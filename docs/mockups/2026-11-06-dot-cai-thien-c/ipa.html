@@ -35,7 +35,12 @@ p,h2,h3{text-wrap:pretty}
 .spk{border:0;background:none;color:var(--primary);border-radius:999px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center}
 .spk:hover{background:var(--primary-soft)}
 .spk svg{width:20px;height:20px}
-.ex{margin:10px 0 0;color:var(--muted)}
+.ex{margin:4px 0 0;color:var(--muted)}
+.card .word{font-size:36px}
+.sense{margin-top:16px;padding-top:14px;border-top:2px solid var(--canvas)}
+.sense .mean{margin:6px 0 2px}
+.lvl{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700}
+.sense.diff .ipa{margin-top:4px}
 .flash{max-width:420px;margin:24px auto;background:#fff;border:2px solid var(--border);border-bottom:4px solid var(--primary);border-radius:1.5rem;padding:28px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
 .flash .w{font-size:40px;font-weight:800}
 .flash .ipa{justify-content:center}
@@ -70,29 +75,28 @@ input:focus-visible{outline:3px solid var(--primary);outline-offset:1px}
   <div class="bar"><i></i>Wordmet</div>
 
   <section class="page on" id="word">
-    <h1 class="word">record</h1>
+    <p class="help" style="margin:0 0 12px">Như Cambridge: phiên âm đặt ngay dưới từ và loại từ, dùng chung cho các nghĩa bên dưới. Nghĩa nào đọc khác thì tách thành khối riêng.</p>
     <div class="card">
-      <span class="pos">danh từ</span>
-      <p class="mean">hồ sơ, bản ghi</p>
-      <div class="ipa"><span><em>UK</em><code>/ˈrek.ɔːd/</code><button class="spk" aria-label="Nghe giọng UK">%SPK%</button></span><span><em>US</em><code>/ˈrek.ɚd/</code><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div>
-      <p class="ex">She keeps a record of every lesson.</p>
+      <h1 class="word">record</h1>
+      <p style="margin:2px 0 6px"><span class="pos">danh từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/ˈrek.ɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/ˈrek.ɚd/</code></span></div>
+      <div class="sense"><p class="mean">hồ sơ, bản ghi</p><p class="ex">She keeps a record of every lesson.</p></div>
+      <div class="sense"><p class="mean">kỷ lục</p><p class="ex">She broke the world record.</p></div>
     </div>
     <div class="card">
-      <span class="pos">động từ</span>
-      <p class="mean">ghi lại, thu âm</p>
-      <div class="ipa"><span><em>UK</em><code>/rɪˈkɔːd/</code><button class="spk" aria-label="Nghe giọng UK">%SPK%</button></span><span><em>US</em><code>/rɪˈkɔːrd/</code><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div>
-      <p class="ex">They recorded the song in one day.</p>
-    </div>
-    <h1 class="word" style="margin-top:32px">lead</h1>
-    <div class="card">
-      <span class="pos">danh từ</span>
-      <p class="mean">chì (kim loại)</p>
-      <div class="ipa"><span><em>UK</em><code>/led/</code><button class="spk" aria-label="Nghe giọng UK">%SPK%</button></span><span><em>US</em><code>/led/</code><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div>
+      <h1 class="word">record</h1>
+      <p style="margin:2px 0 6px"><span class="pos">động từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/rɪˈkɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/rɪˈkɔːrd/</code></span></div>
+      <div class="sense"><p class="mean">ghi lại, thu âm</p><p class="ex">They recorded the song in one day.</p></div>
     </div>
     <div class="card">
-      <span class="pos">danh từ</span>
-      <p class="mean">vị trí dẫn đầu</p>
-      <div class="ipa"><span><em>UK</em><code>/liːd/</code><button class="spk" aria-label="Nghe giọng UK">%SPK%</button></span><span><em>US</em><code>/liːd/</code><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div>
+      <h1 class="word">lead</h1>
+      <p style="margin:2px 0 6px"><span class="pos">danh từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/liːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/liːd/</code></span></div>
+      <div class="sense"><p class="mean">vị trí dẫn đầu</p></div>
+      <div class="sense diff"><p class="mean">chì (kim loại)</p>
+        <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/led/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/led/</code></span></div>
+      </div>
     </div>
   </section>
 
@@ -100,7 +104,7 @@ input:focus-visible{outline:3px solid var(--primary);outline-offset:1px}
     <div class="flash">
       <span class="w">record</span>
       <span class="pos">động từ</span>
-      <div class="ipa"><span><em>UK</em><code>/rɪˈkɔːd/</code><button class="spk" aria-label="Nghe giọng UK">%SPK%</button></span><span><em>US</em><code>/rɪˈkɔːrd/</code><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/rɪˈkɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/rɪˈkɔːrd/</code></span></div>
       <p class="mean" style="margin:6px 0 0">ghi lại, thu âm</p>
     </div>
     <div class="btns"><button class="btn">Cần ôn lại</button><button class="btn on">Đã biết</button></div>
@@ -117,7 +121,7 @@ input:focus-visible{outline:3px solid var(--primary);outline-offset:1px}
     <div class="card">
       <span class="pos">danh từ</span>
       <p class="mean">nỗi sợ hãi vô lý</p>
-      <div class="ipa"><span><code>/ˈfoʊ.bi.ə/</code><button class="spk" aria-label="Nghe">%SPK%</button></span></div>
+      <div class="ipa"><span><button class="spk" aria-label="Nghe">%SPK%</button><code>/ˈfoʊ.bi.ə/</code></span></div>
     </div>
   </section>
 
