@@ -34,9 +34,9 @@ p{max-width:62ch}
 .muted{color:var(--muted)}
 .hero{background:var(--primary-soft);border:2px solid #c9d0ef;border-bottom:4px solid var(--primary);border-radius:1.25rem;padding:24px;display:flex;flex-direction:column;gap:6px;max-width:840px}
 .hero h2{font-size:34px;font-weight:800;margin:0}
-.pair{display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-top:14px;max-width:520px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;max-width:420px}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:.875rem;font-weight:600;border:2px solid var(--border-strong);background:#fff;box-shadow:0 .3rem 0 var(--border)} /* taste-skill-ignore: ledge cua design B */
-.btn.on{background:var(--accent);border-color:var(--accent);box-shadow:0 .25rem 0 var(--accent-deep);font-size:18px;font-weight:700;min-height:52px} /* taste-skill-ignore: ledge cua design B */
+.btn.on{background:var(--accent);border-color:var(--accent);box-shadow:0 .25rem 0 var(--accent-deep)} /* taste-skill-ignore: ledge cua design B */
 .btn{white-space:nowrap}
 .btn svg{width:20px;height:20px}
 .btn small{font-weight:500;color:var(--muted);font-size:14px}
@@ -47,9 +47,8 @@ p{max-width:62ch}
 .gcard .band{height:64px}
 .gcard .in{padding:16px;display:flex;flex-direction:column;gap:6px}
 .gcard h3{margin:0;font-size:22px}
-.gcard .pair{grid-template-columns:1fr 1.4fr;max-width:none;margin-top:10px}
+.gcard .pair{max-width:none;margin-top:10px}
 .gcard .btn{min-height:44px}
-.gcard .btn.on{min-height:46px;font-size:17px}
 .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
 .meta span{display:flex;align-items:center;gap:6px}
 .meta i{width:8px;height:8px;border-radius:50%;display:inline-block}
@@ -60,16 +59,13 @@ p{max-width:62ch}
 .tile b{display:block;font-size:30px;font-weight:800}
 .box{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:20px}
 .box h3{margin:0 0 4px}
-.toast{position:absolute;left:50%;bottom:24px;width:min(420px,calc(100% - 32px));transform:translate(-50%,140%);opacity:0;background:var(--navy);color:var(--on-navy);border-radius:.875rem;padding:16px 18px;display:flex;gap:14px;align-items:center;transition:transform .32s cubic-bezier(.34,1.56,.64,1),opacity .2s;box-shadow:0 12px 32px rgb(15 26 61/.35)} /* taste-skill-ignore: toast noi tren trang */
+.toast{position:absolute;left:50%;bottom:24px;transform:translate(-50%,160%);opacity:0;background:var(--navy);color:var(--on-navy);border-radius:999px;padding:8px 16px 8px 10px;display:flex;gap:8px;align-items:center;white-space:nowrap;transition:transform .32s cubic-bezier(.34,1.56,.64,1),opacity .2s;box-shadow:0 8px 20px rgb(15 26 61/.3)} /* taste-skill-ignore: toast noi tren trang */
 .toast.show{transform:translate(-50%,0);opacity:1}
-.toast svg{width:44px;height:52px;flex-shrink:0}
-.toast .n{font-size:28px;font-weight:800;line-height:1.1}
-.toast .sub{color:var(--on-navy-muted);font-size:15px}
-.dots{display:flex;gap:6px;margin-top:8px}
-.dots span{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--on-navy-muted)}
-.dots i{width:18px;height:18px;border-radius:5px;background:var(--navy-raised)}
-.dots i.d{background:var(--accent)}
-.toast .x{margin-left:auto;align-self:flex-start;background:none;border:0;color:var(--accent);font-weight:600}
+.toast svg{width:22px;height:26px;flex-shrink:0;transform-origin:50% 90%}
+.toast.show svg{animation:flame .9s cubic-bezier(.34,1.56,.64,1) .15s both}
+.toast .n{font-size:16px;font-weight:700}
+@keyframes flame{0%{transform:scale(.3) rotate(-12deg)}55%{transform:scale(1.25) rotate(6deg)}80%{transform:scale(.95) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.toast.show svg{animation:none}}
 p,h2,h3{text-wrap:pretty}
 .n,.tile b,.stat b,.btn small,.meta{font-variant-numeric:tabular-nums}
 .btn{transition:transform .15s cubic-bezier(.2,0,0,1),box-shadow .15s,background-color .15s}
@@ -175,28 +171,21 @@ p,h2,h3{text-wrap:pretty}
       <div class="box">
         <h3>Còn 5 từ mới trong nhóm này</h3>
         <p class="muted" style="margin:0 0 14px">Học bây giờ thì ngày mai chúng có trong phiên ôn.</p>
-        <div class="pair" style="margin:0;grid-template-columns:1.4fr 1fr"><button class="btn on" data-go="group">Học 5 từ mới</button><button class="btn" data-go="today">Về trang chủ</button></div>
+        <div class="pair" style="margin:0;grid-template-columns:1fr 1fr"><button class="btn on" data-go="group">Học 5 từ mới</button><button class="btn" data-go="today">Về trang chủ</button></div>
       </div>
     </div>
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite">
     <svg viewBox="0 0 44 52" aria-hidden="true"><path d="M22 2c4 10 16 16 16 30a16 16 0 0 1-32 0c0-8 4-12 8-16 0 6 2 9 5 10-1-10 0-17 3-24z" fill="#ffd84a" stroke="#c9a21a" stroke-width="3"/></svg>
-    <div>
-      <div class="n">13 ngày liên tiếp</div>
-      <div class="sub">Bạn đã giữ chuỗi hôm nay.</div>
-      <div class="dots" id="dots"></div>
-    </div>
-    <button class="x" id="toastClose">Đóng</button>
+    <span class="n">13 ngày liên tiếp</span>
   </div>
 </div>
 </div>
 
 <script>
-const days=['T2','T3','T4','T5','T6','T7','CN'];
-document.getElementById('dots').innerHTML=days.map((d,i)=>`<span><i class="${i<=4?'d':''}"></i>${d}</span>`).join('');
 let timer;
-function toast(){const t=document.getElementById('toast');t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),4500);}
+function toast(){const t=document.getElementById('toast');t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove("show"),3000);}
 function show(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
   document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));
@@ -206,7 +195,6 @@ function show(id){
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
 document.getElementById('toastBtn').addEventListener('click',toast);
-document.getElementById('toastClose').addEventListener('click',()=>document.getElementById('toast').classList.remove('show'));
 document.getElementById('width').addEventListener('click',e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',String(on));document.getElementById('frame').classList.toggle('phone',on);});
 if(location.hash){const id=location.hash.slice(1).split('-')[0];if(document.getElementById(id))show(id);if(location.hash.includes('phone'))document.getElementById('width').click();if(location.hash.includes('toast'))toast();}
 </script>
