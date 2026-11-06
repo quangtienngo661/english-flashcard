@@ -17,7 +17,8 @@ const base = (s: PracticeSense) => ({
 });
 
 /** `generate_cloze` (Bước 6 §5.1) with the session's other words (session synonyms design §5.1). */
-export const clozeInput = (s: PracticeSense, sessionWords: SessionWord[] = []) => ({ ...base(s), session_words: sessionWords });
+export const clozeInput = (s: PracticeSense, sessionWords?: SessionWord[]) =>
+  ({ ...base(s), ...(sessionWords === undefined ? {} : { session_words: sessionWords }) });
 
 /** `generate_meaning_question`: the three wrong meanings in Vietnamese (design §7.4). */
 export const meaningInput = (s: PracticeSense, wrongVi: string[]) => ({ ...base(s), other_meanings_vi: wrongVi });

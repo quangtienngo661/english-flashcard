@@ -12,7 +12,7 @@ import { checkCloze, checkMcq, checkMeaning, keepAlternatives, pickMcqForm, pick
 import { clozeInput, contentKey, mcqInput, meaningInput, wordCheckInput } from './ai-inputs.js';
 import { aiQuestion, type AiQuestionInput } from './ai-question.js';
 import { AiRequestsRepository, type AiRequestRow } from './ai-requests.repository.js';
-import { pickSessionWords, type SessionSense, type SessionWord } from './session-words.js';
+import { pickSessionWords, type SessionSense } from './session-words.js';
 import { UnknownFormsRepository } from './unknown-forms.repository.js';
 import { WordChecksRepository } from './word-checks.repository.js';
 
@@ -31,7 +31,7 @@ type McqValue = { sentence: string; distractors: string[]; translation_vi: strin
  */
 export type StoredAiInput = { senseRevisionId: string; contentKey: string | null } & (
   // `session_words` and `session`: the words sent to the writer and their senses; both absent on rows written before session synonyms.
-  | { type: 'cloze'; data: Omit<ReturnType<typeof clozeInput>, 'session_words'> & { session_words?: SessionWord[] }; session?: SessionSense[] }
+  | { type: 'cloze'; data: ReturnType<typeof clozeInput>; session?: SessionSense[] }
   | { type: 'meaning_in_sentence'; data: ReturnType<typeof meaningInput>; wrong: CandidateSense[] }
   | { type: 'mcq_sentence'; data: ReturnType<typeof mcqInput>; form: McqForm }
 );

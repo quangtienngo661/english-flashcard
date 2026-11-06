@@ -6,7 +6,9 @@ describe('AI inputs (design §7.1, §15)', () => {
   it('learning content only: word, part of speech, level, Vietnamese meaning, context label', () => {
     const s = deploy({ context_label: 'software' });
     const base = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: 'software' };
-    expect(clozeInput(s)).toEqual({ ...base, session_words: [] });
+    // No list given (a rebuilt example input, where the session is not known): the key is left out, not sent as an empty list.
+    expect(clozeInput(s)).toEqual(base);
+    expect(clozeInput(s, [])).toEqual({ ...base, session_words: [] });
     expect(clozeInput(s, [{ word: 'release', meaning_vi: 'phát hành' }, { word: 'ship', meaning_vi: null }]))
       .toEqual({ ...base, session_words: [{ word: 'release', meaning_vi: 'phát hành' }, { word: 'ship', meaning_vi: null }] });
     expect(meaningInput(s, ['a', 'b', 'c'])).toEqual({ ...base, other_meanings_vi: ['a', 'b', 'c'] });
