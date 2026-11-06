@@ -30,7 +30,11 @@ export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
     if (key.paired_private) maskedPrompt = { ...prompt, meaning: PRIVATE_MEANING_MASK };
     correct = { ...correct, is_true: key.is_true };
   } else if (key.kind === 'type_word') {
-    correct = { ...correct, main: key.main, accepted: key.accepted };
+    // A declared alternative that is a private word's form never reaches staff (design §5.5).
+    correct = {
+      ...correct, main: key.main, accepted: key.accepted,
+      also_accepted: (key.also_accepted ?? []).map((alternative) => (alternative.private ? PRIVATE_WORD_MASK : alternative.form)),
+    };
   }
   return {
     type: question.type,
