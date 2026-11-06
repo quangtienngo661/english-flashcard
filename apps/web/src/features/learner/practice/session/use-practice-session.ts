@@ -86,7 +86,8 @@ export type Phase =
   | { kind: 'closed' };
 
 export type SummaryWord = { sense_id: string; lemma: string; meaning: string; item_id: string; action: 'needs_review' | 'known' | null };
-export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; words: SummaryWord[] };
+/** `alternatives`: how many of the right answers were alternative answers; absent from an older API. */
+export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; alternatives?: number; words: SummaryWord[] };
 
 const isSlug = (error: unknown, slug: string) => error instanceof ApiError && error.problem.slug === slug;
 /** E29: after this long in "Đang tạo câu…" the learner gets the general error instead of waiting on. */

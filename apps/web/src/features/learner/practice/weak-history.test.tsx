@@ -99,6 +99,7 @@ const historyItem = (over: Record<string, unknown>) => ({
 const HISTORY = {
   items: [
     historyItem({}),
+    historyItem({ item_id: 'h4', lemma: 'vital', type: 'cloze', prompt_style: 'sentence', prompt: { kind: 'cloze', sentence: 'Sleep is ___ for good health.' }, answer: 'crucial', correct: { lemma: 'vital', text: 'vital', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, review_action: null, alternative: true }),
     historyItem({ item_id: 'h2', lemma: 'server', type: 'true_false_definition', prompt: { kind: 'true_false', lemma: 'server', meaning: 'máy chủ' }, answer: 'true', correct: { lemma: 'server', text: 'máy chủ', choice_index: null, is_true: true }, result: 'correct', skipped: false, tries: 1, review_action: 'known' }),
     historyItem({ item_id: 'h3', lemma: 'update', prompt_style: 'sentence', prompt: { kind: 'type_sentence', sentence: 'We ___ the app.' }, answer: 'update', correct: { lemma: 'update', text: 'update', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, hint_level: 1, review_action: null }),
   ],
@@ -121,6 +122,24 @@ const historyRoutes = (over: Record<string, Route> = {}): Record<string, Route> 
   ...over,
 });
 
+describe('HistoryPage — alternative answers (session synonyms design §3.3)', () => {
+  it('an alternative answer has its own result chip, and shows what was typed beside the right answer', async () => {
+    renderApp(<HistoryPage />, { routes: historyRoutes() });
+    const vital = (await screen.findByText('vital', { selector: '[data-col="word"]' })).closest('li')!;
+    expect(within(vital).getByText('Đúng · đáp án thay thế')).toBeInTheDocument();
+    expect(within(vital).getByText('crucial')).toBeInTheDocument();
+    expect(within(vital).getAllByText('vital').length).toBeGreaterThanOrEqual(2);
+    const update = screen.getByText('update', { selector: '[data-col="word"]' }).closest('li')!;
+    expect(within(update).queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
+  });
+
+  it('the English chip', async () => {
+    renderApp(<HistoryPage />, { locale: 'en', routes: historyRoutes() });
+    const vital = (await screen.findByText('vital', { selector: '[data-col="word"]' })).closest('li')!;
+    expect(within(vital).getByText('Right · alternative')).toBeInTheDocument();
+  });
+});
+
 describe('HistoryPage (K/57, K/57b, K/82, K/83)', () => {
   it('Câu đã làm: type with style, answer, right answer, result and what was pressed', async () => {
     renderApp(<HistoryPage />, { routes: historyRoutes() });
@@ -134,8 +153,8 @@ describe('HistoryPage (K/57, K/57b, K/82, K/83)', () => {
     const update = screen.getByText('update', { selector: '[data-col="word"]' }).closest('li')!;
     expect(within(update).getByText('Gõ từ · theo câu')).toBeInTheDocument();
     expect(within(update).getByText('Đúng · có gợi ý')).toBeInTheDocument();
-    expect(screen.getByText('3 câu')).toBeInTheDocument();
-    expect(screen.getByText('2 đúng')).toBeInTheDocument();
+    expect(screen.getByText('4 câu')).toBeInTheDocument();
+    expect(screen.getByText('3 đúng')).toBeInTheDocument();
   });
 
   it('K/57: each answered row labels "Bạn trả lời" and "Đáp án" for every width and screen readers (audit 26/10/2026 #7)', async () => {

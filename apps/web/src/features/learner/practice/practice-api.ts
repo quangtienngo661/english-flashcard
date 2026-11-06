@@ -91,6 +91,8 @@ export type HistoryItem = {
   tries: number;
   hint_level: number;
   review_action: string | null;
+  /** The answer was a declared session word, credited to the word typed (`answer`); absent from an older API. */
+  alternative?: boolean;
   answered_at: string;
   local_date: string;
   translation: string | null;

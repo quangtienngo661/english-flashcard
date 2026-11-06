@@ -1195,6 +1195,7 @@
         "empty": "Bạn chưa làm câu nào.",
         "correct": "đúng",
         "typed": "bạn gõ {answer}, đáp án {correct}",
+        "alternative": "bạn gõ {answer}, đáp án thay thế cho {correct}",
         "chose": "bạn chọn {answer}, đáp án {correct}",
         "choseTf": "bạn chọn {answer}",
         "skipped": "bỏ qua, đáp án {correct}",
@@ -1389,6 +1390,7 @@
           "title": "Xong {count, number} câu.",
           "line": "{source}, {types}. Hôm nay còn {remaining, number}/{limit, number} phiên luyện.",
           "lineNoPool": "{source}, {types}.",
+          "alternatives": "Trong đó {count, number} đáp án thay thế",
           "mixed": "trộn {count, number} kiểu câu",
           "correct": "Đúng",
           "wrong": "Sai",
@@ -1472,7 +1474,8 @@
           "wrong": "Sai",
           "skipped": "Sai · bỏ qua",
           "hinted": "Đúng · có gợi ý",
-          "retried": "Đúng · lần {n, number}"
+          "retried": "Đúng · lần {n, number}",
+          "alternative": "Đúng · đáp án thay thế"
         },
         "actions": {
           "needs_review": "Cần ôn lại",

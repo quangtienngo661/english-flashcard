@@ -15,7 +15,7 @@ import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
 import { STAGGER } from '../../review/ReviewSummary';
 import { KBD } from './QuestionCard';
-import type { Summary } from './use-practice-session';
+import type { Summary, SummaryWord } from './use-practice-session';
 
 export function useSummary(sessionId: string) {
   const api = useApi();
@@ -66,12 +66,14 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
     return true;
   });
 
-  async function reviewOne(itemId: string) {
+  /** A row is a word, and two words can share an item (an alternative answer): the call names its word, and so does the pending key. */
+  async function reviewOne(word: SummaryWord) {
+    const key = `${word.item_id}:${word.sense_id}`;
     if (pressing) return;
-    setPressing(itemId);
+    setPressing(key);
     setError(null);
     try {
-      await api.post(`/v1/practice/items/${itemId}/review`, { action: 'needs_review' });
+      await api.post(`/v1/practice/items/${word.item_id}/review`, { action: 'needs_review', sense_id: word.sense_id });
       refresh();
     } catch (e) {
       setError(errorText(e));
@@ -113,6 +115,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
           </div>
         </dl>
       )}
+      {data && (data.alternatives ?? 0) > 0 && <p className="text-caption text-muted">{ts('alternatives', { count: data.alternatives ?? 0 })}</p>}
       {data && data.words.length > 0 && (
         <section className={`flex flex-col gap-2 rounded-card bg-surface p-4 ${STAGGER[3]}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -136,7 +139,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
                     {ts('added')}
                   </span>
                 ) : (
-                  <Button variant="quiet" isPending={pressing === word.item_id} onPress={() => void reviewOne(word.item_id)}>
+                  <Button variant="quiet" isPending={pressing === `${word.item_id}:${word.sense_id}`} onPress={() => void reviewOne(word)}>
                     {ts('review')}
                   </Button>
                 )}

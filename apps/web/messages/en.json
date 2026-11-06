@@ -1195,6 +1195,7 @@
         "empty": "No questions answered yet.",
         "correct": "right",
         "typed": "you typed {answer}, answer {correct}",
+        "alternative": "you typed {answer}, alternative to {correct}",
         "chose": "you chose {answer}, answer {correct}",
         "choseTf": "you chose {answer}",
         "skipped": "skipped, answer {correct}",
@@ -1389,6 +1390,7 @@
           "title": "{count, plural, one {# question} other {# questions}} done.",
           "line": "{source}, {types}. {remaining, number} of {limit, number} sessions left today.",
           "lineNoPool": "{source}, {types}.",
+          "alternatives": "{count, plural, one {Including # alternative answer} other {Including # alternative answers}}",
           "mixed": "{count, number} question types",
           "correct": "Right",
           "wrong": "Wrong",
@@ -1472,7 +1474,8 @@
           "wrong": "Wrong",
           "skipped": "Wrong · skipped",
           "hinted": "Right · with hint",
-          "retried": "Right · try {n, number}"
+          "retried": "Right · try {n, number}",
+          "alternative": "Right · alternative"
         },
         "actions": {
           "needs_review": "Still learning",
