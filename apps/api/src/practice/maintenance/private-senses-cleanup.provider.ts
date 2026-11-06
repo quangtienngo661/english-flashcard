@@ -16,15 +16,19 @@ export class PracticePrivateSensesCleanup implements PrivateSensesCleanup {
     await tx.$queryRaw`
       SELECT s.id FROM practice_sessions s
       WHERE s.user_id = ${userId}::uuid AND s.status IN ('active', 'waiting_continue')
-        AND (EXISTS (SELECT 1 FROM practice_session_items i WHERE i.session_id = s.id AND i.sense_id = ANY(${senseIds}::uuid[]))
+        AND (EXISTS (SELECT 1 FROM practice_session_items i WHERE i.session_id = s.id
+            AND (i.sense_id = ANY(${senseIds}::uuid[]) OR i.alternative_sense_id = ANY(${senseIds}::uuid[])))
           OR EXISTS (SELECT 1 FROM practice_ai_requests r WHERE r.id = s.pending_ai_request_id AND r.sense_id = ANY(${senseIds}::uuid[])))
       ORDER BY s.id FOR UPDATE`;
     const requests = await tx.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM practice_ai_requests
       WHERE user_id = ${userId}::uuid AND sense_id = ANY(${senseIds}::uuid[]) ORDER BY id FOR UPDATE`;
-    await tx.$queryRaw`
-      SELECT id FROM practice_session_items
-      WHERE user_id = ${userId}::uuid AND sense_id = ANY(${senseIds}::uuid[]) ORDER BY id FOR UPDATE`;
+    // Items of these words, and the alternative answers that credited one of them (their asked word stays, but their credit and typed text are
+    // this word's: they go with it, session synonyms design §5.5).
+    const items = await tx.$queryRaw<Array<{ id: string; credited: boolean }>>`
+      SELECT id, COALESCE(alternative_sense_id = ANY(${senseIds}::uuid[]), false) AS credited FROM practice_session_items
+      WHERE user_id = ${userId}::uuid AND (sense_id = ANY(${senseIds}::uuid[]) OR alternative_sense_id = ANY(${senseIds}::uuid[]))
+      ORDER BY id FOR UPDATE`;
     const requestIds = requests.map(({ id }) => id);
     if (requestIds.length > 0) await tx.practiceAiRequest.deleteMany({ where: { id: { in: requestIds } } });
     await tx.practiceWordCheck.deleteMany({ where: { userId, senseId: { in: senseIds } } });
@@ -39,8 +43,12 @@ export class PracticePrivateSensesCleanup implements PrivateSensesCleanup {
       },
       data: { pendingNotice: 'word-not-found' },
     });
-    await tx.practiceReport.deleteMany({ where: { userId, senseId: { in: senseIds } } });
-    await tx.practiceSessionItem.deleteMany({ where: { userId, senseId: { in: senseIds } } });
+    // A report keeps the asked word's sense, so an alternative item credited to a deleted word needs its report removed by item first.
+    const creditedItemIds = items.filter(({ credited }) => credited).map(({ id }) => id);
+    await tx.practiceReport.deleteMany({
+      where: { userId, ...(creditedItemIds.length === 0 ? { senseId: { in: senseIds } } : { OR: [{ senseId: { in: senseIds } }, { itemId: { in: creditedItemIds } }] }) },
+    });
+    await tx.practiceSessionItem.deleteMany({ where: { userId, OR: [{ senseId: { in: senseIds } }, { alternativeSenseId: { in: senseIds } }] } });
     // Questions of other words that used these senses as distractors stay: they live only in this learner's history.
     await tx.practiceQuestion.deleteMany({ where: { userId, senseId: { in: senseIds } } });
   }

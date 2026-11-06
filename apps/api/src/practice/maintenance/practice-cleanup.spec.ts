@@ -68,7 +68,7 @@ describe('PracticeCleanupService.runOnce (Bước 7 design §12.1)', () => {
 
 describe('PracticePrivateSensesCleanup.deleteForSenses (design §12.1, B7E115)', () => {
   const USER = 'u-1';
-  const make = (requestIds: string[]) => {
+  const make = (requestIds: string[], items: Array<{ id: string; credited: boolean }> = []) => {
     const calls: string[] = [];
     const record = (name: string, result: unknown = { count: 0 }) => vi.fn(async (...args: unknown[]) => {
       calls.push(name);
@@ -79,7 +79,7 @@ describe('PracticePrivateSensesCleanup.deleteForSenses (design §12.1, B7E115)',
         const sql = strings.join('?');
         if (sql.includes('FROM practice_sessions')) { calls.push('lock sessions'); return []; }
         if (sql.includes('FROM practice_ai_requests')) { calls.push('lock ai requests'); return requestIds.map((id) => ({ id })); }
-        if (sql.includes('FROM practice_session_items')) { calls.push('lock items'); return []; }
+        if (sql.includes('FROM practice_session_items')) { calls.push('lock items'); return items; }
         throw new Error(`unexpected query ${sql}`);
       }),
       practiceAiRequest: { deleteMany: record('delete ai requests') },
@@ -108,6 +108,36 @@ describe('PracticePrivateSensesCleanup.deleteForSenses (design §12.1, B7E115)',
       where: { userId: USER, pendingAiRequestId: { in: ['req-1'] } }, data: { pendingAiRequestId: null },
     });
     expect(tx.practiceQuestion.deleteMany).toHaveBeenCalledWith({ where: { userId: USER, senseId: { in: ['s-1'] } } });
+  });
+
+  it('CSE8: deleting a private word deletes the alternative items that credited it, their reports first', async () => {
+    const { tx, calls } = make([], [{ id: 'i-asked', credited: false }, { id: 'i-alt', credited: true }]);
+    await new PracticePrivateSensesCleanup().deleteForSenses(tx as never, USER, ['s-1']);
+    expect(calls.indexOf('delete reports')).toBeLessThan(calls.indexOf('delete items'));
+    // A report keeps the asked word's sense, so the sense filter alone would miss it and the item delete would hit the foreign key.
+    expect(tx.practiceReport.deleteMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId: USER, OR: [{ senseId: { in: ['s-1'] } }, { itemId: { in: ['i-alt'] } }] },
+    });
+    expect(tx.practiceSessionItem.deleteMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId: USER, OR: [{ senseId: { in: ['s-1'] } }, { alternativeSenseId: { in: ['s-1'] } }] },
+    });
+  });
+
+  it('CSE9: deleting a private asked word deletes its alternative item as today, by the asked sense', async () => {
+    const { tx } = make([], [{ id: 'i-asked', credited: false }]);
+    await new PracticePrivateSensesCleanup().deleteForSenses(tx as never, USER, ['s-1']);
+    expect(tx.practiceReport.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: USER, senseId: { in: ['s-1'] } } });
+    expect(tx.practiceSessionItem.deleteMany).toHaveBeenCalledWith({ where: expect.objectContaining({ OR: expect.arrayContaining([{ senseId: { in: ['s-1'] } }]) }) });
+  });
+
+  it('the item lock and the session lock both look at the credited column too', async () => {
+    const { tx } = make([]);
+    await new PracticePrivateSensesCleanup().deleteForSenses(tx as never, USER, ['s-1']);
+    const queries = (tx.$queryRaw.mock.calls as unknown as Array<[TemplateStringsArray]>).map(([strings]) => strings.join('?'));
+    const itemLock = queries.find((sql) => sql.includes('FROM practice_session_items') && !sql.includes('FROM practice_sessions'))!;
+    expect(itemLock).toContain('alternative_sense_id = ANY(');
+    expect(itemLock).toMatch(/ORDER BY id FOR UPDATE/);
+    expect(queries.find((sql) => sql.includes('FROM practice_sessions'))).toContain('i.alternative_sense_id = ANY(');
   });
 
   it('with no AI request for those senses nothing points at them, so no pending pointer is cleared', async () => {

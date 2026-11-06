@@ -44,7 +44,9 @@ describe('PracticeEntryUsageProbe (Bước 4 and 7 tables refer to a sense by a 
     const where = (table: Table) => (tx[table].findFirst.mock.calls[0][0] as { where: unknown }).where;
     expect(where('practiceSession')).toEqual({ OR: [{ senseIds: { hasSome: SENSES } }, { aiSenseIds: { hasSome: SENSES } }] });
     expect(where('practiceQuestion')).toEqual({ OR: [{ senseId: { in: SENSES } }, { distractorSenseIds: { hasSome: SENSES } }] });
-    for (const table of ['practiceSessionItem', 'practiceReport', 'practiceAiRequest', 'practiceWordCheck'] as const) {
+    // An alternative answer keeps the word typed in its own column (session synonyms design §4.2).
+    expect(where('practiceSessionItem')).toEqual({ OR: [{ senseId: { in: SENSES } }, { alternativeSenseId: { in: SENSES } }] });
+    for (const table of ['practiceReport', 'practiceAiRequest', 'practiceWordCheck'] as const) {
       expect(where(table), table).toEqual({ senseId: { in: SENSES } });
     }
   });

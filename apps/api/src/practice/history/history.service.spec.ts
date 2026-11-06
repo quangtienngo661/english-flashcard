@@ -17,6 +17,45 @@ const row = {
   },
 };
 
+describe('HistoryService.history — alternative answers (session synonyms design §3.3)', () => {
+  const capture = (rows: unknown[] = [row]) => {
+    const wheres: Array<Record<string, unknown>> = [];
+    const prisma = { practiceSessionItem: { findMany: async ({ where }: { where: Record<string, unknown> }) => { wheres.push(where); return rows; } } };
+    return { wheres, service: new HistoryService(prisma as unknown as PrismaClient, {} as PracticeStats, {} as ContentService, {} as LearningService) };
+  };
+
+  it('the sense_id filter finds an alternative item under both words', async () => {
+    const { wheres, service } = capture();
+    await service.history('u1', { page_size: 20, sense_id: 's9' }, 'vi');
+    expect(wheres[0]).toMatchObject({ userId: 'u1', AND: [{ OR: [{ senseId: 's9' }, { alternativeSenseId: 's9' }] }] });
+  });
+
+  it('the sense_id filter and the page cursor combine, neither replaces the other', async () => {
+    const { wheres, service } = capture([]);
+    const page = await new HistoryService({ practiceSessionItem: { findMany: async () => Array.from({ length: 3 }, (_, k) => ({ ...row, id: `00000000-0000-4000-8000-00000000000${k}` })) } } as unknown as PrismaClient,
+      {} as PracticeStats, {} as ContentService, {} as LearningService).history('u1', { page_size: 2, sense_id: 's9' }, 'vi');
+    const token = page.next_page_token!;
+    await service.history('u1', { page_size: 2, sense_id: 's9', page_token: token }, 'vi');
+    const and = wheres[0].AND as Array<{ OR: unknown[] }>;
+    expect(and).toHaveLength(2);
+    expect(and[0].OR).toEqual([{ senseId: 's9' }, { alternativeSenseId: 's9' }]);
+    expect(JSON.stringify(and[1].OR)).toContain('answeredAt');
+  });
+
+  it('without a sense_id or a cursor there is no extra condition', async () => {
+    const { wheres, service } = capture();
+    await service.history('u1', { page_size: 20 }, 'vi');
+    expect(wheres[0].AND).toEqual([]);
+  });
+
+  it('each item says alternative', async () => {
+    const { service } = capture([row, { ...row, id: 'it-2', alternative: true, alternativeSenseId: 's2', answerRaw: 'crucial' }]);
+    const items = (await service.history('u1', { page_size: 20 }, 'vi')).items;
+    expect(items.map((item) => item.alternative)).toEqual([false, true]);
+    expect(items[1]).toMatchObject({ sense_id: 's1', answer: 'crucial' });
+  });
+});
+
 describe('HistoryService.history (B7E124)', () => {
   const service = new HistoryService({ practiceSessionItem: { findMany: async () => [row] } } as unknown as PrismaClient, {} as PracticeStats, {} as ContentService, {} as LearningService);
 
