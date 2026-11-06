@@ -34,6 +34,9 @@ export type Prompt =
   | { kind: 'meaning_in_sentence'; sentence: string; highlight: string; options: string[]; meaning_language: MeaningLanguage }
   | { kind: 'mcq_sentence'; sentence: string; options: string[] };
 
+/** A form of a session word that an AI fill-in declared as also fitting its blank; `form` is normalized, `private` marks a private word's form. */
+export type DeclaredAlternative = { form: string; private: boolean };
+
 export type AnswerKey = {
   reveal: { lemma: string; meaning: string; definition_en: string | null };
   asked_private: boolean;
@@ -43,7 +46,9 @@ export type AnswerKey = {
   | { kind: 'mcq'; correct_index: number; option_private: boolean[] }
   | { kind: 'true_false'; is_true: boolean; paired_private: boolean }
   // accepted is normalized and includes main.
-  | { kind: 'type_word'; main: string; accepted: string[] }
+  // `also_accepted` and `session_private` exist on AI fill-in keys written after session synonyms: the declared alternatives, and whether a
+  // session word sent to the writer was private (the AI input is deleted after 7 days; this mark stays, design §5.5).
+  | { kind: 'type_word'; main: string; accepted: string[]; also_accepted?: DeclaredAlternative[]; session_private?: boolean }
 );
 
 export type HintStep = { kind: 'definition' | 'example' | 'meaning' | 'first_letter'; text: string };

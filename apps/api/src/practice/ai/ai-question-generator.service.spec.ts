@@ -287,6 +287,70 @@ describe('AiQuestionGenerator (design §6.5 B–H)', () => {
     }
   });
 
+  describe('declared alternatives (session synonyms design §5.3, §5.5)', () => {
+    const verb = (lemma: string, data: Partial<PracticeSense> = {}) => deploy({ lemma, gloss_vi: `nghĩa ${lemma}`, pos: 'verb', inflections: [], ...data });
+
+    it('CS11: a dropped alternative is logged by count and the question is kept', async () => {
+      const sense = deploy();
+      const release = verb('release');
+      const t = setup({
+        sense, others: [release], wordIds: [sense.sense_id, release.sense_id],
+        results: { first: succeeded({ ...goodCloze, also_accepted: ['Release', 'important'] }) },
+      });
+      expect(await t.run()).toEqual({ state: 'ready', questionId: 'q-1' });
+      expect(t.logs).toContainEqual(expect.objectContaining({
+        event: 'ai_alternative_dropped', ai_op: 'generate_cloze', ai_reason: 'unknown-alternative', count: 1,
+      }));
+      expect(t.calls.filter((call) => call === 'write')).toHaveLength(1);
+      expect(t.calls).not.toContain('release');
+      expect(t.written()?.built.answerKey).toMatchObject({ also_accepted: [{ form: 'release', private: false }], session_private: false });
+      // An alternative never fails the check and is never recorded as an unknown form.
+      expect(t.unknown).toEqual([]);
+    });
+
+    it('nothing is logged when every alternative is kept or none is declared', async () => {
+      const sense = deploy();
+      const release = verb('release');
+      const t = setup({ sense, others: [release], wordIds: [sense.sense_id, release.sense_id],
+        results: { first: succeeded({ ...goodCloze, also_accepted: ['release'] }) } });
+      await t.run();
+      expect(t.logs.some((entry) => entry.event === 'ai_alternative_dropped')).toBe(false);
+      const plain = setup();
+      await plain.run();
+      expect(plain.logs.some((entry) => entry.event === 'ai_alternative_dropped')).toBe(false);
+      expect(plain.written()?.built.answerKey).toMatchObject({ also_accepted: [], session_private: false });
+    });
+
+    it('session_private is true when a sent session sense is private, also when it declared nothing (CS15)', async () => {
+      const sense = deploy();
+      const razor = verb('razor', { scope: 'private' });
+      const t = setup({ sense, others: [razor], wordIds: [sense.sense_id, razor.sense_id] });
+      await t.run();
+      expect(t.written()?.built.answerKey).toMatchObject({ also_accepted: [], session_private: true });
+    });
+
+    it('a private declared alternative is marked private', async () => {
+      const sense = deploy();
+      const razor = verb('razor', { scope: 'private' });
+      const t = setup({ sense, others: [razor], wordIds: [sense.sense_id, razor.sense_id],
+        results: { first: succeeded({ ...goodCloze, also_accepted: ['razor'] }) } });
+      await t.run();
+      expect(t.written()?.built.answerKey).toMatchObject({ also_accepted: [{ form: 'razor', private: true }], session_private: true });
+    });
+
+    it('CSE2: an input saved before this change has no session, so every declared entry is dropped', async () => {
+      const sense = deploy();
+      const aiInput: StoredAiInput = {
+        senseRevisionId: 'rev-old', contentKey: null, type: 'cloze',
+        data: { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null },
+      };
+      const t = setup({ sense, aiInput, results: { first: succeeded({ ...goodCloze, also_accepted: ['release'] }) } });
+      await t.run();
+      expect(t.written()?.built.answerKey).toMatchObject({ also_accepted: [], session_private: false });
+      expect(t.logs).toContainEqual(expect.objectContaining({ event: 'ai_alternative_dropped', count: 1 }));
+    });
+  });
+
   it('a request already ready or failed is not run again', async () => {
     const t = setup();
     t.request.state = 'ready';

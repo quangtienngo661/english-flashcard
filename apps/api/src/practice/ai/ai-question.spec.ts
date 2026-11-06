@@ -11,7 +11,7 @@ describe('aiQuestion: cloze (design §7.8, §8)', () => {
   const result = { sentence: 'We ___ the app every Friday.', accepted_answers: ['deploy'], translation_vi: 'Chúng tôi triển khai ứng dụng.' };
 
   it('prompt holds only the sentence; answer_key is type_word with translation_vi; blank is the main form', () => {
-    const q = aiQuestion({ type: 'cloze', result }, deploy({ definition_en: definition }), 'vi', MAX, seededRandom(1));
+    const q = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy({ definition_en: definition }), 'vi', MAX, seededRandom(1));
     expect(q.type).toBe('cloze');
     expect(q.promptStyle).toBe('sentence');
     expect(q.prompt).toEqual({ kind: 'cloze', sentence: result.sentence });
@@ -23,8 +23,16 @@ describe('aiQuestion: cloze (design §7.8, §8)', () => {
     expect(q.distractorSenseIds).toEqual([]);
   });
 
+  it('the key keeps the declared alternatives and the private mark exactly as given (CS16)', () => {
+    const alternatives = [{ form: 'crucial', private: false }, { form: 'vital', private: true }];
+    const q = aiQuestion({ type: 'cloze', result, alternatives, sessionPrivate: true }, deploy(), 'vi', MAX, seededRandom(1));
+    expect(q.answerKey).toMatchObject({ kind: 'type_word', accepted: ['deploy'], also_accepted: alternatives, session_private: true });
+    const plain = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy(), 'vi', MAX, seededRandom(1));
+    expect(plain.answerKey).toMatchObject({ also_accepted: [], session_private: false });
+  });
+
   it('catalog word, vi learner → 3 levels: first letter, definition, Vietnamese meaning', () => {
-    const q = aiQuestion({ type: 'cloze', result }, deploy({ definition_en: definition }), 'vi', MAX, seededRandom(1));
+    const q = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy({ definition_en: definition }), 'vi', MAX, seededRandom(1));
     expect(q.hints).toEqual({
       level1: { kind: 'first_letter', text: 'd' }, level2: { kind: 'definition', text: definition },
       level3: { kind: 'meaning', text: 'triển khai' },
@@ -32,7 +40,7 @@ describe('aiQuestion: cloze (design §7.8, §8)', () => {
   });
 
   it('private word of a vi learner (no definition) → first letter, then the meaning moves up to level 2', () => {
-    const q = aiQuestion({ type: 'cloze', result }, deploy({ scope: 'private', definition_en: null }), 'vi', MAX, seededRandom(1));
+    const q = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy({ scope: 'private', definition_en: null }), 'vi', MAX, seededRandom(1));
     expect(q.hints).toEqual({
       level1: { kind: 'first_letter', text: 'd' }, level2: { kind: 'meaning', text: 'triển khai' }, level3: null,
     });
@@ -40,15 +48,15 @@ describe('aiQuestion: cloze (design §7.8, §8)', () => {
   });
 
   it('en learner → no Vietnamese meaning level; a definition longer than the setting is left out', () => {
-    const en = aiQuestion({ type: 'cloze', result }, deploy({ definition_en: definition }), 'en', MAX, seededRandom(1));
+    const en = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy({ definition_en: definition }), 'en', MAX, seededRandom(1));
     expect(en.hints).toEqual({ level1: { kind: 'first_letter', text: 'd' }, level2: { kind: 'definition', text: definition }, level3: null });
-    const long = aiQuestion({ type: 'cloze', result }, deploy({ definition_en: definition }), 'en', 10, seededRandom(1));
+    const long = aiQuestion({ type: 'cloze', result, alternatives: [], sessionPrivate: false }, deploy({ definition_en: definition }), 'en', 10, seededRandom(1));
     expect(long.hints).toEqual({ level1: { kind: 'first_letter', text: 'd' }, level2: null, level3: null });
   });
 
   it('an inflected main answer is not a base blank; accepted answers are normalized', () => {
-    const q = aiQuestion({ type: 'cloze', result: { ...result, accepted_answers: ['deployed', 'Deployed'] } }, deploy(), 'vi', MAX,
-      seededRandom(1));
+    const q = aiQuestion({ type: 'cloze', result: { ...result, accepted_answers: ['deployed', 'Deployed'] }, alternatives: [], sessionPrivate: false },
+      deploy(), 'vi', MAX, seededRandom(1));
     expect(q.answerKey).toMatchObject({ main: 'deployed', accepted: ['deployed'] });
     expect(q.blank).toEqual({ text: 'deployed', base: false });
   });
@@ -102,6 +110,8 @@ describe('ownSentenceQuestion (design §7.3)', () => {
     expect(q.answerKey).toMatchObject({ kind: 'type_word', main: 'deploy', accepted: ['deploy'], translation_vi: null });
     expect(q.hints.level1).toEqual({ kind: 'first_letter', text: 'd' });
     expect(q.blank).toEqual({ text: 'deploy', base: true });
+    expect(q.answerKey).not.toHaveProperty('also_accepted');
+    expect(q.answerKey).not.toHaveProperty('session_private');
   });
 
   it('an inflected blank only accepts itself', () => {

@@ -6,9 +6,9 @@ import { ContentService, type CandidateSense, type Learner, type PracticeSense }
 import { EntitlementsService } from '../../entitlements/index.js';
 import { LearningService } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
-import type { AiFailure } from '../practice.types.js';
+import type { AiFailure, DeclaredAlternative } from '../practice.types.js';
 import { eligibleCandidates } from '../questions/distractors.js';
-import { checkCloze, checkMcq, checkMeaning, pickMcqForm, pickWrongMeanings, type McqForm } from './ai-checks.js';
+import { checkCloze, checkMcq, checkMeaning, keepAlternatives, pickMcqForm, pickWrongMeanings, type McqForm } from './ai-checks.js';
 import { clozeInput, contentKey, mcqInput, meaningInput, wordCheckInput } from './ai-inputs.js';
 import { aiQuestion, type AiQuestionInput } from './ai-question.js';
 import { AiRequestsRepository, type AiRequestRow } from './ai-requests.repository.js';
@@ -21,7 +21,7 @@ export type GenerateOutcome =
   | { state: 'preparing' }
   | { state: 'failed'; failure: AiFailure; resetsAt?: string; retryAfterSeconds?: number };
 
-type ClozeValue = { sentence: string; accepted_answers: string[]; translation_vi: string };
+type ClozeValue = { sentence: string; accepted_answers: string[]; also_accepted?: string[]; translation_vi: string };
 type MeaningValue = { sentence: string; word_in_sentence: string; translation_vi: string };
 type McqValue = { sentence: string; distractors: string[]; translation_vi: string };
 
@@ -137,7 +137,8 @@ export class AiQuestionGenerator {
     }
 
     // H. The question, written only while the request is still generating; then the unit is confirmed.
-    const built = aiQuestion(questionInput(stored, result.result), sense, learner.nativeLanguage,
+    const extras = await this.alternativesOf(stored, result.result, learner);
+    const built = aiQuestion(questionInput(stored, result.result, extras), sense, learner.nativeLanguage,
       (await this.settings.get()).practice.hintDefinitionMaxChars, random);
     const written = await this.requests.writeQuestion(request.id, {
       built, userId, senseId: sense.sense_id, senseRevisionId: stored.senseRevisionId, contentKey: stored.contentKey,
@@ -153,6 +154,24 @@ export class AiQuestionGenerator {
     // B7E12: the question is still given; it is simply free.
     else this.logger.warn('ai_confirm_not_charged', { ai_request: request.id, ai_op: op, ai_state: confirmed.state });
     return { state: 'ready', questionId: written.questionId };
+  }
+
+  /**
+   * H, cloze only: the declared alternatives that are forms of the session words sent to the writer, and whether one of those words
+   * was private (session synonyms design §5.3, §5.5). A dropped entry is logged by count; the question is kept and the entry is not
+   * recorded as an unknown form (it is usually a word from outside the session).
+   */
+  private async alternativesOf(stored: StoredAiInput, value: Record<string, unknown>, learner: Learner):
+    Promise<{ alternatives: DeclaredAlternative[]; sessionPrivate: boolean }> {
+    if (stored.type !== 'cloze') return { alternatives: [], sessionPrivate: false };
+    const sent = stored.session ?? [];
+    const found = sent.length === 0 ? new Map<string, PracticeSense>() : await this.content.practiceSenses(
+      learner.userId, sent.map(({ senseId }) => senseId), learner.nativeLanguage);
+    const cloze = value as ClozeValue;
+    const { kept, dropped } = keepAlternatives(cloze.also_accepted ?? [], cloze.accepted_answers,
+      sent.flatMap(({ senseId }) => found.get(senseId) ?? []));
+    if (dropped > 0) this.logger.info('ai_alternative_dropped', { ai_op: OPERATION.cloze, ai_reason: 'unknown-alternative', count: dropped });
+    return { alternatives: kept, sessionPrivate: sent.some(({ scope }) => scope === 'private') };
   }
 
   /** F: the call, and one rewrite under `#2` when Practice's rules reject the first answer. */
@@ -243,8 +262,9 @@ function failureOf(result: AiResult): [AiFailure, FailOptions] {
   }
 }
 
-function questionInput(stored: StoredAiInput, value: Record<string, unknown>): AiQuestionInput {
-  if (stored.type === 'cloze') return { type: 'cloze', result: value as ClozeValue };
+function questionInput(stored: StoredAiInput, value: Record<string, unknown>,
+  extras: { alternatives: DeclaredAlternative[]; sessionPrivate: boolean }): AiQuestionInput {
+  if (stored.type === 'cloze') return { type: 'cloze', result: value as ClozeValue, ...extras };
   if (stored.type === 'meaning_in_sentence') return { type: 'meaning_in_sentence', result: value as MeaningValue, wrong: stored.wrong };
   return { type: 'mcq_sentence', result: value as McqValue, form: stored.form };
 }
