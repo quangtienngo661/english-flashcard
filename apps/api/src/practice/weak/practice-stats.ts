@@ -21,13 +21,21 @@ export class PracticeStats {
   ) {}
 
   async statsFor(userId: string, senseIds?: string[]): Promise<Map<string, SenseStats>> {
-    const only = senseIds === undefined ? Prisma.empty : Prisma.sql`AND i.sense_id = ANY(${senseIds}::uuid[])`;
+    // An alternative answer counts for the word typed, never for the word asked (session synonyms design §4.1): the sense of an
+    // item is its credited one, and an alternative that credits nobody has none. The first filter is looser so the indexes on both
+    // sense columns stay usable; the second is exact.
+    const loose = senseIds === undefined ? Prisma.empty
+      : Prisma.sql`AND (i.sense_id = ANY(${senseIds}::uuid[]) OR i.alternative_sense_id = ANY(${senseIds}::uuid[]))`;
+    const only = senseIds === undefined ? Prisma.empty : Prisma.sql`AND sense_id = ANY(${senseIds}::uuid[])`;
     const rows = await this.prisma.$queryRaw<StatsRow[]>`
-      WITH final AS (
-        SELECT i.id, i.sense_id, i.result, i.answered_at, i.hint_level, r.status AS report
+      WITH credited AS (
+        SELECT i.id, CASE WHEN i.alternative THEN i.alternative_sense_id ELSE i.sense_id END AS sense_id, i.result, i.answered_at,
+          i.hint_level, r.status AS report
         FROM practice_session_items i
         LEFT JOIN practice_reports r ON r.item_id = i.id
-        WHERE i.user_id = ${userId}::uuid AND i.result IN ('correct', 'wrong') ${only}
+        WHERE i.user_id = ${userId}::uuid AND i.result IN ('correct', 'wrong') ${loose}
+      ), final AS (
+        SELECT * FROM credited WHERE sense_id IS NOT NULL ${only}
       ), counted AS (
         SELECT sense_id, result, answered_at,
           row_number() OVER (PARTITION BY sense_id ORDER BY answered_at DESC, id DESC) AS rn

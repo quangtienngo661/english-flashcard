@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
+import type { ContentService, PracticeSense } from '../../content/index.js';
 import type { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import type { IdentityService } from '../../identity/profile/identity.service.js';
 import type { LearningService } from '../../learning/index.js';
+import { deploy } from '../testing/ai-senses.js';
 import type { ItemWithQuestion } from '../sessions/session-views.js';
 import type { SessionsService } from '../sessions/sessions.service.js';
 import { AnswersService, type FinalWrite } from './answers.service.js';
@@ -30,7 +32,7 @@ function setup(at: Date, record?: () => Promise<void>, activity?: () => Promise<
   const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) };
   const learning = { recordActivity: vi.fn(activity ?? (async () => { calls.push('activity'); })) };
   const service = new AnswersService({} as PrismaClient, new FakeClock(at), identity as unknown as IdentityService,
-    learning as unknown as LearningService, {} as SessionsService, entitlements as unknown as EntitlementsService);
+    learning as unknown as LearningService, {} as SessionsService, entitlements as unknown as EntitlementsService, {} as ContentService);
   return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, entitlements, calls, identity, learning };
 }
 
@@ -86,7 +88,7 @@ describe('AnswersService.writeFinal — records a learning activity day (nhóm B
 
 // A mcq item the learner has not answered yet, with the parts `resultOf` and `writeFinal` read.
 const mcqItem = (overrides: Record<string, unknown> = {}) => ({
-  id: 'it-1', userId, sessionId: 'sess-1', senseId: 'sense-1', result: null, tries: 0, maxRetries: null, answersTried: [],
+  id: 'it-1', userId, sessionId: 'sess-1', senseId: 'sense-1', result: null, tries: 0, sessionWordTries: 0, maxRetries: null, answersTried: [],
   hintLevel: 0, skipped: false,
   question: {
     type: 'mcq_definition', prompt: { kind: 'mcq', options: ['cat', 'dog'] }, hints: { level1: null, level2: null },
@@ -96,7 +98,9 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 }) as unknown as ItemWithQuestion;
 
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
-function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi') {
+/** `session`: the senses of the session's words (`practiceSenses` returns them) and, when fewer, the ids that are still usable. */
+function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
+  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean> } = { senses: [] }) {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
     $queryRaw: vi.fn(async () => []),
@@ -111,18 +115,25 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi') {
   };
   const identity = { getProfile: vi.fn(async (_id: string, db?: unknown) => { reads.push({ read: 'getProfile', db }); return { timezone: 'UTC', native_language: nativeLanguage }; }) };
   const learning = {
-    practiceCheck: vi.fn(async (_u: string, _s: string, _g: null, db?: unknown) => {
+    practiceCheck: vi.fn(async (_u: string, senseId: string, _g: null, db?: unknown) => {
       reads.push({ read: 'practiceCheck', db });
-      return { item: { due_now: true } };
+      return { item: { due_now: session.due?.[senseId] ?? true } };
     }),
     recordActivity: vi.fn(async () => undefined),
   };
-  const sessions = { closeIfIdle: vi.fn(async () => undefined), lockOpen: vi.fn(async () => undefined) };
+  const sessions = {
+    closeIfIdle: vi.fn(async () => undefined),
+    lockOpen: vi.fn(async () => ({ id: 'sess-1', senseIds: session.senses.map((s) => s.sense_id) })),
+    sessionWordIds: vi.fn(async () => session.usable ?? session.senses.map((s) => s.sense_id)),
+  };
+  const content = {
+    practiceSenses: vi.fn(async (_user: string, ids: string[]) => new Map(session.senses.filter((s) => ids.includes(s.sense_id)).map((s) => [s.sense_id, s]))),
+  };
   const entitlements = { recordPracticeSession: vi.fn(async () => undefined) };
   const service = new AnswersService(prisma as unknown as PrismaClient, new FakeClock(new Date('2026-10-19T03:00:00Z')),
     identity as unknown as IdentityService, learning as unknown as LearningService, sessions as unknown as SessionsService,
-    entitlements as unknown as EntitlementsService);
-  return { service, tx, reads, learning, identity };
+    entitlements as unknown as EntitlementsService, content as unknown as ContentService);
+  return { service, tx, reads, learning, identity, sessions, content };
 }
 
 describe('AnswersService — reads inside the answer transaction use the transaction (PX4)', () => {
@@ -166,6 +177,188 @@ const clozeQuestion = (hints: Record<string, unknown> = { level1: { kind: 'first
     reveal: { lemma: 'deploy', meaning: 'triển khai', definition_en: null }, asked_private: false },
 });
 
+// Session synonyms (design §3.1, §4.1): Lan's session holds `vital` (asked, "Sleep is ___ for good health.", crucial declared),
+// `crucial` and `habit`.
+describe('AnswersService — session words and alternative answers', () => {
+  const crucial = deploy({ sense_id: 'sense-crucial', lemma: 'crucial', pos: 'adjective', inflections: [] });
+  const habit = deploy({ sense_id: 'sense-habit', lemma: 'habit', pos: 'noun', inflections: [] });
+  const words = { senses: [crucial, habit] };
+  const vitalQuestion = (alsoAccepted: unknown[] = [{ form: 'crucial', private: false }]) => {
+    const base = clozeQuestion();
+    return {
+      ...base,
+      answerKey: {
+        ...base.answerKey, main: 'vital', accepted: ['vital'], also_accepted: alsoAccepted, session_private: false,
+        reveal: { lemma: 'vital', meaning: 'thiết yếu', definition_en: null },
+      },
+    };
+  };
+  const finalData = (t: ReturnType<typeof route>) =>
+    (t.tx.practiceSessionItem.update.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>).at(-1)![0];
+
+  it('CS2: a declared session word is a final right marked alternative, credited to the typed word', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', words);
+    await expect(t.service.answer(userId, 'it-1', { text: 'Crucial.' })).resolves.toMatchObject({ result: 'correct' });
+    expect(finalData(t).data).toMatchObject({
+      result: 'correct', alternative: true, alternativeSenseId: 'sense-crucial', answerRaw: 'Crucial.', answerNormalized: 'crucial', tries: 1,
+    });
+  });
+
+  it('CS1: the sentence\'s own answer is a plain right answer: no session word is read and no alternative is written', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', words);
+    await t.service.answer(userId, 'it-1', { text: 'vital' });
+    expect(t.sessions.sessionWordIds).not.toHaveBeenCalled();
+    expect(t.content.practiceSenses).not.toHaveBeenCalled();
+    expect(finalData(t).data).not.toHaveProperty('alternative');
+  });
+
+  it('CS3: another session word is a try-again with reason session_word and does not use up a try', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', words);
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: 'session_word' });
+    expect(t.tx.practiceSessionItem.update).toHaveBeenCalledExactlyOnceWith({
+      where: { id: 'it-1' }, data: { answersTried: ['habit'], tries: 1, sessionWordTries: 1 },
+    });
+    expect(t.sessions.sessionWordIds).toHaveBeenCalledWith(t.tx, userId, expect.objectContaining({ id: 'sess-1' }));
+  });
+
+  it('CS12: with max_retries 3 and two tries used, a session word on the third is still a try-again', async () => {
+    const t = route(aiItem(vitalQuestion(), { maxRetries: 3, tries: 2, answersTried: ['a', 'b'] }), 'vi', words);
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).resolves.toEqual({ result: 'try_again', tries: 3, reason: 'session_word' });
+    const capped = route(aiItem(vitalQuestion(), { maxRetries: 3, tries: 3, answersTried: ['a', 'b', 'c'] }), 'vi', words);
+    await capped.service.answer(userId, 'it-1', { text: 'zzz' });
+    expect(finalData(capped).data).toMatchObject({ result: 'wrong', tries: 4 });
+  });
+
+  it('with max_retries 1, one session-word try then one other wrong try is still a try-again; the next is final wrong', async () => {
+    const afterSessionWord = route(aiItem(vitalQuestion(), { maxRetries: 1, tries: 1, sessionWordTries: 1, answersTried: ['habit'] }), 'vi', words);
+    await expect(afterSessionWord.service.answer(userId, 'it-1', { text: 'zzz' })).resolves.toEqual({ result: 'try_again', tries: 2, reason: null });
+    expect(afterSessionWord.tx.practiceSessionItem.update).toHaveBeenCalledExactlyOnceWith({
+      where: { id: 'it-1' }, data: { answersTried: ['habit', 'zzz'], tries: 2 },
+    });
+    const next = route(aiItem(vitalQuestion(), { maxRetries: 1, tries: 2, sessionWordTries: 1, answersTried: ['habit', 'zzz'] }), 'vi', words);
+    await next.service.answer(userId, 'it-1', { text: 'yyy' });
+    expect(finalData(next).data).toMatchObject({ result: 'wrong', tries: 3 });
+  });
+
+  it('CS4: an outside word keeps today\'s try-again with reason null', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', words);
+    await expect(t.service.answer(userId, 'it-1', { text: 'important' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
+    expect(t.tx.practiceSessionItem.update).toHaveBeenCalledExactlyOnceWith({ where: { id: 'it-1' }, data: { answersTried: ['important'], tries: 1 } });
+  });
+
+  it('CS19: a Bước 4 type_word question gets the session-word try-again too', async () => {
+    const plain = { ...clozeQuestion(), type: 'type_word', prompt: { kind: 'type_sentence', sentence: 'We ___ it.' } };
+    const t = route(aiItem(plain), 'vi', words);
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: 'session_word' });
+    await expect(route(aiItem(plain), 'vi', words).service.answer(userId, 'it-1', { text: 'crucial' })).resolves
+      .toEqual({ result: 'try_again', tries: 1, reason: 'session_word' });
+  });
+
+  it('CSE7: a word no longer usable in the session is an outside word', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', { senses: [crucial, habit], usable: [crucial.sense_id] });
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
+    const declared = route(aiItem(vitalQuestion()), 'vi', { senses: [crucial, habit], usable: [habit.sense_id] });
+    await expect(declared.service.answer(userId, 'it-1', { text: 'crucial' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
+  });
+
+  it('CSE1: a declared word that is not in this session is an outside word', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', { senses: [habit] });
+    await expect(t.service.answer(userId, 'it-1', { text: 'crucial' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
+  });
+
+  it('CSE3: a form of two session words is an alternative that credits nobody', async () => {
+    const find = deploy({ sense_id: 'sense-find', lemma: 'find', pos: 'verb', inflections: [{ form: 'found', kind: 'past' }] });
+    const found = deploy({ sense_id: 'sense-found', lemma: 'found', pos: 'verb', inflections: [] });
+    const t = route(aiItem(vitalQuestion([{ form: 'found', private: false }])), 'vi', { senses: [find, found] });
+    await t.service.answer(userId, 'it-1', { text: 'found' });
+    expect(finalData(t).data).toMatchObject({ result: 'correct', alternative: true, alternativeSenseId: null });
+  });
+
+  describe('the reply of an alternative answer (design §3.2, §4.1)', () => {
+    const typedCrucial = { ...crucial, meaning: { text: 'quan trọng', language: 'vi' as const, translation_missing: false } };
+    const answered = (over: Record<string, unknown> = {}) => aiItem(vitalQuestion(), {
+      result: 'correct', tries: 1, alternative: true, alternativeSenseId: 'sense-crucial', answerRaw: 'Crucial.', answerNormalized: 'crucial',
+      reviewAction: null, alternativeReviewAction: null, ...over,
+    });
+    const context = { senses: [typedCrucial, habit], due: { 'sense-crucial': true, 'sense-1': false } };
+
+    it('CS2: rows typed then asked, each with its own show_known and action; the card-level buttons stay off', async () => {
+      const found = answered({ alternativeReviewAction: 'known' });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never);
+      expect(result).toMatchObject({
+        result: 'correct', show_known: false, highlight_needs_review: false, correct: { lemma: 'vital', text: 'vital' }, meaning: 'thiết yếu',
+        alternative: {
+          typed: 'Crucial.',
+          rows: [
+            { sense_id: 'sense-crucial', lemma: 'crucial', meaning: 'quan trọng', role: 'typed', show_known: true, action: 'known' },
+            { sense_id: 'sense-1', lemma: 'vital', meaning: 'thiết yếu', role: 'asked', show_known: false, action: null },
+          ],
+        },
+      });
+    });
+
+    it('the asked row reports its own review action', async () => {
+      const found = answered({ reviewAction: 'needs_review' });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ role: string; action: string | null }> } };
+      expect(result.alternative.rows.map((row) => [row.role, row.action])).toEqual([['typed', null], ['asked', 'needs_review']]);
+    });
+
+    it('CSE3: no credited word → only the asked row', async () => {
+      const found = answered({ alternativeSenseId: null });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { typed: string; rows: Array<{ role: string }> } };
+      expect(result.alternative.rows.map((row) => row.role)).toEqual(['asked']);
+      expect(result.alternative.typed).toBe('Crucial.');
+    });
+
+    it('CSE10: after a hint neither row shows Know', async () => {
+      const found = answered({ hintLevel: 1 });
+      const t = route(found, 'vi', { senses: [typedCrucial], due: { 'sense-crucial': true, 'sense-1': true } });
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ show_known: boolean }> } };
+      expect(result.alternative.rows.map((row) => row.show_known)).toEqual([false, false]);
+    });
+
+    it('a word that is not in learning has no Know either', async () => {
+      const found = answered();
+      const t = route(found, 'vi', context);
+      t.learning.practiceCheck.mockImplementation(async (_u: string, senseId: string) => ({ item: senseId === 'sense-crucial' ? null : { due_now: true } } as never));
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ show_known: boolean }> } };
+      expect(result.alternative.rows.map((row) => row.show_known)).toEqual([false, true]);
+    });
+
+    it('a typed word that is no longer visible leaves only the asked row', async () => {
+      const found = answered();
+      const t = route(found, 'vi', { senses: [], due: {} });
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ role: string }> } };
+      expect(result.alternative.rows.map((row) => row.role)).toEqual(['asked']);
+    });
+
+    it('a plain reply has alternative: null', async () => {
+      const t = route(aiItem(vitalQuestion()), 'vi', context);
+      await expect(t.service.answer(userId, 'it-1', { text: 'vital' })).resolves.toMatchObject({ result: 'correct', alternative: null });
+      await expect(route(mcqItem(), 'vi', context).service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ alternative: null });
+    });
+
+    it('already-answered carries the same alternative', async () => {
+      const t = route(answered(), 'vi', context);
+      const rejected = await t.service.answer(userId, 'it-1', { text: 'Crucial.' }).catch((error: unknown) => error) as {
+        status: number; extensions: { result: { alternative: { typed: string; rows: unknown[] } } };
+      };
+      expect(rejected.status).toBe(409);
+      expect(rejected.extensions.result.alternative.typed).toBe('Crucial.');
+      expect(rejected.extensions.result.alternative.rows).toHaveLength(2);
+    });
+  });
+
+  it('a choice question reads no session words', async () => {
+    const t = route(mcqItem(), 'vi', words);
+    await t.service.answer(userId, 'it-1', { choice: 1 });
+    expect(t.sessions.sessionWordIds).not.toHaveBeenCalled();
+  });
+});
+
 describe('AnswersService — Bước 7 kinds', () => {
   it('B7E56: a choice kind answered → the right option as correct text; the translation for a vi learner only', async () => {
     const vi = route(aiItem(meaningQuestion));
@@ -189,12 +382,12 @@ describe('AnswersService — Bước 7 kinds', () => {
     const right = route(aiItem(clozeQuestion()));
     await expect(right.service.answer(userId, 'it-1', { text: 'Deployed.' })).resolves.toMatchObject({ result: 'correct' });
     const wrong = route(aiItem(clozeQuestion()));
-    await expect(wrong.service.answer(userId, 'it-1', { text: 'release' })).resolves.toEqual({ result: 'try_again', tries: 1 });
+    await expect(wrong.service.answer(userId, 'it-1', { text: 'release' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
   });
 
   it('nhóm B M6: "try again" records no learning activity, the final answer and a skip each record one through tx; an answered item records none', async () => {
     const retry = route(aiItem(clozeQuestion()));
-    await expect(retry.service.answer(userId, 'it-1', { text: 'release' })).resolves.toEqual({ result: 'try_again', tries: 1 });
+    await expect(retry.service.answer(userId, 'it-1', { text: 'release' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
     expect(retry.learning.recordActivity).not.toHaveBeenCalled();
     const final = route(aiItem(clozeQuestion()));
     await final.service.answer(userId, 'it-1', { text: 'deployed' });

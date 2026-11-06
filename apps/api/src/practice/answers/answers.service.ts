@@ -3,14 +3,17 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { dateValue, localDate } from '../../common/time/local-date.js';
+import { ContentService } from '../../content/index.js';
 import { EntitlementsService } from '../../entitlements/index.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import type { PracticeSession, Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
 import { matchesAnswer, normalizeAnswer } from '../grading/normalize.js';
 import type { AnswerKey, Hints, Prompt } from '../practice.types.js';
 import type { ItemWithQuestion } from '../sessions/session-views.js';
+import type { ReviewAction } from '../reviews/practice-reviews.service.js';
 import { SessionsService } from '../sessions/sessions.service.js';
+import { matchTyped, sessionWordForms, type SessionWordForms, type TypeWordKey } from './typed-match.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
@@ -21,9 +24,19 @@ export type AnswerResult = {
   meaning: string; definition_en: string | null; show_known: boolean; highlight_needs_review: boolean;
   /** Bước 7 (PRC22): the Vietnamese translation of an AI sentence, for a `vi` learner only; else null. */
   translation: string | null;
+  /** Session synonyms: set for an AI fill-in answered with a declared session word; null for every other result. */
+  alternative: { typed: string; rows: AlternativeRow[] } | null;
 };
+/** One word of an alternative answer: the word typed (credited) or the word asked, each with its own review state. */
+export type AlternativeRow = {
+  sense_id: string; lemma: string; meaning: string; role: 'typed' | 'asked'; show_known: boolean; action: ReviewAction | null;
+};
+/** `reason: 'session_word'`: the typed word is another word of the session (it does not use up a try); null for any other wrong word. */
+export type TryAgainReply = { result: 'try_again'; tries: number; reason: 'session_word' | null };
 export type FinalWrite = {
   result: 'correct' | 'wrong'; answerRaw: string | null; answerNormalized: string | null; answersTried: string[]; tries: number; skipped: boolean;
+  /** An AI fill-in answered with a declared session word, and the word credited (null when the form belongs to more than one). */
+  alternative?: boolean; alternativeSenseId?: string | null;
 };
 
 /**
@@ -54,15 +67,17 @@ export class AnswersService {
     @Inject(LearningService) private readonly learning: LearningService,
     @Inject(SessionsService) private readonly sessions: SessionsService,
     @Inject(EntitlementsService) private readonly entitlements: EntitlementsService,
+    @Inject(ContentService) private readonly content: ContentService,
   ) {}
 
-  answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | { result: 'try_again'; tries: number }> {
-    return this.locked(userId, itemId, async (tx, item) => {
+  answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | TryAgainReply> {
+    return this.locked(userId, itemId, async (tx, item, session) => {
       await this.assertUnanswered(tx, userId, item, true);
       const key = item.question.answerKey as AnswerKey;
       let correct: boolean;
       let raw: string;
       let normalized: string;
+      let alternative: { senseId: string | null } | null = null;
       if (key.kind === 'mcq' && 'choice' in body) {
         correct = body.choice === key.correct_index;
         raw = normalized = String(body.choice);
@@ -73,11 +88,25 @@ export class AnswersService {
         correct = matchesAnswer(body.text, key.accepted);
         raw = body.text;
         normalized = normalizeAnswer(body.text);
-        if (!correct && (item.maxRetries === null || item.tries < item.maxRetries)) {
-          await tx.practiceSessionItem.update({
-            where: { id: item.id }, data: { answersTried: [...item.answersTried, raw], tries: item.tries + 1 },
-          });
-          return { result: 'try_again', tries: item.tries + 1 };
+        if (!correct) {
+          // Not the sentence's own answer: is it another word of the current session (design §3.1)? Read only now, never for a right answer.
+          const match = matchTyped(body.text, key, await this.sessionWords(tx, userId, item, key, session));
+          if (match.kind === 'alternative') {
+            correct = true;
+            alternative = { senseId: match.senseId };
+          } else if (match.kind === 'session_word') {
+            // Always a try-again, and not counted against max_retries: the learner typed a word of her own session, not a misspelling.
+            await tx.practiceSessionItem.update({
+              where: { id: item.id },
+              data: { answersTried: [...item.answersTried, raw], tries: item.tries + 1, sessionWordTries: item.sessionWordTries + 1 },
+            });
+            return { result: 'try_again', tries: item.tries + 1, reason: 'session_word' };
+          } else if (item.maxRetries === null || item.tries - item.sessionWordTries < item.maxRetries) {
+            await tx.practiceSessionItem.update({
+              where: { id: item.id }, data: { answersTried: [...item.answersTried, raw], tries: item.tries + 1 },
+            });
+            return { result: 'try_again', tries: item.tries + 1, reason: null };
+          }
         }
       } else {
         throw validationFailed();
@@ -85,6 +114,7 @@ export class AnswersService {
       const final = await this.writeFinal(tx, item, {
         result: correct ? 'correct' : 'wrong', answerRaw: raw, answerNormalized: normalized, answersTried: item.answersTried,
         tries: item.tries + 1, skipped: false,
+        ...(alternative ? { alternative: true, alternativeSenseId: alternative.senseId } : {}),
       });
       return this.resultOf(userId, final, tx);
     });
@@ -157,31 +187,76 @@ export class AnswersService {
     const correct = item.result === 'correct';
     const translation = key.translation_vi
       ? ((await this.identity.getProfile(userId, db))?.native_language === 'vi' ? key.translation_vi : null) : null;
+    const alternative = item.alternative ? await this.alternativeOf(userId, item, key, learningItem?.due_now ?? null, db) : null;
     return {
       result: correct ? 'correct' : 'wrong', skipped: item.skipped, tries: item.tries, hint_level: item.hintLevel,
       correct: correctOf(key, prompt),
       meaning: key.reveal.meaning, definition_en: key.reveal.definition_en,
-      show_known: learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
-      highlight_needs_review: learningItem !== null && !correct, translation,
+      // On an alternative card the buttons belong to the two rows; an older web build shows today's card and must not review the asked word.
+      show_known: alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
+      highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
     };
+  }
+
+  /**
+   * The two rows of an alternative answer, typed word first (design §3.2). Each row's Know follows today's rule for that word on its own:
+   * a right answer, no hint, and the word in learning and due now.
+   */
+  private async alternativeOf(userId: string, item: ItemWithQuestion, key: AnswerKey, askedDue: boolean | null,
+    db?: Prisma.TransactionClient | PrismaClient): Promise<NonNullable<AnswerResult['alternative']>> {
+    const knowable = (due: boolean | null) => due === true && item.result === 'correct' && item.hintLevel === 0;
+    const rows: AlternativeRow[] = [];
+    if (item.alternativeSenseId !== null) {
+      const typed = (await this.typedWords(userId, [item.alternativeSenseId], db)).get(item.alternativeSenseId);
+      if (typed) {
+        const { item: learningItem } = await this.learning.practiceCheck(userId, item.alternativeSenseId, null, db);
+        rows.push({
+          sense_id: item.alternativeSenseId, lemma: typed.lemma, meaning: typed.meaning, role: 'typed',
+          show_known: knowable(learningItem?.due_now ?? null), action: item.alternativeReviewAction as ReviewAction | null,
+        });
+      }
+    }
+    rows.push({
+      sense_id: item.senseId, lemma: key.reveal.lemma, meaning: key.reveal.meaning, role: 'asked',
+      show_known: knowable(askedDue), action: item.reviewAction as ReviewAction | null,
+    });
+    return { typed: item.answerRaw ?? '', rows };
+  }
+
+  /** The lemma and the meaning (in the learner's language) of words the learner typed; a word that is not visible any more is left out. */
+  async typedWords(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, { lemma: string; meaning: string }>> {
+    if (senseIds.length === 0) return new Map();
+    const language = (await this.identity.getProfile(userId, db))?.native_language === 'en' ? 'en' : 'vi';
+    const senses = await this.content.practiceSenses(userId, senseIds, language, db);
+    return new Map([...senses].map(([id, sense]) => [id, { lemma: sense.lemma, meaning: sense.meaning.text }]));
   }
 
   /**
    * Lock order (plan, Global Constraints): the idle close in its own statement, then the session row (404, session-closed,
    * last_activity_at), then the item row; a void item is 409 item-void.
    */
-  private async locked<T>(userId: string, itemId: string, work: (tx: Prisma.TransactionClient, item: ItemWithQuestion) => Promise<T>):
-    Promise<T> {
+  private async locked<T>(userId: string, itemId: string,
+    work: (tx: Prisma.TransactionClient, item: ItemWithQuestion, session: PracticeSession) => Promise<T>): Promise<T> {
     const found = await this.prisma.practiceSessionItem.findFirst({ where: { id: itemId, userId }, select: { sessionId: true } });
     if (!found) throw notFound();
     await this.sessions.closeIfIdle(userId, found.sessionId);
     return this.prisma.$transaction(async (tx) => {
-      await this.sessions.lockOpen(tx, userId, found.sessionId);
+      const session = await this.sessions.lockOpen(tx, userId, found.sessionId);
       await tx.$queryRaw`SELECT id FROM practice_session_items WHERE id = ${itemId}::uuid FOR UPDATE`;
       const item = await tx.practiceSessionItem.findUniqueOrThrow({ where: { id: itemId }, include: { question: true } });
       if (item.result === 'void') throw conflict('item-void', 'Item void');
-      return work(tx, item);
+      return work(tx, item, session);
     }, transactionOptions);
+  }
+
+  /** The current session's words as the matching needs them: usable now, so a word deleted or taken out of the group is an outside word. */
+  private async sessionWords(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, key: TypeWordKey,
+    session: PracticeSession): Promise<SessionWordForms[]> {
+    const ids = await this.sessions.sessionWordIds(tx, userId, session);
+    // The forms of a word do not depend on the language of its meaning.
+    const found = ids.length === 0 ? new Map() : await this.content.practiceSenses(userId, ids, 'vi', tx);
+    return sessionWordForms({ senseId: item.senseId, lemma: key.reveal.lemma }, ids.flatMap((id) => found.get(id) ?? []));
   }
 
   private async assertUnanswered(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, withResult: boolean): Promise<void> {
