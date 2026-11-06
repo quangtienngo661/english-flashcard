@@ -35,6 +35,11 @@ export type Item = {
   private_word?: boolean;
 };
 
+/** One word of an alternative answer (API `AlternativeRow`): the word typed (credited) or the word asked, each with its own button state. */
+export type AlternativeRow = {
+  sense_id: string; lemma: string; meaning: string; role: 'typed' | 'asked'; show_known: boolean; action: 'needs_review' | 'known' | null;
+};
+
 export type AnswerResult = {
   result: 'correct' | 'wrong';
   skipped: boolean;
@@ -46,6 +51,8 @@ export type AnswerResult = {
   show_known: boolean;
   highlight_needs_review: boolean;
   translation: string | null;
+  /** Set for an AI fill-in answered with a declared session word: the two rows of the card. Absent from an older API. */
+  alternative?: { typed: string; rows: AlternativeRow[] } | null;
 };
 
 export type AnswerBody = { choice: number } | { is_true: boolean } | { text: string };
@@ -63,7 +70,9 @@ export type SessionNotice =
   | { kind: 'ai-fallback'; reason: AiReason; resetsAt: string | null }
   | { kind: 'word-not-recognized'; senseId: string; lemma: string | null };
 
-export type Outcome = { kind: 'try_again'; tries: number } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
+/** `reason: 'session_word'`: the typed word is another word of this session (session synonyms); an older API sends none. */
+export type TryAgainReason = 'session_word' | null;
+export type Outcome = { kind: 'try_again'; tries: number; reason: TryAgainReason } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
 export type Phase =
   | { kind: 'question'; item: Item; outcome: Outcome | null; notice?: SessionNotice | null }
   /** K/73: the next AI question is still being written. */
@@ -77,7 +86,8 @@ export type Phase =
   | { kind: 'closed' };
 
 export type SummaryWord = { sense_id: string; lemma: string; meaning: string; item_id: string; action: 'needs_review' | 'known' | null };
-export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; words: SummaryWord[] };
+/** `alternatives`: how many of the right answers were alternative answers; absent from an older API. */
+export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; alternatives?: number; words: SummaryWord[] };
 
 const isSlug = (error: unknown, slug: string) => error instanceof ApiError && error.problem.slug === slug;
 /** E29: after this long in "Đang tạo câu…" the learner gets the general error instead of waiting on. */
@@ -228,7 +238,7 @@ export function usePracticeSession() {
   const answerOnce = useSubmitOnce(async (key) => {
     const { itemId, body } = chosenRef.current!;
     try {
-      return await api.post<AnswerResult | { result: 'try_again'; tries: number }>(`/v1/practice/items/${itemId}/answer`, body, { idempotencyKey: key });
+      return await api.post<AnswerResult | { result: 'try_again'; tries: number; reason?: TryAgainReason }>(`/v1/practice/items/${itemId}/answer`, body, { idempotencyKey: key });
     } catch (e) {
       // E36: answered in another tab; the API sends the result.
       const other = e instanceof ApiError && e.problem.slug === 'already-answered' ? e.problem.extensions?.result : undefined;
@@ -253,7 +263,7 @@ export function usePracticeSession() {
       const response = await answerOnce.submit(`${item.item_id}:${JSON.stringify(body)}`);
       if (!response) return;
       if (response.result === 'try_again') {
-        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries }, notice: phase.notice });
+        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries, reason: response.reason ?? null }, notice: phase.notice });
       }
       else recordFinal(item, response, body);
     } catch (e) {
@@ -276,6 +286,18 @@ export function usePracticeSession() {
         if (phase?.kind !== 'question') return;
         const item = phase.item;
         recordFinal(item, await api.post<AnswerResult>(`/v1/practice/items/${item.item_id}/skip`, {}), null);
+      }),
+    /** Cần ôn lại / Đã biết on one row of an alternative card: reviews that word only and stays on the card (session synonyms design §3.2). */
+    reviewWord: (senseId: string, action: 'needs_review' | 'known') =>
+      guarded(async () => {
+        if (phase?.kind !== 'question' || phase.outcome?.kind !== 'final') return;
+        const { item, outcome } = phase;
+        const alternative = outcome.result.alternative;
+        if (!alternative) return;
+        await api.post(`/v1/practice/items/${item.item_id}/review`, { action, sense_id: senseId });
+        void client.invalidateQueries({ queryKey: GROUPS_KEY });
+        const rows = alternative.rows.map((row) => (row.sense_id === senseId ? { ...row, action } : row));
+        set({ ...phase, outcome: { ...outcome, result: { ...outcome.result, alternative: { ...alternative, rows } } } });
       }),
     /** Cần ôn lại / Đã biết on a result, then the next question (K/61, K/62). */
     review: (action: 'needs_review' | 'known') =>

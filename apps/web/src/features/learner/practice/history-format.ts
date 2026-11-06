@@ -9,6 +9,7 @@ type Translate = (key: string, values?: Record<string, string>) => string;
 export function answerSummary(item: HistoryItem, t: Translate): string {
   const correct = item.correct.text;
   if (item.skipped) return t('skipped', { correct });
+  if (item.alternative) return t('alternative', { answer: item.answer ?? '', correct });
   if (item.result === 'correct') return t('correct');
   const options = item.prompt.options;
   if (options && item.answer !== null && /^\d$/.test(item.answer)) return t('chose', { answer: options[Number(item.answer)] ?? item.answer, correct });

@@ -50,7 +50,7 @@ function aiApi({ nexts, plan = 'pro' }: { nexts: Next[]; plan?: Plan }): Record<
       return { json: { session: view(), ...answer } };
     },
     [`POST /v1/practice/sessions/${SESSION}/prepare`]: () => ({ json: { prepared: 1, already_ready: 0 } }),
-    [`POST /v1/practice/items/${uuid(511)}/hint`]: () => ({ json: { level: 1, hint: { kind: 'first_letter', text: 'd…' } } }),
+    [`POST /v1/practice/items/${uuid(511)}/hint`]: () => ({ json: { level: 1, hint: { kind: 'first_letter', text: 'd' } } }),
     [`POST /v1/practice/items/${uuid(511)}/answer`]: () => ({ json: result() }),
     [`POST /v1/practice/items/${uuid(512)}/answer`]: () => ({ json: result('rizz') }),
     [`POST /v1/practice/items/${uuid(512)}/report`]: () => ({ status: 201, json: { id: uuid(711) } }),
@@ -88,7 +88,7 @@ test.describe('M5a flows (mocked API)', () => {
     await expect(page.getByText('We use Docker to ___ the app to the production server.')).toBeVisible();
     await expect(page.getByText('Câu AI')).toBeVisible();
     await page.getByRole('button', { name: /^Gợi ý/ }).click();
-    await expect(page.getByText('d…')).toBeVisible();
+    await expect(page.getByText('d___')).toBeVisible();
     await page.getByRole('textbox').fill('deploy');
     await page.getByRole('button', { name: /Kiểm tra/ }).click();
     await expect(page.getByText('AI dịch')).toBeVisible();
