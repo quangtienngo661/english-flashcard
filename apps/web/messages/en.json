@@ -761,7 +761,7 @@
       "loadMore": "Show more words",
       "empty": "This deck has no words yet.",
       "emptyTitle": "This deck has no words yet",
-      "emptyBody": "Add words you meet while reading or watching, or pick a batch by topic in Look up. Once it has words, the deck has cards to review.",
+      "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
       "emptyLookup": "Pick words by topic"
     },
     "backlog": {
