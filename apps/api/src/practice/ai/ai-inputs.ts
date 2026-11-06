@@ -1,6 +1,7 @@
 // What Practice sends to the AI gateway (design §7.1, §15): learning content only, never the learner's id, name or sentences.
 import { createHash } from 'node:crypto';
 import type { PracticeSense } from '../../content/index.js';
+import type { SessionWord } from './session-words.js';
 
 // The gateway's word for a missing part of speech (`AI_POS_UNSET`, which `ai/index.ts` does not export).
 const POS_UNSET = 'unspecified';
@@ -15,8 +16,8 @@ const base = (s: PracticeSense) => ({
   word: s.lemma, part_of_speech: s.pos ?? POS_UNSET, level: s.level, meaning_vi: meaningVi(s), context_label: s.context_label,
 });
 
-/** `generate_cloze` (Bước 6 §5.1). */
-export const clozeInput = (s: PracticeSense) => base(s);
+/** `generate_cloze` (Bước 6 §5.1) with the session's other words (session synonyms design §5.1). */
+export const clozeInput = (s: PracticeSense, sessionWords: SessionWord[] = []) => ({ ...base(s), session_words: sessionWords });
 
 /** `generate_meaning_question`: the three wrong meanings in Vietnamese (design §7.4). */
 export const meaningInput = (s: PracticeSense, wrongVi: string[]) => ({ ...base(s), other_meanings_vi: wrongVi });

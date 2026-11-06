@@ -33,6 +33,9 @@ type Options = {
   noPicks?: boolean;
   /** The gateway throws instead of returning a result (B7-3). */
   gatewayThrows?: boolean;
+  /** The session's other words (session synonyms §5.1) and the ids the generator is given: `wordIds` defaults to the asked word only. */
+  others?: PracticeSense[];
+  wordIds?: string[];
 };
 type AiQuestionGeneratorDeps = { isReady: (op: string) => Promise<{ ready: true } | { ready: false; reason: 'model-not-set'; retry_after_seconds?: number }> };
 
@@ -82,7 +85,8 @@ function setup(options: Options = {}) {
   const refuse = async () => { throw new Error('picked again'); };
   const mates = ['release', 'ship', 'post', 'build'].map((lemma) => candidate({ lemma, gloss_vi: `nghĩa ${lemma}` }));
   const content = {
-    practiceSenses: async () => new Map([[sense.sense_id, sense]]),
+    practiceSenses: async (_user: string, ids: string[]) =>
+      new Map([sense, ...(options.others ?? [])].filter((s) => ids.includes(s.sense_id)).map((s) => [s.sense_id, s])),
     practiceCandidates: options.noPicks ? refuse : async () => new Map(mates.map((m) => [m.sense_id, m])),
     practiceLemmaMeanings: options.noPicks ? refuse : async () => new Map(),
     practiceOtherSenses: options.noPicks ? refuse : async () => [],
@@ -103,7 +107,8 @@ function setup(options: Options = {}) {
   const generator = new AiQuestionGenerator(ai as never, entitlements, content, learning, settings, requests, wordChecks, unknownForms,
     { now: () => now } as Clock, new AppLogger({ write: (entry) => logs.push(entry) }));
   const run = () => generator.run(request.id, {
-    learner: { userId, nativeLanguage: 'vi' }, session: { id: 'sess-1', aiStopped: null }, random: seededRandom(1),
+    learner: { userId, nativeLanguage: 'vi' }, session: { id: 'sess-1', aiStopped: null, wordIds: options.wordIds ?? [sense.sense_id] },
+    random: seededRandom(1),
   });
   return { run, calls, runs, request, written: () => written, unknown, logs, checks };
 }
@@ -244,6 +249,42 @@ describe('AiQuestionGenerator (design §6.5 B–H)', () => {
     expect(t.runs[0]).toMatchObject({ op: 'generate_sentence_mcq', id: t.request.id, data: aiInput.data });
     expect(t.written()?.senseRevisionId).toBe('rev-old');
     expect(t.written()?.built.distractorSenseIds).toEqual(mates.map((m) => m.sense_id));
+  });
+
+  it('cloze input carries session_words and the stored input lists the senses sent (CS10)', async () => {
+    const sense = deploy({ lemma: 'brush' });
+    const comb = deploy({ lemma: 'comb', gloss_vi: 'chải (tóc)', pos: 'verb' });
+    const razor = deploy({ lemma: 'razor', gloss_vi: null, pos: 'verb', scope: 'private' });
+    const noun = deploy({ lemma: 'towel', gloss_vi: 'khăn', pos: 'noun' });
+    const t = setup({ sense, others: [comb, razor, noun], wordIds: [sense.sense_id, razor.sense_id, noun.sense_id, comb.sense_id] });
+    await t.run();
+    const stored = t.request.aiInput as Extract<StoredAiInput, { type: 'cloze' }>;
+    // Session order is kept (razor before comb); the noun has another part of speech than the verb asked.
+    expect(stored.data.session_words).toEqual([{ word: 'razor', meaning_vi: null }, { word: 'comb', meaning_vi: 'chải (tóc)' }]);
+    expect(stored.session).toEqual([{ senseId: razor.sense_id, scope: 'private' }, { senseId: comb.sense_id, scope: 'catalog' }]);
+    expect(t.runs[0].data).toEqual(stored.data);
+  });
+
+  it('a one-word session sends session_words []', async () => {
+    const t = setup();
+    await t.run();
+    const stored = t.request.aiInput as Extract<StoredAiInput, { type: 'cloze' }>;
+    expect(stored.data.session_words).toEqual([]);
+    expect(stored.session).toEqual([]);
+  });
+
+  it('meaning and MCQ inputs are unchanged', async () => {
+    const comb = deploy({ lemma: 'comb', gloss_vi: 'chải (tóc)', pos: 'verb' });
+    for (const type of ['meaning_in_sentence', 'mcq_sentence'] as const) {
+      const sense = deploy();
+      const t = setup({ sense, type, others: [comb], wordIds: [sense.sense_id, comb.sense_id],
+        results: { first: succeeded({ sentence: 'We ___ it.', word_in_sentence: 'deploy', distractors: ['release', 'ship', 'post'], translation_vi: 'x' }) } });
+      await t.run();
+      const stored = t.request.aiInput as StoredAiInput | null;
+      expect(stored, type).not.toBeNull();
+      expect(stored!.data, type).not.toHaveProperty('session_words');
+      expect(stored, type).not.toHaveProperty('session');
+    }
   });
 
   it('a request already ready or failed is not run again', async () => {

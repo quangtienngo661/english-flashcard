@@ -147,7 +147,7 @@ describe('ExampleSourceService.rebuildInput (E17)', () => {
 
   it('a cloze takes the sense as it is now', async () => {
     const { service } = setup();
-    await expect(service.rebuildInput('generate_cloze', deploy(), ADMIN)).resolves.toEqual(CLOZE_DATA);
+    await expect(service.rebuildInput('generate_cloze', deploy(), ADMIN)).resolves.toEqual({ ...CLOZE_DATA, session_words: [] });
   });
 
   it('a meaning question: the other catalog senses of the word first, then random catalog meanings, three in all', async () => {
@@ -205,7 +205,7 @@ describe('ExampleSourceService.create (D27, B42)', () => {
     const { service, ai } = setup({ row: source({ aiInput: null }) });
     await expect(service.create(ADMIN, { report_id: 'rep1', expected: { forms: ['deploy'] }, note: null })).resolves.toEqual({ id: 'ex1', operation: 'generate_cloze', rebuilt: true });
     expect(ai.createEvalExample).toHaveBeenCalledExactlyOnceWith({
-      operation: 'generate_cloze', input: CLOZE_DATA, expected: { forms: ['deploy'] }, note: null, source: 'report', sourceRef: 'rep1', actorId: ADMIN,
+      operation: 'generate_cloze', input: { ...CLOZE_DATA, session_words: [] }, expected: { forms: ['deploy'] }, note: null, source: 'report', sourceRef: 'rep1', actorId: ADMIN,
     });
   });
 

@@ -12,6 +12,7 @@ import { checkCloze, checkMcq, checkMeaning, pickMcqForm, pickWrongMeanings, typ
 import { clozeInput, contentKey, mcqInput, meaningInput, wordCheckInput } from './ai-inputs.js';
 import { aiQuestion, type AiQuestionInput } from './ai-question.js';
 import { AiRequestsRepository, type AiRequestRow } from './ai-requests.repository.js';
+import { pickSessionWords, type SessionSense, type SessionWord } from './session-words.js';
 import { UnknownFormsRepository } from './unknown-forms.repository.js';
 import { WordChecksRepository } from './word-checks.repository.js';
 
@@ -29,7 +30,8 @@ type McqValue = { sentence: string; distractors: string[]; translation_vi: strin
  * crash sends the same data under the same operation id (B7E32, B7E114) and builds the same question.
  */
 export type StoredAiInput = { senseRevisionId: string; contentKey: string | null } & (
-  | { type: 'cloze'; data: ReturnType<typeof clozeInput> }
+  // `session_words` and `session`: the words sent to the writer and their senses; both absent on rows written before session synonyms.
+  | { type: 'cloze'; data: Omit<ReturnType<typeof clozeInput>, 'session_words'> & { session_words?: SessionWord[] }; session?: SessionSense[] }
   | { type: 'meaning_in_sentence'; data: ReturnType<typeof meaningInput>; wrong: CandidateSense[] }
   | { type: 'mcq_sentence'; data: ReturnType<typeof mcqInput>; form: McqForm }
 );
@@ -60,7 +62,8 @@ export class AiQuestionGenerator {
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
-  async run(requestId: string, ctx: { learner: Learner; session: { id: string; aiStopped: string | null };
+  /** `ctx.session.wordIds`: the session's usable words in session order (`SessionsService.sessionWordIds`). */
+  async run(requestId: string, ctx: { learner: Learner; session: { id: string; aiStopped: string | null; wordIds: string[] };
     random?: () => number }): Promise<GenerateOutcome> {
     const request = await this.requests.get(requestId);
     if (!request) return { state: 'failed', failure: 'ai-failed' };
@@ -100,7 +103,7 @@ export class AiQuestionGenerator {
     // D. The data sent to AI, saved once.
     let stored = request.aiInput as StoredAiInput | null;
     if (stored === null) {
-      stored = await this.buildInput(type, sense, learner, key, random);
+      stored = await this.buildInput(type, sense, learner, key, random, ctx.session.wordIds);
       if (stored === null) return this.fail(request, 'ai-failed', { reason: 'no-input' });
       await this.requests.saveInput(request.id, stored, this.clock.now());
     }
@@ -204,10 +207,15 @@ export class AiQuestionGenerator {
 
   /** Step D's picks from Content and the learner's groups (design §7.4, §7.5); null when the word no longer has enough. */
   private async buildInput(type: StoredAiInput['type'], sense: PracticeSense, learner: Learner, key: string | null,
-    random: () => number): Promise<StoredAiInput | null> {
+    random: () => number, wordIds: string[]): Promise<StoredAiInput | null> {
     const base = { senseRevisionId: sense.live_revision_id, contentKey: key };
-    if (type === 'cloze') return { ...base, type, data: clozeInput(sense) };
     const { userId, nativeLanguage } = learner;
+    if (type === 'cloze') {
+      const otherIds = wordIds.filter((id) => id !== sense.sense_id);
+      const found = otherIds.length === 0 ? new Map<string, PracticeSense>() : await this.content.practiceSenses(userId, otherIds, nativeLanguage);
+      const { words, senses } = pickSessionWords(sense, otherIds.flatMap((id) => found.get(id) ?? []));
+      return { ...base, type, data: clozeInput(sense, words), session: senses };
+    }
     const mateIds = (await this.learning.practiceGroupMates(userId, [sense.sense_id])).get(sense.sense_id) ?? [];
     const candidates = await this.content.practiceCandidates(userId, mateIds, nativeLanguage);
     const mates = mateIds.flatMap((id) => candidates.get(id) ?? []);

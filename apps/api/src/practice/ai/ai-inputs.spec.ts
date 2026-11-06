@@ -5,10 +5,13 @@ import { clozeInput, contentKey, mcqInput, meaningInput, wordCheckInput } from '
 describe('AI inputs (design §7.1, §15)', () => {
   it('learning content only: word, part of speech, level, Vietnamese meaning, context label', () => {
     const s = deploy({ context_label: 'software' });
-    expect(clozeInput(s)).toEqual({ word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: 'software' });
-    expect(meaningInput(s, ['a', 'b', 'c'])).toEqual({ ...clozeInput(s), other_meanings_vi: ['a', 'b', 'c'] });
+    const base = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: 'software' };
+    expect(clozeInput(s)).toEqual({ ...base, session_words: [] });
+    expect(clozeInput(s, [{ word: 'release', meaning_vi: 'phát hành' }, { word: 'ship', meaning_vi: null }]))
+      .toEqual({ ...base, session_words: [{ word: 'release', meaning_vi: 'phát hành' }, { word: 'ship', meaning_vi: null }] });
+    expect(meaningInput(s, ['a', 'b', 'c'])).toEqual({ ...base, other_meanings_vi: ['a', 'b', 'c'] });
     expect(mcqInput(s, 'deployed', ['released', 'shipped', 'posted']))
-      .toEqual({ ...clozeInput(s), answer_form: 'deployed', candidates: ['released', 'shipped', 'posted'] });
+      .toEqual({ ...base, answer_form: 'deployed', candidates: ['released', 'shipped', 'posted'] });
   });
 
   it('a private word without part of speech or level sends unspecified and null', () => {
