@@ -6,6 +6,7 @@ import { LearningService, type PracticeReviewOutcome } from '../../learning/inde
 import type { AnswerKey } from '../practice.types.js';
 import { AnswersService } from '../answers/answers.service.js';
 import type { ItemWithQuestion, SessionView } from '../sessions/session-views.js';
+import { reviewIdFor } from './review-id.js';
 import { SessionsService } from '../sessions/sessions.service.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -31,8 +32,12 @@ export class PracticeReviewsService {
     @Inject(AnswersService) private readonly answers: AnswersService,
   ) {}
 
-  async review(userId: string, itemId: string, action: ReviewAction):
-    Promise<{ action: ReviewAction; item_id: string; level: number; due_date: string; priority: boolean }> {
+  /**
+   * `senseId` names the word of an alternative answer (design §3.2): required there and refused when it is neither the asked nor the typed
+   * word, so an older web build or a stray shortcut cannot change the asked word by default. Any other item: absent, or its own word.
+   */
+  async review(userId: string, itemId: string, action: ReviewAction, senseId?: string):
+    Promise<{ action: ReviewAction; item_id: string; sense_id: string; level: number; due_date: string; priority: boolean }> {
     const found = await this.prisma.practiceSessionItem.findFirst({ where: { id: itemId, userId }, select: { sessionId: true } });
     if (!found) throw notFound();
     await this.sessions.closeIfIdle(userId, found.sessionId);
@@ -42,14 +47,24 @@ export class PracticeReviewsService {
       const item = await tx.practiceSessionItem.findUniqueOrThrow({ where: { id: itemId }, include: { question: true } });
       if (item.result === 'void') throw conflict('item-void', 'Item void');
       if (item.result === null) throw conflict('not-answered', 'Not answered');
-      if (item.reviewAction !== null && item.reviewAction !== action) throw conflict('review-already-set', 'Review already set');
-      if (item.reviewAction === null && action === 'known' && !(await this.answers.resultOf(userId, item, tx)).show_known) {
-        throw conflict('known-not-allowed', 'Known not allowed');
+      const typedWord = item.alternative && item.alternativeSenseId !== null && senseId === item.alternativeSenseId;
+      // An alternative answer needs the word named (the asked one or the typed one); any other item takes none or its own.
+      const word = item.alternative ? (typedWord || senseId === item.senseId ? senseId : undefined)
+        : (senseId === undefined || senseId === item.senseId ? item.senseId : undefined);
+      if (word === undefined) throw conflict('review-word-required', 'Review word required');
+      const pressed = typedWord ? item.alternativeReviewAction : item.reviewAction;
+      if (pressed !== null && pressed !== action) throw conflict('review-already-set', 'Review already set');
+      if (pressed === null && action === 'known') {
+        // Know follows today's rule for the word of the button: an alternative answer carries it per row.
+        const result = await this.answers.resultOf(userId, item, tx);
+        const knowable = result.alternative ? result.alternative.rows.find((row) => row.sense_id === word)?.show_known === true : result.show_known;
+        if (!knowable) throw conflict('known-not-allowed', 'Known not allowed');
       }
-      const [outcome] = await this.learning.practiceReview(tx, userId, [{ senseId: item.senseId, action: toLearning(action), reviewId: item.id }]);
+      const [outcome] = await this.learning.practiceReview(tx, userId,
+        [{ senseId: word, action: toLearning(action), reviewId: reviewIdFor(item.id, word, item.senseId) }]);
       const applied = this.applied(outcome);
-      await tx.practiceSessionItem.update({ where: { id: item.id }, data: { reviewAction: action } });
-      return { action, item_id: item.id, level: applied.level, due_date: applied.due_date, priority: applied.priority };
+      await tx.practiceSessionItem.update({ where: { id: item.id }, data: typedWord ? { alternativeReviewAction: action } : { reviewAction: action } });
+      return { action, item_id: item.id, sense_id: word, level: applied.level, due_date: applied.due_date, priority: applied.priority };
     }, transactionOptions);
   }
 
