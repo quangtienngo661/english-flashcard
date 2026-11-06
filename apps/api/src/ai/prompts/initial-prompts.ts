@@ -2,8 +2,9 @@ import type { AiOperation } from '../ai.types.js';
 import type { PromptExample } from './prompt-rules.js';
 
 // Appendix A of the Bước 6 plan, approved by the owner 20/10/2026 (design §7.5, D26): only a starting point the admin edits.
-// generate_cloze (revision 2) and the three Bước 7 operations: Appendix A of the Bước 7 plan, approved 21/10/2026.
-// The seed migrations ai_initial_prompts and buoc7_ai_operations hold the same text; initial-prompts.spec.ts checks it.
+// generate_cloze (revision 3: it knows the session words; Appendix A of the session synonyms plan, approved 07/11/2026) and the three
+// Bước 7 operations: Appendix A of the Bước 7 plan, approved 21/10/2026.
+// The seed migrations ai_initial_prompts, buoc7_ai_operations and cloze_session_words_prompt hold the same text; initial-prompts.spec.ts checks it.
 export const INITIAL_PROMPTS: Record<AiOperation, { instructions: string; examples: PromptExample[] }> = {
   generate_cloze: {
     instructions: `You write one English practice sentence for a Vietnamese learner of English.
@@ -14,30 +15,35 @@ The user message is a JSON object with these fields:
 - level: the CEFR level (A1 to C2) of this meaning of the word, or null when the word has no level (a word the learner added).
 - meaning_vi: the Vietnamese meaning of the word. The sentence must use the word with exactly this meaning.
 - context_label: a short note on where this meaning is used (for example a field or a register), or null.
+- session_words: the other words the learner is practising in the same session, each as {"word", "meaning_vi"}; meaning_vi is null when unknown. The field may be empty, null or missing.
 
 Task:
 1. Write one natural English sentence that uses the word with the meaning in meaning_vi.
 2. Replace the word in the sentence with one blank written as three underscores: ___
-3. Give the forms that fill the blank and a Vietnamese translation of the whole sentence.
+3. Give the forms of the word that fill the blank, the forms of session words that also fill it (usually none), and a Vietnamese translation of the whole sentence.
 
 Rules:
 1. Exactly one blank. The word must not appear anywhere else in the sentence, in any form.
-2. Only this word may fit the blank. Give the sentence a clue that belongs to this word and this meaning: a typical collocation, a typical subject or object, or the field in context_label. Avoid general sentences where many words fit.
-3. Before you answer, think of the other words a learner might write in the blank, especially synonyms and near-synonyms. If any of them fits as well as the given word, rewrite the sentence until none does.
-4. If you cannot make the given word the only good answer, still give your best sentence; never list other words in accepted_answers.
+2. Give the sentence a clue that belongs to this word and this meaning: a typical collocation, a typical subject or object, or the field in context_label. Avoid general sentences where many words fit.
+3. No word in session_words may fit the blank with its meaning_vi. Check each one before you answer, and rewrite the sentence until none fits. A session word whose meaning_vi is null must not fit in any meaning.
+4. also_accepted: only if you cannot write a good sentence where no session word fits, list the forms of the session words that fit the blank with their meaning_vi. Never list a session word whose meaning_vi is null, and never list a word that is not in session_words. Otherwise give an empty list.
 5. When level is given, use words and grammar at or below that level.
 6. The word may be inflected to fit the sentence (for example "deploys" or "deployed").
-7. accepted_answers: the form or forms of the given word that fit the blank, most likely first, at most 5, without underscores. Do not list other words, even synonyms.
+7. accepted_answers: the form or forms of the given word that fit the blank, most likely first, at most 5, without underscores. Only forms of the given word: session words go in also_accepted.
 8. translation_vi: a natural Vietnamese translation of the whole sentence with the blank filled in.
 9. The sentence is at most 300 characters, on one line, plain text (no Markdown, no HTML).`,
     examples: [
       {
-        input: { word: 'brush', part_of_speech: 'verb', level: 'A1', meaning_vi: 'chải, đánh (răng, tóc)', context_label: null },
-        output: { sentence: 'I ___ my teeth twice a day, after breakfast and before bed.', accepted_answers: ['brush'], translation_vi: 'Tôi đánh răng hai lần mỗi ngày, sau bữa sáng và trước khi đi ngủ.' },
+        input: { word: 'brush', part_of_speech: 'verb', level: 'A1', meaning_vi: 'chải, đánh (răng, tóc)', context_label: null, session_words: [{ word: 'comb', meaning_vi: 'chải (tóc)' }] },
+        output: { sentence: 'I ___ my teeth twice a day, after breakfast and before bed.', accepted_answers: ['brush'], also_accepted: [], translation_vi: 'Tôi đánh răng hai lần mỗi ngày, sau bữa sáng và trước khi đi ngủ.' },
       },
       {
-        input: { word: 'attention', part_of_speech: 'noun', level: 'A2', meaning_vi: 'sự chú ý', context_label: null },
-        output: { sentence: 'Please pay ___ to the safety instructions before the plane takes off.', accepted_answers: ['attention'], translation_vi: 'Xin hãy chú ý đến hướng dẫn an toàn trước khi máy bay cất cánh.' },
+        input: { word: 'attention', part_of_speech: 'noun', level: 'A2', meaning_vi: 'sự chú ý', context_label: null, session_words: [] },
+        output: { sentence: 'Please pay ___ to the safety instructions before the plane takes off.', accepted_answers: ['attention'], also_accepted: [], translation_vi: 'Xin hãy chú ý đến hướng dẫn an toàn trước khi máy bay cất cánh.' },
+      },
+      {
+        input: { word: 'habit', part_of_speech: 'noun', level: 'A2', meaning_vi: 'thói quen', context_label: null, session_words: [{ word: 'routine', meaning_vi: 'nếp sinh hoạt hằng ngày' }] },
+        output: { sentence: 'Biting your nails is a nervous ___ that many children grow out of.', accepted_answers: ['habit'], also_accepted: [], translation_vi: 'Cắn móng tay là một thói quen do căng thẳng mà nhiều trẻ sẽ bỏ được khi lớn lên.' },
       },
     ],
   },

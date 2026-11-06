@@ -403,13 +403,13 @@ async function main() {
       check(row && row.ready === false && row.reason === 'model-not-set', `${op} on a fresh database: ${j(row)}`);
     }
     const cloze = await want(api('GET', '/v1/admin/ai/prompts/generate_cloze', { as: admin }), 200, 'cloze prompt');
-    check(cloze.revision === 2, `generate_cloze prompt revision ${cloze.revision}, expected 2 on a fresh database (plan choice 1)`);
+    check(cloze.revision === 3, `generate_cloze prompt revision ${cloze.revision}, expected 3 on a fresh database (session synonyms plan Task 2)`);
     for (const model of ['fake:ok', 'fake:refuse', 'fake:slow', 'fake:503-then-ok', 'fake:bad-form', 'fake:not-recognized']) await addModel(model);
     for (const op of ops) await choose(op, 'fake:ok');
     for (const op of ops) check((await opStatus(op)).ready === true, `${op} not ready after choosing fake:ok`);
     const practice = (await settings()).values.practice;
     check(practice.ai_prefetch_count === 2, `practice.ai_prefetch_count ${practice.ai_prefetch_count}, expected the default 2`);
-    ok(`five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok published for each, all five ready; ai_prefetch_count 2`);
+    ok(`five operations were model-not-set; generate_cloze prompt at revision 3; six fake models added; fake:ok published for each, all five ready; ai_prefetch_count 2`);
   }, { fatal: true });
 
   await step(`Content: import ${words.length} verbs (gloss, short definition, example, inflections) in ${Object.keys(BUCKETS).length} topic/level buckets and publish`, async () => {

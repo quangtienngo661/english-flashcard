@@ -661,7 +661,7 @@ async function partM2() {
       ['POST', `${base}/publish`, { expected_version: first.version, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }],
     ]) await wantProblem(asAdmin(method, path, { body }), 409, 'draft-selection-required', `ambiguous legacy ${method} ${path}`);
     const shot = (answers) => ({
-      input: clozeData(W1), output: { sentence: 'Lan will ___ it tomorrow.', accepted_answers: answers, translation_vi: 'Lan sẽ làm việc đó vào ngày mai.' } });
+      input: clozeData(W1), output: { sentence: 'Lan will ___ it tomorrow.', accepted_answers: answers, also_accepted: [], translation_vi: 'Lan sẽ làm việc đó vào ngày mai.' } });
     const refused = await wantProblem(asAdmin('PUT', draftPath(op, first.id), { idem: true, body: draftBody(first, { examples: [...first.examples, shot([`${W1}ment`])] }) }),
       422, 'few-shot-invalid', 'save a bad few-shot example');
     check(j(refused.examples) === j([{ index: first.examples.length, problems: [`unknown-form:${W1}ment`] }]), `few-shot violations ${j(refused.examples)}`);
