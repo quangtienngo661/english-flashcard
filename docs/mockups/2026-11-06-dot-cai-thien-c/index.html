@@ -70,6 +70,27 @@ p{max-width:62ch}
 .dots i{width:18px;height:18px;border-radius:5px;background:var(--navy-raised)}
 .dots i.d{background:var(--accent)}
 .toast .x{margin-left:auto;align-self:flex-start;background:none;border:0;color:var(--accent);font-weight:600}
+p,h2,h3{text-wrap:pretty}
+.n,.tile b,.stat b,.btn small,.meta{font-variant-numeric:tabular-nums}
+.btn{transition:transform .15s cubic-bezier(.2,0,0,1),box-shadow .15s,background-color .15s}
+.btn:hover{background:var(--primary-soft)}
+.btn.on:hover{background:#ffe066}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 transparent} /* taste-skill-ignore: nut lun xuong gap ledge */
+.btn:focus-visible,.tab:focus-visible,.toast .x:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:440px;margin:10px 0 2px}
+.stat{background:#fff;border-radius:.875rem;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-weight:700}
+.stat span{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.stat i{width:8px;height:8px;border-radius:50%}
+.gcard .band{position:relative;display:flex;align-items:flex-end;gap:4px;padding:12px 16px}
+.gcard .band b{width:14px;border:2px solid var(--ink);border-radius:4px;background:var(--ink)}
+.gcard .band b.e{background:transparent}
+.gcard .in{flex:1}
+.gcard .pair{margin-top:auto;padding-top:10px}
+.chip{align-self:flex-start;border-radius:999px;padding:2px 10px;font-size:14px;font-weight:600;background:var(--accent-soft)}
+.chip.ok{background:var(--success-soft);color:var(--success)}
+.hint{font-size:14px;color:var(--muted);margin:0}
 @media (max-width:640px){.cards{grid-template-columns:1fr}.nav{display:none}.page{padding:16px}.title{font-size:36px}.tiles{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.frame,.toast{transition:none}}
 </style>
@@ -97,27 +118,35 @@ p{max-width:62ch}
     <h1 class="title">Hôm nay</h1>
     <div class="hero">
       <h2>Du lịch</h2>
-      <p class="muted" style="margin:0">8 từ đến hạn · 5 từ mới · nhóm có 40 từ</p>
+      <p class="muted" style="margin:0">13 từ chờ hôm nay · nhóm có 40 từ</p>
+      <div class="stats">
+        <div class="stat"><b>3</b><span><i style="background:var(--accent)"></i>ưu tiên</span></div>
+        <div class="stat"><b>5</b><span><i style="background:var(--primary)"></i>đến hạn</span></div>
+        <div class="stat"><b>5</b><span><i style="background:var(--muted)"></i>mới</span></div>
+      </div>
       <div class="pair">
         <button class="btn" data-go="group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="14" height="16" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v14"/></svg>Học <small>5 mới</small></button>
         <button class="btn on" data-go="done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Ôn <small>8 từ</small></button>
       </div>
     </div>
     <div class="cards">
-      <article class="gcard"><div class="band" style="background:var(--primary-soft)"></div><div class="in">
+      <article class="gcard"><div class="band" style="background:var(--primary-soft)" aria-hidden="true"><b style="height:30px"></b><b style="height:22px"></b><b style="height:16px"></b><b style="height:10px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b></div><div class="in">
         <span class="muted">40 từ</span><h3>Du lịch</h3>
+        <span class="chip">13 từ chờ</span>
         <div class="meta muted"><span><i style="background:var(--primary)"></i>8 đến hạn</span><span><i style="background:var(--muted)"></i>5 mới</span></div>
-        <div class="pair"><button class="btn">Học</button><button class="btn on">Ôn 8</button></div>
+        <div class="pair"><button class="btn">Học <small>5</small></button><button class="btn on">Ôn <small>8</small></button></div>
       </div></article>
-      <article class="gcard"><div class="band" style="background:var(--accent-soft)"></div><div class="in">
-        <span class="muted">120 từ</span><h3>Công việc</h3>
-        <div class="meta muted"><span><i style="background:var(--primary)"></i>3 đến hạn</span><span><i style="background:var(--muted)"></i>0 mới</span></div>
-        <div class="pair"><button class="btn">Học</button><button class="btn on">Ôn 3</button></div>
+      <article class="gcard"><div class="band" style="background:var(--accent-soft)" aria-hidden="true"><b class="e" style="height:6px"></b><b style="height:12px"></b><b style="height:20px"></b><b style="height:28px"></b><b style="height:34px"></b><b style="height:26px"></b></div><div class="in">
+        <span class="muted">120 từ · 47 đã thuộc</span><h3>Công việc</h3>
+        <span class="chip ok">Xong hôm nay</span>
+        <p class="hint">Ôn lại lúc này không đổi lịch ôn.</p>
+        <div class="pair" style="grid-template-columns:1fr"><button class="btn">Ôn lại tùy thích</button></div>
       </div></article>
-      <article class="gcard"><div class="band" style="background:var(--success-soft)"></div><div class="in">
+      <article class="gcard"><div class="band" style="background:var(--success-soft)" aria-hidden="true"><b style="height:34px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b></div><div class="in">
         <span class="muted">25 từ</span><h3>Ẩm thực</h3>
-        <div class="meta muted"><span><i style="background:var(--primary)"></i>0 đến hạn</span><span><i style="background:var(--muted)"></i>12 mới</span></div>
-        <div class="pair"><button class="btn on" style="grid-column:1/-1">Học 12 từ mới</button></div>
+        <span class="chip">12 từ mới</span>
+        <p class="hint">Chưa có từ nào để ôn. Học trước, mai ôn.</p>
+        <div class="pair" style="grid-template-columns:1fr"><button class="btn on">Học 12 từ mới</button></div>
       </div></article>
     </div>
   </section>
@@ -171,6 +200,7 @@ function toast(){const t=document.getElementById('toast');t.classList.add('show'
 function show(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
   document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));
+  const navs=document.querySelectorAll('.nav span');navs.forEach((s,i)=>s.classList.toggle('on',(id==='group'?1:0)===i&&id!=='done'));
   if(id==='done')setTimeout(toast,600);
 }
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
