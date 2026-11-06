@@ -8,7 +8,7 @@ const translate = OPERATIONS.translate_sentence;
 const CLOZE_IN = { word: 'deploy', part_of_speech: 'verb', level: 'B2', meaning_vi: 'triển khai', context_label: null };
 const LOOKUP_IN = { text: 'went', context_sentence: null };
 const CLOZE_OUT = {
-  sentence: 'The team will ___ the new version tomorrow.', accepted_answers: ['deploy'],
+  sentence: 'The team will ___ the new version tomorrow.', accepted_answers: ['deploy'], also_accepted: [],
   translation_vi: 'Nhóm sẽ triển khai phiên bản mới vào ngày mai.',
 };
 const LOOKUP_OUT = {
@@ -64,6 +64,25 @@ describe('operation inputs', () => {
   it('an extra key is refused', () => {
     expect(violations(clozeIn({ user_id: 'u1' }))).toEqual([expect.stringMatching(/^user_id: /)]);
     expect(violations(translate.validateInput({ sentence: 'Hi.', extra: 1 }))).toEqual([expect.stringMatching(/^extra: /)]);
+  });
+
+  it('session_words: missing, null and [] are valid; 100 entries are not', () => {
+    const entry = { word: 'crucial', meaning_vi: 'thiết yếu' };
+    expect(cloze.validateInput(CLOZE_IN)).toEqual({ ok: true });
+    expect(clozeIn({ session_words: null })).toEqual({ ok: true });
+    expect(clozeIn({ session_words: [] })).toEqual({ ok: true });
+    expect(clozeIn({ session_words: Array.from({ length: 99 }, () => entry) })).toEqual({ ok: true });
+    const result = clozeIn({ session_words: Array.from({ length: 100 }, () => entry) });
+    expect(result.ok).toBe(false);
+    expect(violations(result)[0]).toMatch(/^session_words/);
+  });
+
+  it('session_words entry: meaning_vi may be null, an extra key is refused', () => {
+    expect(clozeIn({ session_words: [{ word: 'crucial', meaning_vi: null }] })).toEqual({ ok: true });
+    expect(violations(clozeIn({ session_words: [{ word: 'crucial', meaning_vi: null, note: 'x' }] }))[0]).toMatch(/^session_words\.0/);
+    expect(violations(clozeIn({ session_words: [{ word: '', meaning_vi: 'x' }] }))[0]).toMatch(/^session_words\.0\.word/);
+    expect(violations(clozeIn({ session_words: [{ word: x(101), meaning_vi: 'x' }] }))[0]).toMatch(/^session_words\.0\.word/);
+    expect(violations(clozeIn({ session_words: [{ word: 'crucial', meaning_vi: x(301) }] }))[0]).toMatch(/^session_words\.0\.meaning_vi/);
   });
 
   it('a \\0 is refused', () => {
@@ -139,6 +158,26 @@ describe('operation outputs', () => {
     expect(translate.checkOutput({ translation_vi: x(600) }).ok).toBe(true);
   });
 
+  it('also_accepted is cleaned, deduplicated, and loses entries equal to an accepted answer', () => {
+    const result = cloze.checkOutput({
+      sentence: 'Sleep is ___ for good health.', accepted_answers: ['vital'], also_accepted: [' Crucial ', 'crucial', 'VITAL'], translation_vi: 'x',
+    });
+    expect(value(result)?.also_accepted).toEqual(['Crucial']);
+  });
+
+  it('also_accepted: missing → shape; 6 entries → answers-count; an underscore → answer-underscore; 101 characters → too-long; [] is valid', () => {
+    const { also_accepted: _, ...missing } = CLOZE_OUT;
+    expect(problem(cloze.checkOutput(missing))).toBe('shape');
+    expect(problem(clozeOut({ also_accepted: ['a', 'b', 'c', 'd', 'e', 'f'] }))).toBe('answers-count');
+    expect(clozeOut({ also_accepted: ['a', 'b', 'c', 'd', 'e'] }).ok).toBe(true);
+    expect(problem(clozeOut({ also_accepted: ['cru_cial'] }))).toBe('answer-underscore');
+    expect(problem(clozeOut({ also_accepted: [x(101)] }))).toBe('too-long');
+    expect(clozeOut({ also_accepted: [x(100)] }).ok).toBe(true);
+    expect(clozeOut({ also_accepted: [] }).ok).toBe(true);
+    expect(problem(clozeOut({ also_accepted: 'crucial' }))).toBe('shape');
+    expect(value(clozeOut({ also_accepted: ['  '] }))?.also_accepted).toEqual([]);
+  });
+
   it('a missing key or an extra key → shape', () => {
     const { translation_vi: _, ...missing } = CLOZE_OUT;
     expect(problem(cloze.checkOutput(missing))).toBe('shape');
@@ -212,7 +251,7 @@ describe('output schemas', () => {
 
   it('schema names are versioned, lookup part_of_speech is an enum of the valid parts of speech, default token limits', () => {
     expect(Object.values(OPERATIONS).map((op) => op.outputSchema.name)).toEqual([
-      'generate_cloze_v1', 'lookup_word_v1', 'translate_sentence_v1', 'generate_meaning_question_v1', 'generate_sentence_mcq_v1',
+      'generate_cloze_v2', 'lookup_word_v1', 'translate_sentence_v1', 'generate_meaning_question_v1', 'generate_sentence_mcq_v1',
       'check_private_word_v1',
     ]);
     const pos = (lookup.outputSchema.schema.properties as Record<string, { enum?: string[] }>).part_of_speech;
