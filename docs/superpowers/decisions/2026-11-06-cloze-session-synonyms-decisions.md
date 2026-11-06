@@ -246,7 +246,8 @@ Listed in design §11; they stand once the owner approves the design:
 19. The AI quality dashboard counts an alternative answer as correct (R10).
 20. A word's history shows an alternative item under both words (R10).
 21. Deleting a private word also deletes the alternative items that credited it (R11).
-22. The session-word reason and the alternative card survive a reload (R20).
+22. The session-word reason comes only with the try-again reply; after a reload nothing is rebuilt, as today (R20; corrected
+    07/11/2026, see the table below).
 23. The summary says how many right answers were alternative answers (R21).
 
 Changed after the review, and why:
@@ -260,6 +261,7 @@ Changed after the review, and why:
 | The session-word message is for AI fill-in questions only | Every typed question (proposal 13) | It needs no declaration; one grading path (R24) |
 | The forms for the session-word message may be computed at grading or stored when writing (left to the builder) | Computed at grading only | Stored forms would miss words of a later session and every older question (R4) |
 | Session words sent as bare lemmas | With their Vietnamese meaning (proposal 4) | A lemma alone lets the writer declare a meaning Lan is not learning (R6) |
+| The session-word reason and the alternative card survive a reload (first version of proposal 22, 07/11/2026) | Nothing is rebuilt after a reload, as today (proposal 22) | The code survey for the plan (07/11/2026) showed today's web shows no try-again box after a reload and `current` never returns an answered item, so the spelling message cannot come back; rebuilding only the new card would be new behaviour no other card has |
 
 The first draft's proposal "private words go into the session list (the judge cannot see them)" became D13.
 

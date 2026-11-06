@@ -104,9 +104,10 @@ Two cases this order settles:
 - **It does not use up a try** (Claude's call, §11). When an admin caps retries (`type_word_max_retries`, 1–10; unlimited by
   default), a wrong typed answer becomes final once the cap is reached (`answers.service.ts`). A session-word try never does: Lan's
   last allowed try with `habit` stays a try-again. The try is still recorded (`answers_tried`); only the cap ignores it.
-- **It survives a reload.** The try-again reply carries the reason (a new field, for example `reason: 'session_word'`), and the
-  session's `current` view returns the reason of the last try, so the web shows the same text after a reload. Today that view returns
-  only `state: 'try_again'`, and the web always shows the spelling text.
+- **The reason comes with the try-again reply** (a new field `reason: 'session_word' | null`). After a reload the page behaves as
+  today: the web rebuilds no try-again box from the session's `current` view, so it shows the question again with neither this message
+  nor the spelling one (corrected 07/11/2026 from the code survey; the first version assumed the web showed the spelling text after a
+  reload).
 - Exact wording in Vietnamese and English: builder, in the style of the existing feedback lines.
 
 ### 3.2 The "Alternative answer" card
@@ -130,8 +131,9 @@ vital     this sentence's word    [Still learning] [Know]
 - No explanation sentence ("vital fits too…"): the label and the original sentence carry it (owner).
 - Each row's Know button follows today's rule for that word on its own: shown only when the answer earned it (no hint used) and that
   word is in learning and due now. A word that is not due has only Still learning. After a hint, neither row has Know.
-- Each row acts on its own word only. Lan may press one row, both, or neither. Pressing one row leaves the other row's buttons
-  available; each row remembers its own pressed state.
+- Each row acts on its own word only. Lan may press one row, both, or neither. A row's button reviews its word and stays on the card
+  (on today's card, Still learning and Know also move to the next question); Next question moves on. Pressing one row leaves the other
+  row's buttons available; each row remembers its own pressed state.
 - **No result shortcut works on this card** (D7, widened after review R1). Today the page-level key handler
   (`apps/web/src/features/learner/practice/session/PracticeSession.tsx`) maps Enter to the bold button, `1` to Still learning and `2`
   to Know, and the server applies a review to the item's word, which is the asked word. On this card Enter, `1` and `2` do nothing.
@@ -143,8 +145,9 @@ vital     this sentence's word    [Still learning] [Know]
   today. The learning log is keyed per item **and** word (today it is keyed by the item id, "so pressing twice writes once").
 - Accessible names: each row's buttons name their word ("Still learning: crucial"), and the result live region announces
   "Alternative answer" with the asked word's reveal line.
-- The card is rebuilt from what is stored with the item, so it shows again, with each row's pressed state, after a reload
-  (`current`) and in an `already-answered` reply, not only in the answer reply.
+- The card's fields are built from what is stored with the item, so an `already-answered` reply carries them too. After a reload the
+  session moves to the next question, as it does today after every result card (`current` never returns an answered item); rows Lan
+  did not press are not shown again (corrected 07/11/2026 from the code survey).
 - The reply keeps `result: 'correct'` and adds fields for the alternative (the typed word, the two rows). The v1 API stays additive
   (SR7): an older web build shows today's "Right" card, and the 409 above stops its Enter = Know from reaching the asked word.
 - The two-row card appears only for an alternative answer. A right answer with the asked word keeps today's card.
@@ -414,8 +417,8 @@ with `accepted_answers: [vital]` and `also_accepted: [crucial]`.
 | CS10 | When a fill-in question is written for `habit` in Lan's session, then its input holds `session_words` = `routine` with its meaning, and not `crucial` or `vital`. | §5.1 |
 | CS11 | When the writer declares `important` for the `vital` sentence, then the entry is dropped and logged and the question is kept; in an eval run the rule result is `pass` with the problem `unknown-alternative:important`. | §5.3 |
 | CS12 | When an admin caps retries at 3 and Lan's third try is `habit`, then she still gets the session-word try-again, not a final wrong. | R9 |
-| CS13 | When Lan reloads the page after a session-word try, then she sees the session-word message again, not the spelling one. | R20 |
-| CS14 | When Lan reloads the page on the alternative card, then she sees the alternative card with both rows and their pressed states. | R20 |
+| CS13 | When Lan reloads the page after a session-word try, then the question shows again with no try-again box, as today, and neither the session-word nor the spelling message. | R20 |
+| CS14 | When Lan reloads the page on the alternative card, then the session moves to the next question, as today after any result card. | R20 |
 | CS15 | When a fill-in question whose session words held one of Lan's private words is in a real-question judge pass or is chosen for "Đưa vào bộ ví dụ", then it is skipped or refused (`private-word`), also after its AI request was cleaned up. | D13, R11 |
 | CS16 | When staff open a report of a question whose `also_accepted` holds a form of Lan's private word, then that entry shows as the private-word mask. | R11 |
 | CS17 | When the fill-in judge scores the `habit` sentence about running, then it gives fail_major with `also_accepted: []`, fail_minor with `[routine]`, and fail_major when `also_accepted` holds a session word that does not fit. | D11, §6.1 |
@@ -473,7 +476,7 @@ with `accepted_answers: [vital]` and `also_accepted: [crucial]`.
 - A session keeps at most `max_questions_per_session` words (at most 100).
 - The v1 API is additive only (SR7).
 - Smokes that run the fake provider keep passing (§13). `smoke:buoc-7` already types a group mate into an AI fill-in and expects
-  `try_again` without `correct`; the reply now also carries the session-word reason.
+  `try_again` without `correct`; its session holds one word, so the reply now carries `reason: null` there.
 - Repo rules: tests first (red before green), Conventional Commits, PRs into `dev`.
 
 ## 11. Calls made by Claude (the owner may override)
@@ -506,7 +509,9 @@ The owner's decisions D1–D14 are not in this list. Calls changed or added afte
 19. The AI quality dashboard counts an alternative answer as correct (R10, §4.2).
 20. A word's history shows an alternative item under both words (R10, §3.3).
 21. Deleting a private word also deletes the alternative items that credited it (R11, §5.5).
-22. The session-word reason and the alternative card survive a reload (R20, §3.1, §3.2).
+22. The session-word reason comes only with the try-again reply; after a reload neither the message nor the card is shown again, as
+    today (R20, §3.1, §3.2). Corrected 07/11/2026: the first version made both survive a reload, assuming today's web rebuilt a
+    try-again after one; it does not, and `current` never returns an answered item.
 23. The summary says how many right answers were alternative answers (R21, §3.3).
 
 ## 12. Left to the builder
