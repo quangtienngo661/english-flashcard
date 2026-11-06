@@ -19,7 +19,7 @@ const SEED_ACTOR = '00000000-0000-4000-8000-000000000060';
 const NOW = new Date('2026-10-20T05:00:00.000Z');
 const OP = 'generate_cloze' as const;
 const INPUT = { word: 'borrow', part_of_speech: 'verb', level: 'A2', meaning_vi: 'mượn', context_label: null };
-const OUTPUT = { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], translation_vi: 'Mình mượn bút nhé?' };
+const OUTPUT = { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], also_accepted: [], translation_vi: 'Mình mượn bút nhé?' };
 const EXAMPLE = { input: INPUT, output: OUTPUT };
 
 class StubAdapter extends AiAdapter {
@@ -174,7 +174,7 @@ describe('PromptsService.get (nhóm B M2: the prompt of the live config)', () =>
     });
     await expect(service.get(OP)).resolves.toEqual({
       operation: OP, instructions: 'Live text.', examples: [], revision: 4,
-      input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'], updated_at: '2026-10-30T01:00:00.000Z',
+      input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label', 'session_words'], updated_at: '2026-10-30T01:00:00.000Z',
       updated_by: ADMIN, updated_by_user: { id: ADMIN, email: 'admin@x.test', system: false }, guard: PROMPT_GUARD,
     });
     expect(client.aiLiveConfig.findUnique).toHaveBeenCalledWith({ where: { operation: OP }, include: { config: true } });

@@ -14,8 +14,9 @@ function sense(over: Partial<PracticeSense> = {}): PracticeSense {
   } as PracticeSense;
 }
 
-function setup(senses: PracticeSense[] = [sense()]) {
-  const content = { catalogPracticeSensesByLemma: vi.fn(async () => senses) };
+/** `byLemma`: the catalog senses of each lemma (a lemma not listed has none); without it every lemma gets `senses`. */
+function setup(senses: PracticeSense[] = [sense()], byLemma?: Record<string, PracticeSense[]>) {
+  const content = { catalogPracticeSensesByLemma: vi.fn(async (lemma: string) => (byLemma ? byLemma[lemma] ?? [] : senses)) };
   const ai = { registerEvalRules: vi.fn() };
   const rules = new PracticeEvalRules(content as never, ai as never);
   return { rules, content, ai };
@@ -37,6 +38,56 @@ describe('PracticeEvalRules.check', () => {
     const result = await rules.check('generate_cloze', CLOZE_IN, { sentence: 'We will ___ it.', accepted_answers: ['deploy'] });
     expect(result).toEqual({ status: 'pass', problems: [], reason: null });
     expect(content.catalogPracticeSensesByLemma).toHaveBeenCalledWith('deploy', 'verb', 'vi');
+  });
+
+  describe('declared alternatives (session synonyms design §5.3)', () => {
+    const release = () => sense({ sense_id: 's2', lemma: 'release', inflections: [{ form: 'released', kind: 'past' }, { form: 'releases', kind: 'third_person' }] });
+    const world = () => setup(undefined, { deploy: [sense()], release: [release()] });
+    const IN = { ...CLOZE_IN, session_words: [{ word: 'release', meaning_vi: 'phát hành' }, { word: 'ghost', meaning_vi: null }] };
+    const OUT = { sentence: 'We will ___ it.', accepted_answers: ['deploy'] };
+
+    it('CS11: an alternative of no session word → pass with unknown-alternative', async () => {
+      const { rules } = world();
+      expect(await rules.check('generate_cloze', IN, { ...OUT, also_accepted: ['important'] }))
+        .toEqual({ status: 'pass', problems: ['unknown-alternative:important'], reason: null });
+    });
+
+    it('an alternative that is a form of a session word → pass with no problem', async () => {
+      const { rules } = world();
+      expect(await rules.check('generate_cloze', IN, { ...OUT, also_accepted: ['Released', 'release'] }))
+        .toEqual({ status: 'pass', problems: [], reason: null });
+    });
+
+    it('a failing cloze keeps its problems first, then unknown-alternative (the entry as sent)', async () => {
+      const { rules } = world();
+      expect(await rules.check('generate_cloze', IN, { sentence: 'We will ___ it.', accepted_answers: ['deployment'], also_accepted: ['Important', 'release'] }))
+        .toEqual({ status: 'fail', problems: ['unknown-form:deployment', 'unknown-alternative:Important'], reason: null });
+    });
+
+    it('a session word the catalog lacks has no forms, so its entry is unknown', async () => {
+      const { rules } = world();
+      expect(await rules.check('generate_cloze', IN, { ...OUT, also_accepted: ['ghost'] }))
+        .toEqual({ status: 'pass', problems: ['unknown-alternative:ghost'], reason: null });
+    });
+
+    it('an alternative with no session_words in the input is unknown', async () => {
+      const { rules } = world();
+      expect(await rules.check('generate_cloze', CLOZE_IN, { ...OUT, also_accepted: ['release'] }))
+        .toEqual({ status: 'pass', problems: ['unknown-alternative:release'], reason: null });
+    });
+
+    it("no session_words and no also_accepted → today's result, and no extra catalog read", async () => {
+      const { rules, content } = world();
+      expect(await rules.check('generate_cloze', CLOZE_IN, { ...OUT, also_accepted: [] })).toEqual({ status: 'pass', problems: [], reason: null });
+      expect(await rules.check('generate_cloze', IN, OUT)).toEqual({ status: 'pass', problems: [], reason: null });
+      expect(content.catalogPracticeSensesByLemma.mock.calls.map(([lemma]) => lemma)).toEqual(['deploy', 'deploy']);
+    });
+
+    it('a word outside the catalog is skipped, whatever it declares', async () => {
+      const { rules } = setup([]);
+      expect(await rules.check('generate_cloze', IN, { ...OUT, also_accepted: ['important'] }))
+        .toEqual({ status: 'skipped', problems: [], reason: 'not-in-catalog' });
+    });
   });
 
   it('an answer that is not a form of the word → unknown-form:<answer as sent>', async () => {

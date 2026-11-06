@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { seededRandom } from '../testing/seeded-random.js';
 import { candidate, deploy } from '../testing/ai-senses.js';
-import { checkCloze, checkMcq, checkMeaning, mcqForms, pickMcqForm, pickWrongMeanings, revealsWord, validForms } from './ai-checks.js';
+import { checkCloze, checkMcq, checkMeaning, keepAlternatives, mcqForms, pickMcqForm, pickWrongMeanings, revealsWord, validForms } from './ai-checks.js';
 
 const verb = (lemma: string, past: string, participle = past) => candidate({
   lemma, inflections: [{ form: `${lemma}s`, kind: 'third_person' }, { form: past, kind: 'past' }, { form: participle, kind: 'past_participle' }],
@@ -34,6 +34,46 @@ describe('checkCloze (design §7.2)', () => {
   it('B7E120: "Deploy is easy: we ___ the app daily." → rejected, reveals', () => {
     expect(checkCloze({ sentence: 'Deploy is easy: we ___ the app daily.', accepted_answers: ['deploy'] }, deploy()))
       .toEqual({ ok: false, unknownForms: [], reveals: true });
+  });
+});
+
+describe('keepAlternatives (session synonyms design §5.3)', () => {
+  const crucial = (data = {}) => deploy({ lemma: 'crucial', gloss_vi: 'quan trọng', pos: 'adjective', inflections: [], ...data });
+
+  it('keeps a form of a session word, normalized, with its private mark', () => {
+    expect(keepAlternatives(['Crucial'], ['vital'], [crucial({ scope: 'private' })]))
+      .toEqual({ kept: [{ form: 'crucial', private: true }], dropped: 0 });
+    expect(keepAlternatives(['Crucial.'], ['vital'], [crucial()])).toEqual({ kept: [{ form: 'crucial', private: false }], dropped: 0 });
+  });
+
+  it('a form of two session senses is private when either is', () => {
+    expect(keepAlternatives(['crucial'], ['vital'], [crucial(), crucial({ scope: 'private' })]))
+      .toEqual({ kept: [{ form: 'crucial', private: true }], dropped: 0 });
+  });
+
+  it('a form listed twice, or with other case, is kept once', () => {
+    expect(keepAlternatives(['crucial', 'Crucial'], ['vital'], [crucial()]).kept).toEqual([{ form: 'crucial', private: false }]);
+  });
+
+  it('drops a form of no session word and counts it', () => {
+    expect(keepAlternatives(['important', 'crucial'], ['vital'], [crucial()]))
+      .toEqual({ kept: [{ form: 'crucial', private: false }], dropped: 1 });
+  });
+
+  it('removes a form equal to an accepted answer, uncounted', () => {
+    expect(keepAlternatives(['Vital'], ['vital'], [crucial()])).toEqual({ kept: [], dropped: 0 });
+  });
+
+  it('a form of the asked word that is also a form of a session word stays out as the accepted answer', () => {
+    expect(keepAlternatives(['found'], ['found'], [crucial({ lemma: 'found' })])).toEqual({ kept: [], dropped: 0 });
+  });
+
+  it('no session senses → every entry dropped', () => {
+    expect(keepAlternatives(['crucial', 'important'], ['vital'], [])).toEqual({ kept: [], dropped: 2 });
+  });
+
+  it('no entries → nothing kept, nothing dropped', () => {
+    expect(keepAlternatives([], ['vital'], [crucial()])).toEqual({ kept: [], dropped: 0 });
   });
 });
 

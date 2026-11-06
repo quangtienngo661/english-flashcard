@@ -2,7 +2,7 @@
 // AI output and the picks it sent.
 import type { CandidateSense, MaskedExample, PracticeSense } from '../../content/index.js';
 import { normalizeAnswer } from '../grading/normalize.js';
-import type { HintStep, Hints } from '../practice.types.js';
+import type { DeclaredAlternative, HintStep, Hints } from '../practice.types.js';
 import { shuffle } from '../questions/distractors.js';
 import type { BuiltQuestion } from '../questions/question-builder.service.js';
 import type { McqForm } from './ai-checks.js';
@@ -11,7 +11,9 @@ type NativeLanguage = 'vi' | 'en';
 
 /** Checked gateway output with what Practice sent alongside it. */
 export type AiQuestionInput =
-  | { type: 'cloze'; result: { sentence: string; accepted_answers: string[]; translation_vi: string } }
+  // `alternatives`: the checked `also_accepted`; `sessionPrivate`: a session word sent to the writer was private (design §5.5).
+  | { type: 'cloze'; result: { sentence: string; accepted_answers: string[]; translation_vi: string }; alternatives: DeclaredAlternative[];
+    sessionPrivate: boolean }
   | { type: 'meaning_in_sentence'; result: { sentence: string; word_in_sentence: string; translation_vi: string };
     wrong: CandidateSense[] }
   | { type: 'mcq_sentence'; result: { sentence: string; distractors: string[]; translation_vi: string }; form: McqForm };
@@ -55,7 +57,7 @@ export function aiQuestion(input: AiQuestionInput, s: PracticeSense, nativeLangu
       type: 'cloze', promptStyle: 'sentence', prompt: { kind: 'cloze', sentence: result.sentence },
       answerKey: {
         kind: 'type_word', ...baseKey(s), main, accepted: normalizedSet(input.result.accepted_answers),
-        translation_vi: result.translation_vi,
+        also_accepted: input.alternatives, session_private: input.sessionPrivate, translation_vi: result.translation_vi,
       },
       hints: clozeHints(s, main, nativeLanguage, maxDefinitionChars),
       blank: { text: main, base: [s.lemma, ...s.variants].includes(main) }, distractorSenseIds: [],

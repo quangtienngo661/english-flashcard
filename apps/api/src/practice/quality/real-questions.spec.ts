@@ -59,6 +59,29 @@ describe('touchesPrivateWord (R6, B39)', () => {
     expect(touchesPrivateWord({ answerKey: mcqKey([false, false, false, false]), aiInput: meaningInput(['catalog', 'catalog', 'catalog']) })).toBe(false);
   });
 
+  it('CS15: a cloze whose key says session_private is touched, with or without its input', () => {
+    const key: AnswerKey = { ...clozeKey(false), kind: 'type_word', main: 'go', accepted: ['go'], also_accepted: [], session_private: true };
+    expect(touchesPrivateWord({ answerKey: key, aiInput: clozeInput(null) })).toBe(true);
+    expect(touchesPrivateWord({ answerKey: key, aiInput: null })).toBe(true);
+  });
+
+  it('a cloze input listing a private session sense is touched', () => {
+    const input = { ...clozeInput(null), session: [{ senseId: 's1', scope: 'catalog' as const }, { senseId: 's2', scope: 'private' as const }] };
+    expect(touchesPrivateWord({ answerKey: clozeKey(false), aiInput: input })).toBe(true);
+    expect(touchesPrivateWord({ answerKey: null, aiInput: input })).toBe(true);
+  });
+
+  it('a cloze with catalog session words only is not touched', () => {
+    const input = { ...clozeInput(null), session: [{ senseId: 's1', scope: 'catalog' as const }] };
+    const key: AnswerKey = { ...clozeKey(false), kind: 'type_word', main: 'go', accepted: ['go'], also_accepted: [], session_private: false };
+    expect(touchesPrivateWord({ answerKey: key, aiInput: input })).toBe(false);
+  });
+
+  it('a key written before this change (no field) is not touched', () => {
+    expect(touchesPrivateWord({ answerKey: clozeKey(false), aiInput: null })).toBe(false);
+    expect(touchesPrivateWord({ answerKey: clozeKey(false), aiInput: clozeInput(null) })).toBe(false);
+  });
+
   it('a content key means the asked word was a private word checked by AI → true', () => {
     expect(touchesPrivateWord({ answerKey: clozeKey(false), aiInput: clozeInput('abc') })).toBe(true);
   });

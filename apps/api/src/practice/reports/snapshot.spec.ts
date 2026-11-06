@@ -53,6 +53,24 @@ describe('buildSnapshot', () => {
     expect('option_index' in learner).toBe(false);
   });
 
+  it('CS16: a private declared alternative shows as the private-word mask', () => {
+    const prompt: Prompt = { kind: 'cloze', sentence: 'Sleep is ___ for good health.' };
+    const answerKey: AnswerKey = {
+      reveal, asked_private: false, kind: 'type_word', main: 'vital', accepted: ['vital'], session_private: true,
+      also_accepted: [{ form: 'crucial', private: false }, { form: 'razor', private: true }],
+    };
+    const snapshot = buildSnapshot({ type: 'cloze', prompt, answerKey, hints: noHints }, answered('crucial', { result: 'correct' }));
+    expect(snapshot.correct).toMatchObject({ main: 'vital', accepted: ['vital'], also_accepted: ['crucial', PRIVATE_WORD_MASK] });
+    expect(deepStrings(snapshot).some((text) => text.includes('razor'))).toBe(false);
+  });
+
+  it('a key without also_accepted gives []', () => {
+    const prompt: Prompt = { kind: 'cloze', sentence: 'We ___ the app.' };
+    const answerKey: AnswerKey = { reveal, asked_private: false, kind: 'type_word', main: 'deploy', accepted: ['deploy'] };
+    const snapshot = buildSnapshot({ type: 'cloze', prompt, answerKey, hints: noHints }, answered('x'));
+    expect(snapshot.correct).toMatchObject({ also_accepted: [] });
+  });
+
   it('an unanswered item has no learner answer', () => {
     const snapshot = buildSnapshot({ type: 'mcq_definition', prompt: mcqPrompt, answerKey: mcqKey, hints: noHints },
       answered(null, { result: null }));
@@ -87,7 +105,7 @@ describe('buildSnapshot', () => {
     expect(buildSnapshot(question, answered('deploy', { answers_tried: ['deplo'], hint_level: 1 }))).toEqual({
       type: 'type_word',
       prompt,
-      correct: { ...reveal, main: 'deployed', accepted: ['deployed'] },
+      correct: { ...reveal, main: 'deployed', accepted: ['deployed'], also_accepted: [] },
       hints_shown: { level1: hints.level1, level2: null, level3: null },
       learner: { answer: 'deploy', answers_tried: ['deplo'], result: 'wrong', hint_level: 1 },
     });
@@ -141,7 +159,7 @@ describe('buildSnapshot', () => {
     };
     const question = { type: 'cloze' as const, prompt, answerKey, hints: clozeHints };
     expect(buildSnapshot(question, answered('deploy', { hint_level: 3 }))).toEqual({
-      type: 'cloze', prompt, correct: { ...reveal, main: 'deployed', accepted: ['deployed'] }, hints_shown: clozeHints,
+      type: 'cloze', prompt, correct: { ...reveal, main: 'deployed', accepted: ['deployed'], also_accepted: [] }, hints_shown: clozeHints,
       learner: { answer: 'deploy', answers_tried: [], result: 'wrong', hint_level: 3 },
     });
     expect(buildSnapshot(question, answered('x', { hint_level: 2 }))).toMatchObject({ hints_shown: { level3: null } });

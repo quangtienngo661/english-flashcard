@@ -26,8 +26,8 @@ const START = new Date('2026-10-20T05:00:00.000Z');
 const OP: AiOperation = 'generate_cloze';
 const DATA = { word: 'borrow', part_of_speech: 'verb', level: 'A2', meaning_vi: 'mượn', context_label: null };
 const OTHER_DATA = { ...DATA, word: 'lend', meaning_vi: 'cho mượn' };
-const GOOD = JSON.stringify({ sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], translation_vi: 'Mình mượn bút nhé?' });
-const TWO_BLANKS = JSON.stringify({ sentence: 'I ___ it, you ___ it.', accepted_answers: ['borrow'], translation_vi: 'x' });
+const GOOD = JSON.stringify({ sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], also_accepted: [], translation_vi: 'Mình mượn bút nhé?' });
+const TWO_BLANKS = JSON.stringify({ sentence: 'I ___ it, you ___ it.', accepted_answers: ['borrow'], also_accepted: [], translation_vi: 'x' });
 const USAGE = { inputTokens: 100, cachedInputTokens: 0, outputTokens: 50, reasoningTokens: 0 };
 const SECRET_KEY = 'sk-test-never-logged';
 
@@ -295,7 +295,7 @@ describe('RunnerService.execute — learner', () => {
     const report = await runner.execute(learner());
     expect(report.result).toEqual({
       status: 'succeeded', operation_id: 'q1',
-      result: { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], translation_vi: 'Mình mượn bút nhé?' },
+      result: { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], also_accepted: [], translation_vi: 'Mình mượn bút nhé?' },
       meta: {
         operation: OP, provider: 'fake', model: 'fake:ok', effort: 'low', prompt_revision: 3, schema_version: 1, replayed: false,
       },
@@ -624,7 +624,7 @@ describe('RunnerService.execute — learner', () => {
     await runner.execute(learner());
     const request = records[0].content.request as Record<string, unknown>;
     expect(request).toEqual({
-      instructions: adapter.requests[0].instructions, data: DATA, schema_name: 'generate_cloze_v1', effort: 'low', thinking: null,
+      instructions: adapter.requests[0].instructions, data: DATA, schema_name: 'generate_cloze_v2', effort: 'low', thinking: null,
       max_output_tokens: 1_200,
     });
     expect(String(request.instructions)).toContain('Write one sentence.');

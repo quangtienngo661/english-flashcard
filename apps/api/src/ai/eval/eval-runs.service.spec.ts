@@ -262,7 +262,7 @@ describe('EvalRunsService.create', () => {
 
   it('the row stores the draft and no revision', async () => {
     const draft = { instructions: 'Draft.', examples: [{ input: EXAMPLE_INPUT, output: {
-      sentence: 'We ___ on Friday.', accepted_answers: ['deploy'], translation_vi: 'Chúng tôi triển khai vào thứ Sáu.',
+      sentence: 'We ___ on Friday.', accepted_answers: ['deploy'], also_accepted: [], translation_vi: 'Chúng tôi triển khai vào thứ Sáu.',
     } }] };
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: draft });
     expect(ctx.created[0]).toMatchObject({ draft, promptRevision: null, configId: null, configVersion: null });
