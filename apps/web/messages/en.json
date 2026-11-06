@@ -1320,6 +1320,7 @@
         "check": "Check",
         "attempt": "Try {n, number}",
         "tryAgainBody": "Check the spelling and try again. The answer stays hidden.",
+        "sessionWordBody": "That's another word from this session. Try again.",
         "retry": "Try again",
         "reveal": "Show answer",
         "tryAgainNote": "A right answer on a retry still counts as right. Showing the answer counts as wrong.",

@@ -121,15 +121,72 @@ describe('AI question types (K/78a–K/81)', () => {
 
   it('copy doc §15 row 10: [Gợi ý] opens hint 1 in the numbered list with progress, then [Mở gợi ý 2]', async () => {
     renderApp(<PracticeSession />, { routes: routes(cloze(), {
-      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd…' } }),
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
     }) });
     await screen.findByText('We use Docker to ___ the app to the production server.');
     // The cloze field has the focus, so H types a letter there; the button opens the hint.
     await userEvent.click(screen.getByRole('button', { name: /^Gợi ý/ }));
-    expect(await screen.findByText('d…')).toBeInTheDocument();
+    expect(await screen.findByText('d___')).toBeInTheDocument();
     expect(screen.getByText('Gợi ý 1/3')).toBeInTheDocument();
     expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Mở gợi ý 2/ })).toBeInTheDocument();
+  });
+
+  it('CS20: hint 1 of a cloze shows the first letter and three underscores, whatever the length of the word', async () => {
+    renderApp(<PracticeSession />, { routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'c' } }),
+    }) });
+    await screen.findByText('We use Docker to ___ the app to the production server.');
+    await userEvent.click(screen.getByRole('button', { name: /^Gợi ý/ }));
+    expect(await screen.findByText('c___')).toBeInTheDocument();
+    expect(screen.queryByText('c')).not.toBeInTheDocument();
+  });
+
+  it('a hint that is not a first letter is shown as the API sends it', async () => {
+    renderApp(<PracticeSession />, { routes: routes(cloze({ hint_level: 2 }), {
+      'POST /v1/practice/items/it-c/hint': (call) => Response.json((call.body as { level: number }).level === 1
+        ? { level: 1, hint: { kind: 'first_letter', text: 'c' } } : { level: 2, hint: { kind: 'definition', text: 'very important' } }),
+    }) });
+    await screen.findByText('We use Docker to ___ the app to the production server.');
+    expect(await screen.findByText('very important')).toBeInTheDocument();
+    expect(await screen.findByText('c___')).toBeInTheDocument();
+  });
+
+  describe('a try-again says why (session synonyms design §3.1)', () => {
+    const typeAndCheck = async (reply: unknown) => {
+      renderApp(<PracticeSession />, { routes: routes(cloze(), { 'POST /v1/practice/items/it-c/answer': () => Response.json(reply) }) });
+      await screen.findByText('We use Docker to ___ the app to the production server.');
+      await userEvent.type(screen.getByRole('textbox'), 'habit');
+      await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
+    };
+
+    it('CS3: a session-word try-again says it is another word from this session, not the spelling text', async () => {
+      await typeAndCheck({ result: 'try_again', tries: 1, reason: 'session_word' });
+      expect(await screen.findByText('Đây là một từ khác trong phiên này. Gõ lại.')).toBeInTheDocument();
+      expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
+      expect(document.querySelector('[data-live="result"]')).toHaveTextContent('Đây là một từ khác trong phiên này. Gõ lại.');
+    });
+
+    it('CS4: a try-again with reason null keeps the spelling text', async () => {
+      await typeAndCheck({ result: 'try_again', tries: 1, reason: null });
+      expect(await screen.findByText(/Kiểm tra chính tả rồi gõ lại/)).toBeInTheDocument();
+      expect(screen.queryByText(/một từ khác trong phiên/)).not.toBeInTheDocument();
+    });
+
+    it('CS4: an older API sends no reason: the spelling text', async () => {
+      await typeAndCheck({ result: 'try_again', tries: 1 });
+      expect(await screen.findByText(/Kiểm tra chính tả rồi gõ lại/)).toBeInTheDocument();
+    });
+
+    it('the English copy', async () => {
+      renderApp(<PracticeSession />, { locale: 'en', routes: routes(cloze(), {
+        'POST /v1/practice/items/it-c/answer': () => Response.json({ result: 'try_again', tries: 1, reason: 'session_word' }),
+      }) });
+      await screen.findByText('We use Docker to ___ the app to the production server.');
+      await userEvent.type(screen.getByRole('textbox'), 'habit');
+      await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+      expect(await screen.findByText("That's another word from this session. Try again.")).toBeInTheDocument();
+    });
   });
 
   it('K/79a: a Vietnamese learner sees "Bản dịch · AI dịch" with the translated sentence', async () => {

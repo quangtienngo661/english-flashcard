@@ -1320,6 +1320,7 @@
         "check": "Kiểm tra",
         "attempt": "Lần {n, number}",
         "tryAgainBody": "Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.",
+        "sessionWordBody": "Đây là một từ khác trong phiên này. Gõ lại.",
         "retry": "Làm lại",
         "reveal": "Xem đáp án",
         "tryAgainNote": "Làm lại mà đúng vẫn tính là đúng. Xem đáp án thì tính là sai.",

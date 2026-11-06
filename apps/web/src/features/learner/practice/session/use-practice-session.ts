@@ -63,7 +63,9 @@ export type SessionNotice =
   | { kind: 'ai-fallback'; reason: AiReason; resetsAt: string | null }
   | { kind: 'word-not-recognized'; senseId: string; lemma: string | null };
 
-export type Outcome = { kind: 'try_again'; tries: number } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
+/** `reason: 'session_word'`: the typed word is another word of this session (session synonyms); an older API sends none. */
+export type TryAgainReason = 'session_word' | null;
+export type Outcome = { kind: 'try_again'; tries: number; reason: TryAgainReason } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
 export type Phase =
   | { kind: 'question'; item: Item; outcome: Outcome | null; notice?: SessionNotice | null }
   /** K/73: the next AI question is still being written. */
@@ -228,7 +230,7 @@ export function usePracticeSession() {
   const answerOnce = useSubmitOnce(async (key) => {
     const { itemId, body } = chosenRef.current!;
     try {
-      return await api.post<AnswerResult | { result: 'try_again'; tries: number }>(`/v1/practice/items/${itemId}/answer`, body, { idempotencyKey: key });
+      return await api.post<AnswerResult | { result: 'try_again'; tries: number; reason?: TryAgainReason }>(`/v1/practice/items/${itemId}/answer`, body, { idempotencyKey: key });
     } catch (e) {
       // E36: answered in another tab; the API sends the result.
       const other = e instanceof ApiError && e.problem.slug === 'already-answered' ? e.problem.extensions?.result : undefined;
@@ -253,7 +255,7 @@ export function usePracticeSession() {
       const response = await answerOnce.submit(`${item.item_id}:${JSON.stringify(body)}`);
       if (!response) return;
       if (response.result === 'try_again') {
-        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries }, notice: phase.notice });
+        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries, reason: response.reason ?? null }, notice: phase.notice });
       }
       else recordFinal(item, response, body);
     } catch (e) {

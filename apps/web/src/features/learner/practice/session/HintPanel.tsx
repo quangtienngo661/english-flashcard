@@ -59,7 +59,7 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
               </span>
               {value ? (
                 <span className="min-w-0 break-words text-ui text-ink">
-                  {'kind' in value ? value.text : t('letters', { first: value.first_letter, length: value.length })}
+                  {'kind' in value ? (value.kind === 'first_letter' ? `${value.text}___` : value.text) : t('letters', { first: value.first_letter, length: value.length })}
                 </span>
               ) : (
                 n === nextLevel &&

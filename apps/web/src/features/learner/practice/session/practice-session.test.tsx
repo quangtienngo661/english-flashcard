@@ -517,10 +517,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     renderApp(<PracticeSession />, {
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view(), item: mcq('item-4', { hint_level: 1 }), preparing: false }),
-        'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd…' } }),
+        'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
       }),
     });
-    expect(await screen.findByText('d…')).toBeInTheDocument();
+    expect(await screen.findByText('d___')).toBeInTheDocument();
     expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
   });
 

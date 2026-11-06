@@ -246,7 +246,7 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
   // One live region from the start of the question, so screen readers hear the result (audit 26/10/2026 #8).
   const announce = final
     ? `${final.result.result === 'correct' ? t('right') : t('wrong')}. ${t('revealLine', { lemma: final.result.correct.lemma, meaning: final.result.meaning })}`
-    : outcome?.kind === 'try_again' ? t('wrong') : '';
+    : outcome?.kind === 'try_again' ? (outcome.reason === 'session_word' ? `${t('wrong')}. ${t('sessionWordBody')}` : t('wrong')) : '';
 
   return (
     <div className="flex flex-col gap-4">
@@ -270,7 +270,7 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
         <>
           <div data-feedback className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4 motion-safe:animate-feedback-in">
             <p className="text-title font-bold text-danger">{t('wrong')}</p>
-            <p className="text-ui font-semibold text-ink">{t('tryAgainBody')}</p>
+            <p className="text-ui font-semibold text-ink">{outcome.reason === 'session_word' ? t('sessionWordBody') : t('tryAgainBody')}</p>
           </div>
           <TryAgainActions
             onRetry={focusAnswer}
