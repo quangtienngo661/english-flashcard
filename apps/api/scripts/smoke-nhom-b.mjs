@@ -799,9 +799,10 @@ async function partM2() {
     const eventsBefore = events();
     // Hold the pointer until both publishes reach its guarded UPDATE. Otherwise a fast first publish can retire the draft before
     // the second request reads it, which legitimately returns 404 instead of exercising the intended concurrent-version conflict.
-    const holder = psqlLater(`BEGIN; SELECT operation FROM ai_live_configs WHERE operation = '${op}' FOR UPDATE; SELECT pg_sleep(8); COMMIT;`);
+    // 3 s, not longer: the publish transaction stops waiting after Prisma's default 5 s and both requests would end in a 500.
+    const holder = psqlLater(`BEGIN; SELECT operation FROM ai_live_configs WHERE operation = '${op}' FOR UPDATE; SELECT pg_sleep(3); COMMIT;`);
     await waitFor(() => count(`SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND state = 'active'
-      AND query LIKE '%FOR UPDATE; SELECT pg_sleep(8)%'`), (n) => n > 0, 'publish pointer lock acquired', 20_000, 100);
+      AND query LIKE '%FOR UPDATE; SELECT pg_sleep(3)%'`), (n) => n > 0, 'publish pointer lock acquired', 20_000, 100);
     const pending = Promise.all([1, 2].map(() => asOther('POST', `${draftPath(op, pc.draft.id)}/publish`, { idem: true, body })));
     try {
       await waitFor(() => count(`SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND wait_event_type = 'Lock'
@@ -1539,10 +1540,22 @@ async function partM4() {
       check((await answer(S.editor, shown.item.item_id, { choice })).result === 'correct', 'the MCQ answer is not correct');
       await finish(S.editor, mcqSession.id);
       T.mcqOptions = shown.item.prompt.options;
-      // E's cloze session over the same four words (P included), L's over W1 and W2.
-      const clozeSession = await startSession(S.editor, { source: 'group', group_id: group.id, types: ['cloze'], count: 4 });
-      check(clozeSession.ai_planned === 4 && clozeSession.cloze_source === 'ai', `cloze session ${j(clozeSession)}`);
-      T.eAsked = await askCloze(S.editor, clozeSession, 4);
+      // E's cloze sessions: W1–W3 in one group and P alone in another, L's over W1 and W2. A fill-in written in a session that holds a
+      // private word counts as touching it (session synonyms design §5.5), so P must not share a session with the words judged below.
+      const wordsGroup = await want(api('POST', '/v1/groups', { as: S.editor, idem: true, body: { name: `M4 E words ${run}` } }), 201, 'words group of E');
+      for (const word of [W1, W2, W3]) {
+        const res = await api('POST', `/v1/groups/${wordsGroup.id}/items`, { as: S.editor, idem: true, body: { sense_id: T.sense.get(word) } });
+        check(res.status === 200 || res.status === 201, `add ${word} to E's words group: ${res.status} ${res.text}`);
+      }
+      const clozeSession = await startSession(S.editor, { source: 'group', group_id: wordsGroup.id, types: ['cloze'], count: 3 });
+      check(clozeSession.ai_planned === 3 && clozeSession.cloze_source === 'ai', `cloze session ${j(clozeSession)}`);
+      T.eAsked = await askCloze(S.editor, clozeSession, 3);
+      const pGroup = await want(api('POST', '/v1/groups', { as: S.editor, idem: true, body: { name: `M4 E private ${run}` } }), 201, 'private group of E');
+      const addedP = await api('POST', `/v1/groups/${pGroup.id}/items`, { as: S.editor, idem: true, body: { sense_id: T.pSense } });
+      check(addedP.status === 200 || addedP.status === 201, `add P to E's private group: ${addedP.status} ${addedP.text}`);
+      const pSession = await startSession(S.editor, { source: 'group', group_id: pGroup.id, types: ['cloze'], count: 1 });
+      check(pSession.ai_planned === 1 && pSession.cloze_source === 'ai', `P session ${j(pSession)}`);
+      T.eAsked.push(...await askCloze(S.editor, pSession, 1));
       check(j(sorted(T.eAsked.map((asked) => asked.lemma))) === j(sorted([W1, W2, W3, T.P])), `E was asked ${j(T.eAsked.map((asked) => asked.lemma))}`);
       const lGroup = await want(api('POST', '/v1/groups', { as: S.learner, idem: true, body: { name: `M4 L ${run}` } }), 201, 'group of L');
       for (const word of [W1, W2]) {
@@ -1798,7 +1811,10 @@ async function partM4() {
       check(created.operation === op && created.rebuilt === true && exampleRows() === examples + 1, `created ${j(created)}`);
       const example = await exampleOf(created.id);
       const catalog = { word: lemma, part_of_speech: 'verb', level: before.level, meaning_vi: `nghĩa thử ${WORDS.indexOf(lemma) + 1}`, context_label: null };
-      check(example && example.source === 'report' && example.source_ref === T.report.id && example.split === 'dev' && canon(example.input) === canon(catalog) && canon(catalog) === canon(before), `example ${j(example)} vs catalog ${j(catalog)}`);
+      // What the AI was sent also holds the session's other words (session synonyms); a rebuilt input has no known session, so it has none.
+      const { session_words: sentWords, ...sentBefore } = before;
+      check(Array.isArray(sentWords), `control: the data the AI was sent should hold session_words, got ${j(before)}`);
+      check(example && example.source === 'report' && example.source_ref === T.report.id && example.split === 'dev' && canon(example.input) === canon(catalog) && canon(catalog) === canon(sentBefore), `example ${j(example)} vs catalog ${j(catalog)}`);
       ok(`request ${T.reported.aiRequestId} deleted (the question row stays): preview rebuilt true, input null; added as dev example ${created.id} with input ${j(example.input)} = the sense now = what the AI was sent`);
     });
 
