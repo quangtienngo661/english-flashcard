@@ -253,7 +253,15 @@ export class AnswersService {
   /** The current session's words as the matching needs them: usable now, so a word deleted or taken out of the group is an outside word. */
   private async sessionWords(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, key: TypeWordKey,
     session: PracticeSession): Promise<SessionWordForms[]> {
-    const ids = await this.sessions.sessionWordIds(tx, userId, session);
+    let ids: string[];
+    try {
+      ids = await this.sessions.sessionWordIds(tx, userId, session);
+    } catch (error) {
+      // The session's group was deleted in another tab: its items cannot be read (404). Before session synonyms an answer never read the group,
+      // so it is judged as it was: no session words, today's try-again or final wrong. The next `next` call ends the session as it always did.
+      if (error instanceof ProblemDetailsException && error.getStatus() === 404) return [];
+      throw error;
+    }
     // The forms of a word do not depend on the language of its meaning.
     const found = ids.length === 0 ? new Map() : await this.content.practiceSenses(userId, ids, 'vi', tx);
     return sessionWordForms({ senseId: item.senseId, lemma: key.reveal.lemma }, ids.flatMap((id) => found.get(id) ?? []));
