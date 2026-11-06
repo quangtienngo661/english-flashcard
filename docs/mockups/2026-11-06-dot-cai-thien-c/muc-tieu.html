@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup chọn mục tiêu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2445d6;--primary-soft:#eceffe;--accent:#ffd84a;--accent-deep:#c9a21a;--accent-soft:#fff4c7;--ink:#0f1a3d;--muted:#4d5577;--canvas:#f1f3fd;--border:#e3e6f4;--border-strong:#7d84a8;--success-soft:#e3f4ea;--navy:#1b2444;--on-navy:#f1f3fd}
+*{box-sizing:border-box}
+body{margin:0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);background:#e7eaf6;font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+p,h1,h2,h3{text-wrap:pretty}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 24px;background:#fff}
+.controls b{margin-right:12px}
+.tab{border:2px solid var(--border-strong);background:#fff;border-radius:.75rem;padding:6px 14px;font-weight:600}
+.tab[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab:focus-visible,.btn:focus-visible,.goal:focus-visible,.chip:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 24px 16px;background:#fff;color:var(--muted);font-size:14px}
+.flow span{background:var(--canvas);border-radius:999px;padding:2px 10px}
+.flow span.new{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.stage{padding:24px;display:flex;justify-content:center}
+.frame{width:1100px;max-width:100%;background:var(--canvas);border-radius:1.25rem;overflow:hidden}
+.bar{background:var(--navy);color:var(--on-navy);display:flex;align-items:center;gap:8px;padding:14px 28px;font-weight:800;font-size:20px}
+.bar i{display:inline-block;width:32px;height:18px;border-radius:6px;background:var(--accent)}
+.page{display:none;padding:28px}
+.page.on{display:block}
+h1{font-size:32px;margin:0 0 4px;font-weight:800}
+h2{font-size:20px;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 20px}
+.q{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700;margin-right:6px;vertical-align:2px}
+.goals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:820px}
+.goal{text-align:left;background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:16px;display:flex;flex-direction:column;gap:2px}
+.goal b{font-size:18px}
+.goal small{color:var(--muted);font-size:14px}
+.goal[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:20px}
+.btn{min-height:48px;border-radius:.875rem;border:2px solid var(--border-strong);background:#fff;font-weight:600;padding:0 20px}
+.btn.on{background:var(--accent);border-color:var(--accent)}
+.link{border:0;background:none;color:var(--primary);font-weight:600;padding:0}
+.variants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}
+.variants.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:20px}
+.card h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:2px solid var(--border-strong);background:#fff;border-radius:999px;padding:2px 12px;font-weight:600;font-size:14px}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.muted{color:var(--muted);font-size:14px;margin:8px 0 0}
+.deck{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:2px solid var(--canvas)}
+.deck:first-of-type{border-top:0}
+.deck b{display:block}
+.deck small{color:var(--muted)}
+.deck .btn{min-height:40px;padding:0 14px;font-size:14px}
+.lvl{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700}
+.hero{background:var(--navy);color:var(--on-navy);border-radius:1.25rem;padding:20px 24px;max-width:820px}
+.hero b{font-size:24px}
+.groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:820px;margin-top:16px}
+.g{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:16px}
+.g b{display:block;font-size:17px}
+.g small{color:var(--muted)}
+.setting{display:flex;justify-content:space-between;align-items:center;background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:16px 20px;max-width:620px}
+.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--accent-soft);border-radius:1.25rem;padding:16px 20px;max-width:820px}
+.form{max-width:620px;display:flex;flex-direction:column;gap:14px}
+label{font-weight:600;display:flex;flex-direction:column;gap:6px}
+input,textarea{font:inherit;border:2px solid var(--border-strong);border-radius:.75rem;padding:10px 12px;background:#fff}
+.help{font-weight:400;font-size:14px;color:var(--muted)}
+@media (max-width:760px){.goals,.variants,.variants.two,.groups{grid-template-columns:1fr}.page{padding:16px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <b>Màn hình</b>
+  <button class="tab" data-page="goal" aria-pressed="true">1. Chọn mục tiêu</button>
+  <button class="tab" data-page="suggest" aria-pressed="false">2. Gợi ý bộ từ</button>
+  <button class="tab" data-page="today" aria-pressed="false">3. Hôm nay sau đó</button>
+  <button class="tab" data-page="change" aria-pressed="false">4. Đổi mục tiêu</button>
+  <button class="tab" data-page="admin" aria-pressed="false">5. Admin soạn lộ trình</button>
+</div>
+<div class="flow">Luồng người mới: <span>Đăng ký</span>→<span>Xác thực email</span>→<span>Chọn ngôn ngữ (đã có)</span>→<span class="new">Chọn mục tiêu</span>→<span class="new">Gợi ý bộ từ</span>→<span>Hôm nay</span> · Ô đen "Câu N" là câu đang chờ bạn chốt; số từ là số minh họa.</div>
+
+<div class="stage"><div class="frame">
+  <div class="bar"><i></i>Wordmet</div>
+
+  <section class="page on" id="goal">
+    <h1>Bạn học tiếng Anh để làm gì?</h1>
+    <p class="sub">Chọn một mục tiêu để nhận gợi ý bộ từ.</p>
+    <div class="goals">
+      <button class="goal" aria-pressed="false"><b>IELTS</b><small>Học thuật, du học</small></button>
+      <button class="goal" aria-pressed="true"><b>TOEIC</b><small>Công sở, kinh doanh</small></button>
+      <button class="goal" aria-pressed="false"><b>Đi làm</b><small>Email, họp, thuyết trình</small></button>
+      <button class="goal" aria-pressed="false"><b>Giao tiếp hằng ngày</b><small>Ăn uống, mua sắm, đi lại</small></button>
+      <button class="goal" aria-pressed="false"><b>Công nghệ</b><small>Lập trình, sản phẩm số</small></button>
+      <button class="goal" aria-pressed="false"><b>Chưa có mục tiêu</b><small>Tự chọn chủ đề sau</small></button>
+    </div>
+    <div class="row"><button class="btn on">Tiếp tục</button><button class="link"><span class="q">Câu 1</span>Bỏ qua</button></div>
+
+    <div class="variants">
+      <div class="card"><h3><span class="q">Câu 2</span>A. Tự chọn trình độ</h3>
+        <p style="margin:0 0 8px;font-weight:600">Bạn đang ở mức nào?</p>
+        <div class="chips"><button class="chip">A1</button><button class="chip">A2</button><button class="chip" aria-pressed="true">B1</button><button class="chip">B2</button><button class="chip">C1</button><button class="chip">C2</button></div>
+        <p class="muted">Hiện ngay dưới lưới mục tiêu. Gợi ý lấy từ ở mức đã chọn.</p></div>
+      <div class="card"><h3><span class="q">Câu 2</span>B. Mục tiêu có sẵn trình độ</h3>
+        <div class="goal" aria-pressed="true" style="pointer-events:none"><b>TOEIC</b><small>Công sở, kinh doanh · B1–B2</small></div>
+        <p class="muted">Người học không chọn mức. Mỗi lộ trình tự mang khoảng trình độ.</p></div>
+      <div class="card"><h3><span class="q">Câu 2</span>C. Không theo trình độ</h3>
+        <div class="goal" aria-pressed="true" style="pointer-events:none"><b>TOEIC</b><small>Công sở, kinh doanh</small></div>
+        <p class="muted">Gợi ý lấy mọi từ của chủ đề, từ dễ tới khó.</p></div>
+    </div>
+  </section>
+
+  <section class="page" id="suggest">
+    <h1>Lộ trình TOEIC</h1>
+    <p class="sub">Các bộ từ lấy từ kho: chủ đề kinh doanh và tiếp thị, mức B1–B2.</p>
+    <div class="variants two" style="margin-top:0">
+      <div class="card"><h3><span class="q">Câu 5</span>A. Tạo nhóm luôn</h3>
+        <div class="deck"><div><b>Kinh doanh</b><small>B1 · 120 từ</small></div></div>
+        <div class="deck"><div><b>Kinh doanh</b><small>B2 · 95 từ</small></div></div>
+        <div class="deck"><div><b>Tiếp thị</b><small>B1 · 60 từ</small></div></div>
+        <div class="row"><button class="btn on">Tạo 3 nhóm và bắt đầu</button></div>
+        <p class="muted">Một bấm: app tạo 3 nhóm, thêm sẵn từ, đưa về Hôm nay.</p></div>
+      <div class="card"><h3><span class="q">Câu 5</span>B. Người học tự chọn</h3>
+        <div class="deck"><div><b>Kinh doanh</b><small>B1 · 120 từ</small></div><button class="btn">Xem và thêm</button></div>
+        <div class="deck"><div><b>Kinh doanh</b><small>B2 · 95 từ</small></div><button class="btn">Xem và thêm</button></div>
+        <div class="deck"><div><b>Tiếp thị</b><small>B1 · 60 từ</small></div><button class="btn">Xem và thêm</button></div>
+        <div class="row"><button class="btn">Về Hôm nay</button></div>
+        <p class="muted">"Xem và thêm" mở trang chọn từ theo chủ đề đã có, tích từng từ hoặc thêm cả bộ.</p></div>
+    </div>
+    <p class="muted" style="margin-top:16px"><span class="q">Câu 3</span>Với IELTS: lấy danh sách từ riêng cho kỳ thi, hay ghép gần đúng bằng chủ đề + trình độ như ví dụ TOEIC ở trên.</p>
+  </section>
+
+  <section class="page" id="today">
+    <div class="hero"><small>Hôm nay</small><br><b>20 từ mới đang chờ</b><p style="margin:4px 0 0;opacity:.85">Từ 3 nhóm của lộ trình TOEIC</p></div>
+    <div class="groups">
+      <div class="g"><b>Kinh doanh · B1</b><small>120 từ mới</small></div>
+      <div class="g"><b>Kinh doanh · B2</b><small>95 từ mới</small></div>
+      <div class="g"><b>Tiếp thị · B1</b><small>60 từ mới</small></div>
+    </div>
+    <p class="muted" style="max-width:820px">Thay cho màn trống hiện nay: người mới vào là đã có nhóm để Học. Giao diện Hôm nay và thẻ nhóm giữ như mockup M1.</p>
+  </section>
+
+  <section class="page" id="change">
+    <h2><span class="q">Câu 6</span>Trong Cài đặt</h2>
+    <div class="setting"><div><b>Mục tiêu học</b><br><small class="help">TOEIC · B1–B2</small></div><button class="btn">Đổi mục tiêu</button></div>
+    <p class="muted" style="max-width:620px">Đổi mục tiêu chỉ đổi gợi ý. Nhóm và từ đã thêm giữ nguyên.</p>
+    <h2 style="margin-top:28px"><span class="q">Câu 1</span>Người dùng cũ hoặc người đã bỏ qua</h2>
+    <div class="banner"><div><b>Chọn mục tiêu để nhận gợi ý bộ từ</b><br><small class="help">IELTS, TOEIC, đi làm…</small></div><div style="display:flex;gap:8px"><button class="btn on">Chọn mục tiêu</button><button class="btn">Ẩn</button></div></div>
+    <p class="muted" style="max-width:820px">Thẻ nằm trên trang Hôm nay, ẩn hẳn sau khi chọn hoặc bấm Ẩn.</p>
+  </section>
+
+  <section class="page" id="admin">
+    <h2><span class="q">Câu 4</span>Nếu admin soạn lộ trình (trang admin mới "Lộ trình")</h2>
+    <div class="form">
+      <label>Tên<input value="TOEIC"></label>
+      <label>Mô tả ngắn<input value="Công sở, kinh doanh"></label>
+      <label>Chủ đề<span class="chips"><button class="chip" aria-pressed="true">Kinh doanh</button><button class="chip" aria-pressed="true">Tiếp thị</button><button class="chip">Công nghệ</button><button class="chip">Ẩm thực</button><button class="chip">Đời sống</button></span></label>
+      <label>Trình độ<span class="chips"><button class="chip">A1</button><button class="chip">A2</button><button class="chip" aria-pressed="true">B1</button><button class="chip" aria-pressed="true">B2</button><button class="chip">C1</button><button class="chip">C2</button></span><span class="help">Chỉ có khi câu 2 chọn B.</span></label>
+      <label>Thứ tự hiện<input value="2"></label>
+      <div class="row" style="margin-top:0"><button class="btn on">Lưu lộ trình</button><button class="btn">Ẩn khỏi người học</button></div>
+    </div>
+    <p class="muted" style="max-width:620px">Nếu cố định trong code thì không có trang này; đổi lộ trình phải sửa code và deploy.</p>
+  </section>
+</div></div>
+
+<script>
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
+document.querySelectorAll('.goals .goal').forEach(g=>g.addEventListener('click',()=>document.querySelectorAll('.goals .goal').forEach(x=>x.setAttribute('aria-pressed',String(x===g)))));
+if(location.hash){const id=location.hash.slice(2);if(document.getElementById(id))show(id);}
+</script>
+</body>
+</html>
