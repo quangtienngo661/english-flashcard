@@ -302,6 +302,20 @@ describe('SourcesService.listShown / list: which sources are shown to learners (
     expect(values).toEqual([AGID_SOURCE_ID]);
   });
 
+  it('round C: a source is also shown when the live transcription of a visible catalog sense came from it, and not for a draft', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.listShown();
+    const { text } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    const branch = text.slice(text.indexOf('FROM sense_revisions r'));
+    expect(text).toContain('FROM sense_revisions r JOIN senses s ON s.live_revision_id = r.id JOIN entries e ON e.id = s.entry_id');
+    expect(text).toContain('r.ipa_source_id = ds.id');
+    // The live revision of an open catalog sense: a draft that names the source is not in use yet.
+    expect(branch).toContain("s.state = 'open'");
+    expect(branch).toContain("e.scope = 'catalog'");
+    expect(text.indexOf('r.ipa_source_id = ds.id')).toBeLessThan(text.indexOf('ds.id = $1::uuid'));
+  });
+
   it('listShown on a database with nothing shown is an empty list', async () => {
     const { prisma, service } = setup();
     prisma.$queryRaw.mockResolvedValue([]);
