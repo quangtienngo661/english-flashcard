@@ -31,7 +31,8 @@ export function GroupListPage() {
   const needle = query.trim().toLocaleLowerCase();
   const shown = all.filter(
     (g) =>
-      (filter === 'all' || (filter === 'waiting' ? waiting(g) > 0 : waiting(g) === 0)) &&
+      // A deck with no words is not "done today" (owner 06/11/2026): only "Tất cả" lists it.
+      (filter === 'all' || (filter === 'waiting' ? waiting(g) > 0 : waiting(g) === 0 && g.total > 0)) &&
       (!needle || g.name.toLocaleLowerCase().includes(needle)),
   );
   const actions = {

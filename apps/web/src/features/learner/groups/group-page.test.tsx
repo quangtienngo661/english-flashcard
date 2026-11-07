@@ -273,3 +273,46 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(calls.some((c) => c.path.includes('admin'))).toBe(false);
   });
 });
+
+describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
+  const EMPTY = {
+    ...SUMMARY, name: 'test3', total: 0, today: { priority: 0, due: 0, new: 0 },
+    cells: SUMMARY.cells.map((c) => ({ ...c, total: 0, due: 0 })), backlog: 0, available: { due: 0, new: 0 },
+  };
+  const emptyRoutes = () =>
+    routes({
+      [`GET /v1/groups/${G}`]: () => Response.json({ id: G, name: 'test3', version: 1, item_count: 0, removable_items: 0, created_at: '2026-11-06T03:00:00Z', updated_at: '2026-11-06T03:00:00Z' }),
+      'GET /v1/groups': () => Response.json({ items: [EMPTY] }),
+      [`GET ${WORDS_URL}`]: () => Response.json({ items: [], next_page_token: null }),
+      [`GET /v1/groups/${G}/queue?mode=all`]: () => Response.json({ cards: [] }),
+    });
+
+  it('the main action is [Thêm từ], locked to this deck; nothing offers to study 0 words, no 0-everywhere counts', async () => {
+    renderApp(<GroupPage />, { routes: emptyRoutes() });
+    const main = screen.getByRole('main');
+    expect(await within(main).findByRole('heading', { name: 'Nhóm này chưa có từ nào' }, { timeout: 5000 })).toBeInTheDocument();
+    expect(within(main).queryByRole('link', { name: /Học tất cả|^Ôn \d/ })).not.toBeInTheDocument();
+    expect(within(main).queryByText('0 ưu tiên')).not.toBeInTheDocument();
+    expect(within(main).queryByRole('figure')).not.toBeInTheDocument();
+    expect(within(main).queryByRole('heading', { name: 'Toàn bộ 0 từ' })).not.toBeInTheDocument();
+    expect(within(main).getByRole('link', { name: 'Chọn từ theo chủ đề' })).toHaveAttribute('href', '/vi/app/lookup');
+    await userEvent.click(within(main).getByRole('button', { name: 'Thêm từ' }));
+    expect(await screen.findByText('Lưu vào nhóm: test3', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('the ⋯ menu drops "Học tất cả 0 từ"', async () => {
+    renderApp(<GroupPage />, { routes: emptyRoutes() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm' }, { timeout: 5000 }));
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
+  });
+
+  it('control: a deck with words keeps its counts, chart and "Học tất cả N từ" in the menu', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    const main = screen.getByRole('main');
+    expect(await within(main).findByText('1 ưu tiên', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(within(main).getByRole('figure')).toBeInTheDocument();
+    expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 4 từ', 'Xóa nhóm']);
+  });
+});

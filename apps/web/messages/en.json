@@ -679,6 +679,8 @@
       "backlogShort": "{count, plural, one {# word} other {# words}} not reviewed in a while",
       "waitingChip": "{count, plural, one {# card} other {# cards}} waiting",
       "doneChip": "Done today",
+      "emptyChip": "No words yet",
+      "addWord": "Add word",
       "review": "Review {count, plural, one {# card} other {# cards}}",
       "studyAgain": "Study the whole deck",
       "menu": "Options for {name}",
@@ -757,7 +759,10 @@
       "toList": "Go to your decks",
       "emptyFilter": "No words in this filter.",
       "loadMore": "Show more words",
-      "empty": "This deck has no words yet."
+      "empty": "This deck has no words yet.",
+      "emptyTitle": "This deck has no words yet",
+      "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
+      "emptyLookup": "Pick words by topic"
     },
     "backlog": {
       "back": "{name} deck",
