@@ -2,6 +2,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Route } from '@/app-shell/session/test-support';
+import { StreakToast } from '@/app-ui/StreakToast';
 import { renderApp } from '@/app-ui/test-utils';
 import { RecallSession } from './RecallSession';
 
@@ -83,6 +84,15 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect(await screen.findByText('luggage lên ngăn 14 ngày.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toBeInTheDocument();
+  });
+
+  it('đợt C DC9: an answer that is the first study of the day shows the streak toast', async () => {
+    renderApp(<><RecallSession /><StreakToast /></>, { routes: routes({
+      'POST /v1/practice/items/r-1/answer': () => Response.json(answer({ streak: { days: 4 } })),
+    }) });
+    await screen.findByText('hành lý');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText('4 ngày liên tiếp')).toBeInTheDocument();
   });
 
   it('a right answer that keeps the stage says so', async () => {

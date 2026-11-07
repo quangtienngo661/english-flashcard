@@ -1638,6 +1638,9 @@
       "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
       "noteLeveled": "{lemma} lên ngăn {stage}.",
       "noteKept": "{lemma} giữ ngăn {stage}."
+    },
+    "streak": {
+      "days": "{days, number} ngày liên tiếp"
     }
   }
 }

@@ -47,7 +47,7 @@ export function ReviewSummary({ counts, group }: { counts: { known: number; revi
         {due > 0 && group && (
           <Link
             href={`/${locale}/app/recall?group=${group.id}`}
-            className="flex min-h-control-touch items-center justify-center gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary md:min-w-48"
+            className="flex min-h-control-touch items-center justify-center gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none hover:brightness-95 focus-visible:ring-2 focus-visible:ring-primary md:min-w-48"
           >
             <ListChecks aria-hidden className="size-5 shrink-0" />
             {tDeck('recall')}
@@ -57,7 +57,7 @@ export function ReviewSummary({ counts, group }: { counts: { known: number; revi
           href={`/${locale}/app`}
           className={
             due > 0
-              ? 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner border-2 border-border-strong bg-surface px-4.5 text-body font-semibold text-ink shadow-button-secondary outline-none focus-visible:ring-2 focus-visible:ring-primary md:min-w-64'
+              ? 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner border-2 border-border-strong bg-surface px-4.5 text-body font-semibold text-ink shadow-button-secondary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary md:min-w-64'
               : 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary md:w-fit md:min-w-64'
           }
         >

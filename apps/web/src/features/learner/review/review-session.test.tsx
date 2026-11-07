@@ -2,6 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
+import { StreakToast } from '@/app-ui/StreakToast';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';
@@ -225,6 +226,22 @@ describe('ReviewSession (K/20–K/22)', () => {
     await client.refetchQueries({ type: 'active' });
     expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(1);
     expect(screen.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeInTheDocument();
+  });
+
+  it('đợt C DC9: the first flip of the day shows the streak toast; a later one without `streak` shows nothing new', async () => {
+    let first = true;
+    renderApp(<><ReviewSession /><StreakToast /></>, { routes: routes([DEPLOY, CACHE], {
+      'POST /v1/reviews': () => {
+        const streak = first ? { days: 13 } : null;
+        first = false;
+        return Response.json({ item_id: uuid(1), level: 1, due_date: '2026-10-21', priority: false, streak });
+      },
+    }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByText('13 ngày liên tiếp')).toBeInTheDocument();
+    expect(screen.getAllByText(/ngày liên tiếp/)).toHaveLength(1);
   });
 
   it('đợt C DC25: mode=new asks for the new words only', async () => {

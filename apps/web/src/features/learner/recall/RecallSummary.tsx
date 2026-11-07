@@ -12,8 +12,8 @@ import { useSummary } from '../practice/session/SessionSummary';
 import { STAGGER } from '../review/ReviewSummary';
 
 const ACTION = 'flex min-h-control-touch items-center justify-center gap-2 rounded-inner px-4.5 text-body font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary';
-const PRIMARY = `${ACTION} bg-accent text-on-accent shadow-ledge-accent`;
-const SECONDARY = `${ACTION} border-2 border-border-strong bg-surface text-ink shadow-button-secondary`;
+const PRIMARY = `${ACTION} bg-accent text-on-accent shadow-ledge-accent hover:brightness-95`;
+const SECONDARY = `${ACTION} border-2 border-border-strong bg-surface text-ink shadow-button-secondary hover:bg-primary-soft`;
 
 /**
  * Đợt C §4.4, mockup "Xong phiên Ôn": how many words, then right-and-moved-up, wrong, Cần ôn lại (and right-but-kept when a word was
@@ -42,7 +42,7 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const home = `/${locale}/app`;
   return (
     <section className="flex w-full flex-col gap-5">
-      <h1 className={cn('text-display font-extrabold text-ink', STAGGER[0])}>{t('doneTitle', { count: data.asked })}</h1>
+      <h1 className={cn('text-balance text-display font-extrabold text-ink', STAGGER[0])}>{t('doneTitle', { count: data.asked })}</h1>
       <div className={cn('grid gap-3', tiles.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3', STAGGER[1])}>
         {tiles.map((tile) => (
           <div key={tile.label} className="flex flex-col gap-1 rounded-card bg-surface p-4 shadow-ledge-soft">

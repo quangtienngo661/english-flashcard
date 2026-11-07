@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { RouterProvider } from 'react-aria-components';
+import { StreakToast } from '@/app-ui/StreakToast';
 import { ToastRegion } from '@/app-ui/Toast';
 import { ApiError, NetworkError } from './api/problem';
 import { hardReplace } from './navigate';
@@ -51,6 +52,7 @@ export function AppProviders({ children, store }: { children: ReactNode; store?:
               {offline ? <OfflineBand onRetry={retry} /> : null}
               {children}
               <ToastRegion />
+              <StreakToast />
             </OfflineContext.Provider>
           </RouterProvider>
         </ThemeProvider>

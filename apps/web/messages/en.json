@@ -1638,6 +1638,9 @@
       "nothingBody": "Learn a few new words first, then come back to review.",
       "noteLeveled": "{lemma} moved up to the {stage} stage.",
       "noteKept": "{lemma} stays in the {stage} stage."
+    },
+    "streak": {
+      "days": "{days, number}-day streak"
     }
   }
 }
