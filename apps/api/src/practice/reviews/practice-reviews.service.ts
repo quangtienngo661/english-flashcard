@@ -42,7 +42,7 @@ export class PracticeReviewsService {
     if (!found) throw notFound();
     await this.sessions.closeIfIdle(userId, found.sessionId);
     return this.prisma.$transaction(async (tx) => {
-      await this.lockReviewable(tx, userId, found.sessionId);
+      const session = await this.lockReviewable(tx, userId, found.sessionId);
       await tx.$queryRaw`SELECT id FROM practice_session_items WHERE id = ${itemId}::uuid FOR UPDATE`;
       const item = await tx.practiceSessionItem.findUniqueOrThrow({ where: { id: itemId }, include: { question: true } });
       if (item.result === 'void') throw conflict('item-void', 'Item void');
@@ -56,7 +56,8 @@ export class PracticeReviewsService {
       if (pressed !== null && pressed !== action) throw conflict('review-already-set', 'Review already set');
       if (pressed === null && action === 'known') {
         // Know follows today's rule for the word of the button: an alternative answer carries it per row.
-        const result = await this.answers.resultOf(userId, item, tx);
+        // A recall session never offers "Đã biết": the answer already moved the word (round C).
+        const result = await this.answers.resultOf(userId, item, tx, { schedule: null, recall: session.kind === 'recall' });
         const knowable = result.alternative ? result.alternative.rows.find((row) => row.sense_id === word)?.show_known === true : result.show_known;
         if (!knowable) throw conflict('known-not-allowed', 'Known not allowed');
       }
@@ -70,7 +71,11 @@ export class PracticeReviewsService {
 
   /** `alternatives`: how many of the right answers were alternative answers (design §3.3). */
   async summary(userId: string, sessionId: string):
-    Promise<{ session: SessionView; asked: number; correct: number; wrong: number; alternatives: number; words: SummaryWord[] }> {
+    Promise<{
+      session: SessionView; asked: number; correct: number; wrong: number; alternatives: number; words: SummaryWord[];
+      /** Round C (H7): only a recall session. "Wrong" is `wrong`; "Cần ôn lại" is the count of `words[].action === 'needs_review'`. */
+      recall: { leveled_up: number; correct_kept: number } | null;
+    }> {
     return this.prisma.$transaction(async (tx) => {
       await this.reviewableSession(tx, userId, sessionId, false);
       const items = await this.items(tx, sessionId);
@@ -78,7 +83,12 @@ export class PracticeReviewsService {
       const wrong = items.filter((item) => item.result === 'wrong').length;
       const alternatives = items.filter((item) => item.result === 'correct' && item.alternative).length;
       const words = (await this.listedWords(userId, items, tx)).map(({ sense_id, lemma, meaning, item_id, action }) => ({ sense_id, lemma, meaning, item_id, action }));
-      return { session: await this.sessions.view(tx, sessionId), asked: correct + wrong, correct, wrong, alternatives, words };
+      const session = await this.sessions.view(tx, sessionId);
+      const recall = session.kind === 'recall' ? {
+        leveled_up: items.filter((item) => item.recallOutcome === 'leveled_up').length,
+        correct_kept: items.filter((item) => item.result === 'correct' && item.recallOutcome === 'kept').length,
+      } : null;
+      return { session, asked: correct + wrong, correct, wrong, alternatives, words, recall };
     }, transactionOptions);
   }
 
@@ -103,17 +113,18 @@ export class PracticeReviewsService {
   }
 
   /** The session row lock; "Cần ôn tập" works on a finished session, not on an abandoned one (R11). */
-  private lockReviewable(tx: Prisma.TransactionClient, userId: string, sessionId: string) {
+  private lockReviewable(tx: Prisma.TransactionClient, userId: string, sessionId: string): Promise<{ kind: string }> {
     return this.reviewableSession(tx, userId, sessionId, true);
   }
 
-  private async reviewableSession(tx: Prisma.TransactionClient, userId: string, sessionId: string, lock: boolean): Promise<void> {
+  private async reviewableSession(tx: Prisma.TransactionClient, userId: string, sessionId: string, lock: boolean): Promise<{ kind: string }> {
     const session = lock
       ? await this.sessions.lockSession(tx, userId, sessionId)
       : await tx.practiceSession.findFirst({ where: { id: sessionId, userId } });
     if (!session) throw notFound();
     if (session.status === 'abandoned') throw sessionClosed();
     if (lock) await this.sessions.touch(tx, session);
+    return session;
   }
 
   /** The summary's list with the typed words of alternative answers named (one read for all of them). */

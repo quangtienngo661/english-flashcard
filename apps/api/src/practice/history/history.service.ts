@@ -99,7 +99,8 @@ export class HistoryService {
     if (at !== null && Number.isNaN(at.getTime())) throw invalidInput();
     const rows = await this.prisma.practiceSessionItem.findMany({
       where: {
-        userId, result: { in: ['correct', 'wrong'] },
+        // A recall session ("Ôn") has no place on the practice history page (round C, DC30); its wrong answers still count as weak.
+        userId, result: { in: ['correct', 'wrong'] }, session: { kind: 'practice' },
         ...(query.date === undefined ? {} : { localDate: dateValue(query.date) }),
         AND: [
           // An alternative answer shows under both of its words (session synonyms design §3.3).

@@ -26,7 +26,7 @@ function setup(row: ItemWithQuestion = found, rows: Array<{ sense_id: string; sh
   };
   const sessions = {
     closeIfIdle: vi.fn(async () => undefined),
-    lockSession: vi.fn(async () => ({ id: 'sess-1', status: 'active' })),
+    lockSession: vi.fn(async () => ({ id: "sess-1", status: "active" })),
     touch: vi.fn(async () => undefined),
   };
   const answers = { resultOf: vi.fn(async () => ({ show_known: rows === null, alternative: rows === null ? null : { typed: 'Crucial.', rows } })) };
@@ -108,7 +108,7 @@ describe('PracticeReviewsService.review — reads inside the transaction use the
   it('PX4: "Đã biết" works out the buttons with the learning item read through tx', async () => {
     const { service, tx, answers, learning } = setup();
     await expect(service.review(userId, 'it-1', 'known')).resolves.toMatchObject({ action: 'known', item_id: 'it-1', level: 2 });
-    expect(answers.resultOf).toHaveBeenCalledExactlyOnceWith(userId, found, tx);
+    expect(answers.resultOf).toHaveBeenCalledExactlyOnceWith(userId, found, tx, { schedule: null, recall: false });
     expect(learning.practiceReview).toHaveBeenCalledWith(tx, userId, expect.any(Array));
   });
 });
@@ -188,5 +188,55 @@ describe('PracticeReviewsService — summary and Review all with alternative ans
     await expect(service.reviewAll(userId, 'sess-1')).resolves.toEqual({ added: 2 });
     const inputs = (learning.practiceReview.mock.calls[0] as unknown as [unknown, string, Array<{ senseId: string }>])[2];
     expect(inputs.map((input) => input.senseId)).toEqual(['sense-2', 'sense-3']);
+  });
+});
+
+// Round C (H7): the summary of a recall session, and "Đã biết" is refused there.
+describe('PracticeReviewsService — recall sessions', () => {
+  const key = (lemma: string) => ({ answerKey: { reveal: { lemma, meaning: lemma, definition_en: null } } });
+  const answered = (id: string, result: 'correct' | 'wrong', recallOutcome: string | null) => ({
+    id, senseId: `sense-${id}`, result, hintLevel: 0, reviewAction: null, alternative: false, alternativeSenseId: null,
+    alternativeReviewAction: null, recallOutcome, question: key(id),
+  }) as unknown as ItemWithQuestion;
+
+  function world(items: ItemWithQuestion[], kind: 'practice' | 'recall') {
+    const t = setup();
+    const tx = t.tx as unknown as Record<string, unknown>;
+    tx.practiceSession = { findFirst: vi.fn(async () => ({ id: 'sess-1', status: 'finished', kind })) };
+    (tx.practiceSessionItem as Record<string, unknown>).findMany = vi.fn(async () => items);
+    const sessions = t.sessions as unknown as Record<string, unknown>;
+    sessions.view = vi.fn(async () => ({ id: 'sess-1', kind }));
+    (t.answers as unknown as Record<string, unknown>).typedWords = vi.fn(async () => new Map());
+    return t;
+  }
+
+  const eight = [
+    ...['a', 'b', 'c'].map((id) => answered(id, 'correct', 'leveled_up')),
+    ...['d', 'e'].map((id) => answered(id, 'correct', 'kept')),
+    ...['f', 'g', 'h'].map((id) => answered(id, 'wrong', 'kept')),
+  ];
+
+  it('H7: 8 answers (3 leveled up, 2 right and kept, 3 wrong) → recall { leveled_up: 3, correct_kept: 2 }, wrong 3', async () => {
+    const { service } = world(eight, 'recall');
+    await expect(service.summary(userId, 'sess-1')).resolves.toMatchObject({
+      session: { kind: 'recall' }, asked: 8, correct: 5, wrong: 3, recall: { leveled_up: 3, correct_kept: 2 },
+    });
+  });
+
+  it('a practice session has recall: null', async () => {
+    const { service } = world([answered('a', 'correct', null)], 'practice');
+    await expect(service.summary(userId, 'sess-1')).resolves.toMatchObject({ recall: null });
+  });
+
+  it('a wrong answer never counts as "right and kept", even though its outcome is kept', async () => {
+    const { service } = world([answered('f', 'wrong', 'kept')], 'recall');
+    await expect(service.summary(userId, 'sess-1')).resolves.toMatchObject({ recall: { leveled_up: 0, correct_kept: 0 } });
+  });
+
+  it('"Đã biết" in a recall session works out its buttons as a recall session (never known)', async () => {
+    const t = setup();
+    t.sessions.lockSession.mockResolvedValue({ id: 'sess-1', status: 'active', kind: 'recall' } as never);
+    await t.service.review(userId, 'it-1', 'known');
+    expect(t.answers.resultOf).toHaveBeenCalledExactlyOnceWith(userId, found, t.tx, { schedule: null, recall: true });
   });
 });
