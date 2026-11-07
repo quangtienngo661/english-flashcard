@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException, StandardSchemaValidationPipe, type ArgumentsHost } from '@nestjs/common';
+import { BadRequestException, HttpException, NotFoundException, StandardSchemaValidationPipe, type ArgumentsHost } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { AppLogger, type LogEntry } from '../logging/app-logger.js';
@@ -76,6 +76,46 @@ describe('ProblemDetailsFilter', () => {
       status: 400, type: 'https://api.example.com/problems/validation-failed', operation_id: 'op-2',
     });
     expect(JSON.stringify(response.body)).not.toContain('private JSON');
+  });
+
+  // @nestjs/platform-express 12.3.0 wraps body-parser's http-errors in an HttpException (the original is its `cause`)
+  // before any filter runs; 12.1.2 passed them through. The wrapped error must map exactly as the bare one does.
+  const bodyError = (message: string, type: string, status: number) =>
+    Object.assign(new Error(message), { type, status, statusCode: status, expose: true });
+  const wrapped = (cause: Error & { status: number }) => new HttpException(cause.message, cause.status, { cause });
+
+  it('B1#36: a wrapped entity.too.large is still 413 payload-too-large and does not echo its message', () => {
+    const { host, response } = mockArgumentsHost({ operationId: 'op-3' });
+    new ProblemDetailsFilter('https://api.example.com/problems/').catch(
+      wrapped(bodyError('private request body', 'entity.too.large', 413)), host,
+    );
+    expect(response.statusCode).toBe(413);
+    expect(response.body).toMatchObject({
+      status: 413, type: 'https://api.example.com/problems/payload-too-large', title: 'Payload too large', operation_id: 'op-3',
+    });
+    expect(JSON.stringify(response.body)).not.toContain('private request body');
+  });
+
+  it('a wrapped charset.unsupported is 415 unsupported-media-type', () => {
+    const { host, response } = mockArgumentsHost({});
+    new ProblemDetailsFilter('https://api.example.com/problems/').catch(
+      wrapped(bodyError('unsupported charset "LATIN1"', 'charset.unsupported', 415)), host,
+    );
+    expect(response.statusCode).toBe(415);
+    expect(response.body).toMatchObject({
+      status: 415, type: 'https://api.example.com/problems/unsupported-media-type', title: 'Unsupported media type',
+    });
+  });
+
+  it('a wrapped 400 body error is validation-failed and carries no violations echoing its message', () => {
+    const { host, response } = mockArgumentsHost({});
+    new ProblemDetailsFilter('https://api.example.com/problems/').catch(
+      wrapped(bodyError('private size detail', 'request.size.invalid', 400)), host,
+    );
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toMatchObject({ status: 400, type: 'https://api.example.com/problems/validation-failed' });
+    expect(response.body).not.toHaveProperty('violations');
+    expect(JSON.stringify(response.body)).not.toContain('private size detail');
   });
 
   it('maps a StandardSchemaValidationPipe 400 to validation-failed with violations', async () => {
