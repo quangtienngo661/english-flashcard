@@ -9,7 +9,7 @@ import { IdentityService } from '../../identity/profile/identity.service.js';
 import { BATCH_SCOPE, type BatchScope } from '../batch-scope.port.js';
 import { INFLECTION_KINDS, LEVELS, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { publishViolations } from '../senses/publish.service.js';
-import { revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
+import { revisionFormOf, revisionIpa, type RevisionContent } from '../senses/revision-content.js';
 import type { SenseFilter } from './sense-filters.js';
 
 type PageQuery = { page_size: number; page_token?: string };
@@ -19,7 +19,7 @@ export type LatestRevision = { revisionNo: number; status: string; content: Revi
 export type ExportRow = {
   headword: string; pos: string; gloss_vi: string | null; definition_en: string | null;
   example_en_1: string; example_en_2: string; example_en_3: string;
-  topics: string; accepted_forms: string; context_label: string | null; form_of: string; inflections: string;
+  topics: string; accepted_forms: string; ipa_uk: string; ipa_us: string; ipa_source_id: string; context_label: string | null; form_of: string; inflections: string;
   sense_id: string; revision: number; _status: string; _level: Level | null; _inflections: string; _missing?: string;
 };
 export type EntryExportRow = { headword: string; pos: string; inflections: string; _level: Level | null; _inflections: string };
@@ -36,7 +36,7 @@ const catalogWhere = { language: 'en', entryType: 'word', scope: 'catalog' } sat
 const levelInclude = { source: true } satisfies Prisma.EntryLevelInclude;
 const levelsQuery = { include: levelInclude, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }] } satisfies Prisma.Entry$levelsArgs;
 const revisionsQuery = {
-  orderBy: { revisionNo: 'desc' }, take: 1, include: { texts: true },
+  orderBy: { revisionNo: 'desc' }, take: 1, include: { texts: true, ipaSource: { select: { id: true, name: true } } },
 } satisfies Prisma.Sense$revisionsArgs;
 const entryInclude = {
   variants: { orderBy: [{ text: 'asc' }, { id: 'asc' }] }, levels: levelsQuery,
@@ -49,7 +49,7 @@ const senseInclude = {
 const inflectionsQuery = { select: { form: true, kind: true, source: true }, orderBy: { position: 'asc' } } satisfies Prisma.Entry$inflectionsArgs;
 const exportSenseInclude = {
   entry: { include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery } },
-  revisions: { ...revisionsQuery, include: { texts: true, formOf: { select: { lemma: true, pos: true } } } },
+  revisions: { ...revisionsQuery, include: { texts: true, ipaSource: { select: { id: true, name: true } }, formOf: { select: { lemma: true, pos: true } } } },
 } satisfies Prisma.SenseInclude;
 type EntryRow = Prisma.EntryGetPayload<{ include: typeof entryInclude }>;
 type SenseRow = Prisma.SenseGetPayload<{ include: typeof senseInclude }>;
@@ -110,7 +110,7 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
-    ...revisionFormOf(revision),
+    ...revisionFormOf(revision), ...revisionIpa(revision),
   };
 }
 function senseSummary(sense: EntryRow['senses'][number] | SenseRow) {
@@ -142,7 +142,9 @@ function senseView(sense: SenseRow) {
     ...senseSummary(sense), entry_id: sense.entryId, lemma: sense.entry.lemma, pos: sense.entry.pos,
     ...levelState(sense.entry.levels), function_word: sense.entry.functionWordOverride ?? sense.entry.functionWordDerived,
     content: content ? { gloss_vi: content.glossVi, definition_en: content.definitionEn,
-      examples_en: content.examplesEn, topics: content.topicCodes, accepted_forms: content.acceptedForms } : null,
+      examples_en: content.examplesEn, topics: content.topicCodes, accepted_forms: content.acceptedForms,
+      ipa_uk: content.ipaUk ?? null, ipa_us: content.ipaUs ?? null,
+      ipa_source: revision?.ipaSource ? { id: revision.ipaSource.id, name: revision.ipaSource.name } : null } : null,
   };
 }
 
@@ -351,6 +353,7 @@ export class AdminCatalogQueries {
           pos: sense.entry.pos, gloss_vi: content.glossVi, definition_en: content.definitionEn,
           example_en_1: content.examplesEn[0] ?? '', example_en_2: content.examplesEn[1] ?? '', example_en_3: content.examplesEn[2] ?? '',
           topics: content.topicCodes.join(';'), accepted_forms: content.acceptedForms.join(';'),
+          ipa_uk: content.ipaUk ?? '', ipa_us: content.ipaUs ?? '', ipa_source_id: content.ipaSourceId ?? '',
           context_label: sense.contextLabel, sense_id: sense.id, revision: revision.revisionNo,
           form_of: revision.formOf && revision.formKind ? `${revision.formOf.lemma}/${revision.formOf.pos}:${revision.formKind}` : '',
           ...inflectionCells(sense.entry.inflections, sense.entry.inflectionsReviewedAt),

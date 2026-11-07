@@ -1,11 +1,14 @@
 import { z } from 'zod';
 import { normalizeText } from '../catalog/normalize.js';
 import { LEMMA_MAX, LEVELS, MEANING_MAX, PRIVATE_EXAMPLES_MAX, SENTENCE_MAX, VALID_POS } from '../content.constants.js';
+import { IPA_MAX_LENGTH, normalizeIpa } from '../senses/ipa.js';
 
 /** NFC + trim, then 1..max code points (Review Focus 3: an emoji counts once). */
 export const boundedText = (max: number) => z.string().transform(normalizeText)
   .refine((value) => !value.includes('\0') && [...value].length >= 1 && [...value].length <= max);
 const uuid = z.uuid().transform((value) => value.toLowerCase());
+/** The learner's own pronunciation note (round C, H10): slashes dropped, at most 100 characters, empty = none. */
+export const ownIpa = z.string().transform(normalizeIpa).refine((value) => !value.includes('\0') && [...value].length <= IPA_MAX_LENGTH);
 
 export const myWordParams = z.strictObject({ id: uuid });
 export const myWordPatch = z.strictObject({
@@ -15,7 +18,8 @@ export const myWordPatch = z.strictObject({
   senses: z.array(z.strictObject({
     sense_id: uuid, meaning: boundedText(MEANING_MAX).optional(),
     examples: z.array(boundedText(SENTENCE_MAX)).max(PRIVATE_EXAMPLES_MAX).optional(),
-  }).refine((sense) => sense.meaning !== undefined || sense.examples !== undefined)).min(1).max(100).optional(),
+    ipa: ownIpa.nullable().optional(),
+  }).refine((sense) => sense.meaning !== undefined || sense.examples !== undefined || sense.ipa !== undefined)).min(1).max(100).optional(),
   level: z.enum(LEVELS).nullable().optional(),
   topics: z.array(z.string().transform((value) => normalizeText(value).toLowerCase())
     .pipe(z.string().min(1).regex(/^[a-z0-9-]+$/))).max(20).optional(),

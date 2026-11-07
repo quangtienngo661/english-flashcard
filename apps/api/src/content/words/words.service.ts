@@ -18,6 +18,13 @@ export type WordSense = {
   form_of: { entry_id: string; lemma: string; pos: string; kind: InflectionKind } | null;
   /** The live revision came from an AI suggestion the learner saved and has not edited since (Bước 7 design §11.2). */
   ai_suggested: boolean;
+  /**
+   * Round C (H9): the transcription without slashes (UK and US of the catalog, `custom` = the learner's note on a private word) and the
+   * URL of the pre-made recording when its file is ready; `audio` stays null until then.
+   */
+  pronunciation: {
+    uk: string | null; us: string | null; custom: string | null; audio: { uk: string | null; us: string | null };
+  };
 };
 /** A sense on the word page (`GET /words/{lemma}`): adds the viewer's saved-sentence count (API (e)). */
 export type WordPageSense = WordSense & { sentence_count: number };
@@ -26,7 +33,8 @@ export type WordListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string; mine?: boolean;
 };
 export type WordRow = { lemma: string; pos_list: string[]; level: Level | null; meaning_preview: string; has_private: boolean };
-type SenseRow = Omit<WordSense, 'meaning' | 'form_of'> & {
+type SenseRow = Omit<WordSense, 'meaning' | 'form_of' | 'pronunciation'> & {
+  ipa_uk: string | null; ipa_us: string | null; ipa_custom: string | null;
   gloss_vi: string | null; form_of_entry_id: string | null; form_kind: InflectionKind | null;
   form_lemma: string | null; form_pos: string | null;
 };
@@ -76,6 +84,7 @@ function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
     form_of: row.form_of_entry_id && row.form_kind && row.form_lemma && row.form_pos
       ? { entry_id: row.form_of_entry_id, lemma: row.form_lemma, pos: row.form_pos, kind: row.form_kind } : null,
     ai_suggested: row.ai_suggested,
+    pronunciation: { uk: row.ipa_uk, us: row.ipa_us, custom: row.ipa_custom, audio: { uk: null, us: null } },
   };
 }
 
@@ -100,7 +109,7 @@ export class WordsService {
         displayed.level, r.examples, gloss.text AS gloss_vi, definition.text AS definition_en,
         COALESCE(topics.items, '[]'::jsonb) AS topics,
         r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos,
-        r.draft_source = 'ai_suggestion' AS ai_suggested
+        r.draft_source = 'ai_suggestion' AS ai_suggested, r.ipa_uk, r.ipa_us, r.ipa_custom
       FROM ${from}
       JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
       LEFT JOIN LATERAL (${displayedLevel}) displayed ON true

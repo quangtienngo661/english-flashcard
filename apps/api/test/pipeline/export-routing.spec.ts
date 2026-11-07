@@ -14,7 +14,7 @@ import { SensesExportController } from '../../src/content-pipeline/export/senses
 const id = '12345678-abcd-4abc-8abc-123456789abc';
 const row: ExportRow = {
   headword: 'analyze/analyse', pos: 'verb', gloss_vi: '=HYPERLINK("x")', definition_en: 'Analyze.',
-  example_en_1: 'Analyze this.', example_en_2: '', example_en_3: '', topics: 'business', accepted_forms: '',
+  example_en_1: 'Analyze this.', example_en_2: '', example_en_3: '', topics: 'business', accepted_forms: '', ipa_uk: '', ipa_us: '', ipa_source_id: '',
   context_label: null, form_of: '', inflections: '', sense_id: id, revision: 2, _status: 'draft', _level: 'B1', _inflections: '',
 };
 
@@ -58,6 +58,16 @@ describe('export controller routing (unit, no infrastructure)', () => {
     expect(detail.body).toEqual({ sense_id: id });
     expect((await http.get('/v1/admin/content/senses/bad-id')).status).toBe(404);
     expect((await http.get('/v1/admin/content/senses/zzzzzzzz-abcd-4abc-8abc-123456789abc')).status).toBe(400);
+  });
+
+  it('round C (H15): the sense export has the three transcription columns, filled from the row, right after accepted_forms', async () => {
+    const http = await start({ rows: [{ ...row, ipa_uk: 'lɛd', ipa_us: 'liːd', ipa_source_id: id }] });
+    const exported = await http.get('/v1/admin/content/senses/export');
+    const [header, line] = exported.text.replaceAll(String.fromCharCode(13), '').split(String.fromCharCode(10));
+    const columns = header.split(',');
+    expect(columns.slice(columns.indexOf('accepted_forms'), columns.indexOf('accepted_forms') + 4))
+      .toEqual(['accepted_forms', 'ipa_uk', 'ipa_us', 'ipa_source_id']);
+    expect(line).toContain(`lɛd,liːd,${id}`);
   });
 
   it('B2#55 (stream): oversize returns intact Problem Details before attachment headers or CSV bytes', async () => {

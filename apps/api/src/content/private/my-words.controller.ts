@@ -46,8 +46,8 @@ export class MyWordsController {
   ): Promise<void> {
     await privateWordProblems(() => this.prisma.$transaction((tx) => this.words.updatePrivateWord(tx, learner.userId, params.id, {
       lemma: body.lemma, pos: body.pos, level: body.level, topicCodes: body.topics,
-      senses: body.senses?.map(({ sense_id, meaning, examples }) => ({
-        senseId: sense_id, meaning: meaning === undefined ? undefined : { text: meaning, language: learner.nativeLanguage }, examples,
+      senses: body.senses?.map(({ sense_id, meaning, examples, ipa }) => ({
+        senseId: sense_id, meaning: meaning === undefined ? undefined : { text: meaning, language: learner.nativeLanguage }, examples, ipa,
       })),
     }), transactionOptions));
   }
