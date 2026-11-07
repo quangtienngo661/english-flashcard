@@ -1023,7 +1023,9 @@
         "example": "Example {n, number}",
         "addExample": "+ Add an example",
         "exampleHint": "Up to 300 characters each.",
-        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples."
+        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples.",
+        "ipa": "Pronunciation",
+        "ipaHint": "Optional."
       },
       "recognizedShort": "{kind} of {base}",
       "lockedDeck": "Saving to deck: {name}",

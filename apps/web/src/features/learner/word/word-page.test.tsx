@@ -174,15 +174,46 @@ describe('WordPage (K/31–K/33, M/41)', () => {
   });
 });
 
+describe('WordPage IPA (đợt C §5.3, DC13)', () => {
+  const p = (uk: string | null, us: string | null) => ({ uk, us, custom: null, audio: { uk: null, us: null } });
+  const LEAD = {
+    lemma: 'lead', inflections: [],
+    sections: [
+      { pos: 'noun', senses: [
+        sense(11, 'noun', 'vị trí dẫn đầu', { lemma: 'lead', pronunciation: p('liːd', 'liːd') }),
+        sense(12, 'noun', 'chì (kim loại)', { lemma: 'lead', pronunciation: p('led', 'led') }),
+      ] },
+      { pos: 'verb', senses: [sense(13, 'verb', 'dẫn đường', { lemma: 'lead', pronunciation: p('liːd', 'liːd') })] },
+    ],
+  };
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('each part-of-speech block shows its reading once; the metal sense shows its own /led/ under its meaning', async () => {
+    installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
+    nav.params = new URLSearchParams({ w: 'lead' });
+    renderApp(<WordPage />, { routes: routes({ 'GET /v1/words/lead': () => Response.json(LEAD) }) });
+    const noun = await screen.findByRole('group', { name: 'noun' });
+    expect(within(noun).getAllByText('/liːd/')).toHaveLength(2);
+    const metal = screen.getAllByRole('article').find((a) => a.textContent?.includes('chì (kim loại)'))!;
+    expect(within(metal).getAllByText('/led/')).toHaveLength(2);
+    const first = screen.getAllByRole('article').find((a) => a.textContent?.includes('vị trí dẫn đầu'))!;
+    expect(within(first).queryByText('/liːd/')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: 'verb' })).getAllByText('/liːd/')).toHaveLength(2);
+  });
+});
+
 describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('A1-5: the speaker icon by the word (US voice) and a button by the example; saved sentences only with a local US voice', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US', false)]);
     renderApp(<WordPage />, { routes: routes() });
-    const head = (await screen.findByRole('heading', { level: 1, name: 'left' })).parentElement!;
-    await userEvent.click(within(head).getByRole('button', { name: 'Nghe phát âm' }));
+    // Đợt C §5.3: the speakers moved from the head to each part-of-speech block (UK and US).
+    const adjectiveBlock = await screen.findByRole('group', { name: 'adjective' });
+    await userEvent.click(within(adjectiveBlock).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'left', lang: 'en-US' }));
+    const head = screen.getByRole('heading', { level: 1, name: 'left' }).parentElement!;
+    expect(within(head).queryByRole('button')).not.toBeInTheDocument();
     const adjective = screen.getAllByRole('article')[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Nghe câu' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left 1.', lang: 'en-US' }));
