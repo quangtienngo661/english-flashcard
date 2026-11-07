@@ -46,6 +46,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
+    "@aws-sdk/client-s3": "3.1156.0",
+    "@google-cloud/text-to-speech": "7.2.0",
     "@nestjs/common": "^12.3.0",
     "@nestjs/core": "^12.3.0",
     "@nestjs/platform-express": "^12.3.0",

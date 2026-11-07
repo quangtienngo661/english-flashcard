@@ -48,13 +48,33 @@ describe('GroupListPage (K/16, K/16b)', () => {
     // Control: the deck beside it has words and is done for today, so it still offers to study again.
     const done = screen.getByRole('link', { name: 'Nhóm 2' }).closest('li')!;
     expect(within(done).getByText('Xong hôm nay')).toBeInTheDocument();
-    expect(within(done).getByRole('link', { name: 'Học lại cả nhóm' })).toHaveAttribute('href', '/vi/app/review?group=g2&mode=all');
+    expect(within(done).getByRole('link', { name: 'Ôn tập' })).toHaveAttribute('href', '/vi/app/recall?group=g2');
     await userEvent.click(within(card).getByRole('button', { name: 'Tùy chọn nhóm test 1' }));
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
     await userEvent.click(within(card).getByRole('button', { name: 'Thêm từ' }));
     expect(await screen.findByText('Lưu vào nhóm: test 1', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('đợt C §4.1: the buttons follow what waits today; none shows a count', async () => {
+    const levels = (l: number[]) => l.map((total, level) => ({ level, total, due: 0 }));
+    const both = { ...deck(1, 4), name: 'Du lịch', today: { priority: 1, due: 3, new: 5 } };
+    const dueOnly = { ...deck(2, 4), name: 'Công việc' };
+    const newOnly = { ...deck(3, 0), name: 'Ẩm thực', total: 12, today: { priority: 0, due: 0, new: 12 }, cells: levels([12, 0, 0, 0, 0, 0]) };
+    const mastered = { ...deck(4, 0), name: 'IELTS', total: 120, cells: levels([10, 20, 20, 23, 30, 17]) };
+    renderApp(<GroupListPage />, { routes: withGroups([both, dueOnly, newOnly, mastered]) });
+    const card = async (name: string) => (await screen.findByRole('link', { name })).closest('li')!;
+    const links = (li: HTMLElement) => within(li).getAllByRole('link').slice(1).map((a) => [a.textContent, a.getAttribute('href')]);
+    expect(links(await card('Du lịch'))).toEqual([['Học', '/vi/app/review?group=g1&mode=new'], ['Ôn', '/vi/app/recall?group=g1']]);
+    expect(links(await card('Công việc'))).toEqual([['Học', '/vi/app/review?group=g2&mode=all'], ['Ôn', '/vi/app/recall?group=g2']]);
+    expect(links(await card('Ẩm thực'))).toEqual([['Học', '/vi/app/review?group=g3&mode=new']]);
+    const done = await card('IELTS');
+    expect(links(done)).toEqual([['Ôn tập', '/vi/app/recall?group=g4']]);
+    expect(within(done).getByText('Xong hôm nay')).toBeInTheDocument();
+    // DC11: words at stage 4 or 5 (30 + 17) are "đã thuộc".
+    expect(within(done).getByText('120 từ · 47 đã thuộc')).toBeInTheDocument();
+    expect(within(await card('Ẩm thực')).getByText('12 từ')).toBeInTheDocument();
   });
 
   it('filter "Xong hôm nay" leaves out an empty deck; "Tất cả" keeps it', async () => {

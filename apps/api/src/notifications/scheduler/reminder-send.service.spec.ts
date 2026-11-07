@@ -14,7 +14,7 @@ const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
 const DATA: ReminderSendData = { userId: USER, localDate: '2026-10-29', kind: 'regular', language: 'vi' };
 const smtp = (fields: Record<string, unknown>) => Object.assign(new Error('smtp'), fields);
 
-function setup(send: NotificationProvider['send']) {
+function setup(send: NotificationProvider['send'], streak: { days: number; studiedToday: boolean } = { days: 0, studiedToday: false }) {
   const rows = new Map<string, { state: string }>();
   const logs: LogEntry[] = [];
   const reminderDelivery = {
@@ -28,7 +28,7 @@ function setup(send: NotificationProvider['send']) {
     { reminderDelivery } as unknown as PrismaClient,
     new FakeClock(new Date('2026-10-29T03:00:00Z')), // 10:00 on 2026-10-29 in Asia/Saigon
     { choose: async () => [provider] } as unknown as ChannelChooser,
-    { cardsLeftToday: async () => new Map([[USER, 5]]) } as unknown as LearningService,
+    { cardsLeftToday: async () => new Map([[USER, 5]]), streakAsOf: vi.fn(async () => streak) } as unknown as LearningService,
     { getProfile: async () => ({ timezone: 'Asia/Saigon' }) } as unknown as IdentityService,
     {} as ReminderQueueService,
     new AppLogger({ write: (entry) => logs.push(entry) }),
@@ -79,5 +79,33 @@ describe('ReminderSendService.send (design 8.3, D37)', () => {
     const t = setup(async () => { throw smtp({ responseCode: 550 }); });
     await expect(t.service.send(DATA, attempt)).rejects.toBeInstanceOf(UnrecoverableError);
     expect(t.rows.get('row')).toEqual({ state: 'failed' });
+  });
+});
+
+describe('ReminderSendService.send — the streak line (round C, DC29)', () => {
+  const attempt = { lastAttempt: false };
+
+  it('a streak of 12 and nothing studied today → the provider is given streakDays 12', async () => {
+    const t = setup(async () => 'sent', { days: 12, studiedToday: false });
+    await t.service.send(DATA, attempt);
+    expect(t.provider.send).toHaveBeenCalledExactlyOnceWith(USER, { kind: 'regular', language: 'vi', streakDays: 12 });
+  });
+
+  it('a streak of 1 is not worth a line → null', async () => {
+    const t = setup(async () => 'sent', { days: 1, studiedToday: false });
+    await t.service.send(DATA, attempt);
+    expect(t.provider.send).toHaveBeenCalledExactlyOnceWith(USER, { kind: 'regular', language: 'vi', streakDays: null });
+  });
+
+  it('a streak of 2 → 2', async () => {
+    const t = setup(async () => 'sent', { days: 2, studiedToday: false });
+    await t.service.send(DATA, attempt);
+    expect(vi.mocked(t.provider.send).mock.calls[0][1]).toMatchObject({ streakDays: 2 });
+  });
+
+  it('already studied today (a few cards left) → null: the streak is safe', async () => {
+    const t = setup(async () => 'sent', { days: 12, studiedToday: true });
+    await t.service.send(DATA, attempt);
+    expect(vi.mocked(t.provider.send).mock.calls[0][1]).toMatchObject({ streakDays: null });
   });
 });

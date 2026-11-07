@@ -19,6 +19,10 @@ const contentColumns = new Set([
   'topics',
   'accepted_forms',
   'form_of',
+  // Round C (H15): transcription; an empty cell keeps the stored value, "-" clears it.
+  'ipa_uk',
+  'ipa_us',
+  'ipa_source_id',
 ]);
 const extraColumns = new Set([
   'coreinventory 1',

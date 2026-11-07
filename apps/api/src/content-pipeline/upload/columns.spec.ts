@@ -158,3 +158,13 @@ describe('classifyColumns', () => {
     expect(classifyColumns(['lemma', 'lemma'])).toEqual(emptyClassification);
   });
 });
+
+describe('classifyColumns — ipa (round C)', () => {
+  it('the three transcription columns are content columns, in header order, and raise no warning', () => {
+    const result = classifyColumns(['sense_id', 'revision', 'ipa_us', 'ipa_uk', 'ipa_source_id']);
+    expect(result.contentColumns).toEqual(['ipa_us', 'ipa_uk', 'ipa_source_id']);
+    expect(result.unknownColumns).toEqual([]);
+    expect(result.problems).toEqual([]);
+  });
+});
+

@@ -18,7 +18,7 @@ function setup() {
 describe('LearningService.recordActivity (the façade Practice writes a learning day through)', () => {
   it("uses the caller's transaction when given one, and not the shared client", async () => {
     const { service, tx, clientRows, txRows } = setup();
-    await service.recordActivity('u1', '2026-10-20', tx);
+    await service.recordActivity('u1', '2026-10-20', { studied: false }, tx);
     expect(txRows).toHaveBeenCalledExactlyOnceWith({
       data: [{ userId: 'u1', localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
     });
@@ -27,7 +27,7 @@ describe('LearningService.recordActivity (the façade Practice writes a learning
 
   it('falls back to the shared client without one', async () => {
     const { service, clientRows, txRows } = setup();
-    await service.recordActivity('u1', '2026-10-20');
+    await service.recordActivity('u1', '2026-10-20', { studied: false });
     expect(clientRows).toHaveBeenCalledExactlyOnceWith({
       data: [{ userId: 'u1', localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
     });

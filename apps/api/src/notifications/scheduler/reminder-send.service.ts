@@ -53,6 +53,10 @@ export class ReminderSendService implements OnModuleInit {
     if (!provider) return skipped('reminders-off');
     // The learner may have finished today's cards since the tick (D27).
     if (!(await this.learning.cardsLeftToday([{ userId, today: localDate }])).has(userId)) return skipped('no-cards-left');
+    // The streak line (round C, DC29): only for a streak of 2 or more that today has not yet kept. The mail is sent exactly when it
+    // was before; this only adds a line to it.
+    const streak = await this.learning.streakAsOf(userId, localDate);
+    const streakDays = !streak.studiedToday && streak.days >= 2 ? streak.days : null;
 
     try {
       await this.prisma.reminderDelivery.create({ data: { userId, localDate: dateValue(localDate), kind, state: 'sending' } });
@@ -63,7 +67,7 @@ export class ReminderSendService implements OnModuleInit {
 
     let outcome;
     try {
-      outcome = await provider.send(userId, { kind, language });
+      outcome = await provider.send(userId, { kind, language, streakDays });
     } catch (error) {
       // A NotSentError means the mailer was never called (B3-3): certainly not delivered, like a 4xx.
       const notSent = error instanceof NotSentError;

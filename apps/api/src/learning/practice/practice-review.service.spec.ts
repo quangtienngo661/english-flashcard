@@ -53,7 +53,11 @@ function writing(at: string, learning: string[], stored: string[] = []) {
       })),
       update: vi.fn(async () => { events.push('update'); }),
     },
-    learningActivityDay: { createMany: vi.fn(async () => { events.push('activity'); return { count: 1 }; }) },
+    learningActivityDay: {
+      // A study day flips the row with an update first (round C); the insert is only for a day with no row yet.
+      updateMany: vi.fn(async (_args: unknown) => { events.push('activity'); return { count: 1 }; }),
+      createMany: vi.fn(async () => ({ count: 1 })),
+    },
   };
   const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) };
   const service = new PracticeReviewService(
@@ -70,8 +74,8 @@ describe('PracticeReviewService.review — records a learning activity day (nhó
       { senseId, action: 'review', reviewId }, { senseId: otherSense, action: 'review', reviewId: otherReview },
     ]);
     expect(outcomes.map(({ outcome }) => outcome)).toEqual(['applied', 'not-in-learning']);
-    expect(rawTx.learningActivityDay.createMany).toHaveBeenCalledExactlyOnceWith({
-      data: [{ userId, localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
+    expect(rawTx.learningActivityDay.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId, localDate: new Date('2026-10-20T00:00:00.000Z'), studied: false }, data: { studied: true },
     });
     expect(events).toEqual(['update', 'log', 'activity']);
   });
@@ -81,7 +85,7 @@ describe('PracticeReviewService.review — records a learning activity day (nhó
     await service.review(tx, userId, [
       { senseId, action: 'review', reviewId }, { senseId: otherSense, action: 'review', reviewId: otherReview },
     ]);
-    expect(rawTx.learningActivityDay.createMany).toHaveBeenCalledOnce();
+    expect(rawTx.learningActivityDay.updateMany).toHaveBeenCalledOnce();
     expect(events).toEqual(['update', 'log', 'update', 'log', 'activity']);
   });
 
@@ -89,7 +93,7 @@ describe('PracticeReviewService.review — records a learning activity day (nhó
     const { service, tx, rawTx, events } = writing('2026-10-19T03:00:00Z', [senseId], [reviewId]);
     const outcomes = await service.review(tx, userId, [{ senseId, action: 'review', reviewId }]);
     expect(outcomes.map(({ outcome }) => outcome)).toEqual(['applied']);
-    expect(rawTx.learningActivityDay.createMany).not.toHaveBeenCalled();
+    expect(rawTx.learningActivityDay.updateMany).not.toHaveBeenCalled();
     expect(events).toEqual([]);
   });
 
@@ -102,12 +106,12 @@ describe('PracticeReviewService.review — records a learning activity day (nhó
       { senseId, action: 'known', reviewId }, { senseId: otherSense, action: 'review', reviewId: otherReview },
     ]);
     expect(outcomes.map(({ outcome }) => outcome)).toEqual(['known-not-allowed', 'not-in-learning']);
-    expect(rawTx.learningActivityDay.createMany).not.toHaveBeenCalled();
+    expect(rawTx.learningActivityDay.updateMany).not.toHaveBeenCalled();
   });
 
   it('no inputs → no statement at all', async () => {
     const { service, tx, rawTx } = writing('2026-10-19T03:00:00Z', []);
     await expect(service.review(tx, userId, [])).resolves.toEqual([]);
-    expect(rawTx.learningActivityDay.createMany).not.toHaveBeenCalled();
+    expect(rawTx.learningActivityDay.updateMany).not.toHaveBeenCalled();
   });
 });

@@ -39,6 +39,7 @@ describe('settings definitions', () => {
       content: { private_words_per_user: 10000, sentences_per_sense: 20 },
       ai: AI_DEFAULTS_API,
       identity: { unverified_cleanup_days: 7 },
+      tts: { daily_char_cap: 120000 },
     });
   });
 
@@ -133,7 +134,7 @@ describe('settings definitions', () => {
 
   it('toApiValues names every new key in snake_case', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
-    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity']);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity', 'tts']);
     expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
     for (const section of Object.values(api)) {
       for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z0-9]+)*$/);
@@ -473,3 +474,27 @@ describe('apiValueOf (M5-T1)', () => {
       .toMatchObject({ freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 });
   });
 });
+
+describe('round C (H14): tts.daily_char_cap', () => {
+  it('defaults to 120000 and is a whole number 0–1000000', () => {
+    expect(SETTINGS_DEFAULTS.tts.dailyCharCap).toBe(120_000);
+    expect(SETTINGS_BOUNDS.tts.daily_char_cap).toEqual({ min: 0, max: 1_000_000 });
+    expect(toApiValues(SETTINGS_DEFAULTS).tts).toEqual({ daily_char_cap: 120_000 });
+    for (const value of [0, 120_000, 1_000_000]) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual([]);
+    for (const value of [-1, 1_000_001, 1.5, null, '5']) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual(['tts.daily_char_cap']);
+  });
+
+  it('JSON stored before it gets the default; a stored value is kept; a stored value out of bounds falls back', () => {
+    expect(withDefaults({}).tts.dailyCharCap).toBe(120_000);
+    expect(withDefaults({ tts: { dailyCharCap: 50_000 } }).tts.dailyCharCap).toBe(50_000);
+    expect(withDefaults({ tts: { dailyCharCap: 2_000_000 } }).tts.dailyCharCap).toBe(120_000);
+  });
+
+  it('a patch applies and its change is in the history diff', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { tts: { daily_char_cap: 0 } });
+    expect(next.tts.dailyCharCap).toBe(0);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'tts.daily_char_cap', oldValue: 120_000, newValue: 0 }]);
+    expect(apiValueOf(next, 'tts.daily_char_cap')).toBe(0);
+  });
+});
+

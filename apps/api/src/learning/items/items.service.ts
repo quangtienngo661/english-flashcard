@@ -244,7 +244,7 @@ export class ItemsService {
       dueAfter: item.dueDate, localDate: dateValue(today), at,
     })) });
     // Last write (nhóm B D39): only when a word was really added; words the learner already had are not a lần học.
-    if (added.length > 0) await recordActivityIn(tx, userId, today);
+    if (added.length > 0) await recordActivityIn(tx, userId, today, { studied: false });
     const bySense = new Map(items.map((item) => [item.senseId, { ...item, created: createdIds.has(item.id) }]));
     return senseIds.map((senseId) => bySense.get(senseId)!);
   }
@@ -259,7 +259,7 @@ export class ItemsService {
       userId, itemId, senseId: item.senseId, groupId, kind: 'item_removed', levelBefore: item.level, dueBefore: item.dueDate,
       localDate: dateValue(day), at,
     } });
-    await recordActivityIn(tx, userId, day);
+    await recordActivityIn(tx, userId, day, { studied: false });
   }
 
   private async profile(userId: string) {

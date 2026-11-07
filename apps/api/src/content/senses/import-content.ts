@@ -1,6 +1,6 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
-import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, type RevisionContent } from './revision-content.js';
+import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, revisionIpa, type RevisionContent } from './revision-content.js';
 import { emptyContent, latestUsableRevision, type SensesService, type TopicLookup } from './senses.service.js';
 
 export type ImportContentResult =
@@ -29,14 +29,14 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
-    ...revisionFormOf(revision),
+    ...revisionFormOf(revision), ...revisionIpa(revision),
   };
 }
 
 function hasContent(content: RevisionContent): boolean {
   return Boolean(content.glossVi?.trim() || content.definitionEn?.trim()
     || content.examplesEn.some((value) => value.trim()) || content.topicCodes.some((value) => value.trim())
-    || content.acceptedForms.some((value) => value.trim()));
+    || content.acceptedForms.some((value) => value.trim()) || Boolean(content.ipaUk || content.ipaUs));
 }
 
 const rejected = (code: RejectionCode): ImportContentResult => ({ kind: 'rejected', codes: [code] });

@@ -64,6 +64,8 @@ export type AppSettings = {
     /** Nhóm B (design §7.1, D26): the most real AI questions one judge run takes, newest first. */
     realJudgeLimit: number;
   };
+  /** Round C (H14, design §5.5): the most characters sent to the speech provider in one UTC day; 0 stops new recordings. */
+  tts: { dailyCharCap: number };
 };
 
 export const SETTINGS_DEFAULTS: AppSettings = {
@@ -87,6 +89,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
   ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100, evalHeldOutRatio: 0.3,
     adminDailyUsdCap: 2, judgeLabelMin: 30, judgeAgreementMin: 0.85, realJudgeLimit: 200 },
+  tts: { dailyCharCap: 120_000 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -156,6 +159,9 @@ export const SETTINGS_BOUNDS = {
     judge_label_min: { min: 10, max: 1000 },
     judge_agreement_min: { min: 0.5, max: 1 },
     real_judge_limit: { min: 1, max: 500 },
+  },
+  tts: {
+    daily_char_cap: { min: 0, max: 1_000_000 },
   },
 } as const;
 
@@ -240,6 +246,9 @@ export const settingsValuesPatchSchema = z.strictObject({
     judge_agreement_min: ratioIn(b.ai.judge_agreement_min).optional(),
     real_judge_limit: intIn(b.ai.real_judge_limit).optional(),
   }).optional(),
+  tts: z.strictObject({
+    daily_char_cap: intIn(b.tts.daily_char_cap).optional(),
+  }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
 
@@ -300,6 +309,7 @@ const FIELDS = [
   ['ai', 'judge_label_min', 'judgeLabelMin'],
   ['ai', 'judge_agreement_min', 'judgeAgreementMin'],
   ['ai', 'real_judge_limit', 'realJudgeLimit'],
+  ['tts', 'daily_char_cap', 'dailyCharCap'],
 ] as const;
 
 type Section = keyof AppSettings;
@@ -310,7 +320,7 @@ const read = (values: AppSettings, section: Section, field: string): AnyValue =>
 
 export function toApiValues(values: AppSettings): Record<Section, Record<string, AnyValue>> {
   const out: Record<Section, Record<string, AnyValue>> = {
-    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {}, ai: {}, identity: {},
+    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {}, ai: {}, identity: {}, tts: {},
   };
   for (const [section, apiKey, field] of FIELDS) out[section][apiKey] = read(values, section, field);
   return out;

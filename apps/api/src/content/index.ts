@@ -18,6 +18,8 @@ export type { EntryUsageModule, EntryUsageProbe, EntryUsageReason, EntryUsageSco
 export { entriesExportQuery, sensesExportQuery, type EntriesExportFilter, type SenseFilter } from './catalog/sense-filters.js';
 export type { EntryExportRow, ExportRow, ScopeRecord } from './catalog/admin-catalog.queries.js';
 export { normalizeText, normalizeLemma, splitHeadword } from './catalog/normalize.js';
+export { ownIpa } from './private/my-words.schemas.js';
+export { normalizeIpa } from './senses/ipa.js';
 export type { SourceView } from './sources/sources.service.js';
 export { ContentRuleError, contentHash, mergeContent, normalizeContent, type FormOf, type RevisionContent } from './senses/revision-content.js';
 export type { PublishItem, PublishItemResult, PublishViolation, QuickPublishResult, SenseStateResult } from './senses/publish.service.js';

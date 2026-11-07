@@ -5,7 +5,7 @@ import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import {
   CurrentLearner, INFLECTION_KINDS, LEMMA_MAX, LEVELS, LearnerContent, MEANING_MAX, PRIVATE_EXAMPLES_MAX, SENTENCE_MAX, VALID_POS,
-  normalizeText,
+  normalizeText, ownIpa,
   type Learner,
 } from '../../content/index.js';
 import { QuickAddService } from './quick-add.service.js';
@@ -29,6 +29,8 @@ export const quickAddBody = z.strictObject({
     // Bước 7 design §11.2 (D22): the examples of an AI suggestion, as the learner edited them, and where the word came from.
     examples: z.array(bounded(SENTENCE_MAX)).max(PRIVATE_EXAMPLES_MAX).optional(),
     ai_suggestion: z.boolean().optional(),
+    // Round C (H10): the learner's own pronunciation note.
+    ipa: ownIpa.nullable().optional(),
   }).optional(),
   sentence: bounded(SENTENCE_MAX).optional(),
 }).refine((body) => (body.sense_id === undefined) !== (body.new_word === undefined));

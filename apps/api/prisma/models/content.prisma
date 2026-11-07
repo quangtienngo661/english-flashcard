@@ -30,6 +30,7 @@ model DataSource {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   levels EntryLevel[]
+  ipaRevisions SenseRevision[] @relation("IpaSource")
 
   @@unique([name, version])
   @@map("data_sources")
@@ -134,9 +135,16 @@ model SenseRevision {
   // "This sense is a form of <entry>" (D29); the link is to the entry, not a sense, so it survives sense replacement.
   formOfEntryId String?   @map("form_of_entry_id") @db.Uuid
   formKind      String?   @map("form_kind")
+  // Round C: UK / US transcription without the slashes; `ipa_source_id` = the data source it came from (null = typed by hand);
+  // `ipa_custom` = the learner's own note on a private word.
+  ipaUk         String?   @map("ipa_uk") @db.VarChar(100)
+  ipaUs         String?   @map("ipa_us") @db.VarChar(100)
+  ipaSourceId   String?   @map("ipa_source_id") @db.Uuid
+  ipaCustom     String?   @map("ipa_custom") @db.VarChar(100)
 
-  sense  Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
-  formOf Entry?              @relation("FormOf", fields: [formOfEntryId], references: [id], onDelete: SetNull)
+  sense     Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
+  formOf    Entry?              @relation("FormOf", fields: [formOfEntryId], references: [id], onDelete: SetNull)
+  ipaSource DataSource?         @relation("IpaSource", fields: [ipaSourceId], references: [id], onDelete: SetNull)
   texts  SenseRevisionText[]
 
   @@unique([senseId, revisionNo])
@@ -204,4 +212,23 @@ model ContextSentence {
 
   @@index([userId, senseId])
   @@map("context_sentences")
+}
+
+// Round C: one pre-made recording (design §5.5). `key` = sha256(voice_name | text | phonemes); the mp3 is at tts/v1/<key>.mp3.
+model SpeechAudio {
+  key       String    @id
+  voice     String
+  voiceName String    @map("voice_name")
+  text      String
+  phonemes  String?
+  status    String    @default("pending")
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  charCount Int?      @map("char_count")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  readyAt   DateTime? @map("ready_at") @db.Timestamptz
+
+  @@index([status, updatedAt])
+  @@map("speech_audio")
 }

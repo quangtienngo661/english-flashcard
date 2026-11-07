@@ -19,6 +19,8 @@ export type RowErrorCode =
   | 'invalid-inflection'
   | 'invalid-form-of'
   | 'form-of-not-found'
-  | 'inflections-differ-in-file';
+  | 'inflections-differ-in-file'
+  | 'ipa-invalid'
+  | 'invalid-ipa-source';
 
 export type RowError = { code: RowErrorCode; message: string };

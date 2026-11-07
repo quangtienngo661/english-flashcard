@@ -23,6 +23,7 @@ import { InflectionsService, type EntryByForm, type InflectionInput, type Inflec
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
 import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
+import { AudioService } from './audio/audio.service.js';
 import { PublishService, type PublishItem, type PublishItemResult, type QuickPublishResult, type SenseStateResult } from './senses/publish.service.js';
 
 @Injectable()
@@ -42,6 +43,7 @@ export class ContentService {
     @Inject(WordFormsService) private readonly wordForms: WordFormsService,
     @Inject(EntryDeleteService) private readonly entryDeletion: EntryDeleteService,
     @Inject(EntryUsageRegistry) private readonly entryUsage: EntryUsageRegistry,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
 
   /** Deletes a catalog entry that was never published and that nothing else refers to; 409 `entry-in-use` with `reasons` otherwise. */
@@ -133,20 +135,35 @@ export class ContentService {
     return this.senses.markRevisions(tx, items, actorId);
   }
 
-  publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
-    return this.publish.publishItem(item, actorId, opts);
+  /** Round C: the recordings are made after the publish has committed, and a failure to queue them never fails the publish. */
+  async publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    const result = await this.publish.publishItem(item, actorId, opts);
+    if (result.outcome === 'published') await this.audio.ensureForSenses([item.senseId]);
+    return result;
   }
 
-  unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
-    return this.publish.unpublish(senseIds, actorId);
+  /** Hiding a sense can change how its siblings are read (`lead` with two readings becomes one), so they are looked at again. */
+  async unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    const results = await this.publish.unpublish(senseIds, actorId);
+    await this.audio.ensureForSenses(results.filter(({ ok }) => ok).map(({ senseId }) => senseId));
+    return results;
   }
 
-  retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
-    return this.publish.retire(senseIds, actorId);
+  async retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    const results = await this.publish.retire(senseIds, actorId);
+    await this.audio.ensureForSenses(results.filter(({ ok }) => ok).map(({ senseId }) => senseId));
+    return results;
   }
 
-  quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
-    return this.publish.quickPublish(input.senseId, input.actorId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+  async quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
+    const result = await this.publish.quickPublish(input.senseId, input.actorId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+    if (result.outcome === 'published') await this.audio.ensureForSenses([input.senseId]);
+    return result;
+  }
+
+  /** Round C: queues the recordings of these senses (and their siblings); call it after the write that changed them has committed. */
+  ensureAudio(senseIds: string[]): Promise<string[]> {
+    return this.audio.ensureForSenses(senseIds);
   }
 
   latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {

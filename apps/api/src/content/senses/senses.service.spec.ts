@@ -114,3 +114,34 @@ describe('SensesService.saveDraft after a rejection (T1)', () => {
     expect(raw.senseRevision.findFirst).not.toHaveBeenCalled();
   });
 });
+
+describe('SensesService.saveDraft — ipa (round C)', () => {
+  const withIpa = { ...usableRev, status: 'draft', ipaUk: 'kæt', ipaUs: null, ipaSourceId: null, ipaCustom: null, contentHash: 'old' };
+
+  it('a save with only { ipaUk } keeps every other field of the base and writes the ipa columns', async () => {
+    const { tx, created } = draftTx(withIpa, null);
+    await save(tx, 1, { ipaUk: 'ˈkæt' });
+    const data = created[0].data as Record<string, unknown> & { texts: { create: Array<{ text: string }> } };
+    expect(data).toMatchObject({ ipaUk: 'ˈkæt', ipaUs: null, ipaSourceId: null, examples: ['A cat sat.'] });
+    expect(data.texts.create.map(({ text }) => text)).toEqual(['con mèo']);
+  });
+
+  it('a save of { ipaUs } keeps the stored ipaUk', async () => {
+    const { tx, created } = draftTx(withIpa, null);
+    await save(tx, 1, { ipaUs: 'kæt' });
+    expect(created[0].data).toMatchObject({ ipaUk: 'kæt', ipaUs: 'kæt' });
+  });
+
+  it('a save that changes nothing in the ipa is unchanged (the hash covers the ipa)', async () => {
+    const hash = contentHash({ glossVi: 'con mèo', definitionEn: null, examplesEn: ['A cat sat.'], topicCodes: [], acceptedForms: [], ipaUk: 'kæt' });
+    const { tx, created } = draftTx({ ...withIpa, contentHash: hash }, null);
+    await expect(save(tx, 1, { ipaUk: '/kæt/' })).resolves.toMatchObject({ changed: false });
+    expect(created).toHaveLength(0);
+  });
+
+  it('a character that is not IPA is refused before anything is written', async () => {
+    const { tx, created } = draftTx(withIpa, null);
+    await expect(save(tx, 1, { ipaUk: 'kæt9' })).rejects.toMatchObject({ code: 'ipa-invalid', extensions: { field: 'ipa_uk', char: '9' } });
+    expect(created).toHaveLength(0);
+  });
+});

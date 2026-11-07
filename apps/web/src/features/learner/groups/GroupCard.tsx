@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Button, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
+import { mastered } from './deck-actions';
+import { DeckButtons } from './DeckButtons';
 import type { GroupSummary } from './groups-api';
 
 /** Cards waiting today in a deck (priority + due + new, already capped by the API). */
@@ -47,16 +49,17 @@ const ACTION =
   'relative z-10 mt-auto flex min-h-control items-center justify-center gap-2 rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft';
 
 /**
- * One deck (K/10, K/16): stage bars, size, name, cards waiting, the review button and the ⋯ menu (K/10b). Owner 06/11/2026: a deck
+ * One deck (K/10, K/16): stage bars, size and words mastered, name, cards waiting, Học · Ôn (đợt C §4.1) and the ⋯ menu (K/10b). Owner 06/11/2026: a deck
  * with no words says "Chưa có từ" and offers [Thêm từ] (locked to it), never "Xong hôm nay" or a study button for 0 words.
  */
 export function GroupCard({ group, index, actions }: { group: GroupSummary; index: number; actions: Actions }) {
   const t = useTranslations('App.groups');
+  const tDeck = useTranslations('App.deck');
   const locale = useLocale();
   const addWord = useAddWord();
   const count = waiting(group);
   const empty = group.total === 0;
-  const review = `/${locale}/app/review?group=${group.id}`;
+  const known = mastered(group);
 
   return (
     // Owner 27/10/2026: the whole card opens the deck (stretched link) and lifts a little on hover; the menu and the review
@@ -69,6 +72,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-caption text-muted">
           {t('words', { count: group.total })}
+          {known > 0 && ` · ${tDeck('mastered', { count: known })}`}
           {group.backlog > 0 && ` · ${t('backlogShort', { count: group.backlog })}`}
         </p>
         <h3 className="break-words text-title font-semibold text-ink">
@@ -90,9 +94,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
             {t('addWord')}
           </button>
         ) : (
-          <Link href={count > 0 ? review : `${review}&mode=all`} data-google-vignette="false" className={ACTION}>
-            {count > 0 ? t('review', { count }) : t('studyAgain')}
-          </Link>
+          <DeckButtons group={group} size="card" className="mt-auto" />
         )}
       </div>
     </li>

@@ -78,6 +78,7 @@ export class ImportRowProcessor {
         const warnings: string[] = [];
         const formOf = await this.resolveFormOf(tx, row);
         if (row.content !== null && !opts.contentApplied) {
+          await this.assertIpaSource(row);
           // JobContext carries lease metadata only. The batch id is its owning job's id.
           const actor = await tx.backgroundJob.findUniqueOrThrow({ where: { id: batch.id }, select: { createdBy: true } });
           const result = await this.content.importContent(tx, {
@@ -147,6 +148,14 @@ export class ImportRowProcessor {
       // In particular, LeaseLostError must reach the existing job runner unchanged.
       throw error;
     }
+  }
+
+  /** A named transcription source must exist (the foreign key would otherwise fail the whole row as a server error). */
+  private async assertIpaSource(row: NormalizedRow): Promise<void> {
+    const id = row.content?.ipaSourceId;
+    if (!id) return;
+    if (!(await this.content.getSource(id))) throw new RowRejected([{ code: 'invalid-ipa-source',
+      message: `Ô "ipa_source_id" trỏ tới nguồn ${JSON.stringify(id)}, nhưng chưa có nguồn dữ liệu này. Tạo nguồn trước hoặc sửa ô.` }]);
   }
 
   /** undefined keeps the sense's link, null clears it; a named base must be a catalog entry. */

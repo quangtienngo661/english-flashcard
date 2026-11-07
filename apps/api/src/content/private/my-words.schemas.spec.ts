@@ -16,3 +16,16 @@ describe('PATCH /v1/my-words body — examples per sense (Bước 7 plan choice 
     expect(myWordPatch.safeParse({ senses: [{ sense_id: SENSE, examples: ['a.', 'b.', 'c.'] }] }).success).toBe(false);
   });
 });
+
+describe('PATCH /v1/my-words body — ipa per sense (round C, H10)', () => {
+  it('ipa alone is a change; an empty string and null clear it; slashes are dropped', () => {
+    expect(myWordPatch.parse({ senses: [{ sense_id: SENSE, ipa: '/ˈfəʊbiə/' }] }).senses).toEqual([{ sense_id: SENSE, ipa: 'ˈfəʊbiə' }]);
+    expect(myWordPatch.parse({ senses: [{ sense_id: SENSE, ipa: '' }] }).senses).toEqual([{ sense_id: SENSE, ipa: '' }]);
+    expect(myWordPatch.parse({ senses: [{ sense_id: SENSE, ipa: null }] }).senses).toEqual([{ sense_id: SENSE, ipa: null }]);
+  });
+
+  it('101 characters → refused; 100 → accepted', () => {
+    expect(myWordPatch.safeParse({ senses: [{ sense_id: SENSE, ipa: 'a'.repeat(101) }] }).success).toBe(false);
+    expect(myWordPatch.safeParse({ senses: [{ sense_id: SENSE, ipa: 'a'.repeat(100) }] }).success).toBe(true);
+  });
+});

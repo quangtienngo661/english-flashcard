@@ -18,7 +18,8 @@ import { showToast } from '@/app-ui/Toast';
 import { useAddWord, useAddWordScope } from '@/features/learner/add-word/add-word-context';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
-import { waiting } from './GroupCard';
+import { mastered } from './deck-actions';
+import { DeckButtons } from './DeckButtons';
 import { useGroupDialogs } from './GroupDialogs';
 import { highlightWord } from './highlight';
 import {
@@ -90,7 +91,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const total = summary?.total ?? detail.item_count;
   // Owner 06/11/2026: a deck with no words leads with [Thêm từ]; no study button for 0 words and no counts that are all 0.
   const empty = total === 0;
-  const count = summary ? waiting(summary) : 0;
+  const known = summary ? mastered(summary) : 0;
   const review = `/${locale}/app/review?group=${detail.id}`;
   const created = format.date(detail.created_at, 'full');
   const filters: Array<{ id: WordFilter; label: string }> = [
@@ -106,7 +107,9 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       <section className="flex min-w-0 flex-col gap-4 rounded-card border border-border bg-surface p-5 lg:col-span-1 lg:self-start">
         <div>
           <h1 className="wrap-anywhere text-h2 font-extrabold text-ink">{detail.name}</h1>
-          <p className="text-caption text-muted">{t('meta', { count: detail.item_count, date: created })}</p>
+          <p className="text-caption text-muted">
+            {known > 0 ? t('metaMastered', { count: detail.item_count, mastered: known, date: created }) : t('meta', { count: detail.item_count, date: created })}
+          </p>
         </div>
         {summary && !empty && (
           <div className="flex flex-wrap gap-2 text-caption font-semibold">
@@ -121,14 +124,10 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
               <Plus aria-hidden className="size-5 shrink-0" />
               {t('addWord')}
             </Button>
-          ) : count > 0 ? (
-            <Link href={review} className="flex min-h-control-touch flex-1 items-center justify-center rounded-inner bg-accent px-4 text-body font-semibold text-on-accent shadow-ledge-accent">
-              {t('review', { count })}
-            </Link>
+          ) : summary ? (
+            <DeckButtons group={summary} className="flex-1" />
           ) : (
-            <Link href={`${review}&mode=all`} className="flex min-h-control-touch flex-1 items-center justify-center rounded-inner bg-accent px-4 text-body font-semibold text-on-accent shadow-ledge-accent">
-              {t('studyAll', { count: detail.item_count })}
-            </Link>
+            <span className="flex-1" />
           )}
           <DeckMenu
             studyAll={`${review}&mode=all`}
