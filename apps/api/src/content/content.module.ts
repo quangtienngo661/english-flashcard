@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
+import { audioStorageProvider } from './audio/audio-storage.provider.js';
+import { DevAudioController } from './audio/dev-audio.controller.js';
 import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
 import { AdminCatalogQueries } from './catalog/admin-catalog.queries.js';
 import { AdminEntriesController, EntryFunctionWordController } from './catalog/admin-entries.controller.js';
@@ -45,11 +47,11 @@ import { WordFormsService } from './word-forms/word-forms.service.js';
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
     AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController, WordsController,
-    AdminWordFormsController, AiLookupController,
+    AdminWordFormsController, AiLookupController, DevAudioController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
     PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
-    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser],
+    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser, audioStorageProvider],
   exports: [ContentService],
 })
 export class ContentModule {}
