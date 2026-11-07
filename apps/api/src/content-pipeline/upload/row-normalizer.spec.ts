@@ -365,3 +365,52 @@ describe('row identity keys', () => {
     expect(contentKey(first).hash).not.toBe(contentKey(second).hash);
   });
 });
+
+// Round C (H15): the transcription columns of the CSV.
+describe('normalizeRow — ipa columns (round C)', () => {
+  const source = '00000000-0000-4000-8000-0000000000bb';
+
+  it('a row with only the ipa cells has a content patch of just those fields (everything else is kept by the merge)', () => {
+    const row = accepted({ ...baseCells, sense_id: senseId, revision: '3', ipa_uk: '/ˈlɛd/', ipa_us: 'lɛd' });
+    expect(row.content).toEqual({ ipaUk: 'ˈlɛd', ipaUs: 'lɛd' });
+    expect(row.content).not.toHaveProperty('glossVi');
+    expect(row.content).not.toHaveProperty('examplesEn');
+  });
+
+  it('an empty cell keeps the stored value: it is not in the patch', () => {
+    expect(accepted({ ...baseCells, ipa_uk: '', ipa_us: 'lɛd' }).content).toEqual({ ipaUs: 'lɛd' });
+    expect(accepted({ ...baseCells, ipa_uk: ' ', ipa_us: '' }).content).toBeNull();
+  });
+
+  it('"-" clears the stored value', () => {
+    expect(accepted({ ...baseCells, ipa_uk: '-', ipa_us: '-' }).content).toEqual({ ipaUk: null, ipaUs: null });
+    expect(accepted({ ...baseCells, ipa_source_id: '-' }).content).toEqual({ ipaSourceId: null });
+  });
+
+  it('ipa_source_id is kept as a lower-case uuid', () => {
+    expect(accepted({ ...baseCells, ipa_uk: 'lɛd', ipa_source_id: source.toUpperCase() }).content).toEqual({ ipaUk: 'lɛd', ipaSourceId: source });
+  });
+
+  it('a source id that is not a uuid is a row error naming the cell', () => {
+    const errors = rejected({ ...baseCells, ipa_uk: 'lɛd', ipa_source_id: 'wiktionary' });
+    expect(errors).toEqual([{ code: 'invalid-ipa-source', message: expect.stringContaining('ipa_source_id') }]);
+    expect(errors[0].message).toContain('"wiktionary"');
+  });
+
+  it('a character that is not IPA is a row error in Vietnamese that names the cell and the character', () => {
+    const errors = rejected({ ...baseCells, ipa_uk: 'lʌg1' });
+    expect(errors).toEqual([{ code: 'ipa-invalid', message: expect.stringContaining('ipa_uk') }]);
+    expect(errors[0].message).toContain('"1"');
+    expect(errors[0].message).toMatch(/Phiên âm/u);
+    expect(rejected({ ...baseCells, ipa_us: 'x2' })[0].message).toContain('ipa_us');
+  });
+
+  it('an ipa of 101 characters is a row error', () => {
+    expect(rejected({ ...baseCells, ipa_uk: 'a'.repeat(101) }).map((e) => e.code)).toEqual(['cell-too-long']);
+  });
+
+  it('the ipa cells combine with the other content cells in one patch', () => {
+    expect(accepted({ ...baseCells, gloss_vi: 'chì', ipa_us: 'lɛd' }).content).toEqual({ glossVi: 'chì', ipaUs: 'lɛd' });
+  });
+});
+

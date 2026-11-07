@@ -4,6 +4,7 @@ import {
   ContentRuleError, INFLECTION_KINDS, LEVELS, MAX_EXAMPLES, normalizeContent, normalizeText,
   OWNER_SOURCE_ID, splitHeadword, VALID_POS, type InflectionKind, type Level, type RevisionContent,
 } from '../../content/index.js';
+import { normalizeIpa } from '../../content/senses/ipa.js';
 import type { RowError } from './row-errors.js';
 
 export type NormalizedRow = {
@@ -76,13 +77,14 @@ function parseFormOf(cell: string): NormalizedRow['formOf'] | RowError {
 
 const contentColumns = [
   'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
-  'topics', 'accepted_forms',
+  'topics', 'accepted_forms', 'ipa_uk', 'ipa_us', 'ipa_source_id',
 ] as const;
 const exampleColumns = ['example_en_1', 'example_en_2', 'example_en_3'] as const;
 const extraColumns = ['coreinventory 1', 'coreinventory 2', 'threshold', 'notes'] as const;
 const uuidSchema = z.uuid();
 const maxLemmaLength = 100;
 const maxCellLength = 2_000;
+const maxIpaLength = 100;
 
 function splitList(value: string): string[] {
   return value.split(';').map((piece) => piece.trim()).filter(Boolean);
@@ -148,6 +150,28 @@ export function normalizeRow(
   }
   delete contentCells.form_of;
   delete contentCells.inflections;
+  // The transcription cells (round C, H15): empty keeps the stored value, "-" clears it. They are 100 characters at most, not 2,000.
+  const ipaPatch: Partial<RevisionContent> = {};
+  for (const [column, key] of [['ipa_uk', 'ipaUk'], ['ipa_us', 'ipaUs']] as const) {
+    const value = (contentCells[column] ?? '').trim();
+    if (!value) continue;
+    if (value === '-') { ipaPatch[key] = null; continue; }
+    if ([...normalizeIpa(value)].length > maxIpaLength) {
+      errors.push({ code: 'cell-too-long',
+        message: `Ô ${JSON.stringify(column)} có ${[...normalizeIpa(value)].length} ký tự; phiên âm tối đa ${maxIpaLength} ký tự.` });
+      continue;
+    }
+    ipaPatch[key] = value;
+  }
+  const rawSource = (contentCells.ipa_source_id ?? '').trim();
+  if (rawSource === '-') ipaPatch.ipaSourceId = null;
+  else if (rawSource) {
+    const parsed = uuidSchema.safeParse(rawSource);
+    if (parsed.success) ipaPatch.ipaSourceId = parsed.data.toLowerCase();
+    else errors.push({ code: 'invalid-ipa-source',
+      message: `Ô "ipa_source_id" có giá trị ${JSON.stringify(rawSource)}, không phải định danh UUID của một nguồn dữ liệu. Để trống để giữ nguyên, ghi "-" để bỏ nguồn.` });
+  }
+  for (const column of ['ipa_uk', 'ipa_us', 'ipa_source_id']) delete contentCells[column];
   const lengthCheckedCells = { ...contentCells };
   if (Object.hasOwn(cells, 'context_label')) lengthCheckedCells.context_label = cells.context_label;
   for (const [column, value] of Object.entries(lengthCheckedCells)) {
@@ -159,8 +183,8 @@ export function normalizeRow(
   }
 
   let content: Partial<RevisionContent> | null = null;
-  if (Object.values(contentCells).some((value) => value.trim())) {
-    const partial: Partial<RevisionContent> = {};
+  if (Object.values(contentCells).some((value) => value.trim()) || Object.keys(ipaPatch).length > 0) {
+    const partial: Partial<RevisionContent> = { ...ipaPatch };
     if (Object.hasOwn(contentCells, 'gloss_vi')) partial.glossVi = contentCells.gloss_vi.trim() ? contentCells.gloss_vi : null;
     if (Object.hasOwn(contentCells, 'definition_en')) partial.definitionEn = contentCells.definition_en.trim() ? contentCells.definition_en : null;
     if (exampleColumns.some((column) => Object.hasOwn(contentCells, column))) {
@@ -171,7 +195,10 @@ export function normalizeRow(
     try {
       content = normalizeContent(partial, lemma);
     } catch (error) {
-      if (error instanceof ContentRuleError && error.code === 'too-many-examples') {
+      if (error instanceof ContentRuleError && error.code === 'ipa-invalid') {
+        errors.push({ code: 'ipa-invalid',
+          message: `Phiên âm ở ô ${JSON.stringify(error.extensions?.field)} có ký tự ${JSON.stringify(error.extensions?.char)} không hợp lệ. Chỉ viết ký hiệu IPA (chữ a-z, ký tự IPA, dấu trọng âm ˈ ˌ, ː), không viết dấu / hai đầu.` });
+      } else if (error instanceof ContentRuleError && error.code === 'too-many-examples') {
         errors.push({ code: 'too-many-examples',
           message: `Các ví dụ ${JSON.stringify(partial.examplesEn)} vượt giới hạn ${MAX_EXAMPLES} câu không trống.` });
       } else {
