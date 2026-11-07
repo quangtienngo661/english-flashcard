@@ -278,20 +278,14 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
       ) : final ? (
         <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
       ) : outcome?.kind === 'try_again' ? (
-        <>
-          <div data-feedback className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4 motion-safe:animate-feedback-in">
-            <p className="text-title font-bold text-danger">{t('wrong')}</p>
-            {/* A session word is spelt right: the spelling text would mislead, and the owner wants no line instead (07/11/2026). */}
-            {outcome.reason !== 'session_word' && <p className="text-ui font-semibold text-ink">{t('tryAgainBody')}</p>}
-          </div>
-          <TryAgainActions
-            onRetry={focusAnswer}
-            onHint={() => nextHint && state.setHintLevel(nextHint)}
-            hintAvailable={nextHint !== undefined}
-            onReveal={() => void state.skip()}
-            busy={state.busy}
-          />
-        </>
+        // Owner 07/11/2026: no box on a try-again. The red field and "Lần N" say it; the live region says "Chưa đúng".
+        <TryAgainActions
+          onRetry={focusAnswer}
+          onHint={() => nextHint && state.setHintLevel(nextHint)}
+          hintAvailable={nextHint !== undefined}
+          onReveal={() => void state.skip()}
+          busy={state.busy}
+        />
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {item.hint_level === 0 && nextHint !== undefined ? (

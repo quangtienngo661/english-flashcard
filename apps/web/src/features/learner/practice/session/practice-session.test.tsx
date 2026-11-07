@@ -202,7 +202,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     fireEvent.keyDown(document.body, { key: 'Enter' });
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1));
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
@@ -211,7 +211,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('server');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1);
     expect(posts(v.calls, '/v1/practice/items/item-5/review')).toHaveLength(0);
@@ -232,10 +232,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.');
-    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
@@ -250,7 +250,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Đúng rồi');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent('Có lỗi xảy ra. Thử lại sau.');
     expect(screen.getByRole('button', { name: /Đã biết/ })).toBeEnabled();
@@ -288,7 +288,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
     await userEvent.type(input, 'cash{Enter}');
-    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
+    expect(await screen.findByText('Lần 1')).toBeInTheDocument();
     expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Câu trả lời' }));
   });
 
@@ -296,7 +296,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     const view_ = renderApp(<PracticeSession />, { routes: routes() });
     await screen.findByText('triển khai');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('Chưa đúng')).toBeInTheDocument();
+    expect(await screen.findByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
+    // No box title on the page (owner, 07/11/2026): the live region still says it for screen readers.
+    expect(screen.queryByText('Chưa đúng')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-live="result"]')).toHaveTextContent('Chưa đúng. deploy · triển khai (phần mềm)');
     const [answer] = posts(view_.calls, '/v1/practice/items/item-4/answer');
     expect(answer.body).toEqual({ choice: 1 });
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
@@ -322,7 +325,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.click(screen.getByRole('button', { name: /1 deploy/ }));
     await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
     release();
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
   });
 
@@ -332,12 +335,12 @@ describe('PracticeSession (K/60–K/67)', () => {
     const card = screen.getByText('triển khai').closest('section')!;
     expect(card).toHaveClass('motion-safe:animate-card-rise');
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     expect(screen.getByRole('button', { name: /2 delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
     expect(screen.getByRole('button', { name: /1 deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
     expect(screen.getByRole('button', { name: /1 deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
-    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
+    expect(screen.getByText('deploy · triển khai (phần mềm)').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
@@ -356,7 +359,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /1 Đúng/ }));
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('server · máy chủ')).toBeInTheDocument();
+    expect(screen.queryByText('Đúng rồi')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /1 Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
     await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
@@ -377,7 +381,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByRole('button', { name: 'Kiểm tra' })).toBeDisabled();
     await userEvent.type(input, 'cash');
     await userEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }));
-    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
+    expect(await screen.findByText('Lần 1')).toBeInTheDocument();
+    // No box on a try-again (owner, 07/11/2026): no line, and "Chưa đúng" only in the live region.
+    expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
+    expect(screen.getByText('Chưa đúng')).toHaveAttribute('data-live', 'result');
     expect(posts(v.calls, '/v1/practice/items/item-6/answer')[0].body).toEqual({ text: 'cash' });
     expect(screen.getByText('Lần 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Làm lại/ })).toBeInTheDocument();
@@ -463,7 +470,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -535,7 +542,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
     await userEvent.type(input, 'cache{Enter}');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('cache · bộ nhớ đệm')).toBeInTheDocument();
     expect(input).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
@@ -562,7 +569,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
     expect(screen.queryByText(/nhờ gợi ý/)).not.toBeInTheDocument();
   });
 
@@ -596,7 +603,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     const keys = posts(v.calls, '/v1/practice/items/item-4/answer').map((c) => c.headers['Idempotency-Key']);
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
@@ -612,14 +619,14 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
     await screen.findByText('triển khai');
     expect(screen.queryByRole('button', { name: 'Nghe phát âm' })).not.toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     const uk = screen.getByRole('button', { name: 'Nghe phát âm' });
     await userEvent.click(uk);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
-    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
   });
 });
 

@@ -1325,7 +1325,6 @@
         "answerPlaceholder": "Type the English word",
         "check": "Check",
         "attempt": "Try {n, number}",
-        "tryAgainBody": "Check the spelling and try again. The answer stays hidden.",
         "alternativeLabel": "Alternative answer",
         "alternativeTyped": "The word you typed",
         "alternativeAsked": "This sentence's word",

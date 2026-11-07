@@ -37,11 +37,11 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   return (
     <div className="flex flex-col gap-3">
       {/* Announced through the session's live region (audit 26/10/2026 #8), so this block is not a second status. */}
-      {/* 3C (owner 27/10/2026): the result rises in. */}
-      <div data-feedback className={cn('flex gap-3 rounded-inner p-4 motion-safe:animate-feedback-in', right ? 'bg-success-soft' : 'bg-danger-soft')}>
+      {/* 3C (owner 27/10/2026): the result rises in. Owner 07/11/2026: no coloured box and no "Đúng rồi"/"Chưa đúng" title; the icon keeps the
+          only mark of right or wrong on a typed answer. */}
+      <div data-feedback className="flex gap-3 motion-safe:animate-feedback-in">
         <Icon aria-hidden className={cn('mt-0.5 size-5 shrink-0', right ? 'text-success' : 'text-danger')} />
         <div className="flex min-w-0 flex-col gap-0.5">
-          <p className={cn('text-title font-bold', right ? 'text-success' : 'text-danger')}>{right ? t('right') : t('wrong')}</p>
           <div className="flex flex-wrap items-center gap-x-2">
             <p className="min-w-0 break-words text-ui font-semibold text-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
             <span className="flex gap-1">

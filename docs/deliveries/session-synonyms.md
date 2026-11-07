@@ -120,6 +120,12 @@ the design as written (§5.5, D13).
   ("Từ bạn gõ", "Từ của câu này"), the word is larger and its meaning sits beside it; the rows lose their border, like the translation block above
   them; the summary's "Trong đó N đáp án thay thế" moves into the "Đúng" tile, under the count it belongs to. Screenshots replaced in
   [`session-synonyms-screens/`](session-synonyms-screens/).
+- No result box and no try-again box (owner, after seeing the screens). A try-again shows only the red field with "Lần 1" and its buttons: no
+  "Chưa đúng" title and no spelling line, whatever the reason. A graded answer keeps the reveal line, speaker and definition with a green tick or a
+  red cross before them, but no coloured box and no "Đúng rồi" / "Chưa đúng" title; the alternative card loses its blue header and its "Đáp án thay
+  thế" title the same way. Screen readers still hear all three words through the live region. The message key `tryAgainBody` is deleted. Applies
+  to every practice question type, not only the AI fill-in. Design §3.1, §3.2, CS3 and CS4 are updated, and so are five expected results in
+  [`giao-dien-nguoi-hoc-test-flow.md`](giao-dien-nguoi-hoc-test-flow.md); screenshots 01 and 02 replaced (02 now shows a try-again, which looks the same for a session word).
 
 ## The owner's steps, in order
 

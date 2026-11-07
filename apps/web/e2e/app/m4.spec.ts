@@ -162,21 +162,23 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByText(vi.session.report.done)).toBeVisible();
     await expect(dialog).toBeHidden();
     await page.keyboard.press('2');
-    await expect(page.getByText(vi.session.wrong, { exact: true })).toBeVisible();
+    // The result has no box title (owner, 07/11/2026): the reveal line shows it.
+    await expect(page.getByText('deploy · triển khai', { exact: true })).toBeVisible();
+    await expect(page.getByText(vi.session.wrong, { exact: true })).toHaveCount(0);
     await page.keyboard.press('Enter');
 
     // True/false, right.
     await expect(page.getByText(vi.session.ask.true_false)).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
     await page.getByRole('button', { name: /1 Đúng/ }).click();
-    await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
+    await expect(page.getByText('server · máy chủ', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Đã biết/ }).click();
 
     // Typing: a miss, then the right word.
     const answer = page.getByRole('textbox', { name: vi.session.answerLabel });
     await answer.fill('cash');
     await page.getByRole('button', { name: vi.session.check }).click();
-    await expect(page.getByText(vi.session.tryAgainBody)).toBeVisible();
+    await expect(page.getByText('Lần 1', { exact: true })).toBeVisible();
     await answer.fill('cache');
     await answer.press('Enter');
     await expect(page.getByText('cache · bộ nhớ đệm', { exact: true })).toBeVisible();
@@ -188,7 +190,7 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByRole('textbox', { name: vi.session.answerLabel })).toBeVisible();
     await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('cache');
     await page.keyboard.press('Enter');
-    await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
+    await expect(page.getByText('cache · bộ nhớ đệm', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Đã biết/ }).click();
     await expect(page.getByRole('heading', { name: 'Xong 4 câu.' })).toBeVisible();
     await page.getByRole('list', { name: /Cần ôn lại · 1 từ/ }).getByRole('button', { name: vi.session.summary.review }).click();
@@ -354,10 +356,10 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.goto('/vi/app/practice/session');
   await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
   await page.keyboard.press('1');
-  await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
+  await expect(page.getByText('deploy · triển khai', { exact: true })).toBeVisible();
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: /1 Đúng/ }).click();
-  await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
+  await expect(page.getByText('server · máy chủ', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Đã biết/ }).click();
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));
   await noSideScroll(page, 'typed answer');

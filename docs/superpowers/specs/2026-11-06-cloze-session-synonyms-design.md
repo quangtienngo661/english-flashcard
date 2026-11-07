@@ -38,7 +38,8 @@ Goals:
 
 Non-goals:
 - Words outside the session: unchanged. Lan typing `important` (not in her session) still gets "Not quite" and a retry, and the
-  existing message "Check the spelling and try again. The answer stays hidden." stays as it is (owner, 06/11/2026).
+  existing message "Check the spelling and try again. The answer stays hidden." stays as it is (owner, 06/11/2026). *After the build
+  (owner, 07/11/2026) every try-again lost its box and that line too; see §3.1.*
 - No synonym dictionary and no synonym marking when a word is added to a deck (rejected: the app has no synonym data).
 - Only AI fill-in questions declare alternatives. The non-AI typed questions (Bước 4 `type_word`, and the fill-in built from the
   learner's own saved sentence, `own_sentence`) never give an "Alternative answer"; they do get the session-word message, and the
@@ -66,10 +67,10 @@ the older `{ first_letter, length }` shape (`LegacyLetters` in `HintPanel.tsx`) 
 
 | Lan types | Result | Screen |
 |---|---|---|
-| `vital` | Right | Today's "Right" screen, unchanged. |
+| `vital` | Right | Today's "Right" screen, unchanged. After the build (owner, 07/11/2026) no result has a coloured box or a "Right" / "Not quite" title: a green tick or red cross stands before the reveal line, and screen readers still hear the word. |
 | `crucial` (in her session, declared) | **Alternative answer** | See 3.2. |
-| `habit` (in her session, not declared) | Try again | ~~New message: "That's another word from this session. Try again."~~ Only "Not quite", with no line under it (owner, 07/11/2026, after the build). |
-| `important` (not in her session) | Try again | Unchanged: "Not quite. Check the spelling and try again. The answer stays hidden." |
+| `habit` (in her session, not declared) | Try again | ~~New message: "That's another word from this session. Try again."~~ No box and no line: the red field and "Try 1" show it; "Not quite" is read to screen readers only (owner, 07/11/2026, after the build). |
+| `important` (not in her session) | Try again | ~~Unchanged: "Not quite. Check the spelling and try again. The answer stays hidden."~~ The same as `habit` (owner, 07/11/2026, after the build). |
 
 **Order of matching a typed answer** (Practice, at grading):
 1. It matches this question's accepted answers (`answerKey.accepted`) → Right. This is today's rule, unchanged: for an AI fill-in,
@@ -112,7 +113,9 @@ Two cases this order settles:
 
 ### 3.2 The "Alternative answer" card
 
-Mock-up approved by the owner in chat (06/11/2026); the speaker and the translation box are kept from today's card (review R29):
+Mock-up approved by the owner in chat (06/11/2026); the speaker and the translation box are kept from today's card (review R29).
+After the build (owner, 07/11/2026) the card lost its coloured header and the "Alternative answer" label, like every result; a blue
+tick stands before the sentence, and screen readers still hear "Alternative answer".
 
 ```
 Sleep is ___ for good health.
@@ -407,8 +410,8 @@ with `accepted_answers: [vital]` and `also_accepted: [crucial]`.
 |---|---|---|
 | CS1 | When Lan types `vital` into the `vital` sentence, then she gets Right and today's card. | §3.1 |
 | CS2 | When Lan types `crucial` into the `vital` sentence, then she gets the "Alternative answer" card with a `crucial` row and a `vital` row, `crucial` gets a right answer in its stats and `vital` gets nothing. | D3–D6, §4.1 |
-| CS3 | When Lan types `habit` into the `vital` sentence, then she gets a try-again that says only "Not quite" (no spelling line; owner, 07/11/2026, replaced "That's another word from this session. Try again.") and no word gets credit. | D14 |
-| CS4 | When Lan types `important` into the `vital` sentence, then she gets today's "Not quite. Check the spelling and try again." | D1, D10 |
+| CS3 | When Lan types `habit` into the `vital` sentence, then she gets a try-again with no box and no line, "Not quite" read to screen readers only (owner, 07/11/2026, replaced "That's another word from this session. Try again."), and no word gets credit. | D14 |
+| CS4 | When Lan types `important` into the `vital` sentence, then she gets ~~today's "Not quite. Check the spelling and try again."~~ the same try-again as CS3 (owner, 07/11/2026, after the build). | D1, D10 |
 | CS5 | When Lan presses Enter, `1` or `2` on the alternative card, then nothing changes and the card stays. | D7, R1 |
 | CS6 | When Lan presses Know in the `crucial` row, then only `crucial`'s schedule changes and the `vital` row's buttons stay available. | D6 |
 | CS7 | When a review call for an alternative item names no word, or a word that is not one of its two, then it is refused with 409 and nothing changes. | R1 |

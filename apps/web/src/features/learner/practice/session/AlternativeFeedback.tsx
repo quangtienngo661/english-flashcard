@@ -28,10 +28,10 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
   const [before, after] = at < 0 ? [sentence, ''] : [sentence.slice(0, at), sentence.slice(at + BLANK.length)];
   return (
     <div className="flex flex-col gap-3">
-      <div data-feedback className="flex gap-3 rounded-inner bg-primary-soft p-4 motion-safe:animate-feedback-in">
+      {/* Owner 07/11/2026: no coloured box and no "Đáp án thay thế" title, as on the plain result; the live region still says it. */}
+      <div data-feedback className="flex gap-3 motion-safe:animate-feedback-in">
         <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-title font-bold text-primary">{t('alternativeLabel')}</p>
           <p className="break-words text-pretty text-ui text-ink">
             {before}
             <strong className="font-extrabold">{result.correct.text}</strong>
