@@ -42,7 +42,7 @@ describe('TtsWorkerService.run (round C, design §5.5)', () => {
   it('registers itself as the queue handler', () => {
     const t = setup();
     t.service.onModuleInit();
-    expect(t.queue.setHandler).toHaveBeenCalledTimes(1);
+    expect(t.queue.setHandler).toHaveBeenCalledExactlyOnceWith('speak', expect.any(Function));
   });
 
   it('pending → synthesize → store the file under tts/v1/<key>.mp3 → ready with the time and the character count', async () => {

@@ -12,6 +12,7 @@ import { writeCatalogEntry } from '../catalog/write-entry.js';
 import { VALID_POS } from '../content.constants.js';
 import { ContentService } from '../content.service.js';
 import { generateInflections } from '../inflections/inflect.js';
+import { AudioService } from '../audio/audio.service.js';
 import { cell, contentSchema, toContent } from './content-body.js';
 import { ContentRuleError } from './revision-content.js';
 
@@ -55,6 +56,7 @@ export class AdminSensesController {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(ContentService) private readonly content: ContentService,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
 
   @Post()
@@ -83,6 +85,16 @@ export class AdminSensesController {
       });
       return { sense_id: params.id, revision: result.revisionNo, dropped_topics: result.droppedTopics };
     }));
+  }
+
+  /** H13 (round C): the failed recordings of a catalog sense go back to pending. 202: the work is done by the worker. */
+  @Post(':id/audio/retry')
+  @HttpCode(202)
+  @RateLimit('user.write')
+  async retryAudio(@Param({ schema: senseParamsSchema }) params: z.infer<typeof senseParamsSchema>) {
+    const sense = await this.prisma.sense.findFirst({ where: { id: params.id, entry: { scope: 'catalog' } }, select: { id: true } });
+    if (!sense) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
+    return { retried: await this.audio.retryForSense(params.id) };
   }
 
   @Post('review')

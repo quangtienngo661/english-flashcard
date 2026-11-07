@@ -1,6 +1,7 @@
 import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
 import { z } from 'zod';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
+import { AudioService } from '../audio/audio.service.js';
 import { LEVELS } from '../content.constants.js';
 import { AdminCatalogQueries } from './admin-catalog.queries.js';
 import { normalizeText } from './normalize.js';
@@ -29,7 +30,10 @@ const sensePathParams = z.strictObject({
 @Controller('admin/content')
 @RequirePermission('content.edit')
 export class AdminCatalogController {
-  constructor(@Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries) {}
+  constructor(
+    @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
+    @Inject(AudioService) private readonly audio: AudioService,
+  ) {}
 
   @Get('entries')
   listEntries(@Query({ schema: entriesQuery }) query: z.infer<typeof entriesQuery>) {
@@ -44,7 +48,9 @@ export class AdminCatalogController {
   // Express 5 rejects inline param regexes. Literal UUID hyphens exclude 'export' at
   // routing time, independent of module order; the schema checks hex lengths and z.uuid().
   @Get('senses/:id8-:id4a-:id4b-:id4c-:id12')
-  getSense(@Param({ schema: sensePathParams }) params: z.infer<typeof sensePathParams>) {
-    return this.queries.getSense(params.id);
+  async getSense(@Param({ schema: sensePathParams }) params: z.infer<typeof sensePathParams>) {
+    const view = await this.queries.getSense(params.id);
+    // Round C (H12): the state of the UK and US recordings; null for a voice with none, and for a sense that is not on show.
+    return { ...view, audio: await this.audio.statesForSense(params.id) };
   }
 }

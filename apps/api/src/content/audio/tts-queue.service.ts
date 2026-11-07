@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
-import { DelayedError, Queue, Worker } from 'bullmq';
+import { DelayedError, type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
@@ -10,6 +10,12 @@ export const TTS_CONCURRENCY = 4;
 
 const COMMAND_TIMEOUT_MS = 2_000;
 export type TtsJobHandler = (key: string, attempt: { attemptsMade: number; attempts: number }) => Promise<{ deferUntil: Date } | undefined>;
+type Handlers = { speak: TtsJobHandler; sweep: () => Promise<void>; cleanup: () => Promise<void> };
+/** Every five minutes the sweep queues lost recordings again; every week the cleanup removes what nothing uses (design §5.5). */
+export const TTS_SWEEP_SCHEDULER = 'tts-sweep';
+export const TTS_CLEANUP_SCHEDULER = 'tts-cleanup';
+export const TTS_SWEEP_EVERY_MS = 5 * 60_000;
+export const TTS_CLEANUP_EVERY_MS = 7 * 24 * 3_600_000;
 /** Three tries, the wait before each doubling from five seconds (design §5.5). */
 export const TTS_JOB_OPTIONS = {
   attempts: 3, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: true, removeOnFail: true,
@@ -26,8 +32,9 @@ export class TtsQueueService implements OnApplicationBootstrap, OnModuleDestroy 
   private producerConnection: Redis | undefined;
   private producer: Queue | undefined;
   private worker: Worker | undefined;
+  private scheduler: Queue | undefined;
   private workerConnection: Redis | undefined;
-  private handler: TtsJobHandler | undefined;
+  private handlers: Partial<Handlers> = {};
   private closing: Promise<void> | undefined;
 
   constructor(
@@ -39,22 +46,42 @@ export class TtsQueueService implements OnApplicationBootstrap, OnModuleDestroy 
     return this.worker !== undefined;
   }
 
-  setHandler(handler: TtsJobHandler): void {
-    this.handler = handler;
+  /** Called by the worker and audio services at module init, so this service does not depend on them. */
+  setHandler<K extends keyof Handlers>(name: K, handler: Handlers[K]): void {
+    this.handlers[name] = handler;
+  }
+
+  /** What the worker does with a job, by name. A speak job that asks to wait (the daily cap) is moved to the delayed set. */
+  async process(job: Pick<Job, 'name' | 'data' | 'attemptsMade' | 'opts' | 'moveToDelayed'>, token?: string): Promise<void> {
+    const { speak, sweep, cleanup } = this.handlers;
+    if (job.name === 'speak' && speak) {
+      const result = await speak(job.data.key as string, { attemptsMade: job.attemptsMade, attempts: job.opts.attempts ?? 1 });
+      if (result) {
+        // The daily cap is used up: wait for midnight UTC without using a try.
+        await job.moveToDelayed(result.deferUntil.getTime(), token);
+        throw new DelayedError();
+      }
+      return;
+    }
+    if (job.name === 'sweep' && sweep) return sweep();
+    if (job.name === 'cleanup' && cleanup) return cleanup();
+    throw new Error(`No TTS handler for job ${job.name}`);
   }
 
   async onApplicationBootstrap(): Promise<void> {
     if (!this.config.pipeline.runWorkers) return;
     this.workerConnection = new Redis(this.config.redisUrl, { maxRetriesPerRequest: null });
     this.workerConnection.on('error', (error) => { this.logger.warn('tts_worker_connection_failed', { error }); });
-    this.worker = new Worker(TTS_QUEUE, async (job, token) => {
-      const result = await this.handler?.(job.data.key as string, { attemptsMade: job.attemptsMade, attempts: job.opts.attempts ?? 1 });
-      if (result) {
-        // The daily cap is used up: wait for midnight UTC without using a try.
-        await job.moveToDelayed(result.deferUntil.getTime(), token);
-        throw new DelayedError();
-      }
-    }, { connection: this.workerConnection, prefix: this.config.pipeline.queuePrefix, concurrency: TTS_CONCURRENCY });
+    // The schedulers go on the worker's own queue object, so the API process never touches them.
+    const scheduled = new Queue(TTS_QUEUE, { connection: this.workerConnection, prefix: this.config.pipeline.queuePrefix });
+    scheduled.on('error', (error) => { this.logger.warn('tts_queue_error', { error }); });
+    this.scheduler = scheduled;
+    const options = { removeOnComplete: true, removeOnFail: true };
+    await scheduled.upsertJobScheduler(TTS_SWEEP_SCHEDULER, { every: TTS_SWEEP_EVERY_MS }, { name: 'sweep', opts: options });
+    await scheduled.upsertJobScheduler(TTS_CLEANUP_SCHEDULER, { every: TTS_CLEANUP_EVERY_MS }, { name: 'cleanup', opts: options });
+    this.worker = new Worker(TTS_QUEUE, (job, token) => this.process(job, token), {
+      connection: this.workerConnection, prefix: this.config.pipeline.queuePrefix, concurrency: TTS_CONCURRENCY,
+    });
     this.worker.on('error', (error) => { this.logger.warn('tts_worker_error', { error }); });
     await this.worker.waitUntilReady();
   }
@@ -98,8 +125,9 @@ export class TtsQueueService implements OnApplicationBootstrap, OnModuleDestroy 
   }
 
   protected async close(): Promise<void> {
-    const results = await Promise.allSettled([this.worker?.close(), this.producer?.close()]);
+    const results = await Promise.allSettled([this.worker?.close(), this.scheduler?.close(), this.producer?.close()]);
     this.worker = undefined;
+    this.scheduler = undefined;
     this.producer = undefined;
     const connections = [this.producerConnection, this.workerConnection].filter((c): c is Redis => c !== undefined);
     this.producerConnection = undefined;

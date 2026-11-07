@@ -59,3 +59,49 @@ describe('TtsQueueService (round C, design §5.5)', () => {
     expect(queue.running).toBe(false);
   });
 });
+
+describe('TtsQueueService.process (the worker)', () => {
+  const job = (name: string, over: Record<string, unknown> = {}) => ({
+    name, data: { key: 'k1' }, attemptsMade: 1, opts: { attempts: 3 }, moveToDelayed: vi.fn(async () => undefined), ...over,
+  });
+  const service = () => new TtsQueueService(testConfig(), logger());
+
+  it('a speak job goes to the speak handler with the key and the tries so far', async () => {
+    const queue = service();
+    const speak = vi.fn(async () => undefined);
+    queue.setHandler('speak', speak);
+    await queue.process(job('speak') as never);
+    expect(speak).toHaveBeenCalledExactlyOnceWith('k1', { attemptsMade: 1, attempts: 3 });
+  });
+
+  it('a speak job that must wait (the daily cap) is moved to the delayed set and ends with DelayedError, using no try', async () => {
+    const queue = service();
+    const until = new Date('2026-11-08T00:00:00Z');
+    queue.setHandler('speak', async () => ({ deferUntil: until }));
+    const speaking = job('speak');
+    await expect(queue.process(speaking as never, 'token-1')).rejects.toMatchObject({ name: 'DelayedError' });
+    expect(speaking.moveToDelayed).toHaveBeenCalledExactlyOnceWith(until.getTime(), 'token-1');
+  });
+
+  it('sweep and cleanup jobs go to their handlers', async () => {
+    const queue = service();
+    const [sweep, cleanup] = [vi.fn(async () => undefined), vi.fn(async () => undefined)];
+    queue.setHandler('sweep', sweep);
+    queue.setHandler('cleanup', cleanup);
+    await queue.process(job('sweep') as never);
+    await queue.process(job('cleanup') as never);
+    expect(sweep).toHaveBeenCalledTimes(1);
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('a job with no handler fails loudly', async () => {
+    await expect(service().process(job('speak') as never)).rejects.toThrow(/No TTS handler/);
+    await expect(service().process(job('other') as never)).rejects.toThrow(/No TTS handler/);
+  });
+
+  it('the schedulers are every five minutes and every week', async () => {
+    const mod = await import('./tts-queue.service.js');
+    expect(mod.TTS_SWEEP_EVERY_MS).toBe(300_000);
+    expect(mod.TTS_CLEANUP_EVERY_MS).toBe(604_800_000);
+  });
+});

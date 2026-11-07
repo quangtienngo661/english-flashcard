@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { testConfig } from '../../../test/support/test-config.js';
 import type { AppConfig } from '../../common/config/app-config.js';
 import type { AppLogger } from '../../common/logging/app-logger.js';
@@ -8,6 +9,7 @@ import { audioKey, type SenseIpa, type SpeechTarget } from './audio-key.js';
 import type { AudioStorage } from './audio-storage.js';
 import type { TtsQueueService } from './tts-queue.service.js';
 
+const NOW = new Date('2026-11-14T03:00:00Z');
 const UK = 'en-GB-Wavenet-B';
 const US = 'en-US-Wavenet-D';
 const sense = (over: Partial<SenseIpa> & { senseId: string; lemma: string }): SenseIpa => ({ scope: 'catalog', ipaUk: null, ipaUs: null, ...over });
@@ -27,13 +29,26 @@ function setup(over: { senses?: SenseIpa[]; provider?: AppConfig['tts']['provide
       return fresh;
     }),
     readyKeys: vi.fn(async (keys: string[]) => new Set(keys.filter((key) => table.get(key)?.status === 'ready'))),
+    rowsByKeys: vi.fn(async (keys: string[]) => keys.flatMap((key) => {
+      const row = table.get(key);
+      return row ? [{ key, status: row.status, lastError: (row as { lastError?: string | null }).lastError ?? null }] : [];
+    })),
+    stalePending: vi.fn(async (_before: Date, _limit: number) => [] as string[]),
+    resetFailed: vi.fn(async (keys: string[]) => {
+      const reset: string[] = [];
+      for (const key of keys) if (table.get(key)?.status === 'failed') { table.get(key)!.status = 'pending'; reset.push(key); }
+      return reset;
+    }),
+    loadAllSenseIpa: vi.fn(async () => over.senses ?? []),
+    unusedBefore: vi.fn(async (_before: Date, _used: string[]) => [] as string[]),
+    deleteRows: vi.fn(async (_keys: string[]) => undefined),
   };
-  const queue = { enqueue: vi.fn(over.enqueue ?? (async () => true)) };
+  const queue = { enqueue: vi.fn(over.enqueue ?? (async () => true)), setHandler: vi.fn() };
   const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn() };
-  const storage = 'storage' in over ? over.storage : { publicUrl: (objectKey: string) => `https://audio.example.com/${objectKey}` } as AudioStorage;
+  const storage = 'storage' in over ? over.storage : { publicUrl: (objectKey: string) => `https://audio.example.com/${objectKey}`, remove: vi.fn(async (_keys: string[]) => undefined) } as unknown as AudioStorage;
   const config = testConfig({ tts: { provider: over.provider === undefined ? 'fake' : over.provider, voiceUk: UK, voiceUs: US, credentials: null } });
-  const service = new AudioService(config, repo as unknown as AudioRepository, queue as unknown as TtsQueueService, storage ?? null, logger as unknown as AppLogger);
-  return { service, repo, queue, logger, table };
+  const service = new AudioService(config, repo as unknown as AudioRepository, queue as unknown as TtsQueueService, storage ?? null, new FakeClock(NOW), logger as unknown as AppLogger);
+  return { service, repo, queue, logger, table, storage };
 }
 
 const record = (id: string, pos = 'noun') => sense({ senseId: id, lemma: 'record', ipaUk: 'ˈrekɔːd', ipaUs: 'ˈrɛkɚd', ...(pos ? {} : {}) });
@@ -170,3 +185,137 @@ describe('AudioService.urlsForSenses (H9)', () => {
     expect(t.repo.readyKeys).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AudioService.sweep (round C, design §5.5)', () => {
+  it('queues again the pending rows that have waited more than ten minutes', async () => {
+    const t = setup({ senses: [] });
+    t.repo.stalePending.mockResolvedValue(['k1', 'k2']);
+    await expect(t.service.sweep(NOW)).resolves.toBe(2);
+    expect(t.repo.stalePending).toHaveBeenCalledExactlyOnceWith(new Date('2026-11-14T02:50:00Z'), 1000);
+    expect(t.queue.enqueue).toHaveBeenCalledExactlyOnceWith(['k1', 'k2']);
+  });
+
+  it('nothing stale → nothing queued', async () => {
+    const t = setup();
+    await expect(t.service.sweep(NOW)).resolves.toBe(0);
+    expect(t.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('without a provider and storage it does nothing', async () => {
+    const t = setup({ provider: null });
+    t.repo.stalePending.mockResolvedValue(['k1']);
+    await expect(t.service.sweep(NOW)).resolves.toBe(0);
+    expect(t.repo.stalePending).not.toHaveBeenCalled();
+  });
+
+  it('is the handler of the sweep job; cleanup is the handler of the cleanup job', () => {
+    const t = setup();
+    t.service.onModuleInit();
+    expect(t.queue.setHandler.mock.calls.map(([name]) => name).sort()).toEqual(['cleanup', 'sweep']);
+  });
+});
+
+describe('AudioService.cleanup (round C, design §5.5, Review Focus 4)', () => {
+  const cat = [sense({ senseId: 'a', lemma: 'cat' })];
+  const catKeys = [audioKey(UK, 'cat', null), audioKey(US, 'cat', null)];
+
+  it('keeps what the senses on show need; removes the rest older than seven days: the file first, then the row', async () => {
+    const t = setup({ senses: cat });
+    t.repo.unusedBefore.mockResolvedValue(['old1']);
+    await expect(t.service.cleanup(NOW)).resolves.toBe(1);
+    const [before, used] = t.repo.unusedBefore.mock.calls[0];
+    expect(before).toEqual(new Date('2026-11-07T03:00:00Z'));
+    expect([...used].sort()).toEqual([...catKeys].sort());
+    expect((t.storage as unknown as { remove: ReturnType<typeof vi.fn> }).remove).toHaveBeenCalledExactlyOnceWith(['tts/v1/old1.mp3']);
+    expect(t.repo.deleteRows).toHaveBeenCalledExactlyOnceWith(['old1']);
+    const removeOrder = (t.storage as unknown as { remove: ReturnType<typeof vi.fn> }).remove.mock.invocationCallOrder[0];
+    expect(removeOrder).toBeLessThan(t.repo.deleteRows.mock.invocationCallOrder[0]);
+  });
+
+  it('Review Focus 4: after record changes, the old keys are not "used" any more but wait their seven days', async () => {
+    const changed = [record('noun'), { ...record('verb'), ipaUk: 'rɪˈkɔːd' }];
+    const t = setup({ senses: changed });
+    await t.service.cleanup(NOW);
+    const used = new Set(t.repo.unusedBefore.mock.calls[0][1]);
+    expect(used.has(audioKey(UK, 'record', 'ˈɹɛkɔːd'))).toBe(true);
+    expect(used.has(audioKey(UK, 'record', null))).toBe(false);
+    // The "unused" query only takes rows older than the cutoff, so a row made two days ago stays.
+    expect(t.repo.unusedBefore.mock.calls[0][0]).toEqual(new Date('2026-11-07T03:00:00Z'));
+  });
+
+  it('a file that cannot be removed keeps its row, so the next run tries again', async () => {
+    const t = setup({ senses: cat });
+    t.repo.unusedBefore.mockResolvedValue(['old1']);
+    (t.storage as unknown as { remove: ReturnType<typeof vi.fn> }).remove.mockRejectedValue(new Error('R2 down'));
+    await expect(t.service.cleanup(NOW)).resolves.toBe(0);
+    expect(t.repo.deleteRows).not.toHaveBeenCalled();
+    expect(t.logger.warn).toHaveBeenCalledWith('audio_cleanup_failed', expect.anything());
+  });
+
+  it('nothing to remove → no storage call', async () => {
+    const t = setup({ senses: cat });
+    await expect(t.service.cleanup(NOW)).resolves.toBe(0);
+    expect((t.storage as unknown as { remove: ReturnType<typeof vi.fn> }).remove).not.toHaveBeenCalled();
+  });
+
+  it('a read that fails removes nothing (an empty answer from a broken read would delete everything)', async () => {
+    const t = setup({ senses: cat });
+    t.repo.loadAllSenseIpa.mockRejectedValue(new Error('db down'));
+    await expect(t.service.cleanup(NOW)).resolves.toBe(0);
+    expect(t.repo.unusedBefore).not.toHaveBeenCalled();
+  });
+
+  it('with no storage there is nothing to clean', async () => {
+    const t = setup({ senses: cat, storage: null });
+    await expect(t.service.cleanup(NOW)).resolves.toBe(0);
+    expect(t.repo.loadAllSenseIpa).not.toHaveBeenCalled();
+  });
+});
+
+describe('AudioService.statesForSense and retry (H12, H13)', () => {
+  const lead = [sense({ senseId: 'a', lemma: 'cat' })];
+
+  it('reports status, error and url per voice; null for a voice with no row', async () => {
+    const t = setup({ senses: lead });
+    await t.service.ensureForSenses(['a']);
+    const [ukKey, usKey] = [audioKey(UK, 'cat', null), audioKey(US, 'cat', null)];
+    t.table.get(ukKey)!.status = 'ready';
+    Object.assign(t.table.get(usKey)!, { status: 'failed', lastError: 'Google refused' });
+    const states = await t.service.statesForSense('a');
+    expect(states).toEqual({
+      uk: { status: 'ready', error: null, url: `https://audio.example.com/tts/v1/${ukKey}.mp3` },
+      us: { status: 'failed', error: 'Google refused', url: null },
+    });
+  });
+
+  it('a sense that is not on show has no audio state', async () => {
+    const t = setup({ senses: [] });
+    expect(await t.service.statesForSense('gone')).toEqual({ uk: null, us: null });
+  });
+
+  it('no row yet → null for both', async () => {
+    const t = setup({ senses: lead });
+    expect(await t.service.statesForSense('a')).toEqual({ uk: null, us: null });
+  });
+
+  it('retry puts the failed rows of the sense back to pending and queues them; ready and pending ones are left', async () => {
+    const t = setup({ senses: lead });
+    await t.service.ensureForSenses(['a']);
+    t.queue.enqueue.mockClear();
+    const [ukKey, usKey] = [audioKey(UK, 'cat', null), audioKey(US, 'cat', null)];
+    t.table.get(ukKey)!.status = 'ready';
+    t.table.get(usKey)!.status = 'failed';
+    await expect(t.service.retryForSense('a')).resolves.toBe(1);
+    expect(t.table.get(usKey)!.status).toBe('pending');
+    expect(t.queue.enqueue).toHaveBeenCalledExactlyOnceWith([usKey]);
+  });
+
+  it('retry of nothing failed → 0 and nothing queued', async () => {
+    const t = setup({ senses: lead });
+    await t.service.ensureForSenses(['a']);
+    t.queue.enqueue.mockClear();
+    await expect(t.service.retryForSense('a')).resolves.toBe(0);
+    expect(t.queue.enqueue).not.toHaveBeenCalled();
+  });
+});
+

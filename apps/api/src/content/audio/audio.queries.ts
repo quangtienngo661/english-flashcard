@@ -45,6 +45,52 @@ export class AudioRepository {
     return rows.map((row) => row.key);
   }
 
+  /** Every sense on show (catalog and every learner's own), for the weekly cleanup: it needs all of them to know which keys are used. */
+  async loadAllSenseIpa(): Promise<SenseIpa[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ sense_id: string; lemma: string; scope: 'catalog' | 'private'; ipa_uk: string | null; ipa_us: string | null }>>`
+      SELECT s.id::text AS sense_id, e.lemma, e.scope, r.ipa_uk, r.ipa_us
+      FROM senses s
+      JOIN entries e ON e.id = s.entry_id
+      JOIN sense_revisions r ON r.id = s.live_revision_id
+      WHERE s.state = 'open' AND s.live_revision_id IS NOT NULL
+      ORDER BY e.lemma, s.id`;
+    return rows.map((row) => ({ senseId: row.sense_id, lemma: row.lemma, scope: row.scope, ipaUk: row.ipa_uk, ipaUs: row.ipa_us }));
+  }
+
+  /** The status and last error of these keys (only the ones that have a row). */
+  async rowsByKeys(keys: string[]): Promise<Array<{ key: string; status: string; lastError: string | null }>> {
+    if (keys.length === 0) return [];
+    return this.prisma.speechAudio.findMany({ where: { key: { in: keys } }, select: { key: true, status: true, lastError: true } });
+  }
+
+  /** Pending rows nobody has touched since `before`: their job was lost, or never queued (Redis was down). Oldest first. */
+  async stalePending(before: Date, limit: number): Promise<string[]> {
+    const rows = await this.prisma.speechAudio.findMany({
+      where: { status: 'pending', updatedAt: { lt: before } }, orderBy: { updatedAt: 'asc' }, take: limit, select: { key: true },
+    });
+    return rows.map((row) => row.key);
+  }
+
+  /** Puts the `failed` rows among these keys back to `pending` with a clean slate; returns the keys it changed. */
+  async resetFailed(keys: string[], now: Date): Promise<string[]> {
+    if (keys.length === 0) return [];
+    const rows = await this.prisma.$queryRaw<Array<{ key: string }>>`
+      UPDATE speech_audio SET status = 'pending', attempts = 0, last_error = NULL, updated_at = ${now}
+      WHERE key = ANY(${keys}::text[]) AND status = 'failed' RETURNING key`;
+    return rows.map((row) => row.key);
+  }
+
+  /** Rows last touched before `before` whose key is not in `used`. */
+  async unusedBefore(before: Date, used: string[]): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ key: string }>>`
+      SELECT key FROM speech_audio WHERE updated_at < ${before} AND NOT (key = ANY(${used}::text[])) ORDER BY key`;
+    return rows.map((row) => row.key);
+  }
+
+  async deleteRows(keys: string[]): Promise<void> {
+    if (keys.length > 0) await this.prisma.speechAudio.deleteMany({ where: { key: { in: keys } } });
+  }
+
   /** Which of the keys have a file ready to play. */
   async readyKeys(keys: string[]): Promise<Set<string>> {
     if (keys.length === 0) return new Set();

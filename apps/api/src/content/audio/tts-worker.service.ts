@@ -35,7 +35,7 @@ export class TtsWorkerService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.queue.setHandler((key, attempt) => this.run(key, attempt));
+    this.queue.setHandler('speak', (key, attempt) => this.run(key, attempt));
   }
 
   async run(key: string, attempt: TtsJobAttempt): Promise<TtsRunResult> {
