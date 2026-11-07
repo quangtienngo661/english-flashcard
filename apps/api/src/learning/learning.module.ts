@@ -13,6 +13,7 @@ import { LearningEntryUsageProbe } from './entry-usage.probe.js';
 import { LearningService } from './learning.service.js';
 import { MyWordsDeleteController } from './my-words/my-words-delete.controller.js';
 import { PracticeReadsService } from './practice/practice-reads.service.js';
+import { RecallAnswerService } from './practice/recall-answer.service.js';
 import { PracticeReviewService } from './practice/practice-review.service.js';
 import { QuickAddController } from './quick-add/quick-add.controller.js';
 import { QuickAddService } from './quick-add/quick-add.service.js';
@@ -33,7 +34,7 @@ import { ReviewsService } from './reviews/reviews.service.js';
   ],
   providers: [
     BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
-    PracticeReviewService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
+    PracticeReviewService, RecallAnswerService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
     RetentionService,
   ],
   exports: [LearningService],

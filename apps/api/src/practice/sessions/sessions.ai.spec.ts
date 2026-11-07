@@ -44,7 +44,7 @@ type Options = {
 function setup(options: Options) {
   const senseIds = options.senseIds ?? ['s1', 's2'];
   const session: PracticeSession = {
-    id: 'sess-1', userId: learner.userId, source: 'all', groupId: null, groupFilter: null, sort: 'queue', types: options.types,
+    id: 'sess-1', userId: learner.userId, kind: 'practice', source: 'all', groupId: null, groupFilter: null, sort: 'queue', types: options.types,
     promptStyle: 'meaning', targetCount: options.target ?? senseIds.length, senseIds, status: 'active', continued: null,
     pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: options.clozeSource ?? null,
     aiPlanned: options.aiPlanned ?? 0, aiSenseIds: options.aiSenseIds ?? [], pendingAiRequestId: null,

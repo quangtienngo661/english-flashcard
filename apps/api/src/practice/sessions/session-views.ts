@@ -2,7 +2,7 @@ import type { PracticeQuestion, PracticeSession, PracticeSessionItem } from '../
 import type { AnswerKey, Hints, Prompt, PromptStyle, QuestionType } from '../practice.types.js';
 
 export type SessionView = {
-  id: string; source: string; group_id: string | null; group_filter: string | null; sort: string; types: string[];
+  id: string; kind: 'practice' | 'recall'; source: string; group_id: string | null; group_filter: string | null; sort: string; types: string[];
   prompt_style: string; target_count: number; status: string; round: number;
   /** Items that are not void. */
   asked: number;
@@ -24,7 +24,7 @@ export type ItemWithQuestion = PracticeSessionItem & { question: PracticeQuestio
 
 export function sessionView(row: PracticeSession, items: Array<Pick<PracticeSessionItem, 'round' | 'result'>>): SessionView {
   return {
-    id: row.id, source: row.source, group_id: row.groupId, group_filter: row.groupFilter, sort: row.sort, types: row.types,
+    id: row.id, kind: row.kind === 'recall' ? 'recall' : 'practice', source: row.source, group_id: row.groupId, group_filter: row.groupFilter, sort: row.sort, types: row.types,
     prompt_style: row.promptStyle, target_count: row.targetCount, status: row.status,
     round: Math.max(1, ...items.map((i) => i.round)), asked: items.filter((i) => i.result !== 'void').length,
     words: row.senseIds.length, ai_planned: row.aiPlanned, cloze_source: row.clozeSource,

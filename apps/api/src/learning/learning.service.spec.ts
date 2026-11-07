@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { LearningService } from './learning.service.js';
 import type { PracticeReadsService } from './practice/practice-reads.service.js';
 import type { PracticeReviewService } from './practice/practice-review.service.js';
+import type { RecallAnswerService } from './practice/recall-answer.service.js';
 import type { QueueService } from './queue/queue.service.js';
 
 function setup() {
@@ -10,7 +11,7 @@ function setup() {
   const txRows = vi.fn(async () => ({ count: 1 }));
   const prisma = { learningActivityDay: { createMany: clientRows } } as unknown as PrismaClient;
   const tx = { learningActivityDay: { createMany: txRows } } as unknown as Prisma.TransactionClient;
-  const service = new LearningService({} as QueueService, {} as PracticeReadsService, {} as PracticeReviewService, prisma);
+  const service = new LearningService({} as QueueService, {} as PracticeReadsService, {} as PracticeReviewService, {} as RecallAnswerService, prisma);
   return { service, tx, clientRows, txRows };
 }
 

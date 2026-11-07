@@ -13,11 +13,14 @@ const QUESTION_TYPES = [
 const SORTS = ['level_asc', 'overdue_first', 'new_first', 'least_practiced', 'most_wrong', 'queue', 'priority_oldest', 'random'] as const;
 
 export const startBody = z.strictObject({
+  // Round C (H3): a recall ("Ôn") session of one deck. Then `types`, `sort`, `group_filter`, `prompt_style`, `count` and
+  // `cloze_source` are accepted and ignored: the service fixes them.
+  kind: z.enum(['practice', 'recall']).optional(),
   source: z.enum(['today', 'all', 'group', 'weak', 'priority']),
   group_id: uuid.optional(),
   group_filter: z.enum(['all', 'due', 'priority', '0', '1', '2', '3', '4', '5']).optional(),
   sort: z.enum(SORTS).optional(),
-  types: z.array(z.enum(QUESTION_TYPES)).min(1).max(QUESTION_TYPES.length).refine((types) => new Set(types).size === types.length),
+  types: z.array(z.enum(QUESTION_TYPES)).min(1).max(QUESTION_TYPES.length).refine((types) => new Set(types).size === types.length).optional(),
   prompt_style: z.enum(['meaning', 'sentence', 'mixed']).optional(),
   // The upper bound is max_questions_per_session, checked by the service.
   count: z.int().min(1).optional(),
@@ -26,7 +29,8 @@ export const startBody = z.strictObject({
   // API (b): a deck is required with `group`, allowed with `weak` (its weak words), refused with the other sources.
 }).refine((body) => (body.source === 'group' ? body.group_id !== undefined : body.source === 'weak' || body.group_id === undefined)
   && (body.source === 'group' || body.group_filter === undefined)
-  && (body.cloze_source === undefined || body.types.includes('cloze')));
+  && (body.kind === 'recall' || (body.types !== undefined && (body.cloze_source === undefined || body.types.includes('cloze'))))
+  && (body.kind !== 'recall' || body.source === 'group'));
 const sessionParams = z.strictObject({ id: uuid });
 const continueBody = z.strictObject({ continue: z.boolean() });
 // Bước 7 (design §6.6): a new AI request for a slot whose AI failed in an AI-only session.

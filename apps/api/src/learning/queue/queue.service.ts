@@ -71,7 +71,7 @@ export class QueueService {
     }).map((row) => row.user_id));
   }
 
-  async queue(userId: string, groupId: string, mode: 'due' | 'all', nativeLanguage: 'vi' | 'en'): Promise<{ cards: Card[] }> {
+  async queue(userId: string, groupId: string, mode: 'due' | 'all' | 'new', nativeLanguage: 'vi' | 'en'): Promise<{ cards: Card[] }> {
     const [day, { learning }] = await Promise.all([this.today(userId), this.settings.get()]);
     await this.groups.assertOwned(this.prisma, userId, groupId);
     const backlogDays = learning.backlogAfterDays;
@@ -80,6 +80,12 @@ export class QueueService {
     let rows: QueueRow[];
     if (mode === 'all') {
       rows = await read({ kind: 'all' });
+    } else if (mode === 'new') {
+      // The "Học" flashcard row (round C H1): only level-0 words, cut to what is left of today's new-word cap.
+      const [done] = await this.prisma.$queryRaw<Array<{ due_done: number; new_done: number }>>(
+        reviewsDoneQuery(userId, groupId, day));
+      const newLimit = Math.max(0, learning.newPerGroupPerDay - done.new_done);
+      rows = newLimit > 0 ? await read({ kind: 'new', limit: newLimit }) : [];
     } else {
       const [done] = await this.prisma.$queryRaw<Array<{ due_done: number; new_done: number }>>(
         reviewsDoneQuery(userId, groupId, day));

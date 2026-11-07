@@ -30,6 +30,12 @@ describe('HistoryService.history — alternative answers (session synonyms desig
     expect(wheres[0]).toMatchObject({ userId: 'u1', AND: [{ OR: [{ senseId: 's9' }, { alternativeSenseId: 's9' }] }] });
   });
 
+  it('round C DC30: the history lists practice sessions only — the answers of a recall session are left out', async () => {
+    const { wheres, service } = capture();
+    await service.history('u1', { page_size: 20 }, 'vi');
+    expect(wheres[0]).toMatchObject({ userId: 'u1', session: { kind: 'practice' } });
+  });
+
   it('the sense_id filter and the page cursor combine, neither replaces the other', async () => {
     const { wheres, service } = capture([]);
     const page = await new HistoryService({ practiceSessionItem: { findMany: async () => Array.from({ length: 3 }, (_, k) => ({ ...row, id: `00000000-0000-4000-8000-00000000000${k}` })) } } as unknown as PrismaClient,

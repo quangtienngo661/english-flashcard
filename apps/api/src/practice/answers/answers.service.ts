@@ -26,7 +26,11 @@ export type AnswerResult = {
   translation: string | null;
   /** Session synonyms: set for an AI fill-in answered with a declared session word; null for every other result. */
   alternative: { typed: string; rows: AlternativeRow[] } | null;
+  /** Round C (H6): what the final answer did to the schedule; set only in a recall session (and only on the answer itself, not on a read of it). */
+  schedule: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
 };
+/** What `writeFinal` leaves behind: the stored item, the schedule change of a recall session and whether the session was one. */
+export type FinalOutcome = { item: ItemWithQuestion; schedule: AnswerResult['schedule']; recall: boolean };
 /** One word of an alternative answer: the word typed (credited) or the word asked, each with its own review state. */
 export type AlternativeRow = {
   sense_id: string; lemma: string; meaning: string; role: 'typed' | 'asked'; show_known: boolean; action: ReviewAction | null;
@@ -72,7 +76,7 @@ export class AnswersService {
 
   answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | TryAgainReply> {
     return this.locked(userId, itemId, async (tx, item, session) => {
-      await this.assertUnanswered(tx, userId, item, true);
+      await this.assertUnanswered(tx, userId, item, true, session);
       const key = item.question.answerKey as AnswerKey;
       let correct: boolean;
       let raw: string;
@@ -116,7 +120,7 @@ export class AnswersService {
         tries: item.tries + 1, skipped: false,
         ...(alternative ? { alternative: true, alternativeSenseId: alternative.senseId } : {}),
       });
-      return this.resultOf(userId, final, tx);
+      return this.resultOf(userId, final.item, tx, final);
     });
   }
 
@@ -125,8 +129,8 @@ export class AnswersService {
    * After a try, the last typed text becomes the stored answer.
    */
   skip(userId: string, itemId: string): Promise<AnswerResult> {
-    return this.locked(userId, itemId, async (tx, item) => {
-      await this.assertUnanswered(tx, userId, item, false);
+    return this.locked(userId, itemId, async (tx, item, session) => {
+      await this.assertUnanswered(tx, userId, item, false, session);
       if (!['type_word', 'cloze'].includes(item.question.type) || (item.question.type === 'type_word' && item.tries === 0)) {
         throw conflict('skip-not-allowed', 'Skip not allowed');
       }
@@ -134,14 +138,14 @@ export class AnswersService {
         const final = await this.writeFinal(tx, item, {
           result: 'wrong', answerRaw: null, answerNormalized: null, answersTried: [], tries: 0, skipped: true,
         });
-        return this.resultOf(userId, final, tx);
+        return this.resultOf(userId, final.item, tx, final);
       }
       const last = item.answersTried.at(-1)!;
       const final = await this.writeFinal(tx, item, {
         result: 'wrong', answerRaw: last, answerNormalized: normalizeAnswer(last), answersTried: item.answersTried.slice(0, -1),
         tries: item.tries, skipped: true,
       });
-      return this.resultOf(userId, final, tx);
+      return this.resultOf(userId, final.item, tx, final);
     });
   }
 
@@ -158,29 +162,44 @@ export class AnswersService {
     });
   }
 
-  /** The one place a final result is written (a test makes it throw, B4E23). */
-  async writeFinal(tx: Prisma.TransactionClient, item: ItemWithQuestion, final: FinalWrite): Promise<ItemWithQuestion> {
+  /**
+   * The one place a final result is written (a test makes it throw, B4E23). In a recall session the answer also moves the word's
+   * schedule, in this transaction and before the item is written (round C DC4/DC26): "right" there is a right answer without a
+   * hint, and a skip is wrong; a practice session is not touched and spends a session of the day as before.
+   */
+  async writeFinal(tx: Prisma.TransactionClient, item: ItemWithQuestion, final: FinalWrite): Promise<FinalOutcome> {
     const profile = await this.identity.getProfile(item.userId, tx);
     if (!profile) throw notFound();
     const now = this.clock.now();
     const date = localDate(profile.timezone, now);
+    const session = await tx.practiceSession.findUniqueOrThrow({ where: { id: item.sessionId }, select: { kind: true, groupId: true } });
+    const recall = session.kind === 'recall';
+    let schedule: AnswerResult['schedule'] = null;
+    if (recall) {
+      const outcome = await this.learning.recallAnswer(tx, item.userId, {
+        senseId: item.senseId, groupId: session.groupId!, correct: final.result === 'correct' && item.hintLevel === 0,
+      });
+      if (outcome.outcome !== 'not-in-learning') schedule = { level: outcome.level, due_date: outcome.due_date, outcome: outcome.outcome };
+    }
     const written = await tx.practiceSessionItem.update({
       where: { id: item.id },
-      data: { ...final, answeredAt: now, localDate: dateValue(date) },
+      data: { ...final, answeredAt: now, localDate: dateValue(date), ...(schedule ? { recallOutcome: schedule.outcome } : {}) },
       include: { question: true },
     });
     // The session's first final result spends one session of the day (design §7.4); later calls are ignored by the insert.
-    await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
+    // A recall session is not a practice session: it spends none.
+    if (!recall) await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
     // A final result, a skip included, is a "lần học" of the learner's local day (nhóm B D39, B51); a "try again" never gets here.
     await this.learning.recordActivity(item.userId, date, tx);
-    return written;
+    return { item: written, schedule, recall };
   }
 
   /**
    * The stored result as the app sees it; the buttons are worked out now (design 7.8). A caller inside an open transaction
    * passes its `tx` as `db`, so the learning item is read without a second connection.
    */
-  async resultOf(userId: string, item: ItemWithQuestion, db?: Prisma.TransactionClient | PrismaClient): Promise<AnswerResult> {
+  async resultOf(userId: string, item: ItemWithQuestion, db?: Prisma.TransactionClient | PrismaClient,
+    recall: Pick<FinalOutcome, 'schedule' | 'recall'> = { schedule: null, recall: false }): Promise<AnswerResult> {
     const key = item.question.answerKey as AnswerKey;
     const prompt = item.question.prompt as Prompt;
     const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null, db);
@@ -193,8 +212,10 @@ export class AnswersService {
       correct: correctOf(key, prompt),
       meaning: key.reveal.meaning, definition_en: key.reveal.definition_en,
       // On an alternative card the buttons belong to the two rows; an older web build shows today's card and must not review the asked word.
-      show_known: alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
+      // A recall session already moved the word (round C): "Đã biết" is never offered there.
+      show_known: !recall.recall && alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
       highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
+      schedule: recall.schedule,
     };
   }
 
@@ -267,8 +288,10 @@ export class AnswersService {
     return sessionWordForms({ senseId: item.senseId, lemma: key.reveal.lemma }, ids.flatMap((id) => found.get(id) ?? []));
   }
 
-  private async assertUnanswered(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, withResult: boolean): Promise<void> {
+  private async assertUnanswered(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, withResult: boolean,
+    session?: PracticeSession): Promise<void> {
     if (item.result === null) return;
-    throw conflict('already-answered', 'Already answered', withResult ? { result: await this.resultOf(userId, item, tx) } : undefined);
+    const recall = { schedule: null, recall: session?.kind === 'recall' };
+    throw conflict('already-answered', 'Already answered', withResult ? { result: await this.resultOf(userId, item, tx, recall) } : undefined);
   }
 }

@@ -23,3 +23,43 @@ describe('GET /v1/groups available counts', () => {
     expect(items[0]).toMatchObject({ today: { due: 100, new: 20 }, available: { due: 150, new: 40 } });
   });
 });
+
+describe('GET /v1/groups/:id/queue?mode=new', () => {
+  function build(rows: Array<Record<string, unknown>>, newDone: number) {
+    const sections: string[] = [];
+    const prisma = {
+      $queryRaw: vi.fn(async (query: { sql?: string; strings?: string[]; values?: unknown[] }) => {
+        const text = (query.sql ?? query.strings?.join('?') ?? '');
+        if (/new_done|due_done/.test(text)) return [{ due_done: 0, new_done: newDone }];
+        sections.push(text);
+        return rows;
+      }),
+    } as unknown as PrismaClient;
+    const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService;
+    const settings = { get: vi.fn(async () => SETTINGS_DEFAULTS) } as unknown as SettingsService;
+    const content = {
+      cardContent: vi.fn(async (_u: string, ids: string[]) => new Map(ids.map((id) => [id, { word: id }]))),
+      listSentences: vi.fn(async () => new Map()),
+    } as unknown as ContentService;
+    const groups = { assertOwned: vi.fn(async () => undefined) } as unknown as GroupsService;
+    const service = new QueueService(prisma, new FakeClock(new Date('2026-11-07T03:00:00Z')), identity, settings, content, groups);
+    return { service, prisma, sections };
+  }
+
+  it('reads only the new section (no priority, no due) and returns level-0 cards', async () => {
+    const row = { item_id: 'i1', sense_id: 's1', level: 0, due_date: new Date('2026-11-07T00:00:00Z'), priority: false };
+    const { service, sections } = build([row], 5);
+    const { cards } = await service.queue('u1', 'g1', 'new', 'vi');
+    expect(cards.map((c) => c.item_id)).toEqual(['i1']);
+    expect(cards[0]).toMatchObject({ level: 0, section: 'new' });
+    expect(sections).toHaveLength(1);
+    expect(sections[0]).toContain('NOT i.priority AND i.level = 0');
+    expect(sections[0]).not.toContain('due_date <=');
+  });
+
+  it('reads nothing once the daily new-word cap is used up', async () => {
+    const { service, sections } = build([], SETTINGS_DEFAULTS.learning.newPerGroupPerDay);
+    expect((await service.queue('u1', 'g1', 'new', 'vi')).cards).toEqual([]);
+    expect(sections).toHaveLength(0);
+  });
+});

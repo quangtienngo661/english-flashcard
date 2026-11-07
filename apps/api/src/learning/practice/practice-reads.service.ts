@@ -22,7 +22,8 @@ export type PracticeItem = {
 };
 export type PracticeScope =
   | { kind: 'today' } | { kind: 'all' } | { kind: 'priority' }
-  | { kind: 'group'; groupId: string; filter: GroupFilter } | { kind: 'senses'; senseIds: string[] };
+  | { kind: 'group'; groupId: string; filter: GroupFilter } | { kind: 'senses'; senseIds: string[] }
+  | { kind: 'learned'; groupId: string };
 export type PracticeCheck = { item: PracticeItem | null; groupExists: boolean | null; inGroup: boolean | null };
 
 type Db = Prisma.TransactionClient | PrismaClient;
@@ -58,7 +59,7 @@ export class PracticeReadsService {
     // One after the other: with a transaction as `db` they would share its one connection.
     const day = await this.today(userId, db);
     const { learning } = await this.settings.get(db);
-    if (scope.kind === 'group') await this.groups.assertOwned(db, userId, scope.groupId);
+    if (scope.kind === 'group' || scope.kind === 'learned') await this.groups.assertOwned(db, userId, scope.groupId);
     const caps = { reviews: learning.reviewsPerGroupPerDay, new: learning.newPerGroupPerDay };
     const rows = await db.$queryRaw<PracticeItemRow[]>(
       practiceItemsQuery(userId, whereOf(scope), day, learning.backlogAfterDays, caps));

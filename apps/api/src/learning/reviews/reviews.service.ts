@@ -7,7 +7,7 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { recordActivityIn } from '../activity/record-activity.js';
-import { applyAnswer, type Answer, type Section } from '../schedule/schedule.js';
+import { applyLearn, type Answer, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
@@ -52,14 +52,18 @@ export class ReviewsService {
         const at = this.clock.now();
         const today = localDate(profile.timezone, at);
         const before = { level: item.level, dueDate: dateString(item.dueDate), priority: item.priority };
-        const result = applyAnswer(before, input.answer, today, learning.backlogAfterDays);
-        await tx.learningItem.update({
-          where: { id: item.id },
-          data: {
-            level: result.next.level, dueDate: dateValue(result.next.dueDate), priority: result.next.priority,
-            lastReviewedAt: at,
-          },
-        });
+        const result = applyLearn(before, input.answer, today, learning.backlogAfterDays);
+        // A flashcard "known" on a word that is already learned changes nothing (round C DC4): the log row below is still
+        // written so the daily cap counts the card, but the item is left as it is.
+        if (result.changed || input.answer === 'review') {
+          await tx.learningItem.update({
+            where: { id: item.id },
+            data: {
+              level: result.next.level, dueDate: dateValue(result.next.dueDate), priority: result.next.priority,
+              lastReviewedAt: at,
+            },
+          });
+        }
         await tx.learningLogEntry.create({ data: {
           userId, itemId: item.id, senseId: item.senseId, groupId: input.groupId, kind: 'review', answer: input.answer,
           rating: result.rating, levelBefore: before.level, levelAfter: result.next.level, dueBefore: item.dueDate,
@@ -93,10 +97,11 @@ export class ReviewsService {
     if (row.itemId !== input.itemId || row.groupId !== input.groupId || row.answer !== input.answer) {
       throw new ProblemDetailsException({ status: 400, title: 'review_id reused with a different payload' });
     }
+    // "known" no longer clears the flag on a learned word, so the flag is read from the item (gone with the item: false).
+    const item = await db.learningItem.findUnique({ where: { id: row.itemId }, select: { priority: true } });
     return {
       item_id: row.itemId, level: row.levelAfter!, due_date: dateString(row.dueAfter!),
-      // "known" always leaves the item without priority; "review" always sets it.
-      priority: row.answer === 'review', section: row.section as Section,
+      priority: item?.priority ?? false, section: row.section as Section,
     };
   }
 }
