@@ -7,7 +7,7 @@ import {
   LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_EXAMPLES_MAX, PRIVATE_POS_UNSET, SENTENCE_MAX, VALID_POS,
   type InflectionKind, type Level,
 } from '../content.constants.js';
-import { ContentRuleError, contentHash, revisionFormOf, revisionIpa, type RevisionContent } from '../senses/revision-content.js';
+import { ContentRuleError, contentHash, normalizeContent, revisionFormOf, revisionIpa, type RevisionContent } from '../senses/revision-content.js';
 import { LevelsService } from '../catalog/levels.service.js';
 import { generateInflections } from '../inflections/inflect.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
@@ -22,13 +22,17 @@ export type Meaning = { text: string; language: 'vi' | 'en' };
 export type CreatePrivateSenseInput = {
   ownerId: string; lemma: string; pos: string | null; meaning: Meaning; level: Level | null; topicCodes: string[];
   formOf: { entryId: string; kind: InflectionKind } | null; examples: string[]; aiSuggestion: boolean;
+  /** The learner's own pronunciation note (round C, H10); empty or null = none. */
+  ipa?: string | null;
 };
 export type CreatePrivateSenseResult = {
   entryId: string; senseId: string; createdEntry: boolean; catalogMatch: { entryId: string } | null;
 };
 /** Per sense: a new meaning, new examples (an empty list removes them; plan choice 4), or both. */
 export type PrivateWordPatch = {
-  lemma?: string; pos?: string | null; senses?: Array<{ senseId: string; meaning?: Meaning; examples?: string[] }>;
+  lemma?: string; pos?: string | null;
+  /** `ipa`: the sense's own pronunciation note; empty or null clears it (round C, DC33: one box per sense). */
+  senses?: Array<{ senseId: string; meaning?: Meaning; examples?: string[]; ipa?: string | null }>;
   level?: Level | null; topicCodes?: string[];
 };
 export class PrivateWordLimitError extends ContentRuleError {
@@ -60,6 +64,10 @@ function privatePos(value: string | null): string {
 function privateExamples(examples: string[]): string[] {
   if (examples.length > PRIVATE_EXAMPLES_MAX) throw invalid();
   return examples.map((example) => boundedText(example, SENTENCE_MAX));
+}
+/** The learner's own ipa note: slashes dropped, at most 100 characters, no character check (DC22); empty is none. */
+function privateIpa(value: string | null | undefined): string | null {
+  return normalizeContent({ ipaCustom: value ?? null }, '').ipaCustom ?? null;
 }
 function meaningContent(meaning: Meaning): Pick<RevisionContent, 'glossVi' | 'definitionEn'> {
   const text = boundedText(meaning.text, MEANING_MAX);
@@ -139,6 +147,7 @@ export class PrivateWordsService {
     const pos = privatePos(input.pos);
     const meaning = meaningContent(input.meaning);
     const examples = privateExamples(input.examples);
+    const ipaCustom = privateIpa(input.ipa);
     if (input.level !== null && !LEVELS.includes(input.level)) throw invalid();
     await this.lockOwner(tx, input.ownerId);
     const topicCodes = await this.validTopics(tx, input.topicCodes);
@@ -166,7 +175,7 @@ export class PrivateWordsService {
     let contextLabel: string | null = null;
     for (let n = 2; labels.has(contextLabel); n++) contextLabel = `p${n}`;
     const sense = await tx.sense.create({ data: { entryId: entry.id, contextLabel, state: 'unpublished' }, select: { id: true } });
-    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: examples, topicCodes, acceptedForms: [], formOf: input.formOf },
+    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: examples, topicCodes, acceptedForms: [], formOf: input.formOf, ...(ipaCustom ? { ipaCustom } : {}) },
       input.ownerId, input.aiSuggestion ? 'ai_suggestion' : 'user');
 
     if (input.level !== null) {
@@ -197,9 +206,10 @@ export class PrivateWordsService {
       }
     }
     const topicCodes = patch.topicCodes !== undefined ? await this.validTopics(tx, patch.topicCodes) : undefined;
-    const changes = new Map((patch.senses ?? []).map(({ senseId, meaning, examples }) => [senseId, {
+    const changes = new Map((patch.senses ?? []).map(({ senseId, meaning, examples, ipa }) => [senseId, {
       ...(meaning === undefined ? {} : meaningContent(meaning)),
       ...(examples === undefined ? {} : { examplesEn: privateExamples(examples) }),
+      ...(ipa === undefined ? {} : { ipaCustom: privateIpa(ipa) }),
     }]));
     const senses = await tx.sense.findMany({ where: { entryId: entry.id }, include: {
       revisions: { orderBy: { revisionNo: 'desc' }, take: 1, include: revisionInclude },

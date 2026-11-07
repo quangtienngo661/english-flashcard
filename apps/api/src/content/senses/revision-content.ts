@@ -86,9 +86,10 @@ export function normalizeContent(partial: Partial<RevisionContent>, lemma: strin
     if (!check.ok) throw new ContentRuleError('ipa-invalid', { field, char: check.char });
     result[key] = value || null;
   }
-  // The learner's own note is free text (DC22): no character check, only the length.
+  // The learner's own note is free text (DC22): the slashes go like on the other fields, but no character check, only the length.
   if (partial.ipaCustom !== undefined) {
-    const value = partial.ipaCustom === null ? '' : text(partial.ipaCustom);
+    const value = partial.ipaCustom === null ? '' : normalizeIpa(partial.ipaCustom);
+    if (value.includes('\0')) throw new ContentRuleError('validation-failed');
     if ([...value].length > IPA_MAX_LENGTH) throw new ContentRuleError('validation-failed');
     result.ipaCustom = value || null;
   }

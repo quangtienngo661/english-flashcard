@@ -4,6 +4,7 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
 import type { LevelsService } from '../catalog/levels.service.js';
 import type { InflectionsService } from '../inflections/inflections.service.js';
+import { contentHash } from '../senses/revision-content.js';
 import { PrivateWordLimitError, PrivateWordsService } from './private-words.service.js';
 
 /** Thrown by the fake `entry.create`: reaching it means the limit check passed. */
@@ -208,5 +209,86 @@ describe('PrivateWordsService.privateSenseIdsOf (Bước 8: Practice reads it be
     expect(findMany).toHaveBeenCalledExactlyOnceWith({
       where: { entry: { scope: 'private', ownerUserId: 'owner-1' } }, select: { id: true },
     });
+  });
+});
+
+describe('PrivateWordsService — the learner own ipa (round C, H10, DC22/DC33)', () => {
+  const create = (patch: Record<string, unknown>) => {
+    const { service, full } = fullSetup();
+    return { full, run: () => service.createPrivateSense(full as unknown as Prisma.TransactionClient, { ...input, ...patch }) };
+  };
+  const revisionData = (full: ReturnType<typeof fullSetup>['full']) =>
+    (full.senseRevision.create.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0].data;
+
+  it('a new word with ipa "/ˈfəʊbiə/" keeps ipa_custom without the slashes', async () => {
+    const { full, run } = create({ lemma: 'phobia', ipa: '/ˈfəʊbiə/' });
+    await run();
+    expect(revisionData(full)).toMatchObject({ ipaCustom: 'ˈfəʊbiə', ipaUk: null, ipaUs: null, ipaSourceId: null });
+  });
+
+  it('the learner own note is free text: no IPA character check', async () => {
+    const { full, run } = create({ ipa: 'FOH-bee-uh' });
+    await run();
+    expect(revisionData(full)).toMatchObject({ ipaCustom: 'FOH-bee-uh' });
+  });
+
+  it('no ipa, an empty one or null → ipa_custom null', async () => {
+    for (const patch of [{}, { ipa: '' }, { ipa: null }, { ipa: ' / / ' }]) {
+      const { full, run } = create(patch);
+      await run();
+      expect(revisionData(full).ipaCustom, JSON.stringify(patch)).toBeNull();
+    }
+  });
+
+  it('101 characters → validation-failed, nothing written', async () => {
+    const { full, run } = create({ ipa: 'a'.repeat(101) });
+    await expect(run()).rejects.toMatchObject({ code: 'validation-failed' });
+    expect(full.entry.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PrivateWordsService.updatePrivateWord — ipa per sense (round C, DC33)', () => {
+  function updateSetup(ipaCustom: string | null = 'ˈfəʊbiə') {
+    const { service, full } = fullSetup();
+    const latest = {
+      revisionNo: 1, draftSource: 'user', examples: ['A fear.'], topicCodes: [], acceptedForms: [],
+      formOfEntryId: null, formKind: null, ipaUk: null, ipaUs: null, ipaSourceId: null, ipaCustom,
+      texts: [{ language: 'vi', kind: 'gloss', text: 'nỗi sợ' }],
+      contentHash: contentHash({ glossVi: 'nỗi sợ', definitionEn: null, examplesEn: ['A fear.'], topicCodes: [], acceptedForms: [],
+        ...(ipaCustom ? { ipaCustom } : {}) }),
+    };
+    const tx = {
+      ...full,
+      entry: { ...full.entry, findFirst: vi.fn().mockResolvedValueOnce({ id: 'e1', lemma: 'phobia', pos: 'noun' }).mockResolvedValue(null),
+        update: vi.fn(async () => ({})) },
+      sense: { ...full.sense, findMany: vi.fn(async () => [{ id: 's1', revisions: [latest] }]) },
+    };
+    const written = () => (tx.senseRevision.create.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0].data;
+    return { service, tx, written };
+  }
+
+  it('an empty ipa clears it; every other field of the sense is kept', async () => {
+    const { service, tx, written } = updateSetup();
+    await service.updatePrivateWord(tx as unknown as Prisma.TransactionClient, 'u1', 'e1', { senses: [{ senseId: 's1', ipa: '' }] });
+    expect(written()).toMatchObject({ revisionNo: 2, ipaCustom: null, examples: ['A fear.'], texts: { create: [{ language: 'vi', kind: 'gloss', text: 'nỗi sợ' }] } });
+  });
+
+  it('a new ipa replaces the old one', async () => {
+    const { service, tx, written } = updateSetup();
+    await service.updatePrivateWord(tx as unknown as Prisma.TransactionClient, 'u1', 'e1', { senses: [{ senseId: 's1', ipa: '/ˈfoʊbiə/' }] });
+    expect(written()).toMatchObject({ ipaCustom: 'ˈfoʊbiə' });
+  });
+
+  it('DC33: a change of meaning alone keeps the ipa', async () => {
+    const { service, tx, written } = updateSetup();
+    await service.updatePrivateWord(tx as unknown as Prisma.TransactionClient, 'u1', 'e1',
+      { senses: [{ senseId: 's1', meaning: { text: 'chứng sợ', language: 'vi' } }] });
+    expect(written()).toMatchObject({ ipaCustom: 'ˈfəʊbiə' });
+  });
+
+  it('the same ipa again writes no new revision', async () => {
+    const { service, tx } = updateSetup(null);
+    await service.updatePrivateWord(tx as unknown as Prisma.TransactionClient, 'u1', 'e1', { senses: [{ senseId: 's1', ipa: null }] });
+    expect(tx.senseRevision.create).not.toHaveBeenCalled();
   });
 });
