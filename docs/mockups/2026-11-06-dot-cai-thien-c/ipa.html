@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup phiên âm IPA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2445d6;--primary-soft:#eceffe;--accent:#ffd84a;--accent-deep:#c9a21a;--accent-soft:#fff4c7;--ink:#0f1a3d;--muted:#4d5577;--canvas:#f1f3fd;--border:#e3e6f4;--border-strong:#7d84a8;--success-soft:#e3f4ea;--navy:#1b2444;--on-navy:#f1f3fd}
+*{box-sizing:border-box}
+body{margin:0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);background:#e7eaf6;font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+p,h2,h3{text-wrap:pretty}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 24px;background:#fff}
+.controls b{margin-right:12px}
+.tab{border:2px solid var(--border-strong);background:#fff;border-radius:.75rem;padding:6px 14px;font-weight:600}
+.tab[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab:focus-visible,.spk:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.note{margin:0;padding:0 24px 16px;background:#fff;color:var(--muted)}
+.stage{padding:24px;display:flex;justify-content:center}
+.frame{width:1100px;max-width:100%;background:var(--canvas);border-radius:1.25rem;overflow:hidden}
+.bar{background:var(--navy);color:var(--on-navy);display:flex;align-items:center;gap:8px;padding:14px 28px;font-weight:800;font-size:20px}
+.bar i{display:inline-block;width:32px;height:18px;border-radius:6px;background:var(--accent)}
+.page{display:none;padding:28px}
+.page.on{display:block}
+.word{font-size:48px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px}
+.card{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:20px;margin-top:16px;max-width:760px}
+.pos{display:inline-block;border-radius:999px;padding:2px 10px;font-size:14px;font-weight:600;background:var(--primary-soft);color:var(--primary)}
+.mean{font-size:20px;font-weight:600;margin:8px 0 6px}
+.ipa{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:16px}
+.ipa span{display:inline-flex;align-items:center;gap:2px}
+.ipa em{font-style:normal;font-size:13px;font-weight:600;color:var(--muted);margin-right:4px}
+.ipa code{font-family:inherit;font-size:17px}
+.spk{border:0;background:none;color:var(--primary);border-radius:999px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center}
+.spk:hover{background:var(--primary-soft)}
+.spk svg{width:20px;height:20px}
+.ex{margin:4px 0 0;color:var(--muted)}
+.card .word{font-size:36px}
+.sense{margin-top:16px;padding-top:14px;border-top:2px solid var(--canvas)}
+.sense .mean{margin:6px 0 2px}
+.lvl{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700}
+.sense.diff .ipa{margin-top:4px}
+.flash{max-width:420px;margin:24px auto;background:#fff;border:2px solid var(--border);border-bottom:4px solid var(--primary);border-radius:1.5rem;padding:28px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+.flash .w{font-size:40px;font-weight:800}
+.flash .ipa{justify-content:center}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:420px;margin:0 auto}
+.btn{min-height:48px;border-radius:.875rem;border:2px solid var(--border-strong);background:#fff;font-weight:600}
+.btn.on{background:var(--accent);border-color:var(--accent)}
+.form{max-width:560px;display:flex;flex-direction:column;gap:14px}
+label{font-weight:600;display:flex;flex-direction:column;gap:6px}
+input{font:inherit;border:2px solid var(--border-strong);border-radius:.75rem;padding:10px 12px;background:#fff}
+input:focus-visible{outline:3px solid var(--primary);outline-offset:1px}
+.help{font-weight:400;font-size:14px;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.miss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.miss .card{margin:0}
+.miss h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
+.empty{color:var(--muted);font-size:15px}
+@media (max-width:700px){.miss,.two{grid-template-columns:1fr}.page{padding:16px}.word{font-size:38px}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <b>Màn hình</b>
+  <button class="tab" data-page="word" aria-pressed="true">Trang một từ</button>
+  <button class="tab" data-page="flash" aria-pressed="false">Thẻ khi Học</button>
+  <button class="tab" data-page="private" aria-pressed="false">Từ riêng của bạn</button>
+  <button class="tab" data-page="admin" aria-pressed="false">Admin sửa nghĩa</button>
+  <button class="tab" data-page="missing" aria-pressed="false">Nghĩa chưa có phiên âm</button>
+</div>
+<p class="note">Mockup M2, phiên âm gắn theo từng nghĩa. Nút loa UK là nút đã có trong code (giọng của máy), hiện chưa hiện ra; máy nào không có giọng UK thì chỉ ẩn nút loa UK, phiên âm UK vẫn hiện.</p>
+
+<div class="stage"><div class="frame">
+  <div class="bar"><i></i>Wordmet</div>
+
+  <section class="page on" id="word">
+    <p class="help" style="margin:0 0 12px">Như Cambridge: phiên âm đặt ngay dưới từ và loại từ, dùng chung cho các nghĩa bên dưới. Nghĩa nào đọc khác thì tách thành khối riêng.</p>
+    <div class="card">
+      <h1 class="word">record</h1>
+      <p style="margin:2px 0 6px"><span class="pos">danh từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/ˈrek.ɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/ˈrek.ɚd/</code></span></div>
+      <div class="sense"><p class="mean">hồ sơ, bản ghi</p><p class="ex">She keeps a record of every lesson.</p></div>
+      <div class="sense"><p class="mean">kỷ lục</p><p class="ex">She broke the world record.</p></div>
+    </div>
+    <div class="card">
+      <h1 class="word">record</h1>
+      <p style="margin:2px 0 6px"><span class="pos">động từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/rɪˈkɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/rɪˈkɔːrd/</code></span></div>
+      <div class="sense"><p class="mean">ghi lại, thu âm</p><p class="ex">They recorded the song in one day.</p></div>
+    </div>
+    <div class="card">
+      <h1 class="word">lead</h1>
+      <p style="margin:2px 0 6px"><span class="pos">danh từ</span> <span class="lvl">B1</span></p>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/liːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/liːd/</code></span></div>
+      <div class="sense"><p class="mean">vị trí dẫn đầu</p></div>
+      <div class="sense diff"><p class="mean">chì (kim loại)</p>
+        <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/led/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/led/</code></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="flash">
+    <div class="flash">
+      <span class="w">record</span>
+      <span class="pos">động từ</span>
+      <div class="ipa"><span><em>UK</em><button class="spk" aria-label="Nghe giọng UK">%SPK%</button><code>/rɪˈkɔːd/</code></span><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button><code>/rɪˈkɔːrd/</code></span></div>
+      <p class="mean" style="margin:6px 0 0">ghi lại, thu âm</p>
+    </div>
+    <div class="btns"><button class="btn">Cần ôn lại</button><button class="btn on">Đã biết</button></div>
+  </section>
+
+  <section class="page" id="private">
+    <div class="form">
+      <h2 style="margin:0;font-size:28px">Sửa từ của bạn</h2>
+      <label>Từ<input value="phobia"></label>
+      <label>Nghĩa<input value="nỗi sợ hãi vô lý"></label>
+      <label>Phiên âm <span class="help">Không bắt buộc. Gõ theo cách bạn muốn đọc.</span><input value="/ˈfoʊ.bi.ə/"></label>
+      <button class="btn on" style="justify-self:start;padding:0 24px">Lưu</button>
+    </div>
+    <div class="card">
+      <span class="pos">danh từ</span>
+      <p class="mean">nỗi sợ hãi vô lý</p>
+      <div class="ipa"><span><button class="spk" aria-label="Nghe">%SPK%</button><code>/ˈfoʊ.bi.ə/</code></span></div>
+    </div>
+  </section>
+
+  <section class="page" id="admin">
+    <div class="form">
+      <h2 style="margin:0;font-size:28px">record · động từ · ghi lại, thu âm</h2>
+      <div class="two">
+        <label>Phiên âm UK<input value="/rɪˈkɔːd/"></label>
+        <label>Phiên âm US<input value="/rɪˈkɔːrd/"></label>
+      </div>
+      <p class="help" style="margin:0">Nguồn: Wiktionary (CC BY-SA 4.0). Sửa tay thì nguồn đổi thành "Wordmet".</p>
+      <button class="btn on" style="justify-self:start;padding:0 24px">Lưu bản nháp</button>
+    </div>
+  </section>
+
+  <section class="page" id="missing">
+    <p style="margin:0 0 16px">Ví dụ "look after" không có trong nguồn IPA. Ba cách hiện:</p>
+    <div class="miss">
+      <div class="card"><h3>Cách A: ẩn dòng phiên âm</h3><span class="pos">cụm động từ</span><p class="mean">chăm sóc</p></div>
+      <div class="card"><h3>Cách B: ghi "chưa có"</h3><span class="pos">cụm động từ</span><p class="mean">chăm sóc</p><p class="empty">Chưa có phiên âm</p></div>
+      <div class="card"><h3>Cách C: chỉ còn nút loa</h3><span class="pos">cụm động từ</span><p class="mean">chăm sóc</p><div class="ipa"><span><em>US</em><button class="spk" aria-label="Nghe giọng US">%SPK%</button></span></div></div>
+    </div>
+  </section>
+</div></div>
+
+<script>
+const spk='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+document.querySelectorAll('.spk').forEach(b=>b.innerHTML=spk);
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
+if(location.hash){const id=location.hash.slice(2);if(document.getElementById(id))show(id);}
+</script>
+</body>
+</html>
