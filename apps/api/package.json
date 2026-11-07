@@ -35,6 +35,7 @@
     "smoke:buoc-7": "node scripts/smoke-buoc-7.mjs",
     "smoke:buoc-8": "node scripts/smoke-buoc-8.mjs",
     "smoke:nhom-b": "node scripts/smoke-nhom-b.mjs",
+    "smoke:session-synonyms": "node scripts/smoke-session-synonyms.mjs",
     "maintenance:run": "node dist/cli/run-maintenance.js",
     "billing:fake-event": "node scripts/billing-fake-event.mjs",
     "payos:confirm-webhook": "node dist/cli/payos-confirm-webhook.js",

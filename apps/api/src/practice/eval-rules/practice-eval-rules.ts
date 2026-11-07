@@ -52,8 +52,10 @@ export class PracticeEvalRules implements EvalRules, OnModuleInit {
     const sense = mergeSenses(senses);
     if (op === 'generate_cloze') {
       const result = checkCloze({ sentence: String(output.sentence ?? ''), accepted_answers: asStrings(output.accepted_answers) }, sense);
-      if (result.ok) return { ...PASS };
-      return fail([...result.unknownForms.map((form) => `unknown-form:${form}`), ...(result.reveals ? ['reveals-word'] : [])]);
+      // Live, an entry that is no form of a session word is dropped and the question kept, so here it is a problem on a pass (design §5.3).
+      const unknown = (await this.unknownAlternatives(input, output)).map((entry) => `unknown-alternative:${entry}`);
+      if (result.ok) return { status: 'pass', problems: unknown, reason: null };
+      return fail([...result.unknownForms.map((form) => `unknown-form:${form}`), ...(result.reveals ? ['reveals-word'] : []), ...unknown]);
     }
     if (op === 'generate_meaning_question') {
       const result = checkMeaning({ sentence: String(output.sentence ?? ''), word_in_sentence: String(output.word_in_sentence ?? '') }, sense);
@@ -77,6 +79,25 @@ export class PracticeEvalRules implements EvalRules, OnModuleInit {
     if (op === 'generate_meaning_question') return forms.has(normalizeAnswer(String(output.word_in_sentence ?? '')));
     const answers = asStrings(output.accepted_answers);
     return answers.length > 0 && answers.every((answer) => forms.has(normalizeAnswer(answer)));
+  }
+
+  /**
+   * The `also_accepted` entries (as sent) that are no form of any word in `input.session_words`. A session word's forms are those of its
+   * catalog senses of any part of speech; a word the catalog lacks has none. Reads the catalog only when something was declared.
+   */
+  private async unknownAlternatives(input: Record<string, unknown>, output: Record<string, unknown>): Promise<string[]> {
+    const declared = asStrings(output.also_accepted);
+    if (declared.length === 0) return [];
+    const lemmas = new Set(
+      (Array.isArray(input.session_words) ? input.session_words : [])
+        .map((entry) => (entry !== null && typeof entry === 'object' ? (entry as { word?: unknown }).word : undefined))
+        .filter((word): word is string => typeof word === 'string'),
+    );
+    const known = new Set<string>();
+    for (const senses of await Promise.all([...lemmas].map((lemma) => this.content.catalogPracticeSensesByLemma(lemma, null, NATIVE_LANGUAGE)))) {
+      for (const sense of senses) for (const form of validForms(sense)) known.add(form);
+    }
+    return declared.filter((entry) => !known.has(normalizeAnswer(entry)));
   }
 
   /** `unspecified` takes every part of speech of the lemma (design §5.2). */

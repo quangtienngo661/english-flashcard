@@ -186,7 +186,8 @@ function HistoryRow({ item, withDate }: { item: HistoryItem; withDate: boolean }
   const right = item.result === 'correct';
   const result = item.skipped ? t('result.skipped')
     : !right ? t('result.wrong')
-      : item.hint_level > 0 ? t('result.hinted')
+      : item.alternative ? t('result.alternative')
+        : item.hint_level > 0 ? t('result.hinted')
         : item.tries > 1 ? t('result.retried', { n: item.tries }) : t('result.correct');
   const time = withDate ? `${format.date(item.answered_at, 'dayMonth')} ${format.time(item.answered_at)}` : format.time(item.answered_at);
   return (

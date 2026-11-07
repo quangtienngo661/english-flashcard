@@ -17,7 +17,7 @@ const OTHER_MODEL_ID = '33333333-3333-4333-8333-333333333333';
 const UNPRICED_MODEL_ID = '55555555-5555-4555-8555-555555555555';
 const EXAMPLE = {
   input: { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null },
-  output: { sentence: 'We will ___ it.', accepted_answers: ['deploy'], translation_vi: 'Chúng tôi sẽ triển khai.' },
+  output: { sentence: 'We will ___ it.', accepted_answers: ['deploy'], also_accepted: [], translation_vi: 'Chúng tôi sẽ triển khai.' },
 };
 
 type Cfg = {
@@ -153,7 +153,7 @@ describe('ConfigsService.get', () => {
     expect(view).toMatchObject({ operation: OP, live_version: 4, draft: null });
     expect(view.live).toMatchObject({ id: live.id, number: 3, status: 'published', model: { id: MODEL_ID, model_id: 'fake:ok' }, created_by_user: { email: 'admin@x.test' } });
     expect(view.previous).toMatchObject({ id: retired.id, number: 2, status: 'retired' });
-    expect(view.input_fields).toEqual(['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label']);
+    expect(view.input_fields).toEqual(['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label', 'session_words']);
   });
 
   it('an operation with no live pointer → 404', async () => {

@@ -679,6 +679,8 @@
       "backlogShort": "{count, plural, one {# word} other {# words}} not reviewed in a while",
       "waitingChip": "{count, plural, one {# card} other {# cards}} waiting",
       "doneChip": "Done today",
+      "emptyChip": "No words yet",
+      "addWord": "Add word",
       "review": "Review {count, plural, one {# card} other {# cards}}",
       "studyAgain": "Study the whole deck",
       "menu": "Options for {name}",
@@ -757,7 +759,10 @@
       "toList": "Go to your decks",
       "emptyFilter": "No words in this filter.",
       "loadMore": "Show more words",
-      "empty": "This deck has no words yet."
+      "empty": "This deck has no words yet.",
+      "emptyTitle": "This deck has no words yet",
+      "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
+      "emptyLookup": "Pick words by topic"
     },
     "backlog": {
       "back": "{name} deck",
@@ -1195,6 +1200,7 @@
         "empty": "No questions answered yet.",
         "correct": "right",
         "typed": "you typed {answer}, answer {correct}",
+        "alternative": "you typed {answer}, alternative to {correct}",
         "chose": "you chose {answer}, answer {correct}",
         "choseTf": "you chose {answer}",
         "skipped": "skipped, answer {correct}",
@@ -1320,6 +1326,11 @@
         "check": "Check",
         "attempt": "Try {n, number}",
         "tryAgainBody": "Check the spelling and try again. The answer stays hidden.",
+        "alternativeLabel": "Alternative answer",
+        "alternativeTyped": "The word you typed",
+        "alternativeAsked": "This sentence's word",
+        "reviewWord": "Still learning: {lemma}",
+        "knowWord": "Know: {lemma}",
         "retry": "Try again",
         "reveal": "Show answer",
         "tryAgainNote": "A right answer on a retry still counts as right. Showing the answer counts as wrong.",
@@ -1383,6 +1394,7 @@
           "title": "{count, plural, one {# question} other {# questions}} done.",
           "line": "{source}, {types}. {remaining, number} of {limit, number} sessions left today.",
           "lineNoPool": "{source}, {types}.",
+          "alternatives": "{count, plural, one {Including # alternative answer} other {Including # alternative answers}}",
           "mixed": "{count, number} question types",
           "correct": "Right",
           "wrong": "Wrong",
@@ -1466,7 +1478,8 @@
           "wrong": "Wrong",
           "skipped": "Wrong · skipped",
           "hinted": "Right · with hint",
-          "retried": "Right · try {n, number}"
+          "retried": "Right · try {n, number}",
+          "alternative": "Right · alternative"
         },
         "actions": {
           "needs_review": "Still learning",

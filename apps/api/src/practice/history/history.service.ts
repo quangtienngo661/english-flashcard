@@ -19,6 +19,8 @@ export type HistoryItem = {
   item_id: string; session_id: string; sense_id: string; lemma: string; type: string; prompt_style: string; prompt: Prompt;
   answer: string | null; correct: AnswerResult['correct']; result: string; skipped: boolean; tries: number; hint_level: number;
   review_action: string | null; answered_at: string; local_date: string;
+  /** Session synonyms: the answer was a declared session word, credited to the word typed (`answer`), not to this item's `sense_id`. */
+  alternative: boolean;
   /** Bước 7 (B7E124): the Vietnamese translation of an AI sentence, for a `vi` learner only. */
   translation: string | null;
 };
@@ -99,8 +101,11 @@ export class HistoryService {
       where: {
         userId, result: { in: ['correct', 'wrong'] },
         ...(query.date === undefined ? {} : { localDate: dateValue(query.date) }),
-        ...(query.sense_id === undefined ? {} : { senseId: query.sense_id }),
-        ...(at === null ? {} : { OR: [{ answeredAt: { lt: at } }, { answeredAt: at, id: { lt: cursor!.id as string } }] }),
+        AND: [
+          // An alternative answer shows under both of its words (session synonyms design §3.3).
+          ...(query.sense_id === undefined ? [] : [{ OR: [{ senseId: query.sense_id }, { alternativeSenseId: query.sense_id }] }]),
+          ...(at === null ? [] : [{ OR: [{ answeredAt: { lt: at } }, { answeredAt: at, id: { lt: cursor!.id as string } }] }]),
+        ],
       },
       include: { question: true },
       orderBy: [{ answeredAt: 'desc' }, { id: 'desc' }],
@@ -116,7 +121,7 @@ export class HistoryService {
           item_id: row.id, session_id: row.sessionId, sense_id: row.senseId, lemma: key.reveal.lemma, type: row.question.type,
           prompt_style: row.question.promptStyle, prompt, answer: row.answerRaw, correct: correctOf(key, prompt), result: row.result!,
           skipped: row.skipped, tries: row.tries, hint_level: row.hintLevel, review_action: row.reviewAction,
-          answered_at: row.answeredAt!.toISOString(), local_date: dateString(row.localDate!),
+          answered_at: row.answeredAt!.toISOString(), local_date: dateString(row.localDate!), alternative: row.alternative === true,
           translation: nativeLanguage === 'vi' ? key.translation_vi ?? null : null,
         };
       }),

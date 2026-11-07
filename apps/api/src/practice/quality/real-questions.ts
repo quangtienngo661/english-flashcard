@@ -29,9 +29,12 @@ export function touchesPrivateWord(q: { answerKey: AnswerKey | null; aiInput: St
   if (key !== null) {
     if (key.asked_private) return true;
     if (key.kind === 'mcq' && key.option_private.some(Boolean)) return true;
+    // An AI fill-in written with a private session word (the AI input is deleted after 7 days; the key keeps the mark, design §5.5).
+    if (key.kind === 'type_word' && key.session_private === true) return true;
   }
   if (input === null) return false;
   if (input.contentKey !== null) return true;
+  if (input.type === 'cloze') return (input.session ?? []).some((sense) => sense.scope === 'private');
   if (input.type === 'mcq_sentence') return (input.form?.senses ?? []).some((sense) => sense.scope === 'private');
   if (input.type === 'meaning_in_sentence') return (input.wrong ?? []).some((sense) => sense.scope === 'private');
   return false;

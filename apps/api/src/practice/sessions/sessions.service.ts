@@ -183,17 +183,18 @@ export class SessionsService {
     let retry = retryAi;
     let failure: { resetsAt?: string; retryAfterSeconds?: number } = {};
     for (let attempt = 0; ; attempt++) {
-      const { result, view } = await this.prisma.$transaction(async (tx) => {
-        const session = await this.lockOpen(tx, learner.userId, sessionId);
-        const advanced = await this.advance(tx, learner, session, true, retry);
-        return { result: advanced, view: await this.view(tx, session.id) };
+      const { result, view, session } = await this.prisma.$transaction(async (tx) => {
+        const locked = await this.lockOpen(tx, learner.userId, sessionId);
+        const advanced = await this.advance(tx, learner, locked, true, retry);
+        return { result: advanced, view: await this.view(tx, locked.id), session: locked };
       }, transactionOptions);
       retry = false;
       if (result.state === 'pending') {
         const preparing: NextResult = { state: 'preparing', session: view, retry_after_seconds: PREPARING_RETRY_SECONDS };
         // B7E16, B7E111: someone else is making it; at most one run of the generator per call.
         if (attempt > 0 || (!result.fresh && !(await this.aiRequests.claimStale(result.requestId, this.clock.now())))) return preparing;
-        const outcome = await this.generator.run(result.requestId, { learner, session: { id: sessionId, aiStopped: null } });
+        const wordIds = await this.sessionWordIds(this.prisma, learner.userId, session);
+        const outcome = await this.generator.run(result.requestId, { learner, session: { id: sessionId, aiStopped: null, wordIds } });
         if (outcome.state === 'preparing') return preparing;
         if (outcome.state === 'failed') failure = { resetsAt: outcome.resetsAt, retryAfterSeconds: outcome.retryAfterSeconds };
         continue;
@@ -212,11 +213,11 @@ export class SessionsService {
    */
   async prepare(learner: Learner, sessionId: string): Promise<{ prepared: number; already_ready: number; failed: number }> {
     await this.closeIfIdle(learner.userId, sessionId);
-    const { requestIds, already } = await this.prisma.$transaction(async (tx) => {
+    const { requestIds, already, wordIds } = await this.prisma.$transaction(async (tx) => {
       const session = await this.lockOpen(tx, learner.userId, sessionId);
       const { practice } = await this.settings.get(tx);
       const aiTypes = this.aiTypesOf(session);
-      const none = { requestIds: [] as string[], already: 0 };
+      const none = { requestIds: [] as string[], already: 0, wordIds: [] as string[] };
       if (session.aiStopped !== null || aiTypes.length === 0 || practice.aiPrefetchCount === 0 || session.continued === true) return none;
       const items: ItemWithQuestion[] = await tx.practiceSessionItem.findMany({
         where: { sessionId: session.id }, include: { question: true }, orderBy: { position: 'asc' },
@@ -227,7 +228,7 @@ export class SessionsService {
       const window = session.senseIds.slice(cursor + 1).filter((id) => session.aiSenseIds.includes(id)).slice(0, practice.aiPrefetchCount);
       let budget = await this.aiBudgetOf(tx, session, items);
       const pointed = session.pendingAiRequestId ? (await this.aiRequests.get(session.pendingAiRequestId, tx))?.senseId : undefined;
-      const result = { requestIds: [] as string[], already: 0 };
+      const result = { requestIds: [] as string[], already: 0, wordIds: [] as string[] };
       for (const senseId of window) {
         if (budget <= 0) break;
         if (senseId === pointed || (await this.aiRequests.findForSession(tx, session.id, senseId))?.round === 1) {
@@ -255,11 +256,12 @@ export class SessionsService {
         result.requestIds.push(request.id);
         budget--;
       }
+      if (result.requestIds.length > 0) result.wordIds = await this.sessionWordIds(tx, learner.userId, session);
       return result;
     }, transactionOptions);
     // B7E126: a session closed meanwhile only leaves unseen questions behind.
     const outcomes = await Promise.all(requestIds.map((id) =>
-      this.generator.run(id, { learner, session: { id: sessionId, aiStopped: null } })));
+      this.generator.run(id, { learner, session: { id: sessionId, aiStopped: null, wordIds } })));
     return {
       prepared: outcomes.filter((o) => o.state === 'ready').length,
       already_ready: already + outcomes.filter((o) => o.state === 'preparing').length,
@@ -380,11 +382,17 @@ export class SessionsService {
     return this.learning.practiceItems(userId, scope);
   }
 
+  /** The session's usable words, in session order: what counts as another word of the session for an AI fill-in (session synonyms §3.1). */
+  async sessionWordIds(db: Prisma.TransactionClient | PrismaClient, userId: string, session: PracticeSession): Promise<string[]> {
+    const usable = await this.usable(db, userId, session);
+    return session.senseIds.filter((id) => usable.has(id));
+  }
+
   /** Senses of the session still usable: visible, in learning and, for a group source, still in that group (design 7.2). */
-  private async usable(tx: Prisma.TransactionClient, userId: string, session: PracticeSession): Promise<Set<string>> {
+  private async usable(db: Prisma.TransactionClient | PrismaClient, userId: string, session: PracticeSession): Promise<Set<string>> {
     const items = session.source === 'group'
-      ? await this.learning.practiceItems(userId, { kind: 'group', groupId: session.groupId!, filter: 'all' }, tx)
-      : await this.learning.practiceItems(userId, { kind: 'senses', senseIds: session.senseIds }, tx);
+      ? await this.learning.practiceItems(userId, { kind: 'group', groupId: session.groupId!, filter: 'all' }, db)
+      : await this.learning.practiceItems(userId, { kind: 'senses', senseIds: session.senseIds }, db);
     const inSession = new Set(session.senseIds);
     return new Set(items.map(({ sense_id }) => sense_id).filter((id) => inSession.has(id)));
   }

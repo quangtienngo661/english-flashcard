@@ -13,7 +13,7 @@ function request(model: string, overrides: Partial<AdapterRequest> = {}): Adapte
     model,
     instructions: 'Write one sentence.',
     data: CLOZE_DATA,
-    schema: { name: 'generate_cloze_v1', schema: { type: 'object' } },
+    schema: { name: 'generate_cloze_v2', schema: { type: 'object' } },
     effort: null,
     thinking: null,
     maxOutputTokens: null,
@@ -35,7 +35,7 @@ describe('FakeAiAdapter.call', () => {
   it('fake:ok generate_cloze → a sentence with one blank, the word as answer, a Vietnamese translation, usage and a request id', async () => {
     const outcome = await call(new FakeAiAdapter(), request('fake:ok'));
     expect(okText(outcome)).toEqual({
-      sentence: 'Lan will ___ it tomorrow.', accepted_answers: ['deploy'], translation_vi: expect.any(String),
+      sentence: 'Lan will ___ it tomorrow.', accepted_answers: ['deploy'], also_accepted: [], translation_vi: expect.any(String),
     });
     expect(outcome).toMatchObject({
       usage: { inputTokens: 100, cachedInputTokens: 0, outputTokens: 50, reasoningTokens: 0 },
@@ -89,6 +89,23 @@ describe('FakeAiAdapter.call', () => {
     const mcq = await parsed('fake:ok', 'generate_sentence_mcq', NEW_OPS[1].data);
     expect(mcq).toMatchObject({ sentence: 'Lan ___ it today.', distractors: ['delivered', 'debugged', 'delayed'] });
     expect(await parsed('fake:ok', 'check_private_word', NEW_OPS[2].data)).toEqual({ verdict: 'ok' });
+  });
+
+  it('fake:ok cloze declares no alternative', async () => {
+    expect(await parsed('fake:ok', 'generate_cloze', CLOZE_DATA)).toMatchObject({ accepted_answers: ['deploy'], also_accepted: [] });
+  });
+
+  it('fake:alternative → also_accepted holds the first session word', async () => {
+    const withWords = { ...CLOZE_DATA, session_words: [{ word: 'release', meaning_vi: null }, { word: 'ship', meaning_vi: 'gửi' }] };
+    expect(await parsed('fake:alternative', 'generate_cloze', withWords)).toMatchObject({
+      accepted_answers: ['deploy'], also_accepted: ['release'],
+    });
+    expect(await parsed('fake:alternative', 'generate_cloze', CLOZE_DATA)).toMatchObject({ also_accepted: [] });
+    expect(await parsed('fake:alternative', 'generate_cloze', { ...CLOZE_DATA, session_words: [] })).toMatchObject({ also_accepted: [] });
+  });
+
+  it('FAKE_MODELS lists fake:alternative', () => {
+    expect(FAKE_MODELS).toContain('fake:alternative');
   });
 
   it('fake:bad-form → passes the gate, but the answer is not a form of the word, a distractor is outside candidates and the word is absent', async () => {

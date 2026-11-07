@@ -7,7 +7,11 @@ import { CurrentLearner, LearnerContent, type Learner } from '../../content/inde
 import { PracticeReviewsService } from './practice-reviews.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
-const reviewBody = z.strictObject({ action: z.enum(['needs_review', 'known']) });
+// `sense_id`: which word of an alternative answer the button belongs to (required there, optional on every other item).
+const reviewBody = z.strictObject({
+  action: z.enum(['needs_review', 'known']),
+  sense_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
+});
 
 @Controller('practice')
 @LearnerContent()
@@ -23,7 +27,7 @@ export class PracticeReviewsController {
     @Body({ schema: reviewBody }) body: z.infer<typeof reviewBody>,
     @CurrentLearner() learner: Learner,
   ) {
-    return this.reviews.review(learner.userId, params.id, body.action);
+    return this.reviews.review(learner.userId, params.id, body.action, body.sense_id);
   }
 
   @Get('sessions/:id/summary')

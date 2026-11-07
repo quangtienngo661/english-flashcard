@@ -87,6 +87,8 @@ export const CONTEXT_LABEL_MAX = 2_000;
 export const TRANSLATION_MAX = 600;
 export const ACCEPTED_ANSWERS_MAX = 5;
 export const ACCEPTED_ANSWER_MAX = 100;
+/** `generate_cloze.session_words`: a session keeps at most 100 words (`max_questions_per_session`), so at most 99 besides the asked one. */
+export const SESSION_WORDS_MAX = 99;
 export const LOOKUP_EXAMPLES_MAX = 2;
 
 // Bước 7 operations (design §15).

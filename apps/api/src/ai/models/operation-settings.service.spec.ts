@@ -29,7 +29,7 @@ describe('OperationSettingsService.list (nhóm B M2: the choices are those of th
     expect(items).toHaveLength(2);
     expect(items[0]).toMatchObject({
       operation: 'generate_cloze', model: { id: MODEL.id, provider: 'openai', model_id: 'gpt-6-luna' }, effort: 'low', thinking: 'off',
-      max_output_tokens: 900, version: 4, input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'],
+      max_output_tokens: 900, version: 4, input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label', 'session_words'],
     });
     expect(items[0]!.estimate).not.toBeNull();
     expect(items[1]).toMatchObject({ operation: 'lookup_word', model: null, effort: null, thinking: null, version: 0, estimate: null });

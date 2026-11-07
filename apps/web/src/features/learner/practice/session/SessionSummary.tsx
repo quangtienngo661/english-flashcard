@@ -15,7 +15,7 @@ import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
 import { STAGGER } from '../../review/ReviewSummary';
 import { KBD } from './QuestionCard';
-import type { Summary } from './use-practice-session';
+import type { Summary, SummaryWord } from './use-practice-session';
 
 export function useSummary(sessionId: string) {
   const api = useApi();
@@ -66,12 +66,14 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
     return true;
   });
 
-  async function reviewOne(itemId: string) {
+  /** A row is a word, and two words can share an item (an alternative answer): the call names its word, and so does the pending key. */
+  async function reviewOne(word: SummaryWord) {
+    const key = `${word.item_id}:${word.sense_id}`;
     if (pressing) return;
-    setPressing(itemId);
+    setPressing(key);
     setError(null);
     try {
-      await api.post(`/v1/practice/items/${itemId}/review`, { action: 'needs_review' });
+      await api.post(`/v1/practice/items/${word.item_id}/review`, { action: 'needs_review', sense_id: word.sense_id });
       refresh();
     } catch (e) {
       setError(errorText(e));
@@ -103,9 +105,11 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
       </div>
       {data && (
         <dl className="grid grid-cols-2 gap-3">
-          <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[1]}`}>
-            <dt className="text-caption text-muted">{ts('correct')}</dt>
-            <dd className="text-h3 font-extrabold text-success">{data.correct}</dd>
+          <div className={`flex flex-col rounded-card bg-surface p-4 ${STAGGER[1]}`}>
+            <dt className="order-2 text-caption text-muted">{ts('correct')}</dt>
+            <dd className="order-1 text-h3 font-extrabold text-success">{data.correct}</dd>
+            {/* The alternatives belong to the right-answer count, so they sit in its tile (UI polish, 07/11/2026). */}
+            {(data.alternatives ?? 0) > 0 && <dd className="order-3 mt-1 text-caption font-semibold text-ink">{ts('alternatives', { count: data.alternatives ?? 0 })}</dd>}
           </div>
           <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[2]}`}>
             <dt className="text-caption text-muted">{ts('wrong')}</dt>
@@ -136,7 +140,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
                     {ts('added')}
                   </span>
                 ) : (
-                  <Button variant="quiet" isPending={pressing === word.item_id} onPress={() => void reviewOne(word.item_id)}>
+                  <Button variant="quiet" isPending={pressing === `${word.item_id}:${word.sense_id}`} onPress={() => void reviewOne(word)}>
                     {ts('review')}
                   </Button>
                 )}

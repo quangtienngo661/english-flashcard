@@ -38,6 +38,35 @@ describe('GroupListPage (K/16, K/16b)', () => {
     expect(names()).toEqual(['Nhóm 1', 'Nhóm 3']);
   });
 
+  it('an empty deck: chip "Chưa có từ" and [Thêm từ] locked to it, no "Học lại cả nhóm" (owner 06/11/2026)', async () => {
+    const empty = { ...deck(9, 0), name: 'test 1', total: 0, cells: cells.map((c) => ({ ...c, total: 0 })) };
+    renderApp(<GroupListPage />, { routes: withGroups([deck(2, 0), empty], { 'GET /v1/groups/g9/queue?mode=all': () => Response.json({ cards: [] }) }) });
+    const card = (await screen.findByRole('link', { name: 'test 1' })).closest('li')!;
+    expect(within(card).getByText('Chưa có từ')).toBeInTheDocument();
+    expect(within(card).queryByText('Xong hôm nay')).not.toBeInTheDocument();
+    expect(within(card).queryByRole('link', { name: 'Học lại cả nhóm' })).not.toBeInTheDocument();
+    // Control: the deck beside it has words and is done for today, so it still offers to study again.
+    const done = screen.getByRole('link', { name: 'Nhóm 2' }).closest('li')!;
+    expect(within(done).getByText('Xong hôm nay')).toBeInTheDocument();
+    expect(within(done).getByRole('link', { name: 'Học lại cả nhóm' })).toHaveAttribute('href', '/vi/app/review?group=g2&mode=all');
+    await userEvent.click(within(card).getByRole('button', { name: 'Tùy chọn nhóm test 1' }));
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    await userEvent.click(within(card).getByRole('button', { name: 'Thêm từ' }));
+    expect(await screen.findByText('Lưu vào nhóm: test 1', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('filter "Xong hôm nay" leaves out an empty deck; "Tất cả" keeps it', async () => {
+    const empty = { ...deck(9, 0), name: 'test 1', total: 0, cells: cells.map((c) => ({ ...c, total: 0 })) };
+    renderApp(<GroupListPage />, { routes: withGroups([deck(2, 0), empty]) });
+    await screen.findByText('test 1');
+    expect(names()).toEqual(['Nhóm 2', 'test 1']);
+    await userEvent.click(screen.getByRole('button', { name: /Tất cả · 2 nhóm/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Xong hôm nay' }));
+    expect(names()).toEqual(['Nhóm 2']);
+  });
+
   it('K/16b: from 10 decks a search box filters by name', async () => {
     const many = Array.from({ length: 10 }, (_, i) => deck(i + 1, 1));
     renderApp(<GroupListPage />, { routes: withGroups(many) });

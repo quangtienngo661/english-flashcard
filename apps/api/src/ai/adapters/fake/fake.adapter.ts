@@ -4,7 +4,7 @@ import { AiAdapter, type AdapterOutcome, type AdapterRequest, type ModelDescript
 /** The fake's models are scenarios (design §4.3). */
 export const FAKE_MODELS = [
   'fake:ok', 'fake:slow', 'fake:two-blanks', 'fake:bad-json', 'fake:truncated', 'fake:429-then-ok', 'fake:503-then-ok',
-  'fake:refuse', 'fake:quota', 'fake:auth', 'fake:bad-form', 'fake:not-recognized',
+  'fake:refuse', 'fake:quota', 'fake:auth', 'fake:bad-form', 'fake:not-recognized', 'fake:alternative',
 ] as const;
 
 const FAKE_USAGE: Usage = { inputTokens: 100, cachedInputTokens: 0, outputTokens: 50, reasoningTokens: 0 };
@@ -14,12 +14,21 @@ type Data = Record<string, unknown>;
 const judgeCodes = (data: Data): string[] =>
   (Array.isArray(data.criteria) ? (data.criteria as Array<{ code: unknown }>) : []).map((criterion) => String(criterion.code));
 
+/** The first `session_words[].word` of a fill-in input, or null. */
+function firstSessionWord(data: Data): string | null {
+  const words = data.session_words;
+  if (!Array.isArray(words) || words.length === 0) return null;
+  const word = (words[0] as { word?: unknown }).word;
+  return typeof word === 'string' ? word : null;
+}
+
 /** A valid answer for the operation whose output schema is `<operation>_v1`, built from `data`. */
 function okValue(schemaName: string, data: Data): Record<string, unknown> {
   switch (schemaName) {
-    case 'generate_cloze_v1':
+    case 'generate_cloze_v2':
       return {
-        sentence: 'Lan will ___ it tomorrow.', accepted_answers: [String(data.word)], translation_vi: 'Lan sẽ làm việc đó vào ngày mai.',
+        sentence: 'Lan will ___ it tomorrow.', accepted_answers: [String(data.word)], also_accepted: [],
+        translation_vi: 'Lan sẽ làm việc đó vào ngày mai.',
       };
     case 'lookup_word_v1':
       return {
@@ -57,7 +66,7 @@ function okValue(schemaName: string, data: Data): Record<string, unknown> {
 function badFormValue(schemaName: string, data: Data): Record<string, unknown> {
   const value = okValue(schemaName, data);
   switch (schemaName) {
-    case 'generate_cloze_v1':
+    case 'generate_cloze_v2':
       return { ...value, accepted_answers: [`${String(data.word)}ment`] };
     case 'generate_sentence_mcq_v1':
       return { ...value, distractors: [...(value.distractors as string[]).slice(0, 2), 'outsider'] };
@@ -100,7 +109,7 @@ export class FakeAiAdapter extends AiAdapter {
         });
         return error('timeout', null);
       case 'fake:two-blanks':
-        return ok(JSON.stringify({ ...okValue('generate_cloze_v1', data), sentence: 'Lan will ___ it ___.' }));
+        return ok(JSON.stringify({ ...okValue('generate_cloze_v2', data), sentence: 'Lan will ___ it ___.' }));
       case 'fake:bad-json':
         return ok('not json');
       case 'fake:truncated':
@@ -117,6 +126,12 @@ export class FakeAiAdapter extends AiAdapter {
         return error('auth', 401);
       case 'fake:bad-form':
         return ok(JSON.stringify(badFormValue(req.schema.name, data)));
+      case 'fake:alternative': {
+        // Session synonyms smoke: a fill-in that declares the first session word as also fitting the blank.
+        const value = okValue(req.schema.name, data);
+        const first = firstSessionWord(data);
+        return ok(JSON.stringify(req.schema.name === 'generate_cloze_v2' && first !== null ? { ...value, also_accepted: [first] } : value));
+      }
       case 'fake:not-recognized':
         return ok(JSON.stringify(req.schema.name === 'check_private_word_v1'
           ? { verdict: 'not_recognized' } : okValue(req.schema.name, data)));

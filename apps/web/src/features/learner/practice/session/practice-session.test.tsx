@@ -517,10 +517,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     renderApp(<PracticeSession />, {
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view(), item: mcq('item-4', { hint_level: 1 }), preparing: false }),
-        'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd…' } }),
+        'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
       }),
     });
-    expect(await screen.findByText('d…')).toBeInTheDocument();
+    expect(await screen.findByText('d___')).toBeInTheDocument();
     expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
   });
 
@@ -636,5 +636,75 @@ describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
   it('after an AI or rule session it sends no cloze_source (the API default stays)', () => {
     expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
     expect(againBody(view(null))).not.toHaveProperty('cloze_source');
+  });
+});
+
+// The summary with alternative answers (session synonyms design §3.3). `vital` was asked and `crucial` typed on the same item (a1),
+// after a hint, so both words are listed and share the item id.
+describe('Summary of alternative answers', () => {
+  const rows = [
+    { sense_id: 'sense-vital', lemma: 'vital', meaning: 'thiết yếu', item_id: 'a1', action: null },
+    { sense_id: 'sense-crucial', lemma: 'crucial', meaning: 'quan trọng', item_id: 'a1', action: null },
+  ];
+  const summaryRoutes = (summary: Record<string, unknown>, over: Record<string, Route> = {}) => routes({
+    [`GET /v1/practice/sessions/${SESSION}/summary`]: () => Response.json({ ...SUMMARY, ...summary }),
+    ...over,
+  });
+  const openSummary = async (summary: Record<string, unknown>, over: Record<string, Route> = {}) => {
+    const v = renderApp(<PracticeSession />, { routes: summaryRoutes(summary, over) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('{Escape}');
+    await screen.findByRole('heading', { name: 'Xong 10 câu.' });
+    return v;
+  };
+
+  it('CS8: two summary rows on one item each review their own word', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const v = await openSummary({ alternatives: 1, words: rows }, {
+      'POST /v1/practice/items/a1/review': async () => {
+        await gate;
+        return Response.json({ action: 'needs_review', item_id: 'a1', sense_id: 'sense-crucial', level: 1, due_date: '2026-11-08', priority: true });
+      },
+    });
+    const list = screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' });
+    const [, crucial] = within(list).getAllByRole('listitem');
+    await userEvent.click(within(crucial).getByRole('button', { name: 'Cần ôn lại' }));
+    await waitFor(() => expect(posts(v.calls, '/v1/practice/items/a1/review')).toHaveLength(1));
+    expect(posts(v.calls, '/v1/practice/items/a1/review')[0].body).toEqual({ action: 'needs_review', sense_id: 'sense-crucial' });
+    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' })).getAllByRole('listitem')[index]).getByRole('button', { name: 'Cần ôn lại' });
+    // A pending Button shows a spinner icon (React Aria drops aria-busy), so that is what tells a pending row.
+    const pending = (index: number) => rowButton(index).querySelector('svg') !== null;
+    await waitFor(() => expect(pending(1)).toBe(true));
+    expect(pending(0)).toBe(false);
+    release();
+    await waitFor(() => expect(pending(1)).toBe(false));
+  });
+
+  it('a pressed row shows "Đã đưa vào ưu tiên" and the other keeps its button', async () => {
+    await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }] });
+    const [vital, crucial] = within(screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' })).getAllByRole('listitem');
+    expect(within(crucial).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();
+    expect(within(crucial).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(vital).getByRole('button', { name: 'Cần ôn lại' })).toBeInTheDocument();
+  });
+
+  it('CS9: the summary says how many right answers were alternative answers', async () => {
+    await openSummary({ alternatives: 2 });
+    const line = await screen.findByText('Trong đó 2 đáp án thay thế');
+    // The line belongs to the right-answer count: it sits in the "Đúng" tile, not loose under both tiles (UI polish, 07/11/2026).
+    const right = screen.getAllByRole('term').find((term) => term.textContent === 'Đúng')!;
+    expect(right.parentElement).toContainElement(line);
+  });
+
+  it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {
+    await openSummary({ alternatives: 0 });
+    expect(screen.queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
+  });
+
+  it('an older API sends no count: the same', async () => {
+    await openSummary({});
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
   });
 });

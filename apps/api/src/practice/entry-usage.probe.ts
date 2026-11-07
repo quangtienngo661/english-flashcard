@@ -29,7 +29,8 @@ export class PracticeEntryUsageProbe implements EntryUsageProbe, OnModuleInit {
     ];
     const used = await tx.practiceSession.findFirst({ where: { OR: [{ senseIds: { hasSome: senseIds } }, { aiSenseIds: { hasSome: senseIds } }] }, ...select })
       ?? await tx.practiceQuestion.findFirst({ where: { OR: questionOf }, ...select })
-      ?? await tx.practiceSessionItem.findFirst(bySense)
+      // An alternative answer keeps the word typed in its own column (session synonyms design §4.2).
+      ?? await tx.practiceSessionItem.findFirst({ where: { OR: [{ senseId: { in: senseIds } }, { alternativeSenseId: { in: senseIds } }] }, ...select })
       ?? await tx.practiceReport.findFirst(bySense)
       ?? await tx.practiceAiRequest.findFirst(bySense)
       ?? await tx.practiceWordCheck.findFirst({ where: { senseId: { in: senseIds } }, select: { senseId: true } });

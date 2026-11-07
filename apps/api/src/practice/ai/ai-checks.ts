@@ -2,6 +2,7 @@
 import { maskExample, type CandidateSense, type InflectionKind, type LemmaMeanings, type PracticeSense } from '../../content/index.js';
 import { normalizeAnswer } from '../grading/normalize.js';
 import { MCQ_OPTIONS, MCQ_SENTENCE_CANDIDATES_MAX } from '../practice.constants.js';
+import type { DeclaredAlternative } from '../practice.types.js';
 import { eligibleCandidates, shuffle, subsenses } from '../questions/distractors.js';
 
 const BLANK = '___';
@@ -11,6 +12,30 @@ const NEEDED = MCQ_OPTIONS - 1;
 export function validForms(s: PracticeSense): Set<string> {
   return new Set([s.lemma, ...s.variants, ...s.accepted, ...s.inflections.map(({ form }) => form), ...s.extra_forms]
     .map(normalizeAnswer));
+}
+
+/**
+ * The `also_accepted` entries of an AI fill-in that Practice keeps (session synonyms design §5.3): a form of one of the session
+ * senses that were sent to the writer, normalized and listed once, marked private when a private sense has that form. An entry equal
+ * to an accepted answer is the asked word itself and goes without being counted; any other entry is dropped and counted.
+ */
+export function keepAlternatives(alsoAccepted: string[], accepted: string[], sessionSenses: PracticeSense[]):
+  { kept: DeclaredAlternative[]; dropped: number } {
+  const asked = new Set(accepted.map(normalizeAnswer));
+  const forms = sessionSenses.map((sense) => ({ valid: validForms(sense), private: sense.scope === 'private' }));
+  const kept = new Map<string, DeclaredAlternative>();
+  let dropped = 0;
+  for (const entry of alsoAccepted) {
+    const form = normalizeAnswer(entry);
+    if (asked.has(form)) continue;
+    const owners = forms.filter((owner) => owner.valid.has(form));
+    if (owners.length === 0) {
+      dropped++;
+      continue;
+    }
+    if (!kept.has(form)) kept.set(form, { form, private: owners.some((owner) => owner.private) });
+  }
+  return { kept: [...kept.values()], dropped };
 }
 
 /**

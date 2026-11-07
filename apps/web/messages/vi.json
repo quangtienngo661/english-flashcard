@@ -679,6 +679,8 @@
       "backlogShort": "{count, number} từ lâu chưa ôn",
       "waitingChip": "{count, number} thẻ chờ",
       "doneChip": "Xong hôm nay",
+      "emptyChip": "Chưa có từ",
+      "addWord": "Thêm từ",
       "review": "Ôn {count, number} thẻ",
       "studyAgain": "Học lại cả nhóm",
       "menu": "Tùy chọn nhóm {name}",
@@ -757,7 +759,10 @@
       "toList": "Về Danh sách nhóm",
       "emptyFilter": "Không có từ nào ở mục này.",
       "loadMore": "Xem thêm từ",
-      "empty": "Nhóm chưa có từ nào."
+      "empty": "Nhóm chưa có từ nào.",
+      "emptyTitle": "Nhóm này chưa có từ nào",
+      "emptyBody": "Thêm những từ bạn bắt gặp khi đọc hoặc xem phim, hoặc chọn nhanh một bộ từ theo chủ đề trong Tra từ. Khi nhóm đã có từ, bạn có thể bắt đầu ôn tập.",
+      "emptyLookup": "Chọn từ theo chủ đề"
     },
     "backlog": {
       "back": "Nhóm {name}",
@@ -1195,6 +1200,7 @@
         "empty": "Bạn chưa làm câu nào.",
         "correct": "đúng",
         "typed": "bạn gõ {answer}, đáp án {correct}",
+        "alternative": "bạn gõ {answer}, đáp án thay thế cho {correct}",
         "chose": "bạn chọn {answer}, đáp án {correct}",
         "choseTf": "bạn chọn {answer}",
         "skipped": "bỏ qua, đáp án {correct}",
@@ -1320,6 +1326,11 @@
         "check": "Kiểm tra",
         "attempt": "Lần {n, number}",
         "tryAgainBody": "Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.",
+        "alternativeLabel": "Đáp án thay thế",
+        "alternativeTyped": "Từ bạn gõ",
+        "alternativeAsked": "Từ của câu này",
+        "reviewWord": "Cần ôn lại: {lemma}",
+        "knowWord": "Đã biết: {lemma}",
         "retry": "Làm lại",
         "reveal": "Xem đáp án",
         "tryAgainNote": "Làm lại mà đúng vẫn tính là đúng. Xem đáp án thì tính là sai.",
@@ -1383,6 +1394,7 @@
           "title": "Xong {count, number} câu.",
           "line": "{source}, {types}. Hôm nay còn {remaining, number}/{limit, number} phiên luyện.",
           "lineNoPool": "{source}, {types}.",
+          "alternatives": "Trong đó {count, number} đáp án thay thế",
           "mixed": "trộn {count, number} kiểu câu",
           "correct": "Đúng",
           "wrong": "Sai",
@@ -1466,7 +1478,8 @@
           "wrong": "Sai",
           "skipped": "Sai · bỏ qua",
           "hinted": "Đúng · có gợi ý",
-          "retried": "Đúng · lần {n, number}"
+          "retried": "Đúng · lần {n, number}",
+          "alternative": "Đúng · đáp án thay thế"
         },
         "actions": {
           "needs_review": "Cần ôn lại",

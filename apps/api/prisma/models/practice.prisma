@@ -89,6 +89,13 @@ model PracticeSessionItem {
   // The learner's date, in their zone at the moment of the final result.
   localDate        DateTime? @map("local_date") @db.Date
   reviewAction     String?   @map("review_action")
+  // Session synonyms: an AI fill-in answered with a declared session word. `alternativeSenseId` is the word credited (null when the typed
+  // form belongs to more than one session word); `alternativeReviewAction` is that word's own review button, as `reviewAction` is the asked word's.
+  alternative             Boolean @default(false)
+  alternativeSenseId      String? @map("alternative_sense_id") @db.Uuid
+  alternativeReviewAction String? @map("alternative_review_action")
+  // Tries spent on another word of the session: they do not count against `max_retries`.
+  sessionWordTries        Int     @default(0) @map("session_word_tries")
 
   session  PracticeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   question PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
@@ -96,6 +103,7 @@ model PracticeSessionItem {
 
   @@unique([sessionId, position])
   @@index([userId, senseId, answeredAt])
+  @@index([userId, alternativeSenseId])
   @@index([userId, localDate])
   @@index([askedAt])
   @@index([questionId])

@@ -3,7 +3,7 @@ import { assembleInstructions, PROMPT_GUARD, promptViolations } from './prompt-r
 
 const CLOZE_EXAMPLE = {
   input: { word: 'deploy', part_of_speech: 'verb', level: 'B2', meaning_vi: 'triển khai', context_label: null },
-  output: { sentence: 'We ___ it today.', accepted_answers: ['deploy'], translation_vi: 'Hôm nay chúng tôi triển khai nó.' },
+  output: { sentence: 'We ___ it today.', accepted_answers: ['deploy'], also_accepted: [], translation_vi: 'Hôm nay chúng tôi triển khai nó.' },
 };
 const TRANSLATE_EXAMPLE = { input: { sentence: 'Hi.' }, output: { translation_vi: 'Chào.' } };
 

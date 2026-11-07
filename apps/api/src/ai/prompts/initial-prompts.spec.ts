@@ -7,8 +7,10 @@ import { INITIAL_PROMPTS } from './initial-prompts.js';
 import { promptViolations } from './prompt-rules.js';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../prisma/migrations');
-// Bước 6 seeds the first three operations; Bước 7 seeds three more and generate_cloze revision 2 (plan Task 6).
-const folders = readdirSync(MIGRATIONS).filter((name) => name.endsWith('_ai_initial_prompts') || name.endsWith('_buoc7_ai_operations'));
+// Bước 6 seeds the first three operations; Bước 7 seeds three more and generate_cloze revision 2 (plan Task 6); the session synonyms
+// plan (Task 2) replaces generate_cloze with config 3.
+const folders = readdirSync(MIGRATIONS).filter((name) => name.endsWith('_ai_initial_prompts') || name.endsWith('_buoc7_ai_operations')
+  || name.endsWith('_cloze_session_words_prompt') || name.endsWith('_cloze_session_words_prompt_by_text'));
 // A Windows checkout may turn the file's line endings into CRLF; the migration strips \r the same way.
 const migration = (folder: string) => readFileSync(join(MIGRATIONS, folder, 'migration.sql'), 'utf8').replace(/\r\n/g, '\n');
 
@@ -22,7 +24,7 @@ describe('initial prompts', () => {
   });
 
   it('some seed migration contains each instructions text and each JSON.stringify(examples) verbatim', () => {
-    expect(folders).toHaveLength(2);
+    expect(folders).toHaveLength(4);
     const sql = folders.map(migration).join('\n').replace(/''/g, "'");
     for (const op of AI_OPERATIONS) {
       expect(sql, op).toContain(`$p$${INITIAL_PROMPTS[op].instructions}$p$`);
@@ -43,5 +45,35 @@ describe('initial prompts', () => {
       `WHERE "operation" = 'generate_cloze' AND "revision" = 1 AND "updated_by" = '${AI_SYSTEM_ACTOR_ID}'`,
     );
     expect(sql).toContain('SELECT "operation", "instructions", "examples", "revision", "updated_by" FROM updated;');
+  });
+
+  it('generate_cloze config 3 replaces only the untouched seed config 2 of the system actor (design §5.2)', () => {
+    const sql = migration(folders.find((name) => name.endsWith('_cloze_session_words_prompt')) ?? 'missing');
+    expect(sql).toContain('c."number" = 2');
+    expect(sql).toContain(`c."created_by" = '${AI_SYSTEM_ACTOR_ID}'`);
+    expect(sql).toContain(`c."published_by" = '${AI_SYSTEM_ACTOR_ID}'`);
+    expect(sql).toContain('RAISE NOTICE');
+  });
+
+  it('a later migration replaces the live config whose text is the seed revision 2, whoever published it (final review, 07/11/2026)', () => {
+    const sql = migration(folders.find((name) => name.endsWith('_cloze_session_words_prompt_by_text')) ?? 'missing');
+    // Nhóm B copied the admin who chose a model into published_by, so "published by the system actor" is false on a database whose owner chose
+    // a model before it, although the prompt text is still the seed's: the test is the text itself, read from seed revision 2.
+    expect(sql).toContain('FROM ai_prompt_revisions');
+    expect(sql).toContain('"revision" = 2');
+    expect(sql).toContain(`"saved_by" = '${AI_SYSTEM_ACTOR_ID}'`);
+    expect(sql).toMatch(/v_old\."instructions" <> v_seed\."instructions"/);
+    expect(sql).toMatch(/v_old\."examples" <> v_seed\."examples"/);
+    expect(sql).not.toMatch(/"published_by" = '/);
+    expect(sql).not.toMatch(/"created_by" = '/);
+    // Idempotent: where the first migration already made config 3, the live text is the new text and nothing happens.
+    expect(sql).toMatch(/v_old\."instructions" = v_instructions AND v_old\."examples" = v_examples/);
+    expect(sql).toContain('RAISE NOTICE');
+  });
+
+  it('the seed examples declare also_accepted and one has session_words', () => {
+    const examples = INITIAL_PROMPTS.generate_cloze.examples;
+    for (const example of examples) expect(Array.isArray(example.output.also_accepted), JSON.stringify(example.output)).toBe(true);
+    expect(examples.some((example) => Array.isArray(example.input.session_words) && example.input.session_words.length > 0)).toBe(true);
   });
 });
