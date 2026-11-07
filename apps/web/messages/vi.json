@@ -1320,7 +1320,6 @@
         "answerPlaceholder": "Gõ từ tiếng Anh",
         "check": "Kiểm tra",
         "attempt": "Lần {n, number}",
-        "tryAgainBody": "Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.",
         "alternativeLabel": "Đáp án thay thế",
         "alternativeTyped": "Từ bạn gõ",
         "alternativeAsked": "Từ của câu này",

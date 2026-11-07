@@ -160,24 +160,26 @@ describe('AI question types (K/78a–K/81)', () => {
       await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
     };
 
-    it('CS3: a session-word try-again says only "Chưa đúng": no line under it, not the spelling text (owner, 07/11/2026)', async () => {
+    // Owner, 07/11/2026: a try-again shows no box at all. The red field and "Lần 1" say it; "Chưa đúng" is only for screen readers.
+    it('CS3: a session-word try-again shows no box and no line; only the live region says "Chưa đúng"', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: 'session_word' });
-      // Once on the page and once in the live region for screen readers.
-      expect(await screen.findAllByText('Chưa đúng')).toHaveLength(2);
+      expect(await screen.findByText('Lần 1')).toBeInTheDocument();
+      expect(screen.getByText('Chưa đúng')).toHaveAttribute('data-live', 'result');
       expect(screen.queryByText(/một từ khác trong phiên/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
-      expect(document.querySelector('[data-live="result"]')).toHaveTextContent(/^Chưa đúng$/);
     });
 
-    it('CS4: a try-again with reason null keeps the spelling text', async () => {
+    it('CS4: a try-again with reason null shows no line either', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: null });
-      expect(await screen.findByText(/Kiểm tra chính tả rồi gõ lại/)).toBeInTheDocument();
-      expect(screen.queryByText(/một từ khác trong phiên/)).not.toBeInTheDocument();
+      expect(await screen.findByText('Lần 1')).toBeInTheDocument();
+      expect(screen.getByText('Chưa đúng')).toHaveAttribute('data-live', 'result');
+      expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
     });
 
-    it('CS4: an older API sends no reason: the spelling text', async () => {
+    it('CS4: an older API sends no reason: the same', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1 });
-      expect(await screen.findByText(/Kiểm tra chính tả rồi gõ lại/)).toBeInTheDocument();
+      expect(await screen.findByText('Lần 1')).toBeInTheDocument();
+      expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
     });
 
     it('the English copy', async () => {
@@ -187,7 +189,8 @@ describe('AI question types (K/78a–K/81)', () => {
       await screen.findByText('We use Docker to ___ the app to the production server.');
       await userEvent.type(screen.getByRole('textbox'), 'habit');
       await userEvent.click(screen.getByRole('button', { name: /Check/ }));
-      expect(await screen.findAllByText('Not quite')).toHaveLength(2);
+      expect(await screen.findByText('Try 1')).toBeInTheDocument();
+      expect(screen.getByText('Not quite')).toHaveAttribute('data-live', 'result');
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Check the spelling/)).not.toBeInTheDocument();
     });
@@ -209,7 +212,7 @@ describe('AI question types (K/78a–K/81)', () => {
     });
     await screen.findByText('deployed', { selector: 'strong' });
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('deploy · triển khai (phần mềm)');
     expect(screen.queryByText(/Chúng tôi dùng Docker/)).toBeNull();
     expect(screen.queryByText('Translation')).toBeNull();
   });
@@ -235,7 +238,7 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByText('We ___ the app to the server yesterday.');
     await userEvent.keyboard('1');
-    await screen.findByText('Đúng rồi');
+    await screen.findByText('rizz · triển khai (phần mềm)');
     await userEvent.click(screen.getByRole('button', { name: 'Báo lỗi' }));
     const dialog = await screen.findByRole('dialog', { name: 'Báo lỗi câu này' });
     expect(within(dialog).getByText('Đội Wordmet sẽ thấy từ “rizz” bạn tự thêm để kiểm tra.')).toBeInTheDocument();
@@ -272,12 +275,13 @@ describe('Alternative answer card', () => {
     await screen.findByText('Sleep is ___ for good health.');
     await userEvent.type(screen.getByRole('textbox'), 'crucial');
     await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
-    await screen.findByText('Đáp án thay thế');
+    await screen.findByText('vital · thiết yếu');
     return r;
   };
 
-  it('CS2: shows "Đáp án thay thế", the sentence with vital filled in, the reveal line and one row per word', async () => {
+  it('CS2: shows the sentence with vital filled in, the reveal line and one row per word; no box title (owner, 07/11/2026)', async () => {
     await open();
+    expect(screen.queryByText('Đáp án thay thế')).not.toBeInTheDocument();
     expect(screen.queryByText('Đúng rồi')).not.toBeInTheDocument();
     expect(screen.getByText('vital', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('vital', { selector: 'strong' }).parentElement).toHaveTextContent('Sleep is vital for good health.');
@@ -334,7 +338,7 @@ describe('Alternative answer card', () => {
     (document.activeElement as HTMLElement | null)?.blur();
     await userEvent.keyboard('{Enter}1{Enter}2');
     expect(r.calls.filter((c) => c.method === 'POST' && /\/(review|next)$/.test(c.path))).toHaveLength(0);
-    expect(screen.getByText('Đáp án thay thế')).toBeInTheDocument();
+    expect(screen.getByText('vital · thiết yếu')).toBeInTheDocument();
     // Focus left in the read-only answer field changes nothing either.
     screen.getByRole('textbox').focus();
     await userEvent.keyboard('{Enter}1{Enter}2');
@@ -369,8 +373,8 @@ describe('Alternative answer card', () => {
     await screen.findByText('Sleep is ___ for good health.');
     await userEvent.type(screen.getByRole('textbox'), 'vital');
     await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
-    expect(screen.queryByText('Đáp án thay thế')).not.toBeInTheDocument();
+    expect(await screen.findByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
+    expect(document.querySelector('[data-live="result"]')).toHaveTextContent('Đúng rồi. deploy · triển khai (phần mềm)');
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
@@ -379,7 +383,9 @@ describe('Alternative answer card', () => {
     await screen.findByText('Sleep is ___ for good health.');
     await userEvent.type(screen.getByRole('textbox'), 'crucial');
     await userEvent.click(screen.getByRole('button', { name: /Check/ }));
-    expect(await screen.findByText('Alternative answer')).toBeInTheDocument();
+    expect(await screen.findByText('vital · thiết yếu')).toBeInTheDocument();
+    expect(screen.queryByText('Alternative answer')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-live="result"]')).toHaveTextContent('Alternative answer. vital · thiết yếu');
     const items = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();
     expect(within(items[1]).getByText("This sentence's word")).toBeInTheDocument();
