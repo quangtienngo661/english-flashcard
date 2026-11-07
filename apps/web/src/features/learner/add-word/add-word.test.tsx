@@ -96,7 +96,10 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     }) });
     expect(await screen.findByText('/ɡəʊ/')).toBeInTheDocument();
     expect(screen.getByText('/ɡoʊ/')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Nghe giọng Anh-Anh' })).toBeInTheDocument();
+    // The speakers sit outside the option's label: a press on the meaning must never become a press on a speaker (a label sends its
+    // click to its first control, the speaker when the option has no radio).
+    expect(screen.getByRole('button', { name: 'Nghe giọng Anh-Anh' }).closest('label')).toBeNull();
+    expect(screen.getByText('/ɡəʊ/').closest('label')).toBeNull();
   });
 
   it('đợt C DC15: the manual form has an optional Phiên âm field; it is sent without slashes, and left out when empty', async () => {
