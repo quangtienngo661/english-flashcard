@@ -11,22 +11,25 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { Button } from '@/app-ui/Button';
 import { EmptyState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
-import { isId, useGroup } from '../groups/groups-api';
+import { isId, useGroup, useGroups } from '../groups/groups-api';
 import { Flashcard } from './Flashcard';
 import { ReviewSummary } from './ReviewSummary';
 import { useReviewQueue } from './use-review-queue';
 
 const KBD = 'hidden rounded-sm border px-1.5 text-caption md:inline';
 
-/** K/20–K/22 `/app/review?group=&mode=due|all`: a full-screen review session over one deck. */
+/** K/20–K/22 `/app/review?group=&mode=new|all|due` (Học, đợt C): a full-screen flashcard session over one deck. */
 export function ReviewSession() {
   const t = useTranslations('App');
   const locale = useLocale();
   const params = useSearchParams();
   const raw = params.get('group');
   const id = isId(raw) ? raw.toLowerCase() : null;
-  const mode = params.get('mode') === 'all' ? 'all' : 'due';
+  const modeParam = params.get('mode');
+  // Đợt C DC25: Học opens on the new words (`new`) or on every word (`all`); `due` stays for older links.
+  const mode = modeParam === 'all' || modeParam === 'new' ? modeParam : 'due';
   const group = useGroup(id);
+  const summary = useGroups().data?.items.find((g) => g.id === id);
   const session = useReviewQueue(id, mode);
   const errorText = useErrorMessage();
   const notFound =
@@ -63,7 +66,7 @@ export function ReviewSession() {
   let body: ReactNode;
   if (notFound) body = <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />;
   else if (session.queue.isPending) body = <FullScreenSpinner />;
-  else if (session.done) body = <ReviewSummary counts={session.counts} />;
+  else if (session.done) body = <ReviewSummary counts={session.counts} group={summary} />;
   else if (total === 0)
     body = (
       <EmptyState

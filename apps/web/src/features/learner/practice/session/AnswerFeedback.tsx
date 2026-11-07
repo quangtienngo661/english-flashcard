@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/app-ui/Button';
 import { SpeakWord } from '@/app-ui/SpeakButtons';
 import { cn } from '@/lib/cn';
+import { STAGE_KEYS } from '../../groups/stages';
 import { KBD } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
 
@@ -29,11 +30,16 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   focusPrimary?: boolean;
 }) {
   const t = useTranslations('App.practice.session');
+  const tRecall = useTranslations('App.recall');
+  const tStage = useTranslations('App.stages');
   const locale = useLocale();
   const right = result.result === 'correct';
   const kind = feedbackCase(result);
   const Icon = right ? CircleCheck : CircleX;
   const noteKey = kind === 1 ? 'noteKnowEnter' : kind === 2 ? 'noteNotDue' : kind === 3 ? 'noteHint' : kind === 4 ? 'noteWrong' : null;
+  // Đợt C: in an Ôn session a right answer has already moved the word (or kept it); say which, with the stage it is in now.
+  const schedule = right ? result.schedule ?? null : null;
+  const stage = schedule ? tStage(STAGE_KEYS[schedule.level] ?? 's1') : '';
   return (
     <div className="flex flex-col gap-3">
       {/* Announced through the session's live region (audit 26/10/2026 #8), so this block is not a second status. */}
@@ -87,7 +93,13 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
           </Button>
         )}
       </div>
-      {noteKey && <p className="text-caption text-muted">{t(noteKey, { lemma: result.correct.lemma })}</p>}
+      {schedule ? (
+        <p className="text-caption text-muted">
+          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma: result.correct.lemma, stage })}
+        </p>
+      ) : (
+        noteKey && <p className="text-caption text-muted">{t(noteKey, { lemma: result.correct.lemma })}</p>
+      )}
     </div>
   );
 }

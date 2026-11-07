@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
+import { showStreak } from '@/app-ui/StreakToast';
 import { GROUPS_KEY, groupKey, type Card } from '../groups/groups-api';
 
 export type Answer = 'known' | 'review';
@@ -14,7 +15,9 @@ type Pending = { itemId: string; answer: Answer; reviewId: string };
  * again from the queue (Review Focus 4). Each press is one `POST /reviews` with a new `review_id` (the API's dedupe key);
  * after a lost connection the same press keeps its id, so a retry cannot count twice (E19).
  */
-export function useReviewQueue(groupId: string | null, mode: 'due' | 'all') {
+export type QueueMode = 'due' | 'new' | 'all';
+
+export function useReviewQueue(groupId: string | null, mode: QueueMode) {
   const api = useApi();
   const client = useQueryClient();
   // The cards are read once: after that the query is disabled, so "Thử lại" on the offline band (refetch of every active
@@ -54,8 +57,10 @@ export function useReviewQueue(groupId: string | null, mode: 'due' | 'all') {
     busyRef.current = true;
     setBusy(true);
     try {
-      await api.post('/v1/reviews', { item_id: card.item_id, group_id: groupId, answer: value, review_id: pending.reviewId });
+      const saved = await api.post<{ streak?: { days: number } | null }>('/v1/reviews', { item_id: card.item_id, group_id: groupId, answer: value, review_id: pending.reviewId });
       pendingRef.current = null;
+      // Đợt C DC9: only the first study of the learner's day carries it.
+      if (saved?.streak) showStreak(saved.streak.days);
       setError(null);
       setCounts((c) => ({ ...c, [value]: c[value] + 1 }));
       setIndex((i) => i + 1);

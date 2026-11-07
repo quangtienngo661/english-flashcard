@@ -92,7 +92,10 @@ test.describe('M2 flows (mocked API)', () => {
     const { handlers } = decksApi([summary(G, 'Công nghệ'), done(G2, 'Du lịch')]);
     await signedInAs(page, 'free', handlers);
     await page.goto('/vi/app');
-    await expect(page.getByRole('link', { name: 'Ôn 4 thẻ' }).first()).toHaveAttribute('href', `/vi/app/review?group=${G}`);
+    // Đợt C §4.1: Học (new words) and Ôn, with no count.
+    const hero = page.getByRole('region', { name: 'Công nghệ' });
+    await expect(hero.getByRole('link', { name: 'Học', exact: true })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
+    await expect(hero.getByRole('link', { name: 'Ôn', exact: true })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
   });
 
   test('create → rename → delete a deck', async ({ page }) => {
