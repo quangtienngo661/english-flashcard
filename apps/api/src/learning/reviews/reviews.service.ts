@@ -7,12 +7,16 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { recordActivityIn } from '../activity/record-activity.js';
+import { streakAsOf } from '../activity/streak.js';
 import { applyLearn, type Answer, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
 export type ReviewInput = { itemId: string; groupId: string; answer: Answer; reviewId: string };
-export type ReviewResult = { item_id: string; level: number; due_date: string; priority: boolean; section: Section };
+/** `streak`: set only by the first study of the learner's day (round C, H2); a replayed review_id never carries one. */
+export type ReviewResult = {
+  item_id: string; level: number; due_date: string; priority: boolean; section: Section; streak: { days: number } | null;
+};
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 
@@ -72,10 +76,10 @@ export class ReviewsService {
           reviewId: input.reviewId, section: result.section, localDate: dateValue(today), at,
         } });
         // Last write (nhóm B D39): a replay returned above, so a replayed review never reaches this line.
-        await recordActivityIn(tx, userId, today, { studied: true });
+        const { firstStudied } = await recordActivityIn(tx, userId, today, { studied: true });
         return {
           item_id: item.id, level: result.next.level, due_date: result.next.dueDate, priority: result.next.priority,
-          section: result.section,
+          section: result.section, streak: firstStudied ? { days: (await streakAsOf(tx, userId, today)).days } : null,
         };
       }, transactionOptions);
     } catch (error) {
@@ -101,7 +105,7 @@ export class ReviewsService {
     const item = await db.learningItem.findUnique({ where: { id: row.itemId }, select: { priority: true } });
     return {
       item_id: row.itemId, level: row.levelAfter!, due_date: dateString(row.dueAfter!),
-      priority: item?.priority ?? false, section: row.section as Section,
+      priority: item?.priority ?? false, section: row.section as Section, streak: null,
     };
   }
 }

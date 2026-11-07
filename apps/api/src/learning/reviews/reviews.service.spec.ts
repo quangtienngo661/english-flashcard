@@ -32,6 +32,8 @@ function setup(at: string, stored: Record<string, unknown> | null = null, item: 
       // A study day flips the row with an update first (round C); the insert is only for a day with no row yet.
       updateMany: vi.fn(async (_args: unknown) => { events.push('activity'); return { count: 1 }; }),
       createMany: vi.fn(async () => ({ count: 1 })),
+      // The study days the streak reads: 12 days up to yesterday, then today (2026-11-07 learner-local).
+      findMany: vi.fn(async (_args: unknown) => Array.from({ length: 13 }, (_, i) => ({ localDate: new Date(Date.UTC(2026, 10, 7 - i)) }))),
     },
   };
   const prisma = { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as unknown as PrismaClient;
@@ -57,7 +59,7 @@ describe('ReviewsService.answer — records a learning activity day (nhóm B M6,
       itemId, groupId, answer: 'review', levelAfter: 1, dueAfter: new Date('2026-10-20T00:00:00Z'), section: 'due',
     }, {}, { priority: true });
     await expect(service.answer(userId, input)).resolves.toEqual({
-      item_id: itemId, level: 1, due_date: '2026-10-20', priority: true, section: 'due',
+      item_id: itemId, level: 1, due_date: '2026-10-20', priority: true, section: 'due', streak: null,
     });
     expect(tx.learningActivityDay.updateMany).not.toHaveBeenCalled();
     expect(events).toEqual([]);
@@ -102,5 +104,33 @@ describe('ReviewsService.answer — flashcards only move new words (round C, DC4
       itemId, groupId, answer: 'review', levelAfter: 1, dueAfter: new Date('2026-11-07T00:00:00Z'), section: 'due',
     }, {}, null);
     await expect(service.answer(userId, input)).resolves.toMatchObject({ priority: false });
+  });
+});
+
+describe('ReviewsService.answer — the study streak (round C, DC28)', () => {
+  const known = { ...input, answer: 'known' as const };
+
+  it('the first flashcard of the day reports the streak, read after the day was marked', async () => {
+    const { service, tx } = setup('2026-11-07T03:00:00Z');
+    await expect(service.answer(userId, input)).resolves.toMatchObject({ streak: { days: 13 } });
+    expect(tx.learningActivityDay.findMany).toHaveBeenCalledTimes(1);
+    expect(tx.learningActivityDay.updateMany.mock.invocationCallOrder[0])
+      .toBeLessThan(tx.learningActivityDay.findMany.mock.invocationCallOrder[0]);
+  });
+
+  it('a later card the same day reports no streak and reads no days', async () => {
+    const { service, tx } = setup('2026-11-07T03:00:00Z');
+    tx.learningActivityDay.updateMany.mockResolvedValue({ count: 0 });
+    tx.learningActivityDay.createMany.mockResolvedValue({ count: 0 });
+    await expect(service.answer(userId, known)).resolves.toMatchObject({ streak: null });
+    expect(tx.learningActivityDay.findMany).not.toHaveBeenCalled();
+  });
+
+  it('a replayed review_id reports no streak', async () => {
+    const { service, tx } = setup('2026-11-07T03:00:00Z', {
+      itemId, groupId, answer: 'known', levelAfter: 1, dueAfter: new Date('2026-11-08T00:00:00Z'), section: 'new',
+    });
+    await expect(service.answer(userId, known)).resolves.toMatchObject({ streak: null });
+    expect(tx.learningActivityDay.findMany).not.toHaveBeenCalled();
   });
 });

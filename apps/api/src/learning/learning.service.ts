@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { recordActivityIn } from './activity/record-activity.js';
+import { streakAsOf } from './activity/streak.js';
 import {
   PracticeReadsService, type PracticeCheck, type PracticeItem, type PracticeScope,
 } from './practice/practice-reads.service.js';
@@ -55,6 +56,11 @@ export class LearningService {
   /** "Cần ôn tập" / "Đã biết" from practice, in the caller's transaction; idempotent by `reviewId`. */
   practiceReview(tx: Prisma.TransactionClient, userId: string, inputs: PracticeReviewInput[]): Promise<PracticeReviewOutcome[]> {
     return this.practiceReviews.review(tx, userId, inputs);
+  }
+
+  /** The learner's study streak on their local date `today` (round C): `days`, and whether today is already a study day. */
+  streakAsOf(userId: string, today: string, db?: Prisma.TransactionClient | PrismaClient): Promise<{ days: number; studiedToday: boolean }> {
+    return streakAsOf(db ?? this.prisma, userId, today);
   }
 
   /** The final answer of a recall session on the schedule (round C), in the caller's transaction. */
