@@ -28,8 +28,12 @@ const AVAILABILITY_BATCH = 50;
 const OPEN = ['active', 'waiting_continue'];
 
 export type GroupFilter = 'all' | 'due' | 'priority' | '0' | '1' | '2' | '3' | '4' | '5';
+/** Round C (H3): the types of a recall session are fixed; a word that fits neither (a 1-word group) is left out. */
+const RECALL_TYPES: QuestionType[] = ['mcq_definition', 'type_word'];
 export type StartInput = {
-  source: Source; group_id?: string; group_filter?: GroupFilter; sort?: SortKey; types: QuestionType[];
+  /** Round C: 'recall' = the "Ôn" session of one deck (needs `source: 'group'`); `types` and the options below are ignored then. */
+  kind?: 'practice' | 'recall';
+  source: Source; group_id?: string; group_filter?: GroupFilter; sort?: SortKey; types?: QuestionType[];
   prompt_style?: 'meaning' | 'sentence' | 'mixed'; count?: number;
   /** Bước 7 (design §6.1): only with `cloze`; default 'ai'. */
   cloze_source?: ClozeSource;
@@ -69,7 +73,7 @@ const withNotice = (slot: Advance, notice: Notice | undefined): Advance =>
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'Session closed', type: 'session-closed' });
-const noWords = (reason: 'group-empty' | 'no-word-fits-types' | 'source-empty') => new ProblemDetailsException({
+const noWords = (reason: 'group-empty' | 'no-word-fits-types' | 'source-empty' | 'nothing-learned') => new ProblemDetailsException({
   status: 409, title: 'No words to practise', type: 'practice-no-words', extensions: { reason },
 });
 
@@ -90,6 +94,8 @@ export class SessionsService {
   ) {}
 
   async start(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
+    if (input.kind === 'recall') return this.startRecall(learner, input);
+    const types = input.types!;
     const { practice } = await this.settings.get();
     const count = input.count ?? practice.defaultQuestionsPerSession;
     if (count > practice.maxQuestionsPerSession) {
@@ -104,9 +110,9 @@ export class SessionsService {
     // second connection while the transaction holds one (PX4). A word that stops being visible before the transaction
     // commits is dropped later, when `build` skips it as not visible.
     await this.assertEntitled(learner.userId);
-    const clozeSource = input.types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
+    const clozeSource = types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
     // Bước 7 (design §6.1 step 2); null when no AI type is chosen (own cloze is a rule question).
-    const snapshot = await this.aiPlanner.gate(learner.userId, input.types, clozeSource);
+    const snapshot = await this.aiPlanner.gate(learner.userId, types, clozeSource);
     const items = await this.sourceItems(learner.userId, input);
     if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
     const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
@@ -118,6 +124,64 @@ export class SessionsService {
       recent_wrong: statsBySense.get(item.sense_id)?.wrong ?? 0,
     }));
     const order = sortWords(words, sort, Math.random);
+    const { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
+    if (kept.length === 0) throw noWords('no-word-fits-types');
+    // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1).
+    const ai = await this.aiPlanner.plan(learner, { types, clozeSource, count, kept, available: availableBySense }, snapshot);
+    return this.prisma.$transaction(async (tx) => {
+      await withPracticeLock(tx, learner.userId);
+      const now = this.clock.now();
+      await tx.practiceSession.updateMany({
+        where: { userId: learner.userId, kind: 'practice', status: { in: OPEN } }, data: { status: 'abandoned', endedAt: now },
+      });
+      // After the close (R4, B5E73): it waits for the old session's row, so a first answer being written there commits
+      // first and is counted. A refusal rolls back, so the open session stays.
+      const quota = await this.entitlements.checkQuota(learner.userId, 'practice_sessions', tx);
+      if (!quota.allowed) throw refusalProblem(quota);
+      const session = await tx.practiceSession.create({ data: {
+        userId: learner.userId, kind: 'practice', source: input.source, groupId: input.group_id ?? null,
+        groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types,
+        promptStyle: input.prompt_style ?? 'mixed', targetCount: count, senseIds: kept, status: 'active', startedAt: now,
+        lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds,
+      } });
+      return { session: sessionView(session, []) };
+    }, transactionOptions);
+  }
+
+  /**
+   * Round C (H3): the "Ôn" session of one deck — the learned words, two rule-graded types, no AI and no practice quota. It closes only
+   * the learner's open recall session, so a practice session in progress stays; an answer to one of its questions changes the schedule.
+   */
+  private async startRecall(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
+    const { practice } = await this.settings.get();
+    await this.assertEntitled(learner.userId);
+    const items = await this.learning.practiceItems(learner.userId, { kind: 'learned', groupId: input.group_id! });
+    if (items.length === 0) throw noWords('nothing-learned');
+    const words: SortableWord[] = items.map((item) => ({
+      sense_id: item.sense_id, level: item.level, due_date: item.due_date, priority: item.priority, section: item.section,
+      added_at: item.added_at, last_needs_review_at: item.last_needs_review_at, last_practiced_at: null, recent_wrong: 0,
+    }));
+    const order = sortWords(words, 'queue', Math.random);
+    const { kept } = await this.keepAvailable(learner, order, practice.defaultQuestionsPerSession, RECALL_TYPES, null);
+    if (kept.length === 0) throw noWords('no-word-fits-types');
+    return this.prisma.$transaction(async (tx) => {
+      await withPracticeLock(tx, learner.userId);
+      const now = this.clock.now();
+      await tx.practiceSession.updateMany({
+        where: { userId: learner.userId, kind: 'recall', status: { in: OPEN } }, data: { status: 'abandoned', endedAt: now },
+      });
+      const session = await tx.practiceSession.create({ data: {
+        userId: learner.userId, kind: 'recall', source: 'group', groupId: input.group_id!, groupFilter: 'all', sort: 'queue',
+        types: RECALL_TYPES, promptStyle: 'meaning', targetCount: kept.length, senseIds: kept, status: 'active', startedAt: now,
+        lastActivityAt: now, clozeSource: null, aiPlanned: 0, aiSenseIds: [],
+      } });
+      return { session: sessionView(session, []) };
+    }, transactionOptions);
+  }
+
+  /** The first `count` words of `order` for which at least one of `types` can be built. */
+  private async keepAvailable(learner: Learner, order: string[], count: number, types: QuestionType[], clozeSource: ClozeSource | null):
+    Promise<{ kept: string[]; availableBySense: Map<string, QuestionType[]> }> {
     const kept: string[] = [];
     const availableBySense = new Map<string, QuestionType[]>();
     // Each batch asks only for the words still missing (each word loads all its group mates), at most AVAILABILITY_BATCH.
@@ -125,7 +189,7 @@ export class SessionsService {
       const batch = order.slice(at, at + Math.min(AVAILABILITY_BATCH, count - kept.length));
       at += batch.length;
       const available = await this.builder.availability({
-        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: input.types, clozeSource,
+        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: types, clozeSource,
       });
       for (const senseId of batch) {
         if (kept.length < count && (available.get(senseId)?.length ?? 0) > 0) {
@@ -134,33 +198,14 @@ export class SessionsService {
         }
       }
     }
-    if (kept.length === 0) throw noWords('no-word-fits-types');
-    // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1).
-    const ai = await this.aiPlanner.plan(learner, { types: input.types, clozeSource, count, kept, available: availableBySense }, snapshot);
-    return this.prisma.$transaction(async (tx) => {
-      await withPracticeLock(tx, learner.userId);
-      const now = this.clock.now();
-      await tx.practiceSession.updateMany({
-        where: { userId: learner.userId, status: { in: OPEN } }, data: { status: 'abandoned', endedAt: now },
-      });
-      // After the close (R4, B5E73): it waits for the old session's row, so a first answer being written there commits
-      // first and is counted. A refusal rolls back, so the open session stays.
-      const quota = await this.entitlements.checkQuota(learner.userId, 'practice_sessions', tx);
-      if (!quota.allowed) throw refusalProblem(quota);
-      const session = await tx.practiceSession.create({ data: {
-        userId: learner.userId, source: input.source, groupId: input.group_id ?? null,
-        groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types: input.types,
-        promptStyle: input.prompt_style ?? 'mixed', targetCount: count, senseIds: kept, status: 'active', startedAt: now,
-        lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds,
-      } });
-      return { session: sessionView(session, []) };
-    }, transactionOptions);
+    return { kept, availableBySense };
   }
 
   /** Never calls AI (design §6.8): a slot still waiting for its AI question is `preparing`; a ready one is attached (G). */
   async current(learner: Learner): Promise<{ session: SessionView; item: ItemView | null; notice?: Notice; preparing: boolean }> {
     await this.closeIfIdle(learner.userId, null);
-    const open = await this.prisma.practiceSession.findFirst({ where: { userId: learner.userId, status: { in: OPEN } } });
+    // The practice page never shows a recall session (round C, H5).
+    const open = await this.prisma.practiceSession.findFirst({ where: { userId: learner.userId, kind: 'practice', status: { in: OPEN } } });
     if (!open) throw notFound();
     const { result, view } = await this.prisma.$transaction(async (tx) => {
       const session = await this.lockOpen(tx, learner.userId, open.id);

@@ -13,6 +13,7 @@ import type { WordChecksRepository } from '../ai/word-checks.repository.js';
 import type { QuestionBuilder } from '../questions/question-builder.service.js';
 import type { ItemWithQuestion } from './session-views.js';
 import type { PracticeStats } from '../weak/practice-stats.js';
+import { startBody } from './sessions.controller.js';
 import { SessionsService } from './sessions.service.js';
 
 const learner: Learner = { userId: '00000000-0000-4000-8000-000000000001', nativeLanguage: 'vi' };
@@ -357,3 +358,88 @@ describe('SessionsService — weak words of one deck (API (b), design §8.2)', (
     expect(JSON.stringify(result)).not.toContain('group-not-found');
   });
 });
+
+describe('SessionsService — recall sessions (round C, H3–H5)', () => {
+  const recallInput = { kind: 'recall' as const, source: 'group' as const, group_id: 'g1' };
+  const words = (n: number) => Array.from({ length: n }, (_, i) => item(`s${i + 1}`));
+
+  it('opens a recall session with the fixed types, meaning prompts and queue order, and never checks the practice quota', async () => {
+    const { service, tx, entitlements, aiPlanner, learning } = setup({ items: words(4) });
+    await service.start(learner, recallInput as never);
+    expect(entitlements.checkQuota).not.toHaveBeenCalled();
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+    expect(aiPlanner.plan).not.toHaveBeenCalled();
+    expect(learning.practiceItems.mock.calls[0][1]).toEqual({ kind: 'learned', groupId: 'g1' });
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data).toMatchObject({
+      kind: 'recall', source: 'group', groupId: 'g1', groupFilter: 'all', types: ['mcq_definition', 'type_word'], promptStyle: 'meaning',
+      sort: 'queue', targetCount: 4, clozeSource: null, aiPlanned: 0, aiSenseIds: [],
+    });
+  });
+
+  it('asks for min(default questions per session, usable words): 30 words → 10', async () => {
+    const { service, tx } = setup({ items: words(30) });
+    await service.start(learner, recallInput as never);
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data.targetCount).toBe(10);
+  });
+
+  it('closes only the open session of the same kind: a practice session in progress stays', async () => {
+    const { service, tx } = setup({ items: words(2) });
+    await service.start(learner, recallInput as never);
+    expect(tx.practiceSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: learner.userId, kind: 'recall' }) }));
+  });
+
+  it('a practice start closes only practice sessions', async () => {
+    const { service, tx } = setup();
+    await service.start(learner, input);
+    expect(tx.practiceSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ kind: 'practice' }) }));
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data.kind).toBe('practice');
+  });
+
+  it('a group with nothing learned → 409 practice-no-words, reason nothing-learned', async () => {
+    const { service, tx } = setup({ items: [] });
+    await expect(service.start(learner, recallInput as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'nothing-learned' } });
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('asks the builder for the two recall types; a 3-word group where only type_word fits still opens', async () => {
+    const { service, builder, tx } = setup({ items: words(3) });
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) => new Map(senseIds.map((id) => [id, ['type_word']])) as never);
+    await service.start(learner, recallInput as never);
+    expect(builder.availability.mock.calls[0][0]).toMatchObject({ chosenTypes: ['mcq_definition', 'type_word'], clozeSource: null });
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('current() looks only at practice sessions: a recall session open alone → 404', async () => {
+    const { service, prisma } = setupCurrent();
+    await expect(service.current(learner)).rejects.toMatchObject({ status: 404 });
+    expect(prisma.practiceSession.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: learner.userId, kind: 'practice' }) }));
+  });
+
+  it('the start body: kind recall needs source group and a group_id; types become optional', () => {
+    const ok = startBody.safeParse({ kind: 'recall', source: 'group', group_id: '11111111-1111-4111-8111-111111111111' });
+    expect(ok.success).toBe(true);
+    for (const bad of [
+      { kind: 'recall', source: 'today' },
+      { kind: 'recall', source: 'group' },
+      { kind: 'recall', source: 'all', group_id: '11111111-1111-4111-8111-111111111111' },
+    ]) expect(startBody.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+    // A practice session still needs its types.
+    expect(startBody.safeParse({ source: 'today' }).success).toBe(false);
+    expect(startBody.safeParse({ kind: 'practice', source: 'today', types: ['type_word'] }).success).toBe(true);
+  });
+});
+
+function setupCurrent() {
+  const { service, ...rest } = setup();
+  const prisma = (service as unknown as { prisma: { practiceSession: { findFirst: ReturnType<typeof vi.fn> } } }).prisma;
+  prisma.practiceSession.findFirst = vi.fn(async () => null);
+  return { service, prisma, ...rest };
+}
