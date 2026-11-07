@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
+import type { Pronunciation } from './pronunciation';
 
 export type FormOf = { entry_id: string; lemma: string; pos: string; kind: string };
 /** `GET /v1/words/{lemma}` sense (API `WordPageSense`). */
@@ -20,6 +21,8 @@ export type PageSense = {
   form_of: FormOf | null;
   ai_suggested: boolean;
   sentence_count: number;
+  /** Đợt C (H9); absent from an older API. */
+  pronunciation?: Pronunciation;
 };
 export type Inflection = { kind: string; form: string; has_page: boolean };
 export type WordPageData = { lemma: string; inflections: Inflection[]; sections: Array<{ pos: string; senses: PageSense[] }> };

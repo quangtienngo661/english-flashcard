@@ -3,7 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useApi } from '@/app-shell/session/session-context';
-import { SpeakSentence, SpeakWord } from '@/app-ui/SpeakButtons';
+import { PronunciationLine } from '@/app-ui/PronunciationLine';
+import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { cn } from '@/lib/cn';
 import type { Card } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
@@ -37,6 +38,7 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
   const t = useTranslations('App.review');
   const { content } = card;
   const forms = useForms(content.lemma);
+  const pron = content.pronunciation ? { scope: content.scope, pronunciation: content.pronunciation } : null;
 
   return (
     <div
@@ -54,15 +56,13 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
               <span className="break-all text-display font-extrabold text-ink">{content.lemma}</span>
               <span className="text-ui text-muted">{content.pos}</span>
             </span>
-            <span className="self-center text-caption text-muted">
-              <span className="hidden md:inline">{t('hintWeb')}</span>
-              <span className="md:hidden">{t('hintPhone')}</span>
-            </span>
           </button>
-          {/* Review plan I3: outside the flip button, so a press reads the word and never flips the card. */}
-          <div className="absolute right-3 top-3 flex gap-1">
-            <SpeakWord text={content.lemma} />
-          </div>
+          {/* Review plan I3: outside the flip button, so a press reads the word and never flips the card. Đợt C §5.3: UK and US with their IPA. */}
+          <PronunciationLine text={content.lemma} line={pron} align="center" className="px-5" />
+          <span className="self-center px-5 pb-5 pt-3 text-caption text-muted">
+            <span className="hidden md:inline">{t('hintWeb')}</span>
+            <span className="md:hidden">{t('hintPhone')}</span>
+          </span>
         </div>
         <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'motion-safe:rotate-y-180', !flipped && 'motion-reduce:opacity-0')}>
           {/* Option C (owner 27/10/2026, docs/audit/2026-10-27-mat-sau-the.html): one column, the meaning across the card, examples below. */}
@@ -72,10 +72,8 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
               <p className="flex flex-wrap items-baseline gap-x-2">
                 <span className="break-all text-h3 font-bold text-ink">{content.lemma}</span>
                 <span className="text-ui text-muted">{content.pos}</span>
-                <span className="flex gap-1 self-center">
-                  <SpeakWord text={content.lemma} />
-                </span>
               </p>
+              <PronunciationLine text={content.lemma} line={pron} />
               <p className="break-words text-title-lg font-bold text-ink">{content.meaning.text}</p>
               {forms.length > 0 && (
                 <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">

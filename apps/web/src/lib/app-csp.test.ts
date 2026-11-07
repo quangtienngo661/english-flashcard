@@ -36,6 +36,13 @@ describe('withAppCsp: the nonce policy of /app (launch prep B design §5.4, LB3E
     }
   });
 
+  it('đợt C §5.5: media-src takes the origin of NEXT_PUBLIC_AUDIO_BASE_URL (the R2 domain, or the API dev route locally); unset leaves self', () => {
+    vi.stubEnv('NEXT_PUBLIC_AUDIO_BASE_URL', 'http://localhost:3000/v1/dev/audio');
+    expect(run('/vi/app/word').policy).toContain("media-src 'self' http://localhost:3000;");
+    vi.stubEnv('NEXT_PUBLIC_AUDIO_BASE_URL', '');
+    expect(run('/vi/app/word').policy).toContain("media-src 'self';");
+  });
+
   it('two requests to the same page get two nonces', () => {
     const first = nonceOf(run('/vi/app/groups').policy);
     const second = nonceOf(run('/vi/app/groups').policy);

@@ -335,7 +335,7 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    const uk = within(front).getByRole('button', { name: 'Nghe phát âm' });
+    const uk = within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' });
     const flip = within(front).getAllByRole('button').find((b) => b.textContent?.includes('deploy') && !b.getAttribute('aria-label'))!;
     expect(flip.contains(uk)).toBe(false);
     expect(uk.closest('button')).toBe(uk);
@@ -348,6 +348,25 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     expect(synth.speak).toHaveBeenCalledTimes(2);
   });
 
+  it('đợt C §5.3: both faces show UK and US with their IPA; a ready file plays, a missing one falls back to the browser voice', async () => {
+    const play = vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const uk = makeVoice('en-GB');
+    const synth = installSpeech([uk, makeVoice('en-US')]);
+    const luggage = card(5, 'luggage', {}, { pos: 'noun', pronunciation: { uk: 'ˈlʌɡ.ɪdʒ', us: 'ˈlʌɡɪdʒ', custom: null, audio: { uk: null, us: 'https://audio.test/us.mp3' } } });
+    renderApp(<ReviewSession />, { routes: routes([luggage]) });
+    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
+    expect(within(front).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
+    expect(within(front).getByText('/ˈlʌɡɪdʒ/')).toBeInTheDocument();
+    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }));
+    expect(play).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Anh' }));
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'luggage', voice: uk }));
+    await userEvent.keyboard(' ');
+    const back = screen.getByRole('group', { name: 'Thẻ 1 trên 1' }).querySelector<HTMLElement>('[data-face="back"]')!;
+    expect(within(back).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
+    play.mockRestore();
+  });
+
   it('back: the speaker icon by the word (US voice), a button by the example and by the saved sentence (local voice)', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
@@ -355,7 +374,7 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     await userEvent.keyboard(' ');
     const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
     await within(card).findByText('triển khai');
-    expect(within(card).getByRole('button', { name: 'Nghe phát âm' })).toBeInTheDocument();
+    expect(within(card).getAllByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).length).toBeGreaterThan(0);
     const sentences = within(card).getAllByRole('button', { name: 'Nghe câu' });
     expect(sentences).toHaveLength(2);
     await userEvent.click(sentences[1]);

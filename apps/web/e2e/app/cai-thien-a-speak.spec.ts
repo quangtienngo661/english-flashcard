@@ -73,11 +73,12 @@ async function setup(page: Page, locale: 'vi' | 'en' = 'vi') {
 }
 
 test.describe('Pronunciation buttons (C1, mocked API)', () => {
-  test('word page: the speaker icon reads the word in the US voice; the example and the saved sentence have a button', async ({ page }) => {
+  test('word page: the US speaker of the block reads the word in the US voice; the example and the saved sentence have a button', async ({ page }) => {
     await setup(page);
     await page.goto('/vi/app/word?w=deploy');
     await expect(page.getByRole('heading', { level: 1, name: 'deploy' })).toBeVisible();
-    await page.getByRole('button', { name: 'Nghe phát âm' }).click();
+    // Đợt C §5.3: the speakers sit in each part-of-speech block (UK, US); no file in the mocked API, so the browser voice reads.
+    await page.getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).first().click();
     await expect(page.getByText('We deploy the app every Friday.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
@@ -87,7 +88,7 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await setup(page);
     await page.goto(`/vi/app/review?group=${G}`);
     const front = page.getByRole('group', { name: /Thẻ 1/ });
-    await front.getByRole('button', { name: 'Nghe phát âm' }).click();
+    await front.getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
     // Both faces stay mounted for the 3D flip (owner 27/10/2026, 1C): "not flipped" is the card's own state.
     await expect(front).toHaveAttribute('data-flipped', 'false');
@@ -98,7 +99,7 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await page.getByRole('button', { name: copy.vi.App.review.flip }).click();
     await expect(front).toHaveAttribute('data-flipped', 'true');
     await expect(page.getByText('triển khai')).toBeVisible();
-    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe phát âm' }).click();
+    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
   });
@@ -130,12 +131,13 @@ for (const scheme of ['light', 'dark'] as const) {
         const where = `${locale} ${scheme} ${width}px`;
 
         await page.goto(`/${locale}/app/word?w=deploy`);
-        await expect(page.getByRole('button', { name: t.word, exact: true })).toBeVisible();
+        // Đợt C §5.3: the word page and the card have a UK and a US speaker; the practice result keeps its one speaker.
+        await expect(page.getByRole('button', { name: t.us, exact: true }).first()).toBeVisible();
         await noSideScroll(page, `${where} word`);
         expect(await seriousViolations(page), `${where} word`).toEqual([]);
 
         await page.goto(`/${locale}/app/review?group=${G}`);
-        await expect(page.getByRole('group').first().getByRole('button', { name: t.word, exact: true })).toBeVisible();
+        await expect(page.getByRole('group').first().getByRole('button', { name: t.us, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');

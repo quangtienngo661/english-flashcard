@@ -9,12 +9,13 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
-import { SpeakWord } from '@/app-ui/SpeakButtons';
+import { PronunciationLine } from '@/app-ui/PronunciationLine';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { useAddWord } from '../add-word/add-word-context';
 import type { WordRow } from '../lookup/lookup-api';
 import { FormsLine } from './FormsLine';
 import { AddToDeckCard, LearningBlock } from './LearningBlock';
+import { blockPronunciation } from './pronunciation';
 import { SenseBlock } from './SenseBlock';
 import { levelRange, useSenseItems, useWordPage, wordHref, type PageSense, type WordPageData } from './word-api';
 
@@ -69,7 +70,6 @@ function WordBody({ data }: { data: WordPageData }) {
         {/* Level, then the speaker, on one centre line (owner 27/10/2026); no meaning count. */}
         <div className="mb-2 flex items-center gap-1.5">
           {range && <span className="rounded-sm bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">{range}</span>}
-          <SpeakWord text={data.lemma} />
           {mine && <span className="rounded-sm bg-neutral-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mine.label')}</span>}
           {aiSuggested && <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mine.aiLabel')}</span>}
         </div>
@@ -79,10 +79,29 @@ function WordBody({ data }: { data: WordPageData }) {
       {bases.map((base) => (
         <BaseForms key={base} base={base} label={t(onlyForms ? 'formOf' : 'alsoFormOf', { base })} current={data.lemma} />
       ))}
-      <div className="flex flex-col divide-y divide-border">
-        {senses.map((sense, i) => (
-          <SenseBlock key={sense.sense_id} index={i + 1} sense={sense} item={items?.get(sense.sense_id)} forms={forms} />
-        ))}
+      {/* Đợt C §5.3 (Cambridge style): each part of speech shows its reading once; a sense read otherwise carries its own line. */}
+      <div className="flex flex-col gap-6">
+        {data.sections.map((section, s) => {
+          const start = data.sections.slice(0, s).reduce((n, other) => n + other.senses.length, 0);
+          const { shared, perSense } = blockPronunciation(section.senses);
+          return (
+            <div key={`${section.pos}-${s}`} role="group" aria-label={section.pos} className="flex flex-col gap-3">
+              <PronunciationLine text={data.lemma} line={shared} className="border-b border-border pb-3" />
+              <div className="flex flex-col divide-y divide-border">
+                {section.senses.map((sense, i) => (
+                  <SenseBlock
+                    key={sense.sense_id}
+                    index={start + i + 1}
+                    sense={sense}
+                    item={items?.get(sense.sense_id)}
+                    forms={forms}
+                    ownLine={perSense.get(sense.sense_id)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

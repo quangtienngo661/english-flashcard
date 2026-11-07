@@ -2118,7 +2118,8 @@
       "entitlements": "Plans and quotas",
       "content": "Content",
       "ai": "AI",
-      "identity": "Accounts"
+      "identity": "Accounts",
+      "tts": "Voice"
     },
     "save": "Save changes",
     "saved": "Saved",
@@ -2243,6 +2244,9 @@
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"
+      },
+      "tts": {
+        "daily_char_cap": "Daily TTS character cap"
       }
     },
     "aiUsage": {
@@ -2464,7 +2468,20 @@
         "retired": "retired"
       },
       "unknownUser": "deleted user",
-      "lastOnly": "Only the latest is kept, no history."
+      "lastOnly": "Only the latest is kept, no history.",
+      "ipaUk": "UK pronunciation",
+      "ipaUs": "US pronunciation",
+      "ipaSource": "Source: {name}",
+      "ipaSourceOwn": "Source: Wordmet",
+      "ipaInvalid": "“{char}” is not an IPA symbol.",
+      "audio": "Voice",
+      "audioReady": "Ready",
+      "audioPending": "Being made",
+      "audioFailed": "Failed",
+      "audioNone": "None yet",
+      "audioRetry": "Try again",
+      "audioRetried": "The voice is queued again.",
+      "audioLine": "{voice} · {status}"
     }
   },
   "topics": {

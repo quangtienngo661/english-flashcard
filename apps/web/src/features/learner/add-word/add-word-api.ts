@@ -22,6 +22,8 @@ export type QuickAddBody = {
     form_of?: { entry_id: string; kind: string };
     /** Bước 7 §11.2: the AI suggestion's examples as edited (≤ 2), and that the word came from AI. */
     examples?: string[];
+    /** Đợt C (H10): the learner's own IPA, without slashes. */
+    ipa?: string;
     ai_suggestion?: boolean;
   };
   sentence?: string;

@@ -41,7 +41,9 @@ if (flag === '--dev' || flag === '--dev-app') {
       '-v', 'wordmet-pnpm-store:/pnpm-store',
       '-e', 'WATCHPACK_POLLING=true',
       ...(app
-        ? ['-e', 'NEXT_PUBLIC_LEARNER_APP=on', '-e', `NEXT_PUBLIC_API_BASE_URL=${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000'}`]
+        ? ['-e', 'NEXT_PUBLIC_LEARNER_APP=on', '-e', `NEXT_PUBLIC_API_BASE_URL=${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000'}`,
+          // Đợt C §5.5: the fake audio route of the local API, for CSP media-src.
+          '-e', `NEXT_PUBLIC_AUDIO_BASE_URL=${process.env.NEXT_PUBLIC_AUDIO_BASE_URL ?? 'http://localhost:3000/v1/dev/audio'}`]
         : []),
       '-w', '/work',
       'node:24.11.0-bookworm',
@@ -98,7 +100,7 @@ const result = spawnSync(
     '-e', `MODE=${mode}`,
     ...(mode === 'deploy' ? ['-v', `${wranglerConfig}:/wcfg/.wrangler`, '-e', 'XDG_CONFIG_HOME=/wcfg'] : []),
     // Build-time NEXT_PUBLIC_* values are passed through from the host.
-    ...['NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_INDEXABLE', 'NEXT_PUBLIC_CONTACT_EMAIL', 'NEXT_PUBLIC_SUPPORT_EMAIL', 'NEXT_PUBLIC_LEARNER_APP', 'NEXT_PUBLIC_API_BASE_URL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : [])),
+    ...['NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_INDEXABLE', 'NEXT_PUBLIC_CONTACT_EMAIL', 'NEXT_PUBLIC_SUPPORT_EMAIL', 'NEXT_PUBLIC_LEARNER_APP', 'NEXT_PUBLIC_API_BASE_URL', 'NEXT_PUBLIC_AUDIO_BASE_URL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : [])),
     'node:24.11.0-bookworm',
     'bash', '-c', script,
   ],
