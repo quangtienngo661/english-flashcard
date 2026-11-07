@@ -324,6 +324,10 @@ output `docs/deliveries/dot-cai-thien-a-smoke-output.txt`; the owner's own pass 
 questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questions.md`; code facts `docs/preparation/DOT_CAI_THIEN_A_CODE_FACTS_2026-10-26.md`. Group B
 (real AI call by Postman, eval, judge, prompt lifecycle) gets its own design after the first real AI call.
 
+## Đợt cải thiện C — plan & as-built
+
+`docs/deliveries/dot-cai-thien-c.md` (plan tóm tắt 07/11/2026: Học / Ôn và chuỗi ngày, phiên âm IPA và giọng Google WaveNet; 5 PR BE + 2 PR FE). Design, decisions (DC1–DC36) và plan: `docs/superpowers/{specs,decisions,plans}/2026-11-0{6,7}-dot-cai-thien-c*`.
+
 ## Nhóm B (chất lượng AI) — plan & as-built
 
 `docs/deliveries/nhom-b.md` (plan tóm tắt 29–30/10/2026, as-built per milestone M1–M6 và báo cáo cuối 31/10/2026; PR #191 docs, #192–#195, #197 và #198). Việc cần chủ dự án xem: `docs/deliveries/nhom-b-open-items.md`; smoke cuối: `docs/deliveries/nhom-b-smoke-output.txt`; chạy thật với model thật (C-T3) là việc của chủ dự án.

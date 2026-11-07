@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Học, Ôn và chuỗi ngày</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2445d6;--primary-deep:#1a32a6;--primary-soft:#eceffe;--accent:#ffd84a;--accent-deep:#c9a21a;--accent-soft:#fff4c7;--ink:#0f1a3d;--muted:#4d5577;--surface:#fff;--canvas:#f1f3fd;--canvas-deep:#dde1f5;--border:#e3e6f4;--border-strong:#7d84a8;--success:#1b7a46;--success-soft:#e3f4ea;--warning:#7a5200;--navy:#1b2444;--navy-raised:#2c3760;--on-navy:#f1f3fd;--on-navy-muted:#b9c1e0}
+*{box-sizing:border-box}
+body{margin:0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);background:#e7eaf6;font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+p{max-width:62ch}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 24px;background:#fff}
+.controls b{margin-right:12px}
+.tab{border:2px solid var(--border-strong);background:#fff;border-radius:.75rem;padding:6px 14px;font-weight:600}
+.tab[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.note{margin:0;padding:0 24px 16px;background:#fff;color:var(--muted);max-width:none}
+.stage{padding:24px;display:flex;justify-content:center}
+.frame{position:relative;width:1200px;max-width:100%;min-height:760px;background:var(--canvas);border-radius:1.25rem;overflow:hidden;transition:width .25s cubic-bezier(.2,0,0,1)}
+.frame.phone{width:390px}
+.bar{background:var(--navy);color:var(--on-navy);display:flex;align-items:center;gap:20px;padding:14px 28px;font-weight:600}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px}
+.logo i{display:inline-block;width:32px;height:18px;border-radius:6px;background:var(--accent)}
+.nav{display:flex;gap:6px}
+.nav span{padding:8px 14px;border-radius:.75rem}
+.nav span.on{background:var(--accent);color:var(--ink)}
+.phone .nav{display:none}
+.page{padding:28px;display:none}
+.page.on{display:block}
+.phone .page{padding:16px}
+.title{display:inline-block;font-size:44px;font-weight:800;margin:0 0 20px;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:.4em;text-underline-offset:-.2em;text-decoration-skip-ink:none}
+.muted{color:var(--muted)}
+.hero{background:var(--primary-soft);border:2px solid #c9d0ef;border-bottom:4px solid var(--primary);border-radius:1.25rem;padding:24px;display:flex;flex-direction:column;gap:6px;max-width:840px}
+.hero h2{font-size:34px;font-weight:800;margin:0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;max-width:420px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:.875rem;font-weight:600;border:2px solid var(--border-strong);background:#fff;box-shadow:0 .3rem 0 var(--border)} /* taste-skill-ignore: ledge cua design B */
+.btn.on{background:var(--accent);border-color:var(--accent);box-shadow:0 .25rem 0 var(--accent-deep)} /* taste-skill-ignore: ledge cua design B */
+.btn{white-space:nowrap}
+.btn svg{width:20px;height:20px}
+.btn small{font-weight:500;color:var(--muted);font-size:14px}
+.btn.on small{color:var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}
+.phone .cards{grid-template-columns:1fr}
+.gcard{background:#fff;border:2px solid var(--border);border-radius:1.25rem;overflow:hidden;display:flex;flex-direction:column}
+.gcard .band{height:64px}
+.gcard .in{padding:16px;display:flex;flex-direction:column;gap:6px}
+.gcard h3{margin:0;font-size:22px}
+.gcard .pair{max-width:none;margin-top:10px}
+.gcard .btn{min-height:44px}
+.meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.meta span{display:flex;align-items:center;gap:6px}
+.meta i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.summary{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.summary h2{font-size:44px;font-weight:800;margin:24px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{background:#fff;border-radius:1.25rem;padding:16px}
+.tile b{display:block;font-size:30px;font-weight:800}
+.box{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:20px}
+.box h3{margin:0 0 4px}
+.toast{position:absolute;left:50%;bottom:24px;transform:translate(-50%,160%);opacity:0;background:var(--navy);color:var(--on-navy);border-radius:999px;padding:8px 16px 8px 10px;display:flex;gap:8px;align-items:center;white-space:nowrap;transition:transform .32s cubic-bezier(.34,1.56,.64,1),opacity .2s;box-shadow:0 8px 20px rgb(15 26 61/.3)} /* taste-skill-ignore: toast noi tren trang */
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast svg{width:22px;height:26px;flex-shrink:0;transform-origin:50% 90%}
+.toast.show svg{animation:flame .9s cubic-bezier(.34,1.56,.64,1) .15s both}
+.toast .n{font-size:16px;font-weight:700}
+@keyframes flame{0%{transform:scale(.3) rotate(-12deg)}55%{transform:scale(1.25) rotate(6deg)}80%{transform:scale(.95) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.toast.show svg{animation:none}}
+p,h2,h3{text-wrap:pretty}
+.n,.tile b,.stat b,.btn small,.meta{font-variant-numeric:tabular-nums}
+.btn{transition:transform .15s cubic-bezier(.2,0,0,1),box-shadow .15s,background-color .15s}
+.btn:hover{background:var(--primary-soft)}
+.btn.on:hover{background:#ffe066}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 transparent} /* taste-skill-ignore: nut lun xuong gap ledge */
+.btn:focus-visible,.tab:focus-visible,.toast .x:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:440px;margin:10px 0 2px}
+.stat{background:#fff;border-radius:.875rem;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-weight:700}
+.stat span{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.stat i{width:8px;height:8px;border-radius:50%}
+.gcard .band{position:relative;display:flex;align-items:flex-end;gap:4px;padding:12px 16px}
+.gcard .band b{width:14px;border:2px solid var(--ink);border-radius:4px;background:var(--ink)}
+.gcard .band b.e{background:transparent}
+.gcard .in{flex:1}
+.gcard .pair{margin-top:auto;padding-top:10px}
+.chip{align-self:flex-start;border-radius:999px;padding:2px 10px;font-size:14px;font-weight:600;background:var(--accent-soft)}
+.chip.ok{background:var(--success-soft);color:var(--success)}
+.hint{font-size:14px;color:var(--muted);margin:0}
+@media (max-width:640px){.cards{grid-template-columns:1fr}.nav{display:none}.page{padding:16px}.title{font-size:36px}.tiles{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.frame,.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <b>Màn hình</b>
+  <button class="tab" data-page="today" aria-pressed="true">Hôm nay</button>
+  <button class="tab" data-page="group" aria-pressed="false">Trang nhóm</button>
+  <button class="tab" data-page="done" aria-pressed="false">Xong phiên Ôn</button>
+  <span style="flex:1"></span>
+  <button class="tab" id="toastBtn">Hiện toast chuỗi ngày</button>
+  <button class="tab" id="width" aria-pressed="false">Xem trên điện thoại</button>
+</div>
+<p class="note">Mockup đợt C (C6 và Học/Ôn), số liệu là ví dụ. Chỉ đổi chỗ có nút Ôn và thêm toast chuỗi ngày; phần còn lại của mỗi trang giữ như app hiện tại.</p>
+
+<div class="stage">
+<div class="frame" id="frame">
+  <div class="bar">
+    <span class="logo"><i></i>Wordmet</span>
+    <span class="nav"><span class="on">Hôm nay</span><span>Nhóm</span><span>Luyện tập</span><span>Tra từ</span></span>
+  </div>
+
+  <section class="page on" id="today">
+    <h1 class="title">Hôm nay</h1>
+    <div class="hero">
+      <h2>Du lịch</h2>
+      <p class="muted" style="margin:0">13 từ chờ hôm nay · nhóm có 40 từ</p>
+      <div class="stats">
+        <div class="stat"><b>3</b><span><i style="background:var(--accent)"></i>ưu tiên</span></div>
+        <div class="stat"><b>5</b><span><i style="background:var(--primary)"></i>đến hạn</span></div>
+        <div class="stat"><b>5</b><span><i style="background:var(--muted)"></i>mới</span></div>
+      </div>
+      <div class="pair">
+        <button class="btn" data-go="group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="14" height="16" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v14"/></svg>Học</button>
+        <button class="btn on" data-go="done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Ôn</button>
+      </div>
+    </div>
+    <div class="cards">
+      <article class="gcard"><div class="band" style="background:var(--primary-soft)" aria-hidden="true"><b style="height:30px"></b><b style="height:22px"></b><b style="height:16px"></b><b style="height:10px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b></div><div class="in">
+        <span class="muted">40 từ</span><h3>Du lịch</h3>
+        <span class="chip">13 từ chờ</span>
+        <div class="meta muted"><span><i style="background:var(--primary)"></i>8 đến hạn</span><span><i style="background:var(--muted)"></i>5 mới</span></div>
+        <div class="pair"><button class="btn">Học</button><button class="btn on">Ôn</button></div>
+      </div></article>
+      <article class="gcard"><div class="band" style="background:var(--accent-soft)" aria-hidden="true"><b class="e" style="height:6px"></b><b style="height:12px"></b><b style="height:20px"></b><b style="height:28px"></b><b style="height:34px"></b><b style="height:26px"></b></div><div class="in">
+        <span class="muted">120 từ · 47 đã thuộc</span><h3>Công việc</h3>
+        <span class="chip ok">Xong hôm nay</span>
+        <div class="pair" style="grid-template-columns:1fr"><button class="btn">Ôn tập</button></div>
+      </div></article>
+      <article class="gcard"><div class="band" style="background:var(--success-soft)" aria-hidden="true"><b style="height:34px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b><b class="e" style="height:6px"></b></div><div class="in">
+        <span class="muted">25 từ</span><h3>Ẩm thực</h3>
+        <span class="chip">12 từ mới</span>
+        <div class="pair" style="grid-template-columns:1fr"><button class="btn on">Học</button></div>
+      </div></article>
+    </div>
+  </section>
+
+  <section class="page" id="group">
+    <h1 class="title">Du lịch</h1>
+    <div class="hero">
+      <p class="muted" style="margin:0">40 từ · 8 từ đến hạn · 5 từ mới · 12 từ đã thuộc</p>
+      <div class="pair">
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="14" height="16" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v14"/></svg>Học</button>
+        <button class="btn on" data-go="done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Ôn</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0">Học: lật thẻ. Ôn: chọn từ theo nghĩa hoặc gõ từ theo nghĩa.</p>
+    </div>
+    <p class="muted" style="margin-top:20px">Biểu đồ theo ngăn và danh sách từ giữ như hiện tại.</p>
+  </section>
+
+  <section class="page" id="done">
+    <div class="summary">
+      <h2>Xong 8 từ.</h2>
+      <div class="tiles">
+        <div class="tile"><b style="color:var(--success)">5</b>Đúng, lên nấc</div>
+        <div class="tile"><b>2</b>Sai, giữ nấc</div>
+        <div class="tile"><b style="color:var(--warning)">1</b>Cần ôn lại</div>
+      </div>
+      <div class="box">
+        <h3>Còn 5 từ mới trong nhóm này</h3>
+        <p class="muted" style="margin:0 0 14px">Học bây giờ thì ngày mai chúng có trong phiên ôn.</p>
+        <div class="pair" style="margin:0;grid-template-columns:1fr 1fr"><button class="btn on" data-go="group">Học</button><button class="btn" data-go="today">Về trang chủ</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <svg viewBox="0 0 44 52" aria-hidden="true"><path d="M22 2c4 10 16 16 16 30a16 16 0 0 1-32 0c0-8 4-12 8-16 0 6 2 9 5 10-1-10 0-17 3-24z" fill="#ffd84a" stroke="#c9a21a" stroke-width="3"/></svg>
+    <span class="n">13 ngày liên tiếp</span>
+  </div>
+</div>
+</div>
+
+<script>
+let timer;
+function toast(){const t=document.getElementById('toast');t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove("show"),3000);}
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
+  document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));
+  const navs=document.querySelectorAll('.nav span');navs.forEach((s,i)=>s.classList.toggle('on',(id==='group'?1:0)===i&&id!=='done'));
+  if(id==='done')setTimeout(toast,600);
+}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+document.getElementById('toastBtn').addEventListener('click',toast);
+document.getElementById('width').addEventListener('click',e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',String(on));document.getElementById('frame').classList.toggle('phone',on);});
+if(location.hash){const id=location.hash.slice(1).split('-')[0];if(document.getElementById(id))show(id);if(location.hash.includes('phone'))document.getElementById('width').click();if(location.hash.includes('toast'))toast();}
+</script>
+</body>
+</html>
