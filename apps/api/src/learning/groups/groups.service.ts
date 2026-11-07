@@ -119,7 +119,7 @@ export class GroupsService {
         levelBefore: item.level, dueBefore: item.dueDate, localDate: today, at,
       })) });
       // Last write (nhóm B D39): only when the delete removed a word from learning.
-      if (removable.length > 0) await recordActivityIn(tx, userId, day);
+      if (removable.length > 0) await recordActivityIn(tx, userId, day, { studied: false });
     }, transactionOptions);
   }
 

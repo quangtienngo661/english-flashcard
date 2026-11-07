@@ -91,7 +91,7 @@ export class BacklogService {
         dueBefore: item.dueDate, dueAfter: dateValue(next.dueDate), localDate: dateValue(today), at,
       })) });
       // Last write (nhóm B D39): only when at least one item was relearned.
-      if (items.length > 0) await recordActivityIn(tx, userId, today);
+      if (items.length > 0) await recordActivityIn(tx, userId, today, { studied: false });
       return { relearned: items.length };
     }, transactionOptions);
   }

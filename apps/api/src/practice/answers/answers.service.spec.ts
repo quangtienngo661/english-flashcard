@@ -32,7 +32,11 @@ function setup(at: Date, record?: () => Promise<void>, activity?: () => Promise<
     recordPracticeSession: vi.fn(record ?? (async () => { calls.push('record'); })),
   };
   const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) };
-  const learning = { recordActivity: vi.fn(activity ?? (async () => { calls.push('activity'); })) };
+  const learning = {
+    recordActivity: vi.fn(activity ?? (async () => { calls.push('activity'); return { firstStudied: false }; })),
+    streakAsOf: vi.fn(async () => ({ days: 5, studiedToday: true })),
+    recallAnswer: vi.fn(async () => ({ outcome: 'kept', level: 1, due_date: '2026-10-20' })),
+  };
   const service = new AnswersService({} as PrismaClient, new FakeClock(at), identity as unknown as IdentityService,
     learning as unknown as LearningService, {} as SessionsService, entitlements as unknown as EntitlementsService, {} as ContentService);
   return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, entitlements, calls, identity, learning };
@@ -68,7 +72,7 @@ describe('AnswersService.writeFinal — records a learning activity day (nhóm B
   it('Review focus 1: an answer at 00:01 learner-local after a 23:58 start records the new date through the same tx, as the last write', async () => {
     const { service, tx, rawTx, learning, calls } = setup(new Date('2026-10-19T17:01:00Z'));
     await service.writeFinal(tx, item, final);
-    expect(learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-20', tx);
+    expect(learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-20', { studied: true }, tx);
     // The date is the one written on the practice item.
     expect(rawTx.practiceSessionItem.update.mock.calls[0][0].data.localDate.toISOString().slice(0, 10)).toBe('2026-10-20');
     expect(calls).toEqual(['update', 'record', 'activity']);
@@ -78,7 +82,7 @@ describe('AnswersService.writeFinal — records a learning activity day (nhóm B
     const { service, tx, learning } = setup(new Date('2026-10-19T03:00:00Z'));
     await service.writeFinal(tx, item, { result: 'wrong', answerRaw: null, answerNormalized: null, answersTried: [], tries: 0, skipped: true });
     await service.writeFinal(tx, item, { ...final, result: 'wrong' });
-    expect(learning.recordActivity.mock.calls).toEqual([[userId, '2026-10-19', tx], [userId, '2026-10-19', tx]]);
+    expect(learning.recordActivity.mock.calls).toEqual([[userId, '2026-10-19', { studied: true }, tx], [userId, '2026-10-19', { studied: true }, tx]]);
   });
 
   it('recordActivity throwing makes writeFinal reject with that error', async () => {
@@ -102,7 +106,7 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
 /** `session`: the senses of the session's words (`practiceSenses` returns them) and, when fewer, the ids that are still usable. */
 function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
-  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean>; gone?: boolean; kind?: 'recall';
+  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean>; gone?: boolean; kind?: 'recall'; firstStudied?: boolean;
     recall?: unknown } = { senses: [] }) {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
@@ -123,7 +127,8 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
       reads.push({ read: 'practiceCheck', db });
       return { item: { due_now: session.due?.[senseId] ?? true } };
     }),
-    recordActivity: vi.fn(async () => undefined),
+    recordActivity: vi.fn(async (..._args: unknown[]) => ({ firstStudied: session.firstStudied ?? false })),
+    streakAsOf: vi.fn(async () => ({ days: 8, studiedToday: true })),
     recallAnswer: vi.fn(async (..._args: unknown[]) => session.recall ?? { outcome: 'kept', level: 3, due_date: '2026-10-25' }),
   };
   const sessions = {
@@ -417,10 +422,10 @@ describe('AnswersService — Bước 7 kinds', () => {
     expect(retry.learning.recordActivity).not.toHaveBeenCalled();
     const final = route(aiItem(clozeQuestion()));
     await final.service.answer(userId, 'it-1', { text: 'deployed' });
-    expect(final.learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-19', final.tx);
+    expect(final.learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-19', { studied: true }, final.tx);
     const skipped = route(aiItem(clozeQuestion(), { tries: 0, answersTried: [] }));
     await skipped.service.skip(userId, 'it-1');
-    expect(skipped.learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-19', skipped.tx);
+    expect(skipped.learning.recordActivity).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-19', { studied: true }, skipped.tx);
     const done = route(mcqItem({ result: 'wrong' }));
     await expect(done.service.answer(userId, 'it-1', { choice: 0 })).rejects.toMatchObject({ status: 409 });
     expect(done.learning.recordActivity).not.toHaveBeenCalled();
@@ -532,5 +537,31 @@ describe('AnswersService — final answers of a recall session', () => {
     learning.recallAnswer.mockRejectedValueOnce(boom);
     await expect(service.answer(userId, 'it-1', { choice: 0 })).rejects.toBe(boom);
     expect(tx.practiceSessionItem.update).not.toHaveBeenCalled();
+  });
+});
+
+// Round C (H6): the first final answer of the day reports the study streak.
+describe('AnswersService — the study streak on a final answer', () => {
+  it('the first study of the day: streak { days } read through tx after the day was marked', async () => {
+    const { service, tx, learning } = route(mcqItem(), 'vi', { senses: [], firstStudied: true });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ streak: { days: 8 } });
+    expect(learning.streakAsOf).toHaveBeenCalledExactlyOnceWith(userId, '2026-10-19', tx);
+  });
+
+  it('a later answer the same day: streak null and nothing read', async () => {
+    const { service, learning } = route(mcqItem());
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ streak: null });
+    expect(learning.streakAsOf).not.toHaveBeenCalled();
+  });
+
+  it('a skip can be the first study of the day too; a recall session carries the streak beside the schedule', async () => {
+    const { service } = route(aiItem(clozeQuestion(), { tries: 1, answersTried: ['x'] }), 'vi', { senses: [], kind: 'recall', firstStudied: true });
+    await expect(service.skip(userId, 'it-1')).resolves.toMatchObject({ streak: { days: 8 }, schedule: { outcome: 'kept' } });
+  });
+
+  it('reading an answer again (409 already-answered) carries no streak', async () => {
+    const { service } = route(mcqItem({ result: 'correct' }), 'vi', { senses: [], firstStudied: true });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).rejects.toMatchObject({
+      status: 409, extensions: { result: { streak: null } } });
   });
 });

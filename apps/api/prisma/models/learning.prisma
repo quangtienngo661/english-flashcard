@@ -82,6 +82,8 @@ model LearningLogEntry {
 model LearningActivityDay {
   userId    String   @map("user_id") @db.Uuid
   localDate DateTime @map("local_date") @db.Date
+  // Round C: true when the learner studied that day (flashcard, final practice answer, review button); false for add / remove only.
+  studied   Boolean  @default(false)
 
   @@id([userId, localDate])
   @@map("learning_activity_days")
