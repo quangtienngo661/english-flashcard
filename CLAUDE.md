@@ -326,7 +326,7 @@ questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questio
 
 ## Đợt cải thiện C — plan & as-built
 
-`docs/deliveries/dot-cai-thien-c.md` (plan tóm tắt 07/11/2026: Học / Ôn và chuỗi ngày, phiên âm IPA và giọng Google WaveNet; 5 PR BE + 2 PR FE). Design, decisions (DC1–DC36) và plan: `docs/superpowers/{specs,decisions,plans}/2026-11-0{6,7}-dot-cai-thien-c*`.
+`docs/deliveries/dot-cai-thien-c.md` (plan tóm tắt và as-built 07/11/2026: Học / Ôn và chuỗi ngày, phiên âm IPA và giọng Google WaveNet; PR #236, #237, #239, #241, #242, #244, #245, #246 đã vào `dev`). Checklist chủ dự án tự kiểm: `docs/deliveries/dot-cai-thien-c-checklist.md`; việc trước launch (Google Cloud, R2, chọn giọng, nạp phiên âm, chính sách bảo mật) ở mục "Đợt C" của `deploy-checklist.md`. Design, decisions (DC1–DC36) và plan: `docs/superpowers/{specs,decisions,plans}/2026-11-0{6,7}-dot-cai-thien-c*`.
 
 ## Nhóm B (chất lượng AI) — plan & as-built
 
