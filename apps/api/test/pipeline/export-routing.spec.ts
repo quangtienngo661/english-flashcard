@@ -8,6 +8,7 @@ import { AdminCatalogController } from '../../src/content/catalog/admin-catalog.
 import { AdminCatalogQueries } from '../../src/content/catalog/admin-catalog.queries.js';
 import { ContentService, type ExportRow } from '../../src/content/index.js';
 import { PermissionGuard } from '../../src/identity/staff/permission.guard.js';
+import { AudioService } from '../../src/content/audio/audio.service.js';
 import { ExportService } from '../../src/content-pipeline/export/export.service.js';
 import { SensesExportController } from '../../src/content-pipeline/export/senses-export.controller.js';
 
@@ -23,6 +24,7 @@ const row: ExportRow = {
 @Module({ controllers: [AdminCatalogController], providers: [
   { provide: AdminCatalogQueries, useValue: { getSense: (senseId: string) => ({ sense_id: senseId }) } },
   { provide: ContentService, useValue: { listExportRows: async () => ({ rows: [row] }) } },
+  { provide: AudioService, useValue: { statesForSense: async () => ({ uk: null, us: null }) } },
 ], exports: [ContentService] })
 class CatalogRoutingModule {}
 
@@ -55,7 +57,7 @@ describe('export controller routing (unit, no infrastructure)', () => {
     expect(exported.text).toContain('"\'=HYPERLINK(""x"")"');
     const detail = await http.get(`/v1/admin/content/senses/${id.toUpperCase()}`);
     expect(detail.status).toBe(200);
-    expect(detail.body).toEqual({ sense_id: id });
+    expect(detail.body).toEqual({ sense_id: id, audio: { uk: null, us: null } });
     expect((await http.get('/v1/admin/content/senses/bad-id')).status).toBe(404);
     expect((await http.get('/v1/admin/content/senses/zzzzzzzz-abcd-4abc-8abc-123456789abc')).status).toBe(400);
   });

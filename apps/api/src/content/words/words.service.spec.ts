@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { InflectionsService } from '../inflections/inflections.service.js';
 import type { SentencesService } from '../sentences/sentences.service.js';
+import type { AudioService } from '../audio/audio.service.js';
 import { WordsService, type WordSense } from './words.service.js';
+
+const noAudio = { urlsForSenses: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, { uk: null, us: null }]))) } as unknown as AudioService;
 
 const sense = (id: string, pos: string): WordSense => ({
   sense_id: id, entry_id: `e-${pos}`, scope: 'catalog', lemma: 'deploy', pos, level: 'B1', context_label: null,
@@ -14,7 +17,7 @@ describe('WordsService.wordPage — sentence_count (API (e))', () => {
   it("GE1/GE2: each sense carries the viewer's sentence count, 0 when it has none", async () => {
     const prisma = { $queryRaw: vi.fn(async () => []) };
     const counts = vi.fn(async () => new Map([['s1', 3]]));
-    const service = new WordsService(prisma as unknown as PrismaClient, {} as InflectionsService, { counts } as unknown as SentencesService);
+    const service = new WordsService(prisma as unknown as PrismaClient, {} as InflectionsService, { counts } as unknown as SentencesService, noAudio);
     vi.spyOn(service as unknown as { senses: () => Promise<WordSense[]> }, 'senses').mockResolvedValue([sense('s1', 'verb'), sense('s2', 'noun')]);
     const page = await service.wordPage('u1', 'deploy', 'vi');
     expect(page.sections.flatMap((s) => s.senses.map((x) => [x.sense_id, x.sentence_count]))).toEqual([['s1', 3], ['s2', 0]]);
@@ -31,7 +34,7 @@ describe('WordsService — pronunciation on every sense (round C, H9)', () => {
   });
   const read = async (rows: unknown[]) => {
     const prisma = { $queryRaw: vi.fn(async () => rows) };
-    const service = new WordsService(prisma as unknown as PrismaClient, {} as InflectionsService, {} as SentencesService);
+    const service = new WordsService(prisma as unknown as PrismaClient, {} as InflectionsService, {} as SentencesService, noAudio);
     return { service, prisma, cards: await service.cardContent('u1', ['s1'], 'vi') };
   };
 
@@ -65,8 +68,24 @@ describe('WordsService — pronunciation on every sense (round C, H9)', () => {
     const prisma = { $queryRaw: vi.fn().mockResolvedValueOnce([row({ ipa_uk: 'lɛd' })]).mockResolvedValue([]) };
     const service = new WordsService(prisma as unknown as PrismaClient,
       { inflectionsOf: vi.fn(async () => new Map()) } as unknown as InflectionsService,
-      { counts: vi.fn(async () => new Map()) } as unknown as SentencesService);
+      { counts: vi.fn(async () => new Map()) } as unknown as SentencesService, noAudio);
     const page = await service.wordPage('u1', 'lead', 'vi');
     expect(page.sections.flatMap((section) => section.senses.map((s) => s.pronunciation.uk))).toEqual(['lɛd']);
+  });
+});
+
+describe('WordsService — audio urls in the pronunciation (round C, H9)', () => {
+  const row = {
+    sense_id: 's1', entry_id: 'e1', scope: 'catalog', lemma: 'lead', pos: 'noun', level: 'B1', context_label: null, examples: [],
+    gloss_vi: 'chì', definition_en: null, topics: [], form_of_entry_id: null, form_kind: null, form_lemma: null, form_pos: null,
+    ai_suggested: false, ipa_uk: 'lɛd', ipa_us: 'lɛd', ipa_custom: null,
+  };
+
+  it('a ready recording appears as audio.uk / audio.us', async () => {
+    const audio = { urlsForSenses: vi.fn(async () => new Map([['s1', { uk: 'https://audio.example.com/tts/v1/a.mp3', us: null }]])) } as unknown as AudioService;
+    const service = new WordsService({ $queryRaw: vi.fn(async () => [row]) } as unknown as PrismaClient, {} as InflectionsService, {} as SentencesService, audio);
+    const cards = await service.cardContent('u1', ['s1'], 'vi');
+    expect(cards.get('s1')?.pronunciation.audio).toEqual({ uk: 'https://audio.example.com/tts/v1/a.mp3', us: null });
+    expect(audio.urlsForSenses).toHaveBeenCalledExactlyOnceWith(['s1']);
   });
 });

@@ -10,6 +10,7 @@ import type { Learner } from '../learner/learner-content.guard.js';
 import { CurrentLearner, LearnerContent } from '../learner/learner.decorator.js';
 import { ContentRuleError } from '../senses/revision-content.js';
 import { myWordParams, myWordPatch, type MyWordPatch } from './my-words.schemas.js';
+import { AudioService } from '../audio/audio.service.js';
 import { PrivateWordsService } from './private-words.service.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -33,6 +34,7 @@ export class MyWordsController {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(PrivateWordsService) private readonly words: PrivateWordsService,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
 
   @Patch(':id')
@@ -50,5 +52,8 @@ export class MyWordsController {
         senseId: sense_id, meaning: meaning === undefined ? undefined : { text: meaning, language: learner.nativeLanguage }, examples, ipa,
       })),
     }), transactionOptions));
+    // After the commit (round C): a new spelling of the word needs new recordings for each of its meanings.
+    const senses = await this.prisma.sense.findMany({ where: { entryId: params.id }, select: { id: true } });
+    await this.audio.ensureForSenses(senses.map(({ id }) => id));
   }
 }

@@ -115,6 +115,26 @@ export interface AppConfig {
     apiKey: string | null;
     checksumKey: string | null;
   };
+  /**
+   * Pre-made speech audio (round C, design §5.4–5.5). Storage is Cloudflare R2 (`r2`, the four keys together) or a local folder (`local`,
+   * the fake); null = off and the app keeps the browser voice. `publicBaseUrl` has no trailing slash. Neither fake runs in production.
+   */
+  audio: {
+    storage: 'r2' | 'local' | null;
+    publicBaseUrl: string | null;
+    r2: { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string } | null;
+    localDir: string;
+  };
+  /**
+   * The text-to-speech provider: `google` (service account credentials, secret: never logged), `fake` (tests and the smoke) or null.
+   * The voices are Google voice names (e.g. en-GB-Wavenet-B); the language code is their first five characters.
+   */
+  tts: {
+    provider: 'google' | 'fake' | null;
+    voiceUk: string;
+    voiceUs: string;
+    credentials: { clientEmail: string; privateKey: string; projectId: string } | null;
+  };
   /** Google sign-in (Bước 8, design §5.2). `fake` wins over `real`; the fake never runs in production (B8E38). */
   google: {
     mode: 'off' | 'real' | 'fake';
@@ -201,6 +221,24 @@ function isTrustedProxy(value: string): boolean {
   });
 }
 
+/** `GOOGLE_TTS_CREDENTIALS`: base64 of the service account JSON. A failure names the variable and never the value. */
+const ttsCredentials = z.string().optional().transform((value, ctx) => {
+  const text = value?.trim();
+  if (!text) return null;
+  try {
+    const json: unknown = JSON.parse(Buffer.from(text, 'base64').toString('utf8'));
+    const record = json !== null && typeof json === 'object' && !Array.isArray(json) ? json as Record<string, unknown> : {};
+    const field = (name: string) => (typeof record[name] === 'string' && record[name] !== '' ? record[name] as string : null);
+    const [clientEmail, privateKey, projectId] = [field('client_email'), field('private_key'), field('project_id')];
+    if (clientEmail !== null && privateKey !== null && projectId !== null) return { clientEmail, privateKey, projectId };
+  } catch {
+    // Falls through to the issue below.
+  }
+  ctx.addIssue({ code: 'custom', message: 'must be the base64 of a service account JSON with client_email, private_key and project_id' });
+  return z.NEVER;
+});
+const optionalText = z.string().optional().transform((value) => value?.trim() || null);
+
 const envSchema = z.object({
   DATABASE_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['postgres:', 'postgresql:'].includes(value.protocol))
@@ -265,6 +303,17 @@ const envSchema = z.object({
   // Read by the AI SDKs themselves, which add these headers to every provider call; no client option turns them off (D29).
   OPENAI_CUSTOM_HEADERS: z.string().optional(),
   ANTHROPIC_CUSTOM_HEADERS: z.string().optional(),
+  GOOGLE_TTS_CREDENTIALS: ttsCredentials,
+  TTS_VOICE_UK: nonEmpty.default('en-GB-Wavenet-B'),
+  TTS_VOICE_US: nonEmpty.default('en-US-Wavenet-D'),
+  TTS_FAKE_ENABLED: booleanString.default(false),
+  AUDIO_STORAGE_ENDPOINT: optionalText,
+  AUDIO_STORAGE_BUCKET: optionalText,
+  AUDIO_STORAGE_ACCESS_KEY_ID: optionalText,
+  AUDIO_STORAGE_SECRET_ACCESS_KEY: optionalText,
+  AUDIO_PUBLIC_BASE_URL: optionalText,
+  AUDIO_STORAGE_FAKE_ENABLED: booleanString.default(false),
+  AUDIO_STORAGE_FAKE_DIR: nonEmpty.default('.tmp/audio'),
   GOOGLE_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
   GOOGLE_CLIENT_SECRET: z.string().optional().transform((value) => value?.trim() || null),
   GOOGLE_REDIRECT_URI: z.string().optional().transform((value) => value?.trim() || null)
@@ -298,6 +347,28 @@ const envSchema = z.object({
     const message = 'The fake AI provider is not allowed in production';
     ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
     ctx.addIssue({ code: 'custom', path: ['AI_FAKE_ENABLED'], message });
+  }
+  for (const name of ['TTS_FAKE_ENABLED', 'AUDIO_STORAGE_FAKE_ENABLED'] as const) {
+    if (values.BILLING_PRODUCTION && values[name]) {
+      const message = name === 'TTS_FAKE_ENABLED' ? 'The fake speech provider is not allowed in production' : 'The local fake audio storage is not allowed in production';
+      ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+      ctx.addIssue({ code: 'custom', path: [name], message });
+    }
+  }
+  // The real storage needs all four keys together (like payOS); the fake wins, so stray real values beside it are not checked.
+  const storageKeys = ['AUDIO_STORAGE_ENDPOINT', 'AUDIO_STORAGE_BUCKET', 'AUDIO_STORAGE_ACCESS_KEY_ID', 'AUDIO_STORAGE_SECRET_ACCESS_KEY'] as const;
+  const storageOn = values.AUDIO_STORAGE_FAKE_ENABLED || storageKeys.some((name) => values[name] !== null);
+  if (!values.AUDIO_STORAGE_FAKE_ENABLED && storageKeys.some((name) => values[name] !== null)) {
+    for (const name of storageKeys) {
+      if (values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when any AUDIO_STORAGE_* key is set (all keys together)' });
+    }
+  }
+  if (storageOn && values.AUDIO_PUBLIC_BASE_URL === null) {
+    ctx.addIssue({ code: 'custom', path: ['AUDIO_PUBLIC_BASE_URL'], message: 'Required when audio storage is on' });
+  }
+  if (values.AUDIO_PUBLIC_BASE_URL !== null && !(URL.canParse(values.AUDIO_PUBLIC_BASE_URL)
+    && ['http:', 'https:'].includes(new URL(values.AUDIO_PUBLIC_BASE_URL).protocol))) {
+    ctx.addIssue({ code: 'custom', path: ['AUDIO_PUBLIC_BASE_URL'], message: 'Must be an http(s) URL' });
   }
   if (values.BILLING_PRODUCTION && values.GOOGLE_FAKE_ENABLED) {
     const message = 'The fake Google page is not allowed in production';
@@ -409,6 +480,21 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       clientId: values.PAYOS_CLIENT_ID,
       apiKey: values.PAYOS_API_KEY,
       checksumKey: values.PAYOS_CHECKSUM_KEY,
+    },
+    audio: {
+      storage: values.AUDIO_STORAGE_FAKE_ENABLED ? 'local' : values.AUDIO_STORAGE_ENDPOINT !== null ? 'r2' : null,
+      publicBaseUrl: values.AUDIO_PUBLIC_BASE_URL?.replace(/\/+$/, '') ?? null,
+      r2: !values.AUDIO_STORAGE_FAKE_ENABLED && values.AUDIO_STORAGE_ENDPOINT !== null ? {
+        endpoint: values.AUDIO_STORAGE_ENDPOINT, bucket: values.AUDIO_STORAGE_BUCKET!, accessKeyId: values.AUDIO_STORAGE_ACCESS_KEY_ID!,
+        secretAccessKey: values.AUDIO_STORAGE_SECRET_ACCESS_KEY!,
+      } : null,
+      localDir: values.AUDIO_STORAGE_FAKE_DIR,
+    },
+    tts: {
+      provider: values.TTS_FAKE_ENABLED ? 'fake' : values.GOOGLE_TTS_CREDENTIALS !== null ? 'google' : null,
+      voiceUk: values.TTS_VOICE_UK,
+      voiceUs: values.TTS_VOICE_US,
+      credentials: values.GOOGLE_TTS_CREDENTIALS,
     },
     google: {
       mode: values.GOOGLE_FAKE_ENABLED ? 'fake' : values.GOOGLE_CLIENT_ID !== null ? 'real' : 'off',
