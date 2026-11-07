@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
+import { AudioRepository } from './audio/audio.queries.js';
+import { AudioService } from './audio/audio.service.js';
+import { TtsQueueService } from './audio/tts-queue.service.js';
 import { audioStorageProvider } from './audio/audio-storage.provider.js';
 import { DevAudioController } from './audio/dev-audio.controller.js';
 import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
@@ -51,7 +54,7 @@ import { WordFormsService } from './word-forms/word-forms.service.js';
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
     PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
-    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser, audioStorageProvider],
+    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser, audioStorageProvider, AudioRepository, AudioService, TtsQueueService],
   exports: [ContentService],
 })
 export class ContentModule {}

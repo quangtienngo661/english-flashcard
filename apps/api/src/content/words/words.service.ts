@@ -7,6 +7,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
+import { AudioService } from '../audio/audio.service.js';
 import { SentencesService } from '../sentences/sentences.service.js';
 import { visibleEntryCondition } from '../learner/visible-senses.js';
 
@@ -74,7 +75,7 @@ export function senseMeaning(glossVi: string | null, definitionEn: string | null
     translation_missing: !useEnglish && nativeLanguage !== 'vi' };
 }
 
-function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
+function view(row: SenseRow, nativeLanguage: NativeLanguage, audio: { uk: string | null; us: string | null } = { uk: null, us: null }): WordSense {
   return {
     sense_id: row.sense_id, entry_id: row.entry_id, scope: row.scope, lemma: row.lemma, pos: row.pos, level: row.level,
     // Private labels (p2, p3, …) only keep the live-sense index unique; they are never shown.
@@ -84,7 +85,7 @@ function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
     form_of: row.form_of_entry_id && row.form_kind && row.form_lemma && row.form_pos
       ? { entry_id: row.form_of_entry_id, lemma: row.form_lemma, pos: row.form_pos, kind: row.form_kind } : null,
     ai_suggested: row.ai_suggested,
-    pronunciation: { uk: row.ipa_uk, us: row.ipa_us, custom: row.ipa_custom, audio: { uk: null, us: null } },
+    pronunciation: { uk: row.ipa_uk, us: row.ipa_us, custom: row.ipa_custom, audio },
   };
 }
 
@@ -95,6 +96,7 @@ export class WordsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
     @Inject(SentencesService) private readonly sentences: SentencesService,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
 
   /** One statement per read: visibility, displayed level and live content on one snapshot. */
@@ -126,7 +128,9 @@ export class WordsService {
       WHERE ${visible(viewerId)} AND ${where}
       ORDER BY e.lemma COLLATE "C", array_position(${posOrder}::text[], e.pos), (e.scope = 'private'),
         s.context_label NULLS FIRST, s.created_at, s.id`;
-    return rows.map((row) => view(row, nativeLanguage));
+    // The recordings that are ready for these senses; a failure only leaves the URLs null (the app falls back to the browser voice).
+    const audio = await this.audio.urlsForSenses(rows.map((row) => row.sense_id));
+    return rows.map((row) => view(row, nativeLanguage, audio.get(row.sense_id)));
   }
 
   cardContent(viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage): Promise<Map<string, WordSense>> {

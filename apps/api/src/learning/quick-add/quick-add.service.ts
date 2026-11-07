@@ -54,7 +54,7 @@ export class QuickAddService {
   async quickAdd(userId: string, nativeLanguage: 'vi' | 'en', input: QuickAddInput): Promise<QuickAddResult> {
     const profile = await this.identity.getProfile(userId);
     if (!profile) throw notFound();
-    return contentProblems(() => this.prisma.$transaction(async (tx) => {
+    const result = await contentProblems(() => this.prisma.$transaction(async (tx) => {
       // Learning's lock first, then Content's owner lock inside createPrivateSense: the same order as deleteMyWord.
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, input.groupId);
@@ -79,6 +79,9 @@ export class QuickAddService {
         sentence_id: sentence?.id ?? null,
       };
     }, transactionOptions));
+    // After the commit (round C): the recordings of a new private word; a failure here never undoes the add.
+    if (result.created_word) await this.content.ensureAudio([result.sense_id]);
+    return result;
   }
 
   /** B3E17 / CR23: the private entry with its senses and sentences, plus their items, group links and log rows. */

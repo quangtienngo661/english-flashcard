@@ -213,3 +213,22 @@ model ContextSentence {
   @@index([userId, senseId])
   @@map("context_sentences")
 }
+
+// Round C: one pre-made recording (design §5.5). `key` = sha256(voice_name | text | phonemes); the mp3 is at tts/v1/<key>.mp3.
+model SpeechAudio {
+  key       String    @id
+  voice     String
+  voiceName String    @map("voice_name")
+  text      String
+  phonemes  String?
+  status    String    @default("pending")
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  charCount Int?      @map("char_count")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  readyAt   DateTime? @map("ready_at") @db.Timestamptz
+
+  @@index([status, updatedAt])
+  @@map("speech_audio")
+}
