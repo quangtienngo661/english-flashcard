@@ -1,0 +1,20 @@
+{"id":0,"verdict":"ok","why":"common word, right meaning"}
+{"id":1,"verdict":"ok","why":"slang, right meaning"}
+{"id":2,"verdict":"ok","why":"phrasal verb, right meaning"}
+{"id":3,"verdict":"ok","why":"technical term"}
+{"id":4,"verdict":"ok","why":"product name"}
+{"id":5,"verdict":"ok","why":"right meaning"}
+{"id":6,"verdict":"ok","why":"idiom, right meaning"}
+{"id":7,"verdict":"ok","why":"British word"}
+{"id":8,"verdict":"ok","why":"rare but real"}
+{"id":9,"verdict":"ok","why":"abbreviation"}
+{"id":10,"verdict":"not_recognized","why":"misspelled (receive)"}
+{"id":11,"verdict":"not_recognized","why":"misspelled (beautiful)"}
+{"id":12,"verdict":"not_recognized","why":"false friend: library is thư viện; hiệu sách is bookshop"}
+{"id":13,"verdict":"not_recognized","why":"false friend: actually is thật ra; hiện tại is currently"}
+{"id":14,"verdict":"not_recognized","why":"false friend: sensible is hợp lý; nhạy cảm is sensitive"}
+{"id":15,"verdict":"not_recognized","why":"not English"}
+{"id":16,"verdict":"not_recognized","why":"made-up word"}
+{"id":17,"verdict":"not_recognized","why":"opposite direction: cho mượn is lend; arguable under the prompt's when-in-doubt-ok rule"}
+{"id":18,"verdict":"not_recognized","why":"false friend: eventually is cuối cùng"}
+{"id":19,"verdict":"not_recognized","why":"false friend: sympathetic is thông cảm; dễ mến is likeable"}

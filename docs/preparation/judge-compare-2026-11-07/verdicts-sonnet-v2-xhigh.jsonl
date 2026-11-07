@@ -1,0 +1,102 @@
+{"id": 0, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"Clean\" fits (\"I clean my teeth twice a day\") and is a common A1 word."}
+{"id": 1, "verdict": "fail_minor", "other_words": ["heed"], "reason": "\"Pay heed to the teacher\" is natural English, though \"heed\" is formal and few learners would write it."}
+{"id": 2, "verdict": "fail_minor", "other_words": ["picturesque"], "reason": "\"Picturesque\" fits and keeps the meaning, but it is a rarer word than \"scenic\"."}
+{"id": 3, "verdict": "fail_major", "other_words": ["round"], "reason": "\"A round of chess\" is natural for one game, and \"round\" is a common word."}
+{"id": 4, "verdict": "fail_major", "other_words": ["deal", "agreement"], "reason": "\"A three-year deal with the club\" is the usual way to say this, and \"deal\" is a very common word."}
+{"id": 5, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"bubble\" is clumsy because bubbles are already mentioned, and it does not mean đun sôi."}
+{"id": 6, "verdict": "pass", "other_words": [], "reason": "The closest candidates \"play\" and \"race\" suit only some sports, while \"compete against one another\" covers every sport mentioned."}
+{"id": 7, "verdict": "fail_major", "other_words": ["team"], "reason": "\"A team of 20 people, from cooks to cleaners\" is natural, and \"team\" is a very common word."}
+{"id": 8, "verdict": "pass", "other_words": [], "reason": "The closest candidates \"bill\" and \"invoice\" are not what a shoe shop gives you, so only \"receipt\" is natural here."}
+{"id": 9, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"plantain\" is a rarer starchy fruit and is not the long yellow fruit monkeys are known for."}
+{"id": 10, "verdict": "fail_minor", "other_words": ["associate"], "reason": "\"Business associate\" fits and is natural, but it is formal and rarer than \"partner\"."}
+{"id": 11, "verdict": "fail_minor", "other_words": ["application", "program"], "reason": "\"Weather application\" is natural, but it is only the long form of \"app\" (or a vaguer word)."}
+{"id": 12, "verdict": "pass", "other_words": [], "reason": "The closest candidates \"open\" and \"run\" use the app but do not mean cài đặt, and \"set up\" cannot fill the blank before \"it\"."}
+{"id": 13, "verdict": "fail_minor", "other_words": ["demanding", "taxing"], "reason": "\"Demanding\" fits with the pressure clue, but it is a close synonym that is rarer than \"stressful\"."}
+{"id": 14, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"list\" is not what a waiter hands out in a restaurant, so only \"menu\" fits."}
+{"id": 15, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"money\" does not go with \"official\" in this sentence, so only \"currency\" fits."}
+{"id": 16, "verdict": "fail_major", "other_words": ["washing"], "reason": "\"Do the washing\" is the usual British phrase, and \"washing\" is a common word."}
+{"id": 17, "verdict": "fail_major", "other_words": ["put", "calculate"], "reason": "\"Put the cost at $2,000\" is a natural way to give an estimate, and \"put\" is a basic word."}
+{"id": 18, "verdict": "fail_minor", "other_words": ["briefing", "huddle"], "reason": "\"Team briefing\" and \"team huddle\" are natural, but both are rarer than \"meeting\"."}
+{"id": 19, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"Cook the cake in the oven for 30 minutes\" is natural, and \"cook\" is a common A1 word."}
+{"id": 20, "verdict": "fail_major", "other_words": ["buy", "get"], "reason": "\"Buy much of its oil from other countries\" keeps the meaning, and \"buy\" is a basic A1 word."}
+{"id": 21, "verdict": "fail_major", "other_words": ["reminder", "memento"], "reason": "\"A reminder of my trip\" fits the sentence naturally, and \"reminder\" is a common word."}
+{"id": 22, "verdict": "fail_major", "other_words": ["raise"], "reason": "\"Raise the number of students\" is natural, and \"raise\" is a common word."}
+{"id": 23, "verdict": "fail_major", "other_words": ["group", "division", "section"], "reason": "\"The sales group has three teams\" is natural, and \"group\" is a common word."}
+{"id": 24, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"trouble\" is vaguer and does not mean owing money, so only \"debt\" fits."}
+{"id": 25, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"owner\" does not mean someone who puts money in to earn a profit, so only \"investor\" fits."}
+{"id": 26, "verdict": "fail_minor", "other_words": ["reuse"], "reason": "\"Reuse\" is understandable here, but it does not mean making new paper the way \"recycle\" does."}
+{"id": 27, "verdict": "fail_minor", "other_words": ["recall"], "reason": "\"I can't recall her name\" is natural, but \"recall\" is formal and rarer than \"remember\"."}
+{"id": 28, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"program\" is not natural after \"web\", and \"web app\" means something different."}
+{"id": 29, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"honey\" is not described as white, and \"salt\" is not sweet, so only \"sugar\" fits."}
+{"id": 30, "verdict": "fail_major", "other_words": ["uncooked"], "reason": "\"Uncooked\" fits and is an easy synonym that a learner at this level knows."}
+{"id": 31, "verdict": "fail_major", "other_words": ["payment"], "reason": "\"Proof of payment\" is natural for a receipt, and \"payment\" is a common word."}
+{"id": 32, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"brunch\" is a late-morning meal, not the first meal of every day."}
+{"id": 33, "verdict": "fail_major", "other_words": ["out", "tour", "excursion"], "reason": "\"A day out to the zoo\" is natural English, and \"out\" is a basic word."}
+{"id": 34, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"press\" is not natural with \"on\" and a mouse, so only \"click\" fits."}
+{"id": 35, "verdict": "fail_major", "other_words": ["piece"], "reason": "\"A thin piece of bread\" is natural, and \"piece\" is a basic A1 word."}
+{"id": 36, "verdict": "fail_major", "other_words": ["maker"], "reason": "\"A famous maker of sports shoes\" is natural, and \"maker\" is a common word."}
+{"id": 37, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"timer\" counts down a set time but is not what wakes you at 6 a.m., so only \"alarm\" fits."}
+{"id": 38, "verdict": "fail_major", "other_words": ["employ", "choose"], "reason": "\"Employ Maria as the new cook\" is natural, and \"employ\" is a common word."}
+{"id": 39, "verdict": "fail_minor", "other_words": ["host"], "reason": "\"The website's host is the computer that stores its pages\" is understandable, but \"host\" is a rarer technical word."}
+{"id": 40, "verdict": "fail_major", "other_words": ["item", "thing"], "reason": "\"Every item you need to make the cake\" is natural, and \"item\" is a common word."}
+{"id": 41, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"manage\" means to succeed in doing something, not to have enough money for it, so only \"afford\" fits."}
+{"id": 42, "verdict": "fail_minor", "other_words": ["bargain"], "reason": "\"It's a bargain!\" can seal an agreement, but it is rarer and usually means a cheap price."}
+{"id": 43, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"Cook the eggs in a pan with a little hot oil\" is natural, and \"cook\" is a common A1 word."}
+{"id": 44, "verdict": "fail_major", "other_words": ["glad", "good", "great"], "reason": "\"I feel glad, not sad\" is natural, and \"glad\" is a common word."}
+{"id": 45, "verdict": "fail_minor", "other_words": ["gain"], "reason": "\"The shop made a gain of $200\" is understandable, but \"gain\" is a rarer word for a shop's earnings."}
+{"id": 46, "verdict": "fail_minor", "other_words": ["display"], "reason": "\"The display on my phone is broken\" fits, but \"display\" is a more technical word than \"screen\"."}
+{"id": 47, "verdict": "fail_major", "other_words": ["land"], "reason": "\"Call me as soon as you land at the airport\" is natural, and \"land\" is a common word."}
+{"id": 48, "verdict": "fail_major", "other_words": ["extra"], "reason": "\"A 10% extra charge\" is natural, and \"extra\" is a basic word that covers the same idea."}
+{"id": 49, "verdict": "fail_major", "other_words": ["service"], "reason": "\"Service the machines regularly, changing the oil\" is natural, and \"service\" is a common word."}
+{"id": 50, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"people\" is too vague and \"its people\" would mean its employees, so only \"stakeholders\" covers all three groups."}
+{"id": 51, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"holidays\" does not name Saturday and Sunday as a pair, so only \"weekend\" fits."}
+{"id": 52, "verdict": "fail_minor", "other_words": ["trade", "speculate"], "reason": "\"Trade in the stock market\" and \"speculate in the stock market\" are natural, but they mean different activities from investing."}
+{"id": 53, "verdict": "fail_major", "other_words": ["save", "get"], "reason": "\"Save the file from the website to your computer\" is natural, and \"save\" is a basic word."}
+{"id": 54, "verdict": "fail_major", "other_words": ["programmer", "engineer"], "reason": "\"The software programmer wrote the code\" is natural, and \"programmer\" is a common word."}
+{"id": 55, "verdict": "fail_major", "other_words": ["plan", "idea"], "reason": "\"His plan was to control the middle of the board\" is natural, and \"plan\" is a basic word."}
+{"id": 56, "verdict": "fail_minor", "other_words": ["atlas"], "reason": "\"The atlas shows all the roads and towns\" fits, but \"atlas\" is a rarer word for a book of maps."}
+{"id": 57, "verdict": "fail_major", "other_words": ["board"], "reason": "\"Passengers will board at Dover\" is natural, and \"board\" is a common word."}
+{"id": 58, "verdict": "fail_major", "other_words": ["bag", "case"], "reason": "\"Packed her clothes in a bag/case and pulled it on its wheels\" is natural, and both are common words."}
+{"id": 59, "verdict": "fail_major", "other_words": ["cooking", "food"], "reason": "\"French cooking\" is the most natural phrase here, and \"cooking\" is a basic word."}
+{"id": 60, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"settle\" does not take \"for the food\" in this way, so only \"pay\" fits."}
+{"id": 61, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"internet\" needs \"on\" not \"in\", and \"gallery\" would not show on a computer, so only \"cloud\" fits."}
+{"id": 62, "verdict": "fail_minor", "other_words": ["famished", "peckish"], "reason": "\"Famished\" fits but is rarer than \"hungry\", and \"peckish\" is informal and means only mild hunger."}
+{"id": 63, "verdict": "fail_minor", "other_words": ["mate", "pal", "buddy"], "reason": "\"My best mate\" and \"my best pal\" are natural, but they are informal or regional words."}
+{"id": 64, "verdict": "fail_major", "other_words": ["baggage"], "reason": "\"Baggage cart\" is a natural phrase at an airport, and \"baggage\" is a common word."}
+{"id": 65, "verdict": "fail_major", "other_words": ["deal"], "reason": "\"Agreed to a deal, combining into a single company\" is natural, and \"deal\" is a common word."}
+{"id": 66, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"card\" is not something you open to save money, so only \"account\" fits."}
+{"id": 67, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"give\" means for free, which clashes with wanting to buy the bike, so only \"sell\" fits."}
+{"id": 68, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"coffee\" is made from beans, not from a bag of black leaves, so only \"tea\" fits."}
+{"id": 69, "verdict": "fail_minor", "other_words": ["cordless", "Bluetooth"], "reason": "\"Cordless headphones\" fits, but \"cordless\" is a rarer word, and \"Bluetooth headphones\" repeats the next clause."}
+{"id": 70, "verdict": "fail_minor", "other_words": ["pressing", "critical"], "reason": "\"Marked critical\" and \"marked pressing\" fit, but both are rarer or more formal than \"urgent\"."}
+{"id": 71, "verdict": "fail_minor", "other_words": ["swamped", "occupied"], "reason": "\"Swamped\" fits but is informal, and \"occupied\" is formal, so both are rarer than \"busy\"."}
+{"id": 72, "verdict": "fail_major", "other_words": ["system", "file"], "reason": "\"The customer system, which stores names and orders in tables\" is natural, and \"system\" is a common word."}
+{"id": 73, "verdict": "fail_major", "other_words": ["attraction", "monument", "sight"], "reason": "\"A famous Paris attraction\" and \"monument\" are natural, and both are common words."}
+{"id": 74, "verdict": "fail_major", "other_words": ["change", "switch"], "reason": "\"Change your economy ticket to business class\" is natural, and \"change\" is a basic word."}
+{"id": 75, "verdict": "fail_major", "other_words": ["lock", "protect", "encode"], "reason": "\"Protect your messages using a secret key\" fits, and \"protect\" is a common word."}
+{"id": 76, "verdict": "fail_major", "other_words": ["run", "supervise", "oversee"], "reason": "\"Run the shop\" is natural, and \"run\" is a common word."}
+{"id": 77, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"Clean your hands with soap and water\" is natural, and \"clean\" is a basic A1 word."}
+{"id": 78, "verdict": "fail_major", "other_words": ["get", "take"], "reason": "\"Take a book from the library and give it back next week\" is natural, and \"take\" is a basic word."}
+{"id": 79, "verdict": "fail_major", "other_words": ["plan", "arrange"], "reason": "\"Plan the school trip\" is natural, and \"plan\" is a basic word."}
+{"id": 80, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"experience\" makes a real phrase, but user experience is a wider idea than the buttons and menus, so only \"interface\" means giao diện."}
+{"id": 81, "verdict": "fail_major", "other_words": ["change"], "reason": "\"Helps grape juice change, turning its sugar into alcohol\" is natural enough, and \"change\" is a basic word."}
+{"id": 82, "verdict": "fail_major", "other_words": ["schedule"], "reason": "\"Schedule invoice payments so the system sends them on the due date\" is natural, and \"schedule\" is a common word."}
+{"id": 83, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"am\" gives only the place and not the job, so only \"work\" fits."}
+{"id": 84, "verdict": "fail_minor", "other_words": ["internet"], "reason": "\"An internet English class\" is understandable, but it is less idiomatic than \"online\"."}
+{"id": 85, "verdict": "fail_major", "other_words": ["yearly"], "reason": "\"Its yearly sports day\" is natural, and \"yearly\" is a common word."}
+{"id": 86, "verdict": "fail_major", "other_words": ["mess", "stuff"], "reason": "\"Cleared the mess off her desk\" is natural, and \"mess\" is a common word."}
+{"id": 87, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"around\" does not contrast with \"right\" as a direction, so only \"left\" fits."}
+{"id": 88, "verdict": "fail_major", "other_words": ["upload", "release", "push"], "reason": "\"Upload the app to the production server\" is natural, and \"upload\" is a common word."}
+{"id": 89, "verdict": "fail_major", "other_words": ["revenue", "income", "sales"], "reason": "\"The shop's annual income\" or \"annual revenue\" fits, and \"income\" is a common word."}
+{"id": 90, "verdict": "fail_major", "other_words": ["organized", "orderly"], "reason": "\"Neat and organized, with all her books in the right places\" is natural, and \"organized\" is a common word."}
+{"id": 91, "verdict": "fail_major", "other_words": ["responsibility"], "reason": "\"Legal responsibility for damage\" is natural, and \"responsibility\" is a common word."}
+{"id": 92, "verdict": "fail_major", "other_words": ["overseas"], "reason": "\"Study overseas\" is natural, and \"overseas\" is a common B1 word."}
+{"id": 93, "verdict": "fail_major", "other_words": ["top", "sprinkle", "decorate"], "reason": "\"Top it with a few fresh parsley leaves\" is natural, and \"top\" is a basic word."}
+{"id": 94, "verdict": "fail_major", "other_words": ["wait", "connection", "stopover"], "reason": "\"A two-hour wait at Seoul airport\" is natural, and \"wait\" is a basic word."}
+{"id": 95, "verdict": "fail_major", "other_words": ["isolated", "faraway", "distant"], "reason": "\"An isolated village high in the mountains\" is natural, and \"faraway\" and \"distant\" are common too."}
+{"id": 96, "verdict": "fail_major", "other_words": ["income", "figure", "total"], "reason": "\"The company's sales income\" or \"sales figure\" fits, and both are common words."}
+{"id": 97, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"delightful\" has 10 letters, not 9, so only \"delicious\" fits the hint."}
+{"id": 98, "verdict": "fail_minor", "other_words": ["stall", "delay"], "reason": "\"Stall by cleaning my room\" fits but is informal, and \"delay\" with no object sounds awkward."}
+{"id": 99, "verdict": "fail_major", "other_words": ["profitable", "valuable"], "reason": "\"A profitable contract that brought in millions\" is natural, and \"profitable\" is a common word."}
+{"id": 100, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"suitable\" takes \"for\" not \"with\", so only \"compatible\" fits."}
+{"id": 101, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"other\" fits the grammar but does not mean trái, and the L clue points only to \"left\"."}

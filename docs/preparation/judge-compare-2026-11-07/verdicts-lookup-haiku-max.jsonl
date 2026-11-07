@@ -1,0 +1,20 @@
+{"id": 0, "verdict": "pass", "wrong_fields": [], "reason": "children is the plural of child (noun), and 'trẻ em', the definition and the example all fit."}
+{"id": 1, "verdict": "pass", "wrong_fields": [], "reason": "better is the comparative of good (adjective), and 'giỏi hơn, tốt hơn', the definition and the example fit 'better than mine'."}
+{"id": 2, "verdict": "pass", "wrong_fields": [], "reason": "ran lemmatises to run, and the 'manage a business' sense matches the bakery sentence in meaning_vi, definition and example."}
+{"id": 3, "verdict": "pass", "wrong_fields": [], "reason": "mice is the plural of mouse (noun), and the animal sense 'chuột' is the common meaning with no context."}
+{"id": 4, "verdict": "pass", "wrong_fields": [], "reason": "flew is the past tense of fly, and 'bay' with the wings definition and the geese example match the birds sentence."}
+{"id": 5, "verdict": "pass", "wrong_fields": [], "reason": "Sports bat sense matches the swung-and-hit sentence, and both examples use the same sense."}
+{"id": 6, "verdict": "pass", "wrong_fields": [], "reason": "Noun 'fair' meaning a fun fair matches the county fair context, and 'hội chợ' fits."}
+{"id": 7, "verdict": "pass", "wrong_fields": [], "reason": "Music sense 'nhạc rock' matches 'listens to rock', and the definition and example use the same sense."}
+{"id": 8, "verdict": "pass", "wrong_fields": [], "reason": "Mattress spring is the coil 'lò xo' (noun), and the definition and example match."}
+{"id": 9, "verdict": "pass", "wrong_fields": [], "reason": "Verb bear meaning tolerate matches 'can't bear the noise', and 'chịu đựng' and the example fit."}
+{"id": 10, "verdict": "pass", "wrong_fields": [], "reason": "gave up lemmatises to give up, and 'bỏ, từ bỏ' with the stop-a-habit definition fits 'gave up smoking'."}
+{"id": 11, "verdict": "pass", "wrong_fields": [], "reason": "The misspelling 'recieve' is corrected to receive (verb), and 'nhận', the definition and the example are right."}
+{"id": 12, "verdict": "pass", "wrong_fields": [], "reason": "The misspelling 'definately' is corrected to definitely (adverb), and the meaning, definition and example are right."}
+{"id": 13, "verdict": "pass", "wrong_fields": [], "reason": "Book as the reading noun is the most common meaning, and 'sách', the definition and the example fit."}
+{"id": 14, "verdict": "pass", "wrong_fields": [], "reason": "Verb fast meaning go without food matches Ramadan fasting, and 'nhịn ăn' and the example fit."}
+{"id": 15, "verdict": "pass", "wrong_fields": [], "reason": "Lead the metal (noun, 'chì') matches water pipes made of lead, and the definition and example agree."}
+{"id": 16, "verdict": "pass", "wrong_fields": [], "reason": "Adjective minute (/maɪˈnjuːt/) meaning tiny matches 'differences are minute', and meaning, definition and example agree."}
+{"id": 17, "verdict": "pass", "wrong_fields": [], "reason": "booked lemmatises to book (verb), and 'đặt trước (bàn, vé)' with the reservation definition and example matches the sentence."}
+{"id": 18, "verdict": "pass", "wrong_fields": [], "reason": "Verb address meaning speak formally to an audience matches 'address the nation', and the meaning, definition and example agree."}
+{"id": 19, "verdict": "pass", "wrong_fields": [], "reason": "Noun kind meaning type matches 'What kind of music', and 'loại, kiểu' and the example fit."}
