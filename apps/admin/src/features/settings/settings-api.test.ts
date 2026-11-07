@@ -9,13 +9,14 @@ const values = (): Values => ({
   content: {},
   ai: {},
   identity: {},
+  tts: {},
 });
 
 describe('settings-api', () => {
-  it('the layout has the 55 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(55);
-    expect(new Set(FIELD_ORDER).size).toBe(55);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 22, 2, 10, 1]);
+  it('the layout has the 56 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B, one TTS cap of đợt C), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(56);
+    expect(new Set(FIELD_ORDER).size).toBe(56);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 22, 2, 10, 1, 1]);
     // The three prices close the entitlements tab, in dong.
     expect(SETTINGS_LAYOUT.entitlements.slice(-3)).toEqual([
       { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },

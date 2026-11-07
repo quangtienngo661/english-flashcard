@@ -2118,7 +2118,8 @@
       "entitlements": "Gói và lượt",
       "content": "Nội dung",
       "ai": "AI",
-      "identity": "Tài khoản"
+      "identity": "Tài khoản",
+      "tts": "Giọng đọc"
     },
     "save": "Lưu thay đổi",
     "saved": "Đã lưu",
@@ -2243,6 +2244,9 @@
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"
+      },
+      "tts": {
+        "daily_char_cap": "Trần ký tự TTS mỗi ngày"
       }
     },
     "aiUsage": {
@@ -2464,7 +2468,20 @@
         "retired": "ngừng dùng"
       },
       "unknownUser": "người dùng đã xóa",
-      "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử."
+      "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử.",
+      "ipaUk": "Phiên âm UK",
+      "ipaUs": "Phiên âm US",
+      "ipaSource": "Nguồn: {name}",
+      "ipaSourceOwn": "Nguồn: Wordmet",
+      "ipaInvalid": "Ký hiệu “{char}” không có trong bảng phiên âm.",
+      "audio": "Giọng đọc",
+      "audioReady": "Có giọng",
+      "audioPending": "Đang tạo",
+      "audioFailed": "Lỗi",
+      "audioNone": "Chưa có (người học chưa thấy nghĩa này)",
+      "audioRetry": "Tạo lại",
+      "audioRetried": "Đã xếp lại việc tạo giọng đọc.",
+      "audioLine": "{voice} · {status}"
     }
   },
   "topics": {

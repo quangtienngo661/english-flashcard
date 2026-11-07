@@ -15,6 +15,9 @@ export type Problem = {
   no_held_out?: boolean;
   /** Top-level extension member of `few-shot-invalid`: the few-shot examples (by position) that broke the rules, with what was wrong. */
   examples?: Array<{ index: number; problems: string[] }>;
+  /** Top-level extension members of `ipa-invalid` (đợt C H11): the field and the character refused. */
+  field?: string;
+  char?: string;
 };
 
 export class ApiError extends Error {
@@ -173,6 +176,8 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (Array.isArray(body.reasons)) problem.reasons = body.reasons.filter((r): r is string => typeof r === 'string');
   if (Array.isArray(body.missing_expected)) problem.missing_expected = body.missing_expected.filter((id): id is string => typeof id === 'string');
   if (typeof body.no_held_out === 'boolean') problem.no_held_out = body.no_held_out;
+  if (typeof body.field === 'string') problem.field = body.field;
+  if (typeof body.char === 'string') problem.char = body.char;
   if (Array.isArray(body.examples)) {
     problem.examples = body.examples.flatMap((entry): Array<{ index: number; problems: string[] }> => {
       if (entry === null || typeof entry !== 'object') return [];

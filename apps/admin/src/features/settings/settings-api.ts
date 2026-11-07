@@ -1,7 +1,7 @@
 import type { ApiClient } from '../../api/client';
 
-export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai' | 'identity';
-export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity'];
+export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai' | 'identity' | 'tts';
+export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity', 'tts'];
 
 export type SettingValue = boolean | number | string | null;
 export type Values = Record<Section, Record<string, SettingValue>>;
@@ -31,7 +31,7 @@ export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent'
  */
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
 
-/** The 55 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A and the three Pro prices of launch prep B included). */
+/** The 56 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A and the three Pro prices of launch prep B included). */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -100,6 +100,8 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'real_judge_limit', kind: 'int' },
   ],
   identity: [{ key: 'unverified_cleanup_days', kind: 'int', unit: 'days' }],
+  // Đợt C (H14): the Google TTS characters the worker may send a day (UTC); default 120000.
+  tts: [{ key: 'daily_char_cap', kind: 'int', unit: 'chars' }],
 };
 
 /** A field's DOM id and its name in errors: `<section>.<key>` (the API key without the `values.` prefix). */

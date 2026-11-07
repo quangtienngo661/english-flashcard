@@ -9,7 +9,14 @@ export type SenseContent = {
   examples_en: string[];
   topics: string[];
   accepted_forms: string[];
+  /** Đợt C (H11, H12): transcriptions without slashes; absent from an older API or a body that leaves them as they are. */
+  ipa_uk?: string | null;
+  ipa_us?: string | null;
 };
+/** The read side only (H12): where the IPA came from; null = typed by staff (Wordmet). Never sent back. */
+export type SenseContentView = SenseContent & { ipa_source?: { id: string; name: string } | null };
+/** H12: one voice's file; null when learners do not see the sense. */
+export type AudioState = { status: 'pending' | 'ready' | 'failed'; error: string | null; url: string | null };
 
 /** One row of `GET /v1/admin/content/senses` (API 10.3: `missing` on every row). */
 export type SenseRow = SenseSummary & {
@@ -18,7 +25,7 @@ export type SenseRow = SenseSummary & {
   pos: string;
   displayed_level: Level | null;
   conflict: boolean;
-  content: SenseContent | null;
+  content: SenseContentView | null;
   missing: Missing[];
 };
 
@@ -30,6 +37,8 @@ export type SenseDetailView = Omit<SenseRow, 'missing'> & {
   published_by: Actor;
   state_changed_by: Actor;
   state_changed_at: string | null;
+  /** Đợt C (H12); absent from an older API. */
+  audio?: { uk: AudioState | null; us: AudioState | null };
 };
 
 export type SenseFilters = { status: string; level: string; pos: string; topic: string; batch_id: string };
@@ -87,6 +96,9 @@ export const quickPublish = (api: ApiClient, id: string, revision: number | null
     `/v1/admin/content/senses/${id}/quick-publish`,
     { revision, content },
   );
+
+/** H13: the failed voices of the sense back in the queue. */
+export const retryAudio = (api: ApiClient, id: string) => api.post<{ retried: number }>(`/v1/admin/content/senses/${id}/audio/retry`, {});
 
 /** What the status badge says: the sense's state wins (removed, retired), else the latest revision's status. */
 export function statusKey(row: Pick<SenseSummary, 'state' | 'status' | 'live_revision_id'>): string {

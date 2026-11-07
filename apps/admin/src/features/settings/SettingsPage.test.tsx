@@ -418,3 +418,16 @@ describe('launch prep A settings (design 6.6)', () => {
     expect(s.fields.entitlements.free_ai_daily_cap).toBe('Trần lượt AI mỗi ngày, gói Miễn phí');
   });
 });
+
+describe('Đợt C: TTS (H14)', () => {
+  it('the "Giọng đọc" tab edits the daily character cap', async () => {
+    const view = VIEW();
+    view.bounds.tts.daily_char_cap = { min: 0, max: 1000000 };
+    view.values.tts.daily_char_cap = 120000;
+    view.defaults.tts.daily_char_cap = 120000;
+    renderApp('/settings?tab=tts', { [GET]: () => Response.json(view) });
+    const field = await screen.findByRole('textbox', { name: s.fields.tts.daily_char_cap });
+    await waitFor(() => expect(field).toHaveValue('120.000'));
+    expect(screen.getByRole('tab', { name: s.tabs.tts })).toBeInTheDocument();
+  });
+});

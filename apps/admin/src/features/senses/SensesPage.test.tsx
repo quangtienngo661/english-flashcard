@@ -195,3 +195,76 @@ describe('SenseDetail (A/88b, design §6.12)', () => {
     expect(await screen.findByText(s.detail.notFound)).toBeInTheDocument();
   });
 });
+
+describe('SenseDetail: pronunciation (đợt C §5.2, H11–H13)', () => {
+  const withIpa = (over: Record<string, unknown> = {}) => detail({
+    content: {
+      gloss_vi: 'hành lý', definition_en: null, examples_en: ['My luggage is heavy.'], topics: [], accepted_forms: [],
+      ipa_uk: 'ˈlʌɡ.ɪdʒ', ipa_us: null, ipa_source: { id: 'src-w', name: 'Wiktionary' },
+    },
+    audio: { uk: { status: 'failed', error: 'INVALID_ARGUMENT: phoneme', url: null }, us: { status: 'ready', error: null, url: 'http://x/tts/v1/a.mp3' } },
+    ...over,
+  });
+
+  it('shows UK and US fields with their source; a typed IPA loses its slashes and the source becomes Wordmet', async () => {
+    let body: { content?: Record<string, unknown> } | undefined;
+    renderApp('/senses/d1', {
+      ...base, [GET_D]: () => Response.json(withIpa()),
+      'PUT /v1/admin/content/senses/d1/draft': (call: Call) => ((body = call.body as typeof body), Response.json({ sense_id: 'd1', revision: 4, dropped_topics: [] })),
+    });
+    expect(await screen.findByLabelText(s.detail.ipaUk)).toHaveValue('ˈlʌɡ.ɪdʒ');
+    expect(screen.getByLabelText(s.detail.ipaUs)).toHaveValue('');
+    expect(screen.getByText('Nguồn: Wiktionary')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(s.detail.ipaUs), '/ˈlʌɡɪdʒ/');
+    expect(screen.getByText('Nguồn: Wordmet')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: s.detail.saveDraft }));
+    await waitFor(() => expect(body?.content).toMatchObject({ ipa_uk: 'ˈlʌɡ.ɪdʒ', ipa_us: 'ˈlʌɡɪdʒ' }));
+    expect(body?.content).not.toHaveProperty('ipa_source');
+  });
+
+  it('a cleared field is sent as null; a sense with no IPA sends no IPA key', async () => {
+    let body: { content?: Record<string, unknown> } | undefined;
+    renderApp('/senses/d1', {
+      ...base, [GET_D]: () => Response.json(withIpa()),
+      'PUT /v1/admin/content/senses/d1/draft': (call: Call) => ((body = call.body as typeof body), Response.json({ sense_id: 'd1', revision: 4, dropped_topics: [] })),
+    });
+    await userEvent.clear(await screen.findByLabelText(s.detail.ipaUk));
+    await userEvent.click(screen.getByRole('button', { name: s.detail.saveDraft }));
+    await waitFor(() => expect(body?.content).toMatchObject({ ipa_uk: null }));
+    expect(body?.content).not.toHaveProperty('ipa_us');
+  });
+
+  it('400 ipa-invalid names the character under its field', async () => {
+    renderApp('/senses/d1', {
+      ...base, [GET_D]: () => Response.json(withIpa()),
+      'PUT /v1/admin/content/senses/d1/draft': () => problem(400, 'ipa-invalid', { field: 'ipa_uk', char: '1' }),
+    });
+    await userEvent.type(await screen.findByLabelText(s.detail.ipaUk), '1');
+    await userEvent.click(screen.getByRole('button', { name: s.detail.saveDraft }));
+    expect(await screen.findByText('Ký hiệu “1” không có trong bảng phiên âm.')).toBeInTheDocument();
+    expect(screen.getByLabelText(s.detail.ipaUk)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('the voice panel: ready, failed with its error and [Tạo lại], which queues it again', async () => {
+    let gets = 0;
+    let retried = 0;
+    renderApp('/senses/d1', {
+      ...base,
+      [GET_D]: () => Response.json(++gets === 1 ? withIpa() : withIpa({ audio: { uk: { status: 'pending', error: null, url: null }, us: { status: 'ready', error: null, url: 'http://x/a.mp3' } } })),
+      'POST /v1/admin/content/senses/d1/audio/retry': () => ((retried += 1), Response.json({ retried: 1 }, { status: 202 })),
+    });
+    const voice = await screen.findByRole('region', { name: s.detail.audio });
+    expect(within(voice).getByText(/UK.*Lỗi/)).toBeInTheDocument();
+    expect(within(voice).getByText('INVALID_ARGUMENT: phoneme')).toBeInTheDocument();
+    expect(within(voice).getByText(/US.*Có giọng/)).toBeInTheDocument();
+    await userEvent.click(within(voice).getByRole('button', { name: s.detail.audioRetry }));
+    await waitFor(() => expect(retried).toBe(1));
+    expect(await within(voice).findByText(/UK.*Đang tạo/)).toBeInTheDocument();
+  });
+
+  it('a sense not shown to learners has no voice yet', async () => {
+    renderApp('/senses/d1', { ...base, [GET_D]: () => Response.json(withIpa({ audio: { uk: null, us: null } })) });
+    const voice = await screen.findByRole('region', { name: s.detail.audio });
+    expect(within(voice).getAllByText(/Chưa có/)).toHaveLength(2);
+  });
+});
