@@ -232,6 +232,7 @@ jobs:
             echo "TRUST_PROXY=false"
             echo "MAINTENANCE_ENABLED=false"
             echo "JOB_QUEUE_PREFIX=ci-admin-e2e"
+            echo "BILLING_PRODUCTION=false"
             echo "AI_FAKE_ENABLED=true"
             echo "TURNSTILE_MODE=fake"
             echo "IMPORT_RECONCILE_SECONDS=1"
