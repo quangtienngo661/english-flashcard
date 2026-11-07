@@ -20,6 +20,7 @@ const final: FinalWrite = {
 function setup(at: Date, record?: () => Promise<void>, activity?: () => Promise<void>) {
   const calls: string[] = [];
   const tx = {
+    practiceSession: { findUniqueOrThrow: vi.fn(async () => ({ kind: 'practice', groupId: null })) },
     practiceSessionItem: {
       update: vi.fn(async ({ data }: { data: { localDate: Date } }) => {
         calls.push('update');
@@ -101,13 +102,15 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
 /** `session`: the senses of the session's words (`practiceSenses` returns them) and, when fewer, the ids that are still usable. */
 function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
-  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean>; gone?: boolean } = { senses: [] }) {
+  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean>; gone?: boolean; kind?: 'recall';
+    recall?: unknown } = { senses: [] }) {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
     $queryRaw: vi.fn(async () => []),
+    practiceSession: { findUniqueOrThrow: vi.fn(async () => ({ kind: session.kind ?? 'practice', groupId: session.kind === 'recall' ? 'g1' : null })) },
     practiceSessionItem: {
       findUniqueOrThrow: vi.fn(async () => found),
-      update: vi.fn(async () => ({ ...found, result: 'correct', tries: 1 })),
+      update: vi.fn(async (_args: { data: Record<string, unknown> }) => ({ ...found, result: 'correct', tries: 1 })),
     },
   };
   const prisma = {
@@ -121,10 +124,11 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
       return { item: { due_now: session.due?.[senseId] ?? true } };
     }),
     recordActivity: vi.fn(async () => undefined),
+    recallAnswer: vi.fn(async (..._args: unknown[]) => session.recall ?? { outcome: 'kept', level: 3, due_date: '2026-10-25' }),
   };
   const sessions = {
     closeIfIdle: vi.fn(async () => undefined),
-    lockOpen: vi.fn(async () => ({ id: 'sess-1', senseIds: session.senses.map((s) => s.sense_id) })),
+    lockOpen: vi.fn(async () => ({ id: 'sess-1', kind: session.kind ?? 'practice', senseIds: session.senses.map((s) => s.sense_id) })),
     sessionWordIds: vi.fn(async () => {
       // The session's group was deleted in another tab: reading its items is a 404.
       if (session.gone) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
@@ -138,7 +142,7 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
   const service = new AnswersService(prisma as unknown as PrismaClient, new FakeClock(new Date('2026-10-19T03:00:00Z')),
     identity as unknown as IdentityService, learning as unknown as LearningService, sessions as unknown as SessionsService,
     entitlements as unknown as EntitlementsService, content as unknown as ContentService);
-  return { service, tx, reads, learning, identity, sessions, content };
+  return { service, tx, reads, learning, identity, sessions, content, entitlements };
 }
 
 describe('AnswersService — reads inside the answer transaction use the transaction (PX4)', () => {
@@ -466,5 +470,67 @@ describe('AnswersService — Bước 7 kinds', () => {
     const legacy = route(mcqItem({ question: legacyQuestion }));
     await expect(legacy.service.hint(userId, 'it-1', 2)).resolves.toEqual({ level: 2, hint: { first_letter: 'c', length: 3 } });
     await expect(legacy.service.hint(userId, 'it-1', 3)).rejects.toMatchObject({ problemType: 'hint-unavailable' });
+  });
+});
+
+// Round C (H6): the final answer of a recall ("Ôn") session changes the schedule in the same transaction.
+describe('AnswersService — final answers of a recall session', () => {
+  const dueUp = { outcome: 'leveled_up', level: 4, due_date: '2026-11-21' };
+
+  it('a correct answer without a hint on a due word: recallAnswer(correct: true), the schedule is returned and stored, no practice session is spent', async () => {
+    const { service, tx, learning, entitlements } = route(mcqItem(), 'vi', { senses: [], kind: 'recall', recall: dueUp });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({
+      result: 'correct', show_known: false, schedule: { level: 4, due_date: '2026-11-21', outcome: 'leveled_up' },
+    });
+    expect(learning.recallAnswer).toHaveBeenCalledExactlyOnceWith(tx, userId, { senseId: 'sense-1', groupId: 'g1', correct: true });
+    expect(tx.practiceSessionItem.update.mock.calls[0][0].data).toMatchObject({ recallOutcome: 'leveled_up' });
+    expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+
+  it('a correct answer after a hint counts as wrong for the schedule: correct: false, outcome kept', async () => {
+    const { service, learning } = route(mcqItem({ hintLevel: 1 }), 'vi', { senses: [], kind: 'recall' });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({
+      result: 'correct', show_known: false, schedule: { outcome: 'kept' } });
+    expect(learning.recallAnswer.mock.calls[0][2]).toMatchObject({ correct: false });
+  });
+
+  it('a wrong answer: correct: false', async () => {
+    const { service, learning } = route(mcqItem(), 'vi', { senses: [], kind: 'recall' });
+    await service.answer(userId, 'it-1', { choice: 1 });
+    expect(learning.recallAnswer.mock.calls[0][2]).toMatchObject({ correct: false });
+  });
+
+  it('a skip is wrong: correct: false', async () => {
+    const found = aiItem(clozeQuestion(), { tries: 1, answersTried: ['x'] });
+    const { service, learning } = route(found, 'vi', { senses: [], kind: 'recall' });
+    await expect(service.skip(userId, 'it-1')).resolves.toMatchObject({ schedule: { outcome: 'kept' } });
+    expect(learning.recallAnswer.mock.calls[0][2]).toMatchObject({ correct: false });
+  });
+
+  it('a word that left learning: no schedule, nothing stored', async () => {
+    const { service, tx } = route(mcqItem(), 'vi', { senses: [], kind: 'recall', recall: { outcome: 'not-in-learning' } });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ schedule: null, show_known: false });
+    expect(tx.practiceSessionItem.update.mock.calls[0][0].data.recallOutcome ?? null).toBeNull();
+  });
+
+  it('show_known stays false when the answer is read again (409 already-answered) in a recall session', async () => {
+    const { service } = route(mcqItem({ result: 'correct' }), 'vi', { senses: [], kind: 'recall' });
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).rejects.toMatchObject({
+      status: 409, extensions: { result: { result: 'correct', show_known: false, schedule: null } } });
+  });
+
+  it('a practice session: schedule null, recallAnswer never called, the practice session is recorded as before', async () => {
+    const { service, learning, entitlements } = route(mcqItem());
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ result: 'correct', schedule: null, show_known: true });
+    expect(learning.recallAnswer).not.toHaveBeenCalled();
+    expect(entitlements.recordPracticeSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('recallAnswer throwing writes nothing (the transaction rolls back with it)', async () => {
+    const boom = new Error('lock timeout');
+    const { service, tx, learning } = route(mcqItem(), 'vi', { senses: [], kind: 'recall' });
+    learning.recallAnswer.mockRejectedValueOnce(boom);
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).rejects.toBe(boom);
+    expect(tx.practiceSessionItem.update).not.toHaveBeenCalled();
   });
 });
