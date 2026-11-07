@@ -70,4 +70,62 @@ describe('revision content', () => {
       examplesEn: base.examplesEn, definitionEn: base.definitionEn, glossVi: base.glossVi })).toBe(contentHash(base));
     expect(contentHash({ ...base, examplesEn: [...base.examplesEn].reverse() })).not.toBe(contentHash(base));
   });
+
+  describe('round C: ipa', () => {
+    const go: RevisionContent = { glossVi: 'đi', definitionEn: 'To move.', examplesEn: ['We go home.'],
+      topicCodes: ['daily-life', 'business'], acceptedForms: ['goes', 'going'] };
+    const bước2 = '75c1824d5dac12bec43da99ae749d5745d7980ca76b2093c863eea7dba1c24e2';
+    const source = '00000000-0000-4000-8000-0000000000bb';
+
+    it('hash stability: no ipa (absent or null) hashes exactly as before; a value changes the hash', () => {
+      expect(contentHash(go)).toBe(bước2);
+      expect(contentHash({ ...go, ipaUk: null, ipaUs: null, ipaSourceId: null, ipaCustom: null })).toBe(bước2);
+      const uk = contentHash({ ...go, ipaUk: 'ɡəʊ' });
+      expect(uk).not.toBe(bước2);
+      expect(contentHash({ ...go, ipaUs: 'ɡoʊ' })).not.toBe(uk);
+      expect(contentHash({ ...go, ipaUk: 'ɡəʊ', ipaUs: 'ɡoʊ' })).not.toBe(uk);
+      expect(contentHash({ ...go, ipaUk: 'ɡəʊ', ipaSourceId: source })).not.toBe(uk);
+      expect(contentHash({ ...go, ipaCustom: 'ɡəʊ' })).not.toBe(bước2);
+    });
+
+    it('normalizeContent strips slashes, turns blank into null, and keeps null', () => {
+      expect(normalizeContent({ ipaUk: '/ɡəʊ/', ipaUs: ' ', ipaCustom: null }, 'go')).toEqual({ ipaUk: 'ɡəʊ', ipaUs: null, ipaCustom: null });
+      expect(normalizeContent({}, 'go')).toEqual({});
+    });
+
+    it('normalizeContent refuses a character that is not IPA, naming the field and the character', () => {
+      let caught: unknown;
+      try { normalizeContent({ ipaUk: 'lʌg1' }, 'lug'); } catch (error) { caught = error; }
+      expect(caught).toBeInstanceOf(ContentRuleError);
+      expect(caught).toMatchObject({ code: 'ipa-invalid', extensions: { field: 'ipa_uk', char: '1' } });
+      try { normalizeContent({ ipaUs: 'x2' }, 'x'); } catch (error) { caught = error; }
+      expect(caught).toMatchObject({ code: 'ipa-invalid', extensions: { field: 'ipa_us', char: '2' } });
+    });
+
+    it('normalizeContent refuses an ipa longer than 100 characters, and does not check the learner own (ipaCustom)', () => {
+      expect(() => normalizeContent({ ipaUk: 'a'.repeat(101) }, 'x')).toThrowError(expect.objectContaining({ code: 'validation-failed' }));
+      expect(normalizeContent({ ipaUk: 'a'.repeat(100) }, 'x')).toEqual({ ipaUk: 'a'.repeat(100) });
+      expect(normalizeContent({ ipaCustom: 'FOO-bee-uh' }, 'x')).toEqual({ ipaCustom: 'FOO-bee-uh' });
+      expect(() => normalizeContent({ ipaCustom: 'a'.repeat(101) }, 'x')).toThrowError(expect.objectContaining({ code: 'validation-failed' }));
+    });
+
+    it('mergeContent: absent keeps the base, null clears, a value replaces', () => {
+      const withIpa: RevisionContent = { ...go, ipaUk: 'ɡəʊ', ipaUs: 'ɡoʊ', ipaSourceId: source };
+      expect(mergeContent(withIpa, { glossVi: 'mới' })).toMatchObject({ ipaUk: 'ɡəʊ', ipaUs: 'ɡoʊ', ipaSourceId: source });
+      expect(mergeContent(withIpa, { ipaUk: null })).toMatchObject({ ipaUk: null, ipaUs: 'ɡoʊ' });
+      expect(mergeContent(go, { ipaUs: 'ɡoʊ' })).toMatchObject({ ipaUs: 'ɡoʊ' });
+      expect('ipaUk' in mergeContent(go, { glossVi: 'mới' })).toBe(false);
+    });
+
+    it('mergeContent: a hand edit of an ipa drops the source; the same value or a new source keeps it', () => {
+      const sourced: RevisionContent = { ...go, ipaUk: 'ɡəʊ', ipaUs: 'ɡoʊ', ipaSourceId: source };
+      expect(mergeContent(sourced, { ipaUk: 'ɡɒʊ' }).ipaSourceId).toBeNull();
+      expect(mergeContent(sourced, { ipaUs: 'ɡoː' }).ipaSourceId).toBeNull();
+      expect(mergeContent(sourced, { ipaUk: 'ɡəʊ' }).ipaSourceId).toBe(source);
+      expect(mergeContent(sourced, { ipaUk: 'ɡɒʊ', ipaSourceId: '00000000-0000-4000-8000-0000000000cc' }).ipaSourceId)
+        .toBe('00000000-0000-4000-8000-0000000000cc');
+      expect(mergeContent(sourced, { glossVi: 'mới' }).ipaSourceId).toBe(source);
+      expect(mergeContent(sourced, { ipaSourceId: null }).ipaSourceId).toBeNull();
+    });
+  });
 });

@@ -7,7 +7,7 @@ import {
   LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_EXAMPLES_MAX, PRIVATE_POS_UNSET, SENTENCE_MAX, VALID_POS,
   type InflectionKind, type Level,
 } from '../content.constants.js';
-import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
+import { ContentRuleError, contentHash, revisionFormOf, revisionIpa, type RevisionContent } from '../senses/revision-content.js';
 import { LevelsService } from '../catalog/levels.service.js';
 import { generateInflections } from '../inflections/inflect.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
@@ -70,7 +70,7 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
-    ...revisionFormOf(revision),
+    ...revisionFormOf(revision), ...revisionIpa(revision),
   };
 }
 
@@ -118,6 +118,7 @@ export class PrivateWordsService {
       senseId, revisionNo, status: 'published', draftSource, createdBy: ownerId, publishedAt: now, publishedBy: ownerId,
       contentHash: contentHash(content), examples: content.examplesEn, topicCodes: content.topicCodes,
       acceptedForms: content.acceptedForms, formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
+      ipaUk: content.ipaUk ?? null, ipaUs: content.ipaUs ?? null, ipaSourceId: content.ipaSourceId ?? null, ipaCustom: content.ipaCustom ?? null,
       texts: { create: texts },
     }, select: { id: true } });
     await tx.sense.update({ where: { id: senseId }, data: {
