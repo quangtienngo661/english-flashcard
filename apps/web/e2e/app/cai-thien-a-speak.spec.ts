@@ -131,12 +131,13 @@ for (const scheme of ['light', 'dark'] as const) {
         const where = `${locale} ${scheme} ${width}px`;
 
         await page.goto(`/${locale}/app/word?w=deploy`);
-        await expect(page.getByRole('button', { name: t.word, exact: true })).toBeVisible();
+        // Đợt C §5.3: the word page and the card have a UK and a US speaker; the practice result keeps its one speaker.
+        await expect(page.getByRole('button', { name: t.us, exact: true }).first()).toBeVisible();
         await noSideScroll(page, `${where} word`);
         expect(await seriousViolations(page), `${where} word`).toEqual([]);
 
         await page.goto(`/${locale}/app/review?group=${G}`);
-        await expect(page.getByRole('group').first().getByRole('button', { name: t.word, exact: true })).toBeVisible();
+        await expect(page.getByRole('group').first().getByRole('button', { name: t.us, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');
