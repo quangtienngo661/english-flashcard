@@ -67,6 +67,9 @@ Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi
 - [ ] **`max_concurrent_calls` (50) đếm theo từng tiến trình, không theo cả hệ thống: đặt theo tier của provider khi chạy nhiều instance.** Nguồn: B6 §18 "Deploy".
   Vì sao: hai instance API cộng worker là hơn 50 lượt song song; tier Anthropic thấp hơn thế thì 429 hàng loạt.
 - [ ] **Ba điểm riêng tư của Bước 7 (B7 §20) và chữ "300 câu AI" của gói Pro (B7 §19).** Vì sao: chữ trên trang gói, landing và chính sách phải khớp số thật trong Cài đặt (`pro_ai_practice_per_cycle`).
+- [ ] **Sau khi migrate bản có "từ đồng nghĩa trong phiên": mở Admin → AI → Prompts → `generate_cloze` và xem bản đang chạy có nhắc `session_words` không** (`docs/deliveries/session-synonyms.md`, mục "The owner's steps").
+  Vì sao: migration chỉ thay prompt khi bản đang chạy còn đúng chữ của bản gốc; đã sửa chữ thì chỉ in một thông báo và bản cũ vẫn chạy, nên câu AI không khai đáp án thay thế.
+- [ ] **Chính sách bảo mật nêu rằng mỗi câu điền từ AI gửi kèm danh sách từ của phiên (tối đa 99 từ, kèm nghĩa tiếng Việt), từ riêng của người học cũng nằm trong đó.** Nguồn: design `2026-11-06-cloze-session-synonyms` §5.5, D13. Vì sao: trước đây chỉ gửi từ đang hỏi.
 
 ## Trước khi bán thật (Bước 5)
 
