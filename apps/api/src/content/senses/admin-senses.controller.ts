@@ -27,12 +27,12 @@ const batchSchema = z.strictObject({ lines: z.array(z.string()).max(500) });
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 type BatchResult = { line: number; status: 'created' | 'exists' | 'invalid'; entry_id?: string; sense_id?: string; warnings: string[] };
 
-async function problemDetails<T>(write: () => Promise<T>): Promise<T> {
+export async function problemDetails<T>(write: () => Promise<T>): Promise<T> {
   try { return await write(); } catch (error) {
     if (!(error instanceof ContentRuleError)) throw error;
     throw new ProblemDetailsException({
       status: error.code === 'stale-revision' ? 409 : error.code === 'not-found' ? 404 : 400,
-      title: error.code, type: error.code,
+      title: error.code, type: error.code, ...(error.extensions ? { extensions: error.extensions } : {}),
     });
   }
 }

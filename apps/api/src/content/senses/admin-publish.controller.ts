@@ -71,7 +71,7 @@ export class AdminPublishController {
       throw new ProblemDetailsException({
         status: error instanceof PublishIncompleteError ? 422 : error.code === 'stale-revision' || error.code === 'revision-rejected' ? 409 : error.code === 'not-found' ? 404 : 400,
         title: error.code, type: error.code,
-        ...(error instanceof PublishIncompleteError ? { extensions: { violations: error.violations } } : {}),
+        ...(error instanceof PublishIncompleteError ? { extensions: { violations: error.violations } } : error.extensions ? { extensions: error.extensions } : {}),
       });
     }
   }
