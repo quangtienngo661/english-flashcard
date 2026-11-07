@@ -105,9 +105,11 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
       </div>
       {data && (
         <dl className="grid grid-cols-2 gap-3">
-          <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[1]}`}>
-            <dt className="text-caption text-muted">{ts('correct')}</dt>
-            <dd className="text-h3 font-extrabold text-success">{data.correct}</dd>
+          <div className={`flex flex-col rounded-card bg-surface p-4 ${STAGGER[1]}`}>
+            <dt className="order-2 text-caption text-muted">{ts('correct')}</dt>
+            <dd className="order-1 text-h3 font-extrabold text-success">{data.correct}</dd>
+            {/* The alternatives belong to the right-answer count, so they sit in its tile (UI polish, 07/11/2026). */}
+            {(data.alternatives ?? 0) > 0 && <dd className="order-3 mt-1 text-caption font-semibold text-ink">{ts('alternatives', { count: data.alternatives ?? 0 })}</dd>}
           </div>
           <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[2]}`}>
             <dt className="text-caption text-muted">{ts('wrong')}</dt>
@@ -115,7 +117,6 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
           </div>
         </dl>
       )}
-      {data && (data.alternatives ?? 0) > 0 && <p className="text-caption text-muted">{ts('alternatives', { count: data.alternatives ?? 0 })}</p>}
       {data && data.words.length > 0 && (
         <section className={`flex flex-col gap-2 rounded-card bg-surface p-4 ${STAGGER[3]}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">

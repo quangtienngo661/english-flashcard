@@ -68,7 +68,7 @@ the older `{ first_letter, length }` shape (`LegacyLetters` in `HintPanel.tsx`) 
 |---|---|---|
 | `vital` | Right | Today's "Right" screen, unchanged. |
 | `crucial` (in her session, declared) | **Alternative answer** | See 3.2. |
-| `habit` (in her session, not declared) | Try again | New message: "That's another word from this session. Try again." |
+| `habit` (in her session, not declared) | Try again | ~~New message: "That's another word from this session. Try again."~~ Only "Not quite", with no line under it (owner, 07/11/2026, after the build). |
 | `important` (not in her session) | Try again | Unchanged: "Not quite. Check the spelling and try again. The answer stays hidden." |
 
 **Order of matching a typed answer** (Practice, at grading):
@@ -407,7 +407,7 @@ with `accepted_answers: [vital]` and `also_accepted: [crucial]`.
 |---|---|---|
 | CS1 | When Lan types `vital` into the `vital` sentence, then she gets Right and today's card. | §3.1 |
 | CS2 | When Lan types `crucial` into the `vital` sentence, then she gets the "Alternative answer" card with a `crucial` row and a `vital` row, `crucial` gets a right answer in its stats and `vital` gets nothing. | D3–D6, §4.1 |
-| CS3 | When Lan types `habit` into the `vital` sentence, then she gets a try-again with "That's another word from this session. Try again." and no word gets credit. | D14 |
+| CS3 | When Lan types `habit` into the `vital` sentence, then she gets a try-again that says only "Not quite" (no spelling line; owner, 07/11/2026, replaced "That's another word from this session. Try again.") and no word gets credit. | D14 |
 | CS4 | When Lan types `important` into the `vital` sentence, then she gets today's "Not quite. Check the spelling and try again." | D1, D10 |
 | CS5 | When Lan presses Enter, `1` or `2` on the alternative card, then nothing changes and the card stays. | D7, R1 |
 | CS6 | When Lan presses Know in the `crucial` row, then only `crucial`'s schedule changes and the `vital` row's buttons stay available. | D6 |

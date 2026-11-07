@@ -112,6 +112,15 @@ the design as written (§5.5, D13).
 - The learner web in dark mode, on a phone and in English; with a screen reader; or a web build from before this change against the new API.
 - A group deleted during a session, and the weak-word stats credit, have no smoke step.
 
+## Changed after the build (owner, 07/11/2026)
+
+- A try-again for an undeclared session word says only "Chưa đúng" / "Not quite": the line "Đây là một từ khác trong phiên này. Gõ lại." is gone (owner,
+  after seeing it). An ordinary try-again keeps its spelling line; a session word gets none, since it is spelt right. Design §3.1 and CS3 are updated.
+- UI polish with the redesign skill, on the screens this work built: each row of the alternative card names its role as a small label above the word
+  ("Từ bạn gõ", "Từ của câu này"), the word is larger and its meaning sits beside it; the rows lose their border, like the translation block above
+  them; the summary's "Trong đó N đáp án thay thế" moves into the "Đúng" tile, under the count it belongs to. Screenshots replaced in
+  [`session-synonyms-screens/`](session-synonyms-screens/).
+
 ## The owner's steps, in order
 
 1. Check the live fill-in prompt. After the next deploy of the API, open Admin → AI → Prompts → `generate_cloze`: the text should start "You write one English practice sentence…" and mention
