@@ -44,6 +44,11 @@ transaction. Chuỗi ngày đọc cột mới `learning_activity_days.studied`. 
 - Không log chữ từ riêng của người học, không log `GOOGLE_TTS_CREDENTIALS`. Log TTS dùng `key` (hash).
 - Lệnh test mặc định không cần Docker (`~/.claude/rules/testing-boundaries.md`). Lệnh: `pnpm exec vitest run <file>` trong từng app. Defect fix hai commit.
   Conventional Commits, scope theo `git log` (`api`, `web`, `admin`, `docs`).
+- Migration: tên thư mục phải sau migration mới nhất trong `apps/api/prisma/migrations` lúc làm (07/11/2026 mới nhất là `20261111110000_…`); tên trong
+  plan (`20261112…`) đổi theo nếu `dev` có migration mới hơn.
+- Code đã đổi sau khi đọc facts: `dev` có đợt "session synonyms" (PR #229–#233) sửa `answers.service.ts` (`locked` truyền thêm `session`; `AnswerResult.alternative`),
+  `practice-reviews.service.ts` (`review-id.ts`: `review_id` của từ được hỏi vẫn là id câu), `history.service.ts`, `practice-stats.ts`, `GroupCard.tsx`, `GroupPage.tsx`.
+  Số dòng trong plan lấy trước đợt đó: đọc lại file trước khi sửa, giữ nguyên hành vi của đợt synonyms (chỉ áp cho câu AI điền từ, không có trong phiên Ôn).
 - Thư viện mới: trước khi viết code gọi thư viện, kiểm cách dùng bằng context7 (`TextToSpeechClient` với `credentials` inline, `S3Client` với endpoint R2).
 
 ## Hợp đồng API
@@ -148,7 +153,7 @@ thẩm mỹ mới, xung đột với token đang dùng.
 ### Task 3: Migration Practice: `kind`, `recall_outcome`, phiên mở theo loại
 
 **Files:**
-- Create: `apps/api/prisma/migrations/20261107100000_dot_c_recall_sessions/migration.sql`
+- Create: `apps/api/prisma/migrations/20261112100000_dot_c_recall_sessions/migration.sql`
 - Modify: `apps/api/prisma/models/practice.prisma`
 
 - [ ] **Step 1:** Migration: `ALTER TABLE practice_sessions ADD COLUMN kind text NOT NULL DEFAULT 'practice' CHECK (kind IN ('practice','recall'))`;
@@ -252,7 +257,7 @@ thẩm mỹ mới, xung đột với token đang dùng.
 ### Task 8: Cột `studied` và lần học đầu tiên trong ngày
 
 **Files:**
-- Create: `apps/api/prisma/migrations/20261107110000_dot_c_studied_days/migration.sql`
+- Create: `apps/api/prisma/migrations/20261112110000_dot_c_studied_days/migration.sql`
 - Modify: `apps/api/prisma/models/learning.prisma:82-88`, `apps/api/src/learning/activity/record-activity.ts`, `learning.service.ts:62-64`, các nơi gọi:
   `reviews.service.ts:71`, `practice-review.service.ts:90`, `answers.service.ts:145`, `items.service.ts:247,262`, `groups.service.ts:122`, `backlog.service.ts:94`
 - Test: `activity/record-activity.spec.ts` và spec của từng nơi gọi
@@ -314,7 +319,7 @@ thẩm mỹ mới, xung đột với token đang dùng.
 ### Task 11: Cột phiên âm và nội dung bản sửa
 
 **Files:**
-- Create: `apps/api/prisma/migrations/20261107120000_dot_c_ipa/migration.sql`, `apps/api/src/content/senses/ipa.ts`, `ipa.spec.ts`
+- Create: `apps/api/prisma/migrations/20261112120000_dot_c_ipa/migration.sql`, `apps/api/src/content/senses/ipa.ts`, `ipa.spec.ts`
 - Modify: `apps/api/prisma/models/content.prisma:117-147`, `content/senses/revision-content.ts`, `senses.service.ts:29-57`, `senses/import-content.ts:27`,
   `private/private-words.service.ts:68,109-126`
 - Test: `revision-content.spec.ts`, `senses.service.spec.ts`
@@ -432,7 +437,7 @@ thẩm mỹ mới, xung đột với token đang dùng.
 ### Task 17: Bảng `speech_audio`, tạo dòng sau khi đăng, URL trong `WordSense`
 
 **Files:**
-- Create: migration `20261107130000_dot_c_speech_audio/migration.sql`, `apps/api/src/content/audio/audio.service.ts`, `audio.queries.ts`, `audio.service.spec.ts`
+- Create: migration `20261112130000_dot_c_speech_audio/migration.sql`, `apps/api/src/content/audio/audio.service.ts`, `audio.queries.ts`, `audio.service.spec.ts`
 - Modify: `content.prisma`, `content/content.service.ts` (thêm `ensureAudio`), `content/senses/publish.service.ts:48-76` (sau commit), `content-pipeline/publish/publish-job.handler.ts`
   (đi qua `publishItem`, không sửa nếu `publishItem` đã gọi), `learning/quick-add/quick-add.service.ts` (sau transaction), `content/private/my-words.controller.ts`
   (sau PATCH), `content/words/words.service.ts` (`audio`)
