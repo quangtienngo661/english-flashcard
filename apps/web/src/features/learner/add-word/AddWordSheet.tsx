@@ -379,30 +379,33 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
               <p className="text-ui font-semibold text-ink">{t('formOf', { word: lemma, kind: kind(via.kind), base: via.base.lemma })}</p>
             )}
             {options.map((o) => (
-              <label key={o.sense.sense_id} className={cn('flex items-start gap-2 py-1', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
-                {inDeck.has(o.sense.sense_id) ? (
-                  <span className="text-caption text-muted">{t('alreadyIn')}</span>
-                ) : (
-                  <input
-                    type="radio"
-                    name="add-word-sense"
-                    checked={chosenSense?.sense.sense_id === o.sense.sense_id}
-                    disabled={!!lockedGroupId && queue.isPending}
-                    onChange={() => setPicked(o.sense.sense_id)}
-                    className="mt-1 size-4 shrink-0 accent-primary"
-                  />
-                )}
-                <span className="min-w-0 break-words text-ui text-ink">
-                  <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
-                  <span className="block">{o.sense.meaning.text}</span>
-                  {/* Đợt C §5.3: the reading of each result, with its speakers. */}
-                  <PronunciationLine
-                    text={o.sense.lemma}
-                    line={o.sense.pronunciation ? { scope: o.sense.scope, pronunciation: o.sense.pronunciation } : null}
-                    className="mt-0.5"
-                  />
-                </span>
-              </label>
+              // Đợt C §5.3: the reading sits under the option, outside its label: a label sends a press to its first control, which
+              // would be a speaker on an option with no radio ("đã có trong nhóm").
+              <div key={o.sense.sense_id} className="flex flex-col py-1">
+                <label className={cn('flex items-start gap-2', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
+                  {inDeck.has(o.sense.sense_id) ? (
+                    <span className="text-caption text-muted">{t('alreadyIn')}</span>
+                  ) : (
+                    <input
+                      type="radio"
+                      name="add-word-sense"
+                      checked={chosenSense?.sense.sense_id === o.sense.sense_id}
+                      disabled={!!lockedGroupId && queue.isPending}
+                      onChange={() => setPicked(o.sense.sense_id)}
+                      className="mt-1 size-4 shrink-0 accent-primary"
+                    />
+                  )}
+                  <span className="min-w-0 break-words text-ui text-ink">
+                    <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
+                    <span className="block">{o.sense.meaning.text}</span>
+                  </span>
+                </label>
+                <PronunciationLine
+                  text={o.sense.lemma}
+                  line={o.sense.pronunciation ? { scope: o.sense.scope, pronunciation: o.sense.pronunciation } : null}
+                  className={cn('mt-0.5', inDeck.has(o.sense.sense_id) ? 'pl-0' : 'pl-6')}
+                />
+              </div>
             ))}
           </div>
         )}
