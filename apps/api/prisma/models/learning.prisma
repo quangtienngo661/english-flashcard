@@ -68,6 +68,7 @@ model LearningLogEntry {
   // The section of the queue the card was in when answered, so caps can skip priority cards.
   section       String?
   // 'practice' when "Cần ôn tập"/"Đã biết" was pressed in a practice session (Bước 4, group_id null); null for flashcards.
+  // 'recall' for the final answer of a recall ("Ôn") session (round C; it carries the group_id, so the daily caps count it).
   origin        String?
   localDate     DateTime  @map("local_date") @db.Date
   at            DateTime  @db.Timestamptz
