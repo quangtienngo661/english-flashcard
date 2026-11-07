@@ -691,7 +691,10 @@ describe('Summary of alternative answers', () => {
 
   it('CS9: the summary says how many right answers were alternative answers', async () => {
     await openSummary({ alternatives: 2 });
-    expect(await screen.findByText('Trong đó 2 đáp án thay thế')).toBeInTheDocument();
+    const line = await screen.findByText('Trong đó 2 đáp án thay thế');
+    // The line belongs to the right-answer count: it sits in the "Đúng" tile, not loose under both tiles (UI polish, 07/11/2026).
+    const right = screen.getAllByRole('term').find((term) => term.textContent === 'Đúng')!;
+    expect(right.parentElement).toContainElement(line);
   });
 
   it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {

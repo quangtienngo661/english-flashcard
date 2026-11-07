@@ -32,7 +32,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
         <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-title font-bold text-primary">{t('alternativeLabel')}</p>
-          <p className="break-words text-ui text-ink">
+          <p className="break-words text-pretty text-ui text-ink">
             {before}
             <strong className="font-extrabold">{result.correct.text}</strong>
             {after}
@@ -55,18 +55,19 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
           <p className="break-words text-ui text-ink">{result.translation}</p>
         </div>
       )}
-      <ul className="flex flex-col divide-y divide-border rounded-inner border border-border bg-surface">
+      {/* Same flat surface as the translation above: no border, so the card reads as one piece (UI polish, 07/11/2026). */}
+      <ul className="flex flex-col divide-y divide-border rounded-inner bg-surface px-4">
         {rows.map((row) => (
-          <li key={row.sense_id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 flex-col">
-              <p className="break-words text-ui text-ink">
-                <span className="font-bold">{row.lemma}</span>
-                {` · ${row.role === 'typed' ? t('alternativeTyped') : t('alternativeAsked')}`}
+          <li key={row.sense_id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className="text-caption font-semibold text-muted">{row.role === 'typed' ? t('alternativeTyped') : t('alternativeAsked')}</p>
+              <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                <span className="break-words text-title font-bold text-ink">{row.lemma}</span>
+                <span className="break-words text-caption text-muted">{row.meaning}</span>
               </p>
-              <p className="break-words text-caption text-muted">{row.meaning}</p>
             </div>
             {row.action === null ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex shrink-0 flex-wrap gap-2">
                 <Button variant="quiet" aria-label={t('reviewWord', { lemma: row.lemma })} isDisabled={busy} onPress={() => onReviewWord(row.sense_id, 'needs_review')}>
                   {t('stillLearning')}
                 </Button>
@@ -77,7 +78,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
                 )}
               </div>
             ) : (
-              <p className="flex items-center gap-1 text-caption font-semibold text-ink">
+              <p className="flex shrink-0 items-center gap-1 text-caption font-semibold text-ink">
                 <Check aria-hidden className="size-4 text-success" />
                 {row.action === 'known' ? t('know') : t('summary.added')}
               </p>

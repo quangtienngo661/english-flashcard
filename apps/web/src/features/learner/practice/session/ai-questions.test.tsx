@@ -160,11 +160,13 @@ describe('AI question types (K/78a–K/81)', () => {
       await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
     };
 
-    it('CS3: a session-word try-again says it is another word from this session, not the spelling text', async () => {
+    it('CS3: a session-word try-again says only "Chưa đúng": no line under it, not the spelling text (owner, 07/11/2026)', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: 'session_word' });
-      expect(await screen.findByText('Đây là một từ khác trong phiên này. Gõ lại.')).toBeInTheDocument();
+      // Once on the page and once in the live region for screen readers.
+      expect(await screen.findAllByText('Chưa đúng')).toHaveLength(2);
+      expect(screen.queryByText(/một từ khác trong phiên/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Kiểm tra chính tả/)).not.toBeInTheDocument();
-      expect(document.querySelector('[data-live="result"]')).toHaveTextContent('Đây là một từ khác trong phiên này. Gõ lại.');
+      expect(document.querySelector('[data-live="result"]')).toHaveTextContent(/^Chưa đúng$/);
     });
 
     it('CS4: a try-again with reason null keeps the spelling text', async () => {
@@ -185,7 +187,9 @@ describe('AI question types (K/78a–K/81)', () => {
       await screen.findByText('We use Docker to ___ the app to the production server.');
       await userEvent.type(screen.getByRole('textbox'), 'habit');
       await userEvent.click(screen.getByRole('button', { name: /Check/ }));
-      expect(await screen.findByText("That's another word from this session. Try again.")).toBeInTheDocument();
+      expect(await screen.findAllByText('Not quite')).toHaveLength(2);
+      expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Check the spelling/)).not.toBeInTheDocument();
     });
   });
 
@@ -281,8 +285,11 @@ describe('Alternative answer card', () => {
     expect(screen.getByText('Giấc ngủ rất quan trọng cho sức khỏe.')).toBeInTheDocument();
     const items = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent('crucial · từ bạn gõ');
-    expect(items[1]).toHaveTextContent('vital · từ của câu này');
+    // Each row names its role as its own label above the word (UI polish, 07/11/2026).
+    expect(within(items[0]).getByText('Từ bạn gõ')).toBeInTheDocument();
+    expect(within(items[0]).getByText('crucial')).toBeInTheDocument();
+    expect(within(items[1]).getByText('Từ của câu này')).toBeInTheDocument();
+    expect(within(items[1]).getByText('vital')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Đã biết: crucial' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cần ôn lại: crucial' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cần ôn lại: vital' })).toBeInTheDocument();
@@ -374,8 +381,8 @@ describe('Alternative answer card', () => {
     await userEvent.click(screen.getByRole('button', { name: /Check/ }));
     expect(await screen.findByText('Alternative answer')).toBeInTheDocument();
     const items = within(screen.getByRole('list')).getAllByRole('listitem');
-    expect(items[0]).toHaveTextContent('crucial · the word you typed');
-    expect(items[1]).toHaveTextContent("vital · this sentence's word");
+    expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();
+    expect(within(items[1]).getByText("This sentence's word")).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Know: crucial' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Still learning: vital' })).toBeInTheDocument();
   });
