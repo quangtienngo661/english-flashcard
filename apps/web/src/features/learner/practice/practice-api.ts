@@ -45,6 +45,8 @@ export type StartBody = {
 /** The session as the API shows it (`SessionView`). */
 export type PracticeSessionView = {
   id: string;
+  /** Đợt C (H4): `recall` is an Ôn session of one deck; absent from an older API (= `practice`). */
+  kind?: 'practice' | 'recall';
   source: Source;
   group_id: string | null;
   group_filter: GroupFilter | null;

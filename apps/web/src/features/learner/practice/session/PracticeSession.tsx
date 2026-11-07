@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { Layers2, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -11,6 +11,7 @@ import { Button } from '@/app-ui/Button';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
 import { useGroups } from '../../groups/groups-api';
+import { RecallSummary } from '../../recall/RecallSummary';
 import { useSourceLabel } from '../CurrentSessionCard';
 import type { PracticeSessionView } from '../practice-api';
 import { AiUnavailableState } from './AiUnavailableState';
@@ -31,19 +32,26 @@ import { usePracticeSession, type Item, type PracticeSessionState } from './use-
 
 const AI_TYPES = ['meaning_in_sentence', 'mcq_sentence'];
 
-/** K/60–K/67 `/app/practice/session`: the open practice session, full screen. */
-export function PracticeSession() {
+/**
+ * K/60–K/67 `/app/practice/session`: the open practice session, full screen. Đợt C §4.4: with `recall`, the Ôn session of that deck
+ * (`/app/recall`): no Đã biết (the answer moved the word already), its own summary, and every way out leads back to the deck.
+ */
+export function PracticeSession({ recall }: { recall?: { groupId: string } } = {}) {
   const t = useTranslations('App.practice.session');
+  const tr = useTranslations('App.recall');
   const tc = useTranslations('App.common');
   const locale = useLocale();
   const errorText = useErrorMessage();
-  const state = usePracticeSession();
+  const state = usePracticeSession(recall);
   const { phase, session } = state;
   const groups = useGroups();
   const label = useSourceLabel();
   const [reporting, setReporting] = useState(false);
-  const sourceLabel = session ? label({ session, item: null, preparing: false }, groups.data?.items ?? []) : '';
-  const practiceHref = `/${locale}/app/practice`;
+  const deckName = recall ? groups.data?.items.find((g) => g.id === recall.groupId)?.name : undefined;
+  const sourceLabel = session && !recall ? label({ session, item: null, preparing: false }, groups.data?.items ?? []) : '';
+  const headerText = recall ? (deckName ? tr('header', { group: deckName }) : tr('headerNoName')) : t('header', { source: sourceLabel });
+  const practiceHref = recall ? `/${locale}/app/group?id=${recall.groupId}` : `/${locale}/app/practice`;
+  const backLabel = recall ? tr('back') : undefined;
 
   // Keys (K/51): 1–4 choose; on results Enter follows the bold button, 1 reviews, 2 knows in case 1; H hint, Esc stop.
   const keys = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -116,11 +124,13 @@ export function PracticeSession() {
 
   let body: ReactNode;
   if (state.load.isError) body = <ErrorState message={errorText(state.load.error)} onRetry={() => void state.load.refetch()} />;
-  else if (phase === null || phase.kind === 'advancing' || !session && phase.kind !== 'none') body = state.error ? <Ended message={errorText(state.error)} href={practiceHref} /> : <FullScreenSpinner />;
-  else if (phase.kind === 'none') body = <Ended message={t('none')} href={practiceHref} />;
-  else if (phase.kind === 'closed') body = <Ended message={t('closed')} href={practiceHref} />;
+  else if (phase === null || phase.kind === 'advancing' || !session && phase.kind !== 'none' && phase.kind !== 'nothing_learned')
+    body = state.error ? <Ended message={errorText(state.error)} href={practiceHref} label={backLabel} /> : <FullScreenSpinner />;
+  else if (phase.kind === 'none') body = <Ended message={t('none')} href={practiceHref} label={backLabel} />;
+  else if (phase.kind === 'nothing_learned') body = recall ? <NothingLearned groupId={recall.groupId} /> : <Ended message={t('none')} href={practiceHref} />;
+  else if (phase.kind === 'closed') body = <Ended message={t('closed')} href={practiceHref} label={backLabel} />;
   else if (phase.kind === 'round') body = <RoundPrompt session={session!} onContinue={(go) => void state.continueRound(go)} busy={state.busy} />;
-  else if (phase.kind === 'summary') body = <SessionSummary session={session!} sourceLabel={sourceLabel} />;
+  else if (phase.kind === 'summary') body = recall ? <RecallSummary session={session!} /> : <SessionSummary session={session!} sourceLabel={sourceLabel} />;
   else if (phase.kind === 'preparing') body = <PreparingState />;
   else if (phase.kind === 'ai_stopped')
     body = (
@@ -161,7 +171,7 @@ export function PracticeSession() {
             </Link>
           )}
           <kbd className={`${KBD} border-border-strong text-ink`}>Esc</kbd>
-          {session && <span className="truncate text-ui text-ink">{t('header', { source: sourceLabel })}</span>}
+          {session && <span className="truncate text-ui text-ink">{headerText}</span>}
         </div>
         {session && total > 0 && (
           <div className="flex shrink-0 items-center gap-3">
@@ -337,13 +347,33 @@ function Progress({ results, position, total, done, label }: { results: Record<n
   );
 }
 
-function Ended({ message, href }: { message: string; href: string }) {
+function Ended({ message, href, label }: { message: string; href: string; label?: string }) {
   const t = useTranslations('App.practice.session');
   return (
     <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface p-6">
       <p className="text-title font-bold text-ink">{message}</p>
       <Link href={href} className="font-semibold text-primary underline underline-offset-2">
-        {t('back')}
+        {label ?? t('back')}
+      </Link>
+    </div>
+  );
+}
+
+/** Đợt C: Ôn needs learned words; the deck has only new ones, so Học comes first. */
+function NothingLearned({ groupId }: { groupId: string }) {
+  const t = useTranslations('App.recall');
+  const tDeck = useTranslations('App.deck');
+  const locale = useLocale();
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface p-6">
+      <p className="text-title font-bold text-ink">{t('nothingTitle')}</p>
+      <p className="text-body text-muted">{t('nothingBody')}</p>
+      <Link
+        href={`/${locale}/app/review?group=${groupId}&mode=new`}
+        className="flex min-h-control-touch items-center gap-2 rounded-inner bg-accent px-5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <Layers2 aria-hidden className="size-5 shrink-0" />
+        {tDeck('learn')}
       </Link>
     </div>
   );
