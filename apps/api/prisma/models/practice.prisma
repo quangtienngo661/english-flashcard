@@ -27,6 +27,8 @@ model PracticeSession {
   pendingAiRequestId String?  @map("pending_ai_request_id") @db.Uuid
   aiStopped          String?  @map("ai_stopped")
   aiNoticeShown      Boolean  @default(false) @map("ai_notice_shown")
+  // Round C: 'practice' (the practice page) or 'recall' (the "Ôn" session of a deck; no quota, own open slot per user).
+  kind               String   @default("practice")
 
   items PracticeSessionItem[]
 
@@ -96,6 +98,8 @@ model PracticeSessionItem {
   alternativeReviewAction String? @map("alternative_review_action")
   // Tries spent on another word of the session: they do not count against `max_retries`.
   sessionWordTries        Int     @default(0) @map("session_word_tries")
+  // Recall sessions only: what the final answer did to the schedule ('leveled_up' | 'kept').
+  recallOutcome           String? @map("recall_outcome")
 
   session  PracticeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   question PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
