@@ -8,6 +8,7 @@ import {
 import {
   PracticeReviewService, type PracticeReviewInput, type PracticeReviewOutcome,
 } from './practice/practice-review.service.js';
+import { RecallAnswerService, type RecallAnswerInput, type RecallAnswerOutcome } from './practice/recall-answer.service.js';
 import type { LearnerDay } from './queue/queue.queries.js';
 import { QueueService } from './queue/queue.service.js';
 
@@ -18,6 +19,7 @@ export class LearningService {
     @Inject(QueueService) private readonly queue: QueueService,
     @Inject(PracticeReadsService) private readonly practice: PracticeReadsService,
     @Inject(PracticeReviewService) private readonly practiceReviews: PracticeReviewService,
+    @Inject(RecallAnswerService) private readonly recall: RecallAnswerService,
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
   ) {}
 
@@ -53,6 +55,11 @@ export class LearningService {
   /** "Cần ôn tập" / "Đã biết" from practice, in the caller's transaction; idempotent by `reviewId`. */
   practiceReview(tx: Prisma.TransactionClient, userId: string, inputs: PracticeReviewInput[]): Promise<PracticeReviewOutcome[]> {
     return this.practiceReviews.review(tx, userId, inputs);
+  }
+
+  /** The final answer of a recall session on the schedule (round C), in the caller's transaction. */
+  recallAnswer(tx: Prisma.TransactionClient, userId: string, input: RecallAnswerInput): Promise<RecallAnswerOutcome> {
+    return this.recall.recallAnswer(tx, userId, input);
   }
 
   /**

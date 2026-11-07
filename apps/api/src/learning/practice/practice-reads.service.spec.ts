@@ -69,3 +69,31 @@ describe('PracticeReadsService — reads through the client it is given (PX4)', 
     expect(prisma.groupItem.count).not.toHaveBeenCalled();
   });
 });
+
+describe('PracticeReadsService — the learned scope of a recall session (round C)', () => {
+  const sqlOf = (call: unknown) => {
+    const q = call as { sql?: string; strings?: string[] };
+    return q.sql ?? q.strings!.join('?');
+  };
+
+  it('reads the learned words of the group: today list (priority + due, within the review cap) or not yet due, never level 0', async () => {
+    const { service, prisma, groups } = setup();
+    await service.items(userId, { kind: 'learned', groupId });
+    expect(groups.assertOwned).toHaveBeenCalledExactlyOnceWith(prisma, userId, groupId);
+    const sql = sqlOf((prisma.$queryRaw.mock.calls as unknown[][])[0][0]);
+    // Level 0 is left out, whatever else matches.
+    expect(sql).toContain('AND i.level >= 1');
+    // Priority + due words come from the capped list of today (which already leaves out the backlog)...
+    expect(sql).toContain('i.id IN (');
+    expect(sql).toContain('due_left');
+    // ...and the words not due yet are added on top, without the priority ones (those are in the list or in the backlog).
+    expect(sql).toContain('NOT i.priority AND i.due_date >');
+  });
+
+  it('keeps the other scopes untouched: a group list still has no level filter', async () => {
+    const { service, prisma } = setup();
+    await service.items(userId, { kind: 'group', groupId, filter: 'all' });
+    const sql = sqlOf((prisma.$queryRaw.mock.calls as unknown[][])[0][0]);
+    expect(sql).not.toContain('AND i.level >= 1');
+  });
+});

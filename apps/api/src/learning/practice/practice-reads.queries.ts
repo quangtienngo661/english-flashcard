@@ -9,7 +9,9 @@ export type GroupFilter = 'all' | 'due' | 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
 /** Which items to read, as SQL conditions on `learning_items i` (plus `ids` from `todayIdsQuery`). */
 export type ItemsWhere =
   | { kind: 'all' } | { kind: 'priority' } | { kind: 'level'; groupId: string; level: number } | { kind: 'group'; groupId: string }
-  | { kind: 'group-priority'; groupId: string } | { kind: 'senses'; senseIds: string[] } | { kind: 'today'; groupId: string | null };
+  | { kind: 'group-priority'; groupId: string } | { kind: 'senses'; senseIds: string[] } | { kind: 'today'; groupId: string | null }
+  // Round C recall: the learned words of a group (level >= 1), those of today's list and those not yet due.
+  | { kind: 'learned'; groupId: string };
 export type Caps = { reviews: number | null; new: number };
 
 const visible = (userId: string) => visibleSenseCondition(Prisma.sql`i.sense_id`, userId);
@@ -81,6 +83,13 @@ export function practiceItemsQuery(
     case 'today':
       condition = Prisma.sql`AND i.id IN (${todayIdsQuery(userId, where.groupId, today, backlogDays, caps)})`;
       break;
+    case 'learned':
+      // Today's list gives the priority and due words within the review cap (the backlog is left out of it); the other branch adds the
+      // words not due yet. A level-0 word and a backlog word are in neither.
+      condition = Prisma.sql`AND i.level >= 1 AND ${inGroup(where.groupId)} AND (
+        i.id IN (${todayIdsQuery(userId, where.groupId, today, backlogDays, caps)})
+        OR (NOT i.priority AND i.due_date > ${today}::date))`;
+      break;
   }
   return Prisma.sql`${itemRows(userId)} AND ${visible(userId)} ${condition} ORDER BY i.id`;
 }
@@ -95,7 +104,8 @@ function itemRows(userId: string): Prisma.Sql {
     SELECT i.id::text AS item_id, i.sense_id::text AS sense_id, i.level, i.due_date, i.priority,
       COALESCE((SELECT min(gi.added_at) FROM group_items gi WHERE gi.item_id = i.id), i.created_at) AS added_at,
       (SELECT max(l.at) FROM learning_log l
-        WHERE l.user_id = i.user_id AND l.item_id = i.id AND l.kind = 'review' AND l.answer = 'review') AS last_needs_review_at
+        WHERE l.user_id = i.user_id AND l.item_id = i.id AND l.kind = 'review' AND l.answer = 'review'
+          AND l.origin IS DISTINCT FROM 'recall') AS last_needs_review_at
     FROM learning_items i
     WHERE i.user_id = ${userId}::uuid`;
 }
