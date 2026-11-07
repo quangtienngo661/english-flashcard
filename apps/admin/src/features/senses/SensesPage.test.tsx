@@ -262,7 +262,7 @@ describe('SenseDetail: pronunciation (đợt C §5.2, H11–H13)', () => {
     expect(await within(voice).findByText(/UK.*Đang tạo/)).toBeInTheDocument();
   });
 
-  it('a sense not shown to learners has no voice yet', async () => {
+  it('no file yet (a sense not shown, or published before TTS): "Chưa có" for both voices', async () => {
     renderApp('/senses/d1', { ...base, [GET_D]: () => Response.json(withIpa({ audio: { uk: null, us: null } })) });
     const voice = await screen.findByRole('region', { name: s.detail.audio });
     expect(within(voice).getAllByText(/Chưa có/)).toHaveLength(2);

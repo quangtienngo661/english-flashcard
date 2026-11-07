@@ -2478,7 +2478,7 @@
       "audioReady": "Ready",
       "audioPending": "Being made",
       "audioFailed": "Failed",
-      "audioNone": "None yet (learners do not see this sense)",
+      "audioNone": "None yet",
       "audioRetry": "Try again",
       "audioRetried": "The voice is queued again.",
       "audioLine": "{voice} · {status}"

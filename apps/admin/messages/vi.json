@@ -2478,7 +2478,7 @@
       "audioReady": "Có giọng",
       "audioPending": "Đang tạo",
       "audioFailed": "Lỗi",
-      "audioNone": "Chưa có (người học chưa thấy nghĩa này)",
+      "audioNone": "Chưa có",
       "audioRetry": "Tạo lại",
       "audioRetried": "Đã xếp lại việc tạo giọng đọc.",
       "audioLine": "{voice} · {status}"

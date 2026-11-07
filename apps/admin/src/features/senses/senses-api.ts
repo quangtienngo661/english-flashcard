@@ -15,7 +15,7 @@ export type SenseContent = {
 };
 /** The read side only (H12): where the IPA came from; null = typed by staff (Wordmet). Never sent back. */
 export type SenseContentView = SenseContent & { ipa_source?: { id: string; name: string } | null };
-/** H12: one voice's file; null when learners do not see the sense. */
+/** H12: one voice's file; null when there is none yet (the sense is not shown, or was published before TTS and not backfilled). */
 export type AudioState = { status: 'pending' | 'ready' | 'failed'; error: string | null; url: string | null };
 
 /** One row of `GET /v1/admin/content/senses` (API 10.3: `missing` on every row). */
