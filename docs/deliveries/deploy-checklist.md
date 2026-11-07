@@ -41,9 +41,10 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 ## Chặn đồ giả ở production (đợt A, R3)
 
 - [ ] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`; rồi kiểm API từ chối khởi động khi bật một đồ giả.**
-  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (giữ cơ chế, chỉ thêm mục checklist).
+  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (02/11/2026 giữ cơ chế, chỉ thêm mục checklist; 07/11/2026 bỏ giá trị mặc định).
   Vì sao: `BILLING_PRODUCTION=true` cùng một đồ giả (thanh toán, AI, Google, hoặc `TURNSTILE_MODE` là `fake`/`off`) làm API và worker dừng ngay khi khởi động
-  (`apps/api/src/common/config/app-config.ts`, `superRefine`), nhưng chỉ khi chính biến `BILLING_PRODUCTION` được đặt; thiếu nó thì mọi đồ giả chạy được.
+  (`apps/api/src/common/config/app-config.ts`, `superRefine`). Từ 07/11/2026 biến này không có giá trị mặc định: thiếu nó thì API và worker cũng không khởi động, nên không còn
+  trường hợp quên biến mà đồ giả vẫn chạy. Đặt nhầm `false` ở production thì vẫn hở, nên mục này vẫn cần.
   Kiểm: trên môi trường production thật, thử bật từng đồ giả một và thấy API cùng worker dừng với tên hai biến trong thông báo, rồi bỏ đồ giả đó đi.
 
 ## Lượt AI cho Free và trial đã tắt (đợt A M3, 05/11/2026)

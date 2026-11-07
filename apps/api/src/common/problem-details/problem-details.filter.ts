@@ -51,7 +51,10 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       });
   }
 
-  private toProblemDetails(exception: unknown): ProblemDetailsOptions {
+  private toProblemDetails(thrown: unknown): ProblemDetailsOptions {
+    // @nestjs/platform-express 12.3.0 wraps body-parser's http-errors in an HttpException whose `cause` is the original
+    // (12.1.2 passed them through): unwrap it so a body error maps as below, not as a bare HttpException.
+    const exception = thrown instanceof HttpException && isExposedClientError(thrown.cause) ? thrown.cause : thrown;
     if (exception instanceof ProblemDetailsException) {
       return {
         status: exception.getStatus(),

@@ -293,7 +293,8 @@ const envSchema = z.object({
   IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
   REMINDER_TICK_SECONDS: positiveInteger.default(900),
   REMINDER_RETRY_BACKOFF_MS: positiveInteger.default(60_000),
-  BILLING_PRODUCTION: booleanString.default(false),
+  // No default (Q13, 07/11/2026): every guard below keys on it, so an environment that forgets it must not start with the fakes reachable.
+  BILLING_PRODUCTION: booleanString,
   BILLING_FAKE_ENABLED: booleanString.default(false),
   BILLING_FAKE_SECRET: secretSchema().optional(),
   BILLING_FAKE_FETCH_STATE: booleanString.default(true),
