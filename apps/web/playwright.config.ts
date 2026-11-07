@@ -24,6 +24,8 @@ export default defineConfig({
       NEXT_PUBLIC_SITE_URL: baseURL,
       NEXT_PUBLIC_LEARNER_APP: 'on',
       NEXT_PUBLIC_API_BASE_URL: 'http://localhost:3000',
+      // Đợt C §5.5: pronunciation files come from the mocked API's dev audio route (CSP media-src).
+      NEXT_PUBLIC_AUDIO_BASE_URL: 'http://localhost:3000/v1/dev/audio',
       // Cloudflare's test site key (always passes): the form tests get a stub script from mockApi(), E23 loads the real widget.
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
       CLOUDFLARE_CF_FETCH_PATH: fileURLToPath(new URL('./.wrangler/e2e-cf.json', import.meta.url)),

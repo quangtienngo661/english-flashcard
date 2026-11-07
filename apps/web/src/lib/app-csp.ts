@@ -10,10 +10,10 @@ export function nonceFromPolicy(policy: string | null | undefined): string | und
   return /'nonce-([^']+)'/.exec(policy ?? '')?.[1];
 }
 
-/** The origin of the API the browser calls (`connect-src`), from the same variable the build checks; null when it is not a URL. */
-function apiOrigin(): string | null {
+/** The origin of a URL variable (the API for `connect-src`, the pronunciation files for `media-src`); null when it is not a URL. */
+function originOf(value: string | undefined): string | null {
   try {
-    return new URL(process.env.NEXT_PUBLIC_API_BASE_URL ?? '').origin;
+    return new URL(value ?? '').origin;
   } catch {
     return null;
   }
@@ -30,7 +30,8 @@ export function withAppCsp(request: NextRequest, next: (request: NextRequest) =>
   const policy = buildAppCsp(nonce, {
     // Read at call time: the build inlines the variables.
     adsense: Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT),
-    apiOrigin: apiOrigin(),
+    apiOrigin: originOf(process.env.NEXT_PUBLIC_API_BASE_URL),
+    audioOrigin: originOf(process.env.NEXT_PUBLIC_AUDIO_BASE_URL),
     dev: !(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').startsWith('https://'),
     themeHash: THEME_SCRIPT_HASH,
   });

@@ -77,7 +77,7 @@ describe('buildCsp (design §4.6, D9, D20, D22)', () => {
 });
 
 describe('buildAppCsp (launch prep B design §5.4, DB39): the /app policy with a per-request nonce', () => {
-  const OPTIONS = { adsense: false, apiOrigin: 'https://api.wordmet.com', dev: false, themeHash: "'sha256-theme='" };
+  const OPTIONS = { adsense: false, apiOrigin: 'https://api.wordmet.com', audioOrigin: 'https://audio.wordmet.com', dev: false, themeHash: "'sha256-theme='" };
   const NONCE = 'bm9uY2UtMQ==';
 
   it('is exactly the table of §5.4 before AdSense: nonce and strict-dynamic, the theme hash, no eval, https: or http:', () => {
@@ -86,6 +86,7 @@ describe('buildAppCsp (launch prep B design §5.4, DB39): the /app policy with a
       "script-src 'nonce-bm9uY2UtMQ==' 'strict-dynamic' 'sha256-theme=' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
+      "media-src 'self' https://audio.wordmet.com",
       "font-src 'self'",
       "connect-src 'self' https://api.wordmet.com https://cloudflareinsights.com",
       'frame-src https://challenges.cloudflare.com',
@@ -117,6 +118,12 @@ describe('buildAppCsp (launch prep B design §5.4, DB39): the /app policy with a
   it('a build served over plain http (the local e2e) does not upgrade its own requests; no API origin leaves connect-src without it', () => {
     expect(directives(buildAppCsp(NONCE, { ...OPTIONS, dev: true })).has('upgrade-insecure-requests')).toBe(false);
     expect(directives(buildAppCsp(NONCE, { ...OPTIONS, apiOrigin: null })).get('connect-src')).toEqual(["'self'", 'https://cloudflareinsights.com']);
+  });
+
+  it('đợt C §5.5: the pre-made pronunciation files play from their own origin; none set leaves media-src at self', () => {
+    expect(directives(buildAppCsp(NONCE, OPTIONS)).get('media-src')).toEqual(["'self'", 'https://audio.wordmet.com']);
+    expect(directives(buildAppCsp(NONCE, { ...OPTIONS, audioOrigin: null })).get('media-src')).toEqual(["'self'"]);
+    expect(directives(buildAppCsp(NONCE, { ...OPTIONS, adsense: true })).get('media-src')).toEqual(["'self'", 'https://audio.wordmet.com']);
   });
 
   it('there is no host list for scripts to lean on: strict-dynamic ignores it, so Turnstile and the beacon are loaded by a script that has the nonce', () => {

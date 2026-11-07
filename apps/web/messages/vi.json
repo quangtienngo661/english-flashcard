@@ -360,7 +360,10 @@
     },
     "speak": {
       "word": "Nghe phát âm",
-      "sentence": "Nghe câu"
+      "sentence": "Nghe câu",
+      "uk": "Nghe giọng Anh-Anh",
+      "us": "Nghe giọng Anh-Mỹ",
+      "pending": "Đang tạo giọng đọc"
     },
     "auth": {
       "back": "Quay lại",
