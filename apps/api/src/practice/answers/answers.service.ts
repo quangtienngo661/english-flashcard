@@ -190,7 +190,7 @@ export class AnswersService {
     // A recall session is not a practice session: it spends none.
     if (!recall) await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
     // A final result, a skip included, is a "lần học" of the learner's local day (nhóm B D39, B51); a "try again" never gets here.
-    await this.learning.recordActivity(item.userId, date, tx);
+    await this.learning.recordActivity(item.userId, date, { studied: true }, tx);
     return { item: written, schedule, recall };
   }
 

@@ -66,7 +66,8 @@ export class LearningService {
    * A "lần học" of the learner on their local date `localDate` (nhóm B D39, B51): one row per learner per day, however many calls.
    * Practice calls it with its `tx` as the last write of a final answer; the shared client is the default for any other caller.
    */
-  recordActivity(userId: string, localDate: string, db?: Prisma.TransactionClient | PrismaClient): Promise<void> {
-    return recordActivityIn(db ?? this.prisma, userId, localDate);
+  recordActivity(userId: string, localDate: string, opts: { studied: boolean }, db?: Prisma.TransactionClient | PrismaClient):
+    Promise<{ firstStudied: boolean }> {
+    return recordActivityIn(db ?? this.prisma, userId, localDate, opts);
   }
 }

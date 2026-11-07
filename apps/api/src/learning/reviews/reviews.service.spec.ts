@@ -28,7 +28,11 @@ function setup(at: string, stored: Record<string, unknown> | null = null, item: 
       findUnique: vi.fn(async () => itemRow),
       update: vi.fn(async () => { events.push('update'); }),
     },
-    learningActivityDay: { createMany: vi.fn(async () => { events.push('activity'); return { count: 1 }; }) },
+    learningActivityDay: {
+      // A study day flips the row with an update first (round C); the insert is only for a day with no row yet.
+      updateMany: vi.fn(async (_args: unknown) => { events.push('activity'); return { count: 1 }; }),
+      createMany: vi.fn(async () => ({ count: 1 })),
+    },
   };
   const prisma = { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as unknown as PrismaClient;
   const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService;
@@ -42,8 +46,8 @@ describe('ReviewsService.answer — records a learning activity day (nhóm B M6,
     const { service, tx, events } = setup('2026-10-19T17:01:00Z');
     await service.answer(userId, input);
     expect(tx.learningLogEntry.create.mock.calls[0][0].data.localDate).toEqual(new Date('2026-10-20T00:00:00.000Z'));
-    expect(tx.learningActivityDay.createMany).toHaveBeenCalledExactlyOnceWith({
-      data: [{ userId, localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
+    expect(tx.learningActivityDay.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId, localDate: new Date('2026-10-20T00:00:00.000Z'), studied: false }, data: { studied: true },
     });
     expect(events).toEqual(['update', 'log', 'activity']);
   });
@@ -55,14 +59,14 @@ describe('ReviewsService.answer — records a learning activity day (nhóm B M6,
     await expect(service.answer(userId, input)).resolves.toEqual({
       item_id: itemId, level: 1, due_date: '2026-10-20', priority: true, section: 'due',
     });
-    expect(tx.learningActivityDay.createMany).not.toHaveBeenCalled();
+    expect(tx.learningActivityDay.updateMany).not.toHaveBeenCalled();
     expect(events).toEqual([]);
   });
 
   it('a failing activity write fails the review (the transaction rolls the log row back with it)', async () => {
     const { service, tx } = setup('2026-10-19T03:00:00Z');
     const boom = new Error('activity insert failed');
-    tx.learningActivityDay.createMany.mockRejectedValueOnce(boom);
+    tx.learningActivityDay.updateMany.mockRejectedValueOnce(boom);
     await expect(service.answer(userId, input)).rejects.toBe(boom);
   });
 });

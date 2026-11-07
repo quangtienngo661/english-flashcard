@@ -72,7 +72,7 @@ export class ReviewsService {
           reviewId: input.reviewId, section: result.section, localDate: dateValue(today), at,
         } });
         // Last write (nhóm B D39): a replay returned above, so a replayed review never reaches this line.
-        await recordActivityIn(tx, userId, today);
+        await recordActivityIn(tx, userId, today, { studied: true });
         return {
           item_id: item.id, level: result.next.level, due_date: result.next.dueDate, priority: result.next.priority,
           section: result.section,
