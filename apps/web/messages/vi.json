@@ -762,7 +762,8 @@
       "empty": "Nhóm chưa có từ nào.",
       "emptyTitle": "Nhóm này chưa có từ nào",
       "emptyBody": "Thêm những từ bạn bắt gặp khi đọc hoặc xem phim, hoặc chọn nhanh một bộ từ theo chủ đề trong Tra từ. Khi nhóm đã có từ, bạn có thể bắt đầu ôn tập.",
-      "emptyLookup": "Chọn từ theo chủ đề"
+      "emptyLookup": "Chọn từ theo chủ đề",
+      "metaMastered": "{count, number} từ · {mastered, number} đã thuộc · tạo ngày {date}"
     },
     "backlog": {
       "back": "Nhóm {name}",
@@ -1613,6 +1614,12 @@
         "yes": "Có",
         "no": "Không"
       }
+    },
+    "deck": {
+      "learn": "Học",
+      "recall": "Ôn",
+      "recallExtra": "Ôn tập",
+      "mastered": "{count, number} đã thuộc"
     }
   }
 }

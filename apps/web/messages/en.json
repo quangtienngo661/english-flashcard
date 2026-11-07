@@ -762,7 +762,8 @@
       "empty": "This deck has no words yet.",
       "emptyTitle": "This deck has no words yet",
       "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
-      "emptyLookup": "Pick words by topic"
+      "emptyLookup": "Pick words by topic",
+      "metaMastered": "{count, plural, one {# word} other {# words}} · {mastered, number} mastered · created {date}"
     },
     "backlog": {
       "back": "{name} deck",
@@ -1613,6 +1614,12 @@
         "yes": "Yes",
         "no": "No"
       }
+    },
+    "deck": {
+      "learn": "Learn",
+      "recall": "Review",
+      "recallExtra": "Extra review",
+      "mastered": "{count, number} mastered"
     }
   }
 }

@@ -47,8 +47,10 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
     const hero = await screen.findByRole('region', { name: 'Công nghệ' });
     expect(within(hero).getByText('Ôn tiếp · có thẻ ưu tiên')).toBeInTheDocument();
     expect(within(hero).getByText('10 thẻ chờ hôm nay · nhóm có 18 từ')).toBeInTheDocument();
-    expect(within(hero).getByRole('link', { name: 'Ôn 10 thẻ' })).toHaveAttribute('href', '/vi/app/review?group=g-tech');
-    expect(within(hero).getByRole('link', { name: 'Hoặc học tất cả 18 từ' })).toHaveAttribute('href', '/vi/app/review?group=g-tech&mode=all');
+    // Đợt C §4.1: Học (new words) and Ôn, no count on either.
+    expect(within(hero).getByRole('link', { name: 'Học' })).toHaveAttribute('href', '/vi/app/review?group=g-tech&mode=new');
+    expect(within(hero).getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-tech');
+    expect(within(hero).queryByRole('link', { name: /Ôn 10 thẻ|Hoặc học tất cả/ })).not.toBeInTheDocument();
   });
 
   it('counts follow the locale: 262962 waiting cards show as "262.962" (audit 26/10/2026 #9)', async () => {
@@ -80,7 +82,10 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
     const names = within(list).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(names).toEqual(['Công nghệ', 'IELTS', 'Du lịch', 'Ẩm thực A2']);
     expect(within(list).getByText('Xong hôm nay')).toBeInTheDocument();
-    expect(within(list).getByRole('link', { name: 'Học lại cả nhóm' })).toHaveAttribute('href', '/vi/app/review?group=g-food&mode=all');
+    // Done for today with learned words: one [Ôn tập] (recall without changing the schedule), no Học.
+    const food = within(list).getByRole('link', { name: 'Ẩm thực A2' }).closest('li')!;
+    expect(within(food).getByRole('link', { name: 'Ôn tập' })).toHaveAttribute('href', '/vi/app/recall?group=g-food');
+    expect(within(food).queryByRole('link', { name: 'Học' })).not.toBeInTheDocument();
   });
 
   it('K/10b: the ⋯ menu of a card offers rename, study all N words, delete', async () => {
