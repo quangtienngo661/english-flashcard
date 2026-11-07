@@ -23,6 +23,7 @@ function validEnv(): NodeJS.ProcessEnv {
     LEARNER_APP_URL: 'https://wordmet.example.com',
     TERMS_VERSION: '2026-10-20',
     TURNSTILE_MODE: 'off',
+    BILLING_PRODUCTION: 'false',
   };
 }
 
@@ -367,6 +368,13 @@ describe('loadConfig', () => {
       BILLING_FAKE_FETCH_STATE: 'false',
     }).billing;
     expect(billing).toEqual({ production: false, fakeEnabled: true, fakeSecret: secret, fakeFetchState: false });
+  });
+
+  it('Q13 (07/11/2026): BILLING_PRODUCTION has no default, so unset or blank refuses to start, naming only it', () => {
+    const { BILLING_PRODUCTION: _, ...unset } = validEnv();
+    expect(() => loadConfig(unset)).toThrow(/^Missing or invalid configuration variables: BILLING_PRODUCTION$/);
+    expect(() => loadConfig({ ...validEnv(), BILLING_PRODUCTION: '' })).toThrow(/^Missing or invalid configuration variables: BILLING_PRODUCTION$/);
+    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'false' }).billing.production).toBe(false);
   });
 
   it.each(['BILLING_PRODUCTION', 'BILLING_FAKE_ENABLED', 'BILLING_FAKE_FETCH_STATE'])('%s accepts only true or false', (name) => {
