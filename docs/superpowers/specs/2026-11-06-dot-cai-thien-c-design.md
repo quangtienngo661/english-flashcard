@@ -1,7 +1,8 @@
 # Đợt cải thiện C (Học / Ôn và chuỗi ngày; phiên âm và giọng đọc) — Design (07/11/2026)
 
-> **Trạng thái 07/11/2026:** bản nháp, **chờ chủ dự án trả lời 10 câu ở §2.2** rồi đọc lại. Chưa có code, chưa có plan, chưa có decision record
-> (decision record viết sau khi chốt hết các câu, theo `~/.claude/rules/decision-records.md`).
+> **Trạng thái 07/11/2026:** đã chốt. Chủ dự án giao Claude đề xuất 10 câu QC1–QC10 ("các câu hỏi bạn có thể tự đề xuất"); kết quả là DC25–DC34 ở §2.2.
+> Decision record: [`../decisions/2026-11-06-dot-cai-thien-c-decisions.md`](../decisions/2026-11-06-dot-cai-thien-c-decisions.md); plan:
+> [`../plans/2026-11-07-dot-cai-thien-c.md`](../plans/2026-11-07-dot-cai-thien-c.md). Chưa có code.
 > **Nguồn quyết định:** chat brainstorm 06/11/2026 (hai session, transcript `f88b58c8…` và `a7482d05…`); danh sách gốc
 > [`../../preparation/IMPROVEMENT_IDEAS_2026-10-23.md`](../../preparation/IMPROVEMENT_IDEAS_2026-10-23.md) (C6, C18; C7 để sau).
 > **Mockup:** [`../../mockups/2026-11-06-dot-cai-thien-c/index.html`](../../mockups/2026-11-06-dot-cai-thien-c/index.html) (M1, bản `fd0ef1d0`),
@@ -47,10 +48,10 @@ sau mỗi câu, chủ dự án: "giữ trang luyện tập y nguyên").
 | DC7 | Hạn mức | Phiên Ôn không tính vào số phiên luyện mỗi ngày (admin chỉnh được, Free 1–50). Trang Luyện tập giữ nguyên | Chủ dự án |
 | DC8 | Chuỗi ngày | Ngày có học thì tính; bỏ một ngày thì về 0 | Chủ dự án |
 | DC9 | Hiện chuỗi | Toast nhỏ kiểu chess.com: ngọn lửa nảy nhẹ + "N ngày liên tiếp", tự tắt sau 3 giây; hiện một lần mỗi ngày, sau lần học đầu tiên của ngày | Chủ dự án (toast); Claude (lúc hiện) |
-| DC10 | Nhắc giữ chuỗi | Email nhắc có thêm "sắp mất chuỗi N ngày" | Chủ dự án (cách làm: QC5) |
-| DC11 | "Đã thuộc" | Từ đang ở nấc ≥ 4 (đã đúng ở lần ôn mốc 7 ngày). Rơi về nấc 1 thì bị trừ. Hiện ở dòng tóm tắt của trang nhóm và thẻ nhóm | Chủ dự án (mốc 7 ngày); Claude (trừ, chỗ hiện) |
-| DC12 | Mục tiêu tuần, email tuần | Không làm đợt này | Claude (mục tiêu tuần); chủ dự án (email tuần dời) |
-| DC13 | Phiên âm gắn ở đâu | Theo từng nghĩa, UK và US. Hiện kiểu Cambridge: phiên âm dưới từ + loại từ, dùng chung cho các nghĩa đọc giống nhau; nghĩa đọc khác thì có phiên âm riêng ở nghĩa đó | Chủ dự án (theo nghĩa, Cambridge); Claude (gộp hiển thị) |
+| DC10 | Nhắc giữ chuỗi | Email nhắc có thêm "sắp mất chuỗi N ngày" | Chủ dự án (cách làm: DC29) |
+| DC11 | "Đã thuộc" | Từ đang ở nấc ≥ 4 (đã đúng ở lần ôn mốc 7 ngày). Rơi về nấc 1 thì bị trừ. Hiện ở dòng tóm tắt của trang nhóm và thẻ nhóm | Chủ dự án (mốc 7 ngày); Claude (trừ, chỗ hiện) — xem decision record |
+| DC12 | Mục tiêu tuần, email tuần | Không làm đợt này | Claude (cả hai; chủ dự án: email tuần "tí bàn") |
+| DC13 | Phiên âm gắn ở đâu | Theo từng nghĩa, UK và US. Hiện kiểu Cambridge: phiên âm dưới từ + loại từ, dùng chung cho các nghĩa đọc giống nhau; nghĩa đọc khác thì có phiên âm riêng ở nghĩa đó | Chủ dự án (theo nghĩa, Cambridge; hai giọng ngầm đồng ý qua mockup); Claude (gộp hiển thị) |
 | DC14 | Ai thấy | Mọi gói | Chủ dự án |
 | DC15 | Từ riêng | Một ô "Phiên âm" không bắt buộc, không chia UK / US; bỏ trống thì không hiện | Chủ dự án |
 | DC16 | Admin | Sửa được phiên âm từng nghĩa | Chủ dự án |
@@ -63,56 +64,31 @@ sau mỗi câu, chủ dự án: "giữ trang luyện tập y nguyên").
 | DC23 | Gửi IPA cho Google | Mặc định chỉ gửi chữ. Từ nào có các nghĩa mang phiên âm khác nhau (`lead` /liːd/ và /led/) thì tự gửi kèm IPA bằng thẻ SSML `<phoneme>` cho từng cách đọc | Claude, chủ dự án đồng ý |
 | DC24 | Khi chưa có file | Đang tạo hoặc tạo lỗi thì dùng tạm giọng của trình duyệt | Claude (luồng §5.5) |
 
-### 2.2 Còn mở — chủ dự án trả lời trước, Claude đề xuất sau
+### 2.2 Chốt sau khi đọc code (QC1–QC10 → DC25–DC34)
 
-Các câu này xuất hiện khi đọc code (facts M1 §"Surprises", facts M2 §"Surprises"): code hiện tại khác với giả định lúc brainstorm, hoặc quyết
-định đã chốt chưa nói tới trường hợp này. Không phương án nào được ưu tiên.
+Các câu này xuất hiện khi đọc code (facts M1, M2 §"Surprises"). Chủ dự án giao Claude đề xuất (07/11/2026: "các câu hỏi bạn có thể tự đề xuất"); câu hỏi
+gốc và mọi phương án đã đưa ra nằm ở decision record.
 
-**M1**
+| # | Câu | Chọn | Lý do ngắn |
+|---|---|---|---|
+| DC25 | QC1. Học lật thẻ nào | Chỉ từ mới (trong trần từ mới còn lại, `mode=new`). Nhóm hết từ mới hôm nay thì Học lật mọi từ đã học (`mode=all`), không đổi lịch | Học không đổi lịch từ đã học (DC4), nên thẻ đến hạn ở Học chỉ làm Lan tưởng đã ôn |
+| DC26 | QC2. "Cần ôn lại" rồi Ôn ngay | Về nấc 1, đến hạn hôm nay, ưu tiên (giữ code hiện tại). Ở Ôn, trả lời đúng một từ đang ưu tiên chỉ bỏ cờ ưu tiên, giữ nấc 1, hạn ngày mai | Lan được thử lại ngay trong ngày, nhưng một lần đúng ngay sau khi quên không đủ để lên nấc. `applyAnswer` và trang Luyện tập không đổi |
+| DC27 | QC3. Độ dài phiên Ôn | Tối đa `practice.defaultQuestionsPerSession` (10) câu, không vòng 2; còn từ đến hạn thì màn xong phiên có nút "Ôn" để làm phiên sau | Dùng lại cài đặt có sẵn; phiên ngắn hợp điện thoại |
+| DC28 | QC4. Ngày nào tính chuỗi | Chỉ ngày có lật thẻ, trả lời câu Ôn / Luyện tập, hoặc bấm "Cần ôn lại" / "Đã biết". Cột mới `learning_activity_days.studied`; thêm / xoá từ, xoá nhóm, "Học lại" không tính | Đúng ý lúc brainstorm ("chỉ cần như vậy"); bảng giữ nguyên cho báo cáo giữ chân |
+| DC29 | QC5. Dòng "sắp mất chuỗi" | (a) Chỉ thêm vào email nhắc khi email đó được gửi như hiện tại, khi chuỗi ≥ 2 và hôm nay chưa học | Không thêm email mới, không đổi luật gửi. Ghi nhận: có tối chuỗi sắp mất mà không có email |
+| DC30 | QC6. Câu Ôn vào Luyện tập | (b) Tính vào "Từ hay sai", không vào lịch sử | Từ hay sai ở Ôn là tín hiệu thật; lịch sử là của trang Luyện tập |
+| DC31 | QC7. Nguồn phiên âm | (a) Chỉ Wiktionary (bản trích Wiktextract của kaikki.org). Không khớp thì để trống (DC18) | Có cả UK và US; CMUdict thêm bước đổi ARPAbet mà chỉ bù được US |
+| DC32 | QC8. Nút đọc câu ví dụ | (a) Giữ như hiện tại (giọng trình duyệt; câu riêng chỉ giọng cài trên máy) | Không tốn gì, không gửi câu ra ngoài |
+| DC33 | QC9. Phiên âm từ riêng | (b) Mỗi nghĩa một ô (`ipa_custom` trên bản sửa); form thêm từ có một ô vì từ mới có một nghĩa | Mọi nội dung đã nằm theo nghĩa; `bass` đọc khác theo nghĩa |
+| DC34 | QC10. Nút loa khi chưa có file và máy không có giọng đó | (b) Nút mờ, rê hoặc focus thấy "Đang tạo giọng đọc" | Đọc bằng giọng US dưới nhãn UK là sai; ẩn nút làm dòng phiên âm nhảy chỗ |
 
-- **QC1. Học lật những thẻ nào?** Lan bấm "Học" ở nhóm Du lịch:
-  - (a) chỉ 5 từ mới; nhóm hết từ mới thì nút Học lật lại mọi từ đã học, không đổi lịch;
-  - (b) 5 từ mới trước, rồi tới mọi từ đã học;
-  - (c) cách khác.
-- **QC2. "Cần ôn lại" đưa từ về nấc 1 thì ôn lại lúc nào?** Hiện tại: về nấc 1, **đến hạn ngay hôm nay** và gắn cờ ưu tiên (`schedule.ts:40`).
-  Với luật DC5, Lan bấm "Cần ôn lại" cho `luggage` rồi vào Ôn trả lời đúng ngay thì `luggage` lên nấc 2 luôn trong ngày. Có thể:
-  - (a) giữ như hiện tại (đến hạn hôm nay, ưu tiên);
-  - (b) về nấc 1, đến hạn ngày mai;
-  - (c) đến hạn hôm nay, nhưng lần Ôn đúng đầu tiên trong ngày đó chỉ bỏ cờ ưu tiên, không lên nấc.
-- **QC3. Một phiên Ôn dài bao nhiêu?** Lan có 8 từ đến hạn. Có thể: (a) mọi từ đến hạn của nhóm trong một phiên (trần hiện tại 100 từ một nhóm
-  một ngày); (b) phiên 10 câu như Luyện tập, bấm "Ôn tiếp" để làm phiên sau; (c) con số khác.
-- **QC4. Ngày nào tính vào chuỗi?** Lúc brainstorm, Claude nói app ghi "ngày có học" khi ôn thẻ hoặc trả lời câu luyện, và bạn chọn "chỉ cần như
-  vậy". Code thật còn ghi ngày đó khi **thêm từ, xoá từ, xoá nhóm, bấm "Học lại"** (`items.service.ts:247,262`, `groups.service.ts:122`,
-  `backlog.service.ts:94`). Lan chỉ thêm 3 từ vào nhóm hôm nay, không lật thẻ nào: có giữ chuỗi không?
-- **QC5. Dòng "sắp mất chuỗi" gửi thế nào?** Email nhắc hiện tại chỉ gửi khi còn thẻ chờ, cách nhau ít nhất 2 ngày (`minGapDays`), không xem
-  hôm nay Lan đã học chưa, và chữ cố định không có số liệu (`reminder-message.ts:16-33`). Nên tối mà chuỗi sắp mất có thể không có email nào. Có thể:
-  - (a) chỉ thêm dòng chuỗi vào email nhắc khi email đó được gửi như bây giờ;
-  - (b) thêm một email riêng "sắp mất chuỗi": tối nào Lan có chuỗi từ N ngày trở lên mà chưa học thì gửi, dùng chung công tắc email nhắc;
-  - (c) sửa email nhắc: không gửi khi hôm nay đã học, và ngày chuỗi sắp mất thì gửi dù chưa đủ 2 ngày.
-- **QC6. Câu trả lời trong Ôn có vào trang Luyện tập không?** Trang Luyện tập có "Từ hay sai" và lịch sử phiên, tính từ các câu đã trả lời. Câu
-  trả lời ở Ôn: (a) tính vào "Từ hay sai" và lịch sử; (b) tính vào "Từ hay sai", không vào lịch sử; (c) không tính vào đâu.
-
-**M2**
-
-- **QC7. Lấy phiên âm từ nguồn nào?** Hai nguồn đã đọc giấy phép ngày 26/10 (`IMPROVEMENT_IDEAS` §"Nguồn IPA cho C18"):
-  - **Wiktionary:** có cả UK và US. CC BY-SA 4.0: dùng thương mại được, phải ghi công, và phần IPA lấy về phải cho người khác dùng lại theo cùng
-    giấy phép (code của app không bị ảnh hưởng).
-  - **CMUdict:** chỉ US, ký hiệu ARPAbet phải đổi sang IPA; giấy phép kiểu BSD, chỉ cần giữ dòng bản quyền.
-
-  Có thể: (a) chỉ Wiktionary; (b) Wiktionary, thiếu US thì lấy CMUdict; (c) tìm thêm nguồn khác trước khi chốt. Mockup admin đang ghi
-  "Nguồn: Wiktionary" chỉ để minh họa.
-- **QC8. Nút loa của câu ví dụ.** Hiện thẻ flashcard và trang một từ có nút đọc câu ví dụ bằng giọng của máy (`Flashcard.tsx:97`,
-  `SenseBlock.tsx:85`); câu riêng của Lan chỉ đọc bằng giọng cài trên máy để chữ không rời máy (`SpeakButtons.tsx:49`). DC21 nói Google không
-  đọc câu. Các nút đọc câu: (a) giữ như hiện tại; (b) bỏ.
-- **QC9. Phiên âm của từ riêng gắn theo từ hay theo nghĩa?** Một từ riêng có thể có nhiều nghĩa (sửa ở `PATCH /v1/my-words/:id`). Lan thêm
-  `bass` với hai nghĩa "cá vược" /bæs/ và "giọng trầm" /beɪs/: (a) một ô phiên âm cho cả từ; (b) mỗi nghĩa một ô.
-- **QC10. File UK đang tạo mà máy không có giọng UK thì nút loa UK làm gì?** Nhiều máy không có giọng Anh-Anh (`speech.ts:47`). Trong vài phút
-  đầu sau khi admin đăng nghĩa mới (hoặc khi Google lỗi): (a) ẩn nút loa UK; (b) hiện nút mờ, rê vào thấy "Đang tạo giọng đọc"; (c) đọc bằng
-  giọng US của máy.
+**Đổi kỹ thuật khi làm plan (Claude):** §5.1 không còn chặn ký hiệu ngoài bảng của Google khi lưu. Admin lưu phiên âm như nguồn ghi (kiểm ký tự theo bảng IPA
+rộng); lúc gửi Google, hàm `toGooglePhonemes` đổi sang bảng ký hiệu của Google (`t͡ʃ` → `ʧ`, `r` → `ɹ`, `ɝ` → `ɚ` / `ɜː`…), đổi không được thì chỉ gửi chữ. Lý do:
+bảng của Google (đọc 07/11/2026) không có `ɝ`, `ɾ`, `e` (UK), nên chặn khi lưu sẽ loại nhiều phiên âm Wiktionary đúng. Khoá file dùng ký hiệu đã đổi.
 
 ## 3. Chia việc và thứ tự
 
-Mỗi PR một nhánh từ `origin/dev`, PR vào `dev`. PR sửa lỗi gồm hai commit (test đỏ trước). Thứ tự gợi ý (Claude đề xuất):
+Mỗi PR một nhánh từ `origin/dev`, PR vào `dev`. PR sửa lỗi gồm hai commit (test đỏ trước). Thứ tự gợi ý (Claude đề xuất). **Plan đã chia lại thành 5 PR BE và 2 PR FE cho hai phiên làm việc (chủ dự án 07/11/2026); bảng dưới là bản lúc viết design:**
 
 | PR | Việc | File chính |
 |---|---|---|
@@ -136,7 +112,7 @@ Trang Hôm nay (thẻ to = nhóm đứng đầu)  /  thẻ nhóm  /  trang nhóm
         │
         ├── [Học]  → lật thẻ (ReviewSession hiện có)
         │            từ mới: Đã biết → nấc 1, ngày mai
-        │            từ đã học: Đã biết → không đổi;  Cần ôn lại → nấc 1 (QC2)
+        │            từ đã học: Đã biết → không đổi;  Cần ôn lại → nấc 1 (DC26)
         │
         └── [Ôn]   → phiên Ôn: câu "chọn từ theo nghĩa" hoặc "gõ từ theo nghĩa"
                      đúng + đến hạn → lên nấc;  đúng + chưa đến hạn → giữ;  sai → giữ
@@ -151,7 +127,7 @@ Trạng thái thẻ nhóm (mockup `index.html`, đã duyệt):
 | Có từ đến hạn hoặc ưu tiên, có từ mới | Học · Ôn |
 | Chỉ có từ mới (chưa học từ nào) | Học |
 | Không còn gì đến hạn hôm nay, đã có từ đã học | chip "Xong hôm nay" · nút "Ôn tập" (Ôn mọi từ đã học, không đổi lịch vì chưa đến hạn) |
-| Có từ đến hạn, không có từ mới | Học · Ôn (Học theo QC1) |
+| Có từ đến hạn, không có từ mới | Học · Ôn (Học theo DC25) |
 
 Dòng tóm tắt trang nhóm: `40 từ · 8 từ đến hạn · 5 từ mới · 12 từ đã thuộc`. Thẻ nhóm ghi `120 từ · 47 đã thuộc`. Thẻ to trang Hôm nay giữ ba ô
 "ưu tiên / đến hạn / mới" như hiện tại, nút đổi thành Học · Ôn.
@@ -162,10 +138,10 @@ Dòng tóm tắt trang nhóm: `40 từ · 8 từ đến hạn · 5 từ mới ·
 
 | Hàm | Gọi từ | Luật |
 |---|---|---|
-| `applyLearn(state, answer, today)` | `POST /v1/reviews` (Học) | nấc 0 + `known` → nấc 1, hạn `today+1`; nấc ≥ 1 + `known` → không đổi; `review` → theo QC2 |
+| `applyLearn(state, answer, today)` | `POST /v1/reviews` (Học) | nấc 0 + `known` → nấc 1, hạn `today+1`; nấc ≥ 1 + `known` → không đổi; `review` → nấc 1, hôm nay, ưu tiên (DC26) |
 | `applyRecall(state, correct, today)` | câu trả lời cuối của phiên Ôn | `correct` và `isDueNow` (ưu tiên hoặc `dueDate ≤ today`) → nấc +1 (tối đa 5), hạn theo `LEVEL_INTERVALS`, bỏ cờ ưu tiên; còn lại → không đổi |
 
-- "Cần ôn lại" trong phiên Ôn dùng lại `POST /v1/practice/items/:id/review { action: 'needs_review' }` (đã có), luật theo QC2.
+- "Cần ôn lại" trong phiên Ôn dùng lại `POST /v1/practice/items/:id/review { action: 'needs_review' }` (đã có), luật DC26.
 - Đúng nghĩa là trả lời đúng ở lần cuối, **không dùng gợi ý** (giống điều kiện `show_known` hiện tại, `answers.service.ts:164`). Đúng sau khi đã
   xem gợi ý → giữ nấc. (Claude đề xuất, theo luật trang Luyện tập đang dùng.)
 - `ReviewsService.answer` đang giả định `priority = answer === 'review'` khi phát lại một `review_id` (`reviews.service.ts:99`): sửa theo luật mới.
@@ -179,7 +155,7 @@ Dòng tóm tắt trang nhóm: `40 từ · 8 từ đến hạn · 5 từ mới ·
 |---|---|
 | Học: `deploy` nấc 0, Lan bấm Đã biết | nấc 1, hạn ngày mai, không ưu tiên |
 | Học: `luggage` nấc 3, đến hạn hôm nay, Lan bấm Đã biết | không đổi (vẫn đến hạn, vẫn hiện ở Ôn) |
-| Học: `luggage` nấc 3, Lan bấm Cần ôn lại | nấc 1, hạn theo QC2 |
+| Học: `luggage` nấc 3, Lan bấm Cần ôn lại | nấc 1, hạn hôm nay, ưu tiên (DC26) |
 | Ôn: `luggage` nấc 3, đến hạn, trả lời đúng không gợi ý | nấc 4, hạn +14 ngày; số "đã thuộc" +1 |
 | Ôn: `luggage` nấc 3, đến hạn, đúng sau khi xem gợi ý | không đổi |
 | Ôn: `delay` nấc 2, hạn ngày mai, trả lời đúng | không đổi |
@@ -200,11 +176,11 @@ Dùng lại máy câu hỏi của Practice (dựng câu `mcq_definition` và `ty
   ['mcq_definition','type_word']`, `prompt_style: 'meaning'`, bỏ qua `types`, `sort`, `cloze_source` gửi lên. Phạm vi mới trong Learning:
   `{ kind: 'learned', groupId }` = từ nấc ≥ 1 của nhóm, không tồn đọng, xếp ưu tiên → đến hạn (theo `due_date, level`) → chưa đến hạn; phần đến hạn
   bị cắt theo trần ôn còn lại. "Xong hôm nay" (không còn gì đến hạn) thì phiên gồm từ chưa đến hạn.
-- **Độ dài:** theo QC3.
+- **Độ dài:** DC27.
 - **Hạn mức:** phiên `recall` bỏ cả hai lần `checkQuota` trong `start` (`sessions.service.ts:101,148`) và không gọi `recordPracticeSession` ở
   `writeFinal` (`answers.service.ts:143`).
 - **Không đụng phiên Luyện tập:** "một phiên mở mỗi người" tính riêng theo `kind` (`sessions.service.ts:143-145` lọc thêm `kind`); `GET
-  /v1/practice/sessions/current` chỉ trả phiên `practice`. Lịch sử và "Từ hay sai" theo QC6.
+  /v1/practice/sessions/current` chỉ trả phiên `practice`. Lịch sử và "Từ hay sai" theo DC30.
 - **Ghi lịch ôn:** `writeFinal` của phiên `recall` gọi `LearningService.recallAnswer(tx, userId, { senseId, groupId, correct, hintUsed })` trong cùng
   transaction; Learning khoá dòng, chạy `applyRecall`, ghi `learning_log` (`kind: 'review'`, `origin: 'recall'`, có `group_id`, `section`) và ngày
   học. Câu trả lời trả thêm `schedule: { level, due_date, changed }` để màn xong phiên đếm "lên nấc".
@@ -224,15 +200,14 @@ Dùng lại máy câu hỏi của Practice (dựng câu `mcq_definition` và `ty
 
 ### 4.5 Chuỗi ngày
 
-- **Nguồn:** theo QC4. Nếu chuỗi chỉ tính lật thẻ và trả lời câu: thêm cột `studied boolean` vào `learning_activity_days`, chỉ các lần lật thẻ,
-  câu trả lời Ôn và câu trả lời Luyện tập đặt `true`; các chỗ ghi khác giữ nguyên (vẫn phục vụ báo cáo giữ chân D7/D30). Nếu mọi ngày có hoạt động
-  đều tính: dùng bảng như hiện tại.
+- **Nguồn (DC28):** thêm cột `studied boolean` vào `learning_activity_days`; lật thẻ, câu trả lời cuối của Ôn và Luyện tập, nút "Cần ôn lại" / "Đã biết"
+  đặt `true`; các chỗ ghi khác giữ nguyên (vẫn phục vụ báo cáo giữ chân D7/D30). Dòng cũ được đặt `true` (chưa có người học thật).
 - **Tính:** hàm thuần `streakDays(dates, today)`: đếm ngược từ hôm nay (hoặc từ hôm qua nếu hôm nay chưa học) qua các ngày liền nhau. Ngày theo múi
   giờ của Lan (`localDate(profile.timezone)`).
 - **Toast:** `POST /v1/reviews`, câu trả lời Ôn và câu trả lời Luyện tập trả thêm `streak: { days }` **chỉ ở lần ghi đầu tiên của ngày** (lần
   `createMany(skipDuplicates)` trả `count = 1`). Web thấy trường này thì hiện `StreakToast` (component mới trong `app-ui/`, không dùng hàng toast
   chung vì toast chung là chữ thuần, 5 giây): ngọn lửa + "13 ngày liên tiếp", 3 giây, tắt chuyển động khi máy bật giảm chuyển động.
-- **Email:** theo QC5. Phần chung: Learning xuất `streakAsOf(userId, localDate)`; Notifications truyền số vào `ReminderSendData` và chữ email.
+- **Email:** DC29. Phần chung: Learning xuất `streakAsOf(userId, localDate)`; Notifications truyền số vào `ReminderSendData` và chữ email.
   Chữ (vi): "Bạn đang có chuỗi 12 ngày. Học hôm nay để giữ chuỗi." Chỉ thêm khi chuỗi ≥ 2 ngày và hôm nay chưa học.
 
 **When → Then:**
@@ -253,12 +228,12 @@ Dùng lại máy câu hỏi của Practice (dựng câu `mcq_definition` và `ty
 - **Phiên âm nằm trên `SenseRevision`** (Claude đề xuất): hai cột `ipa_uk`, `ipa_us` (VarChar 100, có thể trống) và `ipa_source_id` (→
   `data_sources`, trống khi admin tự gõ). Nằm trên bản sửa nên phiên âm đi qua nháp → duyệt → đăng → hoàn tác như mọi nội dung khác. Đặt trên
   `Sense` thì sửa phiên âm sẽ hiện ngay, bỏ qua bước duyệt.
-- Từ riêng: cột `ipa_custom` (VarChar 100) trên bản sửa; gắn theo từ hay theo nghĩa theo QC9.
+- Từ riêng: cột `ipa_custom` (VarChar 100) trên bản sửa; gắn theo nghĩa (DC33).
 - Phải sửa cùng lúc (facts M2 §A1): `RevisionContent`, `normalizeContent`, `mergeContent`, `revisionData`, ba bản `readContent`
   (`senses.service.ts:29`, `import-content.ts:27`, `private-words.service.ts:68`), `contentSchema` / `toContent`. **`contentHash` chỉ thêm phiên
   âm khi có giá trị**, như `formOf` (`revision-content.ts:79`), để hash của mọi bản sửa cũ giữ nguyên.
-- Kiểm khi lưu: bỏ dấu `/` hai đầu nếu admin gõ kèm; chỉ nhận ký tự trong bảng IPA mà Google hỗ trợ (danh sách lấy từ tài liệu Google lúc làm plan;
-  ký tự lạ → lỗi `ipa-invalid` chỉ rõ ký tự). Từ riêng không kiểm ký hiệu (không gửi Google, DC22).
+- Kiểm khi lưu: bỏ dấu `/` hai đầu nếu admin gõ kèm; chỉ nhận ký tự của bảng IPA rộng (ký tự lạ → lỗi `ipa-invalid` chỉ rõ ký tự). Ký hiệu Google không
+  nhận được đổi lúc gửi (§2.2, đổi kỹ thuật). Từ riêng không kiểm ký hiệu (không gửi Google, DC22).
 
 ### 5.2 Admin và CSV
 
@@ -328,7 +303,7 @@ context7 lúc làm plan.
 
 - `SpeakButtons.tsx`: `SpeakWord` thay bằng `Pronounce` nhận `{ text, ipa, audio }`: có URL thì phát `<audio>` (một đối tượng `Audio` dùng chung,
   bấm nút khác thì dừng file đang phát); chưa có URL hoặc phát lỗi thì đọc bằng giọng trình duyệt tương ứng (`uk`, `us` của `speech.ts`); máy không
-  có giọng đó thì theo QC10.
+  có giọng đó thì nút mờ (DC34).
 - CSP `/app` (`buildAppCsp`, `csp.ts:54-71`): thêm `media-src 'self' <AUDIO_PUBLIC_BASE_URL>`. CSP chỉ chạy ở bản build production
   (`app-csp.ts:28`), nên kiểm bằng `pnpm cf:docker` / e2e chứ không bằng `next dev`. Sửa `csp.test.ts`, `app-csp.test.ts`.
 - Phím tắt của phiên Học (space, 1, 2) không bị nút loa nuốt, giữ như hiện tại (`SpeakButtons.tsx:8-10`).
@@ -347,19 +322,19 @@ context7 lúc làm plan.
 | Hết trần ký tự trong ngày | dòng giữ `pending`, chạy tiếp sau 0:00 |
 | Hai admin đăng hai nghĩa cùng khoá cùng lúc | một dòng (PK `key`, `INSERT … ON CONFLICT DO NOTHING`), một lần gọi Google |
 | Đẩy việc lỗi vì Redis tắt ngay sau khi đăng | dòng `pending` vẫn có; vòng quét 5 phút đẩy lại |
-| Lan bấm loa UK khi file còn `pending` | giọng UK của trình duyệt; không có thì theo QC10 |
+| Lan bấm loa UK khi file còn `pending` | giọng UK của trình duyệt; không có thì nút mờ (DC34) |
 | Admin đổi tên giọng UK trong cấu hình | khoá mới cho mọi nghĩa; lệnh tạo cả kho tạo lại file UK; file cũ bị dọn sau một tuần |
 
 ### 5.6 Nạp dữ liệu cho kho có sẵn (khoảng 7.849 từ)
 
-1. **Phiên âm:** script đọc file nguồn (theo QC7), khớp theo (chữ, loại từ), xuất CSV gồm cột định danh + `ipa_uk`, `ipa_us`; admin nhập CSV (tạo
+1. **Phiên âm:** script đọc file nguồn (Wiktionary, DC31), khớp theo (chữ, loại từ), xuất CSV gồm cột định danh + `ipa_uk`, `ipa_us`; admin nhập CSV (tạo
    nháp) rồi đăng hàng loạt bằng trang có sẵn. Dùng lại đường nhập và đăng hiện có thay vì viết đường ghi mới. `ASSUMPTION`: một CSV chỉ có cột định
    danh và hai cột phiên âm thì các cột nội dung khác giữ nguyên (`mergeContent` giữ trường không có trong bản vá); plan phải kiểm điều này với
    `row-normalizer.ts` trước. Chỗ nguồn ghi phiên âm theo (chữ, loại từ) thì mọi nghĩa nhận cùng phiên âm; các trường hợp như `lead` admin sửa tay.
 2. **Giọng đọc:** lệnh `pnpm tts:backfill` tạo dòng `pending` cho mọi nghĩa đang hiện chưa có file; chạy lại an toàn (khoá đã có thì bỏ qua). Ước
    lượng (chưa chạy): khoảng 15.600 file, dưới 125.000 ký tự nếu chỉ gửi chữ, nằm trong hạn mức miễn phí.
 3. **Trang nguồn dữ liệu:** `sourceShownCondition` (`sources.service.ts:62-69`) thêm nhánh thứ ba: nguồn được dùng làm `ipa_source_id` của một bản
-   đang đăng. Thêm dòng ghi công theo giấy phép của nguồn đã chọn (QC7).
+   đang đăng. Thêm dòng ghi công theo giấy phép của nguồn đã chọn (DC31).
 4. **Chính sách bảo mật:** thêm Google Cloud Text-to-Speech vào danh sách bên xử lý, ghi rõ chỉ gửi chữ của từ (kể cả từ riêng của người học), không
    gửi câu. Sửa câu "không gửi từ vựng của bạn cho Google" ở đoạn AdSense (bản nháp `docs/launch-b-legal-drafts`, dòng 188). Ghi vào
    `deploy-checklist.md`; văn bản đăng qua trang `/legal` của admin.
