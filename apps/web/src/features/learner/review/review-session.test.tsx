@@ -130,7 +130,8 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(heading.parentElement).toHaveClass('motion-safe:animate-summary-in');
     expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:50ms]');
     expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:100ms]');
-    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ })).toHaveClass('motion-safe:[animation-delay:150ms]');
+    // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
+    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:150ms]');
   });
 
   it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
@@ -224,6 +225,34 @@ describe('ReviewSession (K/20–K/22)', () => {
     await client.refetchQueries({ type: 'active' });
     expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(1);
     expect(screen.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeInTheDocument();
+  });
+
+  it('đợt C DC25: mode=new asks for the new words only', async () => {
+    params.current = new URLSearchParams({ group: G, mode: 'new' });
+    const { count } = renderApp(<ReviewSession />, { routes: routes([], { [`GET /v1/groups/${G}/queue?mode=new`]: () => Response.json({ cards: [card(4, 'board', { level: 0, section: 'new' })] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    expect(count('GET', `/v1/groups/${G}/queue?mode=new`)).toBe(1);
+    expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(0);
+  });
+
+  it('đợt C §4.1: after Học, a deck with due words offers Ôn; one without does not', async () => {
+    const summary = (due: number) => ({
+      id: G, name: 'Công nghệ', version: 1, total: 2, today: { priority: 0, due, new: 0 },
+      cells: [0, 2, 0, 0, 0, 0].map((total, level) => ({ level, total, due: 0 })), backlog: 0, available: { due, new: 0 },
+    });
+    const view = renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(4)] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    view.unmount();
+
+    renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(0)] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByRole('heading', { name: 'Xong 1 thẻ.' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ôn' })).not.toBeInTheDocument();
   });
 
   it('mode=all asks for every card and labels long-overdue ones', async () => {

@@ -14,7 +14,9 @@ type Pending = { itemId: string; answer: Answer; reviewId: string };
  * again from the queue (Review Focus 4). Each press is one `POST /reviews` with a new `review_id` (the API's dedupe key);
  * after a lost connection the same press keeps its id, so a retry cannot count twice (E19).
  */
-export function useReviewQueue(groupId: string | null, mode: 'due' | 'all') {
+export type QueueMode = 'due' | 'new' | 'all';
+
+export function useReviewQueue(groupId: string | null, mode: QueueMode) {
   const api = useApi();
   const client = useQueryClient();
   // The cards are read once: after that the query is disabled, so "Thử lại" on the offline band (refetch of every active
