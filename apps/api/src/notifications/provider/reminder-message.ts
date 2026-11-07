@@ -13,21 +13,29 @@ export function reminderSettingsUrl(learnerAppUrl: string, language: ReminderLan
   return `${learnerAppUrl}/${language}/app/settings`;
 }
 
-const COPY: Record<ReminderLanguage, Record<ReminderKind, { subject: string; body: string }> & { settings: string }> = {
+const COPY: Record<ReminderLanguage, Record<ReminderKind, { subject: string; body: string }> & { settings: string; streak: (days: number) => string }> = {
   vi: {
     regular: { subject: 'Tới giờ học từ vựng', body: 'Hôm nay bạn còn từ cần ôn. Mở app để học vài phút nhé.' },
     inactive: { subject: 'Đã lâu rồi bạn chưa vào học', body: 'Các từ của bạn vẫn đang chờ. Quay lại học vài phút nhé.' },
     settings: 'Tắt nhắc học trong Cài đặt',
+    streak: (days) => `Bạn đang có chuỗi ${days} ngày. Học hôm nay để giữ chuỗi.`,
   },
   en: {
     regular: { subject: 'Time to study your words', body: 'You still have words to review today. Open the app for a few minutes.' },
     inactive: { subject: "It's been a while since you studied", body: 'Your words are still waiting. Come back for a few minutes.' },
     settings: 'Turn reminders off in Settings',
+    streak: (days) => `You're on a ${days}-day streak. Study today to keep it.`,
   },
 };
 
-/** Plain text, generic (design 8.4): names no word and ends with the settings link line. */
-export function reminderMail(to: string, kind: ReminderKind, language: ReminderLanguage, settingsUrl: string): MailMessage {
+/**
+ * Plain text, generic (design 8.4): names no word and ends with the settings link line. `streakDays` (round C, DC29) adds the
+ * streak line first when the learner has a streak worth keeping; null leaves the mail as it was.
+ */
+export function reminderMail(
+  to: string, kind: ReminderKind, language: ReminderLanguage, settingsUrl: string, streakDays: number | null,
+): MailMessage {
   const copy = COPY[language];
-  return { to, subject: copy[kind].subject, text: `${copy[kind].body}\n\n${copy.settings}: ${settingsUrl}` };
+  const streak = streakDays === null ? '' : `${copy.streak(streakDays)}\n\n`;
+  return { to, subject: copy[kind].subject, text: `${streak}${copy[kind].body}\n\n${copy.settings}: ${settingsUrl}` };
 }

@@ -19,7 +19,7 @@ export class EmailProvider extends NotificationProvider {
     super();
   }
 
-  async send(userId: string, message: { kind: ReminderKind; language: ReminderLanguage }): Promise<NotificationOutcome> {
+  async send(userId: string, message: { kind: ReminderKind; language: ReminderLanguage; streakDays: number | null }): Promise<NotificationOutcome> {
     let to: string | undefined;
     try {
       to = (await this.identity.verifiedEmails([userId])).get(userId);
@@ -31,7 +31,7 @@ export class EmailProvider extends NotificationProvider {
       throw new NotSentError(error);
     }
     const settingsUrl = reminderSettingsUrl(this.config.learnerAppUrl, message.language);
-    await this.mailer.send(reminderMail(to, message.kind, message.language, settingsUrl));
+    await this.mailer.send(reminderMail(to, message.kind, message.language, settingsUrl, message.streakDays));
     return 'sent';
   }
 }
