@@ -1620,6 +1620,24 @@
       "recall": "Review",
       "recallExtra": "Extra review",
       "mastered": "{count, number} mastered"
+    },
+    "recall": {
+      "header": "Review · {group}",
+      "headerNoName": "Review",
+      "doneTitle": "{count, plural, one {# word} other {# words}} done.",
+      "leveledUp": "Right, moved up",
+      "correctKept": "Right, same stage",
+      "wrongKept": "Wrong, same stage",
+      "needsReview": "Still learning",
+      "newLeftTitle": "{count, plural, one {# new word} other {# new words}} left in this deck",
+      "newLeftBody": "Learn them now and they join tomorrow's review.",
+      "again": "Review more",
+      "home": "Back to Today",
+      "back": "Back to the deck",
+      "nothingTitle": "This deck has no learned words yet.",
+      "nothingBody": "Learn a few new words first, then come back to review.",
+      "noteLeveled": "{lemma} moved up to the {stage} stage.",
+      "noteKept": "{lemma} stays in the {stage} stage."
     }
   }
 }

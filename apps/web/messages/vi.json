@@ -1620,6 +1620,24 @@
       "recall": "Ôn",
       "recallExtra": "Ôn tập",
       "mastered": "{count, number} đã thuộc"
+    },
+    "recall": {
+      "header": "Ôn · {group}",
+      "headerNoName": "Ôn",
+      "doneTitle": "Xong {count, number} từ.",
+      "leveledUp": "Đúng, lên ngăn",
+      "correctKept": "Đúng, giữ ngăn",
+      "wrongKept": "Sai, giữ ngăn",
+      "needsReview": "Cần ôn lại",
+      "newLeftTitle": "Còn {count, number} từ mới trong nhóm này",
+      "newLeftBody": "Học bây giờ thì ngày mai chúng có trong phiên ôn.",
+      "again": "Ôn tiếp",
+      "home": "Về trang chủ",
+      "back": "Về nhóm",
+      "nothingTitle": "Nhóm này chưa có từ nào đã học.",
+      "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
+      "noteLeveled": "{lemma} lên ngăn {stage}.",
+      "noteKept": "{lemma} giữ ngăn {stage}."
     }
   }
 }
