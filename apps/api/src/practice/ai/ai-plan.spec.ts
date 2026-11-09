@@ -128,16 +128,25 @@ describe('markAiSensesRandom (practice ai count §5)', () => {
 });
 
 describe('plannedFromCount (practice ai count §4 step 5)', () => {
-  it('(5, 3, 3, 3) → 3: no later round, only 3 marked', () => {
-    expect(plannedFromCount(5, 3, 3, 3)).toBe(3);
+  it('(5, 3, 3, 3, 3 capable) → 3: no later round, only 3 marked', () => {
+    expect(plannedFromCount(5, 3, 3, 3, 3)).toBe(3);
   });
 
-  it('(8, 3, 8, 20) → 8: later rounds hold the rest', () => {
-    expect(plannedFromCount(8, 3, 8, 20)).toBe(8);
+  it('(8, 3, 8, 20, 8 capable) → 8: later rounds hold the rest', () => {
+    expect(plannedFromCount(8, 3, 8, 20, 8)).toBe(8);
   });
 
-  it('(2, 0, 4, 4) → 0: nothing marked, no later round', () => {
-    expect(plannedFromCount(2, 0, 4, 4)).toBe(0);
+  it('(2, 0, 4, 4, 0 capable) → 0: nothing marked, no later round', () => {
+    expect(plannedFromCount(2, 0, 4, 4, 0)).toBe(0);
+  });
+
+  it('final review I1: later-round slots count only AI-capable words — 4 kept, 1 capable, target 10, K 5 → 1 + 1 + 1 = 3', () => {
+    // 6 later slots = one full round of 4 words (1 capable) + 2 slots of the next round (at most 1 capable).
+    expect(plannedFromCount(5, 1, 4, 10, 1)).toBe(3);
+    // No AI-capable word at all: nothing in later rounds either.
+    expect(plannedFromCount(5, 0, 4, 10, 0)).toBe(0);
+    // Partial round smaller than the capable words: 8 kept, 6 capable, target 10 → 2 later slots.
+    expect(plannedFromCount(8, 3, 8, 10, 6)).toBe(5);
   });
 });
 

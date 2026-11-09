@@ -257,6 +257,15 @@ describe("AiSessionPlanner.plan with the learner's ai count (practice ai count �
     expect(plan).toEqual({ aiPlanned: 8, aiSenseIds: ['s3', 's6', 's8'] });
   });
 
+  it('final review I1: own_then_ai, 4 words of which 1 is AI-capable, count 10, aiCount 5 → aiPlanned 3; 3 units open the session', async () => {
+    const senses = words(4);
+    const ids = senses.map((s) => s.sense_id);
+    const t = setup({ senses });
+    const available = new Map<string, QuestionType[]>(ids.map((id) => [id, id === 's4' ? ['cloze'] : []]));
+    expect(await t.planner.plan(learner, { types: ['cloze'], clozeSource: 'own_then_ai', count: 10, kept: ids, available,
+      aiCount: 5, placement: 'even' }, snapshot({ remaining: 3 }))).toEqual({ aiPlanned: 3, aiSenseIds: ['s4'] });
+  });
+
   it('aiCount 0 → aiPlanned 0 and no unseen-question lookup', async () => {
     const { senses, ids } = ten();
     const t = setup({ senses });
