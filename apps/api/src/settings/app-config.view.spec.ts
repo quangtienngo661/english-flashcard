@@ -5,7 +5,10 @@ import { SETTINGS_DEFAULTS } from './settings.definitions.js';
 describe('appConfigView (design §8.7)', () => {
   it('maps the defaults to the numbers the learner screens show', () => {
     expect(appConfigView(SETTINGS_DEFAULTS)).toEqual({
-      practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
+      practice: {
+        max_questions_per_session: 20, default_questions_per_session: 10, session_max_mode: 'fixed', ai_max_mode: 'percent',
+        ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even', scope_questions_max: 100,
+      },
       reminders: { send_time: '20:00' },
       learning: { backlog_after_days: 60, groups_per_user: 100 },
       account: { transaction_retention_years: 10 },

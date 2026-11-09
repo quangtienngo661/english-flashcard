@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+/** Practice AI count (09/11/2026, design §3): the session maximum, the AI maximum and how AI questions are placed. */
+export const SESSION_MAX_MODES = ['fixed', 'scope_words'] as const;
+export type SessionMaxMode = (typeof SESSION_MAX_MODES)[number];
+export const AI_MAX_MODES = ['fixed', 'percent'] as const;
+export type AiMaxMode = (typeof AI_MAX_MODES)[number];
+export const AI_PLACEMENTS = ['even', 'random', 'learner'] as const;
+export type AiPlacementSetting = (typeof AI_PLACEMENTS)[number];
+/**
+ * The ceiling of the `scope_words` mode; not admin-editable. `generate_cloze.session_words` sends at most `SESSION_WORDS_MAX` (99)
+ * other words of the session, sized for a session of at most 100 questions (D11).
+ */
+export const SCOPE_QUESTIONS_MAX = 100;
+
 /** Admin-tunable values (design §9). Stored camelCase in `app_settings.value`; the API speaks snake_case. */
 export type AppSettings = {
   reminders: { enabled: boolean; sendTime: string; minGapDays: number; inactiveAfterDays: number; stopAfterDays: number };
@@ -21,6 +34,12 @@ export type AppSettings = {
     typeWordMaxRetries: number | null;
     /** Bước 7 (design §14, D8): AI questions generated ahead of the learner. */
     aiPrefetchCount: number;
+    /** Practice AI count (09/11/2026): `scope_words` = the scope's word count, at most `SCOPE_QUESTIONS_MAX`. */
+    sessionMaxMode: SessionMaxMode;
+    /** The AI maximum: `aiMaxFixed` questions, or `aiMaxPercent` of the session rounded down. */
+    aiMaxMode: AiMaxMode; aiMaxFixed: number; aiMaxPercent: number;
+    /** `learner` lets the learner choose even or random; the session stores what it got. */
+    aiPlacement: AiPlacementSetting;
   };
   /** Bước 5 (design §13, D18). */
   entitlements: {
@@ -75,7 +94,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   practice: {
     maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
     idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
-    aiPrefetchCount: 2,
+    aiPrefetchCount: 2, sessionMaxMode: 'fixed', aiMaxMode: 'percent', aiMaxFixed: 5, aiMaxPercent: 50, aiPlacement: 'even',
   },
   entitlements: {
     freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5,
@@ -118,6 +137,8 @@ export const SETTINGS_BOUNDS = {
     hint_definition_max_chars: { min: 80, max: 500 },
     type_word_max_retries: { min: 1, max: 10, nullable: true },
     ai_prefetch_count: { min: 0, max: 20 },
+    ai_max_fixed: { min: 0, max: 100 },
+    ai_max_percent: { min: 0, max: 100 },
   },
   entitlements: {
     free_practice_sessions_per_day: { min: 1, max: 50 },
@@ -202,6 +223,11 @@ export const settingsValuesPatchSchema = z.strictObject({
     hint_definition_max_chars: intIn(b.practice.hint_definition_max_chars).optional(),
     type_word_max_retries: intIn(b.practice.type_word_max_retries).nullable().optional(),
     ai_prefetch_count: intIn(b.practice.ai_prefetch_count).optional(),
+    session_max_mode: z.enum(SESSION_MAX_MODES).optional(),
+    ai_max_mode: z.enum(AI_MAX_MODES).optional(),
+    ai_max_fixed: intIn(b.practice.ai_max_fixed).optional(),
+    ai_max_percent: intIn(b.practice.ai_max_percent).optional(),
+    ai_placement: z.enum(AI_PLACEMENTS).optional(),
   }).optional(),
   entitlements: z.strictObject({
     free_practice_sessions_per_day: intIn(b.entitlements.free_practice_sessions_per_day).optional(),
@@ -267,6 +293,11 @@ const FIELDS = [
   ['learning', 'active_window_days', 'activeWindowDays'],
   ['practice', 'max_questions_per_session', 'maxQuestionsPerSession'],
   ['practice', 'default_questions_per_session', 'defaultQuestionsPerSession'],
+  ['practice', 'session_max_mode', 'sessionMaxMode'],
+  ['practice', 'ai_max_mode', 'aiMaxMode'],
+  ['practice', 'ai_max_fixed', 'aiMaxFixed'],
+  ['practice', 'ai_max_percent', 'aiMaxPercent'],
+  ['practice', 'ai_placement', 'aiPlacement'],
   ['practice', 'history_months', 'historyMonths'],
   ['practice', 'true_false_true_percent', 'trueFalseTruePercent'],
   ['practice', 'idle_session_close_hours', 'idleSessionCloseHours'],
@@ -340,7 +371,8 @@ export function crossFieldViolations(values: AppSettings): string[] {
   return [
     ...(values.reminders.stopAfterDays > values.reminders.inactiveAfterDays ? []
       : ['values.reminders.stop_after_days: Expected greater than inactive_after_days']),
-    ...(values.practice.defaultQuestionsPerSession <= values.practice.maxQuestionsPerSession ? []
+    // Only the fixed mode has a maximum to compare with; under `scope_words` the API lowers the default to the scope (09/11/2026).
+    ...(values.practice.sessionMaxMode !== 'fixed' || values.practice.defaultQuestionsPerSession <= values.practice.maxQuestionsPerSession ? []
       : ['values.practice.default_questions_per_session: Expected at most max_questions_per_session']),
     ...(values.entitlements.proPracticeSessionsPerDay >= values.entitlements.freePracticeSessionsPerDay ? []
       : ['values.entitlements.pro_practice_sessions_per_day: Expected at least free_practice_sessions_per_day']),
