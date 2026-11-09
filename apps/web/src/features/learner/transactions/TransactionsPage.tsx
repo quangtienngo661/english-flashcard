@@ -2,14 +2,14 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
+import { PageColumns } from '@/app-chrome/PageColumns';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useFormat } from '@/app-shell/format';
 import { useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
 import { EmptyState, FullScreenSpinner } from '@/app-ui/States';
-import { BackLink } from '../practice/BackLink';
 import { TransactionDetail } from './TransactionDetail';
 import { TransactionRow } from './TransactionRow';
 import { useTransactions, type Transaction } from './transactions-api';
@@ -62,12 +62,14 @@ export function TransactionsPage() {
     );
 
   return (
-    <AppShell variant="sub" back={back} aside={<TransactionsAside />}>
-      <BackLink {...back} />
+    <>
+      <BackLink {...(back)} />
+      <PageColumns aside={<TransactionsAside />}>
       <PageTitle>{t('title')}</PageTitle>
       {content}
       {open && <TransactionDetail item={open} onClose={() => setOpen(null)} />}
-    </AppShell>
+    </PageColumns>
+      </>
   );
 }
 

@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
+import { PageColumns } from '@/app-chrome/PageColumns';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
@@ -31,11 +32,9 @@ export function WordPage() {
   const notFound = lemma === null || (page.error instanceof ApiError && page.error.problem.status === 404);
 
   return (
-    <AppShell
-      variant="sub"
-      back={{ href: `/${locale}/app/lookup`, label: t('back') }}
-      aside={page.data ? <WordAside data={page.data} /> : undefined}
-    >
+    <>
+      <BackLink {...({ href: `/${locale}/app/lookup`, label: t('back') })} />
+      <PageColumns aside={page.data ? <WordAside data={page.data} /> : undefined}>
       {notFound ? (
         <EmptyState title={t('notFoundTitle', { word: raw })} body={t('notFoundBody')} action={<AddThis word={raw} />} />
       ) : page.data ? (
@@ -45,7 +44,8 @@ export function WordPage() {
       ) : (
         <FullScreenSpinner />
       )}
-    </AppShell>
+    </PageColumns>
+      </>
   );
 }
 

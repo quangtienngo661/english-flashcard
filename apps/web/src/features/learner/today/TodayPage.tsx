@@ -2,7 +2,8 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { AppShell } from '@/app-chrome/AppShell';
+import { PageColumns } from '@/app-chrome/PageColumns';
+import { AddFab } from '@/app-chrome/AddFab';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -36,16 +37,13 @@ export function TodayPage() {
   };
 
   return (
-    <AppShell
-      variant="main"
-      fab
-      aside={
+    <>
+      <PageColumns aside={
         <>
           <QuickAddBox />
           {sorted.length > 0 && <TodayAside groups={sorted} />}
         </>
-      }
-    >
+      }>
       <PageTitle aside={<span className="rounded-full bg-surface px-3 py-1 text-caption font-semibold text-ink">{format.date(new Date(), 'weekdayDayMonth')}</span>}>
         {t('title')}
       </PageTitle>
@@ -98,7 +96,9 @@ export function TodayPage() {
         </div>
       )}
       {dialogs}
-    </AppShell>
+    </PageColumns>
+      <AddFab />
+    </>
   );
 }
 

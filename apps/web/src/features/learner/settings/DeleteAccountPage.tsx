@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -53,10 +53,11 @@ export function DeleteAccountPage() {
   }
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/settings`, label: t('back') }}>
+    <>
+      <BackLink {...({ href: `/${locale}/app/settings`, label: t('back') })} />
       <PageTitle>{t('title')}</PageTitle>
       {body}
-    </AppShell>
+    </>
   );
 }
 

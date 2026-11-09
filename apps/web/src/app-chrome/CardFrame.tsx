@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { DotGridBackground } from '@/ui/DotGridBackground';
 import { AppLogo } from './Logo';
 
-/** The centred card on the dot grid, for sign-in pages and onboarding (replaces AppShell's AuthFrame). */
+/** The centred card on the dot grid, for sign-in pages and onboarding (replaces the old AuthFrame). */
 export function CardFrame({ children }: { children: ReactNode }) {
   const locale = useLocale();
   return (

@@ -3,7 +3,7 @@
 import { CircleCheck, CircleX, Folder, Layers, Star, Target } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { AppShell } from '@/app-chrome/AppShell';
+
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -180,7 +180,7 @@ export function PracticePage() {
     );
 
   return (
-    <AppShell variant="main">
+    <>
       <PageTitle>{t('title')}</PageTitle>
       <div className="flex flex-col gap-6 xl:flex-row">
         {body}
@@ -191,7 +191,7 @@ export function PracticePage() {
         </aside>
       </div>
       {starter.dialogs}
-    </AppShell>
+    </>
   );
 }
 

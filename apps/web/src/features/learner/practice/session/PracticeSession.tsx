@@ -180,9 +180,9 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           </div>
         )}
       </header>
-      <main id="main" className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-6">
         {body}
-      </main>
+      </div>
       {phase?.kind === 'question' && session && (
         <ReportDialog
           key={phase.item.item_id}

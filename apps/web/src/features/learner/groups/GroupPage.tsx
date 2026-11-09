@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, type AnimationEvent } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { createFormat, useFormat } from '@/app-shell/format';
@@ -57,7 +57,8 @@ export function GroupPage() {
   const notFound = id === null || (detail.error instanceof ApiError && detail.error.problem.status === 404);
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }} fab>
+    <>
+      <BackLink {...({ href: `/${locale}/app/groups`, label: t('back') })} />
       {notFound ? (
         <NotFoundState title={t('notFound')} back={{ href: `/${locale}/app/groups`, label: t('toList') }} />
       ) : detail.data ? (
@@ -67,7 +68,7 @@ export function GroupPage() {
       ) : (
         <FullScreenSpinner />
       )}
-    </AppShell>
+    </>
   );
 }
 

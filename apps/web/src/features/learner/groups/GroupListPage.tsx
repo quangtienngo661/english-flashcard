@@ -3,7 +3,7 @@
 import { Plus, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { Button } from '@/app-ui/Button';
@@ -41,7 +41,7 @@ export function GroupListPage() {
   };
 
   return (
-    <AppShell variant="main" fab>
+    <>
       <PageTitle
         aside={
           <Button variant="sticker" onPress={() => open({ kind: 'create' })}>
@@ -116,6 +116,6 @@ export function GroupListPage() {
         </div>
       )}
       {dialogs}
-    </AppShell>
+    </>
   );
 }

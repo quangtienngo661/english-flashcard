@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Logo } from '@/app-chrome/Logo';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -143,16 +142,8 @@ export function OrderReturnPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="mx-auto flex max-w-6xl items-center px-4 py-4 md:px-8">
-        <Link href={`/${locale}/app`} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <Logo tone="surface" />
-        </Link>
-      </header>
-      <main id="main" className="mx-auto flex max-w-xl flex-col px-4 pb-12 md:px-8">
-        {body}
-      </main>
-    </div>
+    // The (chrome) layout draws the frame and the main landmark (giao diện mới M1.10).
+    <div className="mx-auto flex w-full max-w-xl flex-col">{body}</div>
   );
 }
 

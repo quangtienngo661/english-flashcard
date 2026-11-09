@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
@@ -41,9 +41,10 @@ export function TopicPickerPage() {
   const groupId = isId(rawGroup) ? rawGroup.toLowerCase() : undefined;
   const valid = /^[a-z0-9-]+$/.test(code) && LEVELS.includes(level);
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }}>
+    <>
+      <BackLink {...({ href: `/${locale}/app/groups`, label: t('back') })} />
       {valid ? <Picker code={code} level={level} groupId={groupId} /> : <NotFoundState title={t('notFound')} />}
-    </AppShell>
+    </>
   );
 }
 

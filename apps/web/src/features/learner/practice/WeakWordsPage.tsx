@@ -3,7 +3,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
+import { PageColumns } from '@/app-chrome/PageColumns';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -13,7 +14,6 @@ import { Button } from '@/app-ui/Button';
 import { Select } from '@/app-ui/Select';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { STAGE_KEYS } from '../groups/stages';
-import { BackLink } from './BackLink';
 import { localDay } from './days';
 import { RULE_TYPES, useWeakGroups, type WeakWord } from './practice-api';
 import { usePracticeStarter } from './use-practice-starter';
@@ -52,10 +52,9 @@ export function WeakWordsPage() {
     starter.request('weak', { source: 'weak', ...(chosen ? { group_id: chosen.group_id } : {}), types: [...RULE_TYPES], count: questions });
 
   return (
-    <AppShell
-      variant="sub"
-      back={back}
-      aside={
+    <>
+      <BackLink {...(back)} />
+      <PageColumns aside={
         <>
           {count > 0 && (
             <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-card border-b-4 border-primary bg-navy-card p-5 text-on-navy">
@@ -98,9 +97,7 @@ export function WeakWordsPage() {
             ))}
           </section>
         </>
-      }
-    >
-      <BackLink {...back} />
+      }>
       <PageTitle>{t('title')}</PageTitle>
       {groups.isPending ? (
         <FullScreenSpinner />
@@ -135,7 +132,8 @@ export function WeakWordsPage() {
         </section>
       )}
       {starter.dialogs}
-    </AppShell>
+    </PageColumns>
+      </>
   );
 }
 

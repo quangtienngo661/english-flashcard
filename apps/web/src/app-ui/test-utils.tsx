@@ -8,6 +8,8 @@ import { SessionProvider } from '@/app-shell/session/session-context';
 import { SessionStore, type Me } from '@/app-shell/session/session-store';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '@/app-shell/session/test-support';
+import { AppChrome } from '@/app-chrome/AppChrome';
+import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
 
 /** Renders app UI with the App copy, a QueryClient and a signed-in session whose API answers `routes`. */
 export function renderApp(
@@ -17,7 +19,16 @@ export function renderApp(
     me = makeMe(),
     routes = {},
     instantWaits = false,
-  }: { locale?: 'vi' | 'en'; me?: Me; routes?: Record<string, Route>; /** 429 retries do not wait (E4 tests). */ instantWaits?: boolean } = {},
+    chrome = false,
+  }: {
+    locale?: 'vi' | 'en';
+    me?: Me;
+    routes?: Record<string, Route>;
+    /** 429 retries do not wait (E4 tests). */
+    instantWaits?: boolean;
+    /** Wraps the UI in the (chrome) layout: AddWordProvider and AppChrome (giao diện mới M1.10). */
+    chrome?: boolean;
+  } = {},
 ) {
   const f = makeFetch({
     'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
@@ -31,7 +42,7 @@ export function renderApp(
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <QueryClientProvider client={client}>
         <SessionProvider store={store}>
-          <ThemeProvider>{ui}</ThemeProvider>
+          <ThemeProvider>{chrome ? <AddWordProvider><AppChrome>{ui}</AppChrome></AddWordProvider> : ui}</ThemeProvider>
         </SessionProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>,

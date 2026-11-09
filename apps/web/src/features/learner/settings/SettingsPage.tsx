@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { displayName } from '@/app-chrome/AvatarMenu';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -77,7 +77,8 @@ export function SettingsPage() {
   const methods = me.sign_in_methods ?? ['password'];
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app`, label: tCommon('back') }}>
+    <>
+      <BackLink {...({ href: `/${locale}/app`, label: tCommon('back') })} />
       <PageTitle>{t('title')}</PageTitle>
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <Section title={t('personal')}>
@@ -200,7 +201,7 @@ export function SettingsPage() {
           {t('logout')}
         </Button>
       </div>
-    </AppShell>
+    </>
   );
 }
 

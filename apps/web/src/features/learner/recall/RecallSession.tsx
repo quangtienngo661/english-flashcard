@@ -13,9 +13,9 @@ export function RecallSession() {
   const raw = useSearchParams().get('group');
   if (!isId(raw))
     return (
-      <main id="main" className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col justify-center bg-canvas px-4 py-6">
+      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col justify-center px-4 py-6">
         <NotFoundState title={t('notFound')} back={{ href: `/${locale}/app/groups`, label: t('toList') }} />
-      </main>
+      </div>
     );
   return <PracticeSession recall={{ groupId: raw.toLowerCase() }} />;
 }
