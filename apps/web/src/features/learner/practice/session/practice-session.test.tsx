@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
+import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';

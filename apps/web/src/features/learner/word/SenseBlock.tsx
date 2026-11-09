@@ -10,7 +10,7 @@ import { highlightWord } from '../groups/highlight';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { DeleteMyWordDialog, EditMyWordDialog } from './MyWordDialogs';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
-import type { PronLine } from './pronunciation';
+import type { PronLine } from '@/lib/speech/pronunciation';
 import { wordHref, type ItemState, type PageSense } from './word-api';
 
 /** The meaning text with the base word of a form linked ("quá khứ của go"); the link is added after it when the text lacks it. */

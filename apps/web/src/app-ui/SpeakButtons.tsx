@@ -4,8 +4,8 @@ import { Volume2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import { playAudio } from './audio-player';
-import { speak, useVoices } from './speech';
+import { playAudio } from '@/lib/speech/audio-player';
+import { speak, useVoices } from '@/lib/speech/speech';
 
 function stopReviewKeys(event: KeyboardEvent<HTMLButtonElement>) {
   if (event.key === ' ' || event.key === '1' || event.key === '2') event.stopPropagation();

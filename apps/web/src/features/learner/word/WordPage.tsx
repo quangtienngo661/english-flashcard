@@ -15,7 +15,7 @@ import { useAddWord } from '../add-word/add-word-context';
 import type { WordRow } from '../lookup/lookup-api';
 import { FormsLine } from './FormsLine';
 import { AddToDeckCard, LearningBlock } from './LearningBlock';
-import { blockPronunciation } from './pronunciation';
+import { blockPronunciation } from '@/lib/speech/pronunciation';
 import { SenseBlock } from './SenseBlock';
 import { levelRange, useSenseItems, useWordPage, wordHref, type PageSense, type WordPageData } from './word-api';
 

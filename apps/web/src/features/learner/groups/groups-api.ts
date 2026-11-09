@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useMemo } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
-import type { Pronunciation } from '../word/pronunciation';
+import type { Pronunciation } from '@/lib/speech/pronunciation';
 
 export type Cell = 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
 
