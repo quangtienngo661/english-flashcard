@@ -5,7 +5,7 @@ import type { ContentService, Learner } from '../../content/index.js';
 import type { EntitlementsService, EntitlementsSnapshot, Refusal } from '../../entitlements/index.js';
 import type { PracticeSession, PrismaClient } from '../../generated/prisma/client.js';
 import type { LearningService, PracticeItem } from '../../learning/index.js';
-import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
+import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
 import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
 import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
 import { AiSessionPlanner, type AiSessionPlan } from '../ai/ai-session-planner.service.js';
@@ -37,6 +37,8 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 function setup(options: {
   early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
   snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[]; realAiPlanner?: boolean;
+  /** Practice AI count (09/11/2026): practice settings over the defaults. */
+  practice?: Partial<AppSettings['practice']>;
 } = {}) {
   const calls: string[] = [];
   // Facade reads made while the transaction is open without the transaction's own client (each would borrow a second connection).
@@ -94,7 +96,8 @@ function setup(options: {
     }),
     build: vi.fn(async ({ db }: { db?: unknown }) => { via('build', db); return { skip: true }; }),
   };
-  const settings = { get: vi.fn(async (db?: unknown) => { via('settings.get', db); return SETTINGS_DEFAULTS; }) };
+  const values: AppSettings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, ...options.practice } };
+  const settings = { get: vi.fn(async (db?: unknown) => { via('settings.get', db); return values; }) };
   const aiPlanner = {
     gate: vi.fn(async () => { calls.push('gate'); return options.snapshot ?? null; }),
     plan: vi.fn(async () => options.aiPlan ?? { aiPlanned: 0, aiSenseIds: [] }),
@@ -480,6 +483,220 @@ describe('SessionsService — recall sessions (round C, H3–H5)', () => {
     // A practice session still needs its types.
     expect(startBody.safeParse({ source: 'today' }).success).toBe(false);
     expect(startBody.safeParse({ kind: 'practice', source: 'today', types: ['type_word'] }).success).toBe(true);
+  });
+});
+
+describe("SessionsService.start — the learner's ai count and the session maximum (practice ai count §4, 09/11/2026)", () => {
+  const words = (n: number) => Array.from({ length: n }, (_, i) => item(`s${i + 1}`));
+  const createData = (tx: ReturnType<typeof setup>['tx']) =>
+    (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+  const planInput = (aiPlanner: ReturnType<typeof setup>['aiPlanner']) =>
+    (aiPlanner.plan.mock.calls as unknown as Array<[Learner, Record<string, unknown>]>)[0][1];
+  const mixed = { source: 'all' as const, types: ['mcq_definition' as const, 'cloze' as const], cloze_source: 'ai' as const };
+  const validationFailed = { status: 400, problemType: 'validation-failed' };
+
+  it('startBody: ai_count is a whole number ≥ 0; ai_placement is even or random', () => {
+    const body = { source: 'today', types: ['type_word'] };
+    for (const ai_count of [0, 3]) expect(startBody.safeParse({ ...body, ai_count }).success, String(ai_count)).toBe(true);
+    for (const ai_count of [-1, 2.5, '3']) expect(startBody.safeParse({ ...body, ai_count }).success, String(ai_count)).toBe(false);
+    for (const ai_placement of ['even', 'random']) expect(startBody.safeParse({ ...body, ai_placement }).success, ai_placement).toBe(true);
+    for (const ai_placement of ['learner', 'bogus']) expect(startBody.safeParse({ ...body, ai_placement }).success, ai_placement).toBe(false);
+    expect(startBody.safeParse({ kind: 'recall', source: 'group', group_id: '11111111-1111-4111-8111-111111111111', ai_count: 3 }).success)
+      .toBe(true);
+  });
+
+  it('ai_count path: the words are read before the AI gate', async () => {
+    const { service, calls } = setup({ snapshot: {} as EntitlementsSnapshot });
+    await service.start(learner, { ...mixed, ai_count: 2 });
+    expect(calls.indexOf('gate')).toBeGreaterThan(-1);
+    expect(calls.indexOf('practiceItems')).toBeLessThan(calls.indexOf('gate'));
+  });
+
+  it('old path keeps its order: without ai_count the gate runs before the words are read', async () => {
+    const { service, calls } = setup({ snapshot: {} as EntitlementsSnapshot });
+    await service.start(learner, mixed);
+    expect(calls.indexOf('gate')).toBeGreaterThan(-1);
+    expect(calls.indexOf('gate')).toBeLessThan(calls.indexOf('practiceItems'));
+  });
+
+  it('fixed mode: count 25 over the maximum 20 is lowered to 20, not refused', async () => {
+    const { service, tx } = setup({ items: words(30) });
+    await service.start(learner, { ...input, count: 25 });
+    expect(createData(tx).targetCount).toBe(20);
+  });
+
+  describe('scope_words mode', () => {
+    const scope = { sessionMaxMode: 'scope_words' as const };
+
+    it('a group of 4 words, count 10 → targetCount 4', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(4) });
+      await service.start(learner, { ...input, count: 10 });
+      expect(createData(tx).targetCount).toBe(4);
+    });
+
+    it('no count, default 10, 4 words → targetCount 4', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(4) });
+      await service.start(learner, input);
+      expect(createData(tx).targetCount).toBe(4);
+    });
+
+    it('24 words in scope, 21 of them askable with the chosen types, count 24 → targetCount 21, no word asked twice', async () => {
+      const { service, tx, builder } = setup({ practice: scope, items: words(24) });
+      builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) =>
+        new Map(senseIds.map((id) => [id, ['s3', 's9', 's17'].includes(id) ? [] : ['mcq_definition']])) as never);
+      await service.start(learner, { ...input, count: 24 });
+      expect(createData(tx).targetCount).toBe(21);
+      expect((createData(tx).senseIds as string[]).length).toBe(21);
+    });
+
+    it('300 words, count 100 → targetCount 100', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(300) });
+      await service.start(learner, { ...input, count: 100 });
+      expect(createData(tx).targetCount).toBe(100);
+    });
+
+    it('an empty group → 409 practice-no-words, group-empty', async () => {
+      const { service, tx } = setup({ practice: scope, items: [] });
+      await expect(service.start(learner, { ...input, source: 'group', group_id: 'g1', ai_count: 0 } as never)).rejects.toMatchObject({
+        status: 409, problemType: 'practice-no-words', extensions: { reason: 'group-empty' },
+      });
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the ai count reaching the planner', () => {
+    it('percent 50, count 10, ai_count 3 → plan gets aiCount 3, placement even, count 10; the row stores even', async () => {
+      const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 3 });
+      expect(planInput(aiPlanner)).toMatchObject({ aiCount: 3, placement: 'even', count: 10 });
+      expect(createData(tx)).toMatchObject({ aiPlacement: 'even', targetCount: 10 });
+    });
+
+    it('percent 50, count 10, ai_count 9 → plan gets aiCount 5', async () => {
+      const { service, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 9 });
+      expect(planInput(aiPlanner).aiCount).toBe(5);
+    });
+
+    it('scope_words, 4 words, percent 50, ai_count 3, admin learner, body random → aiCount 2, placement random, count 4', async () => {
+      const { service, tx, aiPlanner } = setup({
+        snapshot: {} as EntitlementsSnapshot, items: words(4), practice: { sessionMaxMode: 'scope_words', aiPlacement: 'learner' },
+      });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 3, ai_placement: 'random' });
+      expect(planInput(aiPlanner)).toMatchObject({ aiCount: 2, placement: 'random', count: 4 });
+      expect(createData(tx)).toMatchObject({ aiPlacement: 'random', targetCount: 4 });
+    });
+
+    it('admin even, body random → placement even', async () => {
+      const { service, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiPlacement: 'even' } });
+      await service.start(learner, { ...mixed, ai_count: 2, ai_placement: 'random' });
+      expect(planInput(aiPlanner).placement).toBe('even');
+    });
+  });
+
+  describe('400 validation-failed, no session created', () => {
+    it('ai_count 2 with no AI type → 400 before any quota check or read', async () => {
+      const { service, tx, calls } = setup();
+      await expect(service.start(learner, { source: 'all', types: ['mcq_definition'], ai_count: 2 })).rejects.toMatchObject(validationFailed);
+      expect(calls).toEqual([]);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('ai_count 1, count 4, only AI cloze → 400: the 3 other questions have no type', async () => {
+      const { service, tx } = setup({ snapshot: {} as EntitlementsSnapshot, items: words(4) });
+      await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai', count: 4, ai_count: 1 }))
+        .rejects.toMatchObject(validationFailed);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('percent 10, count 5, ai_count 2, only AI types → K 0 leaves no type: 400, not 409 no-word-fits-types', async () => {
+      const { service, tx, builder, aiPlanner } = setup({ practice: { aiMaxPercent: 10 } });
+      await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai', count: 5, ai_count: 2 }))
+        .rejects.toMatchObject(validationFailed);
+      expect(builder.availability).not.toHaveBeenCalled();
+      expect(aiPlanner.gate).not.toHaveBeenCalled();
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('ai_count 0 with only AI types → 400 before any quota check or read', async () => {
+      const { service, tx, calls } = setup();
+      await expect(service.start(learner, { source: 'all', types: ['meaning_in_sentence'], ai_count: 0 })).rejects.toMatchObject(validationFailed);
+      expect(calls).toEqual([]);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+  });
+
+  it('percent 100, ai_count 10, count 10, only AI types → the session opens with aiCount 10', async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiMaxPercent: 100 } });
+    await service.start(learner, { source: 'all', types: ['cloze', 'mcq_sentence'], cloze_source: 'ai', count: 10, ai_count: 10 });
+    expect(planInput(aiPlanner).aiCount).toBe(10);
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('ai_count 0: the AI types are dropped from the session and the gate is not called', async () => {
+    const { service, tx, aiPlanner } = setup();
+    await service.start(learner, { source: 'all', types: ['mcq_definition', 'meaning_in_sentence'], ai_count: 0 });
+    expect(createData(tx)).toMatchObject({ types: ['mcq_definition'], clozeSource: null, aiPlacement: 'even' });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+  });
+
+  it('review focus 3: ai_count 0 with own_then_ai → the session becomes own and keeps its cloze', async () => {
+    const { service, tx, aiPlanner } = setup();
+    await service.start(learner, { source: 'all', types: ['cloze', 'mcq_definition'], cloze_source: 'own_then_ai', ai_count: 0 });
+    expect(createData(tx)).toMatchObject({ clozeSource: 'own', types: ['cloze', 'mcq_definition'] });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+  });
+
+  it('review focus 4: percent 10, count 5, ai_count 2 → K 0, so AI switched off system-wide does not refuse; the gate is not called', async () => {
+    const { service, tx, aiPlanner } = setup({ practice: { aiMaxPercent: 10 } });
+    aiPlanner.gate.mockRejectedValue(Object.assign(new Error('ai-unavailable'), { status: 503 }));
+    await service.start(learner, { ...mixed, count: 5, ai_count: 2 });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+    expect(createData(tx)).toMatchObject({ types: ['mcq_definition'], clozeSource: null, targetCount: 5 });
+  });
+
+  it('final K 0: scope_words, percent 50, count 10, ai_count 3, one usable word → aiCount 0, targetCount 1, no AI type stored', async () => {
+    const { service, tx, aiPlanner, builder } = setup({
+      snapshot: {} as EntitlementsSnapshot, items: words(4), practice: { sessionMaxMode: 'scope_words' },
+    });
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) =>
+      new Map(senseIds.map((id) => [id, id === 's2' ? ['mcq_definition', 'cloze'] : []])) as never);
+    await service.start(learner, { ...mixed, count: 10, ai_count: 3 });
+    expect(aiPlanner.gate).toHaveBeenCalledTimes(1);
+    expect(planInput(aiPlanner).aiCount).toBe(0);
+    expect(createData(tx)).toMatchObject({ targetCount: 1, types: ['mcq_definition'], clozeSource: null, senseIds: ['s2'] });
+  });
+
+  it("own_then_ai with ai_count 2: the plan gets the AI side's availability", async () => {
+    const { service, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot });
+    builder.availability.mockImplementation((async ({ senseIds, clozeRole }: { senseIds: string[]; clozeRole?: 'own' | 'ai' }) =>
+      new Map(senseIds.map((id) => [id, clozeRole === 'ai' && id === 's1' ? [] : ['cloze']]))) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own_then_ai', ai_count: 2 });
+    expect(planInput(aiPlanner)).toMatchObject({
+      clozeSource: 'own_then_ai', aiCount: 2, available: new Map([['s1', []], ['s2', ['cloze']]]),
+    });
+  });
+
+  it('review focus 1: no ai_count ignores the AI settings — fixed 0 still plans the old way, aiPlacement null', async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiMaxMode: 'fixed', aiMaxFixed: 0 } });
+    await service.start(learner, { ...mixed, count: 10 });
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['mcq_definition', 'cloze'], 'ai');
+    expect(planInput(aiPlanner).aiCount).toBeUndefined();
+    expect(createData(tx)).toMatchObject({ aiPlacement: null, types: ['mcq_definition', 'cloze'], clozeSource: 'ai' });
+  });
+
+  it("not enough units: the planner's 403 stops the start, no session is created", async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+    aiPlanner.plan.mockRejectedValueOnce(Object.assign(new Error('ai-quota-insufficient'), { status: 403 }));
+    await expect(service.start(learner, { ...mixed, ai_count: 2 })).rejects.toThrow('ai-quota-insufficient');
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('a recall start with ai_count 3 opens as before', async () => {
+    const { service, tx, aiPlanner } = setup({ items: words(4) });
+    await service.start(learner, { kind: 'recall', source: 'group', group_id: 'g1', ai_count: 3 } as never);
+    expect(aiPlanner.plan).not.toHaveBeenCalled();
+    expect(createData(tx)).toMatchObject({ kind: 'recall', targetCount: 4, aiPlanned: 0 });
   });
 });
 

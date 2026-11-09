@@ -3,7 +3,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { ContentService, type Learner } from '../../content/index.js';
-import { EntitlementsService, refusalProblem } from '../../entitlements/index.js';
+import { EntitlementsService, refusalProblem, type EntitlementsSnapshot } from '../../entitlements/index.js';
 import type { PracticeSession, Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { LearningService, type PracticeItem, type PracticeScope } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
@@ -21,7 +21,7 @@ import { QuestionBuilder } from '../questions/question-builder.service.js';
 import { chooseType } from '../questions/question-types.js';
 import { PracticeStats } from '../weak/practice-stats.js';
 import { defaultSort, nextRoundOrder, sortWords, type SortKey, type SortableWord, type Source } from './order.js';
-import { ruleTypesFor } from './session-limits.js';
+import { aiCapOf, placementOf, ruleTypesFor, sessionMaxOf, withoutAi } from './session-limits.js';
 import { itemView, sessionView, type ItemView, type ItemWithQuestion, type SessionView } from './session-views.js';
 
 const transactionOptions = { timeout: 15_000, maxWait: 10_000 };
@@ -38,6 +38,13 @@ export type StartInput = {
   prompt_style?: 'meaning' | 'sentence' | 'mixed'; count?: number;
   /** Bước 7 (design §6.1): only with `cloze`; default 'ai'. */
   cloze_source?: ClozeSource;
+  /**
+   * Practice AI count (09/11/2026, design §4): the learner's number of AI questions, lowered to the admin's AI maximum. Absent = the old
+   * split by type ratio and the old check order, so a client that does not send it behaves as before.
+   */
+  ai_count?: number;
+  /** Used only when the admin lets the learner choose (`ai_placement = learner`); else ignored. */
+  ai_placement?: 'even' | 'random';
 };
 type Notice = 'word-not-found';
 /** The reasons the app sees (design §6.6); the detail stays in `practice_ai_requests.failure`. */
@@ -77,6 +84,8 @@ const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'S
 const noWords = (reason: 'group-empty' | 'no-word-fits-types' | 'source-empty' | 'nothing-learned') => new ProblemDetailsException({
   status: 409, title: 'No words to practise', type: 'practice-no-words', extensions: { reason },
 });
+const validationFailed = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
+const hasAiType = (types: QuestionType[], clozeSource: ClozeSource | null) => types.some((type) => isAiType(type, clozeSource));
 
 @Injectable()
 export class SessionsService {
@@ -96,12 +105,13 @@ export class SessionsService {
 
   async start(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
     if (input.kind === 'recall') return this.startRecall(learner, input);
-    const types = input.types!;
+    let types = input.types!;
+    let clozeSource: ClozeSource | null = types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
+    const byCount = input.ai_count !== undefined;
+    // Practice AI count §4 step 6: the checks that need only the input, before any quota check or read.
+    if (byCount && input.ai_count! > 0 && !hasAiType(types, clozeSource)) throw validationFailed();
+    if (byCount && input.ai_count === 0 && withoutAi(types, clozeSource).types.length === 0) throw validationFailed();
     const { practice } = await this.settings.get();
-    const count = input.count ?? practice.defaultQuestionsPerSession;
-    if (count > practice.maxQuestionsPerSession) {
-      throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
-    }
     const sort = input.sort ?? defaultSort(input.source);
     // Early answer for a learner with no session left, before the availability walk (plan review #15); the check that
     // counts runs again inside the transaction, after the open session is closed.
@@ -111,11 +121,19 @@ export class SessionsService {
     // second connection while the transaction holds one (PX4). A word that stops being visible before the transaction
     // commits is dropped later, when `build` skips it as not visible.
     await this.assertEntitled(learner.userId);
-    const clozeSource = types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
-    // Bước 7 (design §6.1 step 2); null when no AI type is chosen (own cloze is a rule question).
-    const snapshot = await this.aiPlanner.gate(learner.userId, types, clozeSource);
+    // Bước 7 (design §6.1 step 2); null when no AI type is chosen (own cloze is a rule question). Without ai_count it runs before
+    // the words are read, as before; with ai_count it waits for the provisional K, so a session with no AI question skips it.
+    let snapshot: EntitlementsSnapshot | null = byCount ? null : await this.aiPlanner.gate(learner.userId, types, clozeSource);
     const items = await this.sourceItems(learner.userId, input);
     if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
+    // §4 steps 1–2: above the maximum is lowered, never refused (the scope may change between the dialog and the start).
+    const count = Math.min(input.count ?? practice.defaultQuestionsPerSession, sessionMaxOf(practice, items.length));
+    // Provisional K from the count, to drop the AI types before words are kept; the final K follows the target below.
+    const provisionalAi = byCount ? Math.min(input.ai_count!, aiCapOf(practice, count)) : 0;
+    if (byCount && provisionalAi === 0) ({ types, clozeSource } = withoutAi(types, clozeSource));
+    // Only AI types and no AI question: no type is left for any question (D16), so 400 rather than "no word fits".
+    if (types.length === 0) throw validationFailed();
+    if (byCount && hasAiType(types, clozeSource)) snapshot = await this.aiPlanner.gate(learner.userId, types, clozeSource);
     const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
       ? await this.stats.statsFor(learner.userId) : new Map();
     const words: SortableWord[] = items.map((item) => ({
@@ -127,10 +145,23 @@ export class SessionsService {
     const order = sortWords(words, sort, Math.random);
     const { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
     if (kept.length === 0) throw noWords('no-word-fits-types');
+    // §4 step 3: in scope_words mode the session asks each kept word once.
+    const target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+    let aiCount: number | undefined;
+    let placement: 'even' | 'random' | undefined;
+    if (byCount) {
+      aiCount = Math.min(provisionalAi, aiCapOf(practice, target));
+      // A session with no AI question stores no AI type, so later rounds never plan one.
+      if (aiCount === 0 && hasAiType(types, clozeSource)) ({ types, clozeSource } = withoutAi(types, clozeSource));
+      // The questions that are not AI need a type (D16; the plan's open decision keeps this 400).
+      if (aiCount < target && ruleTypesFor(types, clozeSource).length === 0) throw validationFailed();
+      placement = placementOf(practice.aiPlacement, input.ai_placement);
+    }
     // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1). Under 'own_then_ai' a word with a saved
     // sentence is asked from it, so only the AI side's availability may mark words for AI and count units.
     const aiAvailable = clozeSource === 'own_then_ai' ? await this.aiSideAvailability(learner, kept, types, clozeSource) : availableBySense;
-    const ai = await this.aiPlanner.plan(learner, { types, clozeSource, count, kept, available: aiAvailable }, snapshot);
+    const ai = await this.aiPlanner.plan(learner,
+      { types, clozeSource, count: target, kept, available: aiAvailable, aiCount, placement }, snapshot);
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
       const now = this.clock.now();
@@ -144,8 +175,8 @@ export class SessionsService {
       const session = await tx.practiceSession.create({ data: {
         userId: learner.userId, kind: 'practice', source: input.source, groupId: input.group_id ?? null,
         groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types,
-        promptStyle: input.prompt_style ?? 'mixed', targetCount: count, senseIds: kept, status: 'active', startedAt: now,
-        lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds,
+        promptStyle: input.prompt_style ?? 'mixed', targetCount: target, senseIds: kept, status: 'active', startedAt: now,
+        lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds, aiPlacement: placement ?? null,
       } });
       return { session: sessionView(session, []) };
     }, transactionOptions);
