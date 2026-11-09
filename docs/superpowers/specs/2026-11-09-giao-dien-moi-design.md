@@ -69,7 +69,7 @@ artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB):
 | QR1 | ✅ Chốt 10/11/2026: một dòng trong Cài đặt và một mục trong menu ảnh đại diện, cùng mở trang `/app/settings/reports` (§9 M6) | §9 M6, §10.4 |
 | QR2 | ✅ Chốt 10/11/2026: cả bốn chỗ thêm API (§10.5) | §1, §9 M3, M6, §10.5 |
 | QR3 | ✅ Chốt 10/11/2026: đọc giá lúc build (§10.6) | §9 M8, §10.6, §11 |
-| QR4 | AdSense tải lại trang làm mất hiệu ứng mở nhóm (review I6, DB38) | §5.4, §8.2 |
+| QR4 | ⏸ Gác lại 10/11/2026 (chủ dự án: "tạm thời gác lại, mình tính sau"): đợt này giữ DB38; các cách và trade-off ở decision record | §5.4, §8.2 |
 | QR5 | ✅ Chốt 10/11/2026: giữ màu nhóm tính theo ID, chấp nhận khả năng trùng màu (5 nhóm: 85% có ít nhất một cặp trùng) | §7.4 |
 
 ## 3. Context UI và motion
@@ -221,7 +221,7 @@ app/[locale]/app/
 | Lan chuyển từ Hôm nay sang Nhóm, hoặc từ Nhóm vào Một nhóm | Thanh trên, thanh tab dưới đứng yên, chữ đang gõ ở ô tìm còn nguyên, chỉ phần giữa đổi (trừ người có quảng cáo, xem QR4) |
 | Lan mở `/vi/app/practice/session` | Không có thanh trên, không có tab dưới; nút lịch nằm trên thanh của phiên ở điện thoại, nổi góc phải dưới ở máy tính |
 | Phiên đăng nhập hết hạn khi đang ở `(chrome)` | `RequireSession` chuyển về đăng nhập như hiện nay (E1–E11 của design giao diện người học) |
-| Lan (Miễn phí, có quảng cáo) rời Nhóm hoặc Tra từ | Theo DB38: trang tải lại cả document, khung mất trạng thái, không có FLIP; chờ QR4 |
+| Lan (Miễn phí, có quảng cáo) rời Nhóm hoặc Tra từ | Theo DB38: trang tải lại cả document, khung mất trạng thái, không có FLIP; QR4 gác lại nên giữ như vậy |
 
 ### 5.5 Đang tải và lỗi
 
@@ -867,7 +867,7 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - `app-ui/`, `components/`, `HistoryPage.tsx`, token cũ không dùng đã xóa; tag `archive/giao-dien-cu-2026-11` có trên GitHub; `giao-dien-cu-map.md` đủ màn.
 - `pnpm test`, lint, typecheck, build của web, API và admin xanh; `assert:render-mode` qua; e2e web qua; `smoke:giao-dien-moi` qua trên DB mới;
   so dung lượng JS qua; điểm Lighthouse, kết quả Schema Markup Validator và số khung hình trên điện thoại đã ghi.
-- QR1–QR5 đã chốt và design đã sửa theo.
+- QR1–QR3, QR5 đã chốt và design đã sửa theo; QR4 gác lại (giữ DB38), trừ khi chủ dự án chốt trước PR cuối.
 - PR `refactor/giao-dien-moi` → `dev` CI xanh.
 
 ## 15. Rủi ro và chỗ chưa kiểm
@@ -882,7 +882,7 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - **Turnstile "chỉ hiện khi cần"** còn chờ chủ dự án.
 - **Lịch học:** định nghĩa các số đã viết ở §10.2; bước code facts của plan kiểm chúng khớp mọi chỗ ghi `learning_log`. Truy vấn SQL chỉ được smoke
   kiểm ngày hôm nay.
-- **Quảng cáo:** theo DB38, người Miễn phí có quảng cáo bị tải lại trang khi rời Nhóm, Tra từ (QR4).
+- **Quảng cáo:** theo DB38, người Miễn phí có quảng cáo bị tải lại trang khi rời Nhóm, Tra từ (QR4, gác lại 10/11/2026).
 - **11 hộp thoại chưa có khung Figma** (§9 M3–M7): dựng theo `Dialog` chung và hộp gần nhất; chủ dự án xem qua ảnh trong delivery record.
 - **Gói Miễn phí và câu AI:** một khung Figma (`131:4522`) vẽ AI khóa ở Miễn phí, lệch API hiện có; làm theo API.
 - **Ảnh OG:** thêm TTF Noto Sans có tiếng Việt làm Worker lớn hơn; đo ở M8.

@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-09-giao-dien-moi-design.md`, with `docs/superpowers/decisions/2026-11-09-giao-dien-moi-decisions.md` and the code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-{api,web}.md` (cited below as "API facts §n", "web facts §n"). Every web task starts by reading design §3 (sources of UI and motion context, how to read a Figma frame) and the Figma frames it names, through the Figma MCP (`get_screenshot`, `get_design_context`, `get_variable_defs`).
 
-**Plan parts:** this file is part 1. Each of M2–M9 gets its own part, written from the same design and approved by the owner just before that milestone starts, appended here as "Part 2" … "Part 9". The roadmap fixes their scope and order. QR4 (ads) is still open: Task Q4 is a placeholder.
+**Plan parts:** this file is part 1. Each of M2–M9 gets its own part, written from the same design and approved by the owner just before that milestone starts, appended here as "Part 2" … "Part 9". The roadmap fixes their scope and order. QR4 (ads) was set aside by the owner on 10/11/2026 ("tạm thời gác lại, mình tính sau"): DB38 stays, Task Q4 is a placeholder.
 
 ## Global Constraints
 
@@ -591,7 +591,7 @@ Run: `git switch -c feat/giao-dien-moi-m1 refactor/giao-dien-moi`. Paths are und
 
 ## Task Q4 (placeholder): ads and page reloads
 
-QR4 is open. The options are on the artifact https://claude.ai/artifact/V8Yd4w2qDBmR9GVuTdT3Yq and in `docs/preparation/AD_ALTERNATIVES_TO_ADSENSE_2026-11-10.md`:
+QR4 is set aside (owner, 10/11/2026); the options and their trade-offs are in the decision record (QR4, round 2), on the artifact https://claude.ai/artifact/V8Yd4w2qDBmR9GVuTdT3Yq and in `docs/preparation/AD_ALTERNATIVES_TO_ADSENSE_2026-11-10.md`:
 - A: keep DB38 as it is.
 - B: AdSense vignette on tab switches.
 - C: Google Ad Manager web interstitial.

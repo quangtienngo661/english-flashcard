@@ -146,10 +146,26 @@ nút "Luyện lại từ sai" mở trang Từ hay sai có sẵn thay vì thêm c
 Claude tự quyết khi ghi design: thêm `GET /v1/public/prices`; deploy thật (`PRICES_REQUIRED=1`) mà không đọc được giá thì build fail, CI của PR dùng
 giá dự phòng.
 
-### QR4. Quảng cáo tải lại trang (chưa chốt)
+### QR4. Quảng cáo tải lại trang (gác lại 10/11/2026)
 
 Vòng 1: chủ dự án hỏi lại vì nhớ quảng cáo hiện "khi chuyển từ section này qua section khác, ví dụ Hôm nay → Nhóm". Claude giải thích cách
 đang làm theo DB13, DB38 (vignette hiện khi bấm link trên trang có mã, tức lúc rời Nhóm, Tra từ). Chờ chủ dự án chọn lại.
+
+Vòng 2: chủ dự án hỏi cách khác ngoài AdSense (khảo sát `docs/preparation/AD_ALTERNATIVES_TO_ADSENSE_2026-11-10.md`), rồi xem mô phỏng ba điện
+thoại (`docs/mockups/2026-11-05-redesign-concepts/quang-cao-chuyen-trang.html`, artifact https://claude.ai/artifact/V8Yd4w2qDBmR9GVuTdT3Yq) và
+trade-off. Cả bốn cách đều cần AdSense duyệt site; quảng cáo chỉ cho gói Miễn phí.
+
+| Phương án | Trade-off |
+|---|---|
+| A. Giữ DB38 (mã chỉ ở Nhóm, Tra từ) | Code và test đã có; Hôm nay và phiên học không có mã. Rời Nhóm, Tra từ tải lại cả trang, mất hiệu ứng mở nhóm; quảng cáo hiện lúc rời Nhóm, không phải lúc chuyển tab |
+| B. AdSense khi chuyển tab | Quảng cáo đúng lúc chuyển tab, không tải lại khi chuyển tab, chỉ cần AdSense. Mã ở mọi trang có thanh tab; mọi link không phải tab phải gắn `data-google-vignette="false"`, sót là bật sai chỗ; vào phiên luyện, Học, Ôn phải tải lại trang; chưa thấy cách đặt tần suất; phải đổi DB38 và sửa `AdsenseLoader.tsx` |
+| C. Google Ad Manager (web interstitial) | Google ghi rõ chạy khi chuyển trang trong app; đặt được tần suất (mặc định 1 lần mỗi 10 phút); gắn "không quảng cáo" một lần cho khung phiên; nút Back không bật. Dành cho publisher lớn, có thể không mở cho app nhỏ; thêm ad unit, mã GPT; thêm site vài ngày tới 2–4 tuần; chưa rõ phí và trả tiền về Việt Nam |
+| B trước, rồi C khi xin được Ad Manager | Có quảng cáo theo ý chủ dự án sớm, sau đó sang cách Google hỗ trợ chính thức. Viết code hai lần; trong lúc chờ vẫn chịu rủi ro A1 |
+
+Rủi ro chung của A và B (A1): chưa kiểm vignette có hiện khi chuyển trang trong app không; chỉ kiểm được sau khi deploy và AdSense duyệt.
+
+Vòng 3 (chủ dự án 10/11/2026): "vậy phần quảng cáo tạm thời gác lại, mình tính sau". Đợt giao diện mới giữ DB38 như hiện nay; Claude chưa nêu đề
+xuất vì chủ dự án chưa chọn.
 
 ### QR5. Màu nhóm trùng (chủ dự án chốt 10/11/2026)
 
