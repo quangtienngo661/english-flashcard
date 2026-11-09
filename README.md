@@ -1,8 +1,8 @@
 # Wordmet
 
 An English vocabulary app for Vietnamese learners, organised by CEFR level (A1–C2) and topic. Learners save words into groups,
-review them with flashcards on an automatic schedule (Leitner boxes), and practise with non-AI questions and AI-written questions
-(graded by rules, never by the AI). The content team (`admin`, `editor`) writes, reviews and publishes words and grants plans in
+learn new words with flashcards, review them with short quizzes on an automatic schedule (Leitner boxes), hear UK and US
+pronunciations, and practise with non-AI questions and AI-written questions (graded by rules, never by the AI). The content team (`admin`, `editor`) writes, reviews and publishes words and grants plans in
 the admin app.
 
 > **Status:** not launched yet. The landing page deploys from `main` to Cloudflare Workers; the learner app (`/vi/app`,
