@@ -24,8 +24,8 @@ export const startBody = z.strictObject({
   prompt_style: z.enum(['meaning', 'sentence', 'mixed']).optional(),
   // The upper bound is max_questions_per_session, checked by the service.
   count: z.int().min(1).optional(),
-  // Bước 7 (design §6.1): only with cloze.
-  cloze_source: z.enum(['ai', 'own']).optional(),
+  // Bước 7 (design §6.1): only with cloze. 'own_then_ai' (09/11/2026): a word with a saved sentence is asked from it, else AI writes one.
+  cloze_source: z.enum(['ai', 'own', 'own_then_ai']).optional(),
   // API (b): a deck is required with `group`, allowed with `weak` (its weak words), refused with the other sources.
 }).refine((body) => (body.source === 'group' ? body.group_id !== undefined : body.source === 'weak' || body.group_id === undefined)
   && (body.source === 'group' || body.group_filter === undefined)

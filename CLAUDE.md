@@ -374,6 +374,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/session-synonyms.md` (plan tóm tắt và as-built 07/11/2026; API, web; PR #228–#231 và PR tài liệu vào `dev`; smoke cuối ở `docs/deliveries/session-synonyms-smoke-output.txt`). **Việc của chủ dự án còn lại** (prompt viết câu điền từ và câu chọn, judge mới, nhập bộ câu thử ở `docs/preparation/eval-sets/`, chạy eval): mục "The owner's steps" cuối file đó; chưa gọi AI thật. Design, decisions, review: `docs/superpowers/{specs,decisions,reviews}/2026-11-06-cloze-session-synonyms*`; plan `docs/superpowers/plans/2026-11-07-session-synonyms.md`; code facts `docs/preparation/SESSION_SYNONYMS_PLAN_CODE_FACTS_2026-11-07-{api,ai,web}.md`.
 
+## Câu điền từ: câu đã lưu trước, chưa có thì AI viết — plan & as-built
+
+`docs/deliveries/cloze-own-then-ai.md` (plan tóm tắt và as-built 09/11/2026; **chỉ API**, PR vào `dev`; smoke ở `docs/deliveries/cloze-own-then-ai-smoke-output.txt`). Nguồn `cloze_source: 'own_then_ai'`: từ có câu đã lưu thì hỏi từ câu đó (không tốn lượt AI), từ chưa có thì AI viết, trong cùng một phiên; item trả về có `ai: boolean`. Thay phần "Pro bật cả hai thì câu điền từ AI tự tắt" của A11. Hộp Tùy chỉnh phiên trong code **chưa** gửi nguồn mới: giao diện làm cùng đợt dựng hộp mới (vòng 13, "hai cột gọn"); danh sách việc và câu chưa chốt (con số lượt AI trong hộp) ở cuối delivery record. Design, decisions: `docs/superpowers/{specs,decisions}/2026-11-09-cloze-own-then-ai*`.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

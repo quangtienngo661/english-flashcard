@@ -325,6 +325,52 @@ describe('SessionsService.start — Bước 7 types (design §6.1)', () => {
     expect(none.tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clozeSource: null, aiPlanned: 0 }) });
   });
 
+  it('own_then_ai: the gate sees the mixed source; words are kept by either side; the plan is made from the AI side only', async () => {
+    const { service, tx, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot, aiPlan: { aiPlanned: 1, aiSenseIds: ['s2'] } });
+    // s1 has a saved sentence (only the own side offers it the cloze); s2 has none (only the AI side does).
+    builder.availability.mockImplementation((async ({ senseIds, clozeRole }: { senseIds: string[]; clozeRole?: 'own' | 'ai' }) =>
+      new Map(senseIds.map((id) => [id, clozeRole === 'ai' && id === 's1' ? [] : ['cloze']]))) as never);
+    const result = await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own_then_ai' });
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['cloze'], 'own_then_ai');
+    const [keep, aiSide] = builder.availability.mock.calls.map(([arg]) => arg as unknown as Record<string, unknown>);
+    expect(builder.availability).toHaveBeenCalledTimes(2);
+    expect(keep).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai' });
+    expect(keep.clozeRole).toBeUndefined();
+    expect(aiSide).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai', senseIds: expect.arrayContaining(['s1', 's2']) });
+    expect(aiPlanner.plan).toHaveBeenCalledWith(learner, expect.objectContaining({
+      clozeSource: 'own_then_ai', kept: expect.arrayContaining(['s1', 's2']),
+      available: new Map([['s1', []], ['s2', ['cloze']]]),
+    }), {});
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      clozeSource: 'own_then_ai', aiPlanned: 1, aiSenseIds: ['s2'],
+    }) });
+    expect(result.session).toMatchObject({ ai_planned: 1, cloze_source: 'own_then_ai' });
+  });
+
+  it('the other sources do not ask the AI side a second time', async () => {
+    for (const cloze_source of ['ai', 'own'] as const) {
+      const { service, builder } = setup();
+      await service.start(learner, { source: 'all', types: ['cloze'], cloze_source });
+      expect(builder.availability, cloze_source).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('own_then_ai on a plan without ai.practice → 403 entitlement-required before any word is read', async () => {
+    const { service, builder, calls } = free();
+    await expect(service.start(learner, { source: 'all', types: ['type_word', 'cloze'], cloze_source: 'own_then_ai' })).rejects.toMatchObject({
+      status: 403, problemType: 'entitlement-required',
+    });
+    expect(builder.availability).not.toHaveBeenCalled();
+    expect(calls).not.toContain('practiceItems');
+  });
+
+  it('startBody takes cloze_source own_then_ai only together with cloze, and refuses an unknown source', () => {
+    const body = { source: 'today', types: ['type_word', 'cloze'] };
+    expect(startBody.safeParse({ ...body, cloze_source: 'own_then_ai' }).success).toBe(true);
+    expect(startBody.safeParse({ source: 'today', types: ['type_word'], cloze_source: 'own_then_ai' }).success).toBe(false);
+    expect(startBody.safeParse({ ...body, cloze_source: 'mixed' }).success).toBe(false);
+  });
+
   it('a refusal of the gate stops before any word is read and before the transaction', async () => {
     const { service, aiPlanner, calls } = setup();
     aiPlanner.gate.mockRejectedValueOnce(new Error('entitlement-required'));

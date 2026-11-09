@@ -1,10 +1,12 @@
 import { MCQ_OPTIONS, SENTENCE_SHARE } from '../practice.constants.js';
-import type { ClozeSource, PromptStyle, QuestionType } from '../practice.types.js';
+import type { ClozeRole, ClozeSource, PromptStyle, QuestionType } from '../practice.types.js';
 import type { QuestionWord } from './distractors.js';
 
 /** What the Bước 7 types need to know about a word (design §6.2); the caller gathers it. */
 export type AiTypeFacts = {
   clozeSource: ClozeSource | null;
+  // Only for 'own_then_ai': the side the caller asks about. Missing = either side is enough (the word stays in the session).
+  clozeRole?: ClozeRole;
   hasViMeaning: boolean;
   // A saved context sentence of the sense that maskExample can mask.
   ownSentence: boolean;
@@ -26,12 +28,26 @@ export function availableTypes(
   const aiBase = !!extra && extra.hasViMeaning && !asked.function_word && !extra.wordRejected;
   return chosen.filter((type) => {
     if (type === 'type_word') return true;
-    if (type === 'cloze') return extra?.clozeSource === 'own' ? extra.ownSentence : aiBase;
+    if (type === 'cloze') return clozeAvailable(extra, aiBase);
     if (type === 'meaning_in_sentence') return aiBase && extra.meaningPool >= MCQ_OPTIONS - 1;
     if (type === 'mcq_sentence') return aiBase && extra.mcqForms >= MCQ_OPTIONS - 1;
     if (asked.function_word) return false;
     return eligibleCount >= (type === 'mcq_definition' ? MCQ_OPTIONS - 1 : 1);
   });
+}
+
+/**
+ * Whether the cloze can be asked for this word. 'own' needs a maskable saved sentence; 'ai' needs what AI needs; 'own_then_ai' is
+ * a saved sentence when the word has one, else AI: the own side takes the first, the AI side only a word with no saved sentence.
+ */
+function clozeAvailable(extra: AiTypeFacts | undefined, aiBase: boolean): boolean {
+  if (extra?.clozeSource === 'own') return extra.ownSentence;
+  if (extra?.clozeSource === 'own_then_ai') {
+    if (extra.clozeRole === 'own') return extra.ownSentence;
+    if (extra.clozeRole === 'ai') return aiBase && !extra.ownSentence;
+    return extra.ownSentence || aiBase;
+  }
+  return aiBase;
 }
 
 /** A random available type, preferring one other than the word's previous type in the session (design 7.2). */

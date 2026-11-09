@@ -16,6 +16,11 @@ export type ItemView = {
   item_id: string; round: number; position: number; type: QuestionType; prompt_style: PromptStyle; prompt: Prompt;
   hints_available: { level1: boolean; level2: boolean; level3: boolean }; hint_level: number; state: 'unanswered' | 'try_again'; tries: number;
   reportable: boolean;
+  /**
+   * This very question was written by AI. With cloze source 'own_then_ai' the session alone cannot say, since a saved-sentence cloze
+   * and an AI cloze share the session.
+   */
+  ai: boolean;
   /** The asked word is the learner's own (learner UI D12, K/81: a report shows it to the team). */
   private_word: boolean;
 };
@@ -44,6 +49,7 @@ export function itemView(item: ItemWithQuestion): ItemView {
     // learner's own sentence (§7.3).
     reportable: item.question.source === 'ai'
       || (!(item.question.answerKey as AnswerKey).asked_private && item.question.source !== 'own_sentence'),
+    ai: item.question.source === 'ai',
     private_word: (item.question.answerKey as AnswerKey).asked_private === true,
   };
 }

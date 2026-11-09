@@ -9,7 +9,7 @@ import { contentKey } from '../ai/ai-inputs.js';
 import { ownSentenceQuestion } from '../ai/ai-question.js';
 import { WordChecksRepository } from '../ai/word-checks.repository.js';
 import { MCQ_OPTIONS } from '../practice.constants.js';
-import type { AnswerKey, Blank, ClozeSource, Hints, Prompt, PromptStyle, QuestionType } from '../practice.types.js';
+import { usesSavedSentences, type AnswerKey, type Blank, type ClozeRole, type ClozeSource, type Hints, type Prompt, type PromptStyle, type QuestionType } from '../practice.types.js';
 import { eligibleCandidates, pickDistractors, shuffle } from './distractors.js';
 import { buildHints } from './hints.js';
 import { availableTypes, chooseType, typingStyle, type AiTypeFacts } from './question-types.js';
@@ -26,7 +26,7 @@ export type BuildInput = {
   userId: string; nativeLanguage: NativeLanguage; senseId: string; chosenTypes: QuestionType[];
   promptStyle: 'meaning' | 'sentence' | 'mixed'; previousType: QuestionType | null; avoidDistractors: string[];
   settings: AppSettings['practice']; random: () => number;
-  /** Bước 7: the session's cloze source; only 'own' makes `cloze` buildable here (AI cloze goes through the generator). */
+  /** Bước 7: the session's cloze source; only 'own' and 'own_then_ai' make `cloze` buildable here (AI cloze goes through the generator). */
   clozeSource?: ClozeSource | null;
   /** The client to read through: a caller inside an open transaction passes its `tx` (default: the global client). */
   db?: Prisma.TransactionClient | PrismaClient;
@@ -50,7 +50,10 @@ export class QuestionBuilder {
    */
   async availability(input: {
     userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[];
-    clozeSource?: ClozeSource | null; db?: Prisma.TransactionClient | PrismaClient;
+    clozeSource?: ClozeSource | null;
+    // 'own_then_ai' only: which side of the cloze is asked about (see availableTypes); missing = either side.
+    clozeRole?: ClozeRole;
+    db?: Prisma.TransactionClient | PrismaClient;
   }): Promise<Map<string, QuestionType[]>> {
     const { userId, nativeLanguage, senseIds, chosenTypes, db } = input;
     const choiceAi = chosenTypes.includes('meaning_in_sentence') || chosenTypes.includes('mcq_sentence');
@@ -63,7 +66,7 @@ export class QuestionBuilder {
       : undefined;
     const facts = chosenTypes.some((type) => NEW_TYPES.includes(type))
       ? await this.aiFacts({
-        userId, nativeLanguage, senseIds, chosenTypes, clozeSource: input.clozeSource ?? 'ai', mates, senses,
+        userId, nativeLanguage, senseIds, chosenTypes, clozeSource: input.clozeSource ?? 'ai', clozeRole: input.clozeRole, mates, senses,
         meanings: meanings ?? new Map(), db,
       })
       : new Map<string, AiTypeFacts>();
@@ -81,12 +84,13 @@ export class QuestionBuilder {
   /** What the Bước 7 types need per word (design §6.2): one read per kind for the batch, one per word for its other senses. */
   private async aiFacts(input: {
     userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[]; clozeSource: ClozeSource;
-    mates: Map<string, string[]>; senses: Map<string, CandidateSense>; meanings: LemmaMeanings;
+    clozeRole?: ClozeRole; mates: Map<string, string[]>; senses: Map<string, CandidateSense>; meanings: LemmaMeanings;
     db?: Prisma.TransactionClient | PrismaClient;
   }): Promise<Map<string, AiTypeFacts>> {
-    const { userId, nativeLanguage, senseIds, chosenTypes, clozeSource, mates, senses, meanings, db } = input;
+    const { userId, nativeLanguage, senseIds, chosenTypes, clozeSource, clozeRole, mates, senses, meanings, db } = input;
     const full = await this.content.practiceSenses(userId, senseIds, nativeLanguage, db);
-    const own = chosenTypes.includes('cloze') && clozeSource === 'own'
+    // Both sides of 'own_then_ai' need the saved sentences: the own side to take them, the AI side to leave those words alone.
+    const own = chosenTypes.includes('cloze') && usesSavedSentences(clozeSource)
       ? await this.content.listSentences(userId, senseIds, db) : new Map<string, Array<{ text: string }>>();
     const wantsMeaning = chosenTypes.includes('meaning_in_sentence');
     const randoms = wantsMeaning
@@ -106,6 +110,7 @@ export class QuestionBuilder {
         ? mcqForms(sense, eligibleCandidates(sense, candidates, Infinity, meanings)).map((f) => f.candidates.length) : [];
       result.set(senseId, {
         clozeSource,
+        clozeRole,
         hasViMeaning: sense.gloss_vi !== null,
         ownSentence: (own.get(senseId) ?? []).some(({ text }) => maskExample(text, target) !== null),
         meaningPool: wrong?.length ?? 0,
@@ -128,12 +133,14 @@ export class QuestionBuilder {
     const eligible = eligibleCandidates(sense, pool, Infinity, meanings);
     const target = { lemma: sense.lemma, variants: sense.variants, inflections: sense.inflections };
     // Bước 7 (design §7.3): cloze from the learner's saved sentences that maskExample can mask (B7E52); the only non-AI new type.
-    const ownMasked = input.chosenTypes.includes('cloze') && input.clozeSource === 'own'
+    const ownMasked = input.chosenTypes.includes('cloze') && usesSavedSentences(input.clozeSource ?? null)
       ? ((await this.content.listSentences(userId, [senseId], db)).get(senseId) ?? [])
         .flatMap(({ text }) => maskExample(text, target) ?? [])
       : [];
-    const extra: AiTypeFacts | undefined = input.clozeSource === 'own' ? {
-      clozeSource: 'own', hasViMeaning: false, ownSentence: ownMasked.length > 0, meaningPool: 0, mcqForms: 0, wordRejected: false,
+    // `build` makes rule questions only, so under 'own_then_ai' it is the own side that asks for the cloze here.
+    const extra: AiTypeFacts | undefined = usesSavedSentences(input.clozeSource ?? null) ? {
+      clozeSource: input.clozeSource!, clozeRole: 'own', hasViMeaning: false, ownSentence: ownMasked.length > 0, meaningPool: 0, mcqForms: 0,
+      wordRejected: false,
     } : undefined;
     const available = availableTypes(sense, eligible.length, input.chosenTypes, extra);
     if (available.length === 0) return { skip: 'no-type' };
