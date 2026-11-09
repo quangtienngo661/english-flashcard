@@ -20,8 +20,9 @@ Ví dụ xuyên suốt: **Lan**, người học tiếng Việt, có 5 nhóm ("Đ
 | Đăng nhập và tài khoản | 18 khung (9 trang × 2) | `/{locale}/app/(auth)/*`, `/app/complete-profile`, `/app/welcome` |
 | App người học | 81 khung (73 khung lúc review, tính cả 16 khung overlay; thêm 8 khung màn Ôn ngày 09/11/2026) | `/{locale}/app/(member)/*` |
 
-- **Thêm:** API lịch học (tổng theo tháng, chi tiết một ngày) cho hai hộp Lịch và Ngày (§10). Các chỗ Figma cần dữ liệu khác (thẻ nhóm "tiếp
-  theo", "Lần luyện gần nhất", số liệu trong hộp Ngày, chuỗi ngày trên nút lịch) chờ chủ dự án chọn thêm API, tự tính ở web hay bỏ (§2, QR2).
+- **Thêm:** API lịch học (tổng theo tháng, chi tiết một ngày) cho hai hộp Lịch và Ngày (§10); API cho các chỗ Figma cần dữ liệu khác: thẻ nhóm
+  "tiếp theo", "ôn gần nhất", khối "Lần luyện gần nhất", số liệu trong hộp Ngày, chuỗi ngày trên nút lịch (§10.5, QR2); giá công khai cho trang
+  chủ đọc lúc build (§10.6, QR3); trang "Báo lỗi của tôi" trong Cài đặt (QR1).
 - **Bỏ:** trang Lịch sử luyện tập (`/app/practice/history`), thay bằng hai hộp Lịch và Ngày; đường dẫn cũ chuyển hướng (§10.4).
 - **Không đổi:** admin (`apps/admin` giữ hướng B và bộ token cũ), API ngoài phần lịch học và các chỗ QR2 chọn thêm API, cách đăng nhập, cách thanh toán, cờ
   `NEXT_PUBLIC_LEARNER_APP` (app vẫn chặn trên production tới khi Deploy).
@@ -65,9 +66,9 @@ artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB):
 
 | # | Câu hỏi | Ảnh hưởng tới |
 |---|---|---|
-| QR1 | "Báo lỗi của tôi" đặt ở đâu khi bỏ trang Lịch sử luyện tập (review C1) | §9 M5–M7, §10.4 |
-| QR2 | Bốn chỗ Figma cần dữ liệu API chưa có: thêm API, tự tính ở web hay bỏ (review I1, I9) | §1, §9 M3, §10.2 |
-| QR3 | Giá trên trang chủ lấy từ đâu (review I8) | §9 M8, §11 |
+| QR1 | ✅ Chốt 10/11/2026: một dòng trong Cài đặt và một mục trong menu ảnh đại diện, cùng mở trang `/app/settings/reports` (§9 M6) | §9 M6, §10.4 |
+| QR2 | ✅ Chốt 10/11/2026: cả bốn chỗ thêm API (§10.5) | §1, §9 M3, M6, §10.5 |
+| QR3 | ✅ Chốt 10/11/2026: đọc giá lúc build (§10.6) | §9 M8, §10.6, §11 |
 | QR4 | AdSense tải lại trang làm mất hiệu ứng mở nhóm (review I6, DB38) | §5.4, §8.2 |
 | QR5 | Màu nhóm theo ID: 5 nhóm có 85% khả năng trùng ít nhất một cặp màu (7 màu); giữ, hay gán theo thứ tự tạo nhóm (cần `created_at` trong `GET /v1/groups`) (review M6) | §7.4 |
 
@@ -529,7 +530,8 @@ Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả l
 
 Nút Học · Ôn theo DC3 của đợt C (GM17): hai nút bằng nhau, không có số; nút có việc đang chờ là nút chính navy (hướng B tô nền vàng, giao
 diện mới dành vàng cho từ đích), nút còn lại là nút phụ. Figma đã sửa ở Hôm nay, Nhóm, Một nhóm và trang nền của Overlay 1, 6.
-Dữ liệu Figma cần mà API chưa có (thẻ nhóm "tiếp theo", "ôn gần nhất"; khối "Lần luyện gần nhất" ở Hôm nay): theo QR2. Hộp thoại có trong code
+Thẻ nhóm "tiếp theo", "ôn gần nhất" và khối "Lần luyện gần nhất" ở Hôm nay dùng API mới ở §10.5 (QR2), làm trong đợt này. Nút "Luyện lại từ
+sai →" của khối đó mở trang Từ hay sai (`/app/practice/weak`). Hộp thoại có trong code
 nhưng chưa có khung Figma, làm trong đợt này theo `Dialog` chung (GM15), quy tắc §3.3 và hộp gần nhất trong Figma (hộp xóa theo Xóa tài khoản):
 Tạo, Đổi tên, Xóa nhóm (`GroupDialogs.tsx`); Bỏ từ khỏi nhóm, Bỏ N từ khỏi việc học. Ảnh chụp các hộp này vào delivery record để chủ dự án xem.
 Màu nhóm theo §7.4. Link "Xem lịch sử" ở Hôm nay đã đổi thành "Mở lịch học" trong Figma; trước M6 link này mở trang lịch sử cũ.
@@ -570,8 +572,16 @@ theo cách ở M3: Báo lỗi câu này (`ReportDialog.tsx`), Phiên đang dở 
 Lịch sử → Báo lỗi của tôi") đổi theo QR1.
 
 **M6 — Lịch học.** API §10; hộp Lịch `102:3278` / `102:3948`, hộp Ngày `103:3820` / `103:4248`; nút lịch nổi trên mọi màn app (trừ overlay; trên
-điện thoại ẩn ở Từ tồn đọng, Chủ đề); bỏ trang Lịch sử luyện tập (§10.4); link "Mở lịch học" ở Hôm nay mở hộp Lịch. Tab "Báo lỗi của tôi" của trang
-cũ chuyển tới chỗ theo QR1 trong cùng đợt, để không lúc nào mất lối vào.
+điện thoại ẩn ở Từ tồn đọng, Chủ đề); bỏ trang Lịch sử luyện tập (§10.4); link "Mở lịch học" ở Hôm nay mở hộp Lịch. Nút lịch đọc chuỗi ngày từ
+`GET /v1/me/streak` (§10.5). Số liệu thêm của hộp Ngày theo §10.5.
+
+"Báo lỗi của tôi" (QR1) chuyển trong cùng đợt, để không lúc nào mất lối vào:
+- Trang `/app/settings/reports` (nhóm `(chrome)`, `Tab=Không`), dựng lại từ `MyReportsTab.tsx` hiện có, dùng `GET /v1/practice/reports` như hiện nay.
+- Lối vào: một dòng "Báo lỗi của tôi" trong Cài đặt (cạnh "Lịch sử giao dịch") và một mục cùng tên trong menu ảnh đại diện (component `181:316`).
+  Nếu M7 chưa làm lại Cài đặt thì thêm dòng vào trang Cài đặt cũ.
+- Câu sau khi gửi báo lỗi đổi thành "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi." (`App.practice.session.report.done`).
+- `/app/practice/history?tab=reports` chuyển tới `/app/settings/reports` (§10.4).
+- Figma: chưa có khung cho trang này, dòng trong Cài đặt và mục trong menu; vẽ trước khi code M6.
 
 **M7 — Cài đặt, tài khoản, gói học.**
 
@@ -588,8 +598,8 @@ cũ chuyển tới chỗ theo QR1 trong cùng đợt, để không lúc nào m�
 Hộp Hủy gói (`SubscriptionRows.tsx`, `SettingsPage.tsx`) chưa có khung Figma, làm theo cách ở M3.
 
 **M8 — Trang công khai và SEO** (trang `0:1`): Trang chủ `5:13` / `9:108`; Chính sách bảo mật `14:172` / `17:260`; Điều khoản sử dụng `15:190` /
-`17:355`; Nguồn dữ liệu `16:210` / `18:283`; 404 `16:317` / `18:358`. SEO §11. Bảng giá trang chủ theo QR3 (trang chủ hiện không ghi giá:
-`components/landing/Plans.tsx:31`). Font ảnh OG (§5.8). Chuyển phần còn lại của `components/` sang `site/`, bỏ import token cũ (§7.1), xóa `app-ui/`
+`17:355`; Nguồn dữ liệu `16:210` / `18:283`; 404 `16:317` / `18:358`. SEO §11. Bảng giá trang chủ đọc giá lúc build (QR3, §10.6; trang chủ hiện
+không ghi giá: `components/landing/Plans.tsx:31`). Font ảnh OG (§5.8). Chuyển phần còn lại của `components/` sang `site/`, bỏ import token cũ (§7.1), xóa `app-ui/`
 và `components/`.
 
 **M9 — Chế độ tối và rà soát.** Sửa phần tối theo mockup đã duyệt; xóa token cũ không dùng (§7.1); chạy toàn bộ kiểm thử §13; chụp mọi màn so với
@@ -692,8 +702,54 @@ của một người mọi nhóm không dùng hết index đầu. Thêm migratio
 
 `/app/practice/history` thành trang server chỉ chuyển hướng, giữ locale: có `?date=` thì sang `/{locale}/app/practice?ngay=<date>`; không có thì
 sang `/{locale}/app/practice?lich` (không giá trị) và web tự tính tháng theo `me.timezone`, vì server Worker chạy giờ UTC, lệch tháng với người học
-UTC+7 trong 7 giờ đầu tháng (review M4). `?tab=reports` chuyển tới chỗ của "Báo lỗi của tôi" theo QR1. `features/learner/practice/HistoryPage.tsx`
+UTC+7 trong 7 giờ đầu tháng (review M4). `?tab=reports` chuyển tới `/{locale}/app/settings/reports` (QR1). `features/learner/practice/HistoryPage.tsx`
 xóa (còn trong tag).
+
+### 10.5 API thêm theo QR2 (chủ dự án: "toàn bộ thêm API", 10/11/2026)
+
+| Endpoint | Module | Thêm gì | Đợt |
+|---|---|---|---|
+| `GET /v1/groups` | Learning | Mỗi nhóm thêm `next_lemma: string \| null` và `last_reviewed: { lemma: string \| null, at } \| null` | M3 |
+| `GET /v1/practice/sessions/last` (mới) | Practice | `{ id, group_id, local_date, last_answer_at, finished, questions, correct, wrong_count, wrong_lemmas }`; 204 khi chưa có phiên nào | M3 |
+| `GET /v1/me/calendar/days/{date}` | Learning (+ port Practice) | `counts.reviewed_known`, `counts.reviewed_again`, `counts.learned_groups`; `practice_sessions: [{ session_id, first_position, last_position, questions, correct }]` | M6 |
+| `GET /v1/me/streak` (mới) | Learning | `{ days, studied_today }`, dùng lại `streakAsOf` (`learning/learning.service.ts:61–62`) | M6 |
+
+**Định nghĩa:**
+
+| Trường | Định nghĩa |
+|---|---|
+| `next_lemma` | Lemma của thẻ đầu tiên mà hàng đợi `GET /v1/groups/:id/queue` trả lúc này (cùng thứ tự: ưu tiên → đến hạn → mới); `null` khi hàng đợi trống |
+| `last_reviewed` | Dòng `learning_log` `kind='review'` mới nhất có `group_id` của nhóm; `lemma` lấy từ từ đó, từ đã xóa thì `null`; nhóm chưa ôn lần nào thì `last_reviewed = null` |
+| `sessions/last` | Phiên `kind='practice'` có câu trả lời mới nhất (đã xong hay đang dở, `finished` nói rõ); `questions`, `correct` đếm câu đã chấm; `wrong_lemmas` tối đa 4 lemma khác nhau của câu sai, theo thứ tự trả lời; `group_id` `null` khi phiên không theo nhóm. Tên nhóm web lấy từ `GET /v1/groups` (Practice không đọc bảng nhóm) |
+| `reviewed_known`, `reviewed_again` | Số lượt ôn trong ngày theo `rating` (`known` / `again`); tổng hai số bằng `reviewed`. Bước code facts kiểm mọi dòng `review` đều có `rating`; có dòng `null` thì không đếm vào hai số này và ghi rulings |
+| `learned_groups` | Số `group_id` khác nhau (không tính `null`) trong các dòng học mới của ngày |
+| `practice_sessions` | Mỗi phiên có câu trả lời trong ngày một mục; `first_position`, `last_position` là vị trí câu nhỏ nhất, lớn nhất được trả lời trong ngày đó; `questions`, `correct` chỉ đếm câu của ngày đó. Practice cung cấp qua port ở §10.2 |
+| `streak` | Theo DC8 đợt C: số ngày học liên tiếp tính tới hôm nay (hoặc hôm qua nếu hôm nay chưa học), `studied_today` cho biết hôm nay đã học chưa |
+
+| Khi | Thì |
+|---|---|
+| Nhóm trống hoặc hôm nay không còn thẻ nào | `next_lemma = null`; thẻ nhóm không hiện dòng "tiếp theo" |
+| 50 nhóm | `GET /v1/groups` tính hai trường bằng một truy vấn cho mọi nhóm, không gọi hàng đợi từng nhóm; test với 50 nhóm |
+| Lan chưa luyện phiên nào | `sessions/last` trả 204; Hôm nay không hiện khối "Lần luyện gần nhất" |
+| Phiên gần nhất không có câu sai | `wrong_lemmas = []`; khối ẩn nút "Luyện lại từ sai" |
+| Lan vừa học xong lượt đầu trong ngày | Câu trả lời của API đã kèm chuỗi ngày (như hiện nay); web cập nhật bộ đệm của `GET /v1/me/streak`, không gọi lại |
+| Lan đổi múi giờ | `streak` theo `local_date` lúc ghi, như `streakAsOf` hiện nay |
+
+### 10.6 Giá công khai cho trang chủ (QR3)
+
+- `GET /v1/public/prices` (mới, `@Public()`, module Settings): `{ currency: 'VND', prices: { '1': number, '3': number, '12': number } }`, đọc cùng cài
+  đặt với `GET /v1/me/app-config` (`settings/app-config.view.ts:13–16,42`). Hiện giá chỉ có ở endpoint cần đăng nhập đó.
+- Trang chủ đọc giá **lúc build** (`site/landing/prices.ts`, đợi tối đa 5 giây), nên vẫn dựng sẵn. Bảng giá và JSON-LD dùng cùng số.
+- Build không đọc được giá: khi biến `PRICES_REQUIRED=1` (đặt trong `deploy-web.yml`, tức lúc deploy thật) thì build fail; khi không có biến (CI của
+  PR, máy dev) thì dùng `site/landing/prices.fallback.ts` và in cảnh báo.
+- Đổi giá trong admin thì phải deploy lại web để trang chủ đổi theo. Ghi vào `deploy-checklist.md`. Trang Gói học và lúc thanh toán vẫn đọc giá
+  thật từ API như hiện nay.
+
+| Khi | Thì |
+|---|---|
+| Admin đổi giá 1 tháng từ 79.000 ₫ thành 89.000 ₫, chưa deploy lại | Trang chủ còn ghi 79.000 ₫; trang Gói học và thanh toán ghi 89.000 ₫ |
+| Deploy thật mà API không trả lời | Build fail, bản đang chạy giữ nguyên |
+| PR chạy CI không có API | Build dùng giá dự phòng, có cảnh báo; test pin giá dự phòng khớp `settings.definitions.ts` |
 
 ## 11. SEO và metadata (M8)
 
@@ -710,7 +766,7 @@ xóa (còn trong tag).
 | hreflang trang pháp lý | `/en/privacy`, `/en/terms`, `/en/sources` vẫn được phục vụ (chỉ trang chủ `/en` chuyển hướng, `lib/landing-locale.ts:7–11`). `alternates` của trang đè hết `alternates` của layout, nên mỗi trang tự khai canonical và hreflang `vi`, `en` của chính nó |
 | Ảnh OG từng trang | `opengraph-image.tsx` trong thư mục `privacy/`, `terms/`, `sources/`, dựng bằng font mới |
 | Sitemap | Chỉ liệt kê trang được index (đưa trang `noindex` vào sitemap là tự mâu thuẫn). Lúc launch thêm `privacy`; `terms`, `sources` chỉ vào khi bỏ `noindex` của chúng (việc của launch, ghi ở `deploy-checklist.md`). `lastModified` lấy từ ngày hiệu lực văn bản. Một test ghim danh sách sitemap theo `NEXT_PUBLIC_INDEXABLE` (mẫu ở `lib/landing-locale.test.ts`) |
-| JSON-LD | `SoftwareApplication.offers` đang ghi `price: '0'`, `priceCurrency: 'USD'` (`components/seo/JsonLd.tsx`, chuyển sang `site/seo/`): đổi sang `VND`; giá các kỳ Pro theo nguồn giá chốt ở QR3 (nếu trang chủ không ghi giá thì JSON-LD chỉ ghi gói Miễn phí); thêm `Organization` (tên, url, logo). Rich result SoftwareApplication của Google bắt buộc có `aggregateRating` hoặc `review`, Wordmet không có và không bịa: mục tiêu là markup hợp lệ (Schema Markup Validator), không phải rich result |
+| JSON-LD | `SoftwareApplication.offers` đang ghi `price: '0'`, `priceCurrency: 'USD'` (`components/seo/JsonLd.tsx`, chuyển sang `site/seo/`): đổi sang `VND`; giá các kỳ Pro lấy cùng số đọc lúc build như bảng giá (§10.6); thêm `Organization` (tên, url, logo). Rich result SoftwareApplication của Google bắt buộc có `aggregateRating` hoặc `review`, Wordmet không có và không bịa: mục tiêu là markup hợp lệ (Schema Markup Validator), không phải rich result |
 | Trang đăng nhập, đăng ký | Vẫn `noindex`, có title và description để link chia sẻ hiện đúng |
 | Màu trình duyệt | `viewport.themeColor` và `manifest.ts:9–10` theo màu nền (`#f6f7fa` sáng, `#0f1220` tối), vì thanh trên mới là kính sáng trên nền, không phải dải navy |
 
@@ -737,7 +793,7 @@ xóa (còn trong tag).
 | Render mode | `pnpm assert:render-mode` (đang chạy trong CI, `ci.yml:108`) | Trang chủ vẫn dựng sẵn |
 | Admin | `pnpm lint`, `typecheck`, `test`, `build` trong `apps/admin` | Đợt này sửa `packages/design-tokens`; admin không được đổi |
 | e2e web | `pnpm test:e2e` (Playwright, `apps/web/e2e`; chạy `cf:build` của OpenNext, trên Windows qua `pnpm cf:docker`) | Sửa journey trong cùng PR với màn; thêm journey mở lịch và xem một ngày ở M6 |
-| Smoke API lịch | `pnpm smoke:giao-dien-moi` trong `apps/api` (mới; API và worker thật, DB và `JOB_QUEUE_PREFIX` riêng; giữ giới hạn 5 lần đăng ký mỗi IP mỗi giờ) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày khớp tuyệt đối (chỉ kiểm được ngày hôm nay, §10.3) |
+| Smoke API mới | `pnpm smoke:giao-dien-moi` trong `apps/api` (mới; API và worker thật, DB và `JOB_QUEUE_PREFIX` riêng; giữ giới hạn 5 lần đăng ký mỗi IP mỗi giờ) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày, `next_lemma`, `last_reviewed`, `sessions/last`, `streak`, giá công khai khớp tuyệt đối (chỉ kiểm được ngày hôm nay, §10.3) |
 | Ảnh so với Figma | `pnpm shots` | Mọi khung §9, máy tính 1440 và điện thoại 390; ảnh ghi vào delivery record |
 | Truy cập | `e2e/a11y.spec.ts` (trang công khai), `e2e/support/axe.ts` trong từng journey app | Mỗi journey mới gọi axe trên màn của nó |
 | Khóa chữ không dùng | script tìm khóa `messages/vi.json` không còn được gọi trong `src/` (khóa dùng động ghi vào danh sách cho phép) | §12; LP3 hiện chỉ kiểm hai file cùng khóa |

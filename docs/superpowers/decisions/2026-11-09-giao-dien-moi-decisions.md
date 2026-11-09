@@ -112,8 +112,46 @@ Claude đề xuất chín đợt như bảng tóm tắt; chủ dự án "ok". Kh
 
 Review: [`../reviews/2026-11-09-giao-dien-moi-design-review.md`](../reviews/2026-11-09-giao-dien-moi-design-review.md). Chủ dự án yêu cầu xem
 mockup các cách trước khi chọn: [`../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html`](../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html)
-(artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB). QR5 (màu nhóm trùng) Claude thêm khi sửa design theo review M6. Ghi bảng phương án
-ở đây khi chủ dự án chốt.
+(artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB). QR5 (màu nhóm trùng) Claude thêm khi sửa design theo review M6.
+
+### QR1. "Báo lỗi của tôi" (chủ dự án chốt 10/11/2026)
+
+| Phương án | Trade-off |
+|---|---|
+| A. Link ở chân hộp Lịch (như Figma) | Đúng Figma; phải mở lịch mới thấy |
+| ✅ B. Một dòng trong Cài đặt | Cùng chỗ với Lịch sử giao dịch; xa nơi báo lỗi |
+| ✅ C. Một mục trong menu ảnh đại diện | Mở được từ mọi màn có thanh trên; menu dài thêm |
+| D. Link trên trang Luyện tập | Gần nơi báo lỗi; khung Luyện tập thêm một dòng |
+
+Chủ dự án chọn B và C. Claude tự quyết khi ghi design: trang đích `/app/settings/reports` (cạnh `/app/settings/transactions`), làm ở M6 cùng lúc bỏ
+trang Lịch sử; link ở chân hộp Lịch trong Figma bỏ.
+
+### QR2. Dữ liệu Figma cần mà API chưa có (chủ dự án chốt 10/11/2026)
+
+Bốn chỗ, mỗi chỗ ba cách: thêm API / web tự tính / bỏ. ✅ Chủ dự án: "toàn bộ thêm API".
+
+Claude tự quyết khi ghi design: chuỗi ngày qua endpoint nhỏ mới `GET /v1/me/streak` (nút lịch hiện trên mọi màn, không thể chờ API lịch tháng);
+nút "Luyện lại từ sai" mở trang Từ hay sai có sẵn thay vì thêm cách mở phiên mới; `sessions/last` chỉ trả `group_id`, tên nhóm web lấy từ
+`GET /v1/groups` để Practice không đọc bảng của Learning.
+
+### QR3. Giá trên trang chủ (chủ dự án chốt 10/11/2026)
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ A. Đọc giá lúc build | Trang vẫn tĩnh, Google đọc được giá; đổi giá phải deploy lại web |
+| B. Bảng giá tự gọi API trên trình duyệt | Luôn đúng giá; cần endpoint công khai, mở CSP; giá nháy lúc đầu; Google không thấy giá |
+| C. Lưu đệm có làm mới (ISR, R2) | Tự đúng sau tối đa 1 giờ; thêm hạ tầng |
+| D. Không ghi giá | Không lệch giá; khách chưa đăng ký không biết giá |
+
+Claude tự quyết khi ghi design: thêm `GET /v1/public/prices`; deploy thật (`PRICES_REQUIRED=1`) mà không đọc được giá thì build fail, CI của PR dùng
+giá dự phòng.
+
+### QR4. Quảng cáo tải lại trang (chưa chốt)
+
+Vòng 1: chủ dự án hỏi lại vì nhớ quảng cáo hiện "khi chuyển từ section này qua section khác, ví dụ Hôm nay → Nhóm". Claude giải thích cách
+đang làm theo DB13, DB38 (vignette hiện khi bấm link trên trang có mã, tức lúc rời Nhóm, Tra từ). Chờ chủ dự án chọn lại.
+
+### QR5. Màu nhóm trùng (chưa chốt)
 
 ## GM8–GM10, GM12. Cấu trúc FE và SEO
 
