@@ -21,6 +21,7 @@ import { QuestionBuilder } from '../questions/question-builder.service.js';
 import { chooseType } from '../questions/question-types.js';
 import { PracticeStats } from '../weak/practice-stats.js';
 import { defaultSort, nextRoundOrder, sortWords, type SortKey, type SortableWord, type Source } from './order.js';
+import { ruleTypesFor } from './session-limits.js';
 import { itemView, sessionView, type ItemView, type ItemWithQuestion, type SessionView } from './session-views.js';
 
 const transactionOptions = { timeout: 15_000, maxWait: 10_000 };
@@ -554,13 +555,9 @@ export class SessionsService {
     return (session.types as QuestionType[]).filter((type) => isAiType(type, session.clozeSource as ClozeSource | null));
   }
 
-  /**
-   * The chosen non-AI types, including own-sentence cloze on every plan (đợt cải thiện A C3, changes Bước 7 D11). Under 'own_then_ai'
-   * the cloze is in both lists: AI for a word with no saved sentence, a rule question for a word that has one.
-   */
+  /** The session's rule types (`ruleTypesFor`). */
   private ruleTypesOf(session: PracticeSession): QuestionType[] {
-    const source = session.clozeSource as ClozeSource | null;
-    return (session.types as QuestionType[]).filter((type) => !isAiType(type, source) || (type === 'cloze' && source === 'own_then_ai'));
+    return ruleTypesFor(session.types as QuestionType[], session.clozeSource as ClozeSource | null);
   }
 
   /** r of design §6.3 (R9): planned − asked AI items (void included) − requests of the session not yet asked. */
