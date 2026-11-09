@@ -1,7 +1,8 @@
 'use client';
 
 import { Lock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 
 /** The small "Pro" label on a feature the plan does not include (restyled from app-ui/Locked.tsx). */
 export function ProBadge() {
@@ -11,5 +12,19 @@ export function ProBadge() {
       <Lock aria-hidden className="size-3" />
       {t('proBadge')}
     </span>
+  );
+}
+
+/** D6 line shown when a locked control is pressed: no price, no buy button, only the way to Plans. */
+export function LockedFeature() {
+  const t = useTranslations('App.ui');
+  const locale = useLocale();
+  return (
+    <p role="status" className="font-wm-sans text-wm-caption text-wm-muted">
+      {t('lockedLine')}{' '}
+      <Link href={`/${locale}/app/plans`} className="font-semibold text-wm-accent underline underline-offset-2">
+        {t('seePlans')}
+      </Link>
+    </p>
   );
 }
