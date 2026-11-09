@@ -8,7 +8,7 @@ import type { PracticeSession, Prisma, PrismaClient } from '../../generated/pris
 import { LearningService, type PracticeItem, type PracticeScope } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
 import { contentKey } from '../ai/ai-inputs.js';
-import { aiBudget, aiChanceInLaterRound } from '../ai/ai-plan.js';
+import { aiBudget, aiChanceInLaterRound, evenWantsAi } from '../ai/ai-plan.js';
 import { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
 import { AiRequestsRepository, type AiRequestRow } from '../ai/ai-requests.repository.js';
 import { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
@@ -561,7 +561,7 @@ export class SessionsService {
     for (const { senseId, round } of plan) {
       const previous = items.filter((item) => item.senseId === senseId).at(-1);
       if (aiTypes.length > 0 && session.aiStopped === null && this.wantsAi(session, senseId, round, budget,
-        session.targetCount - answered, ruleTypes.length)) {
+        session.targetCount - answered, ruleTypes.length, answered)) {
         const slot = await this.aiSlot(tx, learner, session, items, senseId, round, aiTypes, retryAi,
           (previous?.question.type as QuestionType | undefined) ?? null, build);
         if (slot) return slot.state === 'question' ? { ...slot, notice } : withNotice(slot, notice);
@@ -601,11 +601,18 @@ export class SessionsService {
       open.filter((request) => request.questionId === null || !asked.has(request.questionId)).length);
   }
 
-  /** Round 1: the words marked at start; round ≥ 2: with chance r ÷ q, or always while r > 0 in an AI-only session (design §6.3). */
-  private wantsAi(session: PracticeSession, senseId: string, round: number, budget: number, left: number, ruleCount: number): boolean {
+  /**
+   * Round 1: the words marked at start; round ≥ 2: always while r > 0 in an AI-only session, else by the session's stored placement
+   * (practice AI count §5): even spreads the rest over the session's positions; random and a session started without ai_count
+   * (placement null) keep the chance r ÷ q (design §6.3). Read from the row, so an admin change after the start does not apply.
+   */
+  private wantsAi(session: PracticeSession, senseId: string, round: number, budget: number, left: number, ruleCount: number,
+    answered: number): boolean {
     if (round === 1) return session.aiSenseIds.includes(senseId);
     if (budget <= 0) return false;
-    return ruleCount === 0 || Math.random() < aiChanceInLaterRound(budget, left);
+    if (ruleCount === 0) return true;
+    if (session.aiPlacement === 'even') return evenWantsAi(session.aiPlanned, budget, answered, session.targetCount);
+    return Math.random() < aiChanceInLaterRound(budget, left);
   }
 
   /**
