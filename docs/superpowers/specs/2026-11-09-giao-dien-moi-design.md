@@ -189,8 +189,8 @@ app/[locale]/app/
 ├─ (auth)/layout.app.tsx          AuthGate (giữ ngoại lệ B8-2: người đã đăng nhập vẫn mở được quên, đặt lại mật khẩu)
 │   ├─ (split)/layout.app.tsx     hai cột, panel navy: login/  register/
 │   └─ (card)/layout.app.tsx      card giữa: verify-email/  forgot-password/  reset-password/  google/complete/  account-deleted/
-└─ (member)/layout.app.tsx        RequireSession, AddWordProvider, trạng thái hộp Lịch/Ngày, HouseAd, AdsenseLoader
-   ├─ (chrome)/layout.app.tsx     thanh trên, thanh tab dưới (điện thoại), nút lịch nổi; tab đang sáng (hoặc Không) theo useSelectedLayoutSegment
+└─ (member)/layout.app.tsx        RequireSession, trạng thái hộp Lịch/Ngày, HouseAd, AdsenseLoader
+   ├─ (chrome)/layout.app.tsx     AddWordProvider, thanh trên, thanh tab dưới (điện thoại), nút lịch nổi; tab đang sáng (hoặc Không) theo pathname
    │   ├─ page.app.tsx            Hôm nay
    │   ├─ groups/  lookup/  practice/  practice/weak/  practice/history/ (chỉ chuyển hướng, §10.4)
    │   ├─ group/  group/backlog/  topic/  word/
@@ -209,7 +209,12 @@ app/[locale]/app/
 - `(auth)` tách hai nhóm con vì layout server không biết đường dẫn đang mở; khung hai cột chỉ cho đăng nhập, đăng ký (Figma `35:308`, `35:405`).
 - Đuôi `page.app.tsx`, `layout.app.tsx` giữ theo D21 (`next.config.ts`, `pageExtensions`).
 - Màn có cột phụ (từ 1280 px) khai báo cột phụ trong chính màn đó, không qua layout.
-- `AddWordProvider` lên `(member)/layout` để hộp Thêm từ mở được từ mọi màn có thanh trên.
+- `AddWordProvider` lên `(chrome)/layout`, không lên `(member)`: provider bật phím `N` toàn trang (`add-word-context.tsx:23–33`), nên đặt ở
+  `(member)` sẽ bật `N` cả trong phiên luyện và trang onboarding (hôm nay không có).
+- Bỏ `<AppShell>` ở 17 chỗ gọi (code facts web §9.3): `back` (10 chỗ) thành `BackLink` trong nội dung trang, `aside` (6 chỗ) thành
+  `PageColumns` (cột phụ từ 1280 px); `PlansPage`, `OrderReturnPage` và các màn phiên bỏ `<main id="main">` riêng (layout đã có).
+- `SearchStrip` chỉ xóa chữ khi tham số `q` hoặc `level` đổi; hiện nó xóa khi bất kỳ tham số nào đổi (`SearchStrip.tsx:40–46`), nên `?id=`,
+  `?lich=`, `?ngay=` sẽ xóa chữ đang gõ.
 
 | Khi | Thì |
 |---|---|
@@ -223,8 +228,9 @@ app/[locale]/app/
 - `loading.app.tsx` đặt theo từng route có bố cục riêng (Hôm nay, Nhóm, Một nhóm, Tra từ, trang một từ, Luyện tập), khung xương theo khung Figma
   của route đó; các route còn lại dùng một khung xương trung tính (tiêu đề và ba khối). `loading` chỉ hiện khi chuyển trang mềm. Next nhận đuôi
   `.app.tsx` cho mọi file đặc biệt, không chỉ page, layout (review M5, đã đọc app loader của Next).
-- Lần tải cứng (mở app, tải lại): `RequireSession` hiện khung xương có hình khung app (thanh trên, tab dưới) thay cho vòng chờ toàn màn
-  (`FullScreenSpinner`, `app-shell/RequireSession.tsx:54–55`).
+- Lần tải cứng (mở app, tải lại): `RequireSession` hiện khung xương thay cho vòng chờ toàn màn (`FullScreenSpinner`,
+  `app-shell/RequireSession.tsx:54–55`). `RequireSession` nằm trên mọi nhóm con, nên khung xương chọn hình theo `usePathname()`: trang của
+  `(chrome)` có thanh trên và tab dưới; phiên và onboarding thì không. Vẫn giữ `role="status"` và chữ "Đang tải…" (test `RequireSession.test.tsx:57–63`).
 - Mỗi nhóm route có `error.app.tsx`: chữ "chuyện gì xảy ra + việc cần làm", nút "Thử lại" gọi `retry()` (cách Next 16.3+ khuyên dùng; `reset()`
   chỉ khi không muốn tải lại dữ liệu). Lỗi chỉ thay phần giữa, khung còn.
 - Lỗi dữ liệu trong màn (API trả Problem Details) giữ cách hiện nay (`app-shell/api/use-error-message.ts`).
@@ -265,11 +271,13 @@ app/[locale]/app/
 ### 5.8 Font và chữ dịch
 
 - `next/font/google` cho ba font, đều có bộ `vietnamese` (đã kiểm `font-data.json` của Next 16.4.3): `Noto_Sans` (biến thiên `wght`),
-  `Bricolage_Grotesque` (biến thiên `opsz`, `wdth`, `wght`), `JetBrains_Mono` (chỉ tải ở layout `/app`, xem dưới). Biến CSS `--font-sans`, `--font-display`, `--font-mono`.
-  Thay `Lexend` ở `app/[locale]/layout.tsx:12`.
+  `Bricolage_Grotesque` (biến thiên `opsz`, `wdth`, `wght`), `JetBrains_Mono` (`preload: false`). Cả ba khai ở root layout
+  (`app/[locale]/layout.tsx`, thay `Lexend` dòng 12), biến `--font-noto-sans`, `--font-bricolage`, `--font-jetbrains-mono` gắn trên `<html>`. Token
+  Tailwind khai bằng `@theme inline` tên `--font-wm-sans`, `--font-wm-display`, `--font-wm-mono`: không trùng `--font-sans` của `theme.css` (admin
+  dùng) và `--font-mono` mặc định của Tailwind (code facts web S5).
 - `next/font` mặc định chỉ tải trục `wght`. Không khai `axes` cho Bricolage (`opsz`, `wdth`): khảo sát GM18 đo file trục `wght` khoảng 41 KB, thêm hai
-  trục thì khoảng 131 KB. JetBrains Mono dùng cho nhãn trên gần như mọi màn app, nên `preload: true` ở layout `/app` để chữ không nhảy khi font tới;
-  trang công khai không tải font này.
+  trục thì khoảng 131 KB. JetBrains Mono `preload: false`: tải sớm ở root layout thì trang công khai cũng tải; chữ nhãn có thể đổi font sau khi
+  tải xong (`display: swap`, `adjustFontFallback` giảm nhảy chữ).
 - Ảnh OG đang nhúng font Lexend: `scripts/gen-og-fonts.mjs` đọc cứng `assets/fonts/Lexend-*.ttf`, `og-fonts.test.ts` kiểm `lexendRegular`,
   `lexendExtraBold`, `opengraph-image.tsx` dùng `fontFamily: 'Lexend'`. `next/og` cần file TTF tĩnh. Thêm TTF tĩnh Noto Sans (có tiếng Việt) và
   Bricolage ExtraBold vào `assets/fonts/` kèm giấy phép OFL, sửa script và test, ghi cỡ Worker trước và sau (file nhúng hiện 274 KB; mục Worker của
@@ -308,8 +316,13 @@ Dời file trong đợt này:
 | `components/landing/*`, `components/sections/*`, `components/layout/*`, `components/seo/*`, `components/interactive/*` | `site/landing/`, `site/legal/`, `site/layout/`, `site/seo/`, `site/interactive/` | M8 |
 | `app-ui/*` còn lại, `components/ui/*` | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M8 |
 
-Một test lint có file mẫu cố ý vi phạm (ví dụ `ui/` import `@/features/...`) chạy `eslint` và kiểm có lỗi, để luật có "răng". `app-ui/`,
-`components/` xóa khi không còn file nào dùng (cuối M8); bản cũ nằm trong tag.
+Ngoại lệ (code facts web S10, S11): luật của `ui/` bỏ qua file test (`src/ui/**/*.test.{ts,tsx}`), vì `renderApp` (`app-ui/test-utils.tsx`)
+import `@/app-shell/*`; `TurnstileWidget` không vào `ui/` (import `@/app-shell/config`), chuyển sang `features/learner/auth/` ở M2;
+`app-ui/speech-test-support.ts` dời cùng `lib/speech/`.
+
+Một test lint dùng `ESLint.lintText` với đường dẫn ảo (ví dụ `src/ui/Probe.tsx` import `@/features/...`) và kiểm có lỗi, để luật có "răng";
+không ghi file mẫu lên đĩa (sẽ làm `pnpm lint` của CI fail); timeout riêng 30 giây (lần chạy đầu khoảng 3,2 giây). `app-ui/`, `components/` xóa khi
+không còn file nào dùng (cuối M8); bản cũ nằm trong tag.
 
 ## 7. Token, theme, font, màu nhóm
 
@@ -327,8 +340,12 @@ Chuyển tiếp trong lúc màn cũ còn chạy (review I4). Token cũ và mới
 - M8: khi `grep` không còn class cũ trong `apps/web/src`, bỏ import bộ cũ khỏi web. Một test kiểm không còn class của bộ cũ trong `apps/web/src`.
 - Không sửa, không xóa gì trong `theme.css`: admin vẫn import (`apps/admin/src/styles/globals.css:2`) và có test riêng đọc nó
   (`apps/admin/src/styles/tokens.test.ts:8`). `dark.css`, `island.css`, `dark-pastel.css` chỉ xóa ở M9 sau khi kiểm admin không import.
-- Màu chỉ khai báo trong package, như luật hiện nay (README của package; `apps/web/src/styles/tokens.test.ts` kiểm tương phản LP12 và việc app
-  không tự khai báo màu UBC1). Hai test này đọc thêm `web.css`, `web-dark.css`; README của package thêm mục bộ `wm-`.
+- Màu chỉ khai báo trong package, như luật hiện nay (README của package; UBC1). Kích thước trong token `wm-` viết bằng `rem`, như LP31 bắt với
+  `theme.css` (10 px = `0.625rem`).
+- Test mới cho `web.css`, `web-dark.css` (LP12 hiện chỉ đọc `theme.css`, nên tự nó không đỏ): cặp tương phản sáng và tối, hai file có cùng bộ
+  khóa `--color-wm-*`, không có `px` trong `--radius-wm-*`, `--shadow-wm-*`. `text-classes.test.ts` thêm tên `--color-wm-*`, `--text-wm-*` vào danh
+  sách cho phép; `lib/cn.ts` thêm các cỡ chữ `wm-` vào nhóm `font-size`, không thì `tailwind-merge` bỏ mất cỡ chữ khi đi cùng màu chữ (code facts
+  web S6, S7, S13). README của package thêm mục bộ `wm-`.
 
 ### 7.2 Giá trị từ Figma (đọc 09/11/2026)
 
@@ -372,8 +389,18 @@ dùng effect style `Shadow/Soft` của biến thể `Nút / Kiểu=Phụ` (`3:8`
 ### 7.3 Màu ngăn
 
 Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, đồng, bạc, vàng, lục bảo, ánh kim), lấy từ component "Chip ngăn" (`54:656`)
-ở trang Hệ thống. Component này dùng màu đặt tay, không gắn biến: M1 đọc mã màu từng biến thể bằng Plugin API rồi khai báo
-`--color-wm-stage-0` … `--color-wm-stage-5` (sáng, tối) trong `web.css`, `web-dark.css`. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
+ở trang Hệ thống. Component này dùng màu đặt tay, không gắn biến; mã màu đọc bằng Plugin API ngày 10/11/2026:
+
+| Ngăn | Nền | Chấm | Chữ |
+|---|---|---|---|
+| Mới (0) | `#eef0f4` | `#9aa3b1` | `#525a78` |
+| 1 ngày | `#f7e8dc` | `#c07a45` | `#7c4a28` |
+| 3 ngày | `#edf0f4` | `#98a2b0` | `#4d5664` |
+| 7 ngày | `#fbf0c8` | `#d4a72c` | `#6f5208` |
+| 14 ngày | `#dcf3ea` | `#1f9d75` | `#0c654c` |
+| 30 ngày | gradient `#ffe0f2` → `#fff2d1` (35%) → `#dbffeb` (70%) → `#d9f0ff` | gradient góc `#ff8ad9` → `#ffd46b` → `#8cffb5` → `#7ad6ff` | `#3b2f6b` |
+
+Chữ trên nền đều ≥ 5,9:1. Khai báo `--color-wm-stage-<n>-bg|dot|ink` trong `web.css`; bản tối chốt cùng mockup tối (GM4), trước đó dùng giá trị sáng. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
 (`app-redesign-plan.md`, "Ý tưởng chung").
 
 ### 7.4 Màu nhóm (GM5)
@@ -388,7 +415,8 @@ nhận ra nhóm ở băng chuyền, bảng chọn nhóm, Hôm nay; thứ tự nh
 - **Token:** `--color-wm-group-0` … `--color-wm-group-6`, `--color-wm-group-empty` (viền, nền nhạt) và `--color-wm-group-0-ink` … (chữ) trong
   `web.css`, `web-dark.css`; component dùng token theo chỉ số, không viết hex trong `lib/` hay `style=` (luật UBC1 và `check-tailwind-raw.mjs`).
 - **Màu cho chữ** (số thẻ chờ "24"): tương phản trên trắng đo được `#d99a17` 2,45, `#e5603f` 3,46, `#149384` 3,79, `#4a9637` 3,68, `#2a86d1` 3,87,
-  `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Bản `-ink` của mỗi màu chỉnh đậm hơn cho tới khi ≥ 3:1 (chữ ≥ 24 px) và thêm vào kiểm LP12.
+  `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Chỉ hổ phách dưới 3:1, nên `--color-wm-group-3-ink` = `#bb8414` (3,27:1); sáu màu còn lại dùng
+  chính nó làm `-ink`. Kiểm ≥ 3:1 (chữ ≥ 24 px) trong test token.
 - Bản Dark của bảy màu chốt cùng mockup tối (GM4); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
 - **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Chủ dự án giữ cách theo ID (QR5).
 
@@ -440,12 +468,14 @@ Mỗi component có test hành vi (theo role và chữ hiển thị) ở `ui/*.t
 
 ### 8.1 Nguồn và token
 
-Mọi số ở [`motion-va-chuyen-canh.md`](../../mockups/2026-11-05-redesign-concepts/motion-va-chuyen-canh.md) §1–§6, §8. Token thêm vào
-`web.css`: đường cong chính `--ease-out-strong` `cubic-bezier(0.23, 1, 0.32, 1)` (đã có tên này trong `globals.css`), lò xo `--ease-spring`,
-mức mờ `--blur-sm` 6px, `--blur-md` 12px, `--blur-lg` 18px, thời lượng ra 150–170ms và vào 300–340ms. Component dùng token, không viết số rời.
+Mọi số ở [`motion-va-chuyen-canh.md`](../../mockups/2026-11-05-redesign-concepts/motion-va-chuyen-canh.md) §1–§6, §8. Dùng lại hai đường
+cong đã có cùng giá trị: `--ease-out-strong` `cubic-bezier(0.23, 1, 0.32, 1)` (`globals.css:155`) và `--ease-spring` (`theme.css:78`). Token mới
+trong `web.css`: mức mờ `--blur-wm-sm` 6px, `--blur-wm-md` 12px, `--blur-wm-lg` 18px (không đè `--blur-sm/md/lg` mặc định của Tailwind), thời lượng
+`--transition-duration-wm-out` 160ms, `--transition-duration-wm-in` 320ms. Mức mờ trên điện thoại (dưới) là rule `@media` riêng ngoài khối `@theme`,
+vì `@theme` chỉ chứa biến và `@keyframes`. Component dùng token, không viết số rời.
 
 Điều kiện từ khảo sát (chủ dự án đồng ý 09/11/2026):
-- Dưới 768 px, `--blur-lg` bằng 12px: mức mờ khi chuyển cảnh trên điện thoại tối đa 12px.
+- Dưới 768 px, `--blur-wm-lg` bằng 12px: mức mờ khi chuyển cảnh trên điện thoại tối đa 12px.
 - Hộp thoại và tấm trượt đóng trong 150ms, đường cong tăng tốc (GM15).
 - Trước khi gộp vào `dev`: đo một phiên Học 20 thẻ trên Android tầm thấp và Safari iOS (DevTools Performance, CPU chậm 4–6 lần), ghi số khung
   hình vào delivery record.
@@ -496,7 +526,9 @@ Mỗi đợt một hoặc vài PR vào `refactor/giao-dien-moi`. ID là khung Fi
 
 **M1 — Nền.** Token và font (§7, §5.8); `ui/` (§7.5); khung app trong layout (§5.4) với `loading`/`error` (§5.5); nền lưới chấm; luật phụ thuộc
 (§6), dời file phát âm sang `lib/speech/`. Các màn cũ chạy tạm trong khung mới (token cũ còn import, §7.1). Sửa các tài liệu nguồn theo bảng
-chỗ lệch ở §3.1. Test đỏ ngay vì đổi font, màu và sửa trong cùng PR: `e2e/chrome.spec.ts:4–13` (ghim H1 là Lexend), LP12 trong `tokens.test.ts`.
+chỗ lệch ở §3.1. Bỏ `<AppShell>` ở 17 chỗ gọi (§5.4); `renderApp` thêm tùy chọn bọc khung app cho test màn cần `<main>`, nút + nổi hay hộp
+Thêm từ (`group-list.test.tsx:56–57`, `group-page.test.tsx:60,69,300,307,319`). Test đỏ vì đổi font và sửa trong cùng PR: `e2e/chrome.spec.ts:4–15`
+(ghim H1 là Lexend). Font ảnh OG đổi ở M8 cùng trang công khai.
 Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả lời sai, hộp Thêm từ, Đăng nhập) bằng HTML từ biến Dark của Figma, gửi chủ dự
 án duyệt (GM4); phần tối sửa ở M9.
 
@@ -611,30 +643,41 @@ Figma; mở PR cuối vào `dev`.
 
 ### 10.1 Dữ liệu sẵn có
 
-- `learning_log`: mỗi lượt học, ôn, thêm, bỏ một từ; có `kind`, `level_before`, `level_after`, `rating`, `origin`, `local_date` theo múi giờ của
-  người học lúc ghi (`apps/api/prisma/models/learning.prisma:50–79`). Không có khóa ngoại tới từ: xóa từ vẫn giữ log (D33).
+- `learning_log`: mỗi lượt học, ôn, thêm, bỏ, học lại một từ; có `kind`, `answer`, `level_before`, `level_after`, `rating`, `origin`, `local_date`
+  theo múi giờ của người học lúc ghi (`apps/api/prisma/models/learning.prisma:50–79`). Code facts đầy đủ:
+  `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-api.md`. Bỏ một từ khỏi việc học giữ log (D33), nhưng **xóa từ riêng xóa luôn log
+  của từ đó** (`quick-add.service.ts:95`); `learning_activity_days` không bị xóa.
 - `learning_activity_days`: một dòng mỗi người mỗi ngày có hoạt động, `studied` = có học thật (`learning.prisma:81–91`).
 - `GET /v1/practice/history?date=YYYY-MM-DD` lọc **câu trả lời** theo `local_date`, chỉ của phiên `kind='practice'` (phiên Ôn không vào, DC30),
   có phân trang (`practice/history/history.controller.ts:8–35`, `history.service.ts:102–104`). `practice_sessions` không có `local_date`; chỉ
   `practice_session_items.local_date` có, và đã có index `(user_id, local_date)` (`practice.prisma:92,111`).
-- `learning_log.kind` chỉ có `review`, `item_added`, `item_removed`; `origin` là `null` (lật thẻ ở Học), `'practice'` (nút "Cần ôn tập / Đã biết"
-  trong phiên luyện, `group_id` null), `'recall'` (câu cuối của phiên Ôn) (`learning.prisma:58–72`).
+- `learning_log.kind` có `review`, `item_added`, `item_removed`, `relearn`; `rating` chỉ là `'Good'` hoặc `'Again'` (CHECK ở
+  `20261017210000_learning/migration.sql:85,87`; `answer` là `known` / `review`); `origin` là `null` (lật thẻ ở Học), `'practice'` (nút "Cần ôn tập /
+  Đã biết" trong phiên luyện, `group_id` null), `'recall'` (câu cuối của phiên Ôn). Mọi dòng `review` hiện có đều có `rating`.
+- `practice_sessions` không có cột `finished`, `finished_at`, `local_date`; `status` ∈ `active`, `waiting_continue`, `finished`, `abandoned`.
+  Job dọn dẹp xóa câu luyện cũ hơn `historyMonths` (mặc định 6 tháng, `practice-cleanup.service.ts:38`); `learning_log` không bị dọn.
 
 ### 10.2 Endpoint
 
-Module Learning sở hữu cả hai endpoint (nó sở hữu hai bảng trên). Số phiên luyện và số câu mỗi ngày đến từ Practice qua một **port do Learning
-khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocalDate(userId, from, to)` trả `{ date, sessions, questions }[]`. Lý do:
-`PracticeModule` đã import `LearningModule` (`practice.module.ts:7,46`); Learning import ngược lại sẽ thành vòng (review I3). Code đã có mẫu này:
-`PRIVATE_SENSES_CLEANUP` (`learning/private-senses-cleanup.port.ts:5–8`, export ở `learning/index.ts`).
+Module Learning sở hữu cả hai endpoint (nó sở hữu hai bảng trên). Số phiên luyện và số câu đến từ Practice qua một **port do Learning khai báo,
+Practice cung cấp**, token `PRACTICE_DAY_COUNTS` (chuỗi, như `PRIVATE_SENSES_CLEANUP`), hai hàm:
+- `countByLocalDate(userId, from, to): Promise<{ date: string; sessions: number; questions: number; correct: number }[]>`;
+- `sessionsOfDay(userId, date): Promise<{ sessionId: string; firstPosition: number; lastPosition: number; questions: number; correct: number }[]>`.
+
+Lý do: `PracticeModule` đã import `LearningModule` (`practice.module.ts:7,46`); Learning import ngược lại sẽ thành vòng (review I3). Provider đặt
+trong `@Global()` `PracticePortsModule` (`practice/maintenance/private-senses-cleanup.provider.ts:57–63`, đăng ký ở `app.module.ts`), không trong
+`PracticeModule` (không có `exports`). Learning inject **không** `@Optional()`, để thiếu provider thì ứng dụng không khởi động thay vì trả số 0.
+Múi giờ lấy bằng `IdentityService.getProfile(userId).timezone` (`Learner` không có múi giờ), như `QueueService.today`.
 
 **Định nghĩa** (review I2; bước code facts của plan chỉ kiểm định nghĩa khớp các chỗ ghi log, không đổi định nghĩa):
 
 | Số | Định nghĩa |
 |---|---|
-| `learned` của một ngày | Số `item_id` khác nhau có dòng `kind='review'`, `level_before = 0` trong ngày (lượt học đầu đưa từ khỏi ngăn Mới, DC4 đợt C) |
-| `reviewed` của một ngày | Số **lượt**: số dòng `kind='review'`, `level_before ≥ 1` trong ngày, mọi `origin` (lật thẻ ở Học, nút trong phiên luyện, câu cuối của phiên Ôn) |
-| `practice_sessions` của một ngày | Số `session_id` khác nhau có câu trả lời trong ngày, theo đúng bộ lọc của history (`kind='practice'`, câu đã chấm); phiên qua nửa đêm tính ở cả hai ngày |
-| `practice_questions` của một ngày | Số câu trả lời trong ngày theo cùng bộ lọc |
+| `learned` của một ngày | Số `item_id` khác nhau có dòng `kind='review'`, `level_before = 0`, `level_after ≥ 1` trong ngày, mọi `origin` (lượt đưa từ khỏi ngăn Mới: lật thẻ ở Học, nút trong phiên luyện; DC4 đợt C). Từ đã "học lại" (`kind='relearn'`, về ngăn 0) học lại lần sau thì tính `learned` lần nữa |
+| `reviewed` của một ngày | Số **lượt**: số dòng `kind='review'` còn lại trong ngày (không thỏa điều kiện `learned`), mọi `origin` |
+| `practice_sessions` của một ngày | Số `session_id` khác nhau có câu đã chấm trong ngày theo đúng bộ lọc của history (`result IN ('correct','wrong')`, phiên `kind='practice'`, `history.service.ts:103`); phiên qua nửa đêm tính ở cả hai ngày |
+| `practice_questions` của một ngày | Số câu đã chấm trong ngày theo cùng bộ lọc |
+| `result` của một từ | `rating` của lượt cuối đổi tên: `'Good'` → `known`, `'Again'` → `again` |
 | `study_days` của tháng | Số dòng `learning_activity_days` có `studied = true` trong tháng |
 | "Một từ" | Một `item_id` (một nghĩa đã lưu), không phải một lemma |
 
@@ -663,7 +706,8 @@ khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocal
 }
 ```
 
-- Mỗi `(item_id, kind)` một dòng trong ngày; `result` là `rating` của lượt cuối (`known` / `again`), `times` là số lượt; `group_id` là nhóm của
+- Mỗi `(item_id, kind)` một dòng trong ngày; `result` theo bảng định nghĩa (`known` / `again`), `times` là số lượt; `lemma` lấy qua
+  `ContentService.cardContent` (chỉ trả nghĩa còn hiện, gọi một lần cho cả trang), không có thì `null`; `group_id` là nhóm của
   lượt cuối (`null` khi lượt cuối có `origin='practice'`; web hiện không chấm màu).
 - `counts` luôn là tổng của cả ngày, không đổi theo `?kind=`. `kind` mặc định `all`.
 - Thứ tự: giờ của lượt cuối, mới trước; cùng giờ thì theo `item_id`. `page_token` gắn với `(date, kind)` như history (`encodeBoundToken`,
@@ -675,7 +719,7 @@ khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocal
 
 | Khi | Thì |
 |---|---|
-| `month` sai dạng (`2026-13`, `26-11`) hoặc thiếu | 400 `validation-failed`, `violations` nêu `month` (`problem-details.filter.ts:77,88`) |
+| `month` sai dạng (`2026-13`, `26-11`) hoặc thiếu | 400 `validation-failed`, `violations` nêu `month` (`problem-details.filter.ts:79-89`, Zod qua `@Query({ schema })`) |
 | `month` ngoài khoảng 2026-01 tới 2100-12 (ví dụ `0001-01`) | 400 `validation-failed`, `violations` nêu `month` |
 | `date` không có thật (`2026-02-30`) | 400 `validation-failed`, `violations` nêu `date` |
 | Tháng hoặc ngày ở tương lai theo múi giờ của Lan | 200, không có dòng nào, tổng bằng 0 |
@@ -683,7 +727,9 @@ khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocal
 | Lan đổi múi giờ giữa tháng | Mỗi dòng giữ `local_date` lúc ghi; lịch theo `local_date`, không tính lại |
 | Một từ được học rồi ôn lại cùng ngày | Có một dòng `learned` và một dòng `reviewed` |
 | Một từ ôn 3 lần trong ngày, lần cuối "Cần ôn lại" | Một dòng `reviewed`, `result: "again"`, `times: 3` |
-| Từ riêng đã bị xóa | Dòng vẫn có (log giữ, D33); `lemma` lấy từ dữ liệu còn lại nếu có, không có thì `null` và web ghi "Từ đã xóa", không có link |
+| Từ riêng đã bị xóa | Log của từ đó đã bị xóa cùng từ: số của các ngày cũ giảm theo; ngày chỉ có từ đó vẫn tính trong `study_days` nhưng không có trong `days` |
+| Nghĩa trong kho chung bị ẩn hoặc gỡ sau khi đã học | Dòng vẫn có; `lemma = null`; web ghi "Từ không còn trong kho", không có link |
+| Tháng cũ hơn 6 tháng | `learned`, `reviewed` vẫn đủ; `practice_sessions`, `practice_questions` bằng 0 vì job dọn dẹp đã xóa câu luyện (`historyMonths`) |
 | Ngày có 300 lượt ôn | Phân trang 20 dòng một lần; `counts` vẫn đúng tổng |
 | Ngày chỉ có thêm hoặc bỏ từ (`studied = false`) | Không tính là ngày có học; không có trong `days` |
 | Không đăng nhập | 401 như mọi endpoint của người học |
@@ -691,11 +737,13 @@ khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocal
 | Một từ mới bấm "Cần ôn lại" ngay lần học đầu | Một dòng `learned` (lượt có `level_before = 0`); không có dòng `reviewed` |
 | Tài khoản bị xóa | Dữ liệu đã xóa cùng tài khoản; không có gì để trả |
 
-Hàm gộp số theo ngày và theo tháng là hàm thuần, test đủ các dòng trên. Không có giới hạn tốc độ riêng: SR14 chỉ áp cho endpoint ghi, và chưa có
-`@Get` nào dùng `@RateLimit` (review M2).
+Hàm gộp số theo ngày và theo tháng là hàm thuần, test đủ các dòng trên. Hai endpoint lịch không có giới hạn tốc độ riêng (SR14 chỉ áp cho endpoint
+ghi); `GET /v1/public/prices` có giới hạn theo IP (§10.6), theo tiền lệ `@Get('complete') @Public() @RateLimit('auth.google.ip')`.
 
 **Index:** `learning_log` chỉ có index `(user_id, group_id, local_date)` và `(user_id, item_id)` (`learning.prisma:76–77`); truy vấn theo tháng
-của một người mọi nhóm không dùng hết index đầu. Thêm migration index `(user_id, local_date)` (review M17).
+của một người mọi nhóm không dùng hết index đầu. Thêm `@@index([userId, localDate])` vào model và migration
+`CREATE INDEX "learning_log_user_id_local_date_idx"` (tên Prisma tự sinh, để kiểm drift của CI không lệch); thư mục migration đặt tên sau
+`20261112150000_cloze_source_own_then_ai` (dấu thời gian các migration đang đi trước lịch) (review M17).
 
 **Khoảng trống chấp nhận:** không còn backend e2e (D38), nên truy vấn SQL chỉ được kiểm qua smoke (ngày hôm nay); ca đổi múi giờ, qua nửa đêm, từ
 đã xóa chỉ có hàm thuần kiểm.
@@ -720,10 +768,10 @@ xóa (còn trong tag).
 
 | Trường | Định nghĩa |
 |---|---|
-| `next_lemma` | Lemma của thẻ đầu tiên mà hàng đợi `GET /v1/groups/:id/queue` trả lúc này (cùng thứ tự: ưu tiên → đến hạn → mới); `null` khi hàng đợi trống |
-| `last_reviewed` | Dòng `learning_log` `kind='review'` mới nhất có `group_id` của nhóm; `lemma` lấy từ từ đó, từ đã xóa thì `null`; nhóm chưa ôn lần nào thì `last_reviewed = null` |
-| `sessions/last` | Phiên `kind='practice'` có câu trả lời mới nhất (đã xong hay đang dở, `finished` nói rõ); `questions`, `correct` đếm câu đã chấm; `wrong_lemmas` tối đa 4 lemma khác nhau của câu sai, theo thứ tự trả lời; `group_id` `null` khi phiên không theo nhóm. Tên nhóm web lấy từ `GET /v1/groups` (Practice không đọc bảng nhóm) |
-| `reviewed_known`, `reviewed_again` | Số lượt ôn trong ngày theo `rating` (`known` / `again`); tổng hai số bằng `reviewed`. Bước code facts kiểm mọi dòng `review` đều có `rating`; có dòng `null` thì không đếm vào hai số này và ghi rulings |
+| `next_lemma` | Lemma của thẻ đầu tiên mà hàng đợi `GET /v1/groups/:id/queue?mode=due` trả lúc này (ưu tiên theo `added_at, id` → đến hạn theo `due_date, level, added_at, id` → mới theo `added_at, id`, trong giới hạn còn lại của ngày; `queue.queries.ts:70-90`); `null` khi hàng đợi trống. Tính bằng một truy vấn mới cho mọi nhóm (dựa theo `todayIdsQuery`, `practice-reads.queries.ts:29-67`, thêm thứ tự và `group_id`), không sửa `groupStatsQuery` (job nhắc nhở dùng chung) |
+| `last_reviewed` | Dòng `learning_log` `kind='review'` mới nhất có `group_id` của nhóm (`DISTINCT ON (group_id) … ORDER BY at DESC`); `lemma` qua `ContentService.cardContent`, nghĩa không còn hiện thì `null`; nhóm chưa ôn lần nào thì `last_reviewed = null` |
+| `sessions/last` | Phiên `kind='practice'` có câu đã chấm mới nhất; `finished = (status = 'finished')`; `local_date`, `last_answer_at` lấy từ câu đã chấm cuối; `questions`, `correct` dùng lại `PracticeReviewsService.summary` (`practice-reviews.service.ts:73-95`); `wrong_lemmas` tối đa 4 lemma khác nhau của câu sai theo thứ tự trả lời, lemma lấy từ câu hỏi đã lưu (`answer_key->'reveal'->>'lemma'`, như history); `group_id` `null` khi phiên không theo nhóm. Tên nhóm web lấy từ `GET /v1/groups` |
+| `reviewed_known`, `reviewed_again` | Số lượt ôn trong ngày theo `rating` (`'Good'`, `'Again'`); tổng hai số bằng `reviewed` |
 | `learned_groups` | Số `group_id` khác nhau (không tính `null`) trong các dòng học mới của ngày |
 | `practice_sessions` | Mỗi phiên có câu trả lời trong ngày một mục; `first_position`, `last_position` là vị trí câu nhỏ nhất, lớn nhất được trả lời trong ngày đó; `questions`, `correct` chỉ đếm câu của ngày đó. Practice cung cấp qua port ở §10.2 |
 | `streak` | Theo DC8 đợt C: số ngày học liên tiếp tính tới hôm nay (hoặc hôm qua nếu hôm nay chưa học), `studied_today` cho biết hôm nay đã học chưa |
@@ -731,7 +779,8 @@ xóa (còn trong tag).
 | Khi | Thì |
 |---|---|
 | Nhóm trống hoặc hôm nay không còn thẻ nào | `next_lemma = null`; thẻ nhóm không hiện dòng "tiếp theo" |
-| 50 nhóm | `GET /v1/groups` tính hai trường bằng một truy vấn cho mọi nhóm, không gọi hàng đợi từng nhóm; test với 50 nhóm |
+| 50 nhóm | `GET /v1/groups` tính hai trường bằng một truy vấn cho mọi nhóm và một lần `cardContent` cho mọi lemma, không gọi hàng đợi từng nhóm; `pnpm test:scale` (100 nhóm × 2.000 từ, < 500 ms, chạy tay) vẫn qua |
+| Thẻ đầu hàng đợi là nghĩa vừa bị ẩn | Bỏ qua thẻ đó, lấy thẻ kế (hàng đợi cũng bỏ thẻ không có `cardContent`, `queue.service.ts:105-108`) |
 | Lan chưa luyện phiên nào | `sessions/last` trả 204; Hôm nay không hiện khối "Lần luyện gần nhất" |
 | Phiên gần nhất không có câu sai | `wrong_lemmas = []`; khối ẩn nút "Luyện lại từ sai" |
 | Lan vừa học xong lượt đầu trong ngày | Câu trả lời của API đã kèm chuỗi ngày (như hiện nay); web cập nhật bộ đệm của `GET /v1/me/streak`, không gọi lại |
@@ -739,8 +788,10 @@ xóa (còn trong tag).
 
 ### 10.6 Giá công khai cho trang chủ (QR3)
 
-- `GET /v1/public/prices` (mới, `@Public()`, module Settings): `{ currency: 'VND', prices: { '1': number, '3': number, '12': number } }`, đọc cùng cài
-  đặt với `GET /v1/me/app-config` (`settings/app-config.view.ts:13–16,42`). Hiện giá chỉ có ở endpoint cần đăng nhập đó.
+- `GET /v1/public/prices` (mới, `@Public()`, module Settings, controller theo mẫu `legal/public-legal.controller.ts`):
+  `{ currency: 'VND', prices: { '1': number, '3': number, '12': number } }`, đọc cùng cài đặt với `GET /v1/me/app-config`
+  (`settings/app-config.view.ts:13–16,42`; mặc định 79.000, 199.000, 599.000 ở `settings.definitions.ts:86`). Hiện giá chỉ có ở endpoint cần đăng nhập
+  đó. Giới hạn theo IP bằng một luật mới `public.prices.ip` (60 lần mỗi phút).
 - Trang chủ đọc giá **lúc build** (`site/landing/prices.ts`, đợi tối đa 5 giây), nên vẫn dựng sẵn. Bảng giá và JSON-LD dùng cùng số.
 - Build không đọc được giá: khi biến `PRICES_REQUIRED=1` (đặt trong `deploy-web.yml`, tức lúc deploy thật) thì build fail; khi không có biến (CI của
   PR, máy dev) thì dùng `site/landing/prices.fallback.ts` và in cảnh báo.
@@ -791,12 +842,12 @@ xóa (còn trong tag).
 | Unit, component (web) | `pnpm test` trong `apps/web` | Test hành vi mỗi component `ui/` và mỗi màn, theo role và chữ; chữ đổi theo Figma thì test sửa theo cùng PR |
 | Unit (API) | `pnpm test` trong `apps/api` | Hàm gộp lịch (§10.3), controller hai endpoint, service Practice export |
 | Hàm thuần mới | trong bộ unit | `groupColorIndex` (§7.4); đọc tham số `?lich=`, `?ngay=` (§5.6) |
-| Lint, typecheck, build | `pnpm lint`, `pnpm typecheck`, `pnpm build` | Có luật phụ thuộc §6 và test lint có file mẫu vi phạm |
+| Lint, typecheck, build | `pnpm lint`, `pnpm typecheck`; bản build production là `cf:build` chạy trong `pnpm test:e2e` (job `web` của CI không có bước `pnpm build` riêng) | Có luật phụ thuộc §6 và test lint |
 | Render mode | `pnpm assert:render-mode` (đang chạy trong CI, `ci.yml:108`) | Trang chủ vẫn dựng sẵn |
 | Admin | `pnpm lint`, `typecheck`, `test`, `build` trong `apps/admin` | Đợt này sửa `packages/design-tokens`; admin không được đổi |
 | e2e web | `pnpm test:e2e` (Playwright, `apps/web/e2e`; chạy `cf:build` của OpenNext, trên Windows qua `pnpm cf:docker`) | Sửa journey trong cùng PR với màn; thêm journey mở lịch và xem một ngày ở M6 |
 | Smoke API mới | `pnpm smoke:giao-dien-moi` trong `apps/api` (mới; API và worker thật, DB và `JOB_QUEUE_PREFIX` riêng; giữ giới hạn 5 lần đăng ký mỗi IP mỗi giờ) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày, `next_lemma`, `last_reviewed`, `sessions/last`, `streak`, giá công khai khớp tuyệt đối (chỉ kiểm được ngày hôm nay, §10.3) |
-| Ảnh so với Figma | `pnpm shots` | Mọi khung §9, máy tính 1440 và điện thoại 390; ảnh ghi vào delivery record |
+| Ảnh so với Figma | `pnpm shots` (cần tài khoản học thật, `SHOTS_EMAIL`/`SHOTS_PASSWORD`) | Bộ khóa mới `gm-m1` … `gm-m9` thay `m1`…`m5b` của đợt cũ; mọi khung §9 ở 390 và 1440 (đang chụp thêm 1024); ảnh ghi vào delivery record |
 | Truy cập | `e2e/a11y.spec.ts` (trang công khai), `e2e/support/axe.ts` trong từng journey app | Mỗi journey mới gọi axe trên màn của nó |
 | Khóa chữ không dùng | script tìm khóa `messages/vi.json` không còn được gọi trong `src/` (khóa dùng động ghi vào danh sách cho phép) | §12; LP3 hiện chỉ kiểm hai file cùng khóa |
 | Lighthouse, Schema Markup Validator | chạy tay ở M9 | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý; JSON-LD hợp lệ |
@@ -835,5 +886,5 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - **11 hộp thoại chưa có khung Figma** (§9 M3–M7): dựng theo `Dialog` chung và hộp gần nhất; chủ dự án xem qua ảnh trong delivery record.
 - **Gói Miễn phí và câu AI:** một khung Figma (`131:4522`) vẽ AI khóa ở Miễn phí, lệch API hiện có; làm theo API.
 - **Ảnh OG:** thêm TTF Noto Sans có tiếng Việt làm Worker lớn hơn; đo ở M8.
-- **Font nhãn:** JetBrains Mono tải trước ở `/app` thêm một file font cho mọi lần mở app.
+- **Font nhãn:** JetBrains Mono không tải sớm, nên nhãn nhỏ có thể đổi font sau lần vẽ đầu.
 - **Hook hỏi mỗi lần merge** PR vào nhánh dài: thêm một bước bấm cho chủ dự án ở mỗi đợt.

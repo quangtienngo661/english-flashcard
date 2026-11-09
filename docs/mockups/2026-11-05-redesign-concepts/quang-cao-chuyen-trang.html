@@ -1,0 +1,215 @@
+<title>Quảng cáo khi chuyển trang</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* One action bar drives three phones side by side (A AdSense hiện nay, B AdSense khi chuyển tab, C Ad Manager); each phone keeps its own log. */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#e1e5ee; --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#fff;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --warn:#8a5508; --warn-soft:#fbf0dc; --ad:#2b2f3a; --on-ad:#f4f5f8;
+  --shadow-card:0 1px 2px rgb(27 36 68 / .06),0 10px 28px -14px rgb(27 36 68 / .20);
+  --font-sans:'Noto Sans',system-ui,sans-serif; --font-display:'Bricolage Grotesque','Noto Sans',sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --g0:#e5603f;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1220;--surface:#171b2a;--ink:#eceef5;--muted:#a6adc4;--line:#2a3044;--accent:#8da2ff;--accent-soft:#1f2747;--on-accent:#0f1220;--pass:#62c98f;--pass-soft:#142a1e;--fail:#ff8d80;--fail-soft:#311a18;--warn:#f0b450;--warn-soft:#2c2412;--ad:#05060a;--on-ad:#e6e8ef;--shadow-card:0 1px 2px rgb(0 0 0/.4),0 10px 28px -14px rgb(0 0 0/.7);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1220;--surface:#171b2a;--ink:#eceef5;--muted:#a6adc4;--line:#2a3044;--accent:#8da2ff;--accent-soft:#1f2747;--on-accent:#0f1220;--pass:#62c98f;--pass-soft:#142a1e;--fail:#ff8d80;--fail-soft:#311a18;--warn:#f0b450;--warn-soft:#2c2412;--ad:#05060a;--on-ad:#e6e8ef;--shadow-card:0 1px 2px rgb(0 0 0/.4),0 10px 28px -14px rgb(0 0 0/.7);color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.6;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1160px;margin:0 auto;display:grid;gap:20px}
+.intro{padding-block:32px 0;display:grid;gap:8px}
+h1,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.025em;line-height:1.15}
+h3{font-size:17px;font-weight:700;line-height:1.3}
+p{margin:0}
+.lead{color:var(--muted);max-width:72ch}
+.mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px var(--font-sans);cursor:pointer}
+.btn.sec{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn:disabled{opacity:.45;cursor:default}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.cols{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:10px;align-content:start;min-width:0}
+.hd{display:grid;gap:2px}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font:600 12px var(--font-mono);background:var(--accent-soft);color:var(--accent);justify-self:start}
+.phone{position:relative;width:min(280px,100%);height:420px;margin:0 auto;border:8px solid var(--ink);border-radius:30px;background:var(--bg);overflow:hidden}
+.scr{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+.ptop{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;font:800 14px var(--font-display)}
+.code{font:500 10px var(--font-mono);padding:2px 6px;border-radius:6px}
+.code.on{background:var(--warn-soft);color:var(--warn)}.code.off{background:var(--line);color:var(--muted)}
+.pbody{padding:4px 12px;display:grid;gap:8px;align-content:start}
+.pbody h4{margin:0;font:800 20px var(--font-display);letter-spacing:-.02em}
+.card{background:var(--surface);border-radius:12px;box-shadow:var(--shadow-card);padding:10px;display:grid;gap:4px;font-size:13px}
+.card.g{box-shadow:inset 0 0 0 1.5px var(--g0),var(--shadow-card)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabs span{font-size:10px;text-align:center;padding:8px 0;color:var(--muted)}
+.tabs span.on{color:var(--accent);font-weight:700}
+.overlay{position:absolute;inset:0;background:var(--ad);color:var(--on-ad);display:grid;place-items:center;text-align:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:auto}
+.overlay b{font:800 18px var(--font-display)}
+.reload{position:absolute;inset:0;background:var(--surface);display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .12s}
+.reload.show{opacity:1}
+.spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.log{font-size:13px;display:grid;gap:4px;align-content:start;height:220px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.log div{display:flex;gap:6px;align-items:flex-start}
+.kind{flex:none;font:600 11px/1.9 var(--font-mono);border-radius:6px;padding:0 6px}
+.k-ad{background:var(--warn-soft);color:var(--warn)}
+.k-rl{background:var(--fail-soft);color:var(--fail)}
+.k-ok{background:var(--pass-soft);color:var(--pass)}
+.k-no{background:var(--line);color:var(--muted)}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:6px;font-size:14px;align-content:start}
+.note ul{margin:0;padding-left:18px;display:grid;gap:4px}
+code{font-family:var(--font-mono);font-size:12px}
+@media (prefers-reduced-motion: reduce){.spin{animation:none}.overlay,.reload{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="mono">QR4 · quảng cáo cho người học gói Miễn phí · 10/11/2026</span>
+    <h1>Quảng cáo khi chuyển trang</h1>
+    <p class="lead">Bấm một thao tác ở thanh dưới, cả ba điện thoại làm theo. Mỗi máy là một cách: quảng cáo toàn màn có thể hiện lúc nào, và có phải tải lại cả trang không. Nhãn vàng "có mã" là trang đang chứa mã quảng cáo.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="Thao tác của Lan">
+    <button class="btn" type="button" data-go="groups">Sang tab Nhóm</button>
+    <button class="btn" type="button" data-go="group">Mở nhóm Đề 12</button>
+    <button class="btn" type="button" data-go="back">Quay lại</button>
+    <button class="btn" type="button" data-go="lookup">Sang tab Tra từ</button>
+    <button class="btn" type="button" data-go="practice">Sang tab Luyện tập</button>
+    <button class="btn" type="button" data-go="session">Bắt đầu luyện</button>
+    <button class="btn" type="button" data-go="today">Sang tab Hôm nay</button>
+    <button class="btn sec" type="button" id="wait">Tua 10 phút</button>
+    <button class="btn sec" type="button" id="reset">Làm lại</button>
+  </div>
+
+  <div class="cols">
+    <section class="col" data-mode="A" aria-label="Cách A">
+      <div class="hd"><span class="tag">A · đang làm (DB38)</span><h3>AdSense vignette, mã chỉ ở Nhóm và Tra từ</h3></div>
+      <div class="phone"></div>
+      <div class="log" aria-live="polite"></div>
+    </section>
+    <section class="col" data-mode="B" aria-label="Cách B">
+      <div class="hd"><span class="tag">B · AdSense khi chuyển tab</span><h3>Mã ở mọi trang có thanh tab; link không phải tab gắn "không quảng cáo"</h3></div>
+      <div class="phone"></div>
+      <div class="log" aria-live="polite"></div>
+    </section>
+    <section class="col" data-mode="C" aria-label="Cách C">
+      <div class="hd"><span class="tag">C · Google Ad Manager</span><h3>Web interstitial; link không phải tab gắn "không quảng cáo"</h3></div>
+      <div class="phone"></div>
+      <div class="log" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <div class="cols">
+    <div class="note"><h3>A · điều cần biết</h3><ul>
+      <li>Quảng cáo chỉ có thể hiện khi Lan bấm link <b>trên</b> Nhóm hoặc Tra từ, tức lúc rời hai trang đó. Nút Học, Ôn đã gắn <code>data-google-vignette="false"</code>; link mở nhóm thì chưa.</li>
+      <li>Mã đã nạp không gỡ được, nên rời Nhóm, Tra từ là tải lại cả trang: mất hiệu ứng mở nhóm, khung app vẽ lại.</li>
+      <li>Hôm nay → Nhóm không có quảng cáo vì Hôm nay không có mã.</li>
+      <li>Chưa kiểm: vignette có hiện khi chuyển trang trong app không (A1).</li>
+    </ul></div>
+    <div class="note"><h3>B · điều cần biết</h3><ul>
+      <li>Quảng cáo chỉ có thể hiện khi bấm sang tab khác; mở nhóm, Quay lại, Bắt đầu luyện gắn <code>data-google-vignette="false"</code>.</li>
+      <li>Chuyển tab không tải lại trang: giữ hiệu ứng và khung app.</li>
+      <li>Phiên luyện không có thanh tab, nên vào phiên phải tải lại cả trang để bỏ mã (mã đã nạp không gỡ được).</li>
+      <li>Chưa kiểm: vignette có hiện khi chuyển trang trong app không (A1). Nếu không hiện thì cách này gần như không có quảng cáo.</li>
+    </ul></div>
+    <div class="note"><h3>C · điều cần biết</h3><ul>
+      <li>Google ghi rõ từ 06/2025: quảng cáo hiện khi chuyển trang trong app, không cần tải lại. Nút Back của trình duyệt không bật quảng cáo (từ 15/06/2026).</li>
+      <li>Mặc định tối đa 1 lần mỗi 10 phút (đặt được tới 1 lần mỗi phút). Link hoặc phần tử cha gắn <code>data-google-interstitial="false"</code> thì không bật quảng cáo, nên khung phiên luyện bọc một lần là đủ, không phải tải lại.</li>
+      <li>Vẫn cần tài khoản AdSense hợp lệ, site vẫn qua Google xét. Google nói Ad Manager dành cho publisher lớn, có thể phải nói chuyện với nhân viên Google; thêm site thường vài ngày, có khi 2–4 tuần.</li>
+      <li>Chưa rõ: tài khoản AdSense chưa được duyệt site có mở được Ad Manager không; bản thường có thu phí không.</li>
+    </ul></div>
+  </div>
+
+  <p class="mono">Trong mô phỏng, quảng cáo hiện ở mọi lần đủ điều kiện để thấy chỗ khác nhau; thật ra Google tự quyết có hiện hay không. Chi tiết và nguồn: docs/preparation/AD_ALTERNATIVES_TO_ADSENSE_2026-11-10.md.</p>
+</div>
+
+<script>
+(() => {
+  const PAGES = {
+    today: { title: 'Hôm nay', tab: 0, body: '<div class="card">Ôn tiếp · Đề 12 · Writing<br><b>24 thẻ chờ</b></div>' },
+    groups: { title: 'Nhóm', tab: 1, body: '<div class="card g"><b>Đề 12 · Writing</b>48 từ · bấm để mở</div><div class="card">Phỏng vấn · 31 từ</div>' },
+    group: { title: 'Đề 12 · Writing', tab: 1, body: '<div class="card">48 từ · 12 đã thuộc</div><div class="card">allocate · mitigate · viable</div>' },
+    lookup: { title: 'Tra từ', tab: 3, body: '<div class="card">Tìm từ…</div><div class="card">budget · candidate · colleague</div>' },
+    practice: { title: 'Luyện tập', tab: 2, body: '<div class="card">Phiên 20 câu · trộn kiểu</div>' },
+    session: { title: 'Phiên luyện', tab: -1, body: '<div class="card">câu 1 / 20</div><div class="card">She tried to ____ the risk.</div>' },
+  };
+  const TABS = ['today', 'groups', 'practice', 'lookup'];
+  const LABEL = { groups: 'tab Nhóm', group: 'nhóm Đề 12', back: 'Quay lại', lookup: 'tab Tra từ', practice: 'tab Luyện tập', session: 'Bắt đầu luyện', today: 'tab Hôm nay' };
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+
+  function makeSim(col) {
+    const mode = col.dataset.mode, phone = col.querySelector('.phone'), log = col.querySelector('.log');
+    const s = { page: 'today', codeLoaded: false, lastAd: -999, minute: 0 };
+    // A: the code is in the document only after Nhóm or Tra từ loaded it. B: every page with the tab bar has it, the session has none.
+    // C: the code stays everywhere; the session's frame opts out as a parent element.
+    const hasCode = () => (mode === 'A' ? s.codeLoaded : mode === 'B' ? s.page !== 'session' : true);
+    function render() {
+      const p = PAGES[s.page], on = hasCode();
+      phone.innerHTML = `<div class="scr"><div class="ptop"><span>wordmet.</span><span class="code ${on ? 'on' : 'off'}">${on ? 'có mã' : 'không mã'}</span></div>
+        <div class="pbody"><h4>${p.title}</h4>${p.body}</div>
+        <div class="tabs">${['Hôm nay', 'Nhóm', 'Luyện tập', 'Tra từ'].map((t, i) => `<span class="${i === p.tab ? 'on' : ''}">${t}</span>`).join('')}</div></div>
+        <div class="overlay"><div><span class="mono" style="color:inherit">Quảng cáo</span><br><b>Quảng cáo toàn màn</b><br><span style="font-size:12px">Lan bấm × để đóng</span></div></div>
+        <div class="reload"><div style="display:grid;gap:8px;justify-items:center"><div class="spin"></div><span class="mono">Tải lại cả trang…</span></div></div>`;
+    }
+    function note(kind, text) {
+      const k = { ad: 'quảng cáo', rl: 'tải lại', ok: 'mượt', no: 'không' }[kind];
+      const d = document.createElement('div');
+      d.innerHTML = `<span class="kind k-${kind}">${k}</span><span>${text}</span>`;
+      log.prepend(d);
+    }
+    async function flash(sel, ms) { const el = phone.querySelector(sel); el.classList.add('show'); await wait(ms); el.classList.remove('show'); }
+    function target(go) {
+      if (go === 'back') return s.page === 'group' ? 'groups' : s.page === 'session' ? 'practice' : null;
+      if (go === 'group') return s.page === 'groups' ? 'group' : null;
+      if (go === 'session') return s.page === 'practice' ? 'session' : null;
+      return go;
+    }
+    async function act(go) {
+      const to = target(go);
+      if (!to) { note('no', go === 'back' ? 'Trang này không có nút Quay lại.' : go === 'group' ? 'Mở tab Nhóm trước.' : 'Mở tab Luyện tập trước.'); return; }
+      if (to === s.page) { note('no', `Đang ở ${PAGES[to].title}.`); return; }
+      const from = s.page, isTab = TABS.includes(go);
+      // 1) Does following this link show a full-screen ad?
+      let ad = false, why = '';
+      if (mode === 'A') {
+        // Học and Ôn opt out in code; the links in this demo (tabs, open group) do not.
+        ad = s.codeLoaded; why = 'trang này không có mã';
+      } else if (!hasCode()) { why = 'trang này không có mã'; }
+      else if (!isTab) { why = 'link gắn không quảng cáo'; }
+      else if (mode === 'C' && s.minute - s.lastAd < 10) { why = 'chưa đủ 10 phút từ lần trước'; }
+      else ad = true;
+      if (ad) { if (mode === 'C') s.lastAd = s.minute; await flash('.overlay', 1300); note('ad', `Bấm ${LABEL[go]} trên ${PAGES[from].title}: quảng cáo toàn màn trước khi sang trang.`); }
+      else note('no', `Bấm ${LABEL[go]}: không có quảng cáo (${why}).`);
+      // 2) Does the page reload? The loaded code cannot be removed, so a page that must not have it starts a new document.
+      const mustDrop = mode === 'A' ? s.codeLoaded && !['groups', 'lookup'].includes(to) : mode === 'B' && to === 'session';
+      if (mustDrop) { await flash('.reload', 700); note('rl', `Sang ${PAGES[to].title}: tải lại cả trang để bỏ mã.`); }
+      else note('ok', `Sang ${PAGES[to].title}: chuyển trong app, không tải lại.`);
+      s.page = to;
+      if (mode === 'A') s.codeLoaded = ['groups', 'lookup'].includes(to);
+      render();
+    }
+    function reset() { Object.assign(s, { page: 'today', codeLoaded: false, lastAd: -999, minute: 0 }); log.innerHTML = ''; render(); note('ok', 'Lan đang ở Hôm nay, gói Miễn phí, 20 tuổi.'); }
+    function tick() { s.minute += 10; note('ok', 'Đã qua 10 phút.'); }
+    reset();
+    return { act, reset, tick };
+  }
+  const sims = [...document.querySelectorAll('.col[data-mode]')].map(makeSim);
+  const buttons = [...document.querySelectorAll('.bar button')];
+  let busy = false;
+  document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true; buttons.forEach((x) => (x.disabled = true));
+    await Promise.all(sims.map((sim) => sim.act(b.dataset.go)));
+    busy = false; buttons.forEach((x) => (x.disabled = false));
+  }));
+  document.getElementById('reset').addEventListener('click', () => sims.forEach((sim) => sim.reset()));
+  document.getElementById('wait').addEventListener('click', () => sims.forEach((sim) => sim.tick()));
+})();
+</script>
