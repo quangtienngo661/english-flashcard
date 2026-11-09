@@ -95,3 +95,69 @@ export function reviewsDoneQuery(userId: string, groupId: string, today: string)
     FROM learning_log
     WHERE user_id = ${userId}::uuid AND group_id = ${groupId}::uuid AND local_date = ${today}::date AND kind = 'review'`;
 }
+
+export type NextCardRow = { group_id: string; sense_id: string; rank: number };
+export type LastReviewedRow = { group_id: string; sense_id: string; at: Date };
+type Caps = { reviews: number | null; new: number };
+
+/**
+ * The first five cards of every group of the learner in the order `GET /v1/groups/:id/queue?mode=due` gives them (giao diện mới
+ * §10.5): priority by `added_at, id`, then due by `due_date, level, added_at, id` within the reviews left today, then new by
+ * `added_at, id` within the new words left today. Built from the CTEs of `todayIdsQuery` (practice-reads.queries.ts), with the order
+ * and the group id kept. The caller drops senses no longer visible, so five rows leave room for a few hidden ones.
+ */
+export function nextCardsQuery(userId: string, today: string, caps: Caps, backlogDays: number): Prisma.Sql {
+  const notBacklog = Prisma.sql`NOT (i.level >= 1 AND ${today}::date - i.due_date > ${backlogDays})`;
+  return Prisma.sql`
+    WITH left_today AS (
+      SELECT g.id AS group_id,
+        CASE WHEN ${caps.reviews}::int IS NULL THEN NULL
+          ELSE GREATEST(0, ${caps.reviews}::int - COALESCE(d.due_done, 0)) END AS due_left,
+        GREATEST(0, ${caps.new}::int - COALESCE(d.new_done, 0)) AS new_left
+      FROM learning_groups g
+      LEFT JOIN (
+        SELECT l.group_id, count(*) FILTER (WHERE l.section = 'due')::int AS due_done,
+          count(*) FILTER (WHERE l.section = 'new')::int AS new_done
+        FROM learning_log l
+        WHERE l.user_id = ${userId}::uuid AND l.local_date = ${today}::date AND l.kind = 'review' AND l.group_id IS NOT NULL
+        GROUP BY l.group_id
+      ) d ON d.group_id = g.id
+      WHERE g.user_id = ${userId}::uuid
+    ), parts AS (
+      SELECT c.group_id, c.due_left, c.new_left, i.id, i.sense_id,
+        CASE
+          WHEN i.priority AND ${notBacklog} THEN 'priority'
+          WHEN NOT i.priority AND i.level >= 1 AND i.due_date <= ${today}::date AND ${notBacklog} THEN 'due'
+          WHEN NOT i.priority AND i.level = 0 THEN 'new'
+        END AS part,
+        i.due_date, i.level, gi.added_at
+      FROM left_today c
+      JOIN group_items gi ON gi.group_id = c.group_id
+      JOIN learning_items i ON i.id = gi.item_id
+      WHERE i.user_id = ${userId}::uuid AND ${visibleSenseCondition(Prisma.sql`i.sense_id`, userId)}
+    ), ranked AS (
+      SELECT group_id, sense_id, part, due_left, new_left,
+        ROW_NUMBER() OVER (PARTITION BY group_id, part ORDER BY
+          CASE WHEN part = 'due' THEN due_date END, CASE WHEN part = 'due' THEN level END, added_at, id) AS part_rank
+      FROM parts WHERE part IS NOT NULL
+    ), kept AS (
+      SELECT group_id, sense_id, part, part_rank FROM ranked
+      WHERE part = 'priority' OR (part = 'due' AND (due_left IS NULL OR part_rank <= due_left))
+        OR (part = 'new' AND part_rank <= new_left)
+    ), ordered AS (
+      SELECT group_id, sense_id, ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY
+        CASE part WHEN 'priority' THEN 0 WHEN 'due' THEN 1 ELSE 2 END, part_rank) AS rank
+      FROM kept
+    )
+    SELECT group_id::text AS group_id, sense_id::text AS sense_id, rank::int AS rank FROM ordered WHERE rank <= 5
+    ORDER BY group_id, rank`;
+}
+
+/** The newest `review` row of each group of the learner (giao diện mới §10.5). */
+export function lastReviewedQuery(userId: string): Prisma.Sql {
+  return Prisma.sql`
+    SELECT DISTINCT ON (group_id) group_id::text AS group_id, sense_id::text AS sense_id, at
+    FROM learning_log
+    WHERE user_id = ${userId}::uuid AND kind = 'review' AND group_id IS NOT NULL
+    ORDER BY group_id, at DESC, id DESC`;
+}
