@@ -126,7 +126,7 @@
       "lead": "Chọn một dạng để làm thử.",
       "rule": "AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "list": "Các dạng bài",
-    "blank": "chỗ trống",
+      "blank": "chỗ trống",
       "free": "Miễn phí",
       "pro": "Pro",
       "aiChip": "Câu AI",
@@ -345,6 +345,11 @@
         "placeholder": "Tìm từ",
         "placeholderShort": "Tìm từ",
         "submit": "Tra"
+      },
+      "menu": {
+        "account": "Tài khoản",
+        "transactions": "Lịch sử giao dịch",
+        "reports": "Báo lỗi của tôi"
       }
     },
     "ui": {

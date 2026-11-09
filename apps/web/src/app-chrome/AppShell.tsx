@@ -1,92 +1,38 @@
 'use client';
 
-import { ChevronLeft, Plus } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense, type ReactNode } from 'react';
-import { AddWordProvider, useAddWord } from '@/features/learner/add-word/add-word-context';
+import type { ReactNode } from 'react';
+import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
-import { AppFooter } from './AppFooter';
-import { AvatarMenu } from './AvatarMenu';
-import { Logo } from './Logo';
-import { MobileTabBar } from './MobileTabBar';
-import { PlanChip } from './PlanChip';
-import { SearchStrip } from './SearchStrip';
-import { TopBar, type ChromeFeatures } from './TopBar';
+import { AddFab } from './AddFab';
+import { AppChrome } from './AppChrome';
+import { BackLink as BackLinkView } from './BackLink';
+import { CardFrame } from './CardFrame';
+import { PageColumns } from './PageColumns';
 
 export type BackLink = { href: string; label: string };
 
 type Props = {
-  /** main: tab pages; sub: a page under a tab (phone shows a back link); full: sessions and Plans; bare: sign-in pages. */
   variant: 'main' | 'sub' | 'full' | 'bare';
   children: ReactNode;
-  /** Side column from 1280 px (design §4.7); below that it follows the main content. */
   aside?: ReactNode;
   back?: BackLink;
-  /** Thêm từ (top bar) is on by default since M3; a page may turn it off. */
-  features?: ChromeFeatures;
-  /** Phone + button on Today, Decks and Look up. */
   fab?: boolean;
 };
 
-const ALL_FEATURES: ChromeFeatures = { addWord: true };
-
-export function AppShell({ variant, children, aside, back, features = ALL_FEATURES, fab = false }: Props) {
-  const t = useTranslations('App.chrome');
+/** Temporary (giao diện mới M1.9): renders the new chrome so every page keeps compiling; M1.10 moves the chrome into layouts and deletes it. */
+export function AppShell({ variant, children, aside, back, fab = false }: Props) {
   if (variant === 'full') return <>{children}</>;
-  if (variant === 'bare') return <AuthFrame>{children}</AuthFrame>;
-
+  if (variant === 'bare') return <CardFrame>{children}</CardFrame>;
   return (
     <AddWordProvider>
-      <div className="flex min-h-dvh flex-col">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-control focus:bg-accent focus:px-4 focus:py-2 focus:text-on-accent">
-          {t('skipToContent')}
-        </a>
-        <header>
-          <div className="hidden md:block">
-            <TopBar features={features} />
-          </div>
-          <PhoneHeader back={variant === 'sub' ? back : undefined} />
-          {/* The strip reads the lookup query from the URL; Suspense keeps the rest of the static shell prerendered. */}
-          <Suspense>
-            <SearchStrip />
-          </Suspense>
-        </header>
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-360 flex-1 px-4 pb-24 pt-5 outline-none md:pb-10 lg:px-8">
-          {aside ? (
-            <div className="flex flex-col gap-6 xl:flex-row">
-              <div className="min-w-0 flex-1">{children}</div>
-              <aside className="flex w-full flex-col gap-4 xl:w-90 xl:shrink-0">{aside}</aside>
-            </div>
-          ) : (
-            children
-          )}
-        </main>
-        <div className="hidden md:block">
-          <AppFooter />
-        </div>
-        {fab && features.addWord && <Fab />}
-        <MobileTabBar />
-      </div>
+      <AppChrome>
+        {back && <BackLinkView href={back.href} label={back.label} />}
+        <PageColumns aside={aside}>{children}</PageColumns>
+      </AppChrome>
+      {fab && <AddFab />}
     </AddWordProvider>
-  );
-}
-
-/** Phone top bar (Figma `284:9`; sub-page `332:2670`): logo or a back link, the plan chip and the avatar. */
-function PhoneHeader({ back }: { back?: BackLink }) {
-  const locale = useLocale();
-  return (
-    <div className="flex h-14 items-center justify-between gap-3 bg-navy px-4 text-on-navy md:hidden">
-      {back ? <SubpageBack back={back} /> : (
-        <Link href={`/${locale}/app`} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-accent">
-          <Logo />
-        </Link>
-      )}
-      <div className="flex items-center gap-3">
-        <PlanChip />
-        <AvatarMenu />
-      </div>
-    </div>
   );
 }
 
@@ -103,43 +49,6 @@ export function SubpageBack({ back, tone = 'navy' }: { back: BackLink; tone?: 'n
       <ChevronLeft aria-hidden className="size-5 shrink-0" />
       <span className="truncate">{back.label}</span>
     </Link>
-  );
-}
-
-/** Phone + button (M/10): opens Thêm từ (M3). */
-function Fab() {
-  const t = useTranslations('App.chrome');
-  const { open } = useAddWord();
-  return (
-    <button
-      type="button"
-      onClick={() => open()}
-      aria-label={t('addWord')}
-      className="fixed bottom-20 right-4 z-40 flex size-14 items-center justify-center rounded-inner bg-navy text-on-accent shadow-ledge md:hidden"
-    >
-      <span className="flex rounded-sm bg-accent p-1">
-        <Plus aria-hidden className="size-5" />
-      </span>
-    </button>
-  );
-}
-
-/**
- * K/01–K/06: the form card in the middle of the screen on a faint pattern of study objects (copy doc §15, point 1; 12% opacity), the logo in
- * the top left corner. The navy story panel that sat on the left from 1024 px was dropped (owner 03/11/2026).
- */
-function AuthFrame({ children }: { children: ReactNode }) {
-  const locale = useLocale();
-  return (
-    <div className="flex min-h-dvh">
-      <main id="main" className="relative flex flex-1 flex-col items-center overflow-hidden bg-canvas px-4 py-8 md:justify-center">
-        <StudyPattern />
-        <Link href={`/${locale}`} className="relative mb-6 self-start rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary md:absolute md:top-8 md:left-8 md:mb-0">
-          <Logo tone="surface" />
-        </Link>
-        <div className="relative w-full max-w-md">{children}</div>
-      </main>
-    </div>
   );
 }
 

@@ -36,8 +36,9 @@ export function SearchStrip() {
   const onLookup = /\/app\/lookup$/.test(usePathname());
   const [q, setQ] = useState(current.q ?? '');
   const [level, setLevel] = useState(current.level ?? ALL);
-  // The lookup page changes the URL under the strip (filters, "Xóa lọc", Back): follow it (review I-5).
-  const search = params.toString();
+  // The lookup page changes the URL under the strip (filters, "Xóa lọc", Back): follow it (review I-5). Only `q` and `level` count, so
+  // `?id=`, `?lich=`, `?ngay=` keep what the learner is typing (design giao diện mới §5.4).
+  const search = `${current.q ?? ''}|${current.level ?? ''}`;
   const [seen, setSeen] = useState(search);
   if (seen !== search) {
     setSeen(search);
