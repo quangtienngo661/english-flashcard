@@ -34,11 +34,13 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown> = 
 }
 
 type Options = {
-  types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | null;
+  types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | 'own_then_ai' | null;
   aiStopped?: string | null; target?: number;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
   aiAvailable?: (senseId: string) => QuestionType[]; prefetch?: number;
+  /** The builder finds no rule type for any word (no saved sentence, no other rule type chosen). */
+  skipBuild?: boolean;
 };
 
 function setup(options: Options) {
@@ -53,7 +55,7 @@ function setup(options: Options) {
   const questions: PracticeQuestion[] = [];
   const items: PracticeSessionItem[] = [];
   const requests: PracticeAiRequest[] = [];
-  const counters = { generate: 0, confirm: 0, charged: 0, built: [] as QuestionType[][] };
+  const counters = { generate: 0, confirm: 0, charged: 0, built: [] as QuestionType[][], availability: [] as Array<Record<string, unknown>> };
 
   const question = (data: Partial<PracticeQuestion>): PracticeQuestion => {
     const row = {
@@ -159,10 +161,13 @@ function setup(options: Options) {
     }),
   };
   const builder = {
-    availability: async ({ senseIds: ids }: { senseIds: string[] }) =>
-      new Map(ids.map((id) => [id, options.aiAvailable ? options.aiAvailable(id) : (['cloze', 'mcq_sentence'] as QuestionType[])])),
+    availability: async (input: { senseIds: string[] }) => {
+      counters.availability.push(input);
+      return new Map(input.senseIds.map((id) => [id, options.aiAvailable ? options.aiAvailable(id) : (['cloze', 'mcq_sentence'] as QuestionType[])]));
+    },
     build: async ({ chosenTypes }: { chosenTypes: QuestionType[] }) => {
       counters.built.push(chosenTypes);
+      if (options.skipBuild) return { skip: 'no-type' as const };
       return {
         type: chosenTypes[0], promptStyle: 'meaning', prompt: { kind: 'type_meaning' }, answerKey: { asked_private: false },
         hints: { level1: null, level2: null }, blank: null, distractorSenseIds: [],
@@ -320,6 +325,73 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
       failure: 'ai-failed', aiInput: null, questionId: null, createdAt: now, updatedAt: now } as PracticeAiRequest);
     expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'type_word' } });
     expect(t.generator.run).not.toHaveBeenCalled();
+  });
+
+  describe('cloze with source own_then_ai (a saved sentence first, else AI)', () => {
+    // The real builder decides per word; here s1 has a saved sentence and is not marked for AI, s2 has none and is.
+    it('round 1: the word with a saved sentence is asked from it with no AI call; the marked word goes through AI', async () => {
+      // The AI side offers the cloze only (the mock would otherwise also offer mcq_sentence and the request type would be random).
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', aiSenseIds: ['s2'], aiPlanned: 1, aiAvailable: () => ['cloze'] });
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.counters.built).toEqual([['cloze']]);
+      expect(t.questionOf(t.items[0])).toMatchObject({ source: 'own_sentence', senseId: 's1' });
+      expect(t.requests).toHaveLength(0);
+      t.answerLast();
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.requests).toHaveLength(1);
+      expect(t.requests[0]).toMatchObject({ senseId: 's2', type: 'cloze' });
+      expect(t.questionOf(t.items[1])).toMatchObject({ source: 'ai', senseId: 's2' });
+      expect(t.counters.built).toEqual([['cloze']]);
+    });
+
+    it('the AI slot asks the builder about the AI side only: cloze with clozeRole ai', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s2'], aiSenseIds: ['s2'], aiPlanned: 1 });
+      await t.service.next(learner, 'sess-1');
+      expect(t.counters.availability).toHaveLength(1);
+      expect(t.counters.availability[0]).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai' });
+    });
+
+    it('prepare makes requests only for words the AI side offers: cloze with clozeRole ai', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1', 's2', 's3'], aiSenseIds: ['s2', 's3'],
+        aiPlanned: 2, aiAvailable: (id) => (id === 's3' ? [] : ['cloze']) });
+      expect(await t.service.prepare(learner, 'sess-1')).toEqual({ prepared: 1, already_ready: 0, failed: 0 });
+      expect(t.requests.map((r) => r.senseId)).toEqual(['s2']);
+      expect(t.counters.availability.length).toBeGreaterThan(0);
+      for (const call of t.counters.availability) {
+        expect(call).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai' });
+      }
+    });
+
+    it('the AI fails for a word: the fallback is built from the rule types, and the saved-sentence cloze is one of them', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1,
+        generate: () => failed('ai-failed') });
+      expect(await t.service.next(learner, 'sess-1'))
+        .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-failed' });
+      expect(t.counters.built).toEqual([['type_word', 'cloze']]);
+    });
+
+    it('a word that is not marked is built from the rule types too, so a saved sentence can come up', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: [], aiPlanned: 0 });
+      await t.service.next(learner, 'sess-1');
+      expect(t.counters.built).toEqual([['type_word', 'cloze']]);
+      expect(t.requests).toHaveLength(0);
+    });
+
+    it('known limit: cloze only and the AI fails for a word with no saved sentence → the word is skipped, no ai_unavailable screen', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1, skipBuild: true,
+        aiAvailable: () => ['cloze'], generate: () => failed('ai-failed') });
+      const result = await t.service.next(learner, 'sess-1');
+      expect(result.state).toBe('waiting_continue');
+      expect(t.items).toHaveLength(0);
+      expect(t.generator.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('the AI is not asked once it has stopped for the session; the saved-sentence cloze still is', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s1', 's2'], aiSenseIds: ['s2'], aiPlanned: 1, aiStopped: 'quota-exhausted' });
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.generator.run).not.toHaveBeenCalled();
+      expect(t.counters.built).toEqual([['cloze']]);
+    });
   });
 
   it('A3-4: own cloze stays after ai.practice is lost mid-session', async () => {

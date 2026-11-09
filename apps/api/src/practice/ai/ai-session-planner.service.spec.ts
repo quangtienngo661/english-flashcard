@@ -58,7 +58,9 @@ describe('AiSessionPlanner.gate (design §6.1 step 2)', () => {
     expect(t.entitlements.snapshot).not.toHaveBeenCalled();
   });
 
-  it.each<[QuestionType[], 'ai' | 'own' | null]>([[['cloze'], 'ai'], [['type_word', 'mcq_sentence'], null]])(
+  it.each<[QuestionType[], 'ai' | 'own' | 'own_then_ai' | null]>([
+    [['cloze'], 'ai'], [['type_word', 'mcq_sentence'], null], [['cloze'], 'own_then_ai'], [['type_word', 'cloze'], 'own_then_ai'],
+  ])(
     'B7E1: Free (ai.practice not allowed) with %o (%s) → 403 entitlement-required', async (types, source) => {
       const t = setup({ snap: snapshot({ allowed: false }) });
       await expect(t.planner.gate(learner.userId, types, source)).rejects.toMatchObject({ status: 403, problemType: 'entitlement-required' });
@@ -84,6 +86,15 @@ describe('AiSessionPlanner.gate (design §6.1 step 2)', () => {
       await expect(t.planner.gate(learner.userId, ['cloze'], 'ai'))
         .rejects.toMatchObject({ status: 503, problemType: 'ai-unavailable', retryAfterSeconds: undefined });
     }
+  });
+
+  it('cloze with source own_then_ai is an AI cloze at the gate: AI off → 503, and generate_cloze is asked once', async () => {
+    const off = setup({ snap: snapshot({ enabled: false }) });
+    await expect(off.planner.gate(learner.userId, ['type_word', 'cloze'], 'own_then_ai'))
+      .rejects.toMatchObject({ status: 503, problemType: 'ai-unavailable' });
+    const t = setup();
+    await expect(t.planner.gate(learner.userId, ['type_word', 'cloze'], 'own_then_ai')).resolves.toMatchObject({ pools: expect.anything() });
+    expect(t.readiness).toEqual(['generate_cloze']);
   });
 
   it('B7E117: a chosen operation without a model → 503 ai-unavailable, reason model-not-set; each chosen op is asked', async () => {
@@ -164,6 +175,19 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
         where: expect.objectContaining({ senseId, type: { in: ['meaning_in_sentence'] } }),
       }));
     }
+    await expect(t.planner.plan(learner, input, snapshot({ remaining: 1 }))).rejects.toMatchObject({
+      status: 403, problemType: 'ai-quota-insufficient', extensions: { remaining: 1, needed: 2 },
+    });
+  });
+
+  it('own_then_ai: only words whose AI-side availability has the cloze are marked; a saved-sentence word needs no unit', async () => {
+    const senses = words(4);
+    const ids = senses.map((s) => s.sense_id);
+    // s1 and s3 have a saved sentence, so the AI side does not offer them the cloze (the session service asks with clozeRole 'ai').
+    const available = new Map<string, QuestionType[]>([['s1', []], ['s2', ['cloze']], ['s3', []], ['s4', ['cloze']]]);
+    const t = setup({ senses });
+    const input = { types: ['cloze'] as QuestionType[], clozeSource: 'own_then_ai' as const, count: 4, kept: ids, available };
+    expect(await t.planner.plan(learner, input, snapshot({ remaining: 2 }))).toEqual({ aiPlanned: 2, aiSenseIds: ['s2', 's4'] });
     await expect(t.planner.plan(learner, input, snapshot({ remaining: 1 }))).rejects.toMatchObject({
       status: 403, problemType: 'ai-quota-insufficient', extensions: { remaining: 1, needed: 2 },
     });

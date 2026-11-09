@@ -27,6 +27,12 @@ describe('itemView (Bước 7)', () => {
     expect(itemView(item({ source: 'rule' })).reportable).toBe(true);
   });
 
+  it('ai says whether this very question was written by AI, whatever the session\'s cloze source is', () => {
+    expect(itemView(item({ source: 'ai' })).ai).toBe(true);
+    expect(itemView(item({ source: 'own_sentence' })).ai).toBe(false);
+    expect(itemView(item({ source: 'rule' })).ai).toBe(false);
+  });
+
   it('learner UI D12 (K/81): private_word says the asked word is the learner\'s own, so the report screen can say the team will see it', () => {
     const privateKey = { kind: 'type_word', main: 'x', accepted: ['x'], asked_private: true };
     expect(itemView(item({ source: 'ai', answerKey: privateKey })).private_word).toBe(true);

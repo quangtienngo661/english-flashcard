@@ -126,8 +126,10 @@ export class SessionsService {
     const order = sortWords(words, sort, Math.random);
     const { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
     if (kept.length === 0) throw noWords('no-word-fits-types');
-    // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1).
-    const ai = await this.aiPlanner.plan(learner, { types, clozeSource, count, kept, available: availableBySense }, snapshot);
+    // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1). Under 'own_then_ai' a word with a saved
+    // sentence is asked from it, so only the AI side's availability may mark words for AI and count units.
+    const aiAvailable = clozeSource === 'own_then_ai' ? await this.aiSideAvailability(learner, kept, types, clozeSource) : availableBySense;
+    const ai = await this.aiPlanner.plan(learner, { types, clozeSource, count, kept, available: aiAvailable }, snapshot);
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
       const now = this.clock.now();
@@ -177,6 +179,21 @@ export class SessionsService {
       } });
       return { session: sessionView(session, []) };
     }, transactionOptions);
+  }
+
+  /** 'own_then_ai': the AI types each kept word would really take from AI (a word with a saved sentence has no AI cloze). */
+  private async aiSideAvailability(learner: Learner, kept: string[], types: QuestionType[], clozeSource: ClozeSource):
+    Promise<Map<string, QuestionType[]>> {
+    const aiTypes = types.filter((type) => isAiType(type, clozeSource));
+    const result = new Map<string, QuestionType[]>();
+    for (let at = 0; at < kept.length; at += AVAILABILITY_BATCH) {
+      const available = await this.builder.availability({
+        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: kept.slice(at, at + AVAILABILITY_BATCH),
+        chosenTypes: aiTypes, clozeSource, clozeRole: 'ai',
+      });
+      for (const [senseId, found] of available) result.set(senseId, found);
+    }
+    return result;
   }
 
   /** The first `count` words of `order` for which at least one of `types` can be built. */
@@ -282,7 +299,7 @@ export class SessionsService {
         }
         const available = (await this.builder.availability({
           userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes,
-          clozeSource: session.clozeSource as ClozeSource | null, db: tx,
+          clozeSource: session.clozeSource as ClozeSource | null, clozeRole: 'ai', db: tx,
         })).get(senseId) ?? [];
         if (available.length === 0) continue;
         const sense = (await this.content.practiceSenses(learner.userId, [senseId], learner.nativeLanguage, tx)).get(senseId);
@@ -532,14 +549,18 @@ export class SessionsService {
     return { state: 'finished', notice };
   }
 
-  /** Types the generator makes (design §5): meaning_in_sentence, mcq_sentence, and cloze when its source is AI. */
+  /** Types the generator makes (design §5): meaning_in_sentence, mcq_sentence, and cloze when its source is AI or own_then_ai. */
   private aiTypesOf(session: PracticeSession): QuestionType[] {
     return (session.types as QuestionType[]).filter((type) => isAiType(type, session.clozeSource as ClozeSource | null));
   }
 
-  /** The chosen non-AI types, including own-sentence cloze on every plan (đợt cải thiện A C3, changes Bước 7 D11). */
+  /**
+   * The chosen non-AI types, including own-sentence cloze on every plan (đợt cải thiện A C3, changes Bước 7 D11). Under 'own_then_ai'
+   * the cloze is in both lists: AI for a word with no saved sentence, a rule question for a word that has one.
+   */
   private ruleTypesOf(session: PracticeSession): QuestionType[] {
-    return (session.types as QuestionType[]).filter((type) => !isAiType(type, session.clozeSource as ClozeSource | null));
+    const source = session.clozeSource as ClozeSource | null;
+    return (session.types as QuestionType[]).filter((type) => !isAiType(type, source) || (type === 'cloze' && source === 'own_then_ai'));
   }
 
   /** r of design §6.3 (R9): planned − asked AI items (void included) − requests of the session not yet asked. */
@@ -579,7 +600,8 @@ export class SessionsService {
       return this.failedSlot(tx, learner, { ...session, pendingAiRequestId: existing.id }, items, existing, retryAi);
     }
     const available = (await this.builder.availability({
-      userId, nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes, clozeSource: session.clozeSource as ClozeSource | null, db: tx,
+      userId, nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes, clozeSource: session.clozeSource as ClozeSource | null,
+      clozeRole: 'ai', db: tx,
     })).get(senseId) ?? [];
     if (available.length === 0) return null;
     if (existing && existing.round === round) {

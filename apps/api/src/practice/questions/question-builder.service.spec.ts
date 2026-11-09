@@ -16,11 +16,12 @@ const cat = {
   inflections: [],
 } as unknown as PracticeSense;
 
-function setup() {
+function setup(savedSentences: string[] = []) {
   const content = {
     practiceSenses: vi.fn(async () => new Map([[senseId, cat]])),
-    practiceCandidates: vi.fn(async () => new Map()),
+    practiceCandidates: vi.fn(async () => new Map([[senseId, cat]])),
     practiceLemmaMeanings: vi.fn(async () => new Map()),
+    listSentences: vi.fn(async () => new Map([[senseId, savedSentences.map((text) => ({ text }))]])),
   };
   const learning = { practiceGroupMates: vi.fn(async (_userId: string, ids: string[]) => new Map(ids.map((id) => [id, [] as string[]]))) };
   const builder = new QuestionBuilder(content as unknown as ContentService, learning as unknown as LearningService,
@@ -74,5 +75,49 @@ describe('QuestionBuilder — reads through the client it is given (PX4)', () =>
     ])) as never);
     expect((await builder.availability(types)).get(senseId)).not.toContain('mcq_definition');
     expect(content.practiceLemmaMeanings).toHaveBeenLastCalledWith(userId, expect.arrayContaining(['cat', 'kitty']), 'vi', undefined);
+  });
+});
+
+describe('QuestionBuilder — cloze with source own_then_ai (a saved sentence first, else AI)', () => {
+  const saved = ['The cat sleeps all day.'];
+  const base = { userId, nativeLanguage: 'vi' as const, senseIds: [senseId], chosenTypes: ['cloze' as const], clozeSource: 'own_then_ai' as const };
+  const cloze = async (sentences: string[], clozeRole?: 'own' | 'ai') =>
+    (await setup(sentences).builder.availability({ ...base, clozeRole })).get(senseId);
+
+  it('a word with a saved sentence: the own role takes the cloze, the AI role does not', async () => {
+    expect(await cloze(saved, 'own')).toEqual(['cloze']);
+    expect(await cloze(saved, 'ai')).toEqual([]);
+  });
+
+  it('a word without one (it has a Vietnamese meaning): the AI role takes the cloze, the own role does not', async () => {
+    expect(await cloze([], 'ai')).toEqual(['cloze']);
+    expect(await cloze([], 'own')).toEqual([]);
+  });
+
+  it('without a role either side is enough to keep the word', async () => {
+    expect(await cloze(saved)).toEqual(['cloze']);
+    expect(await cloze([])).toEqual(['cloze']);
+  });
+
+  it('a saved sentence that cannot be masked does not count', async () => {
+    expect(await cloze(['Nothing about it here.'], 'own')).toEqual([]);
+    expect(await cloze(['Nothing about it here.'], 'ai')).toEqual(['cloze']);
+  });
+
+  it('PX4: the saved sentences are read through the given client', async () => {
+    const { builder, content } = setup(saved);
+    await builder.availability({ ...base, clozeRole: 'ai', db: tx });
+    expect(content.listSentences).toHaveBeenCalledExactlyOnceWith(userId, [senseId], tx);
+  });
+
+  it('build asks a saved sentence when the word has one, and says there is no type when it has none', async () => {
+    const input = {
+      userId, nativeLanguage: 'vi' as const, senseId, chosenTypes: ['cloze' as const], promptStyle: 'meaning' as const, previousType: null,
+      avoidDistractors: [], settings: SETTINGS_DEFAULTS.practice, random: () => 0, db: tx, clozeSource: 'own_then_ai' as const,
+    };
+    expect(await setup(saved).builder.build(input)).toMatchObject({
+      type: 'cloze', prompt: { kind: 'cloze' }, blank: { text: 'cat', base: true }, answerKey: { kind: 'type_word', main: 'cat' },
+    });
+    expect(await setup([]).builder.build(input)).toEqual({ skip: 'no-type' });
   });
 });
