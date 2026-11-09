@@ -493,3 +493,21 @@ Chủ dự án xem bản so sánh có bóng và không bóng, chọn giữ bóng
 - Figma, Hệ thống: nút "Thêm từ" trong 5 biến thể Thanh trên app/Desktop lấy lại bóng navy. Trang công khai không đổi gì.
 - Mockup vòng 15: `--shadow-btn`, `.btn.ok`, `.btn.bad`, `.btn.sec` về lại giá trị trước unslop (chế độ tối vẫn không bóng nút như trước). Kiểm tự động 120 tổ hợp qua; artifact bản 6.
 - Quy tắc ở `ui-best-practices.md` mục 3 sửa theo.
+
+## Học · Ôn theo đợt C và màn Ôn trong Figma (09/11/2026)
+
+Chủ dự án chốt GM17 của design giao diện mới: tên theo code đợt C (DC3). "Học" là lật thẻ (`/app/review`), "Ôn" là chọn hoặc gõ từ theo nghĩa
+(`/app/recall`). Rồi chọn "Vẽ trong Figma".
+
+- **Nút:** "Ôn 24 thẻ" + "Học cả 48 từ" thành hai nút bằng nhau "Học" (nút phụ) và "Ôn" (nút chính, vì có thẻ đến hạn), không số. Sửa ở Hôm nay,
+  Nhóm (băng chuyền và lúc mở chọn nhóm), Một nhóm, trang nền của Overlay 1 và 6 (12 chỗ). Máy tính 148 px mỗi nút; điện thoại chia đều chỗ còn lại.
+- **Component Nút** (Chính, Phụ) căn chữ giữa, để nút rộng cố định không lệch chữ sang trái. Nút ôm chữ không đổi gì.
+- **Khung lật thẻ** đổi tên "Ôn — …" thành "Học — …"; nhãn "ôn nhóm" thành "học nhóm". Chữ trong phiên ("Đóng phiên ôn", "Cần ôn lại") giữ như code.
+- **Màn Ôn mới**, hàng y=52000, dựng từ khung Phiên luyện:
+  - trắc nghiệm theo nghĩa `208:5655` (máy tính) / `208:5778` (điện thoại);
+  - gõ từ theo nghĩa `209:5683` / `209:5802`;
+  - gõ sai, so chữ với đáp án `209:5902` / `209:6003` (dòng so chữ là đề xuất, code chưa có);
+  - xong phiên `209:6089` / `209:6195`: "Xong 8 từ.", vòng 6/8, bốn ô Đúng lên ngăn · Đúng giữ ngăn · Sai giữ ngăn · Cần ôn lại, "Còn 6 từ mới
+    trong nhóm này" với nút Học và "Về trang chủ".
+- Màn Ôn không có nhãn AI, không có nút báo lỗi.
+- **Còn mở:** gõ sai một chữ nhỏ có tính là đúng không.

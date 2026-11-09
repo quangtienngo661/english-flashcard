@@ -24,7 +24,13 @@ trước ở câu đó.
 | GM11 | Chính sách, Điều khoản | Giữ đọc văn bản mỗi lần mở | Chủ dự án; Claude đồng ý |
 | GM12 | SEO | Metadata, ảnh OG từng trang, sitemap, JSON-LD (VND, Organization), màu trình duyệt | Claude đề xuất; chủ dự án duyệt |
 | GM13 | Bóng nút | Giữ bóng navy (và bóng cùng màu cho nút xanh, đỏ); nút tắt không bóng | Chủ dự án |
-| GM14–GM18 | Đề xuất chưa chốt | Xem cuối file | Chờ chủ dự án |
+| GM14 | Motion lệch giữa cũ và mới | Lấy số của giao diện mới cho cả sáu chỗ | Claude đề xuất; chủ dự án chốt |
+| GM15 | Chuyển động hộp thoại | Mọi hộp thoại và tấm trượt dùng chung chuyển động của hộp Lịch | Claude đề xuất; chủ dự án chốt |
+| GM16 | Hộp Lịch, Ngày và URL | Ghi trên URL; đổi tháng, đổi ngày chỉ thay địa chỉ | Chủ dự án (URL); Claude (phần đổi tháng, ngày, theo khảo sát) |
+| GM19 | Lỗi gõ nhỏ ở màn Ôn | Không nhận: gõ đúng hẳn mới tính đúng | Chủ dự án |
+| GM20 | Điều kiện từ khảo sát | Mờ tối đa 12px trên điện thoại; khối tổng kết 400ms; hộp đóng 150ms; tiêu đề xuống dòng line-height ≥ 1,15 | Khảo sát đề xuất; chủ dự án "ok" |
+| GM17 | Học và Ôn; màn Ôn nhớ lại | Tên theo code đợt C (Học = lật thẻ, Ôn = chọn hoặc gõ từ); Figma sửa theo. Mockup màn Ôn chưa chốt | Chủ dự án (tên) |
+| GM18 | Độ đậm tiêu đề | Giữ Bricolage 800 như Figma; quy tắc thành "400, 600, 700 cho chữ thường; 800 cho tiêu đề và số lớn Bricolage" | Chủ dự án |
 
 ## GM1. Phạm vi
 
@@ -100,7 +106,14 @@ Chủ dự án: "làm luôn".
 
 ## GM7. Thứ tự đợt
 
-Claude đề xuất chín đợt như bảng tóm tắt; chủ dự án "ok".
+Claude đề xuất chín đợt như bảng tóm tắt; chủ dự án "ok". Không có phương án thứ tự khác được đưa ra.
+
+## QR1–QR5. Chờ chủ dự án (từ review độc lập)
+
+Review: [`../reviews/2026-11-09-giao-dien-moi-design-review.md`](../reviews/2026-11-09-giao-dien-moi-design-review.md). Chủ dự án yêu cầu xem
+mockup các cách trước khi chọn: [`../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html`](../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html)
+(artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB). QR5 (màu nhóm trùng) Claude thêm khi sửa design theo review M6. Ghi bảng phương án
+ở đây khi chủ dự án chốt.
 
 ## GM8–GM10, GM12. Cấu trúc FE và SEO
 
@@ -113,8 +126,21 @@ Claude kiểm code và tài liệu Next 16.4:
 - Đề xuất: khung app vào layout theo nhóm route, `loading`/`error` theo nhóm, tải code hộp nặng khi mở, tải trước dữ liệu, `next/font` cho ba font,
   một bộ `ui/`, các bổ sung SEO.
 
+Chủ dự án yêu cầu Claude đề xuất theo best practice của Next.js, nên ở GM8–GM10, GM12 Claude đề xuất trước (ngoại lệ đã có trong luật dự án:
+chủ dự án muốn đề xuất trước thì nói, D27 Bước 4).
+
+| Mục | Phương án đã nêu | Trade-off | Chọn |
+|---|---|---|---|
+| GM8 | CSR + React Query cho app; trang công khai dựng sẵn; không Server Actions | Hợp với phiên đăng nhập nằm ở trình duyệt; không đổi API | ✅ |
+| GM8 | Mô hình BFF (cookie phiên ở `wordmet.com`, Next chuyển lệnh gọi sang API; dùng được Server Actions, SSR dữ liệu người học) | Đổi API và bảo mật, ngoài phạm vi | Không làm đợt này |
+| GM9 | Khung app trong layout theo nhóm route | Khung không vẽ lại khi chuyển trang | ✅ |
+| GM9 | Giữ như hiện nay: mỗi màn tự vẽ `<AppShell>` | Mất trạng thái khung mỗi lần chuyển trang | Không chọn |
+| GM10 | Một bộ `ui/` cho cả web, phần trang công khai ở `site/` | Một nguồn component; phải dời file | ✅ |
+| GM12 | Bổ sung metadata, ảnh OG, sitemap, JSON-LD, màu trình duyệt | Thêm việc ở M8 | ✅ |
+
 Chủ dự án bấm "Viết design doc" sau khi xem: duyệt. Lúc viết, Claude thêm nhóm `(onboarding)` cho "Bổ sung hồ sơ" và "Chào mừng" (khung Figma
-của hai trang này là card giữa như trang đăng nhập).
+của hai trang này là card giữa như trang đăng nhập). Sau review độc lập (I5, M8): gộp `(tabs)` và `(sub)` thành `(chrome)` vì Figma vẽ trang phụ
+có cùng thanh trên và tab dưới; `(auth)` tách `(split)` và `(card)`.
 
 ## GM11. Chính sách và Điều khoản
 
@@ -128,13 +154,40 @@ khác biệt nằm ở độ lệch và việc thêm hạ tầng. Chủ dự án
 
 ## GM13. Bóng nút
 
+| Phương án | Trade-off |
+|---|---|
+| Nút không bóng (lượt unslop) | Gọn, đúng luật unslop "không bóng màu"; nút chính bớt nổi |
+| ✅ Nút có bóng màu | Nút chính nổi rõ; chủ dự án thấy ổn sau khi so ảnh |
+
 **Vòng 1.** Lượt unslop vòng 15 bỏ bóng mọi nút (mockup và Figma) theo quy tắc "nút không bóng".
 
 **Vòng 2.** Chủ dự án thấy bóng ổn, xem ảnh so sánh có bóng / không bóng, chọn "Trả bóng lại".
 
 ✅ Nút chính bóng navy, nút xanh và đỏ bóng cùng màu, nút phụ bóng navy rất nhẹ, nút tắt không bóng.
 
-## Đề xuất kỹ thuật viết cùng design, chờ chủ dự án duyệt
+## GM14–GM18. Đề xuất viết cùng design
+
+Claude đưa năm đề xuất lúc viết design. Chủ dự án yêu cầu khảo sát và mockup trước khi chốt: khảo sát
+[`../../preparation/GIAO_DIEN_MOI_GM14_GM18_SURVEY_2026-11-09.md`](../../preparation/GIAO_DIEN_MOI_GM14_GM18_SURVEY_2026-11-09.md), mockup
+[`../../mockups/2026-11-05-redesign-concepts/gm14-18-de-xuat.html`](../../mockups/2026-11-05-redesign-concepts/gm14-18-de-xuat.html)
+(artifact https://claude.ai/artifact/95DqMB8aZgWzLJHVwmghDi).
+
+| # | Phương án đưa ra | Chủ dự án |
+|---|---|---|
+| GM14 | Lấy số mới cho cả sáu chỗ / giữ số cũ / chọn từng chỗ | ✅ Lấy số mới cho cả sáu |
+| GM15 | Một kiểu chung / mỗi hộp một kiểu | ✅ Một kiểu chung |
+| GM16 | Ghi trên URL / chỉ trong trang; nếu ghi URL: đổi tháng, ngày chỉ thay địa chỉ / thêm bước vào lịch sử | Vòng 1 hỏi trade-off; vòng 2 ✅ "url". Phần đổi tháng, ngày chủ dự án không chọn; Claude chọn "chỉ thay địa chỉ" theo khảo sát (Quay lại đóng hộp ngay) |
+| GM17 | Học, Ôn theo code đợt C (sửa Figma) / theo Figma (đổi DC3) / cách khác | ✅ Theo code đợt C; rồi "Vẽ trong Figma" |
+| GM18 | Giữ 800, sửa quy tắc / đổi Figma về 700 / mức khác | ✅ Giữ 800, sửa quy tắc (đã sửa `ui-best-practices.md` mục 5) |
+
+GM17 sau khi chốt, Claude tự quyết khi vẽ Figma (09/11/2026):
+- Nút có việc đang chờ là nút chính navy, nút kia là nút phụ. DC3 ghi "Ôn tô vàng" theo hướng B (màu nhấn vàng); giao diện mới dành vàng cho từ đích
+  (`ui-best-practices.md` mục 1), nên vai "nút nổi bật" chuyển sang navy.
+- Bỏ số trên nút ("Ôn 24 thẻ" thành "Ôn") theo DC3 "không số".
+- Màn Ôn dựng từ khung Phiên luyện; thêm dòng so chữ đã gõ với đáp án theo khảo sát. Dòng này là đề xuất, code chưa có.
+- Gõ sai một chữ nhỏ có tính là đúng không: chủ dự án "không" (GM19), giữ luật hiện tại.
+
+Đề xuất ban đầu lúc viết design:
 
 | # | Đề xuất | Lý do | Bỏ gì |
 |---|---|---|---|

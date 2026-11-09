@@ -18,11 +18,12 @@ Ví dụ xuyên suốt: **Lan**, người học tiếng Việt, có 5 nhóm ("Đ
 |---|---|---|
 | Trang công khai | 10 khung (5 trang × máy tính, điện thoại) | `/{locale}`, `/privacy`, `/terms`, `/sources`, trang 404 |
 | Đăng nhập và tài khoản | 18 khung (9 trang × 2) | `/{locale}/app/(auth)/*`, `/app/complete-profile`, `/app/welcome` |
-| App người học | khoảng 80 khung và 7 overlay | `/{locale}/app/(member)/*` |
+| App người học | 81 khung (73 khung lúc review, tính cả 16 khung overlay; thêm 8 khung màn Ôn ngày 09/11/2026) | `/{locale}/app/(member)/*` |
 
-- **Thêm:** API lịch học (tổng theo tháng, chi tiết một ngày) cho hai hộp Lịch và Ngày (§10).
+- **Thêm:** API lịch học (tổng theo tháng, chi tiết một ngày) cho hai hộp Lịch và Ngày (§10). Các chỗ Figma cần dữ liệu khác (thẻ nhóm "tiếp
+  theo", "Lần luyện gần nhất", số liệu trong hộp Ngày, chuỗi ngày trên nút lịch) chờ chủ dự án chọn thêm API, tự tính ở web hay bỏ (§2, QR2).
 - **Bỏ:** trang Lịch sử luyện tập (`/app/practice/history`), thay bằng hai hộp Lịch và Ngày; đường dẫn cũ chuyển hướng (§10.4).
-- **Không đổi:** admin (`apps/admin` giữ hướng B và bộ token cũ), API ngoài phần lịch học, cách đăng nhập, cách thanh toán, cờ
+- **Không đổi:** admin (`apps/admin` giữ hướng B và bộ token cũ), API ngoài phần lịch học và các chỗ QR2 chọn thêm API, cách đăng nhập, cách thanh toán, cờ
   `NEXT_PUBLIC_LEARNER_APP` (app vẫn chặn trên production tới khi Deploy).
 - **Màu nhóm** tính từ ID nhóm, không thêm dữ liệu (§7.4).
 
@@ -40,21 +41,35 @@ Bảng đầy đủ kèm mọi phương án đã đưa ra: decision record. Tóm
 | GM6 | API lịch học | Làm trong đợt này | Chủ dự án |
 | GM7 | Thứ tự đợt | M1–M9 ở §9 | Claude đề xuất, chủ dự án đồng ý |
 | GM8 | Cách render | App và đăng nhập: CSR với React Query; trang công khai: dựng sẵn; không Server Actions | Claude đề xuất, chủ dự án duyệt |
-| GM9 | Khung app | Thanh trên, tab dưới, nút lịch nằm trong layout theo nhóm route `(tabs)`, `(sub)`, `(onboarding)`, `(focus)` | Claude đề xuất, chủ dự án duyệt |
+| GM9 | Khung app | Thanh trên, tab dưới, nút lịch nằm trong layout theo nhóm route `(chrome)`, `(onboarding)`, `(focus)`; `(auth)` tách `(split)`, `(card)` | Claude đề xuất, chủ dự án duyệt; sửa sau review (I5, M8) |
 | GM10 | Component | Một bộ `src/ui/` cho cả web; phần trang công khai ở `src/site/` | Claude đề xuất, chủ dự án duyệt |
 | GM11 | Chính sách, Điều khoản | Giữ cách đọc văn bản mỗi lần mở, không lưu đệm | Chủ dự án |
 | GM12 | SEO | Các bổ sung ở §11 | Claude đề xuất, chủ dự án duyệt |
 | GM13 | Bóng nút | Giữ bóng navy cho nút chính, bóng cùng màu cho nút xanh, đỏ; nút tắt không bóng | Chủ dự án (09/11/2026) |
 
-**Đề xuất chưa chốt, chờ chủ dự án duyệt cùng bản viết này** (mỗi mục có lý do ở chỗ được nhắc):
+**GM14–GM18** (Claude đề xuất lúc viết; chủ dự án xem khảo sát và mockup rồi chốt ngày 09/11/2026):
 
-| # | Đề xuất | Ở đâu |
+| # | Quyết định | Ở đâu | Trạng thái |
+|---|---|---|---|
+| GM14 | Chỗ motion lệch giữa giao diện mới và code: lấy số của giao diện mới cho cả sáu chỗ | §8.3 | Chốt |
+| GM15 | Mọi hộp thoại và tấm trượt dùng chung chuyển động của hộp Lịch | §8.2 | Chốt |
+| GM16 | Hộp Lịch và Ngày mở theo tham số trên URL (`?lich=`, `?ngay=`); đổi tháng, đổi ngày chỉ thay địa chỉ | §5.6 | Chốt (phần đổi tháng, ngày: Claude đề xuất theo khảo sát) |
+| GM17 | Tên theo code đợt C: Học = lật thẻ (`/app/review`), Ôn = chọn hoặc gõ từ theo nghĩa (`/app/recall`); Figma sửa theo. Màn Ôn chưa có khung Figma | §9, M3, M5 | Chốt phần tên |
+| GM18 | Giữ Bricolage 800 cho tiêu đề và số lớn; quy tắc sửa thành "400, 600, 700 cho chữ thường; 800 cho tiêu đề và số lớn Bricolage" | §3.3 | Chốt, đã sửa `ui-best-practices.md` |
+| GM19 | Màn Ôn không nhận lỗi gõ nhỏ: gõ đúng hẳn mới tính đúng | §9 M5 | Chốt |
+| GM20 | Điều kiện từ khảo sát: mờ tối đa 12px trên điện thoại, khối tổng kết 400ms, hộp đóng 150ms, tiêu đề xuống dòng line-height ≥ 1,15 | §3.3, §8 | Chốt |
+
+**Chờ chủ dự án** (từ review độc lập `../reviews/2026-11-09-giao-dien-moi-design-review.md`; mockup các cách:
+[`../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html`](../../mockups/2026-11-05-redesign-concepts/review-4-quyet-dinh.html),
+artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB):
+
+| # | Câu hỏi | Ảnh hưởng tới |
 |---|---|---|
-| GM14 | Chỗ motion lệch giữa giao diện mới và code: lấy số của giao diện mới | §8.3 |
-| GM15 | Mọi hộp thoại và tấm trượt dùng chung chuyển động của hộp Lịch | §8.2 |
-| GM16 | Hộp Lịch và Ngày mở theo tham số trên URL (`?lich=`, `?ngay=`) | §5.6 |
-| GM17 | Màn Ôn kiểu nhớ lại (`/app/recall`) chưa có khung Figma: vẽ mockup trước đợt M5 | §9, M5 |
-| GM18 | Quy tắc "ba độ đậm 400/600/700" trong `ui-best-practices.md` sửa theo Figma (tiêu đề Bricolage 800) | §3.3 |
+| QR1 | "Báo lỗi của tôi" đặt ở đâu khi bỏ trang Lịch sử luyện tập (review C1) | §9 M5–M7, §10.4 |
+| QR2 | Bốn chỗ Figma cần dữ liệu API chưa có: thêm API, tự tính ở web hay bỏ (review I1, I9) | §1, §9 M3, §10.2 |
+| QR3 | Giá trên trang chủ lấy từ đâu (review I8) | §9 M8, §11 |
+| QR4 | AdSense tải lại trang làm mất hiệu ứng mở nhóm (review I6, DB38) | §5.4, §8.2 |
+| QR5 | Màu nhóm theo ID: 5 nhóm có 85% khả năng trùng ít nhất một cặp màu (7 màu); giữ, hay gán theo thứ tự tạo nhóm (cần `created_at` trong `GET /v1/groups`) (review M6) | §7.4 |
 
 ## 3. Context UI và motion
 
@@ -75,6 +90,19 @@ Thư mục mockup và bản audit Figma chưa có trong git (09/11/2026). Commit
 **Lệch giữa các nguồn:** Figma thắng về giao diện; hành vi API thắng về nghiệp vụ. Ví dụ: chữ trong Figma hứa điều API không làm thì sửa chữ,
 không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs/deliveries/giao-dien-moi-rulings.md` (mã R1, R2…), giống cách Bước 8 làm.
 
+**Chỗ lệch đã biết** (review M14, M7), chốt luôn để người code không phải đoán. Tài liệu nguồn sửa theo trong PR đầu của M1:
+
+| Chỗ | Lệch | Lấy |
+|---|---|---|
+| Thời lượng vào trang, vào phần | `ui-best-practices.md` mục 7: 600–900ms; tài liệu motion: vào 300–340ms | Tài liệu motion (§8) |
+| Phần tử tròn hẳn | `ui-best-practices.md`: công tắc, nút chia đoạn, ảnh đại diện; Figma: thêm nút tăng giảm số câu, huy hiệu | Figma |
+| Bóng dưới thanh trên | Tài liệu motion §6: có bóng navy; Figma: lớp "Bóng dưới" ẩn ở thanh máy tính (lượt unslop), còn ở thanh điện thoại | Không có bóng ở cả hai |
+| Màu nhấn | `app-redesign-plan.md` dòng 5 còn ghi `#2445d6` | `#1e3a8a` (biến Figma) |
+| Khoảng cách | Bậc 4…120 và lưới 4 px; vài lề lẻ trong Figma (card đăng nhập 25, 41) | Lưới 4 px; lề lẻ làm tròn về bậc gần nhất |
+| Chữ đọc | §3.3 16 px, 160–170%; Figma dùng nhiều `Body/Small` 14 px, 150% | Chữ đọc chính 16 px; chữ phụ 14 px theo text style Figma |
+| Độ đậm Bricolage | GM18 nói 800; text style `Display/Card title` là 700 | 800 cho tiêu đề trang và số lớn; 700 cho tiêu đề card |
+| Bóng nút | Trang mẫu vòng 15: `0 6px 14px -8px`; Figma: `0 10px 28px -10px` | Figma (§7.2) |
+
 ### 3.2 Cách đọc một khung Figma khi code
 
 1. Lấy khung theo ID ở §9 bằng Figma MCP: `get_screenshot` để nhìn, `get_design_context` để lấy cấu trúc, `get_variable_defs` để lấy biến.
@@ -90,7 +118,8 @@ không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs
   nhãn và chip đếm 6, card trong hộp thoại 12. Chỉ công tắc, nút chia đoạn, ảnh đại diện tròn hẳn.
 - **Bóng:** card `--shadow-card`, ô chọn và chip `--shadow-row`, hộp thoại và menu `--shadow-pop` (ba bóng màu ink); nút chính bóng navy (GM13).
 - **Chữ:** Noto Sans cho chữ đọc và nút; Bricolage Grotesque cho tiêu đề và số lớn (ExtraBold 800 như Figma, GM18); JetBrains Mono 12 px chữ
-  thường cho nhãn nhỏ của app ("noun · A2", "câu 7 / 20"). Chữ đọc 16 px trở lên, line-height 160–170%.
+  thường cho nhãn nhỏ của app ("noun · A2", "câu 7 / 20"). Chữ đọc 16 px trở lên, line-height 160–170%. Tiêu đề có thể xuống dòng dùng
+  line-height ≥ 1,15 (dấu tiếng Việt chồng hai tầng ở độ đậm 800); 1,0 chỉ cho số và tiêu đề một dòng; không cắt tiêu đề bằng `overflow: hidden`.
 - **Màu:** navy `#1e3a8a` chỉ cho nút chính, link và một điểm nhấn mỗi màn; vàng `#ffd84a` chỉ để tô từ đích. Link khác chữ thường bằng độ
   đậm hoặc mũi tên, không chỉ bằng màu (navy so với ink chỉ 1,47:1). Đúng / Sai luôn kèm icon và chữ.
 - **Hành động phụ:** component "Nút chữ" (Thêm, Thường, Phụ, Xóa), không gạch chân; gạch chân chỉ cho liên kết giữa câu.
@@ -102,7 +131,8 @@ không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs
 
 ## 4. Git và cất code cũ
 
-1. `git fetch`; tag `archive/giao-dien-cu-2026-11` tại `origin/dev` (commit có giao diện cũ cuối cùng); `git push origin archive/giao-dien-cu-2026-11`.
+1. `git fetch`; tag `archive/giao-dien-cu-2026-11` tại `origin/dev` (commit có giao diện cũ cuối cùng);
+   `git push origin refs/tags/archive/giao-dien-cu-2026-11`. Hook git chặn dạng không có `refs/tags/` vì coi đó là tên nhánh (review M1, đã chạy thử).
 2. Nhánh `refactor/giao-dien-moi` từ cùng commit. Hook git chỉ nhận tên `<type>/<slug>` (`~/.claude/hooks/enforce-git-conventions.py:58`).
 3. File `docs/deliveries/giao-dien-cu-map.md` (tạo ở bước này): mỗi màn cũ nằm ở file nào trong tag, và cách lấy lại:
    `git show archive/giao-dien-cu-2026-11:apps/web/src/features/learner/today/TodayPage.tsx` (xem) hoặc
@@ -133,8 +163,8 @@ không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs
 
 | Khu | Render | Ghi chú |
 |---|---|---|
-| Trang chủ, Nguồn dữ liệu, 404 | Dựng sẵn lúc build; Server Components; JS chỉ cho phần tương tác (`Reveal`, hỏi đáp, cửa sổ app minh họa) | Như hiện nay (`(site)/page.tsx`) |
-| Chính sách, Điều khoản | Server render mỗi lần mở, đọc `GET /v1/legal/current` (đợi tối đa 2,5 giây; lỗi thì hiện bản nháp) | Giữ như hiện nay (GM11, `lib/legal.ts`) |
+| Trang chủ, 404 | Dựng sẵn lúc build; Server Components; JS chỉ cho phần tương tác (`Reveal`, hỏi đáp, cửa sổ app minh họa) | Như hiện nay (`(site)/page.tsx`; `scripts/assert-render-mode.mjs` kiểm trong CI) |
+| Chính sách, Điều khoản, Nguồn dữ liệu | Server render mỗi lần mở: đọc `GET /v1/legal/current` hoặc `GET /v1/sources` (đợi tối đa 2,5 giây; lỗi thì hiện bản nháp) | Giữ như hiện nay (GM11; `lib/legal.ts`, `lib/sources.ts`; cả ba `force-dynamic`) |
 | Đăng nhập và tài khoản | Khung, tiêu đề, chữ render ở server; form là client component | Không index |
 | App `/app` | Layout render theo request (`connection()` trong `app/layout.app.tsx`, để mỗi trang có nonce CSP riêng); nội dung là client component, dữ liệu qua React Query | Không index |
 
@@ -147,42 +177,55 @@ Trang công khai không có form (danh sách chờ đã bỏ ngày 03/11/2026), 
 
 ### 5.4 Khung app nằm trong layout
 
-Hiện nay 14 màn tự vẽ `<AppShell>` (`app-chrome/AppShell.tsx`), nên mỗi lần chuyển trang khung vẽ lại và mất trạng thái. Đổi thành:
+Hiện nay 17 chỗ tự vẽ `<AppShell>` (`app-chrome/AppShell.tsx`: 14 màn feature, `AuthGate`, `complete-profile`, `welcome`), nên mỗi lần chuyển
+trang khung vẽ lại và mất trạng thái. Figma: mọi màn điện thoại không phải phiên đều có cùng thanh trên và thanh tab dưới (36 instance mỗi loại),
+kể cả trang phụ; nút "Quay lại" nằm trong nội dung trang; trang phụ dùng biến thể `Tab=Không` (`149:4381`, `149:4350`) (review I5). Vì vậy tab
+và trang phụ chung một layout. Đổi thành:
 
 ```
 app/[locale]/app/
 ├─ layout.app.tsx                 như hiện nay: nonce, theme script, AppIntl, AppProviders
-├─ (auth)/layout.app.tsx          khung đăng nhập (panel navy ở đăng nhập, đăng ký; card giữa ở các trang khác)
-└─ (member)/layout.app.tsx        RequireSession, AddWordProvider, hộp Lịch/Ngày, HouseAd, AdsenseLoader
-   ├─ (tabs)/layout.app.tsx       thanh trên, tab dưới (điện thoại), nút lịch nổi, nút + nổi
+├─ (auth)/layout.app.tsx          AuthGate (giữ ngoại lệ B8-2: người đã đăng nhập vẫn mở được quên, đặt lại mật khẩu)
+│   ├─ (split)/layout.app.tsx     hai cột, panel navy: login/  register/
+│   └─ (card)/layout.app.tsx      card giữa: verify-email/  forgot-password/  reset-password/  google/complete/  account-deleted/
+└─ (member)/layout.app.tsx        RequireSession, AddWordProvider, trạng thái hộp Lịch/Ngày, HouseAd, AdsenseLoader
+   ├─ (chrome)/layout.app.tsx     thanh trên, thanh tab dưới (điện thoại), nút lịch nổi; tab đang sáng (hoặc Không) theo useSelectedLayoutSegment
    │   ├─ page.app.tsx            Hôm nay
-   │   ├─ groups/  lookup/  practice/
-   ├─ (sub)/layout.app.tsx        thanh trên, nút quay lại ở điện thoại, nút lịch nổi
-   │   ├─ group/  group/backlog/  topic/  word/  practice/weak/  practice/history/ (chỉ chuyển hướng, §10.4)
+   │   ├─ groups/  lookup/  practice/  practice/weak/  practice/history/ (chỉ chuyển hướng, §10.4)
+   │   ├─ group/  group/backlog/  topic/  word/
    │   ├─ settings/  settings/account/  settings/delete-account/  settings/transactions/
    │   └─ plans/  plans/order/
-   ├─ (onboarding)/layout.app.tsx khung card giữa như trang đăng nhập (khung Figma "Bổ sung hồ sơ", "Chào mừng"), cần phiên
+   ├─ (onboarding)/layout.app.tsx card giữa như trang đăng nhập (khung "Bổ sung hồ sơ", "Chào mừng"), cần phiên
    │   └─ complete-profile/  welcome/
    └─ (focus)/layout.app.tsx      không khung; nút lịch nằm trên thanh của phiên (điện thoại)
        └─ practice/session/  review/  recall/
 ```
 
-- Thư mục có ngoặc không vào đường dẫn: `/vi/app/word` giữ nguyên. Một đoạn như `practice/` có thể nằm ở nhiều nhóm (`(tabs)/practice` cho
-  `/app/practice`, `(focus)/practice/session` cho `/app/practice/session`) vì đường dẫn cuối khác nhau; plan kiểm bằng `next build`.
+- Thư mục có ngoặc không vào đường dẫn: `/vi/app/word` giữ nguyên. Một đoạn như `practice/` nằm được ở nhiều nhóm (`(chrome)/practice` cho
+  `/app/practice`, `(focus)/practice/session` cho `/app/practice/session`) vì đường dẫn cuối khác nhau (tài liệu Next 16.4, route groups).
+- Nút "Quay lại" và nút "+" nổi do từng màn tự khai báo trong nội dung (Figma: nút + chỉ ở Hôm nay `117:4712`).
+- Nút lịch nổi ẩn ở Từ tồn đọng và Chủ đề trên điện thoại, để không chồng thanh nổi (`app-redesign-plan.md`, vẽ lại vòng 15).
+- `(auth)` tách hai nhóm con vì layout server không biết đường dẫn đang mở; khung hai cột chỉ cho đăng nhập, đăng ký (Figma `35:308`, `35:405`).
 - Đuôi `page.app.tsx`, `layout.app.tsx` giữ theo D21 (`next.config.ts`, `pageExtensions`).
 - Màn có cột phụ (từ 1280 px) khai báo cột phụ trong chính màn đó, không qua layout.
 - `AddWordProvider` lên `(member)/layout` để hộp Thêm từ mở được từ mọi màn có thanh trên.
 
 | Khi | Thì |
 |---|---|
-| Lan chuyển từ Hôm nay sang Nhóm | Thanh trên đứng yên, chữ đang gõ ở ô tìm còn nguyên, chỉ phần giữa đổi |
+| Lan chuyển từ Hôm nay sang Nhóm, hoặc từ Nhóm vào Một nhóm | Thanh trên, thanh tab dưới đứng yên, chữ đang gõ ở ô tìm còn nguyên, chỉ phần giữa đổi (trừ người có quảng cáo, xem QR4) |
 | Lan mở `/vi/app/practice/session` | Không có thanh trên, không có tab dưới; nút lịch nằm trên thanh của phiên ở điện thoại, nổi góc phải dưới ở máy tính |
-| Phiên đăng nhập hết hạn khi đang ở `(sub)` | `RequireSession` chuyển về đăng nhập như hiện nay (E1–E11 của design giao diện người học) |
+| Phiên đăng nhập hết hạn khi đang ở `(chrome)` | `RequireSession` chuyển về đăng nhập như hiện nay (E1–E11 của design giao diện người học) |
+| Lan (Miễn phí, có quảng cáo) rời Nhóm hoặc Tra từ | Theo DB38: trang tải lại cả document, khung mất trạng thái, không có FLIP; chờ QR4 |
 
 ### 5.5 Đang tải và lỗi
 
-- Mỗi nhóm route có `loading.app.tsx`: khung xương theo bố cục khung Figma của màn đầu nhóm, hiện ngay khi bấm chuyển trang.
-- Mỗi nhóm route có `error.app.tsx`: chữ "chuyện gì xảy ra + việc cần làm", nút "Thử lại" gọi `reset()`. Lỗi chỉ thay phần giữa, khung còn.
+- `loading.app.tsx` đặt theo từng route có bố cục riêng (Hôm nay, Nhóm, Một nhóm, Tra từ, trang một từ, Luyện tập), khung xương theo khung Figma
+  của route đó; các route còn lại dùng một khung xương trung tính (tiêu đề và ba khối). `loading` chỉ hiện khi chuyển trang mềm. Next nhận đuôi
+  `.app.tsx` cho mọi file đặc biệt, không chỉ page, layout (review M5, đã đọc app loader của Next).
+- Lần tải cứng (mở app, tải lại): `RequireSession` hiện khung xương có hình khung app (thanh trên, tab dưới) thay cho vòng chờ toàn màn
+  (`FullScreenSpinner`, `app-shell/RequireSession.tsx:54–55`).
+- Mỗi nhóm route có `error.app.tsx`: chữ "chuyện gì xảy ra + việc cần làm", nút "Thử lại" gọi `retry()` (cách Next 16.3+ khuyên dùng; `reset()`
+  chỉ khi không muốn tải lại dữ liệu). Lỗi chỉ thay phần giữa, khung còn.
 - Lỗi dữ liệu trong màn (API trả Problem Details) giữ cách hiện nay (`app-shell/api/use-error-message.ts`).
 
 ### 5.6 Hộp thoại và tham số URL
@@ -190,6 +233,15 @@ app/[locale]/app/
 - Hộp Lịch mở bằng `?lich=2026-11`, hộp Ngày bằng `?ngay=2026-11-08` trên đường dẫn đang đứng (GM16). Lý do: nút Quay lại của trình duyệt đóng hộp;
   link "Mở lịch học" ở Hôm nay và đường dẫn cũ `/app/practice/history` mở thẳng hộp.
 - Các hộp khác (Thêm từ, Thêm câu, Thêm cả loạt, Chọn nhóm, Tùy chỉnh phiên, Giới thiệu Pro, Chi tiết giao dịch) giữ trạng thái trong React như hiện nay.
+- Ba luật lịch sử trình duyệt (khảo sát `GIAO_DIEN_MOI_GM14_GM18_SURVEY_2026-11-09.md`, GM16):
+  1. Mở hộp Lịch, sang hộp Ngày: thêm một bước vào lịch sử. Đổi tháng, đổi ngày (‹ ›, phím mũi tên), lọc trong hộp: chỉ thay địa chỉ, không thêm bước.
+  2. Nút đóng và Esc chỉ lùi lịch sử khi hộp được mở trong phiên này (đánh dấu ở `history.state`); hộp mở từ link hoặc sau khi tải lại thì đóng
+     bằng cách bỏ tham số (thay địa chỉ), để đóng hộp không làm rời app.
+  3. Mở thẳng `?ngay=` từ link: app thay địa chỉ thành `?lich=<tháng>` rồi thêm bước `?ngay=`, để Quay lại từ hộp Ngày về hộp Lịch.
+- Đổi tham số bằng `window.history.pushState` / `replaceState`, không qua `router.push`: `/app` render theo request (`connection()`), nên
+  `router.push` gọi lại server mỗi lần đổi ngày. `useSearchParams` tự theo hai lệnh này (tài liệu Next 16.4, "Linking and navigating").
+- Thành phần đọc `useSearchParams` bọc trong `Suspense`, để build không vỡ nếu sau này bỏ `connection()`.
+- Trạng thái hộp nằm ở `(member)/layout.app.tsx` (một chỗ cho mọi màn), không ở từng màn.
 
 | Khi | Thì |
 |---|---|
@@ -203,14 +255,24 @@ app/[locale]/app/
 - Hộp nặng tải code khi mở lần đầu bằng `next/dynamic`: Thêm từ (và Thêm câu, Thêm cả loạt, Kết quả tra AI, Chọn nhóm), Tùy chỉnh phiên,
   Lịch và Ngày, Giới thiệu Pro. Code hiện chưa dùng `dynamic(` ở `features/` và `app-chrome/`.
 - Rê chuột hoặc focus vào tab, thẻ nhóm thì `queryClient.prefetchQuery` cho màn đó; `Link` của Next giữ prefetch mặc định.
-- Đo trước và sau: cột "First Load JS" của `next build` cho mọi route `/app`. Không route nào nặng hơn bản cũ quá 10%; quá thì ghi lý do vào rulings.
+- Đo trước và sau: Next 16 đã bỏ cột "First Load JS" khỏi output `next build` (tài liệu nâng cấp lên 16). Next 16.4.3 ghi
+  `.next/diagnostics/route-bundle-stats.json` (trường `firstLoadUncompressedJsBytes`, chỉ khi build bằng Turbopack; file này là chi tiết nội bộ
+  của Next, không có trong tài liệu). Một script `scripts/compare-bundle-stats.mjs` so file đó của bản cũ (build ở tag lưu trữ) với bản mới cho
+  mọi route `/vi/app/**`, fail khi route nào nặng hơn quá 10%; quá thì ghi lý do vào rulings. Nếu Next đổi định dạng file, dùng "Total JavaScript"
+  của Lighthouse trên Hôm nay, Nhóm, Phiên luyện.
 
 ### 5.8 Font và chữ dịch
 
 - `next/font/google` cho ba font, đều có bộ `vietnamese` (đã kiểm `font-data.json` của Next 16.4.3): `Noto_Sans` (biến thiên `wght`),
-  `Bricolage_Grotesque` (biến thiên `opsz`, `wdth`, `wght`), `JetBrains_Mono` (`preload: false`). Biến CSS `--font-sans`, `--font-display`, `--font-mono`.
+  `Bricolage_Grotesque` (biến thiên `opsz`, `wdth`, `wght`), `JetBrains_Mono` (chỉ tải ở layout `/app`, xem dưới). Biến CSS `--font-sans`, `--font-display`, `--font-mono`.
   Thay `Lexend` ở `app/[locale]/layout.tsx:12`.
-- Ảnh OG đang nhúng font Lexend (`og-fonts.generated.ts`): sinh lại bằng `pnpm gen:og-fonts` với Noto Sans và Bricolage.
+- `next/font` mặc định chỉ tải trục `wght`. Không khai `axes` cho Bricolage (`opsz`, `wdth`): khảo sát GM18 đo file trục `wght` khoảng 41 KB, thêm hai
+  trục thì khoảng 131 KB. JetBrains Mono dùng cho nhãn trên gần như mọi màn app, nên `preload: true` ở layout `/app` để chữ không nhảy khi font tới;
+  trang công khai không tải font này.
+- Ảnh OG đang nhúng font Lexend: `scripts/gen-og-fonts.mjs` đọc cứng `assets/fonts/Lexend-*.ttf`, `og-fonts.test.ts` kiểm `lexendRegular`,
+  `lexendExtraBold`, `opengraph-image.tsx` dùng `fontFamily: 'Lexend'`. `next/og` cần file TTF tĩnh. Thêm TTF tĩnh Noto Sans (có tiếng Việt) và
+  Bricolage ExtraBold vào `assets/fonts/` kèm giấy phép OFL, sửa script và test, ghi cỡ Worker trước và sau (file nhúng hiện 274 KB; mục Worker của
+  `deploy-checklist.md`) (review M10).
 - Chữ dịch giữ cách hiện nay: trang công khai không gửi chữ xuống trình duyệt (`messages={null}` ở root); app chỉ gửi namespace `App`
   (`app-shell/AppIntl.tsx`).
 
@@ -227,26 +289,45 @@ features/learner/<khu>/ mỗi khu: <Khu>Page.tsx, các phần con, queries.ts, t
 i18n/  lib/             giữ
 ```
 
-Luật phụ thuộc, giữ bằng `no-restricted-imports` trong `eslint.config.mjs`:
+Luật phụ thuộc là **danh sách cấm**, giữ bằng `no-restricted-imports` trong `eslint.config.mjs` (luật này chỉ chặn theo danh sách cấm). Viết
+theo import thật đang có (review I10):
 
-| Thư mục | Được import | Không được import |
+| Thư mục | Không được import | Ghi chú |
 |---|---|---|
-| `ui/` | `lib/`, `styles/` | `features/`, `app-shell/`, `site/`, `app-chrome/` |
-| `site/` | `ui/`, `lib/`, `i18n/` | `features/`, `app-shell/`, `app-chrome/` |
-| `app-chrome/` | `ui/`, `app-shell/`, `lib/` | `site/` |
-| `features/learner/*` | `ui/`, `app-shell/`, `app-chrome/`, `lib/` | `site/` |
+| `ui/` | `@/features/*`, `@/app-shell/*`, `@/app-chrome/*`, `@/site/*` | Logic phát âm dời sang `lib/` (bảng dưới) |
+| `site/` | `@/features/*`, `@/app-chrome/*` | Được import `@/app-shell/theme/*` và `@/app-shell/config` (landing cần theme; `lib/legal.ts`, `lib/sources.ts` đọc config) |
+| `app-chrome/` | `@/site/*` | Được import các context, API mà khung cần từ `features/` (Thêm từ, phím `/` tìm từ, hộp Lịch) |
+| `features/learner/*` | `@/site/*` | |
 
-`app-ui/`, `components/` xóa khi không còn file nào dùng (cuối M8); bản cũ nằm trong tag.
+Dời file trong đợt này:
+
+| File hiện tại | Tới | Đợt |
+|---|---|---|
+| `features/learner/word/pronunciation.ts`, `app-ui/speech.ts`, `app-ui/audio-player.ts` | `lib/speech/` | M1 (để `ui/SpeakButton` không import `features/`) |
+| `components/landing/*`, `components/sections/*`, `components/layout/*`, `components/seo/*`, `components/interactive/*` | `site/landing/`, `site/legal/`, `site/layout/`, `site/seo/`, `site/interactive/` | M8 |
+| `app-ui/*` còn lại, `components/ui/*` | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M8 |
+
+Một test lint có file mẫu cố ý vi phạm (ví dụ `ui/` import `@/features/...`) chạy `eslint` và kiểm có lỗi, để luật có "răng". `app-ui/`,
+`components/` xóa khi không còn file nào dùng (cuối M8); bản cũ nằm trong tag.
 
 ## 7. Token, theme, font, màu nhóm
 
 ### 7.1 Chỗ đặt token
 
-- Thêm `packages/design-tokens/web.css` (Light) và `web-dark.css` (Dark). `apps/web/src/app/globals.css` import hai file này thay cho
-  `theme.css`, `dark.css`, `island.css`. Admin giữ `theme.css` (`apps/admin/src/styles/globals.css:2`).
+Chuyển tiếp trong lúc màn cũ còn chạy (review I4). Token cũ và mới trùng tên mà khác nghĩa: cũ `accent` = vàng `#ffd84a`, `primary` = `#2445d6`,
+`ink` = `#0f1a3d`; mới `accent` = navy `#1e3a8a`, `mark` = vàng, `ink` = `#1b2444`. Code web dùng tên cũ khắp nơi (`bg-canvas`, `bg-navy`,
+`shadow-ledge`, `rounded-control`, `bg-primary-soft`, `pastel-island`…).
+
+- Thêm `packages/design-tokens/web.css` (Light) và `web-dark.css` (Dark), mọi tên mang tiền tố `wm-` (ví dụ `--color-wm-accent`,
+  `--radius-wm-button`, `--shadow-wm-card`), nên không trùng tên cũ. Thêm `./web.css`, `./web-dark.css` vào trường `exports` của
+  `packages/design-tokens/package.json`; thiếu thì `@import` và `createRequire(...).resolve(...)` trong `tokens.test.ts` báo
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+- M1–M7: `apps/web/src/app/globals.css` import cả bộ cũ (`theme.css`, `dark.css`, `island.css`) và bộ mới. Màn đã làm lại chỉ dùng token `wm-`.
+- M8: khi `grep` không còn class cũ trong `apps/web/src`, bỏ import bộ cũ khỏi web. Một test kiểm không còn class của bộ cũ trong `apps/web/src`.
+- Không sửa, không xóa gì trong `theme.css`: admin vẫn import (`apps/admin/src/styles/globals.css:2`) và có test riêng đọc nó
+  (`apps/admin/src/styles/tokens.test.ts:8`). `dark.css`, `island.css`, `dark-pastel.css` chỉ xóa ở M9 sau khi kiểm admin không import.
 - Màu chỉ khai báo trong package, như luật hiện nay (README của package; `apps/web/src/styles/tokens.test.ts` kiểm tương phản LP12 và việc app
-  không tự khai báo màu UBC1). Hai test này đổi sang đọc `web.css`, `web-dark.css`.
-- `dark.css`, `island.css`, `dark-pastel.css` không còn ai dùng sau M8 thì xóa ở M9; README của package cập nhật.
+  không tự khai báo màu UBC1). Hai test này đọc thêm `web.css`, `web-dark.css`; README của package thêm mục bộ `wm-`.
 
 ### 7.2 Giá trị từ Figma (đọc 09/11/2026)
 
@@ -268,8 +349,9 @@ Bộ "Wordmet" (Light / Dark):
 | `color/pass` / `pass-soft` | `#1b7a46` / `#e4f2ea` | `#62c98f` / `#142a1e` |
 | `color/fail` / `fail-soft` | `#b8352a` / `#f8e7e5` | `#ff8d80` / `#311a18` |
 
-Bộ "Wordmet số đo" (19 biến, một chế độ): bo góc `md` 10, `lg` 14, `xl` 20, `2xl` 28, `pill` 999, `button` 10, `modal` 16, cùng các biến còn lại
-đọc lúc làm M1 bằng `get_variable_defs`.
+Bộ "Wordmet số đo" (19 biến, một chế độ): bo góc `sm` 6, `md` 10, `lg` 14, `xl` 20, `2xl` 28, `pill` 999, `button` 10, `modal` 16, cùng các biến
+còn lại đọc lúc làm M1 bằng `get_variable_defs`. Giá trị Dark của biến màu ở bảng trên đọc bằng Plugin API (`valuesByMode`) ngày 09/11/2026;
+`get_variable_defs` chỉ trả chế độ Light.
 
 Bóng (Light; bản Dark theo mockup tối, GM4):
 
@@ -278,17 +360,20 @@ Bóng (Light; bản Dark theo mockup tối, GM4):
 | `--shadow-card` | `0 1px 2px rgb(27 36 68 / .06), 0 10px 28px -14px rgb(27 36 68 / .20)` |
 | `--shadow-row` | `0 1px 2px rgb(27 36 68 / .06), 0 4px 12px -8px rgb(27 36 68 / .16)` |
 | `--shadow-pop` | `0 2px 6px rgb(27 36 68 / .08), 0 24px 56px -24px rgb(27 36 68 / .34)` |
-| `--shadow-btn` (nút chính) | `0 6px 14px -8px rgb(30 58 138 / .55)` |
-| nút xanh / đỏ | `0 6px 14px -8px rgb(27 122 70 / .6)` / `0 6px 14px -8px rgb(184 53 42 / .6)` |
-| nút phụ | `inset 0 0 0 1.5px var(--line), 0 4px 10px -8px rgb(30 58 138 / .45)` |
+| `--shadow-wm-btn` (nút chính) | `0 10px 28px -10px rgb(30 58 138 / .34)` |
+| nút xanh / đỏ | `0 10px 26px -14px rgb(27 122 70 / .35)` / `0 10px 24px -8px rgb(184 53 42 / .30)` |
+| nút phụ (`Shadow/Soft`) | `0 1px 2px rgb(27 36 68 / .05), 0 14px 34px -14px rgb(27 36 68 / .22)` |
 
-Các giá trị bóng lấy từ trang mẫu vòng 15 sau lượt unslop và lượt trả bóng nút (`vong-15-polish-9-trang.html`), khớp style Shadow/Card, Row, Pop
-trong Figma.
+Card, Row, Pop lấy từ ba effect style cùng tên trong Figma (đã đọc ngày 09/11/2026). Bóng nút lấy từ Figma, không lấy trang mẫu vòng 15 (review M7):
+nút chính và nút đỏ là bóng đặt tay trên từng nút sau lượt "trả bóng nút"; nút xanh lấy từ biến thể `Lựa chọn / Trạng thái=Đúng` (`3:35`); nút phụ
+dùng effect style `Shadow/Soft` của biến thể `Nút / Kiểu=Phụ` (`3:8`). Nút bị tắt không có bóng.
 
 ### 7.3 Màu ngăn
 
 Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, đồng, bạc, vàng, lục bảo, ánh kim), lấy từ component "Chip ngăn" (`54:656`)
-ở trang Hệ thống. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn (`app-redesign-plan.md`, "Ý tưởng chung").
+ở trang Hệ thống. Component này dùng màu đặt tay, không gắn biến: M1 đọc mã màu từng biến thể bằng Plugin API rồi khai báo
+`--color-wm-stage-0` … `--color-wm-stage-5` (sáng, tối) trong `web.css`, `web-dark.css`. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
+(`app-redesign-plan.md`, "Ý tưởng chung").
 
 ### 7.4 Màu nhóm (GM5)
 
@@ -298,17 +383,22 @@ nhận ra nhóm ở băng chuyền, bảng chọn nhóm, Hôm nay; thứ tự nh
 - **Bảng màu** (viền nhóm đọc trong các khung Nhóm, Hôm nay, Chọn nhóm, 09/11/2026), theo thứ tự chỉ số 0–6: `#e5603f` cam, `#149384` lục lam,
   `#7a55d3` tím, `#d99a17` hổ phách, `#4a9637` lục, `#d2427a` hồng, `#2a86d1` lam. Nhóm chưa có từ nào dùng `#64708c` (khung "nhóm trống").
   Các màu nhạt hơn trong Figma là thẻ phía sau của chồng (tô nhạt từ màu nhóm), không phải màu riêng.
-- **Hàm:** `groupColorIndex(id) = fnv1a32(id.toLowerCase()) mod 7`, hàm thuần trong `lib/`, không phụ thuộc React.
-- Bản Dark của bảy màu chốt cùng mockup tối (GM4).
+- **Hàm:** `groupColorIndex(id) = fnv1a32(id.toLowerCase()) mod 7`, hàm thuần trong `lib/`, không phụ thuộc React, chỉ trả chỉ số.
+- **Token:** `--color-wm-group-0` … `--color-wm-group-6`, `--color-wm-group-empty` (viền, nền nhạt) và `--color-wm-group-0-ink` … (chữ) trong
+  `web.css`, `web-dark.css`; component dùng token theo chỉ số, không viết hex trong `lib/` hay `style=` (luật UBC1 và `check-tailwind-raw.mjs`).
+- **Màu cho chữ** (số thẻ chờ "24"): tương phản trên trắng đo được `#d99a17` 2,45, `#e5603f` 3,46, `#149384` 3,79, `#4a9637` 3,68, `#2a86d1` 3,87,
+  `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Bản `-ink` của mỗi màu chỉnh đậm hơn cho tới khi ≥ 3:1 (chữ ≥ 24 px) và thêm vào kiểm LP12.
+- Bản Dark của bảy màu chốt cùng mockup tối (GM4); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
+- **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Giữ cách theo ID hay đổi cách gán là QR5.
 
 | Khi | Thì |
 |---|---|
 | Lan mở Nhóm hôm nay rồi ngày mai, thứ tự nhóm đã đổi | Mỗi nhóm giữ đúng màu cũ |
 | Lan đăng nhập trên máy khác | Cùng màu, vì chỉ phụ thuộc ID |
-| Hai nhóm ra cùng chỉ số | Hai nhóm cùng màu; chấp nhận được với 7 màu; tên nhóm vẫn khác |
+| Hai nhóm ra cùng chỉ số | Hai nhóm cùng màu; tên nhóm vẫn khác (xác suất ở trên, QR5) |
 | "Du lịch Nhật" chưa có từ | Viền `#64708c`; thêm từ đầu tiên thì về màu theo ID |
 | ID viết hoa và viết thường | Cùng màu (hàm hạ chữ trước khi băm) |
-| Màu nhóm dùng cho chữ (số thẻ chờ "24") | Chữ lớn ≥ 24 px; kiểm tương phản ≥ 3:1 trên nền trắng ở M3; màu nào không đạt thì dùng bản đậm hơn của màu đó cho chữ |
+| Màu nhóm dùng cho chữ (số thẻ chờ "24") | Dùng token `-ink` của màu đó (≥ 3:1), không dùng màu viền |
 
 Test pin chỉ số chính xác cho ít nhất 7 ID mẫu và kiểm hàm luôn trả số nguyên trong [0, 6].
 
@@ -329,6 +419,8 @@ Dựng trên `react-aria-components` 1.22.1 (đã có) cho phần cần truy c�
 | Công tắc `138:324` | `Switch` | |
 | Nút chia đoạn `138:319` | `Segmented` | |
 | Hàng nhóm `138:339`, Hàng kiểu câu `138:398` | phần của Tùy chỉnh phiên (`features/learner/practice`) | Không đưa vào `ui/` vì chỉ một màn dùng |
+| Lựa chọn (Thường, Đúng, Sai) `3:51` | `AnswerOption` | Ô đáp án trắc nghiệm của Phiên luyện và màn Ôn |
+| Thẻ từ `3:28` | `site/landing` (thẻ minh họa ở trang chủ) | Chỉ trang công khai dùng |
 | Chip ngăn `54:656` | `StageChip`; thêm `StageBar` (thanh sáu ngăn) | |
 | Chip từ `96:322` | `WordChip` | |
 | Nút loa `54:657` | `SpeakButton` | Dùng lại logic `app-ui/speech.ts`, `audio-player.ts` |
@@ -350,6 +442,12 @@ Mỗi component có test hành vi (theo role và chữ hiển thị) ở `ui/*.t
 Mọi số ở [`motion-va-chuyen-canh.md`](../../mockups/2026-11-05-redesign-concepts/motion-va-chuyen-canh.md) §1–§6, §8. Token thêm vào
 `web.css`: đường cong chính `--ease-out-strong` `cubic-bezier(0.23, 1, 0.32, 1)` (đã có tên này trong `globals.css`), lò xo `--ease-spring`,
 mức mờ `--blur-sm` 6px, `--blur-md` 12px, `--blur-lg` 18px, thời lượng ra 150–170ms và vào 300–340ms. Component dùng token, không viết số rời.
+
+Điều kiện từ khảo sát (chủ dự án đồng ý 09/11/2026):
+- Dưới 768 px, `--blur-lg` bằng 12px: mức mờ khi chuyển cảnh trên điện thoại tối đa 12px.
+- Hộp thoại và tấm trượt đóng trong 150ms, đường cong tăng tốc (GM15).
+- Trước khi gộp vào `dev`: đo một phiên Học 20 thẻ trên Android tầm thấp và Safari iOS (DevTools Performance, CPU chậm 4–6 lần), ghi số khung
+  hình vào delivery record.
 
 ### 8.2 Theo màn
 
@@ -375,7 +473,7 @@ mức mờ `--blur-sm` 6px, `--blur-md` 12px, `--blur-lg` 18px, thời lượng 
 | Hộp thoại | 240ms đường cong chính, nhích 12px | `dialog-in` 250ms |
 | Tấm trượt | Từ `translateY(60px)` kèm hiện dần | Từ `translateY(100%)` |
 | Bấm nút | `scale(.97)` | Lún gờ 0,18rem (`pressed`, kiểu hướng B) |
-| Màn tổng kết | Khối từ mờ thành nét 520ms, cách nhau 90ms | `summary-in` 250ms, 50ms |
+| Màn tổng kết | Khối từ mờ thành nét 400ms, cách nhau 90ms (tài liệu motion ghi 520ms; khảo sát: quá mốc 500ms của NN/g) | `summary-in` 250ms, 50ms |
 
 ### 8.4 Giảm chuyển động
 
@@ -383,13 +481,23 @@ Theo tài liệu motion §8: chỉ giữ đổi `opacity` và màu tối đa 200
 chạy hiệu ứng. Giữ hai cơ chế hiện có: quy tắc cuối `globals.css` (mọi thời lượng về 0.01ms) và `lib/use-reduced-motion.ts` (trả `true` lúc
 render ở server). Kéo thẻ vẫn theo tay.
 
+### 8.5 Truy cập của các màn có chuyển động (review M13)
+
+- **Băng chuyền Nhóm:** vùng băng chuyền có `role="region"` và nhãn; chồng giữa là phần tử bấm được duy nhất; các chồng bên cạnh đang mờ là `inert`;
+  đổi nhóm thì một vùng `aria-live="polite"` đọc tên nhóm và số thẻ chờ.
+- **Kéo thẻ ở Học:** luôn có hai nút "Cần ôn lại", "Đã biết" và phím tương ứng, nên không bắt buộc kéo (WCAG 2.2, tiêu chí 2.5.7).
+- **Phím tắt một chữ** (`L`, `F`, `N`, `/`): bỏ qua khi con trỏ đang ở ô nhập, ô chọn hay vùng sửa chữ (ví dụ ô gõ đáp án ở Phiên luyện, màn Ôn).
+- **Hiệu năng:** đo khung hình hoặc INP của Học (chồng thẻ) và Nhóm (băng chuyền) trên điện thoại tầm thấp (CPU chậm 4×), cùng lần đo ở §8.1.
+
 ## 9. Các đợt và màn
 
 Mỗi đợt một hoặc vài PR vào `refactor/giao-dien-moi`. ID là khung Figma (máy tính / điện thoại).
 
 **M1 — Nền.** Token và font (§7, §5.8); `ui/` (§7.5); khung app trong layout (§5.4) với `loading`/`error` (§5.5); nền lưới chấm; luật phụ thuộc
-(§6). Các màn cũ chạy tạm trong khung mới. Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả lời sai, hộp Thêm từ, Đăng nhập)
-bằng HTML từ biến Dark của Figma, gửi chủ dự án duyệt (GM4); phần tối sửa ở M9.
+(§6), dời file phát âm sang `lib/speech/`. Các màn cũ chạy tạm trong khung mới (token cũ còn import, §7.1). Sửa các tài liệu nguồn theo bảng
+chỗ lệch ở §3.1. Test đỏ ngay vì đổi font, màu và sửa trong cùng PR: `e2e/chrome.spec.ts:4–13` (ghim H1 là Lexend), LP12 trong `tokens.test.ts`.
+Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả lời sai, hộp Thêm từ, Đăng nhập) bằng HTML từ biến Dark của Figma, gửi chủ dự
+án duyệt (GM4); phần tối sửa ở M9.
 
 **M2 — Đăng nhập và tài khoản** (trang `35:307`).
 
@@ -399,13 +507,15 @@ bằng HTML từ biến Dark của Figma, gửi chủ dự án duyệt (GM4); ph
 | `/app/register` | Đăng ký `35:405` / `37:533` (thêm ô "Nhập lại mật khẩu", chỉ kiểm ở giao diện; API không đổi) |
 | `/app/verify-email` | Xác minh email `36:385` / `37:623` |
 | `/app/forgot-password` | Quên mật khẩu `36:417` / `37:656` |
-| `/app/reset-password` | Đặt mật khẩu mới `36:447` / `37:687` |
+| `/app/reset-password` | Đặt mật khẩu mới `36:447` / `37:687` (thêm ô "Nhập lại mật khẩu mới", Figma `153:705`, `153:728`; chỉ kiểm ở giao diện) |
 | `/app/google/complete` | Hoàn tất đăng ký Google `36:490` / `37:731` |
 | `/app/account-deleted` | Đã xóa tài khoản `36:549` / `37:791` |
 | `/app/complete-profile` | Bổ sung hồ sơ `36:564` / `37:807` |
 | `/app/welcome` | Chào mừng: chọn ngôn ngữ `36:591` / `37:835` |
 
 Ô Turnstile giữ như hiện nay (`use-turnstile.tsx`); câu "chỉ hiện khi cần" còn chờ chủ dự án (`app-redesign-plan.md`, cuối mục "Bỏ chữ gạch chân").
+`(auth)` tách `(split)` và `(card)` (§5.4). `AuthGate` giữ ngoại lệ B8-2: người đã đăng nhập (tài khoản chỉ có Google) vẫn mở được quên mật khẩu,
+đặt mật khẩu (`features/learner/auth/AuthGate.tsx:12–13,31`; e2e `b8-set-password.spec.ts`).
 
 **M3 — Hôm nay và Nhóm.**
 
@@ -417,6 +527,11 @@ bằng HTML từ biến Dark của Figma, gửi chủ dự án duyệt (GM4); ph
 | `/app/group/backlog` | Từ tồn đọng `97:3085` / `97:3239` |
 | `/app/topic` | Chủ đề `98:3127` / `98:3297` |
 
+Nút Học · Ôn theo DC3 của đợt C (GM17): hai nút bằng nhau, không có số; nút có việc đang chờ là nút chính navy (hướng B tô nền vàng, giao
+diện mới dành vàng cho từ đích), nút còn lại là nút phụ. Figma đã sửa ở Hôm nay, Nhóm, Một nhóm và trang nền của Overlay 1, 6.
+Dữ liệu Figma cần mà API chưa có (thẻ nhóm "tiếp theo", "ôn gần nhất"; khối "Lần luyện gần nhất" ở Hôm nay): theo QR2. Hộp thoại có trong code
+nhưng chưa có khung Figma, làm trong đợt này theo `Dialog` chung (GM15), quy tắc §3.3 và hộp gần nhất trong Figma (hộp xóa theo Xóa tài khoản):
+Tạo, Đổi tên, Xóa nhóm (`GroupDialogs.tsx`); Bỏ từ khỏi nhóm, Bỏ N từ khỏi việc học. Ảnh chụp các hộp này vào delivery record để chủ dự án xem.
 Màu nhóm theo §7.4. Link "Xem lịch sử" ở Hôm nay đã đổi thành "Mở lịch học" trong Figma; trước M6 link này mở trang lịch sử cũ.
 
 **M4 — Tra từ, trang một từ, Thêm từ.**
@@ -425,11 +540,13 @@ Màu nhóm theo §7.4. Link "Xem lịch sử" ở Hôm nay đã đổi thành "M
 |---|---|
 | `/app/lookup` | Tra từ "Từ hóa thẻ" `85:3218` / `85:3667` |
 | `/app/word` | Trang một từ `118:4413` / `118:4714` |
-| Hộp Thêm từ | Overlay 1 `73:580` / `73:966` (nút lưu "Lưu", không "Lưu {word}": `messages/vi.json`, khóa `save`) |
+| Hộp Thêm từ | Overlay 1 `73:580` / `73:966` (nút lưu "Lưu", không "Lưu {word}": `messages/vi.json`, khóa `App.addWord.save`, dòng 933) |
 | Hộp Thêm câu | Overlay 2 `73:1167` / `73:1465` |
 | Hộp Thêm cả loạt | Overlay 3 `73:1701` / `73:1925` |
 | Hộp Kết quả tra bằng AI | Overlay 4 `75:1071` / `75:1346` (mẫu 1C vòng 15) |
 | Hộp Chọn nhóm | Overlay 5 `75:1548` / `75:1849` |
+
+Hộp chưa có khung Figma, làm theo cách ở M3: Sửa từ, Xóa từ (`MyWordDialogs.tsx`), Câu đã gặp (`SavedSentencesDialog.tsx`).
 
 **M5 — Luyện tập và Ôn.**
 
@@ -439,16 +556,22 @@ Màu nhóm theo §7.4. Link "Xem lịch sử" ở Hôm nay đã đổi thành "M
 | Hộp Tùy chỉnh phiên | Overlay 7 `131:3890` / `131:4232`; các trạng thái khác `131:4522`; điện thoại cuộn cuối `141:4320` |
 | `/app/practice/session` | Vừa trả lời đúng `100:3164` / `100:3291`; gõ sai còn làm lại `178:5326` / `178:5442`; sai đã xem đáp án `178:5546` / `178:5657`; trắc nghiệm chọn sai `178:5755` / `178:5895`; tổng kết `119:4608` / `119:4701` |
 | `/app/practice/weak` | Từ hay sai `119:4317` / `119:4482` |
-| `/app/review` | Ôn: mặt trước `80:3228`, đã lật (điện thoại) `80:3321`, đang kéo sang Đã biết `80:3429`, xong phiên `80:3557` / `80:3601` |
-| `/app/recall` | Chưa có khung (GM17): mockup HTML theo phong cách Phiên luyện, chủ dự án duyệt trước khi code |
+| `/app/review` (Học, lật thẻ) | Mặt trước `80:3228`, đã lật (điện thoại) `80:3321`, đang kéo sang Đã biết `80:3429`, xong phiên `80:3557` / `80:3601` (tên khung đổi từ "Ôn" sang "Học" ngày 09/11/2026, GM17) |
+| `/app/recall` (Ôn, chọn hoặc gõ từ theo nghĩa) | Trắc nghiệm theo nghĩa `208:5655` / `208:5778`; gõ từ theo nghĩa `209:5683` / `209:5802`; gõ sai, so chữ với đáp án `209:5902` / `209:6003` (dòng so chữ là đề xuất, code chưa có); xong phiên `209:6089` / `209:6195`. Gõ đúng hẳn mới tính đúng, không nhận lỗi gõ nhỏ (chủ dự án 09/11/2026) |
 
 Hộp Tùy chỉnh phiên làm luôn các việc đã ghi cho "đợt dựng hộp mới" ở `docs/deliveries/cloze-own-then-ai.md` §"Việc cho đợt dựng hộp mới":
 gửi `cloze_source: 'own_then_ai'` khi bật cả câu đã lưu và câu AI; nhãn AI và nút báo lỗi theo `item.ai`; `againBody` gửi lại nguồn mới; đổi dòng
 `ownReplacesAi`. Nếu design `2026-11-09-practice-ai-count` (số câu AI do người học chọn) đã có API trước M5 thì hộp theo API đó; nếu chưa,
 hộp theo API hiện có và phần số câu AI làm khi API đó xong.
 
-**M6 — Lịch học.** API §10; hộp Lịch `102:3278` / `102:3948`, hộp Ngày `103:3820` / `103:4248`; nút lịch nổi trên mọi màn app (trừ overlay);
-bỏ trang Lịch sử luyện tập (§10.4); link "Mở lịch học" ở Hôm nay mở hộp Lịch.
+Khung trạng thái `131:4522` có trạng thái "AI khóa ở gói Miễn phí", nhưng từ đợt A M3 gói Miễn phí có 15 lượt câu AI
+(`docs/deliveries/cloze-own-then-ai.md`): làm theo API (Miễn phí dùng được câu AI tới khi hết lượt), ghi rulings. Hộp chưa có khung Figma, làm
+theo cách ở M3: Báo lỗi câu này (`ReportDialog.tsx`), Phiên đang dở (`CurrentSessionCard.tsx`). Câu xác nhận sau khi gửi báo lỗi ("Xem kết quả trong
+Lịch sử → Báo lỗi của tôi") đổi theo QR1.
+
+**M6 — Lịch học.** API §10; hộp Lịch `102:3278` / `102:3948`, hộp Ngày `103:3820` / `103:4248`; nút lịch nổi trên mọi màn app (trừ overlay; trên
+điện thoại ẩn ở Từ tồn đọng, Chủ đề); bỏ trang Lịch sử luyện tập (§10.4); link "Mở lịch học" ở Hôm nay mở hộp Lịch. Tab "Báo lỗi của tôi" của trang
+cũ chuyển tới chỗ theo QR1 trong cùng đợt, để không lúc nào mất lối vào.
 
 **M7 — Cài đặt, tài khoản, gói học.**
 
@@ -462,8 +585,11 @@ bỏ trang Lịch sử luyện tập (§10.4); link "Mở lịch học" ở Hôm
 | `/app/plans/order` | Đơn hàng đã thanh toán `123:4598` / `123:4690`; trạng thái khác `123:4774` |
 | Hộp Giới thiệu Pro (`HouseAd`) | Overlay 6 `75:2094` / `75:2373` |
 
+Hộp Hủy gói (`SubscriptionRows.tsx`, `SettingsPage.tsx`) chưa có khung Figma, làm theo cách ở M3.
+
 **M8 — Trang công khai và SEO** (trang `0:1`): Trang chủ `5:13` / `9:108`; Chính sách bảo mật `14:172` / `17:260`; Điều khoản sử dụng `15:190` /
-`17:355`; Nguồn dữ liệu `16:210` / `18:283`; 404 `16:317` / `18:358`. SEO §11. Chuyển phần còn lại của `components/` sang `site/`, xóa `app-ui/`
+`17:355`; Nguồn dữ liệu `16:210` / `18:283`; 404 `16:317` / `18:358`. SEO §11. Bảng giá trang chủ theo QR3 (trang chủ hiện không ghi giá:
+`components/landing/Plans.tsx:31`). Font ảnh OG (§5.8). Chuyển phần còn lại của `components/` sang `site/`, bỏ import token cũ (§7.1), xóa `app-ui/`
 và `components/`.
 
 **M9 — Chế độ tối và rà soát.** Sửa phần tối theo mockup đã duyệt; xóa token cũ không dùng (§7.1); chạy toàn bộ kiểm thử §13; chụp mọi màn so với
@@ -476,12 +602,29 @@ Figma; mở PR cuối vào `dev`.
 - `learning_log`: mỗi lượt học, ôn, thêm, bỏ một từ; có `kind`, `level_before`, `level_after`, `rating`, `origin`, `local_date` theo múi giờ của
   người học lúc ghi (`apps/api/prisma/models/learning.prisma:50–79`). Không có khóa ngoại tới từ: xóa từ vẫn giữ log (D33).
 - `learning_activity_days`: một dòng mỗi người mỗi ngày có hoạt động, `studied` = có học thật (`learning.prisma:81–91`).
-- `GET /v1/practice/history?date=YYYY-MM-DD` đã lọc phiên luyện theo ngày, có phân trang (`practice/history/history.controller.ts:8–33`).
+- `GET /v1/practice/history?date=YYYY-MM-DD` lọc **câu trả lời** theo `local_date`, chỉ của phiên `kind='practice'` (phiên Ôn không vào, DC30),
+  có phân trang (`practice/history/history.controller.ts:8–35`, `history.service.ts:102–104`). `practice_sessions` không có `local_date`; chỉ
+  `practice_session_items.local_date` có, và đã có index `(user_id, local_date)` (`practice.prisma:92,111`).
+- `learning_log.kind` chỉ có `review`, `item_added`, `item_removed`; `origin` là `null` (lật thẻ ở Học), `'practice'` (nút "Cần ôn tập / Đã biết"
+  trong phiên luyện, `group_id` null), `'recall'` (câu cuối của phiên Ôn) (`learning.prisma:58–72`).
 
 ### 10.2 Endpoint
 
-Module Learning sở hữu cả hai (nó sở hữu hai bảng trên). Số phiên luyện mỗi ngày lấy qua service Practice export ra, không truy vấn bảng của
-Practice (luật ranh giới module D3).
+Module Learning sở hữu cả hai endpoint (nó sở hữu hai bảng trên). Số phiên luyện và số câu mỗi ngày đến từ Practice qua một **port do Learning
+khai báo, Practice cung cấp**: `PRACTICE_DAY_COUNTS` với hàm `countByLocalDate(userId, from, to)` trả `{ date, sessions, questions }[]`. Lý do:
+`PracticeModule` đã import `LearningModule` (`practice.module.ts:7,46`); Learning import ngược lại sẽ thành vòng (review I3). Code đã có mẫu này:
+`PRIVATE_SENSES_CLEANUP` (`learning/private-senses-cleanup.port.ts:5–8`, export ở `learning/index.ts`).
+
+**Định nghĩa** (review I2; bước code facts của plan chỉ kiểm định nghĩa khớp các chỗ ghi log, không đổi định nghĩa):
+
+| Số | Định nghĩa |
+|---|---|
+| `learned` của một ngày | Số `item_id` khác nhau có dòng `kind='review'`, `level_before = 0` trong ngày (lượt học đầu đưa từ khỏi ngăn Mới, DC4 đợt C) |
+| `reviewed` của một ngày | Số **lượt**: số dòng `kind='review'`, `level_before ≥ 1` trong ngày, mọi `origin` (lật thẻ ở Học, nút trong phiên luyện, câu cuối của phiên Ôn) |
+| `practice_sessions` của một ngày | Số `session_id` khác nhau có câu trả lời trong ngày, theo đúng bộ lọc của history (`kind='practice'`, câu đã chấm); phiên qua nửa đêm tính ở cả hai ngày |
+| `practice_questions` của một ngày | Số câu trả lời trong ngày theo cùng bộ lọc |
+| `study_days` của tháng | Số dòng `learning_activity_days` có `studied = true` trong tháng |
+| "Một từ" | Một `item_id` (một nghĩa đã lưu), không phải một lemma |
 
 **`GET /v1/me/calendar?month=YYYY-MM`**
 
@@ -494,8 +637,8 @@ Practice (luật ranh giới module D3).
 ```
 
 - `days` chỉ có ngày có ít nhất một trong ba số lớn hơn 0, xếp tăng dần theo ngày.
-- `learned`: số từ có lượt học đầu tiên trong ngày (từ ngăn Mới lên ngăn 1, DC4 của đợt C). `reviewed`: số lượt ôn còn lại trong ngày.
-  Cột và điều kiện chính xác (`kind`, `level_before`, `origin`) chốt ở bước "code facts" của plan, kèm test cho từng loại dòng log.
+- `month` bắt buộc; web tính tháng hiện tại theo `me.timezone` của người học.
+- Trường thêm cho hộp Ngày và nút lịch (số Đã biết / Cần ôn lại, số nhóm, tóm tắt phiên, chuỗi ngày) theo QR2.
 
 **`GET /v1/me/calendar/days/YYYY-MM-DD?kind=all|learned|reviewed&page_size=&page_token=`**
 
@@ -508,7 +651,11 @@ Practice (luật ranh giới module D3).
 }
 ```
 
-- Mỗi từ một dòng mỗi loại trong ngày; `result` là kết quả lần cuối (`known` / `again`), `times` là số lần.
+- Mỗi `(item_id, kind)` một dòng trong ngày; `result` là `rating` của lượt cuối (`known` / `again`), `times` là số lượt; `group_id` là nhóm của
+  lượt cuối (`null` khi lượt cuối có `origin='practice'`; web hiện không chấm màu).
+- `counts` luôn là tổng của cả ngày, không đổi theo `?kind=`. `kind` mặc định `all`.
+- Thứ tự: giờ của lượt cuối, mới trước; cùng giờ thì theo `item_id`. `page_token` gắn với `(date, kind)` như history (`encodeBoundToken`,
+  `history.service.ts:130`): dùng token của ngày khác hay `kind` khác thì 400.
 - Câu luyện tập của ngày lấy từ `GET /v1/practice/history?date=` hiện có; hộp Ngày gọi cả hai.
 - Phân trang theo quy ước chung: `page_size` mặc định 20, tối đa 100, `page_token` mờ (SR của system-spec).
 
@@ -516,8 +663,9 @@ Practice (luật ranh giới module D3).
 
 | Khi | Thì |
 |---|---|
-| `month` sai dạng (`2026-13`, `26-11`) | 400 Problem Details, `type` chỉ ra tham số nào sai |
-| `date` không có thật (`2026-02-30`) | 400 Problem Details |
+| `month` sai dạng (`2026-13`, `26-11`) hoặc thiếu | 400 `validation-failed`, `violations` nêu `month` (`problem-details.filter.ts:77,88`) |
+| `month` ngoài khoảng 2026-01 tới 2100-12 (ví dụ `0001-01`) | 400 `validation-failed`, `violations` nêu `month` |
+| `date` không có thật (`2026-02-30`) | 400 `validation-failed`, `violations` nêu `date` |
 | Tháng hoặc ngày ở tương lai theo múi giờ của Lan | 200, không có dòng nào, tổng bằng 0 |
 | Tháng trước khi Lan tạo tài khoản | 200, rỗng |
 | Lan đổi múi giờ giữa tháng | Mỗi dòng giữ `local_date` lúc ghi; lịch theo `local_date`, không tính lại |
@@ -527,37 +675,49 @@ Practice (luật ranh giới module D3).
 | Ngày có 300 lượt ôn | Phân trang 20 dòng một lần; `counts` vẫn đúng tổng |
 | Ngày chỉ có thêm hoặc bỏ từ (`studied = false`) | Không tính là ngày có học; không có trong `days` |
 | Không đăng nhập | 401 như mọi endpoint của người học |
-| Gọi quá nhanh | 429 kèm `Retry-After` theo giới hạn chung |
+| Ngày chỉ có lượt lật thẻ ở Học với từ đã học | Tính vào `reviewed` (mọi `origin`) |
+| Một từ mới bấm "Cần ôn lại" ngay lần học đầu | Một dòng `learned` (lượt có `level_before = 0`); không có dòng `reviewed` |
 | Tài khoản bị xóa | Dữ liệu đã xóa cùng tài khoản; không có gì để trả |
 
-Hàm gộp số theo ngày và theo tháng là hàm thuần, test đủ các dòng trên.
+Hàm gộp số theo ngày và theo tháng là hàm thuần, test đủ các dòng trên. Không có giới hạn tốc độ riêng: SR14 chỉ áp cho endpoint ghi, và chưa có
+`@Get` nào dùng `@RateLimit` (review M2).
+
+**Index:** `learning_log` chỉ có index `(user_id, group_id, local_date)` và `(user_id, item_id)` (`learning.prisma:76–77`); truy vấn theo tháng
+của một người mọi nhóm không dùng hết index đầu. Thêm migration index `(user_id, local_date)` (review M17).
+
+**Khoảng trống chấp nhận:** không còn backend e2e (D38), nên truy vấn SQL chỉ được kiểm qua smoke (ngày hôm nay); ca đổi múi giờ, qua nửa đêm, từ
+đã xóa chỉ có hàm thuần kiểm.
 
 ### 10.4 Trang Lịch sử luyện tập
 
-`/app/practice/history` thành trang server chỉ chuyển hướng: có `?date=` thì sang `/app/practice?ngay=<date>`, không có thì sang
-`/app/practice?lich=<tháng hiện tại>`. `features/learner/practice/HistoryPage.tsx` xóa (còn trong tag).
+`/app/practice/history` thành trang server chỉ chuyển hướng, giữ locale: có `?date=` thì sang `/{locale}/app/practice?ngay=<date>`; không có thì
+sang `/{locale}/app/practice?lich` (không giá trị) và web tự tính tháng theo `me.timezone`, vì server Worker chạy giờ UTC, lệch tháng với người học
+UTC+7 trong 7 giờ đầu tháng (review M4). `?tab=reports` chuyển tới chỗ của "Báo lỗi của tôi" theo QR1. `features/learner/practice/HistoryPage.tsx`
+xóa (còn trong tag).
 
 ## 11. SEO và metadata (M8)
 
 **Đã có, giữ:** `buildMetadata` (`lib/metadata.ts`: canonical, hreflang chỉ cho ngôn ngữ có landing, OG, Twitter, robots theo
 `NEXT_PUBLIC_INDEXABLE`); `JsonLd` (WebSite, SoftwareApplication); ảnh OG theo ngôn ngữ (`app/[locale]/opengraph-image.tsx`); `robots.ts` chặn
-`/*/app`; `/app` có `robots: noindex` (`app/layout.app.tsx:9`).
+`/*/app`; `/app` có `robots: noindex` (`app/[locale]/app/layout.app.tsx:9`). Điều khoản và Nguồn dữ liệu đang tự đặt `robots: noindex`
+(`terms/page.tsx:18`, `sources/page.tsx:16`); Chính sách theo `NEXT_PUBLIC_INDEXABLE`.
 
 **Thêm:**
 
 | Việc | Chi tiết |
 |---|---|
-| Metadata từng trang công khai | Chính sách, Điều khoản, Nguồn dữ liệu có title, description, canonical, OG `url` riêng; hiện Chính sách và Điều khoản chỉ có description khi chưa đăng bản nào |
+| Metadata từng trang công khai | Chính sách, Điều khoản, Nguồn dữ liệu có title, description, canonical, OG `url` riêng. Hiện Chính sách chỉ có description khi chưa đăng bản nào (`privacy/page.tsx:21`); Điều khoản, Nguồn dữ liệu không có description |
+| hreflang trang pháp lý | `/en/privacy`, `/en/terms`, `/en/sources` vẫn được phục vụ (chỉ trang chủ `/en` chuyển hướng, `lib/landing-locale.ts:7–11`). `alternates` của trang đè hết `alternates` của layout, nên mỗi trang tự khai canonical và hreflang `vi`, `en` của chính nó |
 | Ảnh OG từng trang | `opengraph-image.tsx` trong thư mục `privacy/`, `terms/`, `sources/`, dựng bằng font mới |
-| Sitemap | Thêm `privacy`, `terms`, `sources` khi bỏ chặn index lúc launch, `lastModified` lấy từ ngày hiệu lực văn bản (nếu đọc được) |
-| JSON-LD | `SoftwareApplication.offers` đang ghi `price: '0'`, `priceCurrency: 'USD'` (`components/seo/JsonLd.tsx`, chuyển sang `site/seo/`): đổi sang `VND`, thêm các kỳ gói Pro, giá lấy cùng nguồn với bảng giá trang chủ; thêm `Organization` (tên, url, logo) |
+| Sitemap | Chỉ liệt kê trang được index (đưa trang `noindex` vào sitemap là tự mâu thuẫn). Lúc launch thêm `privacy`; `terms`, `sources` chỉ vào khi bỏ `noindex` của chúng (việc của launch, ghi ở `deploy-checklist.md`). `lastModified` lấy từ ngày hiệu lực văn bản. Một test ghim danh sách sitemap theo `NEXT_PUBLIC_INDEXABLE` (mẫu ở `lib/landing-locale.test.ts`) |
+| JSON-LD | `SoftwareApplication.offers` đang ghi `price: '0'`, `priceCurrency: 'USD'` (`components/seo/JsonLd.tsx`, chuyển sang `site/seo/`): đổi sang `VND`; giá các kỳ Pro theo nguồn giá chốt ở QR3 (nếu trang chủ không ghi giá thì JSON-LD chỉ ghi gói Miễn phí); thêm `Organization` (tên, url, logo). Rich result SoftwareApplication của Google bắt buộc có `aggregateRating` hoặc `review`, Wordmet không có và không bịa: mục tiêu là markup hợp lệ (Schema Markup Validator), không phải rich result |
 | Trang đăng nhập, đăng ký | Vẫn `noindex`, có title và description để link chia sẻ hiện đúng |
-| Màu trình duyệt | `viewport.themeColor` và `manifest.ts` theo navy mới và nền tối mới |
+| Màu trình duyệt | `viewport.themeColor` và `manifest.ts:9–10` theo màu nền (`#f6f7fa` sáng, `#0f1220` tối), vì thanh trên mới là kính sáng trên nền, không phải dải navy |
 
 | Khi | Thì |
 |---|---|
 | `NEXT_PUBLIC_INDEXABLE` chưa bật | robots chặn hết như hiện nay; sitemap vẫn sinh nhưng chỉ có trang chủ |
-| `/en` chưa có bản dịch landing (L4) | hreflang chỉ `vi` và `x-default`; `/en` vẫn chuyển sang `/vi` |
+| `/en` chưa có bản dịch landing (L4) | hreflang trang chủ chỉ `vi` và `x-default`; `/en` vẫn chuyển sang `/vi`. Trang pháp lý có cả `vi`, `en` |
 | API văn bản pháp lý không trả lời khi Google đọc trang | Trang hiện thông báo bản nháp (như GM11); description của trang là câu bản nháp |
 
 ## 12. Câu chữ
@@ -573,13 +733,17 @@ Hàm gộp số theo ngày và theo tháng là hàm thuần, test đủ các dò
 | Unit, component (web) | `pnpm test` trong `apps/web` | Test hành vi mỗi component `ui/` và mỗi màn, theo role và chữ; chữ đổi theo Figma thì test sửa theo cùng PR |
 | Unit (API) | `pnpm test` trong `apps/api` | Hàm gộp lịch (§10.3), controller hai endpoint, service Practice export |
 | Hàm thuần mới | trong bộ unit | `groupColorIndex` (§7.4); đọc tham số `?lich=`, `?ngay=` (§5.6) |
-| Lint, typecheck, build | `pnpm lint`, `pnpm typecheck`, `pnpm build` | Có luật phụ thuộc §6 |
-| e2e web | `pnpm test:e2e` (Playwright, `apps/web/e2e`) | Sửa các journey hiện có theo màn mới cuối mỗi đợt; thêm journey mở lịch và xem một ngày ở M6 |
-| Smoke API lịch | `pnpm smoke:giao-dien-moi` (mới, trên API và worker thật, DB mới) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày khớp tuyệt đối |
+| Lint, typecheck, build | `pnpm lint`, `pnpm typecheck`, `pnpm build` | Có luật phụ thuộc §6 và test lint có file mẫu vi phạm |
+| Render mode | `pnpm assert:render-mode` (đang chạy trong CI, `ci.yml:108`) | Trang chủ vẫn dựng sẵn |
+| Admin | `pnpm lint`, `typecheck`, `test`, `build` trong `apps/admin` | Đợt này sửa `packages/design-tokens`; admin không được đổi |
+| e2e web | `pnpm test:e2e` (Playwright, `apps/web/e2e`; chạy `cf:build` của OpenNext, trên Windows qua `pnpm cf:docker`) | Sửa journey trong cùng PR với màn; thêm journey mở lịch và xem một ngày ở M6 |
+| Smoke API lịch | `pnpm smoke:giao-dien-moi` trong `apps/api` (mới; API và worker thật, DB và `JOB_QUEUE_PREFIX` riêng; giữ giới hạn 5 lần đăng ký mỗi IP mỗi giờ) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày khớp tuyệt đối (chỉ kiểm được ngày hôm nay, §10.3) |
 | Ảnh so với Figma | `pnpm shots` | Mọi khung §9, máy tính 1440 và điện thoại 390; ảnh ghi vào delivery record |
-| Truy cập | `apps/web/e2e/a11y.spec.ts` | Mọi màn mới |
-| Lighthouse, Rich Results Test | chạy tay ở M9 | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý vào delivery record |
-| First Load JS | `next build` | So với bản cũ (§5.7) |
+| Truy cập | `e2e/a11y.spec.ts` (trang công khai), `e2e/support/axe.ts` trong từng journey app | Mỗi journey mới gọi axe trên màn của nó |
+| Khóa chữ không dùng | script tìm khóa `messages/vi.json` không còn được gọi trong `src/` (khóa dùng động ghi vào danh sách cho phép) | §12; LP3 hiện chỉ kiểm hai file cùng khóa |
+| Lighthouse, Schema Markup Validator | chạy tay ở M9 | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý; JSON-LD hợp lệ |
+| Dung lượng JS | `scripts/compare-bundle-stats.mjs` (§5.7) | Không route `/vi/app/**` nào nặng hơn bản cũ quá 10% |
+| Khung hình | DevTools Performance, CPU chậm 4–6× (§8.1, §8.5) | Học, Nhóm trên Android tầm thấp và Safari iOS |
 
 Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang lịch sử, ô nhập lại mật khẩu) viết test trước, chạy thấy đỏ rồi mới code.
 
@@ -592,7 +756,9 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - Mọi khung ở §9 có màn tương ứng; `/app/recall` có màn theo mockup đã duyệt.
 - 5 mockup tối đã duyệt và phần tối đã sửa theo.
 - `app-ui/`, `components/`, `HistoryPage.tsx`, token cũ không dùng đã xóa; tag `archive/giao-dien-cu-2026-11` có trên GitHub; `giao-dien-cu-map.md` đủ màn.
-- `pnpm test`, lint, typecheck, build của web và API xanh; e2e web qua; `smoke:giao-dien-moi` qua trên DB mới; điểm Lighthouse và Rich Results đã ghi.
+- `pnpm test`, lint, typecheck, build của web, API và admin xanh; `assert:render-mode` qua; e2e web qua; `smoke:giao-dien-moi` qua trên DB mới;
+  so dung lượng JS qua; điểm Lighthouse, kết quả Schema Markup Validator và số khung hình trên điện thoại đã ghi.
+- QR1–QR5 đã chốt và design đã sửa theo.
 - PR `refactor/giao-dien-moi` → `dev` CI xanh.
 
 ## 15. Rủi ro và chỗ chưa kiểm
@@ -600,12 +766,16 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - **Nhánh dài lệch `dev`:** trong lúc làm, `dev` còn nhận việc khác (ví dụ `practice-ai-count`: design và plan có trong cây làm việc, chưa vào
   `dev`). Merge `dev` vào nhánh mỗi tuần.
 - **Test e2e đổi nhiều:** các journey dựa vào chữ hiển thị; chữ đổi theo Figma thì phải sửa nhiều test. Sửa trong cùng PR với màn.
-- **Ba font** nặng hơn một font Lexend: đo First Load JS và Lighthouse; chỉ tải sớm Noto Sans và Bricolage.
+- **Ba font** nặng hơn một font Lexend: đo dung lượng JS và font (§5.7, §5.8) và Lighthouse; trang công khai chỉ tải sớm Noto Sans và Bricolage.
 - **Chế độ tối** chưa ai nhìn cho tới khi có mockup ở M1.
 - **Khoảng 768–1279 px** chưa có khung Figma; kiểm ở 768 và 1024, chỗ nào xấu thì ghi rulings.
 - **`/app/recall`** chưa có khung.
 - **Turnstile "chỉ hiện khi cần"** còn chờ chủ dự án.
-- **Lịch học:** cách tách "học mới" và "ôn" trong `learning_log` chưa đối chiếu từng dòng code (§10.2); làm ở bước code facts của plan.
-- **Màu nhóm dùng cho chữ** có thể không đạt 3:1 với vài màu (hổ phách `#d99a17` trên trắng): kiểm ở M3.
-- **`ui-best-practices.md`** ghi "ba độ đậm 400, 600, 700" trong khi Figma dùng Bricolage 800 cho tiêu đề (GM18).
+- **Lịch học:** định nghĩa các số đã viết ở §10.2; bước code facts của plan kiểm chúng khớp mọi chỗ ghi `learning_log`. Truy vấn SQL chỉ được smoke
+  kiểm ngày hôm nay.
+- **Quảng cáo:** theo DB38, người Miễn phí có quảng cáo bị tải lại trang khi rời Nhóm, Tra từ (QR4).
+- **11 hộp thoại chưa có khung Figma** (§9 M3–M7): dựng theo `Dialog` chung và hộp gần nhất; chủ dự án xem qua ảnh trong delivery record.
+- **Gói Miễn phí và câu AI:** một khung Figma (`131:4522`) vẽ AI khóa ở Miễn phí, lệch API hiện có; làm theo API.
+- **Ảnh OG:** thêm TTF Noto Sans có tiếng Việt làm Worker lớn hơn; đo ở M8.
+- **Font nhãn:** JetBrains Mono tải trước ở `/app` thêm một file font cho mọi lần mở app.
 - **Hook hỏi mỗi lần merge** PR vào nhánh dài: thêm một bước bấm cho chủ dự án ở mỗi đợt.

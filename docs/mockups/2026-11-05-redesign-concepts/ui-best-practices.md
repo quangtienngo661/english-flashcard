@@ -57,7 +57,8 @@ Số tương phản dưới đây đo bằng công thức WCAG ngày 08/11/2026,
 - Chữ đọc 16 px trở lên. Figma gợi ý line-height 120–145%; Wordmet dùng **160–170%**, vì dấu tiếng Việt chồng hai tầng (ví dụ "ặ", "ễ") cần chỗ.
 - Độ dài dòng 45–75 ký tự: form rộng 360–440 px, bài pháp lý 680–700 px.
 - Tiêu đề không quá 2 dòng, không để một chữ rơi một mình xuống dòng cuối.
-- Tối đa hai họ chữ (Noto Sans, Bricolage Grotesque) và ba độ đậm (400, 600, 700).
+- Hai họ chữ chính (Noto Sans, Bricolage Grotesque). Độ đậm: 400, 600, 700 cho chữ thường; 800 cho tiêu đề và số lớn Bricolage (chủ dự án chốt 09/11/2026, GM18 của design giao diện mới).
+- Tiêu đề có thể xuống dòng: line-height ≥ 1,15 (an toàn 1,2), vì dấu tiếng Việt chồng hai tầng ở độ đậm 800 cần khoảng 1,13 lần cỡ chữ. 1,0 chỉ cho số và tiêu đề một dòng. Không cắt tiêu đề bằng `overflow: hidden` (chủ dự án đồng ý 09/11/2026, theo khảo sát GM18).
 - Hành động phụ và lối đi tới trang khác dùng component "Nút chữ" (chủ dự án chọn mẫu C, 09/11/2026):
   - không nền, không gạch chân, chữ 14 đậm vừa màu navy;
   - "Thêm…" có icon +; đi tới trang khác thì giữ "→" trong nhãn;
