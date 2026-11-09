@@ -15,4 +15,12 @@ describe('GET /v1/me/calendar', () => {
     await controller.month({ userId: 'u1', nativeLanguage: 'vi' }, { month: '2026-11' });
     expect(month).toHaveBeenCalledExactlyOnceWith('u1', '2026-11');
   });
+
+  it('GET days/:date passes the learner, date and query to the service', async () => {
+    const day = vi.fn(async () => ({}));
+    const controller = new CalendarController({ day } as unknown as CalendarService);
+    const learner = { userId: 'u1', nativeLanguage: 'vi' as const };
+    await controller.day(learner, { date: '2026-11-08' }, { kind: 'learned', page_size: 5 });
+    expect(day).toHaveBeenCalledExactlyOnceWith(learner, '2026-11-08', { kind: 'learned', page_size: 5 });
+  });
 });
