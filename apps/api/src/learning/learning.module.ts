@@ -5,6 +5,8 @@ import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
 import { BacklogController } from './backlog/backlog.controller.js';
 import { BacklogService } from './backlog/backlog.service.js';
+import { CalendarController } from './calendar/calendar.controller.js';
+import { CalendarService } from './calendar/calendar.service.js';
 import { GroupsController } from './groups/groups.controller.js';
 import { GroupsService } from './groups/groups.service.js';
 import { ItemsController } from './items/items.controller.js';
@@ -29,11 +31,11 @@ import { ReviewsService } from './reviews/reviews.service.js';
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controller.
   imports: [IdentityModule, ContentModule, SettingsModule],
   controllers: [
-    BacklogController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
+    BacklogController, CalendarController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
     ReviewsController, AdminRetentionController,
   ],
   providers: [
-    BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
+    BacklogService, CalendarService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
     PracticeReviewService, RecallAnswerService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
     RetentionService,
   ],

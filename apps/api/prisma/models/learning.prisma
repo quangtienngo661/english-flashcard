@@ -75,6 +75,8 @@ model LearningLogEntry {
 
   @@index([userId, groupId, localDate])
   @@index([userId, itemId])
+  // The study calendar reads one learner's month across every group (giao diện mới §10.3).
+  @@index([userId, localDate])
   @@map("learning_log")
 }
 
