@@ -378,6 +378,13 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/cloze-own-then-ai.md` (plan tóm tắt và as-built 09/11/2026; **chỉ API**, PR vào `dev`; smoke ở `docs/deliveries/cloze-own-then-ai-smoke-output.txt`). Nguồn `cloze_source: 'own_then_ai'`: từ có câu đã lưu thì hỏi từ câu đó (không tốn lượt AI), từ chưa có thì AI viết, trong cùng một phiên; item trả về có `ai: boolean`. Thay phần "Pro bật cả hai thì câu điền từ AI tự tắt" của A11. Hộp Tùy chỉnh phiên trong code **chưa** gửi nguồn mới: giao diện làm cùng đợt dựng hộp mới (vòng 13, "hai cột gọn"); danh sách việc và câu chưa chốt (con số lượt AI trong hộp) ở cuối delivery record. Design, decisions: `docs/superpowers/{specs,decisions}/2026-11-09-cloze-own-then-ai*`.
 
+## Số câu AI do người học chọn — plan & as-built
+
+`docs/deliveries/practice-ai-count.md` (plan tóm tắt và as-built 09/11/2026; API, admin, Figma Overlay 7; PR vào `dev`; smoke ở
+`docs/deliveries/practice-ai-count-smoke-output.txt`). `POST /v1/practice/sessions` nhận `ai_count` và `ai_placement`; không gửi `ai_count` thì chạy như cũ.
+Admin chọn số câu tối đa (cố định hoặc bằng số từ của phạm vi, trần 100), số câu AI tối đa (cố định hoặc tỉ lệ, làm tròn xuống) và cách xếp câu AI. Web người học
+**chưa** gửi `ai_count`: danh sách việc cho đợt web ở cuối delivery record. Design, decisions, plan: `docs/superpowers/{specs,decisions,plans}/2026-11-09-practice-ai-count*`.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

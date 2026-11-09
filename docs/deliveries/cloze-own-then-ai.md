@@ -78,7 +78,7 @@ Kiểm:
   (`messages/vi.json`, `en.json`): thay bằng một dòng nói "Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết".
 - Nhãn AI và nút báo lỗi theo `item.ai` của từng câu, không theo `session.cloze_source` (`PracticeSession.tsx` `isAi`, `use-practice-session.ts` `asksAi`).
 - `againBody` (`SessionSummary.tsx`) gửi lại `own_then_ai`; kiểu `StartBody.cloze_source` và `PracticeSessionView.cloze_source` thêm giá trị mới (`practice-api.ts`).
-- Câu còn mở (D3 của decision record): con số "Phiên này dùng tối đa N lượt câu AI" hiện mức tối đa hay con số sát thực tế (cần API đếm số từ có câu đã lưu trong phạm vi phiên). Chủ dự án hỏi "là sao" và chưa chốt.
+- Câu D3 của decision record (con số lượt AI trong hộp): thay bằng `practice-ai-count` (người học chọn số câu AI; con số đó là số lượt tối đa phiên dùng).
 - Gói Miễn phí: xem phát hiện ở trên.
 
 ## Việc của chủ dự án
