@@ -295,7 +295,8 @@
       "notFoundTitle": "Không tìm thấy trang này",
       "notFoundBody": "Đường dẫn có thể đã cũ.",
       "home": "Về Hôm nay",
-      "charCount": "{count, number}/{max, number}"
+      "charCount": "{count, number}/{max, number}",
+      "errorPageTitle": "Không tải được trang này."
     },
     "session": {
       "offlineTitle": "Không kết nối được",

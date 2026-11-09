@@ -295,7 +295,8 @@
       "notFoundTitle": "Page not found",
       "notFoundBody": "The link may be out of date.",
       "home": "Go to Today",
-      "charCount": "{count, number}/{max, number}"
+      "charCount": "{count, number}/{max, number}",
+      "errorPageTitle": "This page could not be loaded."
     },
     "session": {
       "offlineTitle": "Can’t connect",
