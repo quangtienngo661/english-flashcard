@@ -38,5 +38,10 @@ từng secret. File có sẵn thì **không bao giờ bị ghi đè**; nếu cò
 - Trong container web, `localhost:3000` không phải API. Trang `/privacy` và `/terms` đọc API ở phía server, nên `docker-compose.yml` đặt
   `API_INTERNAL_BASE_URL=http://api:3000` cho service `web` (đọc lúc chạy, không ghi vào bundle). Không có biến này thì hai trang luôn hiện dòng "bản nháp".
 - `NEXT_PUBLIC_*` và `VITE_API_BASE_URL` được ghi vào bundle lúc build: đổi cổng API thì phải build lại (`pnpm bootstrap` tự build lại).
+- **Giọng đọc (đợt C, 07/11/2026):** `docker-compose.yml` mặc định bật `TTS_FAKE_ENABLED=true`, `AUDIO_STORAGE_FAKE_ENABLED=true` và
+  `AUDIO_PUBLIC_BASE_URL=http://localhost:<API_PORT>/v1/dev/audio` cho `api`, và truyền cùng địa chỉ thành `NEXT_PUBLIC_AUDIO_BASE_URL` khi build `web`
+  (CSP `media-src`). Không gọi Google, không cần R2. File mp3 giả nằm trong container `api` (`.tmp/audio`), nên mất khi container được tạo lại; nghĩa
+  đăng trước đó, hoặc sau khi tạo lại container, cần `docker exec english-learning-api-1 node dist/cli/tts-backfill.js`. Muốn tắt hay đổi thì đặt các
+  biến này trong `.env` ở root.
 - Các service app nằm trong profile `app` nên `docker compose up -d` vẫn chỉ bật Postgres, Redis, Mailpit như trước. Tên project cố định
   `english-learning` nên mọi checkout dùng chung container và volume.

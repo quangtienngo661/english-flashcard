@@ -64,7 +64,7 @@ Phiên BE xong Task 1–23. Mọi PR vào `dev`, CI xanh trước khi merge. H�
 | [#239](https://github.com/quangtienngo661/english-flashcard/pull/239) BE3 phiên âm | 11–14 | `be0c27b9` |
 | [#242](https://github.com/quangtienngo661/english-flashcard/pull/242) BE4 giọng đọc | 15–19 | `ff10ee91` |
 | [#244](https://github.com/quangtienngo661/english-flashcard/pull/244) fix: `origin = 'recall'` | (lỗi của BE1) | `efac5cf4` |
-| BE5 nạp dữ liệu và smoke | 20–23 | PR của nhánh `feat/dot-c-be5-backfill` |
+| [#246](https://github.com/quangtienngo661/english-flashcard/pull/246) BE5 nạp dữ liệu và smoke | 20–23 | `da8edd97` |
 
 **Lỗi smoke tìm ra (đã sửa ở #244).** Câu trả lời cuối của phiên Ôn trả 500 trên DB thật: `learning_log_origin_check` chỉ cho `'practice'`, còn `RecallAnswerService`
 ghi `origin = 'recall'`. Mọi unit test mock DB nên không thấy. Test mới `src/learning/log-origin-constraint.spec.ts` đọc các migration và fail khi lần định nghĩa
@@ -125,3 +125,56 @@ Kết quả cuối mỗi lần chạy: `docs/deliveries/dot-cai-thien-c-smoke-ou
 - `ipa:build-csv` chạy thật trên file raw 2,9 GB và catalog thật chưa thử (chạy trên fixture và DB rỗng); số lượng "readings disagree" trên dữ liệu thật chưa biết.
 - Dòng chuỗi trong email nhắc kiểm bằng unit test, chưa gửi qua Mailpit.
 - Khoá `speech_audio.text` chứa chữ của từ riêng cho tới lần dọn tuần sau khi từ bị xoá (≥ 7 ngày).
+
+---
+
+# Đợt cải thiện C — as-built, phần web và admin (07/11/2026)
+
+Phiên này làm Task 24–31 sau khi API tương ứng đã vào `dev`. Checklist tự kiểm: [`dot-cai-thien-c-checklist.md`](dot-cai-thien-c-checklist.md).
+
+| PR | Task | Merge vào `dev` |
+|---|---|---|
+| [#241](https://github.com/quangtienngo661/english-flashcard/pull/241) FE1 Học / Ôn và chuỗi ngày | 24–27 | `afcdb942` |
+| [#245](https://github.com/quangtienngo661/english-flashcard/pull/245) FE2 phiên âm và giọng đọc | 28–31 | `defcf5b1` |
+
+## Đã dựng
+
+- **Nút Học · Ôn** (`groups/DeckButtons.tsx`, hàm thuần `deckPlan` trong `groups/deck-actions.ts`): thẻ nhóm, trang nhóm, ô đầu trang Hôm nay. Có từ đến hạn: Học (`mode=new`, hoặc `mode=all` khi hết từ mới
+  hôm nay) · **Ôn** vàng. Chỉ có từ mới: **Học** vàng (thêm "Ôn tập" khi nhóm đã có từ đã học). Xong hôm nay: "Ôn tập" (phiên Ôn trên từ chưa đến hạn). Không số. "N đã thuộc" = ngăn 14 + 30 ngày.
+- **Trang Học** nhận `mode=new`; màn xong phiên có nút Ôn khi nhóm còn từ đến hạn.
+- **Trang Ôn** `/app/recall?group=` dùng lại `PracticeSession` với tham số `recall` (một khoá Idempotency mỗi lần mở trang): không bước tùy chỉnh, không "Đã biết", ghi chú "<từ> lên / giữ ngăn …" từ
+  `schedule` của câu trả lời, mọi lối ra về trang nhóm. Màn xong phiên riêng (`recall/RecallSummary.tsx`). 409 `nothing-learned` có trạng thái rỗng kèm nút Học.
+- **Toast chuỗi ngày** (`app-ui/StreakToast.tsx`): gắn một lần ở `AppProviders`, hiện khi response lật thẻ hoặc câu trả lời có `streak`; 3 giây, `pointer-events-none`, vùng `role="status"`; giảm chuyển động
+  thì không trượt, không nảy (`--animate-streak-flame`).
+- **Admin:** hai ô phiên âm (bỏ `/` trước khi gửi; nghĩa không có phiên âm gửi body như trước đợt C), dòng nguồn, lỗi `ipa-invalid` dưới ô, khung "Giọng đọc" với "Tạo lại", tab Cài đặt "Giọng đọc".
+- **Nút loa `Pronounce`** (`app-ui/SpeakButtons.tsx`, một `Audio` cho cả trang trong `audio-player.ts`): file có sẵn → phát file; không có hoặc lỗi → giọng máy cùng giọng; không có cả hai → nút mờ,
+  "Đang tạo giọng đọc" (DC34). CSP `/app` thêm `media-src` theo `NEXT_PUBLIC_AUDIO_BASE_URL`.
+- **Dòng phiên âm `PronunciationLine`**: hai mặt thẻ ôn, trang một từ (một dòng mỗi khối loại từ, dòng riêng cho nghĩa đọc khác, hàm `blockPronunciation`), kết quả tra từ, từ riêng (một loa, không chia UK / US).
+  Ô "Phiên âm" ("Không bắt buộc.") ở form tự nhập nghĩa, form sửa từ AI và hộp sửa từ riêng (`senses[].ipa` của đúng nghĩa đó).
+- **Docker local:** `docker-compose.yml` bật `TTS_FAKE_ENABLED`, `AUDIO_STORAGE_FAKE_ENABLED`, `AUDIO_PUBLIC_BASE_URL` mặc định cho API, và truyền `NEXT_PUBLIC_AUDIO_BASE_URL` khi build web.
+
+## Quyết định ngoài plan
+
+1. Chữ giao diện dùng **"ngăn"** (thuật ngữ cố định của app), không dùng "nấc" như design: "Đúng, lên ngăn", "<từ> giữ ngăn 3 ngày".
+2. Trang nhóm giữ ba chip ưu tiên / đến hạn / mới; "đã thuộc" thêm vào dòng meta ("40 từ · 12 đã thuộc · tạo ngày …") thay cho dòng tóm tắt mới của mockup.
+3. Trang Hôm nay bỏ link "Hoặc học tất cả N từ" ở ô đầu (mockup chỉ có cặp nút); "Học tất cả" vẫn ở menu ⋯ của thẻ nhóm.
+4. Ô "Ôn tiếp" ở màn xong phiên là link thường (`<a>`), vì cùng địa chỉ qua router không mở phiên mới.
+5. Dòng phiên âm ở kết quả tra từ nằm **ngoài** `<label>` của lựa chọn: nhãn chuyển cú bấm cho control đầu tiên, tức là nút loa khi lựa chọn không có radio ("đã có trong nhóm").
+   Lỗi này do e2e A14-2 bắt được trước khi merge; sửa ở PR #245 bằng hai commit (test đỏ, rồi sửa).
+6. Admin ghi "Chưa có" khi API trả `audio.uk = null`: API trả null cả cho nghĩa đã đăng trước đợt C mà chưa chạy `tts:backfill`, không chỉ nghĩa bị ẩn.
+
+## Đã kiểm
+
+- Test: web 95 file / 987 test, admin 105 file / 1.397 test; typecheck, lint, `check-tailwind-raw` sạch; CI xanh ở #241 và #245 (gồm e2e Playwright + axe của web).
+- Skill UI: `impeccable` (shape theo mockup, bộ phát hiện không báo gì), `emil-design-eng` (toast, nút loa), `web-design-guidelines` (thêm hover cho các nút mới).
+- **Chạy thật trên Docker local** (API, worker, Postgres thật; TTS giả và kho file giả), 07/11/2026:
+  - admin: lưu phiên âm có ký tự lạ → lỗi dưới ô; lưu đúng và đăng → "Có giọng" cho UK, US; tab "Giọng đọc" đọc giới hạn từ API.
+  - app học: trang Hôm nay có cặp nút; trang `schedule` hiện `UK /ˈʃedʒ.uːl/  US /ˈskedʒ.uːl/`, hai loa tải hai file mp3 khác nhau (`200`), Console không có lỗi CSP trên bản build production;
+    Học `mode=new` lên ngăn 1; lần học đầu ngày trả `streak: {days: 1}` và hiện toast; phiên Ôn: câu đúng chưa đến hạn ghi "giữ ngăn 1 ngày", màn xong phiên có ô "Đúng, giữ ngăn" và "Còn 16 từ mới";
+    khổ 375 px không cuộn ngang.
+
+## Chưa kiểm
+
+- Bản sửa dòng phiên âm ở kết quả tra từ (mục 5 ở trên) mới kiểm bằng unit test và CI e2e; image web trên Docker local lúc chạy thử được build trước bản sửa đó.
+- Điện thoại thật (vị trí toast trên vùng nút, giọng máy trên iOS / Android).
+- Chưa sửa: kết quả "Tra bằng AI" chưa hiện phiên âm; dừng phiên Ôn sớm bằng Esc thì góc trên ghi "Xong 8/8" (lỗi có từ trang Luyện tập).
