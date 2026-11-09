@@ -31,7 +31,7 @@ Số tương phản dưới đây đo bằng công thức WCAG ngày 08/11/2026,
 
 - Một khái niệm một thành phần: nút, ô nhập, thẻ từ, ô đáp án đều là component trong trang "Hệ thống" của file Figma. Màn mới dùng lại, không vẽ lại.
 - Một khái niệm một từ: app gọi là "nhóm" thì landing cũng gọi là "nhóm", không gọi "bộ thẻ".
-- Bo góc chọn một lần (chủ dự án 09/11/2026: nút và hộp thoại bớt tròn): nút hành động 10 px (biến `radius/button`), hộp thoại, tấm trượt, menu nổi, thanh nổi 16 px (`radius/modal`), card 14–28 px, ô nhập và ô tìm 10 px, tab điều hướng 8 px, nhãn và chip đếm 6 px. Card nằm trong hộp thoại 12 px (góc trong không lớn hơn góc ngoài). Chỉ công tắc, nút chia đoạn và ảnh đại diện còn tròn hẳn.
+- Bo góc chọn một lần (chủ dự án 09/11/2026: nút và hộp thoại bớt tròn): nút hành động 10 px (biến `radius/button`), hộp thoại, tấm trượt, menu nổi, thanh nổi 16 px (`radius/modal`), card 14–28 px, ô nhập và ô tìm 10 px, tab điều hướng 8 px, nhãn và chip đếm 6 px. Card nằm trong hộp thoại 12 px (góc trong không lớn hơn góc ngoài). Tròn hẳn theo Figma: công tắc, nút chia đoạn, ảnh đại diện, nút tăng giảm số câu và huy hiệu (design giao diện mới §3.1).
 - Mọi card có bóng (chủ dự án, 09/11/2026): card, bảng, hộp kết quả dùng bóng hai lớp màu ink trung tính, không ánh màu accent (`--shadow-card`, Figma Shadow/Card); ô chọn, chip, ô từ dùng bóng nhẹ (`--shadow-row`, Shadow/Row); hộp thoại, thanh nổi, menu dùng `--shadow-pop` (Shadow/Pop). Dòng trong bảng không có bóng riêng. Nút có bóng màu (chủ dự án giữ, 09/11/2026, sau khi xem bản không bóng): nút chính bóng navy, nút xanh và đỏ bóng cùng màu nút, nút phụ bóng navy rất nhẹ; nút bị tắt không có bóng.
 
 ## 4. Màu (color) và khả năng tiếp cận (accessibility)
@@ -77,7 +77,7 @@ Số tương phản dưới đây đo bằng công thức WCAG ngày 08/11/2026,
 
 ## 7. Chuyển động (movement, motion)
 
-- Phản hồi khi bấm hoặc rê chuột: 150–250 ms. Vào trang, vào phần: 600–900 ms, các phần lệch nhau 60–90 ms.
+- Phản hồi khi bấm hoặc rê chuột: 150–250 ms. Vào trang, vào phần: theo tài liệu motion (`motion-va-chuyen-canh.md`, vào khoảng 300–340 ms); tài liệu motion là nguồn duy nhất cho số chuyển động (design giao diện mới §3.1).
 - Chỉ animate transform, opacity và blur. Người bật "giảm chuyển động" thấy ngay trạng thái cuối.
 - Mỗi màn tối đa một chuyển động gây chú ý: hero hiện từng từ, viền gói Pro sáng chạy, card 404 hiện từ mờ.
 

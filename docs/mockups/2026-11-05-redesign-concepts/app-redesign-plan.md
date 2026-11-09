@@ -2,7 +2,7 @@
 
 File Figma: `JKnyUUtGjpGpfKK4PqBfdY`. Style giữ theo landing bản 3:
 - chữ Noto Sans và Bricolage;
-- màu nhấn `#2445d6` trên navy;
+- màu nhấn `#1e3a8a` (biến Figma `color/accent`; design giao diện mới §3.1, trước đây ghi `#2445d6`);
 - vàng chỉ để tô từ đích;
 - nền sáng;
 - glow nhẹ.

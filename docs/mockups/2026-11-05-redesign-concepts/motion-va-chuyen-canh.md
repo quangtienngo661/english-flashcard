@@ -122,7 +122,7 @@ cung, xoay ±8° mỗi bước, `cubic-bezier(.34, 1.56, .64, 1)` 660ms).
 | Nút chính | Rê chuột: `filter: brightness(1.12)`, 200ms. Bấm: `scale(.97)`, 150ms đường cong chính. |
 | Hộp thoại, overlay (Thêm từ, Chọn nhóm, Giới thiệu Pro, Chi tiết giao dịch) | Trang mẫu vòng 10 chưa có hiệu ứng cho các hộp này. Đề xuất (chưa chốt): dùng cùng chuyển động với modal Lịch ở mục 5, tức lớp mờ 200ms, hộp 240ms (máy tính), tấm trượt từ dưới (điện thoại). |
 | Chấm "đang chờ" ở trang đơn hàng | Nhấp nháy `opacity 1 → .3 → 1`, 1,4 giây `ease-in-out`, lặp mãi cho tới khi đơn đổi trạng thái. Chấm đỏ "đã dừng" đứng yên. |
-| Thanh trên cùng (kính mờ) | Không có chuyển động; `backdrop-filter: blur(24px) saturate(1.6)` và bóng navy dưới thanh. |
+| Thanh trên cùng (kính mờ) | Không có chuyển động; `backdrop-filter: blur(24px) saturate(1.6)`; không có bóng dưới thanh ở máy tính lẫn điện thoại (Figma, design giao diện mới §3.1). |
 
 ## 7. Motion đang chạy trong code
 

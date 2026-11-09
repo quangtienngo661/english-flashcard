@@ -1,0 +1,214 @@
+<title>Wordmet năm màn tối</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=JetBrains+Mono:wght@400&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one row per screen, the light frame and the dark frame side by side (stacked on phones). Frame tokens = Figma "Wordmet" Light / Dark. */
+:root {
+  --page-bg: #eef0f5; --page-fg: #1b2444; --page-muted: #525a78; --page-line: #d9dde8;
+  --display: 'Bricolage Grotesque', 'Noto Sans', system-ui, sans-serif;
+  --sans: 'Noto Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page-bg: #0a0d18; --page-fg: #eceef5; --page-muted: #a6adc4; --page-line: #232a3d; color-scheme: dark } }
+:root[data-theme="dark"] { --page-bg: #0a0d18; --page-fg: #eceef5; --page-muted: #a6adc4; --page-line: #232a3d; color-scheme: dark }
+body { background: var(--page-bg); color: var(--page-fg); font-family: var(--sans); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px; }
+
+/* The two modes of the app's own tokens, scoped to a frame. */
+.wm-light { --bg: #f6f7fa; --surface: #ffffff; --ink: #1b2444; --muted: #525a78; --ghost: #c9cedc; --line: #e1e5ee; --accent: #1e3a8a;
+  --accent-soft: #e7ecf8; --on-accent: #ffffff; --mark: #ffd84a; --mark-ink: #1b2444; --pass: #1b7a46; --pass-soft: #e4f2ea; --fail: #b8352a; --fail-soft: #f8e7e5;
+  --sh-card: 0 1px 2px rgb(27 36 68 / .06), 0 10px 28px -14px rgb(27 36 68 / .20);
+  --sh-pop: 0 2px 6px rgb(27 36 68 / .08), 0 24px 56px -24px rgb(27 36 68 / .34);
+  --sh-btn: 0 10px 28px -10px rgb(30 58 138 / .34); --glass: rgb(255 255 255 / .8); }
+.wm-dark { --bg: #0f1220; --surface: #171b2a; --ink: #eceef5; --muted: #a6adc4; --ghost: #353c53; --line: #2a3044; --accent: #8da2ff;
+  --accent-soft: #1f2747; --on-accent: #0f1220; --mark: #ffd84a; --mark-ink: #1b2444; --pass: #62c98f; --pass-soft: #142a1e; --fail: #ff8d80; --fail-soft: #311a18;
+  /* Dark shadows are not in Figma yet (GM4): a darker, tighter version of the light ones, proposed here for review. */
+  --sh-card: 0 1px 2px rgb(0 0 0 / .4), 0 10px 28px -14px rgb(0 0 0 / .6);
+  --sh-pop: 0 2px 6px rgb(0 0 0 / .4), 0 24px 56px -24px rgb(0 0 0 / .7);
+  --sh-btn: 0 10px 28px -10px rgb(141 162 255 / .35); --glass: rgb(23 27 42 / .8); }
+
+.intro { max-width: 68ch; margin: 0 auto 32px; }
+.intro h1 { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1.2; margin: 0 0 8px; text-wrap: balance; }
+.intro p { margin: 0 0 8px; color: var(--page-muted); }
+.screen { max-width: 860px; margin: 0 auto 40px; display: grid; gap: 12px; }
+.screen h2 { font-family: var(--display); font-weight: 700; font-size: 1.25rem; margin: 0; }
+.screen .note { margin: 0; color: var(--page-muted); font-size: .875rem; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.pair figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.pair figcaption { font-family: var(--mono); font-size: 12px; color: var(--page-muted); }
+
+/* A 390-wide phone frame of the app. */
+.frame { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--page-line); background: var(--bg); color: var(--ink);
+  min-height: 560px; font-family: var(--sans); isolation: isolate; }
+.frame::before { content: ''; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(ellipse 260px 200px at -5% -5%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 70%),
+              radial-gradient(ellipse 240px 200px at 105% 105%, color-mix(in oklab, var(--mark) 28%, transparent), transparent 70%); }
+.frame::after { content: ''; position: absolute; inset: 0; z-index: -1; background-image: radial-gradient(color-mix(in oklab, var(--muted) 40%, transparent) 1px, transparent 1.2px);
+  background-size: 20px 20px; mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%); }
+.top { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; background: var(--glass); border-bottom: 1px solid var(--line); backdrop-filter: blur(24px) saturate(1.6); }
+.logo { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -1px; }
+.logo b { color: var(--accent); }
+.av { width: 32px; height: 32px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 600; }
+.sbtn { width: 36px; height: 36px; border-radius: 999px; background: var(--bg); display: grid; place-items: center; color: var(--ink); }
+.row { display: flex; gap: 8px; align-items: center; }
+.body { padding: 20px 16px 90px; display: grid; gap: 14px; }
+.title { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1.2; margin: 0; }
+.chip { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface); box-shadow: var(--sh-card); }
+.card { background: var(--surface); border-radius: 20px; padding: 16px; box-shadow: var(--sh-card); display: grid; gap: 10px; }
+.card h3 { font-family: var(--display); font-weight: 700; font-size: 18px; margin: 0; letter-spacing: -.5px; }
+.muted { color: var(--muted); font-size: 14px; }
+.mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.grow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.count { margin-left: auto; font-family: var(--display); font-weight: 800; font-size: 18px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 10px;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 15px; box-shadow: var(--sh-btn); border: 0; }
+.btn.sec { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--sh-card); }
+.textbtn { color: var(--accent); font-weight: 600; font-size: 14px; }
+.tabs { position: absolute; inset: auto 0 0; display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px 8px 10px; background: var(--glass); border-top: 1px solid var(--line); }
+.tab { display: grid; justify-items: center; font-size: 12px; color: var(--muted); }
+.tab i { width: 44px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-style: normal; }
+.tab.on { color: var(--accent); font-weight: 600; } .tab.on i { background: var(--accent-soft); }
+.fab { position: absolute; right: 16px; bottom: 76px; width: 56px; height: 56px; border-radius: 999px; background: var(--accent); color: var(--on-accent);
+  display: grid; place-items: center; font-size: 28px; box-shadow: var(--sh-btn); }
+mark { background: var(--mark); color: var(--mark-ink); padding: 0 3px; border-radius: 3px; }
+
+/* Nhóm carousel */
+.carousel { position: relative; height: 230px; display: grid; place-items: center; }
+.stack { position: absolute; width: 180px; height: 210px; border-radius: 20px; background: var(--surface); box-shadow: var(--sh-pop); padding: 16px; display: grid; align-content: space-between; border-top: 6px solid var(--g); }
+.stack.side { width: 140px; height: 170px; filter: blur(3px); opacity: .55; }
+.stack.l { transform: translateX(-130px) rotate(-6deg); } .stack.r { transform: translateX(130px) rotate(6deg); }
+.stack .n { font-family: var(--display); font-weight: 800; font-size: 44px; color: var(--g); line-height: 1; }
+
+/* Practice */
+.bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; } .bar span { display: block; height: 100%; width: 35%; background: var(--accent); }
+.opt { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1.5px solid var(--line); box-shadow: 0 1px 2px rgb(0 0 0 / .05); font-weight: 600; }
+.opt.bad { background: var(--fail-soft); border-color: var(--fail); color: var(--fail); }
+.opt.good { background: var(--pass-soft); border-color: var(--pass); color: var(--pass); }
+
+/* Dialog */
+.overlay { position: absolute; inset: 0; background: rgb(27 36 68 / .30); backdrop-filter: blur(3px); display: flex; align-items: flex-end; }
+.sheet { width: 100%; background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 16px 24px; box-shadow: var(--sh-pop); display: grid; gap: 14px; }
+.sheet h3 { font-family: var(--display); font-weight: 700; font-size: 22px; margin: 0; letter-spacing: -.8px; }
+.field { display: grid; gap: 6px; } .field label { font-weight: 600; font-size: 14px; }
+.input { height: 48px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); padding: 0 14px; display: flex; align-items: center; }
+.input.focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 16%, transparent); }
+.hint { font-size: 13px; color: var(--muted); }
+.kbd { font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; }
+
+/* Login */
+.login { padding: 24px 16px; display: grid; gap: 18px; }
+.lcard { background: var(--surface); border-radius: 28px; padding: 24px; box-shadow: var(--sh-card); display: grid; gap: 14px; }
+.google { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; } .or::before, .or::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="intro">
+  <h1>Năm màn của giao diện mới, sáng và tối</h1>
+  <p>Mỗi hàng là một màn điện thoại 390 px: bên trái chế độ Sáng, bên phải chế độ Tối. Màu lấy từ biến Figma "Wordmet" (Light, Dark).</p>
+  <p>Cần chốt trước M9: bóng của chế độ Tối (Figma chưa có, ở đây là bản đề xuất), và bảy màu nhóm, màu ngăn ở chế độ Tối (đang dùng giá trị sáng).</p>
+</header>
+
+<template id="today">
+  <div class="top"><span class="logo">wordmet<b>.</b></span><div class="row"><span class="sbtn">⌕</span><span class="av">L</span></div></div>
+  <div class="body">
+    <div class="row" style="justify-content:space-between"><h4 class="title">Hôm nay</h4><span class="chip">Thứ Ba, 10/11</span></div>
+    <div class="card"><h3>Còn 38 thẻ hôm nay</h3><span class="muted">Ôn trước, rồi học từ mới.</span>
+      <div class="grow"><span class="dot" style="background:#e5603f"></span>Công nghệ<span class="count">24</span></div>
+      <div class="grow"><span class="dot" style="background:#149384"></span>Du lịch<span class="count">9</span></div>
+      <div class="grow"><span class="dot" style="background:#7a55d3"></span>IELTS Writing<span class="count">5</span></div>
+      <button class="btn">Ôn 24 thẻ của Công nghệ →</button></div>
+    <div class="card"><span class="mono">lần luyện gần nhất · hôm qua</span><h3>14 / 20 câu đúng</h3><span class="muted">Sai: <mark>mitigate</mark>, allocate, yield</span><span class="textbtn">Luyện lại từ sai →</span></div>
+  </div>
+  <span class="fab">+</span>
+  <nav class="tabs"><span class="tab on"><i>▤</i>Hôm nay</span><span class="tab"><i>▢</i>Nhóm</span><span class="tab"><i>◎</i>Luyện tập</span><span class="tab"><i>⌕</i>Tra từ</span></nav>
+</template>
+
+<template id="groups">
+  <div class="top"><span class="logo">wordmet<b>.</b></span><div class="row"><span class="sbtn">⌕</span><span class="av">L</span></div></div>
+  <div class="body">
+    <h4 class="title">Nhóm</h4>
+    <div class="carousel">
+      <div class="stack side l" style="--g:#7a55d3"><span class="mono">ielts</span></div>
+      <div class="stack side r" style="--g:#149384"><span class="mono">du lịch</span></div>
+      <div class="stack" style="--g:#e5603f"><span class="mono">noun · b2 · 120 từ</span><div><div class="n">24</div><strong>Công nghệ</strong><div class="muted">thẻ chờ ôn</div></div></div>
+    </div>
+    <div class="card"><span class="mono">tiếp theo</span><h3>mitigate</h3><span class="muted">Lần ôn gần nhất: allocate, 2 giờ trước</span><button class="btn">Ôn 24 thẻ</button><span class="textbtn" style="justify-self:center">Học 6 từ mới</span></div>
+  </div>
+  <nav class="tabs"><span class="tab"><i>▤</i>Hôm nay</span><span class="tab on"><i>▢</i>Nhóm</span><span class="tab"><i>◎</i>Luyện tập</span><span class="tab"><i>⌕</i>Tra từ</span></nav>
+</template>
+
+<template id="practice">
+  <div class="body" style="padding-bottom:24px">
+    <div class="row" style="justify-content:space-between"><span class="mono">câu 7 / 20</span><span class="textbtn" style="color:var(--muted)">Dừng</span></div>
+    <div class="bar"><span></span></div>
+    <div class="card"><span class="mono">chọn từ đúng nghĩa</span><h3>làm giảm nhẹ, làm dịu bớt (tác hại, rủi ro)</h3></div>
+    <div class="opt">allocate</div>
+    <div class="opt bad">✕ yield <span style="margin-left:auto;font-size:13px">Bạn chọn</span></div>
+    <div class="opt good">✓ mitigate <span style="margin-left:auto;font-size:13px">Đáp án đúng</span></div>
+    <div class="opt">sustain</div>
+    <div class="card" style="border-left:4px solid var(--fail)"><strong style="color:var(--fail)">Chưa đúng.</strong><span class="muted">"Mitigate" là làm giảm mức độ của một điều xấu: <em>mitigate the risk</em>.</span></div>
+    <button class="btn">Câu tiếp theo</button>
+  </div>
+</template>
+
+<template id="addword">
+  <div class="top"><span class="logo">wordmet<b>.</b></span><div class="row"><span class="sbtn">⌕</span><span class="av">L</span></div></div>
+  <div class="body"><h4 class="title">Hôm nay</h4><div class="card"><h3>Còn 38 thẻ hôm nay</h3></div></div>
+  <div class="overlay"><div class="sheet">
+    <div class="row" style="justify-content:space-between"><h3>Thêm từ</h3><span class="kbd">N</span></div>
+    <div class="field"><label>Từ hoặc cụm từ</label><div class="input focus">mitig<span style="border-left:2px solid var(--accent);height:20px;margin-left:1px"></span></div><span class="hint">Gõ từ tiếng Anh bạn vừa gặp.</span></div>
+    <div class="card" style="padding:12px;border-radius:12px"><strong>mitigate</strong><span class="mono">verb · c1</span><span class="muted">làm giảm nhẹ, làm dịu bớt</span></div>
+    <div class="field"><label>Nhóm</label><div class="input" style="justify-content:space-between">Công nghệ <span class="muted">⌄</span></div></div>
+    <div class="row" style="justify-content:flex-end;gap:12px"><button class="btn sec">Hủy</button><button class="btn">Thêm vào nhóm</button></div>
+  </div></div>
+</template>
+
+<template id="login">
+  <div class="login">
+    <span class="logo">wordmet<b>.</b></span>
+    <div class="lcard">
+      <h4 class="title" style="font-size:26px">Đăng nhập</h4>
+      <span class="muted">Học tiếp từ chỗ bạn dừng.</span>
+      <div class="google">G&nbsp; Tiếp tục với Google</div>
+      <div class="or">hoặc</div>
+      <div class="field"><label>Email</label><div class="input">lan.nguyen@gmail.com</div></div>
+      <div class="field"><div class="row" style="justify-content:space-between"><label>Mật khẩu</label><span class="textbtn" style="font-size:13px">Quên mật khẩu?</span></div>
+        <div class="input" style="border-color:var(--fail)">••••••</div><span class="hint" style="color:var(--fail)">⚠ Mật khẩu không đúng. Thử lại.</span></div>
+      <button class="btn">Đăng nhập</button>
+      <span class="muted" style="text-align:center">Chưa có tài khoản? <span class="textbtn">Đăng ký</span></span>
+    </div>
+  </div>
+</template>
+
+<main id="screens"></main>
+
+<script>
+const SCREENS = [
+  ['today', 'Hôm nay', 'Thẻ "Còn 38 thẻ", màu nhóm, khối "Lần luyện gần nhất", nút + và thanh tab.'],
+  ['groups', 'Nhóm (băng chuyền)', 'Chồng giữa nét, hai chồng bên mờ; số thẻ chờ dùng màu nhóm.'],
+  ['practice', 'Phiên luyện, trả lời sai', 'Đúng / Sai luôn kèm dấu và chữ; nền nhạt của pass, fail ở chế độ Tối.'],
+  ['addword', 'Hộp Thêm từ', 'Tấm trượt trên lớp mờ navy; ô đang nhập có viền nhấn và vòng sáng.'],
+  ['login', 'Đăng nhập', 'Card giữa trên lưới chấm; ô lỗi kèm câu báo lỗi.'],
+];
+const root = document.getElementById('screens');
+for (const [id, name, note] of SCREENS) {
+  const section = document.createElement('section');
+  section.className = 'screen';
+  section.innerHTML = `<h2>${name}</h2><p class="note">${note}</p><div class="pair"></div>`;
+  for (const mode of ['light', 'dark']) {
+    const fig = document.createElement('figure');
+    const frame = document.createElement('div');
+    frame.className = `frame wm-${mode}`;
+    frame.setAttribute('role', 'img');
+    frame.setAttribute('aria-label', `${name}, chế độ ${mode === 'light' ? 'Sáng' : 'Tối'}`);
+    frame.append(document.getElementById(id).content.cloneNode(true));
+    const cap = document.createElement('figcaption');
+    cap.textContent = mode === 'light' ? 'Sáng · Light' : 'Tối · Dark';
+    fig.append(frame, cap);
+    section.querySelector('.pair').append(fig);
+  }
+  root.append(section);
+}
+</script>
