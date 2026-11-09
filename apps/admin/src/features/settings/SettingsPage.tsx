@@ -16,6 +16,7 @@ import { Tabs } from '../../ui/Tabs';
 import { showToast } from '../../ui/Toast';
 import { useSubmitAction } from '../content/useSubmitAction';
 import {
+  aiCapExamples,
   applyPatch,
   changedValues,
   FIELD_ORDER,
@@ -23,14 +24,16 @@ import {
   getAiUsage,
   getSettings,
   isEmptyPatch,
+  parentOf,
   saveSettings,
   sectionOfField,
   SECTIONS,
-  SETTINGS_LAYOUT,
+  type FieldSpec,
   type Section,
   type SettingsView,
   type SettingValue,
   type Values,
+  visibleFields,
 } from './settings-api';
 import { SettingsField } from './SettingsField';
 import { SettingsHistoryDialog } from './SettingsHistoryDialog';
@@ -106,7 +109,19 @@ function SettingsForm({ live, onSaved, onReload }: { live: SettingsView; onSaved
     () => (problem?.slug === 'validation-failed' ? violationsToFields(problem.violations ?? [], fieldOfPath) : { fields: {}, form: [] }),
     [problem],
   );
-  const firstErrorSection = FIELD_ORDER.filter((id) => fieldErrors[id]).map(sectionOfField)[0];
+  // An error on a field hidden by its choice is shown on that choice's row, whose select then takes the focus (design §6).
+  const rowErrors = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [id, message] of Object.entries(fieldErrors)) {
+      const s = sectionOfField(id);
+      const key = id.slice(s.length + 1);
+      const parent = parentOf(s, key);
+      const hidden = parent !== null && !visibleFields(s, draft).some((f) => f.key === key);
+      out[hidden ? `${s}.${parent}` : id] = message;
+    }
+    return out;
+  }, [fieldErrors, draft]);
+  const firstErrorSection = FIELD_ORDER.filter((id) => rowErrors[id]).map(sectionOfField)[0];
   // A 400 on a field of another tab opens that tab (§6.7); the focus then follows on the field once it is shown.
   useEffect(() => {
     if (firstErrorSection && firstErrorSection !== section) setFilters({ tab: firstErrorSection });
@@ -114,12 +129,19 @@ function SettingsForm({ live, onSaved, onReload }: { live: SettingsView; onSaved
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem]);
   const shownErrors = useMemo(
-    () => Object.fromEntries(Object.entries(fieldErrors).filter(([id]) => sectionOfField(id) === section)),
-    [fieldErrors, section],
+    () => Object.fromEntries(Object.entries(rowErrors).filter(([id]) => sectionOfField(id) === section)),
+    [rowErrors, section],
   );
   useFocusFirstError(shownErrors, FIELD_ORDER);
 
   const conflict = moved || problem?.slug === 'version-conflict';
+  /** The AI-max row's example line, from the draft; none while the number of the chosen mode is not a whole number. */
+  const aiExample = (practice: Values['practice']) => {
+    const examples = aiCapExamples(String(practice.ai_max_mode), practice.ai_max_fixed as number, practice.ai_max_percent as number);
+    if (!examples) return null;
+    const [a, b, c] = examples;
+    return t('settings.aiCapExample', { q1: a.questions, a1: a.ai, q2: b.questions, a2: b.ai, q3: c.questions, a3: c.ai });
+  };
   const setValue = (s: Section, key: string, value: SettingValue) => setDraft((d) => ({ ...d, [s]: { ...d[s], [key]: value } }));
   const marked = (s: Section) => patch[s] !== undefined;
 
@@ -195,19 +217,44 @@ function SettingsForm({ live, onSaved, onReload }: { live: SettingsView; onSaved
                 <h2 id={`settings-${s}`} className="pb-2 text-xl font-extrabold tracking-tight text-ink">
                   {t(`settings.tabs.${s}`)}
                 </h2>
-                {SETTINGS_LAYOUT[s].map((spec) => (
-                  <div key={spec.key} className="border-b border-border py-4 last:border-b-0">
-                    <SettingsField
-                      section={s}
-                      spec={spec}
-                      value={draft[s][spec.key] ?? null}
-                      defaultValue={view.defaults?.[s]?.[spec.key] ?? null}
-                      bound={view.bounds[s]?.[spec.key]}
-                      error={fieldErrors[`${s}.${spec.key}`] ? t('settings.outOfRange') : undefined}
-                      onChange={(value) => setValue(s, spec.key, value)}
-                    />
-                  </div>
-                ))}
+                {visibleFields(s, draft)
+                  .filter((spec) => !spec.showWhen)
+                  .map((spec) => {
+                    const field = (f: FieldSpec) => (
+                      <SettingsField
+                        key={f.key}
+                        section={s}
+                        spec={f}
+                        value={draft[s][f.key] ?? null}
+                        defaultValue={view.defaults?.[s]?.[f.key] ?? null}
+                        bound={view.bounds[s]?.[f.key]}
+                        error={rowErrors[`${s}.${f.key}`] ? t('settings.outOfRange') : undefined}
+                        onChange={(value) => setValue(s, f.key, value)}
+                      />
+                    );
+                    if (spec.kind !== 'choice') {
+                      return (
+                        <div key={spec.key} className="border-b border-border py-4 last:border-b-0">
+                          {field(spec)}
+                        </div>
+                      );
+                    }
+                    const children = visibleFields(s, draft).filter((f) => f.showWhen?.key === spec.key);
+                    const example = s === 'practice' && spec.key === 'ai_max_mode' ? aiExample(draft.practice) : null;
+                    // A choice and the number field of its chosen mode share one row, with no border between them (mockup).
+                    return (
+                      <div
+                        key={spec.key}
+                        role="group"
+                        aria-label={t(`settings.fields.${s}.${spec.key}` as Parameters<typeof t>[0])}
+                        className="flex flex-col gap-3 border-b border-border py-4 last:border-b-0"
+                      >
+                        {field(spec)}
+                        {children.map(field)}
+                        {example && <p className="max-w-md text-xs text-muted">{example}</p>}
+                      </div>
+                    );
+                  })}
                 {s === 'reminders' && <p className="pt-2 text-xs text-muted">{t('settings.emailTemplates')}</p>}
               </section>
             </div>
