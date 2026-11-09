@@ -204,3 +204,81 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
       available: availableAll(['s1'], ['cloze']) }, snapshot())).resolves.toEqual({ aiPlanned: 1, aiSenseIds: ['s1'] });
   });
 });
+
+describe("AiSessionPlanner.plan with the learner's ai count (practice ai count §4–§5, 09/11/2026)", () => {
+  const types: QuestionType[] = ['type_word', 'cloze'];
+  const ten = () => {
+    const senses = words(10);
+    return { senses, ids: senses.map((s) => s.sense_id) };
+  };
+
+  it('aiCount 3, count 10, 10 capable words, none unseen, even → aiPlanned 3, the 4th, 7th and 10th words marked', async () => {
+    const { senses, ids } = ten();
+    const t = setup({ senses });
+    expect(await t.planner.plan(learner, { types, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, types),
+      aiCount: 3, placement: 'even' }, snapshot())).toEqual({ aiPlanned: 3, aiSenseIds: ['s4', 's7', 's10'] });
+  });
+
+  it('aiCount 3, random with random () => 0 → the first three capable words marked', async () => {
+    const { senses, ids } = ten();
+    const t = setup({ senses });
+    expect(await t.planner.plan(learner, { types, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, types),
+      aiCount: 3, placement: 'random', random: () => 0 }, snapshot())).toEqual({ aiPlanned: 3, aiSenseIds: ['s1', 's2', 's3'] });
+  });
+
+  it('aiCount 5, count 3, only 3 capable words: remaining 2 → 403 needed 3; remaining 3 → aiPlanned 3', async () => {
+    const senses = words(3);
+    const ids = senses.map((s) => s.sense_id);
+    const t = setup({ senses });
+    const input = { types, clozeSource: 'ai' as const, count: 3, kept: ids, available: availableAll(ids, types), aiCount: 5, placement: 'even' as const };
+    await expect(t.planner.plan(learner, input, snapshot({ remaining: 2 }))).rejects.toMatchObject({
+      status: 403, problemType: 'ai-quota-insufficient', extensions: { remaining: 2, needed: 3 },
+    });
+    expect(await t.planner.plan(learner, input, snapshot({ remaining: 3 }))).toEqual({ aiPlanned: 3, aiSenseIds: ids });
+  });
+
+  it('aiCount 4, count 10, 10 capable, words 1 and 2 have an unseen question, even, remaining 1 → 403 ai-quota-insufficient with remaining 1, needed 2', async () => {
+    const { senses, ids } = ten();
+    const t = setup({ senses, unseen: ['s1', 's2'] });
+    await expect(t.planner.plan(learner, { types, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, types),
+      aiCount: 4, placement: 'even' }, snapshot({ remaining: 1 }))).rejects.toMatchObject({
+      status: 403, problemType: 'ai-quota-insufficient', extensions: { remaining: 1, needed: 2, resets_at: RESETS_AT },
+    });
+    expect(await t.planner.plan(learner, { types, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, types),
+      aiCount: 4, placement: 'even' }, snapshot({ remaining: 2 }))).toEqual({ aiPlanned: 4, aiSenseIds: ['s1', 's2', 's6', 's10'] });
+  });
+
+  it('count 20 on 8 kept words, aiCount 8, even → 3 words marked, aiPlanned 8', async () => {
+    const senses = words(8);
+    const ids = senses.map((s) => s.sense_id);
+    const t = setup({ senses });
+    const plan = await t.planner.plan(learner, { types, clozeSource: 'ai', count: 20, kept: ids, available: availableAll(ids, types),
+      aiCount: 8, placement: 'even' }, snapshot());
+    expect(plan).toEqual({ aiPlanned: 8, aiSenseIds: ['s3', 's6', 's8'] });
+  });
+
+  it('aiCount 0 → aiPlanned 0 and no unseen-question lookup', async () => {
+    const { senses, ids } = ten();
+    const t = setup({ senses });
+    expect(await t.planner.plan(learner, { types, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, types),
+      aiCount: 0, placement: 'even' }, snapshot({ remaining: 0 }))).toEqual({ aiPlanned: 0, aiSenseIds: [] });
+    expect(t.prisma.practiceQuestion.findMany).not.toHaveBeenCalled();
+  });
+
+  it('own_then_ai: no word is AI-capable on the AI side (all have saved sentences), aiCount 3 → aiPlanned 0', async () => {
+    const senses = words(3);
+    const ids = senses.map((s) => s.sense_id);
+    const t = setup({ senses });
+    const available = new Map<string, QuestionType[]>(ids.map((id) => [id, []]));
+    expect(await t.planner.plan(learner, { types: ['cloze'], clozeSource: 'own_then_ai', count: 3, kept: ids, available,
+      aiCount: 3, placement: 'even' }, snapshot({ remaining: 0 }))).toEqual({ aiPlanned: 0, aiSenseIds: [] });
+  });
+
+  it('aiCount undefined keeps the old split: count 10, 4 types of which 2 AI → aiPlanned 5', async () => {
+    const { senses, ids } = ten();
+    const four: QuestionType[] = ['type_word', 'mcq_definition', 'cloze', 'mcq_sentence'];
+    const t = setup({ senses });
+    expect(await t.planner.plan(learner, { types: four, clozeSource: 'ai', count: 10, kept: ids, available: availableAll(ids, four) }, snapshot()))
+      .toEqual({ aiPlanned: 5, aiSenseIds: ['s2', 's4', 's6', 's8', 's10'] });
+  });
+});
