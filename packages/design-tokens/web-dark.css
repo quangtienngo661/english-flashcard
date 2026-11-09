@@ -1,0 +1,19 @@
+/* Dark values of the new web UI's colours (design giao diện mới §7.2, Figma collection "Wordmet", mode Dark, read with the
+   Plugin API 09/11/2026). Same keys as web.css. Dark shadows wait for the dark mockups (GM4, M9). */
+[data-theme='dark'] {
+  --color-wm-bg: #0f1220;
+  --color-wm-surface: #171b2a;
+  --color-wm-ink: #eceef5;
+  --color-wm-muted: #a6adc4;
+  --color-wm-ghost: #353c53;
+  --color-wm-line: #2a3044;
+  --color-wm-accent: #8da2ff;
+  --color-wm-accent-soft: #1f2747;
+  --color-wm-on-accent: #0f1220;
+  --color-wm-mark: #ffd84a;
+  --color-wm-mark-ink: #1b2444;
+  --color-wm-pass: #62c98f;
+  --color-wm-pass-soft: #142a1e;
+  --color-wm-fail: #ff8d80;
+  --color-wm-fail-soft: #311a18;
+}
