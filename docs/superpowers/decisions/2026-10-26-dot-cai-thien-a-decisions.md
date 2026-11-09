@@ -217,6 +217,9 @@ phiên. Nên công tắc **luôn hiện** (khác đề xuất 14.2 "chỉ hiện
 | ✅ Luôn hiện, dòng phụ giải thích | Không thêm API; người chưa lưu câu nào bật lên mà không thấy câu điền từ |
 | Chỉ hiện khi có câu đã lưu | Đúng hơn; phải thêm API đếm câu theo phạm vi phiên |
 
+**Đổi ngày 09/11/2026:** phần "Pro bật cả hai thì câu điền từ AI tự tắt" được thay bằng nguồn `cloze_source: own_then_ai` (từ có câu đã lưu dùng câu đó, từ chưa có thì AI viết); công tắc và
+nguồn `own` giữ nguyên. Xem `2026-11-09-cloze-own-then-ai-decisions.md` và `docs/deliveries/cloze-own-then-ai.md`. Hộp Tùy chỉnh phiên trong code chưa gửi nguồn mới.
+
 ## A12 — Lỗi "Xem đáp án"
 
 Phát hiện khi gom code facts: web hiện "Xem đáp án" cho câu điền từ trước lần thử đầu (mockup K/78a), API từ chối khi `tries === 0`. Chưa tái hiện bằng chạy thật.
