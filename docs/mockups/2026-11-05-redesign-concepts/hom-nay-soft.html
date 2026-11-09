@@ -1,0 +1,449 @@
+<title>Wordmet Hôm nay mềm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Trang Hôm nay của Wordmet theo hướng Soft Structuralism: bento bất đối xứng, khối hai lớp, đảo điều hướng nổi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&display=swap">
+<script>document.documentElement.classList.add('js')</script>
+<style>
+/* Soft Structuralism × Asymmetrical Bento. Silver ground, white machined cards in a two-layer bezel,
+   one jade accent, Geist throughout, very soft ambient shadows. Single look on purpose; every colour is set here. */
+:root {
+  --bg: #eceeed; --shell: rgb(18 26 22 / .045); --ring: rgb(18 26 22 / .065); --core: #fbfbfa; --core-2: #f2f4f3;
+  --ink: #121614; --muted: #48504c; --line: rgb(18 22 20 / .09);
+  --accent: #127a5b; --accent-deep: #0c5a43; --accent-soft: #e1f0e9; --on-accent: #ffffff;
+  --warn: #9c4d0f; --warn-soft: #f6e8dc;
+  --amb: 0 44px 80px -44px rgb(22 44 34 / .26), 0 14px 28px -20px rgb(22 44 34 / .14);
+  --inset: inset 0 1px 1px rgb(255 255 255 / .95);
+  --f: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --s-eyebrow: 13px; --s-small: 14px; --s-body: 16px; --s-title: 22px; --s-big: clamp(44px, 4.2vw, 64px); --s-display: clamp(56px, 7.2vw, 116px);
+  --R: 32px; --gap-shell: 6px; --r-in: calc(var(--R) - var(--gap-shell));
+  --ease: cubic-bezier(.32, .72, 0, 1); --ease-out: cubic-bezier(.22, 1, .36, 1); --spring: cubic-bezier(.34, 1.3, .64, 1);
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); font-size: var(--s-body); line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: hidden }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg) }
+h1, h2, h3, p { margin: 0 }
+a { color: inherit }
+button, input { font: inherit; color: inherit }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)) }
+@media (max-width: 767px) { .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) } }
+.ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: none }
+
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 5px 12px; border-radius: 999px; background: rgb(18 22 20 / .055); font-size: var(--s-eyebrow); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted) }
+.eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent) }
+
+/* Double bezel: an aluminium tray (shell) holding a glass plate (core). */
+.shell { position: relative; padding: var(--gap-shell); border-radius: var(--R); background: var(--shell); box-shadow: 0 0 0 1px var(--ring) }
+.core { position: relative; height: 100%; border-radius: var(--r-in); background: var(--core); box-shadow: var(--inset), var(--amb); overflow: hidden; transition: transform 700ms var(--ease) }
+@media (hover: hover) and (pointer: fine) { .shell.lift:hover .core { transform: translateY(-3px) } }
+
+/* Island button with its icon nested in its own circle. */
+.pill { display: inline-flex; align-items: center; gap: 14px; min-height: 52px; padding: 6px 6px 6px 24px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-size: var(--s-body); font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 500ms var(--ease), background-color 300ms var(--ease) }
+.pill .knob { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgb(255 255 255 / .14); transition: transform 500ms var(--ease) }
+.pill:active { transform: scale(.98) }
+@media (hover: hover) and (pointer: fine) { .pill:hover .knob { transform: translate(3px, -1px) scale(1.06) } }
+.pill.accent { background: var(--accent) } .pill.accent .knob { background: rgb(255 255 255 / .18) }
+@media (hover: hover) and (pointer: fine) { .pill.accent:hover { background: var(--accent-deep) } }
+.pill.soft { background: var(--core-2); color: var(--ink) } .pill.soft .knob { background: var(--core) }
+.pill.sm { min-height: 44px; padding: 4px 4px 4px 18px; gap: 10px; font-size: var(--s-small) } .pill.sm .knob { width: 36px; height: 36px }
+
+/* ---------- floating island navigation ---------- */
+.nav-wrap { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 18px); z-index: 20; display: flex; justify-content: center; padding: 0 16px; pointer-events: none }
+.island { pointer-events: auto; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px; background: rgb(251 251 250 / .72); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 0 0 1px var(--ring), var(--inset), 0 20px 40px -24px rgb(22 44 34 / .3) }
+.wm { display: flex; align-items: center; gap: 8px; padding: 0 14px 0 12px; font-weight: 700; font-size: var(--s-title); letter-spacing: -.04em; text-decoration: none }
+.wm i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent) }
+.island nav { display: flex; gap: 2px }
+.island nav a { padding: 10px 16px; border-radius: 999px; font-size: var(--s-small); font-weight: 500; color: var(--muted); text-decoration: none; transition: background-color 300ms var(--ease), color 300ms var(--ease) }
+.island nav a[aria-current] { background: var(--ink); color: #fff }
+@media (hover: hover) and (pointer: fine) { .island nav a:not([aria-current]):hover { background: rgb(18 22 20 / .06); color: var(--ink) } }
+.burger { display: none; position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--core-2); cursor: pointer }
+.burger i { position: absolute; left: 13px; width: 18px; height: 1.5px; border-radius: 2px; background: var(--ink); transition: transform 500ms var(--ease), opacity 300ms var(--ease) }
+.burger i:nth-child(1) { top: 17px } .burger i:nth-child(2) { top: 25px }
+.burger[aria-expanded="true"] i:nth-child(1) { transform: translateY(4px) rotate(45deg) }
+.burger[aria-expanded="true"] i:nth-child(2) { transform: translateY(-4px) rotate(-45deg) }
+.overlay { position: fixed; inset: 0; z-index: 19; display: grid; align-content: center; gap: 6px; padding: 120px 28px 40px; background: rgb(236 238 237 / .82); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 500ms var(--ease), visibility 0s linear 500ms }
+.overlay.open { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s }
+.overlay a { font-size: var(--s-big); font-weight: 600; letter-spacing: -.04em; text-decoration: none; transform: translateY(48px); opacity: 0; transition: transform 700ms var(--ease), opacity 700ms var(--ease) }
+.overlay.open a { transform: none; opacity: 1 }
+.overlay.open a:nth-child(1) { transition-delay: 100ms } .overlay.open a:nth-child(2) { transition-delay: 150ms } .overlay.open a:nth-child(3) { transition-delay: 200ms } .overlay.open a:nth-child(4) { transition-delay: 250ms }
+@media (max-width: 900px) { .island nav { display: none } .burger { display: block } .island .pill .label { display: none } .island .pill { padding: 4px } }
+
+/* ---------- intro ---------- */
+.intro { padding-block: 120px 96px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 40px }
+.intro h1 { margin-top: 22px; font-size: var(--s-display); font-weight: 600; letter-spacing: -.05em; line-height: 1.0; text-wrap: balance }
+.intro .sub { margin-top: 26px; max-width: 34ch; font-size: var(--s-title); line-height: 1.4; letter-spacing: -.01em; color: var(--muted) }
+.intro .sub b { color: var(--ink); font-weight: 500 }
+.intro-cta { display: grid; justify-items: end; gap: 14px; padding-bottom: 8px }
+.intro-cta p { color: var(--muted); font-size: var(--s-small) }
+@media (max-width: 767px) { .intro { grid-template-columns: 1fr; padding-block: 72px 48px; gap: 28px } .intro h1 { font-size: 13vw } .intro .sub { font-size: 18px } .intro-cta { justify-items: start } }
+
+/* ---------- bento ---------- */
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(148px, auto); gap: 16px }
+.b-review { grid-column: 1 / 8; grid-row: span 3 }
+.b-add { grid-column: 8 / 13; grid-row: span 2 }
+.b-prac { grid-column: 8 / 11 }
+.b-ai { grid-column: 11 / 13 }
+.b-stage { grid-column: 1 / 6; grid-row: span 2 }
+.b-old { grid-column: 6 / 10; grid-row: span 2 }
+.b-met { grid-column: 10 / 13; grid-row: span 2 }
+@media (max-width: 1100px) and (min-width: 768px) { .b-review { grid-column: 1 / 13; grid-row: span 3 } .b-add { grid-column: 1 / 8 } .b-prac { grid-column: 8 / 13 } .b-ai { grid-column: 8 / 13 } .b-stage { grid-column: 1 / 7 } .b-old { grid-column: 7 / 13 } .b-met { grid-column: 1 / 13 } }
+@media (max-width: 767px) { .bento { grid-template-columns: 1fr; gap: 24px } .bento > * { grid-column: 1 / -1 !important; grid-row: auto !important } }
+.bento > *, .deck-row > * { min-width: 0 }
+.card-in { display: flex; flex-direction: column; gap: 14px; padding: 26px; height: 100%; min-width: 0 }
+.card-in h2 { font-size: var(--s-title); font-weight: 600; letter-spacing: -.02em; line-height: 1.2 }
+.card-in .note { color: var(--muted); font-size: var(--s-body); line-height: 1.5 }
+.big { font-size: var(--s-big); font-weight: 600; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums }
+.big small { font-size: var(--s-title); color: var(--muted); letter-spacing: -.01em; font-weight: 500 }
+
+/* review card: a Z-axis cascade of today's cards */
+.b-review .card-in { padding: 30px }
+.cascade { position: relative; flex: 1; min-height: 360px; display: grid; place-items: center; perspective: 1400px }
+.fc { position: absolute; width: min(300px, 70%); aspect-ratio: 300 / 380; transition: transform 800ms var(--ease) }
+.fc .bez { height: 100%; padding: 5px; border-radius: 28px; background: var(--shell); box-shadow: 0 0 0 1px var(--ring) }
+.fc .face { position: absolute; inset: 5px; display: flex; flex-direction: column; padding: 20px; border-radius: 23px; background: var(--core); box-shadow: var(--inset), var(--amb); backface-visibility: hidden; -webkit-backface-visibility: hidden }
+.fc .flipper { position: relative; height: 100%; transform-style: preserve-3d; transition: transform 700ms var(--ease) }
+.fc.turned .flipper { transform: rotateY(180deg) }
+.fc .face.back { transform: rotateY(180deg); visibility: hidden; transition: visibility 0s linear 700ms }
+.fc.turned .face.back { visibility: visible; transition-delay: 0s }
+.fc.turned .face.front { visibility: hidden; transition: visibility 0s linear 700ms }
+.fc.c3 { transform: translate(-150px, 26px) rotate(-7deg) scale(.86) } .fc.c2 { transform: translate(150px, 18px) rotate(6deg) scale(.9) } .fc.c1 { z-index: 2; cursor: pointer }
+.fc.c2 .face, .fc.c3 .face { background: var(--core-2) }
+.fc.c2 .face > *, .fc.c3 .face > * { visibility: hidden }
+@media (hover: hover) and (pointer: fine) { .cascade:hover .fc.c3 { transform: translate(-176px, 30px) rotate(-10deg) scale(.86) } .cascade:hover .fc.c2 { transform: translate(176px, 20px) rotate(9deg) scale(.9) } .cascade:hover .fc.c1:not(.turned) { transform: translateY(-6px) } }
+.f-top { display: flex; align-items: center; justify-content: space-between; font-size: var(--s-small); color: var(--muted) }
+.f-top .tag { padding: 3px 10px; border-radius: 999px; background: var(--core-2); color: var(--ink) }
+.f-word { flex: 1; display: grid; place-content: center; text-align: center; gap: 4px }
+.f-word b { font-size: 52px; font-weight: 600; letter-spacing: -.05em; line-height: 1 }
+.f-word span, .f-hint { color: var(--muted); font-size: var(--s-small) }
+.f-hint { text-align: center }
+.f-mean { margin-top: 14px; font-size: 30px; font-weight: 600; letter-spacing: -.035em; line-height: 1.05 }
+.f-ex { margin-top: auto; padding: 12px 14px; border-radius: 16px; background: var(--core-2); font-size: var(--s-small); line-height: 1.45 }
+.f-ex mark { background: none; color: var(--accent); font-weight: 600 }
+.review-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap }
+.decks-mini { display: flex; gap: 8px; flex-wrap: wrap }
+.decks-mini span { padding: 7px 12px; border-radius: 999px; background: var(--core-2); font-size: var(--s-small) }
+.decks-mini b { font-weight: 600 }
+@media (max-width: 767px) { .cascade { min-height: 330px } .fc.c3 { transform: translate(-64px, 22px) rotate(-6deg) scale(.86) } .fc.c2 { transform: translate(64px, 14px) rotate(5deg) scale(.9) } }
+
+/* quick add */
+.field { margin-top: 4px; padding: 5px; border-radius: 24px; background: var(--shell); box-shadow: 0 0 0 1px var(--ring) }
+.field-in { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 20px; border-radius: 19px; background: var(--core); box-shadow: var(--inset); transition: box-shadow 400ms var(--ease) }
+.field-in:focus-within { box-shadow: var(--inset), 0 0 0 2px var(--accent) }
+.field input { flex: 1; min-width: 0; height: 64px; border: 0; background: transparent; font-size: 40px; font-weight: 600; letter-spacing: -.04em; outline: none; caret-color: var(--accent) }
+.field input::placeholder { color: #b9bfbc }
+.field .pill { flex: none }
+.out { min-height: 48px; padding: 0 4px; font-size: var(--s-body); line-height: 1.5 }
+.out b { color: var(--accent); font-weight: 600 }
+.out.found { color: var(--ink) }
+.tries { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tries span { color: var(--muted); font-size: var(--s-small); margin-right: 2px }
+.tries button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--core-2); font-size: var(--s-small); cursor: pointer; transition: transform 400ms var(--ease), background-color 300ms var(--ease) }
+.tries button:active { transform: scale(.96) }
+@media (hover: hover) and (pointer: fine) { .tries button:hover { background: var(--accent-soft) } }
+.saved { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 32px; font-size: var(--s-small); color: var(--muted) }
+.saved .chip { padding: 4px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-deep); font-weight: 600; animation: chip-in 600ms var(--spring) }
+@keyframes chip-in { from { transform: translateY(10px) scale(.9); opacity: 0 } }
+@media (max-width: 767px) { .field input { font-size: 30px; height: 56px } .field .pill .label { display: none } .field .pill { padding: 4px } }
+
+/* practice ring, AI meter */
+.ring-row { display: flex; align-items: center; gap: 18px; min-width: 0 }
+.ring-row > div { min-width: 0 }
+.ring { width: 92px; height: 92px; flex: none }
+.ring circle { fill: none; stroke-width: 6; stroke-linecap: round }
+.ring .track { stroke: var(--core-2) }
+.ring .val { stroke: var(--accent); stroke-dasharray: 251.3; stroke-dashoffset: 83.8; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1400ms var(--ease) }
+.ring text { font: 600 28px var(--f); letter-spacing: -.04em; fill: var(--ink) }
+.meter { height: 6px; border-radius: 99px; background: var(--core-2); overflow: hidden }
+.meter i { display: block; height: 100%; width: 100%; border-radius: 99px; background: var(--ink); transform-origin: left; transform: scaleX(.733); transition: transform 1200ms var(--ease) }
+.link-arrow { display: inline-flex; align-items: center; gap: 6px; font-size: var(--s-small); font-weight: 500; text-decoration: none; width: fit-content }
+.link-arrow .ico { transition: transform 400ms var(--ease) }
+@media (hover: hover) and (pointer: fine) { .link-arrow:hover .ico { transform: translate(2px, -2px) } }
+
+/* stages */
+.stages { flex: 1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: end; min-height: 200px }
+.st { display: grid; gap: 8px; justify-items: center; text-align: center }
+.st .bar { position: relative; width: 100%; max-width: 46px; height: calc(var(--t) * 150px + 12px); border-radius: 14px; background: var(--core-2); overflow: hidden; transform-origin: bottom; transition: transform 1100ms var(--ease) }
+.st .bar i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--d) * 100%); background: var(--accent); border-radius: 0 }
+.st b { font-size: var(--s-body); font-weight: 600; font-variant-numeric: tabular-nums }
+.st span { font-size: var(--s-small); color: var(--muted); white-space: nowrap }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--s-small); color: var(--muted) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--accent) }
+.legend i.t { background: var(--core-2); box-shadow: 0 0 0 1px var(--line) }
+
+/* backlog */
+.b-old .big { color: var(--warn) }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chips span { padding: 8px 14px; border-radius: 999px; background: var(--warn-soft); color: #5e2d06; font-weight: 500 }
+
+/* photo card */
+.photo-core { display: flex; flex-direction: column; height: 100% }
+.photo { position: relative; flex: 1; min-height: 220px; margin: 6px 6px 0; border-radius: calc(var(--r-in) - 6px); overflow: hidden }
+.photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.04); transition: transform 1600ms var(--ease) }
+@media (hover: hover) and (pointer: fine) { .shell.lift:hover .photo img { transform: scale(1.09) } }
+.photo-cap { padding: 18px 22px 22px; display: grid; gap: 4px }
+
+/* ---------- decks and topics ---------- */
+.decks { padding-block: 160px 40px }
+.sec-h { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 40px }
+.sec-h h2 { margin-top: 18px; font-size: var(--s-big); font-weight: 600; letter-spacing: -.05em; line-height: 1 }
+.sec-h p { max-width: 38ch; color: var(--muted) }
+.deck-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px }
+.deck-row > .shell:nth-child(1) { grid-column: 1 / 6 } .deck-row > .shell:nth-child(2) { grid-column: 6 / 10 } .deck-row > .shell:nth-child(3) { grid-column: 10 / 13 }
+@media (max-width: 1100px) and (min-width: 768px) { .deck-row > .shell:nth-child(1) { grid-column: 1 / 13 } .deck-row > .shell:nth-child(2) { grid-column: 1 / 7 } .deck-row > .shell:nth-child(3) { grid-column: 7 / 13 } }
+@media (max-width: 767px) { .deck-row { grid-template-columns: 1fr; gap: 24px } .deck-row > .shell { grid-column: 1 / -1 !important } }
+.deck-row .photo { min-height: 260px; flex: none; aspect-ratio: 4 / 3 }
+.deck-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+.due { padding: 5px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-deep); font-size: var(--s-small); font-weight: 600; white-space: nowrap }
+.due.none { background: var(--core-2); color: var(--muted) }
+.topics { margin-top: 72px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center }
+.topics > p { width: 100%; margin-bottom: 6px; font-size: var(--s-title); font-weight: 600; letter-spacing: -.02em }
+.topic { display: inline-flex; align-items: center; gap: 14px; padding: 6px 6px 6px 6px; border: 0; border-radius: 999px; background: var(--core); cursor: pointer; text-align: left; transition: transform 500ms var(--ease) }
+.topic img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover }
+.topic .tt b { display: block; font-weight: 600 } .topic .tt span { font-size: var(--s-small); color: var(--muted) }
+.topic .knob { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--core-2); margin-left: 10px; transition: transform 500ms var(--ease), background-color 300ms var(--ease) }
+.topic:active { transform: scale(.98) }
+@media (hover: hover) and (pointer: fine) { .topic:hover .knob { transform: rotate(90deg) scale(1.06); background: var(--accent-soft) } }
+.topic[aria-pressed="true"] .knob { background: var(--accent); color: #fff; transform: none }
+
+/* ---------- footer ---------- */
+.foot { padding-block: 120px 56px; display: grid; gap: 16px }
+.foot .legal { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: var(--s-small) }
+.credits { max-width: 64ch; font-size: var(--s-body); color: var(--muted) }
+.credits a { color: var(--ink) }
+
+/* ---------- motion: heavy fade-up with blur, once ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .js .island { animation: drop 900ms var(--ease) both }
+  .js [data-rise] { animation: rise 1000ms var(--ease) both; animation-delay: calc(var(--i, 0) * 110ms + 150ms) }
+  .js [data-in] { opacity: 0; transform: translateY(56px); filter: blur(10px); transition: opacity 900ms var(--ease), transform 1100ms var(--ease), filter 900ms var(--ease); transition-delay: calc(var(--i, 0) * 80ms) }
+  .js [data-in].is-in { opacity: 1; transform: none; filter: none }
+  .js [data-in]:not(.is-in) .st .bar { transform: scaleY(.1) }
+  .js [data-in]:not(.is-in) .ring .val { stroke-dashoffset: 251.3 }
+  .js [data-in]:not(.is-in) .meter i { transform: scaleX(0) }
+}
+@keyframes drop { from { transform: translateY(-24px); opacity: 0; filter: blur(8px) } }
+@keyframes rise { from { transform: translateY(48px); opacity: 0; filter: blur(10px) } }
+@media (prefers-reduced-motion: reduce) {
+  .core, .fc, .flipper, .pill, .pill .knob, .photo img, .topic, .topic .knob, .overlay a { transition-duration: 1ms !important }
+  .saved .chip { animation: none }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/></symbol>
+</svg>
+
+<header class="nav-wrap">
+  <div class="island">
+    <a class="wm" href="#"><i></i>Wordmet</a>
+    <nav aria-label="Chính"><a href="#" aria-current="page">Hôm nay</a><a href="#nhom">Nhóm</a><a href="#bento">Luyện tập</a><a href="#nhom">Tra từ</a></nav>
+    <a class="pill sm accent" href="#them"><span class="label">Thêm từ</span><span class="knob"><svg class="ico"><use href="#i-plus"/></svg></span></a>
+    <button class="burger" type="button" id="burger" aria-expanded="false" aria-controls="overlay" aria-label="Mở menu"><i></i><i></i></button>
+  </div>
+</header>
+<div class="overlay" id="overlay" aria-label="Menu">
+  <a href="#" aria-current="page">Hôm nay</a><a href="#nhom">Nhóm</a><a href="#bento">Luyện tập</a><a href="#nhom">Tra từ</a>
+</div>
+
+<main class="wrap">
+  <section class="intro" aria-labelledby="h1">
+    <div>
+      <span class="eyebrow" data-rise style="--i:0"><span class="dot"></span>Thứ Năm · 5 tháng 11</span>
+      <h1 id="h1" data-rise style="--i:1">20 thẻ chờ<br>bạn hôm nay</h1>
+      <p class="sub" data-rise style="--i:2"><b>12 thẻ đến hạn và 8 từ mới</b> từ Kinh doanh · A2 và Du lịch · B1. Khoảng 6 phút.</p>
+    </div>
+    <div class="intro-cta" data-rise style="--i:3">
+      <a class="pill accent" id="mag" href="https://claude.ai/artifact/31xjSvBMbJGVu6TQKK4yUh" target="_blank" rel="noopener">Ôn 20 thẻ<span class="knob"><svg class="ico"><use href="#i-arrow"/></svg></span></a>
+      <p>Gói Free · còn 2/3 phiên luyện</p>
+    </div>
+  </section>
+
+  <section class="bento" id="bento" aria-label="Hôm nay">
+    <article class="shell b-review" data-in>
+      <div class="core card-in">
+        <span class="eyebrow">Phiên ôn tiếp theo</span>
+        <h2>Thẻ đầu tiên: brand</h2>
+        <div class="cascade" data-ui>
+          <div class="fc c3" aria-hidden="true"><div class="bez"><div class="face"><p class="f-top">A2</p></div></div></div>
+          <div class="fc c2" aria-hidden="true"><div class="bez"><div class="face"><p class="f-top">A2</p></div></div></div>
+          <div class="fc c1" id="fc" role="button" tabindex="0" aria-label="Lật thẻ brand"><div class="bez"><div class="flipper">
+            <div class="face front"><p class="f-top"><span>A2</span><span class="tag">Kinh doanh</span></p><div class="f-word"><b>brand</b><span>noun</span></div><p class="f-hint">Bấm để lật</p></div>
+            <div class="face back"><p class="f-top"><span>brand · noun</span><span class="tag">Mới</span></p><p class="f-mean">thương hiệu</p><p class="f-ex">This <mark>brand</mark> of shoes is popular with students.</p></div>
+          </div></div></div>
+        </div>
+        <div class="review-foot">
+          <div class="decks-mini"><span><b>14</b> Kinh doanh · A2</span><span><b>6</b> Du lịch · B1</span></div>
+          <a class="pill sm" href="https://claude.ai/artifact/31xjSvBMbJGVu6TQKK4yUh" target="_blank" rel="noopener">Bắt đầu<span class="knob"><svg class="ico"><use href="#i-arrow"/></svg></span></a>
+        </div>
+      </div>
+    </article>
+
+    <article class="shell b-add" id="them" data-in style="--i:1">
+      <form class="core card-in" id="addForm" autocomplete="off">
+        <span class="eyebrow">Thêm từ vừa gặp</span>
+        <h2>Gõ đúng chữ bạn thấy</h2>
+        <div class="field"><div class="field-in">
+          <label class="sr" for="w">Từ vừa gặp</label>
+          <input id="w" placeholder="went" spellcheck="false" autocapitalize="off" maxlength="40">
+          <button class="pill sm accent" type="submit"><span class="label">Thêm</span><span class="knob"><svg class="ico"><use href="#i-plus"/></svg></span></button>
+        </div></div>
+        <p class="out" id="out" aria-live="polite">Wordmet tự nhận ra dạng chia, như went → go.</p>
+        <div class="tries"><span>Thử</span><button type="button">went</button><button type="button">children</button><button type="button">better</button><button type="button">mice</button></div>
+        <p class="saved" id="saved" aria-live="polite">Lưu vào nhóm Từ gặp ngoài đời.</p>
+      </form>
+    </article>
+
+    <article class="shell b-prac" data-in style="--i:2">
+      <div class="core card-in">
+        <div class="ring-row">
+          <svg class="ring" viewBox="0 0 92 92" role="img" aria-label="Còn 2 trong 3 phiên"><circle class="track" cx="46" cy="46" r="40"/><circle class="val" cx="46" cy="46" r="40"/><text x="46" y="56" text-anchor="middle">2</text></svg>
+          <div><h2>phiên luyện còn lại</h2><p class="note">Gói Free: 3 phiên mỗi ngày. Mở lại lúc 0:00.</p></div>
+        </div>
+        <a class="link-arrow" href="#">Luyện ngay <svg class="ico"><use href="#i-arrow"/></svg></a>
+      </div>
+    </article>
+
+    <article class="shell b-ai" data-in style="--i:3">
+      <div class="core card-in">
+        <p class="big">11<small>/15</small></p>
+        <p class="note">câu AI tháng 11, kèm 5 lượt tra AI</p>
+        <div class="meter" aria-hidden="true"><i></i></div>
+      </div>
+    </article>
+
+    <article class="shell b-stage" data-in>
+      <div class="core card-in">
+        <span class="eyebrow">Thẻ theo ngăn</span>
+        <h2 id="stageH">48 từ, 20 thẻ hôm nay</h2>
+        <div class="stages">
+          <div class="st"><span class="bar" style="--t:1;--d:.33"><i></i></span><b id="stNew">8/24</b><span>Mới</span></div>
+          <div class="st"><span class="bar" style="--t:.38;--d:1"><i></i></span><b>9/9</b><span>1 ngày</span></div>
+          <div class="st"><span class="bar" style="--t:.29;--d:.43"><i></i></span><b>3/7</b><span>3 ngày</span></div>
+          <div class="st"><span class="bar" style="--t:.21;--d:0"><i></i></span><b>0/5</b><span>7 ngày</span></div>
+          <div class="st"><span class="bar" style="--t:.08;--d:0"><i></i></span><b>0/2</b><span>14 ngày</span></div>
+          <div class="st"><span class="bar" style="--t:.04;--d:0"><i></i></span><b>0/1</b><span>30 ngày</span></div>
+        </div>
+        <p class="legend"><span><i></i>đến hạn hôm nay</span><span><i class="t"></i>tổng trong ngăn</span></p>
+      </div>
+    </article>
+
+    <article class="shell b-old" data-in style="--i:1">
+      <div class="core card-in">
+        <span class="eyebrow">Lâu chưa ôn</span>
+        <p class="big">4 <small>từ ở Du lịch · B1</small></p>
+        <div class="chips"><span>scenic</span><span>delay</span><span>guide</span><span>luggage</span></div>
+        <p class="note">Quá hạn hơn 14 ngày. Ôn sớm để không phải học lại từ đầu.</p>
+        <a class="link-arrow" href="#" style="margin-top:auto">Ôn 4 từ này <svg class="ico"><use href="#i-arrow"/></svg></a>
+      </div>
+    </article>
+
+    <article class="shell b-met lift" data-in style="--i:2">
+      <div class="core photo-core">
+        <div class="photo"><img src="hom-nay-assets/streets-of-hanoi-hanoi1615.jpg" width="330" height="440" alt="Phố Hà Nội buổi tối, biển hiệu sáng đèn" loading="lazy"></div>
+        <div class="photo-cap"><h2 class="sr">Từ gặp ngoài đời</h2><p><b id="metCount">6 từ</b> gặp ngoài đời</p><p class="note" id="metLast">Mới nhất: went → go, từ lời bài hát</p></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="decks" id="nhom" aria-labelledby="h-decks">
+    <div class="sec-h">
+      <div><span class="eyebrow" data-in>Nhóm của bạn</span><h2 id="h-decks" data-in style="--i:1">3 nhóm, 48 từ</h2></div>
+      <p data-in style="--i:2">Nhóm có thẻ đến hạn đứng trước. Bấm vào nhóm để ôn riêng nhóm đó.</p>
+    </div>
+    <div class="deck-row">
+      <a class="shell lift" href="#" data-in style="text-decoration:none"><div class="core photo-core"><div class="photo"><img src="hom-nay-assets/street-market-hanoi-vietnam-dsc03479.jpg" width="330" height="248" alt="Sạp rau quả trên phố Hà Nội" loading="lazy"></div><div class="photo-cap"><div class="deck-meta"><h3 style="font-size:var(--s-title);font-weight:600;letter-spacing:-.02em">Kinh doanh · A2</h3><span class="due">14 thẻ hôm nay</span></div><p class="note">31 từ · có thẻ ưu tiên: complaint</p></div></div></a>
+      <a class="shell lift" href="#" data-in style="--i:1;text-decoration:none"><div class="core photo-core"><div class="photo"><img src="hom-nay-assets/departure-board-at-ord.jpg" width="330" height="248" alt="Bảng giờ bay ở sân bay" loading="lazy"></div><div class="photo-cap"><div class="deck-meta"><h3 style="font-size:var(--s-title);font-weight:600;letter-spacing:-.02em">Du lịch · B1</h3><span class="due">6 thẻ</span></div><p class="note">11 từ · 4 từ lâu chưa ôn</p></div></div></a>
+      <a class="shell lift" href="#" data-in style="--i:2;text-decoration:none"><div class="core photo-core"><div class="photo"><img src="hom-nay-assets/streets-of-hanoi-hanoi1615.jpg" width="330" height="248" alt="Phố Hà Nội về đêm" loading="lazy"></div><div class="photo-cap"><div class="deck-meta"><h3 style="font-size:var(--s-title);font-weight:600;letter-spacing:-.02em">Từ gặp ngoài đời</h3><span class="due none" id="ngdDue">0 thẻ</span></div><p class="note" id="ngdLine">6 từ bạn tự thêm</p></div></div></a>
+    </div>
+    <div class="topics">
+      <p data-in>Thêm nhóm theo chủ đề</p>
+      <button class="topic" type="button" data-in aria-pressed="false"><img src="hom-nay-assets/computer-keyboard.jpg" width="56" height="56" alt="" loading="lazy"><span class="tt"><b>Công nghệ · A2</b><span>11 từ: account, website, bug…</span></span><span class="knob"><svg class="ico"><use href="#i-plus"/></svg></span></button>
+      <button class="topic" type="button" data-in style="--i:1" aria-pressed="false"><img src="hom-nay-assets/beef-noodle-soup-pho-bo-pho-hanoi.jpg" width="56" height="56" alt="" loading="lazy"><span class="tt"><b>Ẩm thực · A2</b><span>16 từ: recipe, snack, menu…</span></span><span class="knob"><svg class="ico"><use href="#i-plus"/></svg></span></button>
+      <button class="topic" type="button" data-in style="--i:2" aria-pressed="false"><img src="hom-nay-assets/rice-terraces-in-ha-giang-vietnam-2012.jpg" width="56" height="56" alt="" loading="lazy"><span class="tt"><b>Môi trường · B1</b><span>12 từ: pollution, recycle…</span></span><span class="knob"><svg class="ico"><use href="#i-plus"/></svg></span></button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <p class="legal"><a href="#">Điều khoản</a><a href="#">Bảo mật</a><a href="#">Nguồn dữ liệu</a><a href="#">Trợ giúp</a></p>
+  <p class="credits">Ảnh: <a href="https://commons.wikimedia.org/w/index.php?curid=39695340">“Street market - Hanoi, Vietnam - DSC03479”</a>, Daderot, CC0; <a href="https://commons.wikimedia.org/wiki/File:Departure_Board_at_ORD.jpg">“Departure Board at ORD”</a>, Redolta, CC0; <a href="https://commons.wikimedia.org/wiki/File:Streets_of_Hanoi_-_Hanoi1615.jpg">“Streets of Hanoi - Hanoi1615”</a>, lumoplank, CC0; <a href="https://stocksnap.io/photo/computer-keyboard-A28WZDTYEY">“Computer Keyboard”</a>, Luca Bravo, CC0, StockSnap; <a href="https://commons.wikimedia.org/w/index.php?curid=156680631">“Beef noodle soup (Phở bò)”</a>, Andy Li, CC0; <a href="https://commons.wikimedia.org/wiki/File:Rice_terraces_in_Ha_Giang,_Vietnam_-_2012_-_128_(10061901123).jpg">“Rice terraces in Ha Giang, Vietnam”</a>, minhphuc_99kdd, public domain. Lấy từ Wikimedia Commons trừ khi ghi khác.</p>
+</footer>
+
+<script>
+(() => {
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const $ = (id) => document.getElementById(id);
+
+  /* entry: once per block, as it enters */
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 }) : null;
+  document.querySelectorAll('[data-in]').forEach((el) => (io ? io.observe(el) : el.classList.add('is-in')));
+
+  /* menu: the two lines turn into an X; links rise one after another */
+  const burger = $('burger'), overlay = $('overlay');
+  const setMenu = (open) => { burger.setAttribute('aria-expanded', String(open)); burger.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu'); overlay.classList.toggle('open', open); };
+  burger.addEventListener('click', () => setMenu(burger.getAttribute('aria-expanded') !== 'true'));
+  overlay.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+
+  /* magnetic pull on the main action */
+  const mag = $('mag');
+  if (FINE && !REDUCED) {
+    mag.addEventListener('pointermove', (e) => { const r = mag.getBoundingClientRect(); const x = (e.clientX - r.left - r.width / 2) / r.width, y = (e.clientY - r.top - r.height / 2) / r.height; mag.style.transform = `translate(${x * 10}px, ${y * 8}px)`; });
+    mag.addEventListener('pointerleave', () => { mag.style.transform = ''; });
+  }
+
+  /* the top card turns */
+  const fc = $('fc');
+  const turn = () => { fc.classList.toggle('turned'); fc.setAttribute('aria-label', fc.classList.contains('turned') ? 'Lật lại mặt trước' : 'Lật thẻ brand'); };
+  fc.addEventListener('click', turn);
+  fc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); turn(); } });
+
+  /* quick add: a small sample of the form table, enough to try it */
+  const KIND = { past: 'quá khứ', past_participle: 'phân từ quá khứ', plural: 'số nhiều', comparative: 'so sánh hơn', superlative: 'so sánh nhất' };
+  const FORMS = { went: ['go', 'past'], gone: ['go', 'past_participle'], children: ['child', 'plural'], better: ['good', 'comparative'], best: ['good', 'superlative'], mice: ['mouse', 'plural'], bought: ['buy', 'past'], met: ['meet', 'past'], ran: ['run', 'past'], took: ['take', 'past'], felt: ['feel', 'past'], people: ['person', 'plural'] };
+  const BASE = { go: ['động từ', 'A1', 'đi'], child: ['danh từ', 'A1', 'đứa trẻ'], good: ['tính từ', 'A1', 'tốt'], mouse: ['danh từ', 'A1', 'con chuột'], buy: ['động từ', 'A1', 'mua'], meet: ['động từ', 'A1', 'gặp'], run: ['động từ', 'A1', 'chạy'], take: ['động từ', 'A1', 'lấy, cầm'], feel: ['động từ', 'A1', 'cảm thấy'], person: ['danh từ', 'A1', 'người'] };
+  const input = $('w'), out = $('out'), saved = $('saved');
+  const added = []; let ngd = 6, fresh = 24;
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const read = (raw) => { const w = raw.trim().toLowerCase(); if (!w) return { s: 'idle' }; if (FORMS[w]) return { s: 'found', w, base: FORMS[w][0], kind: FORMS[w][1] }; if (BASE[w]) return { s: 'found', w, base: w }; return { s: 'none', w }; };
+  function show() {
+    const r = read(input.value);
+    out.classList.toggle('found', r.s === 'found');
+    if (r.s === 'idle') out.textContent = 'Wordmet tự nhận ra dạng chia, như went → go.';
+    else if (r.s === 'none') out.textContent = `Wordmet chưa có từ “${r.w}”. Tự nhập nghĩa để lưu.`;
+    else { const [pos, lv, mean] = BASE[r.base]; out.innerHTML = `${r.kind ? `${esc(r.w)} là ${KIND[r.kind]} của ` : ''}<b>${r.base}</b> · ${pos} · ${lv} · ${mean}`; }
+    return r;
+  }
+  input.addEventListener('input', show);
+  document.querySelectorAll('.tries button').forEach((b) => b.addEventListener('click', () => { input.value = b.textContent; show(); input.focus({ preventScroll: true }); }));
+  $('addForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const r = show();
+    if (r.s !== 'found') { input.focus(); return; }
+    if (added.includes(r.base)) { saved.textContent = `“${r.base}” đã có trong nhóm.`; return; }
+    added.push(r.base); ngd += 1; fresh += 1;
+    saved.innerHTML = `Đã lưu vào Từ gặp ngoài đời: ${added.map((w) => `<span class="chip">${esc(w)}</span>`).join(' ')}`;
+    $('metCount').textContent = `${ngd} từ`;
+    $('metLast').textContent = `Mới nhất: ${r.w === r.base ? r.base : `${r.w} → ${r.base}`}, vừa thêm`;
+    $('ngdLine').textContent = `${ngd} từ bạn tự thêm`;
+    $('stNew').textContent = `8/${fresh}`;
+    $('stageH').textContent = `${48 + added.length} từ, 20 thẻ hôm nay`;
+    input.value = ''; show();
+  });
+
+  /* topic suggestions */
+  document.querySelectorAll('.topic').forEach((b) => b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', String(on));
+    b.querySelector('.knob').innerHTML = on ? '<svg class="ico" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '<svg class="ico"><use href="#i-plus"/></svg>';
+  }));
+})();
+</script>

@@ -1,0 +1,1027 @@
+<title>Wordmet vòng bốn</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Big+Shoulders+Display:wght@600;800&family=Chakra+Petch:wght@500;700&family=Familjen+Grotesk:wght@400;600&display=swap">
+<style>
+/* Layout: sticky concept/screen switcher, one browser-framed screen, notes under it.
+   Four hybrids of D (Tiêu điểm) and K (Thẻ bài sưu tầm); each concept (.cM–.cP) keeps its own fixed palette. */
+:root {
+  --sh-bg: #eceef2; --sh-fg: #16181d; --sh-muted: #5b606d; --sh-line: #d5d8df; --sh-card: #ffffff; --sh-chip: #e1e4ea;
+  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-io: cubic-bezier(.77, 0, .175, 1); --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+  --f-shell: 'Be Vietnam Pro', system-ui, sans-serif; --f-mono: 'JetBrains Mono', ui-monospace, monospace; --f-disp: 'Bricolage Grotesque', 'Be Vietnam Pro', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sh-bg: #111318; --sh-fg: #e9ebf0; --sh-muted: #9aa0ad; --sh-line: #2a2e37; --sh-card: #191c22; --sh-chip: #23272f; color-scheme: dark } }
+:root[data-theme="dark"] { --sh-bg: #111318; --sh-fg: #e9ebf0; --sh-muted: #9aa0ad; --sh-line: #2a2e37; --sh-card: #191c22; --sh-chip: #23272f; color-scheme: dark }
+*, *::before, *::after { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--sh-bg); color: var(--sh-fg); font-family: var(--f-shell); font-size: 14px; -webkit-font-smoothing: antialiased }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--sh-bg) }
+button { font: inherit; color: inherit }
+a { color: inherit }
+kbd { font: 500 11px/1.3 var(--f-mono); padding: 1px 6px; border-radius: 5px; border: 1px solid currentColor; opacity: .7 }
+.sw { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; background: color-mix(in oklab, var(--sh-bg) 90%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--sh-line); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.sw-in { max-width: 1320px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center }
+.sw h1 { font-size: 15px; font-weight: 700; margin: 0 auto 0 0 }
+.sw h1 span { color: var(--sh-muted); font-weight: 500 }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; background: var(--sh-chip); padding: 3px; border-radius: 10px }
+.seg button { border: 0; background: transparent; color: var(--sh-muted); font-size: 13px; font-weight: 600; padding: 7px 11px; border-radius: 8px; cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 120ms var(--ease-out) }
+.seg button[aria-pressed="true"] { background: var(--sh-card); color: var(--sh-fg); box-shadow: 0 1px 2px rgb(0 0 0 / .14) }
+.seg button:active { transform: scale(.97) }
+.seg button:focus-visible { outline: 2px solid var(--sh-fg); outline-offset: 2px }
+.seg .tag { font-family: var(--f-mono); font-size: 11px; opacity: .6; margin-right: 5px }
+.stage { max-width: 1320px; margin: 0 auto; padding-block: 18px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px }
+.howto { margin: 0; color: var(--sh-muted); font-size: 13px; line-height: 1.55 }
+.howto kbd { border-color: var(--sh-line); background: var(--sh-card); opacity: 1 }
+.frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--sh-line); background: var(--sh-card); box-shadow: 0 24px 60px -36px rgb(0 0 0 / .45) }
+.frame-bar { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 14px; background: var(--sh-chip); border-bottom: 1px solid var(--sh-line) }
+.dots { display: flex; gap: 6px } .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--sh-line) }
+.url { flex: 1; max-width: 420px; margin: 0 auto; text-align: center; font: 12px var(--f-mono); color: var(--sh-muted); background: var(--sh-card); padding: 3px 10px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.viewport { container-type: inline-size; position: relative; overflow: hidden }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px }
+.note { background: var(--sh-card); border: 1px solid var(--sh-line); border-radius: 12px; padding: 14px 16px; min-width: 0 }
+.note h3 { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--sh-muted); margin: 0 0 6px; font-weight: 600 }
+.note p { margin: 0; font-size: 14px; line-height: 1.55 }
+.foot-note { margin: 0; color: var(--sh-muted); font-size: 12px; line-height: 1.5 }
+
+.screen { min-height: 760px; display: flex; flex-direction: column; position: relative }
+.play .rise { animation: rise 380ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 55ms) }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) } }
+@keyframes fade { from { opacity: 0 } }
+@keyframes wig { 0%, 100% { transform: translateX(0) } 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+@keyframes blink { 50% { opacity: 0 } }
+.caret { display: inline-block; width: 2px; height: 1.05em; background: currentColor; margin-left: 2px; vertical-align: -.15em; animation: blink 1s steps(1) infinite }
+.mono { font-family: var(--f-mono) }
+.opt { -webkit-tap-highlight-color: transparent }
+.opt:focus-visible { outline: 2px solid currentColor; outline-offset: 3px }
+.fx { display: inline-block; transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease }
+.fx.out { opacity: 0; filter: blur(10px); transform: translateY(-4px) }
+
+/* ---------- shared card (from K) ---------- */
+.t0 { --f: linear-gradient(135deg, #dcd8ce, #fbfaf6 45%, #cfcabf) }
+.t1 { --f: linear-gradient(135deg, #a8683c, #edbb92 45%, #8a5430) }
+.t2 { --f: linear-gradient(135deg, #8f97a5, #f6f8fb 45%, #848c99) }
+.t3 { --f: linear-gradient(135deg, #b88a1c, #f9e491 45%, #98700f) }
+.t4 { --f: linear-gradient(135deg, #0f7a5c, #86e8c8 45%, #0c654c) }
+.t5 { --f: conic-gradient(from 210deg, #ff8ad8, #ffd36b, #8dffb5, #7ad7ff, #b28bff, #ff8ad8) }
+.kc { --wn: 190; --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; --fx: 0px; --fy: 0px; --fr: 0deg; --lift: 0px; position: relative; width: calc(var(--wn) * 1px); max-width: 100%; aspect-ratio: 63 / 88; font-size: calc(var(--wn) * .0632px); border-radius: .9em; padding: .55em; background: var(--f); transform: translate(var(--fx), calc(var(--fy) + var(--lift))) rotate(var(--fr)) perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)); box-shadow: 0 1.5em 2.4em -1.4em rgb(20 16 40 / .55); transition: transform 500ms var(--ease-out); flex: none }
+.kc.tilting { transition: transform 80ms linear }
+.kc::after { content: ""; position: absolute; inset: 0; border-radius: .9em; pointer-events: none; background: radial-gradient(circle at var(--mx) var(--my), rgb(255 255 255 / .6), transparent 48%); mix-blend-mode: soft-light; opacity: 0; transition: opacity 220ms ease }
+.kc.tilting::after { opacity: 1 }
+.kc-in { position: relative; height: 100%; border-radius: .55em; background: #f7f5f0; color: #1a1530; overflow: hidden; display: flex; flex-direction: column }
+.kc.t5 .kc-in::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .75; background: repeating-linear-gradient(115deg, rgb(255 120 220 / 0) 0, rgb(255 120 220 / .28) 6%, rgb(120 220 255 / .28) 12%, rgb(160 255 180 / .28) 18%, rgb(255 120 220 / 0) 24%); background-size: 260% 260%; background-position: var(--mx) var(--my) }
+.kc::before { content: ""; position: absolute; inset: 0; border-radius: .9em; z-index: 3; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / .85) 50%, transparent 65%); background-size: 250% 100%; background-position: 130% 0; opacity: 0 }
+.kc.shine::before { animation: shine 700ms var(--ease-io) }
+@keyframes shine { 0% { opacity: 1; background-position: 130% 0 } 100% { opacity: 1; background-position: -40% 0 } }
+/* K face: name band, art, type line, text, foot */
+.kn { display: flex; justify-content: space-between; align-items: baseline; gap: .4em; padding: .55em .7em .4em; font: 800 1.7em/1.15 'Big Shoulders Display', sans-serif; text-transform: uppercase; min-width: 0 }
+.kn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.kn small { font: 700 .5em 'Chakra Petch', sans-serif; padding: .15em .45em; border-radius: .4em; background: #1a1530; color: #fff; flex: none }
+.ka { flex: 1; min-height: 0; margin: 0 .55em; border-radius: .35em; display: grid; place-items: center; overflow: hidden }
+.ka.g0 { background: repeating-linear-gradient(45deg, #6b3cf0 0 .5em, #7d55f3 .5em 1em) }
+.ka.g1 { background: radial-gradient(#22b8b4 32%, transparent 34%) 0 0 / .9em .9em, #0e7f7c }
+.ka.g2 { background: linear-gradient(90deg, rgb(255 255 255 / .18) 1px, transparent 1px) 0 0 / .8em .8em, linear-gradient(rgb(255 255 255 / .18) 1px, transparent 1px) 0 0 / .8em .8em, #e2467f }
+.ka b { font: 800 6em/1 'Big Shoulders Display', sans-serif; color: rgb(255 255 255 / .35); text-transform: uppercase }
+.kt { display: flex; justify-content: space-between; gap: .5em; padding: .4em .7em; font: 500 .8em 'Chakra Petch', sans-serif; border-top: 1px solid rgb(26 21 48 / .12); border-bottom: 1px solid rgb(26 21 48 / .12); margin-top: .5em }
+.kx { padding: .45em .7em .3em; font: 400 1em/1.35 'Familjen Grotesk', sans-serif; min-height: 4.4em }
+.kx b { display: block; font-size: 1.2em; font-weight: 600 }
+.kx i { color: #5f5a78; font-size: .9em }
+.kf { display: flex; justify-content: space-between; padding: .3em .7em .5em; font: 700 .72em 'Chakra Petch', sans-serif; color: #5f5a78 }
+/* D face: typographic */
+.kd { flex: 1; display: flex; flex-direction: column; padding: .8em .9em .7em }
+.kd .top { display: flex; justify-content: space-between; font: 500 .72em var(--f-mono); color: #6d6d78 }
+.kd .w { flex: 1; display: grid; place-items: center; text-align: center; font: 700 min(3.1em, calc(21em / var(--len, 6)))/1.05 var(--f-disp); letter-spacing: -.04em; color: #0c0c10; overflow-wrap: break-word }
+.kd .w.long { font-size: 1.3em; font-weight: 600; letter-spacing: -.01em; line-height: 1.3 }
+.kd .p { font: 500 .78em var(--f-mono); color: #6d6d78; text-align: center; margin: 0 }
+.kd .m { font: 500 1.08em/1.35 var(--f-shell); text-align: center; margin: .25em 0 .5em; color: #0c0c10 }
+.kd .bot { display: flex; justify-content: space-between; font: 500 .72em var(--f-mono); color: #6d6d78; border-top: 1px solid #e2e2e8; padding-top: .5em }
+.kback { position: relative; width: calc(var(--wn, 120) * 1px); aspect-ratio: 63 / 88; border-radius: calc(var(--wn, 120) * .057px); padding: calc(var(--wn, 120) * .035px); background: var(--f, #0c0c10); flex: none }
+.kback::before { content: "w."; position: absolute; inset: calc(var(--wn, 120) * .035px); border-radius: calc(var(--wn, 120) * .035px); display: grid; place-items: center; font: 700 calc(var(--wn, 120) * .28px) var(--f-disp); letter-spacing: -.05em; color: #fff; background: radial-gradient(circle at 50% 50%, transparent 0 34%, rgb(255 255 255 / .06) 35% 36%, transparent 37%) 0 0 / 100% 100%, repeating-linear-gradient(45deg, #17171c 0 6px, #0c0c10 6px 12px) }
+.kback.violet::before { content: "W"; font-family: 'Big Shoulders Display', sans-serif; font-weight: 800; background: radial-gradient(circle, #7d55f3 0 28%, transparent 30%), repeating-conic-gradient(from 0deg, #4b22c4 0 10deg, #6b3cf0 10deg 20deg) }
+
+/* ============ M · Một lá ============ */
+.cM { --bg: #f5f5f7; --surface: #fff; --ink: #0c0c10; --muted: #6d6d78; --line: #e2e2e8; --acc: #d6336c; --ok: #13784a; font-family: var(--f-shell); color: var(--ink); background: var(--bg) }
+.m-bar { display: flex; align-items: center; gap: 20px; height: 64px; padding: 0 32px }
+.word { font: 700 23px var(--f-disp); letter-spacing: -.04em; white-space: nowrap }
+.word::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d6336c; margin-left: 2px }
+.cmd { flex: 1; max-width: 460px; margin: 0 auto; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px 0 14px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1px #e2e2e8; color: #6d6d78; font-size: 14px }
+.cmd span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.m-bar nav { display: flex; gap: 18px; font-size: 14px }
+.m-bar nav a { color: var(--muted); text-decoration: none } .m-bar nav a[aria-current] { color: var(--ink); font-weight: 600 }
+.av { width: 30px; height: 30px; border-radius: 9px; background: #0c0c10; color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 600; flex: none }
+@container (max-width: 760px) { .m-bar nav { display: none } }
+.go { font: 600 16px var(--f-shell); border: 0; border-radius: 12px; padding: 14px 22px; background: #0c0c10; color: #fff; cursor: pointer; display: inline-flex; gap: 12px; align-items: center; white-space: nowrap; transition: transform 140ms var(--ease-out), background-color 150ms ease }
+.go kbd { color: #fff; border-color: rgb(255 255 255 / .4) }
+@media (hover: hover) and (pointer: fine) { .go:hover { background: #26262e } }
+.go:active { transform: scale(.97) }
+.go:focus-visible { outline: 2px solid #d6336c; outline-offset: 3px }
+.go.ghost { background: transparent; color: #0c0c10; box-shadow: inset 0 0 0 1.5px #0c0c10 }
+.go.ghost kbd { color: #0c0c10; border-color: currentColor }
+.m-today { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 26px 32px 44px }
+.m-top { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 30px; align-items: center }
+@container (max-width: 860px) { .m-top { grid-template-columns: 1fr } }
+.m-num { font: 700 clamp(120px, 17cqi, 210px)/.78 var(--f-disp); letter-spacing: -.065em; margin: 10px 0 18px; font-variant-numeric: tabular-nums }
+.m-lbl { font: 600 30px/1.2 var(--f-disp); letter-spacing: -.03em; margin: 0 }
+.m-sub { color: var(--muted); font-size: 15px; margin: 6px 0 20px; line-height: 1.5 }
+.m-deck { position: relative; height: 380px; display: grid; place-items: center }
+.m-deck .layer { position: absolute; left: 50%; top: 50%; width: 240px; aspect-ratio: 63 / 88; border-radius: 14px; background: #fff; box-shadow: 0 0 0 1px #e2e2e8; transform: translate(-50%, -50%) translate(calc(var(--d) * 4px), calc(var(--d) * 5px)) rotate(calc(var(--d) * 1.2deg)) }
+.m-deck .kc { --wn: 240; z-index: 2 }
+.play .m-deck .kc { animation: m-top 600ms var(--ease-spring) 200ms both }
+@keyframes m-top { from { opacity: 0; transform: translateY(-40px) rotate(-6deg) } }
+.m-deck .count { position: absolute; right: 6px; bottom: 4px; font: 500 12px var(--f-mono); color: var(--muted) }
+.track { display: flex; height: 16px; gap: 3px; margin-top: 30px }
+.track i { flex: var(--n); background: var(--f); border-radius: 3px; transform-origin: left }
+.play .track i { animation: grow 520ms var(--ease-out) both; animation-delay: calc(160ms + var(--k) * 55ms) }
+@keyframes grow { from { transform: scaleX(.05) } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 10px; font: 500 12px var(--f-mono); color: #6d6d78 }
+.legend b { color: #0c0c10; font-weight: 600 }
+.legend .due::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d6336c; margin-right: 6px }
+.cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 40px; border-top: 1px solid #e2e2e8; padding-top: 22px; margin-top: 36px }
+@container (max-width: 780px) { .cols { grid-template-columns: 1fr; gap: 26px } }
+.cols h3 { margin: 0 0 12px; font: 500 12px var(--f-mono); color: #6d6d78 }
+.list { list-style: none; margin: 0; padding: 0 }
+.list li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #e2e2e8; font-size: 15px }
+.list .mono { font-size: 12px; color: #6d6d78 }
+.big { font: 600 44px/1 var(--f-disp); letter-spacing: -.035em; margin: 0 }
+.big small { font-size: 20px; color: #6d6d78; letter-spacing: 0 }
+.big .a { color: #d6336c }
+.small { color: #6d6d78; font-size: 14px; line-height: 1.5; margin: 8px 0 0 }
+
+.m-session { flex: 1; display: flex; flex-direction: column; background: #fff }
+.prog { height: 3px; background: #e2e2e8 } .prog i { display: block; height: 100%; background: #d6336c; transform-origin: left; transform: scaleX(var(--p, .2)); transition: transform 300ms var(--ease-out) }
+.ses-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; font: 500 12px var(--f-mono); color: #6d6d78 }
+.m-stagec { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px 32px 30px; gap: 26px }
+.m-cardwrap { position: relative; display: grid; place-items: center }
+.m-cardwrap .under { position: absolute; width: 270px; aspect-ratio: 63 / 88; border-radius: 15px; background: #fff; box-shadow: 0 0 0 1px #e2e2e8; transform: translate(8px, 9px) rotate(2deg) }
+.m-cardwrap .under.two { transform: translate(15px, 17px) rotate(4deg) }
+.m-card { --wn: 270; z-index: 1 }
+.m-card.away { transform: translate(260px, -120px) rotate(18deg) scale(.6); opacity: 0; transition: transform 380ms var(--ease-io), opacity 300ms ease 80ms }
+.m-card.enter { animation: m-enter 420ms var(--ease-spring) }
+@keyframes m-enter { from { transform: translate(15px, 30px) rotate(4deg); opacity: .4 } }
+.m-card.flinch { animation: wig 320ms ease }
+.tag { position: absolute; top: -16px; left: 50%; z-index: 4; transform: translateX(-50%) scale(.6); opacity: 0; font: 600 12px var(--f-mono); white-space: nowrap; padding: 6px 12px; border-radius: 8px; background: #0c0c10; color: #fff; transition: transform 320ms var(--ease-spring), opacity 200ms ease }
+.tag.on { transform: translateX(-50%) scale(1); opacity: 1 }
+.tag.up { background: #13784a }
+.wopts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: min(900px, 100%) }
+@container (max-width: 700px) { .wopts { grid-template-columns: 1fr 1fr } }
+.wopts .opt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border: 0; background: transparent; border-radius: 14px; cursor: pointer; color: #0c0c10; transition: background-color 150ms ease, transform 140ms var(--ease-out), opacity 200ms ease }
+.wopts .opt .key { font: 500 11px var(--f-mono); color: #6d6d78 }
+.wopts .opt .lbl { font: 400 30px var(--f-disp); letter-spacing: -.025em; transition: font-weight 200ms var(--ease-out), color 150ms ease }
+.wopts .opt .lbl::after { content: ""; display: block; height: 3px; margin-top: 4px; background: #13784a; border-radius: 2px; transform: scaleX(0); transform-origin: left; transition: transform 240ms var(--ease-out) }
+@media (hover: hover) and (pointer: fine) { .wopts .opt:hover { background: #f5f5f7 } .wopts .opt:hover .lbl { font-weight: 700 } }
+.wopts .opt:active { transform: scale(.97) }
+.wopts .opt.is-right .lbl, .wopts .opt.is-answer .lbl { color: #13784a; font-weight: 700 }
+.wopts .opt.is-right .lbl::after, .wopts .opt.is-answer .lbl::after { transform: scaleX(1) }
+.wopts .opt.is-answer .lbl::after { transition-delay: 160ms }
+.wopts .opt.is-wrong .lbl { color: #6d6d78; text-decoration: line-through; text-decoration-color: #d6336c; text-decoration-thickness: 3px }
+.wopts .opt.is-dim { opacity: .3 }
+.fb { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; animation: fade 200ms ease }
+.fb p { margin: 0; font-size: 15px; max-width: 56ch }
+.fb.ok p { color: #13784a }
+.qhint { margin: 0; color: #6d6d78; font-size: 15px; animation: fade 200ms ease }
+.keys { display: flex; justify-content: center; gap: 18px; padding: 14px; font: 500 12px var(--f-mono); color: #6d6d78; flex-wrap: wrap; align-items: center }
+.keys button { border: 0; background: none; cursor: pointer; padding: 4px; color: #6d6d78; font: inherit }
+.m-lhero { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 40px 32px 30px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: center }
+@container (max-width: 860px) { .m-lhero { grid-template-columns: 1fr; justify-items: start } }
+.m-lhero h2 { font: 700 clamp(56px, 8.4cqi, 112px)/.95 var(--f-disp); letter-spacing: -.055em; margin: 10px 0 20px }
+.lead { font-size: 18px; line-height: 1.6; color: #6d6d78; max-width: 44ch; margin: 0 0 28px }
+.lcta { display: flex; gap: 18px; align-items: center; flex-wrap: wrap }
+.lcta .small { margin: 0 }
+.m-lcard { display: grid; justify-items: center; gap: 14px }
+.m-lcard .kc { --wn: 300 }
+.m-lcard .cap { font: 500 12px var(--f-mono); color: #6d6d78; margin: 0 }
+.ladder { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 1120px; margin: 0 auto 40px; padding: 0 32px }
+.ladder span { display: grid; justify-items: center; gap: 6px; font: 500 11px var(--f-mono); color: #6d6d78; text-align: center }
+.ladder span i { width: 46px; aspect-ratio: 63 / 88; border-radius: 6px; background: var(--f); display: block }
+.ladder span b { font: 600 13px var(--f-shell); color: #0c0c10 }
+.play .ladder span { animation: rise 380ms var(--ease-out) both; animation-delay: calc(300ms + var(--k) * 60ms) }
+
+/* ============ N · Bộ sưu tập chữ ============ */
+.cN { --paper: #f6f5f1; --ink: #111114; --muted: #6a6a72; --line: #deddd7; --acc: #d6336c; --ok: #13784a; font-family: var(--f-shell); color: var(--ink); background: var(--paper) }
+.n-bar { display: flex; align-items: center; gap: 22px; height: 64px; padding: 0 32px; border-bottom: 1px solid var(--line) }
+.n-bar nav { display: flex; gap: 18px; font-size: 14px }
+.n-bar nav a { color: var(--muted); text-decoration: none } .n-bar nav a[aria-current] { color: var(--ink); font-weight: 600 }
+.n-bar .go { margin-left: auto; padding: 10px 16px; font-size: 14px }
+@container (max-width: 760px) { .n-bar nav { display: none } }
+.ncard { --w: 400; container-type: inline-size; position: relative; aspect-ratio: 63 / 88; border-radius: 10px; background: #fff; box-shadow: 0 0 0 var(--bw, 1px) var(--ink); display: flex; flex-direction: column; padding: 8px 9px 7px; color: var(--ink); text-align: left; border: 0; cursor: pointer; min-width: 0; transition: transform 180ms var(--ease-out), box-shadow 180ms ease, opacity 220ms ease }
+.ncard[data-s="0"] { --w: 250; --bw: 1px } .ncard[data-s="1"] { --w: 360; --bw: 1px } .ncard[data-s="2"] { --w: 470; --bw: 1.5px } .ncard[data-s="3"] { --w: 580; --bw: 2px } .ncard[data-s="4"] { --w: 690; --bw: 2.5px } .ncard[data-s="5"] { --w: 800; --bw: 3px }
+.ncard[data-s="5"] { background: linear-gradient(#fff, #fff) padding-box, conic-gradient(from 210deg, #ff8ad8, #ffd36b, #8dffb5, #7ad7ff, #b28bff, #ff8ad8) border-box; border: 3px solid transparent; box-shadow: none }
+.ncard .no { font: 500 9px var(--f-mono); color: var(--muted); display: flex; justify-content: space-between }
+.ncard .w { flex: 1; display: grid; place-items: center; text-align: center; font-family: var(--f-disp); font-weight: var(--w); font-size: min(var(--cap, 20px), calc(150cqi / var(--len, 6))); letter-spacing: -.03em; line-height: 1.05; overflow-wrap: break-word; transition: font-weight 260ms var(--ease-out) }
+.ncard .m { font-size: 9px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ncard.due::after { content: ""; position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 18px solid var(--acc); border-left: 18px solid transparent; border-top-right-radius: 9px }
+@media (hover: hover) and (pointer: fine) { .ncard:hover { transform: translateY(-4px) } .ncard:hover .w { font-weight: 800 } }
+.ncard:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px }
+.n-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px }
+@container (max-width: 980px) { .n-grid { grid-template-columns: repeat(8, minmax(0, 1fr)) } }
+@container (max-width: 560px) { .n-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
+.play .n-grid .ncard { animation: n-in 360ms var(--ease-out) both; animation-delay: calc(100ms + var(--d) * 12ms) }
+@keyframes n-in { from { opacity: 0; transform: translateY(8px) } }
+.n-grid[data-f] .ncard { opacity: .18 }
+.n-grid[data-f="due"] .ncard.due, .n-grid[data-f="0"] .ncard[data-g="0"], .n-grid[data-f="1"] .ncard[data-g="1"], .n-grid[data-f="2"] .ncard[data-g="2"] { opacity: 1 }
+.n-wrap { flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: 26px 32px 40px; display: grid; gap: 20px }
+.n-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; flex-wrap: wrap }
+.n-kick { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 }
+.n-h { font: 700 clamp(44px, 6cqi, 76px)/1 var(--f-disp); letter-spacing: -.05em; margin: 6px 0 0 }
+.n-h span { font-weight: 250; color: var(--muted) }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.chips button { border: 0; box-shadow: inset 0 0 0 1px var(--line); background: #fff; border-radius: 999px; padding: 7px 13px; font: 500 13px var(--f-shell); cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 140ms var(--ease-out) }
+.chips button[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none }
+.chips button:active { transform: scale(.97) }
+.chips .sp { flex: 1 }
+.wscale { display: flex; gap: 0 26px; flex-wrap: wrap; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px }
+.wscale span { display: grid; gap: 2px }
+.wscale b { font-family: var(--f-disp); font-size: 26px; letter-spacing: -.03em; font-weight: var(--w) }
+.wscale small { font: 500 11px var(--f-mono); color: var(--muted) }
+.n-low { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; border-top: 1px solid var(--line); padding-top: 18px }
+@container (max-width: 760px) { .n-low { grid-template-columns: 1fr } }
+.n-low h3 { margin: 0 0 10px; font: 500 12px var(--f-mono); color: var(--muted) }
+.n-session { flex: 1; display: flex; flex-direction: column; background: var(--paper) }
+.n-stagec { flex: 1; width: 100%; max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 48px; align-items: center; padding: 10px 32px 30px }
+@container (max-width: 820px) { .n-stagec { grid-template-columns: 1fr; justify-items: center } }
+.n-q { width: 300px; max-width: 100%; cursor: default }
+.n-q .w { --cap: 56px; letter-spacing: -.04em; transition: font-weight 700ms var(--ease-out) }
+.n-q .w.long { font-size: 24px; letter-spacing: -.01em }
+.n-q .no, .n-q .m { font-size: 12px }
+.n-q { transition: box-shadow 500ms ease }
+.n-q.wrong .w { text-decoration: line-through; text-decoration-color: var(--acc); text-decoration-thickness: 4px }
+.n-side { display: grid; gap: 18px; width: 100% }
+.n-side .ask { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 }
+.n-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
+@container (max-width: 640px) { .n-opts { grid-template-columns: 1fr 1fr } }
+.n-opts .opt { aspect-ratio: 63 / 70 }
+.n-opts .opt .w { --cap: 24px }
+.n-opts .opt.is-right, .n-opts .opt.is-answer { box-shadow: 0 0 0 3px var(--ok) }
+.n-opts .opt.is-wrong { box-shadow: 0 0 0 3px var(--acc); animation: wig 300ms ease }
+.n-opts .opt.is-wrong .w { text-decoration: line-through; text-decoration-color: var(--acc); text-decoration-thickness: 3px }
+.n-opts .opt.is-dim { opacity: .3 }
+.n-lhero { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 44px 32px 30px; display: grid; gap: 26px }
+.n-lhero h2 { font: 700 clamp(50px, 7.6cqi, 104px)/1 var(--f-disp); letter-spacing: -.055em; margin: 6px 0 0; max-width: 14ch }
+.n-lhero h2 span { font-weight: 250 }
+.n-weights { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; border-top: 1px solid var(--line); padding-top: 18px }
+@container (max-width: 760px) { .n-weights { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.n-weights span { display: grid; gap: 4px }
+.n-weights b { font-family: var(--f-disp); font-size: clamp(22px, 3cqi, 38px); letter-spacing: -.03em; font-weight: 200; transition: font-weight 900ms var(--ease-out) }
+.play .n-weights b { font-weight: var(--w) }
+.n-weights small { font: 500 11px var(--f-mono); color: var(--muted) }
+.n-weights span:last-child b { background: conic-gradient(from 210deg, #ff5fb8, #e8a400, #20b26b, #2a9fd6, #8a5cff, #ff5fb8); -webkit-background-clip: text; background-clip: text; color: transparent }
+
+/* ============ O · Phòng trưng bày ============ */
+.cO { --wall: #15111c; --wall2: #211a2b; --text: #efeaf6; --muted: #a79eb8; --acc: #ff5c93; --plaque: #ece6d8; --pink: #3a1f33; font-family: var(--f-shell); color: var(--text); background: var(--wall); color-scheme: dark }
+.cO .screen { --sx: 50%; --sy: 38%; background: radial-gradient(circle 460px at var(--sx) var(--sy), rgb(255 236 200 / .13), transparent 70%), linear-gradient(var(--wall2), var(--wall) 70%) }
+.o-bar { display: flex; align-items: center; gap: 22px; height: 64px; padding: 0 32px; border-bottom: 1px solid rgb(255 255 255 / .08) }
+.o-bar .word { color: var(--text) }
+.o-bar .word::after { background: var(--acc) }
+.o-bar nav { display: flex; gap: 18px; font-size: 14px }
+.o-bar nav a { color: var(--muted); text-decoration: none } .o-bar nav a[aria-current] { color: var(--text); font-weight: 600 }
+.o-btn { font: 600 15px var(--f-shell); border: 0; border-radius: 999px; padding: 11px 20px; background: var(--text); color: #15111c; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; white-space: nowrap; transition: transform 140ms var(--ease-out), box-shadow 200ms ease }
+.o-btn kbd { opacity: .6 }
+@media (hover: hover) and (pointer: fine) { .o-btn:hover { box-shadow: 0 0 30px rgb(255 236 200 / .35) } }
+.o-btn:active { transform: scale(.97) }
+.o-btn.ghost { background: transparent; color: var(--text); box-shadow: inset 0 0 0 1px rgb(239 234 246 / .4) }
+.o-btn.lg { font-size: 17px; padding: 14px 26px }
+.o-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px }
+.o-bar .o-btn { margin-left: auto }
+@container (max-width: 760px) { .o-bar nav { display: none } }
+.o-wrap { flex: 1; width: 100%; max-width: 1220px; margin: 0 auto; padding: 26px 32px 40px; display: grid; gap: 26px }
+.o-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap }
+.o-kick { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 }
+.o-h { font: 600 clamp(34px, 4.4cqi, 54px)/1.1 var(--f-disp); letter-spacing: -.035em; margin: 6px 0 0; max-width: 20ch }
+.o-h em { font-style: normal; color: var(--acc) }
+.o-row { display: flex; gap: 26px; overflow-x: auto; padding: 18px 6px 10px; scroll-snap-type: x mandatory; scrollbar-width: thin }
+.o-ex { display: grid; justify-items: center; gap: 14px; scroll-snap-align: start; flex: none }
+.o-ex .kc { --wn: 168 }
+.play .o-ex { animation: rise 420ms var(--ease-out) both; animation-delay: calc(120ms + var(--k) * 80ms) }
+.plinth { width: 150px; height: 10px; border-radius: 50%; background: radial-gradient(ellipse, rgb(0 0 0 / .55), transparent 70%); margin-top: -6px }
+.plaque { width: 168px; background: var(--plaque); color: #1d1824; border-radius: 3px; padding: 7px 10px; font-size: 12px; line-height: 1.4 }
+.plaque b { display: block; font: 600 14px var(--f-disp); letter-spacing: -.01em }
+.plaque span { font: 500 10px var(--f-mono); color: #5d5566 }
+.plaque .due { color: #b3245a }
+.o-more { align-self: center; flex: none; font: 500 13px var(--f-mono); color: var(--muted); padding: 0 20px }
+.o-rooms { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px }
+@container (max-width: 760px) { .o-rooms { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+.o-room { display: grid; gap: 6px; padding: 12px; border-radius: 8px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .07) }
+.o-room i { height: 4px; border-radius: 2px; background: var(--f) }
+.o-room b { font: 600 26px/1 var(--f-disp); letter-spacing: -.03em }
+.o-room span { font: 500 11px var(--f-mono); color: var(--muted) }
+.o-room span.d { color: var(--acc) }
+.o-low { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px }
+@container (max-width: 760px) { .o-low { grid-template-columns: 1fr } }
+.o-panel { padding: 16px 18px; border-radius: 10px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .07) }
+.o-panel h3 { margin: 0 0 8px; font: 500 12px var(--f-mono); color: var(--muted) }
+.o-in { font: 500 24px var(--f-mono); display: flex; align-items: center; margin: 0 0 4px }
+.o-found { margin: 0 0 12px; font-size: 15px } .o-found b { color: var(--acc) }
+.o-q { font: 600 40px/1 var(--f-disp); margin: 0 } .o-q small { font-size: 18px; color: var(--muted) }
+.o-session { flex: 1; display: flex; flex-direction: column; position: relative }
+.o-session .ses-h { color: var(--muted) }
+.o-spot { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 320px 420px at 50% 34%, rgb(255 236 200 / .22), transparent 72%); opacity: var(--si, .75); transition: opacity 500ms ease }
+.o-spot.flicker { animation: o-flick 500ms ease 2 }
+@keyframes o-flick { 50% { opacity: .15 } }
+.o-stagec { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 6px 32px 30px }
+.o-card { --wn: 230 }
+.o-cardwrap { position: relative; display: grid; justify-items: center; gap: 8px }
+.o-cardwrap .tag { top: -14px }
+.o-cardwrap .tag.up { background: var(--acc) }
+.o-qplaque { width: min(460px, 100%); text-align: center; background: var(--plaque); color: #1d1824; border-radius: 3px; padding: 10px 14px }
+.o-qplaque .ask { font: 500 11px var(--f-mono); color: #5d5566; margin: 0 }
+.o-qplaque .q-prompt { font: 600 34px/1.15 var(--f-disp); letter-spacing: -.025em; margin: 2px 0 0 }
+.o-qplaque .q-prompt.long { font-size: 20px }
+.o-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(860px, 100%) }
+@container (max-width: 700px) { .o-opts { grid-template-columns: 1fr 1fr } }
+.o-opts .opt { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 14px; border: 0; border-radius: 999px; background: rgb(255 255 255 / .06); box-shadow: inset 0 0 0 1px rgb(239 234 246 / .2); color: var(--text); font: 500 19px var(--f-disp); cursor: pointer; transition: box-shadow 200ms ease, background-color 150ms ease, transform 140ms var(--ease-out), opacity 200ms ease }
+.o-opts .opt .key { font: 500 11px var(--f-mono); color: var(--muted) }
+@media (hover: hover) and (pointer: fine) { .o-opts .opt:hover { box-shadow: inset 0 0 0 1px var(--plaque), 0 0 22px rgb(255 236 200 / .18) } }
+.o-opts .opt:active { transform: scale(.97) }
+.o-opts .opt.is-right, .o-opts .opt.is-answer { background: rgb(80 220 150 / .12); box-shadow: inset 0 0 0 1.5px #5fe0a0; color: #a5f3c8 }
+.o-opts .opt.is-wrong { box-shadow: inset 0 0 0 1.5px var(--acc); color: var(--acc); animation: wig 300ms ease }
+.o-opts .opt.is-dim { opacity: .35 }
+.o-session .fb.ok p { color: #a5f3c8 }
+.o-session .qhint, .o-session .keys, .o-session .keys button { color: var(--muted) }
+.o-lhero { position: relative; flex: 1; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 30px; align-items: center; width: 100%; max-width: 1220px; margin: 0 auto; padding: 40px 32px 40px }
+@container (max-width: 900px) { .o-lhero { grid-template-columns: 1fr } }
+.o-lhero h2 { font: 600 clamp(40px, 5.2cqi, 66px)/1.08 var(--f-disp); letter-spacing: -.04em; margin: 10px 0 18px }
+.o-lhero h2 em { font-style: normal; color: var(--acc) }
+.o-lhero .lead { color: var(--muted) }
+.o-wall { position: relative; display: flex; justify-content: center; gap: 22px; padding: 30px 10px 20px; flex-wrap: wrap }
+.o-wall .o-ex .kc { --wn: 170 }
+.o-wall .o-ex:nth-child(2) { margin-top: -26px }
+.o-dim { position: absolute; inset: -20px; border-radius: 28px; pointer-events: none; background: rgb(10 8 14 / .62); -webkit-mask: radial-gradient(circle 230px at var(--sx) var(--sy), transparent 0, transparent 35%, #000 80%); mask: radial-gradient(circle 230px at var(--sx) var(--sy), transparent 0, transparent 35%, #000 80%) }
+.o-cap { font: 500 12px var(--f-mono); color: var(--muted); margin: 0; text-align: center }
+
+/* ============ P · Ván bài ============ */
+.cP { --bg: #f5f5f7; --ink: #0c0c10; --muted: #6d6d78; --line: #e2e2e8; --acc: #d6336c; --ok: #13784a; font-family: var(--f-shell); color: var(--ink); background: var(--bg) }
+.p-wrap { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 22px 32px 40px; display: grid; gap: 22px }
+.p-table { display: grid; grid-template-columns: 1fr auto 1fr; gap: 26px; align-items: center; justify-items: center; padding: 6px 0 }
+.pile { display: grid; justify-items: center; gap: 8px; text-align: center }
+.pile .stack { position: relative; width: 110px; height: 154px }
+.pile .stack .kback, .pile .stack .slot { position: absolute; inset: 0; --wn: 110 }
+.pile .stack .slot { border-radius: 8px; box-shadow: inset 0 0 0 1.5px var(--line); background: repeating-linear-gradient(45deg, transparent 0 6px, rgb(0 0 0 / .03) 6px 12px) }
+.pile .stack .kback:nth-child(3) { transform: translate(3px, -4px) rotate(2deg) }
+.pile .stack .kback:nth-child(4) { transform: translate(-2px, -8px) rotate(-2deg) }
+.pile b { font: 600 34px/1 var(--f-disp); letter-spacing: -.03em }
+.pile span { font: 500 12px var(--f-mono); color: var(--muted) }
+.pile.left b { color: var(--acc) } .pile.right b { color: var(--ok) }
+.pile.bump b { animation: p-bump 320ms var(--ease-spring) }
+@keyframes p-bump { 40% { transform: scale(1.35) } }
+.deck { position: relative; width: 280px; height: 392px; touch-action: none }
+.deck .layer { position: absolute; inset: 0; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px var(--line); transform: translate(calc(var(--d) * 4px), calc(var(--d) * 5px)) rotate(calc(var(--d) * 1.1deg)) }
+.flip { position: absolute; inset: 0; perspective: 1200px; cursor: grab; z-index: 2; user-select: none; -webkit-user-select: none }
+.flip.dragging { cursor: grabbing }
+.flip .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 420ms var(--ease-io) }
+.flip.flipped .inner { transform: rotateY(180deg) }
+.flip .kc { --wn: 280; position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden }
+.flip .back { transform: rotateY(180deg) }
+.flip .kc .kd .w { font-size: min(3.4em, calc(22em / var(--len, 6))) }
+.flip .lab { position: absolute; top: 46%; z-index: 4; background: #fff; padding: 6px 12px; border-radius: 8px; font: 700 13px var(--f-mono); opacity: 0; pointer-events: none; text-transform: uppercase; letter-spacing: .04em }
+.flip .lab.l { left: 16px; color: var(--acc); box-shadow: inset 0 0 0 2px var(--acc); transform: rotate(-10deg) }
+.flip .lab.r { right: 16px; color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); transform: rotate(10deg) }
+.p-hint { font: 500 12px var(--f-mono); color: var(--muted); margin: 0; text-align: center }
+.p-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap }
+.p-btns .go.l { background: #fff; color: var(--acc); box-shadow: inset 0 0 0 1.5px var(--acc) }
+.p-btns .go.r { background: var(--ok) }
+.p-btns .go[disabled] { opacity: .35; cursor: default }
+.p-done { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 40px 0 }
+.p-done h3 { font: 700 46px/1.05 var(--f-disp); letter-spacing: -.04em; margin: 0 }
+.p-done p { margin: 0; color: var(--muted); font-size: 16px }
+.p-lhero { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 36px 32px 30px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; align-items: center }
+@container (max-width: 860px) { .p-lhero { grid-template-columns: 1fr } }
+.p-lhero h2 { font: 700 clamp(48px, 7cqi, 92px)/1 var(--f-disp); letter-spacing: -.05em; margin: 10px 0 20px }
+.p-lhero h2 span { color: var(--ok) }
+.p-lhero .deck { width: 240px; height: 336px }
+.p-lhero .flip .kc { --wn: 240 }
+.p-ldemo { display: grid; justify-items: center; gap: 14px }
+
+@media (prefers-reduced-motion: reduce) {
+  .viewport *, .viewport *::before, .viewport *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-property: opacity, color, background-color, box-shadow !important }
+  .play .rise { animation: fade 200ms ease both !important }
+  .fx.out { transform: none; filter: none }
+}
+</style>
+
+<header class="sw">
+  <div class="sw-in">
+    <h1>Wordmet <span>· vòng 4: lai giữa Tiêu điểm và Thẻ bài</span></h1>
+    <div class="seg" role="group" aria-label="Chọn concept">
+      <button type="button" data-pick-c="m"><span class="tag">M</span>Một lá</button>
+      <button type="button" data-pick-c="n"><span class="tag">N</span>Bộ sưu tập chữ</button>
+      <button type="button" data-pick-c="o"><span class="tag">O</span>Phòng trưng bày</button>
+      <button type="button" data-pick-c="p"><span class="tag">P</span>Ván bài</button>
+    </div>
+    <div class="seg" role="group" aria-label="Chọn màn hình">
+      <button type="button" data-pick-s="landing">Landing</button>
+      <button type="button" data-pick-s="today">Hôm nay</button>
+      <button type="button" data-pick-s="practice">Phiên học</button>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+  <p class="howto">Bốn hướng lai giữa D · Tiêu điểm (chữ lớn, gần như không khung, bàn phím trước) và K · Thẻ bài (mỗi từ một lá, hạng theo ngăn). M, N, O: gõ <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Enter</kbd>, <kbd>H</kbd>. P là ôn thẻ: <kbd>Space</kbd> lật, kéo lá sang phải là Đã biết, sang trái là Cần ôn lại (hoặc <kbd>→</kbd> <kbd>←</kbd>).</p>
+  <div class="frame">
+    <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">wordmet.com/vi/app</span></div>
+    <div class="viewport">
+
+<!-- ================= M · Một lá ================= -->
+<section class="concept cM" data-concept="m">
+  <div class="screen" data-screen="landing">
+    <header class="m-bar"><span class="word">wordmet</span><nav style="margin-left:auto"><a>cách học</a><a>gói</a><a>hỏi đáp</a><a style="color:#0c0c10;font-weight:600">đăng nhập</a></nav></header>
+    <section class="m-lhero">
+      <div>
+        <p class="mono rise" style="--i:0;font-size:12px;color:#6d6d78;margin:0">từ vựng tiếng anh · từng lá một</p>
+        <h2 class="rise" style="--i:1">Học từng lá một.</h2>
+        <p class="lead rise" style="--i:2">Mỗi từ là một lá. Nhớ đúng thì lá lên hạng và lâu hơn mới quay lại: 1, 3, 7, 14 rồi 30 ngày.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="go">Bắt đầu miễn phí</button><p class="small">3 phiên luyện mỗi ngày. Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div class="m-lcard rise" style="--i:2">
+        <div class="kc t5 tiltable" data-morph='[["went","go","động từ · quá khứ","đi"],["met","meet","động từ · quá khứ","gặp"],["children","child","danh từ · số nhiều","đứa trẻ"],["better","good","tính từ · so sánh hơn","tốt"]]'><div class="kc-in"><div class="kd"><div class="top"><span>NGĐ · 001/006</span><span>A1</span></div><div class="w"><span class="fx mw">went</span></div><p class="p"><span class="fx mr">→ go</span></p><p class="m"><span class="fx mm">đi</span></p><div class="bot"><span class="fx mp">động từ · quá khứ</span><span>ánh kim</span></div></div></div></div>
+        <p class="cap">gõ dạng bạn gặp · wordmet tìm từ gốc</p>
+      </div>
+    </section>
+    <div class="ladder">
+      <span style="--k:0"><i class="t0"></i><b>Thường</b>mới</span><span style="--k:1"><i class="t1"></i><b>Đồng</b>1 ngày</span><span style="--k:2"><i class="t2"></i><b>Bạc</b>3 ngày</span><span style="--k:3"><i class="t3"></i><b>Vàng</b>7 ngày</span><span style="--k:4"><i class="t4"></i><b>Lục bảo</b>14 ngày</span><span style="--k:5"><i class="t5"></i><b>Ánh kim</b>30 ngày</span>
+    </div>
+  </div>
+
+  <div class="screen" data-screen="today">
+    <header class="m-bar"><span class="word">wordmet</span><label class="cmd"><span>Gõ một từ để tra hoặc thêm</span><kbd>/</kbd></label><nav><a aria-current="page">Hôm nay</a><a>Bộ sưu tập</a><a>Gói</a></nav><span class="av">L</span></header>
+    <div class="m-today">
+      <div class="m-top">
+        <div>
+          <p class="mono rise" style="--i:0;font-size:12px;color:#6d6d78;margin:0">thứ năm · 05.11</p>
+          <p class="m-num rise count" style="--i:1" data-to="20">20</p>
+          <p class="m-lbl rise" style="--i:2">lá chờ bạn hôm nay</p>
+          <p class="m-sub rise" style="--i:2">12 đến hạn · 8 mới · khoảng 6 phút</p>
+          <div class="rise" style="--i:3"><button type="button" class="go">Bắt đầu ôn <kbd>↵</kbd></button></div>
+        </div>
+        <div class="m-deck" aria-label="Chồng 20 lá, lá trên cùng là manage">
+          <span class="layer" style="--d:5"></span><span class="layer" style="--d:4"></span><span class="layer" style="--d:3"></span><span class="layer" style="--d:2"></span><span class="layer" style="--d:1"></span>
+          <div data-dcard="manage" data-tier="1" data-wn="240"></div>
+          <span class="count">20 / 20</span>
+        </div>
+      </div>
+      <div class="rise" style="--i:4">
+        <div class="track"><i class="t0" style="--n:23;--k:0"></i><i class="t1" style="--n:10;--k:1"></i><i class="t2" style="--n:7;--k:2"></i><i class="t3" style="--n:5;--k:3"></i><i class="t4" style="--n:2;--k:4"></i><i class="t5" style="--n:1;--k:5"></i></div>
+        <div class="legend"><span class="due">thường <b>23</b></span><span class="due">đồng <b>10</b></span><span class="due">bạc <b>7</b></span><span>vàng <b>5</b></span><span>lục bảo <b>2</b></span><span>ánh kim <b>1</b></span><span>· chấm hồng: có lá hôm nay</span></div>
+      </div>
+      <div class="cols">
+        <section class="rise" style="--i:5"><h3>nhóm</h3><ul class="list"><li><span>Kinh doanh · A2</span><span class="mono">13 / 31</span></li><li><span>Du lịch · B1</span><span class="mono">6 / 11</span></li><li><span>Từ gặp ngoài đời</span><span class="mono">1 / 6</span></li></ul></section>
+        <section class="rise" style="--i:6"><h3>vừa gặp</h3><p class="big">went <small>→</small> <span class="a">go</span></p><p class="small">Đã thành lá thường trong "Từ gặp ngoài đời". Gõ <kbd>/</kbd> để thêm từ khác.</p></section>
+        <section class="rise" style="--i:7"><h3>luyện tập</h3><p class="big">2<small>/3</small></p><p class="small">phiên còn lại hôm nay · 11 câu AI tháng này</p></section>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" data-screen="practice">
+    <div class="m-session" data-quiz data-voice="m">
+      <div class="prog"><i></i></div>
+      <header class="ses-h"><span>esc · dừng phiên</span><span class="q-count">03 / 10</span></header>
+      <div class="m-stagec">
+        <div class="m-cardwrap"><span class="under two"></span><span class="under"></span><span class="tag q-tag"></span><div class="kc m-card q-card q-tiered t1"><div class="kc-in"><div class="kd"><div class="top"><span class="q-no"></span><span class="q-kind"></span></div><div class="w q-prompt"></div><p class="p q-ask"></p><p class="m q-reveal">&nbsp;</p><div class="bot"><span class="q-tier"></span><span>KINH DOANH · A2</span></div></div></div></div></div>
+        <div class="wopts q-opts"></div>
+        <div class="fb q-feedback" hidden><p class="q-fbtext"></p><button type="button" class="go q-next"><span class="q-nextlbl">Câu tiếp</span> <kbd>↵</kbd></button></div>
+        <p class="qhint q-hint" hidden></p>
+      </div>
+      <footer class="keys"><span>1–4 chọn</span><span>↵ tiếp</span><button type="button" class="q-hintbtn">h gợi ý</button></footer>
+    </div>
+  </div>
+</section>
+
+<!-- ================= N · Bộ sưu tập chữ ================= -->
+<section class="concept cN" data-concept="n" hidden>
+  <div class="screen" data-screen="landing">
+    <header class="n-bar"><span class="word">wordmet</span><nav style="margin-left:auto"><a>cách học</a><a>gói</a><a>hỏi đáp</a></nav><button type="button" class="go" style="margin-left:0">Bắt đầu</button></header>
+    <section class="n-lhero">
+      <p class="mono rise" style="--i:0;font-size:12px;color:#6a6a72;margin:0">bộ sưu tập từ vựng tiếng anh</p>
+      <h2 class="rise" style="--i:1">Nhớ càng lâu, <span>chữ</span> càng đậm.</h2>
+      <div class="n-weights" aria-label="Từ negotiate ở sáu độ đậm, từ mới đến 30 ngày">
+        <span><b style="--w:250">negotiate</b><small>mới</small></span><span><b style="--w:360">negotiate</b><small>1 ngày</small></span><span><b style="--w:470">negotiate</b><small>3 ngày</small></span><span><b style="--w:580">negotiate</b><small>7 ngày</small></span><span><b style="--w:690">negotiate</b><small>14 ngày</small></span><span><b style="--w:800">negotiate</b><small>30 ngày · ánh kim</small></span>
+      </div>
+      <p class="lead rise" style="--i:3;margin-bottom:0">Mỗi lá trong bộ sưu tập là một từ. Độ đậm của chữ cho biết bạn nhớ nó bao lâu: mảnh là từ mới, đậm nhất là từ đã qua ngăn 30 ngày.</p>
+      <div class="lcta rise" style="--i:4"><button type="button" class="go">Bắt đầu miễn phí</button><p class="small">3 phiên luyện mỗi ngày. Không cần thẻ thanh toán.</p></div>
+    </section>
+  </div>
+
+  <div class="screen" data-screen="today">
+    <header class="n-bar"><span class="word">wordmet</span><label class="cmd"><span>Gõ một từ để tra hoặc thêm</span><kbd>/</kbd></label><nav><a aria-current="page">Bộ sưu tập</a><a>Gói</a></nav><span class="av">L</span></header>
+    <div class="n-wrap">
+      <div class="n-head rise" style="--i:0">
+        <div><p class="n-kick">bộ sưu tập của lan · 048 lá · thứ năm 05.11</p><h2 class="n-h">20 lá <span>cần ôn</span></h2></div>
+        <button type="button" class="go">Ôn 20 lá <kbd>↵</kbd></button>
+      </div>
+      <div class="chips rise" style="--i:1" data-filter>
+        <button type="button" data-f="" aria-pressed="true">Tất cả · 48</button><button type="button" data-f="due" aria-pressed="false">Ôn hôm nay · 20</button><button type="button" data-f="0" aria-pressed="false">Kinh doanh · 31</button><button type="button" data-f="1" aria-pressed="false">Du lịch · 11</button><button type="button" data-f="2" aria-pressed="false">Ngoài đời · 6</button><span class="sp"></span><span class="mono" style="font-size:12px;color:#6a6a72">góc hồng: ôn hôm nay</span>
+      </div>
+      <div class="n-grid" data-ngrid></div>
+      <div class="wscale rise" style="--i:3"><span><b style="--w:250">Aa</b><small>mới · 23</small></span><span><b style="--w:360">Aa</b><small>1 ngày · 10</small></span><span><b style="--w:470">Aa</b><small>3 ngày · 7</small></span><span><b style="--w:580">Aa</b><small>7 ngày · 5</small></span><span><b style="--w:690">Aa</b><small>14 ngày · 2</small></span><span><b style="--w:800">Aa</b><small>30 ngày · 1</small></span></div>
+      <div class="n-low rise" style="--i:4">
+        <section><h3>vừa gặp</h3><p class="big">went <small>→</small> <span style="color:#d6336c">go</span></p><p class="small">Thành lá số 043, chữ mảnh vì là từ mới.</p></section>
+        <section><h3>luyện tập</h3><p class="big">2<small>/3</small></p><p class="small">phiên còn lại hôm nay · 11 câu AI tháng này</p></section>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" data-screen="practice">
+    <div class="n-session" data-quiz data-voice="n">
+      <div class="prog"><i></i></div>
+      <header class="ses-h"><span>esc · dừng phiên</span><span class="q-count">03 / 10</span></header>
+      <div class="n-stagec">
+        <div class="m-cardwrap"><span class="tag q-tag"></span><div class="ncard n-q q-card" data-s="1"><div class="no"><span class="q-no"></span><span class="q-kind"></span></div><div class="w q-prompt"></div><div class="m q-tier"></div></div></div>
+        <div class="n-side">
+          <p class="ask q-ask"></p>
+          <div class="n-opts q-opts"></div>
+          <div class="fb q-feedback" hidden style="justify-content:flex-start"><p class="q-fbtext"></p><button type="button" class="go q-next"><span class="q-nextlbl">Câu tiếp</span> <kbd>↵</kbd></button></div>
+          <p class="qhint q-hint" hidden></p>
+        </div>
+      </div>
+      <footer class="keys"><span>1–4 chọn</span><span>↵ tiếp</span><button type="button" class="q-hintbtn">h gợi ý</button></footer>
+    </div>
+  </div>
+</section>
+
+<!-- ================= O · Phòng trưng bày ================= -->
+<section class="concept cO" data-concept="o" hidden>
+  <div class="screen" data-screen="landing" data-spot>
+    <header class="o-bar"><span class="word">wordmet</span><nav style="margin-left:auto"><a>cách học</a><a>gói</a><a>hỏi đáp</a></nav><button type="button" class="o-btn ghost" style="margin-left:0">Đăng nhập</button></header>
+    <section class="o-lhero">
+      <div>
+        <p class="o-kick rise" style="--i:0">phòng trưng bày · từ vựng tiếng anh</p>
+        <h2 class="rise" style="--i:1">Bộ sưu tập từ vựng của riêng bạn, <em>dưới ánh đèn</em>.</h2>
+        <p class="lead rise" style="--i:2">Mỗi từ là một lá trưng bày. Nhớ đúng thì lá lên hạng. Lá sắp quên được đưa ra giữa phòng mỗi sáng.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="o-btn lg">Bắt đầu miễn phí</button><p class="small" style="color:#a79eb8">Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div style="position:relative">
+        <div class="o-wall">
+          <div class="o-ex" style="--k:0"><div data-kcard="market" data-tier="3" data-wn="170"></div><span class="plinth"></span><p class="plaque"><b>market</b><span>thị trường · vàng · 7 ngày</span></p></div>
+          <div class="o-ex" style="--k:1"><div data-kcard="company" data-tier="5" data-wn="170"></div><span class="plinth"></span><p class="plaque"><b>company</b><span>công ty · ánh kim · 30 ngày</span></p></div>
+          <div class="o-ex" style="--k:2"><div data-kcard="budget" data-tier="2" data-wn="170"></div><span class="plinth"></span><p class="plaque"><b>budget</b><span class="due">ngân sách · bạc · ôn hôm nay</span></p></div>
+        </div>
+        <p class="o-cap">rê chuột để soi đèn</p>
+        <div class="o-dim" aria-hidden="true"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="screen" data-screen="today" data-spot>
+    <header class="o-bar"><span class="word">wordmet</span><nav><a aria-current="page">Hôm nay</a><a>Các phòng</a><a>Luyện tập</a><a>Tra từ</a></nav><button type="button" class="o-btn ghost">+ Thêm từ <kbd>N</kbd></button><span class="av" style="background:#efeaf6;color:#15111c">L</span></header>
+    <div class="o-wrap">
+      <div class="o-head rise" style="--i:0">
+        <div><p class="o-kick">thứ năm · 05.11 · phòng giữa</p><h2 class="o-h">Hôm nay <em>20 lá</em> được đưa ra giữa phòng.</h2></div>
+        <button type="button" class="o-btn lg">Ôn 20 lá <kbd>↵</kbd></button>
+      </div>
+      <div class="o-row">
+        <div class="o-ex" style="--k:0"><div data-kcard="complaint" data-tier="1" data-wn="168"></div><span class="plinth"></span><p class="plaque"><b>complaint</b><span class="due">đồng · ôn hôm nay</span></p></div>
+        <div class="o-ex" style="--k:1"><div data-kcard="staff" data-tier="1" data-wn="168"></div><span class="plinth"></span><p class="plaque"><b>staff</b><span class="due">đồng · ôn hôm nay</span></p></div>
+        <div class="o-ex" style="--k:2"><div data-kcard="manage" data-tier="1" data-wn="168"></div><span class="plinth"></span><p class="plaque"><b>manage</b><span class="due">đồng · ôn hôm nay</span></p></div>
+        <div class="o-ex" style="--k:3"><div data-kcard="budget" data-tier="2" data-wn="168"></div><span class="plinth"></span><p class="plaque"><b>budget</b><span class="due">bạc · ôn hôm nay</span></p></div>
+        <div class="o-ex" style="--k:4"><div data-kcard="apply" data-tier="2" data-wn="168"></div><span class="plinth"></span><p class="plaque"><b>apply</b><span class="due">bạc · ôn hôm nay</span></p></div>
+        <span class="o-more">+ 15 lá khác</span>
+      </div>
+      <div class="o-rooms rise" style="--i:3">
+        <div class="o-room"><i class="t0"></i><b>23</b><span>phòng thường</span><span class="d">8 hôm nay</span></div>
+        <div class="o-room"><i class="t1"></i><b>10</b><span>phòng đồng</span><span class="d">9 hôm nay</span></div>
+        <div class="o-room"><i class="t2"></i><b>7</b><span>phòng bạc</span><span class="d">3 hôm nay</span></div>
+        <div class="o-room"><i class="t3"></i><b>5</b><span>phòng vàng</span><span>·</span></div>
+        <div class="o-room"><i class="t4"></i><b>2</b><span>phòng lục bảo</span><span>·</span></div>
+        <div class="o-room"><i class="t5"></i><b>1</b><span>phòng ánh kim</span><span>·</span></div>
+      </div>
+      <div class="o-low rise" style="--i:4">
+        <section class="o-panel"><h3>thêm từ vừa gặp</h3><p class="o-in">went<span class="caret"></span></p><p class="o-found">→ <b>go</b> · động từ, quá khứ · A1</p><button type="button" class="o-btn ghost">Thêm vào Từ gặp ngoài đời</button></section>
+        <section class="o-panel"><h3>lượt luyện hôm nay</h3><p class="o-q">2<small>/3</small></p><p class="small" style="color:#a79eb8">Câu AI tháng 11: còn 11/15. Tra AI: còn 5.</p></section>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" data-screen="practice">
+    <div class="o-session" data-quiz data-voice="o">
+      <span class="o-spot q-spot" aria-hidden="true"></span>
+      <header class="ses-h" style="position:relative"><span>esc · dừng phiên</span><span class="q-count">03 / 10</span></header>
+      <div class="o-stagec">
+        <div class="o-cardwrap"><span class="tag q-tag"></span><div class="kc o-card q-card q-tiered t1" style="--wn:230"><div class="kc-in"><div class="kn"><span class="q-name">?</span><small>A2</small></div><div class="ka g0"><b class="q-init">?</b></div><div class="kt"><span class="q-kind"></span><span>KINH DOANH</span></div><div class="kx"><b class="q-meaning">&nbsp;</b></div><div class="kf"><span class="q-no"></span><span class="q-tier"></span></div></div></div><span class="plinth" style="width:210px"></span></div>
+        <div class="o-qplaque"><p class="ask q-ask"></p><p class="q-prompt"></p></div>
+        <div class="o-opts q-opts"></div>
+        <div class="fb q-feedback" hidden><p class="q-fbtext"></p><button type="button" class="o-btn q-next"><span class="q-nextlbl">Câu tiếp</span> <kbd>↵</kbd></button></div>
+        <p class="qhint q-hint" hidden></p>
+      </div>
+      <footer class="keys" style="position:relative"><span>1–4 chọn</span><span>↵ tiếp</span><button type="button" class="q-hintbtn">h gợi ý</button></footer>
+    </div>
+  </div>
+</section>
+
+<!-- ================= P · Ván bài ================= -->
+<section class="concept cP" data-concept="p" hidden>
+  <div class="screen" data-screen="landing">
+    <header class="m-bar"><span class="word">wordmet</span><nav style="margin-left:auto"><a>cách học</a><a>gói</a><a>hỏi đáp</a><a style="color:#0c0c10;font-weight:600">đăng nhập</a></nav></header>
+    <section class="p-lhero">
+      <div>
+        <p class="mono rise" style="--i:0;font-size:12px;color:#6d6d78;margin:0">ôn thẻ từ vựng tiếng anh</p>
+        <h2 class="rise" style="--i:1">Lật lá. <span>Đã biết thì vuốt phải.</span></h2>
+        <p class="lead rise" style="--i:2">Ôn bằng một cú vuốt: phải là Đã biết, trái là Cần ôn lại. Wordmet tự xếp ngày gặp lại cho từng lá.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="go">Bắt đầu miễn phí</button><p class="small">Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div class="p-ldemo rise" style="--i:2" data-swipe="demo">
+        <div class="deck"><span class="layer" style="--d:2"></span><span class="layer" style="--d:1"></span><div class="flip"></div></div>
+        <p class="p-hint">thử ngay: bấm để lật, kéo sang phải hoặc trái</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="screen" data-screen="today">
+    <header class="m-bar"><span class="word">wordmet</span><label class="cmd"><span>Gõ một từ để tra hoặc thêm</span><kbd>/</kbd></label><nav><a aria-current="page">Hôm nay</a><a>Bộ sưu tập</a><a>Gói</a></nav><span class="av">L</span></header>
+    <div class="p-wrap">
+      <div class="rise" style="--i:0"><p class="mono" style="font-size:12px;color:#6d6d78;margin:0">thứ năm · 05.11</p><p class="m-lbl" style="font-size:40px;margin-top:6px"><span class="count" data-to="20">20</span> lá chờ bạn lật</p><p class="m-sub" style="margin-bottom:0">12 đến hạn · 8 mới · khoảng 6 phút</p></div>
+      <div class="p-table rise" style="--i:1">
+        <div class="pile left"><span class="stack"><span class="slot"></span></span><b>0</b><span>← cần ôn lại</span></div>
+        <div class="deck"><span class="layer" style="--d:4"></span><span class="layer" style="--d:3"></span><span class="layer" style="--d:2"></span><span class="layer" style="--d:1"></span><div class="flip" style="cursor:default"><div class="inner"><div data-pface="manage"></div></div></div></div>
+        <div class="pile right"><span class="stack"><span class="slot"></span></span><b>0</b><span>đã biết →</span></div>
+      </div>
+      <div class="rise" style="--i:2;display:grid;justify-items:center;gap:10px"><button type="button" class="go">Lật lá đầu tiên <kbd>Space</kbd></button><p class="p-hint">Space lật · ← cần ôn lại · → đã biết</p></div>
+      <div class="cols rise" style="--i:3;margin-top:10px">
+        <section><h3>nhóm</h3><ul class="list"><li><span>Kinh doanh · A2</span><span class="mono">13 / 31</span></li><li><span>Du lịch · B1</span><span class="mono">6 / 11</span></li><li><span>Từ gặp ngoài đời</span><span class="mono">1 / 6</span></li></ul></section>
+        <section><h3>vừa gặp</h3><p class="big">went <small>→</small> <span class="a" style="color:#d6336c">go</span></p><p class="small">Thêm vào chồng ngày mai.</p></section>
+        <section><h3>luyện tập</h3><p class="big">2<small>/3</small></p><p class="small">phiên còn lại hôm nay · 11 câu AI tháng này</p></section>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" data-screen="practice">
+    <div class="m-session" style="background:#f5f5f7" data-swipe="session">
+      <div class="prog"><i></i></div>
+      <header class="ses-h"><span>esc · dừng · ôn thẻ kinh doanh · a2</span><span class="p-count">01 / 06</span></header>
+      <div class="p-wrap" style="padding-top:6px">
+        <div class="p-table">
+          <div class="pile left"><span class="stack"><span class="slot"></span></span><b class="pl">0</b><span>← cần ôn lại</span></div>
+          <div class="deck"><span class="layer" style="--d:3"></span><span class="layer" style="--d:2"></span><span class="layer" style="--d:1"></span><div class="flip"></div></div>
+          <div class="pile right"><span class="stack"><span class="slot"></span></span><b class="pr">0</b><span>đã biết →</span></div>
+        </div>
+        <div class="p-btns"><button type="button" class="go l" data-act="left" disabled>← Cần ôn lại</button><button type="button" class="go ghost" data-act="flip">Lật lá <kbd>Space</kbd></button><button type="button" class="go r" data-act="right" disabled>Đã biết →</button></div>
+        <p class="p-hint p-note">Lật lá trước, rồi kéo hoặc bấm.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+    </div>
+  </div>
+
+  <div class="notes note-set" data-concept="m">
+    <div class="note"><h3>Lấy từ D</h3><p>Nền trống, số khổng lồ, ô lệnh <b>/</b>, đáp án là bốn chữ lớn, màu nhấn hồng sen duy nhất.</p></div>
+    <div class="note"><h3>Lấy từ K</h3><p>Từ đang hỏi là một lá bài có khung theo hạng; Hôm nay là một chồng lá thật; lá Ánh kim nghiêng theo chuột.</p></div>
+    <div class="note"><h3>Được</h3><p>Gọn như D nhưng có một vật để nhìn và để lên hạng. Ít thứ trên màn nhất trong bốn hướng.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Lá bài chiếm chỗ của chữ lớn; câu điền từ dài phải thu nhỏ chữ trên lá.</p></div>
+    <div class="note"><h3>Motion</h3><p>Đúng thì vệt sáng quét, khung lên hạng, rồi lá bay lên góc phải và lá dưới trồi lên. Landing: chữ trên lá đổi dạng bằng blur (went → go).</p></div>
+  </div>
+  <div class="notes note-set" data-concept="n" hidden>
+    <div class="note"><h3>Lấy từ D</h3><p>Chỉ có chữ: Bricolage biến thiên, mono cho nhãn, hồng sen cho thứ cần làm hôm nay.</p></div>
+    <div class="note"><h3>Lấy từ K</h3><p>Bộ sưu tập lá có số thứ tự, sáu hạng; hạng cao nhất có viền ánh kim.</p></div>
+    <div class="note"><h3>Được</h3><p>Hạng được mã hóa bằng độ đậm của chữ: liếc cả bộ 48 lá là thấy từ nào còn mảnh. Lọc theo nhóm và theo hôm nay.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Độ đậm khó phân biệt giữa hai hạng kề nhau; cần nhãn đi kèm. Phụ thuộc font biến thiên.</p></div>
+    <div class="note"><h3>Motion</h3><p>Đúng thì chữ đậm dần lên hạng kế (700 ms); sai thì chữ mảnh lại và bị gạch. Landing: sáu chữ negotiate đậm dần khi mở trang.</p></div>
+  </div>
+  <div class="notes note-set" data-concept="o" hidden>
+    <div class="note"><h3>Lấy từ D</h3><p>Một thứ ở giữa, mọi thứ khác lùi vào tối; chữ Bricolage; hồng sen là màu nhấn.</p></div>
+    <div class="note"><h3>Lấy từ K</h3><p>Lá bài đầy đủ (tên, hình, nghĩa, số trong bộ), khung kim loại theo hạng; các hạng thành các phòng.</p></div>
+    <div class="note"><h3>Được</h3><p>Có bản tối sẵn và cảm giác cao cấp; đèn soi theo chuột làm Landing khó quên.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Nền tối phải giữ đủ tương phản cho chữ nhỏ; đèn theo chuột không có trên điện thoại.</p></div>
+    <div class="note"><h3>Motion</h3><p>Đèn soi theo chuột. Đúng thì đèn sáng hơn và lá lên hạng; sai thì đèn chập chờn.</p></div>
+  </div>
+  <div class="notes note-set" data-concept="p" hidden>
+    <div class="note"><h3>Lấy từ D</h3><p>Màn gần như trống, chỉ có chồng lá và hai đống hai bên; phím <b>Space</b>, <b>←</b>, <b>→</b>.</p></div>
+    <div class="note"><h3>Lấy từ K</h3><p>Lá có khung hạng, mặt sau là nghĩa và câu ví dụ, hai đống lá đếm số.</p></div>
+    <div class="note"><h3>Được</h3><p>Hợp màn Ôn thẻ có sẵn của app (Cần ôn lại / Đã biết); trên điện thoại vuốt là thao tác tự nhiên nhất.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Chỉ hợp ôn thẻ, không hợp câu trắc nghiệm; vuốt nhầm cần có cách hoàn tác.</p></div>
+    <div class="note"><h3>Motion</h3><p>Lá xoay theo hướng kéo, nhãn hiện dần theo khoảng kéo. Thả nhanh là đủ (tính theo vận tốc), thả chậm và ngắn thì lá bật về chỗ.</p></div>
+  </div>
+  <p class="foot-note">Số liệu mẫu như vòng 3: 48 từ trong 3 nhóm, Mới 23, 1 ngày 10, 3 ngày 7, 7 ngày 5, 14 ngày 2, 30 ngày 1; ôn hôm nay 20. Thông số hai style gốc: docs/mockups/2026-11-05-redesign-concepts/style-da-chon.md.</p>
+</main>
+
+<script>
+(() => {
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const STAGES = ['Mới', '1 ngày', '3 ngày', '7 ngày', '14 ngày', '30 ngày'];
+  const TIERS = ['Thường', 'Đồng', 'Bạc', 'Vàng', 'Lục bảo', 'Ánh kim'];
+  const INTERVAL = [0, 1, 3, 7, 14, 30];
+  const URLS = { landing: 'wordmet.com/vi', today: 'wordmet.com/vi/app', practice: 'wordmet.com/vi/app/practice/session' };
+  const POS = { n: 'danh từ', v: 'động từ', a: 'tính từ' };
+  const RAW = [
+    ['brand,n,thương hiệu,2,0', 'bonus,n,tiền thưởng,0,1', 'complaint,n,lời phàn nàn,1,1', 'retire,v,nghỉ hưu,0,0', 'staff,n,nhân viên,1,1', 'receipt,n,biên lai,1,1', 'professional,a,chuyên nghiệp,0,0', 'market,n,thị trường,3,0', 'manage,v,quản lý,1,1', 'budget,n,ngân sách,2,1', 'manager,n,người quản lý,0,0', 'lend,v,cho vay,0,1', 'advertisement,n,quảng cáo,0,0', 'target,n,mục tiêu,2,0', 'product,n,sản phẩm,4,0', 'increase,v,tăng,0,1', 'boss,n,sếp,1,0', 'apply,v,ứng tuyển,2,1', 'company,n,công ty,5,0', 'branch,n,chi nhánh,0,0', 'customer,n,khách hàng,3,0', 'experience,n,kinh nghiệm,0,1', 'produce,v,sản xuất,0,0', 'achieve,v,đạt được,1,1', 'train,v,đào tạo,0,0', 'deal,n,thương vụ,2,0', 'report,n,báo cáo,3,0', 'earn,v,kiếm được,1,1', 'strategy,n,chiến lược,0,1', 'schedule,n,lịch trình,4,0', 'organize,v,tổ chức,0,0'],
+    ['scenic,a,có cảnh đẹp,0,1', 'delay,v,trì hoãn,1,1', 'guide,n,hướng dẫn viên,1,1', 'luggage,n,hành lý,2,1', 'passport,n,hộ chiếu,3,0', 'journey,n,chuyến đi,0,0', 'destination,n,điểm đến,0,1', 'accommodation,n,chỗ ở,1,1', 'souvenir,n,quà lưu niệm,0,0', 'itinerary,n,lịch trình chuyến đi,2,0', 'departure,n,sự khởi hành,3,0'],
+    ['go,v,đi (went),0,1', 'child,n,đứa trẻ (children),0,0', 'negotiate,v,đàm phán,0,0', 'deadline,n,hạn chót,0,0', 'good,a,tốt (better),0,0', 'mouse,n,con chuột (mice),0,0'],
+  ];
+  const WORDS = [];
+  RAW.forEach((list, g) => list.forEach((row) => { const [w, p, m, s, d] = row.split(','); WORDS.push({ w, p, m, s: Number(s), due: d === '1', g, no: WORDS.length + 1 }); }));
+  const BY = Object.fromEntries(WORDS.map((o) => [o.w, o]));
+  const SET = ['KD', 'DL', 'NGĐ'], TOTAL = [31, 11, 6], START = [0, 31, 42];
+  const EX = { company: 'She works for a small company.', market: 'The Asian market is growing fast.', budget: 'We must stay within our budget this year.', manage: 'She manages a team of ten people.', complaint: 'We take every complaint seriously.', staff: 'The staff are very friendly.', receipt: 'Keep the receipt in case you want to return it.', apply: 'I applied for a job at a bank.' };
+  const LV = { company: 'A1', staff: 'A2', manage: 'A2', budget: 'B1', market: 'A2', complaint: 'B1', apply: 'A2', receipt: 'A2' };
+  const QS = [
+    { kind: 'Trắc nghiệm', ask: 'chọn từ có nghĩa này', prompt: 'quản lý', opts: ['report', 'product', 'company', 'manage'], a: 3, meaning: 'quản lý', hint: 'Động từ, bắt đầu bằng "m".', stage: 1 },
+    { kind: 'Trắc nghiệm', ask: 'chọn từ có nghĩa này', prompt: 'ứng tuyển', opts: ['complaint', 'apply', 'brand', 'company'], a: 1, meaning: 'ứng tuyển', hint: 'Động từ, 5 chữ cái.', stage: 2 },
+    { kind: 'Điền từ', ask: 'chọn từ hợp với câu', prompt: 'We must stay within our ____ this year.', opts: ['brand', 'target', 'budget', 'deal'], a: 2, meaning: 'ngân sách', hint: 'Danh từ: số tiền được phép tiêu trong một kỳ.', stage: 2 },
+  ];
+  const cur = { c: 'm', s: 'today' };
+  const timers = new Set();
+  const later = (fn, ms) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); return t; };
+  const clearAll = () => { timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); timers.clear(); };
+  const $$ = (root, sel) => [...root.querySelectorAll(sel)];
+  const setText = (root, sel, txt) => $$(root, sel).forEach((el) => { el.textContent = txt; });
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const pad = (n, l = 3) => String(n).padStart(l, '0');
+  const collNo = (o) => `${SET[o.g]} · ${pad(o.no - START[o.g])}/${pad(TOTAL[o.g])}`;
+
+  /* ---------- card builders ---------- */
+  function kHTML(o, tier, wn) {
+    const ex = EX[o.w] ? `<i>${esc(EX[o.w])}</i>` : '';
+    return `<div class="kc t${tier} tiltable" style="--wn:${wn}"><div class="kc-in"><div class="kn"><span>${esc(o.w)}</span><small>${LV[o.w] || 'A2'}</small></div><div class="ka g${o.g}"><b>${esc(o.w[0])}</b></div><div class="kt"><span>${POS[o.p]}</span><span>${TIERS[tier]}</span></div><div class="kx"><b>${esc(o.m)}</b>${ex}</div><div class="kf"><span>${collNo(o)}</span><span>${STAGES[tier]}</span></div></div></div>`;
+  }
+  function dHTML(o, tier, wn, side = '') {
+    return `<div class="kc t${tier} ${side}" style="--wn:${wn}"><div class="kc-in"><div class="kd"><div class="top"><span>${collNo(o)}</span><span>${LV[o.w] || 'A2'}</span></div><div class="w" style="--len:${o.w.length}">${esc(o.w)}</div><p class="p">${POS[o.p]}</p><p class="m">&nbsp;</p><div class="bot"><span>${TIERS[tier].toLocaleLowerCase('vi')}</span><span>${STAGES[tier]}</span></div></div></div></div>`;
+  }
+  function dBackHTML(o, tier, wn) {
+    return `<div class="kc t${tier} back" style="--wn:${wn}"><div class="kc-in"><div class="kd"><div class="top"><span>${collNo(o)}</span><span>${esc(o.w)}</span></div><div class="w sm" style="font-size:2.3em">${esc(o.m)}</div><p class="m" style="font-style:italic;font-size:.95em;color:#6d6d78">${esc(EX[o.w] || '')}</p><div class="bot"><span>Đã biết → ${STAGES[Math.min(o.s + 1, 5)]}</span><span>← 1 ngày</span></div></div></div></div>`;
+  }
+  $$(document, '[data-kcard]').forEach((s) => { s.outerHTML = kHTML(BY[s.dataset.kcard], Number(s.dataset.tier), Number(s.dataset.wn)); });
+  $$(document, '[data-dcard]').forEach((s) => { const o = BY[s.dataset.dcard]; s.outerHTML = dHTML(o, Number(s.dataset.tier), Number(s.dataset.wn)).replace('class="kc', 'class="kc tiltable').replace('<p class="m">&nbsp;</p>', `<p class="m">${esc(o.m)}</p>`); });
+  $$(document, '[data-pface]').forEach((s) => { const o = BY[s.dataset.pface]; s.outerHTML = dHTML(o, o.s, 280); });
+
+  /* tilt on any .tiltable */
+  function bindTilt(c) {
+    if (!FINE || REDUCED || c._tilt) return;
+    c._tilt = true;
+    c.addEventListener('pointermove', (e) => {
+      const r = c.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      c.classList.add('tilting');
+      c.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`); c.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+      c.style.setProperty('--rx', `${((0.5 - py) * 18).toFixed(1)}deg`); c.style.setProperty('--ry', `${((px - 0.5) * 22).toFixed(1)}deg`);
+    });
+    c.addEventListener('pointerleave', () => { c.classList.remove('tilting'); c.style.removeProperty('--rx'); c.style.removeProperty('--ry'); });
+  }
+  $$(document, '.tiltable').forEach(bindTilt);
+
+  /* ---------- N grid ---------- */
+  $$(document, '[data-ngrid]').forEach((grid) => {
+    grid.innerHTML = WORDS.map((o, i) => `<button type="button" class="ncard${o.due ? ' due' : ''}" data-s="${o.s}" data-g="${o.g}" style="--d:${(i % 12) + Math.floor(i / 12)}" aria-label="${esc(`${o.w}, ${o.m}, ngăn ${STAGES[o.s]}${o.due ? ', ôn hôm nay' : ''}`)}"><span class="no"><span>${pad(o.no)}</span><span>${SET[o.g]}</span></span><span class="w" style="--len:${o.w.length}">${esc(o.w)}</span><span class="m">${esc(o.m)}</span></button>`).join('');
+  });
+  $$(document, '[data-filter]').forEach((bar) => bar.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const grid = bar.closest('.screen').querySelector('[data-ngrid]');
+    $$(bar, 'button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    if (b.dataset.f) grid.dataset.f = b.dataset.f; else delete grid.dataset.f;
+  }));
+
+  /* ---------- O spotlight ---------- */
+  $$(document, '[data-spot]').forEach((sc) => {
+    if (!FINE || REDUCED) return;
+    let raf = 0, x = 0, y = 0;
+    sc.addEventListener('pointermove', (e) => {
+      const r = sc.getBoundingClientRect(); x = e.clientX - r.left; y = e.clientY - r.top;
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; sc.style.setProperty('--sx', `${x}px`); sc.style.setProperty('--sy', `${y}px`); const dim = sc.querySelector('.o-dim'); if (dim) { const d = dim.getBoundingClientRect(); dim.style.setProperty('--sx', `${x - (d.left - r.left)}px`); dim.style.setProperty('--sy', `${y - (d.top - r.top)}px`); } });
+    });
+  });
+  $$(document, '.o-dim').forEach((d) => { d.style.setProperty('--sx', '50%'); d.style.setProperty('--sy', '42%'); });
+
+  /* ---------- M landing morph ---------- */
+  function morphLoop(sc) {
+    const card = sc.querySelector('[data-morph]'); if (!card) return;
+    const forms = JSON.parse(card.dataset.morph);
+    const parts = ['.mw', '.mr', '.mm', '.mp'].map((s) => card.querySelector(s));
+    let i = 0;
+    const t = setInterval(() => {
+      i = (i + 1) % forms.length;
+      const [w, r, pos, m] = forms[i];
+      parts.forEach((p) => p.classList.add('out'));
+      later(() => { parts[0].textContent = w; parts[1].textContent = `→ ${r}`; parts[2].textContent = m; parts[3].textContent = pos; parts.forEach((p) => p.classList.remove('out')); }, 190);
+    }, 2600);
+    timers.add(t);
+  }
+  function countUp(el) {
+    const to = Number(el.dataset.to);
+    if (REDUCED) { el.textContent = to; return; }
+    const t0 = performance.now();
+    const step = (t) => { const p = Math.min(1, (t - t0) / 560); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- quiz (M, N, O) ---------- */
+  function resetQuiz(quiz) { quiz._i = 0; renderQ(quiz); }
+  function renderQ(quiz) {
+    const q = QS[quiz._i % QS.length];
+    const n = 3 + quiz._i;
+    const v = quiz.dataset.voice;
+    const word = BY[q.opts[q.a]];
+    quiz._answered = false;
+    setText(quiz, '.q-kind', v === 'm' ? q.kind.toLocaleLowerCase('vi') : q.kind);
+    setText(quiz, '.q-ask', q.ask);
+    setText(quiz, '.q-count', `${pad(n, 2)} / 10`);
+    setText(quiz, '.q-no', collNo(word));
+    setText(quiz, '.q-tier', v === 'n' ? `${STAGES[q.stage]} · ${q.meaning}` : `${TIERS[q.stage]} · ${STAGES[q.stage]}`);
+    setText(quiz, '.q-name', '?'); setText(quiz, '.q-init', '?');
+    $$(quiz, '.q-meaning').forEach((el) => { el.textContent = ' '; });
+    $$(quiz, '.q-reveal').forEach((el) => { el.textContent = ' '; });
+    quiz.style.setProperty('--p', ((n - 1) / 10).toFixed(2));
+    const long = q.prompt.length > 16;
+    const lw = Math.max(...q.prompt.split(' ').map((x) => x.length));
+    $$(quiz, '.q-prompt').forEach((p) => { p.textContent = q.prompt; p.classList.toggle('long', long); p.style.setProperty('--len', lw); });
+    const card = quiz.querySelector('.q-card');
+    card.classList.remove('shine', 'away', 'flinch', 'wrong');
+    if (card.classList.contains('q-tiered')) { card.classList.remove('t0', 't1', 't2', 't3', 't4', 't5'); card.classList.add(`t${q.stage}`); }
+    if (v === 'n') card.dataset.s = q.stage;
+    const tag = quiz.querySelector('.q-tag'); tag.className = 'tag q-tag';
+    const spot = quiz.querySelector('.q-spot'); if (spot) { spot.style.setProperty('--si', (0.45 + q.stage * 0.12).toFixed(2)); spot.classList.remove('flicker'); }
+    const box = quiz.querySelector('.q-opts');
+    box.innerHTML = q.opts.map((o, k) => {
+      const ow = BY[o];
+      if (v === 'n') return `<button type="button" class="opt ncard" data-k="${k}" data-s="${ow.s}"><span class="no"><span>${k + 1}</span><span>${pad(ow.no)}</span></span><span class="w" style="--len:${o.length}">${esc(o)}</span><span class="m">${POS[ow.p]}</span></button>`;
+      return `<button type="button" class="opt" data-k="${k}"><span class="key">${k + 1}</span><span class="lbl">${esc(o)}</span></button>`;
+    }).join('');
+    $$(box, '.opt').forEach((b) => b.addEventListener('click', () => answer(quiz, Number(b.dataset.k))));
+    const hint = quiz.querySelector('.q-hint'); hint.hidden = true; hint.textContent = q.hint;
+    const fb = quiz.querySelector('.q-feedback'); fb.hidden = true; fb.classList.remove('ok', 'bad');
+  }
+  function feedback(v, q, right, to) {
+    const w = q.opts[q.a];
+    const stay = !right && q.stage === 1;
+    if (v === 'n') return right ? `đúng · ${w}, ${q.meaning}. Chữ đậm lên một bậc: ngăn ${STAGES[to]}.` : `chưa đúng · ${w}, ${q.meaning}. Chữ ${stay ? 'giữ độ mảnh' : 'mảnh lại'}: ngăn 1 ngày.`;
+    const t = TIERS[to].toLocaleLowerCase('vi');
+    return right ? `đúng · ${w}, ${q.meaning}. Lá lên hạng ${t}, gặp lại sau ${INTERVAL[to]} ngày.` : `chưa đúng · ${w}, ${q.meaning}. Lá ${stay ? 'giữ hạng đồng' : 'về hạng đồng'}, gặp lại ngày mai.`;
+  }
+  function answer(quiz, k) {
+    if (quiz._answered) return;
+    const q = QS[quiz._i % QS.length];
+    if (k < 0 || k >= q.opts.length) return;
+    quiz._answered = true;
+    const right = k === q.a, v = quiz.dataset.voice;
+    const to = right ? Math.min(q.stage + 1, 5) : 1;
+    const word = BY[q.opts[q.a]];
+    $$(quiz, '.opt').forEach((b, j) => { if (j === k) b.classList.add('is-picked', right ? 'is-right' : 'is-wrong'); else if (!right && j === q.a) b.classList.add('is-answer'); else b.classList.add('is-dim'); });
+    const card = quiz.querySelector('.q-card');
+    const tag = quiz.querySelector('.q-tag');
+    if (v === 'n') {
+      card.dataset.s = to;
+      card.classList.toggle('wrong', !right);
+      setText(quiz, '.q-tier', `${STAGES[to]} · ${word.w}`);
+      tag.textContent = right ? `đậm lên · ${STAGES[to]}` : (q.stage === 1 ? 'giữ ở 1 ngày' : 'mảnh lại · 1 ngày');
+    } else {
+      if (!REDUCED) { card.classList.remove('shine', 'flinch'); void card.offsetWidth; card.classList.add(right ? 'shine' : 'flinch'); }
+      later(() => {
+        card.classList.remove('t0', 't1', 't2', 't3', 't4', 't5'); card.classList.add(`t${to}`);
+        setText(quiz, '.q-tier', `${TIERS[to]} · ${STAGES[to]}`);
+        setText(quiz, '.q-name', word.w); setText(quiz, '.q-init', word.w[0]);
+        $$(quiz, '.q-meaning').forEach((el) => { el.textContent = EX[word.w] || q.meaning; });
+        $$(quiz, '.q-reveal').forEach((el) => { el.textContent = word.w; });
+      }, REDUCED ? 0 : 260);
+      tag.textContent = right ? `lên hạng ${TIERS[to].toLocaleLowerCase('vi')} · ${STAGES[to]}` : (q.stage === 1 ? 'giữ hạng đồng · 1 ngày' : 'về hạng đồng · 1 ngày');
+      const spot = quiz.querySelector('.q-spot');
+      if (spot) { spot.style.setProperty('--si', right ? '1' : '.3'); if (!right && !REDUCED) spot.classList.add('flicker'); }
+    }
+    tag.classList.toggle('up', right);
+    later(() => tag.classList.add('on'), REDUCED ? 0 : 280);
+    const fb = quiz.querySelector('.q-feedback');
+    fb.classList.add(right ? 'ok' : 'bad');
+    fb.querySelector('.q-fbtext').textContent = feedback(v, q, right, to);
+    setText(fb, '.q-nextlbl', right ? 'Đã biết' : 'Câu tiếp');
+    fb.hidden = false;
+    quiz.style.setProperty('--p', ((3 + quiz._i) / 10).toFixed(2));
+    const nb = fb.querySelector('.q-next'); if (nb) nb.focus({ preventScroll: true });
+  }
+  function next(quiz) {
+    if (!quiz._answered) return;
+    const card = quiz.querySelector('.q-card'), v = quiz.dataset.voice;
+    const go = () => { quiz._i += 1; card.classList.remove('away'); renderQ(quiz); if (!REDUCED) { card.classList.remove('enter'); void card.offsetWidth; card.classList.add('enter'); } };
+    if (REDUCED) { go(); return; }
+    if (v === 'm') { card.classList.add('away'); later(go, 360); return; }
+    card.style.opacity = '0'; card.style.transition = 'opacity 140ms ease';
+    later(() => { card.style.opacity = ''; go(); later(() => { card.style.transition = ''; }, 300); }, 150);
+  }
+  document.addEventListener('animationend', (e) => { if (e.target.classList && e.target.classList.contains('enter')) e.target.classList.remove('enter'); });
+  function toggleHint(quiz) { const h = quiz.querySelector('.q-hint'); h.hidden = !h.hidden; }
+  $$(document, '[data-quiz]').forEach((quiz) => {
+    $$(quiz, '.q-next').forEach((b) => b.addEventListener('click', () => next(quiz)));
+    $$(quiz, '.q-hintbtn').forEach((b) => b.addEventListener('click', () => toggleHint(quiz)));
+  });
+
+  /* ---------- P swipe deck ---------- */
+  const DECKS = { session: ['complaint', 'staff', 'receipt', 'manage', 'budget', 'apply'], demo: ['negotiate', 'budget', 'company'] };
+  function setupSwipe(root) {
+    const kind = root.dataset.swipe;
+    const words = DECKS[kind].map((w) => BY[w]);
+    const flipEl = root.querySelector('.flip');
+    const st = { i: 0, left: 0, right: 0, flipped: false, drag: null, busy: false };
+    root._st = st;
+    const btn = (a) => root.querySelector(`[data-act="${a}"]`);
+    const setBtns = () => { ['left', 'right'].forEach((a) => { const b = btn(a); if (b) b.disabled = !st.flipped || st.busy; }); const note = root.querySelector('.p-note'); if (note) note.textContent = st.flipped ? 'Kéo lá sang trái hoặc phải, hoặc bấm nút.' : 'Lật lá trước, rồi kéo hoặc bấm.'; };
+    function render() {
+      const o = words[st.i % words.length];
+      const front = dHTML(o, o.s, kind === 'demo' ? 240 : 280).replace('<p class="m">&nbsp;</p>', `<p class="m">${o.g === 2 ? 'gặp ngoài đời' : ''}</p>`);
+      flipEl.innerHTML = `<span class="lab l">cần ôn lại</span><span class="lab r">đã biết</span><div class="inner">${front}${dBackHTML(o, o.s, kind === 'demo' ? 240 : 280)}</div>`;
+      flipEl.classList.remove('flipped'); flipEl.style.transform = ''; flipEl.style.transition = '';
+      st.flipped = false; st.busy = false;
+      const cnt = root.querySelector('.p-count'); if (cnt) cnt.textContent = `${pad(Math.min(st.i + 1, words.length), 2)} / ${pad(words.length, 2)}`;
+      root.style.setProperty('--p', (st.i / words.length).toFixed(2));
+      setBtns();
+    }
+    function flip() { if (st.busy) return; st.flipped = !st.flipped; flipEl.classList.toggle('flipped', st.flipped); setBtns(); }
+    function decide(dir) {
+      if (!st.flipped || st.busy) return;
+      st.busy = true; setBtns();
+      const pile = root.querySelector(`.pile.${dir}`);
+      const o = words[st.i % words.length];
+      const land = () => {
+        if (dir === 'left') st.left += 1; else st.right += 1;
+        if (pile) { const b = pile.querySelector('b'); b.textContent = dir === 'left' ? st.left : st.right; pile.classList.remove('bump'); void pile.offsetWidth; pile.classList.add('bump'); const stack = pile.querySelector('.stack'); if (stack && stack.children.length < 4) stack.insertAdjacentHTML('beforeend', `<span class="kback t${dir === 'left' ? 1 : Math.min(o.s + 1, 5)}" style="--wn:110"></span>`); }
+        st.i += 1;
+        if (kind === 'session' && st.i >= words.length) { finish(); return; }
+        render();
+        if (!REDUCED) flipEl.animate([{ transform: 'translateY(18px) scale(.96)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      };
+      if (REDUCED) { land(); return; }
+      const cur = new DOMMatrix(getComputedStyle(flipEl).transform);
+      const sign = dir === 'right' ? 1 : -1;
+      const anim = flipEl.animate([{ transform: cur.toString() }, { transform: `translate(${sign * 520}px, ${cur.m42 - 40}px) rotate(${sign * 24}deg)`, opacity: 0 }], { duration: 300, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
+      anim.onfinish = () => { anim.cancel(); land(); };
+    }
+    function finish() {
+      const wrap = root.querySelector('.p-wrap');
+      root.style.setProperty('--p', '1');
+      wrap.innerHTML = `<div class="p-done"><p class="mono" style="font-size:12px;color:#6d6d78;margin:0">xong phiên</p><h3>Xong ${words.length} lá.</h3><p>${st.right} lá lên một ngăn · ${st.left} lá về ngăn 1 ngày, gặp lại ngày mai.</p><button type="button" class="go" data-again>Ôn lại từ đầu</button></div>`;
+      wrap.querySelector('[data-again]').addEventListener('click', () => { const sc = root.closest('.screen'); sc._built = false; sc.innerHTML = sc._html; init(sc); });
+    }
+    flipEl.addEventListener('click', () => { if (st.drag && st.drag.moved) return; flip(); });
+    flipEl.addEventListener('pointerdown', (e) => {
+      if (!st.flipped || st.busy) return;
+      st.drag = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false, dx: 0 };
+      flipEl.setPointerCapture(e.pointerId); flipEl.classList.add('dragging'); flipEl.style.transition = 'none';
+    });
+    flipEl.addEventListener('pointermove', (e) => {
+      const d = st.drag; if (!d) return;
+      d.dx = e.clientX - d.x; const dy = (e.clientY - d.y) * 0.25;
+      if (Math.abs(d.dx) > 4) d.moved = true;
+      flipEl.style.transform = `translate(${d.dx}px, ${dy}px) rotate(${d.dx * 0.06}deg)`;
+      const l = flipEl.querySelector('.lab.l'), r = flipEl.querySelector('.lab.r');
+      l.style.opacity = Math.min(1, Math.max(0, -d.dx / 110)); r.style.opacity = Math.min(1, Math.max(0, d.dx / 110));
+    });
+    const release = () => {
+      const d = st.drag; if (!d) return;
+      st.drag = null; flipEl.classList.remove('dragging');
+      const v = Math.abs(d.dx) / Math.max(1, performance.now() - d.t);
+      if (Math.abs(d.dx) > 110 || (v > 0.5 && Math.abs(d.dx) > 30)) { decide(d.dx > 0 ? 'right' : 'left'); }
+      else { flipEl.style.transition = 'transform 420ms cubic-bezier(.34, 1.4, .64, 1)'; flipEl.style.transform = ''; $$(flipEl, '.lab').forEach((x) => { x.style.opacity = 0; }); }
+      setTimeout(() => { if (d) d.moved = false; }, 0);
+    };
+    flipEl.addEventListener('pointerup', release); flipEl.addEventListener('pointercancel', release);
+    $$(root, '[data-act]').forEach((b) => b.addEventListener('click', () => { const a = b.dataset.act; if (a === 'flip') flip(); else decide(a); }));
+    root._keys = (e) => { if (e.key === ' ') { flip(); return true; } if (e.key === 'ArrowRight') { decide('right'); return true; } if (e.key === 'ArrowLeft') { decide('left'); return true; } return false; };
+    render();
+  }
+
+  /* ---------- switcher ---------- */
+  function init(sc) {
+    if (!sc._html) sc._html = sc.innerHTML;
+    $$(sc, '.tiltable').forEach(bindTilt);
+    $$(sc, '[data-swipe]').forEach(setupSwipe);
+  }
+  function parseHash() { const m = /^#([mnop])-(landing|today|practice)$/.exec(location.hash); if (m) { cur.c = m[1]; cur.s = m[2]; } }
+  function show() {
+    clearAll();
+    $$(document, '.concept').forEach((el) => { el.hidden = el.dataset.concept !== cur.c; });
+    const concept = document.querySelector(`.concept[data-concept="${cur.c}"]`);
+    $$(concept, '.screen').forEach((sc) => { sc.hidden = sc.dataset.screen !== cur.s; sc.classList.remove('play'); });
+    const sc = concept.querySelector(`.screen[data-screen="${cur.s}"]`);
+    void sc.offsetWidth; sc.classList.add('play');
+    $$(document, '[data-pick-c]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pickC === cur.c)));
+    $$(document, '[data-pick-s]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pickS === cur.s)));
+    $$(document, '.note-set').forEach((nn) => { nn.hidden = nn.dataset.concept !== cur.c; });
+    document.querySelector('.url').textContent = URLS[cur.s];
+    $$(sc, '.count[data-to]').forEach(countUp);
+    $$(sc, '[data-quiz]').forEach(resetQuiz);
+    if (sc.querySelector('[data-swipe="session"]')) { sc.innerHTML = sc._html; init(sc); }
+    morphLoop(sc);
+    const h = `#${cur.c}-${cur.s}`;
+    if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* hash routing is a convenience */ } }
+  }
+  $$(document, '.screen').forEach(init);
+  $$(document, '[data-pick-c]').forEach((b) => b.addEventListener('click', () => { cur.c = b.dataset.pickC; show(); }));
+  $$(document, '[data-pick-s]').forEach((b) => b.addEventListener('click', () => { cur.s = b.dataset.pickS; show(); }));
+  window.addEventListener('hashchange', () => { const before = `${cur.c}-${cur.s}`; parseHash(); if (`${cur.c}-${cur.s}` !== before) show(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, [contenteditable]')) return;
+    const sc = document.querySelector('.concept:not([hidden]) .screen:not([hidden])');
+    if (!sc) return;
+    const sw = sc.querySelector('[data-swipe]');
+    const btn = e.target.closest && e.target.closest('button');
+    if (sw && sw._keys && !(btn && e.key === ' ' && !btn.closest('.screen'))) { if (sw._keys(e)) { e.preventDefault(); return; } }
+    const quiz = sc.querySelector('[data-quiz]');
+    if (!quiz) return;
+    if (btn && btn.classList.contains('opt') && e.key === 'Enter') { e.preventDefault(); if (quiz._answered) next(quiz); else answer(quiz, Number(btn.dataset.k)); return; }
+    if (btn && (e.key === 'Enter' || e.key === ' ') && !btn.classList.contains('q-next')) return;
+    if (/^[1-4]$/.test(e.key)) { answer(quiz, Number(e.key) - 1); e.preventDefault(); }
+    else if (e.key === 'Enter' && quiz._answered) { next(quiz); e.preventDefault(); }
+    else if (e.key === 'h' || e.key === 'H') toggleHint(quiz);
+  });
+  parseHash();
+  show();
+})();
+</script>

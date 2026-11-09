@@ -1,0 +1,561 @@
+<title>Landing Wordmet hiện mờ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Noto+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the first light, centred landing, made deeper: ambient glows and grain behind, a product shot with two floating cards in front, a word marquee, a bento of living demos, a glowing close. Tokens follow the UI-criteria report: Noto Sans reading, Bricolage display, one accent, yellow only behind a target word. */
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --ghost:#c9cedc; --line:#e1e5ee;
+  --accent:#2445d6; --accent-soft:#e8ecfc; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5;
+  --glow:rgba(36,69,214,.34); --glow-y:rgba(255,216,74,.42);
+  --shadow-soft:0 1px 2px rgba(27,36,68,.05),0 14px 34px -14px rgba(27,36,68,.22);
+  --shadow-lift:0 50px 110px -40px rgba(27,36,68,.38),0 12px 32px -16px rgba(27,36,68,.18);
+  --grain-blend:multiply;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --f-body:'Noto Sans',system-ui,sans-serif;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --slow:1; --px:0; --py:0;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --glow:rgba(141,162,255,.36); --glow-y:rgba(255,216,74,.14);
+  --shadow-soft:0 1px 2px rgba(0,0,0,.4),0 14px 34px -14px rgba(0,0,0,.7);
+  --shadow-lift:0 50px 110px -40px rgba(0,0,0,.9),0 12px 32px -16px rgba(0,0,0,.6); --grain-blend:soft-light; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --glow:rgba(141,162,255,.36); --glow-y:rgba(255,216,74,.14);
+  --shadow-soft:0 1px 2px rgba(0,0,0,.4),0 14px 34px -14px rgba(0,0,0,.7);
+  --shadow-lift:0 50px 110px -40px rgba(0,0,0,.9),0 12px 32px -16px rgba(0,0,0,.6); --grain-blend:soft-light; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;overflow-x:clip;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.07;mix-blend-mode:var(--grain-blend);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+p{margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.col{max-width:1160px;margin:0 auto}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+
+/* ambient glows behind a section */
+.glow{position:relative;isolation:isolate}
+.glow::before,.glow::after{content:"";position:absolute;z-index:-1;border-radius:50%;pointer-events:none;filter:blur(50px)}
+.glow::before{width:min(680px,92vw);height:440px;left:50%;top:var(--gt,60px);background:radial-gradient(closest-side,var(--glow),transparent);transform:translateX(-74%);animation:driftA calc(16s * var(--slow)) ease-in-out infinite alternate}
+.glow::after{width:min(560px,80vw);height:380px;left:50%;top:calc(var(--gt,60px) + 150px);background:radial-gradient(closest-side,var(--glow-y),transparent);transform:translateX(-16%);animation:driftB calc(19s * var(--slow)) ease-in-out infinite alternate}
+@keyframes driftA{to{transform:translate(-56%,46px) scale(1.1)}}
+@keyframes driftB{to{transform:translate(-36%,-34px) scale(.92)}}
+html.rm .glow::before,html.rm .glow::after{animation:none}
+@media (max-width:760px){.glow::before{width:80vw;left:6vw;transform:none;animation:none}.glow::after{width:66vw;left:14vw;transform:none;animation:none}}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));
+  background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px)}
+.nav .col{display:flex;align-items:center;gap:24px;height:68px}
+.logo{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.01em;text-decoration:none}
+.logo span{color:var(--accent)}
+.links{display:flex;gap:22px;margin-left:auto;font-size:15px;color:var(--muted)}
+.links a{text-decoration:none;transition:color 150ms ease}
+@media (hover:hover) and (pointer:fine){.links a:hover{color:var(--ink)}}
+.btn{font:inherit;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);text-decoration:none;cursor:pointer;
+  box-shadow:0 10px 28px -10px var(--glow),inset 0 1px 0 rgba(255,255,255,.25);transition:transform 180ms var(--ease-out),box-shadow 200ms var(--ease-out)}
+.btn.ghost{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-soft),inset 0 0 0 1px var(--line)}
+.btn svg{transition:transform 200ms var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{transform:translateY(-1px);box-shadow:0 16px 38px -10px var(--glow),0 0 0 5px color-mix(in srgb,var(--accent) 14%,transparent),inset 0 1px 0 rgba(255,255,255,.25)}
+  .btn:hover svg{transform:translateX(3px)}
+  .btn.ghost:hover{box-shadow:var(--shadow-soft),inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent),0 0 0 5px color-mix(in srgb,var(--accent) 10%,transparent)}
+}
+.btn:active{transform:scale(.97)}
+@media (max-width:720px){.links{display:none}.nav .btn{margin-left:auto;padding:9px 16px}}
+
+/* word reveal (blur → sharp) */
+.w{display:inline-block}
+.js [data-split] .w{opacity:0;filter:blur(var(--b,12px));transform:translateY(.3em)}
+.js [data-split].in .w{opacity:1;filter:blur(0);transform:none;
+  transition:opacity calc(650ms * var(--slow)) var(--ease-out),filter calc(800ms * var(--slow)) var(--ease-out),transform calc(800ms * var(--slow)) var(--ease-out);
+  transition-delay:calc((var(--d,0ms) + var(--i) * var(--st,60ms)) * var(--slow))}
+.js .rv{opacity:0;filter:blur(var(--b,16px));transform:translateY(18px) scale(.985)}
+.js .rv.in{opacity:1;filter:blur(0);transform:none;
+  transition:opacity calc(700ms * var(--slow)) var(--ease-out),filter calc(900ms * var(--slow)) var(--ease-out),transform calc(900ms * var(--slow)) var(--ease-out);
+  transition-delay:calc(var(--d,0ms) * var(--slow))}
+html.rm [data-split] .w,html.rm .rv{filter:none!important;transform:none!important}
+html.rm [data-split].in .w,html.rm .rv.in{transition:opacity calc(240ms * var(--slow)) linear!important;transition-delay:0s!important}
+
+/* hero */
+.hero{padding-block:76px 30px;display:grid;gap:22px;justify-items:center;text-align:center;--gt:30px}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--muted);padding:6px 14px 6px 8px;border-radius:99px;background:color-mix(in srgb,var(--surface) 75%,transparent);box-shadow:var(--shadow-soft),inset 0 0 0 1px var(--line);backdrop-filter:blur(10px)}
+.badge b{font-weight:600;color:var(--on-accent);background:var(--accent);border-radius:99px;padding:1px 9px;font-size:13px}
+.hero h1{font-size:clamp(40px,6.6vw,80px);font-weight:700;line-height:1.28;letter-spacing:-.025em;max-width:16ch}
+.hero h1 .acc{color:var(--accent);text-shadow:0 0 36px var(--glow)}
+.hero .sub{font-size:clamp(17px,1.6vw,19px);color:var(--muted);max-width:56ch}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* stage: product shot with two floating cards (parallax + bob) */
+.stage{position:relative;width:100%;max-width:1000px;margin-top:40px}
+.shot{position:relative;background:var(--surface);border-radius:20px;padding:20px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:18px;text-align:left;
+  box-shadow:var(--shadow-lift),0 40px 100px -50px var(--glow),inset 0 0 0 1px var(--line)}
+.shot::before{content:"";position:absolute;inset:-1px;border-radius:21px;padding:1px;pointer-events:none;
+  background:linear-gradient(140deg,var(--glow),transparent 32%,transparent 66%,var(--glow-y));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.pane{border-radius:14px;padding:18px;display:grid;gap:12px;align-content:start;min-width:0;background:var(--bg)}
+.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.lemma{font-family:var(--f-display);font-weight:700;font-size:36px;line-height:1.3}
+.ipa{color:var(--muted);font-size:16px;display:flex;align-items:center;gap:10px}
+.bars{display:inline-flex;gap:3px;align-items:center;height:18px}
+.bars i{width:3px;height:100%;border-radius:2px;background:var(--accent);transform-origin:center;animation:bar calc(900ms * var(--slow)) ease-in-out infinite;animation-delay:calc(var(--k) * -150ms)}
+@keyframes bar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+html.rm .bars i{animation:none;transform:scaleY(.6)}
+.defn{font-size:17px;line-height:1.5}
+.vi{color:var(--muted);font-size:15px}
+.ex{font-size:16px;line-height:1.6;background:var(--surface);border-radius:10px;padding:12px}
+.q{font-size:19px;line-height:1.55}
+.blank{display:inline-block;min-width:6ch;border-bottom:2px solid var(--ink)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:16px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);transition:box-shadow 250ms ease,background-color 250ms ease}
+.opt.ok{background:var(--pass-soft);box-shadow:inset 0 0 0 1.5px var(--pass),0 0 0 4px color-mix(in srgb,var(--pass) 14%,transparent),0 10px 26px -14px var(--pass)}
+.opt.no{background:var(--fail-soft);box-shadow:inset 0 0 0 1.5px var(--fail)}
+.opt .st{margin-left:auto;display:flex;align-items:center;gap:4px;font-weight:700;font-size:13px}
+.opt.ok .st{color:var(--pass)} .opt.no .st{color:var(--fail)}
+.key{font-size:12px;font-weight:700;min-width:22px;height:22px;display:inline-grid;place-items:center;border-radius:6px;background:var(--accent-soft);color:var(--accent)}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{list-style:none;margin:0;padding:0;display:flex;gap:3px}
+.ticks li{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.ticks li.d{background:var(--accent)} .ticks li.n{background:var(--ink)}
+.fly{position:absolute;z-index:2;transform:translate(calc(var(--px) * var(--depth) * 1px),calc(var(--py) * var(--depth) * 1px));transition:transform 400ms var(--ease-out)}
+.fly .card{background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:16px;padding:14px 16px;text-align:left;
+  box-shadow:var(--shadow-lift),0 20px 60px -30px var(--glow),inset 0 0 0 1px var(--line);animation:bob calc(6s * var(--slow)) ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(-5px) rotate(var(--rot))}to{transform:translateY(6px) rotate(var(--rot))}}
+html.rm .fly .card{animation:none;transform:rotate(var(--rot))}
+.fly-a{left:-120px;top:-74px;--depth:14}.fly-a .card{--rot:-5deg;width:230px}
+.fly-b{right:-48px;bottom:-40px;--depth:22}.fly-b .card{--rot:4deg;width:250px;animation-delay:-2s}
+.fly .card .h{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+.fly .mini-chips{display:flex;flex-wrap:wrap;gap:5px}
+.fly .mini-chips span{font-size:13px;padding:2px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.fly .mini-chips span.more{background:var(--bg);color:var(--muted)}
+.lane{display:flex;gap:4px;margin:6px 0 8px}
+.lane i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+.lane i.on{background:var(--accent);box-shadow:0 0 12px var(--glow)}
+.fly .big{font-family:var(--f-display);font-weight:700;font-size:20px}
+@media (max-width:900px){.fly-a{left:-8px;top:-46px}.fly-b{right:-8px;bottom:-56px}}
+@media (max-width:760px){.shot{grid-template-columns:minmax(0,1fr);padding:14px}.opts{grid-template-columns:minmax(0,1fr)}.fly-a .card{width:200px}.fly-b{display:none}}
+
+/* word marquee */
+.marq{margin-top:110px;display:grid;gap:12px;-webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);overflow:hidden;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)))}
+.track{display:flex;gap:10px;width:max-content;animation:slide calc(52s * var(--slow)) linear infinite}
+.track.r{animation-duration:calc(64s * var(--slow));animation-direction:reverse}
+@keyframes slide{to{transform:translateX(-50%)}}
+html.rm .track{animation:none}
+.wd{display:inline-flex;align-items:baseline;gap:8px;padding:10px 16px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow-soft),inset 0 0 0 1px var(--line);white-space:nowrap}
+.wd b{font-family:var(--f-display);font-weight:700;font-size:18px}
+.wd span{font-size:13px;color:var(--muted)}
+.wd.hot{background:var(--accent-soft);box-shadow:0 10px 30px -16px var(--glow),inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+.wd.hot b{color:var(--accent)}
+
+/* manifesto: words tint as you scroll */
+.mf{padding-block:120px 70px}
+.mf p{font-family:var(--f-display);font-weight:600;font-size:clamp(26px,3.4vw,44px);line-height:1.42;letter-spacing:-.01em;max-width:24ch;margin:0 auto;text-align:center}
+.mf .t{color:var(--ghost);transition:color calc(220ms * var(--slow)) ease,text-shadow calc(400ms * var(--slow)) ease}
+.mf .t.on{color:var(--ink)}
+.mf .t.acc.on{color:var(--accent);text-shadow:0 0 28px var(--glow)}
+html.rm .mf .t{color:var(--ink);transition:none}
+html.rm .mf .t.acc{color:var(--accent)}
+
+/* deck: cards fly in on arrival */
+.sc{padding-block:90px 90px;display:grid;gap:44px;justify-items:center;text-align:center;--gt:170px}
+.sc-head{display:grid;gap:10px;justify-items:center}
+.sec-h{font-size:clamp(30px,4.2vw,52px);font-weight:700;line-height:1.28;letter-spacing:-.02em}
+.sec-p{color:var(--muted);max-width:48ch;font-size:17px}
+.deck{display:grid;grid-template-columns:repeat(4,minmax(0,210px));gap:14px;perspective:1400px;text-align:left}
+.chip{position:relative;height:74px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;border-radius:14px;
+  background:radial-gradient(220px circle at var(--mx,-300px) var(--my,-300px),color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%),var(--surface);
+  box-shadow:var(--shadow-soft),inset 0 0 0 1px var(--line);transition:transform 220ms var(--ease-out),box-shadow 220ms var(--ease-out)}
+.chip::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:0 0 0 1.5px var(--accent),0 0 28px 3px var(--glow)}
+.chip.lit::after{animation:glowPulse calc(1100ms * var(--slow)) ease-out}
+@keyframes glowPulse{0%{opacity:0}22%{opacity:1}100%{opacity:0}}
+.chip b{font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.3}
+.chip span{font-size:13px;color:var(--muted)}
+@media (hover:hover) and (pointer:fine){
+  .deck.flown .chip:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft),inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent),0 18px 40px -16px var(--glow)}
+}
+.js .deck:not(.flown) .chip{opacity:0}
+.sc-cap{font-size:14px;color:var(--muted);padding:7px 14px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow-soft);
+  opacity:0;transform:translateY(8px);transition:opacity calc(500ms * var(--slow)) var(--ease-out),transform calc(500ms * var(--slow)) var(--ease-out)}
+.sc.done .sc-cap,html.rm .sc-cap,html:not(.js) .sc-cap{opacity:1;transform:none}
+@media (max-width:760px){.deck{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}.chip{height:64px;padding:8px 12px}.chip b{font-size:16px}}
+
+/* bento of living demos */
+.bento{padding-block:110px 60px;display:grid;gap:40px}
+.bento .head{display:grid;gap:10px;justify-items:center;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(220px,auto);gap:16px}
+.tile{position:relative;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px;overflow:hidden;
+  background:radial-gradient(360px circle at var(--mx,-400px) var(--my,-400px),color-mix(in srgb,var(--accent) 10%,transparent),transparent 70%),var(--surface);
+  box-shadow:var(--shadow-soft),inset 0 0 0 1px var(--line);transition:transform 260ms var(--ease-out),box-shadow 260ms var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.js .tile.rv.in:hover,html:not(.js) .tile:hover{transform:translateY(-4px);transition:transform 260ms var(--ease-out),box-shadow 260ms var(--ease-out);transition-delay:0s;
+  box-shadow:var(--shadow-lift),inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),0 24px 60px -30px var(--glow)}}
+.tile .when{font-size:13px;font-weight:600;color:var(--accent)}
+.tile h3{font-size:24px;font-weight:700;line-height:1.3}
+.tile p.d{color:var(--muted);max-width:40ch}
+.t-drill{grid-column:1 / 3;grid-row:1 / 3}
+.t-add{grid-column:3}
+.t-say{grid-column:3}
+.t-sched{grid-column:1 / 4}
+.demo{margin-top:auto;border-radius:14px;background:var(--bg);padding:16px;display:grid;gap:12px}
+.t-drill .demo .q{font-size:clamp(18px,1.8vw,22px);padding-block:10px}
+.score{display:flex;flex-wrap:wrap;gap:8px}
+.score span{font-size:13px;color:var(--muted);background:var(--surface);border-radius:99px;padding:4px 12px;box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-weight:600}
+.typed{font-size:17px;padding:10px 12px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);min-height:46px;display:flex;align-items:center}
+.typed .caret{display:inline-block;width:2px;height:1.1em;background:var(--accent);margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.result{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow-soft);
+  opacity:0;transform:translateY(8px);filter:blur(6px);transition:opacity 400ms var(--ease-out),transform 400ms var(--ease-out),filter 400ms var(--ease-out)}
+.result.show{opacity:1;transform:none;filter:blur(0)}
+.result b{font-family:var(--f-display);font-size:18px}
+.result span{font-size:13px;color:var(--muted)}
+.say-row{display:flex;align-items:center;gap:14px}
+.say-btn{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--accent);color:var(--on-accent);box-shadow:0 0 0 0 var(--glow);animation:ping calc(2.4s * var(--slow)) ease-out infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 var(--glow)}70%{box-shadow:0 0 0 16px transparent}100%{box-shadow:0 0 0 0 transparent}}
+html.rm .say-btn{animation:none}
+.say-row .lemma{font-size:28px}
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.stg{border-radius:12px;padding:14px;background:var(--bg);display:grid;gap:4px;transition:background-color 300ms ease,box-shadow 300ms ease,color 300ms ease}
+.stg b{font-family:var(--f-display);font-size:22px}
+.stg span{font-size:13px;color:var(--muted)}
+.stg.on{background:var(--accent);color:var(--on-accent);box-shadow:0 14px 34px -14px var(--glow)}
+.stg.on span{color:color-mix(in srgb,var(--on-accent) 80%,transparent)}
+@media (max-width:900px){.grid{grid-template-columns:1fr 1fr}.t-drill{grid-column:1 / -1;grid-row:auto}.t-add,.t-say{grid-column:auto}.t-sched{grid-column:1 / -1}}
+@media (max-width:620px){.grid{grid-template-columns:1fr}.t-add,.t-say{grid-column:1}.stages{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* close: a card with a travelling glow on its edge */
+.cta{padding-block:90px 110px;--gt:10px}
+.cta-card{position:relative;isolation:isolate;max-width:920px;margin:0 auto;border-radius:28px;padding:clamp(36px,6vw,72px);display:grid;gap:20px;justify-items:center;text-align:center;background:var(--surface);box-shadow:var(--shadow-lift)}
+.cta-card::before{content:"";position:absolute;inset:-1.5px;border-radius:inherit;padding:1.5px;pointer-events:none;
+  background:conic-gradient(from var(--ang),transparent 0 58%,var(--accent) 74%,var(--mark) 82%,transparent 94%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:spin calc(6s * var(--slow)) linear infinite}
+.cta-card::after{content:"";position:absolute;inset:8%;z-index:-1;border-radius:inherit;background:conic-gradient(from var(--ang),transparent 0 58%,var(--glow) 74%,var(--glow-y) 82%,transparent 94%);filter:blur(40px);animation:spin calc(6s * var(--slow)) linear infinite}
+@keyframes spin{to{--ang:360deg}}
+html.rm .cta-card::before,html.rm .cta-card::after{animation:none}
+.cta-card h2{font-size:clamp(32px,4.8vw,60px);font-weight:700;line-height:1.26;max-width:18ch;letter-spacing:-.02em}
+.cta-card p{color:var(--muted);max-width:44ch}
+
+footer{padding-block:30px 120px;overflow:hidden}
+.wm{font-family:var(--f-display);font-weight:800;font-size:clamp(72px,19vw,260px);line-height:1.12;letter-spacing:-.04em;text-align:center;white-space:nowrap}
+.wm .w{--b:22px;color:transparent;background:linear-gradient(180deg,var(--ink) 15%,color-mix(in srgb,var(--ink) 18%,transparent));-webkit-background-clip:text;background-clip:text}
+.fl{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;font-size:14px;color:var(--muted)}
+
+/* demo controls */
+.ctl{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:30;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);border-radius:14px;padding:12px 14px;display:grid;gap:6px;font-size:13px;
+  box-shadow:var(--shadow-lift),inset 0 0 0 1px var(--line)}
+.ctl b{font-size:13px}
+.ctl label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.ctl button{font:inherit;font-size:13px;padding:5px 10px;border-radius:99px;border:0;background:var(--accent-soft);color:var(--accent);cursor:pointer}
+@media (max-width:860px){.ctl{display:none}}
+</style>
+
+<nav class="nav" aria-label="Chính">
+  <div class="col">
+    <a class="logo" href="#top">Word<span>met</span></a>
+    <div class="links"><a href="#bo-the">Bộ thẻ</a><a href="#cach-hoc">Cách học</a><a href="#bat-dau">Giá</a></div>
+    <a class="btn" href="#bat-dau">Dùng thử</a>
+  </div>
+</nav>
+
+<main id="top">
+  <section class="hero col glow" id="hero" aria-labelledby="h-hero">
+    <span class="badge rv" style="--d:0ms;--b:8px"><b>IELTS</b>Từ vựng cho người đang luyện đề</span>
+    <h1 id="h-hero" data-split style="--d:120ms">Từ gặp trong đề, <span class="acc">dùng được</span> trong bài.</h1>
+    <p class="sub rv" style="--d:620ms;--b:10px">Gõ từ vừa gặp, Wordmet có sẵn định nghĩa tiếng Anh, câu mẫu và phiên âm. Thời gian còn lại dành cho việc điền và gõ từ vào câu.</p>
+    <div class="ctas rv" style="--d:760ms;--b:8px"><a class="btn" href="#bat-dau">Bắt đầu miễn phí <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a class="btn ghost" href="#cach-hoc">Xem cách học</a></div>
+
+    <div class="stage rv" style="--d:880ms;--b:24px">
+      <div class="shot" aria-label="Ảnh minh họa màn học">
+        <div class="pane">
+          <div class="lbl">Thẻ từ · ngăn 3 ngày</div>
+          <div><div class="lemma">mitigate</div><div class="ipa">verb · /ˈmɪt.ɪ.ɡeɪt/ <span class="bars" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i></span></div></div>
+          <p class="defn">to make something bad less serious</p>
+          <p class="vi">giảm nhẹ</p>
+          <p class="ex">Planting trees can help <mark>mitigate</mark> the effects of urban heat.</p>
+        </div>
+        <div class="pane">
+          <div class="meta"><span class="lbl">Điền từ vào câu</span><span>Câu 4/20</span></div>
+          <ol class="ticks" aria-hidden="true"><li class="d"></li><li class="d"></li><li class="d"></li><li class="n"></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ol>
+          <p class="q">Cities need clear plans to <mark>mitigate</mark> the risk of flooding.</p>
+          <div class="opts">
+            <div class="opt ok"><span class="key">1</span>mitigate<span class="st"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Đúng</span></div>
+            <div class="opt"><span class="key">2</span>fluctuate</div>
+            <div class="opt"><span class="key">3</span>deteriorate</div>
+            <div class="opt"><span class="key">4</span>advocate</div>
+          </div>
+          <div class="meta"><span>Enter: câu tiếp</span><span>H: gợi ý</span></div>
+        </div>
+      </div>
+      <div class="fly fly-a" aria-hidden="true"><div class="card"><div class="h"><span>Đề 12 · Writing</span><span>vừa thêm</span></div>
+        <div class="mini-chips"><span>mitigate</span><span>allocate</span><span>viable</span><span>scrutiny</span><span class="more">+14 từ</span></div></div></div>
+      <div class="fly fly-b" aria-hidden="true"><div class="card"><div class="h"><span>deteriorate</span><span>lên ngăn</span></div>
+        <div class="lane"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><div class="big">7 ngày</div></div></div>
+    </div>
+  </section>
+
+  <section class="marq" aria-label="Từ thường gặp trong đề IELTS">
+    <div class="track" id="tr1"></div>
+    <div class="track r" id="tr2"></div>
+  </section>
+
+  <section class="mf col" aria-label="Vì sao có Wordmet">
+    <p id="mf">Mỗi đề IELTS để lại vài chục từ lạ. Bạn tra Cambridge, chép định nghĩa, collocation và câu mẫu, mỗi từ [[3–5 phút.]] Ôn mãi thì thuộc mặt chữ, nhưng khi viết vẫn [[không dùng được.]] Wordmet làm phần chép, để bạn dành giờ học cho [[phần dùng.]]</p>
+  </section>
+
+  <section class="sc col glow" id="bo-the" aria-labelledby="h-sc">
+    <div class="sc-head"><h2 class="sec-h" id="h-sc" data-split style="--st:70ms">Một đề, một bộ thẻ.</h2><p class="sec-p rv" style="--d:300ms;--b:8px">Từ rời rạc sau mỗi bài làm xếp thành một nhóm, có lịch ôn riêng.</p></div>
+    <div class="deck" id="deck" aria-label="12 từ của đề 12"></div>
+    <div class="sc-cap" id="cap">IELTS Writing · Đề 12 · 12 từ · ôn lần đầu ngày mai</div>
+  </section>
+
+  <section class="bento col" id="cach-hoc" aria-labelledby="h-bento">
+    <div class="head"><h2 class="sec-h" id="h-bento" data-split>Một buổi học trên Wordmet</h2><p class="sec-p rv" style="--d:250ms;--b:8px">Từ lúc gặp từ trong đề tới lúc từ nằm lại trong trí nhớ.</p></div>
+    <div class="grid">
+      <article class="tile t-drill rv" style="--d:0ms">
+        <span class="when">Trong buổi học</span><h3>Luyện trong câu</h3>
+        <p class="d">Điền và gõ từ vào câu thật, không chỉ chọn nghĩa. Sai thì thấy ngay đáp án đặt trong câu.</p>
+        <div class="demo" id="dDrill">
+          <div class="meta"><span>Điền từ vào câu</span><span>Câu 7/20</span></div>
+          <ol class="ticks" aria-hidden="true"><li class="d"></li><li class="d"></li><li class="d"></li><li class="d"></li><li class="d"></li><li class="d"></li><li class="n"></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ol>
+          <div class="score"><span><b>5</b> đúng</span><span><b>1</b> sai</span><span><b>13</b> câu còn lại</span><span><b>2</b> từ lên ngăn 7 ngày</span></div>
+          <p class="q" id="dq">Air quality tends to <span class="blank">&nbsp;</span> in the dry season.</p>
+          <div class="opts" id="dopts"><div class="opt"><span class="key">1</span>deteriorate<span class="st"></span></div><div class="opt"><span class="key">2</span>allocate<span class="st"></span></div><div class="opt"><span class="key">3</span>advocate<span class="st"></span></div><div class="opt"><span class="key">4</span>mitigate<span class="st"></span></div></div>
+        </div>
+      </article>
+      <article class="tile t-add rv" style="--d:120ms">
+        <span class="when">Sau khi làm đề</span><h3>Ghi từ</h3>
+        <p class="d">Gõ cả dạng đã chia. Wordmet đưa về từ gốc.</p>
+        <div class="demo" id="dAdd"><div class="typed"><span id="typed"></span><span class="caret" aria-hidden="true"></span></div>
+          <div class="result" id="res"><b>deteriorate</b><span>verb · xấu đi</span></div></div>
+      </article>
+      <article class="tile t-say rv" style="--d:220ms">
+        <span class="when">Mỗi thẻ</span><h3>Nghe và đọc phiên âm</h3>
+        <div class="demo"><div class="say-row"><span class="say-btn" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+          <div><div class="lemma">viable</div><div class="ipa">/ˈvaɪ.ə.bəl/ <span class="bars" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i></span></div></div></div></div>
+      </article>
+      <article class="tile t-sched rv" style="--d:300ms">
+        <span class="when">Những ngày sau</span><h3>Ôn đúng lúc</h3>
+        <p class="d">Nhớ thì lên ngăn kế tiếp, quên thì quay về ngăn 1 ngày. Hôm nay chỉ hiện những từ đến hạn.</p>
+        <div class="stages" id="stages"><div class="stg on"><b>1 ngày</b><span>ôn lần đầu</span></div><div class="stg"><b>3 ngày</b><span>nhớ lần hai</span></div><div class="stg"><b>7 ngày</b><span>quen mặt</span></div><div class="stg"><b>14 ngày</b><span>dùng được</span></div><div class="stg"><b>30 ngày</b><span>nhớ lâu</span></div></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="cta col glow" id="bat-dau" aria-labelledby="h-cta">
+    <div class="cta-card rv">
+      <h2 id="h-cta" data-split>Bắt đầu với đề bạn vừa làm.</h2>
+      <p>Miễn phí 3 phiên luyện mỗi ngày. Không cần thẻ thanh toán.</p>
+      <a class="btn" href="#top">Tạo tài khoản miễn phí <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="col">
+    <div class="wm" data-split="chars" style="--st:45ms" aria-label="Wordmet">Wordmet</div>
+    <div class="fl"><span>Mockup motion · 07/11/2026</span><span>Nội dung chữ sẽ viết lại</span></div>
+  </div>
+</footer>
+
+<div class="ctl" role="group" aria-label="Xem motion">
+  <b>Xem motion</b>
+  <button type="button" id="replay">Phát lại phần đầu</button>
+  <button type="button" id="replayDeck">Cho bộ thẻ bay lại</button>
+  <label><input type="checkbox" id="slow"> Chậm ×4</label>
+  <label><input type="checkbox" id="rm"> Giảm chuyển động</label>
+</div>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var mq = matchMedia('(prefers-reduced-motion: reduce)');
+  var rmBox = document.getElementById('rm'), slowBox = document.getElementById('slow');
+  var slow = function(){ return parseFloat(getComputedStyle(root).getPropertyValue('--slow')) || 1; };
+  var isRm = function(){ return root.classList.contains('rm'); };
+  function clamp(x){ return Math.max(0, Math.min(1, x)); }
+
+  /* split headings into words (or letters) */
+  document.querySelectorAll('[data-split]').forEach(function(el){
+    var chars = el.dataset.split === 'chars', i = 0;
+    function wrap(text){
+      var frag = document.createDocumentFragment();
+      (chars ? text.split('') : text.split(/(\s+)/)).forEach(function(p){
+        if (!p) return;
+        if (/^\s+$/.test(p)) { frag.appendChild(document.createTextNode(p)); return; }
+        var s = document.createElement('span'); s.className = 'w'; s.textContent = p; s.style.setProperty('--i', i++); s.setAttribute('aria-hidden', 'true'); frag.appendChild(s);
+      });
+      return frag;
+    }
+    if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+    Array.from(el.childNodes).forEach(function(n){
+      if (n.nodeType === 3) el.replaceChild(wrap(n.textContent), n);
+      else if (n.nodeType === 1) { var t = n.textContent; n.textContent = ''; n.appendChild(wrap(t)); }
+    });
+  });
+
+  /* manifesto words; [[...]] marks the accent phrase */
+  var mf = document.getElementById('mf'), src = mf.textContent, words = [];
+  mf.setAttribute('aria-label', src.replace(/\[\[|\]\]/g, ''));
+  mf.textContent = '';
+  src.split(/(\[\[.*?\]\])/).forEach(function(seg){
+    var acc = /^\[\[/.test(seg); seg = seg.replace(/\[\[|\]\]/g, '');
+    seg.split(/(\s+)/).forEach(function(p){
+      if (!p) return;
+      if (/^\s+$/.test(p)) { mf.appendChild(document.createTextNode(' ')); return; }
+      var s = document.createElement('span'); s.className = 't' + (acc ? ' acc' : ''); s.textContent = p; s.setAttribute('aria-hidden', 'true'); mf.appendChild(s); words.push(s);
+    });
+  });
+  function drawManifesto(){
+    if (isRm()) return;
+    var r = mf.getBoundingClientRect(), vh = innerHeight;
+    var n = Math.round(clamp((vh * .82 - r.top) / (r.height + vh * .3)) * words.length);
+    words.forEach(function(w, k){ w.classList.toggle('on', k < n); });
+  }
+
+  /* marquee rows */
+  var M1 = [['mitigate','verb'],['allocate','verb'],['substantial','adj'],['deteriorate','verb'],['inevitable','adj'],['viable','adj'],['prevalent','adj'],['reluctant','adj'],['advocate','verb']];
+  var M2 = [['scrutiny','noun'],['fluctuate','verb'],['coherent','adj'],['detrimental','adj'],['alleviate','verb'],['incentive','noun'],['undermine','verb'],['feasible','adj'],['consensus','noun']];
+  function fillTrack(el, arr, hot){
+    var html = arr.map(function(w, k){ return '<span class="wd' + (k % hot === 1 ? ' hot' : '') + '"><b>' + w[0] + '</b><span>' + w[1] + '</span></span>'; }).join('');
+    el.innerHTML = html + html.replace(/class="wd/g, 'aria-hidden="true" class="wd');
+  }
+  fillTrack(document.getElementById('tr1'), M1, 4); fillTrack(document.getElementById('tr2'), M2, 3);
+
+  /* entrances */
+  var hero = document.querySelectorAll('.hero [data-split], .hero .rv');
+  function playHero(){
+    hero.forEach(function(el){ el.classList.remove('in'); }); void document.body.offsetWidth;
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ hero.forEach(function(el){ el.classList.add('in'); }); }); });
+  }
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .22, rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('[data-split], .rv').forEach(function(el){ if (!el.closest('.hero')) io.observe(el); });
+
+  /* parallax on the hero stage, spotlight on cards (fine pointers only) */
+  var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var heroEl = document.getElementById('hero');
+  if (fine) {
+    heroEl.addEventListener('pointermove', function(e){
+      if (isRm()) return;
+      var r = heroEl.getBoundingClientRect();
+      root.style.setProperty('--px', (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+      root.style.setProperty('--py', (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+    });
+    document.addEventListener('pointermove', function(e){
+      var t = e.target.closest && e.target.closest('.tile, .chip'); if (!t) return;
+      var r = t.getBoundingClientRect(); t.style.setProperty('--mx', (e.clientX - r.left) + 'px'); t.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  }
+
+  /* deck: chips fly in from depth the moment the section arrives */
+  var DATA = [['mitigate','verb · giảm nhẹ'],['allocate','verb · phân bổ'],['substantial','adj · đáng kể'],['deteriorate','verb · xấu đi'],['inevitable','adj · không tránh được'],['viable','adj · khả thi'],
+              ['prevalent','adj · phổ biến'],['reluctant','adj · miễn cưỡng'],['advocate','verb · ủng hộ'],['scrutiny','noun · sự xem xét kỹ'],['fluctuate','verb · dao động'],['coherent','adj · mạch lạc']];
+  var sc = document.getElementById('bo-the'), deck = document.getElementById('deck');
+  var seed = 11; function rnd(){ seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var chips = DATA.map(function(d){
+    var c = document.createElement('div'); c.className = 'chip'; c.innerHTML = '<b>' + d[0] + '</b><span>' + d[1] + '</span>'; deck.appendChild(c);
+    return { el: c, jx: rnd() - .5, jy: rnd() - .5, z: rnd(), rx: (rnd() - .5) * 70, ry: (rnd() - .5) * 70, rz: (rnd() - .5) * 40, b: 8 + rnd() * 10, order: rnd() };
+  });
+  var flying = false, anims = [];
+  function fly(){
+    anims.forEach(function(a){ a.cancel(); }); anims = [];
+    sc.classList.remove('done'); chips.forEach(function(c){ c.el.classList.remove('lit'); });
+    deck.classList.add('flown');
+    if (isRm()) { sc.classList.add('done'); return; }
+    flying = true;
+    var d = deck.getBoundingClientRect(), cx = d.left + d.width / 2, cy = d.top + d.height / 2, s = slow();
+    var ranked = chips.slice().sort(function(a, b){ return a.order - b.order; });
+    ranked.forEach(function(c, k){
+      var r = c.el.getBoundingClientRect(), ox = r.left + r.width / 2 - cx, oy = r.top + r.height / 2 - cy;
+      var a = c.el.animate([
+        { transform: 'translate3d(' + (ox * 1.6 + c.jx * 520) + 'px,' + (oy * 2.4 + c.jy * 260) + 'px,' + (-260 - c.z * 520) + 'px) rotateX(' + c.rx + 'deg) rotateY(' + c.ry + 'deg) rotate(' + c.rz + 'deg) scale(.82)', filter: 'blur(' + c.b + 'px)', opacity: 0 },
+        { opacity: 1, offset: .45 },
+        { transform: 'none', filter: 'blur(0px)', opacity: 1 }
+      ], { duration: 1150 * s, delay: k * 55 * s, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'backwards' });
+      a.onfinish = function(){ c.el.classList.remove('lit'); void c.el.offsetWidth; c.el.classList.add('lit'); if (k === ranked.length - 1) { flying = false; sc.classList.add('done'); } };
+      anims.push(a);
+    });
+  }
+  new IntersectionObserver(function(es){ es.forEach(function(e){
+    if (e.isIntersecting && !deck.classList.contains('flown')) fly();
+    else if (!e.isIntersecting && !flying && !isRm()) { deck.classList.remove('flown'); sc.classList.remove('done'); }
+  }); }, { threshold: .3 }).observe(deck);
+
+  /* bento loops, running only while visible */
+  var OK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var NO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var loops = [];
+  function loop(el, step){ var o = { el: el, step: step, timer: 0, on: false }; loops.push(o); return o; }
+  function wait(o, ms, fn){ clearTimeout(o.timer); o.timer = setTimeout(function(){ if (o.on) fn(); }, ms * slow()); }
+  loop(document.getElementById('dDrill'), function(o){
+    var opts = o.el.querySelectorAll('.opt'), q = document.getElementById('dq');
+    opts.forEach(function(b){ b.className = 'opt'; b.querySelector('.st').innerHTML = ''; });
+    q.innerHTML = 'Air quality tends to <span class="blank">&nbsp;</span> in the dry season.';
+    wait(o, 1200, function(){
+      opts[3].classList.add('no'); opts[3].querySelector('.st').innerHTML = NO + 'Sai';
+      wait(o, 900, function(){
+        opts[0].classList.add('ok'); opts[0].querySelector('.st').innerHTML = OK + 'Đúng';
+        q.innerHTML = 'Air quality tends to <mark>deteriorate</mark> in the dry season.';
+        wait(o, 2600, function(){ o.step(o); });
+      });
+    });
+  });
+  loop(document.getElementById('dAdd'), function(o){
+    var t = document.getElementById('typed'), res = document.getElementById('res'), word = 'deteriorated', k = 0;
+    t.textContent = ''; res.classList.remove('show');
+    (function type(){ if (!o.on) return; t.textContent = word.slice(0, ++k); if (k < word.length) wait(o, 85, type); else wait(o, 450, function(){ res.classList.add('show'); wait(o, 2600, function(){ o.step(o); }); }); })();
+  });
+  loop(document.getElementById('stages'), function(o){
+    var s = o.el.querySelectorAll('.stg'); o.i = ((o.i || 0) + 1) % s.length;
+    s.forEach(function(x, j){ x.classList.toggle('on', j === o.i); });
+    wait(o, 1300, function(){ o.step(o); });
+  });
+  function settle(){
+    var opts = document.querySelectorAll('#dopts .opt');
+    opts.forEach(function(b){ b.className = 'opt'; b.querySelector('.st').innerHTML = ''; });
+    opts[0].className = 'opt ok'; opts[0].querySelector('.st').innerHTML = OK + 'Đúng';
+    document.getElementById('dq').innerHTML = 'Air quality tends to <mark>deteriorate</mark> in the dry season.';
+    document.getElementById('typed').textContent = 'deteriorated'; document.getElementById('res').classList.add('show');
+  }
+  var lio = new IntersectionObserver(function(es){ es.forEach(function(e){
+    var o = loops.filter(function(x){ return x.el === e.target; })[0]; if (!o) return;
+    if (e.isIntersecting && !o.on && !isRm()) { o.on = true; o.step(o); }
+    else if (!e.isIntersecting) { o.on = false; clearTimeout(o.timer); }
+  }); }, { threshold: .3 });
+  loops.forEach(function(o){ lio.observe(o.el); });
+
+  var ticking = false;
+  addEventListener('scroll', function(){ if (ticking) return; ticking = true; requestAnimationFrame(function(){ ticking = false; drawManifesto(); }); }, { passive: true });
+
+  function setRm(on){
+    root.classList.toggle('rm', on); rmBox.checked = on;
+    if (on) {
+      anims.forEach(function(a){ a.finish(); }); deck.classList.add('flown'); sc.classList.add('done'); words.forEach(function(w){ w.classList.add('on'); });
+      loops.forEach(function(o){ o.on = false; clearTimeout(o.timer); }); settle(); root.style.setProperty('--px', 0); root.style.setProperty('--py', 0);
+    } else { loops.forEach(function(o){ var r = o.el.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight && !o.on) { o.on = true; o.step(o); } }); }
+    drawManifesto();
+  }
+  document.getElementById('replay').addEventListener('click', function(){ scrollTo({ top: 0, behavior: 'instant' }); playHero(); });
+  document.getElementById('replayDeck').addEventListener('click', function(){ var y = sc.getBoundingClientRect().top + scrollY - 80; scrollTo({ top: y, behavior: 'instant' }); setTimeout(fly, 60); });
+  slowBox.addEventListener('change', function(){ root.style.setProperty('--slow', slowBox.checked ? 4 : 1); slowBox.blur(); });
+  rmBox.addEventListener('change', function(){ setRm(rmBox.checked); rmBox.blur(); });
+
+  setRm(mq.matches); drawManifesto();
+  var started = false;
+  function start(){ if (started) return; started = true; playHero(); }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(start);
+  setTimeout(start, 1200);
+})();
+</script>

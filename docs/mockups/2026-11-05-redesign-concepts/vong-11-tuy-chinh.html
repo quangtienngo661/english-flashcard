@@ -1,0 +1,507 @@
+<title>Tùy chỉnh phiên: 5 bố cục</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: chooser (5 layouts × plan × device), one scaled device with the dialog over a dimmed Luyện tập page, notes per layout. */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#dde1ea; --ghost:#c9cedc;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --frame:#e9ebf1;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif; --f-body:'Noto Sans',system-ui,sans-serif;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --shadow-card:0 1px 2px rgb(30 58 138 / .06),0 16px 34px -20px rgb(30 58 138 / .34);
+  --shadow-pop:0 2px 6px rgb(30 58 138 / .10),0 30px 70px -26px rgb(30 58 138 / .50);
+  --scrim:rgb(27 36 68 / .30); --sel:color-mix(in srgb,var(--accent) 6%,var(--surface));
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 18px 36px -20px rgb(0 0 0 / .85); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --scrim:rgb(0 0 0 / .55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 18px 36px -20px rgb(0 0 0 / .85); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --scrim:rgb(0 0 0 / .55); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--frame);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+.mu{color:var(--muted)}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:18px}
+.intro{display:grid;gap:8px;max-width:78ch}
+.intro h1{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.intro p{color:var(--muted)}
+.vrow{font-size:14px;font-weight:600;color:var(--muted)}
+.choose{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;text-align:left}
+.chip small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.stage{position:relative;overflow:hidden;border-radius:20px;justify-self:center}
+.scaler{transform-origin:top left;width:max-content}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.notes section{background:var(--surface);border-radius:16px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.notes h3{font-size:16px;font-weight:700}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--muted);line-height:1.5}
+.notes b{color:var(--ink);font-weight:600}
+.notes .wide{grid-column:1 / -1}
+@media (max-width:900px){.notes{grid-template-columns:1fr}}
+
+/* ===== device: dimmed Luyện tập page behind the dialog ===== */
+.dev{position:relative;overflow:hidden;background:var(--bg)}
+.dev.desk{width:1200px;height:960px} .dev.phone{width:390px;height:844px}
+.back{position:absolute;inset:0;padding:96px 60px;display:grid;gap:20px;align-content:start;background-image:radial-gradient(color-mix(in srgb,var(--ink) 11%,transparent) 1.1px,transparent 1.4px);background-size:20px 20px}
+.back .bar{position:absolute;left:0;right:0;top:0;height:64px;background:color-mix(in srgb,var(--surface) 70%,transparent);border-bottom:1px solid var(--line)}
+.back h2{font-size:44px;font-weight:700;letter-spacing:-.03em}
+.back .blk{background:var(--surface);border:1px solid var(--line);border-radius:18px;height:220px;box-shadow:var(--shadow-card)}
+.back .row{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.phone .back{padding:76px 16px} .phone .back h2{font-size:30px} .phone .back .row{grid-template-columns:1fr}
+.scrim{position:absolute;inset:0;background:var(--scrim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+
+/* ===== dialog shell =====
+   Rules from ui-best-practices.md:
+   type 24 / 16 / 14 (+12 for badges); weights 400 / 600 / 700; Noto Sans + Bricolage only;
+   spacing 4 · 8 · 12 · 16 · 24 · 32; radius: buttons full pill, cards 14–28, fields 10;
+   groups split by white space, not lines; navy only for the start button, links, focus and small selection marks;
+   phone tap targets ≥ 44 px; motion only on transform and opacity. */
+.dlg{--fs-title:24px;--fs-body:16px;--fs-small:14px;--fs-badge:12px;--ctl-line:color-mix(in srgb,var(--muted) 70%,var(--surface));--on-line:color-mix(in srgb,var(--accent) 45%,var(--line));
+  position:absolute;left:50%;top:40px;transform:translateX(-50%);width:600px;max-height:880px;background:var(--surface);border-radius:24px;box-shadow:var(--shadow-pop);display:flex;flex-direction:column;overflow:hidden;font-size:var(--fs-body);line-height:1.6}
+.dlg.wide{width:820px}
+.phone .dlg,.phone .dlg.wide{left:0;right:0;top:auto;bottom:0;width:auto;transform:none;max-height:788px;border-radius:24px 24px 0 0}
+.grab{display:none;width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0}
+.phone .grab{display:block}
+.dh{display:flex;align-items:center;gap:8px;padding:24px 24px 8px}
+.phone .dh{padding:8px 16px 8px}
+.dh h2{font-size:var(--fs-title);font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.dh .src{color:var(--muted)}
+.x{margin-left:auto;width:40px;height:40px;border-radius:50%;border:0;background:var(--bg);display:grid;place-items:center;color:var(--muted);flex:none}
+.phone .x{width:44px;height:44px}
+.bd{flex:1;overflow:auto;padding:8px 24px 24px;display:grid;gap:24px;align-content:start}
+.phone .bd{padding:8px 16px 16px}
+.ft{padding:16px 24px 24px;display:grid;gap:8px;background:var(--surface);box-shadow:0 -16px 16px -16px rgb(27 36 68 / .16)}
+.phone .ft{padding:12px 16px 16px}
+.ft .sum{font-size:var(--fs-small);color:var(--muted)}
+.ft .sum b{color:var(--ink);font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:var(--fs-body);white-space:nowrap;transition:transform .15s var(--ease)}
+.btn:hover{background:color-mix(in srgb,var(--accent) 86%,#ffffff)} .btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;background:var(--accent)}
+.btn.wide{width:100%}
+.lnk{background:none;border:0;padding:0;font-weight:600;font-size:var(--fs-small);color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 35%,transparent);text-underline-offset:4px}
+.lnk.mut{color:var(--muted)}
+
+/* ===== shared controls ===== */
+.sec{display:grid;gap:12px}
+.sh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sh h3{font-size:var(--fs-body);font-weight:700;font-family:var(--f-body)}
+.sh .n{font-size:var(--fs-body);font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.sh small{font-size:var(--fs-small);color:var(--muted)}
+.cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--ctl-line);background:var(--surface);display:grid;place-items:center;flex:none}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.cb .ic{width:13px;height:13px;stroke-width:3.2}
+.rd{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ctl-line);background:var(--surface);flex:none}
+.rd.on{border:6px solid var(--accent)}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.tag{font-size:var(--fs-badge);font-weight:600;line-height:1.5;padding:1px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--ctl-line);border:0;padding:0;position:relative;flex:none}
+.sw::before{content:"";position:absolute;inset:-9px -4px}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform .15s var(--ease)}
+.sw.on{background:var(--accent)} .sw.on::after{transform:translateX(18px)}
+.sw.lock{opacity:.5}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:var(--fs-small);font-weight:600}
+.phone .pill{height:44px}
+.pill small{font-size:var(--fs-small);font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.pill.on{border-color:var(--on-line);background:var(--sel)}
+.pills .lbl{width:100%;font-size:var(--fs-small);color:var(--muted);margin-top:4px}
+.segi{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg)}
+.segi button{border:0;background:transparent;min-height:32px;padding:0 12px;border-radius:999px;font-size:var(--fs-small);font-weight:600;color:var(--muted);white-space:nowrap}
+.phone .segi button{min-height:44px}
+.segi button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(27 36 68 / .12),0 2px 8px -2px rgb(27 36 68 / .14)}
+.segi button[disabled]{opacity:.45;cursor:not-allowed}
+.sel{position:relative}
+.selb{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 16px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:var(--fs-body);font-weight:600;text-align:left}
+.selb .grow{flex:1;min-width:0}
+.selb small{font-size:var(--fs-small);font-weight:400;color:var(--muted)}
+.selb.open{border-color:var(--on-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:5;background:var(--surface);border-radius:14px;box-shadow:var(--shadow-pop);padding:8px;display:grid;gap:4px;max-height:300px;overflow:auto;animation:popIn .18s var(--ease)}
+.pop.narrow{right:auto;min-width:260px}
+@keyframes popIn{from{opacity:0;transform:translateY(-4px)}}
+.pop .q{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:var(--fs-small);margin-bottom:4px}
+.op{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 12px;border-radius:10px;border:0;background:none;text-align:left;font-size:var(--fs-body);width:100%}
+.phone .op{min-height:44px}
+.op:hover{background:var(--bg)}
+.op.on{background:var(--sel);font-weight:600}
+.op small{margin-left:auto;font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.step{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.step .b{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.phone .step .b{width:44px;height:44px}
+.step .b[disabled]{opacity:.35;cursor:not-allowed}
+.step .v{font-family:var(--f-display);font-weight:700;font-size:var(--fs-title);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+.step .mu{font-size:var(--fs-small)}
+.ai-line,.note{font-size:var(--fs-small);color:var(--muted)}
+.ai-line b{color:var(--ink);font-weight:600}
+.warn{font-size:var(--fs-small);color:var(--fail);font-weight:600}
+
+/* selectable boxes: a div holding the toggle button plus, below it, its own options (never a button inside a button) */
+.trow,.tcard,.cell{border-radius:14px;border:1.5px solid var(--line);background:var(--surface)}
+.trow.on,.tcard.on,.cell.on{border-color:var(--on-line);background:var(--sel)}
+.trow.dis,.tcard.dis,.cell.dis{opacity:.45}
+.tb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 16px;border:0;background:none;border-radius:13px;text-align:left;width:100%}
+.tb b{font-weight:600}
+.tb .ask{grid-column:2 / -1;font-size:var(--fs-small);color:var(--muted)}
+.sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-small);color:var(--muted)}
+.trow .sub{padding:0 16px 12px 48px}
+.tb2{display:grid;gap:4px;align-content:start;border:0;background:none;text-align:left;width:100%;border-radius:13px}
+.tlist{display:grid;gap:8px}
+.ghead{display:flex;align-items:center;gap:8px;margin-top:8px}
+.ghead b{font-size:var(--fs-body);font-weight:700}
+.ghead .sp{flex:1}
+
+/* V2 two columns */
+.cols{display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}
+.phone .cols{grid-template-columns:1fr;gap:24px}
+.glist{display:grid;gap:4px;max-height:330px;overflow:auto;background:var(--bg);border-radius:14px;padding:4px}
+.gopt{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 12px;border-radius:10px;border:0;background:none;text-align:left;width:100%;font-size:var(--fs-body)}
+.phone .gopt{min-height:44px}
+.gopt.on{background:var(--surface);font-weight:600;box-shadow:0 1px 2px rgb(27 36 68 / .10)}
+.gopt small{margin-left:auto;font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.tcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.phone .tcards{grid-template-columns:1fr}
+.tcards .span2{grid-column:1 / -1}
+.tcard .tb2{padding:12px 16px}
+.tcard .sub{padding:0 16px 12px 48px}
+.tcard .t,.cell .t{display:flex;align-items:center;gap:12px}
+.tcard .t b,.cell .t b{font-weight:600;flex:1;line-height:1.35}
+.tcard .ask,.cell .ask{font-size:var(--fs-small);color:var(--muted);padding-left:32px}
+.aibox{display:grid;gap:12px}
+.ftrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ftrow .sp{flex:1}
+.ftrow .mu{font-size:var(--fs-small)}
+
+/* V3 matrix */
+.srcline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.srcline .sel{min-width:220px}
+.phone .srcline .sel{min-width:0}
+.phone .srcline .sel:has(.selb){width:100%}
+.tok{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px 0 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:var(--fs-body)}
+.tok small{font-size:var(--fs-small);font-weight:400;color:var(--muted)}
+.tok.open{border-color:var(--on-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.mx{display:grid;grid-template-columns:104px minmax(0,1.45fr) minmax(0,1.25fr) minmax(0,.8fr);gap:8px;align-items:stretch}
+.mx .ch{font-size:var(--fs-small);font-weight:600;color:var(--muted);align-self:end;padding:0 4px}
+.mx .rh{display:grid;align-content:center;gap:4px;padding:8px 4px}
+.mx .rh b{font-weight:700;line-height:1.35}
+.mx .rh small{font-size:var(--fs-small);color:var(--muted);line-height:1.4}
+.cell{min-height:64px}
+.cell .tb2{padding:12px}
+.cell .src2{padding:0 12px 12px;display:flex;gap:4px;flex-wrap:wrap}
+.cell .sub{gap:8px}
+.cell .segi{display:flex;width:100%}
+.cell .segi button{flex:auto;padding:0 8px}
+.cell.none{border-style:dashed;background:transparent;color:var(--muted);display:grid;place-items:center;font-size:var(--fs-small);padding:12px}
+.cell .pill{height:32px;padding:0 12px}
+.phone .cell .pill{height:44px}
+.phone .mx{grid-template-columns:1fr;gap:8px}
+.phone .mx .ch{display:none}
+.phone .mx .rh{padding:8px 0 0}
+.phone .mx .cell.none{display:none}
+
+/* V4 sentence: the sentence is the content, so it uses the title size (phone 20: one extra size, on purpose) */
+.mad{font-family:var(--f-display);font-size:var(--fs-title);font-weight:600;line-height:2.1;letter-spacing:-.01em}
+.phone .mad{font-size:20px;line-height:2.7}
+.phone .tk{min-height:44px}
+.mad .w{position:relative;display:inline-block}
+.tk{display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--accent);line-height:1.5;vertical-align:baseline}
+.tk .ic{width:16px;height:16px}
+.tk.open{border-color:var(--on-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.tk.off{color:var(--muted);text-decoration:line-through;border-style:dashed;font-weight:600}
+.tk.ai::after{content:"AI";font-family:var(--f-body);font-size:var(--fs-badge);font-weight:600;line-height:1.5;background:var(--bg);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.mad .pop{font-family:var(--f-body);font-size:var(--fs-body);font-weight:400;line-height:1.6;letter-spacing:0;min-width:280px;right:auto}
+.madnote{font-size:var(--fs-small);color:var(--muted)}
+
+/* V5 rows: white space between rows, no divider lines */
+.acc{display:grid;gap:4px}
+.ach{display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr) auto;gap:12px;align-items:center;min-height:56px;padding:8px 16px;border:0;border-radius:14px;background:var(--bg);width:100%;text-align:left}
+.phone .ach{grid-template-columns:minmax(0,108px) minmax(0,1fr) auto;padding:8px 12px}
+.ach .k{font-size:var(--fs-small);color:var(--muted)}
+.ach .val{font-weight:600;display:flex;align-items:center;gap:8px;min-width:0}
+.ach .val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ach .ic{color:var(--muted);transition:transform .2s var(--ease)}
+.acr.open .ach .ic{transform:rotate(180deg)}
+.acr.open{background:var(--sel);border-radius:14px}
+.acr.open .ach{background:transparent}
+.acb{padding:0 16px 16px;display:grid;gap:12px;animation:popIn .2s var(--ease)}
+.phone .acb{padding:0 12px 12px}
+.acr.sub .ach .k{padding-left:16px;position:relative}
+.acr.sub .ach .k::before{content:"";position:absolute;left:2px;top:2px;width:8px;height:10px;border-left:1.5px solid var(--ctl-line);border-bottom:1.5px solid var(--ctl-line);border-bottom-left-radius:4px}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:0s!important;animation:none!important}}
+</style>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Tùy chỉnh phiên: 5 bố cục</h1>
+    <p>Vòng 11. Cùng một hộp "Tùy chỉnh phiên" (nguồn "Theo nhóm"), cùng chức năng như code hiện tại, sắp theo 5 cách. Bấm thử được: chọn nhóm, lọc từ, bật tắt kiểu câu, AI, số câu, thứ tự. Đổi gói Miễn phí để xem lúc AI bị khóa.</p>
+  </header>
+  <section style="display:grid;gap:8px">
+    <p class="vrow">Bố cục</p><div class="choose" id="vars"></div>
+    <div class="ctl" style="margin-top:4px">
+      <div class="seg" role="group" aria-label="Khung"><button type="button" data-dev="desk">Máy tính</button><button type="button" data-dev="phone">Điện thoại</button></div>
+      <div class="seg" role="group" aria-label="Gói"><button type="button" data-plan="pro">Gói Pro</button><button type="button" data-plan="free">Gói Miễn phí</button></div>
+      <button type="button" class="lnk mut" data-reset>Về mặc định</button>
+    </div>
+  </section>
+  <div class="stage" id="stage"><div class="scaler" id="scaler"><div class="dev desk" id="dev"></div></div></div>
+  <section class="notes" id="notes"></section>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var IC = { x:'<path d="M6 6l12 12M18 6L6 18"/>', down:'<path d="m6 9 6 6 6-6"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', minus:'<path d="M5 12h14"/>', plus:'<path d="M12 5v14M5 12h14"/>', look:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', arr:'<path d="M5 12h14M13 6l6 6-6 6"/>' };
+  function ic(k){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + IC[k] + '</svg>'; }
+  var TIER = ['#9aa3b1','#c07a45','#98a2b0','#d4a72c','#1f9d75','#b28bff'], STAGE = ['Mới','1 ngày','3 ngày','7 ngày','14 ngày','30 ngày'];
+  var G = [['Đề 12 · Writing','#e5603f',48],['Đề 9 · Listening','#149384',40],['Đề 14 · Reading','#7a55d3',36],['Từ gặp ngoài đời','#d99a17',22],['Đề 10 · Writing','#d2427a',28],['Công việc · B1','#2a86d1',24],['Đề 11 · Speaking','#4a9637',30],['Du lịch Nhật','#64708c',0]];
+  function counts(i){ var n = G[i][2]; if (i === 0) return { all:48, due:24, pri:4, cells:[6,12,10,8,7,5] };
+    var c = [.12,.25,.21,.17,.15,.1].map(function(p){ return Math.round(n * p); }); c[5] = n - c.slice(0,5).reduce(function(a,b){ return a + b; }, 0); return { all:n, due:Math.round(n*.4), pri:Math.round(n*.08), cells:c }; }
+  /* the app's own question line for each type (messages vi.json App.practice.session.ask) */
+  var T = {
+    mcq:{ n:'Trắc nghiệm', ask:'Chọn từ có nghĩa này' },
+    tf:{ n:'Đúng/sai', ask:'Từ và nghĩa này có khớp không?' },
+    twm:{ n:'Gõ từ · theo nghĩa', ask:'Gõ từ tiếng Anh có nghĩa này' },
+    tws:{ n:'Gõ từ · theo câu', ask:'Gõ từ còn thiếu, đúng dạng trong câu' },
+    cloze:{ n:'Điền từ vào câu', ask:'Gõ từ còn thiếu, đúng dạng trong câu', ai:1 },
+    mis:{ n:'Chọn nghĩa trong câu', ask:'Từ in đậm trong câu này nghĩa là gì?', ai:1 },
+    mcqs:{ n:'Trắc nghiệm theo câu', ask:'Chọn từ điền vào chỗ trống', ai:1 }
+  };
+  var SORTS = [['queue','Ưu tiên, đến hạn, rồi từ mới'],['level_asc','Ngăn thấp'],['overdue_first','Quá hạn lâu nhất'],['new_first','Từ mới'],['least_practiced','Lâu chưa luyện'],['most_wrong','Sai nhiều nhất'],['priority_oldest','Bấm Cần ôn lại lâu nhất trước'],['random','Ngẫu nhiên']];
+  var MAX = 20, LEFT = 28, AI_LEFT = 280;
+  var V = [
+    { k:1, t:'Ba bước', s:'Lấy từ ở đâu → hỏi kiểu nào → bao nhiêu câu' },
+    { k:2, t:'Hai cột', s:'Trái là từ, phải là câu hỏi; nhóm là danh sách, không dropdown' },
+    { k:3, t:'Ma trận đề × cách trả lời', s:'Bảng 2 × 3: đề là nghĩa hay câu; trả lời bằng chọn, gõ hay đúng/sai' },
+    { k:4, t:'Câu ghép', s:'Cả phiên là một câu, bấm từng chữ xanh để đổi' },
+    { k:5, t:'Gọn, mở từng dòng', s:'Mỗi dòng một giá trị đang chọn, mở ra mới sửa' }
+  ];
+  function fresh(){ return { g:0, f:'all', on:{ mcq:1, tf:1, twm:1, tws:1, cloze:1, mis:1, mcqs:1 }, ai:true, own:false, count:15, sort:'queue', pop:null, acc:null, q:'' }; }
+  var st = { v:1, dev: innerWidth < 700 ? 'phone' : 'desk', plan:'pro' }; var S = fresh();
+  var ph = function(){ return st.dev === 'phone'; }, pro = function(){ return st.plan === 'pro'; };
+  var aiOn = function(){ return pro() && S.ai; };
+  var tw = function(){ return S.on.twm || S.on.tws; };
+  var promptOf = function(){ return S.on.twm && S.on.tws ? 'mixed' : S.on.twm ? 'meaning' : 'sentence'; };
+  var PROMPT = { meaning:'Theo nghĩa', sentence:'Theo câu', mixed:'Trộn' };
+  /* the two AI multiple-choice types (meaning_in_sentence, mcq_sentence) shown as one "Trắc nghiệm theo câu" with a "Hỏi" choice */
+  var mc = function(){ return !!(S.on.mis || S.on.mcqs); };
+  var mcOf = function(){ return S.on.mis && S.on.mcqs ? 'mixed' : S.on.mis ? 'meaning' : 'word'; };
+  var MCQ = { meaning:'Chọn nghĩa', word:'Chọn từ', mixed:'Trộn' };
+  var MC_ASK = { meaning:T.mis.ask, word:T.mcqs.ask, mixed:'Chọn nghĩa của từ in đậm, hoặc chọn từ điền vào chỗ trống' };
+  function chosen(){ var r = []; if (S.on.mcq) r.push('mcq'); if (S.on.tf) r.push('tf'); if (tw()) r.push('tw'); if (S.own) r.push('own');
+    if (aiOn()) ['cloze','mis','mcqs'].forEach(function(k){ if (S.on[k] && !(S.own && k === 'cloze')) r.push(k); }); return r; }
+  function aiChosen(){ return chosen().filter(function(k){ return T[k] && T[k].ai; }); }
+  function needed(){ var a = aiChosen().length, c = chosen().length; return a ? Math.ceil(S.count * a / c) : 0; }
+  function fName(){ if (S.f === 'all') return 'Mọi từ'; if (S.f === 'due') return 'Cần ôn hôm nay'; if (S.f === 'pri') return 'Đang ưu tiên'; return 'Ngăn ' + STAGE[Number(S.f.slice(1))]; }
+  function fCount(){ var c = counts(S.g); if (S.f === 'all') return c.all; if (S.f === 'due') return c.due; if (S.f === 'pri') return c.pri; return c.cells[Number(S.f.slice(1))]; }
+  function sortName(){ return SORTS.filter(function(s){ return s[0] === S.sort; })[0][1]; }
+  /* what the learner sees as kinds: the two AI multiple-choice types count as one */
+  function kinds(){ var r = chosen().map(function(k){ return k === 'mis' || k === 'mcqs' ? 'mc' : k; }); return r.filter(function(k, i){ return r.indexOf(k) === i; }); }
+  function typeCount(){ return kinds().length; }
+  function aiKinds(){ return kinds().filter(function(k){ return k === 'mc' || k === 'cloze'; }).length; }
+
+  /* ---------- small builders ---------- */
+  function cb(on){ return '<span class="cb' + (on ? ' on' : '') + '">' + (on ? ic('check') : '') + '</span>'; }
+  function sw(on, act, lock){ return '<button type="button" class="sw' + (on ? ' on' : '') + (lock ? ' lock' : '') + '" role="switch" aria-checked="' + !!on + '" data-act="' + act + '"' + (lock ? ' aria-disabled="true"' : '') + '></button>'; }
+  function gdot(i){ return '<i class="dot" style="background:' + G[i][1] + '"></i>'; }
+  function groupSelect(){ var open = S.pop === 'g';
+    var list = G.map(function(g, i){ return [g, i]; }).filter(function(x){ return !S.q || x[0][0].toLowerCase().indexOf(S.q) >= 0; });
+    return '<div class="sel"><button type="button" class="selb' + (open ? ' open' : '') + '" data-pop="g" aria-expanded="' + open + '">' + gdot(S.g) + '<span class="grow">' + G[S.g][0] + '</span><small>' + G[S.g][2] + ' từ</small>' + ic('down') + '</button>' +
+      (open ? '<div class="pop"><label class="q">' + ic('look') + '<span>Tìm trong 8 nhóm</span></label>' + list.map(function(x){ return '<button type="button" class="op' + (x[1] === S.g ? ' on' : '') + '" data-g="' + x[1] + '">' + gdot(x[1]) + x[0][0] + '<small>' + x[0][2] + ' từ</small></button>'; }).join('') + '</div>' : '') + '</div>'; }
+  function filterPills(withLabel){ var c = counts(S.g), it = [['all','Mọi từ',c.all],['due','Cần ôn hôm nay',c.due],['pri','Đang ưu tiên',c.pri]];
+    return '<div class="pills" role="radiogroup" aria-label="Lấy từ nào">' + it.map(function(x){ return '<button type="button" class="pill' + (S.f === x[0] ? ' on' : '') + '" role="radio" aria-checked="' + (S.f === x[0]) + '" data-f="' + x[0] + '">' + x[1] + '<small>' + x[2] + '</small></button>'; }).join('') +
+      '<span class="lbl">' + (withLabel || 'hoặc chỉ một ngăn') + '</span>' + STAGE.map(function(s, i){ return '<button type="button" class="pill' + (S.f === 's' + i ? ' on' : '') + '" role="radio" aria-checked="' + (S.f === 's' + i) + '" data-f="s' + i + '"><i class="dot" style="background:' + TIER[i] + '"></i>' + s + '<small>' + c.cells[i] + '</small></button>'; }).join('') + '</div>'; }
+  function promptSeg(){ var p = promptOf(); return '<span>Đề</span><span class="segi">' + ['meaning','sentence','mixed'].map(function(k){ return '<button type="button" class="' + (tw() && p === k ? 'on' : '') + '" data-prompt="' + k + '">' + PROMPT[k] + '</button>'; }).join('') + '</span>'; }
+  function stepper(){ return '<div class="step"><button type="button" class="b" data-count="-1" aria-label="Bớt 1 câu"' + (S.count <= 1 ? ' disabled' : '') + '>' + ic('minus') + '</button><span class="v">' + S.count + '</span><button type="button" class="b" data-count="1" aria-label="Thêm 1 câu"' + (S.count >= MAX ? ' disabled' : '') + '>' + ic('plus') + '</button><span class="mu">tối đa ' + MAX + '</span></div>'; }
+  function sortSelect(narrow){ var open = S.pop === 'sort'; return '<div class="sel"' + (narrow ? ' style="max-width:320px"' : '') + '><button type="button" class="selb' + (open ? ' open' : '') + '" data-pop="sort" aria-expanded="' + open + '"><span class="grow">' + sortName() + '</span>' + ic('down') + '</button>' +
+    (open ? '<div class="pop">' + SORTS.map(function(s){ return '<button type="button" class="op' + (s[0] === S.sort ? ' on' : '') + '" data-sort="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' : '') + '</div>'; }
+  function aiLine(){ if (!pro()) return '<p class="ai-line">Kiểu câu có AI chỉ có ở gói Pro. <button type="button" class="lnk">Xem gói Pro</button></p>';
+    if (!aiOn() || !aiChosen().length) return ''; return '<p class="ai-line">Phiên này dùng tối đa <b>' + needed() + '</b> lượt câu AI · còn ' + AI_LEFT + '</p>'; }
+  function noTypes(){ return typeCount() ? '' : '<p class="warn">Chọn ít nhất một kiểu câu.</p>'; }
+  function footer(summary){ var dis = !typeCount();
+    return '<div class="ft">' + (summary ? '<p class="sum">' + summary + '</p>' : '') + '<button type="button" class="btn wide"' + (dis ? ' disabled' : '') + '>Bắt đầu ' + S.count + ' câu ' + ic('arr') + '</button><p class="sum">Dùng 1 trong ' + LEFT + ' phiên còn lại hôm nay.</p></div>'; }
+  function shell(inner, wide){ return '<div class="dlg' + (wide ? ' wide' : '') + '" role="dialog" aria-label="Tùy chỉnh phiên"><span class="grab"></span><div class="dh"><h2>Tùy chỉnh phiên</h2><span class="src">· Theo nhóm</span><button type="button" class="x" aria-label="Đóng">' + ic('x') + '</button></div>' + inner + '</div>'; }
+  function box(cls, on, dis, attr, inner, extra, bcls){ return '<div class="' + cls + (on ? ' on' : '') + (dis ? ' dis' : '') + '"><button type="button" class="' + (bcls || 'tb') + '" ' + attr + ' aria-pressed="' + !!on + '"' + (dis ? ' aria-disabled="true"' : '') + '>' + inner + '</button>' + (extra || '') + '</div>'; }
+  function trow(k, extra, dis){ var on = !!S.on[k] && !dis; return box('trow', on, dis, 'data-t="' + k + '"', cb(on) + '<b>' + T[k].n + '</b>' + (T[k].ai ? '<span class="tag">AI</span>' : '<span></span>') + '<span class="ask">' + T[k].ask + '</span>', extra); }
+  function twRow(ask){ return box('trow', tw(), false, 'data-t="tw"', cb(tw()) + '<b>Gõ từ</b><span></span><span class="ask">' + ask + '</span>', tw() ? '<div class="sub">' + promptSeg() + '</div>' : ''); }
+  function ownRow(cls, tagText, bcls){ var tg = tagText ? '<span class="tag">' + tagText + '</span>' : (bcls ? '' : '<span></span>');
+    var inner = bcls ? '<span class="t">' + cb(S.own) + '<b>Điền từ vào câu bạn đã lưu</b>' + tg + '</span><span class="ask">Chỉ dùng cho từ có câu bạn đã lưu.</span>' : cb(S.own) + '<b>Điền từ vào câu bạn đã lưu</b>' + tg + '<span class="ask">Chỉ dùng cho từ có câu bạn đã lưu.</span>';
+    return box(cls, S.own, false, 'data-act="own"', inner, '', bcls); }
+  function mcSeg(){ var m = mcOf(); return '<span>Hỏi</span><span class="segi">' + ['meaning','word','mixed'].map(function(k){ return '<button type="button" class="' + (mc() && m === k ? 'on' : '') + '" data-mc="' + k + '">' + MCQ[k] + '</button>'; }).join('') + '</span>'; }
+  function mcRow(){ var on = mc(); return box('trow', on, false, 'data-t="mc"', cb(on) + '<b>Trắc nghiệm theo câu</b><span class="tag">AI</span><span class="ask">' + MC_ASK[on ? mcOf() : 'mixed'] + '</span>', on ? '<div class="sub">' + mcSeg() + '</div>' : ''); }
+  function summaryLine(){ return '<b>' + S.count + ' câu</b> từ ' + G[S.g][0] + ' · ' + fName().toLowerCase() + ' · ' + typeCount() + ' kiểu câu'; }
+
+  /* ---------- V1 · Ba bước ---------- */
+  function v1(){
+    var gt = twRow(promptOf() === 'meaning' ? T.twm.ask : promptOf() === 'sentence' ? T.tws.ask : 'Gõ từ theo nghĩa hoặc gõ từ còn thiếu trong câu');
+    var own = ownRow('trow', '');
+    var ai = '<div class="ghead"><b>Có AI</b>' + (pro() ? '' : '<span class="tag pro">Pro</span>') + '<span class="sp"></span>' + sw(aiOn(), 'ai', !pro()) + '</div>' +
+      (aiOn() ? '<div class="tlist">' + trow('cloze', S.own ? '<div class="sub">Đang dùng câu bạn đã lưu thay cho câu AI.</div>' : '', S.own) + mcRow() + '</div>' : '') + aiLine();
+    var body = '<div class="bd">' +
+      '<section class="sec"><div class="sh"><span class="n">1</span><h3>Lấy từ ở đâu</h3></div>' + groupSelect() + filterPills() + '</section>' +
+      '<section class="sec"><div class="sh"><span class="n">2</span><h3>Hỏi kiểu nào</h3></div><div class="tlist">' + trow('mcq') + trow('tf') + gt + own + '</div>' + ai + noTypes() + '</section>' +
+      '<section class="sec"><div class="sh"><span class="n">3</span><h3>Bao nhiêu câu</h3></div>' + stepper() + '<div class="sh" style="margin-top:2px"><small>Thứ tự</small></div>' + sortSelect(true) + '</section></div>';
+    return shell(body + footer(summaryLine()));
+  }
+  /* ---------- V2 · Hai cột ---------- */
+  function tcard(k, extra, dis, wide){ var on = !!S.on[k] && !dis; return box('tcard' + (wide ? ' span2' : ''), on, dis, 'data-t="' + k + '"', '<span class="t">' + cb(on) + '<b>' + T[k].n + '</b>' + (T[k].ai ? '<span class="tag">AI</span>' : '') + '</span><span class="ask">' + T[k].ask + '</span>', extra, 'tb2'); }
+  function v2(){
+    var c = counts(S.g);
+    var left = '<section class="sec"><div class="sh"><h3>Từ</h3><small>' + fCount() + ' từ</small></div><div class="glist" role="radiogroup" aria-label="Nhóm">' + G.map(function(g, i){ return '<button type="button" class="gopt' + (i === S.g ? ' on' : '') + '" data-g="' + i + '"><span class="rd' + (i === S.g ? ' on' : '') + '"></span>' + gdot(i) + g[0] + '<small>' + g[2] + '</small></button>'; }).join('') + '</div>' + filterPills('chỉ một ngăn') + '</section>';
+    var twc = box('tcard span2', tw(), false, 'data-t="tw"', '<span class="t">' + cb(tw()) + '<b>Gõ từ</b></span><span class="ask">Gõ lại từ tiếng Anh</span>', tw() ? '<div class="sub">' + promptSeg() + '</div>' : '', 'tb2');
+    var own = ownRow('tcard', '', 'tb2');
+    var right = '<section class="sec"><div class="sh"><h3>Câu hỏi</h3></div><div class="tcards">' + tcard('mcq') + tcard('tf') + twc + own + '</div>' +
+      '<div class="aibox"><div class="ghead" style="margin:0"><b>Kiểu câu có AI</b>' + (pro() ? '' : '<span class="tag pro">Pro</span>') + '<span class="sp"></span>' + sw(aiOn(), 'ai', !pro()) + '</div>' +
+      (aiOn() ? '<div class="tcards">' + tcard('cloze', S.own ? '<div class="sub">Đang dùng câu bạn đã lưu thay cho câu AI.</div>' : '', S.own, true) +
+        box('tcard span2', mc(), false, 'data-t="mc"', '<span class="t">' + cb(mc()) + '<b>Trắc nghiệm theo câu</b><span class="tag">AI</span></span><span class="ask">' + MC_ASK[mc() ? mcOf() : 'mixed'] + '</span>', mc() ? '<div class="sub">' + mcSeg() + '</div>' : '', 'tb2') + '</div>' : '') + aiLine() + '</div>' + noTypes() + '</section>';
+    var bottom = '<div class="ft"><div class="ftrow"><span class="mu">Số câu</span>' + stepper() + (ph() ? '' : '<span class="sp"></span>') + '<div style="min-width:' + (ph() ? '100%' : '240px') + '">' + sortSelect() + '</div></div><button type="button" class="btn wide"' + (typeCount() ? '' : ' disabled') + '>Bắt đầu ' + S.count + ' câu ' + ic('arr') + '</button><p class="sum">Dùng 1 trong ' + LEFT + ' phiên còn lại hôm nay.</p></div>';
+    return shell('<div class="bd"><div class="cols">' + left + right + '</div></div>' + bottom, true);
+  }
+  /* ---------- V3 · Ma trận ---------- */
+  function cell(k, label, extra, dis){ if (!k) return '<div class="cell none">không có kiểu này</div>'; var locked = T[k].ai && !pro(), on = !!S.on[k] && !dis && !locked && (!T[k].ai || aiOn());
+    return box('cell', on, dis || locked, 'data-t="' + k + '"', '<span class="t">' + cb(on) + '<b>' + label + '</b>' + (T[k].ai ? '<span class="tag">' + (locked ? 'Pro' : 'AI') + '</span>' : '') + '</span><span class="ask">' + T[k].ask + '</span>', extra, 'tb2'); }
+  function v3(){
+    var gOpen = S.pop === 'g', fOpen = S.pop === 'f';
+    var src = '<div class="srcline"><span class="mu">Lấy</span><div class="sel"><button type="button" class="tok' + (fOpen ? ' open' : '') + '" data-pop="f">' + fName() + ' <small>' + fCount() + '</small>' + ic('down') + '</button>' +
+      (fOpen ? '<div class="pop narrow">' + [['all','Mọi từ'],['due','Cần ôn hôm nay'],['pri','Đang ưu tiên']].map(function(x){ return '<button type="button" class="op' + (S.f === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + x[1] + '</button>'; }).join('') + STAGE.map(function(s, i){ return '<button type="button" class="op' + (S.f === 's' + i ? ' on' : '') + '" data-f="s' + i + '"><i class="dot" style="background:' + TIER[i] + '"></i>Ngăn ' + s + '<small>' + counts(S.g).cells[i] + '</small></button>'; }).join('') + '</div>' : '') +
+      '</div><span class="mu">trong nhóm</span>' + groupSelect() + '</div>';
+    /* "Gõ từ theo câu" (câu mẫu), cloze (câu AI) and own sentences are the same question with a different sentence source */
+    var aiSrc = aiOn() && S.on.cloze && !S.own;
+    var blankOn = !!S.on.tws || S.own || aiSrc;
+    var chip = function(k, label, on, dis, tag){ return '<button type="button" class="pill' + (on ? ' on' : '') + '" data-src="' + k + '"' + (dis ? ' disabled style="opacity:.45"' : '') + ' aria-pressed="' + on + '">' + label + (tag ? '<small>' + tag + '</small>' : '') + '</button>'; };
+    var srcChips = '<div class="src2"><span class="pills">' + chip('tws', 'Câu mẫu', !!S.on.tws) + chip('ai', 'AI viết', aiSrc, !pro(), pro() ? 'AI' : 'Pro') + chip('own', 'Bạn đã lưu', S.own, false, '') + '</span></div>';
+    var blankCell = box('cell', blankOn, false, 'data-t="blank"', '<span class="t">' + cb(blankOn) + '<b>Gõ từ vào chỗ trống</b></span><span class="ask">' + T.tws.ask + '. Câu lấy từ:</span>', srcChips, 'tb2');
+    var mcLocked = !pro(), mcOn = mc() && aiOn();
+    var mcCell = box('cell', mcOn, mcLocked, 'data-t="mc"', '<span class="t">' + cb(mcOn) + '<b>Trắc nghiệm theo câu</b><span class="tag">' + (mcLocked ? 'Pro' : 'AI') + '</span></span><span class="ask">' + MC_ASK[mcOn ? mcOf() : 'mixed'] + '</span>', mcOn ? '<div class="src2"><div class="sub">' + mcSeg() + '</div></div>' : '', 'tb2');
+    var mx = '<div class="mx"><span></span><span class="ch">Chọn đáp án</span><span class="ch">Gõ từ</span><span class="ch">Đúng hay sai</span>' +
+      '<div class="rh"><b>Đề là nghĩa</b><small>nghĩa tiếng Việt</small></div>' + cell('mcq','Trắc nghiệm') + cell('twm','Gõ từ theo nghĩa') + cell('tf','Đúng/sai') +
+      '<div class="rh"><b>Đề là câu</b><small>câu có chỗ trống hoặc từ in đậm</small></div>' + mcCell + blankCell + cell(null) + '</div>';
+    var aiRow = '';
+    var tail = '<div class="ftrow"><span class="mu">Số câu</span>' + stepper() + (ph() ? '' : '<span class="sp" style="flex:1"></span>') + '<span class="mu">Thứ tự</span><div style="min-width:' + (ph() ? '100%' : '250px') + '">' + sortSelect() + '</div></div>';
+    return shell('<div class="bd"><section class="sec">' + src + '</section><section class="sec"><div class="sh"><h3>Kiểu câu</h3></div>' + aiRow + mx + aiLine() + noTypes() + '</section><section class="sec">' + tail + '</section></div>' + footer(summaryLine()), true);
+  }
+  /* ---------- V4 · Câu ghép ---------- */
+  function tk(key, text, open){ return '<button type="button" class="tk' + (open ? ' open' : '') + '" data-pop="' + key + '">' + text + ic('down') + '</button>'; }
+  function v4(){
+    var c = counts(S.g), P = S.pop;
+    var popG = P === 'g' ? '<div class="pop">' + G.map(function(g, i){ return '<button type="button" class="op' + (i === S.g ? ' on' : '') + '" data-g="' + i + '">' + gdot(i) + g[0] + '<small>' + g[2] + ' từ</small></button>'; }).join('') + '</div>' : '';
+    var popF = P === 'f' ? '<div class="pop">' + [['all','mọi từ',c.all],['due','từ cần ôn hôm nay',c.due],['pri','từ đang ưu tiên',c.pri]].map(function(x){ return '<button type="button" class="op' + (S.f === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + x[1] + '<small>' + x[2] + '</small></button>'; }).join('') + STAGE.map(function(s, i){ return '<button type="button" class="op' + (S.f === 's' + i ? ' on' : '') + '" data-f="s' + i + '"><i class="dot" style="background:' + TIER[i] + '"></i>từ ở ngăn ' + s + '<small>' + c.cells[i] + '</small></button>'; }).join('') + '</div>' : '';
+    var popC = P === 'count' ? '<div class="pop" style="min-width:240px">' + '<div style="padding:6px 6px 2px">' + stepper() + '</div><div class="pills" style="padding:6px">' + [5,10,15,20].map(function(n){ return '<button type="button" class="pill' + (S.count === n ? ' on' : '') + '" data-setcount="' + n + '">' + n + '</button>'; }).join('') + '</div></div>' : '';
+    var popS = P === 'sort' ? '<div class="pop">' + SORTS.map(function(s){ return '<button type="button" class="op' + (s[0] === S.sort ? ' on' : '') + '" data-sort="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' : '';
+    var popP = P === 'prompt' ? '<div class="pop" style="min-width:260px">' + ['meaning','sentence','mixed'].map(function(k){ return '<button type="button" class="op' + (tw() && promptOf() === k ? ' on' : '') + '" data-prompt="' + k + '">' + (k === 'meaning' ? 'đề là nghĩa' : k === 'sentence' ? 'đề là câu mẫu' : 'đề trộn nghĩa và câu') + '</button>'; }).join('') + '<button type="button" class="op" data-t="tw">' + (tw() ? 'bỏ Gõ từ' : 'thêm Gõ từ') + '</button></div>' : '';
+    var popM = P === 'mc' ? '<div class="pop" style="min-width:280px">' + [['meaning','chọn nghĩa của từ in đậm'],['word','chọn từ điền vào chỗ trống'],['mixed','trộn cả hai']].map(function(x){ return '<button type="button" class="op' + (mc() && aiOn() && mcOf() === x[0] ? ' on' : '') + '" data-mc="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '<button type="button" class="op" data-t="mc">' + (mc() && aiOn() ? 'bỏ trắc nghiệm theo câu' : 'thêm trắc nghiệm theo câu') + '</button></div>' : '';
+    var mcOff = !mc() || !aiOn();
+    var fText = S.f === 'all' ? 'mọi từ' : S.f === 'due' ? 'từ cần ôn hôm nay' : S.f === 'pri' ? 'từ đang ưu tiên' : 'từ ở ngăn ' + STAGE[Number(S.f.slice(1))];
+    var tog = function(k, label, ai){ var off = !S.on[k] || (ai && !aiOn()) || (k === 'cloze' && S.own); return '<button type="button" class="tk' + (off ? ' off' : '') + (ai ? ' ai' : '') + '" data-t="' + k + '" aria-pressed="' + !off + '">' + label + '</button>'; };
+    var s1 = 'Luyện <span class="w">' + tk('count', S.count + ' câu', P === 'count') + popC + '</span> trong nhóm <span class="w">' + tk('g', '<i class="dot" style="background:' + G[S.g][1] + ';width:12px;height:12px"></i>' + G[S.g][0], P === 'g') + popG + '</span>, lấy <span class="w">' + tk('f', fText, P === 'f') + popF + '</span>, xếp theo <span class="w">' + tk('sort', sortName().toLowerCase(), P === 'sort') + popS + '</span>.';
+    var s2 = 'Hỏi bằng ' + tog('mcq','trắc nghiệm') + ', ' + tog('tf','đúng/sai') + ', <span class="w"><button type="button" class="tk' + (tw() ? '' : ' off') + (P === 'prompt' ? ' open' : '') + '" data-pop="prompt">gõ từ' + (tw() ? ' · ' + PROMPT[promptOf()].toLowerCase() : '') + ic('down') + '</button>' + popP + '</span>' +
+      ', ' + '<button type="button" class="tk' + (S.own ? '' : ' off') + '" data-act="own" aria-pressed="' + S.own + '">điền từ vào câu bạn đã lưu</button>' +
+      (pro() ? ' và câu AI: ' + tog('cloze','điền từ', true) + ', <span class="w"><button type="button" class="tk ai' + (mcOff ? ' off' : '') + (P === 'mc' ? ' open' : '') + '" data-pop="mc">trắc nghiệm theo câu' + (mcOff ? '' : ' · ' + MCQ[mcOf()].toLowerCase()) + ic('down') + '</button>' + popM + '</span>.' : '.');
+    var aiTail = aiLine();
+    return shell('<div class="bd"><div class="mad">' + s1 + '</div><div class="mad">' + s2 + '</div><p class="madnote">Chữ gạch ngang là kiểu câu đang tắt.</p>' + aiTail + noTypes() + '</div>' + footer(), true);
+  }
+  /* ---------- V5 · Gọn, mở từng dòng ---------- */
+  function v5(){
+    var rows = [
+      ['g','Nhóm', gdot(S.g) + '<span>' + G[S.g][0] + ' · ' + G[S.g][2] + ' từ</span>', function(){ return '<div class="glist" style="max-height:250px;background:var(--surface)">' + G.map(function(g, i){ return '<button type="button" class="gopt' + (i === S.g ? ' on' : '') + '" data-g="' + i + '"><span class="rd' + (i === S.g ? ' on' : '') + '"></span>' + gdot(i) + g[0] + '<small>' + g[2] + '</small></button>'; }).join('') + '</div>'; }],
+      ['f','Lấy từ', '<span>' + fName() + ' · ' + fCount() + ' từ</span>', function(){ return filterPills(); }],
+      ['t','Kiểu câu', '<span>' + typeCount() + ' kiểu' + (aiKinds() ? ' · ' + aiKinds() + ' có AI' : '') + '</span>', function(){ return '<div class="tlist">' + trow('mcq') + trow('tf') +
+        twRow('Gõ lại từ tiếng Anh') + ownRow('trow', '') + '</div>' +
+        '<div class="ghead"><b>Có AI</b>' + (pro() ? '' : '<span class="tag pro">Pro</span>') + '<span class="sp"></span>' + sw(aiOn(), 'ai', !pro()) + '</div>' + (aiOn() ? '<div class="tlist">' + trow('cloze', '', S.own) + mcRow() + '</div>' : '') + aiLine(); }]
+    ];
+    if (tw()) rows.push(['p','Đề cho Gõ từ', '<span>' + PROMPT[promptOf()] + '</span>', function(){ return '<div class="sub">' + promptSeg() + '</div><p class="note">Theo nghĩa: ' + T.twm.ask.toLowerCase() + '. Theo câu: ' + T.tws.ask.toLowerCase() + '.</p>'; }, true]);
+    rows.push(['c','Số câu', '<span>' + S.count + ' câu</span>', function(){ return stepper(); }]);
+    rows.push(['s','Thứ tự', '<span>' + sortName() + '</span>', function(){ return '<div class="glist" style="max-height:none;background:var(--surface)">' + SORTS.map(function(s){ return '<button type="button" class="gopt' + (s[0] === S.sort ? ' on' : '') + '" data-sort="' + s[0] + '"><span class="rd' + (s[0] === S.sort ? ' on' : '') + '"></span>' + s[1] + '</button>'; }).join('') + '</div>'; }]);
+    var acc = '<div class="acc">' + rows.map(function(r){ var open = S.acc === r[0]; return '<div class="acr' + (open ? ' open' : '') + (r[4] ? ' sub' : '') + '"><button type="button" class="ach" data-acc="' + r[0] + '" aria-expanded="' + open + '"><span class="k">' + r[1] + '</span><span class="val">' + r[2] + '</span>' + ic('down') + '</button>' + (open ? '<div class="acb">' + r[3]() + '</div>' : '') + '</div>'; }).join('') + '</div>';
+    return shell('<div class="bd">' + acc + noTypes() + (S.acc !== 't' && aiOn() && aiChosen().length ? aiLine() : '') + '</div>' + footer());
+  }
+  var R = { 1:v1, 2:v2, 3:v3, 4:v4, 5:v5 };
+  var NOTE = {
+    1:{ a:['Ba phần đánh số: Lấy từ ở đâu, Hỏi kiểu nào, Bao nhiêu câu. Đọc từ trên xuống là xong một phiên.','"Lọc từ" và "Ngăn" (hai dropdown không nhãn, chọn cái này thì cái kia về mặc định) gộp thành <b>một hàng nút chọn</b> có số từ: Mọi từ, Cần ôn hôm nay, Đang ưu tiên, hoặc một ngăn.','<b>Đề của Gõ từ nằm ngay trong ô Gõ từ</b>, chỉ hiện khi ô đó được chọn.','"Điền từ vào câu bạn đã lưu" thành một kiểu câu như các kiểu khác. Nhóm "Có AI" có công tắc ở đầu nhóm.','Mỗi kiểu câu kèm câu hỏi thật của app (ví dụ "Chọn từ có nghĩa này"), để biết kiểu đó hỏi gì.','Thứ tự không còn giấu trong "Thêm tùy chọn". Dòng tóm tắt trên nút: số câu, nhóm, kiểu lấy từ, số kiểu câu.'], b:['Dễ hiểu nhất, gần code hiện tại nhất.','Dài: trên điện thoại phải cuộn khá nhiều.'] },
+    2:{ a:['Máy tính: cột trái là <b>Từ</b> (nhóm là danh sách chọn luôn, không phải dropdown; dưới là hàng nút lọc), cột phải là <b>Câu hỏi</b> (thẻ kiểu câu hai cột).','Thẻ Gõ từ chứa luôn nút chọn Đề.','Kiểu câu có AI nằm dưới tiêu đề riêng, công tắc đặt ngay cạnh tiêu đề.','Số câu, thứ tự và nút bắt đầu cùng một hàng ở chân hộp.','Điện thoại: hai cột xếp chồng.'], b:['Thấy hết một lần trên máy tính, không phải mở dropdown nào.','Hộp rộng 820 px; trên điện thoại thành dài như bản 1.'] },
+    3:{ a:['Kiểu câu xếp thành bảng: hàng là <b>đề cho xem gì</b> (nghĩa hay câu), cột là <b>cách trả lời</b> (chọn đáp án, gõ từ, đúng hay sai).','<b>Không còn "Kiểu đề"</b>: "Gõ từ theo nghĩa" là một ô, "Gõ từ vào chỗ trống" là một ô khác; bật cả hai là "Trộn" của code.','"Gõ từ theo câu", "Điền từ vào câu" (AI) và "câu bạn đã lưu" trong code thật ra cùng một dạng câu, chỉ khác nguồn câu. Ở đây gộp thành một ô, bên trong chọn nguồn: Câu mẫu, AI viết, Bạn đã lưu (AI viết và Bạn đã lưu không chọn cùng lúc, như code).','Nguồn từ là một câu ngắn ở đầu: "Lấy [mọi từ] trong nhóm [Đề 12]".','Điện thoại: bảng thành danh sách theo từng hàng.'], b:['Gọn nhất về logic: thấy ngay vì sao có các kiểu câu này.','Phải làm quen cách đọc bảng; còn 1 ô trống "không có kiểu này".','Khi làm code: ô Gõ từ quy ra kiểu Gõ từ và cách đề; ô chỗ trống quy ra thêm cloze hoặc câu đã lưu. API không đổi.'] },
+    4:{ a:['Cả phiên là hai câu: "Luyện [15 câu] trong nhóm [Đề 12 · Writing], lấy [mọi từ], xếp theo [ưu tiên…]." và "Hỏi bằng [trắc nghiệm], [đúng/sai], [gõ từ · trộn]… và câu AI: […]."','Bấm chữ xanh mở danh sách nhỏ ngay tại chỗ; bấm tên kiểu câu để bật tắt (tắt thì gạch ngang).','Đề của Gõ từ nằm trong chính chữ "gõ từ · trộn".'], b:['Lạ và vui, đọc một lần là biết phiên sẽ thế nào.','Khó với người dùng lần đầu; tắt nhiều kiểu câu thì câu khó đọc; bấm trúng chữ nhỏ trên điện thoại khó hơn.'] },
+    5:{ a:['Mỗi dòng là một tùy chọn với <b>giá trị đang chọn</b> ở bên phải: Nhóm, Lấy từ, Kiểu câu, Đề cho Gõ từ, Số câu, Thứ tự. Bấm một dòng thì mở ra để sửa, mỗi lần một dòng.','<b>"Đề cho Gõ từ" là dòng con ngay dưới "Kiểu câu"</b> và chỉ hiện khi có chọn Gõ từ.','Nhóm và thứ tự mở ra thành danh sách chọn luôn (không dropdown chồng dropdown).'], b:['Hộp ngắn nhất: phần lớn người học bấm Bắt đầu luôn với mặc định.','Muốn đổi nhiều thứ thì phải mở nhiều dòng.'] }
+  };
+  function renderNotes(){ var n = NOTE[st.v]; $('notes').innerHTML = '<section><h3>Bản ' + st.v + ' · ' + V[st.v-1].t + '</h3><ul>' + n.a.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></section><section><h3>Được và mất</h3><ul>' + n.b.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul><h3 style="margin-top:8px">Giữ như code</h3><ul><li>Tối đa ' + MAX + ' câu (mặc định trong code 10; ở đây đặt 15). Lượt AI: số câu × số kiểu AI ÷ số kiểu, làm tròn lên, như code.</li><li>"Trắc nghiệm theo câu" là hai kiểu AI của code gộp lại: Chọn nghĩa (từ in đậm nghĩa là gì) và Chọn từ (từ nào điền vào chỗ trống); "Trộn" gửi cả hai. Lượt AI vẫn tính theo từng kiểu như code, nên Trộn tốn hơn một chút.</li><li>Bật "câu bạn đã lưu" thì Điền từ bằng câu AI tắt. Gói Miễn phí: kiểu câu có AI khóa, có nhãn Pro.</li><li>Không chọn kiểu câu nào thì nút Bắt đầu tắt và báo "Chọn ít nhất một kiểu câu."</li></ul></section>' + PRINC; }
+  /* what changed when ui-best-practices.md was applied to all five layouts (09/11/2026) */
+  var PRINC = '<section class="wide"><h3>Đã áp nguyên tắc trong ui-best-practices.md (cả 5 bản)</h3><ul>' + [
+    '<b>Thứ bậc:</b> còn 3 cỡ chữ (24 tiêu đề, 16 nhãn, 14 chữ phụ; nhãn nhỏ AI/Pro 12) và 3 độ đậm (400, 600, 700). Bỏ font mono, chỉ còn Noto Sans và Bricolage. Navy chỉ còn ở nút Bắt đầu, link, dấu tick và công tắc; ô đang chọn dùng viền và nền nhạt, nút chọn đề dùng nền trắng thay nền đen.',
+    '<b>Gần nhau và khoảng trắng:</b> khoảng cách theo bậc 4, 8, 12, 16, 24, 32; nhóm cách nhóm 24. Bỏ đường kẻ giữa các dòng (bản 5), khung nét đứt quanh câu AI (bản 2), viền quanh danh sách nhóm (bản 2) và đường kẻ trên chân hộp (thay bằng bóng mờ).',
+    '<b>Bản 3 và 4:</b> bỏ công tắc "Kiểu câu có AI", vì nó nằm xa các ô AI mà nó bật tắt; mỗi ô AI tự có dấu tick hoặc chữ bấm được.',
+    '<b>Nhất quán:</b> nút bo tròn hẳn (Bắt đầu, nút −/+, nút đóng, chip lọc, nút chọn đề); ô chọn (dropdown) bo 10; thẻ kiểu câu bo 14; hộp bo 24.',
+    '<b>Màu và tiếp cận:</b> viền ô tick, nút tròn và công tắc tắt đổi từ màu ghost (1,47:1) sang màu đạt 3:1. Chữ gạch ngang ở bản 4 đổi từ ghost sang chữ phụ. Trên điện thoại mọi chỗ bấm cao ít nhất 44 px (chip, nút −/+, nút đóng, nút chọn đề, mục danh sách).',
+    '<b>Chữ:</b> bỏ chữ in hoa toàn bộ ("KIỂU CÂU CÓ AI" thành "Kiểu câu có AI", tiêu đề cột bảng ở bản 3); khoảng dòng 1,6 cho dấu tiếng Việt.',
+    '<b>Câu chữ:</b> bỏ gợi ý thừa ("chọn một hoặc nhiều", "chọn ô nào hỏi ô đó", "hợp lệ"); bỏ nhãn "0 lượt", "không tốn lượt"; dòng tóm tắt không nhắc lại số lượt AI (đã có ngay dưới các kiểu câu AI); câu hướng dẫn ở bản 4 rút còn một câu.',
+    '<b>Chuyển động:</b> núm công tắc chạy bằng transform thay vì đổi vị trí left; bỏ hiệu ứng đổi màu viền và độ sáng nút.',
+    '<b>Ngoại lệ cố ý:</b> câu ở bản 4 trên điện thoại cỡ 20 (thêm một cỡ, vì cỡ 24 làm câu quá dài).'
+  ].map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></section>';
+
+  var dev = $('dev'), scaler = $('scaler'), stage = $('stage');
+  function backdrop(){ return '<div class="back" aria-hidden="true"><div class="bar"></div><h2>Luyện tập</h2><div class="row"><div class="blk"></div><div class="blk" style="height:300px"></div></div><div class="blk" style="height:320px"></div></div><div class="scrim"></div>'; }
+  function render(){
+    var keep = dev.querySelector('.bd'), top = keep ? keep.scrollTop : 0;
+    dev.className = 'dev ' + st.dev;
+    dev.innerHTML = backdrop() + R[st.v]();
+    var bd = dev.querySelector('.bd'); if (bd) bd.scrollTop = top;
+    document.querySelectorAll('[data-v]').forEach(function(b){ b.setAttribute('aria-pressed', String(Number(b.dataset.v) === st.v)); });
+    document.querySelectorAll('[data-dev]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.dev === st.dev)); });
+    document.querySelectorAll('[data-plan]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.plan === st.plan)); });
+    renderNotes(); fit();
+  }
+  function fit(){ var W = ph() ? 390 : 1200, s = Math.min(1, stage.parentElement.clientWidth / W); scaler.style.transform = 'scale(' + s + ')'; stage.style.width = Math.floor(W * s) + 'px'; stage.style.height = Math.ceil(dev.offsetHeight * s) + 'px'; }
+  function setHash(){ var h = 'v' + st.v + (st.plan === 'free' ? '-free' : ''); if (location.hash !== '#' + h) history.replaceState(null, '', '#' + h); }
+  function readHash(){ var m = /^#v([1-5])(-free)?$/.exec(location.hash); if (m) { st.v = Number(m[1]); st.plan = m[2] ? 'free' : 'pro'; } }
+  $('vars').innerHTML = V.map(function(v){ return '<button type="button" class="chip" data-v="' + v.k + '">' + v.k + ' · ' + v.t + '<small>' + v.s + '</small></button>'; }).join('');
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var b = t.closest('[data-v],[data-dev],[data-plan],[data-reset]');
+    if (b && !dev.contains(b)) { if (b.dataset.v) { st.v = Number(b.dataset.v); S.pop = null; S.acc = null; } if (b.dataset.dev) st.dev = b.dataset.dev; if (b.dataset.plan) st.plan = b.dataset.plan; if (b.hasAttribute('data-reset')) S = fresh(); setHash(); render(); return; }
+    if (!dev.contains(t)) return;
+    var x;
+    if ((x = t.closest('[data-pop]'))) { S.pop = S.pop === x.dataset.pop ? null : x.dataset.pop; render(); return; }
+    if ((x = t.closest('[data-g]'))) { S.g = Number(x.dataset.g); S.f = 'all'; S.pop = null; render(); return; }
+    if ((x = t.closest('[data-f]'))) { S.f = x.dataset.f; S.pop = null; render(); return; }
+    if ((x = t.closest('[data-sort]'))) { S.sort = x.dataset.sort; S.pop = null; render(); return; }
+    if ((x = t.closest('[data-setcount]'))) { S.count = Number(x.dataset.setcount); render(); return; }
+    if ((x = t.closest('[data-count]'))) { if (x.disabled) return; S.count = Math.max(1, Math.min(MAX, S.count + Number(x.dataset.count))); render(); return; }
+    if ((x = t.closest('[data-prompt]'))) { e.stopPropagation(); var k = x.dataset.prompt; S.on.twm = k !== 'sentence' ? 1 : 0; S.on.tws = k !== 'meaning' ? 1 : 0; if (st.v === 4) S.pop = null; render(); return; }
+    if ((x = t.closest('[data-mc]'))) { if (!pro()) return; var m = x.dataset.mc; S.on.mis = m !== 'word' ? 1 : 0; S.on.mcqs = m !== 'meaning' ? 1 : 0; S.ai = true; if (st.v === 4) S.pop = null; render(); return; }
+    if ((x = t.closest('[data-src]'))) { if (x.disabled) return; var sk = x.dataset.src;
+      if (sk === 'tws') S.on.tws = S.on.tws ? 0 : 1;
+      if (sk === 'own') S.own = !S.own;
+      if (sk === 'ai') { if (aiOn() && S.on.cloze && !S.own) S.on.cloze = 0; else { S.ai = true; S.on.cloze = 1; S.own = false; } }
+      render(); return; }
+    if ((x = t.closest('[data-own]'))) { if (x.disabled) return; S.own = x.dataset.own === '1'; if (!S.own) { S.ai = true; S.on.cloze = 1; } render(); return; }
+    if ((x = t.closest('[data-act]'))) { var a = x.dataset.act; if (a === 'ai') { if (!pro()) return; S.ai = !S.ai; } if (a === 'own') S.own = !S.own; render(); return; }
+    if ((x = t.closest('[data-acc]'))) { S.acc = S.acc === x.dataset.acc ? null : x.dataset.acc; render(); return; }
+    if ((x = t.closest('[data-t]'))) { var k2 = x.dataset.t;
+      if (x.getAttribute('aria-disabled') === 'true') return;
+      if (k2 === 'tw') { var on = tw(); S.on.twm = on ? 0 : 1; S.on.tws = on ? 0 : 1; if (st.v === 4) S.pop = null; }
+      else if (k2 === 'mc') { if (!pro()) return; if (mc() && aiOn()) { S.on.mis = 0; S.on.mcqs = 0; } else { S.ai = true; S.on.mis = 1; S.on.mcqs = 1; } if (st.v === 4) S.pop = null; }
+      else if (k2 === 'blank') { if (S.on.tws || S.own || (aiOn() && S.on.cloze)) { S.on.tws = 0; S.own = false; S.on.cloze = 0; } else { S.on.tws = 1; if (pro()) { S.ai = true; S.on.cloze = 1; } } }
+      else { if (T[k2].ai && !pro()) return; if (T[k2].ai && !S.ai) S.ai = true; S.on[k2] = S.on[k2] ? 0 : 1; }
+      render(); return; }
+    if (S.pop && !t.closest('.pop')) { S.pop = null; render(); }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && (S.pop || S.acc)) { S.pop = null; render(); } });
+  addEventListener('hashchange', function(){ readHash(); render(); });
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage.parentElement); else addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  readHash(); render();
+})();
+</script>
