@@ -60,7 +60,7 @@ Nhánh `feat/practice-ai-count` từ `dev` sau khi PR #248 vào `dev` (merge `50
 
 ## Kiểm
 
-- API: `pnpm test` 354 file, 5202/5202 pass; `tsc` 0 lỗi; lint 2 cảnh báo có từ trước ở file không đụng; drift check sạch.
+- API: `pnpm test` 354 file, 5204/5204 pass (sau sửa của review cuối); `tsc` 0 lỗi; lint 2 cảnh báo có từ trước ở file không đụng; drift check sạch.
 - Admin: `pnpm test` 105 file, 1406/1406 pass; typecheck 0 lỗi; lint sạch; `pnpm test:e2e` (mocked, cả desktop và mobile, gồm `ui-guidelines` và `a11y`) 304 passed.
 - Smoke trên API và worker thật, AI giả, mỗi smoke một DB mới: `smoke:practice-ai-count` 14/14; `smoke:buoc-4`, `smoke:buoc-7`, `smoke:cloze-own-then-ai`,
   `smoke:dot-cai-thien-c` đều pass. Output: `docs/deliveries/practice-ai-count-smoke-output.txt`.
@@ -82,6 +82,16 @@ Nhánh `feat/practice-ai-count` từ `dev` sau khi PR #248 vào `dev` (merge `50
 - Hai dòng lỗi: "Chọn ít nhất một kiểu câu AI." và "Chọn ít nhất một kiểu câu không cần AI cho N câu còn lại."
 - `againBody` (`SessionSummary.tsx`) gửi lại `ai_count`, `ai_placement`, và `types`, `cloze_source` ban đầu, vì `types` lưu trong phiên có thể đã bị bỏ kiểu AI.
 - Tới lúc đó hộp hiện nay vẫn chặn `count` ở `max_questions_per_session`, kể cả khi admin chọn `scope_words` (`CustomizeDialog.tsx:85`).
+
+## Review cuối (một reviewer độc lập, cả nhánh)
+
+0 Critical, 1 Important, 5 Minor. Năm điểm Review Focus của plan đều đúng.
+- **Đã sửa (Important):** đường `ai_count` giữ lượt AI cho mọi chỗ ở vòng sau, kể cả khi ít từ dùng được AI, nên có thể trả 403 sai. Ví dụ: 4 từ, chỉ 1 từ
+  dùng được AI (`own_then_ai`), `count` 10, `ai_count` 5 → trước tính 5 lượt, nay 3. `plannedFromCount` chỉ đếm chỗ ở vòng sau cho từ dùng được AI.
+  Đường cũ (không `ai_count`) giữ nguyên cách tính cũ, nên vẫn có cùng kiểu dư này.
+- **Để lại (Minor):** (1) K tạm > 0, K chốt = 0 có thể làm phiên `scope_words` hỏi lại từ (đã ghi ở Giới hạn); (2) ba lỗi 400 mới không có `violations` hay
+  `reason`, web chưa phân biệt được hai câu báo lỗi; (3) lỗi của ô số đang ẩn hiện ở dropdown bằng chữ chung "Giá trị ngoài khoảng cho phép."; (4) smoke không tới
+  vòng 2, cách xếp ở vòng sau chỉ có unit test; (5) `input.aiCount!` trong planner.
 
 ## Lệch plan (đã ghi trong ledger)
 
