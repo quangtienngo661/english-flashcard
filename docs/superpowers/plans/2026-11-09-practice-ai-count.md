@@ -59,9 +59,9 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
 
 ### Task 0: Branch
 
-- [ ] **Step 1:** Run `gh pr view 248 --json state` and expect `"state":"MERGED"`. If it is not merged, stop and report.
-- [ ] **Step 2:** Run `git fetch origin && git switch -c feat/practice-ai-count origin/dev`. Then `git log --oneline -1` shows the merge of #248 or a later commit.
-- [ ] **Step 3:** These five files are untracked and follow the switch:
+- [x] **Step 1:** Run `gh pr view 248 --json state` and expect `"state":"MERGED"`. If it is not merged, stop and report.
+- [x] **Step 2:** Run `git fetch origin && git switch -c feat/practice-ai-count origin/dev`. Then `git log --oneline -1` shows the merge of #248 or a later commit.
+- [x] **Step 3:** These five files are untracked and follow the switch:
   - the design;
   - the decisions;
   - this plan;
@@ -85,7 +85,7 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
 - `AppSettings['practice']` gains `sessionMaxMode`, `aiMaxMode`, `aiMaxFixed`, `aiMaxPercent`, `aiPlacement`.
 - `AppConfigView['practice']` gains `session_max_mode`, `ai_max_mode`, `ai_max_fixed`, `ai_max_percent`, `ai_placement`, `scope_questions_max`.
 
-- [ ] **Step 1: Write the failing tests** in `settings.definitions.spec.ts`.
+- [x] **Step 1: Write the failing tests** in `settings.definitions.spec.ts`.
 
   Update the existing `'design §9: defaults are …'` test: its `practice` block gains `session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even'`.
 
@@ -104,14 +104,14 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
   - **`it('a choice change is in the history diff')`:** `changedFields(a, b)`, where only `aiPlacement` changes from `even` to `random`, equals `[{ key: 'practice.ai_placement', oldValue: 'even', newValue: 'random' }]`.
 
   In `app-config.view.spec.ts`, update `'maps the defaults…'`: `practice` equals `{ max_questions_per_session: 20, default_questions_per_session: 10, session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even', scope_questions_max: 100 }`.
-- [ ] **Step 2:** In `apps/api`, run `pnpm test -- src/settings`. The new and updated cases FAIL.
-- [ ] **Step 3:** Implement:
+- [x] **Step 2:** In `apps/api`, run `pnpm test -- src/settings`. The new and updated cases FAIL.
+- [x] **Step 3:** Implement:
   - add the five keys to `AppSettings`, `SETTINGS_DEFAULTS`, `SETTINGS_BOUNDS` (numbers only), `settingsValuesPatchSchema` (`z.enum(...)` for choices, `intIn` for numbers) and `FIELDS`, right after `default_questions_per_session`;
   - make the `default ≤ max` rule of `crossFieldViolations` apply only when `sessionMaxMode === 'fixed'`;
   - add the six fields to `appConfigView`;
   - export the new constants and types from `index.ts`.
-- [ ] **Step 4:** `pnpm test -- src/settings` → PASS. `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors.
-- [ ] **Step 5:** Commit `feat(api): add the practice ai count and session maximum settings`.
+- [x] **Step 4:** `pnpm test -- src/settings` → PASS. `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors.
+- [x] **Step 5:** Commit `feat(api): add the practice ai count and session maximum settings`.
 
 ### Task 2: Pure session limits
 
@@ -136,7 +136,7 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
     - keeps `cloze` with source `own_then_ai`, and the source becomes `own`.
   - `ruleTypesFor(types: QuestionType[], clozeSource: ClozeSource | null): QuestionType[]`: today's body of the private `ruleTypesOf`.
 
-- [ ] **Step 1: Write the failing tests.** One `it` per bullet, exact values:
+- [x] **Step 1: Write the failing tests.** One `it` per bullet, exact values:
   - **`sessionMaxOf`:**
     - fixed 20 with scope 4 → 20;
     - `scope_words` with 4 → 4, 1 → 1, 100 → 100, 101 → 100, 300 → 100.
@@ -163,10 +163,10 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
     - `['cloze']` with `own_then_ai` → `['cloze']`;
     - `['cloze']` with `own` → `['cloze']`.
   - **`it('the scope ceiling is one more than the session words sent to AI')`:** `SCOPE_QUESTIONS_MAX === SESSION_WORDS_MAX + 1`.
-- [ ] **Step 2:** `pnpm test -- src/practice/sessions/session-limits.spec.ts` → FAIL, because the module does not exist yet.
-- [ ] **Step 3:** Implement. `aiCapOf` uses integer arithmetic: `Math.floor((targetCount * pct) / 100)`.
-- [ ] **Step 4:** `pnpm test -- src/practice` → PASS. The existing practice tests cover the `ruleTypesOf` move.
-- [ ] **Step 5:** Commit `feat(api): add pure session and ai limits for practice`.
+- [x] **Step 2:** `pnpm test -- src/practice/sessions/session-limits.spec.ts` → FAIL, because the module does not exist yet.
+- [x] **Step 3:** Implement. `aiCapOf` uses integer arithmetic: `Math.floor((targetCount * pct) / 100)`.
+- [x] **Step 4:** `pnpm test -- src/practice` → PASS. The existing practice tests cover the `ruleTypesOf` move.
+- [x] **Step 5:** Commit `feat(api): add pure session and ai limits for practice`.
 
 ### Task 3: AI plan helpers
 
@@ -184,7 +184,7 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
   - `plannedFromCount(aiCount: number, marked: number, kept: number, targetCount: number): number` = `Math.min(aiCount, marked + Math.max(0, targetCount - kept))`.
   - `evenWantsAi(planned: number, budget: number, answered: number, targetCount: number): boolean`. Returns `false` when `budget <= 0`. Otherwise, with `placed = planned - budget`, returns true when `placed < Math.round(planned * (answered + 1) / targetCount)` or `targetCount - answered <= budget`.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
   - **`roundOneAiLimit`:** (4, 10, 10) → 4; (8, 20, 8) → 3; (5, 20, 8) → 2; (3, 4, 4) → 3.
   - **`markAiSensesRandom`**, with `kept` `a`…`j`, all capable, unseen `{b, g}`, limit 4:
     - `random = () => 0` → `['a','b','c','g']`;
@@ -198,10 +198,10 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
     - (budget 4, answered 9) → false;
     - (budget 4, answered 16) → true;
     - (budget 0, answered 10) → false.
-- [ ] **Step 2:** `pnpm test -- src/practice/ai/ai-plan.spec.ts` → FAIL.
-- [ ] **Step 3:** Implement the four exports. Leave `markAiSenses`, `aiPlanned`, `aiNeeded` and `aiBudget` as they are.
-- [ ] **Step 4:** Run the same command → PASS.
-- [ ] **Step 5:** Commit `feat(api): add round-one and even-spread ai plan helpers`.
+- [x] **Step 2:** `pnpm test -- src/practice/ai/ai-plan.spec.ts` → FAIL.
+- [x] **Step 3:** Implement the four exports. Leave `markAiSenses`, `aiPlanned`, `aiNeeded` and `aiBudget` as they are.
+- [x] **Step 4:** Run the same command → PASS.
+- [x] **Step 5:** Commit `feat(api): add round-one and even-spread ai plan helpers`.
 
 ### Task 4: Session column `ai_placement`
 
@@ -219,13 +219,13 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
   - `SessionView.ai_placement: string | null`;
   - `sessions.ai.spec.ts` `Options.aiPlacement?: string | null`, which Task 7 uses.
 
-- [ ] **Step 1: Write the failing test.** Add a session-row builder to `session-views.spec.ts` (it only has an item builder today). Then:
+- [x] **Step 1: Write the failing test.** Add a session-row builder to `session-views.spec.ts` (it only has an item builder today). Then:
 
   `it('ai_placement (09/11/2026): the row value, null for a session started without ai_count')`:
   - a row with `aiPlacement: 'random'` gives `ai_placement === 'random'`;
   - a row with `aiPlacement: null` gives `null`.
-- [ ] **Step 2:** `pnpm test -- src/practice/sessions/session-views.spec.ts` → FAIL.
-- [ ] **Step 3:** Write the migration:
+- [x] **Step 2:** `pnpm test -- src/practice/sessions/session-views.spec.ts` → FAIL.
+- [x] **Step 3:** Write the migration:
   ```sql
   ALTER TABLE practice_sessions ADD COLUMN ai_placement text;
   ALTER TABLE practice_sessions ADD CONSTRAINT practice_sessions_ai_placement_check
@@ -235,12 +235,12 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
   - add the model field and the view field;
   - add `aiPlacement: null` to the two fixtures;
   - add `aiPlacement?` to `Options` in `sessions.ai.spec.ts`.
-- [ ] **Step 4:** Verify:
+- [x] **Step 4:** Verify:
   - `pnpm db:setup` on the local DB applies the migration and generates the client;
   - the test PASSES;
   - `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors;
   - `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma --exit-code --script` → no drift.
-- [ ] **Step 5:** Commit `feat(api): store the ai placement of a practice session`.
+- [x] **Step 5:** Commit `feat(api): store the ai placement of a practice session`.
 
 ### Task 5: Planner takes the learner's AI count
 
@@ -262,7 +262,7 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
     - `planned = plannedFromCount(aiCount, marked.length, kept.length, count)`;
     - `needed` and the 403 work as today.
 
-- [ ] **Step 1: Write the failing tests.** Use the spec's fakes for content, questions and entitlements, with `pools.ai_practice.remaining` set per case:
+- [x] **Step 1: Write the failing tests.** Use the spec's fakes for content, questions and entitlements, with `pools.ai_practice.remaining` set per case:
   - `it('aiCount 3, count 10, 10 capable words, none unseen, even → aiPlanned 3, the 4th, 7th and 10th words marked')`.
   - `it('aiCount 3, random with random () => 0 → the first three capable words marked')`.
   - `it('aiCount 5, count 3, only 3 capable words: remaining 2 → 403 needed 3; remaining 3 → aiPlanned 3')`.
@@ -271,10 +271,10 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
   - `it('aiCount 0 → aiPlanned 0 and no unseen-question lookup')`.
   - `it('own_then_ai: no word is AI-capable on the AI side (all have saved sentences), aiCount 3 → aiPlanned 0')`.
   - `it('aiCount undefined keeps the old split: count 10, 4 types of which 2 AI → aiPlanned 5')`.
-- [ ] **Step 2:** `pnpm test -- src/practice/ai/ai-session-planner.service.spec.ts` → the new cases FAIL.
-- [ ] **Step 3:** Implement the behaviour above.
-- [ ] **Step 4:** Run the same command → PASS: the old cases unchanged, the new ones pass.
-- [ ] **Step 5:** Commit `feat(api): plan session ai questions from the learner's ai count`.
+- [x] **Step 2:** `pnpm test -- src/practice/ai/ai-session-planner.service.spec.ts` → the new cases FAIL.
+- [x] **Step 3:** Implement the behaviour above.
+- [x] **Step 4:** Run the same command → PASS: the old cases unchanged, the new ones pass.
+- [x] **Step 5:** Commit `feat(api): plan session ai questions from the learner's ai count`.
 
 ### Task 6: Start a session with `ai_count` and the new maxima
 
@@ -318,7 +318,7 @@ With the default AI cap (50%), a session with **only AI types** cannot open thro
 
 Every 400 here is `new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' })`. The service tests use a mocked `aiPlanner`, so they assert **what `plan` receives** and **what `practiceSession.create` gets**. The resulting `ai_planned` numbers are pinned in Task 5.
 
-- [ ] **Step 1: Write the failing tests.** The settings come from a fake `SettingsService`; override `SETTINGS_DEFAULTS.practice` per case.
+- [x] **Step 1: Write the failing tests.** The settings come from a fake `SettingsService`; override `SETTINGS_DEFAULTS.practice` per case.
   - **The four existing gate-order tests must stay green unchanged.** They are at `sessions.service.spec.ts:294`, `:305`, `:358` and `:374`.
   - **Schema:** `it('startBody: ai_count is a whole number ≥ 0; ai_placement is even or random')`, through `startBody.safeParse`:
     - `ai_count` 0 and 3 → success; −1, 2.5 and `'3'` → failure;
@@ -351,13 +351,13 @@ Every 400 here is `new ProblemDetailsException({ status: 400, title: 'Validation
   - **Review Focus 1:** no `ai_count`, `ai_max_mode` `fixed`, `ai_max_fixed` 0, `types: ['mcq_definition','cloze']`, `count` 10 → `plan` gets `aiCount: undefined`; `create` gets `aiPlacement: null`.
   - **Not enough units:** the `plan` mock rejects with 403 `ai-quota-insufficient` → no session is created.
   - **Recall** with `ai_count: 3` in the body → the session starts as today.
-- [ ] **Step 2:** `pnpm test -- src/practice/sessions` → the new cases FAIL.
-- [ ] **Step 3:** Implement steps 1–7 above.
-- [ ] **Step 4:** Run, in `apps/api`:
+- [x] **Step 2:** `pnpm test -- src/practice/sessions` → the new cases FAIL.
+- [x] **Step 3:** Implement steps 1–7 above.
+- [x] **Step 4:** Run, in `apps/api`:
   - `pnpm test` → PASS;
   - `pnpm lint` → no new warnings;
   - `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors.
-- [ ] **Step 5:** Commit `feat(api): start a practice session with the learner's ai count`.
+- [x] **Step 5:** Commit `feat(api): start a practice session with the learner's ai count`.
 
 ### Task 7: Even placement in later rounds
 
@@ -374,7 +374,7 @@ Every 400 here is `new ProblemDetailsException({ status: 400, title: 'Validation
   - Then, when `session.aiPlacement === 'even'`, return `evenWantsAi(session.aiPlanned, budget, answered, session.targetCount)`.
   - Otherwise use today's chance r ÷ q.
 
-- [ ] **Step 1: Write the failing tests.** Base session for every case:
+- [x] **Step 1: Write the failing tests.** Base session for every case:
   - fixed mode, `targetCount` 20, 8 words, `continued: true`;
   - `aiPlanned` 8, `aiPlacement: 'even'`;
   - round 1 done, with 3 AI items.
@@ -385,10 +385,10 @@ Every 400 here is `new ProblemDetailsException({ status: 400, title: 'Validation
   - `it('even: answered 16, budget 4 → the 17th question is AI')`.
   - **Review Focus 5:** `it('settings changed to random after start: the session still follows its stored even placement')`. The fake settings return `aiPlacement: 'random'`, and the result equals the first case.
   - `it('legacy session (aiPlacement null) keeps the r ÷ q chance')`. Stub `Math.random` to 0.99 with r ÷ q = 0.5 → not AI.
-- [ ] **Step 2:** `pnpm test -- src/practice/sessions/sessions.ai.spec.ts` → the new cases FAIL.
-- [ ] **Step 3:** Implement the change above.
-- [ ] **Step 4:** `pnpm test` → PASS. `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors.
-- [ ] **Step 5:** Commit `feat(api): spread ai questions evenly in later rounds`.
+- [x] **Step 2:** `pnpm test -- src/practice/sessions/sessions.ai.spec.ts` → the new cases FAIL.
+- [x] **Step 3:** Implement the change above.
+- [x] **Step 4:** `pnpm test` → PASS. `pnpm exec tsc --noEmit -p tsconfig.json` → 0 errors.
+- [x] **Step 5:** Commit `feat(api): spread ai questions evenly in later rounds`.
 
 ### Task 8: Smoke on a real API and worker
 
@@ -403,7 +403,7 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
 - **Types:** `['mcq_definition','cloze']` with `cloze_source: 'ai'`, unless a step says otherwise.
 - **`walk`:** answers `mcq_definition` with the `correct_index` read from the question's answer key in the DB, and `cloze` as the skeleton does.
 
-- [ ] **Step 1: Write the script.** Each step asserts exact values:
+- [x] **Step 1: Write the script.** Each step asserts exact values:
   1. `GET /v1/me/app-config` → `practice` has `session_max_mode 'fixed'`, `ai_max_mode 'percent'`, `ai_max_fixed 5`, `ai_max_percent 50`, `ai_placement 'even'` and `scope_questions_max 100`.
   2. Group A (`group_filter` `all`), `count` 10, `ai_count` 3:
      - `target_count` 10, `ai_planned` 3, `ai_placement 'even'`;
@@ -422,15 +422,15 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
      - Check that the 4 priority words have no unseen AI question, so `needed` is 2.
      - Start `group_filter: 'priority'` with `ai_count` 2 → 403 `ai-quota-insufficient`, `remaining` 1, `needed` 2.
      - Delete the inserted rows (as the skeleton does at line 410) and check that the units are back.
-- [ ] **Step 2:** Run on a fresh DB, following the start instructions at the top of the script. Every step is `ok` and the exit code is 0. Save the output to `docs/deliveries/practice-ai-count-smoke-output.txt`.
-- [ ] **Step 3:** Re-run these four smokes, each on its own fresh DB:
+- [x] **Step 2:** Run on a fresh DB, following the start instructions at the top of the script. Every step is `ok` and the exit code is 0. Save the output to `docs/deliveries/practice-ai-count-smoke-output.txt`.
+- [x] **Step 3:** Re-run these four smokes, each on its own fresh DB:
   - `pnpm smoke:buoc-4`;
   - `pnpm smoke:buoc-7`;
   - `pnpm smoke:cloze-own-then-ai`;
   - `pnpm smoke:dot-cai-thien-c`.
 
   Every step must be ok. Append their summary lines to the output file.
-- [ ] **Step 4:** Commit `test(api): add the practice ai count smoke`.
+- [x] **Step 4:** Commit `test(api): add the practice ai count smoke`.
 
 ### Task 9: Admin — settings model for single-choice fields
 
@@ -482,7 +482,7 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
 
   Add the matching English strings to `en.json`.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
   - **Layout test:** 61 keys, each once (update its name). Per-tab counts are `[5, 6, 14, 22, 2, 10, 1, 1]`. The first seven practice keys follow the order above.
   - **`applyPatch`:** `applyPatch(values, { practice: { session_max_mode: 'scope_words', ai_placement: 'bogus' } })` keeps `scope_words` and drops `bogus`.
   - **`visibleFields('practice', …)`** with `session_max_mode 'scope_words'` and `ai_max_mode 'percent'`: no `max_questions_per_session`, no `ai_max_fixed`, has `ai_max_percent`.
@@ -492,10 +492,10 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
     - `('fixed', 5, 50)` → ai `5, 5, 5`;
     - `('percent', 5, 30)` → ai `2, 3, 6`;
     - `('percent', 5, null as unknown as number)` → `null`.
-- [ ] **Step 2:** In `apps/admin`, run `pnpm test -- src/features/settings/settings-api.test.ts` → FAIL.
-- [ ] **Step 3:** Implement. `applyPatch` accepts a `choice` value only when `typeof value === 'string' && options.includes(value)`.
-- [ ] **Step 4:** Run the same command → PASS. `pnpm typecheck` → 0 errors.
-- [ ] **Step 5:** Commit `feat(admin): model single-choice practice settings`.
+- [x] **Step 2:** In `apps/admin`, run `pnpm test -- src/features/settings/settings-api.test.ts` → FAIL.
+- [x] **Step 3:** Implement. `applyPatch` accepts a `choice` value only when `typeof value === 'string' && options.includes(value)`.
+- [x] **Step 4:** Run the same command → PASS. `pnpm typecheck` → 0 errors.
+- [x] **Step 5:** Commit `feat(admin): model single-choice practice settings`.
 
 ### Task 10: Admin — fields, example line, history labels
 
@@ -520,7 +520,7 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
     - BOUNDS gain `ai_max_fixed` and `ai_max_percent` `{ min: 0, max: 100 }`.
   - **Existing e2e test.** `e2e/settings.spec.ts` finds `max_questions_per_session` by its label. Update it to the new label, under the "Mức cố định" choice.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
   In `SettingsPage.test.tsx`:
   - The `values()` fixture gives a choice key `options[0]`.
@@ -535,14 +535,14 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
 
   In `e2e/settings.spec.ts`:
   - `test('practice tab: switch the maximum to "Bằng số từ của phạm vi" and the AI cap to a fixed 3, save → PUT body has session_max_mode scope_words, ai_max_mode fixed, ai_max_fixed 3')`.
-- [ ] **Step 2:** In `apps/admin`, run `pnpm test` → the new cases FAIL.
-- [ ] **Step 3:** Implement the behaviour above.
-- [ ] **Step 4:** Run all of these and expect them to pass:
+- [x] **Step 2:** In `apps/admin`, run `pnpm test` → the new cases FAIL.
+- [x] **Step 3:** Implement the behaviour above.
+- [x] **Step 4:** Run all of these and expect them to pass:
   - `pnpm test`;
   - `pnpm typecheck`;
   - `pnpm lint`;
   - `pnpm test:e2e`, the whole mocked suite, which includes `ui-guidelines.spec.ts` (no horizontal scroll at 390 px) and `a11y.spec.ts`.
-- [ ] **Step 5:** Commit `feat(admin): edit the practice ai count settings`.
+- [x] **Step 5:** Commit `feat(admin): edit the practice ai count settings`.
 
 ### Task 11: Figma — Overlay 7 dialog
 
@@ -554,13 +554,13 @@ Copy the skeleton of `scripts/smoke-cloze-own-then-ai.mjs`: guards, `step`, `api
 
 Reuse the components on "Hệ thống" (2:2): "Nút chia đoạn" 138:319, "Hàng kiểu câu" 138:398, "Nút chữ" 166:326, and the − / + stepper already in the dialog footer. The ids were recorded on 09/11/2026; confirm them in Step 1.
 
-- [ ] **Step 1:** Load the `figma-use` skill, then call `create_session` on the file. Screenshot the four nodes as the "before" state. If an id no longer resolves, find the frame by name and note the new id.
-- [ ] **Step 2:** In 140:4049, 141:4147 and 141:4320:
+- [x] **Step 1:** Load the `figma-use` skill, then call `create_session` on the file. Screenshot the four nodes as the "before" state. If an id no longer resolves, find the frame by name and note the new id.
+- [x] **Step 2:** In 140:4049, 141:4147 and 141:4320:
   - replace the "Câu AI viết" switch with a − / + stepper showing 0;
   - add the line "Tối đa 5 câu AI · còn 280 lượt" under the header;
   - dim the two AI rows, using the existing disabled row state;
   - set the footer summary to "Dùng 1 trong 28 phiên còn lại hôm nay."
-- [ ] **Step 3:** In 131:4524, delete the panel "AI khóa ở Miễn phí", then add these panels:
+- [x] **Step 3:** In 131:4524, delete the panel "AI khóa ở Miễn phí", then add these panels:
   1. **"3 câu AI":** stepper at 3, rows active, footer "Trong đó 3 câu AI, rải đều."
   2. **"Còn 3 lượt":** "Tối đa 3 câu AI, vì bạn còn 3 lượt", with + disabled at 3.
   3. **"Hết lượt":** stepper locked at 0, "Hết lượt câu AI tháng này.", and a "Nút chữ" "Xem gói Pro".
@@ -568,7 +568,7 @@ Reuse the components on "Hệ thống" (2:2): "Nút chia đoạn" 138:319, "Hàn
   5. **"Theo số từ":** "Số câu" stepper at 4 with "tối đa 4", filter Ưu tiên selected.
   6. **"Câu đã lưu + AI":** "Điền từ vào câu bạn đã lưu" on, "Điền từ vào câu" active, and the line "Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết."
   7. **Errors:** "Chọn ít nhất một kiểu câu AI." and "Chọn ít nhất một kiểu câu không cần AI cho 7 câu còn lại."
-- [ ] **Step 4:** Screenshot the four nodes as the "after" state. Check that:
+- [x] **Step 4:** Screenshot the four nodes as the "after" state. Check that:
   - no text is cut;
   - phone frames keep 16 px margins and 44 px tap targets;
   - values come from variables (`color/*`, `radius/*`).
@@ -582,7 +582,7 @@ Reuse the components on "Hệ thống" (2:2): "Nút chia đoạn" 138:319, "Hàn
 - Modify: `CLAUDE.md` (one pointer section, like the other rounds)
 - Modify: `docs/deliveries/cloze-own-then-ai.md`: in "Việc cho đợt dựng hộp mới", the D3 line becomes "thay bằng `practice-ai-count`".
 
-- [ ] **Step 1:** Write the as-built section. It records:
+- [x] **Step 1:** Write the as-built section. It records:
   - **What changed**, with file paths.
   - **Test counts** from the final `pnpm test` runs, for both the API and the admin.
   - **Smoke results.**
@@ -598,9 +598,9 @@ Reuse the components on "Hệ thống" (2:2): "Nút chia đoạn" 138:319, "Hàn
     - show the two error lines;
     - make `againBody` (`SessionSummary.tsx`) resend `ai_count`, `ai_placement` and the original `types` and `cloze_source`, since the stored ones may be reduced;
     - until then, the current dialog still caps `count` at `max_questions_per_session`, even in `scope_words` mode (`CustomizeDialog.tsx:85`).
-- [ ] **Step 2:** Add the `CLAUDE.md` pointer and change the line in `cloze-own-then-ai.md`.
-- [ ] **Step 3:** Commit `docs(deliveries): record the practice ai count as built`.
-- [ ] **Step 4:** Ship with the `ship-pr` skill:
+- [x] **Step 2:** Add the `CLAUDE.md` pointer and change the line in `cloze-own-then-ai.md`.
+- [x] **Step 3:** Commit `docs(deliveries): record the practice ai count as built`.
+- [x] **Step 4:** Ship with the `ship-pr` skill:
   - base `dev`;
   - title `feat(api): let learners choose the ai question count`;
   - the body lists the API, admin and Figma parts, and the path of the smoke output;
