@@ -106,6 +106,8 @@
   --blur-wm-md: 12px;
   --blur-wm-lg: 18px;
   --blur-wm-glass: 24px;
+  /* Behind dialogs and sheets (motion §5). */
+  --blur-wm-overlay: 3px;
   --transition-duration-wm-out: 160ms;
   --transition-duration-wm-in: 320ms;
   --transition-duration-wm-close: 150ms;

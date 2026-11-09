@@ -16,6 +16,32 @@
   --font-wm-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
+/* Dialog and sheet motion of the new UI (GM15, motion §5–§6): enter on the main curve, close in 150ms on the accelerating one. */
+@theme {
+  --animate-wm-overlay-in: fade-in 200ms var(--ease-out-strong);
+  --animate-wm-dialog-in: wm-dialog-in 240ms var(--ease-out-strong);
+  --animate-wm-sheet-in: wm-sheet-in 240ms var(--ease-out-strong);
+  --animate-wm-pop-out: wm-pop-out 150ms var(--ease-wm-close) forwards;
+
+  @keyframes wm-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+  @keyframes wm-sheet-in {
+    from {
+      opacity: 0.4;
+      transform: translateY(3.75rem);
+    }
+  }
+  @keyframes wm-pop-out {
+    to {
+      opacity: 0;
+    }
+  }
+}
+
 /* Phones blur less during scene changes (design §8.1): at most 12px. Outside @theme, which holds only variables and keyframes. */
 @media (width < 48rem) {
   :root {
