@@ -93,7 +93,7 @@ export class AiSessionPlanner {
       }
     }
     const planned = byCount
-      ? plannedFromCount(input.aiCount!, marked.length, input.kept.length, input.count)
+      ? plannedFromCount(input.aiCount!, marked.length, input.kept.length, input.count, capable.length)
       : aiPlanned(input.count, input.types.length, aiTypes.length, marked.length, input.kept.length);
     const needed = aiNeeded(planned, marked.filter((id) => withUnseen.has(id)).length);
     const pool = snapshot.pools.ai_practice;

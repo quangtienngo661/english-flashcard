@@ -57,9 +57,15 @@ export function markAiSensesRandom(kept: string[], aiCapable: Set<string>, withU
   return kept.filter((id) => marked.has(id));
 }
 
-/** The session's AI questions for K: the marked round-1 words plus one per later-round slot, never above K. */
-export function plannedFromCount(aiCount: number, marked: number, kept: number, targetCount: number): number {
-  return Math.min(aiCount, marked + Math.max(0, targetCount - kept));
+/**
+ * The session's AI questions for K: the marked round-1 words plus the later-round slots an AI-capable word can take, never above K.
+ * Each later round walks the kept words once, so a full round holds `capable` AI slots and the last, partial one at most that many
+ * (final review I1: units are counted only for questions that can be AI, design §4 step 5).
+ */
+export function plannedFromCount(aiCount: number, marked: number, kept: number, targetCount: number, capable: number): number {
+  const later = Math.max(0, targetCount - kept);
+  const laterAi = kept === 0 ? 0 : capable * Math.floor(later / kept) + Math.min(capable, later % kept);
+  return Math.min(aiCount, marked + laterAi);
 }
 
 /**
