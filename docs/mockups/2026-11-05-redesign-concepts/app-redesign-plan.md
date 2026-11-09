@@ -511,3 +511,14 @@ Chủ dự án chốt GM17 của design giao diện mới: tên theo code đợt
     trong nhóm này" với nút Học và "Về trang chủ".
 - Màn Ôn không có nhãn AI, không có nút báo lỗi.
 - **Còn mở:** gõ sai một chữ nhỏ có tính là đúng không.
+
+## "Báo lỗi của tôi" trong Figma (10/11/2026)
+
+Chủ dự án chốt QR1 của design giao diện mới: "Báo lỗi của tôi" mở từ Cài đặt và từ menu ảnh đại diện (không đặt ở hộp Lịch), rồi chọn "Vẽ trong Figma".
+
+- **Trang mới** `211:5827` (máy tính) / `211:6061` (điện thoại), hàng y=54000, dựng từ khung Lịch sử giao dịch: "‹ Cài đặt", tiêu đề "Báo lỗi của tôi", nhóm
+  theo tháng; mỗi dòng: ngày gửi, "từ · lý do", kiểu câu (thêm "Đã trả lại 1 lượt câu AI" khi có), trạng thái có chấm màu (Đang xem navy; Đã xác nhận lỗi,
+  Đã sửa xanh; Không có lỗi xám). Bỏ khối "Gói học"; chú thích cuối trang nói khi nào được trả lượt câu AI.
+- **Cài đặt:** thêm dòng "Báo lỗi của tôi" ngay dưới "Lịch sử giao dịch" trong mục Tài khoản (`120:4295`, `120:4559`, `181:5456`, `181:5748`).
+- **Menu ảnh đại diện** (`181:316`, trang Hệ thống): thêm mục "Báo lỗi của tôi" có icon cờ, sau "Lịch sử giao dịch". Mọi khung dùng menu đổi theo.
+- **Hộp Lịch:** bỏ link "Báo lỗi của tôi" ở chân hộp (máy tính và điện thoại).

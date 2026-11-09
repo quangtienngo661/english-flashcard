@@ -151,7 +151,14 @@ giá dự phòng.
 Vòng 1: chủ dự án hỏi lại vì nhớ quảng cáo hiện "khi chuyển từ section này qua section khác, ví dụ Hôm nay → Nhóm". Claude giải thích cách
 đang làm theo DB13, DB38 (vignette hiện khi bấm link trên trang có mã, tức lúc rời Nhóm, Tra từ). Chờ chủ dự án chọn lại.
 
-### QR5. Màu nhóm trùng (chưa chốt)
+### QR5. Màu nhóm trùng (chủ dự án chốt 10/11/2026)
+
+Bối cảnh: review M6 tính được với 7 màu, 5 nhóm có 85% khả năng ít nhất một cặp trùng màu.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Giữ màu tính theo ID | Không đổi API; mỗi nhóm giữ màu trên mọi máy; có thể trùng |
+| Gán theo thứ tự tạo nhóm | 7 nhóm đầu không trùng; cần `created_at` trong `GET /v1/groups`; xóa nhóm có thể làm màu nhóm khác đổi |
 
 ## GM8–GM10, GM12. Cấu trúc FE và SEO
 

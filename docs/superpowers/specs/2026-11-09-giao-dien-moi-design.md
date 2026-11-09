@@ -70,7 +70,7 @@ artifact https://claude.ai/artifact/JAZaHRrKFbLUTMavXWVuuB):
 | QR2 | ✅ Chốt 10/11/2026: cả bốn chỗ thêm API (§10.5) | §1, §9 M3, M6, §10.5 |
 | QR3 | ✅ Chốt 10/11/2026: đọc giá lúc build (§10.6) | §9 M8, §10.6, §11 |
 | QR4 | AdSense tải lại trang làm mất hiệu ứng mở nhóm (review I6, DB38) | §5.4, §8.2 |
-| QR5 | Màu nhóm theo ID: 5 nhóm có 85% khả năng trùng ít nhất một cặp màu (7 màu); giữ, hay gán theo thứ tự tạo nhóm (cần `created_at` trong `GET /v1/groups`) (review M6) | §7.4 |
+| QR5 | ✅ Chốt 10/11/2026: giữ màu nhóm tính theo ID, chấp nhận khả năng trùng màu (5 nhóm: 85% có ít nhất một cặp trùng) | §7.4 |
 
 ## 3. Context UI và motion
 
@@ -390,7 +390,7 @@ nhận ra nhóm ở băng chuyền, bảng chọn nhóm, Hôm nay; thứ tự nh
 - **Màu cho chữ** (số thẻ chờ "24"): tương phản trên trắng đo được `#d99a17` 2,45, `#e5603f` 3,46, `#149384` 3,79, `#4a9637` 3,68, `#2a86d1` 3,87,
   `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Bản `-ink` của mỗi màu chỉnh đậm hơn cho tới khi ≥ 3:1 (chữ ≥ 24 px) và thêm vào kiểm LP12.
 - Bản Dark của bảy màu chốt cùng mockup tối (GM4); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
-- **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Giữ cách theo ID hay đổi cách gán là QR5.
+- **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Chủ dự án giữ cách theo ID (QR5).
 
 | Khi | Thì |
 |---|---|
@@ -581,7 +581,9 @@ Lịch sử → Báo lỗi của tôi") đổi theo QR1.
   Nếu M7 chưa làm lại Cài đặt thì thêm dòng vào trang Cài đặt cũ.
 - Câu sau khi gửi báo lỗi đổi thành "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi." (`App.practice.session.report.done`).
 - `/app/practice/history?tab=reports` chuyển tới `/app/settings/reports` (§10.4).
-- Figma: chưa có khung cho trang này, dòng trong Cài đặt và mục trong menu; vẽ trước khi code M6.
+- Figma (vẽ 10/11/2026): trang `211:5827` (máy tính) / `211:6061` (điện thoại), dựng từ khung Lịch sử giao dịch, chia theo tháng, mỗi dòng: ngày
+  gửi, "từ · lý do", kiểu câu (và "Đã trả lại 1 lượt câu AI" khi có), trạng thái có chấm màu; dòng "Báo lỗi của tôi" trong mục Tài khoản của Cài đặt
+  (`120:4295`, `120:4559`, `181:5456`, `181:5748`); mục có icon cờ trong component "Menu ảnh đại diện" (`181:316`). Link ở chân hộp Lịch đã bỏ.
 
 **M7 — Cài đặt, tài khoản, gói học.**
 
