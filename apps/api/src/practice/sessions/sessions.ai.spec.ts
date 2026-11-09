@@ -36,6 +36,8 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown> = 
 type Options = {
   types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | 'own_then_ai' | null;
   aiStopped?: string | null; target?: number;
+  /** Practice AI count (09/11/2026): the session's stored placement; null = started without ai_count. */
+  aiPlacement?: string | null;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
   aiAvailable?: (senseId: string) => QuestionType[]; prefetch?: number;
@@ -50,7 +52,7 @@ function setup(options: Options) {
     promptStyle: 'meaning', targetCount: options.target ?? senseIds.length, senseIds, status: 'active', continued: null,
     pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: options.clozeSource ?? null,
     aiPlanned: options.aiPlanned ?? 0, aiSenseIds: options.aiSenseIds ?? [], pendingAiRequestId: null,
-    aiStopped: options.aiStopped ?? null, aiNoticeShown: false,
+    aiStopped: options.aiStopped ?? null, aiNoticeShown: false, aiPlacement: options.aiPlacement ?? null,
   };
   const questions: PracticeQuestion[] = [];
   const items: PracticeSessionItem[] = [];

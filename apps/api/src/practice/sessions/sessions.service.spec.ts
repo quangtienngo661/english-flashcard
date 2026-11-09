@@ -29,7 +29,7 @@ const sessionRow = (overrides: Partial<PracticeSession> = {}): PracticeSession =
   id: 'sess-1', userId: learner.userId, kind: 'practice', source: 'all', groupId: null, groupFilter: null, sort: 'level_asc',
   types: ['mcq_definition'], promptStyle: 'meaning', targetCount: 5, senseIds: ['s1'], status: 'active', continued: null,
   pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: null, aiPlanned: 0, aiSenseIds: [],
-  pendingAiRequestId: null, aiStopped: null, aiNoticeShown: false, ...overrides,
+  pendingAiRequestId: null, aiStopped: null, aiNoticeShown: false, aiPlacement: null, ...overrides,
 });
 
 type Decision = { allowed: true } | ({ allowed: false } & Refusal);
