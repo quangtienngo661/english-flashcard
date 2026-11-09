@@ -81,6 +81,8 @@ test.describe('Cài đặt hệ thống (A/70a–A/70f)', () => {
     const choose = async (field: string, option: string) => {
       await page.getByRole('button', { name: new RegExp(field) }).click();
       await page.getByRole('option', { name: option }).click();
+      // The popover closes with an exit animation; until it is gone its options ("Mức cố định" is in both selects) are still found.
+      await expect(page.getByRole('option')).toHaveCount(0);
     };
     await expect(page.getByText('Ví dụ: phiên 7 câu → tối đa 3 câu AI · phiên 10 câu → 5 · phiên 20 câu → 10')).toBeVisible();
     await choose(p.session_max_mode, s.choices.session_max_mode.scope_words);
