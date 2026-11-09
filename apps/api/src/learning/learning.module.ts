@@ -3,6 +3,7 @@ import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interc
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
+import { StreakController } from './activity/streak.controller.js';
 import { BacklogController } from './backlog/backlog.controller.js';
 import { BacklogService } from './backlog/backlog.service.js';
 import { CalendarController } from './calendar/calendar.controller.js';
@@ -32,7 +33,7 @@ import { ReviewsService } from './reviews/reviews.service.js';
   imports: [IdentityModule, ContentModule, SettingsModule],
   controllers: [
     BacklogController, CalendarController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
-    ReviewsController, AdminRetentionController,
+    ReviewsController, AdminRetentionController, StreakController,
   ],
   providers: [
     BacklogService, CalendarService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
