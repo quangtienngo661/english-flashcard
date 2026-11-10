@@ -64,6 +64,12 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(recall).toHaveAttribute('data-variant', 'primary');
   });
 
+  it('M6.3: the page no longer renders the "+" itself (the chrome stacks it under the calendar button)', async () => {
+    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    await screen.findByRole('region', { name: 'Công nghệ' });
+    expect(screen.queryByRole('button', { name: 'Thêm từ' })).toBeNull();
+  });
+
   it('counts follow the locale: 262962 waiting cards show as "262.962"', async () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes([group('g-big', 'Lớn', { priority: 0, due: 262962, new: 0 }, 123456)]) });
     const hero = await screen.findByRole('region', { name: 'Lớn' });

@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, type MouseEvent } from 'react';
-import { AddFab } from '@/app-chrome/AddFab';
 import { PageColumns } from '@/app-chrome/PageColumns';
 import { createFormat, useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
@@ -92,7 +91,6 @@ export function TodayPage() {
         )}
         {dialogs}
       </PageColumns>
-      <AddFab />
     </>
   );
 }

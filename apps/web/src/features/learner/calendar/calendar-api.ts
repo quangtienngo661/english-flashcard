@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
 import type { HistoryItem } from '../practice/practice-api';
 
@@ -80,4 +80,13 @@ export function useDayAnswers(date: string, enabled = true) {
 /** The answer that started the learner's day carries the streak: write it instead of asking again (design §10.5). */
 export function writeStreak(client: QueryClient, days: number) {
   client.setQueryData<Streak>(STREAK_KEY, { days, studied_today: true });
+}
+
+/** Hover and focus on the calendar button load the month before the click (design §5.7). */
+export function usePrefetchCalendarMonth() {
+  const api = useApi();
+  const client = useQueryClient();
+  return (month: string) => {
+    void client.prefetchQuery({ queryKey: calendarMonthKey(month), queryFn: () => api.get<CalendarMonth>(`/v1/me/calendar?month=${month}`) });
+  };
 }

@@ -681,6 +681,12 @@
       "lastCalendar": "Open study calendar",
       "backlogLabel": "not reviewed in a while"
     },
+    "calendar": {
+      "fab": {
+        "label": "Study calendar",
+        "streak": "{days, number}-day streak"
+      }
+    },
     "groups": {
       "title": "Your decks",
       "create": "Create deck",

@@ -681,6 +681,12 @@
       "lastCalendar": "Mở lịch học",
       "backlogLabel": "từ lâu chưa ôn"
     },
+    "calendar": {
+      "fab": {
+        "label": "Lịch học",
+        "streak": "{days, number} ngày liên tiếp"
+      }
+    },
     "groups": {
       "title": "Nhóm của bạn",
       "create": "Tạo nhóm",
