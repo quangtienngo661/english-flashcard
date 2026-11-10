@@ -2,7 +2,6 @@
 
 import { Search } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -15,7 +14,7 @@ import { useAddWord } from '../add-word/add-word-context';
 import { BulkAddSheet } from '../add-word/BulkAddSheet';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { useGroups } from '../groups/groups-api';
-import { useSenseItems, useWordPage, wordHref, type PageSense } from '../word/word-api';
+import { useSenseItems, useWordPage, type PageSense } from '../word/word-api';
 import { DictionaryPage } from './DictionaryPage';
 import { LiftedCard } from './LiftedCard';
 import { lookupHref, lookupQuery, parseLookup, useWordList, type LookupParams } from './lookup-api';
@@ -108,12 +107,6 @@ export function LookupPage() {
             />
             <div className="flex flex-col items-start gap-1">
               {sense && <TextButton onPress={() => setPicker(true)}>{t('otherGroup')}</TextButton>}
-              <Link
-                href={wordHref(locale, selected.lemma)}
-                className="inline-flex min-h-11 items-center font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:min-h-0"
-              >
-                {t('openWordArrow')}
-              </Link>
             </div>
           </div>
         </div>

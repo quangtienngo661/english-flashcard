@@ -1,11 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import type { GroupSummary } from '../groups/groups-api';
-import { STAGE_DAYS, type ItemState, type PageSense } from '../word/word-api';
+import { STAGE_DAYS, wordHref, type ItemState, type PageSense } from '../word/word-api';
 import { marked } from './DictionaryPage';
 import type { WordRow } from './lookup-api';
 
@@ -17,6 +18,7 @@ import type { WordRow } from './lookup-api';
 export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense?: PageSense; item?: ItemState; groups: GroupSummary[] }) {
   const t = useTranslations('App.lookup');
   const tw = useTranslations('App.word');
+  const locale = useLocale();
   const meta = [sense?.pos ?? word.pos_list.join(', '), sense?.level ?? word.level, sense?.topics[0]?.name].filter(Boolean).join(' · ');
   const example = sense ? sense.examples[0] : word.example;
   const deck = item ? groups.find((g) => item.group_ids.includes(g.id)) : undefined;
@@ -31,12 +33,22 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
         {example && (
           <p className="break-words border-t border-wm-line pt-3 font-wm-sans text-wm-base text-wm-ink">{marked(example, word.lemma)}</p>
         )}
-        {item && deck && (
-          <p className="mt-auto flex items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
-            <span aria-hidden className={cn('size-2.5 shrink-0 rounded-xs', groupTone(deck.id, deck.total).bg)} />
-            {item.level === 0 ? tw('stageNew', { group: deck.name }) : tw('stage', { group: deck.name, days: STAGE_DAYS[item.level] ?? 30 })}
-          </p>
-        )}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 pt-1">
+          {item && deck ? (
+            <p className="flex min-w-0 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
+              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-xs', groupTone(deck.id, deck.total).bg)} />
+              {item.level === 0 ? tw('stageNew', { group: deck.name }) : tw('stage', { group: deck.name, days: STAGE_DAYS[item.level] ?? 30 })}
+            </p>
+          ) : (
+            <span />
+          )}
+          <Link
+            href={wordHref(locale, word.lemma)}
+            className="ml-auto inline-flex min-h-11 items-center font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:min-h-0"
+          >
+            {t('openWordArrow')}
+          </Link>
+        </div>
       </div>
     </section>
   );
