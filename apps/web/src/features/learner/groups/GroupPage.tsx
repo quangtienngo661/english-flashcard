@@ -161,7 +161,8 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       </div>
       <section aria-labelledby="group-title" className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
-        <GroupStack group={group} size="page" depth={2} ref={stackRef} />
+        {/* Above the group info while it flies in from the carousel (motion doc §3). */}
+        <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
         <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
           <p className="font-wm-mono text-wm-mono text-wm-muted">
             {created === null
