@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
-import { SearchStrip } from '@/app-chrome/SearchStrip';
 import { LookupPage } from './LookupPage';
 
 const nav = vi.hoisted(() => ({ params: new URLSearchParams(), replace: vi.fn(), push: vi.fn() }));
@@ -89,40 +88,5 @@ describe('LookupPage (K/30, M/40)', () => {
     });
     expect(await screen.findByText('Không tìm thấy từ này')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Thêm từ này' })).toBeInTheDocument();
-  });
-});
-
-describe('SearchStrip (K/10 tier 2, M/40)', () => {
-  it('submits to /app/lookup with the query and the level', async () => {
-    renderApp(<SearchStrip />, { routes: base() });
-    await userEvent.click(screen.getByRole('button', { name: /Trình độ/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'A2' }));
-    await userEvent.type(screen.getByRole('searchbox'), 'left');
-    await userEvent.click(screen.getByRole('button', { name: 'Tra' }));
-    await waitFor(() => expect(nav.push).toHaveBeenCalled());
-    expect(lastUrl(nav.push).pathname).toBe('/vi/app/lookup');
-    expect(Object.fromEntries(lastUrl(nav.push).searchParams)).toEqual({ q: 'left', level: 'A2' });
-  });
-
-  it('"/" focuses the search box, unless the learner is typing in another field', async () => {
-    renderApp(
-      <>
-        <input aria-label="other" />
-        <SearchStrip />
-      </>,
-      { routes: base() },
-    );
-    await userEvent.keyboard('/');
-    expect(screen.getByRole('searchbox')).toHaveFocus();
-    await userEvent.click(screen.getByRole('textbox', { name: 'other' }));
-    await userEvent.keyboard('/');
-    expect(screen.getByRole('textbox', { name: 'other' })).toHaveValue('/');
-  });
-
-  it('on the lookup page it starts from the query in the URL', () => {
-    nav.params = new URLSearchParams({ q: 'went', level: 'B1' });
-    renderApp(<SearchStrip />, { routes: base() });
-    expect(screen.getByRole('searchbox')).toHaveValue('went');
-    expect(screen.getByRole('button', { name: /B1/ })).toBeInTheDocument();
   });
 });

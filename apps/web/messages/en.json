@@ -325,11 +325,7 @@
         "pro": "Pro"
       },
       "search": {
-        "level": "Level",
-        "allLevels": "All levels",
-        "placeholder": "Search for a word",
-        "placeholderShort": "Search for a word",
-        "submit": "Search"
+        "placeholder": "Search for a word"
       },
       "menu": {
         "account": "Account",

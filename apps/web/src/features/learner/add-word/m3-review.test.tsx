@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
 import { ToastRegion } from '@/app-ui/Toast';
 import { renderApp } from '@/app-ui/test-utils';
-import { SearchStrip } from '@/app-chrome/SearchStrip';
 import { WordPage } from '../word/WordPage';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { AddWordSheet } from './AddWordSheet';
@@ -39,18 +37,6 @@ const base = (extra = {}, decks = [deck(TRAVEL, 'Du lịch')]) => ({
   'GET /v1/lookup?q=rizz': () => Response.json({ senses: [], via_inflection: [] }),
   ...extra,
 });
-/** Renders the strip again on demand, as a URL change on the lookup page does. */
-function Rerender() {
-  const [, setTick] = useState(0);
-  return (
-    <>
-      <button type="button" onClick={() => setTick((n) => n + 1)}>
-        tick
-      </button>
-      <SearchStrip />
-    </>
-  );
-}
 const posts = (calls: Array<{ method: string; path: string }>, path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 const toasts = (ui: React.ReactElement) => (
   <>
@@ -161,27 +147,6 @@ describe('I-4: saving a word refreshes the deck it went to', () => {
     client.setQueryData(['group', TRAVEL], { id: TRAVEL });
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
     await waitFor(() => expect(client.getQueryState(['group', TRAVEL])?.isInvalidated).toBe(true));
-  });
-});
-
-describe('I-5: the search strip follows the URL of the lookup page', () => {
-  it('a level cleared by "Xóa lọc" is cleared in the strip too', async () => {
-    nav.params = new URLSearchParams({ q: 'go', level: 'B1' });
-    renderApp(<Rerender />, { routes: base() });
-    expect(screen.getByRole('button', { name: /B1/ })).toBeInTheDocument();
-    nav.params = new URLSearchParams({ q: 'go' });
-    await userEvent.click(screen.getByRole('button', { name: 'tick' }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: /B1/ })).not.toBeInTheDocument());
-  });
-
-  it('a search from the lookup page keeps its topic, part of speech and "mine" filters', async () => {
-    nav.params = new URLSearchParams({ q: 'go', topic: 'food', pos: 'verb', mine: 'true' });
-    renderApp(<SearchStrip />, { routes: base() });
-    const box = screen.getByRole('searchbox');
-    await userEvent.clear(box);
-    await userEvent.type(box, 'eat{Enter}');
-    const url = new URL(String(nav.push.mock.calls.at(-1)?.[0]), 'http://x');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'eat', topic: 'food', pos: 'verb', mine: 'true' });
   });
 });
 

@@ -325,11 +325,7 @@
         "pro": "Pro"
       },
       "search": {
-        "level": "Trình độ",
-        "allLevels": "Mọi trình độ",
-        "placeholder": "Tìm từ",
-        "placeholderShort": "Tìm từ",
-        "submit": "Tra"
+        "placeholder": "Tìm từ"
       },
       "menu": {
         "account": "Tài khoản",

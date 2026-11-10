@@ -133,7 +133,9 @@ test.describe('M3 flows (mocked API)', () => {
     expect(requests(page, 'POST', `/v1/groups/${NEW}/items/bulk`)[0].body).toEqual({ level: 'A2', topic: 'food' });
   });
 
-  test('"/" focuses the search strip; submitting goes to Tra từ', async ({ page }) => {
+  test('"/" focuses the top-bar search box; submitting goes to Tra từ (M4.3)', async ({ page }, testInfo) => {
+    // The box is in the desktop top bar only (Figma 54:502); phones keep the magnifier link to Tra từ.
+    test.skip(testInfo.project.name === 'mobile', 'desktop top bar only');
     await signedInAs(page, 'free', m3Api());
     await page.goto('/vi/app/groups');
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
