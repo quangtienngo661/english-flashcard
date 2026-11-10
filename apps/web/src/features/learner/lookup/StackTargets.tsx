@@ -64,20 +64,20 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
         .map((group) => {
           const has = added.has(`${group.id}:${senseId}`) || (inGroups?.includes(group.id) ?? false);
           return (
-            <li key={group.id} className="flex flex-col items-center gap-2 text-center">
+            <li key={group.id} className="flex flex-col items-center gap-2">
               <button
                 type="button"
                 aria-label={t('addTo', { group: group.name })}
                 disabled={has || !senseId || inGroups === null}
                 onClick={() => void add(group)}
-                className="lk-stack rounded-wm-md outline-none focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-wm-accent"
+                className="lk-stack rounded-wm-md text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-wm-accent"
               >
                 <GroupStack group={group} size="lookup" depth={1} />
               </button>
               {has ? (
-                <span className="font-wm-sans text-wm-caption font-semibold text-wm-pass">{t('hasIt')}</span>
+                <span className="text-center font-wm-sans text-wm-caption font-semibold text-wm-pass">{t('hasIt')}</span>
               ) : (
-                <span className="font-wm-sans text-wm-caption text-wm-muted">{t('addHere')}</span>
+                <span className="text-center font-wm-sans text-wm-caption text-wm-muted">{t('addHere')}</span>
               )}
             </li>
           );
