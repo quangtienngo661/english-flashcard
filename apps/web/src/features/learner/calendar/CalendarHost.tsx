@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { monthOf, todayIn, useLearnerZone } from '@/lib/learner-date';
 import { CalendarContext, type CalendarControls } from './calendar-context';
@@ -49,9 +49,12 @@ function write(kind: 'push' | 'replace', url: string, state: Marker | null) {
  * reload closes by stripping the parameters, so closing never leaves the app. `L` toggles the calendar outside fields and other dialogs.
  */
 export function CalendarHost({ children }: { children: ReactNode }) {
-  // Re-renders on Next's own navigations; the store covers pushState and Back.
-  useSearchParams();
+  // Next's own navigations (a Link, the history page's redirect) render first and write the URL afterwards, so the render reads the old
+  // location; reading it again after the commit catches the new one. The store covers our pushState / replaceState and Back.
+  const searchParams = useSearchParams();
+  const nextPath = usePathname();
   const location = useSyncExternalStore(subscribe, snapshot, () => '');
+  useEffect(() => notify(), [searchParams, nextPath]);
   const zone = useLearnerZone();
   const today = todayIn(zone, new Date());
   const [pathname, search] = useMemo(() => {
