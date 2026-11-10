@@ -1635,6 +1635,16 @@
     },
     "streak": {
       "days": "{days, number}-day streak"
+    },
+    "stack": {
+      "words": "{count, number} words · {mastered, number} mastered",
+      "empty": "empty deck",
+      "waiting": "cards waiting",
+      "next": "next",
+      "done": "✓ Done for today",
+      "last": "last reviewed",
+      "noWords": "No words yet",
+      "addHint": "Add words to start"
     }
   }
 }

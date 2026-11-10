@@ -514,3 +514,112 @@
     }
   }
 }
+
+/* Group stack (M3 Figma A §2.3, §4; GroupStack.tsx). One design drawn at 290×368 px ("Thẻ giữa", carousel centre) and scaled: every
+   length below is in em of that master at font-size 16px (px ÷ 16), and data-size sets the font-size (Figma widths ÷ 290 × 16). */
+.gstack {
+  position: relative;
+  width: 18.125em;
+  flex: none;
+  font-size: 16px;
+  padding-bottom: calc(var(--gstack-layers, 0) * 0.62em);
+}
+.gstack[data-layers='1'] { --gstack-layers: 1; }
+.gstack[data-layers='2'] { --gstack-layers: 2; }
+.gstack[data-layers='3'] { --gstack-layers: 3; }
+/* Hôm nay row: 176 px desktop, 150 px phone. */
+.gstack[data-size='today'] { font-size: 8.276px; }
+/* Một nhóm head: 210 px desktop, 150 px phone. */
+.gstack[data-size='page'] { font-size: 8.276px; }
+/* Carousel centre: 290 px desktop, 210 px phone. */
+.gstack[data-size='carousel'] { font-size: 11.586px; }
+@media (width >= 48rem) {
+  .gstack[data-size='today'] { font-size: 9.71px; }
+  .gstack[data-size='page'] { font-size: 11.586px; }
+  .gstack[data-size='carousel'] { font-size: 16px; }
+}
+.gstack-face {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 23em;
+  flex-direction: column;
+  overflow: hidden;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 1.952em;
+  background: var(--color-wm-surface);
+  padding: 1.603em 1.743em 1.394em;
+  box-shadow: 0 2.23em 4.18em -2.65em rgb(27 36 68 / 0.45);
+  color: var(--color-wm-ink);
+}
+.gstack-behind {
+  position: absolute;
+  height: 23em;
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: 1.835em;
+  background: var(--color-wm-surface);
+}
+.gstack-behind[data-behind='1'] { left: 0.544em; top: 1.973em; width: 17.038em; height: 21.62em; opacity: 0.85; }
+.gstack-behind[data-behind='2'] { left: 1.088em; top: 3.946em; width: 15.95em; height: 20.24em; opacity: 0.55; border-radius: 1.718em; }
+.gstack-behind[data-behind='3'] { left: 1.631em; top: 5.918em; width: 14.863em; height: 18.86em; opacity: 0.3; border-radius: 1.6em; }
+.gstack[data-size='carousel'] .gstack-behind[data-behind='1'] { filter: blur(0.078em); }
+.gstack[data-size='carousel'] .gstack-behind[data-behind='2'] { filter: blur(0.156em); }
+.gstack[data-size='carousel'] .gstack-behind[data-behind='3'] { filter: blur(0.234em); }
+.gstack-meta {
+  font-family: var(--font-wm-mono);
+  font-size: 1.0875em;
+  font-weight: 500;
+  color: var(--color-wm-muted);
+}
+.gstack-name {
+  margin-top: 0.35em;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+  font-family: var(--font-wm-display);
+  font-size: 2.858em;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.021em;
+}
+.gstack-grow { flex: 1; }
+.gstack-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 1.255em;
+  font-weight: 600;
+  color: var(--color-wm-muted);
+}
+.gstack-count b {
+  font-family: var(--font-wm-display);
+  font-size: 3em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.gstack-state {
+  font-family: var(--font-wm-display);
+  font-size: 1.6em;
+  font-weight: 800;
+}
+.gstack-foot {
+  margin-top: 0.7em;
+  border-top: 1px solid var(--color-wm-line);
+  padding-top: 0.6em;
+  overflow: hidden;
+  font-size: 1.144em;
+  color: var(--color-wm-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gstack-foot b {
+  font-family: var(--font-wm-display);
+  font-size: 1.12em;
+  font-weight: 700;
+  color: var(--color-wm-ink);
+}

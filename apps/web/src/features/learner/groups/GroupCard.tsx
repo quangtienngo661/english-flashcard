@@ -94,7 +94,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
             {t('addWord')}
           </button>
         ) : (
-          <DeckButtons group={group} size="card" className="mt-auto" />
+          <DeckButtons group={group} className="mt-auto" />
         )}
       </div>
     </li>

@@ -1635,6 +1635,16 @@
     },
     "streak": {
       "days": "{days, number} ngày liên tiếp"
+    },
+    "stack": {
+      "words": "{count, number} từ · {mastered, number} đã thuộc",
+      "empty": "nhóm trống",
+      "waiting": "thẻ chờ",
+      "next": "tiếp theo",
+      "done": "✓ Xong hôm nay",
+      "last": "ôn gần nhất",
+      "noWords": "Chưa có từ",
+      "addHint": "Thêm từ để bắt đầu"
     }
   }
 }
