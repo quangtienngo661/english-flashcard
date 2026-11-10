@@ -242,6 +242,20 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(screen.getByRole('link', { name: 'Về Danh sách nhóm' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
+  it('opened from the carousel (owner 10/11/2026): the head draws from the deck list at once, before the deck detail arrives', async () => {
+    let release!: () => void;
+    renderApp(<GroupPage />, { chrome: true,
+      routes: routes({
+        [`GET /v1/groups/${G}`]: () =>
+          new Promise<Response>((r) => (release = () => r(Response.json({ id: G, name: 'Công nghệ', version: 1, item_count: 4, removable_items: 3, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' })))),
+      }),
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
+    expect(screen.queryByText(/tạo ngày/)).toBeNull();
+    release();
+    expect(await screen.findByText(/tạo ngày .*2\/10/)).toBeInTheDocument();
+  });
+
   it('E17: a malformed id never reaches the API', async () => {
     search = new URLSearchParams({ id: '../../admin' });
     const { calls } = renderApp(<GroupPage />, { chrome: true, routes: routes() });
