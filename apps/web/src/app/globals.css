@@ -842,6 +842,7 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
+}
 
 /* How many stacks each side a press on the track can reach (GroupCarousel onTrackClick): one on phones, two from 48rem. */
 .gcar-track { --gcar-reach: 1; }
