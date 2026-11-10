@@ -40,7 +40,7 @@ export function GroupStack({
   const tone = groupTone(group.id, group.total);
   const layers = empty ? 0 : Math.min(depth ?? stackDepth(count), stackDepth(count));
   const name = href ? (
-    <Link href={href} onClick={onOpen} className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-wm-xl focus-visible:after:outline-3 focus-visible:after:outline-offset-2 focus-visible:after:outline-wm-accent">
+    <Link href={href} prefetch onClick={onOpen} className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-wm-xl focus-visible:after:outline-3 focus-visible:after:outline-offset-2 focus-visible:after:outline-wm-accent">
       {group.name}
     </Link>
   ) : (

@@ -217,6 +217,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
         <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
+          prefetch
           onClick={onOpen}
           className="flex min-h-11 items-center text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
