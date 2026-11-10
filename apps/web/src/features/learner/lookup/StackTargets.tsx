@@ -36,6 +36,12 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
   const errorText = useErrorMessage();
   const [added, setAdded] = useState<Set<string>>(() => new Set());
   const target = useRef<GroupSummary | null>(null);
+  // The order is taken once: an add refreshes the counts, and re-sorting then would move the stacks under the pointer.
+  const [order, setOrder] = useState<string[]>([]);
+  const ids = carouselOrder(groups).map((g) => g.id);
+  const kept = [...order.filter((id) => ids.includes(id)), ...ids.filter((id) => !order.includes(id))];
+  if (kept.join() !== order.join()) setOrder(kept);
+  const shown = kept.map((id) => groups.find((g) => g.id === id)!).slice(0, SHOWN);
   const save = useSubmitOnce(async (key) => {
     const group = target.current!;
     const result = await api.post<{ created: boolean }>(`/v1/groups/${group.id}/items`, { sense_id: senseId }, { idempotencyKey: key });
@@ -61,9 +67,7 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
 
   return (
     <ul className="grid grid-cols-3 gap-x-2.5 gap-y-5">
-      {carouselOrder(groups)
-        .slice(0, SHOWN)
-        .map((group) => {
+      {shown.map((group) => {
           const has = added.has(`${group.id}:${senseId}`) || (inGroups?.includes(group.id) ?? false);
           return (
             <li key={group.id} className="flex flex-col items-center gap-2">
