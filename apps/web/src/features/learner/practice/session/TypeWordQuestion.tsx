@@ -1,10 +1,13 @@
 'use client';
 
+import { Lightbulb, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
-import { Button } from '@/app-ui/Button';
+import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
-import { KBD } from './QuestionCard';
+import { FIELD_BOX } from '@/ui/field-styles';
+import { TextButton } from '@/ui/TextButton';
+import { ButtonKey } from './QuestionCard';
 import type { Outcome } from './use-practice-session';
 
 /** The answer field of a typed question (K/63, K/64; TV12 [Kiểm tra]); after a final result it keeps what was typed. */
@@ -18,7 +21,7 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
   const shown = final && outcome.chosen && 'text' in outcome.chosen ? outcome.chosen.text : text;
   return (
     <form
-      className="flex flex-col gap-3 sm:flex-row"
+      className="flex flex-col gap-3 md:flex-row"
       onSubmit={(e) => {
         e.preventDefault();
         if (!final && text.trim()) onSubmit(text);
@@ -41,15 +44,12 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
           spellCheck={false}
           maxLength={100}
           placeholder={t('answerPlaceholder')}
-          className={cn(
-            'min-h-control-touch w-full rounded-inner border-2 bg-surface px-3 pr-16 text-body font-semibold text-ink outline-none placeholder:font-normal placeholder:text-placeholder focus-visible:border-primary',
-            retry ? 'border-danger bg-danger-soft' : 'border-border-strong',
-          )}
+          className={cn(FIELD_BOX, 'pr-16 font-semibold placeholder:font-normal', retry && 'border-wm-fail')}
         />
-        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-caption font-semibold text-danger">{t('attempt', { n: outcome.tries })}</span>}
+        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 font-wm-mono text-wm-mono lowercase text-wm-fail">{t('attempt', { n: outcome.tries })}</span>}
       </div>
       {!final && (
-        <Button type="submit" variant={retry ? 'quiet' : 'sticker'} size="lg" className="px-8" isDisabled={!text.trim()} isPending={disabled}>
+        <Button type="submit" variant={retry ? 'secondary' : 'primary'} className="px-8" isDisabled={!text.trim()} isPending={disabled}>
           {t('check')}
         </Button>
       )}
@@ -57,8 +57,13 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
   );
 }
 
-/** K/64 buttons for a wrong typed answer that can still be retried. */
-export function TryAgainActions({ onRetry, onHint, hintAvailable, onReveal, busy }: {
+/**
+ * K/64 "Chưa đúng" for a wrong typed answer that can still be retried, tucked under the card like the result (Figma 178:5326):
+ * [Xem đáp án] (text), [Gợi ý H], [Làm lại Enter]. A session word is spelt right: the spelling text would mislead, and the owner
+ * wants no line instead (07/11/2026).
+ */
+export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onReveal, busy }: {
+  sessionWord: boolean;
   onRetry: () => void;
   onHint: () => void;
   hintAvailable: boolean;
@@ -67,23 +72,31 @@ export function TryAgainActions({ onRetry, onHint, hintAvailable, onReveal, busy
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Button variant="sticker" size="lg" className="justify-between" onPress={onRetry}>
-          {t('retry')}
-          <kbd className={`${KBD} border-on-accent`}>Enter</kbd>
-        </Button>
+    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 border-wm-fail bg-wm-fail-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-feedback-in md:mx-5.5 md:px-7">
+      <div className="flex items-center gap-3">
+        <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-fail text-wm-on-accent">
+          <X aria-hidden className="size-4.5" />
+        </span>
+        <p className="font-wm-display text-wm-card-title text-wm-fail">{t('wrong')}</p>
+      </div>
+      {!sessionWord && <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('tryAgainBody')}</p>}
+      <p className="font-wm-sans text-wm-small text-wm-muted">{t('tryAgainNote')}</p>
+      <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:justify-end">
+        <TextButton tone="muted" className="col-span-2 row-start-2 justify-center md:col-auto md:row-auto md:mr-auto" isDisabled={busy} onPress={onReveal}>
+          {t('reveal')}
+        </TextButton>
         {hintAvailable && (
-          <Button variant="quiet" size="lg" className="justify-between" onPress={onHint}>
+          <Button variant="secondary" onPress={onHint}>
+            <Lightbulb aria-hidden className="size-4" />
             {t('hint.button')}
-            <kbd className={`${KBD} border-border-strong`}>H</kbd>
+            <ButtonKey>H</ButtonKey>
           </Button>
         )}
-        <Button variant="quiet" size="lg" isPending={busy} onPress={onReveal}>
-          {t('reveal')}
+        <Button variant="primary" className={hintAvailable ? undefined : 'col-span-2'} onPress={onRetry}>
+          {t('retry')}
+          <ButtonKey>Enter</ButtonKey>
         </Button>
       </div>
-      <p className="text-caption text-muted">{t('tryAgainNote')}</p>
     </div>
   );
 }

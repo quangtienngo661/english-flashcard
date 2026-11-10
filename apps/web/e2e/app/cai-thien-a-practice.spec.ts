@@ -10,7 +10,7 @@ const SENTENCE = 'We use Docker to ___ the app to the production server.';
 // The M5a cloze fixture, using a saved sentence: no report or AI translation.
 const cloze = {
   item_id: ITEM, round: 1, position: 1, type: 'cloze', prompt_style: 'sentence',
-  hint_level: 0, state: 'unanswered', tries: 0, reportable: false, private_word: false,
+  hint_level: 0, state: 'unanswered', tries: 0, reportable: false, private_word: false, ai: false,
   hints_available: { level1: true, level2: true, level3: true },
   prompt: { kind: 'cloze', sentence: SENTENCE },
 };

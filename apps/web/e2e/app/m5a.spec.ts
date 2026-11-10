@@ -10,7 +10,7 @@ const SESSION = uuid(410);
 const PRIVATE = uuid(620);
 /** M/78d: the longest AI sentence (300 characters). */
 const LONG_SENTENCE = `We use Docker to ___ ${'the newest internationalization-ready microservices '.repeat(6)}`.slice(0, 299) + '.';
-const base = { round: 1, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false };
+const base = { round: 1, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false, ai: true };
 const cloze = (sentence = 'We use Docker to ___ the app to the production server.') => ({
   ...base, item_id: uuid(511), position: 1, type: 'cloze', hints_available: { level1: true, level2: true, level3: true },
   prompt: { kind: 'cloze', sentence },
@@ -86,7 +86,7 @@ test.describe('M5a flows (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'] });
     await expect(page.getByText('Đang tạo câu…')).toBeVisible();
     await expect(page.getByText('We use Docker to ___ the app to the production server.')).toBeVisible();
-    await expect(page.getByText('Câu AI')).toBeVisible();
+    await expect(page.getByText('câu AI')).toBeVisible();
     await page.getByRole('button', { name: /^Gợi ý/ }).click();
     await expect(page.getByText('d___')).toBeVisible();
     await page.getByRole('textbox').fill('deploy');
@@ -158,7 +158,7 @@ test.describe('M5a flows (mocked API)', () => {
     await page.addInitScript(() => localStorage.setItem('wordmet-web.ai-types', 'on'));
     const dialog = await openCustomize(page);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await page.getByRole('button', { name: /^1 deployed/ }).click();
+    await page.getByRole('button', { name: /^1\s?deployed/ }).click();
     await page.getByRole('button', { name: vi.session.report.button }).click();
     const report = page.getByRole('dialog', { name: vi.session.report.title });
     await expect(report.getByText('Đội Wordmet sẽ thấy từ “rizz” bạn tự thêm để kiểm tra.')).toBeVisible();
@@ -200,8 +200,8 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('textbox').fill('deploy');
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toBeVisible();
-      await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toHaveAttribute('data-variant', 'sticker');
-      await expect(page.getByRole('button', { name: /(Cần ôn lại|Still learning)/ })).toHaveAttribute('data-variant', 'quiet');
+      await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ }).locator('kbd')).toHaveText('Enter');
+      await expect(page.getByRole('button', { name: /(Cần ôn lại|Still learning)/ }).locator('kbd')).toHaveText('1');
       await expect(page.getByRole('link', { name: copy[locale].App.practice.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);

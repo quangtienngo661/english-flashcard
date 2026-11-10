@@ -21,7 +21,7 @@ const view = () => ({
   types: ['cloze', 'meaning_in_sentence', 'mcq_sentence'], prompt_style: 'mixed', target_count: 10, status: 'active', round: 1,
   asked: 4, words: 10, ai_planned: 10, cloze_source: 'ai',
 });
-const base = { round: 1, position: 4, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false };
+const base = { round: 1, position: 4, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false, ai: true };
 const cloze = (over: Record<string, unknown> = {}) => ({
   ...base, item_id: 'it-c', type: 'cloze', hints_available: { level1: true, level2: true, level3: true },
   prompt: { kind: 'cloze', sentence: 'We use Docker to ___ the app to the production server.' }, ...over,
@@ -41,6 +41,8 @@ const result = (over: Record<string, unknown> = {}) => ({
   meaning: 'triển khai (phần mềm)', definition_en: 'to move software to a server so that people can use it', show_known: true,
   highlight_needs_review: false, translation: 'Chúng tôi dùng Docker để triển khai ứng dụng lên máy chủ chính thức.', ...over,
 });
+/** The rows of the alternative card: the one list without a name (the key legend is named "Phím"). */
+const altList = () => screen.getAllByRole('list').find((l) => !l.hasAttribute('aria-label'))!;
 const AI_REASONS = {
   items: [
     { code: 'meaning_wrong', label: 'Nghĩa sai', detail_hint: null, note_required: false },
@@ -68,10 +70,10 @@ type Call = { method: string; path: string; body: unknown };
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 describe('AI question types (K/78a–K/81)', () => {
-  it('K/78a cloze: "Câu AI", the sentence with its blank, [Kiểm tra] sends the typed word', async () => {
+  it('K/78a cloze: "câu AI", the sentence with its blank, [Kiểm tra] sends the typed word', async () => {
     const r = renderApp(<PracticeSession />, { routes: routes(cloze(), { 'POST /v1/practice/items/it-c/answer': () => Response.json(result()) }) });
     expect(await screen.findByText('We use Docker to ___ the app to the production server.')).toBeInTheDocument();
-    expect(screen.getByText('Câu AI')).toBeInTheDocument();
+    expect(screen.getByText('câu AI')).toBeInTheDocument();
     expect(screen.getByText('Điền từ vào câu')).toBeInTheDocument();
     expect(screen.getByText('Gõ từ còn thiếu, đúng dạng trong câu')).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox'), 'deploy');
@@ -93,9 +95,8 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Xem đáp án' }));
     const primary = await screen.findByRole('button', { name: /Cần ôn lại/ });
-    expect(primary).toHaveAttribute('data-variant', 'sticker');
     expect(primary.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(screen.getByRole('button', { name: 'Câu tiếp' })).toHaveAttribute('data-variant', 'quiet');
+    expect(screen.getByRole('button', { name: 'Câu tiếp' }).querySelector('kbd')).toBeNull();
     expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     await screen.findByText('deployed', { selector: 'strong' });
@@ -107,7 +108,7 @@ describe('AI question types (K/78a–K/81)', () => {
     const r = renderApp(<PracticeSession />, { routes: routes(meaning, { 'POST /v1/practice/items/it-m/answer': () => Response.json(result()) }) });
     expect(await screen.findByText('deployed', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('Từ in đậm trong câu này nghĩa là gì?')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^[1-4] / }).map((b) => b.textContent)).toEqual(['1 triển khai (phần mềm)', '2 giao hàng', '3 bảo vệ', '4 trì hoãn']);
+    expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1triển khai (phần mềm)', '2giao hàng', '3bảo vệ', '4trì hoãn']);
     await userEvent.keyboard('1');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-m/answer')[0]?.body).toEqual({ choice: 0 }));
   });
@@ -116,7 +117,7 @@ describe('AI question types (K/78a–K/81)', () => {
     renderApp(<PracticeSession />, { routes: routes(sentenceMcq) });
     expect(await screen.findByText('We ___ the app to the server yesterday.')).toBeInTheDocument();
     expect(screen.getByText('Chọn từ điền vào chỗ trống')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^1 deployed/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^1deployed/ })).toBeInTheDocument();
   });
 
   it('copy doc §15 row 10: [Gợi ý] opens hint 1 in the numbered list with progress, then [Mở gợi ý 2]', async () => {
@@ -283,7 +284,7 @@ describe('Alternative answer card', () => {
     expect(screen.getByText('vital', { selector: 'strong' }).parentElement).toHaveTextContent('Sleep is vital for good health.');
     expect(screen.getByText('vital · thiết yếu')).toBeInTheDocument();
     expect(screen.getByText('Giấc ngủ rất quan trọng cho sức khỏe.')).toBeInTheDocument();
-    const items = within(screen.getByRole('list')).getAllByRole('listitem');
+    const items = within(altList()).getAllByRole('listitem');
     expect(items).toHaveLength(2);
     // Each row names its role as its own label above the word (UI polish, 07/11/2026).
     expect(within(items[0]).getByText('Từ bạn gõ')).toBeInTheDocument();
@@ -303,7 +304,7 @@ describe('Alternative answer card', () => {
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-a/review')).toHaveLength(1));
     expect(posts(r.calls, '/v1/practice/items/it-a/review')[0].body).toEqual({ action: 'known', sense_id: CRUCIAL });
     expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
-    const items = within(screen.getByRole('list')).getAllByRole('listitem');
+    const items = within(altList()).getAllByRole('listitem');
     await waitFor(() => expect(within(items[0]).queryByRole('button')).not.toBeInTheDocument());
     expect(within(items[0]).getByText('Đã biết')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cần ôn lại: vital' })).toBeInTheDocument();
@@ -313,7 +314,7 @@ describe('Alternative answer card', () => {
   it('each row is pressed on its own: both can be, and nothing moves on', async () => {
     const r = await open();
     await userEvent.click(screen.getByRole('button', { name: 'Cần ôn lại: vital' }));
-    await waitFor(() => expect(within(within(screen.getByRole('list')).getAllByRole('listitem')[1]).queryByRole('button')).not.toBeInTheDocument());
+    await waitFor(() => expect(within(within(altList()).getAllByRole('listitem')[1]).queryByRole('button')).not.toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: 'Cần ôn lại: crucial' }));
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-a/review')).toHaveLength(2));
     expect(posts(r.calls, '/v1/practice/items/it-a/review').map((c) => c.body)).toEqual([
@@ -324,7 +325,7 @@ describe('Alternative answer card', () => {
 
   it('a row already pressed in the reply shows its action instead of its buttons', async () => {
     await open(alternative({ alternative: { typed: 'crucial', rows: rows([{ action: 'needs_review', show_known: false }]) } }));
-    const first = within(screen.getByRole('list')).getAllByRole('listitem')[0];
+    const first = within(altList()).getAllByRole('listitem')[0];
     expect(within(first).queryByRole('button')).not.toBeInTheDocument();
     expect(first).toHaveTextContent('Đã đưa vào ưu tiên');
   });
@@ -371,7 +372,7 @@ describe('Alternative answer card', () => {
     await userEvent.click(screen.getByRole('button', { name: /Kiểm tra/ }));
     expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
     expect(screen.queryByText('Đáp án thay thế')).not.toBeInTheDocument();
-    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.queryByText('Từ bạn gõ')).not.toBeInTheDocument();
   });
 
   it('the English copy', async () => {
@@ -380,7 +381,7 @@ describe('Alternative answer card', () => {
     await userEvent.type(screen.getByRole('textbox'), 'crucial');
     await userEvent.click(screen.getByRole('button', { name: /Check/ }));
     expect(await screen.findByText('Alternative answer')).toBeInTheDocument();
-    const items = within(screen.getByRole('list')).getAllByRole('listitem');
+    const items = within(altList()).getAllByRole('listitem');
     expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();
     expect(within(items[1]).getByText("This sentence's word")).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Know: crucial' })).toBeInTheDocument();

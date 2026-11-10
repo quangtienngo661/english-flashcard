@@ -1287,7 +1287,7 @@
       "session": {
         "close": "Dừng phiên, xem tổng kết",
         "header": "Luyện tập · {source}",
-        "aiChip": "Câu AI",
+        "aiChip": "câu AI",
         "translation": "Bản dịch",
         "translationAi": "AI dịch",
         "ai": {
@@ -1310,8 +1310,8 @@
           "seeWord": "Xem lại từ trong Từ của tôi",
           "dismiss": "Đóng thông báo"
         },
-        "progress": "Câu {n, number}/{total, number}",
-        "progressDone": "Xong {total, number}/{total, number}",
+        "progress": "câu {n, number} / {total, number}",
+        "progressDone": "xong {total, number} / {total, number}",
         "kind": {
           "mcq": "Trắc nghiệm",
           "true_false": "Đúng/sai",
@@ -1421,7 +1421,24 @@
           "home": "Về Luyện tập",
           "again": "Luyện thêm một phiên"
         },
-        "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên."
+        "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên.",
+        "countRight": "{count, number} câu đúng",
+        "countWrong": "{count, number} câu sai",
+        "stage": "Ngăn {stage}",
+        "stageMove": "{from} → {to}",
+        "noteKnowTap": "Bấm Đã biết thì {lemma} lên một ngăn.",
+        "noteWrongTap": "Cần ôn lại: {lemma} lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.",
+        "legend": {
+          "label": "Phím",
+          "choose": "Chọn đáp án",
+          "check": "Kiểm tra",
+          "hint": "Gợi ý",
+          "stop": "Dừng phiên",
+          "know": "Đã biết",
+          "review": "Cần ôn lại",
+          "next": "Câu tiếp",
+          "retry": "Làm lại"
+        }
       },
       "weak": {
         "title": "Từ hay sai",

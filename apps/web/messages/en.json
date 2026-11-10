@@ -1310,8 +1310,8 @@
           "seeWord": "Check the word in My words",
           "dismiss": "Close notice"
         },
-        "progress": "Question {n, number} of {total, number}",
-        "progressDone": "Done {total, number} of {total, number}",
+        "progress": "question {n, number} / {total, number}",
+        "progressDone": "done {total, number} / {total, number}",
         "kind": {
           "mcq": "Multiple choice",
           "true_false": "True or false",
@@ -1421,7 +1421,24 @@
           "home": "Back to Practice",
           "again": "Practice another session"
         },
-        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same."
+        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same.",
+        "countRight": "{count, number} right",
+        "countWrong": "{count, number} wrong",
+        "stage": "Stage {stage}",
+        "stageMove": "{from} → {to}",
+        "noteKnowTap": "Tap Know and {lemma} moves up a stage.",
+        "noteWrongTap": "Still learning: {lemma} goes to the top of its deck, back to stage 1. Next question keeps its schedule.",
+        "legend": {
+          "label": "Keys",
+          "choose": "Choose an answer",
+          "check": "Check",
+          "hint": "Hint",
+          "stop": "Stop",
+          "know": "Know",
+          "review": "Still learning",
+          "next": "Next question",
+          "retry": "Try again"
+        }
       },
       "weak": {
         "title": "Weak words",

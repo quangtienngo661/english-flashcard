@@ -23,12 +23,14 @@ type Props = {
   note?: string;
   onPress?: () => void;
   isDisabled?: boolean;
+  /** The check pops in (design §8.2): only on the learner's own right pick. */
+  pop?: boolean;
   /** `motion-safe:animate-wiggle-soft` on a wrong pick and the like (design §8.2). */
   className?: string;
 };
 
 /** Figma "Lựa chọn" (3:51): an answer of a multiple-choice question in Phiên luyện and Ôn. Radius 14, border 1.5 px. */
-export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, className }: Props) {
+export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop = false, className }: Props) {
   return (
     <AriaButton
       onPress={onPress}
@@ -50,7 +52,7 @@ export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, cla
       {note && (state === 'correct' || state === 'wrong') && (
         <span className={cn('inline-flex shrink-0 items-center gap-1 font-wm-sans text-wm-label', state === 'correct' ? 'text-wm-pass' : 'text-wm-fail')}>
           {state === 'correct'
-            ? <Check aria-hidden className="size-4 motion-safe:animate-pop-in" />
+            ? <Check aria-hidden className={cn('size-4', pop && 'motion-safe:animate-pop-in')} />
             : <X aria-hidden className="size-4" />}
           {note}
         </span>

@@ -168,7 +168,7 @@ test.describe('M4 flows (mocked API)', () => {
     // True/false, right.
     await expect(page.getByText(vi.session.ask.true_false)).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
-    await page.getByRole('button', { name: /1 Đúng/ }).click();
+    await page.getByRole('button', { name: /^1\s?Đúng/ }).click();
     await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Đã biết/ }).click();
 
@@ -316,9 +316,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.keyboard.press(kind === 1 ? '1' : '2');
         const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
         await expect(primary).toBeVisible();
-        await expect(primary).toHaveAttribute('data-variant', 'sticker');
         await expect(primary.locator('kbd')).toHaveText('Enter');
-        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) })).toHaveAttribute('data-variant', 'quiet');
+        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) }).locator('kbd')).not.toHaveText('Enter');
         if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
         const where = `${locale} case ${kind} feedback (${scheme})`;
         await noSideScroll(page, where);
@@ -356,7 +355,7 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.keyboard.press('1');
   await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: /1 Đúng/ }).click();
+  await page.getByRole('button', { name: /^1\s?Đúng/ }).click();
   await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Đã biết/ }).click();
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));

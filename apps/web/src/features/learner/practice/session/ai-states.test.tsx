@@ -90,7 +90,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     }) });
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
     await waitFor(() => expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/prepare`)).toHaveLength(1));
-    expect(screen.getByRole('button', { name: /1 deploy/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^1deploy/ })).toBeEnabled();
     release();
   });
 
@@ -180,8 +180,8 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(screen.queryByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toBeNull();
     await userEvent.keyboard('1');
     expect(await screen.findByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
-    expect(screen.getByRole('button', { name: /Đã biết/ })).toHaveAttribute('data-variant', 'sticker');
-    expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toHaveAttribute('data-variant', 'quiet');
+    expect(screen.getByRole('button', { name: /Đã biết/ }).querySelector('kbd')).toHaveTextContent('Enter');
+    expect(screen.getByRole('button', { name: /Cần ôn lại/ }).querySelector('kbd')).toHaveTextContent('1');
     expect(screen.queryByRole('button', { name: /Câu tiếp/ })).not.toBeInTheDocument();
   });
 

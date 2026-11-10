@@ -1,13 +1,17 @@
 'use client';
 
-import { CircleCheck, CircleX } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Button } from '@/app-ui/Button';
+import type { ReactNode } from 'react';
 import { SpeakWord } from '@/app-ui/SpeakButtons';
 import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { Tag } from '@/ui/Tag';
 import { STAGE_KEYS } from '../../groups/stages';
-import { KBD } from './QuestionCard';
+import { ButtonKey } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
+
+const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
 export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
   if (result.result === 'wrong') return result.highlight_needs_review ? 4 : null;
@@ -16,6 +20,7 @@ export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
 }
 
 /**
+ * The result panel tucked under the question card (Figma 100:3164 "Đúng rồi", 178:5546 / 178:5755 "Chưa đúng").
  * Design đợt cải thiện A §6.3: (1) correct + show_known → Know; (2) correct without Know or hints → Next;
  * (3) correct with hints, without Know → Next; (4) wrong/skipped + highlight_needs_review → Still learning.
  * Enter follows the bold button. Wrong outside learning offers only Next.
@@ -35,71 +40,103 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   const locale = useLocale();
   const right = result.result === 'correct';
   const kind = feedbackCase(result);
-  const Icon = right ? CircleCheck : CircleX;
-  const noteKey = kind === 1 ? 'noteKnowEnter' : kind === 2 ? 'noteNotDue' : kind === 3 ? 'noteHint' : kind === 4 ? 'noteWrong' : null;
+  const lemma = result.correct.lemma;
   // Đợt C: in an Ôn session a right answer has already moved the word (or kept it); say which, with the stage it is in now.
   const schedule = right ? result.schedule ?? null : null;
-  const stage = schedule ? tStage(STAGE_KEYS[schedule.level] ?? 's1') : '';
+  const stageName = (level: number) => t('stage', { stage: tStage(STAGE_KEYS[level] ?? 's1') });
+  // M5.1: Đã biết moves the word one stage up; shown only when it can (Figma 100:3164).
+  const level = kind === 1 && !schedule ? result.level ?? null : null;
+  const move = level !== null && level >= 0 && level < STAGE_KEYS.length - 1 ? { from: level, to: level + 1 } : null;
+  const note = kind === 1 ? ['noteKnowEnter', 'noteKnowTap'] as const
+    : kind === 2 ? ['noteNotDue', null] as const
+      : kind === 3 ? ['noteHint', null] as const
+        : kind === 4 ? ['noteWrong', 'noteWrongTap'] as const : null;
+
+  const review = kind !== null && (
+    <Button
+      key="review"
+      variant={kind === 4 ? 'primary' : 'secondary'}
+      autoFocus={focusPrimary && kind === 4}
+      isDisabled={busy}
+      onPress={() => onReview('needs_review')}
+    >
+      {t('stillLearning')}
+      <ButtonKey>{kind === 4 ? 'Enter' : '1'}</ButtonKey>
+    </Button>
+  );
+  const forward = kind === 1 ? (
+    <Button key="know" variant="pass" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('known')}>
+      <Check aria-hidden className="size-4.5" />
+      {t('know')}
+      <ButtonKey>Enter</ButtonKey>
+    </Button>
+  ) : (
+    <Button key="next" variant={kind === 4 ? 'secondary' : 'primary'} autoFocus={focusPrimary && kind !== 4} isPending={busy} onPress={onNext}>
+      {t('next')}
+      {kind !== 4 && <ButtonKey>Enter</ButtonKey>}
+    </Button>
+  );
+  const buttons: ReactNode[] = kind === 4 ? [forward, review] : [review, forward];
+
   return (
-    <div className="flex flex-col gap-3">
-      {/* Announced through the session's live region (audit 26/10/2026 #8), so this block is not a second status. */}
-      {/* 3C (owner 27/10/2026): the result rises in. */}
-      <div data-feedback className={cn('flex gap-3 rounded-inner p-4 motion-safe:animate-feedback-in', right ? 'bg-success-soft' : 'bg-danger-soft')}>
-        <Icon aria-hidden className={cn('mt-0.5 size-5 shrink-0', right ? 'text-success' : 'text-danger')} />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <p className={cn('text-title font-bold', right ? 'text-success' : 'text-danger')}>{right ? t('right') : t('wrong')}</p>
-          <div className="flex flex-wrap items-center gap-x-2">
-            <p className="min-w-0 break-words text-ui font-semibold text-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
-            <span className="flex gap-1">
-              <SpeakWord text={result.correct.lemma} />
-            </span>
-          </div>
-          {result.definition_en && result.definition_en !== result.meaning && <p className="break-words text-caption text-muted">{result.definition_en}</p>}
-        </div>
+    // Announced through the session's live region (audit 26/10/2026 #8), so this panel is not a second status.
+    // 3C (owner 27/10/2026): the result rises in. It tucks 26 px under the card (Figma overlap -26).
+    <div
+      data-feedback
+      className={cn(
+        '-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-feedback-in md:mx-5.5 md:px-7',
+        right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-fail bg-wm-fail-soft',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className={cn('flex size-7.5 shrink-0 items-center justify-center rounded-full text-wm-on-accent', right ? 'bg-wm-pass' : 'bg-wm-fail')}>
+          {right ? <Check aria-hidden className="size-4.5" /> : <X aria-hidden className="size-4.5" />}
+        </span>
+        <p className={cn('font-wm-display text-wm-card-title', right ? 'text-wm-pass' : 'text-wm-fail')}>{right ? t('right') : t('wrong')}</p>
+        <span className="hidden flex-1 md:block" />
+        <span className="flex min-w-0 basis-full items-center gap-1 md:basis-auto">
+          <span className="min-w-0 break-words font-wm-sans text-wm-base-strong text-wm-ink">{t('revealLine', { lemma, meaning: result.meaning })}</span>
+          <SpeakWord text={lemma} />
+        </span>
       </div>
+      {result.definition_en && result.definition_en !== result.meaning && <p className="break-words font-wm-sans text-wm-small text-wm-muted">{result.definition_en}</p>}
+      {move && (
+        <div role="group" aria-label={t('stageMove', { from: stageName(move.from), to: stageName(move.to) })} className="flex flex-wrap items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
+          <StageName dot={STAGE_DOT[move.from]}>{stageName(move.from)}</StageName>
+          <ArrowRight aria-hidden className="size-4 text-wm-muted" />
+          <StageName dot={STAGE_DOT[move.to]}>{stageName(move.to)}</StageName>
+        </div>
+      )}
+      {schedule ? (
+        <p className="font-wm-sans text-wm-small text-wm-muted">
+          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma, stage: tStage(STAGE_KEYS[schedule.level] ?? 's1') })}
+        </p>
+      ) : note && (
+        <>
+          <p className={cn('font-wm-sans text-wm-small text-wm-muted', note[1] && 'hidden md:block')}>{t(note[0], { lemma })}</p>
+          {note[1] && <p className="font-wm-sans text-wm-small text-wm-muted md:hidden">{t(note[1], { lemma })}</p>}
+        </>
+      )}
       {result.translation && locale === 'vi' && (
         // K/79a: the AI's translation of the sentence, for Vietnamese learners only (E41).
-        <div className="flex flex-col gap-1 rounded-inner bg-surface p-4">
-          <p className="flex items-center gap-2 text-caption font-semibold text-ink">
+        <div className="flex flex-col gap-1">
+          <p className="flex items-center gap-2 font-wm-sans text-wm-label text-wm-ink">
             {t('translation')}
-            <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">{t('translationAi')}</span>
+            <Tag tone="accent">{t('translationAi')}</Tag>
           </p>
-          <p className="break-words text-ui text-ink">{result.translation}</p>
+          <p className="break-words font-wm-sans text-wm-small text-wm-ink">{result.translation}</p>
         </div>
       )}
-      <div className={cn('grid gap-3', kind !== null && 'sm:grid-cols-2')}>
-        {kind !== null && (
-          <Button
-            variant={kind === 4 ? 'sticker' : 'quiet'}
-            size="lg"
-            className={cn('justify-between', kind === 4 && 'font-bold')}
-            autoFocus={focusPrimary && kind === 4}
-            isDisabled={busy}
-            onPress={() => onReview('needs_review')}
-          >
-            {t('stillLearning')}
-            <kbd className={`${KBD} border-current`}>{kind === 4 ? 'Enter' : '1'}</kbd>
-          </Button>
-        )}
-        {kind === 1 ? (
-          <Button variant="sticker" size="lg" className="justify-between font-bold" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('known')}>
-            {t('know')}
-            <kbd className={`${KBD} border-current`}>Enter</kbd>
-          </Button>
-        ) : (
-          <Button variant={kind === 4 ? 'quiet' : 'sticker'} size="lg" className={cn('justify-between', kind !== 4 && 'font-bold')} autoFocus={focusPrimary && kind !== 4} isPending={busy} onPress={onNext}>
-            {t('next')}
-            {kind !== 4 && <kbd className={`${KBD} border-current`}>Enter</kbd>}
-          </Button>
-        )}
-      </div>
-      {schedule ? (
-        <p className="text-caption text-muted">
-          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma: result.correct.lemma, stage })}
-        </p>
-      ) : (
-        noteKey && <p className="text-caption text-muted">{t(noteKey, { lemma: result.correct.lemma })}</p>
-      )}
+      <div className={cn('grid gap-3 md:flex md:justify-end', buttons.filter(Boolean).length === 2 && 'grid-cols-2')}>{buttons}</div>
     </div>
+  );
+}
+
+function StageName({ dot, children }: { dot: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden className={cn('size-2.5 rounded-wm-xs', dot)} />
+      {children}
+    </span>
   );
 }

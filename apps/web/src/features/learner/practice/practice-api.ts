@@ -60,7 +60,10 @@ export type PracticeSessionView = {
   asked: number;
   words: number;
   ai_planned: number;
-  cloze_source: 'ai' | 'own' | null;
+  cloze_source: 'ai' | 'own' | 'own_then_ai' | null;
+  /** M5.1: final results so far, every round (`void` not counted); absent from an older API. */
+  correct?: number;
+  wrong?: number;
 };
 
 export type CurrentItem = { item_id: string; state: 'unanswered' | 'try_again' };
