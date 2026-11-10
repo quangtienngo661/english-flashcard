@@ -257,3 +257,22 @@ GM17 sau khi chốt, Claude tự quyết khi vẽ Figma (09/11/2026):
 | GM16 | Hộp Lịch và Ngày theo tham số URL | Nút Quay lại đóng hộp; link và đường dẫn cũ mở thẳng hộp | Intercepting routes của Next (phức tạp hơn khi hộp mở trên mọi màn) |
 | GM17 | Vẽ mockup `/app/recall` trước M5 | Màn có trong code (đợt C) nhưng không có khung Figma | Tự dựng không có khung |
 | GM18 | Sửa `ui-best-practices.md` cho khớp Bricolage 800 trong Figma | Quy tắc ghi "ba độ đậm 400, 600, 700" | |
+
+## QBG. Nền của app (chủ dự án chốt 10/11/2026)
+
+Chủ dự án thấy lưới chấm trên web "không ổn lắm", muốn đổi sang hướng 4 của vòng 8 ("Mesh + hạt + kính"). Hướng đó có hai phần nên
+Claude hỏi lại phạm vi, kèm trang so sánh màn Hôm nay ở ba cách (https://claude.ai/artifact/EtQoipSnWvzgWYCbBYXEbv,
+`docs/mockups/2026-11-10-gm-nen/so-sanh-nen.html`).
+
+| Cách | Được | Mất | |
+|---|---|---|---|
+| A · Lưới chấm (giữ) | Không đổi gì | Chủ dự án thấy không ổn trên web | |
+| B · Mesh + hạt, khối trắng | Chỉ đổi một component nền dùng chung; nhẹ máy; các đợt đang làm không phải sửa | Khác Figma tới khi đổi component nền trong Figma | ✅ |
+| C · Mesh + hạt + khối kính | Cả trang đồng bộ với thanh trên kính mờ | Sửa khối ở mọi màn và trong Figma; mỗi khối thêm một lớp blur, máy yếu có thể giật | |
+
+Chủ dự án chọn: "mesh + hạt, khối trắng". Claude không đưa đề xuất trước câu trả lời.
+
+Claude tự quyết khi làm (10/11/2026): component vẫn tên `DotGridBackground` tới M9, để các nhánh M3–M5 đang làm không vỡ import; lớp hạt ở
+chế độ tối tạm dùng `screen` 12%, chỉnh cùng mockup tối ở M9; component Figma `95:315`, `95:321` đổi tên "Nền app/Mesh hạt", 46 instance
+đổi theo; panel giới thiệu ở trang đăng nhập (M2) vẽ riêng nên chưa đổi.
+
