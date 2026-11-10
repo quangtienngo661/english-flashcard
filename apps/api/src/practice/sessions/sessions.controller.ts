@@ -1,9 +1,11 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Res, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { z } from 'zod';
 import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
 import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import { CurrentLearner, LearnerContent, type Learner } from '../../content/index.js';
+import { LastSessionService, type LastSessionView } from './last-session.service.js';
 import { SessionsService } from './sessions.service.js';
 
 const uuid = z.uuid().transform((value) => value.toLowerCase());
@@ -39,7 +41,21 @@ const nextBody = z.strictObject({ retry_ai: z.literal(true).optional() }).option
 @Controller('practice/sessions')
 @LearnerContent()
 export class SessionsController {
-  constructor(@Inject(SessionsService) private readonly sessions: SessionsService) {}
+  constructor(
+    @Inject(SessionsService) private readonly sessions: SessionsService,
+    @Inject(LastSessionService) private readonly lastSession: LastSessionService,
+  ) {}
+
+  /** Giao diện mới §10.5: the session with the newest graded answer; 204 when the learner has none. */
+  @Get('last')
+  async last(@CurrentLearner() learner: Learner, @Res({ passthrough: true }) res: Response): Promise<LastSessionView | undefined> {
+    const view = await this.lastSession.last(learner.userId);
+    if (view === null) {
+      res.status(204);
+      return undefined;
+    }
+    return view;
+  }
 
   @Post()
   @Idempotent()
