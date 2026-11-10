@@ -487,10 +487,10 @@
   }
 
   /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows): 16px at
-     1440px, about 21px at 2560px, at most 22px. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
+     1440px, about 21px at 2560px, about 27px at 3840px, with no ceiling. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
   @media (width > 90rem) {
     html {
-      font-size: clamp(100%, 0.598rem + 0.4464vw, 137.5%);
+      font-size: max(100%, 0.598rem + 0.4464vw);
     }
   }
 
