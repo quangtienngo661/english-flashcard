@@ -84,12 +84,35 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     expect(await centre()).toHaveTextContent('Đề 12 · Writing');
   });
 
-  it('↓ opens the centre group', async () => {
+  it('↓ opens the centre group after the carousel fades out (motion doc §3, 170 ms)', async () => {
     push.mockClear();
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
     key('ArrowDown');
-    expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-12');
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-12'));
+  });
+
+  it('pressing the centre stack opens it the same way', async () => {
+    push.mockClear();
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await userEvent.click(await centre());
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-12'));
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it('with reduced motion ↓ opens the group at once', async () => {
+    push.mockClear();
+    const media = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia;
+    try {
+      renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+      await centre();
+      key('ArrowDown');
+      expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-12');
+    } finally {
+      window.matchMedia = media;
+    }
   });
 
   it('below the carousel: the rhythm bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {

@@ -51,3 +51,30 @@ describe('useFlipFrom (motion doc §3: the stack flies from the carousel to the 
     expect(animate).not.toHaveBeenCalled();
   });
 });
+
+describe('useFlipFrom with a class for the arriving parts (motion doc §3: back on Nhóm the parts sharpen in without a lift)', () => {
+  function Carousel() {
+    const page = useRef<HTMLDivElement>(null);
+    const stack = useRef<HTMLDivElement>(null);
+    useFlipFrom('back', stack, page, 'wm-carousel-in');
+    return (
+      <div ref={page} data-testid="page">
+        <div ref={stack}>stack</div>
+      </div>
+    );
+  }
+
+  beforeEach(() => {
+    reduced = false;
+    Element.prototype.animate = vi.fn() as unknown as Element['animate'];
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(rect(100, 200, 290, 368));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('adds the class named by the caller to the page', () => {
+    rememberRect('back', document.createElement('div'));
+    const { getByTestId } = render(<Carousel />);
+    expect(getByTestId('page')).toHaveClass('wm-carousel-in');
+    expect(getByTestId('page')).not.toHaveClass('wm-page-in');
+  });
+});
