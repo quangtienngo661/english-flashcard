@@ -358,6 +358,21 @@
       "pending": "The voice is being made"
     },
     "auth": {
+      "showcase": {
+        "stage": "Word card · {days, number}-day box",
+        "group": "Word card · {group}",
+        "today": "Today",
+        "due": "words due",
+        "more": "+{count, number} words",
+        "allocate": "allot",
+        "viable": "workable",
+        "mitigate": "lessen"
+      },
+      "footer": {
+        "copyright": "© {year} Wordmet",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use"
+      },
       "back": "Back",
       "email": "Email",
       "password": "Password",

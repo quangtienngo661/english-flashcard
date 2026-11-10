@@ -358,6 +358,21 @@
       "pending": "Đang tạo giọng đọc"
     },
     "auth": {
+      "showcase": {
+        "stage": "Thẻ từ · ngăn {days, number} ngày",
+        "group": "Thẻ từ · {group}",
+        "today": "Hôm nay",
+        "due": "từ đến hạn",
+        "more": "+{count, number} từ",
+        "allocate": "phân bổ",
+        "viable": "khả thi",
+        "mitigate": "giảm nhẹ"
+      },
+      "footer": {
+        "copyright": "© {year} Wordmet",
+        "privacy": "Chính sách bảo mật",
+        "terms": "Điều khoản sử dụng"
+      },
       "back": "Quay lại",
       "email": "Email",
       "password": "Mật khẩu",
