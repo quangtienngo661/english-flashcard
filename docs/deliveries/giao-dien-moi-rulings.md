@@ -28,3 +28,8 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R17 (10/11/2026, Task M1.10): xóa `features/learner/practice/BackLink.tsx` (liên kết quay lại chỉ hiện ở máy tính của Lịch sử, Từ hay sai, Giao dịch) → `BackLink` mới của `app-chrome` thay ở mọi cỡ.
 - R18 (10/11/2026, Task M1.10): trang Gói học bỏ thanh trên riêng cùng nút "Đóng" (xóa test và khóa `App.plans.close`) → khung app đã có thanh tab để rời trang. Thanh chân trang bỏ khỏi app (khung Figma app không có), xóa khóa `App.chrome.footer`.
 - R19 (10/11/2026, Task M1.11): Next 16.4.3 có `retry()` cho `error` (`dist/client/components/error-boundary.d.ts:6`) → dùng `retry`, không cần `reset`.
+
+## M2
+
+- R20 (10/11/2026, Task M2.2): chữ số trong ô mã dùng `text-wm-card-title` (24 px, Bricolage 700), không 28 px như Figma "Ô mã" → chưa có token 28 px, thêm token chỉ cho một chỗ thì thừa; ô 54/60 px vẫn đủ chỗ.
+- R21 (10/11/2026, Task M2.2): `OtpField` có thêm `hideLabel` (tên nhóm chỉ cho trình đọc màn hình) → Xác minh email không vẽ nhãn trên hàng ô, tiêu đề trang đã nói "Nhập mã 6 số".
