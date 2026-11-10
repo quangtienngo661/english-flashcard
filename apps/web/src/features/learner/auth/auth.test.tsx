@@ -52,6 +52,13 @@ async function fillRegister(birth = '14/5/2008', email = 'lan@example.com') {
   pickDate('Ngày sinh', parseBirthDate(birth)!);
   await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), email);
   await userEvent.type(screen.getByLabelText('Mật khẩu'), 'Aa1!aaaa');
+  await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu'), 'Aa1!aaaa');
+}
+
+/** The reset code: a click on box 1, then the digits (each moves focus to the next box). */
+async function typeResetCode(code: string) {
+  await userEvent.click(screen.getByRole('textbox', { name: 'Chữ số 1' }));
+  await userEvent.keyboard(code);
 }
 
 describe('RegisterForm (K/01, K/01b)', () => {
@@ -80,6 +87,35 @@ describe('RegisterForm (K/01, K/01b)', () => {
     expect(destination.search).toBe('');
     expect(decodeURIComponent(destination.href)).not.toContain('lan@example.com');
     expect(decodeURIComponent(destination.href)).not.toContain('Aa1!aaaa');
+    expect(calls.find((c) => c.path === '/v1/auth/register')!.body).toEqual({
+      given_name: 'Lan', family_name: 'Nguyễn', birth_date: '2008-05-14', email: 'Lan@Example.COM', password: 'Aa1!aaaa',
+      timezone: 'Asia/Ho_Chi_Minh', accept_terms: true, client: 'web', device_label: 'Wordmet Web',
+      turnstile_token: 'fake-turnstile-token',
+    });
+  });
+
+  // Plan part 2, M2.7 (Figma 153:683): "Nhập lại mật khẩu" is checked in the page only; the request body does not change.
+  it('a mismatched confirm sends nothing and says so under the confirm field; once fixed, one request with the old body', async () => {
+    const { calls, count } = renderApp(<RegisterForm today={TODAY} />, {
+      routes: { ...signedOut, 'POST /v1/auth/register': () => Response.json({ email: 'lan@example.com', verification_required: true }, { status: 201 }) },
+    });
+    await userEvent.type(screen.getByRole('textbox', { name: 'Tên' }), 'Lan');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Họ (không bắt buộc)' }), 'Nguyễn');
+    pickDate('Ngày sinh', '2008-05-14');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'Lan@Example.COM');
+    await userEvent.type(screen.getByLabelText('Mật khẩu'), 'Aa1!aaaa');
+    const confirm = screen.getByLabelText('Nhập lại mật khẩu');
+    await userEvent.type(confirm, 'Aa1!aaab');
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+    expect(count('POST', '/v1/auth/register')).toBe(0);
+    expect(confirm).toHaveAttribute('aria-invalid', 'true');
+    expect(confirm).toHaveAccessibleDescription('Mật khẩu nhập lại chưa khớp.');
+    expect(confirm).toHaveFocus();
+    await userEvent.type(confirm, '{Backspace}a');
+    expect(screen.queryByText('Mật khẩu nhập lại chưa khớp.')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+    await waitFor(() => expect(count('POST', '/v1/auth/register')).toBe(1));
     expect(calls.find((c) => c.path === '/v1/auth/register')!.body).toEqual({
       given_name: 'Lan', family_name: 'Nguyễn', birth_date: '2008-05-14', email: 'Lan@Example.COM', password: 'Aa1!aaaa',
       timezone: 'Asia/Ho_Chi_Minh', accept_terms: true, client: 'web', device_label: 'Wordmet Web',
@@ -156,6 +192,16 @@ describe('LoginForm (K/02, K/93)', () => {
     expect(mark).not.toBeNull();
     expect(mark).toHaveAttribute('aria-hidden', 'true');
     expect(mark!.querySelectorAll('path')).toHaveLength(4);
+  });
+
+  // Plan part 2, M2.6 (Figma 35:308): the password field reveals, and "Quên mật khẩu?" sits in its label row.
+  it('the password field has a reveal button and "Quên mật khẩu?" in its label row', () => {
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(screen.getByRole('button', { name: 'Hiện mật khẩu' })).toHaveAttribute('type', 'button');
+    const forgot = screen.getByRole('link', { name: 'Quên mật khẩu?' });
+    expect(forgot).toHaveAttribute('href', '/vi/app/forgot-password');
+    const label = screen.getByText('Mật khẩu', { selector: 'label' });
+    expect(forgot.parentElement).toBe(label.parentElement);
   });
 
   async function login(email = 'lan@example.com') {
@@ -431,13 +477,53 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com', turnstile_token: 'fake-turnstile-token' });
   });
 
+  // Plan part 2, M2.8 (Figma 36:447, 153:705): the code is six boxes like Xác minh email, and "Nhập lại mật khẩu mới" is checked here only.
+  it('the reset code is a group of six boxes named "Chữ số 1" to "Chữ số 6"', () => {
+    writePendingEmail('lan@example.com');
+    renderApp(<ResetPasswordForm />, { routes: signedOut });
+    const group = screen.getByRole('group', { name: 'Mã 6 số trong email' });
+    expect([...group.querySelectorAll('input')].map((box) => box.getAttribute('aria-label'))).toEqual(
+      ['Chữ số 1', 'Chữ số 2', 'Chữ số 3', 'Chữ số 4', 'Chữ số 5', 'Chữ số 6'],
+    );
+  });
+
+  it('Review Focus 2: pasting "48 1205" fills the six boxes, and with a matching confirm the body is the old one', async () => {
+    writePendingEmail('lan@example.com');
+    const user = userEvent.setup();
+    const { calls } = renderApp(<ResetPasswordForm />, {
+      routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
+    });
+    await user.click(screen.getByRole('textbox', { name: 'Chữ số 3' }));
+    await user.paste('48 1205');
+    expect(screen.getByRole('textbox', { name: 'Chữ số 6' })).toHaveFocus();
+    await user.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await user.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
+    await user.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
+    expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({ email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb' });
+  });
+
+  it('Review Focus 3: a mismatched confirm sends nothing and says so under it', async () => {
+    writePendingEmail('lan@example.com');
+    const { count } = renderApp(<ResetPasswordForm />, { routes: signedOut });
+    await typeResetCode('481205');
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    const confirm = screen.getByLabelText('Nhập lại mật khẩu mới');
+    await userEvent.type(confirm, 'Bb2@bbbc');
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    expect(count('POST', '/v1/auth/password/reset')).toBe(0);
+    expect(confirm).toHaveAttribute('aria-invalid', 'true');
+    expect(confirm).toHaveAccessibleDescription('Mật khẩu nhập lại chưa khớp.');
+  });
+
   it('UW-1: sets the new password for the pending email, then sends the learner to sign in and forgets the email', async () => {
     writePendingEmail('lan@example.com');
     const { calls } = renderApp(<ResetPasswordForm />, {
       routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
     });
-    await userEvent.type(screen.getByRole('textbox', { name: 'Mã 6 số trong email' }), '481205');
+    await typeResetCode('481205');
     await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
     await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({
@@ -451,8 +537,9 @@ describe('Forgot and reset password (K/04, K/05)', () => {
       routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
     });
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
-    await userEvent.type(screen.getByRole('textbox', { name: 'Mã 6 số trong email' }), '481205');
+    await typeResetCode('481205');
     await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
     await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toMatchObject({ email: 'lan@example.com' });
@@ -461,7 +548,7 @@ describe('Forgot and reset password (K/04, K/05)', () => {
   it('UW-1: with a pending email the page does not ask for it again', async () => {
     writePendingEmail('lan@example.com');
     renderApp(<ResetPasswordForm />, { routes: signedOut });
-    expect(await screen.findByRole('textbox', { name: 'Mã 6 số trong email' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'Mã 6 số trong email' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument();
   });
 });

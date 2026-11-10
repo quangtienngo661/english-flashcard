@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen } from '@testing-library/react';
 import { createRef } from 'react';
-import { renderApp } from './test-utils';
+import { renderApp } from '@/app-ui/test-utils';
 import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
 
 const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
@@ -52,6 +52,16 @@ describe('TurnstileWidget with a site key', () => {
     expect(container.contains(element)).toBe(true);
     expect(options).toMatchObject({ sitekey: '1x00000000000000000000AA', 'refresh-expired': 'auto' });
     expect(onToken).not.toHaveBeenCalled();
+  });
+
+  // QM2-1 (owner 10/11/2026: "Luôn hiện"): the widget keeps today's options and always shows; no `appearance` option.
+  it('renders with exactly the sitekey, refresh-expired and the four callbacks, so the box always shows', () => {
+    renderApp(<TurnstileWidget onToken={vi.fn()} />);
+    const api = installTurnstile();
+    act(() => scripts()[0]!.dispatchEvent(new Event('load')));
+    const options = api.render.mock.calls[0]![1] as Record<string, unknown>;
+    expect(Object.keys(options).sort()).toEqual(['callback', 'error-callback', 'expired-callback', 'refresh-expired', 'sitekey', 'timeout-callback']);
+    expect(options).not.toHaveProperty('appearance');
   });
 
   it('a second widget reuses the script that is already there', () => {

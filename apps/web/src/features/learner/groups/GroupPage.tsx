@@ -1,27 +1,31 @@
 'use client';
 
-import { MoreHorizontal, Plus, Search } from 'lucide-react';
+import { MoreHorizontal, Search, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, type AnimationEvent } from 'react';
+import { useRef, useState } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { BackLink } from '@/app-chrome/BackLink';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { createFormat, useFormat } from '@/app-shell/format';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { Select } from '@/app-ui/Select';
-import { ErrorState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
-import { showToast } from '@/app-ui/Toast';
 import { useAddWord, useAddWordScope } from '@/features/learner/add-word/add-word-context';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
+import { groupTone } from '@/lib/group-color';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { Skeleton } from '@/ui/Skeleton';
+import { StageBar } from '@/ui/StageBar';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
+import { rhythm } from './carousel';
 import { mastered } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
+import { useCloseFlip, useFlipFrom } from './flip';
 import { useGroupDialogs } from './GroupDialogs';
-import { highlightWord } from './highlight';
+import { GroupStack } from './GroupStack';
 import {
   isId,
   useDeckWords,
@@ -35,8 +39,6 @@ import {
 } from './groups-api';
 import { STAGE_KEYS } from './stages';
 
-const STAGE_DAYS = ['1', '3', '7', '14', '30'] as const;
-
 /** The number of words behind each filter, from the deck summary (counted on the server, owner 27/10/2026). */
 function filterCount(summary: GroupSummary | undefined, filter: WordFilter, total: number): number | null {
   if (filter === 'all') return summary?.total ?? total;
@@ -47,34 +49,66 @@ function filterCount(summary: GroupSummary | undefined, filter: WordFilter, tota
   return summary.cells[Number(filter.slice(6))]?.total ?? 0;
 }
 
-/** K/11–K/13: `/app/group?id=` — the deck's stages, today's counts, a card preview and every word with its stage. */
+/** Stage dots of the word rows (design §7.3); stage 5's dot is a gradient, so the row uses its flat colour. */
+const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
+
+const ALERT = 'flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card';
+
+/** Một nhóm (Figma 84:3552 / 84:3749): `/app/group?id=` — the stack from the carousel, today's counts, the rhythm bar and every word. */
 export function GroupPage() {
   const t = useTranslations('App.group');
+  const tCommon = useTranslations('App.common');
   const locale = useLocale();
   const raw = useSearchParams().get('id');
   const id = isId(raw) ? raw.toLowerCase() : null;
   const detail = useGroup(id);
   const notFound = id === null || (detail.error instanceof ApiError && detail.error.problem.status === 404);
 
-  return (
-    <>
-      <BackLink {...({ href: `/${locale}/app/groups`, label: t('back') })} />
-      {notFound ? (
-        <NotFoundState title={t('notFound')} back={{ href: `/${locale}/app/groups`, label: t('toList') }} />
-      ) : detail.data ? (
-        <GroupBody detail={detail.data} />
-      ) : detail.isError ? (
-        <GroupError error={detail.error} onRetry={() => void detail.refetch()} />
-      ) : (
-        <FullScreenSpinner />
-      )}
-    </>
-  );
+  if (notFound || !detail.data) {
+    return (
+      <>
+        <BackLink href={`/${locale}/app/groups`} label={t('back')} />
+        {notFound ? (
+          <div className={ALERT}>
+            <h1 className="font-wm-display text-wm-card-title text-wm-ink">{t('notFound')}</h1>
+            <Link href={`/${locale}/app/groups`} className="text-wm-small-strong text-wm-accent">
+              {t('toList')}
+            </Link>
+          </div>
+        ) : detail.isError ? (
+          <GroupError error={detail.error} onRetry={() => void detail.refetch()} />
+        ) : (
+          <div role="status" className="flex flex-col gap-5 md:flex-row md:items-center md:gap-11">
+            <span className="sr-only">{tCommon('loading')}</span>
+            <Skeleton className="h-74 w-52 rounded-wm-xl" />
+            <Skeleton className="h-40 flex-1 rounded-wm-xl" />
+          </div>
+        )}
+      </>
+    );
+  }
+  return <GroupBody detail={detail.data} />;
 }
 
 function GroupError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const errorText = useErrorMessage();
-  return <ErrorState message={errorText(error)} onRetry={onRetry} />;
+  const tCommon = useTranslations('App.common');
+  return (
+    <div role="alert" className={ALERT}>
+      <p className="text-wm-base text-wm-ink">{errorText(error)}</p>
+      <Button variant="secondary" onPress={onRetry}>
+        {tCommon('retry')}
+      </Button>
+    </div>
+  );
+}
+
+/** Until `GET /v1/groups` arrives, the stack is drawn from the deck detail with nothing waiting. */
+function fallbackSummary(detail: GroupDetail): GroupSummary {
+  return {
+    id: detail.id, name: detail.name, version: detail.version, total: detail.item_count, today: { priority: 0, due: 0, new: 0 },
+    cells: [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: 0, due: 0 })), backlog: 0, available: { due: 0, new: 0 },
+  };
 }
 
 function GroupBody({ detail }: { detail: GroupDetail }) {
@@ -82,9 +116,11 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const addWord = useAddWord();
   const t = useTranslations('App.group');
   const tStage = useTranslations('App.stages');
+  const tGroups = useTranslations('App.groups');
   const locale = useLocale() as AppLocale;
   const format = useFormat();
   const summary = useGroups().data?.items.find((g) => g.id === detail.id);
+  const group = summary ?? { ...fallbackSummary(detail) };
   const { open, dialogs } = useGroupDialogs();
   const [filter, setFilter] = useState<WordFilter>('all');
   const words = useDeckWords(detail.id, filter);
@@ -93,8 +129,12 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   // Owner 06/11/2026: a deck with no words leads with [Thêm từ]; no study button for 0 words and no counts that are all 0.
   const empty = total === 0;
   const known = summary ? mastered(summary) : 0;
-  const review = `/${locale}/app/review?group=${detail.id}`;
   const created = format.date(detail.created_at, 'full');
+  const tone = groupTone(detail.id, total);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
+  useFlipFrom('group-stack', stackRef, pageRef);
+  const close = useCloseFlip('group-stack-back', stackRef, pageRef);
   const filters: Array<{ id: WordFilter; label: string }> = [
     { id: 'all', label: t('filterAll') },
     { id: 'priority', label: t('filterPriority') },
@@ -102,118 +142,161 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
     { id: 'new', label: t('filterNew') },
     ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: t('filterStage', { stage: tStage(STAGE_KEYS[level]) }) })),
   ];
+  const filterTotal = filterCount(summary, filter, detail.item_count);
+  const left = filterTotal === null ? null : Math.max(0, filterTotal - shown.length);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <section className="flex min-w-0 flex-col gap-4 rounded-card border border-border bg-surface p-5 lg:col-span-1 lg:self-start">
-        <div>
-          <h1 className="wrap-anywhere text-h2 font-extrabold text-ink">{detail.name}</h1>
-          <p className="text-caption text-muted">
+    <div ref={pageRef} className="flex flex-col gap-6">
+      <div data-in="0">
+        <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} />
+      </div>
+      <section aria-labelledby="group-title" className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
+        <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
+        <GroupStack group={group} size="page" depth={2} ref={stackRef} />
+        <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
+          <p className="font-wm-mono text-wm-mono text-wm-muted">
             {known > 0 ? t('metaMastered', { count: detail.item_count, mastered: known, date: created }) : t('meta', { count: detail.item_count, date: created })}
           </p>
-        </div>
-        {summary && !empty && (
-          <div className="flex flex-wrap gap-2 text-caption font-semibold">
-            <span className="rounded-full bg-accent px-2 py-0.5 text-on-accent">{t('chipPriority', { count: summary.today.priority })}</span>
-            <span className="rounded-full bg-primary px-2 py-0.5 text-on-primary">{t('chipDue', { count: summary.today.due })}</span>
-            <span className="rounded-full border border-border-strong px-2 py-0.5 text-ink">{t('chipNew', { count: summary.today.new })}</span>
-          </div>
-        )}
-        <div className="flex gap-2">
-          {empty ? (
-            <Button variant="sticker" size="lg" className="flex-1" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
-              <Plus aria-hidden className="size-5 shrink-0" />
-              {t('addWord')}
-            </Button>
-          ) : summary ? (
-            <DeckButtons group={summary} className="flex-1" />
-          ) : (
-            <span className="flex-1" />
+          <h1 id="group-title" className="flex items-center gap-3 font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">
+            <span aria-hidden className={cn('size-3.25 shrink-0 rounded-wm-xs md:size-4', tone.bg)} />
+            <span className="min-w-0 wrap-anywhere">{detail.name}</span>
+          </h1>
+          {summary && !empty && (
+            <ul aria-label={t('todayChips')} className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['chipPriority', summary.today.priority],
+                  ['chipDue', summary.today.due],
+                  ['chipNew', summary.today.new],
+                ] as const
+              ).map(([key, count]) => (
+                <li key={key} className="flex items-baseline gap-1 rounded-wm-md bg-wm-surface px-3 py-1.25 text-wm-small text-wm-ink shadow-wm-soft">
+                  <b className={cn('font-wm-display font-extrabold', tone.ink)}>{format.number(count)}</b>{' '}
+                  {/* The copy is "{count} ưu tiên": the number is drawn apart, in the deck ink. */}
+                  {t(key, { count }).replace(/^\S+\s/, '')}
+                </li>
+              ))}
+            </ul>
           )}
-          <DeckMenu
-            studyAll={`${review}&mode=all`}
-            total={detail.item_count}
-            onRename={() => open({ kind: 'rename', group: detail })}
-            onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
-          />
+          {summary && !empty && (
+            <StageBar
+              aria-label={tGroups('rhythm')}
+              segments={rhythm(summary.cells).map((c) => ({
+                size: c.total,
+                fill: c.due,
+                tone: tone.bg,
+                label: tGroups('rhythmSegment', { stage: tStage(STAGE_KEYS[c.level]), due: c.due, total: c.total }),
+              }))}
+              labels={rhythm(summary.cells).map((c) => (
+                <span key={c.level} className="hidden md:inline">
+                  <b className="font-bold text-wm-ink">{c.total}</b> {tStage(STAGE_KEYS[c.level])}
+                </span>
+              ))}
+            />
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {empty ? (
+              <Button onPress={() => addWord.open(undefined, { groupId: detail.id })}>{t('addWord')}</Button>
+            ) : (
+              summary && <DeckButtons group={summary} buttonClassName="w-29.75 md:w-37" />
+            )}
+            {!empty && (
+              <TextButton tone="muted" onPress={() => addWord.open(undefined, { groupId: detail.id })} className="text-wm-button md:min-h-11">
+                {t('addWord')}
+              </TextButton>
+            )}
+            <DeckMenu
+              studyAll={`/${locale}/app/review?group=${detail.id}&mode=all`}
+              total={detail.item_count}
+              onRename={() => open({ kind: 'rename', group: detail })}
+              onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
+            />
+          </div>
+          {summary && summary.backlog > 0 && (
+            <Link
+              href={`/${locale}/app/group/backlog?id=${detail.id}`}
+              className="flex w-fit items-center gap-3 rounded-wm-md bg-wm-fail-soft px-3 py-2 text-wm-small-strong text-wm-fail outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
+            >
+              {t('backlog', { count: summary.backlog })}
+              <span className="text-wm-accent">{t('backlogSee')}</span>
+            </Link>
+          )}
         </div>
-        {!empty && (
-          <Button variant="quiet" size="lg" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
-            <Plus aria-hidden className="size-5 shrink-0" />
-            {t('addWord')}
-          </Button>
-        )}
-        {summary && !empty && <StageChart summary={summary} />}
-        {summary && summary.backlog > 0 && (
-          <Link href={`/${locale}/app/group/backlog?id=${detail.id}`} className="flex items-center justify-between rounded-inner bg-danger-soft px-3 py-2 text-ui font-semibold text-danger">
-            {t('backlog', { count: summary.backlog })}
-            <span className="underline underline-offset-2">{t('backlogSee')}</span>
-          </Link>
-        )}
       </section>
-
-      <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        {empty ? (
-          <EmptyDeck />
-        ) : (
-          <>
-            {shown.length > 0 && <CardPreview cards={shown} />}
-            <section className="flex flex-col gap-3">
-              <h2 id="all-words" className="text-title font-semibold text-ink">
-                {t('allWords', { count: total })}
-              </h2>
-              <div className="w-full sm:w-72">
-                <Select
-                  label={t('filterLabel')}
-                  hideLabel
-                  value={filter}
-                  onChange={(next) => setFilter(next as WordFilter)}
-                  items={filters.map((f) => {
-                    const count = filterCount(summary, f.id, detail.item_count);
-                    return count === null ? f : { ...f, suffix: t('filterCount', { count }) };
-                  })}
-                />
-              </div>
-              {words.isPending ? (
-                <FullScreenSpinner />
-              ) : words.isError ? (
-                <GroupError error={words.error} onRetry={() => void words.refetch()} />
-              ) : shown.length === 0 ? (
-                <p className="text-body text-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
-              ) : (
-                <>
-                  <ul aria-label={t('allWords', { count: total })} className="divide-y divide-border rounded-card border border-border bg-surface">
-                    {shown.map((word) => (
-                      <WordRow key={word.item_id} card={word} groupId={detail.id} />
-                    ))}
-                  </ul>
-                  {words.hasNextPage && (
-                    <Button variant="quiet" onPress={() => void words.fetchNextPage()} isPending={words.isFetchingNextPage}>
-                      {t('loadMore')}
-                    </Button>
+      {empty ? (
+        <EmptyDeck />
+      ) : (
+        <section data-in="2" aria-labelledby="all-words" className="flex flex-col gap-3">
+          <h2 id="all-words" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
+            {t('allWords', { count: total })}
+          </h2>
+          <div role="group" aria-label={t('filterLabel')} className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+            {filters.map((f) => {
+              const count = filterCount(summary, f.id, detail.item_count);
+              const pressed = f.id === filter;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setFilter(f.id)}
+                  className={cn(
+                    'flex min-h-9 shrink-0 items-baseline gap-1 rounded-wm-md border px-3 py-1.5 text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
+                    pressed ? 'border-wm-ink bg-wm-ink text-wm-surface' : 'border-wm-line bg-wm-surface text-wm-muted hover:text-wm-ink',
                   )}
-                </>
+                >
+                  <span>{f.label}</span>
+                  {count !== null && <span className="font-wm-mono text-wm-mono font-bold">{format.number(count)}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {words.isPending ? (
+            <div role="status" className="flex flex-col gap-2">
+              <span className="sr-only">{t('allWords', { count: total })}</span>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-wm-lg" />
+              ))}
+            </div>
+          ) : words.isError ? (
+            <GroupError error={words.error} onRetry={() => void words.refetch()} />
+          ) : shown.length === 0 ? (
+            <p className="text-wm-base text-wm-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
+          ) : (
+            <>
+              <ul aria-label={t('allWords', { count: total })} className="flex flex-col gap-2">
+                {shown.map((word) => (
+                  <WordRow key={word.item_id} card={word} groupId={detail.id} />
+                ))}
+              </ul>
+              {words.hasNextPage && (
+                <TextButton onPress={() => void words.fetchNextPage()} isDisabled={words.isFetchingNextPage} className="w-fit">
+                  {left !== null && left > 0 ? t('loadMore', { count: left }) : t('loadMoreUnknown')}
+                </TextButton>
               )}
-            </section>
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </section>
+      )}
       {dialogs}
     </div>
   );
 }
 
-const MENU_ITEM = 'cursor-pointer rounded-sm px-3 py-2 text-ui text-ink outline-none data-focused:bg-primary-soft';
+const MENU_ITEM = 'cursor-pointer rounded-wm-sm px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft';
 
-/** K/13: the deck's ⋯ menu. */
+/** The deck's ⋯ menu: rename, study every word, delete. */
 function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; total: number; onRename: () => void; onDelete: () => void }) {
   const t = useTranslations('App');
   return (
     <MenuTrigger>
-      <AriaButton aria-label={t('group.menu')} className="flex min-h-control-touch w-11 items-center justify-center rounded-inner border-2 border-border-strong bg-surface outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <AriaButton
+        aria-label={t('group.menu')}
+        className="flex size-11 items-center justify-center rounded-wm-md text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent"
+      >
         <MoreHorizontal aria-hidden className="size-5" />
       </AriaButton>
-      <Popover placement="bottom end" className="w-56 rounded-inner bg-surface p-1 shadow-menu">
+      <Popover placement="bottom end" className="w-56 rounded-wm-lg border border-wm-line bg-wm-surface p-1 shadow-wm-pop">
         <Menu className="outline-none">
           <MenuItem className={MENU_ITEM} onAction={onRename}>
             {t('groups.rename')}
@@ -223,7 +306,7 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
               {t('groups.studyAll', { count: total })}
             </MenuItem>
           )}
-          <MenuItem className={`${MENU_ITEM} text-danger`} onAction={onDelete}>
+          <MenuItem className={cn(MENU_ITEM, 'text-wm-fail')} onAction={onDelete}>
             {t('groups.delete')}
           </MenuItem>
         </Menu>
@@ -232,170 +315,23 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
   );
 }
 
-/**
- * A deck with no words (owner 06/11/2026), in place of the preview and the word list: two blank cards, what to do, and the way to
- * pick a batch by topic. [Thêm từ] itself stays at the top of the deck panel, where [Ôn N thẻ] sits once the deck has words.
- */
+/** A deck with no words (owner 06/11/2026): what to do, and the way to pick a batch by topic. [Thêm từ] stays in the head. */
 function EmptyDeck() {
   const t = useTranslations('App.group');
   const locale = useLocale();
   return (
-    <section aria-labelledby="empty-deck" className="flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-border-strong p-6 md:p-8">
-      <div aria-hidden className="relative h-20 w-28">
-        <span className="absolute left-4 top-0 h-16 w-24 -rotate-6 rounded-inner border-2 border-border-strong bg-primary-soft" />
-        <span className="absolute left-0 top-3 flex h-16 w-24 rotate-3 flex-col justify-center gap-1.5 rounded-inner border-2 border-ink bg-surface px-3 shadow-ledge-soft">
-          <span className="h-2 w-12 rounded-full bg-ink" />
-          <span className="h-1.5 w-16 rounded-full bg-border-strong" />
-        </span>
-      </div>
-      <div className="flex max-w-prose flex-col gap-1.5">
-        <h2 id="empty-deck" className="text-balance text-h3 font-bold text-ink">
-          {t('emptyTitle')}
-        </h2>
-        <p className="text-pretty text-body text-muted">{t('emptyBody')}</p>
-      </div>
+    <section data-in="2" aria-labelledby="empty-deck" className="flex flex-col items-start gap-4 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
+      <h2 id="empty-deck" className="text-balance font-wm-display text-wm-card-title text-wm-ink">
+        {t('emptyTitle')}
+      </h2>
+      <p className="max-w-prose text-pretty text-wm-base text-wm-muted">{t('emptyBody')}</p>
       <Link
         href={`/${locale}/app/lookup`}
-        className="flex min-h-control items-center gap-2 rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+        className="flex min-h-11 items-center gap-2 text-wm-button text-wm-accent outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
       >
         <Search aria-hidden className="size-4 shrink-0" />
         {t('emptyLookup')}
       </Link>
-    </section>
-  );
-}
-
-/** The six stages as columns (TV9 labels "Mới · 1 · 3 · 7 · 14 · 30"): blue = due today, outline = not yet. */
-function StageChart({ summary }: { summary: GroupSummary }) {
-  const t = useTranslations('App.group');
-  const tStage = useTranslations('App.stages');
-  const STAGE_AXIS = [tStage('s0'), ...STAGE_DAYS];
-  const max = Math.max(1, ...summary.cells.map((c) => c.total));
-  return (
-    <figure aria-label={`${t('chartLabel')}: ${summary.cells.map((c, i) => `${STAGE_AXIS[i]} ${c.total}`).join(', ')}`} className="flex flex-col gap-2">
-      <ul className="flex h-36 items-end justify-between gap-2">
-        {summary.cells.map((cell, i) => (
-          <li key={cell.level} data-stage={STAGE_AXIS[i]} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-            <span className="text-caption font-semibold text-ink">{cell.total}</span>
-            <span
-              className="flex w-full flex-col justify-end overflow-hidden rounded-sm border-2 border-primary"
-              // raw-ok: column height is the stage's share of the deck
-              style={{ height: `${Math.max(6, Math.round((cell.total / max) * 80))}%` }}
-            >
-              <span
-                className="block w-full bg-primary"
-                // raw-ok: filled part is the share due today
-                style={{ height: `${cell.total ? Math.round((cell.due / cell.total) * 100) : 0}%` }}
-              />
-            </span>
-            <span className="text-caption text-muted">{STAGE_AXIS[i]}</span>
-          </li>
-        ))}
-      </ul>
-      <figcaption className="text-center text-caption text-muted">{t('chartLabel')}</figcaption>
-      <p className="flex flex-wrap justify-center gap-3 text-caption text-muted">
-        <span className="flex items-center gap-1">
-          <span aria-hidden className="size-2 rounded-full bg-primary" />
-          {t('legendDue')}
-        </span>
-        <span className="flex items-center gap-1">
-          <span aria-hidden className="size-2 rounded-full border border-primary" />
-          {t('legendLater')}
-        </span>
-      </p>
-    </figure>
-  );
-}
-
-type Slide = 'out-left' | 'out-right' | 'in-right' | 'in-left';
-const SLIDE: Record<Slide, string> = {
-  'out-left': 'motion-safe:animate-slide-out-left',
-  'out-right': 'motion-safe:animate-slide-out-right',
-  'in-right': 'motion-safe:animate-slide-in-right',
-  'in-left': 'motion-safe:animate-slide-in-left',
-};
-// Both faces share one grid cell, so the card keeps the taller face's height while it turns.
-const PREVIEW_FACE =
-  'col-start-1 row-start-1 flex min-h-40 flex-col items-center justify-center gap-1 rounded-card border-2 border-ink bg-session-card p-4 text-center shadow-ledge-accent backface-hidden';
-
-/**
- * K/11 "Xem trước thẻ": the front, then the back on a press or Space. Owner 27/10/2026: it turns over in 3D like the review
- * card; [Thẻ sau] swipes it out to the left and the next one in from the right, [Thẻ trước] goes back the other way. With
- * reduced motion the card changes at once.
- */
-function CardPreview({ cards }: { cards: DeckWord[] }) {
-  const t = useTranslations('App.group');
-  const [index, setIndex] = useState(0);
-  const [back, setBack] = useState(false);
-  const [slide, setSlide] = useState<Slide | null>(null);
-  const card = cards[index % cards.length].content;
-  const leaving = slide === 'out-left' || slide === 'out-right';
-
-  function move(step: 1 | -1) {
-    setIndex((i) => i + step);
-    setBack(false);
-  }
-
-  function go(step: 1 | -1) {
-    if (leaving) return;
-    if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches) setSlide(step === 1 ? 'out-left' : 'out-right');
-    else move(step);
-  }
-
-  function onAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget) return;
-    if (slide === 'out-left' || slide === 'out-right') {
-      move(slide === 'out-left' ? 1 : -1);
-      setSlide(slide === 'out-left' ? 'in-right' : 'in-left');
-    } else setSlide(null);
-  }
-
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-title font-semibold text-ink">{t('preview')}</h2>
-        <span className="text-caption text-muted">{t('previewHint')}</span>
-      </div>
-      <div className="flex flex-col items-center gap-3 overflow-hidden rounded-card border border-border bg-surface p-6">
-        <div data-testid="preview-slide" onAnimationEnd={onAnimationEnd} className={cn('w-full max-w-xs perspective-distant', slide && SLIDE[slide])}>
-          {/* Keyed per card, so a new card starts face up without turning back. */}
-          <button
-            key={index}
-            type="button"
-            data-flipped={back}
-            onClick={() => setBack((b) => !b)}
-            onKeyDown={(e) => {
-              if (e.key === ' ') {
-                e.preventDefault();
-                setBack((b) => !b);
-              }
-            }}
-            className={cn(
-              'grid w-full rounded-card outline-none transform-3d focus-visible:ring-2 focus-visible:ring-primary motion-safe:transition-transform motion-safe:duration-flip motion-safe:ease-standard',
-              back && 'motion-safe:rotate-y-180',
-            )}
-          >
-            <span data-face="front" aria-hidden={back || undefined} className={cn(PREVIEW_FACE, back && 'motion-reduce:opacity-0')}>
-              <span className="break-all text-h3 font-extrabold text-ink">{card.lemma}</span>
-              <span className="text-caption text-muted">{card.pos}</span>
-            </span>
-            <span data-face="back" aria-hidden={!back || undefined} className={cn(PREVIEW_FACE, 'motion-safe:rotate-y-180', !back && 'motion-reduce:opacity-0')}>
-              <span className="text-title font-semibold text-ink">{card.meaning.text}</span>
-              {card.examples[0] && <span className="text-caption text-muted">{highlightWord(card.examples[0], card.lemma)}</span>}
-            </span>
-          </button>
-        </div>
-        {cards.length > 1 && (
-          <div className="flex gap-2">
-            <Button variant="quiet" isDisabled={index === 0} onPress={() => go(-1)}>
-              ‹ {t('prevCard')}
-            </Button>
-            <Button variant="quiet" onPress={() => go(1)}>
-              {t('nextCard')} ›
-            </Button>
-          </div>
-        )}
-      </div>
     </section>
   );
 }
@@ -409,9 +345,10 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const word = card.content.lemma;
-  const stage = card.level === 0 ? tStage('s0') : t('stageChip', { stage: tStage(STAGE_KEYS[card.level]) });
-  const status =
-    card.section === 'new'
+  const stage = t('stageChip', { stage: tStage(STAGE_KEYS[card.level]) });
+  const status = card.priority
+    ? t('priorityTag')
+    : card.section === 'new'
       ? t('newWord')
       : card.section === 'early'
         ? t('dueOn', { date: createFormat(locale, 'UTC').date(`${card.due_date}T00:00:00Z`, 'dayMonth') })
@@ -432,53 +369,59 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   }
 
   return (
-    <li aria-label={word} className="flex flex-wrap items-start justify-between gap-3 p-4">
-      <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-baseline gap-2">
-          <Link href={`/${locale}/app/word?w=${encodeURIComponent(word)}`} className="break-all text-title font-semibold text-ink hover:underline">
-            {word}
-          </Link>
-          <span className="text-caption text-muted">{card.content.pos}</span>
-        </p>
-        <p className="break-words text-ui text-ink">{card.content.meaning.text}</p>
-        {card.content.examples[0] && <p className="break-words text-caption text-muted">{highlightWord(card.content.examples[0], word)}</p>}
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span className={cn('rounded-full px-2 py-0.5 text-caption font-semibold', card.priority ? 'bg-accent-soft text-ink' : 'bg-primary-soft text-ink')}>
-          {card.priority ? `${stage} · ${t('priorityTag')}` : stage}
+    <li aria-label={word} className="flex items-center gap-4 rounded-wm-lg bg-wm-surface px-4 py-3 shadow-wm-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-baseline md:gap-4">
+        <Link
+          href={`/${locale}/app/word?w=${encodeURIComponent(word)}`}
+          className="font-wm-display text-wm-word text-wm-ink outline-none wrap-anywhere hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent md:w-47.5 md:shrink-0 md:text-xl"
+        >
+          {word}
+        </Link>
+        <span className="hidden w-24 shrink-0 font-wm-mono text-wm-mono text-wm-muted md:block">{card.content.pos}</span>
+        <span className="min-w-0 flex-1 text-wm-small text-wm-muted wrap-anywhere md:text-wm-base md:text-wm-ink">
+          {card.content.meaning.text}
+          {card.sense_changed && <span className="ml-2 rounded-wm-sm bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
         </span>
-        {card.sense_changed && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-caption font-semibold text-danger">{t('senseChanged')}</span>}
-        <span className="text-caption text-muted">{status}</span>
-        <button
-          type="button"
-          aria-label={t('removeLabel', { word })}
-          disabled={busy}
-          onClick={() => (card.group_count === 1 ? setConfirm(true) : void remove())}
-          className="text-caption font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
-        >
-          {t('remove')}
-        </button>
       </div>
-      {confirm && (
-        <Dialog
-          isOpen
-          onOpenChange={(open) => !open && setConfirm(false)}
-          title={t('removeLastTitle', { word })}
-          isDismissable={!busy}
-          footer={
-            <>
-              <Button variant="quiet" onPress={() => setConfirm(false)}>
-                {t('keep')}
-              </Button>
-              <Button variant="danger" onPress={() => void remove()} isPending={busy}>
-                {t('removeLastConfirm')}
-              </Button>
-            </>
-          }
-        >
-          <p className="text-body text-ink">{t('removeLastBody')}</p>
-        </Dialog>
-      )}
+      <span className="hidden w-32.5 shrink-0 items-center gap-1.5 text-wm-caption text-wm-muted md:flex">
+        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_DOT[card.level])} />
+        {stage}
+      </span>
+      <span className={cn('shrink-0 text-right text-wm-label md:w-30', card.priority ? 'text-wm-fail' : statusTone(card))}>{status}</span>
+      <TextButton
+        tone="muted"
+        aria-label={t('removeLabel', { word })}
+        isDisabled={busy}
+        onPress={() => (card.group_count === 1 ? setConfirm(true) : void remove())}
+        className="min-h-11 shrink-0 px-1"
+      >
+        <X aria-hidden className="size-4" />
+      </TextButton>
+      <Dialog
+        isOpen={confirm}
+        onOpenChange={(isOpen) => !isOpen && setConfirm(false)}
+        title={t('removeLastTitle', { word })}
+        isDismissable={!busy}
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setConfirm(false)}>
+              {t('keep')}
+            </Button>
+            <Button variant="danger" onPress={() => void remove()} isPending={busy}>
+              {t('removeLastConfirm')}
+            </Button>
+          </>
+        }
+      >
+        <p role="note" className="rounded-wm-lg bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+          {t('removeLastBody')}
+        </p>
+      </Dialog>
     </li>
   );
+}
+
+/** Status colour of a row (Figma 84:3552): the deck's dark ink, as the drawn "từ mới" / "cần ôn hôm nay". */
+function statusTone(card: DeckWord): string {
+  return card.section === 'early' ? 'text-wm-muted' : 'text-wm-ink';
 }

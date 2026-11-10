@@ -130,3 +130,80 @@ Nhánh `feat/giao-dien-moi-m1`, PR vào `refactor/giao-dien-moi`. Rulings R6–R
 **Review cuối nhánh M1 (reviewer riêng, 10/11/2026)**
 - Đã sửa: thẻ lồng thẻ ở trang đăng nhập và onboarding (`CardFrame` bỏ thẻ, `AuthCard` giữ thẻ của nó); tab thanh trên gãy hai dòng ở 768 px (chữ một dòng, dưới 1024 px ẩn icon, khoảng cách nhỏ hơn). Đã xem trên `pnpm bootstrap` ở 390 và 768 px.
 - Để lại, ghi cho M2+: khung xương thấp hơn header thật khoảng 50 px khi tải cứng; trên điện thoại chỉ tới Gói học qua Cài đặt; màn lỗi không tự hết khi chỉ đổi `?id=` (bấm "Thử lại" hoặc đổi trang); ô tìm ở `SearchStrip` giữ chữ chưa gửi khi đổi tab; tên truy cập của logo đặt bằng `aria-label` trên `span`; phím N vẫn mở Thêm từ khi menu ảnh đại diện đang mở.
+
+# Giao diện mới — as-built M2 Đăng nhập và tài khoản (10/11/2026)
+
+Nhánh `feat/giao-dien-moi-m2`, PR vào `refactor/giao-dien-moi` (mở sau khi PR M1 #251 merge). API không đổi. Rulings R22–R36 ở
+[`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md). Chủ dự án chốt QM2-1 ngày 10/11/2026: ô Turnstile **luôn hiện**.
+
+**Đã làm**
+- `src/ui/`: `PasswordField` (nút mắt hiện/ẩn, không gửi form), `TextField` có chỗ đặt link ở dòng nhãn, `OtpField` (6 ô: gõ, dán, xóa lùi, mã tự điền từ
+  điện thoại hay trình quản lý mật khẩu), `GoogleButton`, `DateOfBirthField`, `Flag`. `date-of-birth` sang `lib/`; đường dẫn cũ trong `app-ui/` chỉ còn
+  re-export tới M8.
+- `(auth)` tách thành `(split)` (Đăng nhập, Đăng ký: cột form 400 px, panel thương hiệu 640 px từ 1280 px, chân trang) và `(card)` (5 trang còn lại: card
+  480 px, hai quầng sáng). `AuthGate` không vẽ khung nữa; ngoại lệ B8-2 giữ nguyên. Card của `(onboarding)` dùng cùng khung. Thay LR43 (03/11/2026).
+- Token mới trong `packages/design-tokens/web.css`: `page-title` 44, `page-title-mobile` 38, `card-heading` 30, `card-heading-mobile` 26.
+- 9 trang dựng lại trên kit mới; `features/learner/auth/**` (trừ test) không còn import `@/app-ui/*`. Ô "Nhập lại mật khẩu" ở Đăng ký và "Nhập lại mật
+  khẩu mới" ở Đặt mật khẩu mới chỉ kiểm ở giao diện: nhập lệch thì không gửi gì, lỗi dưới ô; body gửi API như cũ. Mã đặt lại thành 6 ô.
+- Turnstile (`TurnstileWidget`, `use-turnstile`) chuyển vào `features/learner/auth/`; test ghim tùy chọn hiện nay (không có `appearance`).
+
+**Kiểm**
+- Web: lint, typecheck qua; `pnpm test` 106 file, 1063 test qua (sau khi merge đầu nhánh M1 `8a142dc0`).
+- Admin (token đổi): lint, typecheck, test 1397 qua; build qua với biến của CI (`VITE_API_BASE_URL=https://admin-api.wordmet.com`, khóa Turnstile thử).
+- E2e `pnpm cf:docker` toàn bộ trước khi merge M1: 360 qua, 5 hỏng, 4 flaky. Cả 5 hỏng là đúng 5 lỗi M1 đã sửa sau đó trên nhánh M1 (R20 của M1).
+  Sau khi merge M1, chạy lại các spec liên quan (`cai-thien-a-group`, `overflow`, `m5a`, `m1`, `b8-set-password`, `landing`, `csp`): 154 qua, 6 flaky
+  (qua ở lần thử lại), 2 hỏng ở `m5a` trên mobile (phiên luyện AI, không thuộc M2; lượt đó chạy cùng lúc `pnpm bootstrap` đang build). CI của PR chạy lại toàn bộ.
+- Review cuối cả nhánh (subagent): 0 Critical, 1 Important (mã tự điền vào ô 1 chỉ giữ số cuối) đã sửa bằng test đỏ rồi fix; 3 Minor để lại (dưới).
+
+**Ảnh `gm-m2`** (390 và 1440 px, sáng; 18 ảnh ở `apps/web/test-results/shots/gm-m2/`, không commit)
+
+| Trang | Figma | Ảnh |
+|---|---|---|
+| Đăng nhập | `35:308` / `37:485` | `vi-light-login-{1440,390}.png` |
+| Đăng ký | `35:405` / `37:533` | `vi-light-register-…` |
+| Xác minh email | `36:385` / `37:623` | `vi-light-verify-email-…` |
+| Quên mật khẩu | `36:417` / `37:656` | `vi-light-forgot-password-…` |
+| Đặt mật khẩu mới | `36:447` / `37:687` | `vi-light-reset-password-…` |
+| Hoàn tất đăng ký Google | `36:490` / `37:731` | `vi-light-google-complete-…` |
+| Đã xóa tài khoản | `36:549` / `37:791` | `vi-light-account-deleted-…` |
+| Bổ sung hồ sơ | `36:564` / `37:807` | `vi-light-complete-profile-…` |
+| Chào mừng | `36:591` / `37:835` | `vi-light-welcome-…` |
+
+Ảnh chụp bằng API giả của e2e trong `cf:docker`, không bằng `SHOTS_MILESTONE=gm-m2 pnpm shots`: lệnh đó cần app ở :3001 với API thật, mà cổng 3001
+đang do container `english-learning-web-1` của `pnpm bootstrap` giữ và API chỉ cho CORS từ 3000, 3001. Bộ `gm-m2` đã có trong `e2e-shots/shots.spec.ts`
+để chạy với stack thật sau này.
+
+**Chưa kiểm / rủi ro**
+- Chưa chụp chế độ Tối và tiếng Anh cho M2 (plan chỉ yêu cầu sáng, tiếng Việt).
+- Minor để lại: (1) phím Tab tới "Quên mật khẩu?" trước ô Mật khẩu (thứ tự Figma vẽ); (2) chữ "Đề 12" trên panel thương hiệu (ẩn với trình đọc màn hình) vẫn
+  tiếng Việt ở `/en`; (3) lỗi "mã chưa đúng" ở Đặt mật khẩu mới chưa gắn `aria-describedby` vào nhóm ô mã (R33).
+- `m5a` chạy lại riêng: 21 qua, 1 flaky (qua ở lần thử lại); hai lần hỏng trước là do máy đang build `bootstrap` cùng lúc. `m5a` vẫn hay flaky trên mobile (cả lượt đầu).
+- Chưa xem trên điện thoại thật; mã tự điền chỉ kiểm bằng test jsdom.
+- Xác minh email: đi một mạch từ Đăng ký hay Đăng nhập thì chỉ có ô mã (Figma `36:385`). Tải lại trang, mở tab mới hay trình duyệt tự tải lại tab thì mất mật khẩu trong bộ nhớ, nên trang hỏi thêm ô "Mật khẩu" vì `POST /v1/auth/verify-email` cần mật khẩu để đăng nhập. Chủ dự án xem và giữ như vậy (10/11/2026). Ảnh `vi-light-verify-email-*` mở thẳng trang nên có ô này.
+
+# Giao diện mới — as-built M3 Hôm nay và Nhóm (10/11/2026)
+
+Nhánh `feat/giao-dien-moi-m3`, PR vào `refactor/giao-dien-moi`. API không đổi. Quyết định khi làm: R37–R54 trong `giao-dien-moi-rulings.md`.
+
+**Đã làm**
+- Token màu ngăn, màu nhóm theo ID (viền, nhạt, nền chọn, màu chữ ≥ 4,5:1), token chuyển động của băng chuyền; hàm `groupColorIndex` (FNV-1a), `groupTone`, độ dày chồng, vị trí băng chuyền, thanh nhịp ôn.
+- `GroupStack` (một thiết kế co theo `em`, ba trạng thái: thường, xong hôm nay, trống), `ui/StageBar`, `DeckButtons` trên `ui/ButtonLink` (nút có việc chờ là nút chính navy).
+- Web đọc `next_lemma`, `last_reviewed` và `GET /v1/practice/sessions/last` (204 → không có khối).
+- Hôm nay: khối "ôn tiếp", "Lần luyện gần nhất" (link "Luyện lại từ sai →", "Mở lịch học" tới trang lịch sử cũ cho tới M6), tối đa 4 thẻ nhóm khác (nhóm trống cũng là thẻ, chủ dự án 10/11/2026), dòng "Xong hôm nay", chủ đề gợi ý dạng thẻ nhỏ có trình độ, từ mẫu và số từ (chủ dự án yêu cầu làm đẹp hơn hàng chữ của Figma), cột phụ.
+- Nhóm: băng chuyền "Trượt mờ" (← →, vuốt, cuộn ngang, nút mũi tên; ↓ mở nhóm), bảng chọn nhóm phím F (tìm không dấu, ba nhóm chú thích, ↑ ↓ Enter Esc), dòng `aria-live`, chồng bên cạnh `inert`.
+- Một nhóm: đầu trang có chồng thẻ, chip hôm nay, thanh nhịp ôn có nhãn; chip lọc thay ô chọn; hàng từ 5 cột; thẻ bay khi mở và đóng nhóm. **Khối xem trước thẻ đã bỏ theo quyết định QM3-1 của chủ dự án ("Bỏ như Figma").**
+- Từ lâu chưa ôn và Chủ đề: số lớn, đoạn giải thích, danh sách có chọn tất cả, thanh nổi ở dưới chỉ hiện khi đã chọn từ.
+- Năm hộp thoại (Tạo, Đổi tên, Xóa nhóm, Bỏ từ khỏi nhóm, Bỏ N từ khỏi việc học) chuyển sang `ui/Dialog`; hộp xóa có khối cảnh báo theo thẻ "Xác nhận xóa".
+- File `loading` riêng cho Hôm nay, Nhóm, Một nhóm; xóa `GroupCard.tsx`, khóa chữ không còn dùng.
+
+**Kiểm**
+- Web: lint, typecheck qua; `pnpm test` 112 file, 1149 test qua (sau khi merge M1, M2). Admin: lint, typecheck, build qua; test có 16 test quá thời gian khi máy bận, chạy lại riêng 9 file đó qua 246/246.
+- E2e `pnpm cf:docker` (m1, m2, m3, cai-thien-a-group, overflow, csp; 390 và 1440): 101 qua, 6 qua ở lần thử lại, 0 hỏng, sau khi sửa 2 test ở khổ điện thoại.
+- Chủ dự án tự thử bản `pnpm bootstrap` của nhánh này (10/11/2026): "không có vấn đề gì, ổn".
+- Khung hình băng chuyền: đo trên trang Nhóm có 8 nhóm, CPU chậm 4× (CDP), Chromium headless trong container Linux không GPU, đếm `requestAnimationFrame` trong 700 ms sau mỗi lần đổi nhóm: trung vị 10,4 khung/giây (6 lần: 11,7; 10,4; 9,1; 0,8; 0,1; 16,9). Số này thấp hơn nhiều so với máy thật vì không có GPU; chưa đo trên điện thoại thật.
+
+**Chưa kiểm / rủi ro**
+- **Bộ ảnh `gm-m3` chưa chụp được.** Script đã có (`SHOTS_MILESTONE=gm-m3 pnpm shots`); stack `pnpm bootstrap` ở cổng 3001 đang chạy code của bản checkout chính, còn app của nhánh này chạy ở cổng khác thì API từ chối Origin. Chạy lại script khi stack ở 3001 là code của nhánh này.
+- Xóa nhóm từ Một nhóm: e2e desktop thấy lần tải lại trang Nhóm (`hardReplace`) chưa xong trong thời gian của test; bản điện thoại chuyển trang bình thường; unit test xác nhận gọi `hardReplace('/vi/app/groups')`. Đường này có từ trước M3.
+- Tiêu đề và số lớn dùng thang cỡ chữ mặc định của Tailwind (R44); đổi sang token tiêu đề của M2 ở đợt sau.
+- Màu nhóm, màu ngăn ở chế độ tối dùng giá trị sáng cho tới M9.

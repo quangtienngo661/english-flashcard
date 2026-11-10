@@ -53,4 +53,10 @@ describe('ui actions and surfaces', () => {
     const { container } = render(<DotGridBackground />);
     expect(container.firstChild).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('DotGridBackground draws the mesh background, not the dot grid', () => {
+    const { container } = render(<DotGridBackground />);
+    expect(container.firstChild).toHaveClass('app-mesh');
+    expect(container.firstChild).not.toHaveClass('dot-grid');
+  });
 });

@@ -2,11 +2,16 @@
 
 import { CircleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { FieldError, Input, Label, Text, TextField as AriaTextField } from 'react-aria-components';
 import { FIELD_BOX, FIELD_ERROR, FIELD_HINT, FIELD_LABEL } from './field-styles';
 
-type Props = {
+export type TextFieldProps = {
   label: string;
+  /** Right end of the label row, e.g. the "Quên mật khẩu?" link (Figma "Ô nhập", có liên kết). */
+  labelAside?: ReactNode;
+  /** Drawn inside the box at the right (the eye button of `PasswordField`). */
+  trailing?: ReactNode;
   value: string;
   onChange: (value: string) => void;
   type?: 'text' | 'email' | 'password' | 'date';
@@ -31,7 +36,7 @@ type Props = {
 };
 
 /** Same props as app-ui/TextField; the look of Figma "Ô nhập" (34:345). The error is tied to the input. */
-export function TextField({ label, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: Props) {
+export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: TextFieldProps) {
   const t = useTranslations('App.common');
   return (
     <AriaTextField
@@ -43,15 +48,25 @@ export function TextField({ label, value, onChange, error, description, placehol
       isInvalid={error !== undefined}
       className="group flex w-full min-w-0 flex-col gap-1.5"
     >
-      <Label className={FIELD_LABEL}>{label}</Label>
-      <Input
-        placeholder={placeholder}
-        spellCheck={spellCheck}
-        inputMode={inputMode}
-        min={min}
-        max={max}
-        className={`${FIELD_BOX} data-invalid:border-wm-fail`}
-      />
+      {labelAside ? (
+        <div className="flex items-baseline justify-between gap-3">
+          <Label className={FIELD_LABEL}>{label}</Label>
+          {labelAside}
+        </div>
+      ) : (
+        <Label className={FIELD_LABEL}>{label}</Label>
+      )}
+      <div className="relative">
+        <Input
+          placeholder={placeholder}
+          spellCheck={spellCheck}
+          inputMode={inputMode}
+          min={min}
+          max={max}
+          className={`${FIELD_BOX} data-invalid:border-wm-fail ${trailing ? 'pr-11' : ''}`}
+        />
+        {trailing}
+      </div>
       <FieldError className={FIELD_ERROR}>
         <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
         {error}
