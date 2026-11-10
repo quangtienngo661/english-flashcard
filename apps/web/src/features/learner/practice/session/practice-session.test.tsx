@@ -446,6 +446,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('{Escape}');
     expect(await screen.findByRole('heading', { name: 'Xong 10 câu.' })).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(1);
+    // Figma 119:4608: the ring reads 7/10 right; blocks rise 90 ms apart (design §8.3).
+    expect(screen.getByRole('img', { name: '7/10 câu đúng' })).toHaveTextContent('7/10');
+    expect(screen.getByRole('heading', { name: 'Xong 10 câu.' }).closest('[class*="animate-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
     expect(screen.getByText('Nhóm Công nghệ, trộn 3 kiểu câu. Hôm nay còn 1/3 phiên luyện.')).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Cần ôn lại · 3 từ' });
     expect(within(list).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();
@@ -691,9 +694,8 @@ describe('Summary of alternative answers', () => {
   it('CS9: the summary says how many right answers were alternative answers', async () => {
     await openSummary({ alternatives: 2 });
     const line = await screen.findByText('Trong đó 2 đáp án thay thế');
-    // The line belongs to the right-answer count: it sits in the "Đúng" tile, not loose under both tiles (UI polish, 07/11/2026).
-    const right = screen.getAllByRole('term').find((term) => term.textContent === 'Đúng')!;
-    expect(right.parentElement).toContainElement(line);
+    // M5.5: no Đúng/Sai tiles any more (Figma 119:4608 has the ring); the line sits with the title, next to the ring of right answers.
+    expect(screen.getByRole('heading', { name: /^Xong/ }).parentElement).toContainElement(line);
   });
 
   it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {

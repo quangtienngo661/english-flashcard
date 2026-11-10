@@ -1120,12 +1120,14 @@
       "hero": {
         "chip": "Luyện nhanh · từ cần ôn hôm nay",
         "title": "Hôm nay",
-        "line": "{words, number} từ trong {groups, number} nhóm. {count, number} câu, trộn ba kiểu câu.",
         "empty": "Hôm nay không còn từ nào cần ôn. Chọn một nguồn bên dưới.",
         "start": "Bắt đầu {count, number} câu",
         "customize": "Tùy chỉnh",
-        "artPrompt": "Chọn từ đúng nghĩa",
-        "artMeaning": "triển khai"
+        "artPrompt": "Ví dụ một câu · chọn từ đúng nghĩa",
+        "artMeaning": "triển khai",
+        "words": "<n>{words, number}</n> từ trong {groups, number} nhóm",
+        "body": "{count, number} câu, trộn ba kiểu: {types}.",
+        "artRight": "đúng"
       },
       "sources": {
         "title": "Luyện theo nguồn khác",
@@ -1138,7 +1140,8 @@
           "body": "Một nhóm, lọc theo ngăn hoặc từ ưu tiên.",
           "chip": "{name} · {count, number}",
           "start": "Luyện {name}",
-          "empty": "Chưa có nhóm nào."
+          "empty": "Chưa có nhóm nào.",
+          "more": "+{count, number} nhóm"
         },
         "weak": {
           "name": "Từ hay sai",
@@ -1212,7 +1215,7 @@
       },
       "recent": {
         "title": "Gần đây",
-        "history": "Xem lịch sử",
+        "history": "Mở lịch học",
         "empty": "Bạn chưa làm câu nào.",
         "correct": "đúng",
         "typed": "bạn gõ {answer}, đáp án {correct}",
@@ -1419,7 +1422,9 @@
           "review": "Cần ôn lại",
           "reviewAll": "Đưa {count, number} từ còn lại vào ưu tiên",
           "home": "Về Luyện tập",
-          "again": "Luyện thêm một phiên"
+          "again": "Luyện thêm một phiên",
+          "ring": "{correct, number}/{total, number} câu đúng",
+          "ringCaption": "câu đúng"
         },
         "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên.",
         "countRight": "{count, number} câu đúng",
@@ -1455,7 +1460,6 @@
           "stage": "Ngăn",
           "last": "Sai gần nhất"
         },
-        "wrongOf": "sai {wrong}/{counted}",
         "today": "{time} hôm nay",
         "more": "Xem thêm",
         "emptyTitle": "Chưa có từ nào hay sai.",
@@ -1473,7 +1477,9 @@
           "out": "Rời: khi 5 câu gần nhất còn dưới 2 câu sai.",
           "removed": "Từ bạn đã bỏ khỏi việc học không nằm ở đây."
         },
-        "reopens": "Hết phiên luyện hôm nay. Mở lại lúc {time}."
+        "reopens": "Hết phiên luyện hôm nay. Mở lại lúc {time}.",
+        "right": "{count, number} câu đúng",
+        "wrong": "{count, number} câu sai"
       },
       "history": {
         "title": "Lịch sử luyện tập",

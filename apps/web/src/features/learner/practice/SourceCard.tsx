@@ -1,27 +1,17 @@
 'use client';
 
-import { History, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { ArrowRight, History, SlidersHorizontal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Button } from '@/app-ui/Button';
-import { cn } from '@/lib/cn';
+import { TextButton } from '@/ui/TextButton';
 
-export type SourceTone = 'primary' | 'danger' | 'accent' | 'success';
-
-const TONE: Record<SourceTone, string> = {
-  primary: 'bg-primary-soft',
-  danger: 'bg-danger-soft',
-  accent: 'bg-accent-soft',
-  success: 'bg-success-soft',
-};
-
-export const CHIP = 'inline-flex max-w-full items-center rounded-full border border-border-strong bg-surface px-2.5 py-0.5 text-caption font-semibold text-ink';
+/** A source's tag (Figma "Nguồn" rows): `--bg`, radius 6, 13 px; `fail` for the weak words. */
+export const CHIP = 'inline-flex max-w-full items-center rounded-wm-sm bg-wm-bg px-2 py-0.5 font-wm-sans text-wm-label text-wm-ink';
+export const CHIP_FAIL = 'inline-flex max-w-full items-center rounded-wm-sm bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail';
 
 type Props = {
   name: string;
-  icon: LucideIcon;
-  tone: SourceTone;
   body: string;
   /** Words or decks of the source (K/51 chips), or the line saying it is empty. */
   chips: ReactNode;
@@ -30,57 +20,57 @@ type Props = {
   onStart: () => void;
   busy: boolean;
   onCustomize: () => void;
-  /** Why the last start from this card failed (409 practice-no-words…). */
+  /** Why the last start from this row failed (409 practice-no-words…). */
   error: string | null;
-  /** K/55: no session left; the card says when they refill instead of offering a start. */
+  /** K/55: no session left; the row says when they refill instead of offering a start. */
   reopensAt: string | null;
   /** The title links to the source's own page (Từ hay sai). */
   titleHref?: string;
 };
 
-/** One of the four "Luyện theo nguồn khác" cards of K/51 (K/55 when no session is left). */
-export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, onStart, busy, onCustomize, error, reopensAt, titleHref }: Props) {
+/** One row of the "Luyện theo nguồn khác" card (Figma 99:3169; K/51, K/55 when no session is left). */
+export function SourceCard({ name, body, chips, startLabel, onStart, busy, onCustomize, error, reopensAt, titleHref }: Props) {
   const t = useTranslations('App.practice.sources');
+  const starts = !reopensAt && startLabel;
   return (
-    <li aria-label={name} className={cn('pastel-island flex min-w-0 flex-col gap-3 rounded-card p-4 shadow-ledge-soft', TONE[tone])}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-2 text-title font-semibold text-ink">
-          <Icon aria-hidden className="size-5 shrink-0" />
+    <li aria-label={name} className="flex flex-col gap-3 border-t border-wm-line py-4 first:border-t-0 md:flex-row md:items-center md:gap-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <h3 className="font-wm-display text-wm-word text-wm-ink">
           {titleHref ? (
-            <Link href={titleHref} className="truncate rounded-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary">
+            <Link href={titleHref} className="rounded-wm-sm outline-none hover:underline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent">
               {name}
             </Link>
           ) : (
-            <span className="truncate">{name}</span>
+            name
           )}
         </h3>
-      </div>
-      <p className="text-caption text-muted">{body}</p>
-      <div className="flex min-h-7 flex-wrap gap-1.5">{chips}</div>
-      <div className="mt-auto flex flex-col gap-2 pt-2">
+        <p className="font-wm-sans text-wm-small text-wm-muted">{body}</p>
+        <div className="flex min-h-6 flex-wrap gap-1.5">{chips}</div>
         {error && (
-          <p role="alert" className="text-caption text-danger">
+          <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
             {error}
           </p>
         )}
+      </div>
+      <div className="flex shrink-0 flex-col items-start gap-1 md:items-end">
         {reopensAt && (
-          <p className="flex items-center gap-2 text-ui font-semibold text-ink">
+          <p className="flex items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
             <History aria-hidden className="size-4" />
             {t('reopens', { time: reopensAt })}
           </p>
         )}
-        {/* Owner 27/10/2026: [Tùy chỉnh] is a visible button next to the start, not an icon in the corner. */}
-        <div className="flex gap-2">
-          {!reopensAt && startLabel && (
-            <Button variant="quiet" className="min-w-0 flex-1" isPending={busy} onPress={onStart}>
+        {/* Owner 27/10/2026: next to a start [Tùy chỉnh] is the icon only; alone (Theo nhóm) it keeps its word. */}
+        <div className="flex items-center gap-3">
+          {starts && (
+            <TextButton isDisabled={busy} onPress={onStart}>
               <span className="truncate">{startLabel}</span>
-            </Button>
+              <ArrowRight aria-hidden className="size-4" />
+            </TextButton>
           )}
-          {/* Owner 27/10/2026: next to a start it is the icon only; alone (Theo nhóm) it keeps its word. */}
-          <Button variant="quiet" className={startLabel && !reopensAt ? 'shrink-0 px-3' : 'w-full'} aria-label={t('customize', { name })} onPress={onCustomize}>
+          <TextButton tone="muted" aria-label={t('customize', { name })} onPress={onCustomize}>
             <SlidersHorizontal aria-hidden className="size-4" />
-            {!(startLabel && !reopensAt) && t('customizeButton')}
-          </Button>
+            {!starts && t('customizeButton')}
+          </TextButton>
         </div>
       </div>
     </li>

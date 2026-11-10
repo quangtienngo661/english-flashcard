@@ -1120,12 +1120,14 @@
       "hero": {
         "chip": "Quick practice · words due today",
         "title": "Today",
-        "line": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}. {count, plural, one {# question} other {# questions}}, mixing three question types.",
         "empty": "No words due today. Pick a source below.",
         "start": "Start {count, plural, one {# question} other {# questions}}",
         "customize": "Customize",
-        "artPrompt": "Choose the right word",
-        "artMeaning": "to put into action"
+        "artPrompt": "One question · choose the right word",
+        "artMeaning": "to put into action",
+        "words": "<n>{words, number}</n> {words, plural, one {word} other {words}} in {groups, plural, one {# deck} other {# decks}}",
+        "body": "{count, plural, one {# question} other {# questions}}, mixing three types: {types}.",
+        "artRight": "right"
       },
       "sources": {
         "title": "Practice from another source",
@@ -1138,7 +1140,8 @@
           "body": "One deck, filtered by stage or priority words.",
           "chip": "{name} · {count, number}",
           "start": "Practice {name}",
-          "empty": "No decks yet."
+          "empty": "No decks yet.",
+          "more": "+{count, plural, one {# deck} other {# decks}}"
         },
         "weak": {
           "name": "Weak words",
@@ -1212,7 +1215,7 @@
       },
       "recent": {
         "title": "Recent",
-        "history": "See history",
+        "history": "Open the study calendar",
         "empty": "No questions answered yet.",
         "correct": "right",
         "typed": "you typed {answer}, answer {correct}",
@@ -1419,7 +1422,9 @@
           "review": "Still learning",
           "reviewAll": "Add the other {count, plural, one {# word} other {# words}} to priority",
           "home": "Back to Practice",
-          "again": "Practice another session"
+          "again": "Practice another session",
+          "ring": "{correct, number}/{total, number} right",
+          "ringCaption": "right"
         },
         "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same.",
         "countRight": "{count, number} right",
@@ -1455,7 +1460,6 @@
           "stage": "Stage",
           "last": "Last wrong"
         },
-        "wrongOf": "wrong {wrong}/{counted}",
         "today": "{time} today",
         "more": "Show more",
         "emptyTitle": "No weak words yet.",
@@ -1473,7 +1477,9 @@
           "out": "Leaves: when fewer than 2 of the last 5 questions are wrong.",
           "removed": "Words you stopped learning aren't listed."
         },
-        "reopens": "No sessions left today. Resets at {time}."
+        "reopens": "No sessions left today. Resets at {time}.",
+        "right": "{count, number} right",
+        "wrong": "{count, number} wrong"
       },
       "history": {
         "title": "Practice history",

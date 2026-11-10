@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -10,11 +10,12 @@ import { hardReplace } from '@/app-shell/navigate';
 import { useEntitlements } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
+import { Button } from '@/ui/Button';
+import { TextButton } from '@/ui/TextButton';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
 import { STAGGER } from '../../review/ReviewSummary';
-import { KBD } from './QuestionCard';
+import { ButtonKey } from './QuestionCard';
 import type { Summary, SummaryWord } from './use-practice-session';
 
 export function useSummary(sessionId: string) {
@@ -38,7 +39,7 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
   count: s.target_count,
 });
 
-/** K/67: right and wrong counts, the words to mark Cần ôn lại (one by one or all left), then back or another session. */
+/** K/67 (Figma 119:4608): the ring of right answers, the words to mark Cần ôn lại (one by one or all left), then back or another session. */
 export function SessionSummary({ session, sourceLabel }: { session: PracticeSessionView; sourceLabel: string }) {
   const t = useTranslations('App.practice');
   const ts = useTranslations('App.practice.session.summary');
@@ -93,79 +94,102 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   const data = summary.data;
   const types = session.types.length > 1 ? ts('mixed', { count: session.types.length }) : t(`types.${session.types[0]}`);
   const left = data?.words.filter((w) => w.action === null).length ?? 0;
+  const asked = data?.asked ?? session.asked;
   return (
-    <div className="flex flex-col gap-4">
-      <div className={STAGGER[0]}>
-        <h1 className="text-display font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
-        <p className="wrap-anywhere text-ui text-muted">
-          {pool && pool.limit > 0
-            ? ts('line', { source: sourceLabel, types, remaining: pool.remaining, limit: pool.limit })
-            : ts('lineNoPool', { source: sourceLabel, types })}
-        </p>
-      </div>
-      {data && (
-        <dl className="grid grid-cols-2 gap-3">
-          <div className={`flex flex-col rounded-card bg-surface p-4 ${STAGGER[1]}`}>
-            <dt className="order-2 text-caption text-muted">{ts('correct')}</dt>
-            <dd className="order-1 text-h3 font-extrabold text-success">{data.correct}</dd>
-            {/* The alternatives belong to the right-answer count, so they sit in its tile (UI polish, 07/11/2026). */}
-            {(data.alternatives ?? 0) > 0 && <dd className="order-3 mt-1 text-caption font-semibold text-ink">{ts('alternatives', { count: data.alternatives ?? 0 })}</dd>}
+    <div className="flex flex-col gap-6">
+      <section className="flex flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+        {data && (
+          <div className={STAGGER[0]}>
+            <Ring correct={data.correct} wrong={data.wrong} label={ts('ring', { correct: data.correct, total: data.asked })} caption={ts('ringCaption')} />
           </div>
-          <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[2]}`}>
-            <dt className="text-caption text-muted">{ts('wrong')}</dt>
-            <dd className="text-h3 font-extrabold text-danger">{data.wrong}</dd>
+        )}
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
+          <div className={`flex flex-col gap-2 ${STAGGER[1]}`}>
+            <h1 className="font-wm-display text-wm-card-heading-mobile text-wm-ink md:text-wm-card-heading">{ts('title', { count: asked })}</h1>
+            <p className="wrap-anywhere font-wm-sans text-wm-small text-wm-muted">
+              {pool && pool.limit > 0
+                ? ts('line', { source: sourceLabel, types, remaining: pool.remaining, limit: pool.limit })
+                : ts('lineNoPool', { source: sourceLabel, types })}
+            </p>
+            {/* The alternatives belong to the right answers (UI polish, 07/11/2026). */}
+            {data && (data.alternatives ?? 0) > 0 && <p className="font-wm-sans text-wm-small-strong text-wm-ink">{ts('alternatives', { count: data.alternatives ?? 0 })}</p>}
           </div>
-        </dl>
-      )}
-      {data && data.words.length > 0 && (
-        <section className={`flex flex-col gap-2 rounded-card bg-surface p-4 ${STAGGER[3]}`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="summary-words" className="text-title font-semibold text-ink">
-              {ts('listTitle', { count: data.words.length })}
-            </h2>
+          {data && data.words.length > 0 && (
+            <div className={`flex flex-col ${STAGGER[2]}`}>
+              <h2 id="summary-words" className="font-wm-display text-wm-word text-wm-ink">
+                {ts('listTitle', { count: data.words.length })}
+              </h2>
+              <ul aria-labelledby="summary-words" className="mt-2 flex flex-col">
+                {data.words.map((word) => (
+                  <li key={word.sense_id} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-wm-line py-3">
+                    <span className="min-w-0 break-words font-wm-display text-wm-word text-wm-ink">{word.lemma}</span>
+                    <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-small text-wm-muted">{word.meaning}</span>
+                    {word.action !== null ? (
+                      <span className="flex items-center gap-1 font-wm-sans text-wm-small-strong text-wm-pass">
+                        <Check aria-hidden className="size-4" />
+                        {ts('added')}
+                      </span>
+                    ) : (
+                      <TextButton isDisabled={pressing !== null} onPress={() => void reviewOne(word)}>
+                        {pressing === `${word.item_id}:${word.sense_id}` && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
+                        {ts('review')}
+                      </TextButton>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
+              {error}
+            </p>
+          )}
+          <div className={`flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center ${STAGGER[3]}`}>
+            <Button variant="primary" isPending={again.busy} onPress={run(again.submit)}>
+              {ts('again')}
+              <ArrowRight aria-hidden className="size-4" />
+            </Button>
             {left > 0 && (
-              <Button variant="ink" isPending={reviewAll.busy} onPress={run(reviewAll.submit)}>
+              <TextButton className="justify-center" isDisabled={reviewAll.busy} onPress={run(reviewAll.submit)}>
                 {ts('reviewAll', { count: left })}
-              </Button>
+              </TextButton>
             )}
+            <Link
+              href={`/${locale}/app/practice`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-wm-sm font-wm-sans text-wm-small-strong text-wm-muted outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:min-h-0"
+            >
+              {ts('home')}
+              <ButtonKey>Enter</ButtonKey>
+            </Link>
           </div>
-          <ul aria-labelledby="summary-words" className="flex flex-col divide-y divide-border">
-            {data.words.map((word) => (
-              <li key={word.sense_id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
-                <span className="min-w-0 break-words text-ui font-semibold text-ink sm:w-32">{word.lemma}</span>
-                <span className="min-w-0 flex-1 break-words text-caption text-muted">{word.meaning}</span>
-                {word.action !== null ? (
-                  <span className="flex items-center gap-1 text-caption font-semibold text-success">
-                    <Check aria-hidden className="size-4" />
-                    {ts('added')}
-                  </span>
-                ) : (
-                  <Button variant="quiet" isPending={pressing === `${word.item_id}:${word.sense_id}`} onPress={() => void reviewOne(word)}>
-                    {ts('review')}
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {error && (
-        <p role="alert" className="text-ui text-danger">
-          {error}
-        </p>
-      )}
-      <div className={`grid gap-3 sm:grid-cols-2 ${STAGGER[4]}`}>
-        <Link
-          href={`/${locale}/app/practice`}
-          className="flex min-h-control-touch items-center justify-between gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          {ts('home')}
-          <kbd className={`${KBD} border-on-accent`}>Enter</kbd>
-        </Link>
-        <Button variant="quiet" size="lg" isPending={again.busy} onPress={run(again.submit)}>
-          {ts('again')}
-        </Button>
-      </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/** Figma 119:4608: a 220 px ring, green for the right answers and red for the wrong ones; the count in its middle. */
+function Ring({ correct, wrong, label, caption }: { correct: number; wrong: number; label: string; caption: string }) {
+  const total = correct + wrong;
+  const r = 96;
+  const length = 2 * Math.PI * r;
+  const wrongLength = total > 0 ? (wrong / total) * length : 0;
+  return (
+    <div role="img" aria-label={label} className="relative flex size-44 items-center justify-center md:size-55">
+      <svg aria-hidden viewBox="0 0 220 220" className="absolute inset-0 size-full -rotate-90">
+        <circle cx="110" cy="110" r={r} fill="none" strokeWidth="14" className={total > 0 ? 'stroke-wm-pass' : 'stroke-wm-line'} />
+        {wrongLength > 0 && (
+          <circle cx="110" cy="110" r={r} fill="none" strokeWidth="14" className="stroke-wm-fail" strokeDasharray={`${wrongLength} ${length}`} />
+        )}
+      </svg>
+      <span aria-hidden className="flex flex-col items-center">
+        <span className="flex items-baseline font-wm-display text-wm-ink">
+          <span className="text-wm-section">{correct}</span>
+          <span className="text-wm-card-title text-wm-muted">/{total}</span>
+        </span>
+        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+      </span>
     </div>
   );
 }

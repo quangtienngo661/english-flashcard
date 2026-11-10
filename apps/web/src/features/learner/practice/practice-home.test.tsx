@@ -73,7 +73,9 @@ describe('PracticePage (K/51)', () => {
   it('the big card starts today\'s words: "Bắt đầu N câu" with N = default_questions_per_session', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText('34 từ trong 3 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    // Figma 99:3169: the count is big, then the questions and their types.
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '34 từ trong 3 nhóm')).toBeInTheDocument();
+    expect(within(hero).getByText('12 câu, trộn ba kiểu: Trắc nghiệm, Đúng/sai, Gõ từ.')).toBeInTheDocument();
     await userEvent.click(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/practice/session'));
     const [start] = starts(view.calls);
@@ -357,7 +359,7 @@ describe('English (design §7.1–§7.2)', () => {
     const fresh = [deck(TECH, 'Công nghệ', 18, { priority: 0, due: 0, new: 5 })];
     renderApp(<PracticePage />, { routes: routes({ 'GET /v1/groups': () => Response.json({ items: fresh }) }) });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText('5 từ trong 1 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '5 từ trong 1 nhóm')).toBeInTheDocument();
     expect(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' })).toBeInTheDocument();
   });
 });

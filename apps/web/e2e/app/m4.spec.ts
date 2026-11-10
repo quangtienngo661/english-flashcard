@@ -232,14 +232,17 @@ test.describe('M4 flows (mocked API)', () => {
     await signedInAs(page, 'free', practiceApi());
     await page.goto('/vi/app/practice/weak');
     await expect(page.getByRole('heading', { name: '4 từ hay sai' })).toBeVisible();
-    // M4 review: from 768 px each weak word is one table row: word, meaning, "sai x/y", stage, last wrong, left to right on one line.
-    const row = page.getByRole('listitem').filter({ hasText: 'sai 3/5' });
+    // M4 review: from 768 px each weak word is one table row: word, meaning, the ✓/✗ chips (M5.5), stage, last wrong, left to right on one line.
+    const row = page.getByRole('listitem').filter({ has: page.getByRole('img', { name: '3 câu sai' }) });
     if ((page.viewportSize()?.width ?? 0) >= 768) {
-      const boxes = await Promise.all(['deploy', 'triển khai', 'sai 3/5', '1 ngày'].map(async (text) => (await row.getByText(text, { exact: true }).boundingBox())!));
-      expect(boxes.map((b) => Math.round(b.y / 8))).toEqual(Array(4).fill(Math.round(boxes[0].y / 8)));
+      const cells = [row.getByText('deploy', { exact: true }), row.getByText('triển khai', { exact: true }), row.getByRole('img', { name: '3 câu sai' }), row.getByText('1 ngày', { exact: true })];
+      const boxes = await Promise.all(cells.map(async (cell) => (await cell.boundingBox())!));
+      // Cells of different type sizes are centred on the row, so compare their middles.
+      const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+      for (const b of boxes) expect(Math.abs(middle(b) - middle(boxes[0]))).toBeLessThan(8);
       expect(boxes.map((b) => b.x)).toEqual([...boxes.map((b) => b.x)].sort((a, b) => a - b));
       const last = (await row.getByText(/hôm nay$/).boundingBox())!;
-      expect(Math.abs(last.y - boxes[0].y)).toBeLessThan(8);
+      expect(Math.abs(middle(last) - middle(boxes[0]))).toBeLessThan(8);
     }
     await page.getByRole('button', { name: /Nhóm/ }).click();
     await page.getByRole('option', { name: 'Công nghệ · 2' }).click();

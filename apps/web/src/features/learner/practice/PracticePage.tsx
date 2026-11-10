@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleCheck, CircleX, Folder, Layers, Star, Target } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
@@ -10,20 +10,23 @@ import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements, type Plan, type Pool } from '@/app-shell/queries';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
+import { Kbd } from '@/ui/Kbd';
+import { ProgressBar } from '@/ui/ProgressBar';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
 import { useGroups } from '../groups/groups-api';
 import { CurrentSessionCard } from './CurrentSessionCard';
 import { answerSummary } from './history-format';
 import { OutOfSessions } from './OutOfSessions';
 import { TodayHero } from './PracticeHero';
-import { CHIP, SourceCard } from './SourceCard';
+import { CHIP, CHIP_FAIL, SourceCard } from './SourceCard';
 import { usePracticeStarter } from './use-practice-starter';
 import { RULE_TYPES, useRecentHistory, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
 
 type Origin = Exclude<Source, 'today'> | 'hero';
 const ORIGINS: Origin[] = ['hero', 'group', 'weak', 'priority', 'all'];
-const DECK_CHIPS = 4;
+const DECK_CHIPS = 2;
 
-/** K/51 (K/55 when no session is left, K/77 before replacing an open session): `/app/practice`. */
+/** K/51 (K/55 when no session is left, K/77 before replacing an open session): `/app/practice` (Figma 99:3169 / 99:3391). */
 export function PracticePage() {
   const t = useTranslations('App.practice');
   const locale = useLocale();
@@ -53,13 +56,14 @@ export function PracticePage() {
   const words = decks.reduce((sum, g) => sum + g.total, 0);
   const weakTotal = weakGroups.data?.total ?? 0;
   const weakShown = weakPreview.data?.items ?? [];
+  const empty = (text: string) => <span className="font-wm-sans text-wm-small text-wm-muted">{text}</span>;
 
   let body;
   if (groups.isPending || config.isPending) body = <FullScreenSpinner />;
   else if (groups.isError) body = <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />;
   else
     body = (
-      <div className="flex min-w-0 flex-1 flex-col gap-8">
+      <div className="flex min-w-0 flex-1 flex-col gap-5">
         {out && plan && pool ? (
           <OutOfSessions planName={t(`usage.plan.${plan}`)} limit={pool.limit} time={reopensAt ?? ''} />
         ) : (
@@ -73,30 +77,28 @@ export function PracticePage() {
             onCustomize={() => setCustomize({ source: 'today' })}
           />
         )}
+        {current.data && <CurrentSessionCard current={current.data} groups={decks} out={out} />}
 
         <section className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-title font-semibold text-ink">
-            <span id="other-sources">{t('sources.title')}</span>
-            <span className="rounded-full bg-surface px-2 py-0.5 text-caption font-medium text-muted">{t('sources.count', { count: 4 })}</span>
+          <h2 id="other-sources" className="font-wm-display text-wm-card-title text-wm-ink">
+            {t('sources.title')}
           </h2>
-          <ul aria-labelledby="other-sources" className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          <ul aria-labelledby="other-sources" className="flex flex-col rounded-wm-xl border border-wm-line bg-wm-surface px-5 shadow-wm-card">
             <SourceCard
               name={t('sources.group.name')}
-              icon={Folder}
-              tone="primary"
               body={t('sources.group.body')}
               chips={
                 decks.length === 0 ? (
-                  <span className="text-caption text-muted">{t('sources.group.empty')}</span>
+                  empty(t('sources.group.empty'))
                 ) : (
                   // Owner 27/10/2026: the decks are only shown here (look normal, not buttons); a deck is chosen in [Tùy chỉnh].
                   <>
                     {decks.slice(0, DECK_CHIPS).map((g) => (
-                      <span key={g.id} className={cn(CHIP, 'cursor-default')}>
+                      <span key={g.id} className={CHIP}>
                         <span className="truncate">{t('sources.group.chip', { name: g.name, count: g.total })}</span>
                       </span>
                     ))}
-                    {decks.length > DECK_CHIPS && <span className={cn(CHIP, 'cursor-default')}>+{decks.length - DECK_CHIPS}</span>}
+                    {decks.length > DECK_CHIPS && <span className={CHIP}>{t('sources.group.more', { count: decks.length - DECK_CHIPS })}</span>}
                   </>
                 )
               }
@@ -109,22 +111,23 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.weak.name')}
-              icon={Target}
-              tone="danger"
               titleHref={`/${locale}/app/practice/weak`}
               body={t('sources.weak.body')}
               chips={
                 weakTotal === 0 ? (
-                  <span className="text-caption text-muted">{t('sources.weak.empty')}</span>
+                  empty(t('sources.weak.empty'))
                 ) : (
                   <>
                     {weakShown.map((w) => (
-                      <span key={w.sense_id} className={CHIP}>
+                      <span key={w.sense_id} className={CHIP_FAIL}>
                         <span className="truncate">{t('sources.weak.chip', { lemma: w.lemma, wrong: w.wrong, counted: w.counted })}</span>
                       </span>
                     ))}
                     {weakTotal > weakShown.length && (
-                      <Link href={`/${locale}/app/practice/weak`} className={cn(CHIP, 'outline-none focus-visible:ring-2 focus-visible:ring-primary')}>
+                      <Link
+                        href={`/${locale}/app/practice/weak`}
+                        className={cn(CHIP, 'outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent')}
+                      >
                         {t('sources.weak.more', { count: weakTotal - weakShown.length })}
                       </Link>
                     )}
@@ -140,13 +143,9 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.priority.name')}
-              icon={Star}
-              tone="accent"
               body={t('sources.priority.body')}
               chips={
-                <span className={priority > 0 ? CHIP : 'text-caption text-muted'}>
-                  {priority > 0 ? t('sources.priority.chip', { count: priority, groups: priorityDecks }) : t('sources.priority.empty')}
-                </span>
+                priority > 0 ? <span className={CHIP}>{t('sources.priority.chip', { count: priority, groups: priorityDecks })}</span> : empty(t('sources.priority.empty'))
               }
               startLabel={priority > 0 ? t('sources.priority.start', { count: priority }) : null}
               onStart={() => request('priority', quick('priority'))}
@@ -157,14 +156,8 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.all.name')}
-              icon={Layers}
-              tone="success"
               body={t('sources.all.body')}
-              chips={
-                <span className={words > 0 ? CHIP : 'text-caption text-muted'}>
-                  {words > 0 ? t('sources.all.chip', { words, groups: decks.length }) : t('sources.all.empty')}
-                </span>
-              }
+              chips={words > 0 ? <span className={CHIP}>{t('sources.all.chip', { words, groups: decks.length })}</span> : empty(t('sources.all.empty'))}
               startLabel={words > 0 ? t('sources.all.start', { count }) : null}
               onStart={() => request('all', quick('all'))}
               busy={pending('all')}
@@ -174,19 +167,19 @@ export function PracticePage() {
             />
           </ul>
         </section>
-
-        <Recent />
       </div>
     );
 
   return (
     <>
-      <PageTitle>{t('title')}</PageTitle>
-      <div className="flex flex-col gap-6 xl:flex-row">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <PageTitle>{t('title')}</PageTitle>
+        {pool && plan && <UsageCard pool={pool} plan={plan} out={out} />}
+      </div>
+      <div className="mt-5 flex flex-col gap-5 xl:flex-row xl:gap-6">
         {body}
-        <aside className="order-first flex w-full flex-col gap-4 md:order-none xl:w-90 xl:shrink-0">
-          {pool && plan && <UsageCard pool={pool} plan={plan} out={out} />}
-          {current.data && <CurrentSessionCard current={current.data} groups={decks} out={out} />}
+        <aside className="flex w-full flex-col gap-5 xl:w-80 xl:shrink-0">
+          <Recent />
           <Shortcuts />
         </aside>
       </div>
@@ -195,7 +188,7 @@ export function PracticePage() {
   );
 }
 
-/** "Phiên luyện hôm nay" side card: plan, sessions used, and when they refill (D15). */
+/** "Phiên luyện hôm nay" (Figma header block, D15): plan, sessions used, one bar, and when they refill. */
 function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }) {
   const t = useTranslations('App.practice.usage');
   const format = useFormat();
@@ -207,101 +200,89 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
     line = t('out', { time, wait });
   } else if (time) line = t('note', { time });
   return (
-    <section aria-labelledby="usage-title" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="usage-title" className="text-title font-semibold text-ink">
-          {t('title')}
-        </h2>
-        <span className="rounded-full bg-neutral-soft px-2 py-0.5 text-caption font-semibold text-ink">{t(`plan.${plan}`)}</span>
+    <section aria-labelledby="usage-title" className="flex w-full flex-col gap-2 md:w-85">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="font-wm-mono text-wm-mono text-wm-muted">
+          <span id="usage-title" className="first-letter:lowercase">
+            {t('title')}
+          </span>
+          {' · '}
+          <span>{t(`plan.${plan}`)}</span>
+        </p>
+        {pool.limit > 0 && <span className="shrink-0 font-wm-display text-wm-base text-wm-ink">{t('used', { used: pool.used, limit: pool.limit })}</span>}
       </div>
-      {pool.limit > 0 && (
-        <div className="flex items-center gap-3">
-          {pool.limit <= 5 ? (
-            <span aria-hidden className="flex flex-1 gap-1.5">
-              {Array.from({ length: pool.limit }, (_, i) => (
-                <span key={i} className={cn('h-2.5 flex-1 rounded-full border-2 border-primary', i < pool.used && 'bg-primary')} />
-              ))}
-            </span>
-          ) : (
-            <span aria-hidden className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-soft">
-              <span
-                className="block h-full rounded-full bg-primary"
-                // raw-ok: share of today's sessions used
-                style={{ width: `${Math.min(100, Math.round((pool.used / pool.limit) * 100))}%` }}
-              />
-            </span>
-          )}
-          <span className="shrink-0 text-ui font-semibold text-ink">{t('used', { used: pool.used, limit: pool.limit })}</span>
-        </div>
-      )}
-      {line && <p className="text-caption text-muted">{line}</p>}
+      {pool.limit > 0 && <ProgressBar value={pool.used} max={pool.limit} label={t('used', { used: pool.used, limit: pool.limit })} className="h-2" />}
+      {line && <p className="font-wm-mono text-wm-mono text-wm-muted">{line}</p>}
     </section>
   );
 }
 
-/** K/51 "Gần đây": the last questions answered, with a link to the history. */
+/** K/51 "Gần đây": the last questions answered, with a link to the history (the calendar replaces it in M6). */
 function Recent() {
   const t = useTranslations('App.practice');
   const tRecent = useTranslations('App.practice.recent');
   const locale = useLocale();
-  const format = useFormat();
   const history = useRecentHistory(3);
   const items = history.data?.items ?? [];
   return (
-    <section aria-labelledby="recent-title" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="recent-title" className="text-title font-semibold text-ink">
-          {t('recent.title')}
-        </h2>
-        <Link
-          href={`/${locale}/app/practice/history`}
-          className="rounded-inner border-2 border-border-strong px-4 py-1.5 text-ui font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {t('recent.history')}
-        </Link>
-      </div>
-      {history.isSuccess && items.length === 0 && <p className="text-ui text-muted">{t('recent.empty')}</p>}
+    <section aria-labelledby="recent-title" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+      <h2 id="recent-title" className="font-wm-display text-wm-base text-wm-ink">
+        {t('recent.title')}
+      </h2>
+      {history.isSuccess && items.length === 0 && <p className="font-wm-sans text-wm-small text-wm-muted">{t('recent.empty')}</p>}
       {items.length > 0 && (
-        <ul className="flex flex-col">
-          {items.map((item) => (
-            <li key={item.item_id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-2">
-              {item.result === 'correct' ? (
-                <CircleCheck aria-label={tRecent('right')} className="size-4 shrink-0 self-center text-success" />
-              ) : (
-                <CircleX aria-label={tRecent('wrong')} className="size-4 shrink-0 self-center text-danger" />
-              )}
-              <span className="min-w-0 break-words text-ui font-semibold text-ink md:w-32">{item.lemma}</span>
-              <span className="text-caption text-muted md:w-32">{t(`types.${item.type}`)}</span>
-              <span className="min-w-0 flex-1 basis-full break-words text-caption text-ink md:basis-0">
-                {answerSummary(item, (key, values) => tRecent(key as 'correct', values))}
-              </span>
-              <span className="text-caption text-muted">{format.time(item.answered_at)}</span>
-            </li>
-          ))}
+        <ul className="flex flex-col gap-3">
+          {items.map((item) => {
+            const right = item.result === 'correct';
+            return (
+              <li key={item.item_id} className="flex items-start gap-3">
+                <span
+                  role="img"
+                  aria-label={right ? tRecent('right') : tRecent('wrong')}
+                  className={cn('mt-0.5 flex size-5.5 shrink-0 items-center justify-center rounded-wm-sm', right ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
+                >
+                  {right ? <Check aria-hidden className="size-3.5" /> : <X aria-hidden className="size-3.5" />}
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="break-words font-wm-sans text-wm-small-strong text-wm-ink">{item.lemma}</span>
+                  <span className="break-words font-wm-sans text-wm-caption text-wm-muted">
+                    {answerSummary(item, (key, values) => tRecent(key as 'correct', values))}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
+      <Link href={`/${locale}/app/practice/history`} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'w-fit')}>
+        {t('recent.history')}
+      </Link>
     </section>
   );
 }
 
-/** "Phím tắt trong phiên" (web only; copy doc §6: phones drop it). */
+/** "Phím trong phiên" (web only; Figma draws no phone card). */
 function Shortcuts() {
   const t = useTranslations('App.practice.shortcuts');
   const rows = [
-    ['1–4', t('choose')],
-    ['Enter', t('check')],
-    ['H', t('hint')],
-    ['Esc', t('stop')],
+    [['1', '2', '3', '4'], t('choose')],
+    [['Enter'], t('check')],
+    [['H'], t('hint')],
+    [['Esc'], t('stop')],
   ] as const;
   return (
-    <section aria-labelledby="shortcuts-title" className="hidden flex-col gap-3 rounded-card border border-border bg-surface p-5 md:flex">
-      <h2 id="shortcuts-title" className="text-title font-semibold text-ink">
+    <section aria-labelledby="shortcuts-title" className="hidden flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex">
+      <h2 id="shortcuts-title" className="font-wm-display text-wm-base text-wm-ink">
         {t('title')}
       </h2>
       <ul className="flex flex-col gap-2">
-        {rows.map(([key, label]) => (
-          <li key={key} className="flex items-center gap-2 text-caption text-ink">
-            <kbd className="rounded-sm border border-border-strong px-1.5 font-semibold">{key}</kbd>
+        {rows.map(([keys, label]) => (
+          <li key={label} className="flex items-center gap-2 font-wm-sans text-wm-small text-wm-muted">
+            <span className="flex gap-1">
+              {keys.map((key) => (
+                <Kbd key={key}>{key}</Kbd>
+              ))}
+            </span>
             <span>{label}</span>
           </li>
         ))}
@@ -309,4 +290,3 @@ function Shortcuts() {
     </section>
   );
 }
-

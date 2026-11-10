@@ -8,9 +8,6 @@ import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
 import type { Prompt } from './use-practice-session';
 
-/** The old key cap class: only the summary still uses it, until M5.5 rebuilds it. */
-export const KBD = 'hidden rounded-sm border px-1.5 text-caption font-semibold md:inline';
-
 export type PromptKind = Prompt['kind'];
 export const promptKind = (prompt: Prompt): PromptKind => prompt.kind;
 

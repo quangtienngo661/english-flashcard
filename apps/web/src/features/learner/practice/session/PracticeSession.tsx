@@ -157,6 +157,8 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   const position = done ? total : (session?.asked ?? 0);
   const progressText = done ? t('progressDone', { total }) : t('progress', { n: position, total });
   const stoppable = phase?.kind === 'question' || phase?.kind === 'round';
+  // Figma: the session column is 760 wide, the summary 880 (119:4608).
+  const width = done ? 'max-w-220' : 'max-w-190';
   const legend = phase?.kind === 'question' ? legendItems(phase.item, phase.outcome) : [];
   const closeClass =
     'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
@@ -164,7 +166,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   return (
     <div className="flex flex-1 flex-col">
       {/* Figma "Thanh phiên" (100:3164): close, the source, one progress bar, "câu n / N", the ✓ and ✗ counts. */}
-      <header className="mx-auto flex w-full max-w-190 items-center gap-3 px-4 pt-4 md:px-0 md:pt-10">
+      <header className={`mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
         {stoppable ? (
           <button type="button" aria-label={t('close')} onClick={() => void state.stop()} className={closeClass}>
             <X aria-hidden className="size-4.5" />
@@ -194,7 +196,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           </>
         )}
       </header>
-      <div className="mx-auto flex w-full max-w-190 flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10">
+      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
         {body}
         {legend.length > 0 && (
           <KeyLegend aria-label={t('legend.label')} items={legend.map(([keys, key]) => ({ keys, label: t(`legend.${key}`) }))} className="mt-auto pt-4" />

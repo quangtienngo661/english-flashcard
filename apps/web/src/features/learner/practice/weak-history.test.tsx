@@ -53,12 +53,15 @@ const base = (over: Record<string, Route> = {}): Record<string, Route> => ({
 const posts = (calls: Array<{ method: string; path: string; body: unknown }>, path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 describe('WeakWordsPage (K/56)', () => {
-  it('all decks first: the count, each word with its meaning, "sai x/y", stage and when it was last wrong', async () => {
+  it('all decks first: the count, each word with its meaning, ✓/✗ of the last questions, stage and when it was last wrong', async () => {
     renderApp(<WeakWordsPage />, { routes: base() });
     expect(await screen.findByRole('heading', { name: '6 từ hay sai' })).toBeInTheDocument();
     const row = (await screen.findByText('deploy')).closest('li')!;
     expect(within(row).getByText('nghĩa deploy')).toBeInTheDocument();
-    expect(within(row).getByText('sai 3/5')).toBeInTheDocument();
+    // Figma 119:4317: ✓ = counted − wrong, ✗ = wrong (deploy: counted 5, wrong 3).
+    expect(within(row).getByRole('img', { name: '2 câu đúng' })).toHaveTextContent('2');
+    expect(within(row).getByRole('img', { name: '3 câu sai' })).toHaveTextContent('3');
+    expect(within(row).queryByText('sai 3/5')).not.toBeInTheDocument();
     expect(within(row).getByText('1 ngày')).toBeInTheDocument();
     expect(within(row).getByText(/hôm nay$/)).toBeInTheDocument();
     expect(screen.getByText('Vào: sai 2 lần trong 5 câu gần nhất, ở mọi kiểu câu.')).toBeInTheDocument();
