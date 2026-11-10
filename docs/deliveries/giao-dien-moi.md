@@ -77,6 +77,25 @@ Plan: "Part 4" trong file plan ở trên. Nhánh `feat/giao-dien-moi-m4`, làm s
 - M4.6: dựng lại trang một từ (UK/US, tab nhảy trong trang, câu đã gặp, cột "Bạn đang học", "Cùng chủ đề") và ba hộp Sửa từ, Xóa từ, Câu đã gặp.
 - M4.7: chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m4`, ghi as-built, mở PR.
 
+# Giao diện mới — plan tóm tắt, phần 5: M5 Luyện tập, Học, Ôn (10/11/2026)
+
+Plan: "Part 5" trong file plan ở trên. Hai PR: M5a (`feat/giao-dien-moi-m5a`, sau khi M3 merge), rồi M5b (`feat/giao-dien-moi-m5b`, sau khi M5a merge).
+
+**M5a — Luyện tập**
+- M5.1: API trả ngăn hiện tại của từ khi trả lời và số câu đúng, sai của phiên đang dở; thêm kiểm vào smoke.
+- M5.2: ô đáp án, thanh tiến độ, nút tăng giảm số, dòng phím tắt trong `ui/`.
+- M5.3: dựng lại hộp Tùy chỉnh phiên (nhóm, ngăn, kiểu câu, câu AI, số câu, thứ tự) và các trạng thái lượt AI; gửi nguồn `own_then_ai`.
+- M5.4: dựng lại màn phiên luyện (thanh phiên, thẻ câu, kết quả đúng/sai, ngăn lên, nút có phím).
+- M5.5: dựng lại tổng kết phiên, trang Luyện tập, Từ hay sai.
+- M5.6: chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m5a`, ghi as-built, mở PR.
+
+**M5b — Học và Ôn**
+- M5.7: chồng thẻ, kéo để chấm, đống chip từ, chuyển động tan mờ.
+- M5.8: dựng lại Học (lật hai chiều, phím mũi tên, nhắc khi chưa lật, tổng kết) và đo khung hình.
+- M5.9: dựng lại Ôn (trắc nghiệm theo nghĩa, gõ từ, dòng so chữ, màn xong), thêm e2e cho Ôn, mở PR.
+
+**Còn chờ chủ dự án:** QM5-1 (merge PR #249 trước M5?), QM5-2 (thẻ ở Học tan ngay hay chờ lưu xong).
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).
