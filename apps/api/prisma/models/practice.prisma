@@ -29,6 +29,8 @@ model PracticeSession {
   aiNoticeShown      Boolean  @default(false) @map("ai_notice_shown")
   // Round C: 'practice' (the practice page) or 'recall' (the "Ôn" session of a deck; no quota, own open slot per user).
   kind               String   @default("practice")
+  // Practice AI count (09/11/2026): 'even' | 'random' for a session started with ai_count; null otherwise (old r ÷ q chance).
+  aiPlacement        String?  @map("ai_placement")
 
   items PracticeSessionItem[]
 
