@@ -122,12 +122,14 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(name.closest('li')).toHaveTextContent('tiếp theo commute');
   });
 
-  it('done and empty decks go into one note line, not cards; no card menu', async () => {
+  it('an empty deck is a card after the waiting ones (owner 10/11/2026); decks done today go into one note line; no card menu', async () => {
     const decks = [...GROUPS, group('g-jp', 'Du lịch Nhật', { priority: 0, due: 0, new: 0 }, 0)];
     renderApp(<TodayPage />, { chrome: true, routes: routes(decks) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
-    expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['IELTS', 'Du lịch']);
-    expect(screen.getByText('Xong hôm nay: Ẩm thực A2 · Chưa có từ: Du lịch Nhật')).toBeInTheDocument();
+    expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['IELTS', 'Du lịch', 'Du lịch Nhật']);
+    expect(within(list).getByRole('link', { name: 'Du lịch Nhật' }).closest('li')).toHaveTextContent('Chưa có từ');
+    expect(screen.getByText('Xong hôm nay: Ẩm thực A2')).toBeInTheDocument();
+    expect(screen.queryByText(/^Chưa có từ:/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Tùy chọn nhóm/ })).toBeNull();
   });
 
@@ -158,6 +160,8 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     const row = await screen.findByRole('link', { name: /Kinh doanh · B1/ });
     expect(row).toHaveAttribute('href', '/vi/app/topic?code=business&level=B1');
     expect(row).toHaveTextContent('52 từ');
+    // The sample words say what the topic holds before opening it.
+    expect(row).toHaveTextContent('budget, contract');
     expect(screen.getByRole('link', { name: 'Xem mọi chủ đề trong Tra từ →' })).toHaveAttribute('href', '/vi/app/lookup');
   });
 

@@ -672,7 +672,6 @@
       "seeAllShort": "Xem tất cả →",
       "yourGroupsHint": "{count, number} nhóm khác còn thẻ chờ · bấm thẻ để mở nhóm",
       "noteDone": "Xong hôm nay: {names}",
-      "noteEmpty": "Chưa có từ: {names}",
       "lastTitle": "Lần luyện gần nhất",
       "lastCorrect": "đúng",
       "lastLine": "{date} · {count, number} câu",

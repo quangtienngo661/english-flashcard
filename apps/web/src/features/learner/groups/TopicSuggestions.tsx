@@ -1,14 +1,20 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Layers } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useTopicSuggestions } from './groups-api';
+import { Tag } from '@/ui/Tag';
+import { useTopicSuggestions, type TopicSuggestion } from './groups-api';
 
-/** Rows shown on Hôm nay (Figma 117:4425 "Tạo nhóm nhanh theo chủ đề"). */
+/** Topics shown on Hôm nay (Figma 117:4425 "Tạo nhóm nhanh theo chủ đề"). */
 const ROWS = 4;
+/** Sample words printed under a topic name. */
+const SAMPLES = 3;
 
-/** "Tạo nhóm nhanh theo chủ đề": the first topic suggestions as rows; hidden when the API suggests nothing (GH3). */
+/**
+ * "Tạo nhóm nhanh theo chủ đề": the first topic suggestions as small cards (owner 10/11/2026: polish of the Figma rows), each with
+ * its level, a few sample words and the word count; hidden when the API suggests nothing (GH3).
+ */
 export function TopicSuggestions() {
   const t = useTranslations('App.groups');
   const locale = useLocale();
@@ -24,20 +30,50 @@ export function TopicSuggestions() {
           {t('suggestAll')}
         </Link>
       </div>
-      <ul className="grid gap-x-7 gap-y-1.5 md:grid-cols-2">
+      <ul className="grid gap-3 md:grid-cols-2">
         {data.items.slice(0, ROWS).map((item) => (
-          <li key={`${item.topic.code}-${item.level}`} className="border-t border-wm-line">
-            <Link
-              href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
-              className="flex min-h-11 items-center gap-3 px-0.5 py-3 outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
-            >
-              <span className="min-w-0 flex-1 truncate font-wm-sans text-wm-button text-wm-ink">{t('suggestCard', { topic: item.topic.name, level: item.level })}</span>
-              <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('suggestCount', { count: item.count })}</span>
-              <ArrowRight aria-hidden className="size-4 shrink-0 text-wm-muted" />
-            </Link>
+          <li key={`${item.topic.code}-${item.level}`}>
+            <TopicCard item={item} />
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+function TopicCard({ item }: { item: TopicSuggestion }) {
+  const t = useTranslations('App.groups');
+  const locale = useLocale();
+  const title = t('suggestCard', { topic: item.topic.name, level: item.level });
+  const count = t('suggestCount', { count: item.count });
+  const samples = item.samples.slice(0, SAMPLES).map((s) => s.lemma);
+  return (
+    <Link
+      href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
+      aria-label={`${title}, ${count}`}
+      className="group flex h-full items-center gap-3.5 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-row outline-none transition duration-200 ease-out-strong hover:border-wm-accent/30 hover:shadow-wm-card focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:hover:-translate-y-0.5"
+    >
+      <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-wm-lg bg-wm-accent-soft text-wm-accent">
+        <Layers className="size-5" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-wm-display text-base font-bold text-wm-ink">{item.topic.name}</span>
+          <Tag tone="accent" mono>
+            {item.level}
+          </Tag>
+        </span>
+        {samples.length > 0 && <span className="truncate text-wm-caption text-wm-muted">{samples.join(', ')}…</span>}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="font-wm-mono text-wm-mono text-wm-muted">{count}</span>
+        <span
+          aria-hidden
+          className="flex size-8 items-center justify-center rounded-wm-pill bg-wm-bg text-wm-muted transition duration-200 ease-out-strong group-hover:bg-wm-accent group-hover:text-wm-on-accent"
+        >
+          <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-0.5" />
+        </span>
+      </span>
+    </Link>
   );
 }

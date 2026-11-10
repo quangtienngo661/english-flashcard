@@ -672,7 +672,6 @@
       "seeAllShort": "See all →",
       "yourGroupsHint": "{count, plural, one {# other deck} other {# other decks}} with cards waiting · tap a card to open it",
       "noteDone": "Done today: {names}",
-      "noteEmpty": "No words yet: {names}",
       "lastTitle": "Last practice",
       "lastCorrect": "right",
       "lastLine": "{date} · {count, plural, one {# question} other {# questions}}",

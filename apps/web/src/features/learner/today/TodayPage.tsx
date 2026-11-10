@@ -203,9 +203,10 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   const t = useTranslations('App.today');
   const locale = useLocale();
   const others = groups.filter((g) => g !== hero && waiting(g) > 0);
+  // Owner 10/11/2026: a deck with no word is a card too (its face says "Chưa có từ"), after the decks with cards waiting.
+  const cards = [...others, ...groups.filter((g) => g.total === 0)].slice(0, TODAY_CARDS);
   const done = groups.filter((g) => g.total > 0 && waiting(g) === 0).map((g) => g.name);
-  const empty = groups.filter((g) => g.total === 0).map((g) => g.name);
-  const note = [done.length > 0 && t('noteDone', { names: done.join(', ') }), empty.length > 0 && t('noteEmpty', { names: empty.join(', ') })].filter(Boolean);
+  const note = done.length > 0 ? t('noteDone', { names: done.join(', ') }) : null;
   return (
     <section aria-labelledby="your-groups" className="flex flex-col gap-4">
       <div className="flex items-baseline gap-3">
@@ -218,16 +219,16 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
           <span className="hidden md:inline">{t('seeAll', { count: groups.length })}</span>
         </Link>
       </div>
-      {others.length > 0 && (
+      {cards.length > 0 && (
         <ul aria-label={t('yourGroups')} className="-mx-4 flex gap-3.5 overflow-x-auto px-4 pb-3 md:mx-0 md:gap-5 md:px-0">
-          {others.slice(0, TODAY_CARDS).map((g) => (
+          {cards.map((g) => (
             <li key={g.id} className="shrink-0">
               <GroupStack group={g} size="today" depth={2} href={`/${locale}/app/group?id=${g.id}`} />
             </li>
           ))}
         </ul>
       )}
-      {note.length > 0 && <p className="text-wm-small text-wm-muted wrap-anywhere">{note.join(' · ')}</p>}
+      {note && <p className="text-wm-small text-wm-muted wrap-anywhere">{note}</p>}
     </section>
   );
 }
