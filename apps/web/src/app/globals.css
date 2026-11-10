@@ -486,11 +486,12 @@
     scroll-behavior: smooth;
   }
 
-  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows): 16px at
-     1440px, about 21px at 2560px, about 27px at 3840px, with no ceiling. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
+  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows), no ceiling.
+     Softened the same day after a look at 1920×1080 ("hơi to"): 16px at 1440px, about 16.9px at 1920px, 18px at 2560px, about
+     20.3px at 3840px. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
   @media (width > 90rem) {
     html {
-      font-size: max(100%, 0.598rem + 0.4464vw);
+      font-size: max(100%, 0.8393rem + 0.1786vw);
     }
   }
 
@@ -790,6 +791,60 @@
 .wm-page-out [data-in] {
   animation: wm-page-out var(--transition-duration-wm-close) var(--ease-wm-close) forwards;
 }
+
+/* Tra từ "Từ hóa thẻ" (M4.5, Figma 85:3218, motion doc §4). The group stacks are the Nhóm card at about 0.55: 114 px desktop,
+   107 px phone. */
+.gstack[data-size='lookup'] { font-size: 5.9px; }
+@media (width >= 48rem) {
+  .gstack[data-size='lookup'] { font-size: 6.29px; }
+}
+.lk-stack {
+  transition: transform 250ms var(--ease-wm-out), opacity 250ms var(--ease-wm-out);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lk-stack:not(:disabled):hover { transform: translateY(-4px); }
+}
+.lk-stack:disabled { opacity: 0.55; cursor: default; }
+/* The paper page: warm white, a hairline border, the binding side less rounded. */
+/* Word page title (Figma 118:4413 / 118:4714): Bricolage ExtraBold 56 px on phones, 84 px from 768 px; no token holds these sizes. */
+.wd-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+@media (min-width: 48rem) {
+  .wd-title { font-size: 5.25rem; }
+}
+.lk-paper {
+  background: #fbfaf6;
+  border: 1px solid #e8e4d8;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 0 24px 48px -28px rgb(27 36 68 / 0.45);
+  color: #1b2444;
+}
+/* The paper stays light in dark mode (R71, R80), so text on it keeps the light-mode inks. */
+[data-theme='dark'] .lk-paper .text-wm-ink { color: #1b2444; }
+[data-theme='dark'] .lk-paper .text-wm-muted { color: #525a78; }
+[data-theme='dark'] .lk-paper .text-wm-accent { color: #1e3a8a; }
+[data-theme='dark'] .lk-paper .border-wm-ink { border-color: #1b2444; }
+.lk-rule { border-color: #e8e4d8; }
+/* The entry whose card is lifted stays as a dashed hole; its text keeps full contrast (axe), unlike Figma's greyed text. */
+.lk-entry[aria-current='true'] {
+  outline: 1.5px dashed rgb(27 36 68 / 0.35);
+  outline-offset: 2px;
+  background: rgb(27 36 68 / 0.04);
+}
+.lk-card { rotate: -1.5deg; box-shadow: 0 30px 60px -30px rgb(27 36 68 / 0.55); }
+.lk-card-behind { rotate: 1deg; translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
+@keyframes lk-card-in {
+  from { translate: 0 16px; scale: 0.92; filter: blur(10px); opacity: 0.5; }
+  to { translate: 0 0; scale: 1; filter: blur(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
+}
+
 /* How many stacks each side a press on the track can reach (GroupCarousel onTrackClick): one on phones, two from 48rem. */
 .gcar-track { --gcar-reach: 1; }
 @media (width >= 48rem) {

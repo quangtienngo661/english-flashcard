@@ -66,7 +66,7 @@ describe('M5b review findings', () => {
     const { calls } = open('runnning', { 'POST /v1/lookup/ai': () => Response.json(suggest('run', [RUN])) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Chọn' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu run' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: RUN.sense_id });
     expect((await screen.findAllByText('Đã lưu từ “run” vào nhóm “Du lịch”.')).length).toBeGreaterThan(0);
@@ -82,8 +82,7 @@ describe('M5b review findings', () => {
     await userEvent.type(field, 'sprint');
     await screen.findByRole('button', { name: 'Tra bằng AI' });
     expect(screen.queryByRole('radio', { name: /chạy/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lưu run' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lưu sprint' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
   });
 
   it('I2: a form the typed text was recognised as is not attached to a different AI word', async () => {

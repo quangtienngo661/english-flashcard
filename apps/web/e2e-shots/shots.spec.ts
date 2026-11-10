@@ -52,6 +52,10 @@ test('milestone screenshots', async ({ page }) => {
     await gmM3(page);
     return;
   }
+  if (MILESTONE === 'gm-m4') {
+    await gmM4(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -253,6 +257,96 @@ async function gmM3(page: Page) {
       await page.getByRole('button', { name: 'Bỏ khỏi việc học' }).click();
       await shoot(page, 'dialog-forget', false, [width]);
       await page.keyboard.press('Escape');
+    }
+  }
+}
+
+/**
+ * Giao diện mới M4 (design §9 M4): Tra từ, a catalog word page, the learner's own word page, the five add-word overlays and the
+ * three word dialogs, 390 and 1440 px, light. Needs a learner with at least one deck (gm-m3 makes one). Overlay 4 needs an AI
+ * lookup that answers (a model chosen for `lookup_word`, or `AI_FAKE_ENABLED=true`); it is skipped when the lookup fails.
+ */
+async function gmM4(page: Page) {
+  const widths = [390, 1440];
+  const OWN = 'wmshotword';
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  const dialog = page.getByRole('dialog');
+  const closeDialog = async () => {
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+  };
+  // Tra từ with a level filter: the dictionary page, the lifted card and the stacks; the first entry is the catalog word page.
+  await page.goto('/vi/app/lookup?level=B1');
+  await settle(page, page.getByRole('region', { name: 'Thẻ của từ đang chọn' }));
+  await shoot(page, 'lookup', true, widths);
+  const lemma = (await page.getByRole('region', { name: 'Thẻ của từ đang chọn' }).getByRole('heading').textContent())!.trim();
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app/lookup?level=B1');
+    await settle(page, page.getByRole('region', { name: 'Thẻ của từ đang chọn' }));
+    await page.getByRole('button', { name: 'Thêm cả loạt vào nhóm' }).click();
+    await shoot(page, 'overlay-3-bulk', false, [width]);
+    await closeDialog();
+    await page.getByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' }).click();
+    await shoot(page, 'overlay-5-group', false, [width]);
+    await closeDialog();
+    // Overlay 1: a form Wordmet knows ("went → go").
+    await page.keyboard.press('n');
+    await dialog.getByRole('textbox', { name: 'Từ' }).fill('went');
+    await expect(dialog.getByText('quá khứ của go', { exact: false })).toBeVisible({ timeout: 30_000 });
+    await shoot(page, 'overlay-1-add-word', false, [width]);
+    // Overlay 4: a word Wordmet lacks, looked up with AI.
+    await dialog.getByRole('textbox', { name: 'Từ' }).fill('rizzed');
+    const ai = dialog.getByRole('button', { name: 'Tra bằng AI' });
+    if (await ai.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await ai.click();
+      if (await dialog.getByRole('region', { name: 'thẻ sẽ lưu · xem trước' }).waitFor({ timeout: 30_000 }).then(() => true, () => false)) {
+        await shoot(page, 'overlay-4-ai', false, [width]);
+      }
+    }
+    await closeDialog();
+  }
+  // The learner's own word, made once by hand.
+  await page.goto(`/vi/app/word?w=${OWN}`);
+  await settle(page);
+  if (await page.getByText(`Không tìm thấy từ “${OWN}”`).isVisible()) {
+    await page.getByRole('button', { name: 'Thêm từ này' }).click();
+    await dialog.getByRole('button', { name: 'Tự nhập nghĩa' }).click();
+    await dialog.getByRole('textbox', { name: 'Nghĩa' }).fill('từ thử cho bộ ảnh');
+    await dialog.getByRole('button', { name: 'Lưu từ' }).click();
+    await expect(dialog).toBeHidden({ timeout: 30_000 });
+  }
+  for (const [word, name] of [[lemma, 'word'], [OWN, 'word-own']] as const) {
+    await page.goto(`/vi/app/word?w=${encodeURIComponent(word)}`);
+    await settle(page);
+    await shoot(page, name, true, widths);
+  }
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/vi/app/word?w=${OWN}`);
+    await settle(page);
+    for (const [button, name] of [['Sửa từ', 'dialog-edit-word'], ['Xóa từ', 'dialog-delete-word']] as const) {
+      await page.getByRole('button', { name: button, exact: true }).first().click();
+      await shoot(page, name, false, [width]);
+      await closeDialog();
+    }
+    const addSentence = page.getByRole('button', { name: 'Thêm câu đã gặp' }).first();
+    if (await addSentence.count()) {
+      await addSentence.click();
+      await dialog.getByRole('textbox').first().fill(`I met ${OWN} in a book yesterday.`);
+      await shoot(page, 'overlay-2-sentence', false, [width]);
+      await closeDialog();
+    }
+    const seen = page.getByRole('button', { name: /^\d+ câu đã gặp$/ }).first();
+    if (await seen.count()) {
+      await seen.click();
+      await shoot(page, 'dialog-sentences', false, [width]);
+      await closeDialog();
     }
   }
 }

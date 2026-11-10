@@ -4,22 +4,26 @@ import { Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
 import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AvatarMenu } from './AvatarMenu';
 import { AppLogo } from './Logo';
 import { currentTab, TABS } from './nav';
 import { PlanChipLink } from './PlanChip';
+import { TopSearch } from './TopSearch';
 
 /**
  * Figma "Thanh trên app/Desktop" (54:502), from 768 px: logo, the four tabs (the open one on accent-soft), Thêm từ with the N key,
- * the quiet plan chip, the avatar. Glass: white 80% with a 24px blur, a line below, no shadow (design §3.1). The search box of the frame
- * comes with M4; until then the SearchStrip under the header searches (ruling R8).
+ * the search box with "/", the quiet plan chip, the avatar. Glass: white 80% with a 24px blur, a line below, no shadow (design §3.1).
+ * On Tra từ the search box is left out: the page's own big box takes "/" (giao diện mới M4.3).
  */
 export function TopBar() {
   const t = useTranslations('App.chrome');
   const locale = useLocale();
-  const active = currentTab(usePathname());
+  const pathname = usePathname();
+  const active = currentTab(pathname);
+  const onLookup = /\/app\/lookup$/.test(pathname);
   const addWord = useAddWord();
   return (
     <div className="hidden h-16 items-center gap-3 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
@@ -47,6 +51,12 @@ export function TopBar() {
         })}
       </nav>
       <div className="flex-1" />
+      {!onLookup && (
+        // useSearchParams needs its own boundary, so the rest of the bar never waits for it.
+        <Suspense>
+          <TopSearch />
+        </Suspense>
+      )}
       <button
         type="button"
         onClick={() => addWord.open()}

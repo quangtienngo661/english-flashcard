@@ -49,6 +49,8 @@ async function openSheet(page: Page, locale: 'vi' | 'en' = 'vi') {
   await page.evaluate((id) => window.localStorage.setItem('wordmet-web.last-group', id), DECK);
   await page.getByRole('button', { name: copy[locale].App.lookup.addThis }).click();
   const sheet = page.getByRole('dialog', { name: copy[locale].App.addWord.title });
+  // Thêm từ loads with next/dynamic on its first open (M4.4); the dev server compiles that chunk on first use.
+  await expect(sheet).toBeVisible({ timeout: 30_000 });
   await expect(sheet.getByRole('button', { name: copy[locale].App.addWord.ai.manual })).toBeInViewport();
   return sheet;
 }
@@ -171,7 +173,8 @@ for (const scheme of ['light', 'dark'] as const) {
       await noSideScroll(page, `${locale} panel`);
       expect(await seriousViolations(page), `${locale} panel`).toEqual([]);
       await sheet.getByRole('button', { name: t.addWord.ai.button }).click();
-      await expect(sheet.getByText(LONG_MEANING)).toBeVisible();
+      // The meaning shows in the list and on the preview card (M4.4).
+      await expect(sheet.getByText(LONG_MEANING).first()).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);
       await page.getByRole('button', { name: t.addWord.result.edit }).click();

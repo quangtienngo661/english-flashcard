@@ -112,7 +112,7 @@ describe('Locked add-word sheet (A14)', () => {
     const { calls, onClose } = openLocked();
     expect(await screen.findByText('Lưu vào nhóm: Du lịch', {}, slow)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu go' }, slow));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }, slow));
     expect(await screen.findByText('Đã lưu từ “go” vào nhóm “Du lịch”.', {}, slow)).toBeInTheDocument();
     expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: GO.sense_id });
     expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(TRAVEL);
@@ -132,7 +132,7 @@ describe('Locked add-word sheet (A14)', () => {
     expect(within(list).getByRole('radio', { name: /hoạt động/ })).toBeChecked();
     await userEvent.click(within(list).getByText('đi'));
     expect(within(list).getByRole('radio', { name: /hoạt động/ })).toBeChecked();
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu go' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_id: TRAVEL, sense_id: OTHER.sense_id }));
   });
 
@@ -140,7 +140,7 @@ describe('Locked add-word sheet (A14)', () => {
     openLocked({ [`GET /v1/groups/${TRAVEL}/queue?mode=all`]: () => Response.json({ cards: [card()] }) });
     await screen.findByText('Đã có trong nhóm', {}, slow);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lưu go' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Nghĩa khác, tự nhập' })).toBeInTheDocument();
   });
 
@@ -170,7 +170,7 @@ describe('Locked add-word sheet (A14)', () => {
 
   it('A14-5: group-full keeps the sheet open', async () => {
     const { onClose } = openLocked({ 'POST /v1/quick-add': () => problem(409, 'group-full') });
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu go' }, slow));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }, slow));
     expect(await screen.findByText('Nhóm “Du lịch” đã đầy. Chọn nhóm khác.', {}, slow)).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
@@ -181,11 +181,11 @@ describe('Locked add-word sheet (A14)', () => {
       'POST /v1/quick-add': () => problem(404, 'not-found'),
       [`GET /v1/groups/${TRAVEL}`]: () => problem(404, 'not-found'),
     }, 'go', 'en');
-    await userEvent.click(await screen.findByRole('button', { name: 'Save go' }, slow));
+    await userEvent.click(await screen.findByRole('button', { name: 'Save' }, slow));
     expect(await screen.findByText('This deck no longer exists.', {}, slow)).toBeInTheDocument();
     expect(calls.filter((c) => c.method === 'GET' && c.path === `/v1/groups/${TRAVEL}`)).toHaveLength(1);
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).queryByRole('button', { name: 'Save go' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
     await userEvent.click(within(dialog).getAllByRole('button', { name: 'Close' }).at(-1)!);
     expect(onClose).toHaveBeenCalledOnce();
@@ -197,11 +197,11 @@ describe('Locked add-word sheet (A14)', () => {
       'POST /v1/quick-add': () => problem(404, 'not-found'),
       [`GET /v1/groups/${TRAVEL}`]: () => Response.json({ id: TRAVEL, name: 'Du lịch', version: 1, item_count: 3, removable_items: 3 }),
     }, 'go', 'en');
-    await userEvent.click(await screen.findByRole('button', { name: 'Save go' }, slow));
+    await userEvent.click(await screen.findByRole('button', { name: 'Save' }, slow));
     expect(await screen.findByText('Not found.', {}, slow)).toBeInTheDocument();
     expect(calls.some((c) => c.method === 'GET' && c.path === `/v1/groups/${TRAVEL}`)).toBe(true);
     expect(screen.queryByText('This deck no longer exists.')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save go' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 

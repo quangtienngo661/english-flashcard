@@ -7,7 +7,7 @@
 //
 // What it checks (design §10.2–§10.6): GET /v1/public/prices; next_lemma and last_reviewed on GET /v1/groups against the queue;
 // GET /v1/practice/sessions/last (204, then the session's counts and wrong lemmas); GET /v1/me/calendar and /days/:date (counts, items,
-// kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400.
+// kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -182,7 +182,10 @@ const letters = (n) => Array.from({ length: n }, () => String.fromCharCode(97 + 
 const TOPIC = 'technology';
 const words = [1, 2, 3].map((n) => {
   const base = `zg${letters(6)}`;
-  return { lemma: base, meaning: `nghĩa thử ${n} ${letters(4)}`, definition: `A short smoke definition number ${n}.`, example: `They use the ${base} daily.`, senseId: null, itemId: null };
+  // M4.1: W1 has UK and US IPA, W2 only US, W3 none, so the list's `ipa` shows each fallback.
+  const ipa = [['zɪɡ', 'zɪɡz'], ['', 'zæɡ'], ['', '']][n - 1];
+  return { lemma: base, meaning: `nghĩa thử ${n} ${letters(4)}`, definition: `A short smoke definition number ${n}.`, example: `They use the ${base} daily.`,
+    ipaUk: ipa[0], ipaUs: ipa[1], senseId: null, itemId: null };
 });
 const [W1, W2] = words;
 
@@ -228,8 +231,8 @@ async function main() {
     L = await registerLearner(`smokegm-l-${run}@example.com`);
     const source = await want(api('POST', '/v1/admin/content/sources', {
       as: admin, body: { name: `SmokeGM-${run}`, version: '1.0', license: 'test license', display_priority: 90 } }), 201, 'source');
-    const csv = ['headword,pos,CEFR,gloss_vi,definition_en,example_en_1,topics,context_label',
-      ...words.map((w) => `${w.lemma},noun,A1,${w.meaning},${w.definition},${w.example},${TOPIC},`)].join('\r\n');
+    const csv = ['headword,pos,CEFR,gloss_vi,definition_en,example_en_1,topics,context_label,ipa_uk,ipa_us',
+      ...words.map((w) => `${w.lemma},noun,A1,${w.meaning},${w.definition},${w.example},${TOPIC},,${w.ipaUk},${w.ipaUs}`)].join('\r\n');
     const form = new FormData();
     form.set('level_source_id', source.id);
     form.set('file', new Blob([csv], { type: 'text/csv' }), 'smoke-gm.csv');
@@ -350,6 +353,26 @@ async function main() {
     const problem = await wantProblem(api('GET', '/v1/me/calendar?month=2026-13', { as: L }), 400, 'validation-failed', 'bad month');
     check(Array.isArray(problem.violations) && problem.violations.some((v) => v.startsWith('month')), `violations ${j(problem.violations)}`);
     ok(j(problem.violations));
+  });
+
+  await step('11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)', async () => {
+    const filter = `topic=${TOPIC}&level=A1`;
+    const first = await want(api('GET', `/v1/words?${filter}&page_size=2`, { as: L }), 200, 'words page 1');
+    check(first.total === 3 && first.items.length === 2 && first.next_page_token, `page 1 ${j(first)}`);
+    const second = await want(api('GET', `/v1/words?${filter}&page_size=2&page_token=${encodeURIComponent(first.next_page_token)}`, { as: L }), 200, 'words page 2');
+    check(second.total === 3 && second.items.length === 1 && second.next_page_token === null, `page 2 ${j(second)}`);
+    const none = await want(api('GET', '/v1/words?q=zzzzqqqq', { as: L }), 200, 'no match');
+    check(none.total === 0 && none.items.length === 0 && none.next_page_token === null, `no match ${j(none)}`);
+    for (const row of [...first.items, ...second.items]) {
+      const page = await want(api('GET', `/v1/words/${row.lemma}`, { as: L }), 200, `word ${row.lemma}`);
+      const sense = page.sections[0].senses[0];
+      const ipa = sense.pronunciation.uk ?? sense.pronunciation.us ?? sense.pronunciation.custom;
+      check(row.ipa === ipa && row.example === (sense.examples[0] ?? null),
+        `${row.lemma}: list ${j([row.ipa, row.example])} vs page ${j([ipa, sense.examples[0]])}`);
+      const w = words.find((x) => x.lemma === row.lemma);
+      check(row.ipa === (w.ipaUk || w.ipaUs || null) && row.example === w.example, `${row.lemma}: list ${j([row.ipa, row.example])} vs the CSV`);
+    }
+    ok(`total 3 on both pages, 0 for no match; rows ${j([...first.items, ...second.items].map((r) => [r.lemma, r.ipa, r.example]))}`);
   });
 
   console.log(`\n${failures.length === 0 ? 'ALL OK' : `${failures.length} step(s) FAILED`} — ${stepNo} steps in ${Math.round((Date.now() - started) / 1000)}s`);

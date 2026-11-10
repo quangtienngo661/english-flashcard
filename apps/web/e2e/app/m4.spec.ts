@@ -236,7 +236,9 @@ test.describe('M4 flows (mocked API)', () => {
     const row = page.getByRole('listitem').filter({ hasText: 'sai 3/5' });
     if ((page.viewportSize()?.width ?? 0) >= 768) {
       const boxes = await Promise.all(['deploy', 'triển khai', 'sai 3/5', '1 ngày'].map(async (text) => (await row.getByText(text, { exact: true }).boundingBox())!));
-      expect(boxes.map((b) => Math.round(b.y / 8))).toEqual(Array(4).fill(Math.round(boxes[0].y / 8)));
+      // One line: every cell's vertical centre within 8 px of the word's (rounding y / 8 broke when the page moved by a few px, M4.3).
+      const centre = (b: { y: number; height: number }) => b.y + b.height / 2;
+      for (const box of boxes) expect(Math.abs(centre(box) - centre(boxes[0]))).toBeLessThan(8);
       expect(boxes.map((b) => b.x)).toEqual([...boxes.map((b) => b.x)].sort((a, b) => a - b));
       const last = (await row.getByText(/hôm nay$/).boundingBox())!;
       expect(Math.abs(last.y - boxes[0].y)).toBeLessThan(8);

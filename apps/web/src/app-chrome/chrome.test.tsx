@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { makeMe } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
@@ -9,7 +8,6 @@ import { AvatarMenu } from './AvatarMenu';
 import { BackLink } from './BackLink';
 import { MobileTabBar } from './MobileTabBar';
 import { PlanChip } from './PlanChip';
-import { SearchStrip } from './SearchStrip';
 import { TopBar } from './TopBar';
 
 // A marker on router links, so a test can tell them from plain anchors.
@@ -95,28 +93,5 @@ describe('app chrome (giao diện mới M1.9)', () => {
   it('BackLink is a link with its label', () => {
     renderApp(<BackLink href="/vi/app/groups" label="Nhóm" />);
     expect(screen.getByRole('link', { name: /Nhóm/ })).toHaveAttribute('href', '/vi/app/groups');
-  });
-
-  it('SearchStrip keeps typed text when ?id= changes and clears it when ?q= changes', async () => {
-    pathname = '/vi/app/group';
-    search = new URLSearchParams('id=g1');
-    function Harness() {
-      const [, rerender] = useState(0);
-      return (
-        <>
-          <button type="button" onClick={() => rerender((n) => n + 1)}>rerender</button>
-          <SearchStrip />
-        </>
-      );
-    }
-    renderApp(<Harness />);
-    const box = screen.getAllByRole('searchbox')[0]!;
-    await userEvent.type(box, 'mitig');
-    search = new URLSearchParams('id=g2');
-    await userEvent.click(screen.getByRole('button', { name: 'rerender' }));
-    expect(screen.getAllByRole('searchbox')[0]).toHaveValue('mitig');
-    search = new URLSearchParams('q=yield');
-    await userEvent.click(screen.getByRole('button', { name: 'rerender' }));
-    expect(screen.getAllByRole('searchbox')[0]).toHaveValue('yield');
   });
 });

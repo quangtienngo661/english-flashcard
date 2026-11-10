@@ -59,4 +59,44 @@ describe('ui overlays', () => {
     act(() => showToast('Đã lưu', 'success'));
     expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
   });
+
+  it.each([
+    ['md', 'md:max-w-lg'],
+    ['lg', 'md:max-w-2xl'],
+    ['xl', 'md:max-w-215'],
+  ] as const)('size="%s" gives the dialog its max width (%s); xl is the 860 px box of Overlay 4', (size, width) => {
+    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" size={size}><p>x</p></Dialog>);
+    const modal = screen.getByRole('dialog', { name: 'Hộp' }).parentElement!;
+    expect(modal.className.split(' ')).toContain(width);
+  });
+
+  it('wide stays an alias of size="lg" until M8', () => {
+    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" wide><p>x</p></Dialog>);
+    expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).toContain('md:max-w-2xl');
+  });
+
+  it('showToast with a link shows it in the toast', async () => {
+    renderApp(<ToastRegion />);
+    act(() => showToast('Đã thêm', 'success', { link: { label: 'Xem nhóm', href: '/vi/app/group?id=g1' } }));
+    expect(await screen.findByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g1');
+  });
+
+  it('showToast with a timeout closes it after exactly that long; the default stays 5000 ms', async () => {
+    vi.useFakeTimers();
+    try {
+      renderApp(<ToastRegion />);
+      act(() => showToast('Ngắn', 'success', { timeout: 2400 }));
+      act(() => showToast('Mặc định', 'neutral'));
+      act(() => vi.advanceTimersByTime(2399));
+      expect(screen.getByText('Ngắn')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.queryByText('Ngắn')).not.toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(5000 - 2400 - 1));
+      expect(screen.getByText('Mặc định')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.queryByText('Mặc định')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
