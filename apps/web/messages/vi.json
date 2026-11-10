@@ -296,6 +296,8 @@
       "notFoundBody": "Đường dẫn có thể đã cũ.",
       "home": "Về Hôm nay",
       "charCount": "{count, number}/{max, number}",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
       "errorPageTitle": "Không tải được trang này."
     },
     "session": {

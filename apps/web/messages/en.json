@@ -296,6 +296,8 @@
       "notFoundBody": "The link may be out of date.",
       "home": "Go to Today",
       "charCount": "{count, number}/{max, number}",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "errorPageTitle": "This page could not be loaded."
     },
     "session": {
