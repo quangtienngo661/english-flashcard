@@ -2024,3 +2024,470 @@ Branch: `git switch -c feat/giao-dien-moi-m5b origin/refactor/giao-dien-moi` onc
 **Open:**
 - QM5-1: merge PR #249 before M5?
 - QM5-2: when the card dissolves in Học.
+
+---
+
+# Part 6 — M6 Lịch học (branch `feat/giao-dien-moi-m6`)
+
+**Goal:** Add the study calendar to the web: the floating calendar button with the streak, the Lịch and Ngày dialogs driven by `?lich=` / `?ngay=`, and the redirect that replaces the old practice history page. Move "Báo lỗi của tôi" to `/app/settings/reports` in the same PR, so its entry never disappears (QR1).
+
+**Inputs:**
+- Design §5.4 (layouts, floating button), §5.6 (URL dialogs, three history rules), §5.7, §7.5 (`CalendarButton`), §8.2 row "Lịch, Ngày", §8.4, §9 M6, §10.2–§10.5.
+- Motion doc `motion-va-chuyen-canh.md` §5; prototype `docs/mockups/2026-11-05-redesign-concepts/vong-9-lich.html` (behaviour and keys; its hash URLs are superseded by §5.6).
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m6-calendar.md` ("M6 code C §n") and `…-m6-reports.md` ("M6 code R §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-10-m6-a.md` (button, Lịch, Ngày; "M6 Figma A §n") and `…-m6-b.md` (reports page, Settings row, avatar menu; "M6 Figma B §n").
+
+Paths are under `apps/web/` unless they start with `apps/api/`. `L/` = `src/features/learner/`, `M/` = `src/app/[locale]/app/(member)/`, `C/` = `M/(chrome)/`.
+
+**Order:**
+- The API of §10.2–§10.5 is built (Part 1, A1–A5). M6 adds one API change (M6.1).
+- Start once M4 (PR #257) is merged: M4 changes `TopBar`, `ui/Dialog` (`size`), `ui/Toast`, `app-shell/format.ts` (`'numeric'`) and `ui/States.tsx`, which M6 uses (M6 code C §9, R §9). Run `git switch -c feat/giao-dien-moi-m6 origin/refactor/giao-dien-moi`, then `git merge docs/giao-dien-moi-plan-6`.
+- M6.4 retargets the "Mở lịch học" link that M5.5 adds to Luyện tập. If M5a is not merged when M6.4 runs, leave that link to M5 and note it in the as-built.
+- M6.9 (calendar button in the session bar on phones) runs after M5a and M5b are merged, because M5 rebuilds the session, Học and Ôn bars. If the rest of M6 is ready first, ship M6.1–M6.8 and M6.10 as the M6 PR, and M6.9 as a second PR from `feat/giao-dien-moi-m6-session`.
+- **QM6-1** (owner, before M6.8): see M6.8.
+
+## Part 6 constraints
+
+- **API:** the only change is M6.1 (QR2: the reports list gains the data the Figma rows show). Every other endpoint is unchanged.
+- **Dates:** "today", the current month, "/8", future days and the FAB's day number come from `me.timezone`, never from the device clock's zone or the server (design §10.4). One shared helper (M6.2), not a fourth `localDay` copy (M6 code C §4).
+- **URL dialogs** follow design §5.6 exactly: `window.history.pushState` / `replaceState`, never `router.push`; a `history.state` marker decides whether closing goes back or strips the params; readers of `useSearchParams` sit in `Suspense`.
+- **Esc:** in Ngày it goes back to Lịch; in Lịch it closes. `L` toggles the calendar from anywhere except inputs, selects, contenteditable and other dialogs (the `N` guard of `add-word-context.tsx:32-42`).
+- **Reduced motion:** opacity and colour only, ≤ 200 ms (design §8.4).
+- **Tests:** every test that renders the chrome gets a default `GET /v1/me/streak` route in `renderApp` and in `e2e/support/mock-api.ts` (M6.2), or it throws "unscripted request" (M6 code C §9.2).
+- The report confirmation changes to "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi." in M6.8 (QR1); M5 leaves it alone.
+
+## Part 6 Review Focus
+
+1. **Lan at UTC+7 opens the calendar at 2026-10-31T17:30:00Z.** She sees "Tháng 11, 2026", 01/11 marked "hôm nay", "/1", and "Tháng sau" disabled. The FAB reads "T11" and "1". Pinned in M6.2 (helper) and M6.5 (dialog).
+2. **Lan follows a link to `/vi/app/practice?ngay=2026-11-05`, then presses the browser's Back twice.**
+   - The first Back shows Lịch for November.
+   - The second leaves the dialogs: `/vi/app/practice` without params.
+   - Closing a dialog opened from a link never leaves the app.
+   Pinned in M6.4 (unit) and M6.10 (e2e, real browser).
+3. **A day with two practice sessions and 130 graded answers.**
+   - Two score blocks, in session order.
+   - Each block lists its own answers.
+   - "Xem đủ N câu" loads the rest of that session's answers across history pages.
+   Pinned in M6.6.
+4. **A learned word whose sense was hidden later** (`lemma: null`): the chip reads "Từ không còn trong kho", is not a link, and the counts are unchanged. Pinned in M6.6.
+5. **Phone, Hôm nay:**
+   - the calendar button sits 12 px above the "+" button, and neither covers the other;
+   - on Từ tồn đọng and Chủ đề the calendar button is hidden;
+   - pressing `L` inside the add-word input types an "l".
+   Pinned in M6.3.
+
+### Task M6.1: API — word, question type and AI flag in "Báo lỗi của tôi"
+
+**Files:**
+- Modify: `apps/api/src/practice/reports/reports.service.ts` (`myReportView`, `listMine`), its spec, `apps/api/scripts/smoke-giao-dien-moi.mjs`.
+
+**Interfaces:**
+- Produces: each item of `GET /v1/practice/reports` gains:
+  - `lemma: string | null`, from one `ContentService.cardContent` call for the page's sense ids; `null` when the sense is not returned;
+  - `question_type: QuestionType | null` (`practice.types.ts:8`), the `type` of `questionSnapshot` (`snapshot.ts:39-40`); `null` when the snapshot has none;
+  - `ai: boolean`, true when `questionSource = 'ai'` (`practice.prisma:123,133`).
+- Existing fields, order, paging and the bound token stay the same (M6 code R §1.3).
+
+- [ ] **Step 1: Write the failing tests** in the service spec:
+  - A page of three reports makes exactly one `cardContent` call, with the three sense ids.
+  - A hidden sense gives `lemma: null`.
+  - An AI cloze report gives `question_type: 'cloze'`, `ai: true`.
+  - A rule report gives `ai: false`.
+- [ ] **Step 2: Run** `pnpm vitest run src/practice/reports` in `apps/api` → FAIL.
+- [ ] **Step 3: Implement.** Practice already depends on Content: use its exported service, not a SQL join (D3).
+- [ ] **Step 4: Run** → PASS. Extend `smoke:giao-dien-moi`: report one answered item, then `GET /v1/practice/reports` shows its `lemma` and `question_type`. Run it on a fresh DB → PASS.
+- [ ] **Step 5: Commit** `feat(api): add word, question type and ai flag to my reports`.
+
+### Task M6.2: Learner dates, streak query and test defaults
+
+**Files:**
+- Create: `src/lib/learner-date.ts`, its test; `L/calendar/calendar-api.ts`, its test.
+- Modify: `src/app-shell/format.ts` (style `'monthYear'`), its test.
+- Modify the answer handlers that call `showStreak`:
+  - the practice session hook (`L/practice/session/use-practice-session.ts`, around `:280`), which Ôn reuses;
+  - the Học queue (`L/review/use-review-queue.ts`, around `:63`).
+- Modify the test defaults: `src/app-ui/test-utils.tsx`, `e2e/support/mock-api.ts`.
+
+**Interfaces:**
+- Produces (`learner-date.ts`, pure):
+  - `useLearnerZone(): string` (`me.timezone`, or `'UTC'` when signed out);
+  - `todayIn(zone: string, now: Date): string` (`YYYY-MM-DD`) and `monthOf(date: string): string` (`YYYY-MM`);
+  - `addDays(date, n)`, `addMonths(month, n)`, `daysInMonth(month)`, `weekdayMon0(date)` (Monday = 0);
+  - `elapsedDays(month, today)`: the "/8" figure. It is the day of today in the current month, the month's length for a past month, and 0 for a future month.
+- Produces (`calendar-api.ts`):
+  - `STREAK_KEY = ['me', 'streak']`, `useStreak()`;
+  - `useCalendarMonth(month)` with key `['me', 'calendar', month]`;
+  - `useCalendarDay(date)`: `useInfiniteQuery` with key `['me', 'calendar', 'day', date]`, `?kind=all&page_size=100`;
+  - `useDayAnswers(date)`: `useInfiniteQuery` with key `['practice', 'history', date]`, `?date=&page_size=100`;
+  - `writeStreak(queryClient, days)`: sets `{ days, studied_today: true }`.
+- Types copy the API shapes of M6 code C §1.1–§1.3 and §2.
+- `format.date(at, 'monthYear')`: vi "Tháng 11, 2026", en "November 2026".
+
+- [ ] **Step 1: Write the failing tests:**
+  - `todayIn('Asia/Ho_Chi_Minh', new Date('2026-10-31T17:30:00Z'))` is `'2026-11-01'`; with `'UTC'` it is `'2026-10-31'`.
+  - `elapsedDays('2026-11', '2026-11-08')` = 8; `('2026-10', '2026-11-08')` = 31; `('2026-12', '2026-11-08')` = 0.
+  - `addDays('2026-02-28', 1)` = `'2026-03-01'`; `addMonths('2026-01', -1)` = `'2025-12'`.
+  - `weekdayMon0('2026-11-01')` = 6 (Sunday).
+  - An answer carrying `streak: { days: 6 }` makes `STREAK_KEY` hold `{ days: 6, studied_today: true }`, and no `GET /v1/me/streak` follows. Write this once for the practice hook and once for the Học queue.
+  - `renderApp(<p/>, { chrome: true })` with no extra routes does not throw on `/v1/me/streak`.
+- [ ] **Step 2: Run** `pnpm vitest run src/lib/learner-date.test.ts L/calendar src/app-shell` → FAIL.
+- [ ] **Step 3: Implement.** Use `Intl.DateTimeFormat('en-CA', { timeZone })` as `L/practice/days.ts` does. The three existing `localDay` copies stay untouched (surgical).
+  - Default routes: `GET /v1/me/streak` → `{ days: 0, studied_today: false }` in both `test-utils.tsx` and `mock-api.ts`.
+  - `useStreak` uses `staleTime: 60_000` and `refetchOnWindowFocus: true`, so a tab left open past midnight corrects itself (M6 code C R5).
+- [ ] **Step 4: Run** → PASS, then the whole web unit suite → PASS.
+- [ ] **Step 5: Commit** `feat(web): add learner dates, the streak query and calendar queries`.
+
+### Task M6.3: `CalendarButton` and the floating stack
+
+**Files:**
+- Create: `src/app-chrome/CalendarButton.tsx`, `src/app-chrome/FloatingButtons.tsx`, test `src/app-chrome/calendar-button.test.tsx`.
+- Modify: `C/layout.app.tsx` (render `FloatingButtons`); `M/(focus)/layout.app.tsx` (desktop button); `src/app-chrome/AppChrome.tsx` (`main` bottom padding); `L/today/TodayPage.tsx` (stop rendering `AddFab`); `messages/{vi,en}.json` (`App.calendar.fab`).
+
+**Interfaces:**
+- Consumes: `useStreak()`, `useLearnerZone()`, `todayIn` (M6.2); `useCalendar()` (M6.4: `isOpen`, `openMonth(month?)`, `close()`).
+- Produces: `CalendarButton({ size: 'lg' | 'sm' })`. `FloatingButtons()` renders the bottom-right stack of `(chrome)`:
+  - phone: the calendar button, and below it `AddFab` on Hôm nay only (pathname `/{locale}/app`);
+  - desktop: the calendar button only.
+
+**Behaviour** (`95:343`, M6 Figma A §6):
+- **Sizes:** `lg` is 62 × 66 on desktop, `sm` is 54 × 58 on phones.
+- **Look:**
+  - surface, radius 16, `Shadow/Pop`;
+  - an accent strip with the month: vi "T11", en "Nov" via `Intl`;
+  - today's day number;
+  - a `--mark` streak badge (flame + days) on the top-right corner, hidden when `days` is 0 or the query has no data.
+- **Position:**
+  - desktop: 32 px from the right and the bottom;
+  - phone: 16 px from the right, 14 px above the tab bar;
+  - on Hôm nay (phone), the stack is the calendar button, a 12 px gap, then "+".
+- **Hidden:**
+  - on phones at `/app/group/backlog` and `/app/topic`, where their floating bar sits;
+  - while Lịch or Ngày is open (opacity 0, `pointer-events: none`, 200 ms).
+- **Focus layout:** desktop only (`hidden md:block`). Phones get the session-bar button in M6.9.
+- **Label and tooltip:** accessible name "Lịch học", `aria-keyshortcuts="L"`. Hover and focus-visible show the tooltip "Lịch học" with a `Kbd` "L". Hover lifts the button 2 px (180 ms); press scales it to .95. Pointer-enter and focus prefetch the current month (design §5.7).
+- **Content padding:** `main` keeps 124 px of bottom padding on desktop. On phones it keeps the tab bar height + 100 px (Figma note, M6 Figma A §6), so the last row of every screen can scroll clear of the buttons.
+
+- [ ] **Step 1: Write the failing tests** (`renderApp(…, { chrome: true })`, streak `{ days: 6 }`, zone `Asia/Ho_Chi_Minh`, now `2026-11-08T03:00:00Z`):
+  - The button named "Lịch học" shows "T11", "8" and "6".
+  - With `{ days: 0 }` there is no "0" in the button.
+  - Clicking the button calls `openMonth()`; so does `L` on `document.body`. `L` typed in a `textbox` does not.
+  - On `/vi/app` at 390 px both "Lịch học" and "Thêm từ" are present, in that DOM order. On `/vi/app/group/backlog` at 390 px there is no "Lịch học".
+  - `TodayPage` alone no longer renders "Thêm từ".
+- [ ] **Step 2: Run** `pnpm vitest run src/app-chrome L/today` → FAIL.
+- [ ] **Step 3: Implement.** Any Tailwind arbitrary value carries `// raw-ok:`.
+- [ ] **Step 4: Run** → PASS; `today.test.tsx`, `layouts.test.tsx` → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the floating calendar button with the streak`.
+
+### Task M6.4: Calendar host, URL parameters and "Mở lịch học"
+
+**Files:**
+- Create: `L/calendar/calendar-params.ts` (pure), `L/calendar/CalendarHost.tsx` (client: context, keys, lazy dialogs), `L/calendar/CalendarLink.tsx`, tests `calendar-params.test.ts`, `calendar-host.test.tsx`.
+- Modify: `M/layout.app.tsx` (mount `<Suspense><CalendarHost/></Suspense>`); `L/today/TodayPage.tsx:197-200` and its test `:81`; `L/practice/PracticePage.tsx` ("Gần đây" link, if M5a is merged).
+
+**Interfaces:**
+- Produces (`calendar-params.ts`):
+  - `parseCalendar(search: URLSearchParams, today: string)` returns `{ view: 'none' } | { view: 'month', month } | { view: 'day', month, date } | { view: 'invalid' }`.
+  - `?lich` with an empty value means the current month.
+  - `?ngay=` wins over `?lich=`; the day's `month` is `monthOf(date)`.
+  - A malformed value or one outside `2026-01…2100-12` is `invalid`.
+  - Future months and days are valid; the dialogs show them empty.
+- Produces (`CalendarHost`):
+  - `useCalendar()` returns `{ isOpen, openMonth(month?), openDay(date), backToMonth(), close() }`;
+  - `CalendarLink({ children })` is an `<a href="?lich=<month>">` whose plain click calls `openMonth()`.
+- **History rules** (design §5.6), using `pushState` / `replaceState` on the current path:
+  - Opening Lịch, or going from Lịch to Ngày, pushes a step with `history.state.wmCalendar = true`.
+  - Changing month, day or filter replaces.
+  - `close()` and `backToMonth()` call `history.back()` when the current entry carries the marker. Otherwise they replace (strip params, or set `?lich=`).
+  - Arriving on `?ngay=` without the marker first replaces it with `?lich=<month>`, then pushes `?ngay=`.
+  - `invalid` strips the params by replacing; no dialog opens.
+- `L` toggles: closed → `openMonth()`; open → `close()`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `parseCalendar('lich=2026-13')` → `invalid`.
+  - `('ngay=2026-02-30')` → `invalid`.
+  - `('lich=2026-11&ngay=2026-11-05')` → `day`, month `'2026-11'`.
+  - `('lich=')` with today `2026-11-08` → `month` `'2026-11'`.
+  - Host, with a `useSearchParams` mock that reads `window.location.search`:
+    - opening from the FAB, then a day, then `backToMonth()`, then `close()` calls `pushState` twice and `history.back` twice;
+    - mounting on `?ngay=2026-11-05` calls `replaceState('?lich=2026-11')` then `pushState('?ngay=2026-11-05')`;
+    - mounting on `?lich=2026-13` replaces the URL with the bare path and shows no dialog.
+  - Hôm nay: "Mở lịch học" is a link with `href` `/vi/app?lich=2026-11`, and clicking it opens a dialog titled "Tháng 11, 2026".
+- [ ] **Step 2: Run** `pnpm vitest run L/calendar L/today` → FAIL.
+- [ ] **Step 3: Implement.** The host renders `null` until a dialog is open. The dialogs load through `next/dynamic` (design §5.7).
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): open the calendar from the url and the today link`.
+
+### Task M6.5: Hộp Lịch
+
+**Files:**
+- Create: `L/calendar/MonthDialog.tsx`, `L/calendar/month-grid.ts` (pure), tests `month-grid.test.ts`, `month-dialog.test.tsx`.
+- Modify: `src/ui/Dialog.tsx` (two widths: `size="month"` 45rem, `size="day"` 40rem); `messages/{vi,en}.json` (`App.calendar.month`, copy of M6 Figma A §10).
+
+**Interfaces:**
+- Produces: `monthGrid(month, today, days)` returns week rows (Monday first, 4–6 rows as the month needs). Each cell is:
+  `{ date, inMonth, isToday, isFuture, dots: { learn, review, practice }, band: 'none' | 'start' | 'middle' | 'end' | 'single' }`.
+  - Dots come from that date's `days[]` row (`learned > 0`, `reviewed > 0`, `practice_sessions > 0`).
+  - A band joins consecutive dates present in `days[]` and is cut at row edges.
+  - Days of the adjacent months show only a ghost number: no dots, no band. One request per month; a ruling (M6 Figma A Unresolved 3).
+
+**Behaviour** (`102:3278` / `102:3948`, M6 Figma A §2–§3, §8):
+- **Head:**
+  - "lịch học" over "Tháng 11, 2026";
+  - streak pill "6 ngày liên tiếp" (hidden at 0);
+  - "Về hôm nay", shown only when the selected day is not today or the month is not the current one;
+  - "Tháng trước", disabled at 2026-01, the API's floor (`/v1/me` has no creation date);
+  - "Tháng sau", disabled in the current month;
+  - "Đóng lịch". On phones the close button is a 34 × 34 button at the sheet's top right.
+- **Totals:** "7" + "/8" ngày có học (`totals.study_days`, `elapsedDays`), "55" từ mới đã học, "130" lượt ôn, "4" phiên luyện, in the raw number colours of the frame through `wm-` tokens.
+- **Grid:**
+  - "T2 … CN" header;
+  - each day is a `button` named "Thứ Năm 5/11: học 10 từ, ôn 22 lượt, luyện 20 câu", "…: không học" or "…: chưa tới";
+  - states Thường, Chọn, Hôm nay ("hôm nay" label on desktop, underline on phones), Tương lai (disabled), Ngoài tháng (ghost, not focusable);
+  - bands `--accent-soft` with radius 14 at run ends.
+- **Legend**, and a key footer on desktop only: "← → ↑ ↓ chọn ngày · Enter xem ngày · Esc đóng".
+- **Keys:**
+  - roving focus on the selected day;
+  - `←→` move ±1 day, `↑↓` move ±7 days (crossing a month replaces `?lich=`);
+  - `Enter` or a click opens Ngày;
+  - `Esc` and `L` close;
+  - month arrows keep focus on the arrow and select the new month's last day, or today if it is earlier.
+- **Opening:** selects today, or the day in the URL. Focus goes to that day and returns to the opener on close.
+- **Loading, error:**
+  - a grid skeleton inside the dialog;
+  - on error, "Không tải được lịch." with "Thử lại" (`ui/States` `ErrorState`).
+- **Motion:**
+  - scrim 200 ms;
+  - desktop dialog from `translateY(12px) scale(.97)`, opacity 0, 240 ms `--ease-wm-out`;
+  - phone sheet from `translateY(60px)`, opacity .4, 240 ms;
+  - close 150 ms with the closing curve;
+  - cell hover and selection 150 ms;
+  - reduced motion: opacity only.
+  - The scrim keeps M1's 3 px blur (R10).
+
+- [ ] **Step 1: Write the failing tests:**
+  - `monthGrid('2026-11', '2026-11-08', days)` has 6 rows. The first cell is `'2026-10-26'` with `inMonth: false` and no dots.
+  - With `days` for 3–8/11, 03/11 is `start` and 08/11 is `end`; with 7 and 8 in different rows, each run is cut at the row edge.
+  - `monthGrid('2026-02', …)` has 4 rows.
+  - Dialog (fixture of M6 Figma A §2):
+    - title "Tháng 11, 2026";
+    - "6 ngày liên tiếp";
+    - "7", "/8", "55", "130", "4";
+    - button "Tháng sau" disabled;
+    - day button "Thứ Năm 5/11: học 10 từ, ôn 22 lượt, luyện 20 câu";
+    - 09/11 disabled.
+  - Keys: `ArrowLeft` from 08/11 focuses 07/11; `ArrowUp` focuses 01/11; `Enter` calls `openDay('2026-11-01')`.
+  - "Tháng trước" replaces the URL with `?lich=2026-10` without a new history entry.
+  - A 500 shows "Không tải được lịch." and "Thử lại" refetches.
+- [ ] **Step 2: Run** `pnpm vitest run L/calendar src/ui` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the month calendar dialog`.
+
+### Task M6.6: Hộp Ngày
+
+**Files:**
+- Create: `L/calendar/DayDialog.tsx`, `L/calendar/day-view.ts` (pure), tests `day-view.test.ts`, `day-dialog.test.tsx`.
+- Modify: `messages/{vi,en}.json` (`App.calendar.day`).
+
+**Interfaces:**
+- Consumes: `useCalendarDay`, `useDayAnswers` (M6.2); `useGroups` (`L/groups/groups-api.ts:101`); `groupTone(id, total)` (`src/lib/group-color.ts:36`); `wordHref` (`L/word/word-api.ts:35`).
+- Produces: `dayView(day, answers)` returns:
+  `{ learned: DayItem[], known: DayItem[], again: DayItem[], sessions: { session: PracticeSession, answers: HistoryItem[] }[] }`.
+  - Sessions follow `practice_sessions[]` order.
+  - Answers are grouped by `session_id` and keep the API order (newest first).
+
+**Behaviour** (`103:3820` / `103:4248`, M6 Figma A §4–§5, §8):
+- **Head:**
+  - "Lịch tháng 11" goes back to Lịch, as Esc does;
+  - "Ngày trước" and "Ngày sau" replace `?ngay=`. They are disabled at 2026-01-01 and at today.
+- **Date:** weekday in lower case ("thứ năm", plus " · hôm nay" when it is today), "05/11", and the line "Học 10 từ mới · ôn 22 lượt · luyện 20 câu", which leaves out parts that are 0.
+- **Filter:** Tất cả / Học N / Ôn N / Luyện N. It is client-side, a tab with 0 is disabled, and the counts never change.
+- **Học card:** "Học 10 từ mới", hint "{learned_groups} nhóm", one chip per learned item.
+- **Ôn card:**
+  - "Ôn 22 lượt", hint "lật thẻ và câu ôn";
+  - "16 Đã biết, lên một ngăn" with the known chips;
+  - "6 Cần ôn lại, về ngăn 1 ngày" with the again chips (`Cần ôn` variant).
+  - The headings count lượt (`reviewed_known` / `reviewed_again`); the chips are one per word, as drawn.
+- **Chips:**
+  - colour square from `group_id` (none when `null`); lemma linking to the word page;
+  - `lemma: null` reads "Từ không còn trong kho" and is not a link.
+  - Each list shows 10 chips, then a TextButton "+N từ" that shows the rest, fetching the next page when `next_page_token` is set.
+- **Luyện card:**
+  - title "Luyện tập · N phiên";
+  - per session: hint "câu a–b", score "17/20 đúng", the pass/fail bar, chips ✓ 17 and ✗ 3;
+  - up to 5 answer rows per session: time in the learner's zone, lemma, "bạn trả lời …" (wrong rows add " · đáp án: …" and the `--fail-soft` ✗ badge);
+  - "Xem đủ N câu" expands that session in place, loading history pages until all its answers of the day are in.
+- **Empty states** (prototype copy, dashed box):
+  - future day: "Chưa tới ngày này.";
+  - no activity: "Ngày này không có lần học nào.";
+  - an empty section under a filter: "Ngày này không có.".
+  - A day older than 6 months shows the Luyện card only when the day has sessions.
+- **Loading, error, motion:**
+  - loading and error as in Lịch;
+  - desktop Lịch → Ngày slides +22 px (back −22 px), 220 ms;
+  - phone content rises 4 px, 200 ms;
+  - day change re-animates only the detail (4 px, 180 ms);
+  - the detail area is `aria-live="polite"`;
+  - focus as in M6 Figma A §8.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `dayView` with two sessions and their answers mixed in time returns two groups, each with only its own answers.
+  - Dialog (fixture of M6 Figma A §4):
+    - "thứ năm", "05/11", "Học 10 từ mới · ôn 22 lượt · luyện 20 câu";
+    - "4 nhóm";
+    - "16" and "6";
+    - "17/20";
+    - 5 answer rows;
+    - "Xem đủ 20 câu".
+  - The filter "Ôn 22" hides the Học and Luyện cards and keeps the counts.
+  - A null lemma shows "Từ không còn trong kho" with no link.
+  - 12 learned chips show 10 and "+2 từ"; clicking it shows 12.
+  - A session with 130 answers across two history pages: "Xem đủ 130 câu" requests the second page and then shows 130 rows.
+  - `?ngay=2026-11-09` with today 08/11 shows "Chưa tới ngày này." and makes no day request.
+  - "Ngày sau" is disabled on today.
+  - Esc calls `backToMonth()`.
+- [ ] **Step 2: Run** `pnpm vitest run L/calendar` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the day dialog of the calendar`.
+
+### Task M6.7: Replace the practice history page
+
+**Files:**
+- Rewrite: `C/practice/history/page.app.tsx` as an async server page that only redirects.
+- Delete: `L/practice/HistoryPage.tsx`, `L/practice/MyReportsTab.tsx` (rebuilt in M6.8), the `App.practice.history.*` keys (vi and en).
+- Modify: `L/practice/weak-history.test.tsx` (keep the Từ hay sai tests; move the report tests to M6.8); `e2e/app/m4.spec.ts:252-261,285-286`; `e2e-shots/shots.spec.ts:393-394`.
+- Create: `C/practice/history/history-redirect.test.ts`.
+
+**Interfaces:**
+- Produces `historyTarget(locale, search): string`, a pure function in the page file's folder:
+  - `?tab=reports` → `/{locale}/app/settings/reports`;
+  - `?date=YYYY-MM-DD` (valid) → `/{locale}/app/practice?ngay=<date>`;
+  - otherwise `/{locale}/app/practice?lich`.
+  The page awaits `params` and `searchParams` (Next 16 promises) and calls `redirect()`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `historyTarget('vi', 'tab=reports')` is `/vi/app/settings/reports`.
+  - `('en', 'date=2026-11-05')` is `/en/app/practice?ngay=2026-11-05`.
+  - `('vi', 'date=2026-02-30')` and `('vi', '')` are `/vi/app/practice?lich`.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement**, delete, and move the tests. `rg "practice/history" src` returns only the redirect folder. `rg "practice\.history\." src messages` returns nothing.
+- [ ] **Step 4: Run** the web unit suite → PASS. Then run `pnpm cf:docker e2e/app/m4.spec.ts`: the rewritten case opens `/vi/app/practice/history?date=2026-11-05`, lands on `/vi/app/practice?…ngay=2026-11-05` with the Ngày dialog open, and the Worker build serves the dynamic redirect → PASS.
+- [ ] **Step 5: Commit** `feat(web): redirect the practice history page to the calendar`.
+
+### Task M6.8: "Báo lỗi của tôi" page and its two entries
+
+**Files:**
+- Create: `C/settings/reports/page.app.tsx`, `L/settings/reports/{MyReportsPage,ReportRow}.tsx`, `L/settings/reports/reports-api.ts`, test `my-reports.test.tsx`.
+- Modify:
+  - `src/app-chrome/AvatarMenu.tsx:65` (href) and its doc comment, `chrome.test.tsx` (an href assertion);
+  - `L/settings/SettingsPage.tsx` (a row after "Lịch sử giao dịch");
+  - `src/app-shell/format.ts` (style `'monthLabel'`: vi "tháng 11, 2026");
+  - `messages/{vi,en}.json` (`App.practice.reports.*` new keys; `App.practice.session.report.done`);
+  - `L/practice/session/practice-session.test.tsx:504`;
+  - `e2e/app/overflow.spec.ts:15` (add `/settings/reports`).
+
+**Interfaces:**
+- Consumes: M6.1 fields; `format.date(at, 'numeric')` (M4); `ui/States`.
+- Produces: `useMyReports()` with key `['practice', 'my-reports']` and the URL of M6 code R §1.1. The N+1 `GET /v1/senses/{id}` goes away.
+
+**Behaviour** (`211:5827` / `211:6061`, M6 Figma B §1):
+- **Page:** back link "Cài đặt", title "Báo lỗi của tôi" (44 / 30 px).
+- **Months:** one group per month in the learner's zone, newest first. The label is "tháng 11, 2026", and each group sits in a card with radius 20.
+- **Row:**
+  - date `dd/mm/yyyy` (desktop);
+  - "<từ> · <lý do>";
+  - line 2: the question type label with a lower-case first letter, then " · câu AI" for an AI question. A refunded report shows " · Đã trả lại 1 lượt câu AI" instead of " · câu AI". A confirmed report still refunding, or not refundable, keeps today's two lines.
+  - status with an 8 px dot: Đang xem (`open`, accent), Đã xác nhận lỗi (`confirmed`, pass), Đã sửa (`fixed`, pass), Không có lỗi (`no_error`, muted).
+  - `lemma: null` reads "—".
+  - Rows are not interactive.
+  - **QM6-1** (owner) decides whether phone rows show the date: Figma has none (the month header only), and the design text says every row shows "ngày gửi".
+- **Rows of one card:** separated by a 1 px `--line` border, as on the transactions page (M6 Figma B Conflict 3; a ruling).
+- **Footnote:** "ngày theo múi giờ của bạn · câu do AI viết mà đúng là lỗi thì được trả lại 1 lượt câu AI".
+- **States:** "Xem thêm" pages. The empty state keeps "Bạn chưa báo lỗi câu nào." with "Về Luyện tập". The error state uses `ErrorState` with "Thử lại".
+- **Settings:** a row "Báo lỗi của tôi" right after "Lịch sử giao dịch". It uses the old page's row style (chevron), because M7 rebuilds Settings with the Figma "Xem" button.
+- **Avatar menu:** the "Báo lỗi của tôi" item links to `/{locale}/app/settings/reports`.
+- **Toast after sending a report:** vi "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi.", en "Report sent. See the outcome in Settings → My reports.".
+
+- [ ] **Step 1: Write the failing tests** (fixture of M6 Figma B §1.6, with the M6.1 fields):
+  - Groups "tháng 11, 2026" then "tháng 10, 2026".
+  - Row "deteriorate · Đáp án sai" has "điền từ vào câu · câu AI" and "Đang xem".
+  - Row "allocate · Câu khó hiểu" has "chọn nghĩa trong câu · Đã trả lại 1 lượt câu AI" and "Đã xác nhận lỗi".
+  - Desktop shows "08/11/2026".
+  - Empty and error states as above.
+  - Settings has a link "Báo lỗi của tôi" with `href` `/vi/app/settings/reports`. The menu item has the same `href`.
+  - The practice session toast reads the new text.
+- [ ] **Step 2: Run** `pnpm vitest run L/settings src/app-chrome L/practice` → FAIL.
+- [ ] **Step 3: Implement.** Move the report tests from `weak-history.test.tsx` here.
+- [ ] **Step 4: Run** → PASS. Then `pnpm cf:docker e2e/app/m4.spec.ts e2e/app/m4b.spec.ts e2e/app/overflow.spec.ts`: the reports case opens `/vi/app/practice/history?tab=reports` and lands on `/vi/app/settings/reports` → PASS.
+- [ ] **Step 5: Commit** `feat(web): move my reports to settings`.
+
+### Task M6.9: Calendar button in the session bar (phone)
+
+**Order:** after M5a and M5b are merged into `refactor/giao-dien-moi`.
+
+**Files:**
+- Create: `src/app-chrome/CalendarBarButton.tsx`.
+- Modify: the session bars M5 builds for the practice session, Học and Ôn (`L/practice/session/*`, `L/review/*`, `L/recall/*`), and their tests.
+
+**Behaviour** (Figma "Nút lịch trong thanh" `95:344`; read its size and states before coding, M6 Figma A §6 marks them UNVERIFIED):
+- The button sits in the session's top bar below `md`: month strip and day number, no streak badge.
+- It opens Lịch through `useCalendar()`.
+- Desktop keeps the floating button of the `(focus)` layout (M6.3).
+- `L` works in sessions except inside the answer input.
+
+- [ ] **Step 1: Write the failing tests:**
+  - At 390 px, the practice session, Học and Ôn each show one button "Lịch học" in the top bar, and pressing it opens "Tháng 11, 2026".
+  - At 1440 px, the bar has no calendar button and the floating one is present.
+  - `L` typed in the Ôn answer box types "l".
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the calendar button to the session bar`.
+
+### Task M6.10: M6 check, journey, screenshots, PR
+
+**Files:**
+- Create: `e2e/app/m6.spec.ts`.
+- Modify: `e2e-shots/shots.spec.ts` (set `gm-m6`: Hôm nay with the button, Lịch, Ngày (with a wrong answer and two sessions), Ngày empty, reports page, Settings with the row; at 390 and 1440); `docs/deliveries/giao-dien-moi.md` (M6 as-built); `giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Write the journey** (design §13):
+  - Hôm nay → the button "Lịch học" → Lịch → 05/11 → Ngày;
+  - Back → Lịch; Back → no dialog, same path;
+  - `L` opens and Esc closes;
+  - `/vi/app/practice?ngay=2026-11-05` opened directly, then Back → Lịch;
+  - axe on both dialogs; no sideways scroll at 390 px.
+- [ ] **Step 2: Run the checks:**
+  - web lint, typecheck, test, `pnpm cf:docker` (all specs);
+  - API lint, typecheck, test, build, `smoke:giao-dien-moi` on a fresh DB;
+  - admin: the four checks.
+  - All pass. Record the counts.
+- [ ] **Step 3: Take screenshots:** `SHOTS_MILESTONE=gm-m6 pnpm shots`, next to their Figma frame IDs.
+- [ ] **Step 4: Commit** `test(web): add the calendar journey and the gm-m6 screenshot set` and `docs(web): record m6 as built`.
+- [ ] **Step 5: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): add the study calendar and move my reports to settings`. Merge after CI is green and the owner says yes.
+
+## Part 6 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M6: Lịch → M6.5; Ngày → M6.6; floating button and its hidden places → M6.3; streak → M6.2, M6.3; "Mở lịch học" → M6.4; history page removed → M6.7; QR1 page, Settings row, menu, toast copy, `?tab=reports` → M6.7, M6.8.
+- §5.6 URL rules and edge table → M6.4 (unit), M6.10 (browser).
+- §5.4 session row "nút lịch nằm trên thanh của phiên ở điện thoại, nổi góc phải dưới ở máy tính" → M6.3 (desktop), M6.9 (phone).
+- §5.7 `next/dynamic` and hover prefetch → M6.3, M6.4.
+- §8.2 calendar motion → M6.5, M6.6. §13 journey → M6.10.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- The reports list gains `lemma`, `question_type` and `ai`, under QR2. The Figma rows show the word and the question type, and today the web fetches the lemma once per row.
+- Days of the adjacent months show only a ghost number, without dots or bands: one request per month.
+- "Tháng trước" stops at 2026-01, the API's floor. `/v1/me` has no creation date.
+- A band joins consecutive dates present in `days[]`. The month response has no per-day "studied" flag.
+- Several sessions in one day show one score block per session, and "Xem đủ N câu" expands in place. Figma draws one session.
+- Chips show 10 per list, then "+N từ".
+- The streak badge and pill are hidden at 0. The FAB month reads "T11" in Vietnamese and "Nov" in English.
+- `AddFab` moves from `TodayPage` into the `(chrome)` floating stack, still on Hôm nay only, so the two buttons can stack 12 px apart.
+- The calendar button hides only for the calendar dialogs. Other dialogs cover it with their scrim.
+- The day grid is our own roving-focus grid as in the prototype, not react-aria `Calendar`: that one needs `@internationalized/date` as a direct dependency.
+- The new reports page keeps the `App.practice.reports` keys. The question type reuses `App.practice.types` with a lower-case first letter, and the "theo nghĩa" sub-type of the Figma sample is not shown (the API has no field for it).
+- Rows in a reports card are separated by a line, as on the transactions page.
+- The Settings row uses the old page's chevron until M7.
+- The scrim keeps 3 px blur (R10). The dialog radius is 16 (Figma).
+
+**Open:**
+- QM6-1: date on phone rows of "Báo lỗi của tôi".
