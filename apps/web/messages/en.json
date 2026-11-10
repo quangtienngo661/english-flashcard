@@ -1599,58 +1599,6 @@
         "right": "{count, number} right",
         "wrong": "{count, number} wrong"
       },
-      "history": {
-        "title": "Practice history",
-        "back": "Practice",
-        "tabs": {
-          "answers": "Answered",
-          "reports": "My reports"
-        },
-        "day": "Day",
-        "allDays": "All days",
-        "today": "Today, {date}",
-        "yesterday": "Yesterday, {date}",
-        "counts": {
-          "total": "{count, plural, one {# question} other {# questions}}",
-          "correct": "{count, number} right",
-          "wrong": "{count, number} wrong"
-        },
-        "cols": {
-          "time": "Time",
-          "word": "Word",
-          "type": "Type",
-          "prompt": "Question",
-          "answer": "Your answer",
-          "correct": "Answer",
-          "result": "Result",
-          "action": "Marked"
-        },
-        "typeStyle": "{type} · {style}",
-        "styles": {
-          "meaning": "meaning",
-          "sentence": "sentence"
-        },
-        "result": {
-          "correct": "Right",
-          "wrong": "Wrong",
-          "skipped": "Wrong · skipped",
-          "hinted": "Right · with hint",
-          "retried": "Right · try {n, number}",
-          "alternative": "Right · alternative"
-        },
-        "actions": {
-          "needs_review": "Still learning",
-          "known": "Know"
-        },
-        "none": "—",
-        "more": "Show more",
-        "true": "True",
-        "false": "False",
-        "emptyTitle": "No questions answered yet.",
-        "emptyBody": "Do a practice session and your answers show up here.",
-        "emptyDay": "No questions answered that day.",
-        "toPractice": "Back to Practice"
-      },
       "reports": {
         "cols": {
           "word": "Word",

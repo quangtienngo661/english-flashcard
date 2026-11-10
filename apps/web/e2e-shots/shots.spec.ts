@@ -484,8 +484,6 @@ async function m4(page: Page) {
     for (const [path, n] of [
       ['practice', 'practice'],
       ['practice/weak', 'weak'],
-      ['practice/history', 'history'],
-      ['practice/history?tab=reports', 'reports'],
       ['plans', 'plans'],
     ] as const) {
       await page.goto(at(path));

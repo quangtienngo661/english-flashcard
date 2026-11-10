@@ -1599,58 +1599,6 @@
         "right": "{count, number} câu đúng",
         "wrong": "{count, number} câu sai"
       },
-      "history": {
-        "title": "Lịch sử luyện tập",
-        "back": "Luyện tập",
-        "tabs": {
-          "answers": "Câu đã làm",
-          "reports": "Báo lỗi của tôi"
-        },
-        "day": "Ngày",
-        "allDays": "Mọi ngày",
-        "today": "Hôm nay, {date}",
-        "yesterday": "Hôm qua, {date}",
-        "counts": {
-          "total": "{count, number} câu",
-          "correct": "{count, number} đúng",
-          "wrong": "{count, number} sai"
-        },
-        "cols": {
-          "time": "Giờ",
-          "word": "Từ",
-          "type": "Kiểu câu",
-          "prompt": "Đề",
-          "answer": "Bạn trả lời",
-          "correct": "Đáp án",
-          "result": "Kết quả",
-          "action": "Đã bấm"
-        },
-        "typeStyle": "{type} · {style}",
-        "styles": {
-          "meaning": "theo nghĩa",
-          "sentence": "theo câu"
-        },
-        "result": {
-          "correct": "Đúng",
-          "wrong": "Sai",
-          "skipped": "Sai · bỏ qua",
-          "hinted": "Đúng · có gợi ý",
-          "retried": "Đúng · lần {n, number}",
-          "alternative": "Đúng · đáp án thay thế"
-        },
-        "actions": {
-          "needs_review": "Cần ôn lại",
-          "known": "Đã biết"
-        },
-        "none": "—",
-        "more": "Xem thêm",
-        "true": "Đúng",
-        "false": "Sai",
-        "emptyTitle": "Bạn chưa làm câu nào.",
-        "emptyBody": "Làm một phiên luyện, các câu bạn đã làm sẽ hiện ở đây.",
-        "emptyDay": "Ngày này bạn chưa làm câu nào.",
-        "toPractice": "Về Luyện tập"
-      },
       "reports": {
         "cols": {
           "word": "Từ",

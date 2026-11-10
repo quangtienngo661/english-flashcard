@@ -3,12 +3,11 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Route } from '@/app-shell/session/test-support';
-import { HistoryPage } from './HistoryPage';
 import { WeakWordsPage } from './WeakWordsPage';
 
 let search = new URLSearchParams();
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/vi/app/practice/history',
+  usePathname: () => '/vi/app/practice/weak',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => search,
 }));
@@ -90,128 +89,5 @@ describe('WeakWordsPage (K/56)', () => {
     });
     expect(await screen.findByText('Chưa có từ nào hay sai.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Luyện/ })).not.toBeInTheDocument();
-  });
-});
-
-const historyItem = (over: Record<string, unknown>) => ({
-  item_id: 'h1', session_id: 'x', sense_id: 's1', lemma: 'cache', type: 'type_word', prompt_style: 'meaning',
-  prompt: { kind: 'type_meaning', meaning: 'bộ nhớ đệm' }, answer: 'cash', correct: { lemma: 'cache', text: 'cache', choice_index: null, is_true: null },
-  result: 'wrong', skipped: true, tries: 2, hint_level: 0, review_action: 'needs_review', answered_at: '2026-10-20T14:10:00Z', local_date: '2026-10-20',
-  translation: null, ...over,
-});
-const HISTORY = {
-  items: [
-    historyItem({}),
-    historyItem({ item_id: 'h4', lemma: 'vital', type: 'cloze', prompt_style: 'sentence', prompt: { kind: 'cloze', sentence: 'Sleep is ___ for good health.' }, answer: 'crucial', correct: { lemma: 'vital', text: 'vital', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, review_action: null, alternative: true }),
-    historyItem({ item_id: 'h2', lemma: 'server', type: 'true_false_definition', prompt: { kind: 'true_false', lemma: 'server', meaning: 'máy chủ' }, answer: 'true', correct: { lemma: 'server', text: 'máy chủ', choice_index: null, is_true: true }, result: 'correct', skipped: false, tries: 1, review_action: 'known' }),
-    historyItem({ item_id: 'h3', lemma: 'update', prompt_style: 'sentence', prompt: { kind: 'type_sentence', sentence: 'We ___ the app.' }, answer: 'update', correct: { lemma: 'update', text: 'update', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, hint_level: 1, review_action: null }),
-  ],
-  next_page_token: null,
-};
-const REPORTS = {
-  items: [
-    { id: 'r1', item_id: 'i1', sense_id: 's-deploy', reason_label: 'Có hơn một đáp án đúng', status: 'open', refunded: null, created_at: '2026-10-18T03:00:00Z', resolved_at: null },
-    { id: 'r2', item_id: 'i2', sense_id: 's-cache', reason_label: 'Câu sai ngữ pháp hoặc không tự nhiên', status: 'confirmed', refunded: true, created_at: '2026-10-17T03:00:00Z', resolved_at: '2026-10-18T03:00:00Z' },
-    { id: 'r3', item_id: 'i3', sense_id: 's-gone', reason_label: 'Khác', status: 'confirmed', refunded: false, created_at: '2026-10-12T03:00:00Z', resolved_at: '2026-10-13T03:00:00Z' },
-  ],
-  next_page_token: null,
-};
-const historyRoutes = (over: Record<string, Route> = {}): Record<string, Route> => ({
-  'GET /v1/practice/history?page_size=50': () => Response.json(HISTORY),
-  'GET /v1/practice/reports?page_size=20': () => Response.json(REPORTS),
-  'GET /v1/senses/s-deploy': () => Response.json({ sense_id: 's-deploy', lemma: 'deploy' }),
-  'GET /v1/senses/s-cache': () => Response.json({ sense_id: 's-cache', lemma: 'cache' }),
-  'GET /v1/senses/s-gone': notFound,
-  ...over,
-});
-
-describe('HistoryPage — alternative answers (session synonyms design §3.3)', () => {
-  it('an alternative answer has its own result chip, and shows what was typed beside the right answer', async () => {
-    renderApp(<HistoryPage />, { routes: historyRoutes() });
-    const vital = (await screen.findByText('vital', { selector: '[data-col="word"]' })).closest('li')!;
-    expect(within(vital).getByText('Đúng · đáp án thay thế')).toBeInTheDocument();
-    expect(within(vital).getByText('crucial')).toBeInTheDocument();
-    expect(within(vital).getAllByText('vital').length).toBeGreaterThanOrEqual(2);
-    const update = screen.getByText('update', { selector: '[data-col="word"]' }).closest('li')!;
-    expect(within(update).queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
-  });
-
-  it('the English chip', async () => {
-    renderApp(<HistoryPage />, { locale: 'en', routes: historyRoutes() });
-    const vital = (await screen.findByText('vital', { selector: '[data-col="word"]' })).closest('li')!;
-    expect(within(vital).getByText('Right · alternative')).toBeInTheDocument();
-  });
-});
-
-describe('HistoryPage (K/57, K/57b, K/82, K/83)', () => {
-  it('Câu đã làm: type with style, answer, right answer, result and what was pressed', async () => {
-    renderApp(<HistoryPage />, { routes: historyRoutes() });
-    expect(screen.getByRole('tab', { name: 'Câu đã làm', selected: true })).toBeInTheDocument();
-    const cache = (await screen.findByText('cache', { selector: '[data-col="word"]' })).closest('li')!;
-    expect(within(cache).getByText('Gõ từ · theo nghĩa')).toBeInTheDocument();
-    expect(within(cache).getByText('Sai · bỏ qua')).toBeInTheDocument();
-    expect(within(cache).getByText('Cần ôn lại')).toBeInTheDocument();
-    const server = screen.getByText('server', { selector: '[data-col="word"]' }).closest('li')!;
-    expect(within(server).getByText('Đã biết')).toBeInTheDocument();
-    const update = screen.getByText('update', { selector: '[data-col="word"]' }).closest('li')!;
-    expect(within(update).getByText('Gõ từ · theo câu')).toBeInTheDocument();
-    expect(within(update).getByText('Đúng · có gợi ý')).toBeInTheDocument();
-    expect(screen.getByText('4 câu')).toBeInTheDocument();
-    expect(screen.getByText('3 đúng')).toBeInTheDocument();
-  });
-
-  it('K/57: each answered row labels "Bạn trả lời" and "Đáp án" for every width and screen readers (audit 26/10/2026 #7)', async () => {
-    renderApp(<HistoryPage />, { routes: historyRoutes() });
-    const cache = (await screen.findByText('cache', { selector: '[data-col="word"]' })).closest('li')!;
-    const answerCell = within(cache).getByText('cash').parentElement!;
-    expect(within(answerCell).getByText('Bạn trả lời')).toBeInTheDocument();
-    const correctCell = within(cache).getAllByText('cache').find((el) => el.dataset.col !== 'word')!.parentElement!;
-    expect(within(correctCell).getByText('Đáp án')).toBeInTheDocument();
-  });
-
-  it('K/57b: nothing answered yet', async () => {
-    renderApp(<HistoryPage />, { routes: historyRoutes({ 'GET /v1/practice/history?page_size=50': () => Response.json({ items: [], next_page_token: null }) }) });
-    expect(await screen.findByText('Bạn chưa làm câu nào.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Về Luyện tập' })).toHaveAttribute('href', '/vi/app/practice');
-  });
-
-  it('the day filter asks the API for that local date', async () => {
-    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-    const view = renderApp(<HistoryPage />, {
-      routes: historyRoutes({ [`GET /v1/practice/history?date=${day}&page_size=50`]: () => Response.json({ items: [], next_page_token: null }) }),
-    });
-    await screen.findByText('cache', { selector: '[data-col="word"]' });
-    await userEvent.click(screen.getByRole('button', { name: /Ngày/ }));
-    await userEvent.click(await screen.findByRole('option', { name: /^Hôm nay/ }));
-    expect(await screen.findByText('Ngày này bạn chưa làm câu nào.')).toBeInTheDocument();
-    expect(view.calls.some((c) => c.path === `/v1/practice/history?date=${day}&page_size=50`)).toBe(true);
-  });
-
-  it('K/82: my reports with their outcome and what became of the AI credit', async () => {
-    search = new URLSearchParams({ tab: 'reports' });
-    renderApp(<HistoryPage />, { routes: historyRoutes() });
-    expect(screen.getByRole('tab', { name: 'Báo lỗi của tôi', selected: true })).toBeInTheDocument();
-    const first = (await screen.findByText('Có hơn một đáp án đúng')).closest('li')!;
-    expect(await within(first).findByText('deploy')).toBeInTheDocument();
-    expect(within(first).getByText('Đang xem')).toBeInTheDocument();
-    const second = screen.getByText('Câu sai ngữ pháp hoặc không tự nhiên').closest('li')!;
-    expect(within(second).getByText('Đã xác nhận lỗi')).toBeInTheDocument();
-    expect(within(second).getByText('Đã trả lại 1 lượt câu AI')).toBeInTheDocument();
-    const third = screen.getByText('Khác').closest('li')!;
-    expect(within(third).getByText('Lượt câu AI này không trả lại được')).toBeInTheDocument();
-    expect(await within(third).findByText('—')).toBeInTheDocument();
-  });
-
-  it('K/83: no report yet', async () => {
-    search = new URLSearchParams({ tab: 'reports' });
-    renderApp(<HistoryPage />, { routes: historyRoutes({ 'GET /v1/practice/reports?page_size=20': () => Response.json({ items: [], next_page_token: null }) }) });
-    expect(await screen.findByText('Bạn chưa báo lỗi câu nào.')).toBeInTheDocument();
-  });
-
-  it('switching tabs shows the other list', async () => {
-    renderApp(<HistoryPage />, { routes: historyRoutes() });
-    await screen.findByText('cache', { selector: '[data-col="word"]' });
-    await userEvent.click(screen.getByRole('tab', { name: 'Báo lỗi của tôi' }));
-    expect(await screen.findByText('Có hơn một đáp án đúng')).toBeInTheDocument();
   });
 });

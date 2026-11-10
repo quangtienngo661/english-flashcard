@@ -252,15 +252,11 @@ test.describe('M4 flows (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ source: 'weak', group_id: DECK });
   });
 
-  test('history and my reports', async ({ page }) => {
-    await signedInAs(page, 'free', practiceApi());
-    await page.goto('/vi/app/practice/history');
-    await expect(page.getByText(copy.vi.App.practice.history.actions.needs_review).first()).toBeVisible();
-    await page.getByRole('tab', { name: vi.history.tabs.reports }).click();
-    await expect(page.getByText(vi.reports.refunded)).toBeVisible();
-    await expect(page.getByText('deploy', { exact: true })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('tab', { name: vi.history.tabs.reports, selected: true })).toBeVisible();
+  test('M6.7: the old history address with a date opens that day of the calendar (server redirect on the Worker build)', async ({ page }) => {
+    await signedInAs(page, 'free', { ...practiceApi(), ...calendarApi() });
+    await page.goto('/vi/app/practice/history?date=2026-11-05');
+    await expect(page).toHaveURL(/\/vi\/app\/practice\?(.*&)?ngay=2026-11-05$/);
+    await expect(page.getByRole('dialog', { name: '05/11' })).toBeVisible();
   });
 
   test('plans: numbers from the config, Pro for sale in three periods', async ({ page }) => {
@@ -286,8 +282,6 @@ const PAGES: Shot[] = [
   { path: 'practice/session', ready: (p) => expect(p.getByText(LONG_OPTION)).toBeVisible() },
   // M5.5: phones show only the word and its ✓/✗ chips (Figma 119:4482), so wait for a chip, not the meaning.
   { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|wrong)$/ }).first()).toBeVisible() },
-  { path: 'practice/history', ready: (p) => expect(p.getByText(LONG_MEANING).first()).toBeVisible() },
-  { path: 'practice/history?tab=reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên')).toBeVisible() },
   { path: 'plans', ready: (p) => expect(p.getByRole('heading', { level: 1 })).toBeVisible() },
 ];
 
@@ -365,3 +359,13 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));
   await noSideScroll(page, 'typed answer');
 });
+
+/** The study calendar's endpoints for one quiet day (M6.7). */
+function calendarApi(): Record<string, MockHandler> {
+  return {
+    'GET /v1/me/calendar': (req) => ({ json: { month: req.query.get('month'), days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } } }),
+    'GET /v1/me/calendar/days/2026-11-05': () => ({
+      json: { date: '2026-11-05', counts: { learned: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0, practice_questions: 0 }, items: [], practice_sessions: [], next_page_token: null },
+    }),
+  };
+}
