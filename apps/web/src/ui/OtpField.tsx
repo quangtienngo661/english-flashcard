@@ -17,7 +17,7 @@ type Props = {
 
 /**
  * Figma "Ô mã" (34:364): one box per digit. A digit moves focus to the next box, Backspace on an empty box goes back one,
- * a paste strips non-digits and fills from box 1. Each box keeps only the last digit typed, so typing over a digit replaces it.
+ * a paste or an autofilled code strips non-digits and fills from box 1. Typing beside a digit replaces it with the new one.
  */
 export function OtpField({ label, digitLabel, value, onChange, length = 6, autoFocus, hideLabel }: Props) {
   const labelId = useId();
@@ -25,8 +25,17 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
   const digits = Array.from({ length }, (_, i) => (value[i] ?? '').trim());
   const emit = (next: string[]) => onChange(next.map((d) => d || ' ').join('').trimEnd());
 
+  function fill(code: string) {
+    emit(Array.from({ length }, (_, i) => code[i] ?? ''));
+    boxes.current[Math.min(code.length, length - 1)]?.focus();
+  }
+
   function put(index: number, typed: string) {
-    const digit = typed.replace(/\D/g, '').slice(-1);
+    const clean = typed.replace(/\D/g, '');
+    // More than a box holds: the phone's or a password manager's one-time-code autofill, handled like a paste.
+    if (clean.length > 2) return fill(clean.slice(0, length));
+    // Two digits: one typed beside the digit already there, before or after it; keep the new one.
+    const digit = clean.length === 2 ? (clean[0] === digits[index] ? clean[1] : clean[0]) : clean;
     emit(digits.map((d, i) => (i === index ? digit : d)));
     if (digit && index < length - 1) boxes.current[index + 1]?.focus();
   }
@@ -39,8 +48,7 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
     const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
     if (!pasted) return;
     event.preventDefault();
-    emit(Array.from({ length }, (_, i) => pasted[i] ?? ''));
-    boxes.current[Math.min(pasted.length, length - 1)]?.focus();
+    fill(pasted);
   }
 
   return (
@@ -59,7 +67,7 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
             value={digit}
             inputMode="numeric"
             autoComplete={i === 0 ? 'one-time-code' : 'off'}
-            maxLength={2}
+            maxLength={length}
             autoFocus={autoFocus && i === 0}
             onChange={(e) => put(i, e.target.value)}
             onKeyDown={(e) => onKeyDown(i, e)}
