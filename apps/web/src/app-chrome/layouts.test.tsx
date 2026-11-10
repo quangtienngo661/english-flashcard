@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import CardLayout from '@/app/[locale]/app/(auth)/(card)/layout.app';
 import SplitLayout from '@/app/[locale]/app/(auth)/(split)/layout.app';
 import ChromeLayout from '@/app/[locale]/app/(member)/(chrome)/layout.app';
@@ -13,8 +14,9 @@ import { TodayPage } from '@/features/learner/today/TodayPage';
 vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
 }));
+let pathname = '/vi/app';
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/vi/app',
+  usePathname: () => pathname,
   useSearchParams: () => new URLSearchParams('id=g1'),
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
@@ -36,6 +38,25 @@ describe('member route-group layouts', () => {
     renderApp(<ChromeLayout><p>trang</p></ChromeLayout>);
     await userEvent.keyboard('n');
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  // e2e A14-7: before M1.10 each page had its own AddWordProvider, so leaving the page closed Thêm từ. The layout's provider outlives
+  // the page; it must close the sheet itself when the path changes.
+  it('the (chrome) layout closes Thêm từ when the page changes', async () => {
+    pathname = '/vi/app/group';
+    let navigate = () => {};
+    function Harness() {
+      const [, rerender] = useState(0);
+      navigate = () => rerender((n) => n + 1);
+      return <ChromeLayout><p>trang</p></ChromeLayout>;
+    }
+    renderApp(<Harness />);
+    await userEvent.keyboard('n');
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    pathname = '/vi/app/topic';
+    act(() => navigate());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    pathname = '/vi/app';
   });
 
   it('the (focus) layout opens no dialog on the N key', async () => {

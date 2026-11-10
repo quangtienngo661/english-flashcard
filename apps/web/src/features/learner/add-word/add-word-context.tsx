@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import { createContext,useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AddWordSheet } from './AddWordSheet';
 
 type AddWord = { open: (word?: string, opts?: { groupId?: string }) => void; setScope: (groupId: string | null) => void };
@@ -20,8 +21,16 @@ export function AddWordProvider({ children }: { children: ReactNode }) {
     setSheet({ word: word ?? '', lockedGroupId: opts?.groupId ?? scope.current ?? undefined });
   }, []);
 
+  // The provider lives in the (chrome) layout and outlives each page: leaving the page closes Thêm từ, as it did when every page had its own.
+  const pathname = usePathname();
+  const [sheetPath, setSheetPath] = useState(pathname);
+  if (sheetPath !== pathname) {
+    setSheetPath(pathname);
+    setSheet(null);
+  }
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey =(e: KeyboardEvent) => {
       if (e.key.toLowerCase() !== 'n' || e.altKey || e.ctrlKey || e.metaKey) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;

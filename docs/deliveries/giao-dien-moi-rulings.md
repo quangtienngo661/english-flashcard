@@ -28,6 +28,8 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R17 (10/11/2026, Task M1.10): xóa `features/learner/practice/BackLink.tsx` (liên kết quay lại chỉ hiện ở máy tính của Lịch sử, Từ hay sai, Giao dịch) → `BackLink` mới của `app-chrome` thay ở mọi cỡ.
 - R18 (10/11/2026, Task M1.10): trang Gói học bỏ thanh trên riêng cùng nút "Đóng" (xóa test và khóa `App.plans.close`) → khung app đã có thanh tab để rời trang. Thanh chân trang bỏ khỏi app (khung Figma app không có), xóa khóa `App.chrome.footer`.
 - R19 (10/11/2026, Task M1.11): Next 16.4.3 có `retry()` cho `error` (`dist/client/components/error-boundary.d.ts:6`) → dùng `retry`, không cần `reset`.
+- R20 (10/11/2026, Task M1.13): e2e bắt hai lỗi do M1.10 → `AddWordProvider` nằm ở layout `(chrome)` nên sống qua lần chuyển trang; nó tự đóng tấm Thêm từ khi `pathname` đổi (trước M1.10 mỗi trang có provider riêng nên tự đóng). `main` của `AppChrome` về `block` như `AppShell` cũ: là `flex-col` thì khối trang có `mx-auto` co theo nội dung, email dài làm trang Cài đặt rộng 431 px ở 390 px.
+- R21 (10/11/2026, Task M1.13): `pnpm cf:docker` chép cả repo bằng `tar`, không loại `.claude/worktrees` (khoảng 90 worktree) nên chạy 55 phút vẫn chưa xong bước chép → e2e chạy từ một worktree tách riêng `english-learning-gm-m1-e2e` ở cùng commit. Script chưa sửa (ngoài phạm vi).
 
 ## M2
 

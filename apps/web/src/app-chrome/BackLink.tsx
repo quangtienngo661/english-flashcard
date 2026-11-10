@@ -6,9 +6,10 @@ import { cn } from '@/lib/cn';
 /** "← Nhóm", "← Cài đặt": the way back, at the top of a page under a tab (Figma: inside the content, "Nút chữ" look). */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'mb-3 self-start')}>
-      <ArrowLeft aria-hidden className="size-4" />
-      {label}
+    <Link href={href} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'mb-3 flex w-fit max-w-full')}>
+      <ArrowLeft aria-hidden className="size-4 shrink-0" />
+      {/* A deck name of 60 letters with no space must not widen the page (e2e overflow on Backlog). */}
+      <span className="min-w-0 truncate">{label}</span>
     </Link>
   );
 }
