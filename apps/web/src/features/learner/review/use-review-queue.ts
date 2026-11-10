@@ -54,7 +54,10 @@ export function useReviewQueue(groupId: string | null, mode: QueueMode) {
 
   const index = results.length;
   const card = cards[index] as Card | undefined;
-  const done = ended || (queue.isSuccess && cards.length > 0 && index >= cards.length && saving === 0);
+  // R107: the summary waits for every save; Esc or the last card while one is open shows "finishing" instead.
+  const over = ended || (queue.isSuccess && cards.length > 0 && index >= cards.length);
+  const done = over && saving === 0;
+  const finishing = over && saving > 0;
   const counts = {
     known: results.filter((r) => r.answer === 'known').length,
     review: results.filter((r) => r.answer === 'review').length,
@@ -96,7 +99,7 @@ export function useReviewQueue(groupId: string | null, mode: QueueMode) {
 
   /** Returns false when the card is not turned over yet (the caller shows why). */
   function answer(value: Answer): boolean {
-    if (!card || done) return true;
+    if (!card || over) return true;
     if (!flipped) return false;
     const keep = kept.current;
     const reviewId = keep && keep.itemId === card.item_id && keep.answer === value ? keep.reviewId : crypto.randomUUID();
@@ -117,13 +120,14 @@ export function useReviewQueue(groupId: string | null, mode: QueueMode) {
     index,
     flipped,
     /** Space turns the card both ways (prototype chong-the-mo.html:274-280). */
-    flip: () => card && !done && setFlipped((f) => !f),
+    flip: () => card && !over && setFlipped((f) => !f),
     answer,
     results,
     saving: saving > 0,
     error,
     counts,
     done,
+    finishing,
     end: () => setEnded(true),
   };
 }

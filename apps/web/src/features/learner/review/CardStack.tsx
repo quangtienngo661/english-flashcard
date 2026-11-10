@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import { arrive, dissolve, shake } from '@/lib/stack-motion';
+import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
 import type { Card } from '../groups/groups-api';
@@ -98,7 +98,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       {[...behind].reverse().map((card) => {
         const depth = behind.indexOf(card) + 1;
         // The card just behind follows the hand: it rises and sharpens as the drag reaches the threshold (motion doc §2).
-        const pull = depth === 1 && follow > 0 ? follow : 0;
+        // Reduced motion: no scale or blur behind (motion doc §8), so the card behind stays put.
+        const pull = depth === 1 && follow > 0 && !prefersReducedMotion() ? follow : 0;
         return (
           <div
             key={card.item_id}

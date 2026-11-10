@@ -72,7 +72,7 @@ export function ReviewSession() {
         if (e.key === 'Enter') hardReplace(`/${locale}/app`);
         return;
       }
-      if (!session.card) return;
+      if (!session.card || session.finishing) return;
       if (e.repeat && e.key !== ' ') return;
       if (e.key === ' ') {
         e.preventDefault();
@@ -96,7 +96,7 @@ export function ReviewSession() {
   };
   let body: ReactNode;
   if (notFound) body = <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />;
-  else if (session.queue.isPending) body = <FullScreenSpinner />;
+  else if (session.queue.isPending || session.finishing) body = <FullScreenSpinner />;
   else if (session.done) body = <ReviewSummary counts={session.counts} piles={piles} group={summary} />;
   else if (total === 0)
     body = (
