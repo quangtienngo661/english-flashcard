@@ -6,6 +6,7 @@ import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
 import type { PracticeSessionView } from '../practice-api';
+import { STREAK_KEY } from '../../calendar/calendar-api';
 import { PracticeSession } from './PracticeSession';
 import { againBody } from './SessionSummary';
 
@@ -98,6 +99,16 @@ describe('PracticeSession (K/60–K/67)', () => {
     { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.' },
     { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Cần ôn lại', action: 'needs_review', note: 'Nhấn Enter để đưa deploy lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.' },
   ];
+
+  it('M6.2: an answer carrying streak writes the streak cache; no GET /v1/me/streak follows', async () => {
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ streak: { days: 6 } })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await waitFor(() => expect(v.client.getQueryData(STREAK_KEY)).toEqual({ days: 6, studied_today: true }));
+    expect(v.count('GET', '/v1/me/streak')).toBe(0);
+  });
 
   it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
     const v = renderApp(<PracticeSession />, { routes: routes({

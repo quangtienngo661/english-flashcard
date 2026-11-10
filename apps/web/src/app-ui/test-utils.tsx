@@ -35,6 +35,8 @@ export function renderApp(
     'GET /v1/me': () => Response.json(me),
     // No practice session yet unless a test says otherwise (Hôm nay reads it, giao diện mới M3).
     'GET /v1/practice/sessions/last': () => new Response(null, { status: 204 }),
+    // No streak unless a test says otherwise (the calendar button reads it, giao diện mới M6).
+    'GET /v1/me/streak': () => Response.json({ days: 0, studied_today: false }),
     ...routes,
   });
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, ...(instantWaits ? { wait: async () => {} } : {}) });

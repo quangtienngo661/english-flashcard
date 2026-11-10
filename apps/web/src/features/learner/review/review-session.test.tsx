@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { StreakToast } from '@/app-ui/StreakToast';
 import { renderApp } from '@/app-ui/test-utils';
+import { STREAK_KEY } from '../calendar/calendar-api';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';
 
@@ -242,6 +243,17 @@ describe('ReviewSession (K/20–K/22)', () => {
     await userEvent.keyboard('2');
     expect(await screen.findByText('13 ngày liên tiếp')).toBeInTheDocument();
     expect(screen.getAllByText(/ngày liên tiếp/)).toHaveLength(1);
+  });
+
+  it('M6.2: the first flip of the day writes the streak cache; no GET /v1/me/streak follows', async () => {
+    const v = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE], {
+      'POST /v1/reviews': () => Response.json({ item_id: uuid(1), level: 1, due_date: '2026-10-21', priority: false, streak: { days: 6 } }),
+    }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await waitFor(() => expect(v.client.getQueryData(STREAK_KEY)).toEqual({ days: 6, studied_today: true }));
+    expect(v.count('GET', '/v1/me/streak')).toBe(0);
   });
 
   it('đợt C DC25: mode=new asks for the new words only', async () => {
