@@ -72,7 +72,9 @@ export function GroupCarousel({
       const track = event.currentTarget;
       const rect = track.getBoundingClientRect();
       const style = getComputedStyle(track);
-      const step = Number.parseFloat(style.getPropertyValue('--gcar-step')) || 128;
+      // --gcar-step is in rem (the page scales on wide screens, owner 10/11/2026): turn it into px.
+      const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const step = (Number.parseFloat(style.getPropertyValue('--gcar-step')) || 8) * rootPx;
       const reach = Number.parseFloat(style.getPropertyValue('--gcar-reach')) || 1;
       k = Math.round((event.clientX - (rect.left + rect.width / 2)) / step);
       if (Math.abs(k) > reach) return;

@@ -486,6 +486,14 @@
     scroll-behavior: smooth;
   }
 
+  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows): 16px at
+     1440px, about 21px at 2560px, at most 22px. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
+  @media (width > 90rem) {
+    html {
+      font-size: clamp(100%, 0.598rem + 0.4464vw, 137.5%);
+    }
+  }
+
   /* From md the header is sticky: neither a Tab-focused element nor an anchor target may land under it
      (WCAG 2.2 SC 2.4.11). Targets keep only their own small scroll-mt-4 on top of this. */
   @media (width >= 48rem) {
@@ -547,22 +555,22 @@
   position: relative;
   width: 18.125em;
   flex: none;
-  font-size: 16px;
+  font-size: 1rem;
   padding-bottom: calc(var(--gstack-layers, 0) * 0.62em);
 }
 .gstack[data-layers='1'] { --gstack-layers: 1; }
 .gstack[data-layers='2'] { --gstack-layers: 2; }
 .gstack[data-layers='3'] { --gstack-layers: 3; }
 /* Hôm nay row: 176 px desktop, 150 px phone. */
-.gstack[data-size='today'] { font-size: 8.276px; }
+.gstack[data-size='today'] { font-size: 0.5173rem; }
 /* Một nhóm head: 210 px desktop, 150 px phone. */
-.gstack[data-size='page'] { font-size: 8.276px; }
+.gstack[data-size='page'] { font-size: 0.5173rem; }
 /* Carousel centre: 290 px desktop, 210 px phone. */
-.gstack[data-size='carousel'] { font-size: 11.586px; }
+.gstack[data-size='carousel'] { font-size: 0.7241rem; }
 @media (width >= 48rem) {
-  .gstack[data-size='today'] { font-size: 9.71px; }
-  .gstack[data-size='page'] { font-size: 11.586px; }
-  .gstack[data-size='carousel'] { font-size: 16px; }
+  .gstack[data-size='today'] { font-size: 0.6069rem; }
+  .gstack[data-size='page'] { font-size: 0.7241rem; }
+  .gstack[data-size='carousel'] { font-size: 1rem; }
 }
 .gstack-face {
   position: relative;
@@ -658,14 +666,14 @@
 .gcar-track {
   position: relative;
   height: 21rem;
-  --gcar-step: 128px;
-  --gcar-drop: 21px;
+  --gcar-step: 8rem;
+  --gcar-drop: 1.3125rem;
 }
 @media (width >= 48rem) {
   .gcar-track {
     height: 29.5rem;
-    --gcar-step: 230px;
-    --gcar-drop: 28px;
+    --gcar-step: 14.375rem;
+    --gcar-drop: 1.75rem;
   }
 }
 .gcar-slot {
