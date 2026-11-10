@@ -34,9 +34,11 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
   sort: s.sort,
   types: s.types,
   // Without it the API treats `cloze` as AI-written and spends AI credits (audit 26/10/2026 #2).
-  ...(s.cloze_source === 'own' ? { cloze_source: 'own' as const } : {}),
+  ...(s.cloze_source === 'own' || s.cloze_source === 'own_then_ai' ? { cloze_source: s.cloze_source } : {}),
   ...(s.types.includes('type_word') ? { prompt_style: s.prompt_style as StartBody['prompt_style'] } : {}),
   count: s.target_count,
+  // #249: a session opened with an AI count has a placement; ask for as many AI questions as it planned (R76).
+  ...(s.ai_placement ? { ai_count: s.ai_planned, ai_placement: s.ai_placement } : {}),
 });
 
 /** K/67 (Figma 119:4608): the ring of right answers, the words to mark Cần ôn lại (one by one or all left), then back or another session. */

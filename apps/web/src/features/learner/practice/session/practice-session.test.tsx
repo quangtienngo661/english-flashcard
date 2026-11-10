@@ -639,6 +639,16 @@ describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
     expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
     expect(againBody(view(null))).not.toHaveProperty('cloze_source');
   });
+
+  it('M5.3: a session opened with an AI count asks for it again, with its placement and own_then_ai', () => {
+    const body = againBody({ ...view('own_then_ai'), types: ['mcq_definition', 'cloze'], ai_planned: 3, ai_placement: 'random' });
+    expect(body).toMatchObject({ types: ['mcq_definition', 'cloze'], cloze_source: 'own_then_ai', ai_count: 3, ai_placement: 'random' });
+  });
+
+  it('M5.3: a session opened the old way (no ai_placement) sends no ai_count', () => {
+    expect(againBody({ ...view(null), ai_placement: null })).not.toHaveProperty('ai_count');
+    expect(againBody(view(null))).not.toHaveProperty('ai_count');
+  });
 });
 
 // The summary with alternative answers (session synonyms design §3.3). `vital` was asked and `crucial` typed on the same item (a1),

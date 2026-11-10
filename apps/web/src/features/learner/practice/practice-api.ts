@@ -37,9 +37,14 @@ export type StartBody = {
   group_filter?: GroupFilter;
   sort?: Sort;
   types: QuestionType[];
-  cloze_source?: 'own';
+  /** `own_then_ai`: saved sentences first, AI for the other words (cloze-own-then-ai). */
+  cloze_source?: 'own' | 'own_then_ai';
   prompt_style?: PromptStyle;
   count?: number;
+  /** Practice AI count (#249): how many AI questions; 0 drops the AI types. */
+  ai_count?: number;
+  /** Sent only when the admin lets the learner choose (`ai_placement: 'learner'`) and there is an AI question. */
+  ai_placement?: 'even' | 'random';
 };
 
 /** The session as the API shows it (`SessionView`). */
@@ -61,6 +66,8 @@ export type PracticeSessionView = {
   words: number;
   ai_planned: number;
   cloze_source: 'ai' | 'own' | 'own_then_ai' | null;
+  /** #249: 'even' | 'random' for a session opened with `ai_count`; null (or absent from an older API) otherwise. */
+  ai_placement?: 'even' | 'random' | null;
   /** M5.1: final results so far, every round (`void` not counted); absent from an older API. */
   correct?: number;
   wrong?: number;

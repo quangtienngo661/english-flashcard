@@ -15,6 +15,8 @@ type Props = {
   closeLabel?: string;
   /** The wider dialog (640 px) instead of 512 px. */
   wide?: boolean;
+  /** The widest dialog (840 px, Figma "Tùy chỉnh phiên" 140:4049); wins over `wide`. */
+  xl?: boolean;
   children?: ReactNode;
   /** Buttons: right-aligned on wide screens, full width under 768 px. */
   footer?: ReactNode;
@@ -28,7 +30,7 @@ type Props = {
  * sheet comes from 60px while fading in; both close in 150ms on the accelerating curve. The backdrop is mark-ink, the same navy in
  * both themes (ink turns light in dark mode).
  */
-export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, wide, children, footer, isDismissable = true }: Props) {
+export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, wide, xl, children, footer, isDismissable = true }: Props) {
   return (
     <ModalOverlay
       isOpen={isOpen}
@@ -40,7 +42,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, wi
         className={cn(
           'max-h-dvh w-full overflow-y-auto rounded-t-wm-modal bg-wm-surface px-5 pb-6 pt-5 shadow-wm-pop outline-none md:rounded-wm-modal md:p-7',
           'motion-safe:data-entering:animate-wm-sheet-in motion-safe:data-exiting:animate-wm-pop-out md:motion-safe:data-entering:animate-wm-dialog-in',
-          wide ? 'md:max-w-2xl' : 'md:max-w-lg',
+          xl ? 'md:max-w-210' : wide ? 'md:max-w-2xl' : 'md:max-w-lg',
         )}
       >
         <AriaDialog className="flex flex-col gap-4 outline-none">

@@ -119,7 +119,8 @@ function noticeOf(next: AiFields): SessionNotice | null {
 
 /** Whether the session asks AI questions (Bước 7), so it makes them ahead with `prepare`. */
 export const asksAi = (session: PracticeSessionView) =>
-  session.types.some((type) => type === 'meaning_in_sentence' || type === 'mcq_sentence' || (type === 'cloze' && session.cloze_source === 'ai'));
+  session.types.some((type) => type === 'meaning_in_sentence' || type === 'mcq_sentence'
+    || (type === 'cloze' && (session.cloze_source === 'ai' || session.cloze_source === 'own_then_ai')));
 
 /**
  * One practice session (K/60–K/67). Nothing is kept in the browser: the page reads `GET /practice/sessions/current` once and
