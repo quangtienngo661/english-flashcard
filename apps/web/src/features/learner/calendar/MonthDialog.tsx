@@ -254,6 +254,8 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
   );
 }
 
+// raw-ok: the ghost day number comes from data-day, so it is not text an accessibility check reads as content
+const GHOST = 'before:content-[attr(data-day)]';
 const DOT = { learn: 'bg-wm-accent', review: 'bg-wm-pass', practice: 'bg-wm-practice' } as const;
 const BAND = {
   none: '',
@@ -272,11 +274,10 @@ function Cell({ cell, label, todayMark, selected, register, onOpen }: {
   onOpen: () => void;
 }) {
   if (!cell.inMonth) {
+    // A ghost number of the next or previous month is decoration (Figma "Ngoài tháng"): drawn as generated content, not as text.
     return (
       <span aria-hidden className="relative">
-        <span className={cn('absolute inset-0.75 px-1.5 pt-1.5 font-wm-display font-bold text-wm-ghost md:px-3 md:pt-2', RAW.day)}>
-          {Number(cell.date.slice(8, 10))}
-        </span>
+        <span data-day={Number(cell.date.slice(8, 10))} className={cn('absolute inset-0.75 px-1.5 pt-1.5 font-wm-display font-bold text-wm-ghost md:px-3 md:pt-2', RAW.day, GHOST)} />
       </span>
     );
   }

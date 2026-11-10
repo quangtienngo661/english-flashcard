@@ -95,11 +95,12 @@ describe('CalendarHost (design §5.6)', () => {
 
   it("review #1: our writes carry only the calendar marker, never Next's own history keys (so Next re-syncs its router)", async () => {
     window.history.replaceState({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: {} }, '', '/vi/app/practice?lich=2026-10');
+    replace.mockClear();
     host();
     expect(await screen.findByRole('dialog', { name: 'Tháng 10, 2026' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tháng trước' }));
     act(() => screen.getByRole('button', { name: 'mở ngày', hidden: true }).click());
-    const written = [...push.mock.calls, ...replace.mock.calls].map((call: unknown[]) => call[0] as Record<string, unknown>).slice(1);
+    const written = [...push.mock.calls, ...replace.mock.calls].map((call: unknown[]) => call[0] as Record<string, unknown>);
     expect(written.length).toBeGreaterThan(1);
     for (const state of written) expect(Object.keys(state ?? {}).filter((k) => !k.startsWith('wm'))).toEqual([]);
   });

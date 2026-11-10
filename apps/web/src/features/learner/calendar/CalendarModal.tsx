@@ -1,12 +1,16 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Dialog as AriaDialog, Modal, ModalOverlay } from 'react-aria-components';
 import { cn } from '@/lib/cn';
 
 const WIDTH = { month: 'md:max-w-180', day: 'md:max-w-160' } as const;
 // raw-ok: the centred modal keeps 16 px above and below on a short window; its content scrolls inside (Ngày is taller than 780 px)
 const MODAL = 'relative max-h-dvh w-full overflow-y-auto rounded-t-wm-modal bg-wm-surface text-wm-ink shadow-wm-pop outline-none md:max-h-[calc(100dvh-2rem)] md:rounded-wm-modal';
+
+const keepKeys = (event: KeyboardEvent) => {
+  if (!['Escape', 'Tab', 'l', 'L'].includes(event.key)) event.stopPropagation();
+};
 
 /** Keys typed into a field stay there (the `N` guard of add-word-context). */
 export const isTyping = (target: EventTarget | null) =>
@@ -34,8 +38,12 @@ export function CalendarModal({ size, onDismiss, children }: { size: 'month' | '
         )}
       >
         <AriaDialog data-wm-calendar="" className="outline-none">
-          <div aria-hidden className="mx-auto mt-2 h-1.25 w-10 rounded-full bg-wm-line md:hidden" />
-          {children}
+          {/* Keys stay in the dialog: a session below answers on 1 / 2 from a window listener (final review #5). Esc and Tab belong to the
+              overlay, L to the host. */}
+          <div onKeyDown={keepKeys}>
+            <div aria-hidden className="mx-auto mt-2 h-1.25 w-10 rounded-full bg-wm-line md:hidden" />
+            {children}
+          </div>
         </AriaDialog>
       </Modal>
     </ModalOverlay>

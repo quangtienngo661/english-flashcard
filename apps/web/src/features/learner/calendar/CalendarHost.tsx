@@ -33,11 +33,11 @@ function subscribe(listener: () => void) {
 const snapshot = () => window.location.pathname + window.location.search;
 
 function write(kind: 'push' | 'replace', url: string, state: Marker | null) {
-  // Next's own entries keep their data; only our two keys change.
-  const next: Record<string, unknown> = { ...(window.history.state ?? {}) };
-  delete next.wmCalendar;
-  delete next.wmFromMonth;
-  Object.assign(next, state ?? {});
+  // Only our keys: Next's patched pushState / replaceState copies its own (`__NA`, the tree) and syncs its router when they are absent;
+  // passing them through makes Next skip that sync and later write back a stale URL (final review #1).
+  const next: Marker = {};
+  if (state?.wmCalendar !== undefined) next.wmCalendar = state.wmCalendar;
+  if (state?.wmFromMonth !== undefined) next.wmFromMonth = state.wmFromMonth;
   if (kind === 'push') window.history.pushState(next, '', url);
   else window.history.replaceState(next, '', url);
   notify();
