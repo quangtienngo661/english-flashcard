@@ -55,3 +55,20 @@ describe('itemView (Bước 7)', () => {
     expect(itemView(item({ source: 'ai' })).private_word).toBe(false);
   });
 });
+
+describe('sessionView (giao diện mới M5.1, QR2)', () => {
+  const row = { id: 's1', kind: 'practice', source: 'today', groupId: null, groupFilter: null, sort: 'queue', types: [], promptStyle: 'mixed',
+    targetCount: 20, status: 'active', senseIds: ['a', 'b', 'c'], aiPlanned: 0, clozeSource: null } as unknown as PracticeSession;
+
+  it('after 2 correct and 1 wrong answers the view counts correct 2, wrong 1; unanswered and void count nowhere', () => {
+    const view = sessionView(row, [
+      { round: 1, result: 'correct' }, { round: 1, result: 'wrong' }, { round: 1, result: 'correct' },
+      { round: 1, result: null }, { round: 1, result: 'void' },
+    ]);
+    expect(view).toMatchObject({ correct: 2, wrong: 1, asked: 4 });
+  });
+
+  it('a session with no items counts 0 and 0', () => {
+    expect(sessionView(row, [])).toMatchObject({ correct: 0, wrong: 0 });
+  });
+});

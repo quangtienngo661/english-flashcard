@@ -107,11 +107,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
     const buttons = screen.getAllByRole('button').filter((b) => /^(Cần ôn lại|Đã biết|Câu tiếp)/.test(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Cần ôn lại1', 'Đã biếtEnter'] : id === 4 ? ['Cần ôn lạiEnter', 'Câu tiếp'] : ['Cần ôn lại1', 'Câu tiếpEnter']);
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Cần ôn lại1', 'Đã biếtEnter'] : id === 4 ? ['Câu tiếp', 'Cần ôn lạiEnter'] : ['Cần ôn lại1', 'Câu tiếpEnter']);
     const bold = screen.getByRole('button', { name: new RegExp(primary) });
     expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(bold).toHaveAttribute('data-variant', 'sticker');
-    expect(buttons.find((b) => b !== bold)).toHaveAttribute('data-variant', 'quiet');
+    expect(buttons.find((b) => b !== bold)?.querySelector('kbd')?.textContent).not.toBe('Enter');
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
     const reviewPath = '/v1/practice/items/item-4/review';
@@ -158,7 +157,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     const next = await screen.findByRole('button', { name: /Câu tiếp/ });
-    expect(next).toHaveAttribute('data-variant', 'sticker');
+    expect(next.querySelector('kbd')).toHaveTextContent('Enter');
     expect(screen.queryByRole('button', { name: /Cần ôn lại|Đã biết/ })).not.toBeInTheDocument();
     expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
     expect(next.parentElement?.nextElementSibling).toBeNull();
@@ -261,11 +260,11 @@ describe('PracticeSession (K/60–K/67)', () => {
   it('Review Focus 4: a reload resumes through GET current — position, progress and the open question', async () => {
     renderApp(<PracticeSession />, { routes: routes() });
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
-    expect(screen.getByText('Câu 4/10')).toBeInTheDocument();
+    expect(screen.getByText('câu 4 / 10')).toBeInTheDocument();
     expect(screen.getByText('Luyện tập · Nhóm Công nghệ')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Câu 4/10' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'câu 4 / 10' })).toBeInTheDocument();
     expect(screen.getByText('Chọn từ có nghĩa này')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^[1-4] / }).map((b) => b.textContent)).toEqual(['1 deploy', '2 delay', '3 deliver', '4 defend']);
+    expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1deploy', '2delay', '3deliver', '4defend']);
   });
 
   it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {
@@ -274,7 +273,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     const live = container.querySelector('[data-live="result"]')!;
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
-    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
     await waitFor(() => expect(live).toHaveTextContent('Chưa đúng. deploy · triển khai (phần mềm)'));
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Cần ôn lại/ }));
   });
@@ -300,15 +299,15 @@ describe('PracticeSession (K/60–K/67)', () => {
     const [answer] = posts(view_.calls, '/v1/practice/items/item-4/answer');
     expect(answer.body).toEqual({ choice: 1 });
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
-    expect(screen.getByRole('button', { name: /1 deploy/ })).toHaveTextContent('Đáp án đúng');
-    expect(screen.getByRole('button', { name: /2 delay/ })).toHaveTextContent('Bạn chọn');
+    expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Đáp án đúng');
+    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Bạn chọn');
     expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
     expect(screen.getByText('to start using a new system')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toHaveAttribute('data-variant', 'sticker');
+    expect(screen.getByRole('button', { name: /Cần ôn lại/ }).querySelector('kbd')).toHaveTextContent('Enter');
     expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
-    expect(screen.getByText('Câu 5/10')).toBeInTheDocument();
+    expect(screen.getByText('câu 5 / 10')).toBeInTheDocument();
   });
 
   it('Review Focus 1: a second press while the answer is pending sends nothing more', async () => {
@@ -319,8 +318,8 @@ describe('PracticeSession (K/60–K/67)', () => {
       }),
     });
     await screen.findByText('triển khai');
-    await userEvent.click(screen.getByRole('button', { name: /1 deploy/ }));
-    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
     release();
     await screen.findByText('Chưa đúng');
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
@@ -333,11 +332,11 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(card).toHaveClass('motion-safe:animate-card-rise');
     await userEvent.keyboard('2');
     await screen.findByText('Chưa đúng');
-    expect(screen.getByRole('button', { name: /2 delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
-    expect(screen.getByRole('button', { name: /1 deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
-    expect(screen.getByRole('button', { name: /1 deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
-    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
+    expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
+    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
@@ -355,9 +354,9 @@ describe('PracticeSession (K/60–K/67)', () => {
       }),
     });
     expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /1 Đúng/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^1Đúng/ }));
     expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /1 Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
+    expect(screen.getByRole('button', { name: /^1Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
     await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
@@ -411,7 +410,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('h');
     await screen.findByText('to start using a new system');
-    expect(screen.getByText('Hint')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hint' })).toBeInTheDocument();
     expect(screen.queryByText(/Hint 1\/2/)).not.toBeInTheDocument();
   });
 
@@ -447,6 +446,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('{Escape}');
     expect(await screen.findByRole('heading', { name: 'Xong 10 câu.' })).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(1);
+    // Figma 119:4608: the ring reads 7/10 right; blocks rise 90 ms apart (design §8.3).
+    expect(screen.getByRole('img', { name: '7/10 câu đúng' })).toHaveTextContent('7/10');
+    expect(screen.getByRole('heading', { name: 'Xong 10 câu.' }).closest('[class*="animate-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
     expect(screen.getByText('Nhóm Công nghệ, trộn 3 kiểu câu. Hôm nay còn 1/3 phiên luyện.')).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Cần ôn lại · 3 từ' });
     expect(within(list).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();
@@ -566,7 +568,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.queryByText(/nhờ gợi ý/)).not.toBeInTheDocument();
   });
 
-  it('M4 review: on a retry screen only [Làm lại] is yellow', async () => {
+  it('M4 review: on a retry screen only [Làm lại] takes Enter', async () => {
     renderApp(<PracticeSession />, {
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
@@ -575,8 +577,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Câu trả lời' }), 'cash{Enter}');
     await screen.findByRole('button', { name: /Làm lại/ });
-    const yellow = screen.getAllByRole('button').filter((b) => b.getAttribute('data-variant') === 'sticker');
-    expect(yellow.map((b) => b.textContent)).toEqual(['Làm lạiEnter']);
+    const enter = screen.getAllByRole('button').filter((b) => b.querySelector('kbd')?.textContent === 'Enter');
+    expect(enter.map((b) => b.textContent)).toEqual(['Làm lạiEnter']);
   });
 
   it('M4 review: changing the choice after a lost answer sends a new Idempotency-Key', async () => {
@@ -637,6 +639,16 @@ describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
     expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
     expect(againBody(view(null))).not.toHaveProperty('cloze_source');
   });
+
+  it('M5.3: a session opened with an AI count asks for it again, with its placement and own_then_ai', () => {
+    const body = againBody({ ...view('own_then_ai'), types: ['mcq_definition', 'cloze'], ai_planned: 3, ai_placement: 'random' });
+    expect(body).toMatchObject({ types: ['mcq_definition', 'cloze'], cloze_source: 'own_then_ai', ai_count: 3, ai_placement: 'random' });
+  });
+
+  it('M5.3: a session opened the old way (no ai_placement) sends no ai_count', () => {
+    expect(againBody({ ...view(null), ai_placement: null })).not.toHaveProperty('ai_count');
+    expect(againBody(view(null))).not.toHaveProperty('ai_count');
+  });
 });
 
 // The summary with alternative answers (session synonyms design §3.3). `vital` was asked and `crucial` typed on the same item (a1),
@@ -692,9 +704,8 @@ describe('Summary of alternative answers', () => {
   it('CS9: the summary says how many right answers were alternative answers', async () => {
     await openSummary({ alternatives: 2 });
     const line = await screen.findByText('Trong đó 2 đáp án thay thế');
-    // The line belongs to the right-answer count: it sits in the "Đúng" tile, not loose under both tiles (UI polish, 07/11/2026).
-    const right = screen.getAllByRole('term').find((term) => term.textContent === 'Đúng')!;
-    expect(right.parentElement).toContainElement(line);
+    // M5.5: no Đúng/Sai tiles any more (Figma 119:4608 has the ring); the line sits with the title, next to the ring of right answers.
+    expect(screen.getByRole('heading', { name: /^Xong/ }).parentElement).toContainElement(line);
   });
 
   it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {

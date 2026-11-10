@@ -1,36 +1,36 @@
 'use client';
 
-import { Layers2, X } from 'lucide-react';
+import { Check, Layers2, LoaderCircle, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
-import { Button } from '@/app-ui/Button';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { cn } from '@/lib/cn';
+import { ErrorState } from '@/app-ui/States';
+import { Button } from '@/ui/Button';
+import { KeyLegend } from '@/ui/KeyLegend';
+import { ProgressBar } from '@/ui/ProgressBar';
+import { Tag } from '@/ui/Tag';
+import { TextButton } from '@/ui/TextButton';
 import { useGroups } from '../../groups/groups-api';
 import { RecallSummary } from '../../recall/RecallSummary';
 import { useSourceLabel } from '../CurrentSessionCard';
-import type { PracticeSessionView } from '../practice-api';
 import { AiUnavailableState } from './AiUnavailableState';
 import { AlternativeFeedback } from './AlternativeFeedback';
 import { AnswerFeedback, feedbackCase } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
 import { PreparingState } from './PreparingState';
-import { KBD, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
+import { ButtonKey, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
 import { ReportDialog } from './ReportDialog';
 import { RoundPrompt } from './RoundPrompt';
-import { SentenceText } from './SentenceQuestions';
+import { SentenceText, type BlankFill } from './SentenceQuestions';
 import { SessionNotice } from './SessionNotice';
 import { SessionSummary } from './SessionSummary';
 import { TrueFalseChoices } from './TrueFalseQuestion';
-import { focusAnswer, TryAgainActions, TypeWordInput } from './TypeWordQuestion';
-import { usePracticeSession, type Item, type PracticeSessionState } from './use-practice-session';
-
-const AI_TYPES = ['meaning_in_sentence', 'mcq_sentence'];
+import { focusAnswer, TryAgainPanel, TypeWordInput } from './TypeWordQuestion';
+import { usePracticeSession, type Item, type Outcome, type PracticeSessionState } from './use-practice-session';
 
 /**
  * K/60–K/67 `/app/practice/session`: the open practice session, full screen. Đợt C §4.4: with `recall`, the Ôn session of that deck
@@ -125,7 +125,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   let body: ReactNode;
   if (state.load.isError) body = <ErrorState message={errorText(state.load.error)} onRetry={() => void state.load.refetch()} />;
   else if (phase === null || phase.kind === 'advancing' || !session && phase.kind !== 'none' && phase.kind !== 'nothing_learned')
-    body = state.error ? <Ended message={errorText(state.error)} href={practiceHref} label={backLabel} /> : <FullScreenSpinner />;
+    body = state.error ? <Ended message={errorText(state.error)} href={practiceHref} label={backLabel} /> : <Loading />;
   else if (phase.kind === 'none') body = <Ended message={t('none')} href={practiceHref} label={backLabel} />;
   else if (phase.kind === 'nothing_learned') body = recall ? <NothingLearned groupId={recall.groupId} /> : <Ended message={t('none')} href={practiceHref} />;
   else if (phase.kind === 'closed') body = <Ended message={t('closed')} href={practiceHref} label={backLabel} />;
@@ -148,7 +148,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
     body = (
       <>
         {phase.notice && <SessionNotice notice={phase.notice} answered={phase.outcome?.kind === 'final'} onDismiss={state.dismissNotice} />}
-        <Question state={state} item={phase.item} onReport={() => setReporting(true)} />
+        <Question state={state} item={phase.item} recall={recall !== undefined} onReport={() => setReporting(true)} />
       </>
     );
 
@@ -157,37 +157,56 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   const position = done ? total : (session?.asked ?? 0);
   const progressText = done ? t('progressDone', { total }) : t('progress', { n: position, total });
   const stoppable = phase?.kind === 'question' || phase?.kind === 'round';
+  // Figma: the session column is 760 wide, the summary 880 (119:4608).
+  const width = done ? 'max-w-220' : 'max-w-190';
+  const legend = phase?.kind === 'question' ? legendItems(phase.item, phase.outcome) : [];
+  const closeClass =
+    'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
+    'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:size-9';
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
-      <header className="flex items-center justify-between gap-3 px-4 pt-4 md:px-6">
-        <div className="flex min-w-0 items-center gap-2">
-          {stoppable ? (
-            <button type="button" aria-label={t('close')} onClick={() => void state.stop()} className="rounded-sm p-1 text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <X aria-hidden className="size-5" />
-            </button>
-          ) : (
-            <Link href={practiceHref} aria-label={tc('close')} className="rounded-sm p-1 text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <X aria-hidden className="size-5" />
-            </Link>
-          )}
-          <kbd className={`${KBD} border-border-strong text-ink`}>Esc</kbd>
-          {session && <span className="truncate text-ui text-ink">{headerText}</span>}
-        </div>
+    <div className="flex flex-1 flex-col">
+      {/* Figma "Thanh phiên" (100:3164): close, the source, one progress bar, "câu n / N", the ✓ and ✗ counts. */}
+      <header className={`mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
+        {stoppable ? (
+          <button type="button" aria-label={t('close')} onClick={() => void state.stop()} className={closeClass}>
+            <X aria-hidden className="size-4.5" />
+          </button>
+        ) : (
+          <Link href={practiceHref} aria-label={tc('close')} className={closeClass}>
+            <X aria-hidden className="size-4.5" />
+          </Link>
+        )}
+        {session && <span className="hidden max-w-64 truncate font-wm-sans text-wm-small-strong text-wm-ink md:block">{headerText}</span>}
         {session && total > 0 && (
-          <div className="flex shrink-0 items-center gap-3">
-            <Progress results={state.results} position={position} total={total} done={done} label={progressText} />
-            <span className="text-ui font-semibold text-ink">{progressText}</span>
-          </div>
+          <>
+            <ProgressBar value={position} max={total} label={progressText} className="min-w-12 flex-1" />
+            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{progressText}</span>
+            <span role="img" aria-label={t('countRight', { count: state.counts.correct })}>
+              <Tag tone="pass">
+                <Check aria-hidden className="size-3" />
+                {state.counts.correct}
+              </Tag>
+            </span>
+            <span role="img" aria-label={t('countWrong', { count: state.counts.wrong })}>
+              <Tag tone="fail">
+                <X aria-hidden className="size-3" />
+                {state.counts.wrong}
+              </Tag>
+            </span>
+          </>
         )}
       </header>
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-6">
+      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
         {body}
+        {legend.length > 0 && (
+          <KeyLegend aria-label={t('legend.label')} items={legend.map(([keys, key]) => ({ keys, label: t(`legend.${key}`) }))} className="mt-auto pt-4" />
+        )}
       </div>
       {phase?.kind === 'question' && session && (
         <ReportDialog
           key={phase.item.item_id}
           itemId={phase.item.item_id}
-          kind={isAi(phase.item, session) ? 'ai' : 'non_ai'}
+          kind={phase.item.ai === true ? 'ai' : 'non_ai'}
           privateWord={phase.item.private_word === true}
           lemma={phase.outcome?.kind === 'final' ? phase.outcome.result.correct.lemma : null}
           subtitle={reportSubtitle(phase.item, t(`kind.${promptKind(phase.item.prompt)}`))}
@@ -200,16 +219,44 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   );
 }
 
-const isAi = (item: Item, session: PracticeSessionView) =>
-  AI_TYPES.includes(item.type) || (item.type === 'cloze' && session.cloze_source === 'ai');
+type LegendKey = 'choose' | 'check' | 'hint' | 'stop' | 'know' | 'review' | 'next' | 'retry';
+
+/** The keys of what is on screen (Figma "Phím" under each session frame): the same keys the handler above acts on. */
+function legendItems(item: Item, outcome: Outcome | null): Array<[string[], LegendKey]> {
+  const stop: [string[], LegendKey] = [['Esc'], 'stop'];
+  const hint: Array<[string[], LegendKey]> = hintLevels(item).some((n) => n > item.hint_level) ? [[['H'], 'hint']] : [];
+  if (outcome?.kind === 'final') {
+    if (outcome.result.alternative) return [stop];
+    const kind = feedbackCase(outcome.result);
+    if (kind === 1) return [[['Enter'], 'know'], [['1'], 'review'], stop];
+    if (kind === 4) return [[['Enter'], 'review'], stop];
+    if (kind === null) return [[['Enter'], 'next'], stop];
+    return [[['Enter'], 'next'], [['1'], 'review'], stop];
+  }
+  if (outcome?.kind === 'try_again') return [[['Enter'], 'retry'], ...hint, stop];
+  const prompt = item.prompt;
+  const choices = prompt.kind === 'true_false' ? 2 : 'options' in prompt ? prompt.options.length : 0;
+  return [choices > 0 ? [[`1–${choices}`], 'choose'] : [['Enter'], 'check'], ...hint, stop];
+}
 
 function reportSubtitle(item: Item, kind: string): string {
   const prompt = item.prompt;
   return 'meaning' in prompt ? `${kind} · ${prompt.meaning}` : kind;
 }
 
+/** What fills a sentence's blank once answered: the right word, and a wrong typed one (struck once the answer is shown). */
+function blankFill(item: Item, outcome: Outcome | null): BlankFill | null {
+  if (outcome?.kind === 'try_again') return outcome.typed ? { wrong: outcome.typed } : null;
+  if (outcome?.kind !== 'final' || outcome.result.alternative) return null;
+  const { result, chosen } = outcome;
+  const prompt = item.prompt;
+  const right = prompt.kind === 'mcq_sentence' && result.correct.choice_index !== null ? prompt.options[result.correct.choice_index] : result.correct.text;
+  const typed = chosen && 'text' in chosen && result.result === 'wrong' ? chosen.text : undefined;
+  return { right, wrong: typed };
+}
+
 /** The question on screen, its answer controls, hints and the result. */
-function Question({ state, item, onReport }: { state: PracticeSessionState; item: Item; onReport: () => void }) {
+function Question({ state, item, recall, onReport }: { state: PracticeSessionState; item: Item; recall: boolean; onReport: () => void }) {
   const t = useTranslations('App.practice.session');
   const errorText = useErrorMessage();
   const phase = state.phase?.kind === 'question' ? state.phase : null;
@@ -219,13 +266,23 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
   const levels = hintLevels(item);
   const nextHint = levels.find((n) => n > item.hint_level);
   const typed = prompt.kind === 'type_meaning' || prompt.kind === 'type_sentence' || prompt.kind === 'cloze';
+  const fill = blankFill(item, outcome);
+  const choices = (options: string[]) => (
+    <Choices
+      options={options}
+      rightIndex={final?.result.correct.choice_index ?? null}
+      chosenIndex={chosenChoice(outcome)}
+      onChoose={(choice) => void state.answer({ choice })}
+      disabled={state.busy}
+    />
+  );
 
   let question: ReactNode;
   if (prompt.kind === 'mcq') {
     question = (
       <>
         <PromptTitle text={prompt.meaning} label={prompt.context_label} />
-        <Choices options={prompt.options} rightIndex={final?.result.correct.choice_index ?? null} chosenIndex={chosenChoice(outcome)} onChoose={(choice) => void state.answer({ choice })} disabled={state.busy} />
+        {choices(prompt.options)}
       </>
     );
   } else if (prompt.kind === 'true_false') {
@@ -241,19 +298,19 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
     question = (
       <>
         <SentenceText sentence={prompt.sentence} highlight={prompt.highlight} />
-        <Choices options={prompt.options} rightIndex={final?.result.correct.choice_index ?? null} chosenIndex={chosenChoice(outcome)} onChoose={(choice) => void state.answer({ choice })} disabled={state.busy} />
+        {choices(prompt.options)}
       </>
     );
   } else if (prompt.kind === 'mcq_sentence') {
     question = (
       <>
-        <SentenceText sentence={prompt.sentence} />
-        <Choices options={prompt.options} rightIndex={final?.result.correct.choice_index ?? null} chosenIndex={chosenChoice(outcome)} onChoose={(choice) => void state.answer({ choice })} disabled={state.busy} />
+        <SentenceText sentence={prompt.sentence} fill={fill} />
+        {choices(prompt.options)}
       </>
     );
   } else {
-    // type_sentence, cloze (K/78a): the sentence with its blank.
-    question = <SentenceText sentence={prompt.sentence} />;
+    // type_sentence, cloze (K/78a): the sentence with its blank, filled once answered (Figma 178:5326, 178:5546).
+    question = <SentenceText sentence={prompt.sentence} fill={fill} />;
   }
 
   // One live region from the start of the question, so screen readers hear the result (audit 26/10/2026 #8).
@@ -262,21 +319,24 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
     : outcome?.kind === 'try_again' ? t('wrong') : '';
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
         {announce}
       </p>
-      {/* Keyed per item so each question mounts again and rises in (2A); not the bare id, which the answer field below uses. */}
-      <QuestionCard key={`card-${item.item_id}`} prompt={prompt} ai={state.session !== null && isAi(item, state.session)} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
+      {/* Keyed per item so each question mounts again and rises in (2A); not the bare id, which the answer field below uses.
+          Ôn never shows the AI label or Báo lỗi (app-redesign-plan 512). */}
+      <QuestionCard
+        key={`card-${item.item_id}`}
+        prompt={prompt}
+        ai={!recall && item.ai === true}
+        reportable={!recall && item.reportable}
+        reported={state.reported.has(item.item_id)}
+        onReport={onReport}
+      >
         {question}
+        {typed && <TypeWordInput key={item.item_id} outcome={outcome} onSubmit={(text) => void state.answer({ text })} disabled={state.busy} />}
         <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       </QuestionCard>
-      {typed && <TypeWordInput key={item.item_id} outcome={outcome} onSubmit={(text) => void state.answer({ text })} disabled={state.busy} />}
-      {state.error !== null && (
-        <p role="alert" className="text-ui text-danger">
-          {state.error instanceof NetworkError ? t('failed') : errorText(state.error)}
-        </p>
-      )}
       {final?.result.alternative ? (
         <AlternativeFeedback
           result={final.result}
@@ -288,61 +348,49 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
       ) : final ? (
         <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
       ) : outcome?.kind === 'try_again' ? (
-        <>
-          <div data-feedback className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4 motion-safe:animate-feedback-in">
-            <p className="text-title font-bold text-danger">{t('wrong')}</p>
-            {/* A session word is spelt right: the spelling text would mislead, and the owner wants no line instead (07/11/2026). */}
-            {outcome.reason !== 'session_word' && <p className="text-ui font-semibold text-ink">{t('tryAgainBody')}</p>}
-          </div>
-          <TryAgainActions
-            onRetry={focusAnswer}
-            onHint={() => nextHint && state.setHintLevel(nextHint)}
-            hintAvailable={nextHint !== undefined}
-            onReveal={() => void state.skip()}
-            busy={state.busy}
-          />
-        </>
+        <TryAgainPanel
+          sessionWord={outcome.reason === 'session_word'}
+          onRetry={focusAnswer}
+          onHint={() => nextHint && state.setHintLevel(nextHint)}
+          hintAvailable={nextHint !== undefined}
+          onReveal={() => void state.skip()}
+          busy={state.busy}
+        />
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {item.hint_level === 0 && nextHint !== undefined ? (
-            <Button variant="quiet" onPress={() => state.setHintLevel(nextHint)}>
+            <Button variant="secondary" onPress={() => state.setHintLevel(nextHint)}>
               {t('hint.button')}
-              <kbd className={`${KBD} border-border-strong`}>H</kbd>
+              <ButtonKey>H</ButtonKey>
             </Button>
           ) : (
             <span />
           )}
-          {item.hint_level > 0 && <p className="text-caption text-muted">{t('noteHint')}</p>}
+          {item.hint_level > 0 && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('noteHint')}</p>}
           {prompt.kind === 'cloze' && (
             // K/78a: an AI cloze can be given up before any try (copy doc §17.1 "[Xem đáp án]").
-            <Button variant="quiet" isDisabled={state.busy} onPress={() => void state.skip()}>
+            <TextButton tone="muted" isDisabled={state.busy} onPress={() => void state.skip()}>
               {t('reveal')}
-            </Button>
+            </TextButton>
           )}
-          {!typed && <p className="text-caption text-muted md:hidden">{t('phoneHint')}</p>}
+          {!typed && <p className="font-wm-sans text-wm-caption text-wm-muted md:hidden">{t('phoneHint')}</p>}
         </div>
+      )}
+      {state.error !== null && (
+        <p role="alert" className="mt-3 font-wm-sans text-wm-small text-wm-fail">
+          {state.error instanceof NetworkError ? t('failed') : errorText(state.error)}
+        </p>
       )}
     </div>
   );
 }
 
-/** Segments of the session (K/60): green right, red wrong, blue the current one; earlier ones of a reload look "done". */
-function Progress({ results, position, total, done, label }: { results: Record<number, 'correct' | 'wrong'>; position: number; total: number; done: boolean; label: string }) {
+function Loading() {
+  const t = useTranslations('App.common');
   return (
-    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done ? total : Math.max(0, position - 1)} className="hidden w-48 gap-1 sm:flex">
-      {Array.from({ length: total }, (_, i) => {
-        const n = i + 1;
-        const result = results[n];
-        return (
-          <span
-            key={n}
-            className={cn(
-              'h-1.5 flex-1 rounded-full',
-              result === 'correct' ? 'bg-success' : result === 'wrong' ? 'bg-danger' : n === position && !done ? 'bg-primary' : n < position || done ? 'bg-muted' : 'bg-neutral-soft',
-            )}
-          />
-        );
-      })}
+    <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-wm-muted">
+      <LoaderCircle aria-hidden className="size-8 motion-safe:animate-spin" />
+      <span className="font-wm-sans text-wm-small">{t('loading')}</span>
     </div>
   );
 }
@@ -350,9 +398,12 @@ function Progress({ results, position, total, done, label }: { results: Record<n
 function Ended({ message, href, label }: { message: string; href: string; label?: string }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface p-6">
-      <p className="text-title font-bold text-ink">{message}</p>
-      <Link href={href} className="font-semibold text-primary underline underline-offset-2">
+    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+      <p className="font-wm-display text-wm-word text-wm-ink">{message}</p>
+      <Link
+        href={href}
+        className="font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+      >
         {label ?? t('back')}
       </Link>
     </div>
@@ -365,12 +416,12 @@ function NothingLearned({ groupId }: { groupId: string }) {
   const tDeck = useTranslations('App.deck');
   const locale = useLocale();
   return (
-    <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface p-6">
-      <p className="text-title font-bold text-ink">{t('nothingTitle')}</p>
-      <p className="text-body text-muted">{t('nothingBody')}</p>
+    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+      <p className="font-wm-display text-wm-word text-wm-ink">{t('nothingTitle')}</p>
+      <p className="font-wm-sans text-wm-base text-wm-muted">{t('nothingBody')}</p>
       <Link
         href={`/${locale}/app/review?group=${groupId}&mode=new`}
-        className="flex min-h-control-touch items-center gap-2 rounded-inner bg-accent px-5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="inline-flex min-h-11 items-center gap-2 rounded-wm-button bg-wm-accent px-5 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <Layers2 aria-hidden className="size-5 shrink-0" />
         {tDeck('learn')}

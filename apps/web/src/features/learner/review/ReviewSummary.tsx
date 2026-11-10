@@ -6,12 +6,13 @@ import { ListChecks } from 'lucide-react';
 import type { GroupSummary } from '../groups/groups-api';
 
 /** Each block rises 50ms after the one before it (motion audit #6); with reduced motion they all show at once. */
+// Design §8.3, GM20: summary blocks rise for 400 ms, 90 ms apart (Phiên luyện, Học, Ôn).
 export const STAGGER = [
   'motion-safe:animate-summary-in',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:50ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:100ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:150ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:200ms]',
+  'motion-safe:animate-summary-in motion-safe:[animation-delay:90ms]',
+  'motion-safe:animate-summary-in motion-safe:[animation-delay:180ms]',
+  'motion-safe:animate-summary-in motion-safe:[animation-delay:270ms]',
+  'motion-safe:animate-summary-in motion-safe:[animation-delay:360ms]',
 ] as const;
 
 /**

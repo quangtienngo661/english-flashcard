@@ -343,6 +343,10 @@
         "invalid": "That birth date isn’t valid. Pick another date.",
         "tooYoung": "You need to be 13 or older to use Wordmet.",
         "future": "Your birth date can’t be after today."
+      },
+      "stepper": {
+        "decrease": "{label}: one less",
+        "increase": "{label}: one more"
       }
     },
     "speak": {
@@ -1131,12 +1135,14 @@
       "hero": {
         "chip": "Quick practice · words due today",
         "title": "Today",
-        "line": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}. {count, plural, one {# question} other {# questions}}, mixing three question types.",
         "empty": "No words due today. Pick a source below.",
         "start": "Start {count, plural, one {# question} other {# questions}}",
         "customize": "Customize",
-        "artPrompt": "Choose the right word",
-        "artMeaning": "to put into action"
+        "artPrompt": "One question · choose the right word",
+        "artMeaning": "to put into action",
+        "words": "<b>{words, number}</b> to practise in {groups, plural, one {# deck} other {# decks}}",
+        "body": "{count, plural, one {# question} other {# questions}}, mixing three types: {types}.",
+        "artRight": "right"
       },
       "sources": {
         "title": "Practice from another source",
@@ -1149,7 +1155,8 @@
           "body": "One deck, filtered by stage or priority words.",
           "chip": "{name} · {count, number}",
           "start": "Practice {name}",
-          "empty": "No decks yet."
+          "empty": "No decks yet.",
+          "more": "+{count, plural, one {# deck} other {# decks}}"
         },
         "weak": {
           "name": "Weak words",
@@ -1223,7 +1230,7 @@
       },
       "recent": {
         "title": "Recent",
-        "history": "See history",
+        "history": "Open the study calendar",
         "empty": "No questions answered yet.",
         "correct": "right",
         "typed": "you typed {answer}, answer {correct}",
@@ -1248,28 +1255,16 @@
         "group": "Deck",
         "groupOption": "{name} · {count, plural, one {# word} other {# words}}",
         "allGroups": "All decks · {count, number}",
-        "filter": "Words",
-        "filterAll": "All words",
-        "filterDue": "Due today",
+        "filterDue": "Due",
         "filterPriority": "Priority",
-        "stage": "Stage",
         "stageAll": "All stages",
-        "stageN": "Stage {n, number}",
-        "types": "Question types",
-        "typesHint": "choose one or more",
         "typesNone": "Choose at least one question type.",
         "prompt": "Prompt",
-        "promptHint": "for Type the word",
         "promptMeaning": "By meaning",
         "promptSentence": "By sentence",
         "promptMixed": "Mixed",
         "count": "Questions",
-        "countMax": "up to {max, number}",
-        "more": "One more question",
-        "less": "One fewer question",
-        "options": "More options",
         "order": "Order",
-        "orderSummary": "Order: {order}",
         "sorts": {
           "level_asc": "Lowest stage",
           "overdue_first": "Most overdue",
@@ -1282,18 +1277,46 @@
         },
         "start": "Start {count, plural, one {# question} other {# questions}}",
         "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today.",
-        "aiToggle": "AI question types",
-        "aiLine": "This session uses up to {needed, plural, one {# AI credit} other {# AI credits}} for questions · {remaining, number} left",
         "ownToggle": "Fill in your saved sentences",
-        "ownLine": "Only for words with a sentence you saved. Uses no AI credits.",
-        "ownReplacesAi": "Fill-in uses your saved sentences instead of AI ones.",
         "quotaTitle": "Not enough AI credits for questions",
         "quotaBody": "This session needs {needed, plural, one {# AI credit} other {# AI credits}} for questions, and you have {remaining, number}.",
         "quotaRefillDate": "New AI credits for questions arrive on {date}.",
         "quotaRefillTime": "New AI credits for questions arrive at {time}.",
         "quotaHint": "Choose fewer questions, or turn off AI question types and start again.",
         "aiUnavailable": "Something went wrong on our side, so AI question types can’t be used right now. Turn them off to start, or try again later.",
-        "dropAi": "Turn off AI question types"
+        "dropAi": "Turn off AI question types",
+        "words": "Words",
+        "wordCount": "{count, plural, one {# word} other {# words}}",
+        "groupRow": "{name} · {count, plural, one {# word} other {# words}}",
+        "filterLabel": "Which words",
+        "filterOption": "{name} {count, number}",
+        "stageMenu": "One stage only",
+        "stageName": "Stage {stage}",
+        "stageOption": "Stage {stage} · {count, number}",
+        "questions": "Questions",
+        "mcPick": "Sentence multiple choice",
+        "mcMeaning": "Pick the meaning",
+        "mcWord": "Pick the word",
+        "mcMixed": "Mix",
+        "aiTitle": "AI-written questions",
+        "aiMax": "Up to {max, number} AI questions · {left, number} left",
+        "aiMaxLeft": "Up to {max, number} AI questions, as you have {left, number} left",
+        "aiNone": "A {count, plural, one {#-question} other {#-question}} session has no AI questions.",
+        "aiOut": "No AI questions left this month.",
+        "seePro": "See Pro",
+        "mixLine": "Words with a saved sentence use it; AI writes the others.",
+        "placement": "AI question order",
+        "placementEven": "Spread out",
+        "placementRandom": "Random",
+        "needAi": "Choose at least one AI question type.",
+        "needRule": "Choose at least one non-AI question type for the other {count, plural, one {# question} other {# questions}}.",
+        "aiSummary": "{count, plural, one {# AI question} other {# AI questions}} among them, {placement}.",
+        "aiSummaryEven": "spread out",
+        "aiSummaryRandom": "in random order",
+        "filterAllWords": "All words",
+        "countMaxScope": "up to {max, number}",
+        "ownHelpLabel": "What is fill in your saved sentences?",
+        "ownHelp": "Asks only words with a sentence you saved. Uses no AI questions."
       },
       "session": {
         "close": "Stop, see summary",
@@ -1321,8 +1344,8 @@
           "seeWord": "Check the word in My words",
           "dismiss": "Close notice"
         },
-        "progress": "Question {n, number} of {total, number}",
-        "progressDone": "Done {total, number} of {total, number}",
+        "progress": "question {n, number} / {total, number}",
+        "progressDone": "done {total, number} / {total, number}",
         "kind": {
           "mcq": "Multiple choice",
           "true_false": "True or false",
@@ -1430,9 +1453,28 @@
           "review": "Still learning",
           "reviewAll": "Add the other {count, plural, one {# word} other {# words}} to priority",
           "home": "Back to Practice",
-          "again": "Practice another session"
+          "again": "Practice another session",
+          "ring": "{correct, number}/{total, number} right",
+          "ringCaption": "right"
         },
-        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same."
+        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same.",
+        "countRight": "{count, number} right",
+        "countWrong": "{count, number} wrong",
+        "stage": "Stage {stage}",
+        "stageMove": "{from} → {to}",
+        "noteKnowTap": "Tap Know and {lemma} moves up a stage.",
+        "noteWrongTap": "Still learning: {lemma} goes to the top of its deck, back to stage 1. Next question keeps its schedule.",
+        "legend": {
+          "label": "Keys",
+          "choose": "Choose an answer",
+          "check": "Check",
+          "hint": "Hint",
+          "stop": "Stop",
+          "know": "Know",
+          "review": "Still learning",
+          "next": "Next question",
+          "retry": "Try again"
+        }
       },
       "weak": {
         "title": "Weak words",
@@ -1449,7 +1491,6 @@
           "stage": "Stage",
           "last": "Last wrong"
         },
-        "wrongOf": "wrong {wrong}/{counted}",
         "today": "{time} today",
         "more": "Show more",
         "emptyTitle": "No weak words yet.",
@@ -1467,7 +1508,9 @@
           "out": "Leaves: when fewer than 2 of the last 5 questions are wrong.",
           "removed": "Words you stopped learning aren't listed."
         },
-        "reopens": "No sessions left today. Resets at {time}."
+        "reopens": "No sessions left today. Resets at {time}.",
+        "right": "{count, number} right",
+        "wrong": "{count, number} wrong"
       },
       "history": {
         "title": "Practice history",

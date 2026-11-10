@@ -175,6 +175,20 @@ describe('AnswersService — reads inside the answer transaction use the transac
   });
 });
 
+describe('AnswersService — the item stage in the answer (giao diện mới M5.1, QR2)', () => {
+  it('an answer on an item at level 1 returns level 1', async () => {
+    const t = route(mcqItem());
+    t.learning.practiceCheck.mockImplementation(async () => ({ item: { due_now: true, level: 1 } } as never));
+    await expect(t.service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ result: 'correct', level: 1 });
+  });
+
+  it('an item that left learning returns level null', async () => {
+    const t = route(mcqItem());
+    t.learning.practiceCheck.mockImplementation(async () => ({ item: null } as never));
+    await expect(t.service.answer(userId, 'it-1', { choice: 1 })).resolves.toMatchObject({ result: 'correct', level: null });
+  });
+});
+
 // Bước 7 question kinds (design §7.8, §8).
 const aiItem = (question: Record<string, unknown>, overrides: Record<string, unknown> = {}) => mcqItem({
   question: { hints: { level1: null, level2: null }, ...question }, ...overrides,

@@ -1,11 +1,14 @@
 'use client';
 
-import { CircleCheck, CircleX } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
+import { AnswerOption, type AnswerOptionState } from '@/ui/AnswerOption';
 import type { Outcome } from './use-practice-session';
 
-/** Choice buttons (K/60, K/61, K/62): number key, the option, and after the answer which one was right and which was chosen. */
+/**
+ * Choice buttons (K/60–K/62; Figma "Lựa chọn" 3:51, frame 178:5755): number key, the option, and after the answer the right one
+ * ("Đáp án đúng"), the wrong pick ("Bạn chọn") and the rest dimmed. 2 × 2 on desktop, stacked on phones.
+ */
 export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, columns = 2 }: {
   options: string[];
   rightIndex: number | null;
@@ -17,38 +20,24 @@ export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, 
   const t = useTranslations('App.practice.session');
   const answered = rightIndex !== null;
   return (
-    <div className={cn('grid gap-3', columns === 2 && 'sm:grid-cols-2')}>
+    <div className={cn('grid gap-3', columns === 2 && 'md:grid-cols-2')}>
       {options.map((option, index) => {
         const right = answered && index === rightIndex;
         const chosen = answered && index === chosenIndex;
+        const state: AnswerOptionState = !answered ? 'idle' : right ? 'correct' : chosen ? 'wrong' : 'dim';
         return (
-          <button
+          <AnswerOption
             key={index}
-            type="button"
-            disabled={disabled || answered}
-            onClick={() => onChoose(index)}
-            className={cn(
-              'flex min-h-control-touch min-w-0 items-center gap-3 rounded-inner border-2 px-3 py-2 text-left text-body font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary',
-              right ? 'border-success bg-success-soft' : chosen ? 'border-danger bg-danger-soft' : 'border-border-strong bg-surface enabled:hover:bg-primary-soft',
-              // 3C (owner 27/10/2026): a wrong choice wiggles once (300ms); reduced motion keeps only the colours.
-              chosen && !right && 'motion-safe:animate-wiggle-soft',
-            )}
-          >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-sm border border-border-strong text-caption">{index + 1}</span>{' '}
-            <span className="min-w-0 flex-1 break-words">{option}</span>
-            {right && (
-              <span className="flex shrink-0 items-center gap-1 text-caption font-semibold text-success">
-                {chosen ? t('chosenRight') : t('rightOption')}
-                <CircleCheck aria-hidden className={cn('size-4', chosen && 'motion-safe:animate-pop-in')} />
-              </span>
-            )}
-            {chosen && !right && (
-              <span className="flex shrink-0 items-center gap-1 text-caption font-semibold text-danger">
-                {t('chosen')}
-                <CircleX aria-hidden className="size-4" />
-              </span>
-            )}
-          </button>
+            state={state}
+            label={option}
+            kbd={String(index + 1)}
+            note={right ? (chosen ? t('chosenRight') : t('rightOption')) : chosen ? t('chosen') : undefined}
+            isDisabled={disabled || answered}
+            pop={right && chosen}
+            onPress={() => onChoose(index)}
+            // 3C (owner 27/10/2026): a wrong choice wiggles once (300ms); reduced motion keeps only the colours.
+            className={chosen && !right ? 'motion-safe:animate-wiggle-soft' : undefined}
+          />
         );
       })}
     </div>

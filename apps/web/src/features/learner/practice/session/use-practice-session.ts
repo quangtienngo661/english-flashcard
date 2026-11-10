@@ -34,6 +34,8 @@ export type Item = {
   reportable: boolean;
   /** The asked word is the learner's own (K/81). Absent from an older API: treated as false. */
   private_word?: boolean;
+  /** The question was written by AI (cloze-own-then-ai): the "câu AI" chip and the AI report reasons follow it. */
+  ai?: boolean;
 };
 
 /** One word of an alternative answer (API `AlternativeRow`): the word typed (credited) or the word asked, each with its own button state. */
@@ -58,6 +60,8 @@ export type AnswerResult = {
   schedule?: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
   /** Đợt C (H6): the study streak, on the first study of the learner's day only. */
   streak?: { days: number } | null;
+  /** M5.1: the word's stage (0–5) after the answer; null once it left the schedule. Absent from an older API. */
+  level?: number | null;
 };
 
 export type AnswerBody = { choice: number } | { is_true: boolean } | { text: string };
@@ -77,7 +81,10 @@ export type SessionNotice =
 
 /** `reason: 'session_word'`: the typed word is another word of this session (session synonyms); an older API sends none. */
 export type TryAgainReason = 'session_word' | null;
-export type Outcome = { kind: 'try_again'; tries: number; reason: TryAgainReason } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
+/** `typed`: the wrong word just typed, shown in the sentence's blank with "lần N" (Figma 178:5326). */
+export type Outcome =
+  | { kind: 'try_again'; tries: number; reason: TryAgainReason; typed: string | null }
+  | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
 export type Phase =
   | { kind: 'question'; item: Item; outcome: Outcome | null; notice?: SessionNotice | null }
   /** K/73: the next AI question is still being written. */
@@ -112,7 +119,8 @@ function noticeOf(next: AiFields): SessionNotice | null {
 
 /** Whether the session asks AI questions (Bước 7), so it makes them ahead with `prepare`. */
 export const asksAi = (session: PracticeSessionView) =>
-  session.types.some((type) => type === 'meaning_in_sentence' || type === 'mcq_sentence' || (type === 'cloze' && session.cloze_source === 'ai'));
+  session.types.some((type) => type === 'meaning_in_sentence' || type === 'mcq_sentence'
+    || (type === 'cloze' && (session.cloze_source === 'ai' || session.cloze_source === 'own_then_ai')));
 
 /**
  * One practice session (K/60–K/67). Nothing is kept in the browser: the page reads `GET /practice/sessions/current` once and
@@ -164,8 +172,8 @@ export function usePracticeSession(recall?: { groupId: string }) {
   const [own, setOwn] = useState<{ phase: Phase; session: PracticeSessionView | null } | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reported, setReported] = useState<Set<string>>(() => new Set());
-  // Final results seen on this page, by question number, for the progress bar.
-  const [results, setResults] = useState<Record<number, 'correct' | 'wrong'>>({});
+  // The bar's ✓/✗ (M5.4): the last session view's counts plus the answers graded on this page since that view.
+  const [graded, setGraded] = useState({ correct: 0, wrong: 0 });
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const advanceStarted = useRef(false);
@@ -180,7 +188,11 @@ export function usePracticeSession(recall?: { groupId: string }) {
         : data.session.status === 'waiting_continue' ? { kind: 'round' } : { kind: 'advancing' };
   }
 
-  const set = (next: Phase, view?: PracticeSessionView) => setOwn((prev) => ({ phase: next, session: view ?? prev?.session ?? session }));
+  const set = (next: Phase, view?: PracticeSessionView) => {
+    // A new view counts every graded answer itself (M5.1).
+    if (view) setGraded({ correct: 0, wrong: 0 });
+    setOwn((prev) => ({ phase: next, session: view ?? prev?.session ?? session }));
+  };
 
   function fail(e: unknown): boolean {
     if (isSlug(e, 'session-closed')) {
@@ -278,7 +290,7 @@ export function usePracticeSession(recall?: { groupId: string }) {
   function recordFinal(item: Item, result: AnswerResult, chosen: AnswerBody | null) {
     // Đợt C DC9: only the first study of the learner's day carries it (an answer from another tab carries none).
     if (result.streak) showStreak(result.streak.days);
-    if (session) setResults((r) => ({ ...r, [session!.asked]: result.result }));
+    setGraded((g) => ({ ...g, [result.result]: g[result.result] + 1 }));
     // The band stays with its question: K/76 names the word and links to it once the answer is shown (review I3).
     const notice = phase?.kind === 'question' ? phase.notice : null;
     set({ kind: 'question', item: { ...item, hint_level: result.hint_level }, outcome: { kind: 'final', result, chosen }, notice });
@@ -293,7 +305,8 @@ export function usePracticeSession(recall?: { groupId: string }) {
       const response = await answerOnce.submit(`${item.item_id}:${JSON.stringify(body)}`);
       if (!response) return;
       if (response.result === 'try_again') {
-        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries, reason: response.reason ?? null }, notice: phase.notice });
+        const typed = 'text' in body ? body.text : null;
+        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries, reason: response.reason ?? null, typed }, notice: phase.notice });
       }
       else recordFinal(item, response, body);
     } catch (e) {
@@ -305,7 +318,7 @@ export function usePracticeSession(recall?: { groupId: string }) {
     load,
     phase,
     session,
-    results,
+    counts: { correct: (session?.correct ?? 0) + graded.correct, wrong: (session?.wrong ?? 0) + graded.wrong },
     error,
     busy: busy || answerOnce.busy,
     reported,

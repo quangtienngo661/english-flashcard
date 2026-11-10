@@ -129,10 +129,10 @@ describe('ReviewSession (K/20–K/22)', () => {
     await userEvent.keyboard('1');
     const heading = await screen.findByRole('heading', { name: 'Xong 2 thẻ.' });
     expect(heading.parentElement).toHaveClass('motion-safe:animate-summary-in');
-    expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:50ms]');
-    expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:100ms]');
+    expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
+    expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:180ms]');
     // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
-    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:150ms]');
+    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
   });
 
   it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {

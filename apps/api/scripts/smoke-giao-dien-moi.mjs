@@ -6,7 +6,8 @@
 // default english-learning-postgres-1). No real provider is called.
 //
 // What it checks (design §10.2–§10.6): GET /v1/public/prices; next_lemma and last_reviewed on GET /v1/groups against the queue;
-// GET /v1/practice/sessions/last (204, then the session's counts and wrong lemmas); GET /v1/me/calendar and /days/:date (counts, items,
+// GET /v1/practice/sessions/last (204, then the session's counts and wrong lemmas); M5.1: an answer's `level` and the session view's
+// `correct` / `wrong` after a reload; GET /v1/me/calendar and /days/:date (counts, items,
 // kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFileSync } from 'node:child_process';
@@ -289,7 +290,14 @@ async function main() {
       if (i === 0) {
         const res = await want(api('POST', `/v1/practice/items/${shown.item.item_id}/answer`, { as: L, idem: true, body: { text: word.lemma } }), 200, 'right');
         check(res.result === 'correct', `right answer ${j(res)}`);
+        // M5.1 (QR2): the answer carries the item's current stage, as Learning stores it.
+        const stored = Number(psql(`SELECT level FROM learning_items WHERE user_id = '${L.id}' AND sense_id = '${word.senseId}'`));
+        check(res.level === stored, `answer level ${j(res.level)} vs learning_items.level ${stored}`);
       } else {
+        // M5.1 (QR2): a reload halfway (GET current) returns the counts so far and the same unanswered question.
+        const current = await want(api('GET', '/v1/practice/sessions/current', { as: L }), 200, 'current');
+        check(current.session.correct === 1 && current.session.wrong === 0, `current counts ${j(current.session)}`);
+        check(current.item?.item_id === shown.item.item_id, `current item ${j(current.item)} vs ${shown.item.item_id}`);
         let res = await api('POST', `/v1/practice/items/${shown.item.item_id}/answer`, { as: L, idem: true, body: { text: 'zzzzzz' } });
         if (res.json?.result === 'try_again') res = await api('POST', `/v1/practice/items/${shown.item.item_id}/skip`, { as: L });
         check(res.status === 200 && res.json.result === 'wrong', `wrong answer ${res.status} ${res.text}`);
@@ -299,7 +307,7 @@ async function main() {
     await want(api('POST', `/v1/practice/sessions/${session.id}/finish`, { as: L }), 200, 'finish');
     const status = psql(`SELECT status FROM practice_sessions WHERE id = '${session.id}'`);
     check(status === 'finished', `session status ${status}`);
-    ok(`session ${session.id}: one right, one wrong (${wrongWord.lemma}), finished`);
+    ok(`session ${session.id}: one right (level matches learning_items), one wrong (${wrongWord.lemma}); reload counts 1/0; finished`);
   });
 
   await step('5. GET /v1/me/calendar?month=<this month>', async () => {

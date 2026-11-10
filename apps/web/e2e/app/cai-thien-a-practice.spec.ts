@@ -10,7 +10,7 @@ const SENTENCE = 'We use Docker to ___ the app to the production server.';
 // The M5a cloze fixture, using a saved sentence: no report or AI translation.
 const cloze = {
   item_id: ITEM, round: 1, position: 1, type: 'cloze', prompt_style: 'sentence',
-  hint_level: 0, state: 'unanswered', tries: 0, reportable: false, private_word: false,
+  hint_level: 0, state: 'unanswered', tries: 0, reportable: false, private_word: false, ai: false,
   hints_available: { level1: true, level2: true, level3: true },
   prompt: { kind: 'cloze', sentence: SENTENCE },
 };
@@ -54,20 +54,19 @@ async function openCustomize(page: Page, locale: 'vi' | 'en' = 'vi') {
 }
 
 test.describe('Saved-sentence practice (A3, mocked API)', () => {
-  test('Free: own switch enabled → start sends own cloze → saved-sentence question without AI content', async ({ page }) => {
+  test('Free: saved sentences on → start sends own cloze → saved-sentence question without AI content', async ({ page }) => {
     await signedInAs(page, 'free', ownApi());
     const dialog = await openCustomize(page);
-    const own = dialog.getByRole('switch', { name: vi.customize.ownToggle, exact: true });
+    const own = dialog.getByRole('checkbox', { name: vi.customize.ownToggle, exact: true });
     await expect(own).toBeEnabled();
     await expect(own).not.toBeChecked();
-    await expect(dialog.getByText(vi.customize.ownLine)).toBeVisible();
-    // The switch input is visually hidden (React Aria); click its label as m5a.spec.ts does.
+    // The checkbox input is visually hidden (React Aria); click its label.
     await dialog.getByText(vi.customize.ownToggle, { exact: true }).click();
     await expect(own).toBeChecked();
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
     await expect(page).toHaveURL(/practice\/session$/);
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({
-      types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze'], cloze_source: 'own',
+      types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze'], cloze_source: 'own', ai_count: 0,
     });
     await expect(page.getByText(SENTENCE)).toBeVisible();
     await expect(page.getByText(vi.session.kind.cloze, { exact: true })).toBeVisible();
@@ -81,20 +80,18 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
     await expect(page.getByText(vi.session.translationAi, { exact: true })).toHaveCount(0);
   });
 
-  test('Pro: AI on and own on disables AI cloze and explains the replacement', async ({ page }) => {
+  test('Pro: saved sentences and AI fill-in both on → own_then_ai, and the line that explains it', async ({ page }) => {
     await signedInAs(page, 'pro', ownApi());
     const dialog = await openCustomize(page);
-    await dialog.getByText(new RegExp(`^${vi.customize.aiToggle}`)).first().click();
     await dialog.getByText(vi.customize.ownToggle, { exact: true }).click();
-    await expect(dialog.getByRole('switch', { name: vi.customize.ownToggle, exact: true })).toBeChecked();
-    const aiCloze = dialog.getByRole('checkbox', { name: vi.types.cloze, exact: true });
-    await expect(aiCloze).not.toBeChecked();
-    await expect(aiCloze).toBeDisabled();
-    await expect(dialog.getByText(vi.customize.ownReplacesAi)).toBeVisible();
-    for (const name of [vi.types.meaning_in_sentence, vi.types.mcq_sentence]) {
-      await expect(dialog.getByRole('checkbox', { name, exact: true })).toBeEnabled();
-      await expect(dialog.getByRole('checkbox', { name, exact: true })).toBeChecked();
-    }
+    await dialog.getByRole('button', { name: 'Câu AI viết: thêm 1' }).click();
+    await expect(dialog.getByRole('checkbox', { name: vi.types.cloze, exact: true })).toBeChecked();
+    // The explanation sits behind the "?" by the row (owner 10/11/2026): hover shows it.
+    await dialog.getByRole('button', { name: vi.customize.ownHelpLabel }).hover();
+    await expect(page.getByRole('tooltip')).toHaveText(vi.customize.mixLine);
+    await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
+    await expect(page).toHaveURL(/practice\/session$/);
+    expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ cloze_source: 'own_then_ai', ai_count: 1 });
   });
 });
 
@@ -105,21 +102,18 @@ async function noSideScroll(page: Page, where: string) {
 for (const scheme of ['light', 'dark'] as const) {
   for (const locale of ['vi', 'en'] as const) {
     for (const width of [1440, 390]) {
-      test(`axe and overflow: both switches on (${locale}, ${scheme}, ${width}px)`, async ({ page }) => {
+      test(`axe and overflow: saved sentences and AI on (${locale}, ${scheme}, ${width}px)`, async ({ page }) => {
         test.setTimeout(120_000);
         await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         await page.emulateMedia({ colorScheme: scheme });
-        await page.addInitScript(() => {
-          localStorage.setItem('wordmet-web.ai-types', 'on');
-          localStorage.setItem('wordmet-web.own-sentences', 'on');
-        });
+        await page.addInitScript(() => localStorage.setItem('wordmet-web.own-sentences', 'on'));
         await signedInAs(page, 'pro', ownApi(), { native_language: locale });
         const dialog = await openCustomize(page, locale);
         const t = copy[locale].App.practice;
-        await expect(dialog.getByRole('switch', { name: new RegExp(t.customize.aiToggle) })).toBeChecked();
-        await expect(dialog.getByRole('switch', { name: t.customize.ownToggle, exact: true })).toBeChecked();
-        await expect(dialog.getByRole('checkbox', { name: t.types.cloze, exact: true })).toBeDisabled();
-        await expect(dialog.getByText(t.customize.ownReplacesAi)).toBeVisible();
+        await dialog.getByRole('button', { name: `${t.customize.aiTitle}: ${locale === 'vi' ? 'thêm 1' : 'one more'}` }).click();
+        await expect(dialog.getByRole('checkbox', { name: t.customize.ownToggle, exact: true })).toBeChecked();
+        await dialog.getByRole('button', { name: t.customize.ownHelpLabel }).hover();
+        await expect(page.getByRole('tooltip')).toHaveText(t.customize.mixLine);
         await noSideScroll(page, `${locale} ${scheme} ${width}px setup`);
         expect(await seriousViolations(page), `${locale} ${scheme} ${width}px setup`).toEqual([]);
       });

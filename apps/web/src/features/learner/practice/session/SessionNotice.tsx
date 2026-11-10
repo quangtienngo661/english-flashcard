@@ -28,7 +28,7 @@ export function SeeWordLink({ lemma }: { lemma: string }) {
   const t = useTranslations('App.practice.session.ai');
   const locale = useLocale();
   return (
-    <Link href={wordHref(locale, lemma)} className="font-semibold text-primary underline underline-offset-2">
+    <Link href={wordHref(locale, lemma)} className="font-semibold text-wm-accent underline underline-offset-2">
       {t('seeWord')}
     </Link>
   );
@@ -47,8 +47,8 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
   else if (notice.reason === 'quota-exhausted') text = [t('fallbackQuota'), refill(notice.resetsAt)].filter(Boolean).join(' ');
   else text = t('fallback');
   return (
-    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-inner border-2 border-accent bg-accent-soft px-4 py-3">
-      <p className="text-ui text-ink">
+    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-wm-lg border border-wm-accent bg-wm-accent-soft px-4 py-3">
+      <p className="text-wm-small text-wm-ink">
         {text}
         {lemma && (
           <>
@@ -61,7 +61,7 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
         type="button"
         aria-label={t('dismiss')}
         onClick={onDismiss}
-        className="shrink-0 rounded-sm p-0.5 text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="shrink-0 rounded-sm p-0.5 text-wm-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <X aria-hidden className="size-4" />
       </button>

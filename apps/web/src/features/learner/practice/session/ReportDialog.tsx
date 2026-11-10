@@ -8,9 +8,9 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { showToast } from '@/ui/Toast';
 import { cn } from '@/lib/cn';
 
 type Reason = { code: string; label: string; detail_hint: string | null; note_required: boolean };
@@ -86,38 +86,38 @@ export function ReportDialog({ itemId, kind, privateWord = false, lemma = null, 
       closeLabel={tc('close')}
       footer={
         <>
-          <Button variant="quiet" size="lg" isDisabled={send.busy} onPress={onClose}>
+          <Button variant="secondary" size="lg" isDisabled={send.busy} onPress={onClose}>
             {tc('cancel')}
           </Button>
-          <Button variant="sticker" size="lg" isPending={send.busy} onPress={() => void submit()}>
+          <Button variant="primary" size="lg" isPending={send.busy} onPress={() => void submit()}>
             {t('send')}
           </Button>
         </>
       }
     >
-      {subtitle && <span className="w-fit rounded-full bg-accent-soft px-2 py-0.5 text-caption font-semibold text-ink">{subtitle}</span>}
+      {subtitle && <span className="w-fit rounded-full bg-wm-accent-soft px-2 py-0.5 text-wm-label text-wm-ink">{subtitle}</span>}
       <RadioGroup value={code} onChange={setCode} className="flex flex-col gap-2" isInvalid={tried && !reason}>
-        <Label className="text-ui font-semibold text-ink">{t('question')}</Label>
+        <Label className="text-wm-small-strong text-wm-ink">{t('question')}</Label>
         {(reasons.data?.items ?? []).map((r) => (
           <Radio
             key={r.code}
             value={r.code}
-            className="group flex cursor-pointer items-center gap-3 rounded-inner border-2 border-border-strong bg-surface px-3 py-2.5 text-ui font-semibold text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:border-primary data-selected:bg-primary-soft"
+            className="group flex cursor-pointer items-center gap-3 rounded-wm-lg border border-wm-line bg-wm-surface px-3 py-2.5 text-wm-small-strong text-wm-ink outline-none data-focus-visible:outline-3 data-focus-visible:outline-offset-2 data-focus-visible:outline-wm-accent data-selected:border-wm-accent data-selected:bg-wm-accent-soft"
           >
-            <span aria-hidden className="flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-border-strong group-data-selected:border-primary">
-              <span className="size-2 rounded-full group-data-selected:bg-primary" />
+            <span aria-hidden className="flex size-4 shrink-0 items-center justify-center rounded-full border border-wm-line group-data-selected:border-wm-accent">
+              <span className="size-2 rounded-full group-data-selected:bg-wm-accent" />
             </span>
             {r.label}
           </Radio>
         ))}
-        {tried && !reason && <p className="text-caption text-danger">{t('chooseReason')}</p>}
+        {tried && !reason && <p className="text-wm-caption text-wm-fail">{t('chooseReason')}</p>}
       </RadioGroup>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2">
-          <label htmlFor={noteId} className="text-ui font-semibold text-ink">
+          <label htmlFor={noteId} className="text-wm-small-strong text-wm-ink">
             {t('note')}
           </label>
-          <span className="text-caption text-muted">
+          <span className="text-wm-caption text-wm-muted">
             {reason?.note_required ? t('required', { count: length, max: NOTE_MAX }) : t('optional', { count: length, max: NOTE_MAX })}
           </span>
         </div>
@@ -130,16 +130,16 @@ export function ReportDialog({ itemId, kind, privateWord = false, lemma = null, 
           placeholder={reason?.detail_hint ?? undefined}
           aria-invalid={tried && noteMissing}
           className={cn(
-            'w-full resize-y rounded-control border-2 bg-surface px-3 py-2 text-ui text-ink outline-none placeholder:text-placeholder focus-visible:border-primary',
-            tried && noteMissing ? 'border-danger' : 'border-border-strong',
+            'w-full resize-y rounded-control border-2 bg-wm-surface px-3 py-2 text-wm-small text-wm-ink outline-none placeholder:text-wm-muted focus-visible:border-wm-accent',
+            tried && noteMissing ? 'border-wm-fail' : 'border-wm-line',
           )}
         />
-        {tried && noteMissing && <p className="text-caption text-danger">{t('noteMissing')}</p>}
+        {tried && noteMissing && <p className="text-wm-caption text-wm-fail">{t('noteMissing')}</p>}
       </div>
-      {privateWord && <p className="text-ui text-ink">{lemma ? t('privateWord', { lemma }) : t('privateWordUnknown')}</p>}
-      <p className="text-caption text-muted">{kind === 'ai' ? t('infoAi') : t('info')}</p>
+      {privateWord && <p className="text-wm-small text-wm-ink">{lemma ? t('privateWord', { lemma }) : t('privateWordUnknown')}</p>}
+      <p className="text-wm-caption text-wm-muted">{kind === 'ai' ? t('infoAi') : t('info')}</p>
       {error && (
-        <p role="alert" className="text-ui text-danger">
+        <p role="alert" className="text-wm-small text-wm-fail">
           {error}
         </p>
       )}

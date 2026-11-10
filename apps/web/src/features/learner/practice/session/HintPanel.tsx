@@ -4,9 +4,9 @@ import { useQueries } from '@tanstack/react-query';
 import { Lightbulb } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useApi } from '@/app-shell/session/session-context';
-import { Button } from '@/app-ui/Button';
+import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
-import { KBD } from './QuestionCard';
+import { ButtonKey } from './QuestionCard';
 import type { Item } from './use-practice-session';
 
 type HintStep = { kind: 'definition' | 'example' | 'meaning' | 'first_letter'; text: string };
@@ -36,15 +36,15 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   if (opened.length === 0) return null;
   const nextLevel = levels.find((n) => n > item.hint_level);
   return (
-    <section className="flex flex-col gap-2 rounded-inner bg-accent-soft p-3">
+    <section className="flex flex-col gap-2 rounded-wm-lg bg-wm-accent-soft p-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-ui font-semibold text-ink">
+        <h3 className="flex items-center gap-1.5 text-wm-small-strong text-wm-ink">
           <Lightbulb aria-hidden className="size-4" />
           {t('progress', { opened: opened.length, total: levels.length })}
         </h3>
         <span aria-hidden className="flex gap-1">
           {levels.map((n) => (
-            <span key={n} className={cn('size-2 rounded-full border border-ink', n <= item.hint_level && 'bg-ink')} />
+            <span key={n} className={cn('size-2 rounded-full border border-wm-ink', n <= item.hint_level && 'bg-wm-ink')} />
           ))}
         </span>
       </div>
@@ -53,20 +53,20 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
           const value = n <= item.hint_level ? hints[index]?.data?.hint : undefined;
           return (
             <li key={n} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-              <span className="flex shrink-0 items-center gap-2 text-caption font-semibold text-ink sm:w-44">
-                <span className={cn('flex size-5 items-center justify-center rounded-full border border-ink', n <= item.hint_level && 'bg-ink text-surface')}>{n}</span>
+              <span className="flex shrink-0 items-center gap-2 text-wm-label text-wm-ink sm:w-44">
+                <span className={cn('flex size-5 items-center justify-center rounded-full border border-wm-ink', n <= item.hint_level && 'bg-wm-ink text-wm-surface')}>{n}</span>
                 {value ? ('kind' in value ? t(`kinds.${value.kind}`) : t('kinds.letters')) : t('locked', { n })}
               </span>
               {value ? (
-                <span className="min-w-0 break-words text-ui text-ink">
+                <span className="min-w-0 break-words text-wm-small text-wm-ink">
                   {'kind' in value ? (value.kind === 'first_letter' ? `${value.text}___` : value.text) : t('letters', { first: value.first_letter, length: value.length })}
                 </span>
               ) : (
                 n === nextLevel &&
                 !locked && (
-                  <Button variant="quiet" className="w-fit" onPress={() => onOpen(n)}>
+                  <Button variant="secondary" className="w-fit" onPress={() => onOpen(n)}>
                     {t('open', { n })}
-                    <kbd className={`${KBD} border-border-strong`}>H</kbd>
+                    <ButtonKey>H</ButtonKey>
                   </Button>
                 )
               )}

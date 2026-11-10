@@ -1657,3 +1657,370 @@ Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 
 - The overlay backdrop keeps M1's 3 px blur (R10). Figma's overlays show 1.5 px.
 
 **Open:** none.
+
+---
+
+# Part 5 — M5 Luyện tập, Học, Ôn (branches `feat/giao-dien-moi-m5a`, `feat/giao-dien-moi-m5b`)
+
+**Goal:** Rebuild practice. M5a covers the home page, Tùy chỉnh phiên, the session, the summary and Từ hay sai, plus the shared question pieces Ôn also uses. M5b covers Học (the dissolving card stack) and Ôn (recall).
+
+**Inputs:**
+- Design §5.5, §7.5 (`AnswerOption`, `ProgressBar`), §8.1–§8.5, §9 M5, §10.4.
+- Motion doc §2 (card stack), §5–§7 and §8.
+- `docs/deliveries/cloze-own-then-ai.md` §"Việc cho đợt dựng hộp mới".
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m5-practice.md` ("M5 code P §n") and `…-m5-review.md` ("M5 code R §n").
+- Figma facts `…FIGMA_FACTS_2026-11-10-m5-a.md` ("M5 Figma A") and `…-m5-b.md` ("M5 Figma B").
+- Prototypes:
+  - `vong-13-hai-cot-gon.html` and `vong-14-so-cau-ai.html` (Tùy chỉnh phiên);
+  - `vong-15-polish-9-trang.html` (session 4E, summary, weak words);
+  - `chong-the-mo.html` (Học stack).
+
+Paths are under `apps/web/` unless they start with `apps/api/`. `P/` = `src/features/learner/practice/`.
+
+**Order:**
+- Both M5 branches start once M3 is merged into `refactor/giao-dien-moi`. They use `groupTone`, the stage tokens and `StageBar`.
+- M5b starts after M5a is merged, because Ôn renders `PracticeSession` (M5 code R surprise 1).
+- Speaker buttons come from `@/app-ui/SpeakButtons` and `@/app-ui/PronunciationLine`. Those paths re-export `ui/` after M4 merges, so M5 does not wait for M4. M8 switches the imports.
+- **QM5-1** (owner, before M5.3): if PR #249 (learners choose the number of AI questions) is merged into `dev`, merge `origin/dev` into `refactor/giao-dien-moi` first, and Tùy chỉnh phiên follows Figma (round 14: "Câu AI viết" stepper, "Xếp câu AI"). If not, M5.3 builds the round 13 box (AI switch), and the stepper waits for a later task.
+- **QM5-2** (owner, before M5.8): see M5.8.
+
+## Part 5 constraints
+
+- **API changes:**
+  - the one in M5.1, under QR2;
+  - whatever #249 brings, if QM5-1 is yes.
+- The session create body keeps today's fields, plus `cloze_source: 'own_then_ai'` (`cloze-own-then-ai.md`).
+- **Ôn** never shows the AI label or the report button (`app-redesign-plan.md:512`).
+- **Học:**
+  - keeps the same-`review_id` retry on network errors (E19) and one review in flight at a time;
+  - keys 1 and 2 keep working;
+  - "Cần ôn lại" and "Đã biết" stay as buttons, so dragging is never required (design §8.5).
+- **Typing in Ôn** must be exact (GM19). The API already grades that way; M5.9 pins it in a UI test.
+- **Reduced motion:** opacity only, ≤ 200 ms, run through WAAPI (`element.animate`), because the global CSS rule zeroes CSS durations (M5 code R surprise 9).
+- The report confirmation keeps today's text until M6 builds `/app/settings/reports`. M6 changes it (QR1).
+
+## Part 5 Review Focus
+
+1. **A session reloaded halfway:**
+   - the bar's ✓/✗ counts come back from the server (M5.1, M5.4), not from zero;
+   - "câu 7 / 20" is right.
+2. **Tùy chỉnh phiên for a Free learner with 3 AI questions left asking for 5:**
+   - the red notice "Không đủ lượt câu AI";
+   - start is disabled;
+   - "Bỏ kiểu câu có AI" fixes it.
+   Pinned in M5.3 (for round 14; for round 13, the locked and quota lines that exist today).
+3. **Học, pressing 2 twice fast** (or 1 then 2): exactly one review is sent per card, and the second press acts on the next card only after the first resolves (or as QM5-2 decides). Pinned in M5.8.
+4. **Ôn, typing "deteriorated" for "deteriorate":** graded wrong, no partial credit (GM19), and the compare line shows the difference. Pinned in M5.9.
+5. **A tall back face on a phone (several saved sentences):** the card can still scroll vertically (`touch-action: pan-y`), and a horizontal drag still rates it. Pinned in M5.8 with a pointer test.
+
+### Task M5.1 (M5a): API — stage move and live counts for a practice session
+
+**Files:**
+- Modify the Practice module's answer view and session view (`apps/api/src/practice/sessions/session-views.ts` and the answer service). Find them through `POST /v1/practice/sessions/:id/answers` and `GET /v1/practice/sessions/:id`.
+- Modify the unit tests.
+- Modify `scripts/smoke-giao-dien-moi.mjs` (a check).
+
+**Interfaces:**
+- The answer result gains `level: number | null`: the item's current stage, 0–5, read through the existing Learning port.
+- The session view gains `correct: number` and `wrong: number`.
+
+The web shows "Ngăn 1 ngày → Ngăn 3 ngày" from `level` (Figma `100:3164`), and the bar's ✓/✗ after a reload.
+
+- [ ] **Step 1: Write the failing tests:**
+  - An answer on an item at level 1 returns `level: 1`.
+  - An item that left learning returns `null`.
+  - After 2 correct and 1 wrong answers, the session view returns `correct: 2, wrong: 1`.
+- [ ] **Step 2: Run** the Practice unit tests. Expected: FAIL.
+- [ ] **Step 3: Implement** within D3 (Practice reads Learning only through its port).
+- [ ] **Step 4: Run** the API checks and the smoke on a fresh DB. Expected: PASS. Append the output to `docs/deliveries/giao-dien-moi-smoke-output.txt`.
+- [ ] **Step 5: Commit** `feat(api): return the item stage and live counts in practice sessions`.
+
+### Task M5.2 (M5a): `AnswerOption`, `ProgressBar`, `Stepper`, `KeyLegend`
+
+**Files:**
+- Create: `src/ui/AnswerOption.tsx`, `src/ui/ProgressBar.tsx`, `src/ui/Stepper.tsx`, `src/ui/KeyLegend.tsx`.
+- Test: `src/ui/practice-kit.test.tsx`.
+
+**Interfaces:**
+- `AnswerOption({ state: 'idle'|'correct'|'wrong'|'dim', label, kbd?, note? })` draws Figma `Lựa chọn` `3:51`:
+  - wrong shows the note "Bạn chọn";
+  - correct shows "Đáp án đúng";
+  - dim is opacity .6.
+- `ProgressBar({ value, max, label })`: `role="progressbar"`, continuous fill (`app-redesign-plan.md:447`).
+- `Stepper({ label, value, min, max, onChange })`: minus and plus buttons, each disabled at its limit; 44 px on phones.
+- `KeyLegend({ items: { keys: string[]; label: string }[] })`: desktop only.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Each `AnswerOption` state shows its note text.
+  - The progress bar has `aria-valuenow` 7 and `aria-valuemax` 20.
+  - The stepper's minus button is disabled at `min`, its plus button at `max`, and each press changes the value by exactly one.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/practice-kit.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add answer option, progress bar, stepper and key legend to ui`.
+
+### Task M5.3 (M5a): Tùy chỉnh phiên
+
+**Files:**
+- Rewrite: `P/CustomizeDialog.tsx`.
+- Delete or replace: `AiTypesToggle.tsx`, `OwnSentencesToggle.tsx`.
+- Modify: `use-practice-starter.tsx`.
+- Modify tests: `practice-home.test.tsx:262-319`, `ai-toggle.test.tsx`, `e2e/app/m5a.spec.ts`; `messages/{vi,en}.json`.
+
+**Behaviour:** Figma `131:3890` / `131:4232` (dialog `140:4049`, sheet `141:4147`, scrolled to the end `141:4320`, states `131:4522`), M5 Figma A §2.
+- **Container:** `ui/Dialog size="xl"` (840 px) on desktop; a sheet with a sticky footer on phones.
+- **"Từ" (words):**
+  - desktop: group rows with a `groupTone` square, a count and a check;
+  - phone: a group dropdown;
+  - "Chỉ một ngăn" menu with stage squares and counts;
+  - word-filter segment "Mọi từ / Cần ôn / Ưu tiên".
+- **"Câu hỏi" (question types):**
+  - Trắc nghiệm;
+  - Đúng/sai;
+  - Gõ từ, with a "Theo nghĩa / Theo câu / Trộn" segment on its row;
+  - "Điền từ vào câu bạn đã lưu".
+- **"Câu AI viết" (AI questions):**
+  - QM5-1 yes: `Stepper` plus caption "Tối đa N câu AI · còn M lượt"; rows "Điền từ vào câu" and "Trắc nghiệm theo câu" (with "Chọn nghĩa / Chọn từ / Trộn", which maps to `meaning_in_sentence` / `mcq_sentence`); "Xếp câu AI: Rải đều / Ngẫu nhiên".
+  - QM5-1 no: one AI switch (round 13).
+- **Footer:**
+  - "Số câu" `Stepper` (max = `max_questions_per_session`, or the scope's word count when the admin chose that);
+  - "Thứ tự" menu;
+  - "Bắt đầu N câu →";
+  - "Dùng 1 trong N phiên còn lại hôm nay."
+- **States:** every row of M5 Figma A §2, items 2–10: not enough AI questions, quota spent, Free, at least one type, "Theo số từ".
+- **Free plan follows the API:** AI usable until the quota runs out. Record it as a ruling. The locked look stays only for `entitlement-required` / `plan-required`.
+- **The `own_then_ai` tasks** (`cloze-own-then-ai.md`):
+  - send `cloze_source: 'own_then_ai'` when both saved sentences and AI fill-in are on;
+  - `againBody` resends the new source (and `ai_count` / `ai_placement` with QM5-1 yes);
+  - remove the `ownReplacesAi` line.
+- **Memory:**
+  - keep remembering the saved-sentence choice (`wordmet-web.own-sentences`);
+  - the AI count starts at 0 each time, as in round 14. Drop `wordmet-web.ai-types` with QM5-1 yes.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Saved sentences on and AI fill-in on → the create body has `cloze_source: 'own_then_ai'`.
+  - Saved sentences on and AI fill-in off → `cloze_source: 'own'`.
+  - With QM5-1 yes, asking for 5 AI questions with 3 left shows "Không đủ lượt câu AI" and disables start; "Bỏ kiểu câu có AI" sets the count to 0 and enables start.
+  - Turning off every type shows "Chọn ít nhất một kiểu câu." and disables start.
+  - The Free plan with quota left can set AI questions (no lock).
+  - Choosing "Ngăn 3 ngày" shows "10 từ".
+- [ ] **Step 2: Run** `pnpm vitest run P`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run P` → PASS; then `pnpm cf:docker e2e/app/m5a.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the session options dialog`.
+
+### Task M5.4 (M5a): The session screen (shared with Ôn)
+
+**Files:**
+- Rewrite the views of `P/session/{PracticeSession,QuestionCard,McqQuestion,TypeWordQuestion,TrueFalseQuestion,SentenceQuestions,AnswerFeedback,AlternativeFeedback,HintPanel,RoundPrompt,SessionNotice,PreparingState,AiUnavailableState,ReportDialog}.tsx`.
+- Modify: `use-practice-session.ts` (`Item.ai`; counts from the session view).
+- Create: `src/app/[locale]/app/(member)/(focus)/loading.app.tsx`.
+- Modify tests: `practice-session.test.tsx`, `ai-questions.test.tsx`, `ai-states.test.tsx`, `e2e/app/m4.spec.ts`, `m5a.spec.ts` (fixtures gain `ai`).
+
+**Behaviour:** Figma `100:3164`, `178:5326`, `178:5546`, `178:5755` (+ phone), M5 Figma A §3, round 15 4E.
+- **Bar:** close; "câu n / N" in mono; `ProgressBar`; ✓/✗ chips.
+- **Card:**
+  - kind chip;
+  - the "câu AI" chip and the "Báo lỗi" button follow `item.ai`;
+  - the sentence with the blank, filled correct, or struck through when wrong ("lần 2").
+- **Answering:** MCQ uses `AnswerOption`.
+- **Result panel tucked under the card:**
+  - "Đúng rồi" with "Ngăn 1 ngày → Ngăn 3 ngày" from `level` (M5.1), and the Enter note;
+  - "Chưa đúng" with the English definition and notes;
+  - buttons: "Cần ôn lại [1]", "Đã biết [Enter]" (`pass`), "Làm lại", "Gợi ý", "Xem đáp án", "Câu tiếp".
+- `KeyLegend` on desktop.
+- No `bg-canvas` wrapper (the `(focus)` dot grid shows).
+- **Motion:** `card-rise`, `pop-in` and `wiggle-soft` stay (design §8.2).
+- **Report dialog:** restyle only; the text stays.
+- **Old variants:** `sticker` → `primary`; `quiet` → `secondary`; "Đã biết" → `pass`. Tests stop asserting `data-variant`; they assert the button name and role instead.
+
+- [ ] **Step 1: Write the failing tests:**
+  - An item with `ai: true` shows "câu AI" and "Báo lỗi"; `ai: false` shows neither, even when `reportable`.
+  - A right answer at `level: 1` shows "Ngăn 1 ngày" and "Ngăn 3 ngày".
+  - After reloading a session whose view says `correct: 5, wrong: 2`, the bar reads ✓5 ✗2 and "câu 8 / 20".
+  - MCQ wrong: the picked option reads "Bạn chọn" and the right one "Đáp án đúng".
+  - Keys 1, Enter, H and Esc keep today's actions.
+- [ ] **Step 2: Run** `pnpm vitest run P/session`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run P/session` → PASS; then `pnpm cf:docker e2e/app/m4.spec.ts e2e/app/m5a.spec.ts e2e/app/cai-thien-a-practice.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the practice session screen`.
+
+### Task M5.5 (M5a): Summary, Luyện tập home, Từ hay sai
+
+**Files:**
+- Rewrite: `P/session/SessionSummary.tsx`, `P/{PracticePage,PracticeHero,SourceCard,CurrentSessionCard,OutOfSessions,WeakWordsPage}.tsx`.
+- Create: `C/practice/loading.app.tsx`.
+- Modify tests: `practice-home.test.tsx`, `weak-history.test.tsx`, `e2e/app/m4.spec.ts:236-241`.
+
+**Behaviour:**
+- **Summary** (`119:4608` / `119:4701`):
+  - ring chart (SVG) "16/20 câu đúng";
+  - "Xong 20 câu.";
+  - the "Cần ôn lại · N từ" list with "Đã đưa vào ưu tiên" or a "Cần ôn lại" text button;
+  - "Luyện thêm một phiên", "Đưa N từ còn lại vào ưu tiên", "Về Luyện tập";
+  - blocks enter at 400 ms, 90 ms apart (design §8.3; this changes `STAGGER`, also used by Học and Ôn).
+- **Home** (`99:3169` / `99:3391`):
+  - sessions count "2/30";
+  - quick start "luyện nhanh · từ cần ôn hôm nay" with "Bắt đầu 20 câu" and "Tùy chỉnh";
+  - current-session card "Làm tiếp câu 9 →";
+  - "Luyện theo nguồn khác" (Theo nhóm / Từ hay sai / Đang ưu tiên / Luyện tất cả);
+  - "Gần đây" with "Mở lịch học" (`/app/practice/history` until M6);
+  - key legend.
+- **Từ hay sai** (`119:4317` / `119:4482`):
+  - big count;
+  - group menu "tất cả nhóm ▾";
+  - card "Luyện từ hay sai" with "Tùy chỉnh";
+  - table with ✓/✗ chips: ✓ = `counted − wrong`, ✗ = `wrong`; order is not shown, because the API has none;
+  - stage square;
+  - "sai gần nhất";
+  - "đang có 5 / 12 từ" with "Xem thêm".
+
+- [ ] **Step 1: Write the failing tests:**
+  - The summary ring reads "16/20".
+  - "Đưa 3 từ còn lại vào ưu tiên" posts the 3 items.
+  - The home page's current-session card links "Làm tiếp câu 9".
+  - A weak-word row with `counted 5, wrong 3` shows ✓2 ✗3.
+  - Replace the old "sai 3/5" assertions.
+- [ ] **Step 2: Run** `pnpm vitest run P`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run P` → PASS; then the e2e lines above → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the practice home, summary and weak words`.
+
+### Task M5.6 (M5a): M5a check and PR
+
+- [ ] **Step 1: Run the checks:**
+  - API: lint, typecheck, test, build, smoke.
+  - Web: lint, typecheck, test, `cf:docker`.
+  - Admin: the four checks.
+  - `SHOTS_MILESTONE=gm-m5a pnpm shots`: home, the dialog in 4 states, the session in 4 states, the summary, Từ hay sai; 390 and 1440.
+- [ ] **Step 2: Commit** the shots, and the as-built in `docs/deliveries/giao-dien-moi.md`.
+- [ ] **Step 3: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild practice, its options dialog and session`. Merge after CI is green and the owner says yes.
+
+### Task M5.7 (M5b): Card stack pieces
+
+Branch: `git switch -c feat/giao-dien-moi-m5b origin/refactor/giao-dien-moi` once M5a is merged.
+
+**Files:**
+- Create: `src/ui/WordChip.tsx`.
+- Create: `src/features/learner/review/{CardStack,useCardDrag,Pile}.tsx`.
+- Create: `src/lib/stack-motion.ts` (WAAPI helpers, reduced-motion paths).
+- Test: `review/card-stack.test.tsx`.
+
+**Interfaces:**
+- `WordChip({ word, tone: 'normal'|'review', groupId? })` draws Figma `Chip từ` `96:322`.
+- `useCardDrag(ref, { onRate(rating), threshold: 110, velocity: 0.55 })`:
+  - pointer events with `touch-action: pan-y`;
+  - returns `dx` and the stamp ("Đã biết", "Cần ôn lại") once past half the threshold.
+- `CardStack({ cards, current, flipped, onFlip, onRate })`:
+  - only the top card renders full content;
+  - the cards behind render a light front, with no `useForms` call and no speakers (M5 code R surprise 14).
+- Motion numbers come from motion doc §2: flip 300 ms on the main curve, perspective 1400 px (new token), dissolve, the next card from blur to sharp, chip into the pile, counter bump.
+
+- [ ] **Step 1: Write the failing tests:**
+  - A drag of 120 px to the right calls `onRate('known')`.
+  - A drag of 80 px calls nothing and the card returns.
+  - A fast flick (dx 60 px in 100 ms) calls `onRate`.
+  - Only one card in the stack calls `GET /v1/words/{lemma}`.
+  - With reduced motion, `element.animate` is called only with `opacity` keyframes of ≤ 200 ms.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/review/card-stack.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add the review card stack, drag and piles`.
+
+### Task M5.8 (M5b): Học
+
+**Files:**
+- Rewrite: `review/{ReviewSession,Flashcard,ReviewSummary}.tsx`, `use-review-queue.ts`.
+- Modify tests: `review-session.test.tsx`, `e2e/app/m2.spec.ts:171-236`, `e2e/app/cai-thien-a-speak.spec.ts:122-157`.
+
+**Behaviour:** Figma `80:3228`, `80:3321`, `80:3429`, `80:3557` / `80:3601`; prototype `chong-the-mo.html`.
+- **Session bar** with `ProgressBar`.
+- **Stack:**
+  - front: lemma, part of speech, IPA, speaker;
+  - back: meaning, example, stage.
+- **Piles** "Cần ôn lại" / "Đã biết" with word chips and counters.
+- **Buttons with key caps:** "Cần ôn lại [1]", "Đã biết [2]".
+- **Following the chosen prototype** (rulings):
+  - Space flips both ways ("Xem mặt trước");
+  - ← and → also rate;
+  - pressing a rating before flipping shakes the card (300 ms) and shows "Lật thẻ để xem nghĩa trước đã.";
+  - the buttons are `aria-disabled` until the card is flipped.
+- **Summary** (`80:3557`):
+  - ring chart;
+  - the words in each pile;
+  - "Ôn lại N thẻ cần ôn";
+  - "Học";
+  - "Về trang chủ".
+- **QM5-2** (owner): when Lan presses "Đã biết", either
+  - **(a)** the card dissolves at once and the review is saved in the background. On a network failure the card comes back with "Chưa lưu được, thử lại" and the same `review_id`. Or:
+  - **(b)** the card waits until the save returns, then dissolves (today's order: about 0.2–0.5 s later on a normal connection).
+  - Implement the chosen one. Keep the E19 tests, adapted to (a) or unchanged for (b).
+
+- [ ] **Step 1: Write the failing tests:**
+  - Space twice returns the card to its front.
+  - Pressing 2 before flipping sends nothing and shows "Lật thẻ để xem nghĩa trước đã.".
+  - → after flipping sends `rating: 'good'` once.
+  - Two fast presses send one review per card (QM5-2 decides when the second card can be rated).
+  - The summary lists the words of the "Cần ôn lại" pile.
+  - With network failure and option (a), the card comes back and the retry sends the same `review_id`.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/review`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then the e2e lines above → PASS.
+- [ ] **Step 5: Measure:** a 20-card Học session in DevTools Performance with 4× CPU slowdown (design §8.1, §8.5). Record the frame numbers in the delivery record.
+- [ ] **Step 6: Commit** `feat(web): rebuild learn as a dissolving card stack`.
+
+### Task M5.9 (M5b): Ôn and the M5b PR
+
+**Files:**
+- Modify: `recall/{RecallSession,RecallSummary}.tsx`.
+- Create: `recall/CompareLine.tsx`.
+- Create: `e2e/app/recall.spec.ts`. No Playwright test visits `/app/recall` today.
+
+**Behaviour:** Figma `208:5655`, `209:5683`, `209:5902`, `209:6089` (+ phone).
+- **MCQ by meaning:** `AnswerOption` with keys 1–4.
+- **Type the word:** the field, "Kiểm tra", "Gợi ý".
+- **Wrong:** `CompareLine` shows the typed word against the answer, letter by letter (added and missing letters marked), as soon as the answer is known to the page (after reveal).
+- **Done screen:** ring chart and four result tiles.
+- No AI label, no report button.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `CompareLine("deteriorated", "deteriorate")` marks the final "d" as extra.
+  - `CompareLine("detoriorate", "deteriorate")` marks the substituted letter.
+  - Typing "deteriorated" sends the text unchanged and shows the wrong state (GM19).
+  - Ôn with `reportable: true` shows no report button.
+  - New e2e: Ôn on the mocked API, answer one MCQ and one typed question, axe clean at 390 and 1440, no horizontal scroll.
+- [ ] **Step 2: Run** the recall tests. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the full checks (web, admin); then `SHOTS_MILESTONE=gm-m5b pnpm shots` for Học (4 states) and Ôn (4 states). Expected: all pass.
+- [ ] **Step 5: Commit** the work, the shots and the as-built.
+- [ ] **Step 6: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild learn as a card stack and the recall screens`.
+
+## Part 5 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M5 table: Luyện tập → M5.5; Tùy chỉnh phiên → M5.3; session states → M5.4; summary → M5.5; Từ hay sai → M5.5; Học → M5.8; Ôn → M5.9.
+- The "đợt dựng hộp mới" tasks → M5.3.
+- The practice-ai-count rule → QM5-1.
+- Free AI → M5.3.
+- The report dialog and current-session card → M5.4, M5.5.
+- §7.5 `AnswerOption`, `ProgressBar` → M5.2.
+- §8 motion and the frame-rate measurement → M5.7, M5.8.
+- §5.5 loading files → M5.4, M5.5.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- The answer result gains `level`, and the session view gains `correct` / `wrong` (QR2).
+- M5 is two PRs: M5a, then M5b.
+- Speech imports stay on the `app-ui` paths until M8.
+- Free AI follows the API.
+- The AI count starts at 0 each time; the saved-sentence choice is remembered.
+- ✓ in Từ hay sai = `counted − wrong`.
+- The summary enters at 400 ms / 90 ms. This changes all three summaries (GM14 decided "the new numbers").
+- Học follows the chosen prototype: flip back, arrow keys, the nudge before flipping.
+- The cards behind the top one render light.
+- `touch-action: pan-y` on the card.
+- Ôn's compare line appears once the answer is revealed.
+- Design §8.2's "Ôn (flashcard)" row means Học (GM17 renamed it). Fix the design text in the M5b PR.
+
+**Open:**
+- QM5-1: merge PR #249 before M5?
+- QM5-2: when the card dissolves in Học.

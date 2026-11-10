@@ -1,6 +1,7 @@
 'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { BackLink } from '@/app-chrome/BackLink';
@@ -10,17 +11,21 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
 import { useApi, useSession } from '@/app-shell/session/session-context';
-import { Button } from '@/app-ui/Button';
-import { Select } from '@/app-ui/Select';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { Select } from '@/ui/Select';
+import { Tag } from '@/ui/Tag';
+import { TextButton } from '@/ui/TextButton';
 import { STAGE_KEYS } from '../groups/stages';
 import { localDay } from './days';
 import { RULE_TYPES, useWeakGroups, type WeakWord } from './practice-api';
 import { usePracticeStarter } from './use-practice-starter';
 
 const PAGE = 50;
+const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
-/** K/56 `/app/practice/weak`: the weak words, by deck (API (b)), with a start for them. */
+/** K/56 `/app/practice/weak` (Figma 119:4317): the weak words, by deck (API (b)), with a start for them. */
 export function WeakWordsPage() {
   const t = useTranslations('App.practice.weak');
   const locale = useLocale();
@@ -53,113 +58,126 @@ export function WeakWordsPage() {
 
   return (
     <>
-      <BackLink {...(back)} />
-      <PageColumns aside={
-        <>
-          {count > 0 && (
-            <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-card border-b-4 border-primary bg-navy-card p-5 text-on-navy">
-              <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">{t('cardChip')}</span>
-              <h2 id="weak-card" className="text-h2 font-extrabold">
-                {t('cardCount', { count })}
+      <BackLink {...back} />
+      <PageColumns
+        aside={
+          <>
+            {count > 0 && (
+              // Figma "Luyện từ hay sai": the count in red, the line, [Tùy chỉnh] and the start.
+              <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+                <span className="font-wm-mono text-wm-mono text-wm-muted">{t('cardChip')}</span>
+                <h2 id="weak-card" className="font-wm-display text-wm-section text-wm-fail">
+                  {t('cardCount', { count })}
+                </h2>
+                <p className="font-wm-sans text-wm-small text-wm-muted">{t('cardBody')}</p>
+                {starter.error('weak') && (
+                  <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
+                    {starter.error('weak')}
+                  </p>
+                )}
+                {starter.reopensAt ? (
+                  <p className="font-wm-sans text-wm-small-strong text-wm-ink">{t('reopens', { time: starter.reopensAt })}</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Button variant="primary" isPending={starter.pending('weak')} onPress={start}>
+                      <span className="truncate">{chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}</span>
+                    </Button>
+                    <TextButton className="justify-center" onPress={() => starter.customize({ source: 'weak', groupId: chosen?.group_id })}>
+                      {t('customize')}
+                    </TextButton>
+                  </div>
+                )}
+              </section>
+            )}
+            <section aria-labelledby="weak-rules" className="flex flex-col gap-2 px-1">
+              <h2 id="weak-rules" className="font-wm-sans text-wm-base-strong text-wm-ink">
+                {t('rulesTitle')}
               </h2>
-              <p className="text-ui text-on-navy-muted">{t('cardBody')}</p>
-              {starter.error('weak') && (
-                <p role="alert" className="text-ui font-semibold">
-                  {starter.error('weak')}
+              {(['in', 'skip', 'out', 'removed'] as const).map((key) => (
+                <p key={key} className="font-wm-sans text-wm-small text-wm-muted">
+                  {t(`rules.${key}`)}
                 </p>
-              )}
-              {starter.reopensAt ? (
-                <p className="text-ui font-semibold">{t('reopens', { time: starter.reopensAt })}</p>
-              ) : (
-                <>
-                  <Button variant="sticker" size="lg" className="w-full" isPending={starter.pending('weak')} onPress={start}>
-                    <span className="truncate">{chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}</span>
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="bg-transparent text-on-navy shadow-none ring-2 ring-inset ring-on-navy-muted hover:bg-navy-raised"
-                    onPress={() => starter.customize({ source: 'weak', groupId: chosen?.group_id })}
-                  >
-                    {t('customize')}
-                  </Button>
-                </>
-              )}
+              ))}
             </section>
-          )}
-          <section aria-labelledby="weak-rules" className="flex flex-col gap-2 rounded-card border border-border bg-surface p-5">
-            <h2 id="weak-rules" className="text-title font-semibold text-ink">
-              {t('rulesTitle')}
-            </h2>
-            {(['in', 'skip', 'out', 'removed'] as const).map((key) => (
-              <p key={key} className="text-caption text-ink">
-                {t(`rules.${key}`)}
-              </p>
-            ))}
+          </>
+        }
+      >
+        <PageTitle>{t('title')}</PageTitle>
+        {groups.isPending ? (
+          <FullScreenSpinner />
+        ) : groups.isError ? (
+          <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
+        ) : groups.data.total === 0 ? (
+          <EmptyState title={t('emptyTitle')} body={t('emptyBody')} />
+        ) : (
+          <section className="flex flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-5 shadow-wm-card md:px-6">
+            <div className="w-full md:w-72">
+              <Select
+                label={t('group')}
+                items={[
+                  { id: 'all', label: t('all', { count: groups.data.total }) },
+                  ...groups.data.items.map((g) => ({ id: g.group_id, label: t('deckOption', { name: g.name, count: g.count }) })),
+                ]}
+                value={deck}
+                onChange={setDeck}
+              />
+            </div>
+            <h2 className="wrap-anywhere font-wm-display text-wm-word text-wm-ink">{chosen ? t('titleGroup', { count, name: chosen.name }) : t('titleAll', { count })}</h2>
+            {list.isError ? <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} /> : <WeakList words={words} />}
+            {list.hasNextPage && (
+              <TextButton className="w-fit" isDisabled={list.isFetchingNextPage} onPress={() => void list.fetchNextPage()}>
+                {t('more')}
+              </TextButton>
+            )}
           </section>
-        </>
-      }>
-      <PageTitle>{t('title')}</PageTitle>
-      {groups.isPending ? (
-        <FullScreenSpinner />
-      ) : groups.isError ? (
-        <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
-      ) : groups.data.total === 0 ? (
-        <EmptyState title={t('emptyTitle')} body={t('emptyBody')} />
-      ) : (
-        <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5">
-          <div className="w-full sm:w-72">
-            <Select
-              label={t('group')}
-              items={[
-                { id: 'all', label: t('all', { count: groups.data.total }) },
-                ...groups.data.items.map((g) => ({ id: g.group_id, label: t('deckOption', { name: g.name, count: g.count }) })),
-              ]}
-              value={deck}
-              onChange={setDeck}
-            />
-          </div>
-          <h2 className="wrap-anywhere text-title font-semibold text-ink">{chosen ? t('titleGroup', { count, name: chosen.name }) : t('titleAll', { count })}</h2>
-          {list.isError ? (
-            <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} />
-          ) : (
-            <WeakList words={words} />
-          )}
-          {list.hasNextPage && (
-            <Button variant="quiet" className="w-fit" isPending={list.isFetchingNextPage} onPress={() => void list.fetchNextPage()}>
-              {t('more')}
-            </Button>
-          )}
-        </section>
-      )}
-      {starter.dialogs}
-    </PageColumns>
-      </>
+        )}
+        {starter.dialogs}
+      </PageColumns>
+    </>
   );
 }
 
+/** Figma 119:4317: word, meaning, ✓/✗ of the last 5 questions (✓ = counted − wrong; the API has no order), stage, last wrong. Phones keep the word and the chips. */
 function WeakList({ words }: { words: WeakWord[] }) {
   const t = useTranslations('App.practice.weak');
   const tStage = useTranslations('App.stages');
   const format = useFormat();
   const zone = useZone();
   const today = localDay(new Date(), zone);
+  const cols = 'md:grid md:grid-cols-12 md:items-center md:gap-4';
   return (
     <div>
-      <div aria-hidden className="hidden grid-cols-12 gap-3 border-b border-border pb-2 text-caption text-muted md:grid">
+      <div aria-hidden className={cn('hidden border-b border-wm-line pb-2 font-wm-mono text-wm-mono lowercase text-wm-muted', cols)}>
         <span className="col-span-2">{t('cols.word')}</span>
         <span className="col-span-4">{t('cols.meaning')}</span>
         <span className="col-span-2">{t('cols.recent')}</span>
         <span className="col-span-2">{t('cols.stage')}</span>
         <span className="col-span-2">{t('cols.last')}</span>
       </div>
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="flex flex-col divide-y divide-wm-line">
         {words.map((w) => (
-          <li key={w.sense_id} className="grid grid-cols-2 gap-x-3 gap-y-1 py-3 md:grid-cols-12 md:items-center">
-            <span className="min-w-0 break-words text-ui font-semibold text-ink md:col-span-2 md:col-start-1 md:row-start-1">{w.lemma}</span>
-            <span className="text-right text-caption font-semibold text-danger md:col-span-2 md:col-start-7 md:row-start-1 md:text-left">{t('wrongOf', { wrong: w.wrong, counted: w.counted })}</span>
-            <span className="col-span-2 min-w-0 break-words text-caption text-muted md:col-span-4 md:col-start-3 md:row-start-1 md:text-ui md:text-ink">{w.meaning ?? '—'}</span>
-            <span className="text-caption text-ink md:col-span-2 md:col-start-9 md:row-start-1">{tStage(STAGE_KEYS[w.level] ?? 's0')}</span>
-            <span className="text-right text-caption text-muted md:col-span-2 md:col-start-11 md:row-start-1 md:text-left">
+          <li key={w.sense_id} className={cn('flex items-center justify-between gap-3 py-3', cols)}>
+            <span className="min-w-0 break-words font-wm-display text-wm-word text-wm-ink md:col-span-2">{w.lemma}</span>
+            <span className="hidden min-w-0 break-words font-wm-sans text-wm-small text-wm-muted md:col-span-4 md:block">{w.meaning ?? '—'}</span>
+            <span className="flex shrink-0 gap-1.5 md:col-span-2">
+              <span role="img" aria-label={t('right', { count: w.counted - w.wrong })}>
+                <Tag tone="pass">
+                  <Check aria-hidden className="size-3" />
+                  {w.counted - w.wrong}
+                </Tag>
+              </span>
+              <span role="img" aria-label={t('wrong', { count: w.wrong })}>
+                <Tag tone="fail">
+                  <X aria-hidden className="size-3" />
+                  {w.wrong}
+                </Tag>
+              </span>
+            </span>
+            <span className="hidden items-center gap-1.5 font-wm-sans text-wm-small text-wm-ink md:col-span-2 md:flex">
+              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', STAGE_DOT[w.level] ?? STAGE_DOT[0])} />
+              {tStage(STAGE_KEYS[w.level] ?? 's0')}
+            </span>
+            <span className="hidden font-wm-mono text-wm-mono text-wm-muted md:col-span-2 md:block">
               {localDay(new Date(w.last_wrong_at), zone) === today ? t('today', { time: format.time(w.last_wrong_at) }) : format.date(w.last_wrong_at, 'dayMonth')}
             </span>
           </li>
