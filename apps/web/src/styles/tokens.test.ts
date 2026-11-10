@@ -160,3 +160,17 @@ describe('light islands and the navy card', () => {
     colors = lightColors;
   });
 });
+
+// A merge once dropped a closing brace in globals.css; jsdom tests never parse it, only the production build failed.
+describe('globals.css syntax', () => {
+  it('every block that opens also closes', () => {
+    const code = globals.replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^'\n]*'|"[^"\n]*"/g, '');
+    let depth = 0;
+    for (const ch of code) {
+      if (ch === '{') depth += 1;
+      if (ch === '}') depth -= 1;
+      expect(depth).toBeGreaterThanOrEqual(0);
+    }
+    expect(depth).toBe(0);
+  });
+});
