@@ -19,10 +19,11 @@ const TILE: Record<SourceTone, string> = {
   mark: 'bg-wm-mark/35 text-wm-mark-ink',
   pass: 'bg-wm-pass-soft text-wm-pass',
 };
+// The yellow has no dark ink that reads on both themes (mark-ink stays navy in dark mode, axe color-contrast), so its start uses ink.
 const START: Record<SourceTone, string> = {
   accent: 'text-wm-accent',
   fail: 'text-wm-fail',
-  mark: 'text-wm-mark-ink',
+  mark: 'text-wm-ink',
   pass: 'text-wm-pass',
 };
 
