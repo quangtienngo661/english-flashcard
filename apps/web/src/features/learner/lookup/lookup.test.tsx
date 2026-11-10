@@ -214,3 +214,28 @@ describe('Tra từ: final review findings', () => {
     expect(within(card).getByRole('heading', { name: 'budget' })).toBeInTheDocument();
   });
 });
+
+describe('Tra từ: stacks stay put', () => {
+  it('after an add refreshes the groups, every stack keeps its place', async () => {
+    let added = false;
+    renderApp(<LookupPage />, {
+      routes: base({
+        // After the add, "Công việc · B1" has more cards waiting and would sort first.
+        'GET /v1/groups': () =>
+          Response.json({ items: added ? [group(WRITING, 'Đề 12 · Writing', 31, 1), group(WORK, 'Công việc · B1', 20, 50)] : [group(WRITING, 'Đề 12 · Writing', 30, 24), group(WORK, 'Công việc · B1', 20, 0)] }),
+        [`POST /v1/groups/${WRITING}/items`]: () => {
+          added = true;
+          return Response.json({ created: true }, { status: 201 });
+        },
+      }),
+    });
+    const names = () => screen.getAllByRole('button', { name: /^Thêm vào / }).map((b) => b.getAttribute('aria-label'));
+    const stack = await screen.findByRole('button', { name: 'Thêm vào Đề 12 · Writing' });
+    await waitFor(() => expect(stack).toBeEnabled());
+    const before = names();
+    expect(before).toEqual(['Thêm vào Đề 12 · Writing', 'Thêm vào Công việc · B1']);
+    await userEvent.click(stack);
+    await waitFor(() => expect(within(screen.getByRole('button', { name: 'Thêm vào Công việc · B1' }).parentElement!).getByText('50')).toBeInTheDocument());
+    expect(names()).toEqual(before);
+  });
+});
