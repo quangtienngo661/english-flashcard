@@ -846,7 +846,9 @@
       "home": "Về trang chủ",
       "emptyTitle": "Hôm nay nhóm này không còn thẻ nào.",
       "emptyBody": "Bạn vẫn có thể học lại mọi từ trong nhóm.",
-      "studyAll": "Học tất cả từ"
+      "studyAll": "Học tất cả từ",
+      "stampReview": "về ngăn 1 ngày",
+      "stampKnow": "lên ngăn {stage}"
     },
     "lookup": {
       "title": "Tra từ",

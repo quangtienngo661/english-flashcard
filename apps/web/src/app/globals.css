@@ -940,3 +940,47 @@
 .deck-row[data-more-prev][data-more-next] {
   mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
 }
+
+/* M5.7, the Học card stack (motion doc §2, prototype chong-the-mo.html). The cards share one grid cell, so the stack is as tall as the
+   top card; the cards behind sit lower, smaller and blurred, and move between depths in 300 ms on the main curve. The top card has no
+   CSS transition: a drag moves it through its inline transform and its arrival is a Web Animation (lib/stack-motion.ts). */
+.cstack {
+  position: relative;
+  display: grid;
+  perspective: 1400px;
+}
+.cstack > .cstack-card {
+  grid-area: 1 / 1;
+  transition:
+    transform 300ms var(--ease-out-strong),
+    filter 300ms var(--ease-out-strong),
+    opacity 300ms var(--ease-out-strong);
+}
+.cstack-card[data-depth='1'] { z-index: 3; transform: translateY(16px) scale(0.95); filter: blur(5px); opacity: 0.85; }
+.cstack-card[data-depth='2'] { z-index: 2; transform: translateY(30px) scale(0.9); filter: blur(9px); opacity: 0.5; }
+.cstack-card[data-depth='3'] { z-index: 1; transform: translateY(40px) scale(0.86); filter: blur(12px); opacity: 0; }
+.cstack > .cstack-top {
+  z-index: 5;
+  transition: none;
+  /* A tall back face still scrolls on a phone; a sideways drag rates the card (Review Focus 5). */
+  touch-action: pan-y;
+  cursor: grab;
+}
+.cstack-top:active { cursor: grabbing; }
+.cstack-card[data-leaving] { z-index: 6; pointer-events: none; }
+.cstack-flip {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 300ms var(--ease-out-strong);
+}
+.cstack-flip[data-flipped='true'] { transform: rotateY(180deg); }
+.cstack-face { grid-area: 1 / 1; backface-visibility: hidden; }
+.cstack-back { transform: rotateY(180deg); }
+/* Motion doc §8: no blur or scale behind, only offsets; the faces swap without turning. */
+@media (prefers-reduced-motion: reduce) {
+  .cstack-card[data-depth='1'] { transform: translateY(12px); filter: none; opacity: 1; }
+  .cstack-card[data-depth='2'] { transform: translateY(22px); filter: none; opacity: 1; }
+  .cstack-card[data-depth='3'] { transform: translateY(22px); filter: none; opacity: 0; }
+  .cstack-flip[data-flipped='true'], .cstack-back { transform: none; }
+  .cstack-face[aria-hidden='true'] { opacity: 0; }
+}

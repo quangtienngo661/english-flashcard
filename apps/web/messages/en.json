@@ -846,7 +846,9 @@
       "home": "Back to Today",
       "emptyTitle": "No cards left in this deck today.",
       "emptyBody": "You can still study every word in the deck.",
-      "studyAll": "Study all words"
+      "studyAll": "Study all words",
+      "stampReview": "back to the 1-day stage",
+      "stampKnow": "up to the {stage} stage"
     },
     "lookup": {
       "title": "Look up",
