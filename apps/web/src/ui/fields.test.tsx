@@ -2,8 +2,10 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/app-ui/test-utils';
 import { Checkbox } from './Checkbox';
+import { DateOfBirthField } from './DateOfBirthField';
+import { GoogleButton } from './GoogleButton';
 import { PasswordField } from './PasswordField';
 import { Segmented } from './Segmented';
 import { Select } from './Select';
@@ -135,5 +137,30 @@ describe('ui fields', () => {
     const link = screen.getByRole('link', { name: 'Quên mật khẩu?' });
     const label = screen.getByText('Mật khẩu', { selector: 'label' });
     expect(link.parentElement).toBe(label.parentElement);
+  });
+  it('GoogleButton: the mark is hidden from screen readers, has four paths, and a press calls onPress', async () => {
+    const onPress = vi.fn();
+    renderApp(<GoogleButton onPress={onPress}>Tiếp tục với Google</GoogleButton>);
+    const button = screen.getByRole('button', { name: 'Tiếp tục với Google' });
+    const svg = button.querySelector('svg');
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+    expect(svg?.querySelectorAll('path')).toHaveLength(4);
+    await userEvent.click(button);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('DateOfBirthField: an under-13 date shows the age line and reports null', () => {
+    const onChange = vi.fn();
+    renderApp(<DateOfBirthField label="Ngày sinh" onChange={onChange} today="2026-11-10" />);
+    pickDate('Ngày sinh', '2015-01-01');
+    expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    pickDate('Ngày sinh', '2000-05-12');
+    expect(onChange).toHaveBeenLastCalledWith('2000-05-12');
+  });
+
+  it('DateOfBirthField: serverError tooYoung shows the same line', () => {
+    renderApp(<DateOfBirthField label="Ngày sinh" onChange={vi.fn()} serverError="tooYoung" />);
+    expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
   });
 });
