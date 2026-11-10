@@ -931,3 +931,423 @@ Run `git switch -c feat/giao-dien-moi-m2 origin/refactor/giao-dien-moi` once the
 - The mobile title of Đăng ký uses 38 px, like Đăng nhập, unless 38 px wraps at 390 px. Figma draws it at 32 px.
 
 **Open:** QM2-1 (Turnstile), asked 10/11/2026.
+
+---
+
+# Part 3 — M3 Hôm nay và Nhóm (branch `feat/giao-dien-moi-m3`)
+
+**Goal:** Rebuild Hôm nay, Nhóm (the "Trượt mờ" carousel and the group picker), Một nhóm, Từ lâu chưa ôn and Chủ đề, plus their five dialogs. Group colours by ID, stage colours, the Học · Ôn pair, and the new API fields `next_lemma`, `last_reviewed` and `sessions/last`.
+
+**Inputs:**
+- Design §3, §5.5, §7.3, §7.4, §8.2, §8.4, §8.5, §9 M3.
+- Motion doc `docs/mockups/2026-11-05-redesign-concepts/motion-va-chuyen-canh.md` §1, §3, §8. It is the only source for motion numbers.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m3.md` ("M3 code §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-10-m3-a.md` (Hôm nay, carousel, picker; "M3 Figma A §n") and `…-m3-b.md` (Một nhóm, Từ lâu chưa ôn, Chủ đề, confirm card; "M3 Figma B §n").
+- The chosen prototype `docs/mockups/2026-11-05-redesign-concepts/vong-7-chong-the-tu-dien.html`: carousel, picker and open/close behaviour (M3 code §8). Today: `vong-10-con-lai.html:526-546`. Backlog and topic: `vong-15-polish-9-trang.html:761-812`.
+
+Paths below are under `apps/web/`; `L/` = `src/features/learner/`, `C/` = `src/app/[locale]/app/(member)/(chrome)/`.
+
+Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 is merged. Then `git merge docs/giao-dien-moi-plan-3`.
+
+## Part 3 constraints
+
+- **No API change.** Web types gain `next_lemma?` and `last_reviewed?` as optional fields, so old fixtures still compile. Every `GET /v1/practice/sessions/last` the web makes is answered in tests:
+  - `renderApp` defaults it to 204;
+  - `e2e/support/mock-api.ts` `signedInAs` scripts it as 204.
+- **Học · Ôn** follows `deckPlan` (`L/groups/deck-actions.ts`, unchanged):
+  - the primary button is `ui/ButtonLink` `primary` (navy); the other is `secondary`;
+  - both keep `data-google-vignette="false"` and today's hrefs.
+- **Group colour** always comes from `groupColorIndex(id)` through static class maps; never from the list position.
+- **Motion:**
+  - numbers come from tokens, never written inside components;
+  - with reduced motion: no translate, scale or blur; opacity and colour only, ≤ 200 ms; the carousel changes at once; no FLIP.
+- **One-letter keys** (`F`, `N`, `/`) do nothing when focus is in an input, a select, a contenteditable element or a dialog. Use the same filter as `add-word-context.tsx:36`.
+- **i18n:** keys that no screen reads any more are deleted in the same PR, and the e2e `copy` references to them are updated.
+
+## Part 3 Review Focus
+
+1. The carousel with one group, then with two. One: only the centre stack, no arrows, `←` `→` do nothing. Two: one side stack, never the same group on both sides. Pinned in M3.2 (`carouselSlots`) and M3.6.
+2. `sessions/last` answers 204 or 500: Hôm nay renders every other block, with no error view and no "Lần luyện gần nhất" block. Pinned in M3.5.
+3. Pressing `F`, `←` or `→` while typing in the picker search or in "Thêm từ vừa gặp": the carousel does not move and the picker does not reopen. Pinned in M3.6.
+4. A done group (total > 0, nothing waiting) and an empty group:
+   - the done group shows "✓ Xong hôm nay" and "ôn gần nhất <word>";
+   - the empty group shows "nhóm trống", "Chưa có từ" and "Thêm từ để bắt đầu";
+   - both appear under the right captions in the picker;
+   - neither shows a primary Học/Ôn unless `deckPlan` gives one.
+   Pinned in M3.3 and M3.6.
+5. A 60-character unbroken group name on a 150 px Hôm nay card and on the 210 px phone carousel card: no horizontal scroll. Pinned by `overflow.spec.ts`, extended in M3.5 and M3.6.
+
+### Task M3.1: Stage, group and motion tokens
+
+**Files:**
+- Modify: `packages/design-tokens/web.css`, `web-dark.css` (the same light values until M9), `apps/web/src/styles/web-tokens.test.ts`.
+
+**Values:**
+- **Stage colours** (design §7.3):
+  - `--color-wm-stage-{0..5}-{bg,dot,ink}`;
+  - stage 5's bg and dot are gradients;
+  - add `--color-wm-stage-5-solid` = `#b28bff` for the flat squares of "Từ theo ngăn" (M3 Figma A §5).
+- **Group colours** (design §7.4):
+  - `--color-wm-group-{0..6}` and `--color-wm-group-empty` `#64708c`.
+  - `-soft` (border of the cards behind; Figma ≈ 50 % on white) = `color-mix(in srgb, <colour> 50%, #ffffff)`.
+  - `-wash` (selected picker row, halo) = `color-mix(in srgb, <colour> 12%, #ffffff)`.
+  - `-ink` (numbers on white) takes Figma's darker inks: 0 `#984941`, 1 `#17696c`, 2 `#56429d`, 3 `#916d28`, 5 `#8c3765`.
+  - Group 4 (green) and group 6 (blue) have no drawn ink. Each is `color-mix(in oklab, <colour> 65%, #1b2444)`, computed once and written as hex.
+  - This replaces design §7.4's "the colour itself, ≥ 3:1" with ≥ 4.5:1. Record it as a ruling.
+- **Motion** (motion doc §3, §1):
+  - `--ease-wm-out` = `cubic-bezier(0.23,1,0.32,1)` (the main curve, now in `web.css`);
+  - `--ease-wm-carousel` `(.3,1.25,.5,1)`;
+  - `--ease-wm-flip` `(.3,1.15,.5,1)`;
+  - `--ease-wm-rise` `(.3,1.3,.5,1)`;
+  - `--ease-wm-count` `(.3,1.4,.5,1)`;
+  - durations `carousel` 620, `fade` 450, `blur` 500, `halo` 700, `rise` 460, `count` 520, `flip` 380, `page-in` 340, `lift` 170 ms (`--transition-duration-wm-<name>`).
+
+- [ ] **Step 1: Write the failing tests:**
+  - Every new token exists, with the exact values above.
+  - Each `--color-wm-group-N-ink` has ≥ 4.5:1 contrast on `#ffffff`, computed in the test with the WCAG formula.
+  - `web-dark.css` declares the same names.
+- [ ] **Step 2: Run** `pnpm vitest run src/styles/web-tokens.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS. Then run the admin checks.
+- [ ] **Step 5: Commit** `feat(web): add stage, group and carousel motion tokens`.
+
+### Task M3.2: Pure helpers
+
+**Files:**
+- Create: `src/lib/group-color.ts` and `src/lib/group-color.test.ts`.
+- Create: `L/groups/carousel.ts` and `L/groups/carousel.test.ts`.
+
+**Interfaces:**
+- `groupColorIndex(id: string): number`:
+  - FNV-1a 32-bit over the UTF-8 bytes of `id.toLowerCase()`, then `mod 7`;
+  - offset basis `2166136261`, prime `16777619`.
+- `groupTone(id: string, total: number): GroupTone` returns static class strings `{ border, soft, wash, ink, bg }`. `total === 0` gives the `empty` tone.
+- `stackDepth(waiting: number): 0|1|2|3`: the prototype rule `layers` (`vong-7…html:666`), > 16 → 3, > 6 → 2, > 0 → 1, else 0. The Hôm nay cards cap it at 2.
+- `carouselSlots(count: number, centre: number): { index: number; k: -2|-1|0|1|2 }[]`:
+  - each group appears at most once;
+  - `k` is the shortest wrap-around distance;
+  - the right side takes precedence when both sides tie.
+- `stepTo(from: number, to: number, count: number): number`: the signed shortest step.
+- `rhythm(cells): { level: number; total: number; due: number }[]`: one segment per stage. Segment width ∝ `total`, fill ∝ `due` (prototype `rhythm`, `:663`). This matches Figma: 6 + 9 + 9 = 24.
+- `carouselOrder(groups)`: `sortForToday`, then empty groups last.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `groupColorIndex`:
+    - pin the exact index for 7 sample IDs (at least two UUIDs, `g-food`, an uppercase copy of one UUID). The expected values come from a separate reference FNV-1a run in Node, noted in the test;
+    - the result is always an integer in [0, 6] over 1 000 random strings.
+  - `stackDepth`:
+    - 0 → 0, 1 → 1, 6 → 1, 7 → 2, 16 → 2, 17 → 3.
+  - `carouselSlots`:
+    - `(1, 0)` → `[{0,k:0}]`;
+    - `(2, 0)` → `[{0,0},{1,1}]`;
+    - `(5, 0)` → k for 3 is −2, k for 4 is −1;
+    - `(8, 7)` → index 0 gets k = 1.
+  - `stepTo(7, 0, 8)` → 1, and `stepTo(0, 5, 8)` → −3.
+  - `rhythm`:
+    - widths add up to the group total;
+    - the fills add up to the sum of `cells[n].due`.
+- [ ] **Step 2: Run** both test files. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** both test files. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add group colour, stack depth and carousel helpers`.
+
+### Task M3.3: Shared group pieces
+
+**Files:**
+- Create: `L/groups/GroupStack.tsx` (card face and the cards behind it).
+- Create: `src/ui/StageBar.tsx` (segments with fill, optional labels).
+- Create: `L/groups/DeckButtons.tsx`, rewritten on `ui/ButtonLink`.
+- Create: `L/groups/group-pieces.test.tsx`.
+
+**Interfaces:**
+- `GroupStack({ group, size: 'today'|'carousel'|'page', depth?, as? })`:
+  - draws M3 Figma A §2.3. One design is scaled with font-size in `em`; the base size is set per `size`;
+  - border uses `groupTone`; the cards behind use `-soft`, with fixed ratios .94/.88/.82, opacities .85/.55/.3, and blur only when `size='carousel'`.
+- The face has three states:
+  - **normal**: "N từ · M đã thuộc", name, count in `-ink` + "thẻ chờ", "tiếp theo <next_lemma>";
+  - **done**: "✓ Xong hôm nay", "ôn gần nhất <last_reviewed.lemma>";
+  - **empty**: "nhóm trống", "Chưa có từ", "Thêm từ để bắt đầu".
+  - When `next_lemma` or `last_reviewed` is missing, the footer line is left out.
+- `StageBar({ segments: { size: number; fill: number; tone: string }[], labels?: ReactNode[] })` is a `figure`. Its `aria-label` is passed in.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The normal face shows "24" and "tiếp theo mitigate".
+  - The done face shows "✓ Xong hôm nay" and "ôn gần nhất take for granted".
+  - The empty face shows "nhóm trống", "Chưa có từ" and has no cards behind.
+  - The number of behind cards equals `stackDepth`.
+  - DeckButtons, for each `deckPlan` case in `deck-actions.test.ts`:
+    - exactly one link has the primary class set, or none when `primary` is null;
+    - hrefs keep the `review?group=…&mode=` and `recall?group=` forms;
+    - both links carry `data-google-vignette="false"`.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-pieces.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add the group stack, stage bar and new deck buttons`.
+
+### Task M3.4: New data on the web
+
+**Files:**
+- Modify: `L/groups/groups-api.ts` (types).
+- Create: `L/today/last-session.ts` with `useLastSession()` (key `['practice','sessions','last']`).
+- Modify: `src/app-ui/test-utils.tsx` (default route `GET /v1/practice/sessions/last` → 204).
+- Modify: `e2e/support/mock-api.ts` (`signedInAs` scripts the same 204).
+- Test: `L/today/last-session.test.tsx`.
+
+**Interfaces:**
+- `GroupSummary` gains:
+  - `next_lemma?: string | null`;
+  - `last_reviewed?: { lemma: string | null; at: string } | null`.
+- `LastSessionView = { id; group_id: string | null; local_date: string; last_answer_at: string; finished: boolean; questions: number; correct: number; wrong_count: number; wrong_lemmas: string[] }`.
+- `useLastSession()` returns `LastSessionView | null`. A 204 becomes `null` (`ApiClient.get` resolves `undefined`).
+
+- [ ] **Step 1: Write the failing tests:**
+  - 204 → `data === null`;
+  - 200 → the exact object;
+  - 500 → `isError`.
+- [ ] **Step 2: Run** `pnpm vitest run L/today/last-session.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test, then `pnpm test`. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): read next card, last review and last session`.
+
+### Task M3.5: Hôm nay
+
+**Files:**
+- Move: `C/page.app.tsx` → `C/(today)/page.app.tsx`.
+- Create: `C/(today)/loading.app.tsx` (skeleton of `117:4425`).
+- Rewrite: `L/today/TodayPage.tsx`, `QuickAddBox.tsx`.
+- Modify: `L/groups/TopicSuggestions.tsx` (rows instead of cards, first 4).
+- Modify: `L/today/today.test.tsx`, `e2e/app/m2.spec.ts:86-99`, `e2e/app/overflow.spec.ts:67-84`, `messages/{vi,en}.json` (`App.today`).
+
+**Behaviour:** follows `117:4425` / `117:4712` and M3 Figma A §1. Phone order is M3 Figma A §1.2.
+- **Hero "Ôn tiếp"**: the first group of `sortForToday` with waiting > 0.
+  - Border and big number use `groupTone`.
+  - The bar shows priority / due / new, with a legend.
+  - Học · Ôn buttons.
+  - Big number with "thẻ chờ hôm nay".
+- **"Lần luyện gần nhất"**: only when `useLastSession()` has data.
+  - The date comes from `local_date`.
+  - The group name comes from `useGroups` by `group_id`; it is left out when not found.
+  - Correct/wrong bar and pills.
+  - "Sai: …" lists `wrong_lemmas`.
+  - Links "Luyện lại từ sai →" (`/app/practice/weak`) and "Mở lịch học" (`/app/practice/history` until M6).
+- **"Nhóm của bạn"**:
+  - up to 4 `GroupStack size="today"` cards of the other groups with waiting > 0; each card is a link to `/app/group?id=`;
+  - "Xem tất cả N nhóm →";
+  - the line "Xong hôm nay: … · Chưa có từ: …".
+- **"Tạo nhóm nhanh theo chủ đề"**: topic rows.
+- **Side column** from `xl` (`PageColumns`):
+  - "Thêm từ vừa gặp";
+  - "Từ lâu chưa ôn";
+  - "Từ theo ngăn": flat squares in `stage-N-solid`, bar width = due / total, as the code does today.
+- **No groups**: the empty block, with `ui/Button` "Tạo nhóm đầu tiên".
+- **All done**: "Xong hết thẻ hôm nay. Mai ôn tiếp."
+- The card ⋯ menu is gone (rename and delete live on Một nhóm).
+
+- [ ] **Step 1: Write the failing tests in `today.test.tsx`:**
+  - `sessions/last` 200 → text "14/20", "Sai: deteriorate, allocate, viable, scrutiny", and link "Luyện lại từ sai →" to `/vi/app/practice/weak`.
+  - `sessions/last` 204 → no text "Lần luyện gần nhất"; the hero still shows.
+  - `sessions/last` 500 → the hero still shows and there is no `alert`.
+  - 8 groups → exactly 4 cards in the list "Nhóm của bạn", none of them the hero group; link "Xem tất cả 8 nhóm" to `/vi/app/groups`.
+  - The note line lists the done and empty group names.
+  - The hero's Ôn link has the primary class when `deckPlan` gives `recall`.
+  - Delete the tests of the removed menu and the 6-card cap.
+- [ ] **Step 2: Run** `pnpm vitest run L/today`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run:**
+  - `pnpm vitest run L/today` → PASS;
+  - `pnpm cf:docker e2e/app/m2.spec.ts e2e/app/m3.spec.ts e2e/app/overflow.spec.ts` → PASS. Overflow adds the long name on a Hôm nay card at 390.
+- [ ] **Step 5: Commit** `feat(web): rebuild today with the next review and last practice`.
+
+### Task M3.6: Nhóm: carousel and group picker
+
+**Files:**
+- Rewrite: `L/groups/GroupListPage.tsx` as the carousel page.
+- Create: `L/groups/GroupCarousel.tsx`, `L/groups/GroupPicker.tsx`, `C/groups/loading.app.tsx`.
+- Modify: `L/groups/group-list.test.tsx` (rewrite), `e2e/app/m2.spec.ts:101-138`, `messages/{vi,en}.json` (`App.groups`).
+
+**Behaviour** (M3 Figma A §2, §3; motion doc §3; prototype `n2*` functions):
+- **Header**:
+  - title "Nhóm của bạn";
+  - mono line "{due} thẻ chờ trong {groups} nhóm · …" (desktop and phone texts differ);
+  - picker button showing the centre group, with its colour square;
+  - "+ Tạo nhóm" opens the create dialog.
+- **Carousel** (`role="region"`, labelled):
+  - slots from `carouselSlots`;
+  - transforms `translateX(k·step) scale(1/.83/.66)`, opacity 1/.7/.4, blur 0/3.6/7.2 px; step 230 px desktop, 128 px phone; phone shows `k = ±1` only;
+  - side stacks are `inert` and `aria-hidden`; only the centre stack is a link (to `/app/group?id=`);
+  - halo in the centre group's `-wash`.
+- **Changing group**:
+  - arrows (desktop), `←` `→`, swipe > 40 px, horizontal wheel (`|deltaX| ≥ 12`, at most once per 380 ms);
+  - picking a group further than 3 steps away jumps with no animation;
+  - an `aria-live="polite"` line reads "{name}, {waiting} thẻ chờ".
+- **Below the carousel**:
+  - "nhịp ôn: mới → 30 ngày" with `StageBar` from `rhythm` in the group colour;
+  - Học · Ôn;
+  - "Xem nhóm →";
+  - "Thêm từ" (desktop) opens add-word locked to that group;
+  - rows rise in with the motion doc numbers.
+- **Picker** (key `F`, or the button) is a react-aria `Popover` + `ListBox`:
+  - search "Tìm trong N nhóm", diacritic-insensitive;
+  - captions "còn thẻ chờ", "xong hôm nay", "chưa có từ";
+  - the selected row has the `-wash` background and a check;
+  - `↑` `↓`, `Enter` goes to the group, `Esc` closes and returns focus to the button;
+  - desktop footer "↑ ↓ chọn · ↵ tới nhóm · Esc đóng".
+- **Key `↓`** opens the centre group.
+- The old filter, search box, dashed tile and per-card menu are removed. `TopicSuggestions` stays only on Hôm nay.
+
+- [ ] **Step 1: Write the failing tests:**
+  - 5 groups: the centre link is the first of `carouselOrder`.
+  - `→` makes the next group the centre, and the live line reads "Đề 9 · Listening, 18 thẻ chờ".
+  - `←` from the first group wraps to the last.
+  - Exactly one link inside the region; side stacks have the `inert` attribute.
+  - `F` opens the picker. Typing "de 9" leaves "Đề 9 · Listening". `Enter` makes it the centre and closes the picker.
+  - `F` typed into the picker search does not reopen it.
+  - `←` typed into the quick-add input does not move the carousel.
+  - 1 group: no arrow buttons.
+  - 2 groups: exactly 2 stacks are rendered.
+  - "+ Tạo nhóm" → dialog "Tạo nhóm". Keep the create, rename-conflict, limit, name-taken and double-submit tests of the old `group-list.test.tsx:119-204`.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-list.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS; then `pnpm cf:docker e2e/app/m2.spec.ts e2e/csp.spec.ts e2e/app/overflow.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the group list as a carousel with a picker`.
+
+### Task M3.7: Một nhóm and the open/close FLIP
+
+**Files:**
+- Rewrite: `L/groups/GroupPage.tsx`.
+- Create: `L/groups/flip.ts` with `rememberRect(key, el)`, `useFlipFrom(key, ref)` and `useCloseFlip(key)`.
+- Create: `C/group/loading.app.tsx`.
+- Modify: `L/groups/group-page.test.tsx`, `e2e/app/cai-thien-a-group.spec.ts`, `e2e/app/overflow.spec.ts:36-47`, `messages/{vi,en}.json` (`App.group`).
+
+**Behaviour** (`84:3552` / `84:3749`, M3 Figma B §1):
+- **Page head**:
+  - back link "Nhóm của bạn";
+  - group halo;
+  - `GroupStack size="page"`;
+  - meta "N từ · tạo ngày … · M đã thuộc";
+  - title with the colour square;
+  - chips "4 ưu tiên", "14 đến hạn", "6 mới" with numbers in `-ink`;
+  - `StageBar` from `rhythm`, with stage labels on desktop.
+- **Actions**: Học · Ôn, "Thêm từ" (muted text button), ⋯ menu (rename, "Học tất cả N từ", delete; unchanged).
+- **Word list**:
+  - "Toàn bộ N từ";
+  - filter chips replace the `Select`: toggle buttons with `aria-pressed`, labels and counts as `filterCount` gives today. They wrap on desktop and form one horizontal-scroll row on phones;
+  - rows: 5 columns on desktop (word, POS, meaning, stage dot + "Ngăn …", status); phone keeps word, meaning and status;
+  - "Xem thêm từ · còn N từ".
+- **"Bỏ … khỏi nhóm"** stays as a muted icon text button at the end of each row, even though Figma draws none: the design keeps this dialog. Record it as a ruling.
+- **The card preview (3D flip) is removed**, as Figma draws it (owner QM3-1, 10/11/2026: "Bỏ như Figma").
+- **FLIP:**
+  - the carousel calls `rememberRect('group-stack', centreStack)` before navigating;
+  - the page head runs the 380 ms FLIP from that rect, and the other parts enter from `blur(12px) translateY(12px)`, 340 ms, 22 ms apart;
+  - the back link plays the reverse (150 ms dissolve, FLIP back);
+  - no remembered rect, or reduced motion: no animation.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Chips: pressing "Ngăn 1 ngày2" sets `aria-pressed="true"` and the rows become `['deploy','release']`. Pressing "Đến hạn" calls `…&section=due` once.
+  - The page head shows the three chips with the right numbers.
+  - `figure` "nhịp ôn": 6 segments, with fills matching `cells[n].due`.
+  - No `preview-slide` (the preview is removed). The old preview tests are deleted.
+  - `useFlipFrom` with no remembered rect does not call `element.animate`. With a rect and motion allowed, it calls it once, with duration 380.
+  - The remove, menu, empty, not-found and key-`N` tests of `group-page.test.tsx` keep passing, adapted from `Select` to chips.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-page.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS; then `pnpm cf:docker e2e/app/cai-thien-a-group.spec.ts e2e/app/overflow.spec.ts e2e/app/m2.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the group page with the carousel flip`.
+
+### Task M3.8: Từ lâu chưa ôn and Chủ đề
+
+**Files:**
+- Rewrite the views of `L/groups/BacklogPage.tsx` and `L/groups/TopicPickerPage.tsx` (behaviour, queries and writes unchanged).
+- Create: `L/groups/FloatingBar.tsx`.
+- Modify: `backlog.test.tsx`, `topic-picker.test.tsx` (both now `chrome: true`), `e2e/app/m2.spec.ts:140-169`.
+
+**Behaviour:** variants 8A and 9A (`97:3085` / `97:3239`, `98:3127` / `98:3297`; M3 Figma B §2–3).
+- Header with the big count. The backlog count uses `wm-fail`; the topic count uses `wm-ink`.
+- Explainer with the three bold terms (backlog).
+- List card with select-all.
+- Rows:
+  - the backlog shows the overdue bar on desktop and "NN ngày";
+  - the topic shows a disabled row "đang học · <group>" with a group-colour dot.
+- "đang có 6 / N từ" and "Xem thêm".
+- `FloatingBar` (`radius/modal`, `shadow-wm-pop`) at the bottom, above the phone tab bar:
+  - backlog: "Đã chọn N từ", "Bỏ khỏi việc học" (delete tone), "Học lại N từ";
+  - topic: "thêm vào" + `ui/Select` + "Thêm N từ đã chọn →".
+  - The bar shows only while something is selected.
+  - The backlog "Học lại cả N từ" stays in the header.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The bar is absent with nothing selected.
+  - After ticking 2 rows the bar shows "Đã chọn 2 từ".
+  - A topic row already learned has no checkbox and shows text "đang học · Công việc".
+  - The old assertions (batches of 100, keys, partial failure keeps the dialog) keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/backlog.test.tsx L/groups/topic-picker.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then the e2e lines above → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the backlog and topic pages with floating bars`.
+
+### Task M3.9: The five group dialogs
+
+**Files:**
+- Modify: `L/groups/GroupDialogs.tsx`, and the inline dialogs in `GroupPage.tsx` (remove a word) and `BacklogPage.tsx` (forget N words), moving them to `ui/Dialog`, `ui/TextField` and `ui/Button`.
+- Test: the existing dialog tests.
+- Delivery record: one screenshot of each dialog at 390 and 1440.
+
+**Behaviour:**
+- Motion GM15, through `ui/Dialog`.
+- The confirm dialogs follow the "Xác nhận xóa" card (M3 Figma B §4):
+  - Bricolage 20 title;
+  - a `wm-fail-soft` warning block for what is lost;
+  - the danger button;
+  - the keep or cancel action as a `ui/Button` `secondary`.
+- The copy stays the same.
+- Create and rename keep the 60-character counter.
+
+- [ ] **Step 1: Write the failing test:** the delete dialog's warning block has `role="note"` and the text /12 từ chỉ có trong nhóm này/. All existing dialog assertions keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run L/groups` → PASS; `rg "@/app-ui/" src/features/learner/{today,groups} --glob '!*.test.*'` → no output.
+- [ ] **Step 5: Commit** `feat(web): move the group dialogs to the new kit`.
+
+### Task M3.10: M3 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts` (set `gm-m3`: Hôm nay, Nhóm, Nhóm with picker open, Một nhóm, Từ lâu chưa ôn, Chủ đề, five dialogs; 390 and 1440).
+- Modify: `docs/deliveries/giao-dien-moi.md` (M3 as-built), `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks.**
+  - Web: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm cf:docker`.
+  - Admin: the four checks.
+  - Record the counts.
+  - Measure the carousel frame rate on Nhóm with DevTools Performance at 4× CPU slowdown (design §8.5), and record the number.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m3 pnpm shots`, placed next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m3 screenshot set` and `docs(web): record m3 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild today and groups with the carousel`. Merge after CI is green and the owner says yes.
+
+## Part 3 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M3 table:
+  - Hôm nay → M3.5; Nhóm and picker → M3.6; Một nhóm → M3.7; Từ tồn đọng and Chủ đề → M3.8.
+  - The five dialogs without frames → M3.9.
+  - Học · Ôn (GM17) → M3.3.
+  - The QR2 fields → M3.4, M3.5, M3.6.
+  - "Luyện lại từ sai →" → M3.5.
+- §7.3, §7.4 → M3.1, M3.2.
+- §8.2 Nhóm, §8.4, §8.5 → M3.6, M3.7.
+- The roadmap's route loading files → M3.5, M3.6, M3.7.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- Stack depth follows the chosen prototype (`layers`); Hôm nay caps it at 2.
+- "nhịp ôn": segment width ∝ the stage's word count, fill ∝ its due cards. This is the prototype `rhythm`, and it matches the Figma numbers.
+- "Từ theo ngăn" keeps the code's due/total width. Figma's fills do not follow its own numbers.
+- Group `-ink` takes Figma's darker inks (≥ 4.5:1), not design §7.4's "same colour, ≥ 3:1". Green and blue are mixed with ink.
+- Carousel order: `sortForToday`, with empty groups last.
+- Side stacks are `inert`: design §8.5 wins over the prototype's click-to-switch.
+- Hôm nay shows 4 other groups. Done and empty groups go into one text line, as Figma draws.
+- The card menu leaves Hôm nay and Nhóm. Rename and delete stay on Một nhóm.
+- The Nhóm list's filter, search box and dashed "Tạo nhóm mới" tile are replaced by the picker and "+ Tạo nhóm".
+- "Bỏ … khỏi nhóm" stays on Một nhóm rows, though Figma draws none.
+- The card preview on Một nhóm is removed: owner decision QM3-1 (10/11/2026), not a ruling. Say so in the M3 PR description.
+- StageChip and WordChip are not built in M3: none of these frames uses them (M3 Figma A §7). They come with M5 if Học or Ôn needs them.
+
+**Open:** none.

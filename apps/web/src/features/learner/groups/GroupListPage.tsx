@@ -1,121 +1,211 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-
-import { PageTitle } from '@/app-chrome/PageTitle';
-import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { Button } from '@/app-ui/Button';
-import { Select } from '@/app-ui/Select';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { GroupCard, sortForToday, waiting } from './GroupCard';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import { groupTone } from '@/lib/group-color';
+import { Button } from '@/ui/Button';
+import { Skeleton } from '@/ui/Skeleton';
+import { StageBar } from '@/ui/StageBar';
+import { TextButton } from '@/ui/TextButton';
+import { useAddWord } from '../add-word/add-word-context';
+import { carouselOrder, rhythm, stepTo } from './carousel';
+import { waiting } from './deck-actions';
+import { DeckButtons } from './DeckButtons';
+import { rememberRect } from './flip';
+import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
+import { GroupPicker } from './GroupPicker';
 import { useGroups, type GroupSummary } from './groups-api';
-import { TopicSuggestions } from './TopicSuggestions';
+import { STAGE_KEYS } from './stages';
 
-type Filter = 'all' | 'waiting' | 'done';
-/** K/16b: the search box appears once the list is long enough to need it. */
-const SEARCH_FROM = 10;
+/** Picking a group further than this jumps with no animation (motion doc §3). */
+const JUMP_STEPS = 3;
 
-/** K/16, K/16b, K/17: every deck, a filter, a search from 10 decks, the new-deck tile and topic suggestions. */
+/** One-letter and arrow keys are ignored while typing or inside a dialog (design §8.5; same filter as `add-word-context.tsx`). */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') !== null;
+}
+
+/** Nhóm (Figma 82:3213 / 82:3368, design §8.2, §8.5): the "Trượt mờ" carousel, the group picker (F) and the centre group's actions. */
 export function GroupListPage() {
   const t = useTranslations('App.groups');
-  const errorText = useErrorMessage();
+  const tToday = useTranslations('App.today');
+  const tCommon = useTranslations('App.common');
   const groups = useGroups();
   const { open, dialogs } = useGroupDialogs();
-  const [filter, setFilter] = useState<Filter>('all');
-  const [query, setQuery] = useState('');
-  const all = sortForToday(groups.data?.items ?? []);
-  const words = all.reduce((sum, g) => sum + g.total, 0);
-  const needle = query.trim().toLocaleLowerCase();
-  const shown = all.filter(
-    (g) =>
-      // A deck with no words is not "done today" (owner 06/11/2026): only "Tất cả" lists it.
-      (filter === 'all' || (filter === 'waiting' ? waiting(g) > 0 : waiting(g) === 0 && g.total > 0)) &&
-      (!needle || g.name.toLocaleLowerCase().includes(needle)),
-  );
-  const actions = {
-    onRename: (g: GroupSummary) => open({ kind: 'rename', group: g }),
-    onDelete: (g: GroupSummary) => open({ kind: 'delete', group: g }),
-  };
+  const order = carouselOrder(groups.data?.items ?? []);
 
   return (
     <>
-      <PageTitle
-        aside={
-          <Button variant="sticker" onPress={() => open({ kind: 'create' })}>
-            <Plus aria-hidden className="size-4" />
-            {t('create')}
-          </Button>
-        }
-        meta={
-          all.length > 0 && (
-            <span className="rounded-full bg-surface px-2.5 py-0.5 text-caption font-medium text-muted">{t('summary', { groups: all.length, words })}</span>
-          )
-        }
-      >
-        {t('title')}
-      </PageTitle>
       {groups.isPending ? (
-        <FullScreenSpinner />
-      ) : groups.isError ? (
-        <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
-      ) : (
-        <div className="flex flex-col gap-8">
-          {all.length > 0 && (
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="w-full sm:w-64">
-                <Select
-                  label={t('filterLabel')}
-                  hideLabel
-                  value={filter}
-                  onChange={(id) => setFilter(id as Filter)}
-                  items={[
-                    { id: 'all', label: t('filterAll', { count: all.length }) },
-                    { id: 'waiting', label: t('filterWaiting') },
-                    { id: 'done', label: t('filterDone') },
-                  ]}
-                />
-              </div>
-              {all.length >= SEARCH_FROM && (
-                <label className="flex min-h-control w-full items-center gap-2 rounded-control border-2 border-border-strong bg-surface px-3 sm:w-72">
-                  <Search aria-hidden className="size-4 text-muted" />
-                  <input
-                    type="search"
-                    aria-label={t('search', { count: all.length })}
-                    placeholder={t('search', { count: all.length })}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="min-w-0 flex-1 bg-transparent text-ui text-ink outline-none placeholder:text-placeholder"
-                  />
-                </label>
-              )}
-            </div>
-          )}
-          <ul aria-label={t('title')} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-            {shown.map((group, i) => (
-              <GroupCard key={group.id} group={group} index={i} actions={actions} />
-            ))}
-            <li className="flex">
-              <button
-                type="button"
-                onClick={() => open({ kind: 'create' })}
-                className="flex min-h-48 w-full flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border-strong p-4 text-center outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <span className="flex size-10 items-center justify-center rounded-full border-2 border-ink">
-                  <Plus aria-hidden className="size-5" />
-                </span>
-                <span className="text-ui font-semibold text-ink">{t('createNew')}</span>
-                <span className="text-caption text-muted">{t('createNewHint')}</span>
-              </button>
-            </li>
-          </ul>
-          {all.length > 0 && shown.length === 0 && <p className="text-body text-muted">{t('noMatch')}</p>}
-          <TopicSuggestions />
+        <div role="status" className="flex flex-col items-center gap-5">
+          <span className="sr-only">{tCommon('loading')}</span>
+          <Skeleton className="h-11 w-56 self-start" />
+          <Skeleton className="h-92 w-72 rounded-wm-2xl" />
         </div>
+      ) : groups.isError ? (
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+          <p className="text-wm-base text-wm-ink">{tCommon('errorPageTitle')}</p>
+          <Button variant="secondary" onPress={() => void groups.refetch()}>
+            {tCommon('retry')}
+          </Button>
+        </div>
+      ) : order.length === 0 ? (
+        <>
+          <Title />
+          <section className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
+            <h2 className="font-wm-display text-wm-card-title text-wm-ink">{tToday('emptyTitle')}</h2>
+            <p className="text-wm-base text-wm-muted">{tToday('emptyBody')}</p>
+            <Button size="lg" onPress={() => open({ kind: 'create' })}>
+              {tToday('createFirst')}
+            </Button>
+          </section>
+        </>
+      ) : (
+        <Carousel order={order} onCreate={() => open({ kind: 'create' })} createLabel={t('create')} />
       )}
       {dialogs}
     </>
+  );
+}
+
+function Title({ children }: { children?: ReactNode }) {
+  const t = useTranslations('App.groups');
+  return (
+    <div className="mb-5 flex flex-col gap-1">
+      <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-4xl">{t('title')}</h1>
+      {children}
+    </div>
+  );
+}
+
+function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onCreate: () => void; createLabel: string }) {
+  const t = useTranslations('App.groups');
+  const locale = useLocale();
+  const router = useRouter();
+  const [centreId, setCentreId] = useState(order[0].id);
+  const [instant, setInstant] = useState(false);
+  const [announce, setAnnounce] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const centreRef = useRef<HTMLDivElement>(null);
+  const found = order.findIndex((g) => g.id === centreId);
+  const centre = found === -1 ? 0 : found;
+  const group = order[centre];
+  const waitingGroups = order.filter((g) => waiting(g) > 0);
+  const due = waitingGroups.reduce((sum, g) => sum + waiting(g), 0);
+
+  function goTo(index: number) {
+    const target = order[index];
+    if (!target || index === centre) return;
+    setInstant(Math.abs(stepTo(centre, index, order.length)) > JUMP_STEPS);
+    setCentreId(target.id);
+    setAnnounce(t('live', { name: target.name, count: waiting(target) }));
+  }
+  function step(d: number) {
+    if (order.length < 2) return;
+    goTo((centre + d + order.length) % order.length);
+  }
+  function openGroup() {
+    if (centreRef.current) rememberRect('group-stack', centreRef.current);
+    router.push(`/${locale}/app/group?id=${group.id}`);
+  }
+
+  // The jump without animation lasts one frame, then transitions come back for the next step.
+  useEffect(() => {
+    if (!instant) return;
+    const frame = requestAnimationFrame(() => setInstant(false));
+    return () => cancelAnimationFrame(frame);
+  }, [instant]);
+
+  const keys = useRef({ step, openGroup });
+  useEffect(() => {
+    keys.current = { step, openGroup };
+  });
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        keys.current.step(event.key === 'ArrowRight' ? 1 : -1);
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        keys.current.openGroup();
+      } else if (event.key === 'f' || event.key === 'F') {
+        event.preventDefault();
+        setPickerOpen(true);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-4 md:gap-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
+        <Title>
+          <p className="font-wm-mono text-wm-mono text-wm-muted">
+            <span className="md:hidden">{t('subtitlePhone', { due, groups: waitingGroups.length })}</span>
+            <span className="hidden md:inline">{t('subtitle', { due, groups: waitingGroups.length })}</span>
+          </p>
+        </Title>
+        <div className="mb-5 flex items-center justify-between gap-4 md:justify-end">
+          <GroupPicker
+            groups={order}
+            centreId={group.id}
+            isOpen={pickerOpen}
+            onOpenChange={setPickerOpen}
+            onPick={(id) => goTo(order.findIndex((g) => g.id === id))}
+          />
+          <TextButton tone="add" onPress={onCreate} className="shrink-0 text-wm-button">
+            {createLabel}
+          </TextButton>
+        </div>
+      </div>
+      <GroupCarousel groups={order} centre={centre} instant={instant} onStep={step} centreRef={centreRef} onOpen={() => centreRef.current && rememberRect('group-stack', centreRef.current)} />
+      <p aria-live="polite" className="sr-only">
+        {announce}
+      </p>
+      <Below key={group.id} group={group} onOpen={() => centreRef.current && rememberRect('group-stack', centreRef.current)} />
+    </div>
+  );
+}
+
+/** "Dưới băng chuyền" (Figma 82:3348): the rhythm bar in the group colour, Học · Ôn, "Xem nhóm →", "Thêm từ" (desktop). */
+function Below({ group, onOpen }: { group: GroupSummary; onOpen: () => void }) {
+  const t = useTranslations('App.groups');
+  const tStage = useTranslations('App.stages');
+  const locale = useLocale();
+  const { open } = useAddWord();
+  const tone = groupTone(group.id, group.total);
+  return (
+    <div className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
+      <p className="font-wm-mono text-wm-mono text-wm-muted">{t('rhythm')}</p>
+      <StageBar
+        aria-label={t('rhythm')}
+        className="max-w-105"
+        segments={rhythm(group.cells).map((c) => ({
+          size: c.total,
+          fill: c.due,
+          tone: tone.bg,
+          label: t('rhythmSegment', { stage: tStage(STAGE_KEYS[c.level]), due: c.due, total: c.total }),
+        }))}
+      />
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
+        <Link
+          href={`/${locale}/app/group?id=${group.id}`}
+          onClick={onOpen}
+          className="flex min-h-11 items-center text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+        >
+          {t('open')}
+        </Link>
+        <TextButton tone="muted" onPress={() => open(undefined, { groupId: group.id })} className={cn('hidden text-wm-button md:inline-flex')}>
+          {t('addWord')}
+        </TextButton>
+      </div>
+    </div>
   );
 }

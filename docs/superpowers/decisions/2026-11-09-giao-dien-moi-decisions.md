@@ -258,6 +258,15 @@ GM17 sau khi chốt, Claude tự quyết khi vẽ Figma (09/11/2026):
 | GM17 | Vẽ mockup `/app/recall` trước M5 | Màn có trong code (đợt C) nhưng không có khung Figma | Tự dựng không có khung |
 | GM18 | Sửa `ui-best-practices.md` cho khớp Bricolage 800 trong Figma | Quy tắc ghi "ba độ đậm 400, 600, 700" | |
 
+## Câu hỏi khi viết plan theo từng đợt
+
+| # | Câu | Phương án đã đưa | Chủ dự án chọn |
+|---|---|---|---|
+| QM2-1 | Ô chống bot Cloudflare (Turnstile) ở đăng nhập, đăng ký, quên mật khẩu | Luôn hiện (như hiện nay) / Chỉ hiện khi cần (`appearance: 'interaction-only'`) | ✅ Luôn hiện (trả lời trong phiên thực thi M2, 10/11/2026) |
+| QM3-1 | Khối "Xem trước thẻ" (lật thẻ, Thẻ trước / Thẻ sau) ở trang Một nhóm, Figma `84:3552` không vẽ | Bỏ như Figma / Giữ, đặt dưới phần đầu trang và trên danh sách từ | ✅ Bỏ như Figma (10/11/2026, sau khi xem ảnh so sánh ở `docs/mockups/2026-11-10-gm-m3/`) |
+
+Hai câu hỏi không kèm đề xuất của Claude, theo luật chủ dự án trả lời trước.
+
 ## QBG. Nền của app (chủ dự án chốt 10/11/2026)
 
 Chủ dự án thấy lưới chấm trên web "không ổn lắm", muốn đổi sang hướng 4 của vòng 8 ("Mesh + hạt + kính"). Hướng đó có hai phần nên

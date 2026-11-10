@@ -1,13 +1,20 @@
 'use client';
 
+import { ArrowRight, Layers } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { cn } from '@/lib/cn';
+import { Tag } from '@/ui/Tag';
 import { useTopicSuggestions, type TopicSuggestion } from './groups-api';
 
-const TONES = ['bg-accent-soft', 'bg-success-soft', 'bg-primary-soft'] as const;
+/** Topics shown on Hôm nay (Figma 117:4425 "Tạo nhóm nhanh theo chủ đề"). */
+const ROWS = 4;
+/** Sample words printed under a topic name. */
+const SAMPLES = 3;
 
-/** "Tạo nhóm nhanh theo chủ đề" (K/94, K/16; API (h), D17): hidden when the API suggests nothing (GH3). */
+/**
+ * "Tạo nhóm nhanh theo chủ đề": the first topic suggestions as small cards (owner 10/11/2026: polish of the Figma rows), each with
+ * its level, a few sample words and the word count; hidden when the API suggests nothing (GH3).
+ */
 export function TopicSuggestions() {
   const t = useTranslations('App.groups');
   const locale = useLocale();
@@ -15,47 +22,58 @@ export function TopicSuggestions() {
   if (!data || data.items.length === 0) return null;
   return (
     <section className="flex flex-col gap-3" aria-labelledby="topic-suggestions">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="topic-suggestions" className="text-title font-semibold text-ink">
+      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
+        <h2 id="topic-suggestions" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
           {t('suggestTitle')}
         </h2>
-        <Link href={`/${locale}/app/lookup`} className="text-ui font-semibold text-primary underline underline-offset-2">
+        <Link href={`/${locale}/app/lookup`} className="text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
           {t('suggestAll')}
         </Link>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {data.items.map((item, i) => (
-          <SuggestionCard key={`${item.topic.code}-${item.level}`} item={item} tone={TONES[i % TONES.length]} />
+      <ul className="grid gap-3 md:grid-cols-2">
+        {data.items.slice(0, ROWS).map((item) => (
+          <li key={`${item.topic.code}-${item.level}`}>
+            <TopicCard item={item} />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
 
-function SuggestionCard({ item, tone }: { item: TopicSuggestion; tone: string }) {
+function TopicCard({ item }: { item: TopicSuggestion }) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
   const title = t('suggestCard', { topic: item.topic.name, level: item.level });
+  const count = t('suggestCount', { count: item.count });
+  const samples = item.samples.slice(0, SAMPLES).map((s) => s.lemma);
   return (
-    <section aria-label={title} className={cn('pastel-island flex flex-col gap-3 rounded-card p-4 shadow-ledge-soft', tone)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-body font-semibold text-ink">{title}</h3>
-        <span className="shrink-0 text-caption text-muted">{t('suggestCount', { count: item.count })}</span>
-      </div>
-      <ul className="flex flex-col gap-1.5">
-        {item.samples.map((sample) => (
-          <li key={sample.sense_id} className="flex min-w-0 items-baseline gap-2 rounded-sm bg-surface px-2.5 py-1.5">
-            <span className="text-ui font-semibold text-ink">{sample.lemma}</span>
-            {sample.meaning && <span className="truncate text-caption text-muted">{sample.meaning}</span>}
-          </li>
-        ))}
-      </ul>
-      <Link
-        href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
-        className="flex min-h-control w-fit items-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink"
-      >
-        {t('suggestMore')}
-      </Link>
-    </section>
+    <Link
+      href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
+      aria-label={`${title}, ${count}`}
+      className="group flex h-full items-center gap-3.5 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-row outline-none transition duration-200 ease-out-strong hover:border-wm-accent/30 hover:shadow-wm-card focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:hover:-translate-y-0.5"
+    >
+      <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-wm-lg bg-wm-accent-soft text-wm-accent">
+        <Layers className="size-5" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-wm-display text-base font-bold text-wm-ink">{item.topic.name}</span>
+          <Tag tone="accent" mono>
+            {item.level}
+          </Tag>
+        </span>
+        {samples.length > 0 && <span className="truncate text-wm-caption text-wm-muted">{samples.join(', ')}…</span>}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="font-wm-mono text-wm-mono text-wm-muted">{count}</span>
+        <span
+          aria-hidden
+          className="flex size-8 items-center justify-center rounded-wm-pill bg-wm-bg text-wm-muted transition duration-200 ease-out-strong group-hover:bg-wm-accent group-hover:text-wm-on-accent"
+        >
+          <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-0.5" />
+        </span>
+      </span>
+    </Link>
   );
 }

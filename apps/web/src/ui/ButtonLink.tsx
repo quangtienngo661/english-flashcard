@@ -7,5 +7,5 @@ type Props = ComponentProps<typeof Link> & { variant?: ButtonVariant; size?: 'md
 
 /** A link that looks like `Button` (Figma "Nút" 3:12). */
 export function ButtonLink({ variant = 'primary', size = 'md', className, ...rest }: Props) {
-  return <Link {...rest} className={cn(BUTTON_BASE, size === 'lg' && 'min-h-12 px-6', BUTTON_VARIANT[variant], className)} />;
+  return <Link {...rest} data-variant={variant} className={cn(BUTTON_BASE, size === 'lg' && 'min-h-12 px-6', BUTTON_VARIANT[variant], className)} />;
 }
