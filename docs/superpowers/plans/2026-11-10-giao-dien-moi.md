@@ -1351,3 +1351,309 @@ Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 
 - StageChip and WordChip are not built in M3: none of these frames uses them (M3 Figma A §7). They come with M5 if Học or Ôn needs them.
 
 **Open:** none.
+
+---
+
+# Part 4 — M4 Tra từ, trang một từ, Thêm từ (branch `feat/giao-dien-moi-m4`)
+
+**Goal:** Rebuild Tra từ as "Từ hóa thẻ", the one-word page, the five add-word overlays and the three word dialogs without frames. Move search into the top bar. Add `ui/SpeakButton`. Add the three fields Tra từ needs to `GET /v1/words`.
+
+**Inputs:**
+- Design §5.4 (search box), §5.5, §5.7, §7.5, §8.2 (Tra từ), §9 M4.
+- Motion doc §4 ("Từ hóa thẻ", toast 2.4 s) and §5 (dialogs).
+- The owner's motion artifact `https://claude.ai/artifact/6z635GjwYNpctydnMoNHJD`: read it with the Artifact tool's `read` action. The motion doc wins where the two differ.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m4.md` ("M4 code §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-10-m4-a.md` (Tra từ, word page; "M4 Figma A §n") and `…-m4-b.md` (overlays; "M4 Figma B §n").
+- Paths below are under `apps/web/` unless they start with `apps/api/`. `C/` = `src/app/[locale]/app/(member)/(chrome)/`.
+
+**Depends on M3:** Tra từ and the Chọn nhóm overlay reuse `GroupStack`, `groupTone`, `carouselOrder` and `StageBar`.
+- Run `git switch -c feat/giao-dien-moi-m4 origin/refactor/giao-dien-moi` once M3 is merged.
+- Then run `git merge docs/giao-dien-moi-plan-4`.
+
+## Part 4 constraints
+
+- **API:**
+  - The only API change is additive, on `GET /v1/words`: `ipa`, `example`, `total` (M4.1). This follows the owner's QR2 ("toàn bộ thêm API" for data Figma needs).
+  - Every other request body and endpoint is unchanged.
+  - Request bodies pinned by tests stay identical: quick-add, sentences, bulk, picker add, my-word patch and delete.
+- **Copy:**
+  - Overlay 1's save button becomes "Lưu" through a new key, `App.addWord.saveShort`.
+  - The landing page keeps `App.addWord.save` ("Lưu {word}", `components/landing/copy.ts:52`).
+- **Speech:**
+  - Speaker buttons keep today's chain: the pre-made file, then the browser voice on failure, then dimmed "Đang tạo giọng đọc".
+  - Review and practice keep working through re-exports at the old `app-ui` paths until M5.
+- **One-letter keys** (`/`, `N`) do nothing when focus is in an input, a select, a contenteditable element or a dialog (`[role=dialog]`).
+
+## Part 4 Review Focus
+
+1. **Search box in the top bar.**
+   - Text typed there stays when Lan switches tabs.
+   - It resets when the URL's `q` or `level` changes. This is the M1 rule, pinned today by `chrome.test.tsx:100-121`; move those tests over.
+   - `/` pressed inside an open dialog does not move focus to the box.
+   - Pinned in M4.3.
+2. **Clicking a group stack on Tra từ.**
+   - A double click sends one `POST`.
+   - A group that already has the shown sense reads "✓ đã có" and cannot be clicked.
+   - After a successful add, the caption turns to "✓ đã có" and the toast stays 2.4 s.
+   - Pinned in M4.5.
+3. **A dictionary entry with no IPA or no example:** the entry renders without those lines and without empty gaps. Pinned in M4.5.
+4. **The learner's own word.**
+   - On Tra từ it shows "của tôi".
+   - On the word page it shows a single US speaker, and "Sửa từ" and "Xóa từ" are reachable.
+   - Deleting it lands on Tra từ.
+   - Pinned in M4.6.
+5. **AI lookup in Overlay 4 for a Free learner.**
+   - When the quota runs out: "Hết lượt tra AI." with the refill time, and no save button.
+   - `entitlement-required` shows the locked state.
+   - A `409 ai-in-progress` resend reuses the same key.
+   - Today's tests in `ai-lookup.test.tsx` stay green. Pinned in M4.7.
+
+### Task M4.1: API — three fields on `GET /v1/words`
+
+**Files:**
+- Modify the Content module's words list: the service, query and schema behind `GET /v1/words` under `apps/api/src/content/`. Find them through the route.
+- Modify the Content module's unit tests.
+- Modify `scripts/smoke-giao-dien-moi.mjs`, adding a check, and `apps/web/src/features/learner/lookup/lookup-api.ts` (types).
+
+**Interfaces:** response `{ items: WordRow[], next_page_token, total: number }`. `WordRow` gains:
+- `ipa: string | null`: the first visible sense's UK IPA, else its US IPA, else the custom IPA of a private sense.
+- `example: string | null`: the first example of that sense.
+- `total`: the number of words matching the filters, counted with the same visibility rule as the list.
+
+- [ ] **Step 1: Write the failing unit tests:**
+  - A catalog word with UK and US IPA returns the UK one.
+  - A word with only US IPA returns the US one.
+  - A private word returns its custom IPA.
+  - A word with no IPA returns `null`.
+  - `example` is the first example; with no example it is `null`.
+  - `total` equals the number of matching visible words for a filter whose results span 3 pages of 20.
+- [ ] **Step 2: Run** the Content unit tests. Expected: FAIL.
+- [ ] **Step 3: Implement** in the Content module only, following D3 (no reads of other modules' tables).
+- [ ] **Step 4: Run:**
+  - `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build` in `apps/api` → PASS;
+  - `pnpm smoke:giao-dien-moi` on a fresh DB → PASS, with the new check comparing `total` and one row's `ipa` and `example` against `GET /v1/words/{lemma}`. Append its output to `docs/deliveries/giao-dien-moi-smoke-output.txt`.
+- [ ] **Step 5: Commit** `feat(api): add ipa, example and total to the word list`.
+
+### Task M4.2: `ui/SpeakButton`, pronunciation line, dialog sizes, toast timeout
+
+**Files:**
+- Move: `src/app-ui/SpeakButtons.tsx` → `src/ui/SpeakButton.tsx` (`Pronounce` renamed `SpeakButton`; `SpeakWord`, `SpeakSentence` kept).
+- Move: `src/app-ui/PronunciationLine.tsx` → `src/ui/PronunciationLine.tsx`.
+- Move both test files with them. The old paths become re-exports.
+- Modify: `src/ui/Dialog.tsx` (`size?: 'md' | 'lg' | 'xl'`, which replaces `wide`; `xl` = 860 px for Overlay 4).
+- Modify: `src/ui/Toast.tsx` (per-call `timeout`).
+
+**Interfaces:**
+- `SpeakButton({ text, voice: 'uk'|'us', audioUrl, size?: 28|32 })` draws Figma `Nút loa` (`54:657`): `wm-accent-soft` circle, speaker icon 17.
+- `showToast(text, tone, { timeout?: number })`. The default stays 5000 ms.
+- `Dialog` keeps the `wide` prop as an alias for `lg` until M8, so untouched callers compile.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `size="xl"` gives a dialog whose class names contain the 860 px max width.
+  - `showToast('x', 'success', { timeout: 2400 })` is gone after 2 400 ms and still present at 2 399 ms (fake timers).
+  - The 14 moved speech tests keep passing at the new paths.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS; review and practice still import through the re-exports.
+- [ ] **Step 5: Commit** `feat(web): add speak button, dialog sizes and toast timeout to ui`.
+
+### Task M4.3: Search in the top bar
+
+**Files:**
+- Create: `src/app-chrome/TopSearch.tsx`.
+- Modify: `TopBar.tsx` (put the box inside its own `Suspense`); `AppChrome.tsx` (remove `SearchStrip`).
+- Delete: `SearchStrip.tsx`.
+- Move: the strip's tests to `app-chrome/top-search.test.tsx` (`chrome.test.tsx:100-121`, `lookup.test.tsx:97-124`, `m3-review.test.tsx:168-179`).
+- Modify: `e2e/app/m3.spec.ts:136-144`.
+
+**Behaviour:** desktop only (frame `54:502`).
+- "Tìm từ" box with a "/" key cap; no level select. Enter goes to `/app/lookup?q=…`.
+- On Tra từ, the page's own big box takes `/` and the top-bar box is hidden.
+- Phones keep the magnifier link to Tra từ (`PhoneHeader`).
+- The level filter lives only on Tra từ (M4.5).
+
+- [ ] **Step 1: Write the failing tests:**
+  - From `/vi/app/groups`: `/` focuses the box; typing "left" and Enter leads to exactly `/vi/app/lookup?q=left`.
+  - Typed text stays when `?id=` changes and resets when `q` changes.
+  - `/` inside an open dialog leaves focus in the dialog.
+  - On `/vi/app/lookup` the top-bar box is not rendered.
+- [ ] **Step 2: Run** `pnpm vitest run src/app-chrome`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then `pnpm cf:docker e2e/app/m3.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): move word search into the top bar`.
+
+### Task M4.4: The five overlays
+
+**Files:**
+- Modify: `L/add-word/{AddWordSheet,AddSentenceSheet,BulkAddSheet,AiLookupPanel,AiLookupResult,DeckPickerDialog,GroupPicker,EditSuggestionForm}.tsx` → `ui/*` and `wm-` tokens.
+- Modify: `add-word-context.tsx` (load `AddWordSheet` with `next/dynamic` on the first open; design §5.7).
+- Modify: `messages/{vi,en}.json` (`saveShort`).
+- Tests: the add-word test files (M4 code §7).
+
+**Behaviour:** M4 Figma B.
+- **All five:** title row with a 36 px close button; footer "Hủy" (TextButton muted) + primary button.
+- **Save labels:**
+  - Overlay 1 "Lưu";
+  - Overlay 2 "Lưu câu";
+  - Overlay 3 "Thêm cả loạt";
+  - Overlay 4 "Sửa rồi lưu";
+  - Overlay 5 "Lưu vào nhóm" (or "Tạo nhóm và lưu", as today).
+- **Overlay 1:**
+  - the inflection row "went → go · quá khứ của go" with the highlighted word;
+  - meaning rows with a radio, "pos · level" and the meaning;
+  - "đã có trong nhóm" rows have a check and no radio;
+  - group select.
+- **Overlay 4:**
+  - `size="xl"`, two columns on desktop: left, the meaning list with "từ điển" / "AI gợi ý" badges and the quota line "đã dùng 1 lượt tra AI · còn N"; right, the preview card "thẻ sẽ lưu · xem trước";
+  - the warning "AI có thể sai…";
+  - one column on phones, with no rotation.
+- **Overlay 5:**
+  - search "Tìm hoặc tạo nhóm…";
+  - "dùng gần đây", then "tất cả nhóm (N), A–Z";
+  - rows with the colour square (`groupTone`), name, a six-segment mini `StageBar` (none when 0 words) and "N từ";
+  - the list scrolls inside the dialog.
+- **Overlay 3:** filter summary, "Vào nhóm" select, two notes.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Overlay 1's button name is "Lưu"; pressing it sends the unchanged quick-add body.
+  - Overlay 5 rows show a colour square and a `figure` for a group with words, and no `figure` for "Du lịch Nhật" with 0 words.
+  - Overlay 4 at desktop width renders the preview card region "thẻ sẽ lưu · xem trước".
+  - Opening the add-word dialog for the first time renders it, through `next/dynamic` (await `findByRole('dialog')`).
+  - Update every test that pins "Lưu {word}" in the add flow (M4 code §7.5).
+  - Landing tests stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run L/add-word`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run L/add-word` → PASS; `pnpm test` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the add word, sentence, bulk, ai and group dialogs`.
+
+### Task M4.5: Tra từ "Từ hóa thẻ"
+
+**Files:**
+- Rewrite: `L/lookup/LookupPage.tsx`, `LookupFilters.tsx`.
+- Create: `L/lookup/DictionaryPage.tsx`, `L/lookup/LiftedCard.tsx`, `L/lookup/StackTargets.tsx`, `C/lookup/loading.app.tsx`.
+- Modify: `L/lookup/lookup.test.tsx`, `messages/{vi,en}.json` (`App.lookup`).
+
+**Behaviour** (`85:3218` / `85:3667`, M4 Figma A §1). Phones show the card and stacks first, the dictionary page after.
+- **Search box:** the big "Tìm từ, ví dụ: mitigate" box with a "/" key cap.
+- **Filter sentence:** "{total} từ trình độ {level}, chủ đề {topic}, loại từ {pos}." Each value is a button that opens a react-aria menu (`Popover` + `ListBox`); today's `URL` params are kept.
+- **Tools row:**
+  - "chỉ từ của tôi" (`mine`);
+  - "Thêm cả loạt vào nhóm" (Overlay 3, under today's `canBulk` rule);
+  - "Xóa lọc".
+- **Dictionary page:**
+  - running header: first word · "trang N" · last word;
+  - letter headers;
+  - entries: headword, `ipa`, POS in italics, level, "của tôi" tag; "1" + meaning; the example in italics with the form highlighted (`highlightWord`);
+  - footer "— N —" and "Trang sau →"; "← Trang trước" from page 2 (cursor tokens kept on a client-side stack).
+- **Selection:**
+  - hover, focus or click selects an entry; `↑` `↓` move within the list;
+  - the selected entry stays as a dashed ghost;
+  - the first entry is selected by default.
+- **Lifted card**, for the selected entry, from `GET /v1/words/{lemma}`:
+  - "pos · level · topic";
+  - headword;
+  - UK / US with `SpeakButton`;
+  - meaning;
+  - example;
+  - footer "<group> · ngăn N ngày" from `GET /v1/items?sense_ids=` of the first visible sense.
+- **Stacks:** "Thả vào chồng để thêm", the first 6 groups of `carouselOrder` as `GroupStack` at a 0.55 scale.
+  - Caption "+ thêm vào đây", or "✓ đã có" when the item's `group_ids` contain the group.
+  - A click sends `POST /v1/groups/{id}/items { sense_id }` for the card's sense (`useSubmitOnce`), then the toast "Đã thêm “…” vào nhóm “…”." (2 400 ms).
+- **Links:**
+  - "Nhóm khác hoặc tạo nhóm mới" opens Overlay 5 for that sense;
+  - "Mở trang từ →".
+- **Motion:** the motion doc's §4 lift and arrive; with reduced motion, no lift.
+- **Empty result:** today's empty state ("Thêm từ này" opens Overlay 1).
+
+- [ ] **Step 1: Write the failing tests:**
+  - The URL filters are sent as today, and the sentence reads "24 từ trình độ B1, chủ đề Công việc, loại từ tất cả." (`total` 24).
+  - Choosing "A2" from the level menu replaces the URL.
+  - Entries are grouped under letter headings "B", "C".
+  - An entry without `ipa` and `example` has no empty line.
+  - `↓` moves the selection, and the card's headword changes.
+  - Clicking the "Đề 12 · Writing" stack posts one body `{ sense_id }`; a double click still posts once; then its caption reads "✓ đã có".
+  - The "Công việc · B1" stack (already has the sense) is disabled.
+  - "Trang sau →" requests `page_token=p2`; "← Trang trước" returns to page 1 without a request (cached).
+- [ ] **Step 2: Run** `pnpm vitest run L/lookup`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then `pnpm cf:docker e2e/app/m3.spec.ts e2e/app/overflow.spec.ts` → PASS. Overflow adds a 60-character lemma on the card at 390.
+- [ ] **Step 5: Commit** `feat(web): rebuild lookup as a dictionary page with group stacks`.
+
+### Task M4.6: Trang một từ and the three word dialogs
+
+**Files:**
+- Rewrite: `L/word/{WordPage,SenseBlock,FormsLine,LearningBlock}.tsx`.
+- Restyle: `MyWordDialogs.tsx`, `SavedSentencesDialog.tsx`.
+- Create: `C/word/loading.app.tsx`.
+- Modify: `L/word/word-page.test.tsx`, `my-word.test.tsx`, `messages/{vi,en}.json` (`App.word`).
+
+**Behaviour** (`118:4413` / `118:4714`, M4 Figma A §2):
+- **Head:**
+  - back link "Tra từ";
+  - title, 84 px desktop / 56 px phone;
+  - per part of speech, rows "UK /…/" and "US /…/", each with a `SpeakButton` (one US speaker for a private sense);
+  - row "dạng chia", headword in SemiBold.
+- **Tabs:** anchor links "Nghĩa N", "Câu đã gặp N", "Dạng chia", "Cùng chủ đề". On phones they wrap to 2 rows.
+- **Meanings:** by part of speech ("noun · 2 nghĩa"). Each sense row has:
+  - number, meaning, English definition (catalog only), example with highlight and a sentence speaker;
+  - "N câu đã gặp", which opens Câu đã gặp;
+  - the stage tag "Ngăn 3 ngày · Đề 12 · Writing", or a TextButton add "Thêm vào nhóm" (Overlay 5).
+- **"Câu bạn đã gặp":**
+  - every sentence of the learned senses, from `GET /v1/senses/{id}/sentences`, one request per learned sense;
+  - meta "nghĩa N · <meaning> · ghi ngày dd/mm/yyyy";
+  - "Thêm câu đã gặp" opens Overlay 2. When more than one sense is learned, Overlay 2 shows a sense `Select`.
+- **Right column** from `lg`; on phones "Bạn đang học" moves after the head and "Cùng chủ đề" goes last.
+  - "Bạn đang học": stage bar with labels, "Ôn tiếp", each group's stage tag, "Thêm vào nhóm khác".
+  - "Cùng chủ đề": topic tile, "trình độ A2–B1", 8 word chips, "Xem chủ đề … →" to `/app/topic?code=&level=`.
+- **Own word:** "Từ của tôi" and "AI gợi ý" chips in the head. "Sửa từ" and "Xóa từ" are TextButtons in the head (not drawn; record as a ruling). The three dialogs (Sửa từ, Xóa từ, Câu đã gặp) follow `ui/Dialog` and M3's confirm look.
+- **Not found:** today's empty state.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The head shows "UK", "/ˈrek.ɔːd/", and two speaker buttons named "Nghe giọng Anh" / "Nghe giọng Mỹ" (`App.speak.uk|us`) per part of speech.
+  - Tab "Câu đã gặp 2" is a link to `#cau-da-gap`.
+  - A learned sense shows "Ngăn 3 ngày · Đề 12 · Writing".
+  - An unlearned sense has the button "Thêm vào nhóm", which opens dialog "Lưu vào nhóm".
+  - "Câu bạn đã gặp" lists 2 sentences with "ghi ngày 05/11/2026".
+  - Own word: buttons "Sửa từ" and "Xóa từ"; deleting calls `DELETE /v1/my-words/{entry_id}` then `hardReplace('/vi/app/lookup')`.
+  - The old dialog tests keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/word`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then the e2e specs that open `/app/word` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the word page with uk and us voices`.
+
+### Task M4.7: M4 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts` (set `gm-m4`: Tra từ, word page (catalog and own), the five overlays, the three dialogs; 390 and 1440).
+- Modify: `docs/deliveries/giao-dien-moi.md` (M4 as-built), `giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks:**
+  - `rg "@/app-ui/" src/features/learner/{lookup,word,add-word} --glob '!*.test.*'` → no output;
+  - web: lint, typecheck, test, `cf:docker`; API: lint, typecheck, test, build; admin: the four checks.
+  - All pass. Record the counts.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m4 pnpm shots`, next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m4 screenshot set` and `docs(web): record m4 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild lookup, the word page and add word dialogs`. Merge after CI is green and the owner says yes.
+
+## Part 4 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M4 table: Tra từ → M4.5; trang một từ → M4.6; Overlays 1–5 → M4.4.
+- Sửa từ, Xóa từ and Câu đã gặp → M4.6.
+- Roadmap row 4: `SpeakButton` → M4.2; top-bar search replacing `SearchStrip` → M4.3; add-word dialogs → M4.4.
+- §5.5 loading files → M4.5, M4.6. §5.7 `next/dynamic` → M4.4. §8.2 Tra từ motion → M4.5.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- `GET /v1/words` gains `ipa`, `example` and `total`, under the owner's QR2 ("toàn bộ thêm API"). The Figma dictionary page shows IPA, an example and a count; today's list has none of them.
+- A stack click adds the sense shown on the card. Other senses go through "Mở trang từ →".
+- The 6 stacks are the first 6 groups of `carouselOrder`.
+- Pagination: "Trang sau →" plus "← Trang trước" on cursor tokens. The cursor API has no page numbers to jump to.
+- The level filter leaves the top bar: Figma's top bar has none, and Tra từ's filter sentence carries it.
+- On Tra từ the top-bar box hides, and `/` focuses the page's box.
+- Overlay 1's "Lưu" uses a new key, so the landing demo keeps "Lưu {word}".
+- `wide` stays as an alias of `size="lg"` until M8.
+- Sửa từ and Xóa từ are TextButtons in the word head: Figma draws no own-word page.
+- With more than one learned sense, Overlay 2 shows a sense select.
+- The overlay backdrop keeps M1's 3 px blur (R10). Figma's overlays show 1.5 px.
+
+**Open:** none.
