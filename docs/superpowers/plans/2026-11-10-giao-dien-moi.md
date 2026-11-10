@@ -1235,7 +1235,7 @@ Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 
   - rows: 5 columns on desktop (word, POS, meaning, stage dot + "Ngăn …", status); phone keeps word, meaning and status;
   - "Xem thêm từ · còn N từ".
 - **"Bỏ … khỏi nhóm"** stays as a muted icon text button at the end of each row, even though Figma draws none: the design keeps this dialog. Record it as a ruling.
-- **The card preview (3D flip) is removed**: Figma has no preview on Một nhóm. Record it as a ruling and tell the owner in the report.
+- **The card preview (3D flip) is removed**, as Figma draws it (owner QM3-1, 10/11/2026: "Bỏ như Figma").
 - **FLIP:**
   - the carousel calls `rememberRect('group-stack', centreStack)` before navigating;
   - the page head runs the 380 ms FLIP from that rect, and the other parts enter from `blur(12px) translateY(12px)`, 340 ms, 22 ms apart;
@@ -1347,7 +1347,7 @@ Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 
 - The card menu leaves Hôm nay and Nhóm. Rename and delete stay on Một nhóm.
 - The Nhóm list's filter, search box and dashed "Tạo nhóm mới" tile are replaced by the picker and "+ Tạo nhóm".
 - "Bỏ … khỏi nhóm" stays on Một nhóm rows, though Figma draws none.
-- **The card preview on Một nhóm is removed.** This is a behaviour removal: tell the owner in the report and in the M3 PR description.
+- The card preview on Một nhóm is removed: owner decision QM3-1 (10/11/2026), not a ruling. Say so in the M3 PR description.
 - StageChip and WordChip are not built in M3: none of these frames uses them (M3 Figma A §7). They come with M5 if Học or Ôn needs them.
 
 **Open:** none.
