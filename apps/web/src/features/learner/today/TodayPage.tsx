@@ -3,23 +3,28 @@
 import { Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useRef, type MouseEvent } from 'react';
 import { AddFab } from '@/app-chrome/AddFab';
 import { PageColumns } from '@/app-chrome/PageColumns';
 import { createFormat, useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
 import { StageBar } from '@/ui/StageBar';
 import { mastered, sortForToday, waiting } from '../groups/deck-actions';
 import { DeckButtons } from '../groups/DeckButtons';
+import { ms, rememberRect, token } from '../groups/flip';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { GroupStack } from '../groups/GroupStack';
 import { useGroups, type GroupSummary } from '../groups/groups-api';
 import { STAGE_KEYS } from '../groups/stages';
 import { TopicSuggestions } from '../groups/TopicSuggestions';
+import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
 import { QuickAddBox } from './QuickAddBox';
 
@@ -207,6 +212,24 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   const cards = [...others, ...groups.filter((g) => g.total === 0)].slice(0, TODAY_CARDS);
   const done = groups.filter((g) => g.total > 0 && waiting(g) === 0).map((g) => g.name);
   const note = done.length > 0 ? t('noteDone', { names: done.join(', ') }) : null;
+  const router = useRouter();
+  const reduced = useReducedMotion();
+  const opening = useRef(false);
+  // Owner 10/11/2026: a pressed card lifts (motion doc §3, 170 ms), then the group page opens and the card flies to its head.
+  function openCard(event: MouseEvent<HTMLAnchorElement>, id: string) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    const stack = event.currentTarget.closest<HTMLElement>('.gstack');
+    const go = () => {
+      if (stack) rememberRect('group-stack', stack);
+      router.push(`/${locale}/app/group?id=${id}`);
+    };
+    if (reduced || !stack) return go();
+    if (opening.current) return;
+    opening.current = true;
+    stack.classList.add('wm-card-lift');
+    window.setTimeout(go, ms(token('--transition-duration-wm-lift', '170ms')));
+  }
   return (
     <section aria-labelledby="your-groups" className="flex flex-col gap-4">
       <div className="flex items-baseline gap-3">
@@ -220,13 +243,13 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
         </Link>
       </div>
       {cards.length > 0 && (
-        <ul aria-label={t('yourGroups')} className="-mx-4 flex gap-3.5 overflow-x-auto px-4 pb-3 md:mx-0 md:gap-5 md:px-0">
+        <DeckRow label={t('yourGroups')}>
           {cards.map((g) => (
-            <li key={g.id} className="shrink-0">
-              <GroupStack group={g} size="today" depth={2} href={`/${locale}/app/group?id=${g.id}`} />
+            <li key={g.id} className="shrink-0 snap-start">
+              <GroupStack group={g} size="today" depth={2} href={`/${locale}/app/group?id=${g.id}`} onOpen={(event) => openCard(event, g.id)} />
             </li>
           ))}
-        </ul>
+        </DeckRow>
       )}
       {note && <p className="text-wm-small text-wm-muted wrap-anywhere">{note}</p>}
     </section>

@@ -825,3 +825,13 @@
     animation: none;
   }
 }
+
+/* A deck card pressed on Hôm nay lifts before its group opens (owner 10/11/2026; motion doc §3 numbers). */
+.gstack.wm-card-lift {
+  animation: wm-lift var(--transition-duration-wm-lift) var(--ease-wm-out) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gstack.wm-card-lift {
+    animation: none;
+  }
+}
