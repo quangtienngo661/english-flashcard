@@ -263,3 +263,49 @@ Nhánh `feat/giao-dien-moi-m4`, PR vào `refactor/giao-dien-moi`. Quyết địn
 - Chưa xem trên trình duyệt thật ở mọi khổ (chỉ e2e và axe); chưa chụp ảnh đối chiếu Figma.
 - Thanh trên ở đúng 768 px (logo, bốn tab, Thêm từ, ô tìm, chip gói, avatar) chưa đo có tràn ngang không.
 - Thẻ cũ không bay đi khi đổi mục, chỉ thẻ mới tới (R71).
+
+# Giao diện mới — as-built M5a Luyện tập, Tùy chỉnh phiên, phiên luyện (10/11/2026)
+
+Nhánh `feat/giao-dien-moi-m5a`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R84–R104 trong `giao-dien-moi-rulings.md` (lúc làm đánh số R55–R80, đổi số
+hai lần khi merge PR #256 và #257). QM5-1 = có: #249 (số câu AI do người học chọn) vào `dev`, rồi vào nhánh dài qua PR #255, nên hộp Tùy chỉnh phiên theo vòng 14.
+
+**Đã làm**
+- API (M5.1): câu trả lời có `level` (ngăn sau khi chấm); session view có `correct`, `wrong` để thanh phiên đếm đúng sau khi tải lại. Smoke bước 6 kiểm cả hai.
+- `ui/` (M5.2): `AnswerOption`, `ProgressBar`, `Stepper`, `KeyLegend`; `Kbd` rộng theo chữ ("Enter", "Esc").
+- Tùy chỉnh phiên (M5.3): cột "Từ" (danh sách nhóm, "Mọi từ / Cần ôn / Ưu tiên", "Chỉ một ngăn") cho Theo nhóm và Từ hay sai; bốn hàng kiểu câu, "Gõ từ" có
+  "Theo nghĩa / Theo câu / Trộn" trên hàng; "Câu AI viết" là ô − / + từ 0 với dòng "Tối đa N câu AI · còn M lượt" (hoặc "vì bạn còn M lượt", "Hết lượt…",
+  "Xem gói Pro"); hai kiểu AI, "Trắc nghiệm theo câu" có "Chọn nghĩa / Chọn từ / Trộn"; "Xếp câu AI" khi admin để người học chọn; chân hộp có số câu (và "tối đa N"
+  ở chế độ theo số từ), thứ tự, "Bắt đầu N câu →", "Trong đó N câu AI, rải đều." Gửi `ai_count`, `ai_placement`, `cloze_source: 'own_then_ai'`; `againBody` gửi lại.
+- Phiên luyện (M5.4, dùng chung với Ôn): thanh phiên một thanh tiến độ, "câu n / N", chip ✓/✗; card câu hỏi với chip kiểu câu, "câu AI" và Báo lỗi theo `item.ai`
+  (Ôn không có); chỗ trống tô xanh hoặc đỏ sau khi trả lời; panel kết quả nằm dưới card với "Ngăn 1 ngày → Ngăn 3 ngày"; "Chưa đúng" khi còn làm lại; trắc nghiệm
+  bằng `AnswerOption` ("Bạn chọn", "Đáp án đúng"); bảng phím theo trạng thái; file `loading` cho nhóm `(focus)`.
+- Trang Luyện tập, Tổng kết, Từ hay sai (M5.5): thẻ "Luyện nhanh" với số lớn và câu ví dụ, "Phiên đang dở" dưới thẻ, một card các nguồn, cột phải Gần đây và Phím
+  trong phiên; Tổng kết có vòng tròn "16/20 câu đúng" và khối hiện 400 ms cách 90 ms (dùng chung với Học); Từ hay sai có chip ✓/✗ thay "sai x/y".
+
+**Kiểm**
+- API: `tsc` qua; `pnpm test` 362 file, 5273/5273. Smoke `smoke:giao-dien-moi` 13/13 trên DB mới (`english_learning_smoke_gm`, API ở :3200), output trong
+  `giao-dien-moi-smoke-output.txt`.
+- Web: lint, typecheck qua; `vitest run` 117 file, 1211/1211 (trước hai sửa của review; sau đó 680/680 ở `features/learner`, 227/227 ở practice và `ui`).
+- Admin: lint, typecheck, build (biến môi trường như CI) qua; `vitest run` 1405/1406, test hỏng (`AiConfigsPage` xóa nháp) chạy riêng 24/24.
+- E2e `pnpm cf:docker` cả bộ: 368 qua, 3 qua ở lần thử lại, 38 skip, 1 hỏng (`m5a` "AI failure" trên điện thoại, kẹt ở "Đang tải…" của lớp đăng nhập khi máy đang
+  chạy test API cùng lúc); chạy lại riêng 4/4 qua. Ba spec luyện tập (`m4`, `m5a`, `cai-thien-a-practice`) sau M5.3: 74/74.
+- Review cuối cả nhánh (subagent, Opus): 0 Critical, 1 Important (sau 403 thiếu lượt AI, hộp vẫn cho chọn quá số lượt thật), 6 Minor. Đã sửa Important và Minor M1
+  (Enter sau "Chưa đúng" gửi lại đúng từ sai; nâng lên vì bảng phím mới chỉ vào nó), mỗi cái test đỏ rồi fix.
+
+**Ảnh `gm-m5a`** (390 và 1440 px, sáng; 22 ảnh ở `apps/web/test-results/shots/gm-m5a/`, không commit): trang Luyện tập, hộp Tùy chỉnh phiên ở 4 trạng thái (mặc định;
+3 câu AI và câu đã lưu; thiếu lượt AI; không còn kiểu câu), phiên ở 4 trạng thái (câu điền từ; "Chưa đúng" còn làm lại; "Đúng rồi" với ngăn; trắc nghiệm chọn sai),
+Tổng kết, Từ hay sai. Chụp bằng API giả trong `cf:docker` như M2, vì cổng 3000/3001 đang là stack `pnpm bootstrap` của bản checkout chính; spec chụp là file tạm,
+không commit. Xem ảnh lần đầu bắt hai lỗi hiển thị (chữ "Enter" tràn ô phím; chân hộp xuống dòng), đã sửa.
+
+**Minor để lại (review cuối)**
+1. Bảng phím ghi "H Gợi ý" và "Esc Dừng phiên" khi ô gõ đang được chọn, nhưng trong ô gõ H là chữ và Esc đầu tiên chỉ rời ô.
+2. Giữ phím H mở liền mọi mức gợi ý (không chặn `e.repeat`).
+3. Ô phím làm tên nút khác giữa điện thoại và máy tính ("Câu tiếp Enter"); nên `aria-hidden` ô phím và dùng `aria-keyshortcuts`.
+4. Chế độ theo số từ: lúc danh sách nhóm của Từ hay sai đang tải, số câu tạm là 1.
+5. Hộp mở trên nhóm đầu tiên kể cả khi nhóm đó chưa có từ (bắt đầu sẽ báo 409).
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật ở trình duyệt; ảnh và e2e đều dùng API giả.
+- Chưa chụp chế độ tối, tiếng Anh, 1024 px.
+- Chưa xem trên điện thoại thật.
+- "Luyện thêm một phiên" xin lại `ai_planned` (số câu AI phiên trước dùng thật), không phải số người học đã chọn (R101).
