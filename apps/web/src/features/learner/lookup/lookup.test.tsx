@@ -162,6 +162,7 @@ describe('Tra từ: group stacks', () => {
     await userEvent.dblClick(stack);
     release();
     expect(await screen.findByText('Đã thêm “budget” vào nhóm “Đề 12 · Writing”.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${WRITING}`);
     const posts = calls.filter((c) => c.method === 'POST' && c.path === `/v1/groups/${WRITING}/items`);
     expect(posts).toHaveLength(1);
     expect(posts[0].body).toEqual({ sense_id: uuid(1) });

@@ -59,6 +59,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: uuid(1), sentence: 'I went to the bank yesterday.' });
     expect(await screen.findByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${TRAVEL}`);
   });
 
   it('a form whose base has no meaning yet: the manual form names the base and sends form_of', async () => {

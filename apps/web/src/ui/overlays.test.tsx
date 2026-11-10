@@ -75,6 +75,12 @@ describe('ui overlays', () => {
     expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).toContain('md:max-w-2xl');
   });
 
+  it('showToast with a link shows it in the toast', async () => {
+    renderApp(<ToastRegion />);
+    act(() => showToast('Đã thêm', 'success', { link: { label: 'Xem nhóm', href: '/vi/app/group?id=g1' } }));
+    expect(await screen.findByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g1');
+  });
+
   it('showToast with a timeout closes it after exactly that long; the default stays 5000 ms', async () => {
     vi.useFakeTimers();
     try {

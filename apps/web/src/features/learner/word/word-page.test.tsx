@@ -157,6 +157,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào nhóm' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === `/v1/groups/${G}/items`)?.body).toEqual({ sense_id: uuid(1) }));
     expect(await screen.findByText('Đã thêm “left” vào nhóm “IELTS”.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${G}`);
   });
 
   it('the same-topic box lists other words of the first topic', async () => {
