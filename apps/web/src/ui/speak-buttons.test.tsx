@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SpeakSentence, SpeakWord } from './SpeakButtons';
+import { SpeakSentence, SpeakWord } from './SpeakButton';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
-import { renderApp } from './test-utils';
+import { renderApp } from '@/app-ui/test-utils';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 

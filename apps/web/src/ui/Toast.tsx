@@ -32,9 +32,9 @@ export const toastQueue = new AriaToastQueue<ToastMessage>({
   },
 });
 
-/** Confirms an action or reports a failure; closes itself after 5 s. */
-export function showToast(text: string, tone: ToastTone = 'neutral'): void {
-  toastQueue.add({ text, tone }, { timeout: 5000 });
+/** Confirms an action or reports a failure; closes itself after `timeout` ms (5 s by default; Tra từ's "Đã thêm…" uses 2.4 s, motion §4). */
+export function showToast(text: string, tone: ToastTone = 'neutral', { timeout = 5000 }: { timeout?: number } = {}): void {
+  toastQueue.add({ text, tone }, { timeout });
 }
 
 const TONE: Record<ToastTone, string> = {
