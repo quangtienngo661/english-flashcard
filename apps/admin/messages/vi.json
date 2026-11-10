@@ -2147,18 +2147,23 @@
       "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ",
       "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết.",
       "free_ai_practice_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing",
-      "free_ai_lookup_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing"
+      "free_ai_lookup_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing",
+      "session_max_mode": "Bằng số từ: tối đa là số từ của phạm vi người học chọn, không quá 100",
+      "ai_max_fixed": "không vượt số câu của phiên",
+      "ai_max_percent": "làm tròn xuống",
+      "ai_placement": "Để người học chọn: hộp Tùy chỉnh phiên hiện Rải đều / Ngẫu nhiên khi người học chọn ít nhất 1 câu AI"
     },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",
       "content_retention_days": "không lưu",
       "free_ai_practice_per_cycle": "gói Miễn phí không có câu AI",
       "free_ai_lookup_per_cycle": "gói Miễn phí không tra AI được",
-      "free_ai_daily_cap": "người dùng gói Miễn phí không dùng được AI"
+      "free_ai_daily_cap": "người dùng gói Miễn phí không dùng được AI",
+      "ai_max_fixed": "không có câu AI"
     },
     "cross": {
       "stop_after_days": "và lớn hơn ô trên",
-      "default_questions_per_session": "và ≤ số tối đa",
+      "default_questions_per_session": "và ≤ số tối đa khi chọn Mức cố định",
       "pro_practice_sessions_per_day": "và ≥ gói Miễn phí"
     },
     "units": {
@@ -2173,7 +2178,8 @@
       "uses": "lượt",
       "years": "năm",
       "times": "lần",
-      "vnd": "đồng"
+      "vnd": "đồng",
+      "questions": "câu"
     },
     "fields": {
       "reminders": {
@@ -2192,8 +2198,13 @@
         "active_window_days": "Số ngày gần nhất tính là “đang học” (D7/D30)"
       },
       "practice": {
-        "max_questions_per_session": "Số câu tối đa mỗi phiên",
+        "session_max_mode": "Số câu tối đa mỗi phiên",
+        "max_questions_per_session": "Mức cố định",
         "default_questions_per_session": "Số câu mặc định",
+        "ai_max_mode": "Số câu AI tối đa mỗi phiên",
+        "ai_max_fixed": "Mức cố định",
+        "ai_max_percent": "Tỉ lệ so với số câu của phiên",
+        "ai_placement": "Cách xếp câu AI",
         "history_months": "Giữ lịch sử luyện tập",
         "true_false_true_percent": "Tỉ lệ cặp đúng ở câu Đúng/sai",
         "idle_session_close_hours": "Tự đóng phiên bỏ dở sau",
@@ -2262,7 +2273,23 @@
       "change": "{old} → {new}",
       "by": "{email} · {at}",
       "unknownUser": "Người dùng đã xóa"
-    }
+    },
+    "choices": {
+      "session_max_mode": {
+        "fixed": "Mức cố định",
+        "scope_words": "Bằng số từ của phạm vi"
+      },
+      "ai_max_mode": {
+        "fixed": "Mức cố định",
+        "percent": "Theo tỉ lệ số câu của phiên"
+      },
+      "ai_placement": {
+        "even": "Rải đều",
+        "random": "Ngẫu nhiên",
+        "learner": "Để người học chọn"
+      }
+    },
+    "aiCapExample": "Ví dụ: phiên {q1} câu → tối đa {a1} câu AI · phiên {q2} câu → {a2} · phiên {q3} câu → {a3}"
   },
   "words": {
     "search": "Tìm từ",

@@ -10,6 +10,7 @@ const DEFAULTS = {
   practice: {
     max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
     idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null, ai_prefetch_count: 2,
+    session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even',
   },
   entitlements: {
     free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, free_ai_practice_per_cycle: 15, free_ai_lookup_per_cycle: 5,
@@ -37,6 +38,7 @@ const BOUNDS = {
     max_questions_per_session: { min: 5, max: 100 }, default_questions_per_session: { min: 1, max: 100 }, history_months: { min: 3, max: 24 },
     true_false_true_percent: { min: 20, max: 80 }, idle_session_close_hours: { min: 1, max: 168 }, reports_per_hour: { min: 5, max: 100 },
     hint_definition_max_chars: { min: 80, max: 500 }, type_word_max_retries: { min: 1, max: 10, nullable: true }, ai_prefetch_count: { min: 0, max: 20 },
+    ai_max_fixed: { min: 0, max: 100 }, ai_max_percent: { min: 0, max: 100 },
   },
   entitlements: {
     free_practice_sessions_per_day: { min: 1, max: 50 },

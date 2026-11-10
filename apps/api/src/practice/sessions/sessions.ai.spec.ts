@@ -5,7 +5,7 @@ import type { ContentService, Learner } from '../../content/index.js';
 import type { EntitlementsService } from '../../entitlements/index.js';
 import type { PracticeAiRequest, PracticeQuestion, PracticeSession, PracticeSessionItem, PrismaClient } from '../../generated/prisma/client.js';
 import type { LearningService, PracticeItem } from '../../learning/index.js';
-import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
+import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
 import type { AiQuestionGenerator, GenerateOutcome } from '../ai/ai-question-generator.service.js';
 import { AiRequestsRepository } from '../ai/ai-requests.repository.js';
 import type { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
@@ -36,6 +36,10 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown> = 
 type Options = {
   types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | 'own_then_ai' | null;
   aiStopped?: string | null; target?: number;
+  /** Practice AI count (09/11/2026): the session's stored placement; null = started without ai_count. */
+  aiPlacement?: string | null;
+  /** Practice settings over the defaults. */
+  practice?: Partial<AppSettings['practice']>;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
   aiAvailable?: (senseId: string) => QuestionType[]; prefetch?: number;
@@ -50,7 +54,7 @@ function setup(options: Options) {
     promptStyle: 'meaning', targetCount: options.target ?? senseIds.length, senseIds, status: 'active', continued: null,
     pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: options.clozeSource ?? null,
     aiPlanned: options.aiPlanned ?? 0, aiSenseIds: options.aiSenseIds ?? [], pendingAiRequestId: null,
-    aiStopped: options.aiStopped ?? null, aiNoticeShown: false,
+    aiStopped: options.aiStopped ?? null, aiNoticeShown: false, aiPlacement: options.aiPlacement ?? null,
   };
   const questions: PracticeQuestion[] = [];
   const items: PracticeSessionItem[] = [];
@@ -186,7 +190,7 @@ function setup(options: Options) {
     practiceSenses: async (_u: string, ids: string[]) => new Map(ids.map((id) => [id, sense(id)])),
     visibleSenseIds: async (_u: string, ids: string[]) => new Set(ids),
   };
-  const settings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, aiPrefetchCount: options.prefetch ?? 2 } };
+  const settings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, aiPrefetchCount: options.prefetch ?? 2, ...options.practice } };
   const service = new SessionsService(prisma, new FakeClock(now), { get: async () => settings } as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
     {} as PracticeStats, {} as AiSessionPlanner, generator as unknown as AiQuestionGenerator, aiRequests,
@@ -413,6 +417,73 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     const after = await t.service.next(learner, 'sess-1');
     expect(after.state).toBe('finished');
     expect(t.generator.run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('even placement in later rounds (practice ai count §5, 09/11/2026)', () => {
+  const words = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'];
+  const marked = ['s3', 's6', 's8'];
+
+  /**
+   * Fixed mode, target 20 on 8 words, continued, ai_planned 8. Round 1 is done with its 3 AI items; round 2 items follow, the first
+   * `aiPlaced − 3` of them AI. Every item is answered.
+   */
+  function later(state: { answered: number; aiPlaced: number; aiPlacement?: string | null; settingsPlacement?: 'even' | 'random' | 'learner' }) {
+    const t = setup({
+      types: ['type_word', 'cloze'], clozeSource: 'ai', senseIds: words, aiSenseIds: marked, aiPlanned: 8, target: 20,
+      aiPlacement: state.aiPlacement === undefined ? 'even' : state.aiPlacement,
+      practice: state.settingsPlacement ? { aiPlacement: state.settingsPlacement } : undefined,
+    });
+    t.session.continued = true;
+    let laterAi = state.aiPlaced - marked.length;
+    for (let n = 0; n < state.answered; n++) {
+      const senseId = words[n % words.length];
+      const round = n < words.length ? 1 : 2;
+      const ai = round === 1 ? marked.includes(senseId) : laterAi-- > 0;
+      const q = t.question({ senseId, type: ai ? 'cloze' : 'type_word', source: ai ? 'ai' : 'rule' });
+      t.items.push({
+        id: randomUUID(), sessionId: 'sess-1', userId: learner.userId, questionId: q.id, senseId, round, position: n + 1, askedAt: now,
+        answeredAt: now, answerRaw: 'x', answerNormalized: 'x', answersTried: [], tries: 1, skipped: false, result: 'correct', hintLevel: 0,
+        localDate: null, reviewAction: null, maxRetries: null, alternative: null, alternativeSenseId: null,
+        alternativeReviewAction: null, sessionWordTries: 0,
+      } as unknown as PracticeSessionItem);
+    }
+    return t;
+  }
+
+  /** Whether the next question is an AI one, with Math.random pinned so the old r ÷ q chance would answer the other way. */
+  async function nextIsAi(t: ReturnType<typeof later>, random: number): Promise<boolean> {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(random);
+    try {
+      const result = await t.service.next(learner, 'sess-1');
+      if (result.state !== 'question') throw new Error(`expected a question, got ${result.state}`);
+      return result.item.ai;
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  it('even: the 9th question (answered 8, budget 5) is an AI question', async () => {
+    // r ÷ q = 5 ÷ 12 ≈ 0.42; random 0.99 would say no.
+    expect(await nextIsAi(later({ answered: 8, aiPlaced: 3 }), 0.99)).toBe(true);
+  });
+
+  it('even: answered 9 with 4 AI placed (budget 4) → the 10th question is not AI', async () => {
+    // r ÷ q = 4 ÷ 11; random 0 would say yes.
+    expect(await nextIsAi(later({ answered: 9, aiPlaced: 4 }), 0)).toBe(false);
+  });
+
+  it('even: answered 16, budget 4 → the 17th question is AI', async () => {
+    expect(await nextIsAi(later({ answered: 16, aiPlaced: 4 }), 0.99)).toBe(true);
+  });
+
+  it('review focus 5: settings changed to random after start: the session still follows its stored even placement', async () => {
+    expect(await nextIsAi(later({ answered: 8, aiPlaced: 3, settingsPlacement: 'random' }), 0.99)).toBe(true);
+  });
+
+  it('legacy session (aiPlacement null) keeps the r ÷ q chance', async () => {
+    // answered 12, 4 AI placed: r ÷ q = 4 ÷ 8 = 0.5; random 0.99 → not AI.
+    expect(await nextIsAi(later({ answered: 12, aiPlaced: 4, aiPlacement: null }), 0.99)).toBe(false);
   });
 });
 
