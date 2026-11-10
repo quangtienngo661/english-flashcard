@@ -848,7 +848,14 @@
       "emptyBody": "Bạn vẫn có thể học lại mọi từ trong nhóm.",
       "studyAll": "Học tất cả từ",
       "stampReview": "về ngăn 1 ngày",
-      "stampKnow": "lên ngăn {stage}"
+      "stampKnow": "lên ngăn {stage}",
+      "flipBack": "Xem mặt trước",
+      "nudge": "Lật thẻ để xem nghĩa trước đã.",
+      "legend": "Phím",
+      "stop": "Dừng phiên",
+      "pileList": "{name} · {count, number} thẻ",
+      "ring": "{known, number}/{total, number} thẻ đã biết",
+      "ringCaption": "đã biết"
     },
     "lookup": {
       "title": "Tra từ",

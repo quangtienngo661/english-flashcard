@@ -848,7 +848,14 @@
       "emptyBody": "You can still study every word in the deck.",
       "studyAll": "Study all words",
       "stampReview": "back to the 1-day stage",
-      "stampKnow": "up to the {stage} stage"
+      "stampKnow": "up to the {stage} stage",
+      "flipBack": "See the front",
+      "nudge": "Turn the card over to see the meaning first.",
+      "legend": "Keys",
+      "stop": "Stop",
+      "pileList": "{name} · {count, plural, one {# card} other {# cards}}",
+      "ring": "{known, number}/{total, number} cards known",
+      "ringCaption": "known"
     },
     "lookup": {
       "title": "Look up",

@@ -9,7 +9,7 @@ import { SpeakSentence } from '@/ui/SpeakButton';
 import type { Card } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 import { STAGE_KEYS } from '../groups/stages';
-import { useForms } from './Flashcard';
+import { useForms } from './use-forms';
 import { useCardDrag, type Rating } from './useCardDrag';
 
 export type CardStackHandle = {
@@ -28,6 +28,8 @@ type Props = {
   onNudge?: () => void;
   /** The stamps' stage lines are off (e.g. Học of new words, where Đã biết keeps the word new). */
   stampDetails?: boolean;
+  /** The top card's name for screen readers ("Thẻ 2 trên 20"). */
+  label?: string;
 };
 
 type Leaving = { card: Card; direction: 1 | -1; how: 'drag' | 'key'; speed: number; from: string };
@@ -41,7 +43,7 @@ const BEHIND = 3;
  * once and keeps flying while the next one comes forward, so a fast second answer acts on the next card (QM5-2 a).
  */
 export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
-  { cards, current, flipped, onFlip, onRate, onNudge, stampDetails = true },
+  { cards, current, flipped, onFlip, onRate, onNudge, stampDetails = true, label },
   ref,
 ) {
   const t = useTranslations('App.review');
@@ -112,7 +114,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
         );
       })}
       {top && (
-        <div key={top.item_id} ref={topRef} data-depth={0} className="cstack-card cstack-top">
+        <div key={top.item_id} ref={topRef} role="group" aria-label={label} data-depth={0} data-flipped={flipped} className="cstack-card cstack-top">
           <FullCard card={top} flipped={flipped} onFlip={onFlip} />
           {flipped && (
             <>
