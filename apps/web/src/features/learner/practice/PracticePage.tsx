@@ -180,13 +180,23 @@ export function PracticePage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <PageTitle>{t('title')}</PageTitle>
-        {pool && plan && <UsageCard pool={pool} plan={plan} out={out} />}
-      </div>
-      <div className="mt-5 flex flex-col gap-5 xl:flex-row xl:gap-6">
-        {body}
-        <aside className="flex w-full flex-col gap-5 xl:w-80 xl:shrink-0">
+      <PageTitle>{t('title')}</PageTitle>
+      {/* Owner 10/11/2026: today's sessions top the side column, level with the quick-practice card, Gần đây under it. On phones
+          the sessions card still comes first, so the side items are placed in a grid instead of one aside column. */}
+      <div
+        className={cn(
+          'mt-5 grid items-start gap-5',
+          // raw-ok: the side column keeps its 320px (Figma 99:3169); the main column takes the rest
+          'xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-x-6',
+        )}
+      >
+        {pool && plan && (
+          <div className="xl:col-start-2 xl:row-start-1">
+            <UsageCard pool={pool} plan={plan} out={out} />
+          </div>
+        )}
+        <div className="flex min-w-0 xl:col-start-1 xl:row-span-3 xl:row-start-1">{body}</div>
+        <aside className="flex flex-col gap-5 xl:col-start-2 xl:row-start-2">
           <Recent />
           <Shortcuts />
         </aside>
@@ -214,7 +224,7 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
     <section
       aria-labelledby="usage-title"
       className={cn(
-        'flex w-full flex-col gap-2.5 rounded-wm-xl border bg-wm-surface px-5 py-4 shadow-wm-card md:w-85',
+        'flex w-full flex-col gap-2.5 rounded-wm-xl border bg-wm-surface px-5 py-4 shadow-wm-card',
         out ? 'border-wm-fail' : 'border-wm-line',
       )}
     >
