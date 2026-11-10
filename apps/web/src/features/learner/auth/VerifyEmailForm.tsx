@@ -12,7 +12,7 @@ import { clearPendingEmail, clearPendingPassword, readPendingEmail, readPendingP
 import { useSession } from '@/app-shell/session/session-context';
 import type { Me } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from '@/app-shell/use-turnstile';
+import { useTurnstile } from './use-turnstile';
 import { Button } from '@/ui/Button';
 import { OtpField } from '@/ui/OtpField';
 import { PasswordField } from '@/ui/PasswordField';

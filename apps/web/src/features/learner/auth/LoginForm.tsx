@@ -12,7 +12,7 @@ import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pendi
 import { useSession } from '@/app-shell/session/session-context';
 import type { Notice } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from '@/app-shell/use-turnstile';
+import { useTurnstile } from './use-turnstile';
 import type { AppLocale } from '@/i18n/routing';
 import { Button } from '@/ui/Button';
 import { PasswordField } from '@/ui/PasswordField';

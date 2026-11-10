@@ -9,7 +9,7 @@ import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pendi
 import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from '@/app-shell/use-turnstile';
+import { useTurnstile } from './use-turnstile';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
 import { DateOfBirthField } from '@/ui/DateOfBirthField';

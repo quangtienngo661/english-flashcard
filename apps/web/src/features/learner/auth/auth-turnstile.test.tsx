@@ -14,7 +14,7 @@ import { RegisterForm } from './RegisterForm';
 import { VerifyEmailForm } from './VerifyEmailForm';
 
 const widget = vi.hoisted(() => ({ issued: 0, resets: 0, emit: (() => {}) as (token: string | null) => void }));
-vi.mock('@/app-ui/TurnstileWidget', async () => {
+vi.mock('./TurnstileWidget', async () => {
   const { useEffect, useImperativeHandle } = await import('react');
   return {
     TurnstileWidget: ({ onToken, ref }: { onToken: (token: string | null) => void; ref?: React.Ref<{ reset(): void }> }) => {

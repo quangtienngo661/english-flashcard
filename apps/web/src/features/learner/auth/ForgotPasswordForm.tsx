@@ -9,7 +9,7 @@ import { hardReplace } from '@/app-shell/navigate';
 import { writePendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from '@/app-shell/use-turnstile';
+import { useTurnstile } from './use-turnstile';
 import { Button } from '@/ui/Button';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, FormError } from './AuthHeading';
