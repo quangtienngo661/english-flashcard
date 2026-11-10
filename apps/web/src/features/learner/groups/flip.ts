@@ -26,7 +26,12 @@ export function token(name: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
-export const ms = (value: string) => Number.parseFloat(value);
+/** A CSS time in milliseconds: the production stylesheet writes `380ms` as `.38s`. */
+export const ms = (value: string) => {
+  const text = value.trim();
+  const n = Number.parseFloat(text);
+  return text.endsWith('ms') ? n : text.endsWith('s') ? Math.round(n * 1000) : n;
+};
 
 /**
  * Flies `ref` from the rect remembered under `key` to where it sits (380 ms, the FLIP curve). When it flies, `page` gets
