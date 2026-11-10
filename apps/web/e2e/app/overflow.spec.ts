@@ -101,3 +101,23 @@ test('no horizontal scroll on Today with an unbroken name on a deck card (vi)', 
   await expect(page.getByRole('list', { name: 'Nhóm của bạn' }).getByRole('link', { name: UNBROKEN })).toBeVisible();
   await noSideScroll(page);
 });
+
+// Giao diện mới M4.5: a 60-character word with no space, lifted into the Tra từ card, must not widen the page (390 px on phones).
+test('no horizontal scroll on Tra từ with an unbroken 60-character word (vi)', async ({ page }) => {
+  const word = 'a'.repeat(60);
+  const sense = {
+    sense_id: '00000000-0000-4000-8000-000000000801', entry_id: '00000000-0000-4000-8000-000000000802', scope: 'catalog', lemma: word, pos: 'noun', level: 'B1',
+    context_label: null, meaning: { text: 'nghĩa rất dài', language: 'vi', translation_missing: false }, definition_en: null, examples: [`The ${word} is here.`],
+    topics: [], form_of: null, ai_suggested: false, sentence_count: 0,
+  };
+  await signedInAs(page, 'pro', {
+    'GET /v1/words': () => ({ json: { items: [{ lemma: word, pos_list: ['noun'], level: 'B1', meaning_preview: 'nghĩa rất dài', has_private: false, ipa: 'eɪ', example: `The ${word} is here.` }], next_page_token: null, total: 1 } }),
+    [`GET /v1/words/${word}`]: () => ({ json: { lemma: word, inflections: [], sections: [{ pos: 'noun', senses: [sense] }] } }),
+    'GET /v1/items': () => ({ json: { items: [] } }),
+    'GET /v1/groups': () => ({ json: { items: [] } }),
+    'GET /v1/topics': () => ({ json: { items: [] } }),
+  });
+  await page.goto('/vi/app/lookup?level=B1');
+  await expect(page.getByRole('region', { name: 'Thẻ của từ đang chọn' }).getByRole('heading', { name: word })).toBeVisible();
+  await noSideScroll(page);
+});

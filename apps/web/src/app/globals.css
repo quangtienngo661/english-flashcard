@@ -809,16 +809,19 @@
   border: 1px solid #e8e4d8;
   border-radius: 4px 10px 10px 4px;
   box-shadow: 0 24px 48px -28px rgb(27 36 68 / 0.45);
+  /* The paper stays light in dark mode, so its text keeps the light-mode inks. */
+  --color-wm-ink: #1b2444;
+  --color-wm-muted: #525a78;
+  --color-wm-accent: #1e3a8a;
   color: var(--color-wm-ink);
 }
 .lk-rule { border-color: #e8e4d8; }
-/* The entry whose card is lifted stays as a dashed hole. */
+/* The entry whose card is lifted stays as a dashed hole; its text keeps full contrast (axe), unlike Figma's greyed text. */
 .lk-entry[aria-current='true'] {
-  outline: 1.5px dashed rgb(27 36 68 / 0.25);
+  outline: 1.5px dashed rgb(27 36 68 / 0.35);
   outline-offset: 2px;
-  background: rgb(27 36 68 / 0.03);
+  background: rgb(27 36 68 / 0.04);
 }
-.lk-entry[aria-current='true'] > * { opacity: 0.35; }
 .lk-card { rotate: -1.5deg; box-shadow: 0 30px 60px -30px rgb(27 36 68 / 0.55); }
 .lk-card-behind { rotate: 1deg; translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
 @keyframes lk-card-in {

@@ -63,7 +63,8 @@ test.describe('M3 flows (mocked API)', () => {
   test('lookup → word page → add a meaning to a deck', async ({ page }) => {
     await signedInAs(page, 'free', m3Api());
     await page.goto('/vi/app/lookup?q=left');
-    await page.getByRole('link', { name: 'left', exact: true }).first().click();
+    // Giao diện mới M4.5: the first entry is lifted into the card; its link opens the word page.
+    await page.getByRole('link', { name: vi.lookup.openWordArrow }).click();
     await expect(page).toHaveURL(/\/vi\/app\/word\?w=left$/);
     const adjective = page.getByRole('article').first();
     await adjective.getByRole('button', { name: vi.word.addToGroup }).click();
@@ -149,7 +150,7 @@ test.describe('M3 flows (mocked API)', () => {
 
 // Every M3 page × vi/en × light/dark with the longest content; the desktop (1440) and mobile (390) projects run each once.
 const PAGES: Array<{ path: string; ready: (page: Page) => Promise<void>; open?: (page: Page, locale: 'vi' | 'en') => Promise<void> }> = [
-  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('listitem', { name: 'left' })).toBeVisible() },
+  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('button', { name: /^left/ }).first()).toBeVisible() },
   { path: 'lookup?q=zzzz', ready: (p) => expect(p.getByRole('heading', { level: 2 }).first()).toBeVisible() },
   { path: 'word?w=left', ready: (p) => expect(p.getByRole('article').first()).toBeVisible() },
   {
@@ -161,7 +162,8 @@ const PAGES: Array<{ path: string; ready: (page: Page) => Promise<void>; open?: 
   },
   {
     path: '',
-    ready: (p) => expect(p.getByRole('dialog')).toBeVisible(),
+    // Thêm từ loads with next/dynamic on its first open (M4.4); the dev server compiles that chunk on first use.
+    ready: (p) => expect(p.getByRole('dialog')).toBeVisible({ timeout: 30_000 }),
     open: async (p) => {
       await expect(p.getByRole('heading', { level: 1 }).first()).toBeVisible();
       await p.keyboard.press('n');
