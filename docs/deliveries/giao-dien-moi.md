@@ -96,6 +96,23 @@ Plan: "Part 5" trong file plan ở trên. Hai PR: M5a (`feat/giao-dien-moi-m5a`,
 
 **Còn chờ chủ dự án:** QM5-1 (merge PR #249 trước M5?), QM5-2 (thẻ ở Học tan ngay hay chờ lưu xong).
 
+# Giao diện mới — plan tóm tắt, phần 6: M6 Lịch học (10/11/2026)
+
+Plan: "Part 6" trong file plan ở trên. Nhánh `feat/giao-dien-moi-m6`, làm sau khi M4 (PR #257) merge, một PR vào `refactor/giao-dien-moi`. M6.9 chờ M5a và M5b merge; nếu phần còn lại xong trước thì M6.9 thành PR thứ hai.
+
+- M6.1: API danh sách "Báo lỗi của tôi" trả thêm từ, kiểu câu, cờ câu AI; thêm kiểm vào smoke.
+- M6.2: hàm ngày theo múi giờ người học, query chuỗi ngày và lịch; cập nhật chuỗi ngày từ câu trả lời; route mặc định cho test.
+- M6.3: nút lịch nổi có chuỗi ngày, xếp trên nút "+" ở Hôm nay (điện thoại), ẩn ở Từ tồn đọng và Chủ đề; phím L.
+- M6.4: mở hộp Lịch, Ngày theo `?lich=`, `?ngay=` với ba luật nút Quay lại; link "Mở lịch học" ở Hôm nay và Luyện tập mở hộp Lịch.
+- M6.5: dựng hộp Lịch (tổng tháng, lưới ngày có chấm và dải ngày liền nhau, phím mũi tên, đổi tháng).
+- M6.6: dựng hộp Ngày (lọc, thẻ Học, Ôn, Luyện tập theo từng phiên, "+N từ", "Xem đủ N câu", trạng thái trống).
+- M6.7: trang Lịch sử luyện tập cũ chỉ còn chuyển hướng sang hộp Lịch, Ngày hoặc trang Báo lỗi; xóa trang cũ.
+- M6.8: trang "Báo lỗi của tôi" trong Cài đặt (chia theo tháng), dòng trong Cài đặt, mục trong menu ảnh đại diện, câu báo sau khi gửi báo lỗi.
+- M6.9: nút lịch trên thanh của phiên luyện, Học, Ôn ở điện thoại.
+- M6.10: thêm e2e mở lịch và xem một ngày, chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m6`, ghi as-built, mở PR.
+
+**Còn chờ chủ dự án:** QM6-1 (dòng báo lỗi trên điện thoại có hiện ngày gửi không).
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).
