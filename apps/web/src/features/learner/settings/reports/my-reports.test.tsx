@@ -63,6 +63,13 @@ describe('MyReportsPage (Figma 211:5827 / 211:6061)', () => {
     expect(screen.queryByRole('button', { name: /deteriorate/ })).toBeNull();
   });
 
+  it('QM6-1 (owner: B): phone rows start line 2 with the sent date, as on the transactions page', async () => {
+    renderApp(<MyReportsPage />, { routes: routes() });
+    await screen.findByText('deteriorate · Đáp án sai');
+    expect(row(/deteriorate/)).toHaveTextContent('08/11/2026 · điền từ vào câu · câu AI');
+    expect(row(/viable/)).toHaveTextContent('28/10/2026 · trắc nghiệm');
+  });
+
   it('Xem thêm asks for the next page', async () => {
     const view = renderApp(<MyReportsPage />, { routes: routes({
       'GET /v1/practice/reports?page_size=20': () => Response.json({ items: [report({ id: 'p1' })], next_page_token: 'tok' }),
