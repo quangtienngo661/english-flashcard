@@ -33,6 +33,8 @@ export function renderApp(
   const f = makeFetch({
     'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
     'GET /v1/me': () => Response.json(me),
+    // No practice session yet unless a test says otherwise (Hôm nay reads it, giao diện mới M3).
+    'GET /v1/practice/sessions/last': () => new Response(null, { status: 204 }),
     ...routes,
   });
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, ...(instantWaits ? { wait: async () => {} } : {}) });

@@ -120,7 +120,8 @@ export function meBody(over: Record<string, unknown> = {}) {
   };
 }
 
-/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks for a learner; `extra` handlers on top. */
+/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks and no practice session for a learner;
+ *  `extra` handlers on top. */
 export async function signedInAs(
   page: Page,
   plan: Plan = 'free',
@@ -138,6 +139,7 @@ export async function signedInAs(
     'GET /v1/groups': () => ({ json: { items: [] } }),
     'GET /v1/topics/suggestions': () => ({ json: { items: [] } }),
     'GET /v1/topics': () => ({ json: { items: [] } }),
+    'GET /v1/practice/sessions/last': () => ({ status: 204 }),
     ...extra,
   });
 }
