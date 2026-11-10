@@ -16,7 +16,7 @@ const WHEEL_GAP_MS = 380;
 
 /**
  * "Trượt mờ" (Figma 82:3213 / 82:3368, motion doc §3, design §8.5): the centre stack sharp, two neighbours each side smaller and
- * blurred (one each side on phones), the rest hidden. Only the centre is pressable; the side stacks are `inert`. Positions,
+ * blurred (one each side on phones), the rest hidden. The centre opens its group; a side stack is pressed to bring it to the centre (owner 10/11/2026). Positions,
  * curves and blur live in globals.css (`.gcar-*`), driven by `--k` (distance to the centre) and `data-abs` (its size).
  */
 export function GroupCarousel({
@@ -39,6 +39,7 @@ export function GroupCarousel({
   const locale = useLocale();
   const pointerX = useRef<number | null>(null);
   const lastWheel = useRef(0);
+  const swiped = useRef(false);
   const centreGroup = groups[centre];
   const halo = centreGroup ? groupTone(centreGroup.id, centreGroup.total) : null;
 
@@ -49,7 +50,9 @@ export function GroupCarousel({
     if (pointerX.current === null) return;
     const dx = event.clientX - pointerX.current;
     pointerX.current = null;
-    if (Math.abs(dx) > SWIPE_PX) onStep(dx < 0 ? 1 : -1);
+    // A swipe ends with a click on whatever stack is under the finger: that click must not step again.
+    swiped.current = Math.abs(dx) > SWIPE_PX;
+    if (swiped.current) onStep(dx < 0 ? 1 : -1);
   }
   function onWheel(event: WheelEvent) {
     if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || Math.abs(event.deltaX) < WHEEL_PX) return;
@@ -81,8 +84,10 @@ export function GroupCarousel({
               key={g.id}
               className="gcar-slot"
               data-abs={abs}
-              inert={!isCentre || undefined}
               aria-hidden={!isCentre || undefined}
+              // Owner 10/11/2026 (motion prototype vong-7): pressing a side stack brings it to the centre. Pointer only: the
+              // keys and the arrow buttons do the same for keyboard and screen-reader users, so the stack stays hidden to them.
+              onClick={isCentre ? undefined : () => !swiped.current && onStep(k)}
               // raw-ok: the slot's distance to the centre drives its transform in globals.css
               style={{ '--k': k } as CSSProperties}
             >

@@ -779,3 +779,9 @@
 .wm-page-out [data-in] {
   animation: wm-page-out var(--transition-duration-wm-close) var(--ease-wm-close) forwards;
 }
+/* Side stacks are pressed to come to the centre (owner 10/11/2026); hidden stacks take no press. */
+.gcar-slot:not([data-abs='0']) { cursor: pointer; }
+.gcar-slot[data-abs='3'] { pointer-events: none; }
+@media (width < 48rem) {
+  .gcar-slot[data-abs='2'] { pointer-events: none; }
+}
