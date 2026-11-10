@@ -30,21 +30,42 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R19 (10/11/2026, Task M1.11): Next 16.4.3 có `retry()` cho `error` (`dist/client/components/error-boundary.d.ts:6`) → dùng `retry`, không cần `reset`.
 - R20 (10/11/2026, Task M1.13): e2e bắt hai lỗi do M1.10 → `AddWordProvider` nằm ở layout `(chrome)` nên sống qua lần chuyển trang; nó tự đóng tấm Thêm từ khi `pathname` đổi (trước M1.10 mỗi trang có provider riêng nên tự đóng). `main` của `AppChrome` về `block` như `AppShell` cũ: là `flex-col` thì khối trang có `mx-auto` co theo nội dung, email dài làm trang Cài đặt rộng 431 px ở 390 px.
 - R21 (10/11/2026, Task M1.13): `pnpm cf:docker` chép cả repo bằng `tar`, không loại `.claude/worktrees` (khoảng 90 worktree) nên chạy 55 phút vẫn chưa xong bước chép → e2e chạy từ một worktree tách riêng `english-learning-gm-m1-e2e` ở cùng commit. Script chưa sửa (ngoài phạm vi).
-- R22 (10/11/2026, Task M3.1): `-ink` của màu nhóm lấy màu chữ đậm Figma vẽ (≥ 4,5:1 trên trắng); nhóm 4 (lục) và 6 (lam) Figma không vẽ → `color-mix(in oklab, màu 65%, #1b2444)` = `#376d45`, `#29629d`. Thay mức "chính màu đó, ≥ 3:1" của design §7.4.
-- R23 (10/11/2026, Task M3.1): thêm `--color-wm-group-empty-{soft,wash,ink}` (ink = `#525a78`) để nhóm trống có cùng dạng token với 7 màu; `--radius-wm-xs` 3px cho ô màu 9px (chú thích, hàng ngăn).
-- R24 (10/11/2026, Task M3.1): nền và chấm của ngăn 30 ngày là gradient trong biến `--color-wm-*` → chỉ dùng làm `background-image`; ô phẳng "Từ theo ngăn" và chấm ở hàng từ dùng `stage-5-solid`.
-- R25 (10/11/2026, Task M3.2): độ dày chồng theo `layers` của prototype (> 16 → 3, > 6 → 2, > 0 → 1); Hôm nay tối đa 2. "nhịp ôn": rộng theo số từ của ngăn, phần tô theo số thẻ chờ (khớp 6 + 9 + 9 = 24 của Figma). Thứ tự băng chuyền: `sortForToday`, nhóm trống cuối.
-- R26 (10/11/2026, Task M3.3): chồng thẻ là một thiết kế co theo `em` (290×368 px ở 16px), CSS đặt trong `globals.css` (`.gstack*`) thay vì khoảng 30 class tùy ý cần `raw-ok`; `data-size` chọn cỡ chữ gốc.
-- R27 (10/11/2026, Task M3.3): `DeckButtons` bỏ icon và prop `size` (Figma vẽ nút chỉ có chữ, rộng 148px do nơi dùng đặt); `ButtonLink` có `data-variant` như `Button` để test đọc nút chính.
-- R28 (10/11/2026, Task M3.4): làm M3.4 trước M3.3 vì `GroupStack` đọc `next_lemma`, `last_reviewed`.
-- R29 (10/11/2026, Task M3.5): tiêu đề và số lớn ở Hôm nay, Nhóm, Một nhóm, Tồn đọng, Chủ đề dùng thang cỡ chữ mặc định của Tailwind (`text-3xl`…`text-8xl`) vì Figma đặt cỡ tay; đổi sang `text-wm-page-title` khi M2 đã vào nhánh dài.
-- R30 (10/11/2026, Task M3.5): ngày của "Lần luyện gần nhất" = `local_date` định dạng ở UTC (đã là ngày của người học); tên nhóm bỏ khi `group_id` null hoặc không có trong `GET /v1/groups`. Link "Xem tất cả N nhóm →" luôn hiện như Figma.
-- R31 (10/11/2026, Task M3.6): bảng chọn nhóm = `DialogTrigger`/`Popover`/`Dialog` của react-aria và ô tìm `role="combobox"` + danh sách `aria-activedescendant` tự viết (con trỏ ở ô tìm), không dùng `ListBox`. `Enter` đưa nhóm vào giữa băng chuyền và đóng bảng (theo test của plan), không mở trang nhóm.
-- R32 (10/11/2026, Task M3.6): test "← trong ô Thêm từ vừa gặp" đổi sang ô tìm trên thanh trên vì trang Nhóm không có ô Thêm từ vừa gặp.
-- R33 (10/11/2026, Task M3.6): băng chuyền vẽ cả chồng ±3 (ẩn, mờ 0) để nhóm đi vào ±2 có chuyển động; độ mờ 3,6/7,2px theo tài liệu motion (khung Figma vẽ 1,8/3,6px).
-- R34 (10/11/2026, Task M3.6): `waiting`, `sortForToday` dời sang `deck-actions.ts`, xóa `GroupCard.tsx` (Hôm nay và Nhóm không còn thẻ cũ). Test đổi tên khi xung đột phiên bản, xóa nhóm và bản tiếng Anh dời sang `group-page.test.tsx` vì menu ⋯ chỉ còn ở Một nhóm.
-- R35 (10/11/2026, Task M3.7): `flip.ts` đọc token motion qua `getComputedStyle`, cùng số làm giá trị dự phòng (jsdom). Đóng nhóm: các phần tan 150ms, nhớ khung chồng, Nhóm bay chồng giữa về; mở nhóm chưa chạy bước làm mờ băng chuyền 170ms của prototype (plan chỉ nêu `rememberRect`).
-- R36 (10/11/2026, Task M3.7): chữ trạng thái ở hàng từ dùng `wm-ink` (Figma tô màu đậm của nhóm); "Bỏ … khỏi nhóm" giữ ở cuối hàng dạng nút chữ xám có dấu ✕, tên đọc như cũ (Figma không vẽ; plan).
-- R37 (10/11/2026, Task M3.7): file `loading` riêng cho `(today)`, `groups`, `group`; `group/backlog` dùng lại khung xương trung tính để không nhận khung của Một nhóm.
-- R38 (10/11/2026, Task M3.8): Chủ đề giữ nút "Thêm cả N từ" dạng nút chữ ở đầu trang (Figma không vẽ; test cũ cần) vì thanh nổi chỉ hiện khi đã chọn từ; mỗi danh sách hiện 6 (Tồn đọng) / 8 (Chủ đề) hàng đầu rồi "Xem thêm N từ" như Figma.
-- R39 (10/11/2026, Task M3.5–M3.9): gộp thành một commit vì bỏ thẻ cũ, dời `waiting`/`sortForToday` và file chữ dùng chung cắt ngang các task; tách ra sẽ có commit không build được.
+
+## M2
+
+- R22 (10/11/2026, Task M2.2): chữ số trong ô mã dùng `text-wm-card-title` (24 px, Bricolage 700), không 28 px như Figma "Ô mã" → chưa có token 28 px, thêm token chỉ cho một chỗ thì thừa; ô 54/60 px vẫn đủ chỗ.
+- R23 (10/11/2026, Task M2.2): `OtpField` có thêm `hideLabel` (tên nhóm chỉ cho trình đọc màn hình) → Xác minh email không vẽ nhãn trên hàng ô, tiêu đề trang đã nói "Nhập mã 6 số".
+- R24 (10/11/2026, Task M2.5): đường ôn và sáu chấm ngăn trong panel thương hiệu vẽ bằng SVG trong code theo toạ độ khung `153:751`, chấm màu `ghost` / `accent`, ô màu của chip từ dùng `fail`, `mark`, `pass` → không tải ảnh SVG của Figma về; màu ngăn và màu nhóm có token ở M3.
+- R25 (10/11/2026, Task M2.5): tiêu đề trang (`page-title`, 44 / 38) đậm 800, tiêu đề card (`card-heading`, 30 / 26) đậm 700 → bảng chỗ lệch §3.1 của design ("800 cho tiêu đề trang, 700 cho tiêu đề card"); Figma ghi Bold.
+- R26 (10/11/2026, Task M2.5): `(split)` và `(card)` mỗi nhóm có `error.app.tsx` riêng, `(auth)/error.app.tsx` giữ lại → `AuthGate` không vẽ khung nữa, lỗi bắt ở `(auth)` sẽ hiện không có card.
+- R27 (10/11/2026, Task M2.5): quầng sáng sau card và trong panel dựng bằng hai utility `auth-card-glow`, `auth-panel-glow` (gradient từ token màu) → không dùng ảnh elip của Figma, màu chỉ qua token.
+- R28 (10/11/2026, Task M2.5): chữ mẫu tiếng Anh trên panel (`mitigate`, câu ví dụ, "Đề 12 · Writing") để nguyên trong code, các nhãn ("Thẻ từ · ngăn 7 ngày", "Hôm nay", "từ đến hạn", nghĩa tiếng Việt) vào `App.auth.showcase` → panel là hình minh họa, `aria-hidden`.
+- R29 (10/11/2026, Task M2.7): Đăng ký bỏ dòng giới thiệu dưới tiêu đề ("Ôn từ vựng theo lịch…"), xóa khóa `register.subtitle` → khung `35:405` / `37:533` chỉ có tiêu đề "Tạo tài khoản".
+- R30 (10/11/2026, Task M2.7): e2e tìm ô mật khẩu bằng `getByLabel(…, { exact: true })` → Playwright so nhãn theo chuỗi con, nên "Mật khẩu" trùng cả "Nhập lại mật khẩu" và nút mắt "Hiện mật khẩu".
+- R31 (10/11/2026, Task M2.7): lỗi "Mật khẩu nhập lại chưa khớp." kiểm sau ô Tên (Tên trống báo trước) và trước khi gửi → một lần bấm chỉ báo một lỗi ở phía trình duyệt, như cách form đang làm với Tên.
+- R32 (10/11/2026, Task M2.8): lỗi "mã chưa đúng" của Đặt mật khẩu mới hiện bằng dòng lỗi chung (`FormError`) ngay dưới hàng ô mã, không gắn vào từng ô → `OtpField` là một nhóm sáu ô; Figma không vẽ trạng thái lỗi của ô mã.
+- R33 (10/11/2026, Task M2.8): email trong câu giới thiệu của Xác minh email giữ chữ thường, không in đậm như Figma `36:385` → tách email ra phần tử riêng làm vỡ test 16 và 29 (`getByText` câu đầy đủ) mà plan giữ nguyên.
+- R34 (10/11/2026, Task M2.8): Xác minh email đặt nút "Xác minh" trước dòng "Gửi lại mã sau N giây", giữa card; "Gửi lại mã" là `TextButton` → thứ tự và căn giữa theo khung `36:385`.
+- R35 (10/11/2026, Task M2.9): `google-complete.test.tsx` đổi `findByText(/minh@gmail.com/)` thành `findAllByText` (lần đầu ghim đúng 2 chỗ) → chip tài khoản Google `36:490` hiện email lần thứ hai; plan ghi test này giữ nguyên nhưng chip cũng do plan yêu cầu.
+- R36 (10/11/2026, Task M2.9): `AuthHeading` có thêm `above` (chip Google, vòng tròn của Đã xóa tài khoản) và `centered`; `GoogleMark` được export từ `ui/GoogleButton` để chip dùng chung → một chỗ vẽ chữ G.
+
+## M3
+
+- R37 (10/11/2026, Task M3.1): `-ink` của màu nhóm lấy màu chữ đậm Figma vẽ (≥ 4,5:1 trên trắng); nhóm 4 (lục) và 6 (lam) Figma không vẽ → `color-mix(in oklab, màu 65%, #1b2444)` = `#376d45`, `#29629d`. Thay mức "chính màu đó, ≥ 3:1" của design §7.4.
+- R38 (10/11/2026, Task M3.1): thêm `--color-wm-group-empty-{soft,wash,ink}` (ink = `#525a78`) để nhóm trống có cùng dạng token với 7 màu; `--radius-wm-xs` 3px cho ô màu 9px (chú thích, hàng ngăn).
+- R39 (10/11/2026, Task M3.1): nền và chấm của ngăn 30 ngày là gradient trong biến `--color-wm-*` → chỉ dùng làm `background-image`; ô phẳng "Từ theo ngăn" và chấm ở hàng từ dùng `stage-5-solid`.
+- R40 (10/11/2026, Task M3.2): độ dày chồng theo `layers` của prototype (> 16 → 3, > 6 → 2, > 0 → 1); Hôm nay tối đa 2. "nhịp ôn": rộng theo số từ của ngăn, phần tô theo số thẻ chờ (khớp 6 + 9 + 9 = 24 của Figma). Thứ tự băng chuyền: `sortForToday`, nhóm trống cuối.
+- R41 (10/11/2026, Task M3.3): chồng thẻ là một thiết kế co theo `em` (290×368 px ở 16px), CSS đặt trong `globals.css` (`.gstack*`) thay vì khoảng 30 class tùy ý cần `raw-ok`; `data-size` chọn cỡ chữ gốc.
+- R42 (10/11/2026, Task M3.3): `DeckButtons` bỏ icon và prop `size` (Figma vẽ nút chỉ có chữ, rộng 148px do nơi dùng đặt); `ButtonLink` có `data-variant` như `Button` để test đọc nút chính.
+- R43 (10/11/2026, Task M3.4): làm M3.4 trước M3.3 vì `GroupStack` đọc `next_lemma`, `last_reviewed`.
+- R44 (10/11/2026, Task M3.5): tiêu đề và số lớn ở Hôm nay, Nhóm, Một nhóm, Tồn đọng, Chủ đề dùng thang cỡ chữ mặc định của Tailwind (`text-3xl`…`text-8xl`) vì Figma đặt cỡ tay; đổi sang `text-wm-page-title` khi M2 đã vào nhánh dài.
+- R45 (10/11/2026, Task M3.5): ngày của "Lần luyện gần nhất" = `local_date` định dạng ở UTC (đã là ngày của người học); tên nhóm bỏ khi `group_id` null hoặc không có trong `GET /v1/groups`. Link "Xem tất cả N nhóm →" luôn hiện như Figma.
+- R46 (10/11/2026, Task M3.6): bảng chọn nhóm = `DialogTrigger`/`Popover`/`Dialog` của react-aria và ô tìm `role="combobox"` + danh sách `aria-activedescendant` tự viết (con trỏ ở ô tìm), không dùng `ListBox`. `Enter` đưa nhóm vào giữa băng chuyền và đóng bảng (theo test của plan), không mở trang nhóm.
+- R47 (10/11/2026, Task M3.6): test "← trong ô Thêm từ vừa gặp" đổi sang ô tìm trên thanh trên vì trang Nhóm không có ô Thêm từ vừa gặp.
+- R48 (10/11/2026, Task M3.6): băng chuyền vẽ cả chồng ±3 (ẩn, mờ 0) để nhóm đi vào ±2 có chuyển động; độ mờ 3,6/7,2px theo tài liệu motion (khung Figma vẽ 1,8/3,6px).
+- R49 (10/11/2026, Task M3.6): `waiting`, `sortForToday` dời sang `deck-actions.ts`, xóa `GroupCard.tsx` (Hôm nay và Nhóm không còn thẻ cũ). Test đổi tên khi xung đột phiên bản, xóa nhóm và bản tiếng Anh dời sang `group-page.test.tsx` vì menu ⋯ chỉ còn ở Một nhóm.
+- R50 (10/11/2026, Task M3.7): `flip.ts` đọc token motion qua `getComputedStyle`, cùng số làm giá trị dự phòng (jsdom). Đóng nhóm: các phần tan 150ms, nhớ khung chồng, Nhóm bay chồng giữa về; mở nhóm chưa chạy bước làm mờ băng chuyền 170ms của prototype (plan chỉ nêu `rememberRect`).
+- R51 (10/11/2026, Task M3.7): chữ trạng thái ở hàng từ dùng `wm-ink` (Figma tô màu đậm của nhóm); "Bỏ … khỏi nhóm" giữ ở cuối hàng dạng nút chữ xám có dấu ✕, tên đọc như cũ (Figma không vẽ; plan).
+- R52 (10/11/2026, Task M3.7): file `loading` riêng cho `(today)`, `groups`, `group`; `group/backlog` dùng lại khung xương trung tính để không nhận khung của Một nhóm.
+- R53 (10/11/2026, Task M3.8): Chủ đề giữ nút "Thêm cả N từ" dạng nút chữ ở đầu trang (Figma không vẽ; test cũ cần) vì thanh nổi chỉ hiện khi đã chọn từ; mỗi danh sách hiện 6 (Tồn đọng) / 8 (Chủ đề) hàng đầu rồi "Xem thêm N từ" như Figma.
+- R54 (10/11/2026, Task M3.5–M3.9): gộp thành một commit vì bỏ thẻ cũ, dời `waiting`/`sortForToday` và file chữ dùng chung cắt ngang các task; tách ra sẽ có commit không build được.

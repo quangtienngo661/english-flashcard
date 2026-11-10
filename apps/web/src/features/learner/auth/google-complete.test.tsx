@@ -36,7 +36,8 @@ describe('GoogleComplete (design §9.2)', () => {
   it('Review Focus 1: with no first name from Google it asks for first and family name; the button waits for the first name', async () => {
     stubApi({ 'GET /v1/auth/google/complete': () => Response.json({ email: 'minh@gmail.com', needs_name: true }) });
     renderApp(<GoogleComplete today={TODAY} />);
-    expect(await screen.findByText(/minh@gmail.com/)).toBeInTheDocument();
+    // The address shows twice (Figma 36:490): in the Google account chip and in the intro.
+    expect(await screen.findAllByText(/minh@gmail.com/)).toHaveLength(2);
     expect(screen.getByLabelText('Tên')).toBeInTheDocument();
     await FIELDS();
     expect(screen.getByRole('button', { name: 'Tạo tài khoản' })).toBeDisabled();
@@ -47,7 +48,7 @@ describe('GoogleComplete (design §9.2)', () => {
   it('with a name from Google there are no name fields', async () => {
     stubApi({ 'GET /v1/auth/google/complete': () => Response.json({ email: 'minh@gmail.com', needs_name: false }) });
     renderApp(<GoogleComplete today={TODAY} />);
-    await screen.findByText(/minh@gmail.com/);
+    await screen.findAllByText(/minh@gmail.com/);
     expect(screen.queryByLabelText('Tên')).not.toBeInTheDocument();
   });
 
@@ -57,7 +58,7 @@ describe('GoogleComplete (design §9.2)', () => {
       'POST /v1/auth/google/complete': () => tokenResponse('tok-google'),
     });
     const view = renderApp(<GoogleComplete today={TODAY} />, { routes: { 'GET /v1/me': () => Response.json(makeMe({ auth_method: 'google', sign_in_methods: ['google'] })) } });
-    await screen.findByText(/minh@gmail.com/);
+    await screen.findAllByText(/minh@gmail.com/);
     await userEvent.type(screen.getByLabelText('Tên'), ' Minh ');
     await userEvent.type(screen.getByLabelText('Họ (không bắt buộc)'), 'Trần');
     await FIELDS();
@@ -75,7 +76,7 @@ describe('GoogleComplete (design §9.2)', () => {
       'POST /v1/auth/google/complete': () => problem(400, 'age-below-minimum'),
     });
     renderApp(<GoogleComplete today={TODAY} />);
-    await screen.findByText(/minh@gmail.com/);
+    await screen.findAllByText(/minh@gmail.com/);
     await pickDate('Ngày sinh', '2013-10-29');
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
@@ -97,7 +98,7 @@ describe('GoogleComplete (design §9.2)', () => {
       'POST /v1/auth/google/complete': () => problem(401, 'invalid-token'),
     });
     renderApp(<GoogleComplete today={TODAY} />);
-    await screen.findByText(/minh@gmail.com/);
+    await screen.findAllByText(/minh@gmail.com/);
     await FIELDS();
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     expect(await screen.findByText('Phiên đăng ký đã hết hạn')).toBeInTheDocument();

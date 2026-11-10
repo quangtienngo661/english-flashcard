@@ -19,12 +19,17 @@ for (const locale of ['vi', 'en'] as const) {
     }
   });
 
-  test(`no horizontal scroll on the sign-in pages (${locale})`, async ({ page }) => {
+  test(`no horizontal scroll on the sign-in pages (${locale})`, async ({ page }, testInfo) => {
     await mockApi(page, { 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
-    for (const path of ['/login', '/register', '/forgot-password', '/reset-password']) {
-      await page.goto(`/${locale}/app${path}`);
-      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
-      await noSideScroll(page);
+    // Plan part 2 Review Focus 5: 1024 px sits between the two Figma sizes (no brand panel, card layout).
+    const widths = testInfo.project.name === 'desktop' ? [undefined, 1024] : [undefined];
+    for (const width of widths) {
+      if (width) await page.setViewportSize({ width, height: 900 });
+      for (const path of ['/login', '/register', '/forgot-password', '/reset-password']) {
+        await page.goto(`/${locale}/app${path}`);
+        await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+        await noSideScroll(page);
+      }
     }
   });
 }
