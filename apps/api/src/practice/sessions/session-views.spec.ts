@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { itemView, sessionView, type ItemWithQuestion } from './session-views.js';
 import type { PracticeSession } from '../../generated/prisma/client.js';
+import { itemView, sessionView, type ItemWithQuestion } from './session-views.js';
 
 const item = (question: Record<string, unknown>) => ({
   id: 'it-1', round: 1, position: 1, hintLevel: 0, tries: 0,
@@ -11,6 +11,21 @@ const item = (question: Record<string, unknown>) => ({
     ...question,
   },
 }) as unknown as ItemWithQuestion;
+
+const now = new Date('2026-11-09T03:00:00Z');
+const sessionRow = (overrides: Partial<PracticeSession> = {}): PracticeSession => ({
+  id: 'sess-1', userId: 'u-1', kind: 'practice', source: 'group', groupId: 'g-1', groupFilter: 'all', sort: 'queue',
+  types: ['mcq_definition', 'cloze'], promptStyle: 'mixed', targetCount: 10, senseIds: ['s1', 's2'], status: 'active', continued: null,
+  pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: 'ai', aiPlanned: 3, aiSenseIds: ['s2'],
+  pendingAiRequestId: null, aiStopped: null, aiNoticeShown: false, aiPlacement: null, ...overrides,
+});
+
+describe('sessionView', () => {
+  it('ai_placement (09/11/2026): the row value, null for a session started without ai_count', () => {
+    expect(sessionView(sessionRow({ aiPlacement: 'random' }), []).ai_placement).toBe('random');
+    expect(sessionView(sessionRow({ aiPlacement: null }), []).ai_placement).toBeNull();
+  });
+});
 
 describe('itemView (Bước 7)', () => {
   it('B7E55: never the answer key, the translation or a hint text; level 3 is flagged when stored', () => {

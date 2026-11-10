@@ -1,0 +1,40 @@
+# Smoke output — practice ai count (09/11/2026)
+# pnpm smoke:practice-ai-count on a fresh database english_learning_smoke_ai_count (API + worker built from feat/practice-ai-count, fake AI, JOB_QUEUE_PREFIX=wordmet-aic-smoke)
+
+NOTICE:  database "english_learning_smoke_ai_count" does not exist, skipping
+$ node scripts/smoke-practice-ai-count.mjs
+[1] 09:58:18Z Wait for the API
+    ok — reachable at http://localhost:3000; database english_learning_smoke_ai_count; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-aic-smoke, no key
+[2] 09:58:18Z Accounts: admin (CLI grant), a second admin that publishes configs, learner L1 (Pro)
+    ok — admin smokeaic-admin-4717f951@example.com; publisher smokeaic-publisher-4717f951@example.com; learner smokeaic-l1-4717f951@example.com
+[3] 09:58:26Z AI setup: fake provider on; fake:ok published for generate_cloze and the operation is ready
+    ok — fake:ok is the live model of generate_cloze and the operation is ready
+[4] 09:58:27Z Content: import 10 verbs in one technology/A1 bucket and publish
+    ok — batch 8e1ac34a-5732-4665-96ef-ddb3c1415a2e: 10 created and published
+[5] 09:58:29Z Entitlements: L1 Pro with 20 AI units and 200 sessions a day; group A holds the ten words, 4 of them priority
+    ok — L1 pro, 20 AI units; group 0249e339-1314-4c1e-807e-ca7d701719ae: 10 words, 4 priority
+[6] 09:58:30Z app-config: the five new practice settings at their defaults, and the scope ceiling 100
+    ok — practice {"max_questions_per_session":20,"default_questions_per_session":10,"session_max_mode":"fixed","ai_max_mode":"percent","ai_max_fixed":5,"ai_max_percent":50,"ai_placement":"even","scope_questions_max":100}
+[7] 09:58:30Z Defaults (fixed 20, AI 50 %, even): count 10, ai_count 3 → target 10, ai_planned 3, even; 3 of 10 asked by AI; units 20 → 17
+    ok — AI at positions 4, 7, 10; units 20 → 17
+[8] 09:58:37Z ai_count 9 with count 10 → lowered to the 50 % cap: ai_planned 5
+    ok — target 10, ai_planned 5
+[9] 09:58:37Z count 25 above the fixed maximum 20, only mcq_definition, ai_count 0 → target 20, not 400
+    ok — target 20, ai_planned 0, ai_placement even
+[10] 09:58:37Z Admin: scope_words, AI fixed 2, learner chooses → saved; the history has the four changes with old → new values
+    ok — version 0 → 1; history practice.ai_max_mode percent → fixed; practice.ai_max_fixed 5 → 2; practice.ai_placement even → learner; practice.session_max_mode fixed → scope_words
+[11] 09:58:37Z Priority filter (4 words), count 10, ai_count 3, ai_placement random → target 4, ai_planned 2, random
+    ok — target 4, words 4, ai_planned 2, random
+[12] 09:58:37Z Old client (no ai_count), priority, count 4 → target 4, ai_planned 2 (ceil(4 × 1 ÷ 2)), ai_placement null
+    ok — target 4, ai_planned 2, ai_placement null
+[13] 09:58:38Z 400 validation-failed: ai_count without an AI type; AI-only types with fewer AI than questions
+    ok — both refused with 400 validation-failed
+[14] 09:58:38Z Not enough units: 1 left, the priority words have no unseen AI question, ai_count 2 → 403 remaining 1, needed 2; units restored
+    ok — remaining 1, needed 2; units back to 17
+Smoke practice ai count passed in 22s (14 steps).
+
+# Re-run smokes, each on its own fresh database (summary lines)
+pnpm smoke:buoc-4 (english_learning_smoke_aic_b4): ALL CHECKS PASSED in 58173ms (run id cb547bb2; 20 sessions, 46 answers)
+pnpm smoke:buoc-7 (english_learning_smoke_b7): Smoke Bước 7 passed in 208s (30 steps).
+pnpm smoke:cloze-own-then-ai (english_learning_smoke_cloze_mix): Smoke cloze own_then_ai passed in 20s (10 steps).
+pnpm smoke:dot-cai-thien-c (english_learning_smoke_c): ALL OK — 14 steps in 24s
