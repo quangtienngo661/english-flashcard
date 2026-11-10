@@ -78,7 +78,9 @@ export function DeckRow({ label, children }: { label: string; children: ReactNod
           event.stopPropagation();
         }}
         onDragStart={(event) => event.preventDefault()}
-        className="no-scrollbar -mx-4 flex snap-x snap-proximity gap-3.5 overflow-x-auto overscroll-x-contain px-4 pb-3 pt-2 select-none md:mx-0 md:gap-5 md:px-0"
+        data-more-prev={edges.prev || undefined}
+        data-more-next={edges.next || undefined}
+        className="deck-row no-scrollbar -mx-4 flex snap-x snap-proximity gap-3.5 overflow-x-auto overscroll-x-contain px-4 select-none md:mx-0 md:gap-5 md:px-0"
       >
         {children}
       </ul>

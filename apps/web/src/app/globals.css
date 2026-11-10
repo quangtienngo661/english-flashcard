@@ -576,7 +576,10 @@
   border-radius: 1.952em;
   background: var(--color-wm-surface);
   padding: 1.603em 1.743em 1.394em;
-  box-shadow: 0 2.23em 4.18em -2.65em rgb(27 36 68 / 0.45);
+  /* Tinted with the group colour like the prototype (vong 10 `.gc`), over a faint ink contact shadow. */
+  box-shadow:
+    0 0.0625em 0.125em rgb(27 36 68 / 0.06),
+    0 2.23em 4.18em -2.65em color-mix(in srgb, var(--gstack-tone, var(--color-wm-ink)) 70%, transparent);
   color: var(--color-wm-ink);
 }
 .gstack-behind {
@@ -834,4 +837,31 @@
   .gstack.wm-card-lift {
     animation: none;
   }
+}
+
+/* The stack face knows its group colour for the tinted shadow (owner 10/11/2026, artifact vong 10). */
+.gstack-face.border-wm-group-0 { --gstack-tone: var(--color-wm-group-0); }
+.gstack-face.border-wm-group-1 { --gstack-tone: var(--color-wm-group-1); }
+.gstack-face.border-wm-group-2 { --gstack-tone: var(--color-wm-group-2); }
+.gstack-face.border-wm-group-3 { --gstack-tone: var(--color-wm-group-3); }
+.gstack-face.border-wm-group-4 { --gstack-tone: var(--color-wm-group-4); }
+.gstack-face.border-wm-group-5 { --gstack-tone: var(--color-wm-group-5); }
+.gstack-face.border-wm-group-6 { --gstack-tone: var(--color-wm-group-6); }
+.gstack-face.border-wm-group-empty { --gstack-tone: var(--color-wm-group-empty); }
+
+/* The Hôm nay deck row (DeckRow.tsx): room inside the scroller for the stacks' shadows (a scroller clips both axes), taken back
+   with a negative margin, and soft edges where more cards wait. */
+.deck-row {
+  padding-top: 0.5rem;
+  padding-bottom: 2.75rem;
+  margin-bottom: -2rem;
+}
+.deck-row[data-more-next] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+.deck-row[data-more-prev] {
+  mask-image: linear-gradient(to right, transparent, #000 3rem);
+}
+.deck-row[data-more-prev][data-more-next] {
+  mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
 }
