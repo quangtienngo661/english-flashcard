@@ -617,3 +617,317 @@ Until the owner chooses, no task touches `features/learner/ads/AdsenseLoader.tsx
   - `SearchStrip` stays until M4.
   - The FAB is only on Today.
   - The footer is removed from the app.
+
+---
+
+# Part 2 — M2 Đăng nhập và tài khoản (branch `feat/giao-dien-moi-m2`)
+
+**Goal:** Rebuild the nine sign-in and account pages (design §9 M2) on the M1 kit:
+- `(auth)` splits into `(split)` and `(card)`.
+- The auth forms move off the old `app-ui/` kit.
+- The new fields Figma draws: password reveal, the 6-box code, confirm password.
+- The brand panel of the two split pages.
+
+**Inputs:**
+- Design §3, §5.4, §7.5, §9 M2.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m2.md`, cited as "M2 code §n".
+- Figma facts `docs/preparation/GIAO_DIEN_MOI_PLAN_FIGMA_FACTS_2026-11-10-m2.md`, cited as "M2 Figma §n".
+- Figma page `35:307`.
+
+Paths below are under `apps/web/`. `R/` = `src/app/[locale]/app/`.
+
+Run `git switch -c feat/giao-dien-moi-m2 origin/refactor/giao-dien-moi` once the M1 PR is merged. Then run `git merge docs/giao-dien-moi-plan-2` to bring in this part and its two facts files.
+
+## Part 2 constraints
+
+- The API does not change.
+- Every request body that existing tests pin with `toEqual` stays exactly the same: M2 code §7.1 tests 2, 32 and 33; `google-complete.test.tsx:54`; `e2e/app/b8-set-password.spec.ts`.
+- The accessible names the tests rely on stay:
+  - field labels: "Email", "Mật khẩu", "Mật khẩu mới", "Tên", "Họ (không bắt buộc)", "Ngày sinh";
+  - OTP boxes: "Chữ số N";
+  - button names;
+  - one `h1` per page;
+  - `role="alert"` only for errors (M2 code §7.1 test 40).
+- No field has a `placeholder`. This is pinned by `auth.test.tsx:59-64` (owner 03/11/2026).
+- The birth date stays the browser's date box (owner 27/10/2026). Figma draws it as `dd/mm/yyyy` text; the code does not follow that.
+- Turnstile follows QM2-1, which the owner answers before M2.4 runs:
+  - "luôn hiện" keeps today's render options;
+  - "chỉ hiện khi cần" adds `appearance: 'interaction-only'`.
+  - In both cases Figma's hand-drawn "Đã xác minh" box is not built; the real widget renders in its place.
+- When M2 ends, `features/learner/auth/**` imports nothing from `@/app-ui/*`. Tests may still import `@/app-ui/test-utils`.
+
+## Part 2 Review Focus
+
+1. A signed-in Google-only learner opens Quên mật khẩu or Đặt mật khẩu mới. The page must stay open (B8-2) after `CardFrame` moves out of `AuthGate`. Pinned by `AuthGate.test.tsx:27` and `b8-set-password.spec.ts`, both unchanged.
+2. Pasting "48 1205" into any box of the reset code fills all six boxes and leaves focus on box 6. Pinned in M2.2, and again in M2.8 for the reset page.
+3. Confirm password typed wrong, then fixed:
+   - the first press sends nothing and shows the error under "Nhập lại mật khẩu";
+   - the second press sends the old body, with no extra field.
+   Pinned in M2.7 and M2.8.
+4. Pressing the eye button inside a form shows the password and does not submit the form. Pinned in M2.1.
+5. At 1024 px, a width between the two Figma sizes: no brand panel, card layout, no horizontal scroll. Pinned in M2.5 by `overflow.spec.ts`, which adds a 1024 width.
+
+### Task M2.1: `PasswordField` and a link in the label row
+
+**Files:**
+- Modify: `src/ui/TextField.tsx`; `messages/{vi,en}.json`, adding `App.common.showPassword` ("Hiện mật khẩu" / "Show password") and `App.common.hidePassword` ("Ẩn mật khẩu" / "Hide password").
+- Create: `src/ui/PasswordField.tsx`.
+- Test: `src/ui/fields.test.tsx`.
+
+**Interfaces:**
+- `TextField` gains `labelAside?: ReactNode`, rendered at the right end of the label row (Figma `Ô nhập`, "có liên kết").
+- `PasswordField(props: Omit<TextFieldProps, 'type'>)` renders a `TextField` whose `type` is `password` or `text`, with a 20 px eye button inside the box. The button has `type="button"` and `aria-pressed`, and takes its name from the two new keys.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The eye button reveals and hides: the `type` attribute goes `password` → `text` → `password`, and the button name goes "Hiện mật khẩu" → "Ẩn mật khẩu".
+  - Pressing it inside `<form onSubmit={spy}>` leaves `spy` uncalled.
+  - `getByLabelText('Mật khẩu')` finds only the input.
+  - `labelAside` renders a link in the same row as the label.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/fields.test.tsx`. Expected: FAIL, because `PasswordField` does not exist.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add a password field with reveal to ui`.
+
+### Task M2.2: `OtpField`
+
+**Files:**
+- Create: `src/ui/OtpField.tsx`.
+- Test: `src/ui/otp-field.test.tsx`.
+
+**Interfaces:**
+- Signature: `OtpField({ label, digitLabel, value, onChange, length = 6, autoFocus }: { label: string; digitLabel: (n: number) => string; value: string; onChange: (digits: string) => void; length?: number; autoFocus?: boolean })`.
+- Renders a `role="group"` named `label`, holding `length` inputs named `digitLabel(n)`.
+- The behaviour moves from `VerifyEmailForm.tsx:133-149` (M2 code §6):
+  - `inputMode="numeric"`;
+  - `autoComplete="one-time-code"` on box 1;
+  - `maxLength={2}`, keeping the last digit typed;
+  - focus moves to the next box after a digit;
+  - Backspace on an empty box moves back one box;
+  - paste strips non-digits and fills from box 1.
+- Looks follow the Figma `Ô mã` states (M2 Figma §2): Thường, Đang nhập, Có số (`wm-accent-soft` fill, Bricolage 28).
+
+- [ ] **Step 1: Write the failing tests:**
+  - Paste "48 1205" → `onChange('481205')` and box 6 has focus.
+  - Type `4` then `8` → box 3 has focus.
+  - From an empty box 3, press Backspace twice → box 1 has focus.
+  - Type `7` into a filled box → the box holds `7`.
+  - The group's accessible name is `label`.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/otp-field.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add the six box code field to ui`.
+
+### Task M2.3: `GoogleButton`, `Flag`, `DateOfBirthField` in the new kit
+
+**Files:**
+- Create: `src/ui/GoogleButton.tsx`; `src/ui/DateOfBirthField.tsx`.
+- Move with `git mv`:
+  - `src/app-ui/date-of-birth.ts` and its test → `src/lib/date-of-birth.ts`;
+  - `src/app-ui/Flag.tsx` → `src/ui/Flag.tsx`.
+- The old paths `app-ui/date-of-birth.ts` and `app-ui/Flag.tsx` become one-line re-exports, like `app-ui/Toast.tsx`, until M8.
+- Test: `src/ui/fields.test.tsx`.
+
+**Interfaces:**
+- `GoogleButton({ onPress, children })` draws the Figma `Nút Google` (`34:366`) with the four-path mark, `aria-hidden`. It does not navigate, because `ui/` may not import `@/app-shell/config` (M2 code §8.4).
+- `DateOfBirthField` keeps the props of `app-ui/DateOfBirthField.tsx` and wraps `ui/TextField`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The Google button's `svg` is `aria-hidden` and has 4 `path`s; pressing the button fires `onPress`.
+  - An under-13 date shows "Bạn cần đủ 13 tuổi để dùng Wordmet." and calls `onChange(null)`.
+  - `serverError="tooYoung"` shows the same text.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/fields.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement**, moving the two files with `git mv`.
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS; the old importers still work through the re-exports.
+- [ ] **Step 5: Commit** `feat(web): add google button, flag and birth date field to ui`.
+
+### Task M2.4: Turnstile moves to `features/learner/auth/`
+
+**Files:**
+- Move: `src/app-ui/TurnstileWidget.tsx` and its test, and `src/app-shell/use-turnstile.tsx`, into `src/features/learner/auth/`.
+- Modify: the 4 importers and the two `vi.mock` paths (M2 code §4, §7.4).
+- Restyle the widget's fallback text with `wm-` tokens.
+
+- [ ] **Step 1: Write the test for the QM2-1 answer:**
+  - "chỉ hiện khi cần": a failing test that the `turnstile.render` options contain `appearance: 'interaction-only'`.
+  - "luôn hiện": a test that pins today's options: `sitekey`, `refresh-expired: 'auto'`, and no `appearance`.
+- [ ] **Step 2: Run** the new test. Expected: FAIL for "chỉ hiện khi cần"; PASS for "luôn hiện", which pins existing behaviour.
+- [ ] **Step 3: Move the files and implement.**
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS, including `auth-turnstile.test.tsx` with its new mock path.
+- [ ] **Step 5: Commit** `refactor(web): move turnstile into the auth feature`.
+
+### Task M2.5: `(split)` and `(card)` layouts, the brand panel, heading tokens
+
+**Files:**
+- Create: `R/(auth)/(split)/layout.app.tsx`; `R/(auth)/(card)/layout.app.tsx`.
+- Move `login/` and `register/` into `(split)`.
+- Move `verify-email/`, `forgot-password/`, `reset-password/`, `google/complete/` and `account-deleted/` into `(card)`.
+- Modify: `features/learner/auth/AuthGate.tsx` so it returns `children` with no frame.
+- Modify: `app-chrome/CardFrame.tsx` to match the Figma card:
+  - `max-w-120`, `p-6`, `md:p-10`, `rounded-wm-2xl`, a border, `shadow-wm-lift`;
+  - logo at the top left;
+  - two glows behind the card.
+  - The `(onboarding)` pages get the same card.
+- Create: `features/learner/auth/SplitFrame.tsx` (client component); `features/learner/auth/AuthShowcase.tsx`.
+- Modify: `packages/design-tokens/web.css` and `web-tokens.test.ts`. Add these tokens, taking letter-spacing from M2 Figma §3:
+  - `--text-wm-page-title`: 44 px, lh 1.18;
+  - `--text-wm-page-title-mobile`: 38 px, lh 1.22 (Figma `Display/Page title mobile`);
+  - `--text-wm-card-heading`: 30 px, lh 1.3;
+  - `--text-wm-card-heading-mobile`: 26 px, lh 1.3.
+- Tests: `app-chrome/layouts.test.tsx`, `e2e/landing.spec.ts:550-563`, `e2e/app/overflow.spec.ts`.
+
+**Behaviour:**
+- `SplitFrame` picks the panel variant with `usePathname()` (M2 Figma §3.1–3.2): `/register` gets the "Đề 12" cards; every other path gets the "ngăn" cards.
+- From `xl` (1280 px), it draws a 640 px panel in `wm-accent-soft` holding:
+  - the dot grid;
+  - the three cards;
+  - the review path;
+  - the chips.
+  The whole panel is `aria-hidden`.
+- The form column is 400 px wide: logo on top, form, then a footer at the bottom ("© {year} Wordmet", "Chính sách bảo mật", "Điều khoản sử dụng").
+- Below `xl`, it uses the card layout with no footer.
+- The page `h1` uses `text-wm-page-title-mobile md:text-wm-page-title`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Layouts: a page under `(card)` has exactly one `main` and one logo link to `/vi`.
+  - `AuthGate` keeps its existing tests, now with no frame: it still redirects a signed-in visitor of `/vi/app/login`, and still leaves forgot and reset open.
+  - Rewrite the e2e at `landing.spec.ts:550-563`:
+    - at 1440, the brand panel is visible and the `h1` sits in the left half;
+    - at 1024 and at 390, there is no panel and the card is centred within 2 px.
+  - `overflow.spec.ts` adds a 1024 width.
+  - The web-tokens test pins the four new sizes.
+- [ ] **Step 2: Run** the unit tests. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run:**
+  - `pnpm test` → PASS;
+  - `pnpm cf:docker e2e/landing.spec.ts e2e/app/overflow.spec.ts` → PASS;
+  - the admin checks (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` in `apps/admin`), because `packages/design-tokens` changed.
+- [ ] **Step 5: Commit** `feat(web): split the auth layouts and add the brand panel`.
+
+### Task M2.6: Shared auth pieces and Đăng nhập
+
+**Files:**
+- Rename: `features/learner/auth/AuthCard.tsx` → `AuthHeading.tsx`. It holds the back link (the `BackLink` look with today's behaviour), the `h1`, the intro and the banner. It draws no card.
+- Modify: restyle `FormError` and `PasswordRules` with `wm-` tokens.
+- Create: `features/learner/auth/GoogleSignIn.tsx`, which pairs `ui/GoogleButton` with today's `/v1/auth/google/start` URL logic (M2 code §5).
+- Add `OrDivider` and `SwitchAuthLink` to `AuthHeading.tsx`.
+- Modify: `LoginForm.tsx`.
+- Test: `auth.test.tsx`.
+
+**Behaviour:**
+- Login follows `35:308` / `37:485`.
+- "Quên mật khẩu?" moves into the label row of "Mật khẩu" (`labelAside`). It keeps a 44 px tall hit area on phones, pinned by `landing.spec.ts:822-834`.
+- Button variants map from the old kit: `sticker` → `primary`, `quiet` → `secondary`.
+
+- [ ] **Step 1: Write the failing test:** the login password field has a "Hiện mật khẩu" button, and the link "Quên mật khẩu?" sits in its label row with `href=/vi/app/forgot-password`. Existing login tests 9–15 and 36–40 stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild sign in on the new kit`.
+
+### Task M2.7: Đăng ký with "Nhập lại mật khẩu"
+
+**Files:**
+- Modify: `RegisterForm.tsx`.
+- Modify tests: `auth.test.tsx` (`fillRegister` also fills "Nhập lại mật khẩu"); `auth-turnstile.test.tsx:126`; `e2e/app/m1.spec.ts:10-52`.
+- Modify `messages/{vi,en}.json`:
+  - add `App.auth.register.confirmPassword`: "Nhập lại mật khẩu" / "Re-enter password";
+  - add `App.auth.passwordMismatch`: "Mật khẩu nhập lại chưa khớp." / "The passwords don't match.";
+  - delete the unused `givenNamePlaceholder` and `familyNamePlaceholder`, and `App.ui.dob.placeholder` if nothing reads it.
+
+**Behaviour:** follows `35:405` / `37:533`.
+- The name row has two columns from `sm`.
+- Two `PasswordField`s; only the first has the hint.
+- Uses the new kit's `Checkbox` and `DateOfBirthField`.
+- The Turnstile widget sits where Figma draws the "Đã xác minh" box.
+- Pressing submit with mismatched passwords sends nothing. The error appears under the confirm field (`aria-invalid`) and focus moves there.
+- Typing in the confirm field clears the error.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Mismatch → zero `POST /v1/auth/register`, and the text "Mật khẩu nhập lại chưa khớp." describes the confirm field.
+  - After the fix → one request, whose body still `toEqual`s test 2's body.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the auth tests → PASS; `src/i18n/messages.test.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild sign up with a confirm password field`.
+
+### Task M2.8: Xác minh email, Quên mật khẩu, Đặt mật khẩu mới
+
+**Files:**
+- Modify: `VerifyEmailForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`.
+- Modify tests: `auth.test.tsx` (tests 33, 35); `e2e/app/b8-set-password.spec.ts`.
+- Modify `messages/{vi,en}.json`: add `App.auth.reset.confirmPassword`, "Nhập lại mật khẩu mới" / "Re-enter new password".
+
+**Behaviour:**
+- Verify uses `OtpField`, with each box named by `verify.digit`. Its text and flow do not change, so tests 16–30 keep passing.
+- Reset follows `36:447`:
+  - the single code field becomes an `OtpField` labelled "Mã 6 số trong email";
+  - it gains "Nhập lại mật khẩu mới", with the same mismatch rule as M2.7.
+- Forgot changes style only.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Reset has a group "Mã 6 số trong email" with boxes "Chữ số 1" to "Chữ số 6".
+  - Reset: paste "48 1205", type a matching confirm, submit → the body `toEqual`s `{email, code:'481205', new_password}`.
+  - Reset: a mismatch sends nothing.
+  - The b8 e2e fills the boxes and the confirm field, and keeps its body check.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the auth tests → PASS; then `pnpm cf:docker e2e/app/b8-set-password.spec.ts e2e/app/m1.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild email code and password reset pages`.
+
+### Task M2.9: Google hoàn tất, Đã xóa tài khoản, Bổ sung hồ sơ, Chào mừng
+
+**Files:**
+- Modify: `GoogleComplete.tsx`, `AccountDeleted.tsx`, `CompleteProfile.tsx`, `WelcomeLanguage.tsx`.
+- Create: `features/learner/auth/account-deleted.test.tsx`.
+- Modify: `e2e/app/m1.spec.ts:124-151`, adding `account-deleted` (signed out) and `complete-profile` (signed in) to the axe pages.
+
+**Behaviour:**
+- Google: the email chip (`36:490`) and the two-column name row.
+- Deleted (`36:549`): a success circle, 64 px on desktop and 56 px on phones; "Về trang đăng nhập" as a secondary `ButtonLink`.
+- Welcome: `ui/Select` with `ui/Flag`.
+- Complete profile: style only.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Deleted shows `heading "Tài khoản của bạn đã được xóa."` and `link "Về trang đăng nhập"` to `/vi/app/login`.
+  - With `?pending=1` it shows "Tài khoản đang được xóa".
+  - Existing `google-complete.test.tsx` and `CompleteProfile.test.tsx` stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL, because the deleted page has no test file yet.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild google completion, deleted, profile and welcome pages`.
+
+### Task M2.10: M2 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts`, adding set `gm-m2`: the 9 pages at 390 and 1440, light theme.
+- Modify: `docs/deliveries/giao-dien-moi.md` (M2 as-built); `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks:**
+  - `rg "@/app-ui/" src/features/learner/auth --glob '!*.test.*'` → no output.
+  - Web: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm cf:docker` (all e2e).
+  - Admin: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+  - Expected: all pass. Record the test counts.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m2 pnpm shots`. Put them in the delivery record next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m2 screenshot set`, then `docs(web): record m2 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild the sign in and account pages`. Merge after CI is green and the owner says yes.
+
+## Part 2 self-review notes (10/11/2026)
+
+**Coverage:**
+- Design §9 M2 table (9 routes) → M2.5–M2.9.
+- §5.4 `(split)` / `(card)` and the B8-2 exception → M2.5.
+- §7.5 `OtpField` → M2.2; `GoogleButton` → M2.3.
+- Moving Turnstile (§6) → M2.4.
+- "Nhập lại mật khẩu" (Figma audit, item 4) → M2.7, M2.8.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- The split layout replaces LR43 (owner 03/11/2026: no navy panel). The approved design and Figma `35:308` / `35:405` bring the panel back, in `wm-accent-soft` rather than navy. `landing.spec.ts:550-563` is rewritten to match.
+- The panel shows from 1280 px; narrower screens get the card layout.
+- The reset code becomes six boxes, as Figma draws them.
+- The mismatch message text, and that it shows when submit is pressed.
+- The birth date stays the browser's date box.
+- `GoogleButton` is split: the look goes in `ui/`, the navigation in `features`.
+- `date-of-birth` and `Flag` move to the new kit, with re-exports at the old paths until M8.
+- The mobile title of Đăng ký uses 38 px, like Đăng nhập, unless 38 px wraps at 390 px. Figma draws it at 32 px.
+
+**Open:** QM2-1 (Turnstile), asked 10/11/2026.

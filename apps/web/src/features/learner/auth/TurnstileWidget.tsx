@@ -104,7 +104,7 @@ export function TurnstileWidget({ onToken, ref }: { onToken: (token: string | nu
     <>
       <div ref={container} />
       {unavailable && (
-        <p role="status" className="text-caption text-muted">
+        <p role="status" className="font-wm-sans text-wm-caption text-wm-muted">
           {t('captcha-unavailable')}
         </p>
       )}

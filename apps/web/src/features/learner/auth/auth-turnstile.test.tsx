@@ -14,7 +14,7 @@ import { RegisterForm } from './RegisterForm';
 import { VerifyEmailForm } from './VerifyEmailForm';
 
 const widget = vi.hoisted(() => ({ issued: 0, resets: 0, emit: (() => {}) as (token: string | null) => void }));
-vi.mock('@/app-ui/TurnstileWidget', async () => {
+vi.mock('./TurnstileWidget', async () => {
   const { useEffect, useImperativeHandle } = await import('react');
   return {
     TurnstileWidget: ({ onToken, ref }: { onToken: (token: string | null) => void; ref?: React.Ref<{ reset(): void }> }) => {
@@ -129,6 +129,7 @@ describe('RegisterForm and the bot check', () => {
     pickDate('Ngày sinh', parseBirthDate('14/5/2008')!);
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'Aa1!aaaa');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu'), 'Aa1!aaaa');
     await userEvent.click(screen.getByRole('checkbox'));
     await press('Tạo tài khoản');
     expect(await screen.findByText(/Email này đã có tài khoản/)).toBeInTheDocument();

@@ -63,4 +63,12 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect(tokens(web, 'text-wm').get('base')).toBe('1rem');
     expect(tokens(web, 'shadow-wm').get('btn')).toBe('0 0.625rem 1.75rem -0.625rem rgb(30 58 138 / 0.34)');
   });
+
+  it('pins the auth heading sizes (M2 Figma §3: 44 / 38 page titles, 30 / 26 card headings)', () => {
+    const text = tokens(web, 'text-wm');
+    expect([text.get('page-title'), text.get('page-title--line-height')]).toEqual(['2.75rem', '1.18']);
+    expect([text.get('page-title-mobile'), text.get('page-title-mobile--line-height')]).toEqual(['2.375rem', '1.22']);
+    expect([text.get('card-heading'), text.get('card-heading--line-height')]).toEqual(['1.875rem', '1.3']);
+    expect([text.get('card-heading-mobile'), text.get('card-heading-mobile--line-height')]).toEqual(['1.625rem', '1.3']);
+  });
 });

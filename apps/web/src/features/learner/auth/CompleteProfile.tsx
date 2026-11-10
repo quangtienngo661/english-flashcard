@@ -1,9 +1,8 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -11,11 +10,11 @@ import { safeNext } from '@/app-shell/locale-prefix';
 import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { DateOfBirthField } from '@/ui/DateOfBirthField';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, ConsentLink, FormError } from './AuthHeading';
 
 /**
  * AD18: an account without a birth date or without consent (made by an admin, or older than those columns) gives them here
@@ -58,18 +57,9 @@ export function CompleteProfile({ today }: { today?: string }) {
     }
   }
 
-  const link = (href: string) =>
-    function ConsentLink(chunks: ReactNode) {
-      return (
-        <Link href={href} target="_blank" className="font-semibold text-primary underline underline-offset-2">
-          {chunks}
-        </Link>
-      );
-    };
-
   return (
-    <AuthCard title={termsUpdated ? t('complete.updatedTitle') : t('complete.title')} intro={termsUpdated ? t('complete.updatedBody') : t('complete.body')}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <AuthHeading title={termsUpdated ? t('complete.updatedTitle') : t('complete.title')} intro={termsUpdated ? t('complete.updatedBody') : t('complete.body')}>
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {needsBirth && (
           <DateOfBirthField
             label={t('register.birthDate')}
@@ -81,13 +71,15 @@ export function CompleteProfile({ today }: { today?: string }) {
         )}
         {needsTerms && (
           <Checkbox isSelected={consent} onChange={setConsent}>
-            {t.rich('register.consent', { terms: link(`/${locale}/terms`), privacy: link(`/${locale}/privacy`) })}
+            {t.rich('register.consent', {
+              terms: (chunks) => <ConsentLink href={`/${locale}/terms`} newTab>{chunks}</ConsentLink>,
+              privacy: (chunks) => <ConsentLink href={`/${locale}/privacy`} newTab>{chunks}</ConsentLink>,
+            })}
           </Checkbox>
         )}
         <FormError message={error} />
         <Button
           type="submit"
-          variant="sticker"
           size="lg"
           isPending={busy}
           isDisabled={!store || !me || (needsBirth && birthDate === null) || (needsTerms && !consent)}
@@ -95,6 +87,6 @@ export function CompleteProfile({ today }: { today?: string }) {
           {t('complete.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

@@ -16,7 +16,7 @@ import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { TextField } from '@/app-ui/TextField';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { FormError } from '../auth/AuthCard';
+import { FormError } from '../auth/AuthHeading';
 import { isAutoRenewing, subscriptionsOf } from '../plans/auto-renewing';
 
 /** Design §9.4: what goes, what stays, the block for a renewing plan, then the three confirmations and the red button. */

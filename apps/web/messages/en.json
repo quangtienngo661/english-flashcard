@@ -296,6 +296,8 @@
       "notFoundBody": "The link may be out of date.",
       "home": "Go to Today",
       "charCount": "{count, number}/{max, number}",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "errorPageTitle": "This page could not be loaded."
     },
     "session": {
@@ -342,7 +344,6 @@
       "lockedLine": "Part of the Pro plan.",
       "seePlans": "See plans",
       "dob": {
-        "placeholder": "dd/mm/yyyy",
         "invalid": "That birth date isn’t valid. Pick another date.",
         "tooYoung": "You need to be 13 or older to use Wordmet.",
         "future": "Your birth date can’t be after today."
@@ -356,6 +357,22 @@
       "pending": "The voice is being made"
     },
     "auth": {
+      "passwordMismatch": "The passwords don’t match.",
+      "showcase": {
+        "stage": "Word card · {days, number}-day box",
+        "group": "Word card · {group}",
+        "today": "Today",
+        "due": "words due",
+        "more": "+{count, number} words",
+        "allocate": "allot",
+        "viable": "workable",
+        "mitigate": "lessen"
+      },
+      "footer": {
+        "copyright": "© {year} Wordmet",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use"
+      },
       "back": "Back",
       "email": "Email",
       "password": "Password",
@@ -363,13 +380,11 @@
       "or": "Or",
       "register": {
         "title": "Create an account",
-        "subtitle": "Review vocabulary on schedule, starting with the words you meet.",
         "givenName": "First name",
-        "givenNamePlaceholder": "Lan",
         "familyName": "Last name (optional)",
-        "familyNamePlaceholder": "Nguyen",
         "birthDate": "Date of birth",
         "birthDateHint": "Wordmet is for people 13 and older.",
+        "confirmPassword": "Re-enter password",
         "passwordHint": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
         "consent": "I agree to the <terms>Terms of use</terms> and the <privacy>Privacy policy</privacy>.",
         "submit": "Create account",
@@ -425,6 +440,7 @@
         "code": "6-digit code from the email",
         "newPassword": "New password",
         "hint": "Once changed, your other devices are signed out.",
+        "confirmPassword": "Re-enter new password",
         "submit": "Change password"
       },
       "googleComplete": {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { TurnstileWidget, type TurnstileHandle } from '@/app-ui/TurnstileWidget';
+import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
 
 /**
  * Everything a form with a bot check needs (design 4.3): `token` (`null` until the widget has one, and again after it expires),

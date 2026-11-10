@@ -35,6 +35,21 @@ Phần 1 gồm chuẩn bị nhánh, toàn bộ API mới và đợt M1. M2–M9 
 **Giữ chỗ**
 - Q4: quảng cáo và tải lại trang, viết khi chủ dự án quay lại QR4; tới lúc đó giữ DB38.
 
+# Giao diện mới — plan tóm tắt, phần 2: M2 Đăng nhập và tài khoản (10/11/2026)
+
+Plan: "Part 2" trong file plan ở trên. Nhánh `feat/giao-dien-moi-m2`, một PR vào `refactor/giao-dien-moi`. API không đổi.
+
+- M2.1: ô mật khẩu có nút hiện/ẩn; ô nhập có chỗ đặt link ở dòng nhãn.
+- M2.2: ô mã 6 số, chuyển hành vi gõ, dán, xóa từ trang xác minh email sang `ui/`.
+- M2.3: nút Google, cờ, ô ngày sinh sang bộ `ui/` mới.
+- M2.4: chuyển Turnstile vào `features/learner/auth/`; luôn hiện hay chỉ hiện khi cần theo câu QM2-1.
+- M2.5: tách `(auth)` thành `(split)` (đăng nhập, đăng ký: hai cột, panel giới thiệu từ 1280 px) và `(card)` (năm trang còn lại); card giữa theo Figma; token cỡ tiêu đề.
+- M2.6: phần dùng chung (tiêu đề, lỗi, nút Google, dòng "Hoặc") và dựng lại Đăng nhập.
+- M2.7: dựng lại Đăng ký, thêm ô "Nhập lại mật khẩu" (chỉ kiểm ở giao diện).
+- M2.8: dựng lại Xác minh email, Quên mật khẩu, Đặt mật khẩu mới (mã 6 ô, thêm "Nhập lại mật khẩu mới").
+- M2.9: dựng lại Hoàn tất đăng ký Google, Đã xóa tài khoản, Bổ sung hồ sơ, Chào mừng.
+- M2.10: chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m2`, ghi as-built, mở PR.
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).
@@ -88,3 +103,53 @@ Nhánh `feat/giao-dien-moi-m1`, PR vào `refactor/giao-dien-moi`. Rulings R6–R
 **Review cuối nhánh M1 (reviewer riêng, 10/11/2026)**
 - Đã sửa: thẻ lồng thẻ ở trang đăng nhập và onboarding (`CardFrame` bỏ thẻ, `AuthCard` giữ thẻ của nó); tab thanh trên gãy hai dòng ở 768 px (chữ một dòng, dưới 1024 px ẩn icon, khoảng cách nhỏ hơn). Đã xem trên `pnpm bootstrap` ở 390 và 768 px.
 - Để lại, ghi cho M2+: khung xương thấp hơn header thật khoảng 50 px khi tải cứng; trên điện thoại chỉ tới Gói học qua Cài đặt; màn lỗi không tự hết khi chỉ đổi `?id=` (bấm "Thử lại" hoặc đổi trang); ô tìm ở `SearchStrip` giữ chữ chưa gửi khi đổi tab; tên truy cập của logo đặt bằng `aria-label` trên `span`; phím N vẫn mở Thêm từ khi menu ảnh đại diện đang mở.
+
+# Giao diện mới — as-built M2 Đăng nhập và tài khoản (10/11/2026)
+
+Nhánh `feat/giao-dien-moi-m2`, PR vào `refactor/giao-dien-moi` (mở sau khi PR M1 #251 merge). API không đổi. Rulings R22–R36 ở
+[`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md). Chủ dự án chốt QM2-1 ngày 10/11/2026: ô Turnstile **luôn hiện**.
+
+**Đã làm**
+- `src/ui/`: `PasswordField` (nút mắt hiện/ẩn, không gửi form), `TextField` có chỗ đặt link ở dòng nhãn, `OtpField` (6 ô: gõ, dán, xóa lùi, mã tự điền từ
+  điện thoại hay trình quản lý mật khẩu), `GoogleButton`, `DateOfBirthField`, `Flag`. `date-of-birth` sang `lib/`; đường dẫn cũ trong `app-ui/` chỉ còn
+  re-export tới M8.
+- `(auth)` tách thành `(split)` (Đăng nhập, Đăng ký: cột form 400 px, panel thương hiệu 640 px từ 1280 px, chân trang) và `(card)` (5 trang còn lại: card
+  480 px, hai quầng sáng). `AuthGate` không vẽ khung nữa; ngoại lệ B8-2 giữ nguyên. Card của `(onboarding)` dùng cùng khung. Thay LR43 (03/11/2026).
+- Token mới trong `packages/design-tokens/web.css`: `page-title` 44, `page-title-mobile` 38, `card-heading` 30, `card-heading-mobile` 26.
+- 9 trang dựng lại trên kit mới; `features/learner/auth/**` (trừ test) không còn import `@/app-ui/*`. Ô "Nhập lại mật khẩu" ở Đăng ký và "Nhập lại mật
+  khẩu mới" ở Đặt mật khẩu mới chỉ kiểm ở giao diện: nhập lệch thì không gửi gì, lỗi dưới ô; body gửi API như cũ. Mã đặt lại thành 6 ô.
+- Turnstile (`TurnstileWidget`, `use-turnstile`) chuyển vào `features/learner/auth/`; test ghim tùy chọn hiện nay (không có `appearance`).
+
+**Kiểm**
+- Web: lint, typecheck qua; `pnpm test` 106 file, 1063 test qua (sau khi merge đầu nhánh M1 `8a142dc0`).
+- Admin (token đổi): lint, typecheck, test 1397 qua; build qua với biến của CI (`VITE_API_BASE_URL=https://admin-api.wordmet.com`, khóa Turnstile thử).
+- E2e `pnpm cf:docker` toàn bộ trước khi merge M1: 360 qua, 5 hỏng, 4 flaky. Cả 5 hỏng là đúng 5 lỗi M1 đã sửa sau đó trên nhánh M1 (R20 của M1).
+  Sau khi merge M1, chạy lại các spec liên quan (`cai-thien-a-group`, `overflow`, `m5a`, `m1`, `b8-set-password`, `landing`, `csp`): 154 qua, 6 flaky
+  (qua ở lần thử lại), 2 hỏng ở `m5a` trên mobile (phiên luyện AI, không thuộc M2; lượt đó chạy cùng lúc `pnpm bootstrap` đang build). CI của PR chạy lại toàn bộ.
+- Review cuối cả nhánh (subagent): 0 Critical, 1 Important (mã tự điền vào ô 1 chỉ giữ số cuối) đã sửa bằng test đỏ rồi fix; 3 Minor để lại (dưới).
+
+**Ảnh `gm-m2`** (390 và 1440 px, sáng; 18 ảnh ở `apps/web/test-results/shots/gm-m2/`, không commit)
+
+| Trang | Figma | Ảnh |
+|---|---|---|
+| Đăng nhập | `35:308` / `37:485` | `vi-light-login-{1440,390}.png` |
+| Đăng ký | `35:405` / `37:533` | `vi-light-register-…` |
+| Xác minh email | `36:385` / `37:623` | `vi-light-verify-email-…` |
+| Quên mật khẩu | `36:417` / `37:656` | `vi-light-forgot-password-…` |
+| Đặt mật khẩu mới | `36:447` / `37:687` | `vi-light-reset-password-…` |
+| Hoàn tất đăng ký Google | `36:490` / `37:731` | `vi-light-google-complete-…` |
+| Đã xóa tài khoản | `36:549` / `37:791` | `vi-light-account-deleted-…` |
+| Bổ sung hồ sơ | `36:564` / `37:807` | `vi-light-complete-profile-…` |
+| Chào mừng | `36:591` / `37:835` | `vi-light-welcome-…` |
+
+Ảnh chụp bằng API giả của e2e trong `cf:docker`, không bằng `SHOTS_MILESTONE=gm-m2 pnpm shots`: lệnh đó cần app ở :3001 với API thật, mà cổng 3001
+đang do container `english-learning-web-1` của `pnpm bootstrap` giữ và API chỉ cho CORS từ 3000, 3001. Bộ `gm-m2` đã có trong `e2e-shots/shots.spec.ts`
+để chạy với stack thật sau này.
+
+**Chưa kiểm / rủi ro**
+- Chưa chụp chế độ Tối và tiếng Anh cho M2 (plan chỉ yêu cầu sáng, tiếng Việt).
+- Minor để lại: (1) phím Tab tới "Quên mật khẩu?" trước ô Mật khẩu (thứ tự Figma vẽ); (2) chữ "Đề 12" trên panel thương hiệu (ẩn với trình đọc màn hình) vẫn
+  tiếng Việt ở `/en`; (3) lỗi "mã chưa đúng" ở Đặt mật khẩu mới chưa gắn `aria-describedby` vào nhóm ô mã (R33).
+- `m5a` chạy lại riêng: 21 qua, 1 flaky (qua ở lần thử lại); hai lần hỏng trước là do máy đang build `bootstrap` cùng lúc. `m5a` vẫn hay flaky trên mobile (cả lượt đầu).
+- Chưa xem trên điện thoại thật; mã tự điền chỉ kiểm bằng test jsdom.
+- Xác minh email: đi một mạch từ Đăng ký hay Đăng nhập thì chỉ có ô mã (Figma `36:385`). Tải lại trang, mở tab mới hay trình duyệt tự tải lại tab thì mất mật khẩu trong bộ nhớ, nên trang hỏi thêm ô "Mật khẩu" vì `POST /v1/auth/verify-email` cần mật khẩu để đăng nhập. Chủ dự án xem và giữ như vậy (10/11/2026). Ảnh `vi-light-verify-email-*` mở thẳng trang nên có ô này.
