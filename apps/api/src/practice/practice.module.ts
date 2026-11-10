@@ -38,6 +38,7 @@ import { RealJudgeService } from './quality/real-judge.service.js';
 import { RealQuestionsRepository } from './quality/real-questions.repository.js';
 import { QuestionBuilder } from './questions/question-builder.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
+import { LastSessionService } from './sessions/last-session.service.js';
 import { SessionsService } from './sessions/sessions.service.js';
 import { PracticeStats } from './weak/practice-stats.js';
 
@@ -53,7 +54,7 @@ import { PracticeStats } from './weak/practice-stats.js';
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
     AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService, AiQualityService, PracticeEntryUsageProbe, PracticeEvalRules, PracticeAccountEraser,
-    RealQuestionsRepository, RealJudgeService, ExampleSourceService,
+    RealQuestionsRepository, RealJudgeService, ExampleSourceService, LastSessionService,
   ],
 })
 export class PracticeModule {}

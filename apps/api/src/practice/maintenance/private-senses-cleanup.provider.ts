@@ -1,6 +1,7 @@
 import { Global, Injectable, Module } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
-import { PRIVATE_SENSES_CLEANUP, type PrivateSensesCleanup } from '../../learning/index.js';
+import { PRACTICE_DAY_COUNTS, PRIVATE_SENSES_CLEANUP, type PrivateSensesCleanup } from '../../learning/index.js';
+import { PracticeDayCountsProvider } from './practice-day-counts.provider.js';
 
 /**
  * Removes what Practice keeps about private senses being deleted, inside `deleteMyWord`'s transaction (design §11, R2).
@@ -54,10 +55,18 @@ export class PracticePrivateSensesCleanup implements PrivateSensesCleanup {
   }
 }
 
-/** Global so Learning's `@Optional()` injection finds it without importing Practice (as BATCH_SCOPE). */
+/**
+ * Global so Learning finds Practice's ports without importing Practice (as BATCH_SCOPE): the private-senses cleanup
+ * (`@Optional()` in Learning) and the study calendar's day counts (required, giao diện mới §10.2).
+ */
 @Global()
 @Module({
-  providers: [PracticePrivateSensesCleanup, { provide: PRIVATE_SENSES_CLEANUP, useExisting: PracticePrivateSensesCleanup }],
-  exports: [PRIVATE_SENSES_CLEANUP],
+  providers: [
+    PracticePrivateSensesCleanup,
+    { provide: PRIVATE_SENSES_CLEANUP, useExisting: PracticePrivateSensesCleanup },
+    PracticeDayCountsProvider,
+    { provide: PRACTICE_DAY_COUNTS, useExisting: PracticeDayCountsProvider },
+  ],
+  exports: [PRIVATE_SENSES_CLEANUP, PRACTICE_DAY_COUNTS],
 })
 export class PracticePortsModule {}
