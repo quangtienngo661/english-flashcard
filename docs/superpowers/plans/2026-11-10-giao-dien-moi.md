@@ -617,3 +617,1043 @@ Until the owner chooses, no task touches `features/learner/ads/AdsenseLoader.tsx
   - `SearchStrip` stays until M4.
   - The FAB is only on Today.
   - The footer is removed from the app.
+
+---
+
+# Part 2 — M2 Đăng nhập và tài khoản (branch `feat/giao-dien-moi-m2`)
+
+**Goal:** Rebuild the nine sign-in and account pages (design §9 M2) on the M1 kit:
+- `(auth)` splits into `(split)` and `(card)`.
+- The auth forms move off the old `app-ui/` kit.
+- The new fields Figma draws: password reveal, the 6-box code, confirm password.
+- The brand panel of the two split pages.
+
+**Inputs:**
+- Design §3, §5.4, §7.5, §9 M2.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m2.md`, cited as "M2 code §n".
+- Figma facts `docs/preparation/GIAO_DIEN_MOI_PLAN_FIGMA_FACTS_2026-11-10-m2.md`, cited as "M2 Figma §n".
+- Figma page `35:307`.
+
+Paths below are under `apps/web/`. `R/` = `src/app/[locale]/app/`.
+
+Run `git switch -c feat/giao-dien-moi-m2 origin/refactor/giao-dien-moi` once the M1 PR is merged. Then run `git merge docs/giao-dien-moi-plan-2` to bring in this part and its two facts files.
+
+## Part 2 constraints
+
+- The API does not change.
+- Every request body that existing tests pin with `toEqual` stays exactly the same: M2 code §7.1 tests 2, 32 and 33; `google-complete.test.tsx:54`; `e2e/app/b8-set-password.spec.ts`.
+- The accessible names the tests rely on stay:
+  - field labels: "Email", "Mật khẩu", "Mật khẩu mới", "Tên", "Họ (không bắt buộc)", "Ngày sinh";
+  - OTP boxes: "Chữ số N";
+  - button names;
+  - one `h1` per page;
+  - `role="alert"` only for errors (M2 code §7.1 test 40).
+- No field has a `placeholder`. This is pinned by `auth.test.tsx:59-64` (owner 03/11/2026).
+- The birth date stays the browser's date box (owner 27/10/2026). Figma draws it as `dd/mm/yyyy` text; the code does not follow that.
+- Turnstile follows QM2-1, which the owner answers before M2.4 runs:
+  - "luôn hiện" keeps today's render options;
+  - "chỉ hiện khi cần" adds `appearance: 'interaction-only'`.
+  - In both cases Figma's hand-drawn "Đã xác minh" box is not built; the real widget renders in its place.
+- When M2 ends, `features/learner/auth/**` imports nothing from `@/app-ui/*`. Tests may still import `@/app-ui/test-utils`.
+
+## Part 2 Review Focus
+
+1. A signed-in Google-only learner opens Quên mật khẩu or Đặt mật khẩu mới. The page must stay open (B8-2) after `CardFrame` moves out of `AuthGate`. Pinned by `AuthGate.test.tsx:27` and `b8-set-password.spec.ts`, both unchanged.
+2. Pasting "48 1205" into any box of the reset code fills all six boxes and leaves focus on box 6. Pinned in M2.2, and again in M2.8 for the reset page.
+3. Confirm password typed wrong, then fixed:
+   - the first press sends nothing and shows the error under "Nhập lại mật khẩu";
+   - the second press sends the old body, with no extra field.
+   Pinned in M2.7 and M2.8.
+4. Pressing the eye button inside a form shows the password and does not submit the form. Pinned in M2.1.
+5. At 1024 px, a width between the two Figma sizes: no brand panel, card layout, no horizontal scroll. Pinned in M2.5 by `overflow.spec.ts`, which adds a 1024 width.
+
+### Task M2.1: `PasswordField` and a link in the label row
+
+**Files:**
+- Modify: `src/ui/TextField.tsx`; `messages/{vi,en}.json`, adding `App.common.showPassword` ("Hiện mật khẩu" / "Show password") and `App.common.hidePassword` ("Ẩn mật khẩu" / "Hide password").
+- Create: `src/ui/PasswordField.tsx`.
+- Test: `src/ui/fields.test.tsx`.
+
+**Interfaces:**
+- `TextField` gains `labelAside?: ReactNode`, rendered at the right end of the label row (Figma `Ô nhập`, "có liên kết").
+- `PasswordField(props: Omit<TextFieldProps, 'type'>)` renders a `TextField` whose `type` is `password` or `text`, with a 20 px eye button inside the box. The button has `type="button"` and `aria-pressed`, and takes its name from the two new keys.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The eye button reveals and hides: the `type` attribute goes `password` → `text` → `password`, and the button name goes "Hiện mật khẩu" → "Ẩn mật khẩu".
+  - Pressing it inside `<form onSubmit={spy}>` leaves `spy` uncalled.
+  - `getByLabelText('Mật khẩu')` finds only the input.
+  - `labelAside` renders a link in the same row as the label.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/fields.test.tsx`. Expected: FAIL, because `PasswordField` does not exist.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add a password field with reveal to ui`.
+
+### Task M2.2: `OtpField`
+
+**Files:**
+- Create: `src/ui/OtpField.tsx`.
+- Test: `src/ui/otp-field.test.tsx`.
+
+**Interfaces:**
+- Signature: `OtpField({ label, digitLabel, value, onChange, length = 6, autoFocus }: { label: string; digitLabel: (n: number) => string; value: string; onChange: (digits: string) => void; length?: number; autoFocus?: boolean })`.
+- Renders a `role="group"` named `label`, holding `length` inputs named `digitLabel(n)`.
+- The behaviour moves from `VerifyEmailForm.tsx:133-149` (M2 code §6):
+  - `inputMode="numeric"`;
+  - `autoComplete="one-time-code"` on box 1;
+  - `maxLength={2}`, keeping the last digit typed;
+  - focus moves to the next box after a digit;
+  - Backspace on an empty box moves back one box;
+  - paste strips non-digits and fills from box 1.
+- Looks follow the Figma `Ô mã` states (M2 Figma §2): Thường, Đang nhập, Có số (`wm-accent-soft` fill, Bricolage 28).
+
+- [ ] **Step 1: Write the failing tests:**
+  - Paste "48 1205" → `onChange('481205')` and box 6 has focus.
+  - Type `4` then `8` → box 3 has focus.
+  - From an empty box 3, press Backspace twice → box 1 has focus.
+  - Type `7` into a filled box → the box holds `7`.
+  - The group's accessible name is `label`.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/otp-field.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add the six box code field to ui`.
+
+### Task M2.3: `GoogleButton`, `Flag`, `DateOfBirthField` in the new kit
+
+**Files:**
+- Create: `src/ui/GoogleButton.tsx`; `src/ui/DateOfBirthField.tsx`.
+- Move with `git mv`:
+  - `src/app-ui/date-of-birth.ts` and its test → `src/lib/date-of-birth.ts`;
+  - `src/app-ui/Flag.tsx` → `src/ui/Flag.tsx`.
+- The old paths `app-ui/date-of-birth.ts` and `app-ui/Flag.tsx` become one-line re-exports, like `app-ui/Toast.tsx`, until M8.
+- Test: `src/ui/fields.test.tsx`.
+
+**Interfaces:**
+- `GoogleButton({ onPress, children })` draws the Figma `Nút Google` (`34:366`) with the four-path mark, `aria-hidden`. It does not navigate, because `ui/` may not import `@/app-shell/config` (M2 code §8.4).
+- `DateOfBirthField` keeps the props of `app-ui/DateOfBirthField.tsx` and wraps `ui/TextField`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The Google button's `svg` is `aria-hidden` and has 4 `path`s; pressing the button fires `onPress`.
+  - An under-13 date shows "Bạn cần đủ 13 tuổi để dùng Wordmet." and calls `onChange(null)`.
+  - `serverError="tooYoung"` shows the same text.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/fields.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement**, moving the two files with `git mv`.
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS; the old importers still work through the re-exports.
+- [ ] **Step 5: Commit** `feat(web): add google button, flag and birth date field to ui`.
+
+### Task M2.4: Turnstile moves to `features/learner/auth/`
+
+**Files:**
+- Move: `src/app-ui/TurnstileWidget.tsx` and its test, and `src/app-shell/use-turnstile.tsx`, into `src/features/learner/auth/`.
+- Modify: the 4 importers and the two `vi.mock` paths (M2 code §4, §7.4).
+- Restyle the widget's fallback text with `wm-` tokens.
+
+- [ ] **Step 1: Write the test for the QM2-1 answer:**
+  - "chỉ hiện khi cần": a failing test that the `turnstile.render` options contain `appearance: 'interaction-only'`.
+  - "luôn hiện": a test that pins today's options: `sitekey`, `refresh-expired: 'auto'`, and no `appearance`.
+- [ ] **Step 2: Run** the new test. Expected: FAIL for "chỉ hiện khi cần"; PASS for "luôn hiện", which pins existing behaviour.
+- [ ] **Step 3: Move the files and implement.**
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS, including `auth-turnstile.test.tsx` with its new mock path.
+- [ ] **Step 5: Commit** `refactor(web): move turnstile into the auth feature`.
+
+### Task M2.5: `(split)` and `(card)` layouts, the brand panel, heading tokens
+
+**Files:**
+- Create: `R/(auth)/(split)/layout.app.tsx`; `R/(auth)/(card)/layout.app.tsx`.
+- Move `login/` and `register/` into `(split)`.
+- Move `verify-email/`, `forgot-password/`, `reset-password/`, `google/complete/` and `account-deleted/` into `(card)`.
+- Modify: `features/learner/auth/AuthGate.tsx` so it returns `children` with no frame.
+- Modify: `app-chrome/CardFrame.tsx` to match the Figma card:
+  - `max-w-120`, `p-6`, `md:p-10`, `rounded-wm-2xl`, a border, `shadow-wm-lift`;
+  - logo at the top left;
+  - two glows behind the card.
+  - The `(onboarding)` pages get the same card.
+- Create: `features/learner/auth/SplitFrame.tsx` (client component); `features/learner/auth/AuthShowcase.tsx`.
+- Modify: `packages/design-tokens/web.css` and `web-tokens.test.ts`. Add these tokens, taking letter-spacing from M2 Figma §3:
+  - `--text-wm-page-title`: 44 px, lh 1.18;
+  - `--text-wm-page-title-mobile`: 38 px, lh 1.22 (Figma `Display/Page title mobile`);
+  - `--text-wm-card-heading`: 30 px, lh 1.3;
+  - `--text-wm-card-heading-mobile`: 26 px, lh 1.3.
+- Tests: `app-chrome/layouts.test.tsx`, `e2e/landing.spec.ts:550-563`, `e2e/app/overflow.spec.ts`.
+
+**Behaviour:**
+- `SplitFrame` picks the panel variant with `usePathname()` (M2 Figma §3.1–3.2): `/register` gets the "Đề 12" cards; every other path gets the "ngăn" cards.
+- From `xl` (1280 px), it draws a 640 px panel in `wm-accent-soft` holding:
+  - the dot grid;
+  - the three cards;
+  - the review path;
+  - the chips.
+  The whole panel is `aria-hidden`.
+- The form column is 400 px wide: logo on top, form, then a footer at the bottom ("© {year} Wordmet", "Chính sách bảo mật", "Điều khoản sử dụng").
+- Below `xl`, it uses the card layout with no footer.
+- The page `h1` uses `text-wm-page-title-mobile md:text-wm-page-title`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Layouts: a page under `(card)` has exactly one `main` and one logo link to `/vi`.
+  - `AuthGate` keeps its existing tests, now with no frame: it still redirects a signed-in visitor of `/vi/app/login`, and still leaves forgot and reset open.
+  - Rewrite the e2e at `landing.spec.ts:550-563`:
+    - at 1440, the brand panel is visible and the `h1` sits in the left half;
+    - at 1024 and at 390, there is no panel and the card is centred within 2 px.
+  - `overflow.spec.ts` adds a 1024 width.
+  - The web-tokens test pins the four new sizes.
+- [ ] **Step 2: Run** the unit tests. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run:**
+  - `pnpm test` → PASS;
+  - `pnpm cf:docker e2e/landing.spec.ts e2e/app/overflow.spec.ts` → PASS;
+  - the admin checks (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` in `apps/admin`), because `packages/design-tokens` changed.
+- [ ] **Step 5: Commit** `feat(web): split the auth layouts and add the brand panel`.
+
+### Task M2.6: Shared auth pieces and Đăng nhập
+
+**Files:**
+- Rename: `features/learner/auth/AuthCard.tsx` → `AuthHeading.tsx`. It holds the back link (the `BackLink` look with today's behaviour), the `h1`, the intro and the banner. It draws no card.
+- Modify: restyle `FormError` and `PasswordRules` with `wm-` tokens.
+- Create: `features/learner/auth/GoogleSignIn.tsx`, which pairs `ui/GoogleButton` with today's `/v1/auth/google/start` URL logic (M2 code §5).
+- Add `OrDivider` and `SwitchAuthLink` to `AuthHeading.tsx`.
+- Modify: `LoginForm.tsx`.
+- Test: `auth.test.tsx`.
+
+**Behaviour:**
+- Login follows `35:308` / `37:485`.
+- "Quên mật khẩu?" moves into the label row of "Mật khẩu" (`labelAside`). It keeps a 44 px tall hit area on phones, pinned by `landing.spec.ts:822-834`.
+- Button variants map from the old kit: `sticker` → `primary`, `quiet` → `secondary`.
+
+- [ ] **Step 1: Write the failing test:** the login password field has a "Hiện mật khẩu" button, and the link "Quên mật khẩu?" sits in its label row with `href=/vi/app/forgot-password`. Existing login tests 9–15 and 36–40 stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild sign in on the new kit`.
+
+### Task M2.7: Đăng ký with "Nhập lại mật khẩu"
+
+**Files:**
+- Modify: `RegisterForm.tsx`.
+- Modify tests: `auth.test.tsx` (`fillRegister` also fills "Nhập lại mật khẩu"); `auth-turnstile.test.tsx:126`; `e2e/app/m1.spec.ts:10-52`.
+- Modify `messages/{vi,en}.json`:
+  - add `App.auth.register.confirmPassword`: "Nhập lại mật khẩu" / "Re-enter password";
+  - add `App.auth.passwordMismatch`: "Mật khẩu nhập lại chưa khớp." / "The passwords don't match.";
+  - delete the unused `givenNamePlaceholder` and `familyNamePlaceholder`, and `App.ui.dob.placeholder` if nothing reads it.
+
+**Behaviour:** follows `35:405` / `37:533`.
+- The name row has two columns from `sm`.
+- Two `PasswordField`s; only the first has the hint.
+- Uses the new kit's `Checkbox` and `DateOfBirthField`.
+- The Turnstile widget sits where Figma draws the "Đã xác minh" box.
+- Pressing submit with mismatched passwords sends nothing. The error appears under the confirm field (`aria-invalid`) and focus moves there.
+- Typing in the confirm field clears the error.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Mismatch → zero `POST /v1/auth/register`, and the text "Mật khẩu nhập lại chưa khớp." describes the confirm field.
+  - After the fix → one request, whose body still `toEqual`s test 2's body.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the auth tests → PASS; `src/i18n/messages.test.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild sign up with a confirm password field`.
+
+### Task M2.8: Xác minh email, Quên mật khẩu, Đặt mật khẩu mới
+
+**Files:**
+- Modify: `VerifyEmailForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`.
+- Modify tests: `auth.test.tsx` (tests 33, 35); `e2e/app/b8-set-password.spec.ts`.
+- Modify `messages/{vi,en}.json`: add `App.auth.reset.confirmPassword`, "Nhập lại mật khẩu mới" / "Re-enter new password".
+
+**Behaviour:**
+- Verify uses `OtpField`, with each box named by `verify.digit`. Its text and flow do not change, so tests 16–30 keep passing.
+- Reset follows `36:447`:
+  - the single code field becomes an `OtpField` labelled "Mã 6 số trong email";
+  - it gains "Nhập lại mật khẩu mới", with the same mismatch rule as M2.7.
+- Forgot changes style only.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Reset has a group "Mã 6 số trong email" with boxes "Chữ số 1" to "Chữ số 6".
+  - Reset: paste "48 1205", type a matching confirm, submit → the body `toEqual`s `{email, code:'481205', new_password}`.
+  - Reset: a mismatch sends nothing.
+  - The b8 e2e fills the boxes and the confirm field, and keeps its body check.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the auth tests → PASS; then `pnpm cf:docker e2e/app/b8-set-password.spec.ts e2e/app/m1.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild email code and password reset pages`.
+
+### Task M2.9: Google hoàn tất, Đã xóa tài khoản, Bổ sung hồ sơ, Chào mừng
+
+**Files:**
+- Modify: `GoogleComplete.tsx`, `AccountDeleted.tsx`, `CompleteProfile.tsx`, `WelcomeLanguage.tsx`.
+- Create: `features/learner/auth/account-deleted.test.tsx`.
+- Modify: `e2e/app/m1.spec.ts:124-151`, adding `account-deleted` (signed out) and `complete-profile` (signed in) to the axe pages.
+
+**Behaviour:**
+- Google: the email chip (`36:490`) and the two-column name row.
+- Deleted (`36:549`): a success circle, 64 px on desktop and 56 px on phones; "Về trang đăng nhập" as a secondary `ButtonLink`.
+- Welcome: `ui/Select` with `ui/Flag`.
+- Complete profile: style only.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Deleted shows `heading "Tài khoản của bạn đã được xóa."` and `link "Về trang đăng nhập"` to `/vi/app/login`.
+  - With `?pending=1` it shows "Tài khoản đang được xóa".
+  - Existing `google-complete.test.tsx` and `CompleteProfile.test.tsx` stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run src/features/learner/auth`. Expected: FAIL, because the deleted page has no test file yet.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild google completion, deleted, profile and welcome pages`.
+
+### Task M2.10: M2 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts`, adding set `gm-m2`: the 9 pages at 390 and 1440, light theme.
+- Modify: `docs/deliveries/giao-dien-moi.md` (M2 as-built); `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks:**
+  - `rg "@/app-ui/" src/features/learner/auth --glob '!*.test.*'` → no output.
+  - Web: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm cf:docker` (all e2e).
+  - Admin: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+  - Expected: all pass. Record the test counts.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m2 pnpm shots`. Put them in the delivery record next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m2 screenshot set`, then `docs(web): record m2 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild the sign in and account pages`. Merge after CI is green and the owner says yes.
+
+## Part 2 self-review notes (10/11/2026)
+
+**Coverage:**
+- Design §9 M2 table (9 routes) → M2.5–M2.9.
+- §5.4 `(split)` / `(card)` and the B8-2 exception → M2.5.
+- §7.5 `OtpField` → M2.2; `GoogleButton` → M2.3.
+- Moving Turnstile (§6) → M2.4.
+- "Nhập lại mật khẩu" (Figma audit, item 4) → M2.7, M2.8.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- The split layout replaces LR43 (owner 03/11/2026: no navy panel). The approved design and Figma `35:308` / `35:405` bring the panel back, in `wm-accent-soft` rather than navy. `landing.spec.ts:550-563` is rewritten to match.
+- The panel shows from 1280 px; narrower screens get the card layout.
+- The reset code becomes six boxes, as Figma draws them.
+- The mismatch message text, and that it shows when submit is pressed.
+- The birth date stays the browser's date box.
+- `GoogleButton` is split: the look goes in `ui/`, the navigation in `features`.
+- `date-of-birth` and `Flag` move to the new kit, with re-exports at the old paths until M8.
+- The mobile title of Đăng ký uses 38 px, like Đăng nhập, unless 38 px wraps at 390 px. Figma draws it at 32 px.
+
+**Open:** QM2-1 (Turnstile), asked 10/11/2026.
+
+---
+
+# Part 3 — M3 Hôm nay và Nhóm (branch `feat/giao-dien-moi-m3`)
+
+**Goal:** Rebuild Hôm nay, Nhóm (the "Trượt mờ" carousel and the group picker), Một nhóm, Từ lâu chưa ôn and Chủ đề, plus their five dialogs. Group colours by ID, stage colours, the Học · Ôn pair, and the new API fields `next_lemma`, `last_reviewed` and `sessions/last`.
+
+**Inputs:**
+- Design §3, §5.5, §7.3, §7.4, §8.2, §8.4, §8.5, §9 M3.
+- Motion doc `docs/mockups/2026-11-05-redesign-concepts/motion-va-chuyen-canh.md` §1, §3, §8. It is the only source for motion numbers.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m3.md` ("M3 code §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-10-m3-a.md` (Hôm nay, carousel, picker; "M3 Figma A §n") and `…-m3-b.md` (Một nhóm, Từ lâu chưa ôn, Chủ đề, confirm card; "M3 Figma B §n").
+- The chosen prototype `docs/mockups/2026-11-05-redesign-concepts/vong-7-chong-the-tu-dien.html`: carousel, picker and open/close behaviour (M3 code §8). Today: `vong-10-con-lai.html:526-546`. Backlog and topic: `vong-15-polish-9-trang.html:761-812`.
+
+Paths below are under `apps/web/`; `L/` = `src/features/learner/`, `C/` = `src/app/[locale]/app/(member)/(chrome)/`.
+
+Run `git switch -c feat/giao-dien-moi-m3 origin/refactor/giao-dien-moi` once M2 is merged. Then `git merge docs/giao-dien-moi-plan-3`.
+
+## Part 3 constraints
+
+- **No API change.** Web types gain `next_lemma?` and `last_reviewed?` as optional fields, so old fixtures still compile. Every `GET /v1/practice/sessions/last` the web makes is answered in tests:
+  - `renderApp` defaults it to 204;
+  - `e2e/support/mock-api.ts` `signedInAs` scripts it as 204.
+- **Học · Ôn** follows `deckPlan` (`L/groups/deck-actions.ts`, unchanged):
+  - the primary button is `ui/ButtonLink` `primary` (navy); the other is `secondary`;
+  - both keep `data-google-vignette="false"` and today's hrefs.
+- **Group colour** always comes from `groupColorIndex(id)` through static class maps; never from the list position.
+- **Motion:**
+  - numbers come from tokens, never written inside components;
+  - with reduced motion: no translate, scale or blur; opacity and colour only, ≤ 200 ms; the carousel changes at once; no FLIP.
+- **One-letter keys** (`F`, `N`, `/`) do nothing when focus is in an input, a select, a contenteditable element or a dialog. Use the same filter as `add-word-context.tsx:36`.
+- **i18n:** keys that no screen reads any more are deleted in the same PR, and the e2e `copy` references to them are updated.
+
+## Part 3 Review Focus
+
+1. The carousel with one group, then with two. One: only the centre stack, no arrows, `←` `→` do nothing. Two: one side stack, never the same group on both sides. Pinned in M3.2 (`carouselSlots`) and M3.6.
+2. `sessions/last` answers 204 or 500: Hôm nay renders every other block, with no error view and no "Lần luyện gần nhất" block. Pinned in M3.5.
+3. Pressing `F`, `←` or `→` while typing in the picker search or in "Thêm từ vừa gặp": the carousel does not move and the picker does not reopen. Pinned in M3.6.
+4. A done group (total > 0, nothing waiting) and an empty group:
+   - the done group shows "✓ Xong hôm nay" and "ôn gần nhất <word>";
+   - the empty group shows "nhóm trống", "Chưa có từ" and "Thêm từ để bắt đầu";
+   - both appear under the right captions in the picker;
+   - neither shows a primary Học/Ôn unless `deckPlan` gives one.
+   Pinned in M3.3 and M3.6.
+5. A 60-character unbroken group name on a 150 px Hôm nay card and on the 210 px phone carousel card: no horizontal scroll. Pinned by `overflow.spec.ts`, extended in M3.5 and M3.6.
+
+### Task M3.1: Stage, group and motion tokens
+
+**Files:**
+- Modify: `packages/design-tokens/web.css`, `web-dark.css` (the same light values until M9), `apps/web/src/styles/web-tokens.test.ts`.
+
+**Values:**
+- **Stage colours** (design §7.3):
+  - `--color-wm-stage-{0..5}-{bg,dot,ink}`;
+  - stage 5's bg and dot are gradients;
+  - add `--color-wm-stage-5-solid` = `#b28bff` for the flat squares of "Từ theo ngăn" (M3 Figma A §5).
+- **Group colours** (design §7.4):
+  - `--color-wm-group-{0..6}` and `--color-wm-group-empty` `#64708c`.
+  - `-soft` (border of the cards behind; Figma ≈ 50 % on white) = `color-mix(in srgb, <colour> 50%, #ffffff)`.
+  - `-wash` (selected picker row, halo) = `color-mix(in srgb, <colour> 12%, #ffffff)`.
+  - `-ink` (numbers on white) takes Figma's darker inks: 0 `#984941`, 1 `#17696c`, 2 `#56429d`, 3 `#916d28`, 5 `#8c3765`.
+  - Group 4 (green) and group 6 (blue) have no drawn ink. Each is `color-mix(in oklab, <colour> 65%, #1b2444)`, computed once and written as hex.
+  - This replaces design §7.4's "the colour itself, ≥ 3:1" with ≥ 4.5:1. Record it as a ruling.
+- **Motion** (motion doc §3, §1):
+  - `--ease-wm-out` = `cubic-bezier(0.23,1,0.32,1)` (the main curve, now in `web.css`);
+  - `--ease-wm-carousel` `(.3,1.25,.5,1)`;
+  - `--ease-wm-flip` `(.3,1.15,.5,1)`;
+  - `--ease-wm-rise` `(.3,1.3,.5,1)`;
+  - `--ease-wm-count` `(.3,1.4,.5,1)`;
+  - durations `carousel` 620, `fade` 450, `blur` 500, `halo` 700, `rise` 460, `count` 520, `flip` 380, `page-in` 340, `lift` 170 ms (`--transition-duration-wm-<name>`).
+
+- [ ] **Step 1: Write the failing tests:**
+  - Every new token exists, with the exact values above.
+  - Each `--color-wm-group-N-ink` has ≥ 4.5:1 contrast on `#ffffff`, computed in the test with the WCAG formula.
+  - `web-dark.css` declares the same names.
+- [ ] **Step 2: Run** `pnpm vitest run src/styles/web-tokens.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS. Then run the admin checks.
+- [ ] **Step 5: Commit** `feat(web): add stage, group and carousel motion tokens`.
+
+### Task M3.2: Pure helpers
+
+**Files:**
+- Create: `src/lib/group-color.ts` and `src/lib/group-color.test.ts`.
+- Create: `L/groups/carousel.ts` and `L/groups/carousel.test.ts`.
+
+**Interfaces:**
+- `groupColorIndex(id: string): number`:
+  - FNV-1a 32-bit over the UTF-8 bytes of `id.toLowerCase()`, then `mod 7`;
+  - offset basis `2166136261`, prime `16777619`.
+- `groupTone(id: string, total: number): GroupTone` returns static class strings `{ border, soft, wash, ink, bg }`. `total === 0` gives the `empty` tone.
+- `stackDepth(waiting: number): 0|1|2|3`: the prototype rule `layers` (`vong-7…html:666`), > 16 → 3, > 6 → 2, > 0 → 1, else 0. The Hôm nay cards cap it at 2.
+- `carouselSlots(count: number, centre: number): { index: number; k: -2|-1|0|1|2 }[]`:
+  - each group appears at most once;
+  - `k` is the shortest wrap-around distance;
+  - the right side takes precedence when both sides tie.
+- `stepTo(from: number, to: number, count: number): number`: the signed shortest step.
+- `rhythm(cells): { level: number; total: number; due: number }[]`: one segment per stage. Segment width ∝ `total`, fill ∝ `due` (prototype `rhythm`, `:663`). This matches Figma: 6 + 9 + 9 = 24.
+- `carouselOrder(groups)`: `sortForToday`, then empty groups last.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `groupColorIndex`:
+    - pin the exact index for 7 sample IDs (at least two UUIDs, `g-food`, an uppercase copy of one UUID). The expected values come from a separate reference FNV-1a run in Node, noted in the test;
+    - the result is always an integer in [0, 6] over 1 000 random strings.
+  - `stackDepth`:
+    - 0 → 0, 1 → 1, 6 → 1, 7 → 2, 16 → 2, 17 → 3.
+  - `carouselSlots`:
+    - `(1, 0)` → `[{0,k:0}]`;
+    - `(2, 0)` → `[{0,0},{1,1}]`;
+    - `(5, 0)` → k for 3 is −2, k for 4 is −1;
+    - `(8, 7)` → index 0 gets k = 1.
+  - `stepTo(7, 0, 8)` → 1, and `stepTo(0, 5, 8)` → −3.
+  - `rhythm`:
+    - widths add up to the group total;
+    - the fills add up to the sum of `cells[n].due`.
+- [ ] **Step 2: Run** both test files. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** both test files. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add group colour, stack depth and carousel helpers`.
+
+### Task M3.3: Shared group pieces
+
+**Files:**
+- Create: `L/groups/GroupStack.tsx` (card face and the cards behind it).
+- Create: `src/ui/StageBar.tsx` (segments with fill, optional labels).
+- Create: `L/groups/DeckButtons.tsx`, rewritten on `ui/ButtonLink`.
+- Create: `L/groups/group-pieces.test.tsx`.
+
+**Interfaces:**
+- `GroupStack({ group, size: 'today'|'carousel'|'page', depth?, as? })`:
+  - draws M3 Figma A §2.3. One design is scaled with font-size in `em`; the base size is set per `size`;
+  - border uses `groupTone`; the cards behind use `-soft`, with fixed ratios .94/.88/.82, opacities .85/.55/.3, and blur only when `size='carousel'`.
+- The face has three states:
+  - **normal**: "N từ · M đã thuộc", name, count in `-ink` + "thẻ chờ", "tiếp theo <next_lemma>";
+  - **done**: "✓ Xong hôm nay", "ôn gần nhất <last_reviewed.lemma>";
+  - **empty**: "nhóm trống", "Chưa có từ", "Thêm từ để bắt đầu".
+  - When `next_lemma` or `last_reviewed` is missing, the footer line is left out.
+- `StageBar({ segments: { size: number; fill: number; tone: string }[], labels?: ReactNode[] })` is a `figure`. Its `aria-label` is passed in.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The normal face shows "24" and "tiếp theo mitigate".
+  - The done face shows "✓ Xong hôm nay" and "ôn gần nhất take for granted".
+  - The empty face shows "nhóm trống", "Chưa có từ" and has no cards behind.
+  - The number of behind cards equals `stackDepth`.
+  - DeckButtons, for each `deckPlan` case in `deck-actions.test.ts`:
+    - exactly one link has the primary class set, or none when `primary` is null;
+    - hrefs keep the `review?group=…&mode=` and `recall?group=` forms;
+    - both links carry `data-google-vignette="false"`.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-pieces.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): add the group stack, stage bar and new deck buttons`.
+
+### Task M3.4: New data on the web
+
+**Files:**
+- Modify: `L/groups/groups-api.ts` (types).
+- Create: `L/today/last-session.ts` with `useLastSession()` (key `['practice','sessions','last']`).
+- Modify: `src/app-ui/test-utils.tsx` (default route `GET /v1/practice/sessions/last` → 204).
+- Modify: `e2e/support/mock-api.ts` (`signedInAs` scripts the same 204).
+- Test: `L/today/last-session.test.tsx`.
+
+**Interfaces:**
+- `GroupSummary` gains:
+  - `next_lemma?: string | null`;
+  - `last_reviewed?: { lemma: string | null; at: string } | null`.
+- `LastSessionView = { id; group_id: string | null; local_date: string; last_answer_at: string; finished: boolean; questions: number; correct: number; wrong_count: number; wrong_lemmas: string[] }`.
+- `useLastSession()` returns `LastSessionView | null`. A 204 becomes `null` (`ApiClient.get` resolves `undefined`).
+
+- [ ] **Step 1: Write the failing tests:**
+  - 204 → `data === null`;
+  - 200 → the exact object;
+  - 500 → `isError`.
+- [ ] **Step 2: Run** `pnpm vitest run L/today/last-session.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test, then `pnpm test`. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(web): read next card, last review and last session`.
+
+### Task M3.5: Hôm nay
+
+**Files:**
+- Move: `C/page.app.tsx` → `C/(today)/page.app.tsx`.
+- Create: `C/(today)/loading.app.tsx` (skeleton of `117:4425`).
+- Rewrite: `L/today/TodayPage.tsx`, `QuickAddBox.tsx`.
+- Modify: `L/groups/TopicSuggestions.tsx` (rows instead of cards, first 4).
+- Modify: `L/today/today.test.tsx`, `e2e/app/m2.spec.ts:86-99`, `e2e/app/overflow.spec.ts:67-84`, `messages/{vi,en}.json` (`App.today`).
+
+**Behaviour:** follows `117:4425` / `117:4712` and M3 Figma A §1. Phone order is M3 Figma A §1.2.
+- **Hero "Ôn tiếp"**: the first group of `sortForToday` with waiting > 0.
+  - Border and big number use `groupTone`.
+  - The bar shows priority / due / new, with a legend.
+  - Học · Ôn buttons.
+  - Big number with "thẻ chờ hôm nay".
+- **"Lần luyện gần nhất"**: only when `useLastSession()` has data.
+  - The date comes from `local_date`.
+  - The group name comes from `useGroups` by `group_id`; it is left out when not found.
+  - Correct/wrong bar and pills.
+  - "Sai: …" lists `wrong_lemmas`.
+  - Links "Luyện lại từ sai →" (`/app/practice/weak`) and "Mở lịch học" (`/app/practice/history` until M6).
+- **"Nhóm của bạn"**:
+  - up to 4 `GroupStack size="today"` cards of the other groups with waiting > 0; each card is a link to `/app/group?id=`;
+  - "Xem tất cả N nhóm →";
+  - the line "Xong hôm nay: … · Chưa có từ: …".
+- **"Tạo nhóm nhanh theo chủ đề"**: topic rows.
+- **Side column** from `xl` (`PageColumns`):
+  - "Thêm từ vừa gặp";
+  - "Từ lâu chưa ôn";
+  - "Từ theo ngăn": flat squares in `stage-N-solid`, bar width = due / total, as the code does today.
+- **No groups**: the empty block, with `ui/Button` "Tạo nhóm đầu tiên".
+- **All done**: "Xong hết thẻ hôm nay. Mai ôn tiếp."
+- The card ⋯ menu is gone (rename and delete live on Một nhóm).
+
+- [ ] **Step 1: Write the failing tests in `today.test.tsx`:**
+  - `sessions/last` 200 → text "14/20", "Sai: deteriorate, allocate, viable, scrutiny", and link "Luyện lại từ sai →" to `/vi/app/practice/weak`.
+  - `sessions/last` 204 → no text "Lần luyện gần nhất"; the hero still shows.
+  - `sessions/last` 500 → the hero still shows and there is no `alert`.
+  - 8 groups → exactly 4 cards in the list "Nhóm của bạn", none of them the hero group; link "Xem tất cả 8 nhóm" to `/vi/app/groups`.
+  - The note line lists the done and empty group names.
+  - The hero's Ôn link has the primary class when `deckPlan` gives `recall`.
+  - Delete the tests of the removed menu and the 6-card cap.
+- [ ] **Step 2: Run** `pnpm vitest run L/today`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run:**
+  - `pnpm vitest run L/today` → PASS;
+  - `pnpm cf:docker e2e/app/m2.spec.ts e2e/app/m3.spec.ts e2e/app/overflow.spec.ts` → PASS. Overflow adds the long name on a Hôm nay card at 390.
+- [ ] **Step 5: Commit** `feat(web): rebuild today with the next review and last practice`.
+
+### Task M3.6: Nhóm: carousel and group picker
+
+**Files:**
+- Rewrite: `L/groups/GroupListPage.tsx` as the carousel page.
+- Create: `L/groups/GroupCarousel.tsx`, `L/groups/GroupPicker.tsx`, `C/groups/loading.app.tsx`.
+- Modify: `L/groups/group-list.test.tsx` (rewrite), `e2e/app/m2.spec.ts:101-138`, `messages/{vi,en}.json` (`App.groups`).
+
+**Behaviour** (M3 Figma A §2, §3; motion doc §3; prototype `n2*` functions):
+- **Header**:
+  - title "Nhóm của bạn";
+  - mono line "{due} thẻ chờ trong {groups} nhóm · …" (desktop and phone texts differ);
+  - picker button showing the centre group, with its colour square;
+  - "+ Tạo nhóm" opens the create dialog.
+- **Carousel** (`role="region"`, labelled):
+  - slots from `carouselSlots`;
+  - transforms `translateX(k·step) scale(1/.83/.66)`, opacity 1/.7/.4, blur 0/3.6/7.2 px; step 230 px desktop, 128 px phone; phone shows `k = ±1` only;
+  - side stacks are `inert` and `aria-hidden`; only the centre stack is a link (to `/app/group?id=`);
+  - halo in the centre group's `-wash`.
+- **Changing group**:
+  - arrows (desktop), `←` `→`, swipe > 40 px, horizontal wheel (`|deltaX| ≥ 12`, at most once per 380 ms);
+  - picking a group further than 3 steps away jumps with no animation;
+  - an `aria-live="polite"` line reads "{name}, {waiting} thẻ chờ".
+- **Below the carousel**:
+  - "nhịp ôn: mới → 30 ngày" with `StageBar` from `rhythm` in the group colour;
+  - Học · Ôn;
+  - "Xem nhóm →";
+  - "Thêm từ" (desktop) opens add-word locked to that group;
+  - rows rise in with the motion doc numbers.
+- **Picker** (key `F`, or the button) is a react-aria `Popover` + `ListBox`:
+  - search "Tìm trong N nhóm", diacritic-insensitive;
+  - captions "còn thẻ chờ", "xong hôm nay", "chưa có từ";
+  - the selected row has the `-wash` background and a check;
+  - `↑` `↓`, `Enter` goes to the group, `Esc` closes and returns focus to the button;
+  - desktop footer "↑ ↓ chọn · ↵ tới nhóm · Esc đóng".
+- **Key `↓`** opens the centre group.
+- The old filter, search box, dashed tile and per-card menu are removed. `TopicSuggestions` stays only on Hôm nay.
+
+- [ ] **Step 1: Write the failing tests:**
+  - 5 groups: the centre link is the first of `carouselOrder`.
+  - `→` makes the next group the centre, and the live line reads "Đề 9 · Listening, 18 thẻ chờ".
+  - `←` from the first group wraps to the last.
+  - Exactly one link inside the region; side stacks have the `inert` attribute.
+  - `F` opens the picker. Typing "de 9" leaves "Đề 9 · Listening". `Enter` makes it the centre and closes the picker.
+  - `F` typed into the picker search does not reopen it.
+  - `←` typed into the quick-add input does not move the carousel.
+  - 1 group: no arrow buttons.
+  - 2 groups: exactly 2 stacks are rendered.
+  - "+ Tạo nhóm" → dialog "Tạo nhóm". Keep the create, rename-conflict, limit, name-taken and double-submit tests of the old `group-list.test.tsx:119-204`.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-list.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS; then `pnpm cf:docker e2e/app/m2.spec.ts e2e/csp.spec.ts e2e/app/overflow.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the group list as a carousel with a picker`.
+
+### Task M3.7: Một nhóm and the open/close FLIP
+
+**Files:**
+- Rewrite: `L/groups/GroupPage.tsx`.
+- Create: `L/groups/flip.ts` with `rememberRect(key, el)`, `useFlipFrom(key, ref)` and `useCloseFlip(key)`.
+- Create: `C/group/loading.app.tsx`.
+- Modify: `L/groups/group-page.test.tsx`, `e2e/app/cai-thien-a-group.spec.ts`, `e2e/app/overflow.spec.ts:36-47`, `messages/{vi,en}.json` (`App.group`).
+
+**Behaviour** (`84:3552` / `84:3749`, M3 Figma B §1):
+- **Page head**:
+  - back link "Nhóm của bạn";
+  - group halo;
+  - `GroupStack size="page"`;
+  - meta "N từ · tạo ngày … · M đã thuộc";
+  - title with the colour square;
+  - chips "4 ưu tiên", "14 đến hạn", "6 mới" with numbers in `-ink`;
+  - `StageBar` from `rhythm`, with stage labels on desktop.
+- **Actions**: Học · Ôn, "Thêm từ" (muted text button), ⋯ menu (rename, "Học tất cả N từ", delete; unchanged).
+- **Word list**:
+  - "Toàn bộ N từ";
+  - filter chips replace the `Select`: toggle buttons with `aria-pressed`, labels and counts as `filterCount` gives today. They wrap on desktop and form one horizontal-scroll row on phones;
+  - rows: 5 columns on desktop (word, POS, meaning, stage dot + "Ngăn …", status); phone keeps word, meaning and status;
+  - "Xem thêm từ · còn N từ".
+- **"Bỏ … khỏi nhóm"** stays as a muted icon text button at the end of each row, even though Figma draws none: the design keeps this dialog. Record it as a ruling.
+- **The card preview (3D flip) is removed**, as Figma draws it (owner QM3-1, 10/11/2026: "Bỏ như Figma").
+- **FLIP:**
+  - the carousel calls `rememberRect('group-stack', centreStack)` before navigating;
+  - the page head runs the 380 ms FLIP from that rect, and the other parts enter from `blur(12px) translateY(12px)`, 340 ms, 22 ms apart;
+  - the back link plays the reverse (150 ms dissolve, FLIP back);
+  - no remembered rect, or reduced motion: no animation.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Chips: pressing "Ngăn 1 ngày2" sets `aria-pressed="true"` and the rows become `['deploy','release']`. Pressing "Đến hạn" calls `…&section=due` once.
+  - The page head shows the three chips with the right numbers.
+  - `figure` "nhịp ôn": 6 segments, with fills matching `cells[n].due`.
+  - No `preview-slide` (the preview is removed). The old preview tests are deleted.
+  - `useFlipFrom` with no remembered rect does not call `element.animate`. With a rect and motion allowed, it calls it once, with duration 380.
+  - The remove, menu, empty, not-found and key-`N` tests of `group-page.test.tsx` keep passing, adapted from `Select` to chips.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/group-page.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same test → PASS; then `pnpm cf:docker e2e/app/cai-thien-a-group.spec.ts e2e/app/overflow.spec.ts e2e/app/m2.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the group page with the carousel flip`.
+
+### Task M3.8: Từ lâu chưa ôn and Chủ đề
+
+**Files:**
+- Rewrite the views of `L/groups/BacklogPage.tsx` and `L/groups/TopicPickerPage.tsx` (behaviour, queries and writes unchanged).
+- Create: `L/groups/FloatingBar.tsx`.
+- Modify: `backlog.test.tsx`, `topic-picker.test.tsx` (both now `chrome: true`), `e2e/app/m2.spec.ts:140-169`.
+
+**Behaviour:** variants 8A and 9A (`97:3085` / `97:3239`, `98:3127` / `98:3297`; M3 Figma B §2–3).
+- Header with the big count. The backlog count uses `wm-fail`; the topic count uses `wm-ink`.
+- Explainer with the three bold terms (backlog).
+- List card with select-all.
+- Rows:
+  - the backlog shows the overdue bar on desktop and "NN ngày";
+  - the topic shows a disabled row "đang học · <group>" with a group-colour dot.
+- "đang có 6 / N từ" and "Xem thêm".
+- `FloatingBar` (`radius/modal`, `shadow-wm-pop`) at the bottom, above the phone tab bar:
+  - backlog: "Đã chọn N từ", "Bỏ khỏi việc học" (delete tone), "Học lại N từ";
+  - topic: "thêm vào" + `ui/Select` + "Thêm N từ đã chọn →".
+  - The bar shows only while something is selected.
+  - The backlog "Học lại cả N từ" stays in the header.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The bar is absent with nothing selected.
+  - After ticking 2 rows the bar shows "Đã chọn 2 từ".
+  - A topic row already learned has no checkbox and shows text "đang học · Công việc".
+  - The old assertions (batches of 100, keys, partial failure keeps the dialog) keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups/backlog.test.tsx L/groups/topic-picker.test.tsx`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then the e2e lines above → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the backlog and topic pages with floating bars`.
+
+### Task M3.9: The five group dialogs
+
+**Files:**
+- Modify: `L/groups/GroupDialogs.tsx`, and the inline dialogs in `GroupPage.tsx` (remove a word) and `BacklogPage.tsx` (forget N words), moving them to `ui/Dialog`, `ui/TextField` and `ui/Button`.
+- Test: the existing dialog tests.
+- Delivery record: one screenshot of each dialog at 390 and 1440.
+
+**Behaviour:**
+- Motion GM15, through `ui/Dialog`.
+- The confirm dialogs follow the "Xác nhận xóa" card (M3 Figma B §4):
+  - Bricolage 20 title;
+  - a `wm-fail-soft` warning block for what is lost;
+  - the danger button;
+  - the keep or cancel action as a `ui/Button` `secondary`.
+- The copy stays the same.
+- Create and rename keep the 60-character counter.
+
+- [ ] **Step 1: Write the failing test:** the delete dialog's warning block has `role="note"` and the text /12 từ chỉ có trong nhóm này/. All existing dialog assertions keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/groups`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run L/groups` → PASS; `rg "@/app-ui/" src/features/learner/{today,groups} --glob '!*.test.*'` → no output.
+- [ ] **Step 5: Commit** `feat(web): move the group dialogs to the new kit`.
+
+### Task M3.10: M3 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts` (set `gm-m3`: Hôm nay, Nhóm, Nhóm with picker open, Một nhóm, Từ lâu chưa ôn, Chủ đề, five dialogs; 390 and 1440).
+- Modify: `docs/deliveries/giao-dien-moi.md` (M3 as-built), `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks.**
+  - Web: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm cf:docker`.
+  - Admin: the four checks.
+  - Record the counts.
+  - Measure the carousel frame rate on Nhóm with DevTools Performance at 4× CPU slowdown (design §8.5), and record the number.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m3 pnpm shots`, placed next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m3 screenshot set` and `docs(web): record m3 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild today and groups with the carousel`. Merge after CI is green and the owner says yes.
+
+## Part 3 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M3 table:
+  - Hôm nay → M3.5; Nhóm and picker → M3.6; Một nhóm → M3.7; Từ tồn đọng and Chủ đề → M3.8.
+  - The five dialogs without frames → M3.9.
+  - Học · Ôn (GM17) → M3.3.
+  - The QR2 fields → M3.4, M3.5, M3.6.
+  - "Luyện lại từ sai →" → M3.5.
+- §7.3, §7.4 → M3.1, M3.2.
+- §8.2 Nhóm, §8.4, §8.5 → M3.6, M3.7.
+- The roadmap's route loading files → M3.5, M3.6, M3.7.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- Stack depth follows the chosen prototype (`layers`); Hôm nay caps it at 2.
+- "nhịp ôn": segment width ∝ the stage's word count, fill ∝ its due cards. This is the prototype `rhythm`, and it matches the Figma numbers.
+- "Từ theo ngăn" keeps the code's due/total width. Figma's fills do not follow its own numbers.
+- Group `-ink` takes Figma's darker inks (≥ 4.5:1), not design §7.4's "same colour, ≥ 3:1". Green and blue are mixed with ink.
+- Carousel order: `sortForToday`, with empty groups last.
+- Side stacks are `inert`: design §8.5 wins over the prototype's click-to-switch.
+- Hôm nay shows 4 other groups. Done and empty groups go into one text line, as Figma draws.
+- The card menu leaves Hôm nay and Nhóm. Rename and delete stay on Một nhóm.
+- The Nhóm list's filter, search box and dashed "Tạo nhóm mới" tile are replaced by the picker and "+ Tạo nhóm".
+- "Bỏ … khỏi nhóm" stays on Một nhóm rows, though Figma draws none.
+- The card preview on Một nhóm is removed: owner decision QM3-1 (10/11/2026), not a ruling. Say so in the M3 PR description.
+- StageChip and WordChip are not built in M3: none of these frames uses them (M3 Figma A §7). They come with M5 if Học or Ôn needs them.
+
+**Open:** none.
+
+---
+
+# Part 4 — M4 Tra từ, trang một từ, Thêm từ (branch `feat/giao-dien-moi-m4`)
+
+**Goal:** Rebuild Tra từ as "Từ hóa thẻ", the one-word page, the five add-word overlays and the three word dialogs without frames. Move search into the top bar. Add `ui/SpeakButton`. Add the three fields Tra từ needs to `GET /v1/words`.
+
+**Inputs:**
+- Design §5.4 (search box), §5.5, §5.7, §7.5, §8.2 (Tra từ), §9 M4.
+- Motion doc §4 ("Từ hóa thẻ", toast 2.4 s) and §5 (dialogs).
+- The owner's motion artifact `https://claude.ai/artifact/6z635GjwYNpctydnMoNHJD`: read it with the Artifact tool's `read` action. The motion doc wins where the two differ.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-10-m4.md` ("M4 code §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-10-m4-a.md` (Tra từ, word page; "M4 Figma A §n") and `…-m4-b.md` (overlays; "M4 Figma B §n").
+- Paths below are under `apps/web/` unless they start with `apps/api/`. `C/` = `src/app/[locale]/app/(member)/(chrome)/`.
+
+**Depends on M3:** Tra từ and the Chọn nhóm overlay reuse `GroupStack`, `groupTone`, `carouselOrder` and `StageBar`.
+- Run `git switch -c feat/giao-dien-moi-m4 origin/refactor/giao-dien-moi` once M3 is merged.
+- Then run `git merge docs/giao-dien-moi-plan-4`.
+
+## Part 4 constraints
+
+- **API:**
+  - The only API change is additive, on `GET /v1/words`: `ipa`, `example`, `total` (M4.1). This follows the owner's QR2 ("toàn bộ thêm API" for data Figma needs).
+  - Every other request body and endpoint is unchanged.
+  - Request bodies pinned by tests stay identical: quick-add, sentences, bulk, picker add, my-word patch and delete.
+- **Copy:**
+  - Overlay 1's save button becomes "Lưu" through a new key, `App.addWord.saveShort`.
+  - The landing page keeps `App.addWord.save` ("Lưu {word}", `components/landing/copy.ts:52`).
+- **Speech:**
+  - Speaker buttons keep today's chain: the pre-made file, then the browser voice on failure, then dimmed "Đang tạo giọng đọc".
+  - Review and practice keep working through re-exports at the old `app-ui` paths until M5.
+- **One-letter keys** (`/`, `N`) do nothing when focus is in an input, a select, a contenteditable element or a dialog (`[role=dialog]`).
+
+## Part 4 Review Focus
+
+1. **Search box in the top bar.**
+   - Text typed there stays when Lan switches tabs.
+   - It resets when the URL's `q` or `level` changes. This is the M1 rule, pinned today by `chrome.test.tsx:100-121`; move those tests over.
+   - `/` pressed inside an open dialog does not move focus to the box.
+   - Pinned in M4.3.
+2. **Clicking a group stack on Tra từ.**
+   - A double click sends one `POST`.
+   - A group that already has the shown sense reads "✓ đã có" and cannot be clicked.
+   - After a successful add, the caption turns to "✓ đã có" and the toast stays 2.4 s.
+   - Pinned in M4.5.
+3. **A dictionary entry with no IPA or no example:** the entry renders without those lines and without empty gaps. Pinned in M4.5.
+4. **The learner's own word.**
+   - On Tra từ it shows "của tôi".
+   - On the word page it shows a single US speaker, and "Sửa từ" and "Xóa từ" are reachable.
+   - Deleting it lands on Tra từ.
+   - Pinned in M4.6.
+5. **AI lookup in Overlay 4 for a Free learner.**
+   - When the quota runs out: "Hết lượt tra AI." with the refill time, and no save button.
+   - `entitlement-required` shows the locked state.
+   - A `409 ai-in-progress` resend reuses the same key.
+   - Today's tests in `ai-lookup.test.tsx` stay green. Pinned in M4.7.
+
+### Task M4.1: API — three fields on `GET /v1/words`
+
+**Files:**
+- Modify the Content module's words list: the service, query and schema behind `GET /v1/words` under `apps/api/src/content/`. Find them through the route.
+- Modify the Content module's unit tests.
+- Modify `scripts/smoke-giao-dien-moi.mjs`, adding a check, and `apps/web/src/features/learner/lookup/lookup-api.ts` (types).
+
+**Interfaces:** response `{ items: WordRow[], next_page_token, total: number }`. `WordRow` gains:
+- `ipa: string | null`: the first visible sense's UK IPA, else its US IPA, else the custom IPA of a private sense.
+- `example: string | null`: the first example of that sense.
+- `total`: the number of words matching the filters, counted with the same visibility rule as the list.
+
+- [ ] **Step 1: Write the failing unit tests:**
+  - A catalog word with UK and US IPA returns the UK one.
+  - A word with only US IPA returns the US one.
+  - A private word returns its custom IPA.
+  - A word with no IPA returns `null`.
+  - `example` is the first example; with no example it is `null`.
+  - `total` equals the number of matching visible words for a filter whose results span 3 pages of 20.
+- [ ] **Step 2: Run** the Content unit tests. Expected: FAIL.
+- [ ] **Step 3: Implement** in the Content module only, following D3 (no reads of other modules' tables).
+- [ ] **Step 4: Run:**
+  - `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build` in `apps/api` → PASS;
+  - `pnpm smoke:giao-dien-moi` on a fresh DB → PASS, with the new check comparing `total` and one row's `ipa` and `example` against `GET /v1/words/{lemma}`. Append its output to `docs/deliveries/giao-dien-moi-smoke-output.txt`.
+- [ ] **Step 5: Commit** `feat(api): add ipa, example and total to the word list`.
+
+### Task M4.2: `ui/SpeakButton`, pronunciation line, dialog sizes, toast timeout
+
+**Files:**
+- Move: `src/app-ui/SpeakButtons.tsx` → `src/ui/SpeakButton.tsx` (`Pronounce` renamed `SpeakButton`; `SpeakWord`, `SpeakSentence` kept).
+- Move: `src/app-ui/PronunciationLine.tsx` → `src/ui/PronunciationLine.tsx`.
+- Move both test files with them. The old paths become re-exports.
+- Modify: `src/ui/Dialog.tsx` (`size?: 'md' | 'lg' | 'xl'`, which replaces `wide`; `xl` = 860 px for Overlay 4).
+- Modify: `src/ui/Toast.tsx` (per-call `timeout`).
+
+**Interfaces:**
+- `SpeakButton({ text, voice: 'uk'|'us', audioUrl, size?: 28|32 })` draws Figma `Nút loa` (`54:657`): `wm-accent-soft` circle, speaker icon 17.
+- `showToast(text, tone, { timeout?: number })`. The default stays 5000 ms.
+- `Dialog` keeps the `wide` prop as an alias for `lg` until M8, so untouched callers compile.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `size="xl"` gives a dialog whose class names contain the 860 px max width.
+  - `showToast('x', 'success', { timeout: 2400 })` is gone after 2 400 ms and still present at 2 399 ms (fake timers).
+  - The 14 moved speech tests keep passing at the new paths.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm test`. Expected: PASS; review and practice still import through the re-exports.
+- [ ] **Step 5: Commit** `feat(web): add speak button, dialog sizes and toast timeout to ui`.
+
+### Task M4.3: Search in the top bar
+
+**Files:**
+- Create: `src/app-chrome/TopSearch.tsx`.
+- Modify: `TopBar.tsx` (put the box inside its own `Suspense`); `AppChrome.tsx` (remove `SearchStrip`).
+- Delete: `SearchStrip.tsx`.
+- Move: the strip's tests to `app-chrome/top-search.test.tsx` (`chrome.test.tsx:100-121`, `lookup.test.tsx:97-124`, `m3-review.test.tsx:168-179`).
+- Modify: `e2e/app/m3.spec.ts:136-144`.
+
+**Behaviour:** desktop only (frame `54:502`).
+- "Tìm từ" box with a "/" key cap; no level select. Enter goes to `/app/lookup?q=…`.
+- On Tra từ, the page's own big box takes `/` and the top-bar box is hidden.
+- Phones keep the magnifier link to Tra từ (`PhoneHeader`).
+- The level filter lives only on Tra từ (M4.5).
+
+- [ ] **Step 1: Write the failing tests:**
+  - From `/vi/app/groups`: `/` focuses the box; typing "left" and Enter leads to exactly `/vi/app/lookup?q=left`.
+  - Typed text stays when `?id=` changes and resets when `q` changes.
+  - `/` inside an open dialog leaves focus in the dialog.
+  - On `/vi/app/lookup` the top-bar box is not rendered.
+- [ ] **Step 2: Run** `pnpm vitest run src/app-chrome`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then `pnpm cf:docker e2e/app/m3.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): move word search into the top bar`.
+
+### Task M4.4: The five overlays
+
+**Files:**
+- Modify: `L/add-word/{AddWordSheet,AddSentenceSheet,BulkAddSheet,AiLookupPanel,AiLookupResult,DeckPickerDialog,GroupPicker,EditSuggestionForm}.tsx` → `ui/*` and `wm-` tokens.
+- Modify: `add-word-context.tsx` (load `AddWordSheet` with `next/dynamic` on the first open; design §5.7).
+- Modify: `messages/{vi,en}.json` (`saveShort`).
+- Tests: the add-word test files (M4 code §7).
+
+**Behaviour:** M4 Figma B.
+- **All five:** title row with a 36 px close button; footer "Hủy" (TextButton muted) + primary button.
+- **Save labels:**
+  - Overlay 1 "Lưu";
+  - Overlay 2 "Lưu câu";
+  - Overlay 3 "Thêm cả loạt";
+  - Overlay 4 "Sửa rồi lưu";
+  - Overlay 5 "Lưu vào nhóm" (or "Tạo nhóm và lưu", as today).
+- **Overlay 1:**
+  - the inflection row "went → go · quá khứ của go" with the highlighted word;
+  - meaning rows with a radio, "pos · level" and the meaning;
+  - "đã có trong nhóm" rows have a check and no radio;
+  - group select.
+- **Overlay 4:**
+  - `size="xl"`, two columns on desktop: left, the meaning list with "từ điển" / "AI gợi ý" badges and the quota line "đã dùng 1 lượt tra AI · còn N"; right, the preview card "thẻ sẽ lưu · xem trước";
+  - the warning "AI có thể sai…";
+  - one column on phones, with no rotation.
+- **Overlay 5:**
+  - search "Tìm hoặc tạo nhóm…";
+  - "dùng gần đây", then "tất cả nhóm (N), A–Z";
+  - rows with the colour square (`groupTone`), name, a six-segment mini `StageBar` (none when 0 words) and "N từ";
+  - the list scrolls inside the dialog.
+- **Overlay 3:** filter summary, "Vào nhóm" select, two notes.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Overlay 1's button name is "Lưu"; pressing it sends the unchanged quick-add body.
+  - Overlay 5 rows show a colour square and a `figure` for a group with words, and no `figure` for "Du lịch Nhật" with 0 words.
+  - Overlay 4 at desktop width renders the preview card region "thẻ sẽ lưu · xem trước".
+  - Opening the add-word dialog for the first time renders it, through `next/dynamic` (await `findByRole('dialog')`).
+  - Update every test that pins "Lưu {word}" in the add flow (M4 code §7.5).
+  - Landing tests stay unchanged.
+- [ ] **Step 2: Run** `pnpm vitest run L/add-word`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `pnpm vitest run L/add-word` → PASS; `pnpm test` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the add word, sentence, bulk, ai and group dialogs`.
+
+### Task M4.5: Tra từ "Từ hóa thẻ"
+
+**Files:**
+- Rewrite: `L/lookup/LookupPage.tsx`, `LookupFilters.tsx`.
+- Create: `L/lookup/DictionaryPage.tsx`, `L/lookup/LiftedCard.tsx`, `L/lookup/StackTargets.tsx`, `C/lookup/loading.app.tsx`.
+- Modify: `L/lookup/lookup.test.tsx`, `messages/{vi,en}.json` (`App.lookup`).
+
+**Behaviour** (`85:3218` / `85:3667`, M4 Figma A §1). Phones show the card and stacks first, the dictionary page after.
+- **Search box:** the big "Tìm từ, ví dụ: mitigate" box with a "/" key cap.
+- **Filter sentence:** "{total} từ trình độ {level}, chủ đề {topic}, loại từ {pos}." Each value is a button that opens a react-aria menu (`Popover` + `ListBox`); today's `URL` params are kept.
+- **Tools row:**
+  - "chỉ từ của tôi" (`mine`);
+  - "Thêm cả loạt vào nhóm" (Overlay 3, under today's `canBulk` rule);
+  - "Xóa lọc".
+- **Dictionary page:**
+  - running header: first word · "trang N" · last word;
+  - letter headers;
+  - entries: headword, `ipa`, POS in italics, level, "của tôi" tag; "1" + meaning; the example in italics with the form highlighted (`highlightWord`);
+  - footer "— N —" and "Trang sau →"; "← Trang trước" from page 2 (cursor tokens kept on a client-side stack).
+- **Selection:**
+  - hover, focus or click selects an entry; `↑` `↓` move within the list;
+  - the selected entry stays as a dashed ghost;
+  - the first entry is selected by default.
+- **Lifted card**, for the selected entry, from `GET /v1/words/{lemma}`:
+  - "pos · level · topic";
+  - headword;
+  - UK / US with `SpeakButton`;
+  - meaning;
+  - example;
+  - footer "<group> · ngăn N ngày" from `GET /v1/items?sense_ids=` of the first visible sense.
+- **Stacks:** "Thả vào chồng để thêm", the first 6 groups of `carouselOrder` as `GroupStack` at a 0.55 scale.
+  - Caption "+ thêm vào đây", or "✓ đã có" when the item's `group_ids` contain the group.
+  - A click sends `POST /v1/groups/{id}/items { sense_id }` for the card's sense (`useSubmitOnce`), then the toast "Đã thêm “…” vào nhóm “…”." (2 400 ms).
+- **Links:**
+  - "Nhóm khác hoặc tạo nhóm mới" opens Overlay 5 for that sense;
+  - "Mở trang từ →".
+- **Motion:** the motion doc's §4 lift and arrive; with reduced motion, no lift.
+- **Empty result:** today's empty state ("Thêm từ này" opens Overlay 1).
+
+- [ ] **Step 1: Write the failing tests:**
+  - The URL filters are sent as today, and the sentence reads "24 từ trình độ B1, chủ đề Công việc, loại từ tất cả." (`total` 24).
+  - Choosing "A2" from the level menu replaces the URL.
+  - Entries are grouped under letter headings "B", "C".
+  - An entry without `ipa` and `example` has no empty line.
+  - `↓` moves the selection, and the card's headword changes.
+  - Clicking the "Đề 12 · Writing" stack posts one body `{ sense_id }`; a double click still posts once; then its caption reads "✓ đã có".
+  - The "Công việc · B1" stack (already has the sense) is disabled.
+  - "Trang sau →" requests `page_token=p2`; "← Trang trước" returns to page 1 without a request (cached).
+- [ ] **Step 2: Run** `pnpm vitest run L/lookup`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then `pnpm cf:docker e2e/app/m3.spec.ts e2e/app/overflow.spec.ts` → PASS. Overflow adds a 60-character lemma on the card at 390.
+- [ ] **Step 5: Commit** `feat(web): rebuild lookup as a dictionary page with group stacks`.
+
+### Task M4.6: Trang một từ and the three word dialogs
+
+**Files:**
+- Rewrite: `L/word/{WordPage,SenseBlock,FormsLine,LearningBlock}.tsx`.
+- Restyle: `MyWordDialogs.tsx`, `SavedSentencesDialog.tsx`.
+- Create: `C/word/loading.app.tsx`.
+- Modify: `L/word/word-page.test.tsx`, `my-word.test.tsx`, `messages/{vi,en}.json` (`App.word`).
+
+**Behaviour** (`118:4413` / `118:4714`, M4 Figma A §2):
+- **Head:**
+  - back link "Tra từ";
+  - title, 84 px desktop / 56 px phone;
+  - per part of speech, rows "UK /…/" and "US /…/", each with a `SpeakButton` (one US speaker for a private sense);
+  - row "dạng chia", headword in SemiBold.
+- **Tabs:** anchor links "Nghĩa N", "Câu đã gặp N", "Dạng chia", "Cùng chủ đề". On phones they wrap to 2 rows.
+- **Meanings:** by part of speech ("noun · 2 nghĩa"). Each sense row has:
+  - number, meaning, English definition (catalog only), example with highlight and a sentence speaker;
+  - "N câu đã gặp", which opens Câu đã gặp;
+  - the stage tag "Ngăn 3 ngày · Đề 12 · Writing", or a TextButton add "Thêm vào nhóm" (Overlay 5).
+- **"Câu bạn đã gặp":**
+  - every sentence of the learned senses, from `GET /v1/senses/{id}/sentences`, one request per learned sense;
+  - meta "nghĩa N · <meaning> · ghi ngày dd/mm/yyyy";
+  - "Thêm câu đã gặp" opens Overlay 2. When more than one sense is learned, Overlay 2 shows a sense `Select`.
+- **Right column** from `lg`; on phones "Bạn đang học" moves after the head and "Cùng chủ đề" goes last.
+  - "Bạn đang học": stage bar with labels, "Ôn tiếp", each group's stage tag, "Thêm vào nhóm khác".
+  - "Cùng chủ đề": topic tile, "trình độ A2–B1", 8 word chips, "Xem chủ đề … →" to `/app/topic?code=&level=`.
+- **Own word:** "Từ của tôi" and "AI gợi ý" chips in the head. "Sửa từ" and "Xóa từ" are TextButtons in the head (not drawn; record as a ruling). The three dialogs (Sửa từ, Xóa từ, Câu đã gặp) follow `ui/Dialog` and M3's confirm look.
+- **Not found:** today's empty state.
+
+- [ ] **Step 1: Write the failing tests:**
+  - The head shows "UK", "/ˈrek.ɔːd/", and two speaker buttons named "Nghe giọng Anh" / "Nghe giọng Mỹ" (`App.speak.uk|us`) per part of speech.
+  - Tab "Câu đã gặp 2" is a link to `#cau-da-gap`.
+  - A learned sense shows "Ngăn 3 ngày · Đề 12 · Writing".
+  - An unlearned sense has the button "Thêm vào nhóm", which opens dialog "Lưu vào nhóm".
+  - "Câu bạn đã gặp" lists 2 sentences with "ghi ngày 05/11/2026".
+  - Own word: buttons "Sửa từ" and "Xóa từ"; deleting calls `DELETE /v1/my-words/{entry_id}` then `hardReplace('/vi/app/lookup')`.
+  - The old dialog tests keep passing.
+- [ ] **Step 2: Run** `pnpm vitest run L/word`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same tests → PASS; then the e2e specs that open `/app/word` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the word page with uk and us voices`.
+
+### Task M4.7: M4 check, screenshots, PR
+
+**Files:**
+- Modify: `e2e-shots/shots.spec.ts` (set `gm-m4`: Tra từ, word page (catalog and own), the five overlays, the three dialogs; 390 and 1440).
+- Modify: `docs/deliveries/giao-dien-moi.md` (M4 as-built), `giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Run the checks:**
+  - `rg "@/app-ui/" src/features/learner/{lookup,word,add-word} --glob '!*.test.*'` → no output;
+  - web: lint, typecheck, test, `cf:docker`; API: lint, typecheck, test, build; admin: the four checks.
+  - All pass. Record the counts.
+- [ ] **Step 2: Take screenshots:** `SHOTS_MILESTONE=gm-m4 pnpm shots`, next to their Figma frame IDs.
+- [ ] **Step 3: Commit** `test(web): add the gm-m4 screenshot set` and `docs(web): record m4 as built`.
+- [ ] **Step 4: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild lookup, the word page and add word dialogs`. Merge after CI is green and the owner says yes.
+
+## Part 4 self-review notes (10/11/2026)
+
+**Coverage:**
+- §9 M4 table: Tra từ → M4.5; trang một từ → M4.6; Overlays 1–5 → M4.4.
+- Sửa từ, Xóa từ and Câu đã gặp → M4.6.
+- Roadmap row 4: `SpeakButton` → M4.2; top-bar search replacing `SearchStrip` → M4.3; add-word dialogs → M4.4.
+- §5.5 loading files → M4.5, M4.6. §5.7 `next/dynamic` → M4.4. §8.2 Tra từ motion → M4.5.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- `GET /v1/words` gains `ipa`, `example` and `total`, under the owner's QR2 ("toàn bộ thêm API"). The Figma dictionary page shows IPA, an example and a count; today's list has none of them.
+- A stack click adds the sense shown on the card. Other senses go through "Mở trang từ →".
+- The 6 stacks are the first 6 groups of `carouselOrder`.
+- Pagination: "Trang sau →" plus "← Trang trước" on cursor tokens. The cursor API has no page numbers to jump to.
+- The level filter leaves the top bar: Figma's top bar has none, and Tra từ's filter sentence carries it.
+- On Tra từ the top-bar box hides, and `/` focuses the page's box.
+- Overlay 1's "Lưu" uses a new key, so the landing demo keeps "Lưu {word}".
+- `wide` stays as an alias of `size="lg"` until M8.
+- Sửa từ and Xóa từ are TextButtons in the word head: Figma draws no own-word page.
+- With more than one learned sense, Overlay 2 shows a sense select.
+- The overlay backdrop keeps M1's 3 px blur (R10). Figma's overlays show 1.5 px.
+
+**Open:** none.
