@@ -16,6 +16,7 @@ import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
 import { StageBar } from '@/ui/StageBar';
 import { mastered, sortForToday, waiting } from '../groups/deck-actions';
+import { CalendarLink } from '../calendar/CalendarLink';
 import { DeckButtons } from '../groups/DeckButtons';
 import { ms, rememberRect, token } from '../groups/flip';
 import { useGroupDialogs } from '../groups/GroupDialogs';
@@ -192,10 +193,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
         <Link href={`/${locale}/app/practice/weak`} className={LINK}>
           {t('lastRetry')}
         </Link>
-        {/* The study calendar comes with M6; until then the old history page (design §9 M3). */}
-        <Link href={`/${locale}/app/practice/history`} className={LINK}>
-          {t('lastCalendar')}
-        </Link>
+        <CalendarLink className={LINK}>{t('lastCalendar')}</CalendarLink>
       </div>
     </section>
   );

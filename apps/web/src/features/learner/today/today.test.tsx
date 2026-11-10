@@ -2,6 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
+import { CalendarHost } from '../calendar/CalendarHost';
 import { TodayPage } from './TodayPage';
 
 const push = vi.fn();
@@ -84,7 +85,25 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(within(last).getByText(/20 câu · Công nghệ$/)).toBeInTheDocument();
     expect(within(last).getByText('Sai: deteriorate, allocate, viable, scrutiny')).toBeInTheDocument();
     expect(within(last).getByRole('link', { name: 'Luyện lại từ sai →' })).toHaveAttribute('href', '/vi/app/practice/weak');
-    expect(within(last).getByRole('link', { name: 'Mở lịch học' })).toHaveAttribute('href', '/vi/app/practice/history');
+  });
+
+  it('M6.4: "Mở lịch học" links to ?lich=<month in the learner zone> and opens Lịch in place', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-31T17:30:00Z'));
+    window.history.replaceState(null, '', '/vi/app');
+    try {
+      renderApp(<CalendarHost><TodayPage /></CalendarHost>, { chrome: true, routes: {
+        ...routes(GROUPS), 'GET /v1/practice/sessions/last': () => Response.json(LAST),
+        'GET /v1/me/calendar?month=2026-11': () => Response.json({ month: '2026-11', days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } }),
+      } });
+      const link = within(await screen.findByRole('region', { name: 'Lần luyện gần nhất' })).getByRole('link', { name: 'Mở lịch học' });
+      expect(link).toHaveAttribute('href', '/vi/app?lich=2026-11');
+      await userEvent.click(link);
+      expect(await screen.findByRole('dialog', { name: 'Tháng 11, 2026' })).toBeInTheDocument();
+      expect(window.location.search).toBe('?lich=2026-11');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sessions/last for a group that is gone and no wrong word: no group name, no "Sai:" line', async () => {
