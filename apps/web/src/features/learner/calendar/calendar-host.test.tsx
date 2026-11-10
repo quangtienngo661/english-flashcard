@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useInsertionEffect, useState } from 'react';
 import { renderApp } from '@/app-ui/test-utils';
 import { CalendarHost } from './CalendarHost';
 import { useCalendar } from './calendar-context';
@@ -41,6 +42,7 @@ function Controls() {
   );
 }
 
+const HistoryReplace = window.history.replaceState;
 const go = (url: string) => window.history.replaceState(null, '', url);
 let push: ReturnType<typeof vi.spyOn>;
 let replace: ReturnType<typeof vi.spyOn>;
@@ -117,6 +119,25 @@ describe('CalendarHost (design §5.6)', () => {
     } finally {
       window.removeEventListener('keydown', below);
     }
+  });
+
+  it('a Next navigation to ?ngay= (the history redirect) opens Ngày: Next writes the URL after its render, in an insertion effect', async () => {
+    function NextLike() {
+      const [to, setTo] = useState<string | null>(null);
+      // Next's HistoryUpdater writes the URL in the commit, after the render that already read the old one.
+      useInsertionEffect(() => {
+        if (to) HistoryReplace.call(window.history, null, '', to);
+      }, [to]);
+      return (
+        <CalendarHost>
+          <Controls />
+          <button type="button" onClick={() => setTo('/vi/app/practice?ngay=2026-11-05')}>điều hướng</button>
+        </CalendarHost>
+      );
+    }
+    renderApp(<NextLike />, { routes });
+    await userEvent.click(screen.getByRole('button', { name: 'điều hướng' }));
+    expect(await screen.findByRole('dialog', { name: '05/11' })).toBeInTheDocument();
   });
 
   it('arriving on ?ngay= from a link: replace with ?lich=<month>, then push ?ngay=', async () => {

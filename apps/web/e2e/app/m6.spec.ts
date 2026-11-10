@@ -103,3 +103,14 @@ test('a link to ?ngay= opens Ngày; Back shows Lịch of that month; closing sta
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/vi\/app\/practice$/);
 });
+
+test('final review #1: Ngày from a link, closed at once, stays closed (Next must not write the old URL back)', async ({ page }) => {
+  await signedInAs(page, 'free', calendarApi());
+  await page.goto('/vi/app/practice?ngay=2026-11-05');
+  const day = page.getByRole('dialog', { name: '05/11' });
+  await expect(day.getByRole('region', { name: 'Luyện tập · 2 phiên' })).toBeVisible();
+  await day.getByRole('button', { name: 'Đóng', exact: true }).click();
+  await page.waitForTimeout(500);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/vi\/app\/practice$/);
+});
