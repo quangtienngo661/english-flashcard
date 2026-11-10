@@ -59,7 +59,7 @@ const open = (pages: Array<ReturnType<typeof page>>, extra = {}) =>
   );
 
 describe('My word page (K/88)', () => {
-  it('shows "Từ của tôi" and "AI gợi ý", the source line, no English definition, and [Sửa từ] [Xóa từ] in the head (R70)', async () => {
+  it('shows "Từ của tôi" and "AI gợi ý", the source line, no English definition, and [Sửa từ] [Xóa từ] in the head (R75)', async () => {
     open([page()]);
     const head = await screen.findByRole('heading', { level: 1, name: 'rizz' });
     const top = head.parentElement!;

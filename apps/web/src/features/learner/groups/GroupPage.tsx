@@ -62,9 +62,13 @@ export function GroupPage() {
   const raw = useSearchParams().get('id');
   const id = isId(raw) ? raw.toLowerCase() : null;
   const detail = useGroup(id);
+  const summary = useGroups().data?.items.find((g) => g.id === id);
   const notFound = id === null || (detail.error instanceof ApiError && detail.error.problem.status === 404);
+  // Opened from the carousel (owner 10/11/2026): the deck list already holds this deck, so the head draws at once and the stack
+  // flies in without a skeleton in between; the detail (creation date) fills in when it arrives.
+  const shown = detail.data ?? (summary && !detail.isError ? fromSummary(summary) : null);
 
-  if (notFound || !detail.data) {
+  if (notFound || !shown) {
     return (
       <>
         <BackLink href={`/${locale}/app/groups`} label={t('back')} />
@@ -87,7 +91,12 @@ export function GroupPage() {
       </>
     );
   }
-  return <GroupBody detail={detail.data} />;
+  return <GroupBody detail={shown} />;
+}
+
+/** The detail a deck-list row already tells: no creation date yet, no count of words only in this deck. */
+function fromSummary(summary: GroupSummary): GroupDetail {
+  return { id: summary.id, name: summary.name, version: summary.version, item_count: summary.total, removable_items: 0, created_at: '', updated_at: '' };
 }
 
 function GroupError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -129,7 +138,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   // Owner 06/11/2026: a deck with no words leads with [Thêm từ]; no study button for 0 words and no counts that are all 0.
   const empty = total === 0;
   const known = summary ? mastered(summary) : 0;
-  const created = format.date(detail.created_at, 'full');
+  const created = detail.created_at ? format.date(detail.created_at, 'full') : null;
   const tone = groupTone(detail.id, total);
   const pageRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
@@ -152,10 +161,15 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       </div>
       <section aria-labelledby="group-title" className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
-        <GroupStack group={group} size="page" depth={2} ref={stackRef} />
+        {/* Above the group info while it flies in from the carousel (motion doc §3). */}
+        <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
         <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
           <p className="font-wm-mono text-wm-mono text-wm-muted">
-            {known > 0 ? t('metaMastered', { count: detail.item_count, mastered: known, date: created }) : t('meta', { count: detail.item_count, date: created })}
+            {created === null
+              ? t('metaNoDate', { count: detail.item_count, mastered: known })
+              : known > 0
+                ? t('metaMastered', { count: detail.item_count, mastered: known, date: created })
+                : t('meta', { count: detail.item_count, date: created })}
           </p>
           <h1 id="group-title" className="flex items-center gap-3 font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">
             <span aria-hidden className={cn('size-3.25 shrink-0 rounded-wm-xs md:size-4', tone.bg)} />

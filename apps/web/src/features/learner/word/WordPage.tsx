@@ -135,7 +135,7 @@ function WordBody({ data }: { data: WordPageData }) {
 
 /**
  * Figma head "Từ": the word (84 px, 56 px on phones) with "Từ của tôi" / "AI gợi ý", then per part of speech "UK /…/ 🔊  US /…/ 🔊"
- * (one US speaker with the learner's own IPA for a private sense), then the "dạng chia" rows. [Sửa từ] [Xóa từ] for the own word (R70).
+ * (one US speaker with the learner's own IPA for a private sense), then the "dạng chia" rows. [Sửa từ] [Xóa từ] for the own word (R75).
  */
 function WordHead({ data }: { data: WordPageData }) {
   const t = useTranslations('App.word');
@@ -275,7 +275,7 @@ function MeaningsOfPos({ pos, count, children }: { pos: string; count: number; c
 /**
  * Figma "Câu bạn đã gặp": every saved sentence of the word's meanings, newest first, with "nghĩa N · meaning · ghi ngày dd/mm/yyyy";
  * [Thêm câu đã gặp] opens Overlay 2, which asks for the meaning when more than one is being learned. One request per meaning with
- * sentences (R71).
+ * sentences (R76).
  */
 function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: PageSense[]; forms: string[] }) {
   const t = useTranslations('App.word');

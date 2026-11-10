@@ -22,17 +22,28 @@ export function takeRect(key: string): DOMRect | undefined {
   return rect;
 }
 
-function token(name: string, fallback: string): string {
+export function token(name: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
-const ms = (value: string) => Number.parseFloat(value);
+/** A CSS time in milliseconds: the production stylesheet writes `380ms` as `.38s`. */
+export const ms = (value: string) => {
+  const text = value.trim();
+  const n = Number.parseFloat(text);
+  return text.endsWith('ms') ? n : text.endsWith('s') ? Math.round(n * 1000) : n;
+};
 
 /**
  * Flies `ref` from the rect remembered under `key` to where it sits (380 ms, the FLIP curve). When it flies, `page` gets
- * `wm-page-in`: its parts come in from blur, 22 ms apart. No rect, or reduced motion: nothing moves.
+ * `className`: `wm-page-in` (Một nhóm: parts rise in from blur, 22 ms apart) or `wm-carousel-in` (back on Nhóm: they sharpen
+ * in without a lift). No rect, or reduced motion: nothing moves.
  */
-export function useFlipFrom(key: string, ref: RefObject<HTMLElement | null>, page?: RefObject<HTMLElement | null>): void {
+export function useFlipFrom(
+  key: string,
+  ref: RefObject<HTMLElement | null>,
+  page?: RefObject<HTMLElement | null>,
+  className: 'wm-page-in' | 'wm-carousel-in' = 'wm-page-in',
+): void {
   const reduced = useReducedMotion();
   useLayoutEffect(() => {
     const from = takeRect(key);
@@ -47,7 +58,7 @@ export function useFlipFrom(key: string, ref: RefObject<HTMLElement | null>, pag
       ],
       { duration: ms(token('--transition-duration-wm-flip', '380ms')), easing: token('--ease-wm-flip', 'cubic-bezier(0.3, 1.15, 0.5, 1)') },
     );
-    page?.current?.classList.add('wm-page-in');
+    page?.current?.classList.add(className);
     // Runs once, when the page opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

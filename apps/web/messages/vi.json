@@ -770,7 +770,8 @@
       "emptyLookup": "Chọn từ theo chủ đề",
       "metaMastered": "{count, number} từ · tạo ngày {date} · {mastered, number} đã thuộc",
       "loadMoreUnknown": "Xem thêm từ",
-      "todayChips": "Hôm nay"
+      "todayChips": "Hôm nay",
+      "metaNoDate": "{count, number} từ · {mastered, number} đã thuộc"
     },
     "backlog": {
       "back": "Nhóm {name}",
