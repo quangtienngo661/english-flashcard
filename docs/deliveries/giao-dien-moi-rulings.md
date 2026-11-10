@@ -38,3 +38,6 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R24 (10/11/2026, Task M2.5): `(split)` và `(card)` mỗi nhóm có `error.app.tsx` riêng, `(auth)/error.app.tsx` giữ lại → `AuthGate` không vẽ khung nữa, lỗi bắt ở `(auth)` sẽ hiện không có card.
 - R25 (10/11/2026, Task M2.5): quầng sáng sau card và trong panel dựng bằng hai utility `auth-card-glow`, `auth-panel-glow` (gradient từ token màu) → không dùng ảnh elip của Figma, màu chỉ qua token.
 - R26 (10/11/2026, Task M2.5): chữ mẫu tiếng Anh trên panel (`mitigate`, câu ví dụ, "Đề 12 · Writing") để nguyên trong code, các nhãn ("Thẻ từ · ngăn 7 ngày", "Hôm nay", "từ đến hạn", nghĩa tiếng Việt) vào `App.auth.showcase` → panel là hình minh họa, `aria-hidden`.
+- R27 (10/11/2026, Task M2.7): Đăng ký bỏ dòng giới thiệu dưới tiêu đề ("Ôn từ vựng theo lịch…"), xóa khóa `register.subtitle` → khung `35:405` / `37:533` chỉ có tiêu đề "Tạo tài khoản".
+- R28 (10/11/2026, Task M2.7): e2e tìm ô mật khẩu bằng `getByLabel(…, { exact: true })` → Playwright so nhãn theo chuỗi con, nên "Mật khẩu" trùng cả "Nhập lại mật khẩu" và nút mắt "Hiện mật khẩu".
+- R29 (10/11/2026, Task M2.7): lỗi "Mật khẩu nhập lại chưa khớp." kiểm sau ô Tên (Tên trống báo trước) và trước khi gửi → một lần bấm chỉ báo một lỗi ở phía trình duyệt, như cách form đang làm với Tên.

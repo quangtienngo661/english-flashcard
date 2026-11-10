@@ -344,7 +344,6 @@
       "lockedLine": "Dành cho gói Pro.",
       "seePlans": "Xem Gói học",
       "dob": {
-        "placeholder": "dd/mm/yyyy",
         "invalid": "Ngày sinh không hợp lệ. Chọn lại ngày.",
         "tooYoung": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
         "future": "Ngày sinh không thể sau hôm nay."
@@ -358,6 +357,7 @@
       "pending": "Đang tạo giọng đọc"
     },
     "auth": {
+      "passwordMismatch": "Mật khẩu nhập lại chưa khớp.",
       "showcase": {
         "stage": "Thẻ từ · ngăn {days, number} ngày",
         "group": "Thẻ từ · {group}",
@@ -380,13 +380,11 @@
       "or": "Hoặc",
       "register": {
         "title": "Tạo tài khoản",
-        "subtitle": "Ôn từ vựng theo lịch, bắt đầu từ chính những từ bạn gặp.",
         "givenName": "Tên",
-        "givenNamePlaceholder": "Lan",
         "familyName": "Họ (không bắt buộc)",
-        "familyNamePlaceholder": "Nguyễn",
         "birthDate": "Ngày sinh",
         "birthDateHint": "Wordmet dành cho người từ 13 tuổi.",
+        "confirmPassword": "Nhập lại mật khẩu",
         "passwordHint": "Tối thiểu 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.",
         "consent": "Tôi đồng ý với <terms>Điều khoản sử dụng</terms> và <privacy>Chính sách bảo mật</privacy>.",
         "submit": "Tạo tài khoản",

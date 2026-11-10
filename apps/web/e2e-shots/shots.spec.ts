@@ -57,7 +57,7 @@ test('milestone screenshots', async ({ page }) => {
   await page.goto('/vi/app/login');
   await settle(page);
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
   if (MILESTONE === 'm2') {
@@ -114,7 +114,7 @@ async function gmM1(page: Page) {
   await page.goto('/vi/app/login');
   await settle(page);
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
   await setLanguage(page, 'vi');

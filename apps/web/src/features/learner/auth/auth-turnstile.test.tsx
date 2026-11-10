@@ -129,6 +129,7 @@ describe('RegisterForm and the bot check', () => {
     pickDate('Ngày sinh', parseBirthDate('14/5/2008')!);
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'Aa1!aaaa');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu'), 'Aa1!aaaa');
     await userEvent.click(screen.getByRole('checkbox'));
     await press('Tạo tài khoản');
     expect(await screen.findByText(/Email này đã có tài khoản/)).toBeInTheDocument();

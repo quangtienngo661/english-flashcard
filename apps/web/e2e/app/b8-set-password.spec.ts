@@ -33,7 +33,7 @@ test('LA2#12: a Google-only learner sets a password from Settings, through the f
   const submit = page.getByRole('button', { name: vi.auth.reset.submit });
   await expect(async () => {
     await page.getByRole('textbox', { name: vi.auth.reset.code }).fill('482913');
-    await page.getByLabel(vi.auth.reset.newPassword).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.reset.newPassword, { exact: true }).fill('Aa1!aaaa');
     await expect(submit).toBeEnabled({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
   await submit.click();

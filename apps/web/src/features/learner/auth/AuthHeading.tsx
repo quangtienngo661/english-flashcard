@@ -75,6 +75,19 @@ export function SwitchAuthLink({ question, label, href }: { question: string; la
   );
 }
 
+/** A link inside a sentence (the consent text, "Quên mật khẩu?" under a taken email): bold accent; a new tab for the legal pages. */
+export function ConsentLink({ href, newTab, children }: { href: string; newTab?: boolean; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      target={newTab ? '_blank' : undefined}
+      className="w-fit rounded-wm-sm font-semibold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** A link in a field's label row ("Quên mật khẩu?", Figma "Ô nhập" có liên kết): 13 px accent, a 44 px hit area on phones. */
 export function LabelLink({ href, children }: { href: string; children: ReactNode }) {
   return (

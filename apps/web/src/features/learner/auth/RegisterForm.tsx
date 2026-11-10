@@ -1,9 +1,8 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
@@ -11,14 +10,18 @@ import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { useTurnstile } from '@/app-shell/use-turnstile';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
-import { TextField } from '@/app-ui/TextField';
-import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { DateOfBirthField } from '@/ui/DateOfBirthField';
+import { PasswordField } from '@/ui/PasswordField';
+import { TextField } from '@/ui/TextField';
+import { AuthHeading, ConsentLink, FormError, OrDivider, passwordViolations, PasswordRules, SwitchAuthLink, type PasswordRule } from './AuthHeading';
 import { GoogleSignIn } from './GoogleSignIn';
 
-/** K/01, K/01b: sign-up. The button stays off until the consent box is ticked and the birth date is 13+. */
+/**
+ * K/01, K/01b: sign-up (Figma 35:405 / 37:533). The button stays off until the consent box is ticked and the birth date is 13+.
+ * "Nhập lại mật khẩu" is checked here only: a mismatch sends nothing, and the request body is the same as without the field.
+ */
 export function RegisterForm({ today }: { today?: string }) {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
@@ -30,8 +33,10 @@ export function RegisterForm({ today }: { today?: string }) {
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const confirmBox = useRef<HTMLDivElement>(null);
   const [consent, setConsent] = useState(false);
-  const [errors, setErrors] = useState<{ givenName?: string; email?: string; age?: boolean; password?: PasswordRule[]; form?: string }>({});
+  const [errors, setErrors] = useState<{ givenName?: string; email?: string; age?: boolean; password?: PasswordRule[]; confirm?: string; form?: string }>({});
 
   const bot = useTurnstile();
 
@@ -65,6 +70,11 @@ export function RegisterForm({ today }: { today?: string }) {
       setErrors({ givenName: t('register.givenNameRequired') });
       return;
     }
+    if (confirm !== password) {
+      setErrors({ confirm: t('passwordMismatch') });
+      confirmBox.current?.querySelector('input')?.focus();
+      return;
+    }
     setErrors({});
     try {
       await submit();
@@ -80,19 +90,10 @@ export function RegisterForm({ today }: { today?: string }) {
     }
   }
 
-  const link = (href: string) =>
-    function ConsentLink(chunks: ReactNode) {
-      return (
-        <Link href={href} target="_blank" className="font-semibold text-primary underline underline-offset-2">
-          {chunks}
-        </Link>
-      );
-    };
-
   return (
-    <AuthHeading title={t('register.title')} intro={t('register.subtitle')}>
+    <AuthHeading title={t('register.title')} size="page">
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
           <TextField
             label={t('register.givenName')}
             value={givenName}
@@ -126,37 +127,42 @@ export function RegisterForm({ today }: { today?: string }) {
             spellCheck={false}
             error={errors.email}
           />
-          {errors.email && (
-            <Link href={`/${locale}/app/forgot-password`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
-              {t('login.forgot')}
-            </Link>
-          )}
+          {errors.email && <ConsentLink href={`/${locale}/app/forgot-password`}>{t('login.forgot')}</ConsentLink>}
         </div>
-        <TextField
+        <PasswordField
           label={t('password')}
-          type="password"
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
           description={errors.password?.length ? undefined : t('register.passwordHint')}
         />
         <PasswordRules rules={errors.password ?? []} />
+        <div ref={confirmBox}>
+          <PasswordField
+            label={t('register.confirmPassword')}
+            value={confirm}
+            onChange={(value) => {
+              setConfirm(value);
+              if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
+            }}
+            autoComplete="new-password"
+            error={errors.confirm}
+          />
+        </div>
         <Checkbox isSelected={consent} onChange={setConsent}>
-          {t.rich('register.consent', { terms: link(`/${locale}/terms`), privacy: link(`/${locale}/privacy`) })}
+          {t.rich('register.consent', {
+            terms: (chunks) => <ConsentLink href={`/${locale}/terms`} newTab>{chunks}</ConsentLink>,
+            privacy: (chunks) => <ConsentLink href={`/${locale}/privacy`} newTab>{chunks}</ConsentLink>,
+          })}
         </Checkbox>
         {bot.widget}
         <FormError message={errors.form ?? null} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!consent || birthDate === null || !store || bot.token === null}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!consent || birthDate === null || !store || bot.token === null}>
           {t('register.submit')}
         </Button>
-        <p className="text-center text-caption text-muted">{t('or')}</p>
+        <OrDivider />
         <GoogleSignIn next={`/${locale}/app`} />
-        <p className="text-ui text-muted">
-          {t('register.haveAccount')}{' '}
-          <Link href={`/${locale}/app/login`} className="font-semibold text-primary underline underline-offset-2">
-            {t('register.login')}
-          </Link>
-        </p>
+        <SwitchAuthLink question={t('register.haveAccount')} label={t('register.login')} href={`/${locale}/app/login`} />
       </form>
     </AuthHeading>
   );
