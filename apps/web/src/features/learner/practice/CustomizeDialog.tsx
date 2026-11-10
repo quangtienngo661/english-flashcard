@@ -364,7 +364,14 @@ function CustomizeForm({
           </div>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
-            <Select label={tc('order')} hideLabel items={SORTS.map((id) => ({ id, label: tc(`sorts.${id}`) }))} value={sort} onChange={(id) => setSort(id as Sort)} />
+            <Select
+              label={tc('order')}
+              hideLabel
+              size="sm"
+              items={SORTS.map((id) => ({ id, label: tc(`sorts.${id}`) }))}
+              value={sort}
+              onChange={(id) => setSort(id as Sort)}
+            />
           </div>
           <Button
             variant="primary"
