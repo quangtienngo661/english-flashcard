@@ -56,14 +56,14 @@ beforeEach(() => {
 });
 
 describe('WordPage (K/31–K/33, M/41)', () => {
-  it('heads with the word and its level range, no meaning count (owner 27/10/2026); one numbered block per meaning with its definition', async () => {
+  it('heads with the word, no meaning count (owner 27/10/2026), the level range in "Cùng chủ đề" (M4.6); one block per meaning under its part of speech', async () => {
     renderApp(<WordPage />, { routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'left' })).toBeInTheDocument();
-    expect(screen.getByText('A1 – A2')).toBeInTheDocument();
+    expect(within(await screen.findByRole('region', { name: 'Cùng chủ đề: Hướng' })).getByText('trình độ A1 – A2')).toBeInTheDocument();
     expect(screen.queryByText('3 nghĩa')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 3)).toEqual(['adjective', 'adverb', 'verb']);
     const blocks = screen.getAllByRole('article');
-    expect(blocks.map((b) => within(b).getByRole('heading', { level: 2 }).textContent)).toEqual(['adjective', 'adverb', 'verb']);
-    expect(within(blocks[0]).getByText('bên trái')).toBeInTheDocument();
+    expect(blocks.map((b) => within(b).getByRole('heading', { level: 3 }).textContent)).toEqual(['bên trái', 'về phía bên trái', 'quá khứ và phân từ của leave']);
     expect(within(blocks[0]).getByText('definition 1')).toBeInTheDocument();
   });
 
@@ -87,28 +87,28 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         [`GET /v1/items?sense_ids=${uuid(4)}`]: () => Response.json({ items: [] }),
       }),
     });
-    const line = await screen.findByText('Dạng chia:');
+    const line = await screen.findByText('dạng chia');
     const p = line.closest('p')!;
-    expect(p).toHaveTextContent('Dạng chia: go · goes · going · went · gone');
+    expect(p).toHaveTextContent('dạng chia go · goes · going · went · gone');
     expect(within(p).getAllByRole('link').map((a) => a.textContent)).toEqual(['went']);
   });
 
-  it('a learned word has a card to add it to another deck from its own page (owner 27/10/2026)', async () => {
+  it('a learned word can be added to another deck from its own page (owner 27/10/2026; M4.6: [Thêm vào nhóm khác] in "Bạn đang học")', async () => {
     renderApp(<WordPage />, { routes: routes() });
-    const card = await screen.findByRole('region', { name: 'Thêm vào nhóm khác' }, { timeout: 5000 });
-    await userEvent.click(within(card).getByRole('button', { name: 'Thêm vào nhóm' }));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    const card = await screen.findByRole('region', { name: 'Bạn đang học' }, { timeout: 5000 });
+    await userEvent.click(within(card).getByRole('button', { name: 'Thêm vào nhóm khác' }));
+    expect(await screen.findByRole('dialog', { name: 'Lưu vào nhóm' })).toBeInTheDocument();
   });
 
-  it('a learned meaning: "Đang học · 3 câu đã gặp" (the decks are only in the block, owner 26/10/2026) and the "Bạn đang học" block with its deck stage and first sentence', async () => {
+  it('a learned meaning: its stage tag and "3 câu đã gặp"; "Bạn đang học" with its deck stage; its sentences in "Câu bạn đã gặp" (M4.6)', async () => {
     renderApp(<WordPage />, { routes: routes() });
     const adverb = (await screen.findAllByRole('article'))[1];
-    const chip = await within(adverb).findByText(/^Đang học/);
-    expect(chip).not.toHaveTextContent('IELTS');
+    expect(await within(adverb).findByText('Ngăn 3 ngày · IELTS')).toBeInTheDocument();
     expect(within(adverb).getByRole('button', { name: '3 câu đã gặp' })).toBeInTheDocument();
     const block = screen.getByRole('region', { name: 'Bạn đang học' });
-    expect(await within(block).findByText('IELTS · ngăn 3 ngày')).toBeInTheDocument();
-    expect(await within(block).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.')).toBeInTheDocument();
+    expect((await within(block).findByText('IELTS')).closest('div')).toHaveTextContent('IELTSNgăn 3 ngày');
+    const seen = screen.getByRole('region', { name: 'Câu bạn đã gặp' });
+    expect(await within(seen).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.')).toBeInTheDocument();
   });
 
   it('GE2: a meaning without sentences shows no "câu đã gặp" line', async () => {
@@ -131,8 +131,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         },
       }),
     });
-    // The count moves into the "Đang học" chip once the learning state arrives; press it there.
-    await screen.findByText(/^Đang học/);
+    await screen.findByText('Ngăn 3 ngày · IELTS');
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
     const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
     expect(within(dialog).getAllByRole('listitem')).toHaveLength(3);
@@ -163,7 +162,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
   it('the same-topic box lists other words of the first topic', async () => {
     renderApp(<WordPage />, { routes: routes() });
     const box = await screen.findByRole('region', { name: 'Cùng chủ đề: Hướng' });
-    expect(await within(box).findByRole('link', { name: 'right' })).toHaveAttribute('href', '/vi/app/word?w=right');
+    expect(await within(box).findByRole('link', { name: 'right A1' })).toHaveAttribute('href', '/vi/app/word?w=right');
   });
 
   it('an unknown word: "Không tìm thấy từ" with [Thêm từ này] (Review Focus 5)', async () => {
@@ -217,7 +216,7 @@ describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
     const adjective = screen.getAllByRole('article')[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Nghe câu' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left 1.', lang: 'en-US' }));
-    const block = screen.getByRole('region', { name: 'Bạn đang học' });
+    const block = screen.getByRole('region', { name: 'Câu bạn đã gặp' });
     await within(block).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.');
     expect(within(block).queryByRole('button', { name: 'Nghe câu' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
@@ -226,15 +225,128 @@ describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
     expect(within(dialog).queryByRole('button', { name: 'Nghe câu' })).not.toBeInTheDocument();
   });
 
-  it('a saved sentence is read with the local US voice, in the block and in the list', async () => {
+  it('a saved sentence is read with the local US voice, in "Câu bạn đã gặp" and in the list', async () => {
     const local = makeVoice('en-US');
     const synth = installSpeech([makeVoice('en-US', false), local]);
     renderApp(<WordPage />, { routes: routes() });
-    const block = await screen.findByRole('region', { name: 'Bạn đang học' });
-    await userEvent.click(await within(block).findByRole('button', { name: 'Nghe câu' }));
+    const block = await screen.findByRole('region', { name: 'Câu bạn đã gặp' });
+    await waitFor(() => expect(within(block).getAllByRole('button', { name: 'Nghe câu' })).toHaveLength(3));
+    // Newest first: "Turn left after the bridge." (20/10) is the last row.
+    await userEvent.click(within(block).getAllByRole('button', { name: 'Nghe câu' })[2]);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left after the bridge.', voice: local }));
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
     const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
     await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Nghe câu' })).toHaveLength(3));
+  });
+});
+
+describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
+  const pr = (uk: string, us: string) => ({ uk, us, custom: null, audio: { uk: null, us: null } });
+  const W1 = '33333333-3333-4333-8333-333333333331';
+  const W2 = '33333333-3333-4333-8333-333333333332';
+  const rec = (n: number, pos: string, meaning: string, over = {}) =>
+    sense(n, pos, meaning, { lemma: 'record', level: 'B1', topics: [{ code: 'work', name: 'Công việc' }], examples: [`Keep a record ${n}.`], ...over });
+  const RECORD = {
+    lemma: 'record',
+    inflections: [{ kind: 'plural', form: 'records', has_page: false }, { kind: 'past', form: 'recorded', has_page: false }],
+    sections: [
+      { pos: 'noun', senses: [
+        rec(21, 'noun', 'bản ghi, hồ sơ', { level: 'A2', sentence_count: 2, pronunciation: pr('ˈrek.ɔːd', 'ˈrek.ɚd') }),
+        rec(22, 'noun', 'kỷ lục', { pronunciation: pr('ˈrek.ɔːd', 'ˈrek.ɚd') }),
+      ] },
+      { pos: 'verb', senses: [rec(23, 'verb', 'ghi lại, lưu lại', { pronunciation: pr('rɪˈkɔːd', 'rɪˈkɔːrd') })] },
+    ],
+  };
+  const recordRoutes = (extra = {}) => routes({
+    'GET /v1/words/record': () => Response.json(RECORD),
+    [`GET /v1/items?sense_ids=${uuid(21)},${uuid(22)},${uuid(23)}`]: () => Response.json({ items: [
+      { sense_id: uuid(21), item_id: uuid(94), level: 2, due_date: '2026-11-12', priority: false, group_ids: [W1] },
+      { sense_id: uuid(23), item_id: uuid(95), level: 0, due_date: '2026-11-10', priority: false, group_ids: [W2] },
+    ] }),
+    'GET /v1/groups': () => Response.json({ items: [
+      { id: W1, name: 'Đề 12 · Writing', version: 1, total: 10, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
+      { id: W2, name: 'Đề 14 · Reading', version: 1, total: 4, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
+    ] }),
+    [`GET /v1/senses/${uuid(21)}/sentences`]: () => Response.json({ items: [
+      { id: uuid(61), text: 'Official records show less rain.', created_at: '2026-11-02T03:00:00Z' },
+      { id: uuid(62), text: 'The company kept no record of the meeting.', created_at: '2026-11-05T03:00:00Z' },
+    ] }),
+    'GET /v1/words?page_size=8&topic=work': () => Response.json({ items: [
+      { lemma: 'record', pos_list: ['noun'], level: 'B1', meaning_preview: 'bản ghi', has_private: false },
+      { lemma: 'schedule', pos_list: ['noun'], level: 'A2', meaning_preview: 'lịch', has_private: false },
+    ], next_page_token: null }),
+    ...extra,
+  });
+  beforeEach(() => {
+    nav.params = new URLSearchParams({ w: 'record' });
+  });
+
+  it('the head reads each part of speech in UK and US, each with its own speaker', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const noun = await screen.findByRole('group', { name: 'noun' });
+    expect(within(noun).getByText('UK')).toBeInTheDocument();
+    expect(within(noun).getByText('/ˈrek.ɔːd/')).toBeInTheDocument();
+    expect(within(noun).getByText('/ˈrek.ɚd/')).toBeInTheDocument();
+    expect(within(noun).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Nghe giọng Anh-Anh', 'Nghe giọng Anh-Mỹ']);
+    expect(within(screen.getByRole('group', { name: 'verb' })).getByText('/rɪˈkɔːrd/')).toBeInTheDocument();
+  });
+
+  it('the tabs jump inside the page: "Nghĩa 3", "Câu đã gặp 2"', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    expect(await screen.findByRole('link', { name: 'Nghĩa 3' })).toHaveAttribute('href', '#nghia');
+    expect(screen.getByRole('link', { name: 'Câu đã gặp 2' })).toHaveAttribute('href', '#cau-da-gap');
+    expect(await screen.findByRole('region', { name: 'Câu bạn đã gặp' })).toHaveAttribute('id', 'cau-da-gap');
+  });
+
+  it('a learned meaning shows its stage and group; one not learned has [Thêm vào nhóm] that opens "Lưu vào nhóm"', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const [first, second, verb] = await screen.findAllByRole('article');
+    expect(await within(first).findByText('Ngăn 3 ngày · Đề 12 · Writing')).toBeInTheDocument();
+    expect(within(verb).getByText('Mới · Đề 14 · Reading')).toBeInTheDocument();
+    await userEvent.click(within(second).getByRole('button', { name: 'Thêm vào nhóm' }));
+    expect(await screen.findByRole('dialog', { name: 'Lưu vào nhóm' })).toBeInTheDocument();
+  });
+
+  it('"Câu bạn đã gặp" lists every saved sentence, newest first, with its meaning and date', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const box = await screen.findByRole('region', { name: 'Câu bạn đã gặp' });
+    await waitFor(() => expect(within(box).getAllByRole('listitem')).toHaveLength(2));
+    const rows = within(box).getAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('The company kept no record of the meeting.');
+    expect(within(rows[0]).getByText('nghĩa 1 · bản ghi, hồ sơ · ghi ngày 05/11/2026')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('nghĩa 1 · bản ghi, hồ sơ · ghi ngày 02/11/2026')).toBeInTheDocument();
+  });
+
+  it('"Bạn đang học" shows the next review and each group with its stage', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const block = await screen.findByRole('region', { name: 'Bạn đang học' });
+    expect(within(block).getByText('bản ghi, hồ sơ')).toBeInTheDocument();
+    expect(within(block).getByText('Thứ Năm, 12/11')).toBeInTheDocument();
+    const row = (await within(block).findByText('Đề 12 · Writing')).closest('div')!;
+    expect(row).toHaveTextContent('Đề 12 · WritingNgăn 3 ngày');
+  });
+
+  it('"Thêm câu đã gặp" with two learned meanings asks which one, and saves the sentence to it', async () => {
+    const { calls } = renderApp(<WordPage />, {
+      routes: recordRoutes({ [`POST /v1/senses/${uuid(23)}/sentences`]: () => Response.json({ id: uuid(63) }, { status: 201 }) }),
+    });
+    const box = await screen.findByRole('region', { name: 'Câu bạn đã gặp' });
+    await userEvent.click(await within(box).findByRole('button', { name: 'Thêm câu đã gặp' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Thêm câu đã gặp' });
+    await userEvent.click(within(dialog).getByRole('button', { name: /Nghĩa/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'verb · ghi lại, lưu lại' }));
+    await userEvent.type(within(dialog).getByRole('textbox'), 'They recorded it.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu câu' }));
+    await waitFor(() => expect(calls.filter((c) => c.method === 'POST' && c.path.endsWith('/sentences')).map((c) => c.path)).toEqual([`/v1/senses/${uuid(23)}/sentences`]));
+    expect(calls.find((c) => c.method === 'POST' && c.path.endsWith('/sentences'))!.body).toEqual({ text: 'They recorded it.' });
+  });
+
+  it('"Cùng chủ đề": the topic, the level range, the other words and a link to the topic page', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const box = await screen.findByRole('region', { name: 'Cùng chủ đề: Công việc' });
+    expect(within(box).getByText('trình độ A2 – B1')).toBeInTheDocument();
+    expect(await within(box).findByRole('link', { name: 'schedule A2' })).toHaveAttribute('href', '/vi/app/word?w=schedule');
+    expect(within(box).queryByRole('link', { name: /^record/ })).not.toBeInTheDocument();
+    expect(within(box).getByRole('link', { name: 'Xem chủ đề Công việc →' })).toHaveAttribute('href', '/vi/app/topic?code=work&level=A2');
   });
 });

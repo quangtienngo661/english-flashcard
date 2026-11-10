@@ -39,7 +39,8 @@ const routes = (pages: Array<ReturnType<typeof page>>, extra = {}) => {
     [`GET /v1/items?sense_ids=${SENSE}`]: () => Response.json({ items: [{ sense_id: SENSE, item_id: 'i1', level: 0, due_date: '2026-10-25', priority: false, group_ids: [G] }] }),
     'GET /v1/groups': () => Response.json({ items: [{ id: G, name: 'Du lịch', version: 1, total: 3, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 }] }),
     'GET /v1/words?page_size=8&topic=daily-life': () => Response.json({ items: [], next_page_token: null }),
-    'GET /v1/topics': () => Response.json({ items: [{ code: 'daily-life', name: 'Đời sống' }, { code: 'travel', name: 'Du lịch' }] }),
+    [`GET /v1/senses/${SENSE}/sentences`]: () => Response.json({ items: [{ id: 's1', text: 'She has rizz.', created_at: '2026-11-02T18:00:00Z' }] }),
+    'GET /v1/topics':() => Response.json({ items: [{ code: 'daily-life', name: 'Đời sống' }, { code: 'travel', name: 'Du lịch' }] }),
     'GET /v1/me/app-config': () => Response.json({ learning: { backlog_after_days: 60, groups_per_user: 100 } }),
     'GET /v1/me/entitlements': () => Response.json({ plan: 'pro', pools: {}, sources: [] }),
     [`PATCH /v1/my-words/${ENTRY}`]: () => new Response(null, { status: 204 }),
@@ -58,7 +59,7 @@ const open = (pages: Array<ReturnType<typeof page>>, extra = {}) =>
   );
 
 describe('My word page (K/88)', () => {
-  it('shows "Từ của tôi" and "AI gợi ý", the source line, no English definition, and [Sửa] [Xóa từ]', async () => {
+  it('shows "Từ của tôi" and "AI gợi ý", the source line, no English definition, and [Sửa từ] [Xóa từ] in the head (R70)', async () => {
     open([page()]);
     const head = await screen.findByRole('heading', { level: 1, name: 'rizz' });
     const top = head.parentElement!;
@@ -66,7 +67,7 @@ describe('My word page (K/88)', () => {
     expect(within(top).getByText('AI gợi ý')).toBeInTheDocument();
     expect(screen.getByText('Nguồn: AI gợi ý. Nghĩa này chưa ai duyệt, bạn nên kiểm lại.')).toBeInTheDocument();
     expect(screen.queryByText('charm')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sửa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sửa từ' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Xóa từ' })).toBeInTheDocument();
   });
 
@@ -80,7 +81,7 @@ describe('My word page (K/88)', () => {
 
   it('editing the meaning sends only that change; after the refetch the "AI gợi ý" label is gone', async () => {
     const { calls } = open([page(), page({ ai_suggested: false, meaning: { text: 'sức hấp dẫn', language: 'vi', translation_missing: false } })]);
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa từ' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
     expect(within(dialog).getByRole('textbox', { name: 'Nghĩa' })).toHaveValue('sức hút, khả năng tán tỉnh');
     expect(within(dialog).getByRole('button', { name: /Trình độ/ })).toHaveTextContent('B2');
@@ -97,7 +98,7 @@ describe('My word page (K/88)', () => {
 
   it('editing only the part of speech keeps the label (the API keeps ai_suggested)', async () => {
     const { calls } = open([page(), page({ pos: 'verb' })]);
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa từ' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
     await userEvent.click(within(dialog).getByRole('button', { name: /Loại từ/ }));
     await userEvent.click(await screen.findByRole('option', { name: 'verb' }));
@@ -110,7 +111,7 @@ describe('My word page (K/88)', () => {
 
   it('editing the examples or topic sends them as the API expects', async () => {
     const { calls } = open([page()]);
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa từ' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
     await userEvent.type(within(dialog).getByRole('textbox', { name: 'Câu ví dụ 1' }), '!');
     await userEvent.click(within(dialog).getByRole('button', { name: /Chủ đề/ }));
@@ -122,7 +123,7 @@ describe('My word page (K/88)', () => {
 
   it('đợt C DC33: the Phiên âm of this meaning is in the dialog; a change sends senses[].ipa only', async () => {
     const { calls } = open([page({ pronunciation: { uk: null, us: null, custom: 'rɪz', audio: { uk: null, us: null } } })]);
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa từ' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
     const ipa = within(dialog).getByRole('textbox', { name: 'Phiên âm' });
     expect(ipa).toHaveValue('rɪz');
@@ -140,9 +141,17 @@ describe('My word page (K/88)', () => {
     expect(within(block).queryByText('UK')).not.toBeInTheDocument();
   });
 
+  it('Review Focus 4 (M4.6): the own word has a single US speaker in the head, and its saved sentence in "Câu bạn đã gặp"', async () => {
+    open([page({ pronunciation: { uk: null, us: null, custom: 'rɪz', audio: { uk: null, us: null } } })]);
+    const block = await screen.findByRole('group', { name: 'noun' });
+    expect(within(block).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Nghe giọng Anh-Mỹ']);
+    const box = await screen.findByRole('region', { name: 'Câu bạn đã gặp' });
+    expect(await within(box).findByText('nghĩa 1 · sức hút, khả năng tán tỉnh · ghi ngày 03/11/2026')).toBeInTheDocument();
+  });
+
   it('nothing changed → no request, the dialog closes', async () => {
     const { calls } = open([page()]);
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa từ' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Sửa từ' })).not.toBeInTheDocument());

@@ -109,7 +109,8 @@ test.describe('M3 flows (mocked API)', () => {
   test('saved sentences: one more, then the limit says so with a way to the list', async ({ page }) => {
     await signedInAs(page, 'free', m3Api());
     await page.goto('/vi/app/word?w=left');
-    const block = page.getByRole('region', { name: vi.word.learningTitle });
+    // M4.6: [Thêm câu đã gặp] moved from "Bạn đang học" to "Câu bạn đã gặp".
+    const block = page.getByRole('region', { name: vi.word.seenTitle });
     for (const text of ['I turned left at the station.', 'Turn left again.']) {
       await block.getByRole('button', { name: vi.word.addSentence }).click();
       const sheet = page.getByRole('dialog', { name: vi.addWord.sentenceTitle });

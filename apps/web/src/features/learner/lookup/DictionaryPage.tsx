@@ -127,11 +127,20 @@ function groupByLetter(words: WordRow[]): Array<[string, WordRow[]]> {
   return out;
 }
 
-/** The form of the word in its example, highlighted ("three **candidates** for"). */
-export function marked(sentence: string, word: string) {
-  const stem = word.length > 3 && /e$/.test(word) ? word.slice(0, -1) : word;
-  const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = new RegExp(`\\b${escaped}\\w*`, 'i').exec(sentence);
+/**
+ * The form of the word in its example, highlighted ("three **candidates** for"). `forms` (the word page's inflections) also
+ * catch irregular forms ("went" for "go"); the longest candidate that matches wins.
+ */
+export function marked(sentence: string, word: string, forms: string[] = []) {
+  const match = [word, ...forms]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map((candidate) => {
+      const stem = candidate.length > 3 && /e$/.test(candidate) ? candidate.slice(0, -1) : candidate;
+      const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\w*`, 'i').exec(sentence);
+    })
+    .find((m) => m !== null);
   if (!match) return sentence;
   return (
     <>

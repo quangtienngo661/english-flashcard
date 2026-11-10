@@ -794,6 +794,16 @@
 }
 .lk-stack:disabled { opacity: 0.55; cursor: default; }
 /* The paper page: warm white, a hairline border, the binding side less rounded. */
+/* Word page title (Figma 118:4413 / 118:4714): Bricolage ExtraBold 56 px on phones, 84 px from 768 px; no token holds these sizes. */
+.wd-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+@media (min-width: 48rem) {
+  .wd-title { font-size: 5.25rem; }
+}
 .lk-paper {
   background: #fbfaf6;
   border: 1px solid #e8e4d8;

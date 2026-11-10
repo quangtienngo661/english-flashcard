@@ -9,7 +9,7 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { ErrorState } from '@/app-ui/States';
+import { ErrorState } from '@/ui/States';
 import { cn } from '@/lib/cn';
 import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';

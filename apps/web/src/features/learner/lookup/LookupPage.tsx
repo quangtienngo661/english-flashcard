@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { EmptyState, ErrorState } from '@/app-ui/States';
+import { EmptyState, ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
 import { Skeleton } from '@/ui/Skeleton';

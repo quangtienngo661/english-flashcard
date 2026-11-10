@@ -11,7 +11,7 @@ import { ENTITLEMENTS_KEY, useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
-import { LockedFeature } from '@/app-ui/Locked';
+import { LockedFeature } from '@/ui/ProBadge';
 import { refillKind } from '../settings/refill';
 import { useAiLookup, type AiLookupResult } from './ai-lookup-api';
 
