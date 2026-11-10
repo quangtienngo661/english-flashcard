@@ -18,6 +18,9 @@
   --color-wm-pass-soft: #e4f2ea;
   --color-wm-fail: #b8352a;
   --color-wm-fail-soft: #f8e7e5;
+  /* Practice in the study calendar (M6 Figma A §1): the amber dot and the darker number of "phiên luyện". */
+  --color-wm-practice: #d99a17;
+  --color-wm-practice-ink: #a07725;
 
   /* Radius (Wordmet số đo) */
   /* 3px: the 9px colour squares of legends and stage rows (Figma, M3). */

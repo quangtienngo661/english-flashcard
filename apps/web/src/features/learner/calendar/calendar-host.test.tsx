@@ -83,6 +83,16 @@ describe('CalendarHost (design §5.6)', () => {
     expect(screen.getByText('đang đóng')).toBeInTheDocument();
   });
 
+  it('"Tháng trước" replaces ?lich= with no new history step', async () => {
+    host();
+    await userEvent.click(screen.getByRole('button', { name: 'mở lịch' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Tháng trước' }));
+    expect(await screen.findByRole('dialog', { name: 'Tháng 10, 2026' })).toBeInTheDocument();
+    expect(window.location.search).toBe('?lich=2026-10');
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(window.history.state?.wmCalendar).toBe(1);
+  });
+
   it('arriving on ?ngay= from a link: replace with ?lich=<month>, then push ?ngay=', async () => {
     go('/vi/app/practice?ngay=2026-11-05');
     host();

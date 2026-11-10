@@ -685,6 +685,46 @@
       "fab": {
         "label": "Lịch học",
         "streak": "{days, number} ngày liên tiếp"
+      },
+      "month": {
+        "label": "lịch học",
+        "streak": "{days, number} ngày liên tiếp",
+        "today": "Về hôm nay",
+        "prev": "Tháng trước",
+        "next": "Tháng sau",
+        "close": "Đóng lịch",
+        "totals": "Tổng tháng",
+        "studyDays": "ngày có học",
+        "elapsed": "/{days, number}",
+        "learned": "từ mới đã học",
+        "reviewed": "lượt ôn",
+        "sessions": "phiên luyện",
+        "weekdays": {
+          "mon": "T2",
+          "tue": "T3",
+          "wed": "T4",
+          "thu": "T5",
+          "fri": "T6",
+          "sat": "T7",
+          "sun": "CN"
+        },
+        "todayMark": "hôm nay",
+        "cellLearned": "học {count, number} từ",
+        "cellReviewed": "ôn {count, number} lượt",
+        "cellSessions": "luyện {count, number} phiên",
+        "cellNone": "không học",
+        "cellFuture": "chưa tới",
+        "legend": {
+          "learn": "Học từ mới",
+          "review": "Ôn",
+          "practice": "Luyện tập",
+          "run": "Ngày liền nhau"
+        },
+        "keysPick": "chọn ngày ·",
+        "keysOpen": "xem ngày ·",
+        "keysClose": "đóng",
+        "loading": "Đang tải lịch",
+        "error": "Không tải được lịch."
       }
     },
     "groups": {

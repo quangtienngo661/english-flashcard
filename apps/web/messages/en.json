@@ -684,7 +684,47 @@
     "calendar": {
       "fab": {
         "label": "Study calendar",
-        "streak": "{days, number}-day streak"
+        "streak": "{days, plural, one {# day} other {# days}} in a row"
+      },
+      "month": {
+        "label": "study calendar",
+        "streak": "{days, plural, one {# day} other {# days}} in a row",
+        "today": "Back to today",
+        "prev": "Previous month",
+        "next": "Next month",
+        "close": "Close calendar",
+        "totals": "Month totals",
+        "studyDays": "study days",
+        "elapsed": "/{days, number}",
+        "learned": "new words learned",
+        "reviewed": "reviews",
+        "sessions": "practice sessions",
+        "weekdays": {
+          "mon": "Mo",
+          "tue": "Tu",
+          "wed": "We",
+          "thu": "Th",
+          "fri": "Fr",
+          "sat": "Sa",
+          "sun": "Su"
+        },
+        "todayMark": "today",
+        "cellLearned": "learned {count, plural, one {# word} other {# words}}",
+        "cellReviewed": "{count, plural, one {# review} other {# reviews}}",
+        "cellSessions": "{count, plural, one {# practice session} other {# practice sessions}}",
+        "cellNone": "no study",
+        "cellFuture": "not yet",
+        "legend": {
+          "learn": "New words",
+          "review": "Review",
+          "practice": "Practice",
+          "run": "Days in a row"
+        },
+        "keysPick": "pick a day ·",
+        "keysOpen": "open the day ·",
+        "keysClose": "close",
+        "loading": "Loading the calendar",
+        "error": "Couldn't load the calendar."
       }
     },
     "groups": {
