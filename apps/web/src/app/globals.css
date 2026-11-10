@@ -965,6 +965,9 @@
   /* A tall back face still scrolls on a phone; a sideways drag rates the card (Review Focus 5). */
   touch-action: pan-y;
   cursor: grab;
+  /* A sideways drag must not select the card's words (the gm-m5b drag shot showed it); the prototype does the same. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .cstack-top:active { cursor: grabbing; }
 .cstack-card[data-leaving] { z-index: 6; pointer-events: none; }
