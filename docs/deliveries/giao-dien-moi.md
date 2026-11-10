@@ -309,3 +309,43 @@ không commit. Xem ảnh lần đầu bắt hai lỗi hiển thị (chữ "Enter
 - Chưa chụp chế độ tối, tiếng Anh, 1024 px.
 - Chưa xem trên điện thoại thật.
 - "Luyện thêm một phiên" xin lại `ai_planned` (số câu AI phiên trước dùng thật), không phải số người học đã chọn (R101).
+
+# Giao diện mới — as-built M5b Học (chồng thẻ), Ôn (so chữ) (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m5b`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R107–R113 trong `giao-dien-moi-rulings.md`. QM5-2 = (a) (chủ dự án 11/11/2026):
+thẻ Học tan ngay khi chấm, việc lưu chạy sau lưng.
+
+**Đã làm**
+- Chồng thẻ (M5.7): `lib/stack-motion.ts` (tan, đến, rung, về chỗ, chip bay vào, số nảy; giảm chuyển động chỉ còn đổi độ mờ ≤ 200 ms); `review/useCardDrag.ts` (kéo
+  ngang quá 110 px hoặc vuốt nhanh thì chấm, thẻ chưa lật chỉ nhích và nhắc); `review/CardStack.tsx` (tối đa 3 thẻ phía sau, chỉ thẻ trên cùng gọi
+  `GET /v1/words/{lemma}`, dấu "Cần ôn lại · về ngăn 1 ngày" / "Đã biết · lên ngăn X"); `review/Pile.tsx`, `ui/WordChip.tsx`; CSS `.cstack*` trong `globals.css`.
+- Học (M5.8): hai chồng "Cần ôn lại" / "Đã biết" hai bên thẻ, nút trả lời `aria-disabled` tới khi lật, Space lật hai chiều, 1/← và 2/→ chấm, Esc dừng; thanh
+  tiến độ với "còn N thẻ"; lưu lần lượt sau lưng, lưu hỏng thì lùi về đúng thẻ đó (R107); tổng kết có vòng "x/y thẻ đã biết" và danh sách từ của từng chồng.
+- Ôn (M5.9): dòng so chữ `recall/CompareLine` khi gõ sai rồi bấm "Xem đáp án"; tổng kết Ôn có vòng "x/y từ đúng"; e2e đầu tiên của trang Ôn (`e2e/app/recall.spec.ts`).
+
+**Kiểm**
+- Web: lint, typecheck qua; `vitest run` 120 file, 1236/1236 (trước ba sửa của review); sau sửa, review/recall/practice 217/217.
+- E2e `cf:docker` cả bộ: 375 qua, 1 qua ở lần thử lại (`cai-thien-a-practice` desktop, chờ URL phiên), 38 skip, 0 hỏng. Sau sửa của review: `m2`, `cai-thien-a-speak`,
+  `recall` 47 qua, 1 skip.
+- Khung hình Học, 20 thẻ, CPU chậm 4 lần, Chromium headless không GPU, API giả: 40,8 fps, trung vị 16,7 ms, p95 50 ms, 21 khung trên 50 ms trong 739 khung (khoảng 18 giây).
+- Review cuối cả nhánh (subagent, Opus): 0 Critical, 2 Important, 9 Minor. Đã sửa, test đỏ rồi fix: (I1) Esc hoặc thẻ cuối khi còn lần lưu đang chờ hiện tổng kết
+  ngay, Enter rời trang có thể bỏ các lần lưu chưa gửi, nay hiện spinner tới khi lưu xong; (I2) dấu kéo của lần chấm trước hiện trên thẻ sau khi lật bằng Space;
+  (Minor 3, nâng lên vì Review Focus 3) giảm chuyển động mà thẻ phía sau vẫn phóng to và làm mờ khi kéo.
+- Lint bắt thêm một giá trị Tailwind thô chưa đánh dấu ở lưới Học (commit M5.8); đã đánh dấu `raw-ok`.
+
+**Ảnh `gm-m5b`** (390 và 1440 px, sáng; 15 ảnh ở `apps/web/test-results/shots/gm-m5b/`, không commit): Học mặt trước, mặt sau, đang kéo (1440), tổng kết; Ôn trắc
+nghiệm, chọn sai, so chữ, tổng kết. Ảnh kéo cho thấy chữ trên thẻ bị bôi chọn khi kéo; đã sửa (`user-select: none`) nhưng chưa chụp lại.
+
+**Minor để lại (review cuối)**
+1. Kéo ngay lúc thẻ mới đang đến (300 ms) thì thẻ không theo tay, rồi nhảy.
+2. Lưu hỏng và một phím bấm rơi đúng vào khoảng giữa hai lần render có thể ghi sai thẻ vào chồng.
+3. Key của thẻ đang tan trùng nếu chấm lại cùng thẻ trong khoảng 240 ms sau lưu hỏng.
+4. Thẻ đang tan mất dòng dạng từ và đổi chiều cao.
+5. `CompareLine` là `role="group"` chỉ có con `aria-hidden`, trình đọc màn hình có thể bỏ qua khi duyệt.
+6. "Xem đáp án" trả ô gõ về từ sai đầu tiên, bỏ phần đang gõ lại.
+7. Lùi về thẻ 1 sau lưu hỏng thì focus không về nút lật.
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật ở trình duyệt; ảnh, e2e và đo khung hình đều dùng API giả.
+- Chưa thử trên điện thoại thật: kéo ngang để chấm trong khi mặt sau dài vẫn cuộn dọc (`touch-action: pan-y`), tốc độ khung hình có GPU.
+- Chưa chụp chế độ tối, tiếng Anh, 1024 px; ảnh kéo chưa chụp lại sau sửa bôi chọn.
