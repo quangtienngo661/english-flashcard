@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render } from '@testing-library/react';
 import { useRef } from 'react';
-import { rememberRect, useFlipFrom } from './flip';
+import { ms, rememberRect, useFlipFrom } from './flip';
 
 let reduced = false;
 vi.mock('@/lib/use-reduced-motion', () => ({ useReducedMotion: () => reduced }));
@@ -76,5 +76,11 @@ describe('useFlipFrom with a class for the arriving parts (motion doc §3: back 
     const { getByTestId } = render(<Carousel />);
     expect(getByTestId('page')).toHaveClass('wm-carousel-in');
     expect(getByTestId('page')).not.toHaveClass('wm-page-in');
+  });
+});
+
+describe('ms (motion tokens as the browser reads them)', () => {
+  it.each([['380ms', 380], ['.38s', 380], ['0.17s', 170], ['1.5s', 1500], [' 150ms ', 150]])('%s → %i', (value, expected) => {
+    expect(ms(value)).toBe(expected);
   });
 });
