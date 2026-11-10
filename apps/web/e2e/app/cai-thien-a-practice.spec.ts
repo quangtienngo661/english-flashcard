@@ -86,7 +86,9 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
     await dialog.getByText(vi.customize.ownToggle, { exact: true }).click();
     await dialog.getByRole('button', { name: 'Câu AI viết: thêm 1' }).click();
     await expect(dialog.getByRole('checkbox', { name: vi.types.cloze, exact: true })).toBeChecked();
-    await expect(dialog.getByText(vi.customize.mixLine)).toBeVisible();
+    // The explanation sits behind the "?" by the row (owner 10/11/2026): hover shows it.
+    await dialog.getByRole('button', { name: vi.customize.ownHelpLabel }).hover();
+    await expect(page.getByRole('tooltip')).toHaveText(vi.customize.mixLine);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
     await expect(page).toHaveURL(/practice\/session$/);
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ cloze_source: 'own_then_ai', ai_count: 1 });
@@ -110,7 +112,8 @@ for (const scheme of ['light', 'dark'] as const) {
         const t = copy[locale].App.practice;
         await dialog.getByRole('button', { name: `${t.customize.aiTitle}: ${locale === 'vi' ? 'thêm 1' : 'one more'}` }).click();
         await expect(dialog.getByRole('checkbox', { name: t.customize.ownToggle, exact: true })).toBeChecked();
-        await expect(dialog.getByText(t.customize.mixLine)).toBeVisible();
+        await dialog.getByRole('button', { name: t.customize.ownHelpLabel }).hover();
+        await expect(page.getByRole('tooltip')).toHaveText(t.customize.mixLine);
         await noSideScroll(page, `${locale} ${scheme} ${width}px setup`);
         expect(await seriousViolations(page), `${locale} ${scheme} ${width}px setup`).toEqual([]);
       });

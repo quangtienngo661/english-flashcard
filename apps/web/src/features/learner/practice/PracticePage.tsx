@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { Check, Folder, Layers, Star, Target, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
@@ -86,6 +86,8 @@ export function PracticePage() {
           <ul aria-labelledby="other-sources" className="flex flex-col rounded-wm-xl border border-wm-line bg-wm-surface px-5 shadow-wm-card">
             <SourceCard
               name={t('sources.group.name')}
+              icon={Folder}
+              tone="accent"
               body={t('sources.group.body')}
               chips={
                 decks.length === 0 ? (
@@ -111,6 +113,8 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.weak.name')}
+              icon={Target}
+              tone="fail"
               titleHref={`/${locale}/app/practice/weak`}
               body={t('sources.weak.body')}
               chips={
@@ -143,6 +147,8 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.priority.name')}
+              icon={Star}
+              tone="mark"
               body={t('sources.priority.body')}
               chips={
                 priority > 0 ? <span className={CHIP}>{t('sources.priority.chip', { count: priority, groups: priorityDecks })}</span> : empty(t('sources.priority.empty'))
@@ -156,6 +162,8 @@ export function PracticePage() {
             />
             <SourceCard
               name={t('sources.all.name')}
+              icon={Layers}
+              tone="pass"
               body={t('sources.all.body')}
               chips={words > 0 ? <span className={CHIP}>{t('sources.all.chip', { words, groups: decks.length })}</span> : empty(t('sources.all.empty'))}
               startLabel={words > 0 ? t('sources.all.start', { count }) : null}
@@ -188,7 +196,10 @@ export function PracticePage() {
   );
 }
 
-/** "Phiên luyện hôm nay" (Figma header block, D15): plan, sessions used, one bar, and when they refill. */
+/**
+ * "Phiên luyện hôm nay" (D15): owner 10/11/2026 found the mono header line too faint, so it is a card: the plan as a chip, the sessions
+ * used in large type, a thicker bar, and when they refill.
+ */
 function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }) {
   const t = useTranslations('App.practice.usage');
   const format = useFormat();
@@ -200,19 +211,26 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
     line = t('out', { time, wait });
   } else if (time) line = t('note', { time });
   return (
-    <section aria-labelledby="usage-title" className="flex w-full flex-col gap-2 md:w-85">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">
-          <span id="usage-title" className="first-letter:lowercase">
-            {t('title')}
-          </span>
-          {' · '}
-          <span>{t(`plan.${plan}`)}</span>
-        </p>
-        {pool.limit > 0 && <span className="shrink-0 font-wm-display text-wm-base text-wm-ink">{t('used', { used: pool.used, limit: pool.limit })}</span>}
+    <section
+      aria-labelledby="usage-title"
+      className={cn(
+        'flex w-full flex-col gap-2.5 rounded-wm-xl border bg-wm-surface px-5 py-4 shadow-wm-card md:w-85',
+        out ? 'border-wm-fail' : 'border-wm-line',
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="usage-title" className="font-wm-sans text-wm-small-strong text-wm-ink">
+          {t('title')}
+        </h2>
+        <span className="rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(`plan.${plan}`)}</span>
       </div>
-      {pool.limit > 0 && <ProgressBar value={pool.used} max={pool.limit} label={t('used', { used: pool.used, limit: pool.limit })} className="h-2" />}
-      {line && <p className="font-wm-mono text-wm-mono text-wm-muted">{line}</p>}
+      {pool.limit > 0 && (
+        <>
+          <p className={cn('font-wm-display text-wm-card-title', out ? 'text-wm-fail' : 'text-wm-ink')}>{t('used', { used: pool.used, limit: pool.limit })}</p>
+          <ProgressBar value={pool.used} max={pool.limit} label={t('used', { used: pool.used, limit: pool.limit })} className="h-2.5" />
+        </>
+      )}
+      {line && <p className="font-wm-sans text-wm-caption text-wm-muted">{line}</p>}
     </section>
   );
 }

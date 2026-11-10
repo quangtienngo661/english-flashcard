@@ -1314,7 +1314,9 @@
         "aiSummaryEven": "rải đều",
         "aiSummaryRandom": "xếp ngẫu nhiên",
         "filterAllWords": "Mọi từ",
-        "countMaxScope": "tối đa {max, number}"
+        "countMaxScope": "tối đa {max, number}",
+        "ownHelpLabel": "Điền từ vào câu bạn đã lưu là gì?",
+        "ownHelp": "Chỉ hỏi từ đã có câu bạn lưu. Không tốn lượt câu AI."
       },
       "session": {
         "close": "Dừng phiên, xem tổng kết",

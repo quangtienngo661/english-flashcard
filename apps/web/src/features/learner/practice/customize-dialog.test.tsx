@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Route } from '@/app-shell/session/test-support';
@@ -150,14 +150,17 @@ describe('Tùy chỉnh phiên: question types', () => {
     expect(startButton(dialog)).toBeDisabled();
   });
 
-  it('the prompt style sits on the Gõ từ row and only while Gõ từ is chosen', async () => {
+  it('the prompt style sits on the Gõ từ row; with Gõ từ off it stays there, locked (owner 10/11/2026)', async () => {
     const { view, dialog } = await open('Luyện tất cả');
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Theo câu' }));
     await userEvent.click(startButton(dialog));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
     expect(starts(view.calls)[0].body).toMatchObject({ prompt_style: 'sentence' });
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Gõ từ' }));
-    expect(within(dialog).queryByRole('radiogroup', { name: 'Kiểu đề' })).not.toBeInTheDocument();
+    const prompt = within(dialog).getByRole('radiogroup', { name: 'Kiểu đề' });
+    for (const radio of within(prompt).getAllByRole('radio')) expect(radio).toBeDisabled();
+    // The AI row's own choice is locked the same way while there is no AI question.
+    for (const radio of within(within(dialog).getByRole('radiogroup', { name: 'Kiểu trắc nghiệm theo câu' })).getAllByRole('radio')) expect(radio).toBeDisabled();
   });
 
   it('saved sentences on, no AI: cloze with cloze_source own; the choice is remembered on this device', async () => {
@@ -204,11 +207,22 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     expect(within(dialog).getByRole('group', { name: 'Câu AI viết' })).toHaveTextContent('2');
   });
 
-  it('saved sentences and AI fill-in both on: cloze_source own_then_ai, cloze once, and the line that explains it', async () => {
+  it('saved sentences and AI fill-in both on: cloze_source own_then_ai, cloze once, and the "?" by the row explains it', async () => {
     const { view, dialog } = await open('Luyện tất cả');
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu bạn đã lưu' }));
+    const help = within(dialog).getByRole('button', { name: 'Điền từ vào câu bạn đã lưu là gì?' });
+    // React Aria opens a tooltip on keyboard focus too (jsdom has no real hover): a key press, then focus the "?".
+    const showTip = async () => {
+      for (let i = 0; i < 40 && document.activeElement !== help; i++) await userEvent.tab();
+      return screen.findByRole('tooltip', { hidden: true });
+    };
+    expect(await showTip()).toHaveTextContent('Chỉ hỏi từ đã có câu bạn lưu. Không tốn lượt câu AI.');
+    act(() => help.blur());
     await press(dialog, 'Câu AI viết: thêm 1', 2);
-    expect(within(dialog).getByText('Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.')).toBeInTheDocument();
+    // Owner 10/11/2026: the explanation sits behind the "?" on hover, not as a line under the rows.
+    expect(within(dialog).queryByText('Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.')).not.toBeInTheDocument();
+    expect(await showTip()).toHaveTextContent('Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.');
+    act(() => help.blur());
     await userEvent.click(startButton(dialog));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
     expect(starts(view.calls)[0].body).toMatchObject({

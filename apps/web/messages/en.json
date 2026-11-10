@@ -1314,7 +1314,9 @@
         "aiSummaryEven": "spread out",
         "aiSummaryRandom": "in random order",
         "filterAllWords": "All words",
-        "countMaxScope": "up to {max, number}"
+        "countMaxScope": "up to {max, number}",
+        "ownHelpLabel": "What is fill in your saved sentences?",
+        "ownHelp": "Asks only words with a sentence you saved. Uses no AI questions."
       },
       "session": {
         "close": "Stop, see summary",

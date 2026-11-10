@@ -253,6 +253,8 @@
 
   --animate-card-rise: card-rise 200ms var(--ease-enter) both;
   --animate-feedback-in: feedback-in 160ms var(--ease-enter) both;
+  /* Owner 10/11/2026: the result panel slides down from under the question card, with a slight settle at the end. */
+  --animate-panel-drop: panel-drop 420ms cubic-bezier(0.22, 1.15, 0.36, 1) both;
   --animate-wiggle-soft: wiggle-soft var(--motion-wiggle) var(--ease-standard);
   --animate-pop-in: pop-in 180ms var(--ease-spring) both;
   /* End-of-session summary: its blocks rise one after another, 90ms apart, 400ms each (design §8.3, GM20). */
@@ -300,6 +302,16 @@
     from {
       opacity: 0;
       transform: translateY(0.75rem);
+    }
+  }
+
+  @keyframes panel-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-3.5rem);
+    }
+    40% {
+      opacity: 1;
     }
   }
 

@@ -10,7 +10,7 @@ import { hardReplace } from '@/app-shell/navigate';
 import { useEntitlements } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/ui/Button';
+import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { TextButton } from '@/ui/TextButton';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
@@ -157,10 +157,8 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
                 {ts('reviewAll', { count: left })}
               </TextButton>
             )}
-            <Link
-              href={`/${locale}/app/practice`}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-wm-sm font-wm-sans text-wm-small-strong text-wm-muted outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:min-h-0"
-            >
+            {/* Owner 10/11/2026: a boxed button, so the way back reads as an action (was a grey text link). */}
+            <Link href={`/${locale}/app/practice`} className={`${BUTTON_BASE} ${BUTTON_VARIANT.secondary} md:ml-auto`}>
               {ts('home')}
               <ButtonKey>Enter</ButtonKey>
             </Link>

@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
+import { HelpTip } from '@/ui/HelpTip';
 import { Dialog } from '@/ui/Dialog';
 import { Segmented } from '@/ui/Segmented';
 import { Select } from '@/ui/Select';
@@ -210,6 +211,8 @@ function CustomizeForm({
             <Select
               label={tc('stageMenu')}
               hideLabel
+              size="sm"
+              className="group flex min-w-0 flex-col"
               items={[
                 { id: 'all', label: tc('stageAll') },
                 ...STAGE_KEYS.map((key, level) => ({
@@ -241,6 +244,7 @@ function CustomizeForm({
       {source === 'group' && group && (
         <Segmented<Filter | 'stage'>
           label={tc('filterLabel')}
+          fullWidth
           value={stage !== null ? 'stage' : filter}
           options={[
             { id: 'all', label: tc('filterOption', { name: tc('filterAllWords'), count: group.total }) },
@@ -266,19 +270,20 @@ function CustomizeForm({
           <div className="flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg p-1">
             <TypeRow label={t('types.mcq_definition')} on={mcq} onChange={setMcq} />
             <TypeRow label={t('types.true_false_definition')} on={trueFalse} onChange={setTrueFalse} />
+            {/* Owner 10/11/2026: a row's own choice stays in place when the row is off, only locked. */}
             <TypeRow label={t('types.type_word')} on={typeWord} onChange={setTypeWord}>
-              {typeWord && (
-                <Segmented<PromptStyle>
-                  label={tc('prompt')}
-                  value={prompt}
-                  options={[
-                    { id: 'meaning', label: tc('promptMeaning') },
-                    { id: 'sentence', label: tc('promptSentence') },
-                    { id: 'mixed', label: tc('promptMixed') },
-                  ]}
-                  onChange={setPrompt}
-                />
-              )}
+              <Segmented<PromptStyle>
+                label={tc('prompt')}
+                compact
+                isDisabled={!typeWord}
+                value={prompt}
+                options={[
+                  { id: 'meaning', label: tc('promptMeaning') },
+                  { id: 'sentence', label: tc('promptSentence') },
+                  { id: 'mixed', label: tc('promptMixed') },
+                ]}
+                onChange={setPrompt}
+              />
             </TypeRow>
             <TypeRow
               label={tc('ownToggle')}
@@ -287,9 +292,10 @@ function CustomizeForm({
                 setOwn(on);
                 writeOwnSentencesOn(on);
               }}
+              help={<HelpTip label={tc('ownHelpLabel')}>{mixed ? tc('mixLine') : tc('ownHelp')}</HelpTip>}
             />
           </div>
-          {noTypes && <p className="font-wm-sans text-wm-small-strong text-wm-fail">{tc('typesNone')}</p>}
+          {noTypes && <p className={APPEAR_ERROR}>{tc('typesNone')}</p>}
 
           <div className="mt-2 flex items-center gap-3">
             <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('aiTitle')}</h3>
@@ -306,26 +312,25 @@ function CustomizeForm({
             />
           </div>
           {aiCaption}
-          <div className={cn('flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg p-1', ai === 0 && 'opacity-45')}>
+          <div className={cn('flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg p-1 transition-opacity duration-300 ease-out-strong', ai === 0 && 'opacity-45')}>
             <TypeRow label={t('types.cloze')} on={aiCloze} onChange={setAiCloze} isDisabled={ai === 0} />
             <TypeRow label={t('types.mcq_sentence')} on={aiMc} onChange={setAiMc} isDisabled={ai === 0}>
-              {aiMc && ai > 0 && (
-                <Segmented<McPick>
-                  label={tc('mcPick')}
-                  value={mcPick}
-                  options={[
-                    { id: 'meaning', label: tc('mcMeaning') },
-                    { id: 'word', label: tc('mcWord') },
-                    { id: 'mixed', label: tc('mcMixed') },
-                  ]}
-                  onChange={setMcPick}
-                />
-              )}
+              <Segmented<McPick>
+                label={tc('mcPick')}
+                compact
+                isDisabled={!aiMc || ai === 0}
+                value={mcPick}
+                options={[
+                  { id: 'meaning', label: tc('mcMeaning') },
+                  { id: 'word', label: tc('mcWord') },
+                  { id: 'mixed', label: tc('mcMixed') },
+                ]}
+                onChange={setMcPick}
+              />
             </TypeRow>
           </div>
-          {mixed && <p className="font-wm-sans text-wm-small text-wm-muted">{tc('mixLine')}</p>}
           {learnerPlaces && ai > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 motion-safe:animate-feedback-in">
               <span className="font-wm-sans text-wm-small-strong text-wm-ink">{tc('placement')}</span>
               <Segmented<'even' | 'random'>
                 label={tc('placement')}
@@ -344,8 +349,8 @@ function CustomizeForm({
       {/* The foot stays in view on phones (Figma 141:4147: sticky); count and order move into it from md. */}
       <div className="sticky -bottom-6 -mx-5 -mb-6 flex flex-col gap-3 border-t border-wm-line bg-wm-surface px-5 pb-6 pt-4 shadow-wm-pop md:static md:-mx-7 md:-mb-7 md:px-7 md:pb-7">
         {aiProblem && aiProblem.kind !== 'locked' && <AiProblemBox problem={aiProblem} onDrop={dropAi} />}
-        {needAi && <p className="font-wm-sans text-wm-small-strong text-wm-fail">{tc('needAi')}</p>}
-        {needRule && <p className="font-wm-sans text-wm-small-strong text-wm-fail">{tc('needRule', { count: count - ai })}</p>}
+        {needAi && <p className={APPEAR_ERROR}>{tc('needAi')}</p>}
+        {needRule && <p className={APPEAR_ERROR}>{tc('needRule', { count: count - ai })}</p>}
         {error && (
           <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
             {error}
@@ -404,16 +409,31 @@ function GroupRow({ id, label, name, count, tone, isDisabled }: { id: string; la
 }
 
 /** Figma "Hàng kiểu câu" (138:398): a checkbox row, with its own choice (a segment) on the right when there is one. */
-function TypeRow({ label, on, onChange, isDisabled, children }: { label: string; on: boolean; onChange: (on: boolean) => void; isDisabled?: boolean; children?: ReactNode }) {
+// Owner 10/11/2026: every row has the same height and surface, ticked or not (only the shadow and the weight mark a ticked one), and
+// the change between the two eases in.
+function TypeRow({ label, on, onChange, isDisabled, help, children }: {
+  label: string; on: boolean; onChange: (on: boolean) => void; isDisabled?: boolean; help?: ReactNode; children?: ReactNode;
+}) {
   return (
-    <div className={cn('flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-wm-md px-3 py-1.5 md:min-h-10', on && !isDisabled && 'bg-wm-surface shadow-wm-row')}>
-      <Checkbox isSelected={on} onChange={onChange} isDisabled={isDisabled}>
-        <span className={cn(on && 'font-semibold')}>{label}</span>
-      </Checkbox>
+    <div
+      className={cn(
+        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-md bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
+        on && !isDisabled ? 'shadow-wm-row' : 'shadow-none',
+      )}
+    >
+      <span className="flex items-center gap-1">
+        <Checkbox isSelected={on} onChange={onChange} isDisabled={isDisabled}>
+          <span className={cn(on && 'font-semibold')}>{label}</span>
+        </Checkbox>
+        {help}
+      </span>
       {children}
     </div>
   );
 }
+
+/** A red line that appears under a choice eases in (owner 10/11/2026: opening and closing parts should feel smooth). */
+const APPEAR_ERROR = 'font-wm-sans text-wm-small-strong text-wm-fail motion-safe:animate-feedback-in';
 
 /** K/71 (not enough AI units: needed, left, when they refill) and K/72 (one general line, D11), right above the start. */
 function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { kind: 'locked' }>; onDrop: () => void }) {
@@ -428,7 +448,7 @@ function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { 
       : t('quotaRefillDate', { date: format.date(problem.resetsAt, 'dayMonth') });
   }
   return (
-    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-lg bg-wm-fail-soft p-4">
+    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-lg bg-wm-fail-soft p-4 motion-safe:animate-feedback-in">
       {problem.kind === 'quota' ? (
         <>
           <p className="font-wm-sans text-wm-base-strong text-wm-fail">{t('quotaTitle')}</p>

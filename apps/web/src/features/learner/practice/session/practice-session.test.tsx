@@ -336,7 +336,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
     expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
-    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
+    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
