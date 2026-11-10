@@ -343,17 +343,6 @@ function CustomizeForm({
 
       {/* The foot stays in view on phones (Figma 141:4147: sticky); count and order move into it from md. */}
       <div className="sticky -bottom-6 -mx-5 -mb-6 flex flex-col gap-3 border-t border-wm-line bg-wm-surface px-5 pb-6 pt-4 shadow-wm-pop md:static md:-mx-7 md:-mb-7 md:px-7 md:pb-7">
-        <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-wm-sans text-wm-small-strong text-wm-ink">{tc('count')}</span>
-            <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
-            {scopeMode && <span className="font-wm-mono text-wm-mono text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
-          </div>
-          <div className="flex min-w-0 items-center justify-between gap-2">
-            <span className="font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
-            <Select label={tc('order')} hideLabel items={SORTS.map((id) => ({ id, label: tc(`sorts.${id}`) }))} value={sort} onChange={(id) => setSort(id as Sort)} />
-          </div>
-        </div>
         {aiProblem && aiProblem.kind !== 'locked' && <AiProblemBox problem={aiProblem} onDrop={dropAi} />}
         {needAi && <p className="font-wm-sans text-wm-small-strong text-wm-fail">{tc('needAi')}</p>}
         {needRule && <p className="font-wm-sans text-wm-small-strong text-wm-fail">{tc('needRule', { count: count - ai })}</p>}
@@ -362,16 +351,27 @@ function CustomizeForm({
             {error}
           </p>
         )}
-        <Button
-          variant="primary"
-          className="w-full md:ml-auto md:w-auto md:min-w-55"
-          isPending={busy}
-          isDisabled={noTypes || needAi || needRule || noGroup || quotaBlocked || outLine !== null}
-          onPress={start}
-        >
-          {tc('start', { count })}
-          <ArrowRight aria-hidden className="size-4" />
-        </Button>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('count')}</span>
+            <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
+            {scopeMode && <span className="whitespace-nowrap font-wm-mono text-wm-mono text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
+          </div>
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
+            <Select label={tc('order')} hideLabel items={SORTS.map((id) => ({ id, label: tc(`sorts.${id}`) }))} value={sort} onChange={(id) => setSort(id as Sort)} />
+          </div>
+          <Button
+            variant="primary"
+            className="w-full md:ml-auto md:w-auto md:shrink-0"
+            isPending={busy}
+            isDisabled={noTypes || needAi || needRule || noGroup || quotaBlocked || outLine !== null}
+            onPress={start}
+          >
+            {tc('start', { count })}
+            <ArrowRight aria-hidden className="size-4" />
+          </Button>
+        </div>
         <p className="font-wm-sans text-wm-small text-wm-muted md:text-right">
           {ai > 0 && `${tc('aiSummary', { count: ai, placement: placedAs === 'random' ? tc('aiSummaryRandom') : tc('aiSummaryEven') })} `}
           {outLine ?? (sessions && sessions.limit > 0 ? tc('sessionsLeft', { remaining: sessions.remaining }) : '')}
