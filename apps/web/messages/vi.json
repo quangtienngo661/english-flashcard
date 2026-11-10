@@ -346,6 +346,10 @@
         "invalid": "Ngày sinh không hợp lệ. Chọn lại ngày.",
         "tooYoung": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
         "future": "Ngày sinh không thể sau hôm nay."
+      },
+      "stepper": {
+        "decrease": "{label}: bớt 1",
+        "increase": "{label}: thêm 1"
       }
     },
     "speak": {

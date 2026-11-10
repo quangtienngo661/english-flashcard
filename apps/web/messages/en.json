@@ -346,6 +346,10 @@
         "invalid": "That birth date isn’t valid. Pick another date.",
         "tooYoung": "You need to be 13 or older to use Wordmet.",
         "future": "Your birth date can’t be after today."
+      },
+      "stepper": {
+        "decrease": "{label}: one less",
+        "increase": "{label}: one more"
       }
     },
     "speak": {
