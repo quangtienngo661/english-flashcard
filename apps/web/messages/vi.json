@@ -516,6 +516,7 @@
       "setPasswordHint": "Tài khoản này chỉ đăng nhập bằng Google. Đặt mật khẩu để đăng nhập cả bằng email.",
       "deleteAccountStaff": "Liên hệ admin để xóa tài khoản",
       "transactions": "Lịch sử giao dịch",
+      "reports": "Báo lỗi của tôi",
       "saved": "Đã lưu thay đổi."
     },
     "deleteAccount": {
@@ -1512,7 +1513,7 @@
           "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
           "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
           "send": "Gửi báo lỗi",
-          "done": "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.",
+          "done": "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi.",
           "infoAi": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai. Nếu đúng là AI viết sai câu, bạn được trả lại 1 lượt câu AI.",
           "privateWord": "Đội Wordmet sẽ thấy từ “{lemma}” bạn tự thêm để kiểm tra.",
           "privateWordUnknown": "Đội Wordmet sẽ thấy từ bạn tự thêm trong câu này để kiểm tra."
@@ -1600,12 +1601,6 @@
         "wrong": "{count, number} câu sai"
       },
       "reports": {
-        "cols": {
-          "word": "Từ",
-          "reason": "Lý do",
-          "date": "Ngày gửi",
-          "status": "Kết quả"
-        },
         "status": {
           "open": "Đang xem",
           "fixed": "Đã sửa",
@@ -1619,7 +1614,13 @@
         "emptyBody": "Gặp câu sai khi luyện tập, bấm Báo lỗi ngay trên câu đó. Kết quả hiện ở đây.",
         "toPractice": "Về Luyện tập",
         "unknownWord": "—",
-        "more": "Xem thêm"
+        "more": "Xem thêm",
+        "title": "Báo lỗi của tôi",
+        "back": "Cài đặt",
+        "aiQuestion": "câu AI",
+        "foot": "ngày theo múi giờ của bạn · câu do AI viết mà đúng là lỗi thì được trả lại 1 lượt câu AI",
+        "loading": "Đang tải báo lỗi",
+        "error": "Không tải được danh sách báo lỗi."
       }
     },
     "plans": {

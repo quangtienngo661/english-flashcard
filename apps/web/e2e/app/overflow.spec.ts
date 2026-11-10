@@ -12,7 +12,7 @@ const longMe = { given_name: LONG.givenName, family_name: LONG.familyName, email
 for (const locale of ['vi', 'en'] as const) {
   test(`no horizontal scroll on M1 pages with long names (${locale})`, async ({ page }) => {
     await signedInAs(page, 'pro', {}, { ...longMe, native_language: locale });
-    for (const path of ['', '/settings', '/settings/account']) {
+    for (const path of ['', '/settings', '/settings/account', '/settings/reports']) {
       await page.goto(`/${locale}/app${path}`);
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
       await noSideScroll(page);

@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import type { AppLocale } from '@/i18n/routing';
 import { useSession } from './session/session-context';
 
-export type DateStyle = 'weekdayDayMonth' | 'dayMonth' | 'full' | 'numeric' | 'monthYear';
+export type DateStyle = 'weekdayDayMonth' | 'dayMonth' | 'full' | 'numeric' | 'monthYear' | 'monthLabel';
 
 const INTL_LOCALE: Record<AppLocale, string> = { vi: 'vi-VN', en: 'en-US' };
 
@@ -19,6 +19,8 @@ const DATE_OPTIONS: Record<AppLocale, Record<DateStyle, Intl.DateTimeFormatOptio
     numeric: { day: '2-digit', month: '2-digit', year: 'numeric' },
     // "Tháng 11, 2026" (calendar title, M6.2).
     monthYear: { month: 'long', year: 'numeric' },
+    // "tháng 11, 2026" (month headings of "Báo lỗi của tôi", M6.8).
+    monthLabel: { month: 'long', year: 'numeric' },
   },
   en: {
     weekdayDayMonth: { weekday: 'long', day: 'numeric', month: 'short' },
@@ -26,6 +28,7 @@ const DATE_OPTIONS: Record<AppLocale, Record<DateStyle, Intl.DateTimeFormatOptio
     full: { day: 'numeric', month: 'short', year: 'numeric' },
     numeric: { day: 'numeric', month: 'short', year: 'numeric' },
     monthYear: { month: 'long', year: 'numeric' },
+    monthLabel: { month: 'long', year: 'numeric' },
   },
 };
 
@@ -59,7 +62,11 @@ export function createFormat(locale: AppLocale, timeZone: string): Format {
     return `Tháng ${Number(parts.month)}, ${parts.year}`;
   };
   return {
-    date: (at, style) => (style === 'monthYear' ? monthYear(at) : dates[style].format(new Date(at))),
+    date: (at, style) => {
+      if (style === 'monthYear') return monthYear(at);
+      if (style === 'monthLabel') return locale === 'vi' ? monthYear(at).toLowerCase() : dates.monthLabel.format(new Date(at));
+      return dates[style].format(new Date(at));
+    },
     time: (at) => time.format(new Date(at)),
     resetAt: (at) => time.format(new Date(at)),
     number: (n) => numbers.format(n),

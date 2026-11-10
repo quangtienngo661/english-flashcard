@@ -516,6 +516,7 @@
       "setPasswordHint": "This account signs in with Google only. Set a password to sign in with email too.",
       "deleteAccountStaff": "Ask an admin to delete your account",
       "transactions": "Transaction history",
+      "reports": "My reports",
       "saved": "Changes saved."
     },
     "deleteAccount": {
@@ -1512,7 +1513,7 @@
           "noteMissing": "Describe the problem to send this report.",
           "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
           "send": "Send report",
-          "done": "Report sent. See the outcome in History → My reports.",
+          "done": "Report sent. See the outcome in Settings → My reports.",
           "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
           "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
           "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
@@ -1600,12 +1601,6 @@
         "wrong": "{count, number} wrong"
       },
       "reports": {
-        "cols": {
-          "word": "Word",
-          "reason": "Reason",
-          "date": "Sent",
-          "status": "Outcome"
-        },
         "status": {
           "open": "Under review",
           "fixed": "Fixed",
@@ -1619,7 +1614,13 @@
         "emptyBody": "If a question looks wrong during practice, choose Report on it. The outcome shows up here.",
         "toPractice": "Back to Practice",
         "unknownWord": "—",
-        "more": "Show more"
+        "more": "Show more",
+        "title": "My reports",
+        "back": "Settings",
+        "aiQuestion": "AI question",
+        "foot": "dates in your time zone · an AI-written question confirmed as wrong returns 1 AI credit",
+        "loading": "Loading your reports",
+        "error": "Couldn't load your reports."
       }
     },
     "plans": {

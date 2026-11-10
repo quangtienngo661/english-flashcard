@@ -40,6 +40,11 @@ describe('format in the learner time zone (Review Focus 3, D13)', () => {
     expect(vi('UTC').date('2026-01-01T00:00:00Z', 'monthYear')).toBe('Tháng 1, 2026');
   });
 
+  it('monthLabel (M6.8): "tháng 11, 2026" / "November 2026"', () => {
+    expect(vi('Asia/Ho_Chi_Minh').date('2026-10-31T17:30:00Z', 'monthLabel')).toBe('tháng 11, 2026');
+    expect(en('UTC').date('2026-10-31T17:30:00Z', 'monthLabel')).toBe('October 2026');
+  });
+
   it('dayMonth and full dates', () => {
     expect(vi('UTC').date('2026-11-15T05:00:00Z', 'dayMonth')).toBe('15/11');
     expect(en('UTC').date('2026-11-15T05:00:00Z', 'dayMonth')).toBe('Nov 15');

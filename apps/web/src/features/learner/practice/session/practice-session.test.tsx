@@ -514,7 +514,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, '/v1/practice/items/item-4/report')).toHaveLength(0);
     await userEvent.type(within(dialog).getByRole('textbox', { name: /Ghi chú/ }), 'deliver cũng đúng');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi báo lỗi' }));
-    expect(await screen.findByText('Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.')).toBeInTheDocument();
+    expect(await screen.findByText('Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/report')[0].body).toEqual({ reason: 'other', note: 'deliver cũng đúng' });
     expect(screen.getByRole('button', { name: 'Đã báo lỗi' })).toBeDisabled();
   });
