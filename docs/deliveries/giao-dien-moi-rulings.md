@@ -33,3 +33,8 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 
 - R20 (10/11/2026, Task M2.2): chữ số trong ô mã dùng `text-wm-card-title` (24 px, Bricolage 700), không 28 px như Figma "Ô mã" → chưa có token 28 px, thêm token chỉ cho một chỗ thì thừa; ô 54/60 px vẫn đủ chỗ.
 - R21 (10/11/2026, Task M2.2): `OtpField` có thêm `hideLabel` (tên nhóm chỉ cho trình đọc màn hình) → Xác minh email không vẽ nhãn trên hàng ô, tiêu đề trang đã nói "Nhập mã 6 số".
+- R22 (10/11/2026, Task M2.5): đường ôn và sáu chấm ngăn trong panel thương hiệu vẽ bằng SVG trong code theo toạ độ khung `153:751`, chấm màu `ghost` / `accent`, ô màu của chip từ dùng `fail`, `mark`, `pass` → không tải ảnh SVG của Figma về; màu ngăn và màu nhóm có token ở M3.
+- R23 (10/11/2026, Task M2.5): tiêu đề trang (`page-title`, 44 / 38) đậm 800, tiêu đề card (`card-heading`, 30 / 26) đậm 700 → bảng chỗ lệch §3.1 của design ("800 cho tiêu đề trang, 700 cho tiêu đề card"); Figma ghi Bold.
+- R24 (10/11/2026, Task M2.5): `(split)` và `(card)` mỗi nhóm có `error.app.tsx` riêng, `(auth)/error.app.tsx` giữ lại → `AuthGate` không vẽ khung nữa, lỗi bắt ở `(auth)` sẽ hiện không có card.
+- R25 (10/11/2026, Task M2.5): quầng sáng sau card và trong panel dựng bằng hai utility `auth-card-glow`, `auth-panel-glow` (gradient từ token màu) → không dùng ảnh elip của Figma, màu chỉ qua token.
+- R26 (10/11/2026, Task M2.5): chữ mẫu tiếng Anh trên panel (`mitigate`, câu ví dụ, "Đề 12 · Writing") để nguyên trong code, các nhãn ("Thẻ từ · ngăn 7 ngày", "Hôm nay", "từ đến hạn", nghĩa tiếng Việt) vào `App.auth.showcase` → panel là hình minh họa, `aria-hidden`.

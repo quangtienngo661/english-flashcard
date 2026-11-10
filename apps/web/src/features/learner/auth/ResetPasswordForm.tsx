@@ -11,7 +11,7 @@ import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
+import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
 
 /** K/05: the code from the email and a new password; other devices are signed out, then the learner signs in. */
 export function ResetPasswordForm() {
@@ -51,7 +51,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <AuthCard title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
+    <AuthHeading title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {pendingEmail === null && (
           <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
@@ -71,6 +71,6 @@ export function ResetPasswordForm() {
           {t('reset.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

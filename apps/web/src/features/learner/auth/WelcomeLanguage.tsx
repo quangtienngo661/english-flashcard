@@ -13,7 +13,7 @@ import { Button } from '@/app-ui/Button';
 import { Flag } from '@/app-ui/Flag';
 import { Select } from '@/app-ui/Select';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
 
 /** K/06, K/06b: the language of meanings and of the app, chosen once (E9); then back to `?next` under that language. */
 export function WelcomeLanguage() {
@@ -42,7 +42,7 @@ export function WelcomeLanguage() {
   }
 
   return (
-    <AuthCard title={t('title')} intro={t('body')}>
+    <AuthHeading title={t('title')} intro={t('body')}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <Select
           label={t('language')}
@@ -55,6 +55,6 @@ export function WelcomeLanguage() {
           {t('submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

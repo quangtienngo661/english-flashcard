@@ -12,7 +12,7 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
 
 /** K/04: ask for a reset code; the API answers the same whether the email has an account or not. */
 export function ForgotPasswordForm() {
@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
   const intro = params.get('reason') === 'change-password' ? t('forgot.mustChange') : t('forgot.body');
 
   return (
-    <AuthCard title={t('forgot.title')} intro={intro} onBack={() => hardReplace(`/${locale}/app/login`)}>
+    <AuthHeading title={t('forgot.title')} intro={intro} onBack={() => hardReplace(`/${locale}/app/login`)}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
         {bot.widget}
@@ -61,6 +61,6 @@ export function ForgotPasswordForm() {
           {t('forgot.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

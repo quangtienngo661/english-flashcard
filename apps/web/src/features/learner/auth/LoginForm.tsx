@@ -2,7 +2,6 @@
 
 import { Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
@@ -14,10 +13,12 @@ import { useSession } from '@/app-shell/session/session-context';
 import type { Notice } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { useTurnstile } from '@/app-shell/use-turnstile';
-import { Button } from '@/app-ui/Button';
-import { TextField } from '@/app-ui/TextField';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError, GoogleButton } from './AuthCard';
+import { Button } from '@/ui/Button';
+import { PasswordField } from '@/ui/PasswordField';
+import { TextField } from '@/ui/TextField';
+import { AuthHeading, FormError, LabelLink, OrDivider, SwitchAuthLink } from './AuthHeading';
+import { GoogleSignIn } from './GoogleSignIn';
 
 /** `?error=` slugs the Google trip comes back with (design §9.1); `account-locked` has its own box. */
 const GOOGLE_ERRORS = ['google-failed', 'google-unavailable', 'google-busy', 'google-email-unverified'] as const;
@@ -84,24 +85,25 @@ export function LoginForm() {
   const info = params.get('reset') === '1' ? t('login.passwordReset') : notice ? t(`login.${NOTICE_KEY[notice]}`) : null;
 
   return (
-    <AuthCard
+    <AuthHeading
       title={t('login.title')}
+      size="page"
       banner={
         <>
           {locked && (
-            <div role="alert" className="flex gap-3 rounded-inner border border-danger bg-danger-soft p-4">
-              <Lock aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
-              <div className="flex flex-col gap-1">
-                <p className="text-ui font-semibold text-ink">{t('login.lockedTitle')}</p>
-                <p className="text-ui text-ink">{t('login.lockedBody')}</p>
+            <div role="alert" className="flex gap-3 rounded-wm-md border border-wm-fail bg-wm-fail-soft p-4">
+              <Lock aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-fail" />
+              <div className="flex flex-col gap-1 font-wm-sans text-wm-small text-wm-ink">
+                <p className="font-semibold">{t('login.lockedTitle')}</p>
+                <p>{t('login.lockedBody')}</p>
               </div>
             </div>
           )}
           {info && (
-            <div role="status" className="flex flex-col items-start gap-2 rounded-inner bg-accent-soft p-3 text-ui text-ink">
+            <div role="status" className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-accent-soft p-3 font-wm-sans text-wm-small text-wm-ink">
               {info}
               {notice === 'logout-failed' && (
-                <Button variant="quiet" onPress={() => void store?.retryLogout()}>
+                <Button variant="secondary" onPress={() => void store?.retryLogout()}>
                   {t('login.retryLogout')}
                 </Button>
               )}
@@ -112,23 +114,22 @@ export function LoginForm() {
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
-        <TextField label={t('password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" />
-        <Link href={`/${locale}/app/forgot-password`} className="-mt-5.5 -mb-3.5 w-fit py-3.5 text-caption font-semibold text-primary underline underline-offset-2">
-          {t('login.forgot')}
-        </Link>
+        <PasswordField
+          label={t('password')}
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          labelAside={<LabelLink href={`/${locale}/app/forgot-password`}>{t('login.forgot')}</LabelLink>}
+        />
         {bot.widget}
         <FormError message={error ?? (GOOGLE_ERRORS.find((slug) => slug === returned) ? tErrors(returned as (typeof GOOGLE_ERRORS)[number]) : null)} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('login.submit')}
         </Button>
-        <GoogleButton next={safeNext(params.get('next'), locale)} />
-        <p className="text-ui text-muted">
-          {t('login.noAccount')}{' '}
-          <Link href={`/${locale}/app/register`} className="font-semibold text-primary underline underline-offset-2">
-            {t('login.register')}
-          </Link>
-        </p>
+        <OrDivider />
+        <GoogleSignIn next={safeNext(params.get('next'), locale)} />
+        <SwitchAuthLink question={t('login.noAccount')} label={t('login.register')} href={`/${locale}/app/register`} />
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

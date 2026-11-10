@@ -15,7 +15,8 @@ import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
 import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError, GoogleButton, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
+import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
+import { GoogleSignIn } from './GoogleSignIn';
 
 /** K/01, K/01b: sign-up. The button stays off until the consent box is ticked and the birth date is 13+. */
 export function RegisterForm({ today }: { today?: string }) {
@@ -89,7 +90,7 @@ export function RegisterForm({ today }: { today?: string }) {
     };
 
   return (
-    <AuthCard title={t('register.title')} intro={t('register.subtitle')}>
+    <AuthHeading title={t('register.title')} intro={t('register.subtitle')}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
@@ -149,7 +150,7 @@ export function RegisterForm({ today }: { today?: string }) {
           {t('register.submit')}
         </Button>
         <p className="text-center text-caption text-muted">{t('or')}</p>
-        <GoogleButton next={`/${locale}/app`} />
+        <GoogleSignIn next={`/${locale}/app`} />
         <p className="text-ui text-muted">
           {t('register.haveAccount')}{' '}
           <Link href={`/${locale}/app/login`} className="font-semibold text-primary underline underline-offset-2">
@@ -157,6 +158,6 @@ export function RegisterForm({ today }: { today?: string }) {
           </Link>
         </p>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

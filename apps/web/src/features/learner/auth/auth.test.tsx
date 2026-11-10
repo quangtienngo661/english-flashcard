@@ -158,6 +158,16 @@ describe('LoginForm (K/02, K/93)', () => {
     expect(mark!.querySelectorAll('path')).toHaveLength(4);
   });
 
+  // Plan part 2, M2.6 (Figma 35:308): the password field reveals, and "Quên mật khẩu?" sits in its label row.
+  it('the password field has a reveal button and "Quên mật khẩu?" in its label row', () => {
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(screen.getByRole('button', { name: 'Hiện mật khẩu' })).toHaveAttribute('type', 'button');
+    const forgot = screen.getByRole('link', { name: 'Quên mật khẩu?' });
+    expect(forgot).toHaveAttribute('href', '/vi/app/forgot-password');
+    const label = screen.getByText('Mật khẩu', { selector: 'label' });
+    expect(forgot.parentElement).toBe(label.parentElement);
+  });
+
   async function login(email = 'lan@example.com') {
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), email);
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'pw');

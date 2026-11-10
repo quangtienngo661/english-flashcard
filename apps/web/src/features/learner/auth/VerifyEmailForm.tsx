@@ -17,7 +17,7 @@ import { Button } from '@/app-ui/Button';
 import { showToast } from '@/app-ui/Toast';
 import { TextField } from '@/app-ui/TextField';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
 
 const DIGITS = 6;
 /** The API refuses a new code within this many seconds (auth.otp.email.cooldown). */
@@ -154,7 +154,7 @@ export function VerifyEmailForm() {
     : params.get('reason') === 'login' ? t('verify.loginBody', { email: pendingEmail }) : t('verify.body', { email: pendingEmail });
 
   return (
-    <AuthCard title={t('verify.title')} intro={intro} onBack={() => router.back()}>
+    <AuthHeading title={t('verify.title')} intro={intro} onBack={() => router.back()}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {pendingEmail === null && (
           <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
@@ -199,6 +199,6 @@ export function VerifyEmailForm() {
           {t('verify.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

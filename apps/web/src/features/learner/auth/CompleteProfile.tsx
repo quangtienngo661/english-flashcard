@@ -15,7 +15,7 @@ import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
 
 /**
  * AD18: an account without a birth date or without consent (made by an admin, or older than those columns) gives them here
@@ -68,7 +68,7 @@ export function CompleteProfile({ today }: { today?: string }) {
     };
 
   return (
-    <AuthCard title={termsUpdated ? t('complete.updatedTitle') : t('complete.title')} intro={termsUpdated ? t('complete.updatedBody') : t('complete.body')}>
+    <AuthHeading title={termsUpdated ? t('complete.updatedTitle') : t('complete.title')} intro={termsUpdated ? t('complete.updatedBody') : t('complete.body')}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {needsBirth && (
           <DateOfBirthField
@@ -95,6 +95,6 @@ export function CompleteProfile({ today }: { today?: string }) {
           {t('complete.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

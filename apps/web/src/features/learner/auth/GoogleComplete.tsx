@@ -15,7 +15,8 @@ import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
 import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError, GoogleButton } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
+import { GoogleSignIn } from './GoogleSignIn';
 
 type Info = { email: string; needs_name: boolean };
 type Loaded = { kind: 'ready'; info: Info } | { kind: 'expired' } | { kind: 'error'; message: string } | { kind: 'loading' };
@@ -91,18 +92,18 @@ export function GoogleComplete({ today }: { today?: string }) {
       );
     };
 
-  if (loaded.kind === 'loading') return <AuthCard title={tg('title')}><p className="text-ui text-muted">…</p></AuthCard>;
+  if (loaded.kind === 'loading') return <AuthHeading title={tg('title')}><p className="text-ui text-muted">…</p></AuthHeading>;
   if (loaded.kind === 'expired') {
     return (
-      <AuthCard title={tg('expiredTitle')} intro={tg('expiredBody')}>
-        <GoogleButton next={`/${locale}/app`} />
-      </AuthCard>
+      <AuthHeading title={tg('expiredTitle')} intro={tg('expiredBody')}>
+        <GoogleSignIn next={`/${locale}/app`} />
+      </AuthHeading>
     );
   }
-  if (loaded.kind === 'error') return <AuthCard title={tg('title')}><FormError message={loaded.message} /></AuthCard>;
+  if (loaded.kind === 'error') return <AuthHeading title={tg('title')}><FormError message={loaded.message} /></AuthHeading>;
 
   return (
-    <AuthCard title={tg('title')} intro={tg('intro', { email: loaded.info.email })}>
+    <AuthHeading title={tg('title')} intro={tg('intro', { email: loaded.info.email })}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {needsName && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -130,6 +131,6 @@ export function GoogleComplete({ today }: { today?: string }) {
           {tg('submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }
