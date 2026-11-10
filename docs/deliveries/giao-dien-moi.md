@@ -326,3 +326,47 @@ không commit. Xem ảnh lần đầu bắt hai lỗi hiển thị (chữ "Enter
 - Chưa chụp chế độ tối, tiếng Anh, 1024 px.
 - Chưa xem trên điện thoại thật.
 - "Luyện thêm một phiên" xin lại `ai_planned` (số câu AI phiên trước dùng thật), không phải số người học đã chọn (R101).
+
+# Giao diện mới — as-built M6 Lịch học (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m6`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R107–R125 trong `giao-dien-moi-rulings.md` (đánh số tiếp từ R106 của M5a; đổi số nếu M5b dùng trùng). QM6-1: chủ dự án chọn B (R123). M6.9 (nút lịch trên thanh phiên ở điện thoại) chưa làm, chờ M5b merge, sẽ là PR thứ hai từ `feat/giao-dien-moi-m6-session`.
+
+**Đã làm**
+- API (M6.1): `GET /v1/practice/reports` thêm `lemma` (một lần `ContentService.cardContent` cho cả trang), `question_type`, `ai`. Smoke bước 12; `smoke:giao-dien-moi` nhận `SMOKE_GM_SUFFIX` (R108).
+- Ngày theo múi giờ người học (M6.2): `lib/learner-date.ts` (`todayIn`, `monthOf`, `addDays`, `addMonths`, `elapsedDays`…), `format.date` thêm `monthYear` ("Tháng 11, 2026") và `monthLabel` ("tháng 11, 2026"); query `useStreak`, `useCalendarMonth`, `useCalendarDay`, `useDayAnswers`; câu trả lời có `streak` ghi thẳng vào cache chuỗi ngày (phiên luyện, Ôn, Học).
+- Nút lịch nổi (M6.3): dải tháng "T11" / "Nov", ngày hôm nay, huy hiệu chuỗi ngày (ẩn khi 0), chú thích "Lịch học" + phím L, rê chuột tải trước tháng. Điện thoại: nằm trên nút "+" ở Hôm nay (cách 12 px), ẩn ở Từ tồn đọng và Chủ đề. Layout `(focus)` có nút trên máy tính. `AddFab` chuyển từ Hôm nay vào chồng nút của `AppChrome`.
+- Host lịch (M6.4): `?lich=` / `?ngay=` theo ba luật của design §5.6, `history.state` đánh dấu bước của tab này (R112, R124, R125), phím L bật / tắt, hai hộp nạp bằng `next/dynamic`. "Mở lịch học" ở Hôm nay và "Gần đây" của Luyện tập là `CalendarLink`.
+- Hộp Lịch (M6.5): tổng tháng ("7/8", "55", "130", "4"), lưới ngày có chấm và dải ngày liền nhau, phím mũi tên, Enter, đổi tháng (mốc 2026-01, khóa tháng sau ở tháng hiện tại), "Về hôm nay", trạng thái tải và lỗi. Token mới `--color-wm-practice`, `--color-wm-practice-ink` (R117).
+- Hộp Ngày (M6.6): ngày trước / sau, câu tóm tắt, bộ lọc Tất cả / Học / Ôn / Luyện, thẻ Học (chip theo màu nhóm, 10 chip rồi "+N từ"), thẻ Ôn (Đã biết / Cần ôn lại), thẻ Luyện tập theo từng phiên với "Xem đủ N câu", ba trạng thái trống.
+- Trang lịch sử cũ (M6.7): `/app/practice/history` chỉ còn chuyển hướng phía server (`?tab=reports` → Báo lỗi, `?date=` → `?ngay=`, còn lại `?lich`); xóa `HistoryPage`, `MyReportsTab` và key `App.practice.history`.
+- "Báo lỗi của tôi" (M6.8): `/app/settings/reports`, chia theo tháng, dòng có ngày (điện thoại ở đầu dòng 2, R123), kiểu câu, "câu AI" / "Đã trả lại 1 lượt câu AI", trạng thái có chấm; dòng trong Cài đặt, mục menu ảnh đại diện, câu báo sau khi gửi báo lỗi.
+
+**Kiểm**
+- API: lint, `tsc --noEmit`, build qua; `pnpm test` 362 file, 5275/5275. Smoke 14/14 trên DB mới (`giao-dien-moi-smoke-output.txt`).
+- Web: lint (gồm `check-tailwind-raw`), typecheck qua; `vitest run` 128 file, 1280/1280.
+- Admin (token đổi): lint, typecheck, build (biến môi trường như CI) qua; `vitest run` 1394/1406 lượt đầu (12 test quá thời gian khi máy bận), chạy lại riêng 216/216.
+- E2e `pnpm cf:docker` cả bộ, lượt đầu: 376 qua, 38 skip, 4 hỏng (2 test × 2 khổ: axe tương phản ở số ngày ngoài tháng; redirect `?date=` không mở Ngày). Sau R125: `m4`, `m6`, `overflow` 61/61. Lượt cả bộ cuối (sau mọi sửa): 381 qua, 38 skip, 1 flaky (`landing.spec.ts` LR45 ở 320 px, qua ở lần thử lại, không thuộc M6), 0 hỏng.
+- Review cuối cả nhánh (subagent Opus): 1 Important (Lịch tự mở lại sau khi đóng hộp mở từ link) và 5 Minor; đã sửa Important và Minor #5 (phím số lọt xuống phiên), mỗi cái test đỏ rồi fix (R124).
+
+**Ảnh `gm-m6`** (390 và 1440 px, sáng, tiếng Việt; 14 ảnh ở `apps/web/test-results/shots/gm-m6/`, không commit). Chụp bằng API giả trong `cf:docker` như M2, M5a (spec chụp là file tạm), vì cổng 3000/3001 đang là stack `pnpm bootstrap` của bản checkout chính. Bộ `gm-m6` cho stack thật đã có trong `e2e-shots/shots.spec.ts`.
+
+| Màn | Figma (desktop / phone) | Ảnh |
+|---|---|---|
+| Hôm nay có nút lịch | `117:4425` / `117:4712`, nút `95:343` | `vi-light-today-calendar-button-…` |
+| Lịch | `102:3278` / `102:3948` | `vi-light-month-…` |
+| Ngày (hai phiên, có câu sai) | `103:3820` / `103:4248` | `vi-light-day-…`, `vi-light-day-bottom-…` |
+| Ngày trống | không có frame | `vi-light-day-empty-…` |
+| Báo lỗi của tôi | `211:5827` / `211:6061` | `vi-light-reports-…` |
+| Cài đặt có dòng Báo lỗi | `120:4295` / `120:4559` | `vi-light-settings-row-…` |
+
+**Minor để lại (review cuối)**
+1. Trong Ngày, sau khi lùi qua đầu tháng (01/11 → 31/10), nút ghi "Lịch tháng 10" nhưng quay lại về Lịch tháng 11 (mục lịch sử cũ).
+2. Ngày có hơn 100 mục: "+N từ" có thể ghi "+0 từ" khi trang sau còn mục; hơn 200 mục thì trang 3 không tải.
+3. "Xem đủ N câu": hàm tải trang mới mỗi lần render, có thể hủy trang đang tải rồi tải lại; khối phiên cũ có thể trống tới khi tải xong.
+4. Mở `?ngay=` từ link ở tab mới rồi bấm Back hai lần thì rời app (R112, theo luật 3 của design).
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật trong trình duyệt; ảnh và e2e dùng API giả.
+- Chuyển cảnh Lịch ↔ Ngày chưa trượt ±22 px, đổi ngày chưa nhích 4 px (R119).
+- Chưa chụp chế độ tối, tiếng Anh, 1024 px; màu tối của token luyện tập là tạm (R117).
+- Chưa xem trên điện thoại thật.
