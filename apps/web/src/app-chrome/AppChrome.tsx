@@ -27,7 +27,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <TopBar />
         <PhoneHeader />
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-290 flex-1 px-4 pb-28 pt-6 outline-none md:pb-12 lg:px-8">
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-320 flex-1 px-4 pb-28 pt-6 outline-none md:pb-12 lg:px-8">
         {children}
       </main>
       <MobileTabBar />

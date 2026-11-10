@@ -486,11 +486,12 @@
     scroll-behavior: smooth;
   }
 
-  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows): 16px at
-     1440px, about 21px at 2560px, about 27px at 3840px, with no ceiling. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
+  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows), no ceiling.
+     Softened the same day after a look at 1920×1080 ("hơi to"): 16px at 1440px, about 16.9px at 1920px, 18px at 2560px, about
+     20.3px at 3840px. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
   @media (width > 90rem) {
     html {
-      font-size: max(100%, 0.598rem + 0.4464vw);
+      font-size: max(100%, 0.8393rem + 0.1786vw);
     }
   }
 
