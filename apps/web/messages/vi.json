@@ -440,6 +440,7 @@
         "code": "Mã 6 số trong email",
         "newPassword": "Mật khẩu mới",
         "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
+        "confirmPassword": "Nhập lại mật khẩu mới",
         "submit": "Đổi mật khẩu"
       },
       "googleComplete": {

@@ -55,6 +55,12 @@ async function fillRegister(birth = '14/5/2008', email = 'lan@example.com') {
   await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu'), 'Aa1!aaaa');
 }
 
+/** The reset code: a click on box 1, then the digits (each moves focus to the next box). */
+async function typeResetCode(code: string) {
+  await userEvent.click(screen.getByRole('textbox', { name: 'Chữ số 1' }));
+  await userEvent.keyboard(code);
+}
+
 describe('RegisterForm (K/01, K/01b)', () => {
   // Owner 03/11/2026: the forms show no placeholder text; each field already has its label above it.
   it('no field of the form shows a placeholder', () => {
@@ -471,13 +477,53 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com', turnstile_token: 'fake-turnstile-token' });
   });
 
+  // Plan part 2, M2.8 (Figma 36:447, 153:705): the code is six boxes like Xác minh email, and "Nhập lại mật khẩu mới" is checked here only.
+  it('the reset code is a group of six boxes named "Chữ số 1" to "Chữ số 6"', () => {
+    writePendingEmail('lan@example.com');
+    renderApp(<ResetPasswordForm />, { routes: signedOut });
+    const group = screen.getByRole('group', { name: 'Mã 6 số trong email' });
+    expect([...group.querySelectorAll('input')].map((box) => box.getAttribute('aria-label'))).toEqual(
+      ['Chữ số 1', 'Chữ số 2', 'Chữ số 3', 'Chữ số 4', 'Chữ số 5', 'Chữ số 6'],
+    );
+  });
+
+  it('Review Focus 2: pasting "48 1205" fills the six boxes, and with a matching confirm the body is the old one', async () => {
+    writePendingEmail('lan@example.com');
+    const user = userEvent.setup();
+    const { calls } = renderApp(<ResetPasswordForm />, {
+      routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
+    });
+    await user.click(screen.getByRole('textbox', { name: 'Chữ số 3' }));
+    await user.paste('48 1205');
+    expect(screen.getByRole('textbox', { name: 'Chữ số 6' })).toHaveFocus();
+    await user.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await user.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
+    await user.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
+    expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({ email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb' });
+  });
+
+  it('Review Focus 3: a mismatched confirm sends nothing and says so under it', async () => {
+    writePendingEmail('lan@example.com');
+    const { count } = renderApp(<ResetPasswordForm />, { routes: signedOut });
+    await typeResetCode('481205');
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    const confirm = screen.getByLabelText('Nhập lại mật khẩu mới');
+    await userEvent.type(confirm, 'Bb2@bbbc');
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    expect(count('POST', '/v1/auth/password/reset')).toBe(0);
+    expect(confirm).toHaveAttribute('aria-invalid', 'true');
+    expect(confirm).toHaveAccessibleDescription('Mật khẩu nhập lại chưa khớp.');
+  });
+
   it('UW-1: sets the new password for the pending email, then sends the learner to sign in and forgets the email', async () => {
     writePendingEmail('lan@example.com');
     const { calls } = renderApp(<ResetPasswordForm />, {
       routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
     });
-    await userEvent.type(screen.getByRole('textbox', { name: 'Mã 6 số trong email' }), '481205');
+    await typeResetCode('481205');
     await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
     await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({
@@ -491,8 +537,9 @@ describe('Forgot and reset password (K/04, K/05)', () => {
       routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
     });
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
-    await userEvent.type(screen.getByRole('textbox', { name: 'Mã 6 số trong email' }), '481205');
+    await typeResetCode('481205');
     await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
     await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toMatchObject({ email: 'lan@example.com' });
@@ -501,7 +548,7 @@ describe('Forgot and reset password (K/04, K/05)', () => {
   it('UW-1: with a pending email the page does not ask for it again', async () => {
     writePendingEmail('lan@example.com');
     renderApp(<ResetPasswordForm />, { routes: signedOut });
-    expect(await screen.findByRole('textbox', { name: 'Mã 6 số trong email' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'Mã 6 số trong email' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument();
   });
 });

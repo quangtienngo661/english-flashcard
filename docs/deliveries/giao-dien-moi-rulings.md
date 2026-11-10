@@ -41,3 +41,6 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R27 (10/11/2026, Task M2.7): Đăng ký bỏ dòng giới thiệu dưới tiêu đề ("Ôn từ vựng theo lịch…"), xóa khóa `register.subtitle` → khung `35:405` / `37:533` chỉ có tiêu đề "Tạo tài khoản".
 - R28 (10/11/2026, Task M2.7): e2e tìm ô mật khẩu bằng `getByLabel(…, { exact: true })` → Playwright so nhãn theo chuỗi con, nên "Mật khẩu" trùng cả "Nhập lại mật khẩu" và nút mắt "Hiện mật khẩu".
 - R29 (10/11/2026, Task M2.7): lỗi "Mật khẩu nhập lại chưa khớp." kiểm sau ô Tên (Tên trống báo trước) và trước khi gửi → một lần bấm chỉ báo một lỗi ở phía trình duyệt, như cách form đang làm với Tên.
+- R30 (10/11/2026, Task M2.8): lỗi "mã chưa đúng" của Đặt mật khẩu mới hiện bằng dòng lỗi chung (`FormError`) ngay dưới hàng ô mã, không gắn vào từng ô → `OtpField` là một nhóm sáu ô; Figma không vẽ trạng thái lỗi của ô mã.
+- R31 (10/11/2026, Task M2.8): email trong câu giới thiệu của Xác minh email giữ chữ thường, không in đậm như Figma `36:385` → tách email ra phần tử riêng làm vỡ test 16 và 29 (`getByText` câu đầy đủ) mà plan giữ nguyên.
+- R32 (10/11/2026, Task M2.8): Xác minh email đặt nút "Xác minh" trước dòng "Gửi lại mã sau N giây", giữa card; "Gửi lại mã" là `TextButton` → thứ tự và căn giữa theo khung `36:385`.

@@ -440,6 +440,7 @@
         "code": "6-digit code from the email",
         "newPassword": "New password",
         "hint": "Once changed, your other devices are signed out.",
+        "confirmPassword": "Re-enter new password",
         "submit": "Change password"
       },
       "googleComplete": {

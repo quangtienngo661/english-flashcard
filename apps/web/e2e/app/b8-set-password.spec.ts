@@ -32,8 +32,11 @@ test('LA2#12: a Google-only learner sets a password from Settings, through the f
   // The page was loaded by a full navigation: text typed before React has hydrated is thrown away, so type again until the button wakes up.
   const submit = page.getByRole('button', { name: vi.auth.reset.submit });
   await expect(async () => {
-    await page.getByRole('textbox', { name: vi.auth.reset.code }).fill('482913');
+    // The code is six boxes (Figma 36:447): each digit moves focus to the next box.
+    await page.getByRole('textbox', { name: 'Chữ số 1' }).click();
+    await page.keyboard.type('482913');
     await page.getByLabel(vi.auth.reset.newPassword, { exact: true }).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.reset.confirmPassword, { exact: true }).fill('Aa1!aaaa');
     await expect(submit).toBeEnabled({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
   await submit.click();
