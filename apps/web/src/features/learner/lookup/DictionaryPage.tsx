@@ -11,7 +11,7 @@ const POS_SHORT: Record<string, string> = { noun: 'n.', verb: 'v.', adjective: '
 /**
  * Figma "Trang từ điển" (85:3285): a paper page with a running header (first word · trang N · last word), letter headings and one
  * entry per word: head, IPA, part of speech, level, "của tôi"; "1" and the meaning; the example with the word highlighted. An entry
- * with no IPA or example has no line for it. Hover, focus or a click selects an entry; ↑ ↓ move between entries.
+ * with no IPA or example has no line for it. Focus or a click selects an entry (not hover: the mouse crosses entries on its way to the stacks); ↑ ↓ move between entries.
  */
 export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext }: {
   words: WordRow[];
@@ -36,7 +36,7 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
   }
 
   return (
-    <article className="lk-paper flex min-w-0 flex-col px-5 pb-8 pt-6 md:px-12 md:pb-10 md:pt-8">
+    <article data-surface="paper" className="lk-paper flex min-w-0 flex-col px-5 pb-8 pt-6 md:px-12 md:pb-10 md:pt-8">
       <header
         // raw-ok: Figma's running header, first word left, page number centred, last word right
         className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 border-b-2 border-wm-ink pb-1.5"
@@ -92,7 +92,6 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
       aria-current={current}
       onClick={onSelect}
       onFocus={onSelect}
-      onMouseEnter={onSelect}
       className={cn(
         // raw-ok: the entry's hover box reaches into the page margin by its own padding
         'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-md px-2.5 py-2 text-left outline-none',

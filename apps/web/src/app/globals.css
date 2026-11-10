@@ -809,12 +809,13 @@
   border: 1px solid #e8e4d8;
   border-radius: 4px 10px 10px 4px;
   box-shadow: 0 24px 48px -28px rgb(27 36 68 / 0.45);
-  /* The paper stays light in dark mode, so its text keeps the light-mode inks. */
-  --color-wm-ink: #1b2444;
-  --color-wm-muted: #525a78;
-  --color-wm-accent: #1e3a8a;
-  color: var(--color-wm-ink);
+  color: #1b2444;
 }
+/* The paper stays light in dark mode (R66, R75), so text on it keeps the light-mode inks. */
+[data-theme='dark'] .lk-paper .text-wm-ink { color: #1b2444; }
+[data-theme='dark'] .lk-paper .text-wm-muted { color: #525a78; }
+[data-theme='dark'] .lk-paper .text-wm-accent { color: #1e3a8a; }
+[data-theme='dark'] .lk-paper .border-wm-ink { border-color: #1b2444; }
 .lk-rule { border-color: #e8e4d8; }
 /* The entry whose card is lifted stays as a dashed hole; its text keeps full contrast (axe), unlike Figma's greyed text. */
 .lk-entry[aria-current='true'] {

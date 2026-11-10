@@ -15,7 +15,7 @@ import { useAddWord } from '../add-word/add-word-context';
 import { BulkAddSheet } from '../add-word/BulkAddSheet';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { useGroups } from '../groups/groups-api';
-import { useSenseItems, useWordPage, wordHref } from '../word/word-api';
+import { useSenseItems, useWordPage, wordHref, type PageSense } from '../word/word-api';
 import { DictionaryPage } from './DictionaryPage';
 import { LiftedCard } from './LiftedCard';
 import { lookupHref, lookupQuery, parseLookup, useWordList, type LookupParams } from './lookup-api';
@@ -49,7 +49,7 @@ export function LookupPage() {
   const [picked, setPicked] = useState<string | null>(null);
   const selected = words.find((w) => w.lemma === picked) ?? words[0];
   const wordPage = useWordPage(selected?.lemma ?? null);
-  const sense = wordPage.data?.sections[0]?.senses[0];
+  const sense = selected && wordPage.data ? entrySense(wordPage.data.sections.flatMap((s) => s.senses), selected.meaning_preview, params) : undefined;
   const items = useSenseItems(sense ? [sense.sense_id] : []);
   const item = sense ? items.data?.get(sense.sense_id) : undefined;
   const groups = useGroups().data?.items ?? [];
@@ -168,6 +168,22 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
       </label>
     </form>
   );
+}
+
+/**
+ * The meaning the dictionary entry shows: the word list previews one sense among those matching the filters, so the card and the
+ * stacks pick that same sense (its meaning text, within the filters), not simply the first sense of the word page.
+ */
+function entrySense(senses: PageSense[], preview: string, p: LookupParams): PageSense | undefined {
+  const matching = senses.filter(
+    (s) =>
+      (!p.pos || s.pos === p.pos) &&
+      (!p.level || s.level === p.level) &&
+      (!p.topic || s.topics.some((tp) => tp.code === p.topic)) &&
+      (!p.mine || s.scope === 'private'),
+  );
+  const pool = matching.length > 0 ? matching : senses;
+  return pool.find((s) => s.meaning.text === preview) ?? pool[0];
 }
 
 function AddThis({ word }: { word?: string }) {
