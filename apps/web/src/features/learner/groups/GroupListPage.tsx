@@ -3,7 +3,8 @@
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
@@ -14,7 +15,7 @@ import { useAddWord } from '../add-word/add-word-context';
 import { carouselOrder, rhythm, stepTo } from './carousel';
 import { waiting } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
-import { rememberRect } from './flip';
+import { ms, rememberRect, token, useFlipFrom } from './flip';
 import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
 import { GroupPicker } from './GroupPicker';
@@ -91,6 +92,10 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   const [announce, setAnnounce] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const centreRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  // Back from Một nhóm: the stack flies back to the centre and the other parts sharpen in.
+  useFlipFrom('group-stack-back', centreRef, pageRef, 'wm-carousel-in');
   const found = order.findIndex((g) => g.id === centreId);
   const centre = found === -1 ? 0 : found;
   const group = order[centre];
@@ -108,9 +113,24 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     if (order.length < 2) return;
     goTo((centre + d + order.length) % order.length);
   }
+  // Opening (motion doc §3): the centre stack lifts and every other part blurs out in 170 ms, then the page changes and the
+  // stack flies to the group head. Reduced motion: the page changes at once.
+  const opening = useRef(false);
   function openGroup() {
-    if (centreRef.current) rememberRect('group-stack', centreRef.current);
-    router.push(`/${locale}/app/group?id=${group.id}`);
+    const go = () => {
+      if (centreRef.current) rememberRect('group-stack', centreRef.current);
+      router.push(`/${locale}/app/group?id=${group.id}`);
+    };
+    if (reduced) return go();
+    if (opening.current) return;
+    opening.current = true;
+    pageRef.current?.classList.add('wm-carousel-out');
+    window.setTimeout(go, ms(token('--transition-duration-wm-lift', '170ms')));
+  }
+  function onOpenLink(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    openGroup();
   }
 
   // The jump without animation lasts one frame, then transitions come back for the next step.
@@ -143,8 +163,8 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 md:gap-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
+    <div ref={pageRef} className="flex flex-col gap-4 md:gap-5">
+      <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
         <Title>
           <p className="font-wm-mono text-wm-mono text-wm-muted">
             <span className="md:hidden">{t('subtitlePhone', { due, groups: waitingGroups.length })}</span>
@@ -164,24 +184,24 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
           </TextButton>
         </div>
       </div>
-      <GroupCarousel groups={order} centre={centre} instant={instant} onStep={step} centreRef={centreRef} onOpen={() => centreRef.current && rememberRect('group-stack', centreRef.current)} />
+      <GroupCarousel groups={order} centre={centre} instant={instant} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
       <p aria-live="polite" className="sr-only">
         {announce}
       </p>
-      <Below key={group.id} group={group} onOpen={() => centreRef.current && rememberRect('group-stack', centreRef.current)} />
+      <Below key={group.id} group={group} onOpen={onOpenLink} />
     </div>
   );
 }
 
 /** "Dưới băng chuyền" (Figma 82:3348): the rhythm bar in the group colour, Học · Ôn, "Xem nhóm →", "Thêm từ" (desktop). */
-function Below({ group, onOpen }: { group: GroupSummary; onOpen: () => void }) {
+function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const t = useTranslations('App.groups');
   const tStage = useTranslations('App.stages');
   const locale = useLocale();
   const { open } = useAddWord();
   const tone = groupTone(group.id, group.total);
   return (
-    <div className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
+    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
       <p className="font-wm-mono text-wm-mono text-wm-muted">{t('rhythm')}</p>
       <StageBar
         aria-label={t('rhythm')}
@@ -197,6 +217,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: () => void }) {
         <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
+          prefetch
           onClick={onOpen}
           className="flex min-h-11 items-center text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
         >

@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import { TodayPage } from './TodayPage';
 
+const push = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => '/vi/app',
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), push }),
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.setConfig({ testTimeout: 20_000 });
@@ -111,6 +112,15 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['Nhóm 6', 'Nhóm 5', 'Nhóm 4', 'Nhóm 3']);
     expect(screen.getByRole('region', { name: 'Nhóm 7' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem tất cả 8 nhóm →' })).toHaveAttribute('href', '/vi/app/groups');
+  });
+
+  it('pressing a deck card lifts it, then opens its deck (owner 10/11/2026: not an instant page change)', async () => {
+    push.mockClear();
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
+    const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
+    await userEvent.click(within(list).getByRole('link', { name: 'IELTS' }));
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-ielts'));
   });
 
   it('a deck card opens its deck; the card face shows the next card', async () => {
