@@ -103,6 +103,24 @@ describe('Học, the card stack (M5.8)', () => {
     expect(reviews(calls).map((b) => b.item_id)).toEqual([uuid(1), uuid(2)]);
   });
 
+  it('Esc while a save is open waits for it before the summary (final review I1, R107)', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const { calls } = renderApp(<ReviewSession />, {
+      routes: routes({ 'POST /v1/reviews': async () => { await gate; return Response.json({ level: 2 }); } }),
+    });
+    await top(1);
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await top(2);
+    await userEvent.keyboard('{Escape}');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('heading', { name: /^Xong/ })).not.toBeInTheDocument();
+    release();
+    expect(await screen.findByRole('heading', { name: /^Xong/ })).toBeInTheDocument();
+    expect(reviews(calls)).toHaveLength(1);
+  });
+
   it('QM5-2 (a): a lost save brings the card back, turned over, with the error; the retry sends the same review_id', async () => {
     let fail = true;
     const { calls } = renderApp(<ReviewSession />, {

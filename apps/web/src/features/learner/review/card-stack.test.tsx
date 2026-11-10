@@ -79,6 +79,13 @@ describe('useCardDrag', () => {
     expect(card).toHaveTextContent('known');
   });
 
+  it('a rating drag clears its stamp, so the next card turned over shows none (final review I2)', () => {
+    renderApp(<DragProbe onRate={() => {}} />, { chrome: false });
+    const card = screen.getByTestId('card');
+    drag(card, 130, { steps: 6, ms: 80 });
+    expect(card).toHaveTextContent('none');
+  });
+
   it('a card not turned over never rates, whatever the drag', () => {
     const onRate = vi.fn();
     renderApp(<DragProbe onRate={onRate} flipped={false} />, { chrome: false });
@@ -142,5 +149,23 @@ describe('CardStack', () => {
       expect(Number(options.duration)).toBeLessThanOrEqual(200);
     }
     delete (Element.prototype as { animate?: unknown }).animate;
+  });
+
+  it('with reduced motion, the card behind does not scale or blur while the top card is dragged (final review #3)', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      matches: query.includes('reduce'), media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    }) as MediaQueryList);
+    const { container } = renderApp(<CardStack cards={[card(1), card(2)]} current={0} flipped onFlip={() => {}} onRate={() => {}} label="Thẻ 1" />, {
+      chrome: false,
+      routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }) },
+    });
+    const top = await screen.findByRole('group', { name: 'Thẻ 1' });
+    fireEvent.pointerDown(top, { clientX: 0, clientY: 0, button: 0, isPrimary: true, pointerId: 1 });
+    now += 100;
+    fireEvent.pointerMove(top, { clientX: 80, clientY: 0, pointerId: 1 });
+    const behind = container.querySelector<HTMLElement>('[data-depth="1"]')!;
+    expect(behind.style.transform).not.toMatch(/scale/);
+    expect(behind.style.filter).toBe('');
   });
 });
