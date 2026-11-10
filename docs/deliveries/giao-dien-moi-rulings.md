@@ -30,3 +30,7 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R19 (10/11/2026, Task M1.11): Next 16.4.3 có `retry()` cho `error` (`dist/client/components/error-boundary.d.ts:6`) → dùng `retry`, không cần `reset`.
 - R20 (10/11/2026, Task M1.13): e2e bắt hai lỗi do M1.10 → `AddWordProvider` nằm ở layout `(chrome)` nên sống qua lần chuyển trang; nó tự đóng tấm Thêm từ khi `pathname` đổi (trước M1.10 mỗi trang có provider riêng nên tự đóng). `main` của `AppChrome` về `block` như `AppShell` cũ: là `flex-col` thì khối trang có `mx-auto` co theo nội dung, email dài làm trang Cài đặt rộng 431 px ở 390 px.
 - R21 (10/11/2026, Task M1.13): `pnpm cf:docker` chép cả repo bằng `tar`, không loại `.claude/worktrees` (khoảng 90 worktree) nên chạy 55 phút vẫn chưa xong bước chép → e2e chạy từ một worktree tách riêng `english-learning-gm-m1-e2e` ở cùng commit. Script chưa sửa (ngoài phạm vi).
+
+## M5
+
+- R22 (10/11/2026, Task M5.1): kết quả trả lời có thêm `level` (ngăn hiện tại 0–5, đọc qua `LearningService.practiceCheck`; `null` khi từ không còn trong lịch học); session view có thêm `correct`, `wrong` (đếm item có kết quả cuối, mọi vòng; `void` không tính) → QR2 (plan tự chốt). Không có `GET /v1/practice/sessions/:id`: session view đi ra qua `GET /v1/practice/sessions/current` và các route của phiên, nên smoke kiểm số đếm bằng `current` giữa phiên (đúng cảnh "tải lại giữa chừng"). Ở phiên Ôn, `level` đọc sau khi lịch đã đổi nên bằng ngăn mới (`schedule.level`).

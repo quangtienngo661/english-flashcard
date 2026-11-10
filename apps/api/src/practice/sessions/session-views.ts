@@ -10,6 +10,8 @@ export type SessionView = {
   words: number;
   /** Bước 7 (design §6.1). */
   ai_planned: number; cloze_source: string | null;
+  /** Final results so far, every round (giao diện mới M5.1, QR2): the session bar's ✓ / ✗ after a reload. */
+  correct: number; wrong: number;
 };
 
 export type ItemView = {
@@ -33,6 +35,7 @@ export function sessionView(row: PracticeSession, items: Array<Pick<PracticeSess
     prompt_style: row.promptStyle, target_count: row.targetCount, status: row.status,
     round: Math.max(1, ...items.map((i) => i.round)), asked: items.filter((i) => i.result !== 'void').length,
     words: row.senseIds.length, ai_planned: row.aiPlanned, cloze_source: row.clozeSource,
+    correct: items.filter((i) => i.result === 'correct').length, wrong: items.filter((i) => i.result === 'wrong').length,
   };
 }
 
