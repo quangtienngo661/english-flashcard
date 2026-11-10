@@ -18,7 +18,8 @@ export function CardFrame({ children }: { children: ReactNode }) {
       >
         <AppLogo />
       </Link>
-      <div className="w-full max-w-md rounded-wm-2xl bg-wm-surface p-6 shadow-wm-card md:p-8">{children}</div>
+      {/* Every page here draws its own card (AuthCard); a second card around it doubled the padding and the shadow. */}
+      <div className="w-full max-w-md">{children}</div>
     </main>
   );
 }

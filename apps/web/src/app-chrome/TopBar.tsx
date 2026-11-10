@@ -22,7 +22,7 @@ export function TopBar() {
   const active = currentTab(usePathname());
   const addWord = useAddWord();
   return (
-    <div className="hidden h-16 items-center gap-5 border-b border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
+    <div className="hidden h-16 items-center gap-3 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
       <Link href={`/${locale}/app`} className="shrink-0 rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
         <AppLogo />
       </Link>
@@ -35,11 +35,12 @@ export function TopBar() {
               href={`/${locale}${path}`}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
+                'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
                 isActive ? 'bg-wm-accent-soft text-wm-accent' : 'text-wm-muted hover:text-wm-ink',
               )}
             >
-              <Icon aria-hidden className="size-4" />
+              {/* 768–1023 px: no icons and smaller gaps, so the Vietnamese tab names stay on one line next to Thêm từ. */}
+              <Icon aria-hidden className="hidden size-4 lg:block" />
               {t(`tabs.${id}`)}
             </Link>
           );
