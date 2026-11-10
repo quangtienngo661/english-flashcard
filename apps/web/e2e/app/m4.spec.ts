@@ -168,7 +168,7 @@ test.describe('M4 flows (mocked API)', () => {
     // True/false, right.
     await expect(page.getByText(vi.session.ask.true_false)).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
-    await page.getByRole('button', { name: /^1\s?Đúng/ }).click();
+    await page.getByRole('button', { name: /^(1\s?)?Đúng/ }).click();
     await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Đã biết/ }).click();
 
@@ -284,7 +284,8 @@ const PAGES: Shot[] = [
     },
   },
   { path: 'practice/session', ready: (p) => expect(p.getByText(LONG_OPTION)).toBeVisible() },
-  { path: 'practice/weak', ready: (p) => expect(p.getByText(LONG_MEANING).first()).toBeVisible() },
+  // M5.5: phones show only the word and its ✓/✗ chips (Figma 119:4482), so wait for a chip, not the meaning.
+  { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|wrong)$/ }).first()).toBeVisible() },
   { path: 'practice/history', ready: (p) => expect(p.getByText(LONG_MEANING).first()).toBeVisible() },
   { path: 'practice/history?tab=reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên')).toBeVisible() },
   { path: 'plans', ready: (p) => expect(p.getByRole('heading', { level: 1 })).toBeVisible() },
@@ -320,7 +321,7 @@ for (const scheme of ['light', 'dark'] as const) {
         const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
         await expect(primary).toBeVisible();
         await expect(primary.locator('kbd')).toHaveText('Enter');
-        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) }).locator('kbd')).not.toHaveText('Enter');
+        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) }).locator('kbd', { hasText: 'Enter' })).toHaveCount(0);
         if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
         const where = `${locale} case ${kind} feedback (${scheme})`;
         await noSideScroll(page, where);
@@ -358,7 +359,7 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.keyboard.press('1');
   await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: /^1\s?Đúng/ }).click();
+  await page.getByRole('button', { name: /^(1\s?)?Đúng/ }).click();
   await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Đã biết/ }).click();
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));

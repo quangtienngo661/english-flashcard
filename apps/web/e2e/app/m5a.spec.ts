@@ -158,7 +158,7 @@ test.describe('M5a flows (mocked API)', () => {
     await page.addInitScript(() => localStorage.setItem('wordmet-web.ai-types', 'on'));
     const dialog = await openCustomize(page);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await page.getByRole('button', { name: /^1\s?deployed/ }).click();
+    await page.getByRole('button', { name: /^(1\s?)?deployed/ }).click();
     await page.getByRole('button', { name: vi.session.report.button }).click();
     const report = page.getByRole('dialog', { name: vi.session.report.title });
     await expect(report.getByText('Đội Wordmet sẽ thấy từ “rizz” bạn tự thêm để kiểm tra.')).toBeVisible();
