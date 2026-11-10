@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Route } from '@/app-shell/session/test-support';
@@ -167,5 +167,23 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     await screen.findByText('Đúng rồi');
     const legend = screen.getByRole('list', { name: 'Phím' });
     expect(within(legend).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['EnterĐã biết', '1Cần ôn lại', 'EscDừng phiên']);
+  });
+
+  it('review M1: after a try-again, Enter in the field does not send the same wrong word again; the word is selected to retype', async () => {
+    const typedItem = { ...cloze({ ai: false }), item_id: 'item-8' };
+    const v = renderApp(<PracticeSession />, { routes: routes(typedItem, {
+      'POST /v1/practice/items/item-8/answer': () => Response.json({ result: 'try_again', tries: 1 }),
+    }) });
+    const field = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(field, 'deteriorated{Enter}');
+    await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.');
+    await userEvent.type(field, '{Enter}');
+    const answers = () => v.calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/item-8/answer');
+    expect(answers()).toHaveLength(1);
+    expect((field as HTMLInputElement).selectionStart).toBe(0);
+    expect((field as HTMLInputElement).selectionEnd).toBe('deteriorated'.length);
+    await userEvent.type(field, 'deteriorate{Enter}');
+    await waitFor(() => expect(answers()).toHaveLength(2));
+    expect(answers()[1].body).toEqual({ text: 'deteriorate' });
   });
 });

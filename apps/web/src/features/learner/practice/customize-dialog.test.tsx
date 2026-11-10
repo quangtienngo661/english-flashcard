@@ -283,6 +283,20 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     expect(starts(view.calls)).toHaveLength(1);
   });
 
+  it('review I1: after 403 with 3 units really left, the AI count stops at 3, 3 starts, and the units are read again', async () => {
+    const { view, dialog } = await open('Luyện tất cả', 'pro', {}, {
+      'POST /v1/practice/sessions': problem(403, 'ai-quota-insufficient', { needed: 5, remaining: 3, resets_at: LATER }),
+    });
+    const reads = view.calls.filter((c) => c.path === '/v1/me/entitlements').length;
+    await press(dialog, 'Câu AI viết: thêm 1', 5);
+    await userEvent.click(startButton(dialog));
+    await within(dialog).findByRole('alert');
+    await press(dialog, 'Câu AI viết: bớt 1', 2);
+    expect(within(dialog).getByRole('button', { name: 'Câu AI viết: thêm 1' })).toBeDisabled();
+    expect(startButton(dialog)).toBeEnabled();
+    await waitFor(() => expect(view.calls.filter((c) => c.path === '/v1/me/entitlements').length).toBeGreaterThan(reads));
+  });
+
   it('503 ai-unavailable gives the one general line', async () => {
     const { dialog } = await open('Luyện tất cả', 'pro', {}, { 'POST /v1/practice/sessions': problem(503, 'ai-unavailable') });
     await press(dialog, 'Câu AI viết: thêm 1');
