@@ -53,7 +53,7 @@ describe('learner reports HTTP (unit, mocked service)', () => {
 
   it('GET /v1/practice/reports lists the signed-in learner\'s reports', async () => {
     expect((await http().get('/v1/practice/reports').set(auth()).query({ page_size: 5, page_token: 't' })).status).toBe(200);
-    expect(listMine).toHaveBeenCalledWith(userId, { pageSize: 5, pageToken: 't' });
+    expect(listMine).toHaveBeenCalledWith({ userId, nativeLanguage: 'vi' }, { pageSize: 5, pageToken: 't' });
     expect((await http().get('/v1/practice/reports').set(auth()).query({ page_size: 0 })).status).toBe(400);
   });
 });
