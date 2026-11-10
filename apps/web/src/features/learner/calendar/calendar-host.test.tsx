@@ -93,6 +93,31 @@ describe('CalendarHost (design §5.6)', () => {
     expect(window.history.state?.wmCalendar).toBe(1);
   });
 
+  it("review #1: our writes carry only the calendar marker, never Next's own history keys (so Next re-syncs its router)", async () => {
+    window.history.replaceState({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: {} }, '', '/vi/app/practice?lich=2026-10');
+    host();
+    expect(await screen.findByRole('dialog', { name: 'Tháng 10, 2026' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Tháng trước' }));
+    act(() => screen.getByRole('button', { name: 'mở ngày', hidden: true }).click());
+    const written = [...push.mock.calls, ...replace.mock.calls].map((call: unknown[]) => call[0] as Record<string, unknown>).slice(1);
+    expect(written.length).toBeGreaterThan(1);
+    for (const state of written) expect(Object.keys(state ?? {}).filter((k) => !k.startsWith('wm'))).toEqual([]);
+  });
+
+  it('review #5: keys typed in Lịch do not reach window listeners of the screen below (a session answering on 1 / 2)', async () => {
+    const below = vi.fn();
+    window.addEventListener('keydown', below);
+    try {
+      host();
+      await userEvent.click(screen.getByRole('button', { name: 'mở lịch' }));
+      await screen.findByRole('list', { name: 'Tổng tháng' });
+      await userEvent.keyboard('1');
+      expect(below.mock.calls.filter(([e]) => (e as KeyboardEvent).key === '1')).toHaveLength(0);
+    } finally {
+      window.removeEventListener('keydown', below);
+    }
+  });
+
   it('arriving on ?ngay= from a link: replace with ?lich=<month>, then push ?ngay=', async () => {
     go('/vi/app/practice?ngay=2026-11-05');
     host();
