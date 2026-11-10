@@ -168,7 +168,9 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       );
       if (!done) return;
       writeLastGroup(done.target);
-      showToast(t('saved', { word: saved, group: done.targetName }), 'success');
+      showToast(t('saved', { word: saved, group: done.targetName }), 'success', {
+        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.target}` },
+      });
       for (const queryKey of [GROUPS_KEY, ['group'], ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
       onClose();
     } catch (error) {

@@ -946,6 +946,7 @@
       "manualButton": "Nghĩa khác, tự nhập",
       "save": "Lưu {word}",
       "saveShort": "Lưu",
+      "openGroup": "Xem nhóm",
       "manualTitle": "Tự nhập nghĩa",
       "manualSub": "Chỉ bạn thấy từ này.",
       "recognized": "Wordmet nhận ra đây là {kind} của {base} và đã gắn sẵn.",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
@@ -25,6 +25,7 @@ export type BulkFilter = Pick<LookupParams, 'level' | 'topic' | 'pos'>;
 export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose: () => void }) {
   const t = useTranslations('App.addWord');
   const tc = useTranslations('App.common');
+  const locale = useLocale();
   const client = useQueryClient();
   const errorText = useErrorMessage();
   const groups = useGroups().data?.items ?? [];
@@ -59,6 +60,7 @@ export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose:
       showToast(
         `${t('bulkResult', { added: result.added, name })} ${t('bulkSkipped', { already: result.already_in_group, function: result.skipped_function_words, full: result.skipped_group_full })}`,
         'success',
+        { link: { label: t('openGroup'), href: `/${locale}/app/group?id=${id}` } },
       );
       void client.invalidateQueries({ queryKey: GROUPS_KEY });
       void client.invalidateQueries({ queryKey: ['items'] });

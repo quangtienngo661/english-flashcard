@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -14,7 +14,6 @@ import { GroupStack } from '../groups/GroupStack';
 import { writeLastGroup } from '../add-word/last-group';
 
 const SHOWN = 6;
-const TOAST_MS = 2400;
 
 /**
  * Figma "Chồng của các nhóm" (85:3618): the first six groups of the Nhóm carousel as small stacks. A press adds the card's sense to
@@ -31,6 +30,7 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
   const t = useTranslations('App.lookup');
   const tw = useTranslations('App.word');
   const tAdd = useTranslations('App.addWord');
+  const locale = useLocale();
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
@@ -50,7 +50,9 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
       if (!done) return;
       setAdded((prev) => new Set(prev).add(`${group.id}:${senseId}`));
       writeLastGroup(group.id);
-      showToast(tw(done.result.created ? 'added' : 'alreadyIn', { word: lemma, group: group.name }), 'success', { timeout: TOAST_MS });
+      showToast(tw(done.result.created ? 'added' : 'alreadyIn', { word: lemma, group: group.name }), 'success', {
+        link: { label: tAdd('openGroup'), href: `/${locale}/app/group?id=${group.id}` },
+      });
       for (const queryKey of [['items'], ['group'], GROUPS_KEY]) void client.invalidateQueries({ queryKey });
     } catch (error) {
       showToast(error instanceof ApiError && error.problem.slug === 'group-full' ? tAdd('groupFull', { group: group.name }) : errorText(error), 'danger');

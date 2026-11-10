@@ -946,6 +946,7 @@
       "manualButton": "Other meaning, enter it",
       "save": "Save {word}",
       "saveShort": "Save",
+      "openGroup": "View deck",
       "manualTitle": "Enter a meaning",
       "manualSub": "Only you see this word.",
       "recognized": "Wordmet recognized this as the {kind} of {base} and linked it.",

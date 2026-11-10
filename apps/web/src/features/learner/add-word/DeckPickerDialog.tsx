@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -22,6 +22,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
   const t = useTranslations('App.addWord');
   const tw = useTranslations('App.word');
   const tc = useTranslations('App.common');
+  const locale = useLocale();
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
@@ -57,7 +58,9 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       const done = await save.submit();
       if (!done) return;
       writeLastGroup(done.target);
-      showToast(tw(done.result.created ? 'added' : 'alreadyIn', { word: sense.lemma, group: done.name }), 'success');
+      showToast(tw(done.result.created ? 'added' : 'alreadyIn', { word: sense.lemma, group: done.name }), 'success', {
+        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.target}` },
+      });
       void client.invalidateQueries({ queryKey: ['items'] });
       void client.invalidateQueries({ queryKey: ['group'] });
       void client.invalidateQueries({ queryKey: GROUPS_KEY });

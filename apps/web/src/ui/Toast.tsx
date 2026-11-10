@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -16,7 +17,9 @@ import {
 // a pop-shadowed pill in mark-ink (navy in both themes), radius 16.
 
 export type ToastTone = 'neutral' | 'success' | 'danger';
-export type ToastMessage = { text: string; tone: ToastTone };
+/** `link`: one way on from the toast, e.g. "Xem nhóm" to the group a word was just added to. */
+export type ToastLink = { label: string; href: string };
+export type ToastMessage = { text: string; tone: ToastTone; link?: ToastLink };
 
 /** One queue for the whole app, so a toast outlives the page that raised it. */
 export const toastQueue = new AriaToastQueue<ToastMessage>({
@@ -32,9 +35,9 @@ export const toastQueue = new AriaToastQueue<ToastMessage>({
   },
 });
 
-/** Confirms an action or reports a failure; closes itself after `timeout` ms (5 s by default; Tra từ's "Đã thêm…" uses 2.4 s, motion §4). */
-export function showToast(text: string, tone: ToastTone = 'neutral', { timeout = 5000 }: { timeout?: number } = {}): void {
-  toastQueue.add({ text, tone }, { timeout });
+/** Confirms an action or reports a failure; closes itself after `timeout` ms (5 s by default). */
+export function showToast(text: string, tone: ToastTone = 'neutral', { timeout = 5000, link }: { timeout?: number; link?: ToastLink } = {}): void {
+  toastQueue.add({ text, tone, ...(link ? { link } : {}) }, { timeout });
 }
 
 const TONE: Record<ToastTone, string> = {
@@ -57,6 +60,15 @@ export function ToastRegion() {
           <AriaToastContent className="min-w-0 wrap-anywhere">
             <Text slot="title">{toast.content.text}</Text>
           </AriaToastContent>
+          {toast.content.link && (
+            <Link
+              href={toast.content.link.href}
+              onClick={() => toastQueue.close(toast.key)}
+              className="shrink-0 rounded-wm-sm px-1 font-semibold underline underline-offset-2 outline-none focus-visible:outline-3 focus-visible:outline-wm-mark"
+            >
+              {toast.content.link.label}
+            </Link>
+          )}
           <Button slot="close" className="shrink-0 rounded-wm-sm px-1 font-semibold outline-none focus-visible:outline-3 focus-visible:outline-wm-mark">
             {t('close')}
           </Button>
