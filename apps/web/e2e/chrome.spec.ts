@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { copy } from './copy';
 
-test('Review#1 H1 renders in Lexend with Vietnamese glyphs', async ({ page }) => {
+test('H1 renders in Noto Sans with Vietnamese glyphs', async ({ page }) => {
   await page.goto('/vi');
   const result = await page.evaluate(async () => {
     await document.fonts.ready;
     const h1 = document.querySelector('h1');
     if (!h1) return { family: '', loaded: false };
     const family = getComputedStyle(h1).fontFamily.split(',')[0].trim();
-    return { family, loaded: document.fonts.check(`16px ${family}`, h1.textContent ?? '') };
+    return { family, loaded: document.fonts.check(`800 16px ${family}`, 'Tiếng Việt') };
   });
-  expect(result.family).toMatch(/Lexend/);
+  expect(result.family).toMatch(/Noto Sans/);
   expect(result.loaded).toBe(true);
 });
 

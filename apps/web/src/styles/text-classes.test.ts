@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 // or a built-in text utility.
 const theme = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css'), 'utf8');
 const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
+// The new UI's tokens (design giao diện mới §7.1): `text-wm-<colour>` and `text-wm-<size>`.
+const web = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/web.css'), 'utf8');
 const src = fileURLToPath(new URL('..', import.meta.url));
 
 const names = (css: string, prefix: string) =>
@@ -16,7 +18,9 @@ const BUILT_IN = [
   'left', 'right', 'center', 'justify', 'start', 'end', 'wrap', 'nowrap', 'balance', 'pretty', 'ellipsis', 'clip',
   'transparent', 'current', 'inherit', 'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl',
 ];
-const allowed = new Set([...names(theme, 'color'), ...names(globals, 'color'), ...names(globals, 'text'), ...BUILT_IN]);
+const allowed = new Set([
+  ...names(theme, 'color'), ...names(globals, 'color'), ...names(globals, 'text'), ...names(web, 'color'), ...names(web, 'text'), ...BUILT_IN,
+]);
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

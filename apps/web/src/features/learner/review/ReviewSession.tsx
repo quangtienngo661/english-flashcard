@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { StudyPattern } from '@/app-chrome/AppShell';
 import { ApiError, NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
@@ -117,7 +116,6 @@ export function ReviewSession() {
   const showProgress = !notFound && !session.done && total > 0;
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-canvas">
-      <StudyPattern />
       <header className="relative flex items-center justify-between gap-3 px-4 pt-4 md:px-6">
         <div className="flex min-w-0 items-center gap-2">
           {session.done || notFound ? (
@@ -149,9 +147,9 @@ export function ReviewSession() {
           />
         </div>
       )}
-      <main id="main" className="relative mx-auto flex w-full max-w-xl flex-1 flex-col items-stretch justify-center px-4 py-6">
+      <div className="relative mx-auto flex w-full max-w-xl flex-1 flex-col items-stretch justify-center px-4 py-6">
         {body}
-      </main>
+      </div>
     </div>
   );
 }

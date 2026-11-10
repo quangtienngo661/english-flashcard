@@ -17,8 +17,8 @@ async function settle(page: Page, ready = page.getByRole('heading', { level: 1 }
 }
 
 /** A page is shot full length; a page with a dialog open only as the window shows it (a full-length shot redraws the dialog half see-through). */
-async function shoot(page: Page, name: string, fullPage = true) {
-  for (const width of WIDTHS) {
+async function shoot(page: Page, name: string, fullPage = true, widths = WIDTHS) {
+  for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(300);
     // A dialog switches between sheet and centred box at 768 px and animates in again; shoot it once it has settled.
@@ -40,6 +40,10 @@ async function setLanguage(page: Page, locale: 'vi' | 'en') {
 test('milestone screenshots', async ({ page }) => {
   test.skip(!email || !password, 'SHOTS_EMAIL / SHOTS_PASSWORD not set');
   // Signed-out pages first (a signed-in visit to them redirects into the app), then sign in once.
+  if (MILESTONE === 'gm-m1') {
+    await gmM1(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -93,6 +97,49 @@ test('milestone screenshots', async ({ page }) => {
   }
   await setLanguage(page, 'vi');
 });
+
+/**
+ * Giao diện mới M1 (plan 2026-11-10, Task M1.13): the new chrome on old screens. Login signed out, then Today, Groups, a group and
+ * Settings signed in; vi, light and dark, 390 and 1440 px. A learner with no group gets one from the Kinh doanh · B1 suggestion.
+ */
+async function gmM1(page: Page) {
+  const widths = [390, 1440];
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto('/vi/app/login');
+    await settle(page);
+    await shoot(page, `vi-${scheme}-login`, true, widths);
+  }
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  await setLanguage(page, 'vi');
+  await page.goto('/vi/app/groups');
+  await settle(page);
+  let link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+  if (!(await link.count())) {
+    await page.goto(`/vi/app/${TOPIC}`);
+    await settle(page, page.getByRole('list').first());
+    await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+    await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
+    await page.goto('/vi/app/groups');
+    await settle(page);
+    link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+  }
+  const id = new URL((await link.getAttribute('href'))!, 'http://x').searchParams.get('id')!;
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const [path, n] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], ['settings', 'settings']] as const) {
+      await page.goto(`/vi/app${path ? `/${path}` : ''}`);
+      await settle(page);
+      await shoot(page, `vi-${scheme}-${n}`, true, widths);
+    }
+  }
+}
 
 const COMBOS = (['vi', 'en'] as const).flatMap((locale) => (['light', 'dark'] as const).map((scheme) => ({ locale, scheme })));
 const TOPIC = 'topic?code=business&level=B1';

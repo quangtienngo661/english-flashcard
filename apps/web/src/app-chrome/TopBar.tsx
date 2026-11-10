@@ -7,73 +7,57 @@ import { usePathname } from 'next/navigation';
 import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AvatarMenu } from './AvatarMenu';
-import { Logo } from './Logo';
+import { AppLogo } from './Logo';
 import { currentTab, TABS } from './nav';
-import { PlanChip } from './PlanChip';
-import { ThemeToggle } from './ThemeToggle';
+import { PlanChipLink } from './PlanChip';
 
-export type ChromeFeatures = { addWord: boolean };
-
-/** K/10 tier 1 (Figma `254:333`): navy bar with the four tabs, Thêm từ, Gói học + plan, Cài đặt, avatar. From 768 px. */
-export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAddWord?: () => void }) {
+/**
+ * Figma "Thanh trên app/Desktop" (54:502), from 768 px: logo, the four tabs (the open one on accent-soft), Thêm từ with the N key,
+ * the quiet plan chip, the avatar. Glass: white 80% with a 24px blur, a line below, no shadow (design §3.1). The search box of the frame
+ * comes with M4; until then the SearchStrip under the header searches (ruling R8).
+ */
+export function TopBar() {
   const t = useTranslations('App.chrome');
   const locale = useLocale();
   const active = currentTab(usePathname());
   const addWord = useAddWord();
-
   return (
-    <div className="bg-navy text-on-navy">
-      <div className="mx-auto flex h-16 max-w-360 items-center justify-between gap-6 px-4 lg:px-8">
-        <div className="flex min-w-0 items-center gap-6 lg:gap-10">
-          <Link href={`/${locale}/app`} className="shrink-0 rounded-control outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <Logo />
-          </Link>
-          <nav aria-label={t('mainNav')} className="flex items-center gap-1.5">
-            {TABS.map(({ id, path, icon: Icon }) => {
-              const isActive = id === active;
-              return (
-                <Link
-                  key={id}
-                  href={`/${locale}${path}`}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    'flex items-center gap-2 rounded-control py-2.5 pl-3 pr-3.5 text-body outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                    isActive ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
-                  )}
-                >
-                  <Icon aria-hidden className="size-5" />
-                  {t(`tabs.${id}`)}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-        <div className="flex shrink-0 items-center gap-4">
-          {features.addWord && (
-            <button
-              type="button"
-              onClick={() => (onAddWord ? onAddWord() : addWord.open())}
-              className="flex items-center gap-2.5 rounded-control bg-navy-raised px-2.5 py-2 text-body font-semibold text-on-navy outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    <div className="hidden h-16 items-center gap-3 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
+      <Link href={`/${locale}/app`} className="shrink-0 rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
+        <AppLogo />
+      </Link>
+      <nav aria-label={t('mainNav')} className="flex min-w-0 items-center gap-1">
+        {TABS.map(({ id, path, icon: Icon }) => {
+          const isActive = id === active;
+          return (
+            <Link
+              key={id}
+              href={`/${locale}${path}`}
+              aria-current={isActive ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
+                isActive ? 'bg-wm-accent-soft text-wm-accent' : 'text-wm-muted hover:text-wm-ink',
+              )}
             >
-              <span aria-hidden className="flex rounded-sm bg-accent p-0.5 text-on-accent">
-                <Plus className="size-4" />
-              </span>
-              {t('addWord')}
-              <kbd className="rounded-sm border border-on-navy-muted px-1.5 text-caption text-on-navy-muted">N</kbd>
-            </button>
-          )}
-          <Link
-            href={`/${locale}/app/plans`}
-            className="flex items-center gap-2 rounded-control px-1 py-2 text-body font-medium text-on-navy outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {t('plans')}
-            <PlanChip />
-          </Link>
-          {/* Owner 27/10/2026: switches the theme at once instead of opening Cài đặt (still in the avatar menu). */}
-          <ThemeToggle />
-          <AvatarMenu />
-        </div>
-      </div>
+              {/* 768–1023 px: no icons and smaller gaps, so the Vietnamese tab names stay on one line next to Thêm từ. */}
+              <Icon aria-hidden className="hidden size-4 lg:block" />
+              {t(`tabs.${id}`)}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="flex-1" />
+      <button
+        type="button"
+        onClick={() => addWord.open()}
+        className="flex min-h-10 shrink-0 items-center gap-2 rounded-wm-button bg-wm-accent py-2 pl-4 pr-3 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:active:scale-97"
+      >
+        <Plus aria-hidden className="size-4" />
+        {t('addWord')}
+        <kbd className="rounded-wm-sm border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-mono text-wm-on-accent">N</kbd>
+      </button>
+      <PlanChipLink />
+      <AvatarMenu />
     </div>
   );
 }

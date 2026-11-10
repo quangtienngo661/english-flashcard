@@ -291,11 +291,6 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(within(row).getAllByRole('cell').map((c) => c.textContent)).toEqual(['0', '80']);
   });
 
-  it('a close button back to Today', async () => {
-    renderApp(<PlansPage />, { routes: routes(ent('free')) });
-    expect(await screen.findByRole('link', { name: 'Đóng' })).toHaveAttribute('href', '/vi/app');
-  });
-
   it('English', async () => {
     const view = renderApp(<PlansPage />, { locale: 'en', routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Learn a little every day, go Pro when you need it' })).toBeInTheDocument();

@@ -4,6 +4,50 @@
 @import '@wordmet/design-tokens/dark.css';
 /* `pastel-island`: a few cards keep the light palette in the dark theme (owner 27/10/2026). */
 @import '@wordmet/design-tokens/island.css';
+/* The new UI's tokens (design giao diện mới §7.1): a `wm-` set beside the old one until M8. */
+@import '@wordmet/design-tokens/web.css';
+@import '@wordmet/design-tokens/web-dark.css';
+
+/* Font tokens of the new UI (design §5.8). `inline`, so the var() resolves where the utility is used, under the next/font class on <html>;
+   the names avoid theme.css's --font-sans (admin) and Tailwind's --font-mono. */
+@theme inline {
+  --font-wm-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-wm-display: var(--font-bricolage), var(--font-noto-sans), sans-serif;
+  --font-wm-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* Dialog and sheet motion of the new UI (GM15, motion §5–§6): enter on the main curve, close in 150ms on the accelerating one. */
+@theme {
+  --animate-wm-overlay-in: fade-in 200ms var(--ease-out-strong);
+  --animate-wm-dialog-in: wm-dialog-in 240ms var(--ease-out-strong);
+  --animate-wm-sheet-in: wm-sheet-in 240ms var(--ease-out-strong);
+  --animate-wm-pop-out: wm-pop-out 150ms var(--ease-wm-close) forwards;
+
+  @keyframes wm-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+  @keyframes wm-sheet-in {
+    from {
+      opacity: 0.4;
+      transform: translateY(3.75rem);
+    }
+  }
+  @keyframes wm-pop-out {
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+/* Phones blur less during scene changes (design §8.1): at most 12px. Outside @theme, which holds only variables and keyframes. */
+@media (width < 48rem) {
+  :root {
+    --blur-wm-lg: 12px;
+  }
+}
 
 @theme {
   /* Type: rem; display/cta/h2 scale fluidly between 390px and 1440px (spec §6.1). */
@@ -357,6 +401,31 @@
   }
 }
 
+/* The app background of the new UI (Figma "Nền app/Lưới chấm" 95:315, 95:321): a 20px dot grid fading towards the edges, a navy glow
+   top left and a yellow glow bottom right. Colours only through tokens. */
+@utility dot-grid {
+  background-color: var(--color-wm-bg);
+  background-image:
+    radial-gradient(
+      ellipse 38rem 28rem at -2% -6%,
+      color-mix(in oklab, var(--color-wm-accent) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 32rem 26rem at 102% 106%,
+      color-mix(in oklab, var(--color-wm-mark) 32%, transparent),
+      transparent 70%
+    );
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(color-mix(in oklab, var(--color-wm-muted) 45%, transparent) 1px, transparent 1.2px);
+    background-size: 1.25rem 1.25rem;
+    mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%);
+  }
+}
+
 /* Animate the native disclosure in both directions; older browsers keep the normal details behavior. */
 @supports (interpolate-size: allow-keywords) and selector(::details-content) {
   .faq-item {
@@ -402,7 +471,7 @@
   body {
     background-color: var(--color-surface);
     color: var(--color-ink);
-    font-family: var(--font-sans);
+    font-family: var(--font-wm-sans);
     -webkit-font-smoothing: antialiased;
     /* Every control draws its own focus ring and press state, so the grey flash a tap paints on mobile browsers is turned off. */
     -webkit-tap-highlight-color: transparent;

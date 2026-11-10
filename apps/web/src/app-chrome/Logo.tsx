@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 
-/** The yellow mark (app/icon.svg) and the product name (Figma top bar "logo"). */
+/** The yellow mark (app/icon.svg) and the product name: the old look, kept for the landing until M8. */
 export function Logo({ tone = 'navy' }: { tone?: 'navy' | 'surface' }) {
   const t = useTranslations('App.chrome');
   return (
@@ -13,6 +13,19 @@ export function Logo({ tone = 'navy' }: { tone?: 'navy' | 'surface' }) {
       </svg>
       <span translate="no" className={cn('text-title font-semibold tracking-tight', tone === 'navy' ? 'text-on-navy' : 'text-ink')}>
         {t('brand')}
+      </span>
+    </span>
+  );
+}
+
+/** Figma "Logo" (3:14): "wordmet." in Bricolage ExtraBold, lower case, the full stop in the accent colour. */
+export function AppLogo() {
+  const t = useTranslations('App.chrome');
+  return (
+    <span translate="no" aria-label={t('brand')} className="font-wm-display text-wm-logo text-wm-ink">
+      <span aria-hidden>
+        {t('brand').toLowerCase()}
+        <span className="text-wm-accent">.</span>
       </span>
     </span>
   );

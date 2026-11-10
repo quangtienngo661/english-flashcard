@@ -56,8 +56,8 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 ## Dark theme (learner app only)
 
 `dark.css` redefines every colour under `[data-theme='dark']`, from the "Dark" mode of the Figma variables (file
-`7HcPAKLrWu32C27qYMJUOA`, collection "Wordmet B"). Only the `/app` layout of `apps/web` sets `data-theme`, so the landing
-and admin never change. Exceptions to the Figma values: `border-strong` is `#6b7491` (Figma `#59627d` is 2.33:1 on the dark
+`7HcPAKLrWu32C27qYMJUOA`, collection "Wordmet B"). In `apps/web` both the `/app` layout and the public site layout (`(site)/layout.tsx`) set `data-theme`;
+admin never does. Exceptions to the Figma values: `border-strong` is `#6b7491` (Figma `#59627d` is 2.33:1 on the dark
 `surface`; inputs need 3:1), and `canvas-deep`, `danger-deep`, `wrong-chip`, `wrong-chip-deep` (not in Figma) are chosen
 here. `apps/web/src/styles/tokens.test.ts` checks that every colour has a dark value and the learner app's pairs in both
 modes.
@@ -72,8 +72,9 @@ light palette applies again so text stays dark. Nothing imports it. To turn it o
 
 ## Light islands (`island.css`)
 
-`island.css` (imported by `apps/web`) gives an element with the class `pastel-island` (or `md:pastel-island` from 768 px) the light palette
-in the dark theme, so its soft background stays pastel with dark text (owner 27/10/2026). Used only on deck card bands, topic
+`island.css` (imported by `apps/web`) gives an element with the class `pastel-island` (or `md:pastel-island` from 768 px) a neutral dark
+card with a coloured stripe in the dark theme (option B, header of `island.css`): the soft tokens become `#242b3d`, `surface` `#2f364a`, and a
+stripe in the element's tone runs along the top (left from 768 px). Used only on deck card bands, topic
 suggestion cards, "Thêm từ vừa gặp", practice source cards and the picked row of Tra từ.
 
 ## Contrast pairs checked (LP12)
@@ -100,3 +101,12 @@ suggestion cards, "Thêm từ vừa gặp", practice source cards and the picked
 
 Durations are declared as `--transition-duration-*` because Tailwind v4's `duration-*` utility reads only that
 namespace (a `--duration-fast` token generates no CSS; checked 15/10/2026).
+
+## The `wm-` set (new web UI)
+
+`web.css` and `web-dark.css` hold the tokens of the new web UI (design `docs/superpowers/specs/2026-11-09-giao-dien-moi-design.md` §7, Figma
+file `JKnyUUtGjpGpfKK4PqBfdY`). Every name carries `wm-` (`--color-wm-accent`, `--radius-wm-button`, `--shadow-wm-card`, `--text-wm-base`,
+`--blur-wm-lg`, `--transition-duration-wm-in`, `--ease-wm-close`), so it never collides with `theme.css`, whose `accent`, `ink` and `primary`
+mean other colours. `apps/web` imports both sets until its old screens are gone (M8); rebuilt screens use only `wm-` tokens. Admin imports
+neither. Sizes are in rem. `web-dark.css` redefines every `--color-wm-*` under `[data-theme='dark']`.
+`apps/web/src/styles/web-tokens.test.ts` checks the light/dark key parity, text contrast in both modes and the rem rule.

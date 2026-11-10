@@ -1,0 +1,116 @@
+/* The new web UI ("giao diện mới", design docs/superpowers/specs/2026-11-09-giao-dien-moi-design.md §7.1–§7.2, §8.1).
+   Every name carries `wm-` so it never collides with theme.css while old screens still use it (until M8).
+   Values: Figma file JKnyUUtGjpGpfKK4PqBfdY, collections "Wordmet" (Light) and "Wordmet số đo", text and effect styles. Sizes in rem. */
+@theme {
+  /* Colour, Light */
+  --color-wm-bg: #f6f7fa;
+  --color-wm-surface: #ffffff;
+  --color-wm-ink: #1b2444;
+  --color-wm-muted: #525a78;
+  --color-wm-ghost: #c9cedc;
+  --color-wm-line: #e1e5ee;
+  --color-wm-accent: #1e3a8a;
+  --color-wm-accent-soft: #e7ecf8;
+  --color-wm-on-accent: #ffffff;
+  --color-wm-mark: #ffd84a;
+  --color-wm-mark-ink: #1b2444;
+  --color-wm-pass: #1b7a46;
+  --color-wm-pass-soft: #e4f2ea;
+  --color-wm-fail: #b8352a;
+  --color-wm-fail-soft: #f8e7e5;
+
+  /* Radius (Wordmet số đo) */
+  --radius-wm-sm: 0.375rem;
+  --radius-wm-md: 0.625rem;
+  --radius-wm-lg: 0.875rem;
+  --radius-wm-xl: 1.25rem;
+  --radius-wm-2xl: 1.75rem;
+  --radius-wm-pill: 62.4375rem;
+  --radius-wm-button: 0.625rem;
+  --radius-wm-modal: 1rem;
+
+  /* Shadows (effect styles Card, Row, Pop, Shadow/Soft, Lift; button shadows set on the buttons) */
+  --shadow-wm-card: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06), 0 0.625rem 1.75rem -0.875rem rgb(27 36 68 / 0.2);
+  --shadow-wm-row: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06), 0 0.25rem 0.75rem -0.5rem rgb(27 36 68 / 0.16);
+  --shadow-wm-pop: 0 0.125rem 0.375rem rgb(27 36 68 / 0.08), 0 1.5rem 3.5rem -1.5rem rgb(27 36 68 / 0.34);
+  --shadow-wm-soft: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.05), 0 0.875rem 2.125rem -0.875rem rgb(27 36 68 / 0.22);
+  --shadow-wm-lift: 0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38), 0 0.75rem 2rem -1rem rgb(27 36 68 / 0.18);
+  --shadow-wm-btn: 0 0.625rem 1.75rem -0.625rem rgb(30 58 138 / 0.34);
+  --shadow-wm-btn-pass: 0 0.625rem 1.625rem -0.875rem rgb(27 122 70 / 0.35);
+  --shadow-wm-btn-fail: 0 0.625rem 1.5rem -0.5rem rgb(184 53 42 / 0.3);
+
+  /* Type (Figma text styles). The first six are Bricolage styles: the component adds font-wm-display. */
+  --text-wm-hero: 5rem;
+  --text-wm-hero--line-height: 1.2;
+  --text-wm-hero--letter-spacing: -0.0313em;
+  --text-wm-hero--font-weight: 700;
+  --text-wm-section: 3.25rem;
+  --text-wm-section--line-height: 1.24;
+  --text-wm-section--letter-spacing: -0.0385em;
+  --text-wm-section--font-weight: 700;
+  --text-wm-lemma: 2.25rem;
+  --text-wm-lemma--line-height: 1.3;
+  --text-wm-lemma--letter-spacing: -0.0278em;
+  --text-wm-lemma--font-weight: 700;
+  --text-wm-card-title: 1.5rem;
+  --text-wm-card-title--line-height: 1.3;
+  --text-wm-card-title--letter-spacing: -0.0417em;
+  --text-wm-card-title--font-weight: 700;
+  --text-wm-logo: 1.375rem;
+  --text-wm-logo--line-height: 1.2;
+  --text-wm-logo--letter-spacing: -0.0455em;
+  --text-wm-logo--font-weight: 800;
+  --text-wm-word: 1.1875rem;
+  --text-wm-word--line-height: 1.3;
+  --text-wm-word--letter-spacing: 0;
+  --text-wm-word--font-weight: 700;
+  --text-wm-lead: 1.1875rem;
+  --text-wm-lead--line-height: 1.6;
+  --text-wm-lead--letter-spacing: 0;
+  --text-wm-lead--font-weight: 400;
+  --text-wm-base: 1rem;
+  --text-wm-base--line-height: 1.6;
+  --text-wm-base--letter-spacing: 0;
+  --text-wm-base--font-weight: 400;
+  --text-wm-base-strong: 1rem;
+  --text-wm-base-strong--line-height: 1.6;
+  --text-wm-base-strong--letter-spacing: 0;
+  --text-wm-base-strong--font-weight: 600;
+  --text-wm-button: 0.9375rem;
+  --text-wm-button--line-height: 1.4;
+  --text-wm-button--letter-spacing: 0;
+  --text-wm-button--font-weight: 600;
+  --text-wm-small: 0.875rem;
+  --text-wm-small--line-height: 1.5;
+  --text-wm-small--letter-spacing: 0;
+  --text-wm-small--font-weight: 400;
+  --text-wm-small-strong: 0.875rem;
+  --text-wm-small-strong--line-height: 1.5;
+  --text-wm-small-strong--letter-spacing: 0;
+  --text-wm-small-strong--font-weight: 600;
+  --text-wm-label: 0.8125rem;
+  --text-wm-label--line-height: 1.4;
+  --text-wm-label--letter-spacing: 0;
+  --text-wm-label--font-weight: 600;
+  --text-wm-caption: 0.8125rem;
+  --text-wm-caption--line-height: 1.4;
+  --text-wm-caption--letter-spacing: 0;
+  --text-wm-caption--font-weight: 400;
+  --text-wm-mono: 0.75rem;
+  --text-wm-mono--line-height: 1.4;
+  --text-wm-mono--letter-spacing: 0;
+  --text-wm-mono--font-weight: 400;
+
+  /* Motion (motion-va-chuyen-canh.md; design §8.1). Blur below 48rem: --blur-wm-lg is lowered by an @media rule in the app. */
+  --blur-wm-sm: 6px;
+  --blur-wm-md: 12px;
+  --blur-wm-lg: 18px;
+  --blur-wm-glass: 24px;
+  /* Behind dialogs and sheets (motion §5). */
+  --blur-wm-overlay: 3px;
+  --transition-duration-wm-out: 160ms;
+  --transition-duration-wm-in: 320ms;
+  --transition-duration-wm-close: 150ms;
+  /* Dialogs and sheets close on an accelerating curve (GM15), the "fade out" curve of motion §3. */
+  --ease-wm-close: cubic-bezier(0.4, 0, 1, 1);
+}

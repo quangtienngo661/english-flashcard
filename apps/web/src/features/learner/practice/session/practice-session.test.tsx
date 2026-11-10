@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
+import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
@@ -542,7 +542,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, '/v1/practice/items/item-6/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
     // The typed question's card leaves the page (its key must not clash with the answer field's key; motion round 27/10/2026).
     expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
-    expect(v.container.querySelectorAll('main section')).toHaveLength(1);
+    expect(v.container.querySelectorAll('section')).toHaveLength(1);
   });
 
   it('M4 review: Esc in the answer field leaves the field first; it does not end the session', async () => {

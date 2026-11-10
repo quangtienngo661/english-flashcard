@@ -2,7 +2,7 @@
 import { act, cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SpeakSentence, SpeakWord } from './SpeakButtons';
-import { installSpeech, makeVoice } from './speech-test-support';
+import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { renderApp } from './test-utils';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));

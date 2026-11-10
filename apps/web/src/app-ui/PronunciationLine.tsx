@@ -1,6 +1,6 @@
 'use client';
 
-import { NO_PRONUNCIATION, type PronLine } from '@/features/learner/word/pronunciation';
+import { NO_PRONUNCIATION, type PronLine } from '@/lib/speech/pronunciation';
 import { cn } from '@/lib/cn';
 import { Pronounce } from './SpeakButtons';
 

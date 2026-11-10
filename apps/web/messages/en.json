@@ -126,7 +126,7 @@
       "lead": "Chọn một dạng để làm thử.",
       "rule": "AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "list": "Các dạng bài",
-    "blank": "chỗ trống",
+      "blank": "chỗ trống",
       "free": "Miễn phí",
       "pro": "Pro",
       "aiChip": "Câu AI",
@@ -295,7 +295,8 @@
       "notFoundTitle": "Page not found",
       "notFoundBody": "The link may be out of date.",
       "home": "Go to Today",
-      "charCount": "{count, number}/{max, number}"
+      "charCount": "{count, number}/{max, number}",
+      "errorPageTitle": "This page could not be loaded."
     },
     "session": {
       "offlineTitle": "Can’t connect",
@@ -323,28 +324,17 @@
         "trial": "Trial",
         "pro": "Pro"
       },
-      "footer": {
-        "tagline": "Learn vocabulary in decks and review at the right time. Add words wherever you find them.",
-        "colWordmet": "Wordmet",
-        "about": "About",
-        "plans": "Plans",
-        "contact": "Contact",
-        "colSupport": "Support",
-        "help": "Help",
-        "faq": "FAQ",
-        "feedback": "Send feedback",
-        "colLegal": "Legal",
-        "terms": "Terms of use",
-        "privacy": "Privacy policy",
-        "sources": "Data sources",
-        "copyright": "© {year} Wordmet"
-      },
       "search": {
         "level": "Level",
         "allLevels": "All levels",
         "placeholder": "Search for a word",
         "placeholderShort": "Search for a word",
         "submit": "Search"
+      },
+      "menu": {
+        "account": "Account",
+        "transactions": "Transaction history",
+        "reports": "My reports"
       }
     },
     "ui": {
@@ -1567,7 +1557,6 @@
       "renews": "Pro renews on {date}.",
       "endsOn": "Pro runs through {date} and won't renew.",
       "trialUntil": "Trial through {date}.",
-      "close": "Close",
       "period": "Billing period",
       "periods": {
         "1": "1 month",

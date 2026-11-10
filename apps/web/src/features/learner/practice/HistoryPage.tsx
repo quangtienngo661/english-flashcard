@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -15,7 +15,6 @@ import { Button } from '@/app-ui/Button';
 import { Select } from '@/app-ui/Select';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
-import { BackLink } from './BackLink';
 import { localDay } from './days';
 import { MyReportsTab } from './MyReportsTab';
 import type { HistoryItem } from './practice-api';
@@ -37,8 +36,8 @@ export function HistoryPage() {
     window.history.replaceState(null, '', id === 'reports' ? '?tab=reports' : window.location.pathname);
   };
   return (
-    <AppShell variant="sub" back={back}>
-      <BackLink {...back} />
+    <>
+      <BackLink {...(back)} />
       <PageTitle>{t('title')}</PageTitle>
       <Tabs selectedKey={tab} onSelectionChange={(key) => choose(key as TabId)} className="flex flex-col gap-5">
         <TabList aria-label={t('title')} className="flex w-fit gap-1 self-center rounded-inner bg-neutral-soft p-1">
@@ -59,7 +58,7 @@ export function HistoryPage() {
           <MyReportsTab />
         </TabPanel>
       </Tabs>
-    </AppShell>
+    </>
   );
 }
 

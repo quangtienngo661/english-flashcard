@@ -2,7 +2,8 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
+import { PageColumns } from '@/app-chrome/PageColumns';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -25,11 +26,14 @@ export function AccountPage() {
   const { state } = useSession();
   if (state.status !== 'signed-in') return null;
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/settings`, label: t('back') }} aside={<AccountAside />}>
+    <>
+      <BackLink {...({ href: `/${locale}/app/settings`, label: t('back') })} />
+      <PageColumns aside={<AccountAside />}>
       <PageTitle>{t('title')}</PageTitle>
       {/* Keyed by profile so a save that reloads /me starts the form from the stored values. */}
       <AccountForm key={`${state.me.given_name}|${state.me.family_name}|${state.me.birth_date}`} me={state.me} />
-    </AppShell>
+    </PageColumns>
+      </>
   );
 }
 

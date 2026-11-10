@@ -43,7 +43,7 @@ const routes = (groups: unknown[], suggestions: unknown = SUGGESTIONS) => ({
 
 describe('TodayPage (K/10, K/10b, K/94)', () => {
   it('the deck with priority cards leads; its counts come from today{priority,due,new}', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     const hero = await screen.findByRole('region', { name: 'Công nghệ' });
     expect(within(hero).getByText('Ôn tiếp · có thẻ ưu tiên')).toBeInTheDocument();
     expect(within(hero).getByText('10 thẻ chờ hôm nay · nhóm có 18 từ')).toBeInTheDocument();
@@ -54,21 +54,21 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
   });
 
   it('counts follow the locale: 262962 waiting cards show as "262.962" (audit 26/10/2026 #9)', async () => {
-    renderApp(<TodayPage />, { routes: routes([group('g-big', 'Lớn', { priority: 0, due: 262962, new: 0 }, 123456)]) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes([group('g-big', 'Lớn', { priority: 0, due: 262962, new: 0 }, 123456)]) });
     const hero = await screen.findByRole('region', { name: 'Lớn' });
     expect(within(hero).getByText('262.962 thẻ chờ hôm nay · nhóm có 123.456 từ')).toBeInTheDocument();
   });
 
   it('Today lists 6 decks at most and [Xem tất cả] opens the deck list (owner 27/10/2026)', async () => {
     const many = Array.from({ length: 8 }, (_, i) => group(`g-${i}`, `Nhóm ${i}`, { priority: 0, due: i, new: 0 }));
-    renderApp(<TodayPage />, { routes: routes(many) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(many) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
     expect(within(list).getAllByRole('heading', { level: 3 })).toHaveLength(6);
     expect(screen.getByRole('link', { name: 'Xem tất cả' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
   it('a deck card opens its deck from anywhere on the card; Ôn N thẻ keeps its own link (owner 27/10/2026)', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
     const name = within(list).getByRole('link', { name: 'IELTS' });
     expect(name).toHaveAttribute('href', '/vi/app/group?id=g-ielts');
@@ -77,7 +77,7 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
   });
 
   it('deck cards: waiting decks first (most cards first), done-today decks last', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
     const names = within(list).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(names).toEqual(['Công nghệ', 'IELTS', 'Du lịch', 'Ẩm thực A2']);
@@ -89,21 +89,21 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
   });
 
   it('K/10b: the ⋯ menu of a card offers rename, study all N words, delete', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm IELTS' }));
     const menu = await screen.findByRole('menu');
     expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 80 từ', 'Xóa nhóm']);
   });
 
   it('the side column says how many words wait too long, with the admin number of days', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     expect(await screen.findByText('40 từ lâu chưa ôn')).toBeInTheDocument();
     expect(screen.getByText('Nhóm IELTS, quá hạn hơn 60 ngày')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/vi/app/group/backlog?id=g-ielts');
   });
 
   it('K/94: no deck yet → the empty block and topic cards with 4 sample words', async () => {
-    renderApp(<TodayPage />, { routes: routes([]) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes([]) });
     expect(await screen.findByText('Chưa có nhóm nào')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tạo nhóm đầu tiên' })).toBeInTheDocument();
     const card = await screen.findByRole('region', { name: 'Kinh doanh · B1' });
@@ -113,13 +113,13 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
   });
 
   it('GH3: no suggestion → the topic block is hidden', async () => {
-    renderApp(<TodayPage />, { routes: routes([], { items: [] }) });
+    renderApp(<TodayPage />, { chrome: true, routes: routes([], { items: [] }) });
     await screen.findByText('Chưa có nhóm nào');
     expect(screen.queryByText('Tạo nhóm nhanh theo chủ đề')).not.toBeInTheDocument();
   });
 
   it('M3: the quick-add box opens the add-word sheet with the typed word', async () => {
-    renderApp(<TodayPage />, { routes: { ...routes(GROUPS), 'GET /v1/lookup?q=went': () => Response.json({ senses: [], via_inflection: [] }) } });
+    renderApp(<TodayPage />, { chrome: true, routes: { ...routes(GROUPS), 'GET /v1/lookup?q=went': () => Response.json({ senses: [], via_inflection: [] }) } });
     await screen.findByRole('region', { name: 'Công nghệ' });
     const box = screen.getByRole('region', { name: 'Thêm từ vừa gặp' });
     await userEvent.type(within(box).getByRole('textbox', { name: 'Từ' }), 'went');

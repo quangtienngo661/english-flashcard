@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { PageColumns } from '@/app-chrome/PageColumns';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
@@ -36,7 +36,8 @@ export function LookupPage() {
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
 
   return (
-    <AppShell variant="main" fab aside={preview ? <WordPreview word={preview} /> : undefined}>
+    <>
+      <PageColumns aside={preview ? <WordPreview word={preview} /> : undefined}>
       <div className="flex flex-col gap-4">
         <PageTitle>{t('title')}</PageTitle>
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -97,7 +98,8 @@ export function LookupPage() {
           </section>
         )}
       </div>
-    </AppShell>
+    </PageColumns>
+      </>
   );
 }
 
@@ -147,7 +149,7 @@ function WordPreview({ word }: { word: WordRow }) {
   );
 }
 
-/** [Thêm từ này]: the add-word sheet with the searched word; inside AppShell, so inside its add-word provider. */
+/** [Thêm từ này]: the add-word sheet with the searched word; inside the (chrome) layout, so inside its add-word provider. */
 function AddThis({ word }: { word?: string }) {
   const t = useTranslations('App.lookup');
   const { open } = useAddWord();

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
+import { BackLink } from '@/app-chrome/BackLink';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useAppConfig } from '@/app-shell/queries';
@@ -41,7 +41,8 @@ export function BacklogPage() {
   const back = { href: id ? `/${locale}/app/group?id=${id}` : `/${locale}/app/groups`, label: t('backlog.back', { name: group.data?.name ?? '' }) };
 
   return (
-    <AppShell variant="sub" back={back}>
+    <>
+      <BackLink {...(back)} />
       {notFound ? (
         <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />
       ) : group.data ? (
@@ -49,7 +50,7 @@ export function BacklogPage() {
       ) : (
         <FullScreenSpinner />
       )}
-    </AppShell>
+    </>
   );
 }
 

@@ -1,0 +1,62 @@
+// @vitest-environment jsdom
+import { act, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { renderApp } from '@/app-ui/test-utils';
+import { Dialog } from './Dialog';
+import { SkeletonPage } from './Skeleton';
+import { showToast, ToastRegion } from './Toast';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+
+function Harness({ isDismissable = true, onOpenChange }: { isDismissable?: boolean; onOpenChange?: (open: boolean) => void }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <button type="button">bên ngoài</button>
+      <Dialog
+        isOpen={open}
+        onOpenChange={(next) => { onOpenChange?.(next); setOpen(next); }}
+        title="Tạo nhóm"
+        closeLabel="Đóng"
+        isDismissable={isDismissable}
+      >
+        <p>nội dung</p>
+      </Dialog>
+    </>
+  );
+}
+
+describe('ui overlays', () => {
+  it('an open Dialog is a dialog named by its title; Esc closes it', async () => {
+    const onOpenChange = vi.fn();
+    renderApp(<Harness onOpenChange={onOpenChange} />);
+    expect(screen.getByRole('dialog', { name: 'Tạo nhóm' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('the close button named by closeLabel closes it', async () => {
+    renderApp(<Harness />);
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('with isDismissable={false}, a click outside does not close it', async () => {
+    renderApp(<Harness isDismissable={false} />);
+    await userEvent.click(document.body);
+    expect(screen.getByRole('dialog', { name: 'Tạo nhóm' })).toBeInTheDocument();
+  });
+
+  it('SkeletonPage is a status that says Đang tải…', () => {
+    renderApp(<SkeletonPage shape="chrome" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Đang tải…');
+  });
+
+  it('showToast shows its text in the region', async () => {
+    renderApp(<ToastRegion />);
+    act(() => showToast('Đã lưu', 'success'));
+    expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
+  });
+});

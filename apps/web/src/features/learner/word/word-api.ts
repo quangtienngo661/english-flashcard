@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
-import type { Pronunciation } from './pronunciation';
+import type { Pronunciation } from '@/lib/speech/pronunciation';
 
 export type FormOf = { entry_id: string; lemma: string; pos: string; kind: string };
 /** `GET /v1/words/{lemma}` sense (API `WordPageSense`). */

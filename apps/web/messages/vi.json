@@ -126,7 +126,7 @@
       "lead": "Chọn một dạng để làm thử.",
       "rule": "AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "list": "Các dạng bài",
-    "blank": "chỗ trống",
+      "blank": "chỗ trống",
       "free": "Miễn phí",
       "pro": "Pro",
       "aiChip": "Câu AI",
@@ -295,7 +295,8 @@
       "notFoundTitle": "Không tìm thấy trang này",
       "notFoundBody": "Đường dẫn có thể đã cũ.",
       "home": "Về Hôm nay",
-      "charCount": "{count, number}/{max, number}"
+      "charCount": "{count, number}/{max, number}",
+      "errorPageTitle": "Không tải được trang này."
     },
     "session": {
       "offlineTitle": "Không kết nối được",
@@ -323,28 +324,17 @@
         "trial": "Dùng thử",
         "pro": "Pro"
       },
-      "footer": {
-        "tagline": "Học từ vựng theo nhóm, ôn đúng lúc. Gặp từ ở đâu cũng thêm được.",
-        "colWordmet": "Wordmet",
-        "about": "Giới thiệu",
-        "plans": "Gói học",
-        "contact": "Liên hệ",
-        "colSupport": "Hỗ trợ",
-        "help": "Trợ giúp",
-        "faq": "Câu hỏi thường gặp",
-        "feedback": "Gửi góp ý",
-        "colLegal": "Pháp lý",
-        "terms": "Điều khoản sử dụng",
-        "privacy": "Chính sách bảo mật",
-        "sources": "Nguồn dữ liệu",
-        "copyright": "© {year} Wordmet"
-      },
       "search": {
         "level": "Trình độ",
         "allLevels": "Mọi trình độ",
         "placeholder": "Tìm từ",
         "placeholderShort": "Tìm từ",
         "submit": "Tra"
+      },
+      "menu": {
+        "account": "Tài khoản",
+        "transactions": "Lịch sử giao dịch",
+        "reports": "Báo lỗi của tôi"
       }
     },
     "ui": {
@@ -1567,7 +1557,6 @@
       "renews": "Gói Pro gia hạn vào {date}.",
       "endsOn": "Gói Pro dùng tới hết {date}, không tự gia hạn.",
       "trialUntil": "Dùng thử tới hết {date}.",
-      "close": "Đóng",
       "period": "Kỳ hạn",
       "periods": {
         "1": "1 tháng",
