@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, type CSSProperties, type PointerEvent, type Ref, type WheelEvent } from 'react';
+import { useRef, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type WheelEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stepTo } from './carousel';
@@ -16,7 +16,7 @@ const WHEEL_GAP_MS = 380;
 
 /**
  * "Trượt mờ" (Figma 82:3213 / 82:3368, motion doc §3, design §8.5): the centre stack sharp, two neighbours each side smaller and
- * blurred (one each side on phones), the rest hidden. Only the centre is pressable; the side stacks are `inert`. Positions,
+ * blurred (one each side on phones), the rest hidden. The centre opens its group; a side stack is pressed to bring it to the centre (owner 10/11/2026). Positions,
  * curves and blur live in globals.css (`.gcar-*`), driven by `--k` (distance to the centre) and `data-abs` (its size).
  */
 export function GroupCarousel({
@@ -33,12 +33,13 @@ export function GroupCarousel({
   instant: boolean;
   onStep: (step: number) => void;
   centreRef?: Ref<HTMLDivElement>;
-  onOpen?: () => void;
+  onOpen?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
   const pointerX = useRef<number | null>(null);
   const lastWheel = useRef(0);
+  const swiped = useRef(false);
   const centreGroup = groups[centre];
   const halo = centreGroup ? groupTone(centreGroup.id, centreGroup.total) : null;
 
@@ -49,7 +50,37 @@ export function GroupCarousel({
     if (pointerX.current === null) return;
     const dx = event.clientX - pointerX.current;
     pointerX.current = null;
-    if (Math.abs(dx) > SWIPE_PX) onStep(dx < 0 ? 1 : -1);
+    // A swipe ends with a click on whatever stack is under the finger: that click must not step again.
+    swiped.current = Math.abs(dx) > SWIPE_PX;
+    if (swiped.current) onStep(dx < 0 ? 1 : -1);
+  }
+  // Owner 10/11/2026 (motion prototype vong-7): pressing a side stack brings it to the centre. The side stacks stay `inert`
+  // (design §8.5: blurred text is not read, the keys and arrows do the same), so a browser hands the press to the track: the
+  // stack is found from where the press landed, one step per --gcar-step from the centre.
+  function onTrackClick(event: MouseEvent<HTMLElement>) {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    const target = event.target as Element;
+    if (target.closest('a, button')) return;
+    const slot = target.closest<HTMLElement>('[data-k]');
+    let k: number;
+    if (slot) {
+      k = Number(slot.dataset.k);
+    } else {
+      const track = event.currentTarget;
+      const rect = track.getBoundingClientRect();
+      const style = getComputedStyle(track);
+      // --gcar-step is in rem (the page scales on wide screens, owner 10/11/2026): turn it into px.
+      const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const step = (Number.parseFloat(style.getPropertyValue('--gcar-step')) || 8) * rootPx;
+      const reach = Number.parseFloat(style.getPropertyValue('--gcar-reach')) || 1;
+      k = Math.round((event.clientX - (rect.left + rect.width / 2)) / step);
+      if (Math.abs(k) > reach) return;
+    }
+    const shown = new Set(groups.map((_, index) => stepTo(centre, index, groups.length)));
+    if (k !== 0 && Math.abs(k) <= 2 && shown.has(k)) onStep(k);
   }
   function onWheel(event: WheelEvent) {
     if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || Math.abs(event.deltaX) < WHEEL_PX) return;
@@ -70,6 +101,7 @@ export function GroupCarousel({
         onPointerUp={onPointerUp}
         onPointerCancel={() => (pointerX.current = null)}
         onWheel={onWheel}
+        onClick={onTrackClick}
       >
         {groups.map((g, index) => {
           const k = stepTo(centre, index, groups.length);
@@ -81,6 +113,7 @@ export function GroupCarousel({
               key={g.id}
               className="gcar-slot"
               data-abs={abs}
+              data-k={k}
               inert={!isCentre || undefined}
               aria-hidden={!isCentre || undefined}
               // raw-ok: the slot's distance to the centre drives its transform in globals.css
@@ -102,7 +135,7 @@ export function GroupCarousel({
             <ArrowButton side="next" label={t('next')} onPress={() => onStep(1)} />
           </>
         )}
-        <p aria-hidden className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
+        <p aria-hidden data-part="2" className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
           <span className="md:hidden">{t('hintPhone')}</span>
           <span className="hidden md:inline">{t('hint')}</span>
         </p>
@@ -116,6 +149,7 @@ function ArrowButton({ side, label, onPress }: { side: 'prev' | 'next'; label: s
   return (
     <button
       type="button"
+      data-part="1"
       aria-label={label}
       onClick={onPress}
       onPointerDown={(e) => e.stopPropagation()}
