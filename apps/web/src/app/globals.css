@@ -22,6 +22,16 @@
   --animate-wm-dialog-in: wm-dialog-in 240ms var(--ease-out-strong);
   --animate-wm-sheet-in: wm-sheet-in 240ms var(--ease-out-strong);
   --animate-wm-pop-out: wm-pop-out 150ms var(--ease-wm-close) forwards;
+  /* The group picker (motion doc §3): from a little above, smaller and blurred, 220ms on the main curve. */
+  --animate-wm-picker-in: wm-picker-in 220ms var(--ease-wm-out);
+
+  @keyframes wm-picker-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+      filter: blur(6px);
+    }
+  }
 
   @keyframes wm-dialog-in {
     from {
@@ -622,4 +632,134 @@
   font-size: 1.12em;
   font-weight: 700;
   color: var(--color-wm-ink);
+}
+
+/* The Nhóm carousel "Trượt mờ" (motion doc §3, Figma 82:3213 / 82:3368; GroupCarousel.tsx). Each slot gets --k (signed distance to
+   the centre) inline and data-abs (|k|). Phones: 128px step, one neighbour each side; from 48rem: 230px step, two each side. */
+.gcar-track {
+  position: relative;
+  height: 21rem;
+  --gcar-step: 128px;
+  --gcar-drop: 21px;
+}
+@media (width >= 48rem) {
+  .gcar-track {
+    height: 29.5rem;
+    --gcar-step: 230px;
+    --gcar-drop: 28px;
+  }
+}
+.gcar-slot {
+  position: absolute;
+  top: 1.875rem;
+  left: 50%;
+  translate: -50% 0;
+  transform-origin: top center;
+  transform: translateX(calc(var(--k) * var(--gcar-step))) translateY(calc(var(--gcar-a) * var(--gcar-drop))) scale(var(--gcar-s));
+  opacity: var(--gcar-o);
+  z-index: calc(10 - var(--gcar-a));
+  transition:
+    transform var(--transition-duration-wm-carousel) var(--ease-wm-carousel),
+    opacity var(--transition-duration-wm-fade) var(--ease-wm-out);
+}
+.gcar-slot .gstack {
+  filter: blur(var(--gcar-b));
+  transition:
+    filter var(--transition-duration-wm-blur) var(--ease-wm-out),
+    translate 300ms var(--ease-wm-out);
+}
+.gcar-slot[data-abs='0'] { --gcar-a: 0; --gcar-s: 1; --gcar-o: 1; --gcar-b: 0px; }
+.gcar-slot[data-abs='1'] { --gcar-a: 1; --gcar-s: 0.83; --gcar-o: 0.7; --gcar-b: 3.6px; }
+.gcar-slot[data-abs='2'] { --gcar-a: 2; --gcar-s: 0.66; --gcar-o: 0; --gcar-b: 7.2px; }
+.gcar-slot[data-abs='3'] { --gcar-a: 3; --gcar-s: 0.5; --gcar-o: 0; --gcar-b: 7.2px; }
+@media (width >= 48rem) {
+  .gcar-slot[data-abs='2'] { --gcar-o: 0.4; }
+}
+.gcar-track[data-instant] .gcar-slot,
+.gcar-track[data-instant] .gcar-slot .gstack {
+  transition: none;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .gcar-slot[data-abs='0']:hover .gstack {
+    translate: 0 -8px;
+  }
+}
+.gcar-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+/* "Quầng màu nhóm": a soft glow in the centre group's wash; its colour changes in 700ms. */
+.gcar-halo {
+  position: absolute;
+  inset: 0 8% 10%;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.9;
+  transition: background-color var(--transition-duration-wm-halo) var(--ease-wm-out);
+}
+/* The block under the carousel rises in again for each group: rows 14px up, 45ms apart; bar segments grow from the left. */
+@keyframes wm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes wm-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+.gcar-rise > * {
+  animation: wm-rise var(--transition-duration-wm-rise) var(--ease-wm-rise) both;
+}
+.gcar-rise > :nth-child(2) { animation-delay: 45ms; }
+.gcar-rise > :nth-child(3) { animation-delay: 90ms; }
+.gcar-rise figure li > span:first-child {
+  transform-origin: left;
+  animation: wm-grow var(--transition-duration-wm-count) var(--ease-wm-out) both;
+}
+.gcar-rise figure li:nth-child(1) > span:first-child { animation-delay: 120ms; }
+.gcar-rise figure li:nth-child(2) > span:first-child { animation-delay: 160ms; }
+.gcar-rise figure li:nth-child(3) > span:first-child { animation-delay: 200ms; }
+.gcar-rise figure li:nth-child(4) > span:first-child { animation-delay: 240ms; }
+.gcar-rise figure li:nth-child(5) > span:first-child { animation-delay: 280ms; }
+.gcar-rise figure li:nth-child(6) > span:first-child { animation-delay: 320ms; }
+@media (prefers-reduced-motion: reduce) {
+  .gcar-slot,
+  .gcar-slot .gstack,
+  .gcar-halo {
+    transition: none;
+  }
+  .gcar-rise > *,
+  .gcar-rise figure li > span:first-child {
+    animation: none;
+  }
+}
+
+/* Một nhóm opening from the carousel (motion doc §3, flip.ts): while the stack flies (FLIP 380ms), the other parts come in from
+   blur(12px) translateY(12px), 340ms, 60ms then 22ms apart. Closing: they dissolve in 150ms before the route changes. */
+@keyframes wm-page-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(12px);
+  }
+}
+@keyframes wm-page-out {
+  to {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+.wm-page-in [data-in] {
+  animation: wm-page-in var(--transition-duration-wm-page-in) var(--ease-wm-out) both;
+  animation-delay: 60ms;
+}
+.wm-page-in [data-in='1'] { animation-delay: 82ms; }
+.wm-page-in [data-in='2'] { animation-delay: 104ms; }
+.wm-page-out [data-in] {
+  animation: wm-page-out var(--transition-duration-wm-close) var(--ease-wm-close) forwards;
 }

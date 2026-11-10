@@ -1,4 +1,4 @@
-import { sortForToday } from './GroupCard';
+import { sortForToday } from './deck-actions';
 import type { GroupSummary } from './groups-api';
 
 /** Cards behind a group stack (prototype `layers`, vong-7 :666): more waiting cards, a thicker stack. */

@@ -20,6 +20,8 @@
   --color-wm-fail-soft: #f8e7e5;
 
   /* Radius (Wordmet số đo) */
+  /* 3px: the 9px colour squares of legends and stage rows (Figma, M3). */
+  --radius-wm-xs: 0.1875rem;
   --radius-wm-sm: 0.375rem;
   --radius-wm-md: 0.625rem;
   --radius-wm-lg: 0.875rem;

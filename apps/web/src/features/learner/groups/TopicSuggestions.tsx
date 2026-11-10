@@ -1,13 +1,14 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { cn } from '@/lib/cn';
-import { useTopicSuggestions, type TopicSuggestion } from './groups-api';
+import { useTopicSuggestions } from './groups-api';
 
-const TONES = ['bg-accent-soft', 'bg-success-soft', 'bg-primary-soft'] as const;
+/** Rows shown on Hôm nay (Figma 117:4425 "Tạo nhóm nhanh theo chủ đề"). */
+const ROWS = 4;
 
-/** "Tạo nhóm nhanh theo chủ đề" (K/94, K/16; API (h), D17): hidden when the API suggests nothing (GH3). */
+/** "Tạo nhóm nhanh theo chủ đề": the first topic suggestions as rows; hidden when the API suggests nothing (GH3). */
 export function TopicSuggestions() {
   const t = useTranslations('App.groups');
   const locale = useLocale();
@@ -15,47 +16,28 @@ export function TopicSuggestions() {
   if (!data || data.items.length === 0) return null;
   return (
     <section className="flex flex-col gap-3" aria-labelledby="topic-suggestions">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="topic-suggestions" className="text-title font-semibold text-ink">
+      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
+        <h2 id="topic-suggestions" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
           {t('suggestTitle')}
         </h2>
-        <Link href={`/${locale}/app/lookup`} className="text-ui font-semibold text-primary underline underline-offset-2">
+        <Link href={`/${locale}/app/lookup`} className="text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
           {t('suggestAll')}
         </Link>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {data.items.map((item, i) => (
-          <SuggestionCard key={`${item.topic.code}-${item.level}`} item={item} tone={TONES[i % TONES.length]} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SuggestionCard({ item, tone }: { item: TopicSuggestion; tone: string }) {
-  const t = useTranslations('App.groups');
-  const locale = useLocale();
-  const title = t('suggestCard', { topic: item.topic.name, level: item.level });
-  return (
-    <section aria-label={title} className={cn('pastel-island flex flex-col gap-3 rounded-card p-4 shadow-ledge-soft', tone)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-body font-semibold text-ink">{title}</h3>
-        <span className="shrink-0 text-caption text-muted">{t('suggestCount', { count: item.count })}</span>
-      </div>
-      <ul className="flex flex-col gap-1.5">
-        {item.samples.map((sample) => (
-          <li key={sample.sense_id} className="flex min-w-0 items-baseline gap-2 rounded-sm bg-surface px-2.5 py-1.5">
-            <span className="text-ui font-semibold text-ink">{sample.lemma}</span>
-            {sample.meaning && <span className="truncate text-caption text-muted">{sample.meaning}</span>}
+      <ul className="grid gap-x-7 gap-y-1.5 md:grid-cols-2">
+        {data.items.slice(0, ROWS).map((item) => (
+          <li key={`${item.topic.code}-${item.level}`} className="border-t border-wm-line">
+            <Link
+              href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
+              className="flex min-h-11 items-center gap-3 px-0.5 py-3 outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+            >
+              <span className="min-w-0 flex-1 truncate font-wm-sans text-wm-button text-wm-ink">{t('suggestCard', { topic: item.topic.name, level: item.level })}</span>
+              <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('suggestCount', { count: item.count })}</span>
+              <ArrowRight aria-hidden className="size-4 shrink-0 text-wm-muted" />
+            </Link>
           </li>
         ))}
       </ul>
-      <Link
-        href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
-        className="flex min-h-control w-fit items-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink"
-      >
-        {t('suggestMore')}
-      </Link>
     </section>
   );
 }

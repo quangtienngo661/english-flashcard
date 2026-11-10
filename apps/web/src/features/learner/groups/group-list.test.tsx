@@ -1,125 +1,182 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { GroupListPage } from './GroupListPage';
 
+const push = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => '/vi/app/groups',
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), push }),
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
 vi.setConfig({ testTimeout: 20_000 });
 
 const cells = [1, 2, 3, 0, 0, 0].map((total, level) => ({ level, total, due: 0 }));
-const deck = (i: number, waitingCards: number) => ({
-  id: `g${i}`, name: `Nhóm ${i}`, version: 1, total: 10, today: { priority: 0, due: waitingCards, new: 0 }, cells, backlog: 0,
+const deck = (id: string, name: string, due: number, total = 10) => ({
+  id, name, version: 1, total, today: { priority: 0, due, new: 0 }, cells: total ? cells : cells.map((c) => ({ ...c, total: 0 })), backlog: 0,
+  available: { due, new: 0 },
 });
+// carouselOrder: most waiting first, then done, then empty.
+const FIVE = [
+  deck('g-12', 'Đề 12 · Writing', 24),
+  deck('g-9', 'Đề 9 · Listening', 18),
+  deck('g-14', 'Đề 14 · Reading', 11),
+  deck('g-11', 'Đề 11 · Speaking', 0),
+  deck('g-jp', 'Du lịch Nhật', 0, 0),
+];
 const base = {
   'GET /v1/topics/suggestions': () => Response.json({ items: [] }),
   'GET /v1/me/app-config': () => Response.json({ learning: { backlog_after_days: 60, groups_per_user: 100 } }),
   'GET /v1/me/entitlements': () => Response.json({ plan: 'free', pools: {}, sources: [] }),
 };
 const withGroups = (groups: unknown[], extra = {}) => ({ ...base, 'GET /v1/groups': () => Response.json({ items: groups }), ...extra });
-const names = () => within(screen.getByRole('list', { name: 'Nhóm của bạn' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+const region = () => screen.findByRole('region', { name: 'Các nhóm của bạn' });
+const centre = async () => within(await region()).getByRole('link');
+const key = (k: string, target: Element = document.body) => act(() => void fireEvent.keyDown(target, { key: k }));
 
-describe('GroupListPage (K/16, K/16b)', () => {
-  it('filter: all · N decks, cards waiting, done today', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(1, 3), deck(2, 0), deck(3, 1)]) });
-    await screen.findByText('Nhóm 1');
-    expect(screen.getByRole('button', { name: /Tất cả · 3 nhóm/ })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Tất cả · 3 nhóm/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Xong hôm nay' }));
-    expect(names()).toEqual(['Nhóm 2']);
-    await userEvent.click(screen.getByRole('button', { name: /Xong hôm nay/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Còn thẻ chờ' }));
-    expect(names()).toEqual(['Nhóm 1', 'Nhóm 3']);
+describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)', () => {
+  it('starts on the first group of the carousel order; the only link inside the region is the centre stack', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[3], FIVE[4], FIVE[1], FIVE[0], FIVE[2]]) });
+    const link = await centre();
+    expect(link).toHaveTextContent('Đề 12 · Writing');
+    expect(link).toHaveAttribute('href', '/vi/app/group?id=g-12');
+    const r = await region();
+    expect(within(r).getAllByRole('link')).toHaveLength(1);
+    const sides = r.querySelectorAll('[inert]');
+    expect(sides.length).toBe(4);
+    sides.forEach((s) => expect(s).toHaveAttribute('aria-hidden', 'true'));
   });
 
-  it('an empty deck: chip "Chưa có từ" and [Thêm từ] locked to it, no "Học lại cả nhóm" (owner 06/11/2026)', async () => {
-    const empty = { ...deck(9, 0), name: 'test 1', total: 0, cells: cells.map((c) => ({ ...c, total: 0 })) };
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(2, 0), empty], { 'GET /v1/groups/g9/queue?mode=all': () => Response.json({ cards: [] }) }) });
-    const card = (await screen.findByRole('link', { name: 'test 1' })).closest('li')!;
-    expect(within(card).getByText('Chưa có từ')).toBeInTheDocument();
-    expect(within(card).queryByText('Xong hôm nay')).not.toBeInTheDocument();
-    expect(within(card).queryByRole('link', { name: 'Học lại cả nhóm' })).not.toBeInTheDocument();
-    // Control: the deck beside it has words and is done for today, so it still offers to study again.
-    const done = screen.getByRole('link', { name: 'Nhóm 2' }).closest('li')!;
-    expect(within(done).getByText('Xong hôm nay')).toBeInTheDocument();
-    expect(within(done).getByRole('link', { name: 'Ôn tập' })).toHaveAttribute('href', '/vi/app/recall?group=g2');
-    await userEvent.click(within(card).getByRole('button', { name: 'Tùy chọn nhóm test 1' }));
-    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
+  it('→ makes the next group the centre and the live line reads its name and waiting cards', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('ArrowRight');
+    expect(await centre()).toHaveTextContent('Đề 9 · Listening');
+    expect(screen.getByText('Đề 9 · Listening, 18 thẻ chờ')).toBeInTheDocument();
+  });
+
+  it('← from the first group wraps to the last', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('ArrowLeft');
+    expect(await centre()).toHaveTextContent('Du lịch Nhật');
+  });
+
+  it('the arrow buttons step too', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    await userEvent.click(screen.getByRole('button', { name: 'Nhóm sau' }));
+    expect(await centre()).toHaveTextContent('Đề 9 · Listening');
+    await userEvent.click(screen.getByRole('button', { name: 'Nhóm trước' }));
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+  });
+
+  it('↓ opens the centre group', async () => {
+    push.mockClear();
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('ArrowDown');
+    expect(push).toHaveBeenCalledWith('/vi/app/group?id=g-12');
+  });
+
+  it('below the carousel: the rhythm bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    expect(screen.getByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-12');
+    expect(screen.getByRole('link', { name: 'Xem nhóm →' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
+  });
+
+  it('F opens the picker; "de 9" leaves Đề 9; Enter makes it the centre and closes the picker', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('f');
+    const search = await screen.findByRole('combobox', { name: 'Tìm trong 5 nhóm' });
+    await userEvent.type(search, 'de 9');
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)).toEqual(['Đề 9 · Listening18 chờ']);
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
+    expect(await centre()).toHaveTextContent('Đề 9 · Listening');
+  });
+
+  it('the picker groups the rows by state and marks the centre group', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await userEvent.click(await screen.findByRole('button', { name: /Đề 12 · Writing/ }));
+    const list = await screen.findByRole('listbox');
+    expect(within(list).getAllByRole('group').map((g) => g.getAttribute('aria-label'))).toEqual(['còn thẻ chờ', 'xong hôm nay', 'chưa có từ']);
+    expect(within(list).getByRole('option', { selected: true })).toHaveTextContent('Đề 12 · Writing');
+    expect(within(list).getByRole('option', { name: /Du lịch Nhật/ })).toHaveTextContent('trống');
+    expect(within(list).getByRole('option', { name: /Đề 11/ })).toHaveTextContent('10 từ');
+  });
+
+  it('↓ ↓ Enter in the picker picks the third row; Esc closes and gives focus back to the button', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    const button = await screen.findByRole('button', { name: /Đề 12 · Writing/ });
+    await userEvent.click(button);
+    await screen.findByRole('listbox');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    expect(await centre()).toHaveTextContent('Đề 14 · Reading');
+    const again = screen.getByRole('button', { name: /Đề 14 · Reading/ });
+    await userEvent.click(again);
+    await screen.findByRole('listbox');
     await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-    await userEvent.click(within(card).getByRole('button', { name: 'Thêm từ' }));
-    expect(await screen.findByText('Lưu vào nhóm: test 1', {}, { timeout: 5000 })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
+    await waitFor(() => expect(again).toHaveFocus());
   });
 
-  it('đợt C §4.1: the buttons follow what waits today; none shows a count', async () => {
-    const levels = (l: number[]) => l.map((total, level) => ({ level, total, due: 0 }));
-    const both = { ...deck(1, 4), name: 'Du lịch', today: { priority: 1, due: 3, new: 5 } };
-    const dueOnly = { ...deck(2, 4), name: 'Công việc' };
-    const newOnly = { ...deck(3, 0), name: 'Ẩm thực', total: 12, today: { priority: 0, due: 0, new: 12 }, cells: levels([12, 0, 0, 0, 0, 0]) };
-    const mastered = { ...deck(4, 0), name: 'IELTS', total: 120, cells: levels([10, 20, 20, 23, 30, 17]) };
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([both, dueOnly, newOnly, mastered]) });
-    const card = async (name: string) => (await screen.findByRole('link', { name })).closest('li')!;
-    const links = (li: HTMLElement) => within(li).getAllByRole('link').slice(1).map((a) => [a.textContent, a.getAttribute('href')]);
-    expect(links(await card('Du lịch'))).toEqual([['Học', '/vi/app/review?group=g1&mode=new'], ['Ôn', '/vi/app/recall?group=g1']]);
-    expect(links(await card('Công việc'))).toEqual([['Học', '/vi/app/review?group=g2&mode=all'], ['Ôn', '/vi/app/recall?group=g2']]);
-    expect(links(await card('Ẩm thực'))).toEqual([['Học', '/vi/app/review?group=g3&mode=new']]);
-    const done = await card('IELTS');
-    expect(links(done)).toEqual([['Ôn tập', '/vi/app/recall?group=g4']]);
-    expect(within(done).getByText('Xong hôm nay')).toBeInTheDocument();
-    // DC11: words at stage 4 or 5 (30 + 17) are "đã thuộc".
-    expect(within(done).getByText('120 từ · 47 đã thuộc')).toBeInTheDocument();
-    expect(within(await card('Ẩm thực')).getByText('12 từ')).toBeInTheDocument();
+  it('F typed into the picker search does not reopen or close it; ← there does not move the carousel', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('f');
+    const search = await screen.findByRole('combobox');
+    await userEvent.type(search, 'f');
+    expect(search).toHaveValue('f');
+    key('ArrowLeft', search);
+    expect(screen.getAllByRole('listbox')).toHaveLength(1);
+    await userEvent.keyboard('{Escape}');
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
   });
 
-  it('filter "Xong hôm nay" leaves out an empty deck; "Tất cả" keeps it', async () => {
-    const empty = { ...deck(9, 0), name: 'test 1', total: 0, cells: cells.map((c) => ({ ...c, total: 0 })) };
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(2, 0), empty]) });
-    await screen.findByText('test 1');
-    expect(names()).toEqual(['Nhóm 2', 'test 1']);
-    await userEvent.click(screen.getByRole('button', { name: /Tất cả · 2 nhóm/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Xong hôm nay' }));
-    expect(names()).toEqual(['Nhóm 2']);
+  it('← typed in the top-bar search box does not move the carousel', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    const box = screen.getAllByRole('searchbox')[0] ?? screen.getAllByRole('textbox')[0];
+    key('ArrowLeft', box);
+    key('f', box);
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+    expect(screen.queryByRole('listbox')).toBeNull();
   });
 
-  it('K/16b: from 10 decks a search box filters by name', async () => {
-    const many = Array.from({ length: 10 }, (_, i) => deck(i + 1, 1));
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(many) });
-    const search = await screen.findByRole('searchbox', { name: 'Tìm trong 10 nhóm' });
-    await userEvent.type(search, 'Nhóm 10');
-    expect(names()).toEqual(['Nhóm 10']);
+  it('one group: no arrow buttons, ← → do nothing', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[0]]) });
+    await centre();
+    expect(screen.queryByRole('button', { name: 'Nhóm sau' })).toBeNull();
+    key('ArrowRight');
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+    expect((await region()).querySelectorAll('[inert]').length).toBe(0);
   });
 
-  it('fewer than 10 decks: no search box', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(1, 1)]) });
-    await screen.findByText('Nhóm 1');
-    expect(screen.queryByRole('searchbox', { name: /Tìm trong/ })).not.toBeInTheDocument();
+  it('two groups: exactly two stacks, never the same group on both sides', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[0], FIVE[1]]) });
+    const r = await region();
+    expect(within(r).getAllByText(/^Đề (12|9) · /)).toHaveLength(2);
   });
-});
 
-describe('topic suggestions (K/94)', () => {
-  it('M3: "Xem mọi chủ đề trong Tra từ" opens Tra từ', async () => {
-    renderApp(<GroupListPage />, { chrome: true,
-      routes: withGroups([deck(1, 1)], {
-        'GET /v1/topics/suggestions': () =>
-          Response.json({ items: [{ topic: { code: 'business', name: 'Kinh doanh' }, level: 'B1', count: 40, samples: [] }] }),
-      }),
-    });
-    expect(await screen.findByText('Tạo nhóm nhanh theo chủ đề')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem mọi chủ đề trong Tra từ' })).toHaveAttribute('href', '/vi/app/lookup');
+  it('no group yet: the empty block invites the first group', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([]) });
+    expect(await screen.findByText('Chưa có nhóm nào')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tạo nhóm đầu tiên' })).toBeInTheDocument();
   });
 });
 
-describe('deck dialogs (K/17, K/14)', () => {
-  it('K/17: create counts "12/60", stops at 60 characters, and a double click sends one request', async () => {
+describe('deck dialogs from the list (K/17)', () => {
+  it('"+ Tạo nhóm" opens "Tạo nhóm": counts "12/60", stops at 60 characters, and a double click sends one request', async () => {
     let release!: () => void;
     const { count } = renderApp(<GroupListPage />, { chrome: true,
-      routes: withGroups([deck(1, 1)], {
+      routes: withGroups([FIVE[0]], {
         'POST /v1/groups': () => new Promise<Response>((r) => (release = () => r(Response.json({ id: 'g9', name: 'Du lịch Nhật' }, { status: 201 })))),
       }),
     });
@@ -137,28 +194,8 @@ describe('deck dialogs (K/17, K/14)', () => {
     release();
   });
 
-  it('E18: after a version conflict the name field shows the name saved elsewhere (review I6)', async () => {
-    let stored = { id: 'g1', name: 'Nhóm 1', version: 1, item_count: 10, removable_items: 0 };
-    renderApp(<GroupListPage />, { chrome: true,
-      routes: withGroups([deck(1, 1)], {
-        'GET /v1/groups/g1': () => Response.json(stored),
-        'PATCH /v1/groups/g1': () => {
-          stored = { ...stored, name: 'Tên từ máy khác', version: 2 };
-          return problem(409, 'version-conflict');
-        },
-      }),
-    });
-    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm Nhóm 1' }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên nhóm' }));
-    const field = await screen.findByRole('textbox', { name: 'Tên nhóm' });
-    await userEvent.clear(field);
-    await userEvent.type(field, 'Tên của tôi');
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Lưu tên mới' }));
-    await waitFor(() => expect(field).toHaveValue('Tên từ máy khác'));
-  });
-
   it('a 409 group-limit-reached says the limit with the admin number', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(1, 1)], { 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[0]], { 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tạo nhóm' }));
     await userEvent.type(await screen.findByRole('textbox', { name: 'Tên nhóm' }), 'Mới');
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
@@ -166,40 +203,10 @@ describe('deck dialogs (K/17, K/14)', () => {
   });
 
   it('a 409 group-name-taken shows under the name', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([deck(1, 1)], { 'POST /v1/groups': () => problem(409, 'group-name-taken') }) });
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[0]], { 'POST /v1/groups': () => problem(409, 'group-name-taken') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tạo nhóm' }));
     await userEvent.type(await screen.findByRole('textbox', { name: 'Tên nhóm' }), 'Nhóm 1');
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
     expect(await screen.findByText('Đã có nhóm tên này. Chọn tên khác.')).toBeInTheDocument();
-  });
-
-  it('K/14: delete says how many words leave learning (removable_items), then deletes', async () => {
-    const { count } = renderApp(<GroupListPage />, { chrome: true,
-      routes: withGroups([{ ...deck(1, 1), name: 'Công nghệ' }], {
-        'GET /v1/groups/g1': () => Response.json({ id: 'g1', name: 'Công nghệ', version: 1, item_count: 18, removable_items: 12 }),
-        'DELETE /v1/groups/g1': () => new Response(null, { status: 204 }),
-      }),
-    });
-    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm Công nghệ' }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Xóa nhóm' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Xóa nhóm “Công nghệ”?' });
-    expect(within(dialog).getByText(/12 từ chỉ có trong nhóm này/)).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Giữ nhóm' })).toBeInTheDocument();
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Xóa nhóm và 12 từ' }));
-    await waitFor(() => expect(count('DELETE', '/v1/groups/g1')).toBe(1));
-  });
-
-  it('English: "Delete deck" and "Cancel"', async () => {
-    renderApp(<GroupListPage />, { chrome: true,
-      locale: 'en',
-      routes: withGroups([{ ...deck(1, 1), name: 'Tech' }], {
-        'GET /v1/groups/g1': () => Response.json({ id: 'g1', name: 'Tech', version: 1, item_count: 5, removable_items: 0 }),
-      }),
-    });
-    await userEvent.click(await screen.findByRole('button', { name: 'Options for Tech' }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete deck' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
-    expect(await within(dialog).findByRole('button', { name: 'Delete deck' })).toBeInTheDocument();
   });
 });

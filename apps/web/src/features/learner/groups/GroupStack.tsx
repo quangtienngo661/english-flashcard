@@ -6,8 +6,7 @@ import type { Ref } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stackDepth } from './carousel';
-import { mastered } from './deck-actions';
-import { waiting } from './GroupCard';
+import { mastered, waiting } from './deck-actions';
 import type { GroupSummary } from './groups-api';
 
 /**
@@ -20,6 +19,7 @@ export function GroupStack({
   size,
   depth,
   href,
+  onOpen,
   ref,
   className,
 }: {
@@ -29,6 +29,8 @@ export function GroupStack({
   depth?: number;
   /** Makes the group name a link that covers the whole card. */
   href?: string;
+  /** Runs when the name link is pressed, before navigation (the open FLIP remembers the stack). */
+  onOpen?: () => void;
   ref?: Ref<HTMLDivElement>;
   className?: string;
 }) {
@@ -38,7 +40,7 @@ export function GroupStack({
   const tone = groupTone(group.id, group.total);
   const layers = empty ? 0 : Math.min(depth ?? stackDepth(count), stackDepth(count));
   const name = href ? (
-    <Link href={href} className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-wm-xl focus-visible:after:outline-3 focus-visible:after:outline-offset-2 focus-visible:after:outline-wm-accent">
+    <Link href={href} onClick={onOpen} className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-wm-xl focus-visible:after:outline-3 focus-visible:after:outline-offset-2 focus-visible:after:outline-wm-accent">
       {group.name}
     </Link>
   ) : (

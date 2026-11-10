@@ -82,3 +82,17 @@ test('no horizontal scroll on Today and Backlog with an unbroken deck name and o
   await expect(page.getByText('leave').first()).toBeVisible();
   await noSideScroll(page);
 });
+
+// Part 3 Review Focus 5: a 60-character unbroken name on a Hôm nay deck card (150 px on phones, 176 px on desktop).
+test('no horizontal scroll on Today with an unbroken name on a deck card (vi)', async ({ page }) => {
+  const cells = [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: level === 1 ? 6 : 0, due: level === 1 ? 6 : 0 }));
+  const deck = (id: string, name: string, due: number) => ({
+    id, name, version: 1, total: 6, today: { priority: 0, due, new: 0 }, cells, backlog: 0, available: { due, new: 0 }, next_lemma: UNBROKEN,
+  });
+  await signedInAs(page, 'pro', {
+    'GET /v1/groups': () => ({ json: { items: [deck('00000000-0000-4000-8000-000000000a01', 'Hero', 6), deck(DECK, UNBROKEN, 3)] } }),
+  });
+  await page.goto('/vi/app');
+  await expect(page.getByRole('list', { name: 'Nhóm của bạn' }).getByRole('link', { name: UNBROKEN })).toBeVisible();
+  await noSideScroll(page);
+});

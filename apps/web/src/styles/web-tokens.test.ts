@@ -52,7 +52,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .flatMap((prefix) => [...tokens(web, prefix)].map(([name, value]) => [`${prefix}-${name}`, value]))
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
-    expect(tokens(web, 'radius-wm').size).toBe(8);
+    expect(tokens(web, 'radius-wm').size).toBe(9);
     expect(tokens(web, 'shadow-wm').size).toBe(8);
   });
 
@@ -60,6 +60,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect(light.get('accent')).toBe('#1e3a8a');
     expect(dark.get('accent')).toBe('#8da2ff');
     expect(tokens(web, 'radius-wm').get('button')).toBe('0.625rem');
+    expect(tokens(web, 'radius-wm').get('xs')).toBe('0.1875rem');
     expect(tokens(web, 'text-wm').get('base')).toBe('1rem');
     expect(tokens(web, 'shadow-wm').get('btn')).toBe('0 0.625rem 1.75rem -0.625rem rgb(30 58 138 / 0.34)');
   });

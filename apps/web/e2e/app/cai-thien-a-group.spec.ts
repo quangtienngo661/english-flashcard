@@ -89,6 +89,8 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await sheet.getByRole('link', { name: vi.addWord.seeWords }).click();
     await expect(page).toHaveURL(`/vi/app/topic?code=${TOPIC.code}&level=B1&group=${DECK}`);
     await expect(sheet).toBeHidden();
+    // The target select lives in the floating bar, shown once a word is ticked (giao diện mới M3, Figma 98:3127).
+    await page.getByRole('checkbox', { name: 'Chọn deploy' }).first().check({ force: true });
     await expect(page.getByRole('button', { name: new RegExp(vi.topic.addTo) })).toHaveText(NAME);
     await page.getByRole('button', { name: fill(vi.topic.addAll, { count: 2 }), exact: true }).click();
     await expect(page.getByText(fill(vi.topic.result, { added: 2, name: NAME }))).toBeVisible();

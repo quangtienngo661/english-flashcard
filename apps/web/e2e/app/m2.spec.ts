@@ -109,8 +109,9 @@ test.describe('M2 flows (mocked API)', () => {
     await expect(page.getByText('Đã tạo nhóm “Du lịch Nhật”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/groups')).toHaveLength(1);
 
-    await page.goto('/vi/app/groups');
-    await page.getByRole('button', { name: 'Tùy chọn nhóm Du lịch Nhật' }).click();
+    // The card menu left the list (giao diện mới M3): rename and delete live on the deck page.
+    await page.goto(`/vi/app/group?id=${NEW}`);
+    await page.getByRole('button', { name: vi.group.menu, exact: true }).click();
     await page.getByRole('menuitem', { name: vi.groups.rename }).click();
     const rename = page.getByRole('dialog', { name: vi.groups.renameTitle });
     await rename.getByRole('textbox', { name: vi.groups.nameLabel }).fill('Nhật Bản');
@@ -118,23 +119,30 @@ test.describe('M2 flows (mocked API)', () => {
     await expect(page.getByText(vi.groups.renamed)).toBeVisible();
     expect(requests(page, 'PATCH', `/v1/groups/${NEW}`)[0].body).toEqual({ name: 'Nhật Bản', version: 1 });
 
-    await page.getByRole('button', { name: 'Tùy chọn nhóm Nhật Bản' }).click();
+    await page.getByRole('button', { name: vi.group.menu, exact: true }).click();
     await page.getByRole('menuitem', { name: vi.groups.delete }).click();
     const remove = page.getByRole('dialog', { name: 'Xóa nhóm “Nhật Bản”?' });
     await remove.getByRole('button', { name: vi.groups.deleteSubmitNone }).click();
-    await expect(page.getByText('Đã xóa nhóm “Nhật Bản”.')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Nhật Bản', level: 3 })).toHaveCount(0);
+    // Delete leaves for the list with a full page load (hardReplace); wait for the request, then open the list.
+    await expect.poll(() => requests(page, 'DELETE', `/v1/groups/${NEW}`).length).toBe(1);
+    await page.goto('/vi/app/groups');
+    await expect(page.getByRole('region', { name: vi.groups.carousel })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Nhật Bản/ })).toHaveCount(0);
   });
 
-  test('deck filter shows decks with cards waiting or done today', async ({ page }) => {
+  test('the carousel moves with the keys and the picker (F) jumps to a deck', async ({ page }) => {
     const { handlers } = decksApi([summary(G, 'Công nghệ'), done(G2, 'Du lịch')]);
     await signedInAs(page, 'free', handlers);
     await page.goto('/vi/app/groups');
-    const decks = page.getByRole('list', { name: vi.groups.title });
-    await expect(decks.getByRole('heading', { level: 3 })).toHaveText(['Công nghệ', 'Du lịch']);
-    await page.getByRole('button', { name: /Tất cả · 2 nhóm/ }).click();
-    await page.getByRole('option', { name: vi.groups.filterDone }).click();
-    await expect(decks.getByRole('heading', { level: 3 })).toHaveText(['Du lịch']);
+    const carousel = page.getByRole('region', { name: vi.groups.carousel });
+    await expect(carousel.getByRole('link')).toHaveText(/Công nghệ/);
+    await page.keyboard.press('ArrowRight');
+    await expect(carousel.getByRole('link')).toHaveText(/Du lịch/);
+    await page.keyboard.press('f');
+    await page.getByRole('combobox').fill('cong');
+    await page.keyboard.press('Enter');
+    await expect(carousel.getByRole('link')).toHaveText(/Công nghệ/);
+    await expect(carousel.getByRole('link')).toHaveAttribute('href', `/vi/app/group?id=${G}`);
   });
 
   test('long-overdue words: one button relearns them all', async ({ page }) => {
@@ -150,9 +158,10 @@ test.describe('M2 flows (mocked API)', () => {
     const { handlers } = decksApi([summary(G, 'Công nghệ')]);
     await signedInAs(page, 'free', { ...handlers, ...topicApi });
     await page.goto('/vi/app/topic?code=business&level=B1');
-    await expect(page.getByRole('listitem', { name: 'budget' }).getByText('Đang học · Công nghệ')).toBeVisible();
+    await expect(page.getByRole('listitem', { name: 'budget' }).getByText('đang học · Công nghệ')).toBeVisible();
     await page.getByRole('checkbox', { name: 'Chọn invoice' }).check({ force: true });
-    await page.getByRole('checkbox', { name: 'Chọn profit' }).check({ force: true });
+    // On phones the floating bar can cover the next row: tick it from the keyboard.
+    await page.getByRole('checkbox', { name: 'Chọn profit' }).press('Space');
     await page.getByRole('button', { name: 'Thêm 2 từ đã chọn' }).click();
     await expect(page.getByText('Đã thêm 2 từ vào nhóm “Kinh doanh · B1”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/groups')[0].body).toEqual({ name: 'Kinh doanh · B1' });
@@ -196,7 +205,7 @@ const PAGES: Array<{ path: string; ready: (page: Page) => Promise<void>; flip?: 
   { path: '', ready: (p) => expect(p.getByRole('heading', { level: 1 }).first()).toBeVisible() },
   { path: 'groups', ready: (p) => expect(p.getByRole('heading', { level: 1 }).first()).toBeVisible() },
   { path: `group?id=${G}`, ready: (p) => expect(p.getByRole('heading', { level: 1 }).first()).toBeVisible() },
-  { path: `group/backlog?id=${G}`, ready: (p) => expect(p.getByRole('row').nth(1)).toBeVisible() },
+  { path: `group/backlog?id=${G}`, ready: (p) => expect(p.getByRole('checkbox', { name: /leave/ })).toBeVisible() },
   { path: 'topic?code=business&level=B1', ready: (p) => expect(p.getByRole('listitem', { name: 'contract' })).toBeVisible() },
   { path: `review?group=${G}`, ready: (p) => expect(p.getByRole('group').first()).toBeVisible() },
   { path: `review?group=${G}`, ready: (p) => expect(p.getByText(LONG.sentence.slice(-20))).toBeVisible(), flip: true },

@@ -24,3 +24,17 @@ export function deckPlan(group: GroupSummary): DeckPlan {
 
 /** Words at level 4 or 5: answered right at the 7-day review (DC11). */
 export const mastered = (group: GroupSummary) => (group.cells[4]?.total ?? 0) + (group.cells[5]?.total ?? 0);
+
+/** Cards waiting today in a deck (priority + due + new, already capped by the API). */
+export const waiting = (g: GroupSummary) => g.today.priority + g.today.due + g.today.new;
+
+/** K/10 order: decks with cards waiting first, then decks with priority cards, then most cards waiting, then by name. */
+export function sortForToday(groups: GroupSummary[]): GroupSummary[] {
+  return [...groups].sort(
+    (a, b) =>
+      Number(waiting(b) > 0) - Number(waiting(a) > 0) ||
+      Number(b.today.priority > 0) - Number(a.today.priority > 0) ||
+      waiting(b) - waiting(a) ||
+      a.name.localeCompare(b.name),
+  );
+}
