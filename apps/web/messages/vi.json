@@ -1140,7 +1140,7 @@
         "customize": "Tùy chỉnh",
         "artPrompt": "Ví dụ một câu · chọn từ đúng nghĩa",
         "artMeaning": "triển khai",
-        "words": "<n>{words, number}</n> từ trong {groups, number} nhóm",
+        "words": "<b>{words, number}</b> từ trong {groups, number} nhóm",
         "body": "{count, number} câu, trộn ba kiểu: {types}.",
         "artRight": "đúng"
       },

@@ -31,7 +31,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
             {t.rich('hero.words', {
               words,
               groups,
-              n: (chunks) => <span className="text-wm-section text-wm-accent md:text-wm-hero">{chunks}</span>,
+              b: (chunks) => <span className="text-wm-section text-wm-accent md:text-wm-hero">{chunks}</span>,
             })}
           </p>
           <p className="font-wm-sans text-wm-base text-wm-muted">{t('hero.body', { count, types })}</p>
