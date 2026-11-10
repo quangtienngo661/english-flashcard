@@ -181,3 +181,35 @@ describe('Tra từ: group stacks', () => {
     expect(await screen.findByRole('link', { name: 'Mở trang từ →' })).toHaveAttribute('href', '/vi/app/word?w=budget');
   });
 });
+
+describe('Tra từ: final review findings', () => {
+  it('the card and the stacks use the meaning the entry shows, not the first meaning of the word page', async () => {
+    nav.params = new URLSearchParams({ level: 'B1', topic: 'work', pos: 'verb' });
+    const noun = { ...sense(11, 'record'), meaning: { text: 'hồ sơ', language: 'vi', translation_missing: false } };
+    const verb = { ...sense(12, 'record'), pos: 'verb', meaning: { text: 'ghi lại', language: 'vi', translation_missing: false } };
+    const { calls } = renderApp(<LookupPage />, {
+      routes: base({
+        'GET /v1/words?page_size=20&level=B1&topic=work&pos=verb': () =>
+          Response.json({ items: [row('record', { pos_list: ['verb'], meaning_preview: 'ghi lại' })], next_page_token: null, total: 1 }),
+        'GET /v1/words/record': () => Response.json({ lemma: 'record', inflections: [], sections: [{ pos: 'noun', senses: [noun] }, { pos: 'verb', senses: [verb] }] }),
+        [`GET /v1/items?sense_ids=${uuid(12)}`]: () => Response.json({ items: [] }),
+        [`POST /v1/groups/${WRITING}/items`]: () => Response.json({ created: true }, { status: 201 }),
+      }),
+    });
+    const card = await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' });
+    expect(await within(card).findByText('ghi lại')).toBeInTheDocument();
+    const stack = screen.getByRole('button', { name: 'Thêm vào Đề 12 · Writing' });
+    await waitFor(() => expect(stack).toBeEnabled());
+    await userEvent.click(stack);
+    await waitFor(() => expect(calls.filter((c) => c.path === `/v1/groups/${WRITING}/items`)).toHaveLength(1));
+    expect(calls.find((c) => c.path === `/v1/groups/${WRITING}/items`)?.body).toEqual({ sense_id: uuid(12) });
+  });
+
+  it('moving the mouse over other entries does not change the lifted word', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    const card = await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' });
+    expect(within(card).getByRole('heading', { name: 'budget' })).toBeInTheDocument();
+    await userEvent.hover(screen.getByRole('button', { name: /^candidate/ }));
+    expect(within(card).getByRole('heading', { name: 'budget' })).toBeInTheDocument();
+  });
+});
