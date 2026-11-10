@@ -30,3 +30,8 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R19 (10/11/2026, Task M1.11): Next 16.4.3 có `retry()` cho `error` (`dist/client/components/error-boundary.d.ts:6`) → dùng `retry`, không cần `reset`.
 - R20 (10/11/2026, Task M1.13): e2e bắt hai lỗi do M1.10 → `AddWordProvider` nằm ở layout `(chrome)` nên sống qua lần chuyển trang; nó tự đóng tấm Thêm từ khi `pathname` đổi (trước M1.10 mỗi trang có provider riêng nên tự đóng). `main` của `AppChrome` về `block` như `AppShell` cũ: là `flex-col` thì khối trang có `mx-auto` co theo nội dung, email dài làm trang Cài đặt rộng 431 px ở 390 px.
 - R21 (10/11/2026, Task M1.13): `pnpm cf:docker` chép cả repo bằng `tar`, không loại `.claude/worktrees` (khoảng 90 worktree) nên chạy 55 phút vẫn chưa xong bước chép → e2e chạy từ một worktree tách riêng `english-learning-gm-m1-e2e` ở cùng commit. Script chưa sửa (ngoài phạm vi).
+
+## M4
+
+- R22 (10/11/2026, Task M4.1): `GET /v1/words` thêm `ipa`, `example`, `total` → theo QR2 của chủ dự án ("toàn bộ thêm API"): trang từ điển Figma hiện phiên âm, câu ví dụ và số từ, danh sách cũ không có. `ipa` và `example` lấy từ đúng nghĩa của `meaning_preview` (nghĩa catalog trước nghĩa riêng, rồi loại từ, nhãn, ngày tạo); `total` đếm số từ khớp bộ lọc bằng cùng truy vấn, có một dòng đếm luôn trả về nên trang sau từ cuối vẫn có `total`.
+- R23 (10/11/2026, Task M4.1): `pnpm test` của API một lần hỏng `normalize-timezones.spec.ts` vì quá 5 s khi cả bộ chạy (301 s); chạy riêng file đó 3/3 qua → lỗi do máy tải nặng, không do M4.1; không sửa.

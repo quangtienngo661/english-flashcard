@@ -12,7 +12,13 @@ export const POS = [
 
 export type LookupParams = { q?: string; level?: string; topic?: string; pos?: string; mine?: boolean };
 /** `GET /v1/words` item. */
-export type WordRow = { lemma: string; pos_list: string[]; level: string | null; meaning_preview: string; has_private: boolean };
+/** A word of `GET /v1/words`; `ipa` and `example` come from the sense of `meaning_preview` (API M4.1). */
+export type WordRow = {
+  lemma: string; pos_list: string[]; level: string | null; meaning_preview: string; has_private: boolean;
+  ipa: string | null; example: string | null;
+};
+/** One page of `GET /v1/words`; `total` counts every word matching the filters. */
+export type WordPage = { items: WordRow[]; next_page_token: string | null; total: number };
 
 /** The lookup state lives in the URL (`/app/lookup?q=&level=&topic=&pos=&mine=`); values the API would refuse are dropped. */
 export function parseLookup(params: URLSearchParams): LookupParams {
@@ -54,7 +60,7 @@ export function useWordSearch(p: LookupParams) {
     queryKey: ['words', query],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
-      api.get<{ items: WordRow[]; next_page_token: string | null }>(
+      api.get<WordPage>(
         `/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${pageParam ? `&page_token=${encodeURIComponent(pageParam)}` : ''}`,
       ),
     getNextPageParam: (last) => last.next_page_token,
