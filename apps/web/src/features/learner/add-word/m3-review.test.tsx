@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
 import { ToastRegion } from '@/app-ui/Toast';
 import { renderApp } from '@/app-ui/test-utils';
-import { SearchStrip } from '@/app-chrome/SearchStrip';
 import { WordPage } from '../word/WordPage';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { AddWordSheet } from './AddWordSheet';
@@ -21,6 +19,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => nav.params,
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
+const inflection = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 vi.setConfig({ testTimeout: 20_000 });
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -39,18 +38,6 @@ const base = (extra = {}, decks = [deck(TRAVEL, 'Du lịch')]) => ({
   'GET /v1/lookup?q=rizz': () => Response.json({ senses: [], via_inflection: [] }),
   ...extra,
 });
-/** Renders the strip again on demand, as a URL change on the lookup page does. */
-function Rerender() {
-  const [, setTick] = useState(0);
-  return (
-    <>
-      <button type="button" onClick={() => setTick((n) => n + 1)}>
-        tick
-      </button>
-      <SearchStrip />
-    </>
-  );
-}
 const posts = (calls: Array<{ method: string; path: string }>, path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 const toasts = (ui: React.ReactElement) => (
   <>
@@ -81,7 +68,7 @@ describe('I-1: "Tạo nhóm và lưu" with no meaning to save', () => {
   it('an error while creating from the deck list is shown there', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base({ 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
-    await screen.findByText('went là quá khứ của go');
+    await screen.findByText(inflection('went → go · quá khứ của go'));
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'phỏng vấn');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));
@@ -159,29 +146,8 @@ describe('I-4: saving a word refreshes the deck it went to', () => {
       routes: base({ 'POST /v1/quick-add': () => Response.json({ item_id: uuid(90), sense_id: uuid(1), created_item: true, created_word: false, sentence_id: null }, { status: 201 }) }),
     });
     client.setQueryData(['group', TRAVEL], { id: TRAVEL });
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(client.getQueryState(['group', TRAVEL])?.isInvalidated).toBe(true));
-  });
-});
-
-describe('I-5: the search strip follows the URL of the lookup page', () => {
-  it('a level cleared by "Xóa lọc" is cleared in the strip too', async () => {
-    nav.params = new URLSearchParams({ q: 'go', level: 'B1' });
-    renderApp(<Rerender />, { routes: base() });
-    expect(screen.getByRole('button', { name: /B1/ })).toBeInTheDocument();
-    nav.params = new URLSearchParams({ q: 'go' });
-    await userEvent.click(screen.getByRole('button', { name: 'tick' }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: /B1/ })).not.toBeInTheDocument());
-  });
-
-  it('a search from the lookup page keeps its topic, part of speech and "mine" filters', async () => {
-    nav.params = new URLSearchParams({ q: 'go', topic: 'food', pos: 'verb', mine: 'true' });
-    renderApp(<SearchStrip />, { routes: base() });
-    const box = screen.getByRole('searchbox');
-    await userEvent.clear(box);
-    await userEvent.type(box, 'eat{Enter}');
-    const url = new URL(String(nav.push.mock.calls.at(-1)?.[0]), 'http://x');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'eat', topic: 'food', pos: 'verb', mine: 'true' });
   });
 });
 

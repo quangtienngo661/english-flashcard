@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import type { AppLocale } from '@/i18n/routing';
 import { useSession } from './session/session-context';
 
-export type DateStyle = 'weekdayDayMonth' | 'dayMonth' | 'full';
+export type DateStyle = 'weekdayDayMonth' | 'dayMonth' | 'full' | 'numeric';
 
 const INTL_LOCALE: Record<AppLocale, string> = { vi: 'vi-VN', en: 'en-US' };
 
@@ -15,11 +15,14 @@ const DATE_OPTIONS: Record<AppLocale, Record<DateStyle, Intl.DateTimeFormatOptio
     weekdayDayMonth: { weekday: 'long', day: 'numeric', month: 'numeric' },
     dayMonth: { day: 'numeric', month: 'numeric' },
     full: { day: 'numeric', month: 'numeric', year: 'numeric' },
+    // "05/11/2026" (word page, "ghi ngày dd/mm/yyyy").
+    numeric: { day: '2-digit', month: '2-digit', year: 'numeric' },
   },
   en: {
     weekdayDayMonth: { weekday: 'long', day: 'numeric', month: 'short' },
     dayMonth: { day: 'numeric', month: 'short' },
     full: { day: 'numeric', month: 'short', year: 'numeric' },
+    numeric: { day: 'numeric', month: 'short', year: 'numeric' },
   },
 };
 

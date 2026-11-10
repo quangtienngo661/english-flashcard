@@ -1,8 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Select } from '@/app-ui/Select';
-import { TextField } from '@/app-ui/TextField';
+import { cn } from '@/lib/cn';
+import { Select } from '@/ui/Select';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
+import { TextField } from '@/ui/TextField';
 import { LEVELS, POS, useTopics } from '../lookup/lookup-api';
 import type { AiLookupResult } from './ai-lookup-api';
 
@@ -85,12 +87,12 @@ export function EditSuggestionForm({ value, onChange, meaningError, formOf }: {
         />
       </div>
       {formOf && (
-        <p className="text-caption text-ink">
+        <p className="font-wm-sans text-wm-caption text-wm-ink">
           <span className="font-medium">{t('formOf')}</span> {formOf}
         </p>
       )}
       <div className="flex flex-col gap-2">
-        <span className="text-ui font-medium text-ink">{t('examples')}</span>
+        <span className="font-wm-sans text-wm-small-strong text-wm-ink">{t('examples')}</span>
         {value.examples.map((example, i) => (
           <TextField
             key={i}
@@ -104,12 +106,12 @@ export function EditSuggestionForm({ value, onChange, meaningError, formOf }: {
           <button
             type="button"
             onClick={() => set({ examples: [...value.examples, ''] })}
-            className="self-start text-ui font-semibold text-primary outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.add, 'self-start')}
           >
             {t('addExample')}
           </button>
         )}
-        <p className="text-caption text-muted">{t('exampleHint')}</p>
+        <p className="font-wm-sans text-wm-caption text-wm-muted">{t('exampleHint')}</p>
       </div>
     </div>
   );

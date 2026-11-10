@@ -24,7 +24,7 @@ export function GroupStack({
   className,
 }: {
   group: GroupSummary;
-  size: 'today' | 'carousel' | 'page';
+  size: 'today' | 'carousel' | 'page' | 'lookup';
   /** Cards behind the face; defaults to `stackDepth(waiting)`. Empty groups have none. */
   depth?: number;
   /** Makes the group name a link that covers the whole card. */

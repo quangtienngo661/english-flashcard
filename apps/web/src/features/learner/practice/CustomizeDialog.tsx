@@ -74,8 +74,7 @@ export function CustomizeDialog({ target, onClose, ...rest }: Props) {
       isOpen
       onOpenChange={(open) => !open && onClose()}
       isDismissable={!rest.busy}
-      xl={target.source === 'group' || target.source === 'weak'}
-      wide
+      size={target.source === 'group' || target.source === 'weak' ? 'xl' : 'lg'}
       title={t('customize.title')}
       titleAside={<span className="rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(SOURCE_NAME[target.source] as 'hero.title')}</span>}
       closeLabel={tc('close')}

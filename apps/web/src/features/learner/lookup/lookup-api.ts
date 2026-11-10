@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
 
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
@@ -12,7 +12,13 @@ export const POS = [
 
 export type LookupParams = { q?: string; level?: string; topic?: string; pos?: string; mine?: boolean };
 /** `GET /v1/words` item. */
-export type WordRow = { lemma: string; pos_list: string[]; level: string | null; meaning_preview: string; has_private: boolean };
+/** A word of `GET /v1/words`; `ipa` and `example` come from the sense of `meaning_preview` (API M4.1). */
+export type WordRow = {
+  lemma: string; pos_list: string[]; level: string | null; meaning_preview: string; has_private: boolean;
+  ipa: string | null; example: string | null;
+};
+/** One page of `GET /v1/words`; `total` counts every word matching the filters. */
+export type WordPage = { items: WordRow[]; next_page_token: string | null; total: number };
 
 /** The lookup state lives in the URL (`/app/lookup?q=&level=&topic=&pos=&mine=`); values the API would refuse are dropped. */
 export function parseLookup(params: URLSearchParams): LookupParams {
@@ -47,17 +53,18 @@ export const lookupHref = (locale: string, p: LookupParams) => {
 
 const PAGE_SIZE = 20;
 
-export function useWordSearch(p: LookupParams) {
+/**
+ * One dictionary page of `GET /v1/words` (M4.5): `token` is the cursor of that page (`null` for the first). Each page has its own
+ * cache entry, so going back a page asks nothing.
+ */
+export function useWordList(p: LookupParams, token: string | null) {
   const api = useApi();
   const query = lookupQuery(p);
-  return useInfiniteQuery({
-    queryKey: ['words', query],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      api.get<{ items: WordRow[]; next_page_token: string | null }>(
-        `/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${pageParam ? `&page_token=${encodeURIComponent(pageParam)}` : ''}`,
-      ),
-    getNextPageParam: (last) => last.next_page_token,
+  return useQuery({
+    queryKey: ['words', query, 'page', token],
+    queryFn: () =>
+      api.get<WordPage>(`/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${token ? `&page_token=${encodeURIComponent(token)}` : ''}`),
+    staleTime: 60_000,
   });
 }
 

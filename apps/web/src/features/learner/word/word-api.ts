@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
 import type { Pronunciation } from '@/lib/speech/pronunciation';
 
@@ -63,6 +63,17 @@ export function useSentences(senseId: string | null) {
     queryKey: sentencesKey(senseId ?? ''),
     queryFn: () => api.get<{ items: Sentence[] }>(`/v1/senses/${senseId}/sentences`),
     enabled: senseId !== null,
+  });
+}
+
+/** M4.6 "Câu bạn đã gặp": one `GET /v1/senses/{id}/sentences` per sense, under the same keys as `useSentences`. */
+export function useSentenceLists(senseIds: string[]) {
+  const api = useApi();
+  return useQueries({
+    queries: senseIds.map((id) => ({
+      queryKey: sentencesKey(id),
+      queryFn: () => api.get<{ items: Sentence[] }>(`/v1/senses/${id}/sentences`),
+    })),
   });
 }
 

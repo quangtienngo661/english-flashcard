@@ -226,3 +226,40 @@ Nhánh `feat/giao-dien-moi-m3`, PR vào `refactor/giao-dien-moi`. API không đ�
 - Xóa nhóm từ Một nhóm: e2e desktop thấy lần tải lại trang Nhóm (`hardReplace`) chưa xong trong thời gian của test; bản điện thoại chuyển trang bình thường; unit test xác nhận gọi `hardReplace('/vi/app/groups')`. Đường này có từ trước M3.
 - Tiêu đề và số lớn dùng thang cỡ chữ mặc định của Tailwind (R44); đổi sang token tiêu đề của M2 ở đợt sau.
 - Màu nhóm, màu ngăn ở chế độ tối dùng giá trị sáng cho tới M9.
+
+# Giao diện mới — as-built M4 Tra từ, trang một từ, Thêm từ (10/11/2026)
+
+Nhánh `feat/giao-dien-moi-m4`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R60–R81 trong `giao-dien-moi-rulings.md` (lúc làm đánh số R55–R76, đổi số khi merge PR #256 vì PR đó đã dùng R55–R59).
+
+**Đã làm**
+- API (M4.1): `GET /v1/words` thêm `ipa` (UK, không có thì US, không có thì phiên âm riêng), `example` (câu đầu của cùng nghĩa với `meaning_preview`) và `total` (số từ khớp bộ lọc, cả khi trang nằm sau từ cuối). Smoke `smoke:giao-dien-moi` bước 11 đối chiếu với `GET /v1/words/{lemma}`.
+- `ui/` (M4.2, M4.7): `SpeakButton`, `PronunciationLine` chuyển từ `app-ui` (đường cũ chỉ còn re-export cho ôn tập và luyện tập tới M5), `Dialog` có `size` `md|lg|xl`, `showToast(…, { timeout })`, `ui/States` (`EmptyState`, `ErrorState` kiểu mới).
+- Ô "Tìm từ" có phím `/` trong thanh trên từ 768 px (M4.3); `SearchStrip` đã xóa; trên Tra từ ô này ẩn.
+- Năm hộp Thêm từ (M4.4): nút "Lưu" (khóa mới `saveShort`, trang landing vẫn "Lưu {word}"), dòng dạng gốc "went → go · quá khứ của go", hàng nghĩa có radio hoặc dấu "đã có trong nhóm", Hộp 4 hai cột với thẻ xem trước, Hộp 5 có ô màu nhóm và thanh sáu ngăn nhỏ, Hộp 2 có thẻ "mặt sau thẻ"; hộp Thêm từ nạp bằng `next/dynamic`.
+- Tra từ (M4.5): ô tìm lớn, câu bộ lọc có menu cho trình độ, chủ đề, loại từ, trang từ điển (đầu trang chạy, chữ cái, mục có IPA, loại từ viết tắt, "của tôi", câu ví dụ tô từ), "Trang sau →" / "← Trang trước" theo cursor (trang đã xem không gọi lại), thẻ nhấc lên với UK/US và ngăn đang học, sáu chồng nhóm bấm để thêm (một lần ghi mỗi lần bấm, "✓ đã có"), "Nhóm khác hoặc tạo nhóm mới", "Mở trang từ →". Điện thoại: thẻ và chồng đứng trước trang.
+- Trang một từ (M4.6, subagent): tiêu đề 84/56 px, UK/US theo loại từ, "dạng chia", tab nhảy trong trang, nghĩa theo loại từ với ngăn hoặc "Thêm vào nhóm", "Câu bạn đã gặp", "Bạn đang học", "Cùng chủ đề"; từ của tôi có "Sửa từ", "Xóa từ" ở đầu trang.
+- File `loading` cho Tra từ và trang một từ.
+
+**Kiểm**
+- API: lint, `tsc --noEmit`, build qua; `pnpm test` 5185/5187: 2 test `admin-grant.spec.ts` quá 5 s khi máy bận, chạy riêng 9/9 (giống R61). Smoke 13/13 (M4.1).
+- Web: lint, typecheck qua; `pnpm vitest run --maxWorkers=3` 115 file, 1192 test qua (sau khi merge PR #256). Chạy đủ worker trên máy bận thì 1–3 test quá thời gian, chạy riêng qua.
+- Admin: lint, typecheck, build (biến môi trường như CI) qua; `vitest --maxWorkers=2` 105 file, 1397 test qua (lượt đủ worker có 13 test quá thời gian).
+- `rg "@/app-ui/" src/features/learner/{lookup,word,add-word}` (trừ test): không còn.
+- E2e `pnpm cf:docker` (m1, m2, m3, m5b, cai-thien-a-group, cai-thien-a-speak, overflow; 390 và 1440): lượt đầu bắt 2 lỗi tương phản thật ở Tra từ (R80) và các test còn ghim giao diện cũ; sau khi sửa, m3 và m5b chạy lại 38 qua, 3 qua ở lần thử lại, 0 hỏng; m2 qua (3 qua ở lần thử lại). E2e chưa chạy lại sau khi merge PR #256.
+- Review cuối cả nhánh (subagent): 0 Critical, 2 Important đã sửa bằng test đỏ rồi fix (thẻ lấy đúng nghĩa của mục, rê chuột không đổi mục chọn; R81), 7 Minor để lại (dưới).
+
+**Bộ ảnh `gm-m4`: chưa chụp.** Script đã có (`SHOTS_MILESTONE=gm-m4 pnpm shots`, Figma Tra từ `85:3218` / `85:3667`, trang một từ `118:4413` / `118:4714`, Hộp 1 `73:580` / `73:966`, Hộp 2 `73:1167` / `73:1465`, Hộp 3 `73:1701` / `73:1925`, Hộp 4 `75:1071` / `75:1346`, Hộp 5 `75:1548` / `75:1849`). Lệnh cần app của nhánh này ở cổng 3001 với API thật; cổng 3001 đang là stack `pnpm bootstrap` của bản checkout chính (giống M3). Hộp 4 cần tra AI trả lời được (model cho `lookup_word` hoặc `AI_FAKE_ENABLED=true`).
+
+**Minor để lại (review cuối)**
+1. `WordPage.tsx`: id `pos-modal auxiliary` có dấu cách, `aria-labelledby` của khối "modal auxiliary" không trỏ được.
+2. `AddSentenceSheet`: `save.submit()` không truyền payload; gửi lỗi mạng rồi đổi chữ hoặc nghĩa thì dùng lại cùng Idempotency-Key.
+3. Tra từ: lúc đang tải hoặc lỗi, câu bộ lọc đọc "0 từ …".
+4. Tra từ: "Trang sau →" thay cả trang bằng khung xương, focus bàn phím rơi về `body`; nút Back của trình duyệt đưa về trang 1.
+5. Điện thoại: chọn mục ở dưới thì thẻ đổi ở chỗ đã cuộn khuất.
+6. `TopSearch` vẫn gắn phím `/` dưới 768 px (ô bị ẩn) và trong menu bộ lọc (`role=menu`).
+7. `marked` khớp theo đầu từ ("go" tô "good"); mini bar trong Hộp 5 làm tên radio dài ra (nên `aria-hidden`).
+
+**Chưa kiểm / rủi ro**
+- Chưa xem trên trình duyệt thật ở mọi khổ (chỉ e2e và axe); chưa chụp ảnh đối chiếu Figma.
+- Thanh trên ở đúng 768 px (logo, bốn tab, Thêm từ, ô tìm, chip gói, avatar) chưa đo có tràn ngang không.
+- Thẻ cũ không bay đi khi đổi mục, chỉ thẻ mới tới (R71).

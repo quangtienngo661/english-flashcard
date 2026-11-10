@@ -53,7 +53,7 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await signedInAs(page, 'free', groupApi());
     const sheet = await openSheet(page);
     await sheet.getByRole('textbox', { name: vi.addWord.word, exact: true }).fill('deploy');
-    await sheet.getByRole('button', { name: fill(vi.addWord.save, { word: 'deploy' }), exact: true }).click();
+    await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(page.getByText(fill(vi.addWord.saved, { word: 'deploy', group: NAME }))).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: FIRST.sense_id });
     await expect(sheet).toBeHidden();
@@ -69,7 +69,7 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await expect(senses.getByRole('radio', { name: /bố trí/ })).toBeChecked();
     await senses.getByText(FIRST.meaning.text, { exact: true }).click();
     await expect(senses.getByRole('radio', { name: /bố trí/ })).toBeChecked();
-    await sheet.getByRole('button', { name: fill(vi.addWord.save, { word: 'deploy' }), exact: true }).click();
+    await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(sheet).toBeHidden();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: SECOND.sense_id });
   });

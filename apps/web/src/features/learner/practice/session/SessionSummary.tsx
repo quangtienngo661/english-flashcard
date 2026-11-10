@@ -37,7 +37,7 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
   ...(s.cloze_source === 'own' || s.cloze_source === 'own_then_ai' ? { cloze_source: s.cloze_source } : {}),
   ...(s.types.includes('type_word') ? { prompt_style: s.prompt_style as StartBody['prompt_style'] } : {}),
   count: s.target_count,
-  // #249: a session opened with an AI count has a placement; ask for as many AI questions as it planned (R76).
+  // #249: a session opened with an AI count has a placement; ask for as many AI questions as it planned (R101).
   ...(s.ai_placement ? { ai_count: s.ai_planned, ai_placement: s.ai_placement } : {}),
 });
 
