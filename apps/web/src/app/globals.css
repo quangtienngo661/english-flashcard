@@ -779,3 +779,42 @@
 .wm-page-out [data-in] {
   animation: wm-page-out var(--transition-duration-wm-close) var(--ease-wm-close) forwards;
 }
+
+/* Tra từ "Từ hóa thẻ" (M4.5, Figma 85:3218, motion doc §4). The group stacks are the Nhóm card at about 0.55: 114 px desktop,
+   107 px phone. */
+.gstack[data-size='lookup'] { font-size: 5.9px; }
+@media (width >= 48rem) {
+  .gstack[data-size='lookup'] { font-size: 6.29px; }
+}
+.lk-stack {
+  transition: transform 250ms var(--ease-wm-out), opacity 250ms var(--ease-wm-out);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lk-stack:not(:disabled):hover { transform: translateY(-4px); }
+}
+.lk-stack:disabled { opacity: 0.55; cursor: default; }
+/* The paper page: warm white, a hairline border, the binding side less rounded. */
+.lk-paper {
+  background: #fbfaf6;
+  border: 1px solid #e8e4d8;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 0 24px 48px -28px rgb(27 36 68 / 0.45);
+  color: var(--color-wm-ink);
+}
+.lk-rule { border-color: #e8e4d8; }
+/* The entry whose card is lifted stays as a dashed hole. */
+.lk-entry[aria-current='true'] {
+  outline: 1.5px dashed rgb(27 36 68 / 0.25);
+  outline-offset: 2px;
+  background: rgb(27 36 68 / 0.03);
+}
+.lk-entry[aria-current='true'] > * { opacity: 0.35; }
+.lk-card { rotate: -1.5deg; box-shadow: 0 30px 60px -30px rgb(27 36 68 / 0.55); }
+.lk-card-behind { rotate: 1deg; translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
+@keyframes lk-card-in {
+  from { translate: 0 16px; scale: 0.92; filter: blur(10px); opacity: 0.5; }
+  to { translate: 0 0; scale: 1; filter: blur(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
+}

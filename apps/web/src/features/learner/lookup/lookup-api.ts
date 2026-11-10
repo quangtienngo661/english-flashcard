@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
 
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
@@ -53,17 +53,18 @@ export const lookupHref = (locale: string, p: LookupParams) => {
 
 const PAGE_SIZE = 20;
 
-export function useWordSearch(p: LookupParams) {
+/**
+ * One dictionary page of `GET /v1/words` (M4.5): `token` is the cursor of that page (`null` for the first). Each page has its own
+ * cache entry, so going back a page asks nothing.
+ */
+export function useWordList(p: LookupParams, token: string | null) {
   const api = useApi();
   const query = lookupQuery(p);
-  return useInfiniteQuery({
-    queryKey: ['words', query],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      api.get<WordPage>(
-        `/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${pageParam ? `&page_token=${encodeURIComponent(pageParam)}` : ''}`,
-      ),
-    getNextPageParam: (last) => last.next_page_token,
+  return useQuery({
+    queryKey: ['words', query, 'page', token],
+    queryFn: () =>
+      api.get<WordPage>(`/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${token ? `&page_token=${encodeURIComponent(token)}` : ''}`),
+    staleTime: 60_000,
   });
 }
 

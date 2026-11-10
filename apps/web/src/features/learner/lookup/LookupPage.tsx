@@ -1,176 +1,177 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { PageColumns } from '@/app-chrome/PageColumns';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { useApi } from '@/app-shell/session/session-context';
-import { Button } from '@/app-ui/Button';
-import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { cn } from '@/lib/cn';
+import { EmptyState, ErrorState } from '@/app-ui/States';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { Skeleton } from '@/ui/Skeleton';
+import { TextButton } from '@/ui/TextButton';
 import { useAddWord } from '../add-word/add-word-context';
 import { BulkAddSheet } from '../add-word/BulkAddSheet';
+import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
+import { useGroups } from '../groups/groups-api';
+import { useSenseItems, useWordPage, wordHref } from '../word/word-api';
+import { DictionaryPage } from './DictionaryPage';
+import { LiftedCard } from './LiftedCard';
+import { lookupHref, lookupQuery, parseLookup, useWordList, type LookupParams } from './lookup-api';
 import { LookupFilters } from './LookupFilters';
-import { lookupHref, parseLookup, useWordSearch, type LookupParams, type WordRow } from './lookup-api';
+import { StackTargets } from './StackTargets';
 
-/** K/30, M/40 `/app/lookup?q=&level=&topic=&pos=&mine=`: matching words, filters in the URL, a preview of one word on wide screens. */
+/**
+ * K/30, M/40, Figma "Từ hóa thẻ" (85:3218 / 85:3667) `/app/lookup?q=&level=&topic=&pos=&mine=`: the big search box, the filter
+ * sentence, a dictionary page of the matching words, the selected word lifted into a card and the group stacks to add it to. Phones
+ * show the card and the stacks before the page. Pages follow the API's cursors; the ones already seen stay cached.
+ */
 export function LookupPage() {
   const t = useTranslations('App.lookup');
+  const tAdd = useTranslations('App.addWord');
   const locale = useLocale();
   const router = useRouter();
-  const params = parseLookup(useSearchParams());
-  const search = useWordSearch(params);
   const errorText = useErrorMessage();
-  const words = search.data?.pages.flatMap((p) => p.items) ?? [];
-  const [picked, setPicked] = useState<string | null>(null);
-  const [bulk, setBulk] = useState(false);
-  const tAdd = useTranslations('App.addWord');
-  // Bulk add takes the catalog filters only: not a search text, not "Chỉ từ của tôi" (API (c) body).
-  const canBulk = Boolean((params.level || params.topic || params.pos) && !params.q && !params.mine);
-  const preview = words.find((w) => w.lemma === picked) ?? words[0];
+  const params = parseLookup(useSearchParams());
+  const query = lookupQuery(params);
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
 
+  // Cursor of each page seen, the last is the shown one; a new search starts at page 1.
+  const [tokens, setTokens] = useState<Array<string | null>>([null]);
+  const [seenQuery, setSeenQuery] = useState(query);
+  if (seenQuery !== query) {
+    setSeenQuery(query);
+    setTokens([null]);
+  }
+  const list = useWordList(params, tokens.at(-1) ?? null);
+  const words = list.data?.items ?? [];
+  const [picked, setPicked] = useState<string | null>(null);
+  const selected = words.find((w) => w.lemma === picked) ?? words[0];
+  const wordPage = useWordPage(selected?.lemma ?? null);
+  const sense = wordPage.data?.sections[0]?.senses[0];
+  const items = useSenseItems(sense ? [sense.sense_id] : []);
+  const item = sense ? items.data?.get(sense.sense_id) : undefined;
+  const groups = useGroups().data?.items ?? [];
+  const [bulk, setBulk] = useState(false);
+  const [picker, setPicker] = useState(false);
+  // Bulk add takes the catalog filters only: not a search text, not "Chỉ từ của tôi" (API (c) body).
+  const canBulk = Boolean((params.level || params.topic || params.pos) && !params.q && !params.mine);
+  const filtered = Boolean(params.level || params.topic || params.pos || params.mine);
+
   return (
-    <>
-      <PageColumns aside={preview ? <WordPreview word={preview} /> : undefined}>
-      <div className="flex flex-col gap-4">
-        <PageTitle>{t('title')}</PageTitle>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <LookupFilters value={params} onChange={go} />
-          {canBulk && words.length > 0 && (
-            <Button variant="quiet" onPress={() => setBulk(true)}>
-              {tAdd('bulkButton')}
-            </Button>
+    <div className="flex flex-col gap-6">
+      <h1 className="sr-only">{t('title')}</h1>
+      <div className="flex flex-col gap-3">
+        <SearchBox query={params.q ?? ''} onSearch={(q) => go({ ...params, q: q || undefined })} />
+        <LookupFilters value={params} total={list.data?.total ?? 0} onChange={go} />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <Checkbox isSelected={Boolean(params.mine)} onChange={(mine) => go({ ...params, mine: mine || undefined })}>
+            {t('mine')}
+          </Checkbox>
+          {canBulk && words.length > 0 && <TextButton onPress={() => setBulk(true)}>{tAdd('bulkButton')}</TextButton>}
+          {filtered && (
+            <TextButton tone="muted" onPress={() => go({ q: params.q })}>
+              {t('clear')}
+            </TextButton>
           )}
         </div>
-        {bulk && <BulkAddSheet filter={params} onClose={() => setBulk(false)} />}
-        {search.isPending ? (
-          <FullScreenSpinner />
-        ) : search.isError ? (
-          <ErrorState message={errorText(search.error)} onRetry={() => void search.refetch()} />
-        ) : words.length === 0 ? (
-          <EmptyState title={t('emptyTitle')} body={t('emptyBody')} action={<AddThis word={params.q} />} />
-        ) : (
-          <section aria-label={t('results')} className="flex flex-col rounded-card border border-border bg-surface p-2 md:p-4">
-            <div aria-hidden className="hidden grid-cols-12 gap-3 border-b border-border px-3 pb-2 text-caption font-semibold text-muted md:grid">
-              <span className="col-span-3">{t('colWord')}</span>
-              <span className="col-span-2">{t('colPos')}</span>
-              <span className="col-span-5">{t('colMeaning')}</span>
-              <span className="col-span-2">{t('colLevel')}</span>
+      </div>
+      {bulk && <BulkAddSheet filter={params} onClose={() => setBulk(false)} />}
+      {list.isPending ? (
+        <Skeleton className="h-96 w-full rounded-wm-md" />
+      ) : list.isError ? (
+        <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} />
+      ) : !selected ? (
+        <EmptyState title={t('emptyTitle')} body={t('emptyBody')} action={<AddThis word={params.q} />} />
+      ) : (
+        <div
+          // raw-ok: Figma's two columns, the page beside a 380 px card column
+          className="grid items-start gap-9 lg:grid-cols-[minmax(0,1fr)_23.75rem]"
+        >
+          <DictionaryPage
+            words={words}
+            page={tokens.length}
+            selected={selected.lemma}
+            onSelect={setPicked}
+            onPrev={tokens.length > 1 ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
+            onNext={list.data?.next_page_token ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
+          />
+          <div className="order-first flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:order-none">
+            <LiftedCard word={selected} sense={sense} item={item} groups={groups} />
+            <h2 className="mt-2 font-wm-display text-wm-base-strong font-bold text-wm-ink">{t('stacksTitle')}</h2>
+            <StackTargets
+              groups={groups}
+              senseId={sense?.sense_id ?? null}
+              lemma={selected.lemma}
+              inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
+            />
+            <div className="flex flex-col items-start gap-1">
+              {sense && <TextButton onPress={() => setPicker(true)}>{t('otherGroup')}</TextButton>}
+              <Link
+                href={wordHref(locale, selected.lemma)}
+                className="inline-flex min-h-11 items-center font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:min-h-0"
+              >
+                {t('openWordArrow')}
+              </Link>
             </div>
-            <ul className="divide-y divide-border">
-              {words.map((word) => (
-                <li
-                  key={word.lemma}
-                  aria-label={word.lemma}
-                  onMouseEnter={() => setPicked(word.lemma)}
-                  onFocus={() => setPicked(word.lemma)}
-                  className={cn('grid grid-cols-12 items-center gap-x-3 gap-y-0.5 rounded-inner px-3 py-3', preview?.lemma === word.lemma && 'md:pastel-island md:bg-accent-soft')}
-                >
-                  <span className="col-span-9 row-start-1 flex min-w-0 flex-wrap items-baseline gap-x-2 md:col-span-3">
-                    <Link href={`/${locale}/app/word?w=${encodeURIComponent(word.lemma)}`} className="break-all text-ui font-semibold text-ink hover:underline">
-                      {word.lemma}
-                    </Link>
-                    <span className="text-caption text-muted md:hidden">{word.pos_list.join(', ')}</span>
-                  </span>
-                  <span className="hidden text-caption text-muted md:col-span-2 md:block">{word.pos_list.join(', ')}</span>
-                  <span className="col-span-12 row-start-2 break-words text-ui text-ink md:col-span-5 md:row-start-auto">{word.meaning_preview}</span>
-                  <span className="col-span-3 col-start-10 row-start-1 flex items-center justify-end gap-1.5 md:col-span-2 md:col-start-auto md:row-start-auto md:justify-start">
-                    {word.level && <span className="rounded-sm bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">{word.level}</span>}
-                    {word.has_private && <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mineTag')}</span>}
-                    <AddRow word={word.lemma} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {search.hasNextPage && (
-              <div className="px-3 pt-3">
-                <Button variant="quiet" isPending={search.isFetchingNextPage} onPress={() => void search.fetchNextPage()}>
-                  {t('more')}
-                </Button>
-              </div>
-            )}
-          </section>
-        )}
-      </div>
-    </PageColumns>
-      </>
-  );
-}
-
-type WordPage = { sections: Array<{ pos: string; senses: Array<{ examples: string[]; topics: Array<{ code: string; name: string }> }> }> };
-
-/** K/30 right column: the hovered (or first) word with its first example and the way to its page. */
-function WordPreview({ word }: { word: WordRow }) {
-  const t = useTranslations('App.lookup');
-  const locale = useLocale();
-  const api = useApi();
-  const { open } = useAddWord();
-  const page = useQuery({
-    queryKey: ['word', word.lemma],
-    queryFn: () => api.get<WordPage>(`/v1/words/${encodeURIComponent(word.lemma)}`),
-    staleTime: 60_000,
-  });
-  const first = page.data?.sections[0]?.senses[0];
-  return (
-    <section className="hidden flex-col gap-3 rounded-card border-2 border-ink bg-surface p-5 shadow-ledge xl:flex">
-      <div className="flex flex-wrap gap-1.5">
-        {word.level && <span className="rounded-sm bg-primary px-1.5 py-0.5 text-caption font-semibold text-on-primary">{word.level}</span>}
-        {first?.topics[0] && <span className="rounded-sm bg-success-soft px-1.5 py-0.5 text-caption font-semibold text-success">{first.topics[0].name}</span>}
-      </div>
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className="wrap-anywhere text-title-lg font-extrabold text-ink">{word.lemma}</span>
-        <span className="text-ui text-muted">{word.pos_list.join(', ')}</span>
-      </p>
-      <p className="break-words text-title font-semibold text-ink">{word.meaning_preview}</p>
-      {first?.examples[0] && (
-        <div className="flex flex-col gap-0.5">
-          <p className="text-caption font-semibold text-muted">{t('example')}</p>
-          <p className="break-words text-ui text-ink">{first.examples[0]}</p>
+          </div>
         </div>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="sticker" onPress={() => open(word.lemma)}>
-          {t('addToGroup')}
-        </Button>
-        <Link
-          href={`/${locale}/app/word?w=${encodeURIComponent(word.lemma)}`}
-          className="flex min-h-control w-fit items-center rounded-inner border-2 border-border-strong px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
-        >
-          {t('openWord')}
-        </Link>
-      </div>
-    </section>
+      {picker && sense && <DeckPickerDialog sense={sense} onClose={() => setPicker(false)} />}
+    </div>
   );
 }
 
-/** [Thêm từ này]: the add-word sheet with the searched word; inside the (chrome) layout, so inside its add-word provider. */
+/** Figma "Ô tìm (nổi bật)" (85:3270): the page's own big box; "/" focuses it here (the top bar hides its box on Tra từ). */
+function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
+  const t = useTranslations('App.lookup');
+  const [text, setText] = useState(query);
+  const [seen, setSeen] = useState(query);
+  if (seen !== query) {
+    setSeen(query);
+    setText(query);
+  }
+  const box = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.altKey || e.ctrlKey || e.metaKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      e.preventDefault();
+      box.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onSearch(text.trim());
+  }
+  return (
+    <form role="search" onSubmit={submit}>
+      <label className="flex h-13 items-center gap-3 rounded-wm-xl border-2 border-wm-accent bg-wm-surface pl-5 pr-4 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-15">
+        <Search aria-hidden className="size-5.5 shrink-0 text-wm-accent" />
+        <span className="sr-only">{t('searchLabel')}</span>
+        <input
+          ref={box}
+          type="search"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={100}
+          placeholder={t('searchLabel')}
+          className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted md:text-wm-lead"
+        />
+        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 font-wm-mono text-wm-mono font-bold text-wm-ink">
+          /
+        </kbd>
+      </label>
+    </form>
+  );
+}
+
 function AddThis({ word }: { word?: string }) {
   const t = useTranslations('App.lookup');
   const { open } = useAddWord();
-  return (
-    <Button variant="sticker" onPress={() => open(word)}>
-      {t('addThis')}
-    </Button>
-  );
-}
-
-function AddRow({ word }: { word: string }) {
-  const t = useTranslations('App.lookup');
-  const { open } = useAddWord();
-  return (
-    <button
-      type="button"
-      aria-label={t('addRow', { word })}
-      onClick={() => open(word)}
-      className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-inner border-2 border-border-strong text-ink outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
-    >
-      <Plus aria-hidden className="size-4" />
-    </button>
-  );
+  return <Button onPress={() => open(word)}>{t('addThis')}</Button>;
 }

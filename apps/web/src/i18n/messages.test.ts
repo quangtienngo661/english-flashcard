@@ -40,9 +40,10 @@ describe('messages', () => {
     expect(empty).toEqual([]);
   });
 
-  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy, mail) and every tag is closed', () => {
-    // `mail` is the support address link of the order return page (launch prep B design §3.8).
-    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy', 'mail']);
+  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy, mail, lv, tp, ps) and every tag is closed', () => {
+    // `mail` is the support address link of the order return page (launch prep B design §3.8); `lv`, `tp`, `ps` are the filter
+    // values of Tra từ's sentence (giao diện mới M4.5).
+    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy', 'mail', 'lv', 'tp', 'ps']);
     const problems: string[] = [];
     for (const [key, value] of [...flatVi, ...flatEn]) {
       const opened = [...value.matchAll(/<([a-zA-Z]+)>/g)].map((m) => m[1]);
