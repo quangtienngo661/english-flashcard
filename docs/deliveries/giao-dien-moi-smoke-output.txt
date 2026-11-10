@@ -1,0 +1,65 @@
+# pnpm smoke:giao-dien-moi — 10/11/2026, API + worker built from feat/giao-dien-moi-api (5f9ca6fc), fresh DB english_learning_smoke_gm,
+# AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke; secrets generated for the run, no .env.
+
+$ node scripts/smoke-giao-dien-moi.mjs
+
+[1] 02:02:26Z Wait for the API
+    OK — reachable at http://localhost:3000; database english_learning_smoke_gm
+
+[2] 02:02:26Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 02:02:26Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-1dd46ded@example.com; learner smokegm-l-1dd46ded@example.com; group e9d84ce3-c306-4bba-9e76-bd1d3095b14e with zgzooojm, zgcfqqaq, zgbfckkk
+
+[4] 02:02:45Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgbfckkk; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 02:02:45Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 02:02:45Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 353b6955-b350-4346-b7c6-69609068ba55: one right, one wrong (zgcfqqaq), finished
+
+[7] 02:02:46Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-10","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 02:02:46Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgzooojm","known",1],["learned","zgcfqqaq","known",1],["learned","zgzooojm","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 02:02:46Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"353b6955-b350-4346-b7c6-69609068ba55","group_id":"e9d84ce3-c306-4bba-9e76-bd1d3095b14e","local_date":"2026-11-10","last_answer_at":"2026-11-10T02:02:45.944Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgcfqqaq"]}
+
+[10] 02:02:46Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgzooojm","at":"2026-11-10T02:02:45.340Z"}; next_lemma zgbfckkk (queue zgbfckkk)
+
+[11] 02:02:46Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 02:02:47Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+ALL OK — 12 steps in 21s
+
+# pnpm smoke:dot-cai-thien-c — same build, fresh DB english_learning_smoke_c, TTS_FAKE_ENABLED=true, AUDIO_STORAGE_FAKE_ENABLED=true,
+# JOB_QUEUE_PREFIX=wordmet-c-smoke (last lines)
+
+    OK — adding words left studied = false; the first flashcard returned { days: 1 } and flipped the day; the second returned null (days studied now 3)
+
+[12] 02:05:12Z Phiên âm: quick-publish two readings of zqleadivsa → four new recordings, made by the worker
+    OK — 10 recording(s) after the first publish; 4 new ones (2 UK + 2 US) became ready within 30 s
+
+[13] 02:05:14Z The word page gives two different UK files; each URL plays as audio/mpeg
+    OK — UK liːd / lɛd have different files; all four URLs answer 200 audio/mpeg with an mp3 body
+
+[14] 02:05:14Z A CSV with only the transcription columns keeps the meaning and the examples
+    OK — revision 2 → 3 (draft): ipa_uk ˈlɛd; gloss_vi, definition_en and examples unchanged
+
+ALL OK — 14 steps in 30s
+
+# pnpm test:scale, run alone (a first run in parallel with pnpm test measured 582 ms)
+[Review Focus 5] GET /v1/groups, 100 groups x 2000 items: 362 / 400 / 399 ms (median 399 ms, threshold 500 ms)
+[Review Focus 2 breakdown, run 1] total 2256 ms; practiceItems(all) 1265 ms (200000 rows); statsFor 2 ms; sortWords ~33 ms (timed apart); availability 1 batch(es) 882 ms = groupMates 101 ms + candidates 351 ms + filter; rest (sort, transaction, HTTP) 106 ms
+[Review Focus 2 breakdown, run 2] total 2105 ms; practiceItems(all) 1233 ms (200000 rows); statsFor 2 ms; sortWords ~28 ms (timed apart); availability 1 batch(es) 775 ms = groupMates 107 ms + candidates 277 ms + filter; rest (sort, transaction, HTTP) 95 ms
+[Review Focus 2 breakdown, run 3] total 2214 ms; practiceItems(all) 1291 ms (200000 rows); statsFor 2 ms; sortWords ~28 ms (timed apart); availability 1 batch(es) 844 ms = groupMates 109 ms + candidates 287 ms + filter; rest (sort, transaction, HTTP) 78 ms
+[Review Focus 2] POST /v1/practice/sessions, 100 groups x 2000 items: 2256 / 2105 / 2214 ms (median 2214 ms; D39: accepted in Bước 4, measure again before the pilot)
