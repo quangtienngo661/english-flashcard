@@ -150,8 +150,8 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
   }
   return (
     <form role="search" onSubmit={submit}>
-      <label className="flex h-13 items-center gap-3 rounded-wm-xl border-2 border-wm-accent bg-wm-surface pl-5 pr-4 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-15">
-        <Search aria-hidden className="size-5.5 shrink-0 text-wm-accent" />
+      <label className="flex h-11 items-center gap-2.5 rounded-wm-lg border-2 border-wm-accent bg-wm-surface pl-4 pr-3 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-12">
+        <Search aria-hidden className="size-5 shrink-0 text-wm-accent" />
         <span className="sr-only">{t('searchLabel')}</span>
         <input
           ref={box}
@@ -160,7 +160,7 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
           onChange={(e) => setText(e.target.value)}
           maxLength={100}
           placeholder={t('searchLabel')}
-          className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted md:text-wm-lead"
+          className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted"
         />
         <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 font-wm-mono text-wm-mono font-bold text-wm-ink">
           /

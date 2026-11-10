@@ -9,7 +9,7 @@ export default function Loading() {
   return (
     <div role="status" className="flex flex-col gap-6">
       <span className="sr-only">{t('loading')}</span>
-      <Skeleton className="h-13 w-full rounded-wm-xl md:h-15" />
+      <Skeleton className="h-11 w-full rounded-wm-lg md:h-12" />
       <Skeleton className="h-7 w-80 max-w-full" />
       <div
         // raw-ok: the same two columns as the page
