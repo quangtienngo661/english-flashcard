@@ -180,10 +180,28 @@ async function gmM2(page: Page) {
 async function gmM3(page: Page) {
   const widths = [390, 1440];
   // The shots learner signs up in Vietnamese; the old Settings language switch is rebuilt in M7.
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  // A learner made for the shots answers the welcome question first (Vietnamese).
+  const welcome = page.getByRole('heading', { name: 'Bạn đọc nghĩa của từ bằng ngôn ngữ nào?' });
+  if (await welcome.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+    // "Tiếng Việt" is already chosen.
+    await page.getByRole('button', { name: 'Tiếp tục' }).click();
+    await expect(welcome).toBeHidden({ timeout: 30_000 });
+  }
+  // The first topic Hôm nay suggests (the local content decides which), opened from its card.
+  await page.goto('/vi/app');
+  await settle(page);
+  const topicHref = await page.getByRole('region', { name: 'Tạo nhóm nhanh theo chủ đề' }).getByRole('link').nth(1).getAttribute('href');
+  const topic = topicHref!.replace(/^\/vi\/app\//, '');
   await page.goto('/vi/app/groups');
   await settle(page);
   if (!(await page.getByRole('region', { name: 'Các nhóm của bạn' }).count())) {
-    await page.goto(`/vi/app/${TOPIC}`);
+    await page.goto(`/vi/app/${topic}`);
     await settle(page);
     await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
     await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
@@ -192,7 +210,7 @@ async function gmM3(page: Page) {
   }
   const centre = page.getByRole('region', { name: 'Các nhóm của bạn' }).getByRole('link');
   const id = new URL((await centre.getAttribute('href'))!, 'http://x').searchParams.get('id')!;
-  for (const [path, name] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], [`group/backlog?id=${id}`, 'backlog'], [TOPIC, 'topic']] as const) {
+  for (const [path, name] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], [`group/backlog?id=${id}`, 'backlog'], [topic, 'topic']] as const) {
     await page.goto(`/vi/app${path ? `/${path}` : ''}`);
     await settle(page);
     await shoot(page, name, true, widths);
