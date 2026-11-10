@@ -10,11 +10,16 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useAppConfig } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { Dialog } from '@/app-ui/Dialog';
-import { FullScreenSpinner, NotFoundState } from '@/app-ui/States';
-import { showToast } from '@/app-ui/Toast';
+import Link from 'next/link';
+import { useFormat } from '@/app-shell/format';
+import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { Dialog } from '@/ui/Dialog';
+import { Skeleton } from '@/ui/Skeleton';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
+import { FloatingBar } from './FloatingBar';
 import { GROUPS_KEY, groupKey, isId, useGroup } from './groups-api';
 
 type BacklogItem = {
@@ -27,7 +32,7 @@ type BacklogItem = {
 };
 
 const BATCH = 100;
-const FIRST_ROWS = 5;
+const FIRST_ROWS = 6;
 const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size));
 
 /** K/15 `/app/group/backlog?id=`: words of a deck over `backlog_after_days` overdue; relearn all, some, or stop learning them. */
@@ -42,13 +47,18 @@ export function BacklogPage() {
 
   return (
     <>
-      <BackLink {...(back)} />
+      <BackLink {...back} />
       {notFound ? (
-        <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />
+        <div className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+          <h1 className="font-wm-display text-wm-card-title text-wm-ink">{t('group.notFound')}</h1>
+          <Link href={`/${locale}/app/groups`} className="text-wm-small-strong text-wm-accent">
+            {t('group.toList')}
+          </Link>
+        </div>
       ) : group.data ? (
         <BacklogBody groupId={group.data.id} name={group.data.name} />
       ) : (
-        <FullScreenSpinner />
+        <ListSkeleton label={t('common.loading')} />
       )}
     </>
   );
@@ -59,6 +69,8 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
+  const tCommon = useTranslations('App.common');
+  const format = useFormat();
   const days = useAppConfig().data?.learning.backlog_after_days;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
@@ -139,123 +151,127 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
       return next;
     });
   const rows = showAll ? items : items.slice(0, FIRST_ROWS);
+  const longest = Math.max(1, ...items.map((i) => i.days_overdue));
+  const allTicked = items.length > 0 && items.every((i) => selected.has(i.item_id));
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-card bg-accent-soft p-5 shadow-ledge-accent md:p-7">
-        <div className="min-w-0">
-          <h1 className="text-h2 font-extrabold text-ink">{t('title')}</h1>
-          {days !== undefined && <p className="wrap-anywhere text-ui text-muted">{t('line', { name, count: items.length, days })}</p>}
+    <div className="flex flex-col gap-5 pb-36 md:pb-24">
+      <div className="flex items-end justify-between gap-5">
+        <div className="flex min-w-0 flex-col gap-2">
+          <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">{t('title')}</h1>
+          {days !== undefined && <p className="text-wm-base text-wm-muted wrap-anywhere">{t('line', { name, count: items.length, days })}</p>}
         </div>
-        {items.length > 0 && (
-          <Button variant="sticker" size="lg" isPending={relearn.busy && selected.size === 0} onPress={() => selected.size === 0 && void run(relearn, 'relearned')} isDisabled={selected.size > 0}>
-            {t('relearnAll', { count: items.length })}
-          </Button>
+        <p className="flex shrink-0 flex-col items-end">
+          <span className="font-wm-display text-6xl font-extrabold leading-none tracking-tight text-wm-fail md:text-8xl">{format.number(items.length)}</span>
+          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('countCaption')}</span>
+        </p>
+      </div>
+      {days !== undefined && (
+        <p className="max-w-195 text-wm-small leading-relaxed text-wm-muted md:text-wm-base">
+          {t.rich('explain', { days, b: (chunks) => <b className="font-semibold text-wm-ink">{chunks}</b> })}
+        </p>
+      )}
+      {items.length > 0 && (
+        <Button
+          size="lg"
+          className="w-fit"
+          isPending={relearn.busy && selected.size === 0}
+          onPress={() => selected.size === 0 && void run(relearn, 'relearned')}
+          isDisabled={selected.size > 0}
+        >
+          {t('relearnAll', { count: items.length })}
+        </Button>
+      )}
+      <section aria-label={t('list')} className="rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+        {list.isPending ? (
+          <ListSkeleton label={tCommon('loading')} />
+        ) : items.length === 0 ? (
+          <p className="text-wm-base text-wm-muted">{t('empty')}</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-4 px-4 pb-1.5 font-wm-mono text-wm-mono text-wm-muted">
+              <Checkbox isSelected={allTicked} onChange={(on) => setSelected(on ? new Set(items.map((i) => i.item_id)) : new Set())}>
+                <span className="sr-only">{t('selectAll', { count: items.length })}</span>
+              </Checkbox>
+              <span className="min-w-0 flex-1 md:w-47.5 md:flex-none">{t('colWord')}</span>
+              <span className="hidden min-w-0 flex-1 md:block">{t('colMeaning')}</span>
+              <span className="shrink-0 text-right">{t('colOverdue')}</span>
+            </div>
+            <ul className="flex flex-col">
+              {rows.map((item) => (
+                <li
+                  key={item.item_id}
+                  className={cn('flex items-center gap-4 rounded-wm-md border-t border-wm-line px-4 py-3', selected.has(item.item_id) && 'bg-wm-accent/5')}
+                >
+                  <Checkbox isSelected={selected.has(item.item_id)} onChange={(on) => toggle(item.item_id, on)}>
+                    <span className="sr-only">{t('select', { word: item.content.lemma })}</span>
+                  </Checkbox>
+                  <span className="min-w-0 flex-1 font-wm-display text-wm-word text-wm-ink wrap-anywhere md:w-47.5 md:flex-none">{item.content.lemma}</span>
+                  <span className="hidden min-w-0 flex-1 text-wm-base text-wm-muted wrap-anywhere md:block">{item.content.meaning.text}</span>
+                  <span aria-hidden className="hidden h-1.5 w-37.5 shrink-0 overflow-hidden rounded-wm-sm bg-wm-line md:block">
+                    <span
+                      className="block h-full bg-wm-muted"
+                      // raw-ok: the bar is this word's overdue days against the longest in the list
+                      style={{ width: `${Math.round((item.days_overdue / longest) * 100)}%` }}
+                    />
+                  </span>
+                  <span className="w-19 shrink-0 text-right text-wm-base-strong text-wm-muted">{t('overdueDays', { count: item.days_overdue })}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center gap-5 pt-4 font-wm-mono text-wm-mono text-wm-muted">
+              {t('showing', { shown: rows.length, total: items.length })}
+              {!showAll && items.length > FIRST_ROWS && (
+                <TextButton onPress={() => setShowAll(true)}>{t('more', { count: items.length - FIRST_ROWS })}</TextButton>
+              )}
+            </div>
+          </>
         )}
       </section>
-      <div className="grid gap-6 xl:grid-cols-3">
-        <section className="flex min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-4 xl:col-span-2">
-          {list.isPending ? (
-            <FullScreenSpinner />
-          ) : items.length === 0 ? (
-            <p className="text-body text-muted">{t('empty')}</p>
-          ) : (
-            <>
-              {selected.size > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-inner bg-primary-soft px-3 py-2">
-                  <span className="text-ui font-semibold text-primary">{t('selected', { count: selected.size })}</span>
-                  <div className="flex gap-2">
-                    <Button variant="quiet" isPending={relearn.busy} onPress={() => void run(relearn, 'relearned')}>
-                      {t('relearnSelected', { count: selected.size })}
-                    </Button>
-                    <Button variant="danger" onPress={() => setConfirmForget(true)}>
-                      {t('forget')}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              <table className="w-full table-fixed text-left text-ui">
-                <thead className="text-caption text-muted">
-                  <tr>
-                    <th className="w-10" />
-                    <th className="py-2 font-medium">{t('colWord')}</th>
-                    <th className="py-2 font-medium">{t('colMeaning')}</th>
-                    <th className="w-24 py-2 text-right font-medium">{t('colOverdue')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {rows.map((item) => (
-                    <tr key={item.item_id}>
-                      <td className="py-2.5">
-                        <Checkbox isSelected={selected.has(item.item_id)} onChange={(on) => toggle(item.item_id, on)}>
-                          <span className="sr-only">{t('select', { word: item.content.lemma })}</span>
-                        </Checkbox>
-                      </td>
-                      <td className="break-words py-2.5 font-semibold text-ink">{item.content.lemma}</td>
-                      <td className="break-words py-2.5 text-ink">{item.content.meaning.text}</td>
-                      <td className="py-2.5 text-right text-caption text-muted">{t('overdueDays', { count: item.days_overdue })}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-caption text-muted">
-                {t('showing', { shown: rows.length, total: items.length })}
-                {!showAll && items.length > FIRST_ROWS && (
-                  <>
-                    {' · '}
-                    <button type="button" onClick={() => setShowAll(true)} className="font-semibold text-primary underline underline-offset-2">
-                      {t('more')}
-                    </button>
-                  </>
-                )}
-              </p>
-            </>
-          )}
-        </section>
-        <aside className="flex flex-col gap-4">
-          {days !== undefined && (
-            <section className="flex flex-col gap-2 rounded-card border border-border bg-surface p-5">
-              <h2 className="text-body font-semibold text-ink">{t('whyTitle')}</h2>
-              <p className="text-caption text-muted">{t('whyBody', { days })}</p>
-            </section>
-          )}
-          <section className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5">
-            <h2 className="text-title font-semibold text-ink">{t('waysTitle')}</h2>
-            {(
-              [
-                ['wayRelearn', 'wayRelearnBody', 'text-primary'],
-                ['wayForget', 'wayForgetBody', 'text-danger'],
-                ['wayKeep', 'wayKeepBody', 'text-ink'],
-              ] as const
-            ).map(([title, body, tone]) => (
-              <div key={title} className="rounded-inner bg-canvas p-3">
-                <p className={`text-ui font-semibold ${tone}`}>{t(title)}</p>
-                <p className="text-caption text-muted">{t(body)}</p>
-              </div>
-            ))}
-          </section>
-        </aside>
-      </div>
-      {confirmForget && (
-        <Dialog
-          isOpen
-          onOpenChange={(open) => !open && setConfirmForget(false)}
-          title={t('forgetTitle', { count: selected.size })}
-          isDismissable={!forget.busy}
-          footer={
-            <>
-              <Button variant="quiet" onPress={() => setConfirmForget(false)}>
-                {t('keep')}
-              </Button>
-              <Button variant="danger" isPending={forget.busy} onPress={() => void run(forget, 'forgotten')}>
-                {t('forgetConfirm', { count: selected.size })}
-              </Button>
-            </>
-          }
-        >
-          <p className="text-body text-ink">{t('forgetBody')}</p>
-        </Dialog>
+      {selected.size > 0 && (
+        <FloatingBar label={t('selected', { count: selected.size })}>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-wm-button text-wm-ink">{t('selected', { count: selected.size })}</span>
+            <TextButton tone="delete" onPress={() => setConfirmForget(true)}>
+              {t('forget')}
+            </TextButton>
+          </div>
+          <Button isPending={relearn.busy} onPress={() => void run(relearn, 'relearned')}>
+            {t('relearnSelected', { count: selected.size })}
+          </Button>
+        </FloatingBar>
       )}
+      <Dialog
+        isOpen={confirmForget}
+        onOpenChange={(open) => !open && setConfirmForget(false)}
+        title={t('forgetTitle', { count: selected.size })}
+        isDismissable={!forget.busy}
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setConfirmForget(false)}>
+              {t('keep')}
+            </Button>
+            <Button variant="danger" isPending={forget.busy} onPress={() => void run(forget, 'forgotten')}>
+              {t('forgetConfirm', { count: selected.size })}
+            </Button>
+          </>
+        }
+      >
+        <p role="note" className="rounded-wm-lg bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+          {t('forgetBody')}
+        </p>
+      </Dialog>
+    </div>
+  );
+}
+
+function ListSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" className="flex flex-col gap-3">
+      <span className="sr-only">{label}</span>
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} className="h-12 w-full rounded-wm-md" />
+      ))}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { useFormat } from '@/app-shell/format';
 import { hardReplace } from '@/app-shell/navigate';
 import { ENTITLEMENTS_KEY, useEntitlements } from '@/app-shell/queries';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { sortForToday } from '../groups/GroupCard';
+import { sortForToday } from '../groups/deck-actions';
 import { useGroups } from '../groups/groups-api';
 import { ResumeDialog } from './CurrentSessionCard';
 import { CustomizeDialog, type CustomizeTarget } from './CustomizeDialog';

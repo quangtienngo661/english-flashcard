@@ -19,12 +19,17 @@ for (const locale of ['vi', 'en'] as const) {
     }
   });
 
-  test(`no horizontal scroll on the sign-in pages (${locale})`, async ({ page }) => {
+  test(`no horizontal scroll on the sign-in pages (${locale})`, async ({ page }, testInfo) => {
     await mockApi(page, { 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
-    for (const path of ['/login', '/register', '/forgot-password', '/reset-password']) {
-      await page.goto(`/${locale}/app${path}`);
-      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
-      await noSideScroll(page);
+    // Plan part 2 Review Focus 5: 1024 px sits between the two Figma sizes (no brand panel, card layout).
+    const widths = testInfo.project.name === 'desktop' ? [undefined, 1024] : [undefined];
+    for (const width of widths) {
+      if (width) await page.setViewportSize({ width, height: 900 });
+      for (const path of ['/login', '/register', '/forgot-password', '/reset-password']) {
+        await page.goto(`/${locale}/app${path}`);
+        await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+        await noSideScroll(page);
+      }
     }
   });
 }
@@ -80,5 +85,19 @@ test('no horizontal scroll on Today and Backlog with an unbroken deck name and o
   await noSideScroll(page);
   await page.goto(`/vi/app/group/backlog?id=${DECK}`);
   await expect(page.getByText('leave').first()).toBeVisible();
+  await noSideScroll(page);
+});
+
+// Part 3 Review Focus 5: a 60-character unbroken name on a Hôm nay deck card (150 px on phones, 176 px on desktop).
+test('no horizontal scroll on Today with an unbroken name on a deck card (vi)', async ({ page }) => {
+  const cells = [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: level === 1 ? 6 : 0, due: level === 1 ? 6 : 0 }));
+  const deck = (id: string, name: string, due: number) => ({
+    id, name, version: 1, total: 6, today: { priority: 0, due, new: 0 }, cells, backlog: 0, available: { due, new: 0 }, next_lemma: UNBROKEN,
+  });
+  await signedInAs(page, 'pro', {
+    'GET /v1/groups': () => ({ json: { items: [deck('00000000-0000-4000-8000-000000000a01', 'Hero', 6), deck(DECK, UNBROKEN, 3)] } }),
+  });
+  await page.goto('/vi/app');
+  await expect(page.getByRole('list', { name: 'Nhóm của bạn' }).getByRole('link', { name: UNBROKEN })).toBeVisible();
   await noSideScroll(page);
 });

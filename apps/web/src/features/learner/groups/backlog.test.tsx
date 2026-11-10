@@ -35,7 +35,7 @@ const routes = (extra = {}) => ({
 
 describe('BacklogPage (K/15)', () => {
   it('one yellow button relearns every word, in batches of 100 ids', async () => {
-    const { calls } = renderApp(<BacklogPage />, { routes: routes() });
+    const { calls } = renderApp(<BacklogPage />, { chrome: true, routes: routes() });
     // 150 rows: give the first render more than the default second under a busy run.
     await userEvent.click(await screen.findByRole('button', { name: 'Học lại cả 150 từ' }, { timeout: 5000 }));
     await waitFor(() => expect(calls.filter((c) => c.path === '/v1/items/relearn')).toHaveLength(2));
@@ -44,8 +44,15 @@ describe('BacklogPage (K/15)', () => {
     expect(calls.find((c) => c.path === '/v1/items/relearn')!.headers['Idempotency-Key']).toBeTruthy();
   });
 
+  it('the floating bar is absent with nothing ticked', async () => {
+    renderApp(<BacklogPage />, { chrome: true, routes: routes() });
+    await screen.findByRole('checkbox', { name: 'Chọn word1' }, { timeout: 5000 });
+    expect(screen.queryByText(/^Đã chọn/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Bỏ khỏi việc học' })).toBeNull();
+  });
+
   it('selecting rows gives a normal "Học lại 2 từ" button that sends only those', async () => {
-    const { calls } = renderApp(<BacklogPage />, { routes: routes() });
+    const { calls } = renderApp(<BacklogPage />, { chrome: true, routes: routes() });
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word1' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word2' }));
     expect(screen.getByText('Đã chọn 2 từ')).toBeInTheDocument();
@@ -92,8 +99,8 @@ describe('BacklogPage (K/15)', () => {
   });
 
   it('the explainer uses the admin number of days', async () => {
-    renderApp(<BacklogPage />, { routes: routes() });
+    renderApp(<BacklogPage />, { chrome: true, routes: routes() });
     expect(await screen.findByText(/quá hạn hơn 60 ngày sẽ rời phần cần ôn/)).toBeInTheDocument();
-    expect(screen.getByText('Nhóm IELTS · 150 từ quá hạn hơn 60 ngày')).toBeInTheDocument();
+    expect(screen.getByText('150 từ trong IELTS đã quá hạn hơn 60 ngày.')).toBeInTheDocument();
   });
 });

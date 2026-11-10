@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -9,11 +9,16 @@ import { hardReplace } from '@/app-shell/navigate';
 import { clearPendingEmail, readPendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
+import { Button } from '@/ui/Button';
+import { OtpField } from '@/ui/OtpField';
+import { PasswordField } from '@/ui/PasswordField';
+import { TextField } from '@/ui/TextField';
+import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
 
-/** K/05: the code from the email and a new password; other devices are signed out, then the learner signs in. */
+/**
+ * K/05 (Figma 36:447 / 37:687): the code from the email in six boxes and a new password typed twice; other devices are signed out,
+ * then the learner signs in. "Nhập lại mật khẩu mới" is checked here only: the request body is the same as without it.
+ */
 export function ResetPasswordForm() {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
@@ -21,7 +26,9 @@ export function ResetPasswordForm() {
   const { store } = useSession();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ code?: string; password?: PasswordRule[]; form?: string }>({});
+  const [confirm, setConfirm] = useState('');
+  const confirmBox = useRef<HTMLDivElement>(null);
+  const [errors, setErrors] = useState<{ code?: string; password?: PasswordRule[]; confirm?: string; form?: string }>({});
   // Written by the forgot-password page; absent when this page is opened on its own, then the learner types it (UW-1).
   const [pendingEmail] = useState(readPendingEmail);
   const [typedEmail, setTypedEmail] = useState('');
@@ -39,6 +46,11 @@ export function ResetPasswordForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (confirm !== password) {
+      setErrors({ confirm: t('passwordMismatch') });
+      confirmBox.current?.querySelector('input')?.focus();
+      return;
+    }
     setErrors({});
     try {
       await submit();
@@ -51,26 +63,38 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <AuthCard title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <AuthHeading title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {pendingEmail === null && (
           <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
         )}
-        <TextField label={t('reset.code')} value={code} onChange={setCode} inputMode="numeric" autoComplete="one-time-code" error={errors.code} />
-        <TextField
+        <OtpField label={t('reset.code')} digitLabel={(n) => t('verify.digit', { n })} value={code} onChange={setCode} />
+        <FormError message={errors.code ?? null} />
+        <PasswordField
           label={t('reset.newPassword')}
-          type="password"
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
           description={errors.password?.length ? undefined : t('reset.hint')}
         />
         <PasswordRules rules={errors.password ?? []} />
+        <div ref={confirmBox}>
+          <PasswordField
+            label={t('reset.confirmPassword')}
+            value={confirm}
+            onChange={(value) => {
+              setConfirm(value);
+              if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
+            }}
+            autoComplete="new-password"
+            error={errors.confirm}
+          />
+        </div>
         <FormError message={errors.form ?? null} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email || !code || !password}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || !email || !/^\d{6}$/.test(code) || !password}>
           {t('reset.submit')}
         </Button>
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

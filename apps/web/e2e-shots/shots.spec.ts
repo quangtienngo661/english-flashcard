@@ -44,6 +44,14 @@ test('milestone screenshots', async ({ page }) => {
     await gmM1(page);
     return;
   }
+  if (MILESTONE === 'gm-m2') {
+    await gmM2(page);
+    return;
+  }
+  if (MILESTONE === 'gm-m3') {
+    await gmM3(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -57,7 +65,7 @@ test('milestone screenshots', async ({ page }) => {
   await page.goto('/vi/app/login');
   await settle(page);
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
   if (MILESTONE === 'm2') {
@@ -114,7 +122,7 @@ async function gmM1(page: Page) {
   await page.goto('/vi/app/login');
   await settle(page);
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
   await setLanguage(page, 'vi');
@@ -137,6 +145,114 @@ async function gmM1(page: Page) {
       await page.goto(`/vi/app${path ? `/${path}` : ''}`);
       await settle(page);
       await shoot(page, `vi-${scheme}-${n}`, true, widths);
+    }
+  }
+}
+
+// Plan part 2, M2.10: the nine sign-in and account pages at 390 and 1440, light. Signed-out pages first (a signed-in visit redirects
+// into the app); google/complete without a Google ticket shows its "expired" state.
+async function gmM2(page: Page) {
+  const widths = [390, 1440];
+  await page.emulateMedia({ colorScheme: 'light' });
+  for (const path of ['login', 'register', 'verify-email', 'forgot-password', 'reset-password', 'google/complete', 'account-deleted']) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, `vi-light-${path.replace('/', '-')}`, true, widths);
+  }
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  for (const path of ['complete-profile', 'welcome']) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, `vi-light-${path}`, true, widths);
+  }
+}
+
+/**
+ * Giao diện mới M3 (design §9 M3): Hôm nay, Nhóm with and without the picker, Một nhóm, Từ lâu chưa ôn, Chủ đề and the five group
+ * dialogs, 390 and 1440 px, light. Needs a learner with at least one deck (made from the Kinh doanh · B1 topic when missing).
+ * The remove-word dialog only opens for a word in one deck, and the forget dialog only when the deck has long-overdue words.
+ */
+async function gmM3(page: Page) {
+  const widths = [390, 1440];
+  // The shots learner signs up in Vietnamese; the old Settings language switch is rebuilt in M7.
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  // A learner made for the shots answers the welcome question first (Vietnamese).
+  const welcome = page.getByRole('heading', { name: 'Bạn đọc nghĩa của từ bằng ngôn ngữ nào?' });
+  if (await welcome.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+    // "Tiếng Việt" is already chosen.
+    await page.getByRole('button', { name: 'Tiếp tục' }).click();
+    await expect(welcome).toBeHidden({ timeout: 30_000 });
+  }
+  // The first topic Hôm nay suggests (the local content decides which), opened from its card.
+  await page.goto('/vi/app');
+  await settle(page);
+  const topicHref = await page.getByRole('region', { name: 'Tạo nhóm nhanh theo chủ đề' }).getByRole('link').nth(1).getAttribute('href');
+  const topic = topicHref!.replace(/^\/vi\/app\//, '');
+  await page.goto('/vi/app/groups');
+  await settle(page);
+  if (!(await page.getByRole('region', { name: 'Các nhóm của bạn' }).count())) {
+    await page.goto(`/vi/app/${topic}`);
+    await settle(page);
+    await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+    await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
+    await page.goto('/vi/app/groups');
+    await settle(page);
+  }
+  const centre = page.getByRole('region', { name: 'Các nhóm của bạn' }).getByRole('link');
+  const id = new URL((await centre.getAttribute('href'))!, 'http://x').searchParams.get('id')!;
+  for (const [path, name] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], [`group/backlog?id=${id}`, 'backlog'], [topic, 'topic']] as const) {
+    await page.goto(`/vi/app${path ? `/${path}` : ''}`);
+    await settle(page);
+    await shoot(page, name, true, widths);
+  }
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app/groups');
+    await settle(page);
+    await page.keyboard.press('f');
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await shoot(page, 'groups-picker', false, [width]);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Tạo nhóm', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await shoot(page, 'dialog-create', false, [width]);
+    await page.keyboard.press('Escape');
+    await page.goto(`/vi/app/group?id=${id}`);
+    await settle(page);
+    for (const [item, name] of [['Đổi tên nhóm', 'dialog-rename'], ['Xóa nhóm', 'dialog-delete']] as const) {
+      await page.getByRole('button', { name: 'Tùy chọn nhóm', exact: true }).click();
+      await page.getByRole('menuitem', { name: item }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await shoot(page, name, false, [width]);
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog')).toBeHidden();
+    }
+    const remove = page.getByRole('button', { name: /^Bỏ .+ khỏi nhóm$/ }).first();
+    if ((await remove.count()) && width === widths[0]) {
+      await remove.click();
+      if (await page.getByRole('dialog').isVisible()) {
+        await shoot(page, 'dialog-remove', false, widths);
+        await page.getByRole('button', { name: 'Giữ lại' }).click();
+      }
+    }
+    await page.goto(`/vi/app/group/backlog?id=${id}`);
+    await settle(page);
+    const first = page.getByRole('checkbox', { name: /^Chọn / }).first();
+    if (await first.count()) {
+      await first.check({ force: true });
+      await page.getByRole('button', { name: 'Bỏ khỏi việc học' }).click();
+      await shoot(page, 'dialog-forget', false, [width]);
+      await page.keyboard.press('Escape');
     }
   }
 }

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
+import { hardReplace } from '@/app-shell/navigate';
 import { GroupPage } from './GroupPage';
 
 const G = '11111111-1111-4111-8111-111111111111';
@@ -51,10 +52,7 @@ beforeEach(() => {
   search = new URLSearchParams({ id: G });
 });
 
-/** The flip button of "Xem trước thẻ" (the word rows have buttons named after the word too). */
-const previewCard = async (name: RegExp) => within(await screen.findByTestId('preview-slide')).findByRole('button', { name });
-
-describe('GroupPage (K/11–K/13)', () => {
+describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
   it('group page shows [Add word] and opens the sheet locked to this deck', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
     const main = screen.getByRole('main');
@@ -97,16 +95,34 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
   });
 
-  it('the stage chart is labelled Mới · 1 · 3 · 7 · 14 · 30', async () => {
+  it('"nhịp ôn": one segment per stage, filled with its waiting cards', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const chart = await screen.findByRole('figure', { name: /số ngày giữa hai lần ôn/ });
-    expect(within(chart).getAllByRole('listitem').map((li) => li.dataset.stage)).toEqual(['Mới', '1', '3', '7', '14', '30']);
+    const bar = await screen.findByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' });
+    expect(within(bar).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual([
+      'Mới: 0 thẻ chờ trong 1 từ', '1 ngày: 2 thẻ chờ trong 2 từ', '3 ngày: 0 thẻ chờ trong 0 từ',
+      '7 ngày: 0 thẻ chờ trong 1 từ', '14 ngày: 0 thẻ chờ trong 0 từ', '30 ngày: 0 thẻ chờ trong 0 từ',
+    ]);
   });
 
-  it('English labels the first stage "New"', async () => {
+  it('English names the first stage "New"', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
-    const chart = await screen.findByRole('figure', { name: /New 1/ });
-    expect(within(chart).getAllByRole('listitem')[0].dataset.stage).toBe('New');
+    const bar = await screen.findByRole('figure', { name: 'review rhythm: new → 30 days' });
+    expect(within(bar).getAllByRole('listitem')[0].getAttribute('aria-label')).toMatch(/^New: /);
+  });
+
+  it('the page head: the stack, the colour title and the three chips with their numbers', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
+    const chips = await screen.findByRole('list', { name: 'Hôm nay' });
+    expect(within(chips).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['1 ưu tiên', '1 đến hạn', '1 mới']);
+    expect(screen.getByRole('link', { name: 'Nhóm của bạn' })).toHaveAttribute('href', '/vi/app/groups');
+  });
+
+  it('the card preview is gone (owner QM3-1, "Bỏ như Figma")', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
+    expect(screen.queryByTestId('preview-slide')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Thẻ sau/ })).toBeNull();
   });
 
   it("the creation date is the learner's day, not UTC (review I7)", async () => {
@@ -136,34 +152,37 @@ describe('GroupPage (K/11–K/13)', () => {
   it('the meta line counts the words mastered (stage 4 and 5) once there are some (DC11)', async () => {
     const summary = { ...SUMMARY, cells: [0, 0, 1, 1, 1, 1].map((total, level) => ({ level, total, due: 0 })) };
     renderApp(<GroupPage />, { chrome: true, routes: routes({ 'GET /v1/groups': () => Response.json({ items: [summary] }) }) });
-    expect(await screen.findByText(/^4 từ · 2 đã thuộc · tạo ngày/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(/^4 từ · tạo ngày .* · 2 đã thuộc$/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
-  it('rows show the stage, priority and a changed meaning', async () => {
+  it('rows show the part of speech, the stage, the status and a changed meaning', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const list = await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
     const deploy = within(list).getByRole('listitem', { name: 'deploy' });
-    expect(within(deploy).getByText('Ngăn 1 ngày · ưu tiên')).toBeInTheDocument();
+    expect(within(deploy).getByText('Ngăn 1 ngày')).toBeInTheDocument();
+    expect(within(deploy).getByText('ưu tiên')).toBeInTheDocument();
+    expect(within(within(list).getByRole('listitem', { name: 'went' })).getByText('từ mới')).toBeInTheDocument();
     await waitFor(() => expect(within(within(list).getByRole('listitem', { name: 'release' })).getByText('nghĩa đã đổi')).toBeInTheDocument());
   });
 
-  it('the filter lists every stage with its count and filters the rows', async () => {
+  it('filter chips show every stage with its count, press one at a time and filter the rows', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
-    await userEvent.click(screen.getByRole('button', { name: /Lọc từ trong nhóm/ }));
-    const options = (await screen.findAllByRole('option')).map((o) => o.textContent);
-    expect(options).toEqual([
-      'Tất cả4 từ', 'Ưu tiên1 từ', 'Đến hạn7 từ', 'Mới1 từ', 'Ngăn 1 ngày2 từ', 'Ngăn 3 ngày0 từ', 'Ngăn 7 ngày1 từ', 'Ngăn 14 ngày0 từ', 'Ngăn 30 ngày0 từ',
+    const chips = within(screen.getByRole('group', { name: 'Lọc từ trong nhóm' })).getAllByRole('button');
+    expect(chips.map((c) => c.textContent)).toEqual([
+      'Tất cả4', 'Ưu tiên1', 'Đến hạn7', 'Mới1', 'Ngăn 1 ngày2', 'Ngăn 3 ngày0', 'Ngăn 7 ngày1', 'Ngăn 14 ngày0', 'Ngăn 30 ngày0',
     ]);
-    await userEvent.click(screen.getByRole('option', { name: /Ngăn 1 ngày/ }));
+    expect(chips[0]).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Ngăn 1 ngày2' }));
+    expect(screen.getByRole('button', { name: 'Ngăn 1 ngày2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Tất cả4' })).toHaveAttribute('aria-pressed', 'false');
     await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['deploy', 'release']));
   });
 
-  it('a section filter asks the server for that section (no whole-deck load)', async () => {
+  it('a section filter asks the server for that section once (no whole-deck load)', async () => {
     const { count } = renderApp(<GroupPage />, { chrome: true, routes: routes() });
     await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
-    await userEvent.click(screen.getByRole('button', { name: /Lọc từ trong nhóm/ }));
-    await userEvent.click(await screen.findByRole('option', { name: /Đến hạn/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Đến hạn7' }));
     await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['release']));
     expect(count('GET', `${WORDS_URL}&section=due`)).toBe(1);
     expect(count('GET', `/v1/groups/${G}/queue?mode=all`)).toBe(0);
@@ -178,9 +197,9 @@ describe('GroupPage (K/11–K/13)', () => {
     });
     await screen.findByRole('listitem', { name: 'release' });
     expect(screen.queryByRole('listitem', { name: 'went' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Xem thêm từ' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xem thêm từ · còn 2 từ' }));
     expect(await screen.findByRole('listitem', { name: 'ship' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Xem thêm từ' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Xem thêm từ/ })).not.toBeInTheDocument();
   });
 
   it('removing a word that is only in this deck asks first; one in two decks goes at once', async () => {
@@ -209,56 +228,6 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(screen.queryByText('Nhóm chưa có từ nào.')).not.toBeInTheDocument();
     await userEvent.click(retry);
     expect(await screen.findByRole('list', { name: /Toàn bộ 4 từ/ }, { timeout: 5000 })).toBeInTheDocument();
-  });
-
-  it('preview (owner 27/10/2026): the card turns over in 3D; the face turned away is inert and aria-hidden', async () => {
-    renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const card = await previewCard(/deploy/);
-    const preview = card.closest('[data-flipped]')!;
-    expect(preview).toHaveAttribute('data-flipped', 'false');
-    expect(preview.querySelector('[data-face="back"]')).toHaveAttribute('aria-hidden', 'true');
-    await userEvent.click(card);
-    expect(preview).toHaveAttribute('data-flipped', 'true');
-    expect(preview.querySelector('[data-face="front"]')).toHaveAttribute('aria-hidden', 'true');
-    expect(preview.querySelector('[data-face="back"]')).not.toHaveAttribute('aria-hidden');
-  });
-
-  it('preview: [Thẻ trước] is off on the first card; [Thẻ sau] then [Thẻ trước] go forward and back, each card face up', async () => {
-    renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const prev = await screen.findByRole('button', { name: /Thẻ trước/ });
-    expect(prev).toBeDisabled();
-    await userEvent.click(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ }));
-    await userEvent.click(screen.getByRole('button', { name: /Thẻ sau/ }));
-    const preview = within(screen.getByTestId('preview-slide')).getByRole('button', { name: /release/ }).closest('[data-flipped]')!;
-    expect(preview).toHaveAttribute('data-flipped', 'false');
-    expect(prev).toBeEnabled();
-    await userEvent.click(prev);
-    expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
-    expect(prev).toBeDisabled();
-  });
-
-  it('preview with motion: [Thẻ sau] slides the card out to the left and the next one in from the right; [Thẻ trước] the other way', async () => {
-    const media = window.matchMedia;
-    window.matchMedia = ((query: string) => ({ matches: query.includes('no-preference'), media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia;
-    try {
-      renderApp(<GroupPage />, { chrome: true, routes: routes() });
-      const slide = () => screen.getByTestId('preview-slide');
-      await previewCard(/deploy/);
-      await userEvent.click(screen.getByRole('button', { name: /Thẻ sau/ }));
-      expect(slide()).toHaveClass('motion-safe:animate-slide-out-left');
-      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
-      fireEvent.animationEnd(slide());
-      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /release/ })).toBeInTheDocument();
-      expect(slide()).toHaveClass('motion-safe:animate-slide-in-right');
-      fireEvent.animationEnd(slide());
-      await userEvent.click(screen.getByRole('button', { name: /Thẻ trước/ }));
-      expect(slide()).toHaveClass('motion-safe:animate-slide-out-right');
-      fireEvent.animationEnd(slide());
-      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
-      expect(slide()).toHaveClass('motion-safe:animate-slide-in-left');
-    } finally {
-      window.matchMedia = media;
-    }
   });
 
   it('E17: an unknown or deleted deck shows not found with the way back', async () => {
@@ -316,10 +285,58 @@ describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
   it('control: a deck with words keeps its counts, chart and "Học tất cả N từ" in the menu', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const main = screen.getByRole('main');
-    expect(await within(main).findByText('1 ưu tiên', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await within(main).findByRole('list', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
     expect(within(main).getByRole('figure')).toBeInTheDocument();
     expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 4 từ', 'Xóa nhóm']);
+  });
+});
+
+describe('GroupPage: rename and delete from the ⋯ menu (moved from the list, giao diện mới M3)', () => {
+  it('E18: after a version conflict the name field shows the name saved elsewhere', async () => {
+    let stored = { id: G, name: 'Công nghệ', version: 1, item_count: 4, removable_items: 3, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' };
+    renderApp(<GroupPage />, { chrome: true,
+      routes: routes({
+        [`GET /v1/groups/${G}`]: () => Response.json(stored),
+        [`PATCH /v1/groups/${G}`]: () => {
+          stored = { ...stored, name: 'Tên từ máy khác', version: 2 };
+          return problem(409, 'version-conflict');
+        },
+      }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm' }, { timeout: 5000 }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên nhóm' }));
+    const field = await screen.findByRole('textbox', { name: 'Tên nhóm' });
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Tên của tôi');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Lưu tên mới' }));
+    await waitFor(() => expect(field).toHaveValue('Tên từ máy khác'));
+  });
+
+  it('K/14: delete says how many words leave learning (removable_items), then deletes once', async () => {
+    const { count } = renderApp(<GroupPage />, { chrome: true,
+      routes: routes({
+        [`GET /v1/groups/${G}`]: () => Response.json({ id: G, name: 'Công nghệ', version: 1, item_count: 18, removable_items: 12, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' }),
+        [`DELETE /v1/groups/${G}`]: () => new Response(null, { status: 204 }),
+      }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm' }, { timeout: 5000 }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Xóa nhóm' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Xóa nhóm “Công nghệ”?' });
+    expect(within(dialog).getByRole("note")).toHaveTextContent(/12 từ chỉ có trong nhóm này/);
+    expect(within(dialog).getByRole('button', { name: 'Giữ nhóm' })).toBeInTheDocument();
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Xóa nhóm và 12 từ' }));
+    await waitFor(() => expect(count('DELETE', `/v1/groups/${G}`)).toBe(1));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/groups'));
+  });
+
+  it('English: "Delete deck" and "Cancel"', async () => {
+    renderApp(<GroupPage />, { chrome: true, locale: 'en', routes: routes() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Deck options' }, { timeout: 5000 }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete deck' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(await within(dialog).findByRole('button', { name: /Delete deck/ })).toBeInTheDocument();
   });
 });

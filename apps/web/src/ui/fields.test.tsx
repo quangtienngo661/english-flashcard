@@ -2,8 +2,11 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/app-ui/test-utils';
 import { Checkbox } from './Checkbox';
+import { DateOfBirthField } from './DateOfBirthField';
+import { GoogleButton } from './GoogleButton';
+import { PasswordField } from './PasswordField';
 import { Segmented } from './Segmented';
 import { Select } from './Select';
 import { Switch } from './Switch';
@@ -97,5 +100,67 @@ describe('ui fields', () => {
     await user.click(screen.getByRole('button', { name: /Trình độ/ }));
     await user.click(await screen.findByRole('option', { name: 'A2' }));
     expect(onChange).toHaveBeenCalledWith('a2');
+  });
+  it('PasswordField: the eye button shows and hides the password and is named by its action', async () => {
+    const user = userEvent.setup();
+    renderApp(<PasswordField label="Mật khẩu" value="Aa1!aaaa" onChange={vi.fn()} />);
+    const input = screen.getByLabelText('Mật khẩu');
+    expect(input).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: 'Hiện mật khẩu' }));
+    expect(input).toHaveAttribute('type', 'text');
+    const hide = screen.getByRole('button', { name: 'Ẩn mật khẩu' });
+    expect(hide).toHaveAttribute('aria-pressed', 'true');
+    await user.click(hide);
+    expect(input).toHaveAttribute('type', 'password');
+    expect(screen.getByRole('button', { name: 'Hiện mật khẩu' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('PasswordField: pressing the eye button inside a form does not submit it', async () => {
+    const user = userEvent.setup();
+    const spy = vi.fn((event: React.FormEvent) => event.preventDefault());
+    renderApp(
+      <form onSubmit={spy}>
+        <PasswordField label="Mật khẩu" value="x" onChange={vi.fn()} />
+      </form>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Hiện mật khẩu' }));
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('PasswordField: the label names only the input', () => {
+    renderApp(<PasswordField label="Mật khẩu" value="" onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Mật khẩu').tagName).toBe('INPUT');
+  });
+
+  it('TextField: labelAside renders in the label row', () => {
+    renderApp(<TextField label="Mật khẩu" value="" onChange={vi.fn()} labelAside={<a href="https://example.com/forgot">Quên mật khẩu?</a>} />);
+    const link = screen.getByRole('link', { name: 'Quên mật khẩu?' });
+    const label = screen.getByText('Mật khẩu', { selector: 'label' });
+    expect(link.parentElement).toBe(label.parentElement);
+  });
+  it('GoogleButton: the mark is hidden from screen readers, has four paths, and a press calls onPress', async () => {
+    const onPress = vi.fn();
+    renderApp(<GoogleButton onPress={onPress}>Tiếp tục với Google</GoogleButton>);
+    const button = screen.getByRole('button', { name: 'Tiếp tục với Google' });
+    const svg = button.querySelector('svg');
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+    expect(svg?.querySelectorAll('path')).toHaveLength(4);
+    await userEvent.click(button);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('DateOfBirthField: an under-13 date shows the age line and reports null', () => {
+    const onChange = vi.fn();
+    renderApp(<DateOfBirthField label="Ngày sinh" onChange={onChange} today="2026-11-10" />);
+    pickDate('Ngày sinh', '2015-01-01');
+    expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    pickDate('Ngày sinh', '2000-05-12');
+    expect(onChange).toHaveBeenLastCalledWith('2000-05-12');
+  });
+
+  it('DateOfBirthField: serverError tooYoung shows the same line', () => {
+    renderApp(<DateOfBirthField label="Ngày sinh" onChange={vi.fn()} serverError="tooYoung" />);
+    expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
   });
 });

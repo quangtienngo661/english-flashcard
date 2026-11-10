@@ -16,4 +16,61 @@
   --color-wm-pass-soft: #142a1e;
   --color-wm-fail: #ff8d80;
   --color-wm-fail-soft: #311a18;
+
+  /* Same light values until the dark mockups (GM4, M9). Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
+     colour utility; stage-5-solid is the flat square of "Từ theo ngăn" (M3 Figma A §5). */
+  --color-wm-stage-0-bg: #eef0f4;
+  --color-wm-stage-0-dot: #9aa3b1;
+  --color-wm-stage-0-ink: #525a78;
+  --color-wm-stage-1-bg: #f7e8dc;
+  --color-wm-stage-1-dot: #c07a45;
+  --color-wm-stage-1-ink: #7c4a28;
+  --color-wm-stage-2-bg: #edf0f4;
+  --color-wm-stage-2-dot: #98a2b0;
+  --color-wm-stage-2-ink: #4d5664;
+  --color-wm-stage-3-bg: #fbf0c8;
+  --color-wm-stage-3-dot: #d4a72c;
+  --color-wm-stage-3-ink: #6f5208;
+  --color-wm-stage-4-bg: #dcf3ea;
+  --color-wm-stage-4-dot: #1f9d75;
+  --color-wm-stage-4-ink: #0c654c;
+  --color-wm-stage-5-bg: linear-gradient(90deg, #ffe0f2 0%, #fff2d1 35%, #dbffeb 70%, #d9f0ff 100%);
+  --color-wm-stage-5-dot: linear-gradient(135deg, #ff8ad9, #ffd46b, #8cffb5, #7ad6ff);
+  --color-wm-stage-5-ink: #3b2f6b;
+  --color-wm-stage-5-solid: #b28bff;
+
+  /* Group colours by ID (design §7.4, groupColorIndex). -soft: cards behind a stack; -wash: selected picker row, halo;
+     -ink: numbers on white, Figma's darker inks (>= 4.5:1). Groups 4 and 6 have no drawn ink: color-mix(in oklab, colour 65%, #1b2444). */
+  --color-wm-group-0: #e5603f;
+  --color-wm-group-0-soft: color-mix(in srgb, #e5603f 50%, #ffffff);
+  --color-wm-group-0-wash: color-mix(in srgb, #e5603f 12%, #ffffff);
+  --color-wm-group-0-ink: #984941;
+  --color-wm-group-1: #149384;
+  --color-wm-group-1-soft: color-mix(in srgb, #149384 50%, #ffffff);
+  --color-wm-group-1-wash: color-mix(in srgb, #149384 12%, #ffffff);
+  --color-wm-group-1-ink: #17696c;
+  --color-wm-group-2: #7a55d3;
+  --color-wm-group-2-soft: color-mix(in srgb, #7a55d3 50%, #ffffff);
+  --color-wm-group-2-wash: color-mix(in srgb, #7a55d3 12%, #ffffff);
+  --color-wm-group-2-ink: #56429d;
+  --color-wm-group-3: #d99a17;
+  --color-wm-group-3-soft: color-mix(in srgb, #d99a17 50%, #ffffff);
+  --color-wm-group-3-wash: color-mix(in srgb, #d99a17 12%, #ffffff);
+  --color-wm-group-3-ink: #916d28;
+  --color-wm-group-4: #4a9637;
+  --color-wm-group-4-soft: color-mix(in srgb, #4a9637 50%, #ffffff);
+  --color-wm-group-4-wash: color-mix(in srgb, #4a9637 12%, #ffffff);
+  --color-wm-group-4-ink: #376d45;
+  --color-wm-group-5: #d2427a;
+  --color-wm-group-5-soft: color-mix(in srgb, #d2427a 50%, #ffffff);
+  --color-wm-group-5-wash: color-mix(in srgb, #d2427a 12%, #ffffff);
+  --color-wm-group-5-ink: #8c3765;
+  --color-wm-group-6: #2a86d1;
+  --color-wm-group-6-soft: color-mix(in srgb, #2a86d1 50%, #ffffff);
+  --color-wm-group-6-wash: color-mix(in srgb, #2a86d1 12%, #ffffff);
+  --color-wm-group-6-ink: #29629d;
+  --color-wm-group-empty: #64708c;
+  --color-wm-group-empty-soft: color-mix(in srgb, #64708c 50%, #ffffff);
+  --color-wm-group-empty-wash: color-mix(in srgb, #64708c 12%, #ffffff);
+  --color-wm-group-empty-ink: #525a78;
 }

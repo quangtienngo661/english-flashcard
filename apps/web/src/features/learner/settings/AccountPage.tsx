@@ -15,7 +15,7 @@ import { Button } from '@/app-ui/Button';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
 import { TextField } from '@/app-ui/TextField';
 import { showToast } from '@/app-ui/Toast';
-import { FormError } from '../auth/AuthCard';
+import { FormError } from '../auth/AuthHeading';
 import { useUpdateProfile, type ProfilePatch } from './settings-api';
 import { ShortcutList } from './Shortcuts';
 
