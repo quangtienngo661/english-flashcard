@@ -126,7 +126,7 @@ không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs
 - **Hành động phụ:** component "Nút chữ" (Thêm, Thường, Phụ, Xóa), không gạch chân; gạch chân chỉ cho liên kết giữa câu.
 - **Truy cập:** viền focus 3 px màu nhấn; vùng chạm điện thoại ≥ 44 px; mọi màn dùng được bằng phím. Phím tắt theo Figma và trang mẫu:
   `N` Thêm từ, `/` tìm, Space lật thẻ, Enter, Esc (đã có trong code); `L` mở lịch, `F` chọn nhóm (mới).
-- **Nền:** lưới chấm 20 px mờ dần ra mép, quầng navy góc trái trên và vàng góc phải dưới, trên mọi màn app (vòng 8–9).
+- **Nền:** "Mesh + hạt" (hướng 4 của vòng 8, chủ dự án chốt 10/11/2026, QBG): bốn quầng navy, vàng, lục, navy nhạt phủ lớp hạt nhiễu mịn, trên mọi màn app và trang đăng nhập; khối vẫn trắng, có bóng. Lưới chấm của vòng 9 đã bỏ.
 - **Câu chữ:** theo `~/.claude/rules/vietnamese-writing.md`; không kể chi tiết hệ thống người học không cần (VietQR, payOS, ngăn ôn, hạn mức AI)
   trên trang công khai.
 
@@ -290,7 +290,7 @@ app/[locale]/app/
 ```
 app/                    chỉ khai báo route: page/layout mỏng, metadata, loading, error, sitemap, robots, manifest, ảnh OG
 ui/                     một bộ component cho cả web (thay app-ui/ và components/ui/), §7.5
-styles/                 fonts.ts, nền lưới chấm, keyframe motion, test token
+styles/                 fonts.ts, nền mesh + hạt, keyframe motion, test token
 site/                   phần riêng của trang công khai: landing/, legal/, seo/, layout/ (thay components/*)
 app-chrome/             viết lại: TopBar, MobileTabBar, AvatarMenu, CalendarButton, PageHeader
 app-shell/              giữ nguyên: gọi API, phiên đăng nhập, React Query, cấu hình, theme
@@ -454,7 +454,7 @@ Dựng trên `react-aria-components` 1.22.1 (đã có) cho phần cần truy c�
 | Chip từ `96:322` | `WordChip` | |
 | Nút loa `54:657` | `SpeakButton` | Dùng lại logic `app-ui/speech.ts`, `audio-player.ts` |
 | Ô ngày lịch `96:404` | phần của hộp Lịch | |
-| Nền app/Lưới chấm `95:315`, `95:321` | `DotGridBackground` | CSS, không ảnh |
+| Nền app `95:315`, `95:321` (mesh + hạt từ 10/11/2026) | `DotGridBackground` (giữ tên tới M9) | CSS, hạt bằng SVG `feTurbulence` nhúng `data:` |
 | Nút lịch nổi `95:343`, Nút lịch trong thanh `95:344` | `CalendarButton` (`app-chrome/`) | Phím `L` |
 | Thanh trên app (Desktop theo tab, Mobile) `54:502`, `54:503` | `TopBar` (`app-chrome/`) | Kính mờ: `backdrop-filter: blur(24px) saturate(1.6)` |
 | Thanh tab dưới `54:637` | `MobileTabBar` (`app-chrome/`) | |
