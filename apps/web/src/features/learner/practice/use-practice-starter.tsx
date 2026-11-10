@@ -88,7 +88,8 @@ export function usePracticeStarter<Origin extends string>() {
       const ai = aiRefusal(error);
       if (ai) {
         // AI types come only from the customise dialog: the refusal is told there (K/71, K/72, E24).
-        if (ai.kind === 'locked') void client.invalidateQueries({ queryKey: ENTITLEMENTS_KEY });
+        // A refusal means the cached plan or units are stale (another device spent them): read them again (review I1).
+        if (ai.kind === 'locked' || ai.kind === 'quota') void client.invalidateQueries({ queryKey: ENTITLEMENTS_KEY });
         setAiProblem(ai);
         return;
       }

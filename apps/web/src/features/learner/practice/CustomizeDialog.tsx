@@ -133,9 +133,12 @@ function CustomizeForm({
   const sessionMax = scopeMode ? Math.max(1, Math.min(scopeWords, config?.scope_questions_max ?? SCOPE_MAX)) : (config?.max_questions_per_session ?? 20);
   const count = Math.max(1, Math.min(countWanted ?? config?.default_questions_per_session ?? 10, sessionMax));
   const aiCap = config?.ai_max_mode === 'fixed' ? Math.min(config.ai_max_fixed ?? 5, count) : Math.floor((count * (config?.ai_max_percent ?? 50)) / 100);
-  const aiLeft = aiPool?.remaining ?? 0;
+  const cachedLeft = aiPool?.remaining ?? 0;
+  // After a 403 the API's own count of units left wins over the cached one until the entitlements are read again (review I1): the
+  // plus stops there and the caption says it, but the learner's own choice stays until they lower it, with the start off.
+  const aiLeft = Math.min(cachedLeft, aiProblem?.kind === 'quota' ? aiProblem.remaining : Infinity);
   const aiMax = aiAllowed ? Math.min(aiCap, aiLeft) : 0;
-  const ai = Math.min(aiWanted, aiMax);
+  const ai = Math.min(aiWanted, aiAllowed ? Math.min(aiCap, cachedLeft) : 0);
 
   const ruleTypes: QuestionType[] = [
     ...(mcq ? ['mcq_definition' as const] : []),
@@ -157,7 +160,7 @@ function CustomizeForm({
   const mixed = ai > 0 && own && aiCloze;
   const learnerPlaces = config?.ai_placement === 'learner';
   const placedAs = learnerPlaces ? placement : config?.ai_placement === 'random' ? 'random' : 'even';
-  const quotaBlocked = aiProblem?.kind === 'quota' && ai > 0;
+  const quotaBlocked = aiProblem?.kind === 'quota' && ai > aiProblem.remaining;
   const noGroup = source === 'group' && groupId === '';
 
   function dropAi() {

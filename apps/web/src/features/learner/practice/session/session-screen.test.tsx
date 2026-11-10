@@ -182,7 +182,8 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     expect(answers()).toHaveLength(1);
     expect((field as HTMLInputElement).selectionStart).toBe(0);
     expect((field as HTMLInputElement).selectionEnd).toBe('deteriorated'.length);
-    await userEvent.type(field, 'deteriorate{Enter}');
+    // Typing now replaces the selected word, as a learner retypes it.
+    await userEvent.keyboard('deteriorate{Enter}');
     await waitFor(() => expect(answers()).toHaveLength(2));
     expect(answers()[1].body).toEqual({ text: 'deteriorate' });
   });

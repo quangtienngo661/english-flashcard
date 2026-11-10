@@ -24,6 +24,11 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
       className="flex flex-col gap-3 md:flex-row"
       onSubmit={(e) => {
         e.preventDefault();
+        // Review M1: Enter on the word just graded wrong means "Làm lại": select it to retype, never send it again.
+        if (retry && text === outcome.typed) {
+          focusAnswer();
+          return;
+        }
         if (!final && text.trim()) onSubmit(text);
       }}
     >
