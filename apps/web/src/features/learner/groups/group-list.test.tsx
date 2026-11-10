@@ -45,9 +45,19 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     expect(link).toHaveAttribute('href', '/vi/app/group?id=g-12');
     const r = await region();
     expect(within(r).getAllByRole('link')).toHaveLength(1);
-    const sides = r.querySelectorAll('[inert]');
-    expect(sides.length).toBe(4);
-    sides.forEach((s) => expect(s).toHaveAttribute('aria-hidden', 'true'));
+    // Side stacks are pressable with a pointer (owner 10/11/2026, as the motion prototype) but hidden from screen readers.
+    expect(r.querySelectorAll('[aria-hidden="true"][data-abs]').length).toBe(4);
+    expect(r.querySelectorAll('[inert]').length).toBe(0);
+  });
+
+  it('pressing a side stack brings it to the centre (owner 10/11/2026, motion prototype), without opening it', async () => {
+    push.mockClear();
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    const r = await region();
+    await userEvent.click(within(r).getByText('Đề 14 · Reading'));
+    expect(await centre()).toHaveTextContent('Đề 14 · Reading');
+    expect(screen.getByText('Đề 14 · Reading, 11 thẻ chờ')).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('→ makes the next group the centre and the live line reads its name and waiting cards', async () => {
@@ -156,7 +166,7 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     expect(screen.queryByRole('button', { name: 'Nhóm sau' })).toBeNull();
     key('ArrowRight');
     expect(await centre()).toHaveTextContent('Đề 12 · Writing');
-    expect((await region()).querySelectorAll('[inert]').length).toBe(0);
+    expect((await region()).querySelectorAll('[aria-hidden="true"][data-abs]').length).toBe(0);
   });
 
   it('two groups: exactly two stacks, never the same group on both sides', async () => {
