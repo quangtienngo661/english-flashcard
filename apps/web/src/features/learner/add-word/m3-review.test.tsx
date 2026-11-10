@@ -19,6 +19,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => nav.params,
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
+const inflection = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 vi.setConfig({ testTimeout: 20_000 });
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -67,7 +68,7 @@ describe('I-1: "Tạo nhóm và lưu" with no meaning to save', () => {
   it('an error while creating from the deck list is shown there', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base({ 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
-    await screen.findByText('went là quá khứ của go');
+    await screen.findByText(inflection('went → go · quá khứ của go'));
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'phỏng vấn');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));
@@ -145,7 +146,7 @@ describe('I-4: saving a word refreshes the deck it went to', () => {
       routes: base({ 'POST /v1/quick-add': () => Response.json({ item_id: uuid(90), sense_id: uuid(1), created_item: true, created_word: false, sentence_id: null }, { status: 201 }) }),
     });
     client.setQueryData(['group', TRAVEL], { id: TRAVEL });
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(client.getQueryState(['group', TRAVEL])?.isInvalidated).toBe(true));
   });
 });

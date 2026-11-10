@@ -1,8 +1,11 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { createContext,useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AddWordSheet } from './AddWordSheet';
+
+// Design §5.7: the dialog's code loads on the first open, not with every page.
+const AddWordSheet = dynamic(() => import('./AddWordSheet').then((m) => m.AddWordSheet), { ssr: false });
 
 type AddWord = { open: (word?: string, opts?: { groupId?: string }) => void; setScope: (groupId: string | null) => void };
 const AddWordContext = createContext<AddWord>({ open: () => {}, setScope: () => {} });

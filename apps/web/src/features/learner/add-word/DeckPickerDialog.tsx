@@ -7,9 +7,10 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY, useGroupMutations, useGroups } from '../groups/groups-api';
 import { GroupPicker } from './GroupPicker';
 import { readLastGroup, writeLastGroup } from './last-group';
@@ -85,19 +86,20 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('pickerTitle')}
+      closeLabel={tc('close')}
       isDismissable={!save.busy}
       footer={
         <>
-          <Button variant="quiet" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose}>
             {tc('cancel')}
-          </Button>
+          </TextButton>
           {unmatched ? (
-          <Button variant="sticker" isPending={save.busy} onPress={() => void onSave(unmatched)}>
+          <Button isPending={save.busy} onPress={() => void onSave(unmatched)}>
             {t('createAndSave')}
           </Button>
         ) : (
           deck && (
-            <Button variant="sticker" isPending={save.busy} onPress={() => void onSave(null)}>
+            <Button isPending={save.busy} onPress={() => void onSave(null)}>
               {t('saveTo')}
             </Button>
           )
@@ -105,12 +107,12 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
         </>
       }
     >
-      <p className="-mt-2 w-fit break-words rounded-sm bg-accent-soft px-2 py-0.5 text-caption font-semibold text-ink">
-        {sense.lemma}, {sense.pos}: {sense.meaning.text}
+      <p className="w-fit break-words rounded-wm-xs bg-wm-mark px-1.5 py-0.5 font-wm-sans text-wm-small text-wm-mark-ink">
+        <b className="font-semibold">{sense.lemma}</b>, {sense.pos}: {sense.meaning.text}
       </p>
       <GroupPicker groups={groups} value={deck} onChange={setChosen} onCreate={(name) => void onCreate(name)} onUnmatched={setUnmatched} recentId={lastGroup} />
       {error && (
-        <p role="alert" className="text-ui text-danger">
+        <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
           {error}
         </p>
       )}

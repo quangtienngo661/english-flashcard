@@ -9,8 +9,8 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { ENTITLEMENTS_KEY, useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
 import { LockedFeature } from '@/app-ui/Locked';
 import { refillKind } from '../settings/refill';
 import { useAiLookup, type AiLookupResult } from './ai-lookup-api';
@@ -83,38 +83,38 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
       )}
       <div className="grid grid-cols-2 items-start gap-3">
         <div className="flex flex-col items-stretch gap-1">
-          <Button variant={!allowed ? 'quiet' : accent ? 'sticker' : 'primary'} isPending={lookup.busy} onPress={() => void run()} className="w-full flex-wrap whitespace-normal py-2 text-center">
+          <Button variant={allowed && accent ? 'primary' : 'secondary'} isPending={lookup.busy} onPress={() => void run()} className="w-full flex-wrap whitespace-normal py-2 text-center">
             {t('button')}
             {!allowed && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">
+              <span className="inline-flex items-center gap-1 rounded-wm-pill bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">
                 <Lock aria-hidden className="size-3" />
                 {tUi('proBadge')}
               </span>
             )}
           </Button>
           {allowed && pool && pool.limit > 0 && (
-            <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-caption text-muted">
+            <p className="flex flex-wrap items-center justify-center gap-1.5 text-center font-wm-mono text-wm-mono text-wm-muted">
               <span>{t('left', { count: pool.remaining })}</span>
             </p>
           )}
         </div>
-        <Button variant="quiet" onPress={onManual} className="w-full whitespace-normal py-2 text-center">
+        <Button variant="secondary" onPress={onManual} className="w-full whitespace-normal py-2 text-center">
           {t('manual')}
         </Button>
       </div>
       {lookup.busy && (
-        <p role="status" className="text-ui text-muted">
+        <p role="status" className="font-wm-sans text-wm-small text-wm-muted">
           {t('looking')}
         </p>
       )}
       {failure?.kind === 'locked' && <LockedFeature />}
       {failure && failure.kind !== 'locked' && (
-        <div role="alert" className="flex flex-col items-start gap-2 rounded-inner bg-accent-soft p-3">
-          <p className="text-ui text-ink">
+        <div role="alert" className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-bg p-3">
+          <p className="font-wm-sans text-wm-small text-wm-ink">
             {failure.kind === 'failed' ? t('failed') : failure.kind === 'quota' ? [t('quota'), refill].filter(Boolean).join(' ') : failure.text}
           </p>
           {failure.kind === 'failed' && failure.retryable && (
-            <Button variant="quiet" isPending={lookup.busy} onPress={() => void run()}>
+            <Button variant="secondary" isPending={lookup.busy} onPress={() => void run()}>
               {t('retry')}
             </Button>
           )}

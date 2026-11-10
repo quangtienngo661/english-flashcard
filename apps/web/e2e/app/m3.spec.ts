@@ -85,9 +85,9 @@ test.describe('M3 flows (mocked API)', () => {
     await page.keyboard.press('n');
     const sheet = page.getByRole('dialog', { name: vi.addWord.title });
     await sheet.getByRole('textbox', { name: vi.addWord.word }).fill('went');
-    await expect(sheet.getByText('went là quá khứ của go')).toBeVisible();
+    await expect(sheet.getByText('quá khứ của go', { exact: false })).toBeVisible();
     await sheet.getByRole('textbox', { name: vi.addWord.sentence }).fill('I went to the bank yesterday.');
-    await sheet.getByRole('button', { name: 'Lưu went' }).click();
+    await sheet.getByRole('button', { name: 'Lưu', exact: true }).click();
     await expect(page.getByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: uuid(3), sentence: 'I went to the bank yesterday.' });
   });

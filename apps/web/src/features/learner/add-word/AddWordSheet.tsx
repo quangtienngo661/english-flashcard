@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRef, useState, type ReactNode } from 'react';
@@ -9,13 +9,16 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { Select } from '@/app-ui/Select';
-import { TextField } from '@/app-ui/TextField';
 import { ErrorState } from '@/app-ui/States';
-import { showToast } from '@/app-ui/Toast';
 import { cn } from '@/lib/cn';
+import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { FIELD_BOX, FIELD_ERROR, FIELD_LABEL } from '@/ui/field-styles';
+import { PronunciationLine } from '@/ui/PronunciationLine';
+import { Select } from '@/ui/Select';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
+import { TextField } from '@/ui/TextField';
+import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
 import { LEVELS, useTopics } from '../lookup/lookup-api';
 import { wordHref } from '../word/word-api';
@@ -23,7 +26,6 @@ import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } f
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
 import { AiLookupPanel } from './AiLookupPanel';
 import { AiLookupResult } from './AiLookupResult';
-import { PronunciationLine } from '@/app-ui/PronunciationLine';
 import { bareIpa, cleanExamples, draftFromSuggestion, EditSuggestionForm, IPA_MAX, type WordDraft } from './EditSuggestionForm';
 import { GroupPicker } from './GroupPicker';
 import { readLastGroup, writeLastGroup } from './last-group';
@@ -212,40 +214,33 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   };
 
   const deckField = lockedGroupId ? (
-    <p className="text-ui text-ink">{t('lockedDeck', { name: deckName })}</p>
+    <p className="font-wm-sans text-wm-small text-wm-ink">{t('lockedDeck', { name: deckName })}</p>
   ) : noDecks ? (
-    <div className="flex flex-col items-start gap-2 rounded-inner bg-canvas p-3">
-      <p className="text-ui text-ink">{t('noDecks')}</p>
-      <Button variant="quiet" onPress={openPicker}>
+    <div className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-bg p-3">
+      <p className="font-wm-sans text-wm-small text-wm-ink">{t('noDecks')}</p>
+      <Button variant="secondary" onPress={openPicker}>
         {t('createFirst')}
       </Button>
     </div>
   ) : (
     <div className="flex flex-col gap-1.5">
-      <span aria-hidden className="text-ui font-medium text-ink">
+      <span aria-hidden className={FIELD_LABEL}>
         {t('deck')}
       </span>
-      <button
-        type="button"
-        onClick={openPicker}
-        className={cn(
-          'flex min-h-control w-full items-center justify-between gap-2 rounded-control border-2 bg-surface px-3 py-2 text-left text-ui text-ink outline-none focus-visible:border-primary',
-          deckError ? 'border-danger' : 'border-border-strong',
-        )}
-      >
+      <button type="button" onClick={openPicker} className={cn(FIELD_BOX, 'flex items-center justify-between gap-2 text-left', deckError && 'border-wm-fail')}>
         <span className="sr-only">{t('deck')}: </span>
-        <span className={cn('truncate', !deck && 'text-placeholder')}>{deck ? deckName : t('chooseDeck')}</span>
-        <ChevronDown aria-hidden className="size-4 shrink-0" />
+        <span className={cn('truncate', !deck && 'text-wm-muted')}>{deck ? deckName : t('chooseDeck')}</span>
+        <ChevronDown aria-hidden className="size-4.5 shrink-0 text-wm-muted" />
       </button>
-      {deckError && <p className="text-caption text-danger">{deckError}</p>}
+      {deckError && <p className={FIELD_ERROR}>{deckError}</p>}
     </div>
   );
 
   const failureLine: ReactNode = failure && (
-    <p role="alert" className="text-ui text-danger">
+    <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
       {failure.text}{' '}
       {failure.existing && (
-        <Link href={wordHref(locale, failure.existing)} className="font-semibold underline underline-offset-2">
+        <Link href={wordHref(locale, failure.existing)} className="font-semibold text-wm-accent underline underline-offset-2">
           {t('openExisting')}
         </Link>
       )}
@@ -277,22 +272,22 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     body = (
       <div className="flex flex-col gap-4">
         {body}
-        {deckError && <p className="text-caption text-danger">{deckError}</p>}
+        {deckError && <p className={FIELD_ERROR}>{deckError}</p>}
         {failureLine}
       </div>
     );
     footer = (
       <>
-        <Button variant="quiet" onPress={() => setView(back)}>
+        <TextButton tone="muted" onPress={() => setView(back)}>
           {t('back')}
-        </Button>
+        </TextButton>
         {unmatched ? (
-          <Button variant="sticker" isPending={save.busy} onPress={() => void submit(unmatched)}>
+          <Button isPending={save.busy} onPress={() => void submit(unmatched)}>
             {t('createAndSave')}
           </Button>
         ) : (
           deck && (
-            <Button variant="sticker" onPress={() => setView(back)}>
+            <Button onPress={() => setView(back)}>
               {t('pickDeck', { group: deckName })}
             </Button>
           )
@@ -310,17 +305,17 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           formOf={draftFormOf ? t('recognizedShort', { kind: kind(draftFormOf.kind), base: draftFormOf.base.lemma }) : undefined}
         />
         {deckField}
-        <p className="text-caption text-muted">{t('edit.note')}</p>
+        <p className="font-wm-sans text-wm-caption text-wm-muted">{t('edit.note')}</p>
         {failureLine}
       </div>
     );
     footer = (
       <>
-        <Button variant="quiet" onPress={() => setView('find')}>
+        <TextButton tone="muted" onPress={() => setView('find')}>
           {tc('cancel')}
-        </Button>
+        </TextButton>
         {!noDecks && (
-          <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
+          <Button isPending={save.busy} onPress={() => void submit()}>
             {t('saveManual')}
           </Button>
         )}
@@ -330,9 +325,9 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     title = t('manualTitle');
     body = (
       <div className="flex flex-col gap-4">
-        <p className="-mt-3 text-caption text-muted">{t('manualSub')}</p>
+        <p className="-mt-2 font-wm-sans text-wm-small text-wm-muted">{t('manualSub')}</p>
         <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} />
-        {via && <p className="-mt-2 text-caption text-ink">{t('recognized', { kind: kind(via.kind), base: via.base.lemma })}</p>}
+        {via && <p className="-mt-2 font-wm-sans text-wm-caption text-wm-ink">{t('recognized', { kind: kind(via.kind), base: via.base.lemma })}</p>}
         <TextField label={t('meaning')} value={meaning} onChange={setMeaning} maxLength={300} error={fieldError} autoFocus />
         <TextField label={t('edit.ipa')} description={t('edit.ipaHint')} value={ipa} onChange={setIpa} maxLength={IPA_MAX} spellCheck={false} />
         {sentenceField}
@@ -342,11 +337,11 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     );
     footer = (
       <>
-        <Button variant="quiet" onPress={() => setView('find')}>
+        <TextButton tone="muted" onPress={() => setView('find')}>
           {t('back')}
-        </Button>
+        </TextButton>
         {!noDecks && (
-          <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
+          <Button isPending={save.busy} onPress={() => void submit()}>
             {t('saveManual')}
           </Button>
         )}
@@ -357,12 +352,22 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       <div className="flex flex-col gap-4">
         <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
         {sentenceField}
-        {lemma && lookup.isPending && <p className="text-caption text-muted">{t('lookingUp')}</p>}
-        {lookup.isSuccess && options.length === 0 && !aiShown && <p className="rounded-inner bg-canvas p-3 text-ui text-ink">{t('noMatch', { word: lemma })}</p>}
-        {lemma && lookup.isError && <ErrorState message={errorText(lookup.error)} onRetry={() => void lookup.refetch()} />}
+        {lemma && lookup.isPending && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('lookingUp')}</p>}
+        {lookup.isSuccess && options.length === 0 && !aiShown && (
+          <p className="rounded-wm-md bg-wm-bg p-3 font-wm-sans text-wm-small text-wm-ink">{t('noMatch', { word: lemma })}</p>
+        )}
+        {lemma && lookup.isError && (
+          <>
+            <ErrorState message={errorText(lookup.error)} onRetry={() => void lookup.refetch()} />
+            <TextButton className="self-start" onPress={() => setView('manual')}>
+              {t('ai.manual')}
+            </TextButton>
+          </>
+        )}
         {aiShown ? (
           <AiLookupResult
             text={lemma}
+            sentence={sentence}
             result={aiShown}
             onChoose={(sense) => {
               setChosenFromAi({ text: lemma, sense });
@@ -373,46 +378,63 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           />
         ) : (
           <>
+        {via && via.senses.length > 0 && (
+          // Figma "Dạng gốc": went → go · quá khứ của go, the typed form highlighted.
+          <p className="flex flex-wrap items-center gap-x-2 font-wm-sans text-wm-base text-wm-ink">
+            <mark className="rounded-xs bg-wm-mark px-1 text-wm-mark-ink">{lemma}</mark>
+            {' → '}
+            <b className="font-semibold">{via.base.lemma}</b>
+            <span className="text-wm-muted">{` · ${t('inflection', { kind: kind(via.kind), base: via.base.lemma })}`}</span>
+          </p>
+        )}
         {options.length > 0 && (
-          <div role="radiogroup" aria-label={t('pickSense')} className="flex flex-col gap-1 rounded-inner bg-primary-soft p-3">
-            {via && via.senses.length > 0 && (
-              <p className="text-ui font-semibold text-ink">{t('formOf', { word: lemma, kind: kind(via.kind), base: via.base.lemma })}</p>
-            )}
-            {options.map((o) => (
-              // Đợt C §5.3: the reading sits under the option, outside its label: a label sends a press to its first control, which
-              // would be a speaker on an option with no radio ("đã có trong nhóm").
-              <div key={o.sense.sense_id} className="flex flex-col py-1">
-                <label className={cn('flex items-start gap-2', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
-                  {inDeck.has(o.sense.sense_id) ? (
-                    <span className="text-caption text-muted">{t('alreadyIn')}</span>
-                  ) : (
-                    <input
-                      type="radio"
-                      name="add-word-sense"
-                      checked={chosenSense?.sense.sense_id === o.sense.sense_id}
-                      disabled={!!lockedGroupId && queue.isPending}
-                      onChange={() => setPicked(o.sense.sense_id)}
-                      className="mt-1 size-4 shrink-0 accent-primary"
-                    />
-                  )}
-                  <span className="min-w-0 break-words text-ui text-ink">
-                    <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
-                    <span className="block">{o.sense.meaning.text}</span>
-                  </span>
-                </label>
-                <PronunciationLine
-                  text={o.sense.lemma}
-                  line={o.sense.pronunciation ? { scope: o.sense.scope, pronunciation: o.sense.pronunciation } : null}
-                  className={cn('mt-0.5', inDeck.has(o.sense.sense_id) ? 'pl-0' : 'pl-6')}
-                />
-              </div>
-            ))}
+          <div role="radiogroup" aria-label={t('pickSense')} className="flex flex-col">
+            {options.map((o, i) => {
+              const saved = inDeck.has(o.sense.sense_id);
+              const chosen = chosenSense?.sense.sense_id === o.sense.sense_id;
+              return (
+                // Đợt C §5.3: the reading sits under the option, outside its label: a label sends a press to its first control, which
+                // would be a speaker on an option with no radio ("đã có trong nhóm").
+                <div key={o.sense.sense_id} className={cn('flex flex-col gap-1 rounded-wm-md p-3', i > 0 && 'border-t border-wm-line', chosen && 'bg-wm-accent/6')}>
+                  <label className={cn('flex items-start gap-3', !saved && 'cursor-pointer')}>
+                    {saved ? (
+                      <span aria-hidden className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-wm-pass-soft text-wm-pass">
+                        <Check className="size-3" strokeWidth={3} />
+                      </span>
+                    ) : (
+                      <input
+                        type="radio"
+                        name="add-word-sense"
+                        checked={chosen}
+                        disabled={!!lockedGroupId && queue.isPending}
+                        onChange={() => setPicked(o.sense.sense_id)}
+                        className="mt-0.5 size-4.5 shrink-0 accent-wm-accent"
+                      />
+                    )}
+                    <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-ink">
+                      <span className="font-semibold">{o.sense.lemma}</span>{' '}
+                      <span className="font-wm-mono text-wm-mono text-wm-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
+                      {saved && <span className="ml-2 text-wm-small-strong text-wm-pass">{t('alreadyIn')}</span>}
+                      <span className="block text-wm-small text-wm-muted">{o.sense.meaning.text}</span>
+                    </span>
+                  </label>
+                  <PronunciationLine
+                    text={o.sense.lemma}
+                    line={o.sense.pronunciation ? { scope: o.sense.scope, pronunciation: o.sense.pronunciation } : null}
+                    className="pl-7.5"
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
-        {options.length > 0 && !aiOpen && lemma && (
-          <button type="button" onClick={() => setAiOpen(true)} className="self-start text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary">
-            {t('ai.notThis')}
-          </button>
+        {options.length > 0 && lemma && !aiOpen && (
+          // Figma "Không phải nghĩa bạn cần? Nghĩa khác, tự nhập": the AI lookup and the hand-typed meaning, between the list and the
+          // deck. Once the AI panel is open it carries its own [Tự nhập nghĩa].
+          <div className="flex flex-wrap items-center gap-x-4">
+            <TextButton onPress={() => setAiOpen(true)}>{t('ai.notThis')}</TextButton>
+            <TextButton onPress={() => setView('manual')}>{t('manualButton')}</TextButton>
+          </div>
         )}
         {lemma && lookup.isSuccess && (options.length === 0 || aiOpen) && (
           <AiLookupPanel
@@ -433,7 +455,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
               type="button"
               aria-expanded={byTopic}
               onClick={() => setByTopic((open) => !open)}
-              className="min-h-control-touch self-start text-left text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'self-start text-left')}
             >
               {t('byTopic')}
             </button>
@@ -445,11 +467,10 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     );
     footer = aiShown ? (
       <>
-        <Button variant="ghost" onPress={onClose}>
+        <TextButton tone="muted" onPress={onClose}>
           {tc('cancel')}
-        </Button>
+        </TextButton>
         <Button
-          variant="sticker"
           onPress={() => {
             setDraft(draftFromSuggestion(aiShown.suggestion));
             setFieldError(undefined);
@@ -461,27 +482,30 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       </>
     ) : (
       <>
-        <Button variant="ghost" onPress={onClose}>
+        <TextButton tone="muted" onPress={onClose}>
           {tc('cancel')}
-        </Button>
-        {(options.length > 0 || (lemma && lookup.isError)) && (
-          <Button variant="quiet" onPress={() => setView('manual')}>
-            {options.length > 0 ? t('manualButton') : t('ai.manual')}
-          </Button>
-        )}
+        </TextButton>
         {chosenSense && !noDecks && (
-          <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
-            {t('save', { word: senseWord })}
+          <Button isPending={save.busy} onPress={() => void submit()}>
+            {t('saveShort')}
           </Button>
         )}
       </>
     );
   }
 
-  if (failure?.deckGone) footer = <Button variant="quiet" onPress={onClose}>{tc('close')}</Button>;
+  if (failure?.deckGone) footer = <Button variant="secondary" onPress={onClose}>{tc('close')}</Button>;
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={title} isDismissable={!save.busy} footer={footer}>
+    <Dialog
+      isOpen
+      onOpenChange={(open) => !open && onClose()}
+      title={title}
+      closeLabel={failure?.deckGone ? undefined : tc('close')}
+      size={view === 'find' && aiShown ? 'xl' : 'md'}
+      isDismissable={!save.busy}
+      footer={footer}
+    >
       {body}
     </Dialog>
   );
@@ -501,7 +525,7 @@ function TopicFields({ groupId }: { groupId: string }) {
       {topic && level && (
         <Link
           href={`/${locale}/app/topic?code=${encodeURIComponent(topic)}&level=${level}&group=${groupId}`}
-          className="flex min-h-control-touch items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(BUTTON_BASE, BUTTON_VARIANT.secondary)}
         >
           {t('addWord.seeWords')}
         </Link>

@@ -7,10 +7,12 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { TextField } from '@/app-ui/TextField';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
+import { TextField } from '@/ui/TextField';
+import { showToast } from '@/ui/Toast';
+import { highlightWord } from '../groups/highlight';
 import { sentencesKey, wordKey } from '../word/word-api';
 
 const SENTENCE_MAX = 300;
@@ -53,20 +55,30 @@ export function AddSentenceSheet({ sense, onClose, onSeeAll }: { sense: Sense; o
   }
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('sentenceTitle')} isDismissable={!save.busy}>
+    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('sentenceTitle')} closeLabel={tc('close')} isDismissable={!save.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <p className="-mt-3 text-caption text-muted">{sense.sentence_count > 0 ? t('sentenceSub', info) : t('sentenceSubNone', info)}</p>
+        <p className="-mt-2 break-words font-wm-sans text-wm-small text-wm-muted">
+          {sense.sentence_count > 0 ? t('sentenceSub', info) : t('sentenceSubNone', info)}
+        </p>
         <TextField label={t('sentenceField')} value={text} onChange={setText} maxLength={SENTENCE_MAX} showCount description={t('sentenceHint')} error={error} autoFocus />
         {limit && onSeeAll && (
-          <button type="button" onClick={onSeeAll} className="-mt-2 w-fit text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <TextButton className="-mt-2 self-start" onPress={onSeeAll}>
             {t('seeSentences')}
-          </button>
+          </TextButton>
         )}
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button variant="quiet" onPress={onClose}>
+        {text.trim() && (
+          // Figma "Xem trước mặt sau thẻ": the meaning and the sentence with the word highlighted, as on the back of the card.
+          <div className="flex flex-col gap-1.5 rounded-wm-lg border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
+            <p className="font-wm-mono text-wm-mono text-wm-muted">{t('sentencePreview')}</p>
+            <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
+            <p className="break-words font-wm-sans text-wm-base text-wm-ink">{highlightWord(text.trim(), sense.lemma)}</p>
+          </div>
+        )}
+        <div className="flex flex-col-reverse gap-2 md:flex-row md:items-center md:justify-end md:gap-5">
+          <TextButton tone="muted" onPress={onClose}>
             {tc('cancel')}
-          </Button>
-          <Button variant="sticker" type="submit" isPending={save.busy}>
+          </TextButton>
+          <Button type="submit" isPending={save.busy}>
             {t('sentenceSave')}
           </Button>
         </div>

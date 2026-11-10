@@ -3,9 +3,13 @@
 import { Plus, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
 import { cn } from '@/lib/cn';
+import { groupTone } from '@/lib/group-color';
+import { rhythm } from '../groups/carousel';
 import type { GroupSummary } from '../groups/groups-api';
 import { GROUP_NAME_MAX } from '../groups/group-name';
+import { STAGE_KEYS } from '../groups/stages';
 
 type Props = {
   groups: GroupSummary[];
@@ -20,7 +24,10 @@ type Props = {
 
 const collator = new Intl.Collator('vi');
 
-/** K/42, K/42b, K/42c, M/52: find or create a deck; "Dùng gần đây" first, then every deck A–Z with its size. */
+/**
+ * K/42, K/42b, K/42c, M/52: find or create a deck; "Dùng gần đây" first, then every deck A–Z with its colour, its six stages and its
+ * size (Figma Overlay 5, 124:5260). The list scrolls inside the dialog.
+ */
 export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, recentId }: Props) {
   const t = useTranslations('App.addWord');
   const [text, setText] = useState('');
@@ -40,8 +47,8 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex min-h-control items-center gap-2 rounded-control bg-canvas px-3 focus-within:ring-2 focus-within:ring-primary">
-        <Search aria-hidden className="size-4 shrink-0 text-muted" />
+      <label className="flex min-h-11 items-center gap-2 rounded-wm-md border-2 border-wm-line bg-wm-surface px-3.5 focus-within:border-wm-accent focus-within:ring-4 focus-within:ring-wm-accent/16">
+        <Search aria-hidden className="size-4.5 shrink-0 text-wm-muted" />
         <input
           ref={box}
           type="search"
@@ -50,7 +57,7 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
           value={text}
           maxLength={GROUP_NAME_MAX}
           onChange={(e) => type(e.target.value)}
-          className="min-w-0 flex-1 bg-transparent py-2 text-ui text-ink outline-none placeholder:text-placeholder"
+          className="min-w-0 flex-1 bg-transparent py-2 font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted"
         />
       </label>
       {query && !exact && matches.length > 0 && (
@@ -61,13 +68,13 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
         matches.length > 0 ? (
           <DeckList label={t('results', { count: matches.length })} groups={matches} value={value} onChange={onChange} />
         ) : (
-          <p className="text-ui text-muted">{t('noneNamed', { name: query })}</p>
+          <p className="font-wm-sans text-wm-small text-wm-muted">{t('noneNamed', { name: query })}</p>
         )
       ) : (
-        <>
+        <div className="-mx-1 flex max-h-88 flex-col gap-3 overflow-y-auto px-1">
           {recent.length > 0 && <DeckList label={t('recent')} groups={recent} value={value} onChange={onChange} />}
           <DeckList label={t('all', { count: groups.length })} groups={sorted} value={value} onChange={onChange} />
-        </>
+        </div>
       )}
     </div>
   );
@@ -75,7 +82,7 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
 
 function CreateRow({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <button type="button" onClick={onPress} className="flex items-center gap-2 rounded-inner px-1 py-1.5 text-left text-ui font-semibold text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary">
+    <button type="button" onClick={onPress} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.add, 'self-start text-left')}>
       <Plus aria-hidden className="size-4 shrink-0" />
       <span className="min-w-0 break-words">{label}</span>
     </button>
@@ -86,20 +93,46 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
   const t = useTranslations('App.addWord');
   const name = useId();
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-col">
-      <p aria-hidden className="pb-1 text-caption font-semibold text-muted">
+    <div role="radiogroup" aria-label={label} className="flex flex-col gap-0.5">
+      <p aria-hidden className="pb-1 font-wm-mono text-wm-mono text-wm-muted">
         {label}
       </p>
       {groups.map((g) => (
         <label
           key={g.id}
-          className={cn('flex cursor-pointer items-center gap-3 border-b border-border px-1 py-2.5 last:border-b-0', value === g.id && 'font-semibold')}
+          className={cn(
+            'flex min-h-11 cursor-pointer items-center gap-3 rounded-wm-md px-3 py-2.5 hover:bg-wm-accent/4 has-focus-visible:outline-3 has-focus-visible:outline-wm-accent',
+            value === g.id && 'bg-wm-accent/6',
+          )}
         >
-          <input type="radio" name={name} checked={value === g.id} onChange={() => onChange(g.id)} className="size-4 shrink-0 accent-primary" />
-          <span className="min-w-0 flex-1 break-words text-ui text-ink">{g.name}</span>
-          <span className="shrink-0 text-caption text-muted">{t('words', { count: g.total })}</span>
+          <input type="radio" name={name} checked={value === g.id} onChange={() => onChange(g.id)} className="size-4.5 shrink-0 accent-wm-accent outline-none" />
+          <span data-group-square aria-hidden className={cn('size-2.25 shrink-0 rounded-xs', groupTone(g.id, g.total).bg)} />
+          <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-base-strong text-wm-ink">{g.name}</span>
+          {g.total > 0 && <MiniStages group={g} />}
+          <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('words', { count: g.total })}</span>
         </label>
       ))}
     </div>
+  );
+}
+
+/** Stage 5's dot is a gradient, so the bar uses its flat colour; an empty stage stays grey. */
+const STAGE_FILL = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
+
+/** The six stages of a deck in small (Figma: 8×5 segments, gap 2): which stages hold words. */
+function MiniStages({ group }: { group: GroupSummary }) {
+  const t = useTranslations('App.groups');
+  const tStage = useTranslations('App.stages');
+  const cells = rhythm(group.cells);
+  return (
+    <figure aria-label={t('rhythm')} className="m-0 flex shrink-0 gap-0.5">
+      {cells.map((c) => (
+        <span
+          key={c.level}
+          aria-label={`${tStage(STAGE_KEYS[c.level])}: ${c.total}`}
+          className={cn('block h-1.25 w-2 rounded-xs', c.total > 0 ? STAGE_FILL[c.level] : 'bg-wm-ink/14')}
+        />
+      ))}
+    </figure>
   );
 }

@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
+const inflection = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 vi.setConfig({ testTimeout: 20_000 });
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -50,11 +51,11 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
   it('"went" is recognised as a form of go; saving sends the base sense and the sentence to the last-used deck', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('went', { routes: routes() });
-    expect(await screen.findByText('went là quá khứ của go')).toBeInTheDocument();
+    expect(await screen.findByText(inflection('went → go · quá khứ của go'))).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /đi/ })).toBeChecked();
     expect(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ })).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Câu bạn gặp (không bắt buộc)' }), 'I went to the bank yesterday.');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: uuid(1), sentence: 'I went to the bank yesterday.' });
     expect(await screen.findByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeInTheDocument();
@@ -131,7 +132,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, uuid(999));
     const { calls } = open('went', { routes: routes() });
     expect(await screen.findByRole('button', { name: /Lưu vào nhóm.*Chọn nhóm/ })).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     expect(await screen.findByText('Chọn một nhóm để lưu từ.')).toBeInTheDocument();
     expect(quickAdds(calls)).toHaveLength(0);
   });
@@ -140,7 +141,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     open('went', { routes: routes({}, []) });
     expect(await screen.findByText('Bạn chưa có nhóm nào. Tạo nhóm đầu tiên để lưu từ này.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tạo nhóm đầu tiên' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lưu went' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
   });
 
   it('K/42b, K/42c: typing filters the decks and offers to create one; "Tạo nhóm và lưu" creates, then saves there', async () => {
@@ -177,7 +178,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
   it('409 group-full names the deck', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     open('went', { routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full') }) });
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     expect(await screen.findByText('Nhóm “Du lịch” đã đầy. Chọn nhóm khác.')).toBeInTheDocument();
   });
 
@@ -187,8 +188,8 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     const { calls } = open('went', {
       routes: routes({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json(OK, { status: 201 })))) }),
     });
-    await screen.findByText('went là quá khứ của go');
-    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu went' }));
+    await screen.findByText(inflection('went → go · quá khứ của go'));
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu' }));
     expect(quickAdds(calls)).toHaveLength(1);
     release();
     await waitFor(() => expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(TECH));
