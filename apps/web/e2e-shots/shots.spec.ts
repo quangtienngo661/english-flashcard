@@ -44,6 +44,10 @@ test('milestone screenshots', async ({ page }) => {
     await gmM1(page);
     return;
   }
+  if (MILESTONE === 'gm-m2') {
+    await gmM2(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -138,6 +142,29 @@ async function gmM1(page: Page) {
       await settle(page);
       await shoot(page, `vi-${scheme}-${n}`, true, widths);
     }
+  }
+}
+
+// Plan part 2, M2.10: the nine sign-in and account pages at 390 and 1440, light. Signed-out pages first (a signed-in visit redirects
+// into the app); google/complete without a Google ticket shows its "expired" state.
+async function gmM2(page: Page) {
+  const widths = [390, 1440];
+  await page.emulateMedia({ colorScheme: 'light' });
+  for (const path of ['login', 'register', 'verify-email', 'forgot-password', 'reset-password', 'google/complete', 'account-deleted']) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, `vi-light-${path.replace('/', '-')}`, true, widths);
+  }
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  for (const path of ['complete-profile', 'welcome']) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, `vi-light-${path}`, true, widths);
   }
 }
 
