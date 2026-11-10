@@ -113,6 +113,29 @@ Plan: "Part 6" trong file plan ở trên. Nhánh `feat/giao-dien-moi-m6`, làm s
 
 **Còn chờ chủ dự án:** QM6-1 (dòng báo lỗi trên điện thoại có hiện ngày gửi không).
 
+# Giao diện mới — plan tóm tắt, phần 7: M7 Cài đặt, tài khoản, gói học (11/11/2026)
+
+Plan: "Part 7" trong file plan ở trên. Hai PR vào `refactor/giao-dien-moi`: M7a (`feat/giao-dien-moi-m7a`, sau khi PR M6 merge), rồi M7b (`feat/giao-dien-moi-m7b`, sau khi M7a merge). Không đổi API.
+
+**M7a — Cài đặt, Tài khoản, Xóa tài khoản, Giao dịch**
+- M7.1: tiêu đề trang theo Figma (44 / 30) cho mọi trang dùng chung, chấm trạng thái, hàm chia theo tháng, khung xương ba khối.
+- M7.2: sửa bốn lỗi tìm thấy khi khảo sát: Xóa tài khoản lỗi không có chữ, thiếu câu báo "gói đang tự gia hạn", thẻ gói ở trang Giao dịch không có ngày với Pro mua qua payOS, cổng thanh toán hiện "payos" (test đỏ trước, sửa sau).
+- M7.3: dựng lại Cài đặt (mục lục bên trái, thẻ từng mục, ngôn ngữ, giao diện, nhắc học, các dòng Tài khoản theo thứ tự Figma) và tô mục đang mở trong menu ảnh đại diện.
+- M7.4: dựng lại Tài khoản (Hồ sơ, Email đăng nhập có nhãn đã xác minh, thẻ gói học).
+- M7.5: dựng lại Xóa tài khoản (cột xác nhận bên trái ở máy tính, thông tin trước ở điện thoại; giữ đường xác nhận bằng Google và chặn khi gói đang tự gia hạn).
+- M7.6: dựng lại Lịch sử giao dịch (chia theo tháng, dòng có chấm trạng thái, thẻ gói học) và hộp Chi tiết giao dịch (biên lai, nút chép mã giao dịch).
+- M7.7: thêm e2e cho M7a, chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m7a`, ghi as-built, mở PR.
+
+**M7b — Gói học, Đơn hàng, Giới thiệu Pro**
+- M7.8: thẻ chọn kỳ (`ChoiceCard`), hàm tính giá gạch, phần trăm tiết kiệm, giá mỗi tháng; tách logic mua thành một hook, hành vi giữ nguyên.
+- M7.9: dựng lại Gói học (hai thẻ gói, chọn kỳ bằng thẻ, nút "Mua gói Pro {kỳ}", chữ nhỏ và link Điều khoản, bảng so sánh luôn hiện) và hộp Hủy gói.
+- M7.10: dựng lại trang Đơn hàng (thẻ đã thanh toán, các trạng thái chờ có chấm nhấp nháy, trạng thái đã dừng; báo cho trình đọc màn hình khi đổi trạng thái).
+- M7.11: dựng lại hộp Giới thiệu Pro (viền navy, nhãn Pro, nút "Để sau"); không đụng phần quảng cáo (QR4).
+- M7.12: xóa các file giao diện cũ trong `app-ui/` không còn ai dùng.
+- M7.13: thêm e2e cho M7b, chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m7b`, ghi as-built, mở PR.
+
+**Còn chờ chủ dự án:** không có câu hỏi mở. Các quyết định plan tự chốt nằm ở cuối Part 7 ("Decisions this part makes").
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).
