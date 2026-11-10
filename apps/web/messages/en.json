@@ -774,7 +774,8 @@
       "emptyLookup": "Pick words by topic",
       "metaMastered": "{count, plural, one {# word} other {# words}} · created {date} · {mastered, number} mastered",
       "loadMoreUnknown": "More words",
-      "todayChips": "Today"
+      "todayChips": "Today",
+      "metaNoDate": "{count, plural, one {# word} other {# words}} · {mastered, number} mastered"
     },
     "backlog": {
       "back": "{name} deck",
