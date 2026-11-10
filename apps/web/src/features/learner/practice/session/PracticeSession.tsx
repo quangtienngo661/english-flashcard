@@ -14,6 +14,7 @@ import { ProgressBar } from '@/ui/ProgressBar';
 import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
 import { useGroups } from '../../groups/groups-api';
+import { CompareLine } from '../../recall/CompareLine';
 import { RecallSummary } from '../../recall/RecallSummary';
 import { useSourceLabel } from '../CurrentSessionCard';
 import { AiUnavailableState } from './AiUnavailableState';
@@ -346,7 +347,15 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
           busy={state.busy}
         />
       ) : final ? (
-        <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
+        <>
+          <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
+          {/* M5.9, Figma 209:5902: in Ôn a wrong typed word is set against the answer, letter by letter, once the answer is shown. */}
+          {recall && final.result.result === 'wrong' && final.chosen && 'text' in final.chosen && (
+            <div className="mt-4 motion-safe:animate-feedback-in">
+              <CompareLine typed={final.chosen.text} answer={final.result.correct.text} />
+            </div>
+          )}
+        </>
       ) : outcome?.kind === 'try_again' ? (
         <TryAgainPanel
           sessionWord={outcome.reason === 'session_word'}

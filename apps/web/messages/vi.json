@@ -1713,7 +1713,14 @@
       "nothingTitle": "Nhóm này chưa có từ nào đã học.",
       "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
       "noteLeveled": "{lemma} lên ngăn {stage}.",
-      "noteKept": "{lemma} giữ ngăn {stage}."
+      "noteKept": "{lemma} giữ ngăn {stage}.",
+      "ring": "{correct, number}/{total, number} từ đúng",
+      "ringCaption": "từ đúng",
+      "compare": {
+        "label": "So chữ: bạn gõ {typed}, đáp án {answer}",
+        "typed": "bạn gõ",
+        "answer": "đáp án"
+      }
     },
     "streak": {
       "days": "{days, number} ngày liên tiếp"
