@@ -54,6 +54,32 @@ export function GroupCarousel({
     swiped.current = Math.abs(dx) > SWIPE_PX;
     if (swiped.current) onStep(dx < 0 ? 1 : -1);
   }
+  // Owner 10/11/2026 (motion prototype vong-7): pressing a side stack brings it to the centre. The side stacks stay `inert`
+  // (design §8.5: blurred text is not read, the keys and arrows do the same), so a browser hands the press to the track: the
+  // stack is found from where the press landed, one step per --gcar-step from the centre.
+  function onTrackClick(event: MouseEvent<HTMLElement>) {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    const target = event.target as Element;
+    if (target.closest('a, button')) return;
+    const slot = target.closest<HTMLElement>('[data-k]');
+    let k: number;
+    if (slot) {
+      k = Number(slot.dataset.k);
+    } else {
+      const track = event.currentTarget;
+      const rect = track.getBoundingClientRect();
+      const style = getComputedStyle(track);
+      const step = Number.parseFloat(style.getPropertyValue('--gcar-step')) || 128;
+      const reach = Number.parseFloat(style.getPropertyValue('--gcar-reach')) || 1;
+      k = Math.round((event.clientX - (rect.left + rect.width / 2)) / step);
+      if (Math.abs(k) > reach) return;
+    }
+    const shown = new Set(groups.map((_, index) => stepTo(centre, index, groups.length)));
+    if (k !== 0 && Math.abs(k) <= 2 && shown.has(k)) onStep(k);
+  }
   function onWheel(event: WheelEvent) {
     if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || Math.abs(event.deltaX) < WHEEL_PX) return;
     const now = Date.now();
@@ -73,6 +99,7 @@ export function GroupCarousel({
         onPointerUp={onPointerUp}
         onPointerCancel={() => (pointerX.current = null)}
         onWheel={onWheel}
+        onClick={onTrackClick}
       >
         {groups.map((g, index) => {
           const k = stepTo(centre, index, groups.length);
@@ -84,10 +111,9 @@ export function GroupCarousel({
               key={g.id}
               className="gcar-slot"
               data-abs={abs}
+              data-k={k}
+              inert={!isCentre || undefined}
               aria-hidden={!isCentre || undefined}
-              // Owner 10/11/2026 (motion prototype vong-7): pressing a side stack brings it to the centre. Pointer only: the
-              // keys and the arrow buttons do the same for keyboard and screen-reader users, so the stack stays hidden to them.
-              onClick={isCentre ? undefined : () => !swiped.current && onStep(k)}
               // raw-ok: the slot's distance to the centre drives its transform in globals.css
               style={{ '--k': k } as CSSProperties}
             >
