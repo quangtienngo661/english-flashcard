@@ -1,8 +1,12 @@
-import type { AppSettings } from './settings.definitions.js';
+import { SCOPE_QUESTIONS_MAX, type AiMaxMode, type AiPlacementSetting, type AppSettings, type SessionMaxMode } from './settings.definitions.js';
 
 /** The admin-editable numbers the learner screens show (design §8.7, D16); nothing else of the settings. */
 export type AppConfigView = {
-  practice: { max_questions_per_session: number; default_questions_per_session: number };
+  /** The practice AI count fields (09/11/2026) let the session dialog compute both maxima without another call. */
+  practice: {
+    max_questions_per_session: number; default_questions_per_session: number; session_max_mode: SessionMaxMode; ai_max_mode: AiMaxMode;
+    ai_max_fixed: number; ai_max_percent: number; ai_placement: AiPlacementSetting; scope_questions_max: number;
+  };
   reminders: { send_time: string };
   learning: { backlog_after_days: number; groups_per_user: number };
   /** Bước 8: the delete-account screen says how long payment records are kept (D15). */
@@ -24,6 +28,12 @@ export function appConfigView(s: AppSettings): AppConfigView {
     practice: {
       max_questions_per_session: s.practice.maxQuestionsPerSession,
       default_questions_per_session: s.practice.defaultQuestionsPerSession,
+      session_max_mode: s.practice.sessionMaxMode,
+      ai_max_mode: s.practice.aiMaxMode,
+      ai_max_fixed: s.practice.aiMaxFixed,
+      ai_max_percent: s.practice.aiMaxPercent,
+      ai_placement: s.practice.aiPlacement,
+      scope_questions_max: SCOPE_QUESTIONS_MAX,
     },
     reminders: { send_time: s.reminders.sendTime },
     learning: { backlog_after_days: s.learning.backlogAfterDays, groups_per_user: s.learning.groupsPerUser },

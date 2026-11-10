@@ -15,8 +15,8 @@ const QUESTION_TYPES = [
 const SORTS = ['level_asc', 'overdue_first', 'new_first', 'least_practiced', 'most_wrong', 'queue', 'priority_oldest', 'random'] as const;
 
 export const startBody = z.strictObject({
-  // Round C (H3): a recall ("Ôn") session of one deck. Then `types`, `sort`, `group_filter`, `prompt_style`, `count` and
-  // `cloze_source` are accepted and ignored: the service fixes them.
+  // Round C (H3): a recall ("Ôn") session of one deck. Then `types`, `sort`, `group_filter`, `prompt_style`, `count`,
+  // `cloze_source`, `ai_count` and `ai_placement` are accepted and ignored: the service fixes them.
   kind: z.enum(['practice', 'recall']).optional(),
   source: z.enum(['today', 'all', 'group', 'weak', 'priority']),
   group_id: uuid.optional(),
@@ -24,10 +24,14 @@ export const startBody = z.strictObject({
   sort: z.enum(SORTS).optional(),
   types: z.array(z.enum(QUESTION_TYPES)).min(1).max(QUESTION_TYPES.length).refine((types) => new Set(types).size === types.length).optional(),
   prompt_style: z.enum(['meaning', 'sentence', 'mixed']).optional(),
-  // The upper bound is max_questions_per_session, checked by the service.
+  // The service lowers it to the session maximum (fixed, or the scope's word count up to 100); never a 400 for being too high.
   count: z.int().min(1).optional(),
   // Bước 7 (design §6.1): only with cloze. 'own_then_ai' (09/11/2026): a word with a saved sentence is asked from it, else AI writes one.
   cloze_source: z.enum(['ai', 'own', 'own_then_ai']).optional(),
+  // Practice AI count (09/11/2026): the learner's AI questions, lowered to the admin's maximum; absent = the old split.
+  ai_count: z.int().min(0).optional(),
+  // Used only when the admin lets the learner choose the placement; otherwise ignored.
+  ai_placement: z.enum(['even', 'random']).optional(),
   // API (b): a deck is required with `group`, allowed with `weak` (its weak words), refused with the other sources.
 }).refine((body) => (body.source === 'group' ? body.group_id !== undefined : body.source === 'weak' || body.group_id === undefined)
   && (body.source === 'group' || body.group_filter === undefined)

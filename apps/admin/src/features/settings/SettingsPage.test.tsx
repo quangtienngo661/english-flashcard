@@ -16,7 +16,9 @@ function values(): Values {
   const out = {} as Values;
   for (const section of SECTIONS) {
     out[section] = {};
-    for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : kind === 'usd' ? 2 : 10;
+    for (const { key, kind, options } of SETTINGS_LAYOUT[section]) {
+      out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : kind === 'usd' ? 2 : kind === 'choice' ? options![0] : 10;
+    }
   }
   out.practice.max_questions_per_session = 20;
   out.entitlements.trial_reminder_days_before = 4;
@@ -429,5 +431,76 @@ describe('Đợt C: TTS (H14)', () => {
     const field = await screen.findByRole('textbox', { name: s.fields.tts.daily_char_cap });
     await waitFor(() => expect(field).toHaveValue('120.000'));
     expect(screen.getByRole('tab', { name: s.tabs.tts })).toBeInTheDocument();
+  });
+});
+
+describe('practice AI count (09/11/2026): single-choice fields', () => {
+  const p = s.fields.practice;
+  const c = s.choices;
+  const choose = async (field: string, option: string) => {
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(field) }));
+    await userEvent.click(await screen.findByRole('option', { name: option }));
+  };
+  const row = (label: string) => screen.getByRole('group', { name: label });
+
+  it('practice: choosing "Bằng số từ của phạm vi" hides "Mức cố định" and shows it again with 20 when switched back', async () => {
+    renderApp('/settings?tab=practice', { [GET]: () => Response.json(VIEW()) });
+    await screen.findByRole('textbox', { name: p.default_questions_per_session });
+    expect(within(row(p.session_max_mode)).getByRole('textbox', { name: p.max_questions_per_session })).toHaveValue('20');
+    await choose(p.session_max_mode, c.session_max_mode.scope_words);
+    expect(within(row(p.session_max_mode)).queryByRole('textbox')).toBeNull();
+    await choose(p.session_max_mode, c.session_max_mode.fixed);
+    expect(within(row(p.session_max_mode)).getByRole('textbox', { name: p.max_questions_per_session })).toHaveValue('20');
+  });
+
+  it('practice: with Theo tỉ lệ at 30, the example reads 7 câu → 2, 10 → 3, 20 → 6', async () => {
+    renderApp('/settings?tab=practice', { [GET]: () => Response.json(VIEW()) });
+    await screen.findByRole('textbox', { name: p.default_questions_per_session });
+    await choose(p.ai_max_mode, c.ai_max_mode.percent);
+    await setNumber(p.ai_max_percent, '30');
+    expect(screen.getByText('Ví dụ: phiên 7 câu → tối đa 2 câu AI · phiên 10 câu → 3 · phiên 20 câu → 6')).toBeInTheDocument();
+  });
+
+  it('practice: the example is hidden while the percent field is empty', async () => {
+    const view = VIEW();
+    view.values.practice.ai_max_mode = 'percent';
+    view.values.practice.ai_max_percent = null;
+    renderApp('/settings?tab=practice', { [GET]: () => Response.json(view) });
+    await screen.findByRole('textbox', { name: p.ai_max_percent });
+    expect(screen.queryByText(/^Ví dụ:/)).toBeNull();
+  });
+
+  it('a 400 on ai_max_fixed while Theo tỉ lệ is chosen shows the error on "Số câu AI tối đa mỗi phiên" and focuses its select', async () => {
+    renderApp('/settings?tab=practice', {
+      [GET]: () => Response.json(VIEW()),
+      [PUT]: () => problem(400, 'validation-failed', { violations: ['values.practice.ai_max_fixed: Too big'] }),
+    });
+    await screen.findByRole('textbox', { name: p.default_questions_per_session });
+    await choose(p.ai_max_mode, c.ai_max_mode.percent);
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    const select = screen.getByRole('button', { name: new RegExp(p.ai_max_mode) });
+    await waitFor(() => expect(select).toHaveFocus());
+    expect(within(row(p.ai_max_mode)).getByText(s.outOfRange)).toBeInTheDocument();
+    expect(within(row(p.ai_max_mode)).queryByRole('textbox', { name: p.ai_max_fixed })).toBeNull();
+  });
+
+  it('history shows "Cách xếp câu AI" and "Rải đều → Ngẫu nhiên" for practice.ai_placement', async () => {
+    const change = (key: string, old_value: string | number, new_value: string | number) => ({
+      key, old_value, new_value, changed_by: { id: 'u9', email: 'an.admin@wordmet.com' }, changed_at: '2026-11-09T02:12:00.000Z',
+    });
+    renderApp('/settings', {
+      [GET]: () => Response.json(VIEW()),
+      'GET /v1/admin/settings/history?page_size=20': () => Response.json({
+        items: [change('practice.ai_placement', 'even', 'random'), change('practice.ai_max_fixed', 5, 2)], next_page_token: null,
+      }),
+    });
+    await screen.findByRole('textbox', { name: s.fields.reminders.min_gap_days });
+    await userEvent.click(screen.getByRole('button', { name: s.history }));
+    const dialog = await screen.findByRole('dialog', { name: s.historyDialog.title });
+    expect(await within(dialog).findByText(p.ai_placement)).toBeInTheDocument();
+    expect(within(dialog).getByText('Rải đều → Ngẫu nhiên')).toBeInTheDocument();
+    expect(within(dialog).getByText('practice.ai_placement')).toBeInTheDocument();
+    expect(within(dialog).getByText(`${p.ai_max_mode} · ${p.ai_max_fixed}`)).toBeInTheDocument();
+    expect(within(dialog).getByText('5 → 2')).toBeInTheDocument();
   });
 });

@@ -7,7 +7,7 @@ import { EntitlementsService, refusalProblem, type EntitlementsSnapshot } from '
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { isAiType, type ClozeSource, type QuestionType } from '../practice.types.js';
 import { contentKey } from './ai-inputs.js';
-import { aiNeeded, aiPlanned, markAiSenses } from './ai-plan.js';
+import { aiNeeded, aiPlanned, markAiSenses, markAiSensesRandom, plannedFromCount, roundOneAiLimit } from './ai-plan.js';
 import { findUnseen } from './unseen-questions.js';
 import { WordChecksRepository } from './word-checks.repository.js';
 
@@ -50,13 +50,18 @@ export class AiSessionPlanner {
 
   /**
    * Steps 3–5: marks round-1 words for an AI question (unseen ones first), plans the session's AI questions and checks the
-   * units left against what the session needs (B7E2, B7E3, B7E45, B7E46).
+   * units left against what the session needs (B7E2, B7E3, B7E45, B7E46). `count` is the session's target count.
+   * `aiCount` (practice AI count, 09/11/2026) is the learner's K, already capped: undefined keeps the old split by type ratio;
+   * otherwise round 1 gets its share of K, marked evenly or at random (`random` defaults to Math.random).
    */
   async plan(learner: Learner, input: {
     types: QuestionType[]; clozeSource: ClozeSource | null; count: number; kept: string[]; available: Map<string, QuestionType[]>;
+    aiCount?: number; placement?: 'even' | 'random'; random?: () => number;
   }, snapshot: EntitlementsSnapshot | null): Promise<AiSessionPlan> {
     const aiTypes = input.types.filter((type) => isAiType(type, input.clozeSource));
     if (aiTypes.length === 0 || snapshot === null) return { aiPlanned: 0, aiSenseIds: [] };
+    // K = 0: nothing to mark, so no unseen question is looked up (review M14).
+    if (input.aiCount === 0) return { aiPlanned: 0, aiSenseIds: [] };
     const { userId, nativeLanguage } = learner;
     const capable = input.kept.filter((id) => (input.available.get(id) ?? []).some((type) => aiTypes.includes(type)));
     const senses = await this.content.practiceSenses(userId, capable, nativeLanguage);
@@ -71,8 +76,13 @@ export class AiSessionPlanner {
         { userId, senseId, types: aiTypes, liveRevisionId: sense.live_revision_id, contentKey: key });
       if (unseen.length > 0) withUnseen.add(senseId);
     }
-    const limit = Math.ceil((input.count * aiTypes.length) / input.types.length);
-    const marked = markAiSenses(input.kept, new Set(capable), withUnseen, limit);
+    const byCount = input.aiCount !== undefined;
+    const limit = byCount
+      ? roundOneAiLimit(input.aiCount!, input.count, input.kept.length)
+      : Math.ceil((input.count * aiTypes.length) / input.types.length);
+    const marked = byCount && input.placement === 'random'
+      ? markAiSensesRandom(input.kept, new Set(capable), withUnseen, limit, input.random ?? Math.random)
+      : markAiSenses(input.kept, new Set(capable), withUnseen, limit);
     // A marked private word not checked for its current content needs check_private_word too (design §6.1 step 2, §7.6).
     for (const senseId of marked) {
       const key = keys.get(senseId);
@@ -82,7 +92,9 @@ export class AiSessionPlanner {
         break;
       }
     }
-    const planned = aiPlanned(input.count, input.types.length, aiTypes.length, marked.length, input.kept.length);
+    const planned = byCount
+      ? plannedFromCount(input.aiCount!, marked.length, input.kept.length, input.count, capable.length)
+      : aiPlanned(input.count, input.types.length, aiTypes.length, marked.length, input.kept.length);
     const needed = aiNeeded(planned, marked.filter((id) => withUnseen.has(id)).length);
     const pool = snapshot.pools.ai_practice;
     if (pool.remaining < needed) {
