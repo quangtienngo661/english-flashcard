@@ -26,6 +26,7 @@ export function AuthHeading({
   intro,
   onBack,
   banner,
+  above,
   size = 'card',
   centered,
   children,
@@ -34,6 +35,8 @@ export function AuthHeading({
   intro?: ReactNode;
   onBack?: () => void;
   banner?: ReactNode;
+  /** Drawn above the title (the Google account chip, the deleted-account circle). */
+  above?: ReactNode;
   size?: keyof typeof TITLE;
   centered?: boolean;
   children?: ReactNode;
@@ -47,6 +50,7 @@ export function AuthHeading({
           {t('back')}
         </button>
       )}
+      {above}
       <div className={cn('flex flex-col gap-2', centered && 'items-center text-center')}>
         <h1 className={cn('font-wm-display text-wm-ink', TITLE[size])}>{title}</h1>
         {intro && <p className="font-wm-sans text-wm-base text-wm-muted">{intro}</p>}

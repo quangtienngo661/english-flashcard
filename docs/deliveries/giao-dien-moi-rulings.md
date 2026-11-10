@@ -44,3 +44,5 @@ Chỗ lệch giữa plan/design và code mà người thực thi tự chốt đ�
 - R30 (10/11/2026, Task M2.8): lỗi "mã chưa đúng" của Đặt mật khẩu mới hiện bằng dòng lỗi chung (`FormError`) ngay dưới hàng ô mã, không gắn vào từng ô → `OtpField` là một nhóm sáu ô; Figma không vẽ trạng thái lỗi của ô mã.
 - R31 (10/11/2026, Task M2.8): email trong câu giới thiệu của Xác minh email giữ chữ thường, không in đậm như Figma `36:385` → tách email ra phần tử riêng làm vỡ test 16 và 29 (`getByText` câu đầy đủ) mà plan giữ nguyên.
 - R32 (10/11/2026, Task M2.8): Xác minh email đặt nút "Xác minh" trước dòng "Gửi lại mã sau N giây", giữa card; "Gửi lại mã" là `TextButton` → thứ tự và căn giữa theo khung `36:385`.
+- R33 (10/11/2026, Task M2.9): `google-complete.test.tsx` đổi `findByText(/minh@gmail.com/)` thành `findAllByText` (lần đầu ghim đúng 2 chỗ) → chip tài khoản Google `36:490` hiện email lần thứ hai; plan ghi test này giữ nguyên nhưng chip cũng do plan yêu cầu.
+- R34 (10/11/2026, Task M2.9): `AuthHeading` có thêm `above` (chip Google, vòng tròn của Đã xóa tài khoản) và `centered`; `GoogleMark` được export từ `ui/GoogleButton` để chip dùng chung → một chỗ vẽ chữ G.

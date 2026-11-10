@@ -1,8 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -11,11 +10,12 @@ import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
-import { TextField } from '@/app-ui/TextField';
-import { AuthHeading, FormError } from './AuthHeading';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { DateOfBirthField } from '@/ui/DateOfBirthField';
+import { TextField } from '@/ui/TextField';
+import { AuthHeading, ConsentLink, FormError } from './AuthHeading';
+import { GoogleMark } from '@/ui/GoogleButton';
 import { GoogleSignIn } from './GoogleSignIn';
 
 type Info = { email: string; needs_name: boolean };
@@ -83,16 +83,7 @@ export function GoogleComplete({ today }: { today?: string }) {
     }
   }
 
-  const link = (href: string) =>
-    function ConsentLink(chunks: ReactNode) {
-      return (
-        <Link href={href} target="_blank" className="font-semibold text-primary underline underline-offset-2">
-          {chunks}
-        </Link>
-      );
-    };
-
-  if (loaded.kind === 'loading') return <AuthHeading title={tg('title')}><p className="text-ui text-muted">…</p></AuthHeading>;
+  if (loaded.kind === 'loading') return <AuthHeading title={tg('title')}><p className="font-wm-sans text-wm-base text-wm-muted">…</p></AuthHeading>;
   if (loaded.kind === 'expired') {
     return (
       <AuthHeading title={tg('expiredTitle')} intro={tg('expiredBody')}>
@@ -103,10 +94,20 @@ export function GoogleComplete({ today }: { today?: string }) {
   if (loaded.kind === 'error') return <AuthHeading title={tg('title')}><FormError message={loaded.message} /></AuthHeading>;
 
   return (
-    <AuthHeading title={tg('title')} intro={tg('intro', { email: loaded.info.email })}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <AuthHeading
+      title={tg('title')}
+      intro={tg('intro', { email: loaded.info.email })}
+      above={
+        // Figma 36:490 "Tài khoản Google": which Google account the new Wordmet account is for.
+        <p className="flex w-fit max-w-full items-center gap-2 rounded-wm-pill border border-wm-line bg-wm-bg py-1.5 pl-2.5 pr-3.5 font-wm-sans text-wm-small text-wm-ink">
+          <GoogleMark />
+          <span className="min-w-0 truncate">{loaded.info.email}</span>
+        </p>
+      }
+    >
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {needsName && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
             <TextField label={t('register.givenName')} value={givenName} onChange={setGivenName} autoComplete="given-name" maxLength={50} />
             <TextField label={t('register.familyName')} value={familyName} onChange={setFamilyName} autoComplete="family-name" maxLength={50} />
           </div>
@@ -119,15 +120,14 @@ export function GoogleComplete({ today }: { today?: string }) {
           today={today}
         />
         <Checkbox isSelected={consent} onChange={setConsent}>
-          {t.rich('register.consent', { terms: link(`/${locale}/terms`), privacy: link(`/${locale}/privacy`) })}
+          {t.rich('register.consent', {
+              terms: (chunks) => <ConsentLink href={`/${locale}/terms`} newTab>{chunks}</ConsentLink>,
+              privacy: (chunks) => <ConsentLink href={`/${locale}/privacy`} newTab>{chunks}</ConsentLink>,
+            })}
         </Checkbox>
         <FormError message={error} />
-        {tooYoung && (
-          <Link href={`/${locale}/app/login`} className="w-fit text-ui font-semibold text-primary underline underline-offset-2">
-            {tg('toLogin')}
-          </Link>
-        )}
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || birthDate === null || !consent || (needsName && givenName.trim() === '')}>
+        {tooYoung && <ConsentLink href={`/${locale}/app/login`}>{tg('toLogin')}</ConsentLink>}
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || birthDate === null || !consent || (needsName && givenName.trim() === '')}>
           {tg('submit')}
         </Button>
       </form>

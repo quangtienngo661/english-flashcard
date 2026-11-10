@@ -122,8 +122,8 @@ test.describe('M1 flows (mocked API)', () => {
 
 // Every M1 page × vi/en × light/dark; the desktop (1440) and mobile (390) projects run each once.
 // verify-email opened directly (no pending email, no password in memory) shows its email and password fields too.
-const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com', 'verify-email', 'verify-email?reason=login'];
-const MEMBER_PAGES = ['', 'settings', 'settings/account', 'welcome'];
+const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com', 'verify-email', 'verify-email?reason=login', 'account-deleted'];
+const MEMBER_PAGES = ['', 'settings', 'settings/account', 'welcome', 'complete-profile'];
 
 async function open(page: Page, locale: 'vi' | 'en', path: string, signedIn: boolean) {
   if (signedIn) await signedInAs(page, 'free', {}, { native_language: locale });
