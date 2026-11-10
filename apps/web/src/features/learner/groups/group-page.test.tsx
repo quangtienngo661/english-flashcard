@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
+import { hardReplace } from '@/app-shell/navigate';
 import { GroupPage } from './GroupPage';
 
 const G = '11111111-1111-4111-8111-111111111111';
@@ -327,6 +328,7 @@ describe('GroupPage: rename and delete from the ⋯ menu (moved from the list, g
     expect(within(dialog).getByRole('button', { name: 'Giữ nhóm' })).toBeInTheDocument();
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Xóa nhóm và 12 từ' }));
     await waitFor(() => expect(count('DELETE', `/v1/groups/${G}`)).toBe(1));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/groups'));
   });
 
   it('English: "Delete deck" and "Cancel"', async () => {
