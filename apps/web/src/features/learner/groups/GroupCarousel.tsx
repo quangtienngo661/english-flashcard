@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, type CSSProperties, type PointerEvent, type Ref, type WheelEvent } from 'react';
+import { useRef, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type WheelEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stepTo } from './carousel';
@@ -33,7 +33,7 @@ export function GroupCarousel({
   instant: boolean;
   onStep: (step: number) => void;
   centreRef?: Ref<HTMLDivElement>;
-  onOpen?: () => void;
+  onOpen?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
@@ -107,7 +107,7 @@ export function GroupCarousel({
             <ArrowButton side="next" label={t('next')} onPress={() => onStep(1)} />
           </>
         )}
-        <p aria-hidden className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
+        <p aria-hidden data-part="2" className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
           <span className="md:hidden">{t('hintPhone')}</span>
           <span className="hidden md:inline">{t('hint')}</span>
         </p>
@@ -121,6 +121,7 @@ function ArrowButton({ side, label, onPress }: { side: 'prev' | 'next'; label: s
   return (
     <button
       type="button"
+      data-part="1"
       aria-label={label}
       onClick={onPress}
       onPointerDown={(e) => e.stopPropagation()}

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import type { Ref } from 'react';
+import type { MouseEvent, Ref } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stackDepth } from './carousel';
@@ -30,7 +30,7 @@ export function GroupStack({
   /** Makes the group name a link that covers the whole card. */
   href?: string;
   /** Runs when the name link is pressed, before navigation (the open FLIP remembers the stack). */
-  onOpen?: () => void;
+  onOpen?: (event: MouseEvent<HTMLAnchorElement>) => void;
   ref?: Ref<HTMLDivElement>;
   className?: string;
 }) {

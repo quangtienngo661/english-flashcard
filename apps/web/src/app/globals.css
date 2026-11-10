@@ -785,3 +785,44 @@
 @media (width < 48rem) {
   .gcar-slot[data-abs='2'] { pointer-events: none; }
 }
+
+/* Opening a group from Nhóm (motion doc §3, GroupListPage): the centre stack lifts while every other part blurs to 12px and fades,
+   170ms, 10ms apart; back from Một nhóm the same parts sharpen in, 340ms, 60ms then 22ms apart, without a lift. */
+@keyframes wm-lift {
+  to {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
+@keyframes wm-sharpen-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+.wm-carousel-out [data-part],
+.wm-carousel-out .gcar-slot:not([data-abs='0']) {
+  animation: wm-page-out var(--transition-duration-wm-lift) var(--ease-wm-close) forwards;
+}
+.wm-carousel-out [data-part='1'] { animation-delay: 10ms; }
+.wm-carousel-out [data-part='2'] { animation-delay: 20ms; }
+.wm-carousel-out [data-part='3'] { animation-delay: 30ms; }
+.wm-carousel-out .gcar-slot[data-abs='0'] .gstack {
+  animation: wm-lift var(--transition-duration-wm-lift) var(--ease-wm-out) forwards;
+}
+.wm-carousel-in [data-part],
+.wm-carousel-in .gcar-slot:not([data-abs='0']) {
+  animation: wm-sharpen-in var(--transition-duration-wm-page-in) var(--ease-wm-out) both;
+  animation-delay: 60ms;
+}
+.wm-carousel-in [data-part='1'] { animation-delay: 82ms; }
+.wm-carousel-in [data-part='2'] { animation-delay: 104ms; }
+.wm-carousel-in [data-part='3'] { animation-delay: 126ms; }
+@media (prefers-reduced-motion: reduce) {
+  .wm-carousel-out [data-part],
+  .wm-carousel-out .gcar-slot,
+  .wm-carousel-out .gstack,
+  .wm-carousel-in [data-part],
+  .wm-carousel-in .gcar-slot {
+    animation: none;
+  }
+}
