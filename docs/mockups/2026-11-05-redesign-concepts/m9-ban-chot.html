@@ -126,6 +126,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .t-sec{font-family:var(--f-display);font-weight:700;font-size:1.375rem;line-height:1.25;letter-spacing:-0.012em}
 .t-sec-m{font-family:var(--f-display);font-weight:700;font-size:1.25rem;line-height:1.25;letter-spacing:-0.012em}
 .eyebrow{font-family:var(--f-label);font-size:.75rem;color:var(--muted)}
+/* Labels and chips start with a capital letter (owner 12/11: "viết hoa đầu dòng"); the app writes the text that way. */
+.eyebrow,.qchip{display:inline-block}
+.eyebrow::first-letter,.qchip::first-letter{text-transform:uppercase}
 .cap{font-size:.8125rem;color:var(--muted)}
 .sm{font-size:.875rem}
 .mut{color:var(--muted)}
