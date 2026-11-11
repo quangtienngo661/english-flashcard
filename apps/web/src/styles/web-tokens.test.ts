@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 // The new UI's tokens (design giao diện mới §7.1–§7.2): a `wm-` set beside the old one, read from the workspace package.
 const resolve = (file: string) => createRequire(import.meta.url).resolve(`@wordmet/design-tokens/${file}`);
@@ -133,5 +134,21 @@ describe('wm stage, group and motion tokens (M3)', () => {
     const ms = tokens(web, 'transition-duration-wm');
     expect(Object.fromEntries(['carousel', 'fade', 'blur', 'halo', 'rise', 'count', 'flip', 'page-in', 'lift'].map((k) => [k, ms.get(k)])))
       .toEqual({ carousel: '620ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
+  });
+});
+
+// The waiting dot of Đơn hàng (motion doc §6, design §8.2): opacity 1 → .3 → 1 in 1.4 s ease-in-out, until the order's status changes.
+describe('wm pulse (M7.10)', () => {
+  const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
+
+  it('declares --animate-wm-pulse and its keyframes', () => {
+    expect(tokens(web, 'animate-wm').get('pulse')).toBe('wm-pulse 1.4s ease-in-out infinite');
+    expect(web).toMatch(/@keyframes wm-pulse \{\s*50% \{\s*opacity: 0\.3;\s*\}\s*\}/);
+  });
+
+  it('reduced motion runs every animation once for 0.01 ms, so the endless dot stands still', () => {
+    const rule = /@media \(prefers-reduced-motion: reduce\) \{\s*html \{[^}]*\}\s*\*,\s*\*::before,\s*\*::after \{([^}]*)\}/.exec(globals);
+    expect(rule?.[1]).toContain('animation-duration: 0.01ms !important;');
+    expect(rule?.[1]).toContain('animation-iteration-count: 1 !important;');
   });
 });

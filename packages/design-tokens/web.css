@@ -218,4 +218,14 @@
   --transition-duration-wm-flip: 380ms;
   --transition-duration-wm-page-in: 340ms;
   --transition-duration-wm-lift: 170ms;
+
+  /* The waiting dot of Đơn hàng (motion doc §6, design §8.2): the only endless loop. The reduced-motion rule of the app's
+     globals.css runs it once for 0.01ms, so the dot stands still there. */
+  --animate-wm-pulse: wm-pulse 1.4s ease-in-out infinite;
+
+  @keyframes wm-pulse {
+    50% {
+      opacity: 0.3;
+    }
+  }
 }
