@@ -52,6 +52,10 @@ test('milestone screenshots', async ({ page }) => {
     await gmM3(page);
     return;
   }
+  if (MILESTONE === 'gm-m6') {
+    await gmM6(page);
+    return;
+  }
   if (MILESTONE === 'gm-m4') {
     await gmM4(page);
     return;
@@ -266,6 +270,48 @@ async function gmM3(page: Page) {
  * three word dialogs, 390 and 1440 px, light. Needs a learner with at least one deck (gm-m3 makes one). Overlay 4 needs an AI
  * lookup that answers (a model chosen for `lookup_word`, or `AI_FAKE_ENABLED=true`); it is skipped when the lookup fails.
  */
+/**
+ * M6 (Figma 95:343 button, 102:3278 / 102:3948 Lịch, 103:3820 / 103:4248 Ngày, 211:5827 / 211:6061 reports, 120:4295 Settings): Hôm nay with the
+ * calendar button, Lịch, Ngày of the newest studied day of this month, Ngày of an empty day, "Báo lỗi của tôi", Settings with its row.
+ * The learner needs some study this month for a full Ngày (a wrong answer and two sessions show best).
+ */
+async function gmM6(page: Page) {
+  const widths = [390, 1440];
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app');
+    await settle(page, page.getByRole('button', { name: 'Lịch học' }));
+    await shoot(page, 'today-calendar-button', false, [width]);
+    await page.getByRole('button', { name: 'Lịch học' }).click();
+    const month = page.getByRole('dialog');
+    await expect(month.getByRole('list')).toHaveCount(2, { timeout: 30_000 });
+    await shoot(page, 'month', false, [width]);
+    const studied = month.getByRole('button', { name: /: (học|ôn|luyện)/ });
+    if (await studied.count()) {
+      await studied.last().click();
+      await expect(page.getByRole('dialog').getByRole('group')).toBeVisible({ timeout: 30_000 });
+      await shoot(page, 'day', false, [width]);
+    }
+    await page.keyboard.press('Escape');
+    const quiet = month.getByRole('button', { name: /: không học$/ });
+    if (await quiet.count()) {
+      await quiet.first().click();
+      await shoot(page, 'day-empty', false, [width]);
+    }
+  }
+  for (const [path, name] of [['settings/reports', 'reports'], ['settings', 'settings-row']] as const) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, name, true, widths);
+  }
+}
+
 async function gmM4(page: Page) {
   const widths = [390, 1440];
   const OWN = 'wmshotword';
@@ -484,8 +530,6 @@ async function m4(page: Page) {
     for (const [path, n] of [
       ['practice', 'practice'],
       ['practice/weak', 'weak'],
-      ['practice/history', 'history'],
-      ['practice/history?tab=reports', 'reports'],
       ['plans', 'plans'],
     ] as const) {
       await page.goto(at(path));

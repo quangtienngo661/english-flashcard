@@ -19,8 +19,7 @@ const ICON = 'size-4 text-wm-muted';
 
 /**
  * Figma "Menu ảnh đại diện" (181:316): name and email, then Tài khoản, Cài đặt, Lịch sử giao dịch, Báo lỗi của tôi, Đăng xuất. The
- * theme switch has no place in the new top bar, so it sits here, before Đăng xuất (ruling R7). Báo lỗi goes to the practice history's
- * reports tab until M6 adds /app/settings/reports (ruling R6).
+ * theme switch has no place in the new top bar, so it sits here, before Đăng xuất (ruling R7). Báo lỗi opens /app/settings/reports (M6.8).
  */
 export function AvatarMenu() {
   const t = useTranslations('App.chrome');
@@ -62,7 +61,7 @@ export function AvatarMenu() {
             <ReceiptText aria-hidden className={ICON} />
             {t('menu.transactions')}
           </MenuItem>
-          <MenuItem href={`/${locale}/app/practice/history?tab=reports`} className={ITEM}>
+          <MenuItem href={`/${locale}/app/settings/reports`} className={ITEM}>
             <Flag aria-hidden className={ICON} />
             {t('menu.reports')}
           </MenuItem>

@@ -7,6 +7,7 @@ import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { showStreak } from '@/app-ui/StreakToast';
+import { writeStreak } from '../../calendar/calendar-api';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { CURRENT_KEY, type PracticeSessionView, type QuestionType } from '../practice-api';
 
@@ -289,7 +290,10 @@ export function usePracticeSession(recall?: { groupId: string }) {
 
   function recordFinal(item: Item, result: AnswerResult, chosen: AnswerBody | null) {
     // Đợt C DC9: only the first study of the learner's day carries it (an answer from another tab carries none).
-    if (result.streak) showStreak(result.streak.days);
+    if (result.streak) {
+      showStreak(result.streak.days);
+      writeStreak(client, result.streak.days);
+    }
     setGraded((g) => ({ ...g, [result.result]: g[result.result] + 1 }));
     // The band stays with its question: K/76 names the word and links to it once the answer is shown (review I3).
     const notice = phase?.kind === 'question' ? phase.notice : null;

@@ -516,6 +516,7 @@
       "setPasswordHint": "This account signs in with Google only. Set a password to sign in with email too.",
       "deleteAccountStaff": "Ask an admin to delete your account",
       "transactions": "Transaction history",
+      "reports": "My reports",
       "saved": "Changes saved."
     },
     "deleteAccount": {
@@ -680,6 +681,93 @@
       "lastRetry": "Practise missed words →",
       "lastCalendar": "Open study calendar",
       "backlogLabel": "not reviewed in a while"
+    },
+    "calendar": {
+      "fab": {
+        "label": "Study calendar",
+        "streak": "{days, plural, one {# day} other {# days}} in a row"
+      },
+      "month": {
+        "label": "study calendar",
+        "streak": "{days, plural, one {# day} other {# days}} in a row",
+        "today": "Back to today",
+        "prev": "Previous month",
+        "next": "Next month",
+        "close": "Close calendar",
+        "totals": "Month totals",
+        "studyDays": "study days",
+        "elapsed": "/{days, number}",
+        "learned": "new words learned",
+        "reviewed": "reviews",
+        "sessions": "practice sessions",
+        "weekdays": {
+          "mon": "Mo",
+          "tue": "Tu",
+          "wed": "We",
+          "thu": "Th",
+          "fri": "Fr",
+          "sat": "Sa",
+          "sun": "Su"
+        },
+        "todayMark": "today",
+        "cellLearned": "learned {count, plural, one {# word} other {# words}}",
+        "cellReviewed": "{count, plural, one {# review} other {# reviews}}",
+        "cellSessions": "{count, plural, one {# practice session} other {# practice sessions}}",
+        "cellNone": "no study",
+        "cellFuture": "not yet",
+        "legend": {
+          "learn": "New words",
+          "review": "Review",
+          "practice": "Practice",
+          "run": "Days in a row"
+        },
+        "keysPick": "pick a day ·",
+        "keysOpen": "open the day ·",
+        "keysClose": "close",
+        "loading": "Loading the calendar",
+        "error": "Couldn't load the calendar."
+      },
+      "day": {
+        "back": "{month} calendar",
+        "prev": "Previous day",
+        "next": "Next day",
+        "close": "Close",
+        "todaySuffix": "{weekday} · today",
+        "sumLearned": "Learned {count, plural, one {# new word} other {# new words}}",
+        "sumReviewed": "{count, plural, one {# review} other {# reviews}}",
+        "sumPractice": "{count, plural, one {# practice question} other {# practice questions}}",
+        "filterLabel": "Filter",
+        "all": "All",
+        "filterLearn": "Learned {count, number}",
+        "filterReview": "Review {count, number}",
+        "filterPractice": "Practice {count, number}",
+        "learnTitle": "Learned {count, plural, one {# new word} other {# new words}}",
+        "learnHint": "{count, plural, one {# deck} other {# decks}}",
+        "reviewTitle": "{count, plural, one {# review} other {# reviews}}",
+        "reviewHint": "cards and review questions",
+        "known": "Known, up one stage",
+        "again": "Again, back to stage 1",
+        "more": "+{count, plural, one {# word} other {# words}}",
+        "lemmaGone": "Word no longer in the library",
+        "practiceTitle": "Practice · {count, plural, one {# session} other {# sessions}}",
+        "practiceRange": "questions {first, number}–{last, number}",
+        "score": "right",
+        "rightCount": "{count, number} right",
+        "wrongCount": "{count, number} wrong",
+        "answered": "you answered {answer}",
+        "answeredWrong": "you answered {answer} · answer: {correct}",
+        "skipped": "skipped · answer: {correct}",
+        "trueLabel": "True",
+        "falseLabel": "False",
+        "resultRight": "Right",
+        "resultWrong": "Wrong",
+        "showAll": "Show all {count, number} questions",
+        "future": "This day hasn't come yet.",
+        "none": "No study on this day.",
+        "sectionNone": "Nothing on this day.",
+        "loading": "Loading the day",
+        "error": "Couldn't load this day."
+      }
     },
     "groups": {
       "title": "Your decks",
@@ -1434,7 +1522,7 @@
           "noteMissing": "Describe the problem to send this report.",
           "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
           "send": "Send report",
-          "done": "Report sent. See the outcome in History → My reports.",
+          "done": "Report sent. See the outcome in Settings → My reports.",
           "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
           "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
           "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
@@ -1521,65 +1609,7 @@
         "right": "{count, number} right",
         "wrong": "{count, number} wrong"
       },
-      "history": {
-        "title": "Practice history",
-        "back": "Practice",
-        "tabs": {
-          "answers": "Answered",
-          "reports": "My reports"
-        },
-        "day": "Day",
-        "allDays": "All days",
-        "today": "Today, {date}",
-        "yesterday": "Yesterday, {date}",
-        "counts": {
-          "total": "{count, plural, one {# question} other {# questions}}",
-          "correct": "{count, number} right",
-          "wrong": "{count, number} wrong"
-        },
-        "cols": {
-          "time": "Time",
-          "word": "Word",
-          "type": "Type",
-          "prompt": "Question",
-          "answer": "Your answer",
-          "correct": "Answer",
-          "result": "Result",
-          "action": "Marked"
-        },
-        "typeStyle": "{type} · {style}",
-        "styles": {
-          "meaning": "meaning",
-          "sentence": "sentence"
-        },
-        "result": {
-          "correct": "Right",
-          "wrong": "Wrong",
-          "skipped": "Wrong · skipped",
-          "hinted": "Right · with hint",
-          "retried": "Right · try {n, number}",
-          "alternative": "Right · alternative"
-        },
-        "actions": {
-          "needs_review": "Still learning",
-          "known": "Know"
-        },
-        "none": "—",
-        "more": "Show more",
-        "true": "True",
-        "false": "False",
-        "emptyTitle": "No questions answered yet.",
-        "emptyBody": "Do a practice session and your answers show up here.",
-        "emptyDay": "No questions answered that day.",
-        "toPractice": "Back to Practice"
-      },
       "reports": {
-        "cols": {
-          "word": "Word",
-          "reason": "Reason",
-          "date": "Sent",
-          "status": "Outcome"
-        },
         "status": {
           "open": "Under review",
           "fixed": "Fixed",
@@ -1593,7 +1623,13 @@
         "emptyBody": "If a question looks wrong during practice, choose Report on it. The outcome shows up here.",
         "toPractice": "Back to Practice",
         "unknownWord": "—",
-        "more": "Show more"
+        "more": "Show more",
+        "title": "My reports",
+        "back": "Settings",
+        "aiQuestion": "AI question",
+        "foot": "dates in your time zone · an AI-written question confirmed as wrong returns 1 AI credit",
+        "loading": "Loading your reports",
+        "error": "Couldn't load your reports."
       }
     },
     "plans": {

@@ -516,6 +516,7 @@
       "setPasswordHint": "Tài khoản này chỉ đăng nhập bằng Google. Đặt mật khẩu để đăng nhập cả bằng email.",
       "deleteAccountStaff": "Liên hệ admin để xóa tài khoản",
       "transactions": "Lịch sử giao dịch",
+      "reports": "Báo lỗi của tôi",
       "saved": "Đã lưu thay đổi."
     },
     "deleteAccount": {
@@ -680,6 +681,93 @@
       "lastRetry": "Luyện lại từ sai →",
       "lastCalendar": "Mở lịch học",
       "backlogLabel": "từ lâu chưa ôn"
+    },
+    "calendar": {
+      "fab": {
+        "label": "Lịch học",
+        "streak": "{days, number} ngày liên tiếp"
+      },
+      "month": {
+        "label": "lịch học",
+        "streak": "{days, number} ngày liên tiếp",
+        "today": "Về hôm nay",
+        "prev": "Tháng trước",
+        "next": "Tháng sau",
+        "close": "Đóng lịch",
+        "totals": "Tổng tháng",
+        "studyDays": "ngày có học",
+        "elapsed": "/{days, number}",
+        "learned": "từ mới đã học",
+        "reviewed": "lượt ôn",
+        "sessions": "phiên luyện",
+        "weekdays": {
+          "mon": "T2",
+          "tue": "T3",
+          "wed": "T4",
+          "thu": "T5",
+          "fri": "T6",
+          "sat": "T7",
+          "sun": "CN"
+        },
+        "todayMark": "hôm nay",
+        "cellLearned": "học {count, number} từ",
+        "cellReviewed": "ôn {count, number} lượt",
+        "cellSessions": "luyện {count, number} phiên",
+        "cellNone": "không học",
+        "cellFuture": "chưa tới",
+        "legend": {
+          "learn": "Học từ mới",
+          "review": "Ôn",
+          "practice": "Luyện tập",
+          "run": "Ngày liền nhau"
+        },
+        "keysPick": "chọn ngày ·",
+        "keysOpen": "xem ngày ·",
+        "keysClose": "đóng",
+        "loading": "Đang tải lịch",
+        "error": "Không tải được lịch."
+      },
+      "day": {
+        "back": "Lịch tháng {month, number}",
+        "prev": "Ngày trước",
+        "next": "Ngày sau",
+        "close": "Đóng",
+        "todaySuffix": "{weekday} · hôm nay",
+        "sumLearned": "Học {count, number} từ mới",
+        "sumReviewed": "ôn {count, number} lượt",
+        "sumPractice": "luyện {count, number} câu",
+        "filterLabel": "Lọc",
+        "all": "Tất cả",
+        "filterLearn": "Học {count, number}",
+        "filterReview": "Ôn {count, number}",
+        "filterPractice": "Luyện {count, number}",
+        "learnTitle": "Học {count, number} từ mới",
+        "learnHint": "{count, number} nhóm",
+        "reviewTitle": "Ôn {count, number} lượt",
+        "reviewHint": "lật thẻ và câu ôn",
+        "known": "Đã biết, lên một ngăn",
+        "again": "Cần ôn lại, về ngăn 1 ngày",
+        "more": "+{count, number} từ",
+        "lemmaGone": "Từ không còn trong kho",
+        "practiceTitle": "Luyện tập · {count, number} phiên",
+        "practiceRange": "câu {first, number}–{last, number}",
+        "score": "đúng",
+        "rightCount": "{count, number} câu đúng",
+        "wrongCount": "{count, number} câu sai",
+        "answered": "bạn trả lời {answer}",
+        "answeredWrong": "bạn trả lời {answer} · đáp án: {correct}",
+        "skipped": "bỏ qua · đáp án: {correct}",
+        "trueLabel": "Đúng",
+        "falseLabel": "Sai",
+        "resultRight": "Đúng",
+        "resultWrong": "Sai",
+        "showAll": "Xem đủ {count, number} câu",
+        "future": "Chưa tới ngày này.",
+        "none": "Ngày này không có lần học nào.",
+        "sectionNone": "Ngày này không có.",
+        "loading": "Đang tải ngày",
+        "error": "Không tải được ngày này."
+      }
     },
     "groups": {
       "title": "Nhóm của bạn",
@@ -1434,7 +1522,7 @@
           "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
           "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
           "send": "Gửi báo lỗi",
-          "done": "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.",
+          "done": "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi.",
           "infoAi": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai. Nếu đúng là AI viết sai câu, bạn được trả lại 1 lượt câu AI.",
           "privateWord": "Đội Wordmet sẽ thấy từ “{lemma}” bạn tự thêm để kiểm tra.",
           "privateWordUnknown": "Đội Wordmet sẽ thấy từ bạn tự thêm trong câu này để kiểm tra."
@@ -1521,65 +1609,7 @@
         "right": "{count, number} câu đúng",
         "wrong": "{count, number} câu sai"
       },
-      "history": {
-        "title": "Lịch sử luyện tập",
-        "back": "Luyện tập",
-        "tabs": {
-          "answers": "Câu đã làm",
-          "reports": "Báo lỗi của tôi"
-        },
-        "day": "Ngày",
-        "allDays": "Mọi ngày",
-        "today": "Hôm nay, {date}",
-        "yesterday": "Hôm qua, {date}",
-        "counts": {
-          "total": "{count, number} câu",
-          "correct": "{count, number} đúng",
-          "wrong": "{count, number} sai"
-        },
-        "cols": {
-          "time": "Giờ",
-          "word": "Từ",
-          "type": "Kiểu câu",
-          "prompt": "Đề",
-          "answer": "Bạn trả lời",
-          "correct": "Đáp án",
-          "result": "Kết quả",
-          "action": "Đã bấm"
-        },
-        "typeStyle": "{type} · {style}",
-        "styles": {
-          "meaning": "theo nghĩa",
-          "sentence": "theo câu"
-        },
-        "result": {
-          "correct": "Đúng",
-          "wrong": "Sai",
-          "skipped": "Sai · bỏ qua",
-          "hinted": "Đúng · có gợi ý",
-          "retried": "Đúng · lần {n, number}",
-          "alternative": "Đúng · đáp án thay thế"
-        },
-        "actions": {
-          "needs_review": "Cần ôn lại",
-          "known": "Đã biết"
-        },
-        "none": "—",
-        "more": "Xem thêm",
-        "true": "Đúng",
-        "false": "Sai",
-        "emptyTitle": "Bạn chưa làm câu nào.",
-        "emptyBody": "Làm một phiên luyện, các câu bạn đã làm sẽ hiện ở đây.",
-        "emptyDay": "Ngày này bạn chưa làm câu nào.",
-        "toPractice": "Về Luyện tập"
-      },
       "reports": {
-        "cols": {
-          "word": "Từ",
-          "reason": "Lý do",
-          "date": "Ngày gửi",
-          "status": "Kết quả"
-        },
         "status": {
           "open": "Đang xem",
           "fixed": "Đã sửa",
@@ -1593,7 +1623,13 @@
         "emptyBody": "Gặp câu sai khi luyện tập, bấm Báo lỗi ngay trên câu đó. Kết quả hiện ở đây.",
         "toPractice": "Về Luyện tập",
         "unknownWord": "—",
-        "more": "Xem thêm"
+        "more": "Xem thêm",
+        "title": "Báo lỗi của tôi",
+        "back": "Cài đặt",
+        "aiQuestion": "câu AI",
+        "foot": "ngày theo múi giờ của bạn · câu do AI viết mà đúng là lỗi thì được trả lại 1 lượt câu AI",
+        "loading": "Đang tải báo lỗi",
+        "error": "Không tải được danh sách báo lỗi."
       }
     },
     "plans": {

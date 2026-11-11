@@ -165,6 +165,12 @@ export function SettingsPage() {
               action={<ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />}
             />
           )}
+          {/* M6.8 (QR1): the old row style until M7 rebuilds Settings. */}
+          <Row
+            title={t('reports')}
+            href={`/${locale}/app/settings/reports`}
+            action={<ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />}
+          />
           <Row
             className="hidden md:flex"
             title={t('logout')}

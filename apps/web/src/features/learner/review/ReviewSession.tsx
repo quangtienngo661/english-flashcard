@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -200,6 +201,7 @@ export function ReviewSession() {
             <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('review.left', { count: left })}</span>
           </>
         )}
+        <CalendarBarButton />
       </header>
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-stretch px-4 py-6 md:px-6">{body}</div>
     </div>

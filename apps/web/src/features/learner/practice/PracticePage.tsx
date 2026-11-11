@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import { Kbd } from '@/ui/Kbd';
 import { ProgressBar } from '@/ui/ProgressBar';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
+import { CalendarLink } from '../calendar/CalendarLink';
 import { useGroups } from '../groups/groups-api';
 import { CurrentSessionCard } from './CurrentSessionCard';
 import { answerSummary } from './history-format';
@@ -249,7 +250,6 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
 function Recent() {
   const t = useTranslations('App.practice');
   const tRecent = useTranslations('App.practice.recent');
-  const locale = useLocale();
   const history = useRecentHistory(3);
   const items = history.data?.items ?? [];
   return (
@@ -282,9 +282,7 @@ function Recent() {
           })}
         </ul>
       )}
-      <Link href={`/${locale}/app/practice/history`} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'w-fit')}>
-        {t('recent.history')}
-      </Link>
+      <CalendarLink className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'w-fit')}>{t('recent.history')}</CalendarLink>
     </section>
   );
 }

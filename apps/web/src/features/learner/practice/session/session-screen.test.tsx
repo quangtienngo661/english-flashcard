@@ -2,6 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
+import { CalendarHost } from '@/features/learner/calendar/CalendarHost';
 import type { Route } from '@/app-shell/session/test-support';
 import { PracticeSession } from './PracticeSession';
 
@@ -186,5 +187,32 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     await userEvent.keyboard('deteriorate{Enter}');
     await waitFor(() => expect(answers()).toHaveLength(2));
     expect(answers()[1].body).toEqual({ text: 'deteriorate' });
+  });
+});
+
+describe('M6.9: the calendar button in the session bar (phone, Figma 95:344)', () => {
+  const typeWord = { item_id: 'item-8', round: 1, position: 8, type: 'type_word', prompt_style: 'meaning',
+    prompt: { kind: 'type_meaning', meaning: 'xấu đi', meaning_language: 'vi', context_label: null },
+    hints_available: hints, hint_level: 0, state: 'unanswered', tries: 0, reportable: true, ai: false };
+  const recall = (item: unknown) => routes(null, {
+    'POST /v1/practice/sessions': () => Response.json({ session: view({ kind: 'recall', cloze_source: null }) }),
+    [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ kind: 'recall' }), item }),
+    'GET /v1/me/calendar?month=2026-11': () => Response.json({ month: '2026-11', days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } }),
+  });
+
+  it('the practice session shows one "Lịch học" in its bar', async () => {
+    renderApp(<PracticeSession />, { routes: routes(mcq()) });
+    await screen.findByText('xấu đi');
+    expect(screen.getAllByRole('button', { name: 'Lịch học' })).toHaveLength(1);
+  });
+
+  it('Ôn: the bar button opens "Tháng 11, 2026"; L typed in the answer box types "l"', async () => {
+    renderApp(<CalendarHost><PracticeSession recall={{ groupId: TECH }} /></CalendarHost>, { routes: recall(typeWord) });
+    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(input, 'l');
+    expect(input).toHaveValue('l');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Lịch học' }));
+    expect(await screen.findByRole('dialog', { name: 'Tháng 11, 2026' })).toBeInTheDocument();
   });
 });

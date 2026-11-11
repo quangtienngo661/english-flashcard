@@ -140,6 +140,7 @@ export async function signedInAs(
     'GET /v1/topics/suggestions': () => ({ json: { items: [] } }),
     'GET /v1/topics': () => ({ json: { items: [] } }),
     'GET /v1/practice/sessions/last': () => ({ status: 204 }),
+    'GET /v1/me/streak': () => ({ json: { days: 0, studied_today: false } }),
     ...extra,
   });
 }

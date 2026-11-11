@@ -137,9 +137,8 @@ function practiceApi({ long = false, open = false, used = 1 } = {}): Record<stri
       },
     }),
     'GET /v1/practice/reports': () => ({
-      json: { items: [{ id: uuid(701), item_id: uuid(501), sense_id: uuid(601), reason_label: long ? 'Câu sai ngữ pháp hoặc không tự nhiên' : 'Khác', status: 'confirmed', refunded: true, created_at: '2026-10-22T03:00:00Z', resolved_at: '2026-10-22T05:00:00Z' }], next_page_token: null },
+      json: { items: [{ id: uuid(701), item_id: uuid(501), sense_id: uuid(601), reason_label: long ? 'Câu sai ngữ pháp hoặc không tự nhiên' : 'Khác', status: 'confirmed', refunded: true, created_at: '2026-10-22T03:00:00Z', resolved_at: '2026-10-22T05:00:00Z', lemma: 'deploy', question_type: 'cloze', ai: true }], next_page_token: null },
     }),
-    [`GET /v1/senses/${uuid(601)}`]: () => ({ json: { sense_id: uuid(601), lemma: 'deploy' } }),
   };
 }
 
@@ -252,15 +251,20 @@ test.describe('M4 flows (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ source: 'weak', group_id: DECK });
   });
 
-  test('history and my reports', async ({ page }) => {
+  test('M6.7: the old history address with a date opens that day of the calendar (server redirect on the Worker build)', async ({ page }) => {
+    await signedInAs(page, 'free', { ...practiceApi(), ...calendarApi() });
+    await page.goto('/vi/app/practice/history?date=2026-11-05');
+    await expect(page).toHaveURL(/\/vi\/app\/practice\?(.*&)?ngay=2026-11-05$/);
+    await expect(page.getByRole('dialog', { name: '05/11' })).toBeVisible();
+  });
+
+  test('M6.8: the old reports tab address opens Báo lỗi của tôi in Settings', async ({ page }) => {
     await signedInAs(page, 'free', practiceApi());
-    await page.goto('/vi/app/practice/history');
-    await expect(page.getByText(copy.vi.App.practice.history.actions.needs_review).first()).toBeVisible();
-    await page.getByRole('tab', { name: vi.history.tabs.reports }).click();
-    await expect(page.getByText(vi.reports.refunded)).toBeVisible();
-    await expect(page.getByText('deploy', { exact: true })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('tab', { name: vi.history.tabs.reports, selected: true })).toBeVisible();
+    await page.goto('/vi/app/practice/history?tab=reports');
+    await expect(page).toHaveURL(/\/vi\/app\/settings\/reports$/);
+    await expect(page.getByRole('heading', { level: 1, name: vi.reports.title })).toBeVisible();
+    await expect(page.getByText(`deploy · Khác`)).toBeVisible();
+    await expect(page.getByText(`điền từ vào câu · ${vi.reports.refunded}`)).toBeVisible();
   });
 
   test('plans: numbers from the config, Pro for sale in three periods', async ({ page }) => {
@@ -286,8 +290,7 @@ const PAGES: Shot[] = [
   { path: 'practice/session', ready: (p) => expect(p.getByText(LONG_OPTION)).toBeVisible() },
   // M5.5: phones show only the word and its ✓/✗ chips (Figma 119:4482), so wait for a chip, not the meaning.
   { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|wrong)$/ }).first()).toBeVisible() },
-  { path: 'practice/history', ready: (p) => expect(p.getByText(LONG_MEANING).first()).toBeVisible() },
-  { path: 'practice/history?tab=reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên')).toBeVisible() },
+  { path: 'settings/reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên', { exact: false })).toBeVisible() },
   { path: 'plans', ready: (p) => expect(p.getByRole('heading', { level: 1 })).toBeVisible() },
 ];
 
@@ -365,3 +368,13 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));
   await noSideScroll(page, 'typed answer');
 });
+
+/** The study calendar's endpoints for one quiet day (M6.7). */
+function calendarApi(): Record<string, MockHandler> {
+  return {
+    'GET /v1/me/calendar': (req) => ({ json: { month: req.query.get('month'), days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } } }),
+    'GET /v1/me/calendar/days/2026-11-05': () => ({
+      json: { date: '2026-11-05', counts: { learned: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0, practice_questions: 0 }, items: [], practice_sessions: [], next_page_token: null },
+    }),
+  };
+}
