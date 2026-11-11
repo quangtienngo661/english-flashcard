@@ -529,6 +529,7 @@
       "back": "Cài đặt",
       "deletedTitle": "Những gì bị xóa",
       "keptTitle": "Những gì còn được giữ",
+      "confirmTitle": "Xác nhận xóa",
       "deleted": {
         "learning": "Dữ liệu học: nhóm, lịch ôn, lịch sử trả lời",
         "privateWords": "Từ riêng và câu bạn tự viết",

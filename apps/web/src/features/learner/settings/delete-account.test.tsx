@@ -61,12 +61,41 @@ describe('DeleteAccountPage (design §9.4)', () => {
     const withPro = renderApp(<DeleteAccountPage />, {
       routes: { 'GET /v1/me/entitlements': () => Response.json({ ...ent(), plan: 'pro', pro_until: '2026-12-31T17:00:00.000Z' }), 'GET /v1/me/app-config': () => Response.json(CONFIG) },
     });
-    expect(await screen.findByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).toBeInTheDocument();
+    expect(await screen.findByRole('note')).toHaveTextContent('Thời gian Pro còn lại sẽ mất, không hoàn tiền.');
     expect(screen.getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
     withPro.unmount();
     renderApp(<DeleteAccountPage />, { routes: routes() });
     expect(await screen.findByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
     expect(screen.queryByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).not.toBeInTheDocument();
+  });
+
+  it('M7.5: the info card comes first in the DOM ("Những gì bị xóa" before "Xác nhận xóa"), the same reading order on every size', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    const confirm = await screen.findByRole('heading', { level: 2, name: 'Xác nhận xóa' });
+    const deleted = screen.getByRole('heading', { level: 3, name: 'Những gì bị xóa' });
+    expect(screen.getByRole('heading', { level: 3, name: 'Những gì còn được giữ' })).toBeInTheDocument();
+    expect(deleted.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Xác nhận xóa' })).getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+  });
+
+  it('M7.5: "Xóa vĩnh viễn" is the danger button', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    expect(await screen.findByRole('button', { name: 'Xóa vĩnh viễn' })).toHaveAttribute('data-variant', 'danger');
+  });
+
+  it('M7.5: the renewing-plan block sits in the "Xác nhận xóa" card instead of the form', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([SUB]) });
+    const card = await screen.findByRole('region', { name: 'Xác nhận xóa' });
+    expect(within(card).getByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();
+    expect(within(card).getByRole('link', { name: 'Đến trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(within(card).queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('M7.5: while the plan loads, the page shows the loading blocks', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([], { 'GET /v1/me/entitlements': () => new Promise<Response>(() => {}) as never }) });
+    expect(await screen.findByRole('status')).toHaveTextContent('Đang tải…');
+    expect(screen.queryByRole('button', { name: 'Xóa vĩnh viễn' })).not.toBeInTheDocument();
   });
 
   it.each(['active', 'grace', 'on_hold', 'trialing'])('a %s auto-renewing plan blocks the form and links to the plans page', async (status) => {

@@ -529,6 +529,7 @@
       "back": "Settings",
       "deletedTitle": "What is deleted",
       "keptTitle": "What is kept",
+      "confirmTitle": "Confirm deletion",
       "deleted": {
         "learning": "Learning data: groups, review schedule, answer history",
         "privateWords": "Your own words and sentences",
