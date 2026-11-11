@@ -15,7 +15,7 @@ import { ErrorState } from '@/ui/States';
 import { Tag } from '@/ui/Tag';
 import { CompareTable } from './CompareTable';
 import { PlanCard } from './PlanCard';
-import { bestPeriod, periodOffer, type Months, type Prices } from './period-offer';
+import { bestPeriod, periodOffer, type Months, type Prices } from '@/lib/period-offer';
 import { SubscriptionRows } from './SubscriptionRows';
 import { useBuyOrder } from './use-buy-order';
 

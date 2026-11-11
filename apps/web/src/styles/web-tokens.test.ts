@@ -54,7 +54,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
     expect(tokens(web, 'radius-wm').size).toBe(9);
-    expect(tokens(web, 'shadow-wm').size).toBe(9);
+    expect(tokens(web, 'shadow-wm').size).toBe(11);
   });
 
   it('pins the values the design names', () => {
@@ -150,5 +150,43 @@ describe('wm pulse (M7.10)', () => {
     const rule = /@media \(prefers-reduced-motion: reduce\) \{\s*html \{[^}]*\}\s*\*,\s*\*::before,\s*\*::after \{([^}]*)\}/.exec(globals);
     expect(rule?.[1]).toContain('animation-duration: 0.01ms !important;');
     expect(rule?.[1]).toContain('animation-iteration-count: 1 !important;');
+  });
+});
+
+// M8.3: the public pages' raw Figma values (M8 Figma A §1–§3, B §2.5), as tokens in light and dark.
+describe('wm public site tokens (M8.3)', () => {
+  const shadow = tokens(web, 'shadow-wm');
+  const text = tokens(web, 'text-wm');
+
+  it('pins the three public shadows (Shadow/Lift; the hero stage 5:43; the Pro card 33:340)', () => {
+    expect(shadow.get('lift')).toBe('0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38), 0 0.75rem 2rem -1rem rgb(27 36 68 / 0.18)');
+    expect(shadow.get('stage')).toBe('0 2.5rem 6.25rem -3.125rem rgb(30 58 138 / 0.3), 0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38)');
+    expect(shadow.get('pro-glow')).toBe(
+      '0 0 3rem 0.125rem rgb(30 58 138 / 0.3), 0 2.5rem 6.25rem -3.125rem rgb(30 58 138 / 0.3), 0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38)',
+    );
+  });
+
+  it('pins the AI chip gradient and the halo colours, light and dark', () => {
+    expect([light.get('ai-from'), light.get('ai-to')]).toEqual(['#1e3a8a', '#3d78ff']);
+    expect([dark.get('ai-from'), dark.get('ai-to')]).toEqual(['#8da2ff', '#3d78ff']);
+    expect([light.get('glow-accent'), light.get('glow-mark')]).toEqual(['rgb(30 58 138 / 0.28)', 'rgb(255 216 74 / 0.42)']);
+    expect([dark.get('glow-accent'), dark.get('glow-mark')]).toEqual(['rgb(141 162 255 / 0.28)', 'rgb(255 216 74 / 0.42)']);
+  });
+
+  it('pins the site container (1160 px)', () => {
+    expect(tokens(web, 'container-wm').get('site')).toBe('72.5rem');
+  });
+
+  it.each([
+    ['site-hero', '5rem', '1.2', '-0.025em'],
+    ['site-hero-mobile', '2.1875rem', '1.24', '-0.02em'],
+    ['site-section', '3.25rem', '1.24', '-0.02em'],
+    ['site-section-mobile', '1.875rem', '1.28', '-0.015em'],
+    ['site-page', '4rem', '1.18', '-0.025em'],
+    ['site-page-mobile', '2.375rem', '1.22', '-0.02em'],
+    ['site-doc-heading', '1.75rem', '1.3', '-0.01em'],
+  ])('pins --text-wm-%s: %s / %s / %s, Bold 700', (name, size, lineHeight, letterSpacing) => {
+    expect([text.get(name), text.get(`${name}--line-height`), text.get(`${name}--letter-spacing`), text.get(`${name}--font-weight`)])
+      .toEqual([size, lineHeight, letterSpacing, '700']);
   });
 });

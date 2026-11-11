@@ -210,9 +210,13 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   ở host `api.` thì đăng ký mới hoàn tất.
 - [ ] **Xóa database D1 `wordmet-waitlist` trong Cloudflare dashboard.** Nguồn: design L2. Vì sao: binding `DB`, migration và form đã bị bỏ khỏi code,
   database còn lại chỉ tốn chỗ. Chủ dự án (lúc brainstorm landing, 11/2026) nói chưa có ai đăng ký thật nên không cần xuất dữ liệu.
-- [ ] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** Nguồn: design L2; nghiên cứu
+- [x] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** *(11/11/2026, M8 giao diện mới: link có ở chân trang công khai từ 04/11; nội dung đăng trong admin, việc còn lại ở mục "Chính sách bảo mật và Điều khoản" cuối file.)* Nguồn: design L2; nghiên cứu
   `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`. Vì sao: hai trang hiện là bản nháp (`LegalDraft`), link đang ẩn từ 09/10/2026; khi link
   trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file. *(03/11/2026: nội dung nay soạn và đăng trong admin, xem mục "Chính sách bảo mật và Điều khoản" ở cuối file.)*
+- [ ] **Khi Deploy: đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API (`NEXT_PUBLIC_API_BASE_URL`) trong `deploy-web.yml`.** Nguồn: plan giao diện mới M8.9, as-built M8b
+  (`giao-dien-moi.md`). Vì sao: từ M8, `next.config.ts` đọc giá và FAQ lúc build từ `GET /v1/public/prices`. Không có cờ này thì build không đọc được vẫn qua, in một
+  dòng cảnh báo và đưa giá, FAQ dự phòng lên trang chủ; có cờ thì build fail. Chỉ bật khi `api.` đã chạy, nếu không mọi lần deploy `main` đều fail.
+  Đổi giá hay FAQ trong admin chỉ hiện trên trang chủ sau lần build kế tiếp.
 - [ ] **Sau deploy: mở `/vi`, mở `/en` (phải 307 về `/vi`), bấm Đăng ký (phải tới `/vi/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
   Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
 - [ ] **Bản tiếng Anh của landing.** Nguồn: design L3, L4. Khi có: thêm `'en'` vào `LANDING_LOCALES` (`src/lib/landing-locale.ts`), dịch `Landing` trong

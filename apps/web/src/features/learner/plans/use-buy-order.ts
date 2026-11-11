@@ -8,7 +8,7 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { APP_CONFIG_KEY } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import type { Months } from './period-offer';
+import type { Months } from '@/lib/period-offer';
 
 /**
  * Buying a Pro period (launch prep B design §3.8). A press creates the order with the price the learner saw: if it changed meanwhile the

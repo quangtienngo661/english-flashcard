@@ -10,7 +10,6 @@ import '../globals.css';
 
 // Fonts of the new UI (design giao diện mới §5.8), all with Vietnamese glyphs; the variables feed --font-wm-sans/-display/-mono
 // (globals.css, @theme inline). Variable fonts, so no weight list; Bricolage keeps only its wght axis (no `axes`: ~41 KB instead of ~131 KB).
-// Lexend stays only in the OG image until M8.
 const notoSans = Noto_Sans({ subsets: ['latin', 'vietnamese'], display: 'swap', variable: '--font-noto-sans' });
 const bricolage = Bricolage_Grotesque({ subsets: ['latin', 'vietnamese'], display: 'swap', variable: '--font-bricolage' });
 // Small labels only: not preloaded, so public pages do not fetch it up front.
@@ -34,8 +33,8 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return buildMetadata(locale, { title: t('title'), description: t('description') });
 }
 
-// Matches the `navy` token (the top bar) in the light theme and `navy-card` in the dark one.
-export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#121833' }, { color: '#1b2444' }] };
+// The page background (`--color-wm-bg`) of each theme: the new top bar is glass over the background, not a navy band (design §11).
+export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0f1220' }, { color: '#f6f7fa' }] };
 
 export default async function LocaleLayout({ children, params }: LocaleParams & { children: ReactNode }) {
   const { locale } = await params;

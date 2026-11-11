@@ -1,5 +1,7 @@
 # Landing làm lại — plan tóm tắt (03/11/2026)
 
+> **Đã thay (11/11/2026):** M8 của đợt giao diện mới dựng lại các trang công khai theo Figma; mã của landing này (`src/components/**`) đã xóa. Bố cục, gói có giá, thanh trên và nền mô tả dưới đây không còn đúng. As-built mới: mục "as-built M8b" trong `docs/deliveries/giao-dien-moi.md`. Các bất biến LR20–LR28, LR50 vẫn được e2e giữ.
+
 Design: `docs/superpowers/specs/2026-11-03-landing-redesign-design.md`. Plan đầy đủ: `docs/superpowers/plans/2026-11-03-landing-redesign.md`.
 Nhánh `feat/landing-redesign` (tách từ `docs/landing-redesign`), một PR vào `dev` khi xong.
 
