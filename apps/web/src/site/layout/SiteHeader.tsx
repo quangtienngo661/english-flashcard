@@ -20,7 +20,7 @@ export function SiteHeader({ locale }: { locale: AppLocale }) {
       <Container className="flex h-15 items-center gap-2 md:h-17 md:gap-6">
         <a
           href={home}
-          className="mr-auto shrink-0 rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+          className="mr-auto inline-flex min-h-11 shrink-0 items-center rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
         >
           <AppLogo />
         </a>

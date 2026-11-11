@@ -20,7 +20,7 @@ export function SiteFooter({ locale }: { locale: AppLocale }) {
         {/* A link home, also because AppLogo's aria-label is not allowed on a bare span (axe aria-prohibited-attr). */}
         <a
           href={`/${locale}`}
-          className="self-start rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:self-auto"
+          className="inline-flex min-h-11 items-center self-start rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:self-auto"
         >
           <AppLogo />
         </a>
