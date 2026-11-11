@@ -192,7 +192,8 @@ describe('TransactionsPage (Figma 122:4203 / 122:4354)', () => {
     await screen.findByRole('dialog', { name: 'Chi tiết giao dịch' });
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(button).toHaveFocus();
+    // react-aria's FocusScope puts focus back one animation frame after the dialog unmounts, not in the same tick.
+    await waitFor(() => expect(button).toHaveFocus());
   });
 
   it('a grant\'s detail has no gateway, no id and no help text', async () => {
