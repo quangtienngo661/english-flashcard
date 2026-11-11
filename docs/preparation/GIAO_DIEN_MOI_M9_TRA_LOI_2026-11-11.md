@@ -42,6 +42,30 @@ giao diện hiện tại có chỗ là bản mới hơn bản đã chốt. Mỗi
 hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọn lưu trong db của artifact, collection `picks`, mỗi chỗ một document `d01`…`d25`
 (`{choice: 'current' | 'approved' | null, note, at}`); Claude đọc bằng `ArtifactData list`. Đợt polish sửa theo các lựa chọn này.
 
+## Đã chốt cho mockup đầy đủ (11–12/11/2026, chủ dự án gửi từng tin, chưa báo xong)
+
+**Chế độ tối (trang so sánh `H3B2PmZ1sdjxo2P9ymSYtW`):** cả 6 câu theo B (chủ dự án: "nghiêng về Claude").
+
+**25 chỗ lệch (lựa chọn trong db `picks` của `87DRK6yvkNo6vc9jm571FU`, đọc 12/11):**
+- Theo bản đã chốt: 3, 4, 5, 7, 9, 10, 11, 14, 17, 18, 20, 21, 23; 25 phần thanh trên (56 px).
+- Giữ hiện tại: 8 (icon ngôi nhà), 12 (khoảng chữ logo, tiêu đề hộp thoại), 16 (bề rộng thanh phiên), 19 (dòng nguồn Luyện tập), 22 (thẻ chủ đề có ô icon); 25 phần thanh tab.
+- Chỗ 1: lấy bản đã chốt (lá bài dọc) làm gốc, polish và sửa lỗi giao diện còn lại.
+- Chỗ 2 (đổi sau): từ đích trong câu in đậm gạch chân ở mọi chỗ; riêng trang giấy Tra từ (danh sách A–Z) giữ nền vàng.
+- Chỗ 6: bỏ qua; trang Nhóm làm lại theo artifact `6z635GjwYNpctydnMoNHJD`, băng chuyền kiểu Vòng cung.
+- Chỗ 13: bỏ box "Gần đây" ở Luyện tập; gom tiêu đề mục và card về một kiểu cho mỗi vai trò.
+- Chỗ 15: theo câu 11B (tab gạch dưới; bộ lọc dạng chip).
+- Chỗ 24: chụp ảnh thật màn khung xương lúc tải.
+
+**Chỗ bổ sung:**
+- Góc bo theo kích cỡ, mức C: phím tắt, nhãn 4–5 px; nút, ô nhập, chip 8; dòng danh sách, menu 10; card 14; hộp thoại, thẻ Học 16 (viết bằng `rem`). Bên trong luôn bo ít hơn khung chứa.
+- Panel "Chưa đúng" (Phiên luyện, Ôn): khoảng cách đều; đáp án nổi bật, không còn nằm nhỏ ở góc phải.
+- Ô "Gợi ý 1/2": căn lại theo một lưới (cột số, nội dung, nút "Mở gợi ý", chấm tiến độ).
+- Trang Một nhóm: thanh tiến độ và chip lọc có màu theo mức (ưu tiên đỏ, đến hạn vàng cam, mới xám, Bậc 1→5 xanh lá nhạt → đậm); danh sách từ thành bảng có tên cột (Từ vựng, Loại từ, Nghĩa, Bậc, Trạng thái).
+- Bỏ chữ "ngăn": gọi "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên (code đã gọi `level` 0–5). Nghiên cứu: `SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`. Màu không được là tín hiệu duy nhất; Bậc 1–3 xanh nhạt cần chữ hoặc viền.
+- Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
+- Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
+- Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm, chồng thẻ nhỏ màu nhóm thay ô vuông; vẽ 2 cách để chọn.
+
 ## Ghi chú cho Part 9
 
 - Thứ chặn M9: M8b (đang làm M8.5), M8c (chờ chủ dự án duyệt khung Figma favicon, ảnh chia sẻ).
