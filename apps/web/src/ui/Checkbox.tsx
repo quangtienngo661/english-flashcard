@@ -9,7 +9,7 @@ const keepLinkPresses = (event: SyntheticEvent) => {
   if ((event.target as HTMLElement).closest('a')) event.stopPropagation();
 };
 
-/** Same props as app-ui/Checkbox; the look of Figma "Ô tick" (34:355) and "Ô chọn nhỏ" (96:315). */
+/** A controlled checkbox (`isSelected`, `onChange`) labelled by `children`; Figma "Ô tick" (34:355) and "Ô chọn nhỏ" (96:315). */
 export function Checkbox({
   isSelected,
   onChange,

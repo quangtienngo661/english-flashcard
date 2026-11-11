@@ -14,7 +14,10 @@ type Props<T extends string> = {
   compact?: boolean;
 };
 
-/** Same props as app-ui/Segmented; Figma "Nút chia đoạn" (138:319): fully round, the chosen option on surface with a row shadow. */
+/**
+ * One choice among a few `options`, a radio group named `label`. Figma "Nút chia đoạn" (138:319): fully round, the chosen option on
+ * surface with a row shadow.
+ */
 export function Segmented<T extends string>({ label, value, options, onChange, isDisabled, fullWidth = false, compact = false }: Props<T>) {
   // Owner 10/11/2026: the in-row and full-width segments use smaller type (12px, semibold), so they sit on one line in the options dialog.
   const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? 'px-2 py-1.5 text-xs font-semibold' : 'px-3.5 py-1.5 text-wm-small-strong';
