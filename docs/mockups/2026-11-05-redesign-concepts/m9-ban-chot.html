@@ -158,14 +158,16 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .chip .sw{width:8px;height:8px;border-radius:2px;background:var(--c,var(--lv0))}
 .chip.on{color:var(--ink);border-color:color-mix(in oklab,var(--c,var(--accent)) 60%,transparent);background:color-mix(in oklab,var(--c,var(--accent)) 14%,var(--surface))}
 .chip.on b{color:var(--ink)}
-/* Level filter chips (owner 12/11): label and count on two lines; the whole chip carries the level colour, no colour square. */
+/* Level filter chips (owner 12/11, final): one line; the whole chip carries the level colour (no colour square); the count sits in
+   its own small badge on the card surface so label and number never run together. */
 .lvrow{display:flex;gap:8px}
-.lvchip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:78px;padding:7px 12px 8px;border-radius:var(--r-ctl);cursor:pointer;
-  font:inherit;text-align:left;color:var(--ink);background:color-mix(in oklab,var(--c) 16%,var(--surface));border:1px solid color-mix(in oklab,var(--c) 42%,transparent);
-  transition:background-color 200ms ease,border-color 200ms ease,box-shadow 200ms ease,transform 150ms var(--ease-out);flex:none}
-.lvchip .l{font-size:.75rem;font-weight:600;white-space:nowrap}
-.lvchip b{font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.1;font-variant-numeric:tabular-nums}
-.lvchip:hover{background:color-mix(in oklab,var(--c) 26%,var(--surface))}
+.lvchip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 12px;border-radius:var(--r-ctl);cursor:pointer;flex:none;
+  font:inherit;color:var(--ink);background:color-mix(in oklab,var(--c) 18%,var(--surface));border:1px solid color-mix(in oklab,var(--c) 45%,transparent);
+  transition:background-color 200ms ease,border-color 200ms ease,box-shadow 200ms ease,transform 150ms var(--ease-out)}
+.lvchip .l{font-size:.8125rem;font-weight:600;white-space:nowrap}
+.lvchip b{min-width:24px;height:24px;padding:0 7px;border-radius:6px;display:inline-grid;place-items:center;background:var(--surface);color:var(--ink);
+  font:700 .75rem/1 var(--f-label);font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c) 35%,transparent)}
+.lvchip:hover{background:color-mix(in oklab,var(--c) 28%,var(--surface))}
 .lvchip:active{transform:scale(.97)}
 .lvchip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .lvchip.on{background:color-mix(in oklab,var(--c) 40%,var(--surface));border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
@@ -592,7 +594,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
               <div class="t-sec">Tab và bộ lọc</div>
               <div class="tabs"><span class="on">Nghĩa<i>3</i></span><span>Câu đã gặp<i>2</i></span><span>Dạng chia</span></div>
               <div class="lvrow" style="flex-wrap:wrap"><button class="lvchip on" type="button" style="--c:var(--accent)"><span class="l">Tất cả</span><b>48</b></button><button class="lvchip" type="button" style="--c:var(--lv-pri)"><span class="l">Ưu tiên</span><b>4</b></button><button class="lvchip" type="button" style="--c:var(--lv-due)"><span class="l">Đến hạn</span><b>14</b></button><button class="lvchip" type="button" style="--c:var(--lv3)"><span class="l">Bậc 3</span><b>11</b></button></div>
-              <p class="cap">Tab gạch dưới để chuyển phần trong trang. Chip lọc theo mức: cả chip mang màu của mức, chữ ở trên, số ở dưới; chip đang chọn đậm màu hơn và có viền.</p>
+              <p class="cap">Tab gạch dưới để chuyển phần trong trang. Chip lọc theo mức: cả chip mang màu của mức; số nằm trong ô nhỏ riêng nên không dính vào chữ; chip đang chọn đậm màu hơn và có viền.</p>
             </div>
             <div class="card">
               <div class="t-sec">Tô từ đích</div>
@@ -968,12 +970,12 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     '<button class="btn b-ghost b-sm" type="button" style="align-self:flex-start;padding:0">' + ico('chl', 's') + 'Nhóm của bạn</button>' +
     '<div class="g0" style="display:grid;grid-template-columns:210px 1fr;gap:32px;align-items:start">' +
     '<div class="card" style="border:2px solid color-mix(in oklab,var(--g) 70%,transparent);border-radius:var(--r-dlg);gap:10px;height:250px"><span class="eyebrow">48 từ</span><div class="dt" style="font-weight:800;font-size:1.625rem;line-height:1.05">Đề 12 · Writing</div><div style="margin-top:auto;display:flex;align-items:baseline;gap:6px"><b class="dt" style="font-weight:800;font-size:2.75rem;line-height:1;color:var(--g-ink)">24</b><span class="mut sm">thẻ chờ</span></div><div class="cap" style="border-top:1px solid var(--line);padding-top:8px">tiếp theo <b style="color:var(--ink)">mitigate</b></div></div>' +
-    '<div style="display:flex;flex-direction:column;gap:16px"><span class="eyebrow">48 từ · tạo ngày 12/10/2026</span><h3 class="t-page" style="display:flex;align-items:center;gap:14px"><span class="dot" style="width:16px;height:16px;border-radius:4px"></span>Đề 12 · Writing</h3>' +
+    '<div style="display:flex;flex-direction:column;gap:16px"><span class="eyebrow">48 từ · tạo ngày 12/10/2026</span><h3 class="t-page">Đề 12 · Writing</h3>' +
     statusMini + '<div style="max-width:720px;display:flex;flex-direction:column;gap:8px">' + lvbar(GROUP_COUNTS, { h: 12 }) + legend(GROUP_COUNTS) + '</div>' +
     '<div style="display:flex;gap:10px;align-items:center"><button class="btn b-pri" type="button">Ôn 24 thẻ <span class="kbd">Enter</span></button><button class="btn b-ghost" type="button">Học tất cả 48 từ</button><button class="btn b-ghost" type="button" style="color:var(--ink)">Thêm từ</button></div></div></div>' +
     '<div class="t-sec">Toàn bộ 48 từ</div>' + chipsRow(true) + table + '</div>';
   $('group-phone').innerHTML = ptop() + '<div class="pscreen g0" style="gap:14px"><button class="btn b-ghost b-sm" type="button" style="align-self:flex-start;padding:0">' + ico('chl', 's') + 'Nhóm của bạn</button>' +
-    '<h3 class="t-page-m" style="display:flex;align-items:center;gap:10px"><span class="dot" style="width:12px;height:12px"></span>Đề 12 · Writing</h3>' +
+    '<h3 class="t-page-m">Đề 12 · Writing</h3>' +
     '<div style="display:flex;align-items:baseline;gap:8px"><b class="dt" style="font-weight:800;font-size:2.5rem;line-height:1;color:var(--g-ink)">24</b><span class="mut sm">thẻ chờ · 4 ưu tiên · 14 đến hạn · 6 mới</span></div>' +
     lvbar(GROUP_COUNTS) + legend(GROUP_COUNTS) + '<button class="btn b-pri" type="button">Ôn 24 thẻ</button>' +
     '<div class="t-sec-m" style="margin-top:6px">Toàn bộ 48 từ</div>' + chipsRow(false) +

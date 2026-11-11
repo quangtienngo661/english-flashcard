@@ -66,7 +66,8 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Panel "Chưa đúng" (Phiên luyện, Ôn): khoảng cách đều; đáp án nổi bật, không còn nằm nhỏ ở góc phải.
 - Gợi ý chữ cái đầu: hiện chữ đầu và một dấu gạch dưới cho mỗi chữ còn lại, ví dụ `estimate` → "e_______" (không dùng dấu ba chấm).
 - Ô "Gợi ý 1/2": căn lại theo một lưới (cột số, nội dung, nút "Mở gợi ý", chấm tiến độ).
-- Chip lọc theo mức (Tất cả, Ưu tiên, Đến hạn, Mới, Bậc 1–5): chữ và số tách hai dòng (nhãn 12 px trên, số Bricolage 20 px dưới); cả chip mang màu của mức (nền 16%, viền 42%), không dùng ô màu nhỏ; chip đang chọn nền 40% và viền đậm (12/11).
+- Chip lọc theo mức (Tất cả, Ưu tiên, Đến hạn, Mới, Bậc 1–5), chốt 12/11 sau khi thử chip hai dòng, ba kiểu khác và dropdown: một dòng, cao 36 px; cả chip mang màu của mức (nền 18%, viền 45%), không dùng ô màu nhỏ; số nằm trong ô riêng nền card (24 px, bo 6) để không dính vào chữ; chip đang chọn nền 40%, viền đậm.
+- Tiêu đề trang Một nhóm không có ô màu nhóm phía trước (12/11).
 - Trang Một nhóm: thanh tiến độ và chip lọc có màu theo mức (ưu tiên đỏ, đến hạn vàng cam, mới xám, Bậc 1→5 xanh lá nhạt → đậm); danh sách từ thành bảng có tên cột (Từ vựng, Loại từ, Nghĩa, Bậc, Trạng thái).
 - Bỏ chữ "ngăn": gọi "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên (code đã gọi `level` 0–5). Nghiên cứu: `SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`. Màu không được là tín hiệu duy nhất; Bậc 1–3 xanh nhạt cần chữ hoặc viền.
 - Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc". Áp cả cho hàng "Nhóm của bạn" ở Hôm nay (`DeckRow.tsx`, giữ nguyên trong code; mockup thêm 12/11 sau khi chủ dự án hỏi).
