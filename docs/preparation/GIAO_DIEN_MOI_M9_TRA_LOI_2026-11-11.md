@@ -15,7 +15,7 @@
 | 2. Chế độ tối sửa theo bản nào | Vẽ bản tối trong artifact (HTML), để thấy cả motion; không vẽ trong Figma, vì lúc trước Figma lệch khá nhiều so với artifact đã chốt | Brainstorm lại sau khi M8 xong |
 | 3. Chế độ tối phủ tới đâu | Mọi màn ("all"), cả trang công khai, đăng nhập, hộp thoại. Đồng ý đề xuất của Claude: chỉ vẽ bản tối cho các mẫu dùng chung (nền, card, hộp thoại, nút, màu nhóm, màu ngăn) và các màn có phần riêng; mọi màn kiểm bằng ảnh tối | — |
 | 4. Bộ ảnh cuối chụp tới đâu | Chủ dự án hỏi mục đích của việc chụp; chưa chọn | Chọn ở buổi brainstorm |
-| 5a. Script giữ trong repo hay chạy tay một lần (so dung lượng JS, khóa chữ không dùng, Lighthouse, Schema Markup Validator) | Chưa trả lời | Hỏi lại ở buổi brainstorm |
+| 5a. Script giữ trong repo hay chạy tay một lần (so dung lượng JS, khóa chữ không dùng, Lighthouse, Schema Markup Validator) | Viết script giữ lại trong repo, chạy lại được bằng một lệnh, có thể cho CI chạy trên mỗi PR | Bước nào vào CI: chốt khi viết Part 9 |
 | 5b. Đo số khung hình trên điện thoại thật | Chủ dự án có máy và tự đo; truy cập qua bản deploy tạm hoặc chung mạng Wi-Fi với máy tính | Chưa kiểm cách nào chạy được: API chưa deploy và web gọi API theo một địa chỉ cố định (`ASSUMPTION`: phải đổi sang IP máy tính trong mạng LAN). Web chạy trên Cloudflare Workers, không phải Vercel |
 
 ## Ghi chú cho Part 9
