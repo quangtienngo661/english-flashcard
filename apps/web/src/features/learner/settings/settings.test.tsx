@@ -255,6 +255,36 @@ describe('SettingsPage account section (Bước 8, Figma 120:4507)', () => {
 });
 
 describe('AccountPage (K/91, K/92)', () => {
+  it('M7.4: "Hồ sơ" and "Email đăng nhập" headings; the email is text with "Đã xác minh", not a field', async () => {
+    renderApp(<AccountPage />, { routes: routes() });
+    expect(await screen.findByRole('heading', { level: 2, name: 'Hồ sơ' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Email đăng nhập' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument();
+    expect(screen.getByText('lan@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Đã xác minh')).toBeInTheDocument();
+    expect(screen.getByText('Wordmet dành cho người từ 13 tuổi.')).toBeInTheDocument();
+  });
+
+  it('M7.4: an unverified email has no "Đã xác minh"', async () => {
+    renderApp(<AccountPage />, { routes: routes(), me: makeMe({ email_verified: false }) });
+    expect(await screen.findByText('lan@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('Đã xác minh')).not.toBeInTheDocument();
+  });
+
+  it('M7.4: the plan card under the form: Pro, 30 sessions a day, "Xem gói →" to the plans page; no aside', async () => {
+    renderApp(<AccountPage />, { routes: routes('pro') });
+    expect(await screen.findByText('30 phiên luyện mỗi ngày')).toBeInTheDocument();
+    expect(screen.getByText('Gói Pro')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem gói →' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('M7.4: a Free learner sees "Gói Miễn phí" and the Free count', async () => {
+    renderApp(<AccountPage />, { routes: routes('free') });
+    expect(await screen.findByText('3 phiên luyện mỗi ngày')).toBeInTheDocument();
+    expect(screen.getByText('Gói Miễn phí')).toBeInTheDocument();
+  });
+
   it('K/92: a birth date under 13 shows the line at once and sends nothing', async () => {
     const { count } = renderApp(<AccountPage />, { routes: routes() });
     await screen.findByLabelText('Ngày sinh');

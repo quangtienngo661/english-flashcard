@@ -648,11 +648,14 @@
       "givenName": "First name",
       "familyName": "Last name (optional)",
       "birthDate": "Date of birth",
-      "email": "Email",
       "verified": "Verified",
       "save": "Save changes",
-      "planCard": "Plans",
-      "planLine": "{plan} plan · {count, plural, one {# practice session} other {# practice sessions}} a day"
+      "profile": "Profile",
+      "loginEmail": "Sign-in email",
+      "ageHint": "Wordmet is for people 13 and older.",
+      "planTitle": "{plan} plan",
+      "planSessions": "{count, plural, one {# practice session} other {# practice sessions}} a day",
+      "seePlan": "See plans →"
     },
     "today": {
       "title": "Today",

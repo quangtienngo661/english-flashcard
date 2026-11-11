@@ -27,18 +27,3 @@ export function ShortcutRows() {
   const t = useTranslations('App.settings');
   return KEYS.map(([keys, label]) => <SettingsRow key={label} label={t(label)} control={<Keys keys={keys} />} />);
 }
-
-/** K/91: the keyboard shortcuts as a short list (Tài khoản aside). */
-export function ShortcutList() {
-  const t = useTranslations('App.settings');
-  return (
-    <ul className="flex flex-col gap-2.5">
-      {KEYS.map(([keys, label]) => (
-        <li key={label} className="flex items-center gap-3 font-wm-sans text-wm-caption text-wm-muted">
-          <Keys keys={keys} />
-          {t(label)}
-        </li>
-      ))}
-    </ul>
-  );
-}

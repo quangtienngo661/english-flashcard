@@ -648,11 +648,14 @@
       "givenName": "Tên",
       "familyName": "Họ (không bắt buộc)",
       "birthDate": "Ngày sinh",
-      "email": "Email",
       "verified": "Đã xác minh",
       "save": "Lưu thay đổi",
-      "planCard": "Gói học",
-      "planLine": "Gói {plan} · {count, number} phiên luyện mỗi ngày"
+      "profile": "Hồ sơ",
+      "loginEmail": "Email đăng nhập",
+      "ageHint": "Wordmet dành cho người từ 13 tuổi.",
+      "planTitle": "Gói {plan}",
+      "planSessions": "{count, number} phiên luyện mỗi ngày",
+      "seePlan": "Xem gói →"
     },
     "today": {
       "title": "Hôm nay",
