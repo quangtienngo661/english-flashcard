@@ -162,10 +162,33 @@ M8b merge và chờ chủ dự án duyệt khung Figma. M8 không xóa `app-ui/`
 **Còn chờ chủ dự án:** không có câu hỏi mở cho plan. Câu chữ nháp (6 câu trả lời, 5 câu sửa, câu hoàn tiền) chủ dự án kiểm trong PR; khung Figma của
 M8.10 chủ dự án duyệt trước M8.11.
 
+# Giao diện mới — plan tóm tắt, phần 9: M9 Kiểm thử và chế độ tối (12/11/2026)
+
+Plan: "Part 9" trong file plan ở trên. Quyết định của chủ dự án: QM9-1 tới QM9-9 trong decision record; bản tối theo
+[mockup bản chốt](https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL). Làm tuần tự M9a rồi M9b, một PR vào `refactor/giao-dien-moi` sau M9b.
+Các chỗ sửa khác của mockup thuộc đợt polish (plan riêng, sau M9).
+
+**M9a — Kiểm thử thành script, tải sau, dọn nhỏ**
+- M9.1: script tìm câu chữ không dùng, chạy trong bộ unit (CI); xóa các câu không còn màn nào dùng.
+- M9.2: script so dung lượng JS từng trang app với bản cũ (ngưỡng 10%), file số gốc dựng từ tag giao diện cũ.
+- M9.3: tải sau hộp Tùy chỉnh phiên và Giới thiệu Pro; thêm bước so dung lượng JS vào CI.
+- M9.4: đổi tên component nền app; ghi việc đo lại danh sách nhóm trên máy chủ thật vào deploy-checklist.
+- M9.5: lệnh chạy Lighthouse cho trang chủ và một trang pháp lý.
+- M9.6: bộ ảnh mọi màn ở 4 khổ, sáng và tối.
+- M9.7: hướng dẫn đo khung hình trên điện thoại thật.
+
+**M9b — Chế độ tối theo bản chốt**
+- M9.8: token tối: bóng đen (nút không bóng), nền nhạt nâng lên, màu nhóm tối, lớp mờ, giấy từ điển, quầng vàng, box "Chưa đúng"; token màu mức.
+- M9.9: áp vào nền mesh và hạt, giấy Tra từ, lớp mờ hộp thoại, box "Chưa đúng", thanh trình duyệt theo lựa chọn trong app; thêm kiểm truy cập ở chế độ tối.
+- M9.10: chạy toàn bộ kiểm thử, chụp bộ ảnh trên stack thật, chạy Lighthouse và Schema Markup Validator, ghi as-built, mở PR.
+
+**Còn chờ chủ dự án:** chọn cách đo trên điện thoại (Wi-Fi như đã chốt, hay cắm USB trên Android) trước bước đo của M9.10.
+
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
 Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
-đó, nên chuyển từ M8 sang đợt này. Phải xong **trước PR cuối của M9** (design §14: `app-ui/` và token cũ phải xóa). Nguồn: code facts M8 cleanup
+đó, nên chuyển từ M8 sang đợt này. Từ 12/11 (QM9-1) đợt polish làm **sau M9** và phải xong **trước PR cuối vào `dev`** (design §14: `app-ui/` và
+token cũ phải xóa). Nguồn: code facts M8 cleanup
 (`docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-11-m8-cleanup.md`), kiểm lại trên nhánh dài sau khi M7 merge (`1c4c752e`).
 
 Còn import `app-ui/` (không tính test), 14 chỗ:
@@ -186,7 +209,7 @@ Việc cần làm:
 5. Bỏ import token cũ (`theme.css`, `dark.css`, `island.css`) trong `src/app/globals.css`. Trước đó chuyển những gì đang đọc biến cũ:
    - nền và màu chữ của `body`, viền focus toàn cục (`globals.css` khoảng dòng 519–548);
    - các hiệu ứng `menu-in`, `toast-in`, `feedback-in`, `pop-in`, `card-rise`, `wiggle-soft`, `panel-drop`, `summary-in`, cùng hiệu ứng đóng toast;
-   - `color-scheme: dark`, hiện chỉ có trong `dark.css`.
+   - `color-scheme: dark`: M9b chuyển sang `web-dark.css` (M9.8), sau đó `dark.css` xóa được.
 6. Đổi các class cũ còn sót ở code mới:
    - `app/[locale]/app/layout.app.tsx` (`bg-canvas text-ink`), `AppProviders.tsx` (`OfflineBand`);
    - `groups/highlight.tsx` (`text-primary`: từ đích ở thẻ Học và hộp Thêm câu);
