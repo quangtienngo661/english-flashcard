@@ -1,16 +1,12 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
-import { APP_CONFIG_KEY, useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
-import { useApi } from '@/app-shell/session/session-context';
-import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
 import { Button } from '@/app-ui/Button';
 import { Segmented } from '@/app-ui/Segmented';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
@@ -19,6 +15,7 @@ import { site } from '@/lib/site';
 import { CompareTable } from './CompareTable';
 import { PlanCard } from './PlanCard';
 import { SubscriptionRows } from './SubscriptionRows';
+import { useBuyOrder } from './use-buy-order';
 
 type Source = Entitlements['sources'][number];
 type Months = '1' | '3' | '12';
@@ -200,9 +197,7 @@ function BuyNotes({ startsAt }: { startsAt: string | null }) {
 }
 
 /**
- * The price of the chosen period, the sentence that says what is bought, and [Mua] (design §3.8). A press creates the order with the price
- * the learner saw: if it changed meanwhile the server answers 409 `price-changed`, the prices are read again and nothing is charged. A
- * created order sends the browser to the payOS page (a full page load: the next stop is another site).
+ * The price of the chosen period, the sentence that says what is bought, and [Mua] (design §3.8). The order itself is `useBuyOrder`.
  */
 function BuyBlock({ months, price, runningMonths }: {
   months: Months;
@@ -211,41 +206,11 @@ function BuyBlock({ months, price, runningMonths }: {
   runningMonths: number | null;
 }) {
   const t = useTranslations('App.plans');
-  const locale = useLocale();
   const format = useFormat();
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const errorText = useErrorMessage();
-  const [error, setError] = useState<string | null>(null);
-  const [leaving, setLeaving] = useState(false);
+  const order = useBuyOrder();
   const state = periodState(months, runningMonths);
   const locked = state === 'locked';
   const upgrade = state === 'upgrade';
-
-  // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same order, a press with other content a new one.
-  const create = useSubmitOnce((key) =>
-    api.post<{ order_id: string; checkout_url: string }>(
-      '/v1/me/orders', { period_months: Number(months), expected_amount: price, locale }, { idempotencyKey: key },
-    ));
-
-  async function buy() {
-    setError(null);
-    try {
-      const created = await create.submit(`${months}:${price}`);
-      if (created === undefined) return;
-      setLeaving(true);
-      window.location.assign(created.checkout_url);
-    } catch (failure) {
-      if (failure instanceof ApiError && failure.problem.slug === 'price-changed') {
-        void queryClient.invalidateQueries({ queryKey: APP_CONFIG_KEY });
-        setError(t('priceChanged'));
-      } else if (failure instanceof ApiError && (failure.problem.status === 503 || failure.problem.slug === 'provider-unavailable')) {
-        setError(t('buyUnavailable'));
-      } else {
-        setError(errorText(failure));
-      }
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -253,12 +218,12 @@ function BuyBlock({ months, price, runningMonths }: {
         <span className="text-h2 font-extrabold text-ink">{format.money(price, 'VND')}</span>
         <span className="text-ui text-muted">{t('oneTime', { period: t(`periods.${months}`) })}</span>
       </p>
-      <Button variant={locked ? 'quiet' : 'sticker'} size="lg" isDisabled={locked} onPress={() => void buy()} isPending={create.busy || leaving}>
+      <Button variant={locked ? 'quiet' : 'sticker'} size="lg" isDisabled={locked} onPress={() => order.buy(months, price)} isPending={order.isPending}>
         {locked ? t('currentPeriod') : upgrade ? t('upgrade', { period: t(`periods.${months}`) }) : t('buy')}
       </Button>
-      {error && (
+      {order.error && (
         <p role="alert" className="text-ui text-danger">
-          {error}
+          {order.error}
         </p>
       )}
     </div>
