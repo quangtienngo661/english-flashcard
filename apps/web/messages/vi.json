@@ -5,20 +5,19 @@
     "ogAlt": "Wordmet: Học từ vựng tiếng Anh, ghi nhớ và vận dụng"
   },
   "Nav": {
-    "skipToContent": "Chuyển đến nội dung chính"
+    "skipToContent": "Chuyển đến nội dung chính",
+    "login": "Đăng nhập",
+    "signup": "Đăng ký",
+    "groups": "Nhóm từ",
+    "howTo": "Cách học",
+    "pricing": "Giá",
+    "theme": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "themeToLight": "Chuyển sang giao diện sáng",
+    "themeToDark": "Chuyển sang giao diện tối"
   },
   "Landing": {
-    "nav": {
-      "label": "Wordmet",
-      "features": "Tính năng",
-      "exercises": "Dạng bài",
-      "plans": "Gói học",
-      "faq": "Hỏi đáp",
-      "login": "Đăng nhập",
-      "signup": "Đăng ký",
-      "themeToLight": "Chuyển sang giao diện sáng",
-      "themeToDark": "Chuyển sang giao diện tối"
-    },
     "hero": {
       "line1": "Học từ vựng tiếng Anh,",
       "line2": "ghi nhớ và vận dụng",
@@ -248,10 +247,6 @@
       "title": "Bắt đầu học cùng Wordmet",
       "signup": "Đăng ký",
       "note": "Miễn phí, không cần thẻ thanh toán."
-    },
-    "footer": {
-      "plans": "Gói học",
-      "faq": "Hỏi đáp"
     }
   },
   "Footer": {

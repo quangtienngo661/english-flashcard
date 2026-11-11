@@ -157,7 +157,7 @@ test.describe('LR22 nothing sticks out of its box', () => {
 test.describe('LR23 the theme follows the visitor into the app', () => {
   test('dark chosen on the landing is still dark after a reload and on the login page', async ({ page }) => {
     await open(page);
-    await page.getByRole('button', { name: L.nav.themeToDark }).click();
+    await page.getByRole('button', { name: copy.vi.Nav.themeToDark }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     expect(await page.evaluate(() => localStorage.getItem('wordmet-web.theme'))).toBe('dark');
 
@@ -296,8 +296,8 @@ test.describe('LR28 content security policy', () => {
     for (const name of TAB_NAMES) await page.getByRole('tab', { name }).click();
     await pickExercise(page, 2);
     await answerWrong(page, 2);
-    await page.getByRole('button', { name: L.nav.themeToDark }).click();
-    await page.getByRole('button', { name: L.nav.themeToLight }).click();
+    await page.getByRole('button', { name: copy.vi.Nav.themeToDark }).click();
+    await page.getByRole('button', { name: copy.vi.Nav.themeToLight }).click();
     await page.waitForLoadState('networkidle');
     expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
   });
@@ -380,7 +380,7 @@ test.describe('LR32 the controls stay whole on small screens', () => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
     await page.setViewportSize({ width: 320, height: 700 });
     await open(page);
-    const box = await page.getByRole('banner').getByRole('link', { name: L.nav.signup, exact: true }).boundingBox();
+    const box = await page.getByRole('banner').getByRole('link', { name: copy.vi.Nav.signup, exact: true }).boundingBox();
     expect(box, 'the header button was found').not.toBeNull();
     // min-h-control is 44 px; a second line of text makes it about 65.
     expect(box!.height).toBeLessThan(50);
@@ -643,21 +643,13 @@ test.describe('LR36 the plans are a comparison table and the Pro column stands o
 
 // Final review 03/11/2026: the anchors were bare (`#goi`), so on the legal pages, which share this header and footer, they led nowhere.
 test.describe('LR33 the page anchors work from the legal pages', () => {
-  for (const path of ['/vi/privacy', '/vi/terms']) {
-    test(`the footer link Hỏi đáp on ${path} leads to the questions on the home page`, async ({ page }) => {
-      await page.goto(path);
-      await page.getByRole('contentinfo').getByRole('link', { name: L.footer.faq }).click();
-      await expect(page).toHaveURL(/\/vi#hoi-dap$/);
-      await expect(page.locator('#hoi-dap')).toBeVisible();
-    });
-  }
-
-  test('the header link Gói học on a legal page leads to the plans on the home page', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'the page anchors are in the header from lg up');
+  // M8.4: the footer has no page anchors any more (Figma 7:209); the header link Giá leads to #gia (the section comes in M8.5).
+  test('the header link Giá on a legal page leads to the prices on the home page', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the page anchors are in the header from md up');
     await page.goto('/vi/terms');
-    await page.getByRole('banner').getByRole('link', { name: L.nav.plans }).click();
-    await expect(page).toHaveURL(/\/vi#goi$/);
-    await expect(page.locator('#goi')).toBeVisible();
+    await page.getByRole('banner').getByRole('link', { name: copy.vi.Nav.pricing }).click();
+    await expect(page).toHaveURL(/\/vi#gia$/);
+    await expect(page.locator('#gia')).toBeVisible();
   });
 });
 
@@ -835,7 +827,7 @@ test.describe('LR50 touch targets on phones', () => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
-    const theme = await page.getByRole('banner').getByRole('button', { name: L.nav.themeToDark }).boundingBox();
+    const theme = await page.getByRole('banner').getByRole('button', { name: copy.vi.Nav.themeToDark }).boundingBox();
     expect(theme!.height).toBeGreaterThanOrEqual(44);
     expect(theme!.width).toBeGreaterThanOrEqual(44);
     const login = await page.getByRole('main').getByRole('link', { name: L.hero.login, exact: true }).boundingBox();

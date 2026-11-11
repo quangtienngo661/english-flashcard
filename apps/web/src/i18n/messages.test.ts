@@ -60,6 +60,26 @@ describe('messages', () => {
     expect(app.filter(([, v]) => /vui lòng|please|sorry|\.\.\./i.test(v)).map(([k]) => k)).toEqual([]);
   });
 
+  it('M8.4 the public header and footer read Nav; Landing.nav and Landing.footer are gone', () => {
+    expect(vi.Nav).toEqual({
+      skipToContent: 'Chuyển đến nội dung chính',
+      login: 'Đăng nhập',
+      signup: 'Đăng ký',
+      groups: 'Nhóm từ',
+      howTo: 'Cách học',
+      pricing: 'Giá',
+      theme: 'Giao diện',
+      light: 'Sáng',
+      dark: 'Tối',
+      themeToLight: 'Chuyển sang giao diện sáng',
+      themeToDark: 'Chuyển sang giao diện tối',
+    });
+    for (const messages of [vi, en]) {
+      expect('nav' in messages.Landing).toBe(false);
+      expect('footer' in messages.Landing).toBe(false);
+    }
+  });
+
   it('LP30 Landing.faq has exactly the title and q1..q4 with a1..a4 in both locales', () => {
     const keys = ['title', 'q1', 'a1', 'q2', 'a2', 'q3', 'a3', 'q4', 'a4'];
     expect(Object.keys(vi.Landing.faq)).toEqual(keys);

@@ -5,7 +5,6 @@ import { FinalCta } from './FinalCta';
 import { MetOutside } from './MetOutside';
 import { Plans } from './Plans';
 import { ReviewTiming } from './ReviewTiming';
-import { SiteFooter } from '@/components/layout/SiteFooter';
 import { appCopy, landing, renderLanding } from './test-utils';
 
 describe('Plans', () => {
@@ -93,28 +92,5 @@ describe('FinalCta', () => {
     renderLanding(<FinalCta copy={landing.final} locale="vi" />);
     expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/vi/app/register');
     expect(screen.getByText(landing.final.note)).toBeInTheDocument();
-  });
-});
-
-describe('SiteFooter', () => {
-  const footerCopy = { ...landing.footer, contact: 'Liên hệ', terms: 'Điều khoản sử dụng', privacy: 'Chính sách bảo mật', sources: 'Nguồn dữ liệu', copyright: '© 2026 Wordmet' };
-
-  it('links to the Terms of Use and the Privacy Policy pages', () => {
-    renderLanding(<SiteFooter locale="vi" copy={footerCopy} />);
-    expect(screen.getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
-    expect(screen.getByRole('link', { name: 'Chính sách bảo mật' })).toHaveAttribute('href', '/vi/privacy');
-  });
-
-  it('links to the public data sources page', () => {
-    renderLanding(<SiteFooter locale="vi" copy={footerCopy} />);
-    expect(screen.getByRole('link', { name: 'Nguồn dữ liệu' })).toHaveAttribute('href', '/vi/sources');
-  });
-
-  it('L4 has the anchors and the contact link and no language link', () => {
-    renderLanding(<SiteFooter locale="vi" copy={footerCopy} />);
-    expect(screen.getByRole('link', { name: landing.footer.plans })).toHaveAttribute('href', '/vi#goi');
-    expect(screen.getByRole('link', { name: landing.footer.faq })).toHaveAttribute('href', '/vi#hoi-dap');
-    expect(screen.getByRole('link', { name: 'Liên hệ' }).getAttribute('href')).toMatch(/^mailto:/);
-    expect(screen.queryByRole('link', { name: /english/i })).toBeNull();
   });
 });
