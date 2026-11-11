@@ -29,7 +29,7 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
   const providerKey = `providers.${item.provider}` as 'providers.fake';
   const copy = () => {
     if (!id) return;
-    navigator.clipboard.writeText(id).then(() => showToast(t('detail.copied'), 'success'), () => {});
+    navigator.clipboard?.writeText(id).then(() => showToast(t('detail.copied'), 'success'), () => {});
   };
   const rows: Array<[string, ReactNode]> = [
     [t('detail.at'), t('detail.atValue', { date: text.date, time: format.time(item.occurred_at) })],
