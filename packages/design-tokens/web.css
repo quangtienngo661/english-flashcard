@@ -65,6 +65,15 @@
   --text-wm-page-title-mobile--line-height: 1.22;
   --text-wm-page-title-mobile--letter-spacing: -0.02em;
   --text-wm-page-title-mobile--font-weight: 800;
+  /* App page titles ("Cài đặt", "Luyện tập"…): Figma 44 / 30, line-height 1.1 (M7 Figma A §1.1, §1.5). */
+  --text-wm-app-title: 2.75rem;
+  --text-wm-app-title--line-height: 1.1;
+  --text-wm-app-title--letter-spacing: -0.0255em;
+  --text-wm-app-title--font-weight: 800;
+  --text-wm-app-title-mobile: 1.875rem;
+  --text-wm-app-title-mobile--line-height: 1.1;
+  --text-wm-app-title-mobile--letter-spacing: -0.023em;
+  --text-wm-app-title-mobile--font-weight: 800;
   --text-wm-card-heading: 1.875rem;
   --text-wm-card-heading--line-height: 1.3;
   --text-wm-card-heading--letter-spacing: -0.01em;

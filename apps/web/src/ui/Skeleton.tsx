@@ -8,6 +8,20 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cn('rounded-wm-md bg-wm-line motion-safe:animate-pulse', className)} />;
 }
 
+/** A soft navigation inside the chrome (design §5.5): a title block and three card blocks, announced as "Đang tải…". */
+export function SkeletonBlocks() {
+  const t = useTranslations('App.common');
+  return (
+    <div role="status" className="flex flex-col gap-4">
+      <span className="sr-only">{t('loading')}</span>
+      <Skeleton className="h-9 w-56" />
+      <Skeleton className="h-36 w-full rounded-wm-xl" />
+      <Skeleton className="h-36 w-full rounded-wm-xl" />
+      <Skeleton className="h-36 w-full rounded-wm-xl" />
+    </div>
+  );
+}
+
 /**
  * The whole-page skeleton of a hard load (design §5.5). `chrome` draws the top bar and, on phones, the tab bar; `bare` (sessions,
  * onboarding, auth) only the content. Announced as "Đang tải…".

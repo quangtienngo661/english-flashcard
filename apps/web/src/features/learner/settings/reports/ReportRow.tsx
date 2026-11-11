@@ -3,14 +3,10 @@
 import { useTranslations } from 'next-intl';
 import { useFormat } from '@/app-shell/format';
 import { cn } from '@/lib/cn';
+import { StatusDot } from '@/ui/StatusDot';
 import type { MyReport } from './reports-api';
 
-const TONE = {
-  open: { dot: 'bg-wm-accent', text: 'text-wm-accent' },
-  confirmed: { dot: 'bg-wm-pass', text: 'text-wm-pass' },
-  fixed: { dot: 'bg-wm-pass', text: 'text-wm-pass' },
-  no_error: { dot: 'bg-wm-muted', text: 'text-wm-muted' },
-} as const;
+const TONE = { open: 'accent', confirmed: 'pass', fixed: 'pass', no_error: 'muted' } as const;
 // raw-ok: Figma 211:5998 line 1 is Noto Sans SemiBold 15, between the button (15 medium) and base-strong (16)
 const LINE_1 = 'font-wm-sans text-[0.9375rem] font-semibold leading-snug text-wm-ink';
 
@@ -31,7 +27,6 @@ export function ReportRow({ report }: { report: MyReport }) {
   ].filter(Boolean).join(' · ');
   const refundLine = report.ai && report.status === 'confirmed' && report.refunded !== true
     ? t(report.refunded === null ? 'refunding' : 'notRefundable') : null;
-  const tone = TONE[report.status];
   const date = format.date(report.created_at, 'numeric');
   return (
     <li className="flex items-center gap-3 border-wm-line px-1 py-3 not-first:border-t md:gap-4 md:rounded-wm-lg md:px-3 md:py-4">
@@ -45,9 +40,8 @@ export function ReportRow({ report }: { report: MyReport }) {
         </span>
         {refundLine && <span className="break-words font-wm-sans text-wm-caption text-wm-muted">{refundLine}</span>}
       </span>
-      <span className={cn('flex shrink-0 items-center gap-1.5 font-wm-sans text-wm-small-strong md:w-32.5', tone.text)}>
-        <span aria-hidden className={cn('size-2 shrink-0 rounded-full', tone.dot)} />
-        {t(`status.${report.status}`)}
+      <span className="shrink-0 md:w-32.5">
+        <StatusDot tone={TONE[report.status]}>{t(`status.${report.status}`)}</StatusDot>
       </span>
     </li>
   );

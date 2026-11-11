@@ -72,6 +72,13 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect([text.get('card-heading'), text.get('card-heading--line-height')]).toEqual(['1.875rem', '1.3']);
     expect([text.get('card-heading-mobile'), text.get('card-heading-mobile--line-height')]).toEqual(['1.625rem', '1.3']);
   });
+
+  it('pins the app page title sizes (M7 Figma A §1.1, §1.5: 44 / 30, line-height 1.1)', () => {
+    const text = tokens(web, 'text-wm');
+    expect([text.get('app-title'), text.get('app-title--line-height'), text.get('app-title--letter-spacing')]).toEqual(['2.75rem', '1.1', '-0.0255em']);
+    expect([text.get('app-title-mobile'), text.get('app-title-mobile--line-height'), text.get('app-title-mobile--letter-spacing')])
+      .toEqual(['1.875rem', '1.1', '-0.023em']);
+  });
 });
 
 // M3 (design §7.3, §7.4; motion doc §1, §3). Group inks: Figma's darker inks, green and blue mixed with ink (ruling).
