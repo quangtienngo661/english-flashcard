@@ -71,6 +71,8 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
 - Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm. Chốt cách B (12/11): chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, dấu ✓ cuối dòng.
 - Box "Chưa đúng": chế độ tối dùng cam san hô như dòng nhóm đang chọn (nền `#e5603f` 16% trên card, viền 1,5 px 55%, tiêu đề `#e87052`); chế độ sáng giữ đỏ đậm của token `fail` (nền 9%, viền 62%).
+- Học: nút đóng phiên là dấu X (không còn "Đóng phiên ôn Esc"). Ba nút theo mẫu chủ dự án gửi: "← Cần ôn lại [1]" viền đỏ, "↻ Lật thẻ [Space]" nền nhấn, "✓ Đã biết [2] →" nền xanh lá; mờ khi chưa lật; dưới nút có hàng chú thích phím (Space, 1/←, 2/→, Esc) trên máy tính.
+- Trang một từ: cụm phát âm UK/US và dạng chia nằm giữa hai đường kẻ, tách khỏi tiêu đề phía trên và tab phía dưới; UK và US đứng gần nhau.
 - Học trên điện thoại: không hiện phím tắt (không có bàn phím); ba nút chia đều bề ngang, không tràn; gợi ý trên thẻ là "Chạm vào thẻ để lật".
 - Panel giới thiệu ở Đăng ký: nền đậm hơn; 5 từ (mitigate, allocate, viable, deteriorate, coherent) lần lượt thay nhau trong thẻ từ; thẻ luyện gõ từ vào chỗ trống, nhấn Enter, chuyển xanh "Đúng · lên Bậc n"; số "từ đến hạn" giảm dần.
 - Chế độ tối: màu không được chìm. Panel "Chưa đúng" có ô đáp án nền xanh nhạt, viền xanh, chữ đáp án xanh sáng; các nền nhạt ở chế độ tối (`accent-soft`, `pass-soft`, `fail-soft`) nâng lên 18–20% màu trên nền card thay cho giá trị Figma Dark.

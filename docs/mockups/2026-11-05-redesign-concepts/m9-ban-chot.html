@@ -249,9 +249,23 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .fc .stamp.again{left:18px;color:var(--fail);transform:rotate(-7deg)}
 .fc .stamp.known{right:18px;color:var(--pass);transform:rotate(7deg)}
 .fc-nudge{min-height:1.6em;text-align:center;font-size:14px;color:var(--muted);margin:8px 0}
-.fc-acts{display:flex;justify-content:center;gap:10px}
-.fc-acts .btn{width:180px}
-.fc-acts .btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+/* Action buttons (owner's reference 12/11): icon + label + key chip; flip filled accent, know filled green, again outlined red;
+   a key legend under them on desktop only. */
+.fc-acts{display:flex;justify-content:center;gap:12px}
+.fc-acts .btn{gap:10px;min-height:48px;padding:0 20px;font-weight:700;box-shadow:none}
+.fc-acts .b-again{background:var(--surface);color:var(--fail);border:1px solid var(--line)}
+.fc-acts .b-flip{background:var(--accent);color:var(--on-accent)}
+.fc-acts .b-know{background:var(--pass);color:#ffffff}
+.wm[data-mode="dark"] .fc-acts .b-again{background:color-mix(in oklab,var(--fail) 6%,var(--surface));border-color:color-mix(in oklab,var(--ink) 14%,transparent)}
+.wm[data-mode="dark"] .fc-acts .b-know{background:color-mix(in oklab,#62c98f 52%,#171b2a);color:#eceef5}
+.fc-acts .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.kc2{font:700 .75rem/1 var(--f-label);min-width:22px;height:22px;padding:0 6px;border-radius:var(--r-key);display:inline-grid;place-items:center;
+  background:color-mix(in oklab,currentColor 16%,transparent)}
+.b-flip .kc2,.b-know .kc2{background:color-mix(in oklab,currentColor 22%,transparent)}
+.fc-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font-size:.875rem;color:var(--muted)}
+.fc-legend>span{display:inline-flex;align-items:center;gap:6px}
+.fc-legend .kc2{background:var(--accent-soft);color:var(--accent)}
+.fcw.ph .kc2,.fcw.ph .fc-legend{display:none}
 .fc-sum{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;text-align:center}
 .fc-sum .rv{animation:blurIn 520ms var(--ease-out) both;animation-delay:calc(var(--k) * 90ms)}
 @keyframes blurIn{from{opacity:0;filter:blur(12px);transform:translateY(10px)}to{opacity:1;filter:blur(0);transform:none}}
@@ -280,6 +294,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .sent{font-family:var(--f-display);font-weight:700;font-size:2.125rem;line-height:1.5;letter-spacing:-0.015em}
 .wrong{color:var(--fail);text-decoration:line-through;text-decoration-thickness:2px;border:1.5px dashed var(--fail);background:var(--fail-soft);border-radius:var(--r-ctl);padding:0 8px}
 .right{color:var(--pass);border:1.5px solid var(--pass);background:var(--pass-soft);border-radius:var(--r-ctl);padding:0 8px}
+/* Word page: the pronunciation and forms block sits between two hairlines (owner 12/11). */
+.pron{display:flex;flex-direction:column;gap:12px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 /* Sentence translation after answering: its own soft block under the sentence, not a loose grey line. */
 .trans{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--r-row);
   background:color-mix(in oklab,var(--accent) 7%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 22%,transparent)}
@@ -492,6 +508,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></symbol>
   <symbol id="i-chd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-arrl" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+  <symbol id="i-rot" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
   <symbol id="i-lang" viewBox="0 0 24 24"><path d="M4 5h9M8.5 3v2M6 9c1.4 2.6 3.6 4.5 6.5 5.6M11 5c-1 4-3.4 7.2-7 9"/><path d="m13 21 4-9 4 9M14.5 18h5"/></symbol>
   <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3-1-3 0-5 0-8z"/></symbol>
 </svg>
@@ -1104,16 +1122,18 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       '<div class="fc-stack"></div>' +
       '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Đã biết' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
       '<p class="fc-nudge" aria-live="polite"></p>' +
-      '<div class="fc-acts"><button class="btn b-sec" type="button" data-a="again" style="color:var(--fail)"><span class="kbd">1</span>Cần ôn lại</button>' +
-      '<button class="btn b-sec" type="button" data-a="flip"><span class="ft">Lật thẻ</span><span class="kbd">Space</span></button>' +
-      '<button class="btn b-sec" type="button" data-a="known" style="color:var(--pass)">Đã biết<span class="kbd">2</span></button></div></div>';
+      '<div class="fc-acts"><button class="btn b-again" type="button" data-a="again">' + ico('arrl', 's') + 'Cần ôn lại<span class="kc2">1</span></button>' +
+      '<button class="btn b-flip" type="button" data-a="flip">' + ico('rot', 's') + '<span class="ft">Lật thẻ</span><span class="kc2">Space</span></button>' +
+      '<button class="btn b-know" type="button" data-a="known">' + ico('check', 's') + 'Đã biết<span class="kc2">2</span>' + ico('arr', 's') + '</button></div>' +
+      '<div class="fc-legend"><span><span class="kc2">Space</span>Lật thẻ</span><span><span class="kc2">1</span><span class="kc2">←</span>Cần ôn lại</span>' +
+      '<span><span class="kc2">2</span><span class="kc2">→</span>Đã biết</span><span><span class="kc2">Esc</span>Dừng</span></div></div>';
   }
   function learnHead(phone, id) {
     return phone ?
-      '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="btn b-sec b-sm" type="button">Đóng</button></div>' +
+      '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="xbtn" type="button" aria-label="Đóng phiên ôn">' + ico('x', 's') + '</button></div>' +
       '<div style="padding:12px 16px 0" class="sbar"><div class="prog"><i id="' + id + '-bar" style="width:0%"></i></div><span class="mut sm" id="' + id + '-left"></span></div>' :
       '<div style="max-width:1024px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:20px"><div><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.375rem">Đề 12 · Writing</div></div>' +
-      '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i id="' + id + '-bar" style="width:0%;transition:width 300ms var(--ease-out)"></i></div><span class="mut sm" id="' + id + '-left"></span></div><button class="btn b-sec b-sm" type="button">Đóng phiên ôn <span class="kbd">Esc</span></button></div>';
+      '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i id="' + id + '-bar" style="width:0%;transition:width 300ms var(--ease-out)"></i></div><span class="mut sm" id="' + id + '-left"></span></div><button class="xbtn" type="button" aria-label="Đóng phiên ôn" title="Đóng phiên ôn (Esc)" style="width:40px;height:40px">' + ico('x', 's') + '</button></div>';
   }
   function progressFn(id) {
     return function (i, n) { var b = $(id + '-bar'), l = $(id + '-left'); if (b) b.style.width = (i / n * 100) + '%'; if (l) l.textContent = 'còn ' + (n - i) + ' thẻ'; };
@@ -1229,7 +1249,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 
   // ---------- Trang một từ ----------
   var ipa = function (pos, uk, us) {
-    return '<div style="display:grid;grid-template-columns:90px auto auto;gap:24px;align-items:center"><span class="mono" style="color:var(--accent)">' + pos + '</span>' +
+    return '<div style="display:grid;grid-template-columns:90px auto auto;gap:24px 40px;align-items:center;justify-content:start"><span class="mono" style="color:var(--accent)">' + pos + '</span>' +
       '<span style="display:flex;align-items:center;gap:8px"><span class="mut sm">UK</span><b>' + uk + '</b><span class="iconbtn" style="width:30px;height:30px;border-radius:50%">' + ico('vol', 's') + '</span></span>' +
       '<span style="display:flex;align-items:center;gap:8px"><span class="mut sm">US</span><b>' + us + '</b><span class="iconbtn" style="width:30px;height:30px;border-radius:50%">' + ico('vol', 's') + '</span></span></div>';
   };
@@ -1242,8 +1262,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   $('word-desk').innerHTML = topbar('Tra từ') + '<div style="max-width:1280px;margin:0 auto;padding:28px 32px;display:grid;grid-template-columns:1fr 320px;gap:28px;align-items:start">' +
     '<div style="display:flex;flex-direction:column;gap:18px"><button class="btn b-ghost b-sm" type="button" style="align-self:flex-start;padding:0">' + ico('chl', 's') + 'Tra từ</button>' +
     '<div class="dt" style="font-weight:800;font-size:84px;line-height:.95;letter-spacing:-0.035em">record</div>' +
-    ipa('noun', '/ˈrek.ɔːd/', '/ˈrek.ɚd/') + ipa('verb', '/rɪˈkɔːd/', '/rɪˈkɔːrd/') +
-    '<div style="display:grid;grid-template-columns:90px auto;gap:24px"><span class="mono" style="color:var(--ink)">dạng chia</span><span><b>record</b> · records · recorded · recording</span></div>' +
+    '<div class="pron">' + ipa('noun', '/ˈrek.ɔːd/', '/ˈrek.ɚd/') + ipa('verb', '/rɪˈkɔːd/', '/rɪˈkɔːrd/') +
+    '<div style="display:grid;grid-template-columns:90px auto;gap:24px;justify-content:start"><span class="mono" style="color:var(--ink)">dạng chia</span><span><b>record</b> · records · recorded · recording</span></div></div>' +
     '<div class="tabs" style="margin-top:6px"><span class="on">Nghĩa<i>3</i></span><span>Câu đã gặp<i>2</i></span><span>Dạng chia</span><span>Cùng chủ đề</span></div>' +
     '<div style="display:flex;align-items:baseline;gap:10px"><span class="dt" style="font-weight:800;font-size:1.75rem">noun</span><span class="mono mut">2 nghĩa</span></div>' +
     '<div class="card" style="gap:16px"><div style="display:flex;flex-direction:column;gap:6px"><span class="b" style="font-size:1.125rem">1. bản ghi, hồ sơ <span class="qchip">B1</span></span><span class="mut">a piece of information that is written down and kept</span><span>Keep a <span class="tw">record</span> of every payment.</span></div>' +
