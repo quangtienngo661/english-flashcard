@@ -9,6 +9,7 @@ import { ThemeToggleButton } from './ThemeToggle';
  * Figma "Thanh trên" (`5:2` desktop, `9:93` phone): sticky, `--bg` at 72 % over a background blur, no bottom shadow; 68 px high, 60 on a
  * phone. Owner QM8-1: Đăng nhập (white) and Đăng ký (navy) instead of Figma's "Dùng thử"; the theme switch sits here from `md` up and in
  * the footer below it. The page links always name the home page (`/vi#gia`): from a legal page they open it, on it they only scroll.
+ * Below md the gaps are 6 px, so the logo and the two buttons fit a 320 px screen (R243).
  */
 export function SiteHeader({ locale }: { locale: AppLocale }) {
   const t = useTranslations('Nav');
@@ -17,7 +18,7 @@ export function SiteHeader({ locale }: { locale: AppLocale }) {
     'inline-flex min-h-11 items-center rounded-wm-sm font-wm-sans text-wm-button font-normal text-wm-muted outline-none transition-colors duration-200 hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
     <header className="sticky top-0 z-40 bg-wm-bg/72 backdrop-blur-wm-sm">
-      <Container className="flex h-15 items-center gap-2 md:h-17 md:gap-6">
+      <Container className="flex h-15 items-center gap-1.5 md:h-17 md:gap-6">
         <a
           href={home}
           className="mr-auto inline-flex min-h-11 shrink-0 items-center rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
@@ -35,7 +36,7 @@ export function SiteHeader({ locale }: { locale: AppLocale }) {
             {t('pricing')}
           </a>
         </nav>
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 md:gap-3">
           <div className="hidden md:block">
             <ThemeToggleButton toLight={t('themeToLight')} toDark={t('themeToDark')} />
           </div>
