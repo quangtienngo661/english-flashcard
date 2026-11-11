@@ -70,6 +70,20 @@ describe('ui overlays', () => {
     expect(modal.className.split(' ')).toContain(width);
   });
 
+  it('tone="pro" keeps the name and Esc, and adds the 2 px accent border; the default tone has none (giao diện mới M7.11)', async () => {
+    const onOpenChange = vi.fn();
+    renderApp(<Dialog isOpen onOpenChange={onOpenChange} title="Học nhiều hơn với Pro" tone="pro"><p>x</p></Dialog>);
+    const modal = screen.getByRole('dialog', { name: 'Học nhiều hơn với Pro' }).parentElement!;
+    expect(modal.className.split(' ')).toEqual(expect.arrayContaining(['border-2', 'border-wm-accent']));
+    await userEvent.keyboard('{Escape}');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('the default tone has no border', () => {
+    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp"><p>x</p></Dialog>);
+    expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).not.toContain('border-wm-accent');
+  });
+
   it('wide stays an alias of size="lg" until M8', () => {
     renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" wide><p>x</p></Dialog>);
     expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).toContain('md:max-w-2xl');

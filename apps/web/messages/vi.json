@@ -567,8 +567,11 @@
       "sessions": "{count, number} phiên luyện mỗi ngày",
       "ai": "Nhiều câu luyện tập và lượt tra từ bằng AI hơn",
       "noAds": "Không quảng cáo",
-      "from": "Từ {price} cho 1 tháng",
-      "cta": "Xem gói Pro"
+      "from": "Từ <b>{price}</b> cho 1 tháng",
+      "cta": "Xem gói Pro",
+      "later": "Để sau",
+      "badgePro": "Pro",
+      "badgeAi": "có AI"
     },
     "transactions": {
       "title": "Lịch sử giao dịch",

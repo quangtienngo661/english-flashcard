@@ -567,8 +567,11 @@
       "sessions": "{count, number} practice sessions a day",
       "ai": "More AI practice questions and AI look-ups",
       "noAds": "No ads",
-      "from": "From {price} for 1 month",
-      "cta": "See Pro"
+      "from": "From <b>{price}</b> for 1 month",
+      "cta": "See Pro",
+      "later": "Later",
+      "badgePro": "Pro",
+      "badgeAi": "with AI"
     },
     "transactions": {
       "title": "Transaction history",
