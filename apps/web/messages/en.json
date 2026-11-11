@@ -607,7 +607,6 @@
       "footPhone": "Tap a row to see the payment provider and transaction ID.",
       "more": "Show more",
       "planCard": "Plan",
-      "planGrant": "{plan} plan · through {date}",
       "planUntil": "{plan} plan · through {date}",
       "planOnly": "{plan} plan",
       "aboutTitle": "About transactions",
@@ -629,7 +628,8 @@
         "close": "Close"
       },
       "providers": {
-        "fake": "Fake (test)"
+        "fake": "Fake (test)",
+        "payos": "payOS"
       },
       "emptyTitle": "No transactions yet.",
       "emptyBody": "When you buy Pro or get a plan from the Wordmet team, it shows up here.",
@@ -1192,6 +1192,7 @@
       "google-unavailable": "Google sign-in is not available right now. Use your email and password.",
       "provider-unavailable": "The payment provider did not answer. Try again in a few minutes.",
       "reauth-required": "Confirm with your Google account before deleting.",
+      "renewal-not-cancelled": "Your plan still renews. Cancel it on the Plans page, then try again.",
       "staff-account": "A staff account cannot delete itself. Ask an admin to do it.",
       "subscription-not-cancellable": "This plan no longer renews, so there is nothing to cancel.",
       "subscription-renewing": "You still have a plan that renews. Cancel it before deleting your account.",

@@ -10,6 +10,7 @@ import { useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
 import { EmptyState, FullScreenSpinner } from '@/app-ui/States';
+import { proLastDay } from '../plans/pro-last-day';
 import { TransactionDetail } from './TransactionDetail';
 import { TransactionRow } from './TransactionRow';
 import { useTransactions, type Transaction } from './transactions-api';
@@ -80,15 +81,9 @@ function TransactionsAside() {
   const { data } = useEntitlements();
   if (!data) return null;
   const plan = t(`chrome.plan.${data.plan}`);
-  const grant = data.sources.find((s) => s.kind === 'grant_plan' && s.ends_at);
-  const paid = data.sources.find((s) => s.kind === 'subscription' && (s.renews_at ?? s.ends_at));
-  // A grant's end is an exclusive midnight: the last day is the day before (as the rows).
-  const lastDay = (at: string) => format.date(new Date(new Date(at).getTime() - 1), 'full');
-  const line = grant
-    ? t('transactions.planGrant', { plan, date: lastDay(grant.ends_at!) })
-    : paid
-      ? t('transactions.planUntil', { plan, date: lastDay((paid.renews_at ?? paid.ends_at)!) })
-      : t('transactions.planOnly', { plan });
+  // pro_until (a payOS period or a grant), else a grant's or a subscription's end, minus 1 ms (M7.2).
+  const lastDay = proLastDay(data);
+  const line = lastDay ? t('transactions.planUntil', { plan, date: format.date(lastDay, 'full') }) : t('transactions.planOnly', { plan });
   return (
     <>
       <section className="rounded-card bg-accent-soft p-5 shadow-ledge-accent">

@@ -26,11 +26,12 @@ export function DeleteAccountPage() {
   const { state } = useSession();
   const entitlements = useEntitlements();
   const config = useAppConfig();
+  const errorText = useErrorMessage();
   if (state.status !== 'signed-in') return null;
 
   let body;
   if (entitlements.isPending || config.isPending) body = <FullScreenSpinner />;
-  else if (entitlements.isError) body = <ErrorState message="" onRetry={() => void entitlements.refetch()} />;
+  else if (entitlements.isError) body = <ErrorState message={errorText(entitlements.error)} onRetry={() => void entitlements.refetch()} />;
   else {
     const renewing = subscriptionsOf(entitlements.data.sources).some(isAutoRenewing);
     const years = config.data?.account?.transaction_retention_years;

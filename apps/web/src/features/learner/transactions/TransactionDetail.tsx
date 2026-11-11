@@ -13,6 +13,8 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
   const format = useFormat();
   const planText = usePlanText();
   const money = moneyText(format, item);
+  // A known gateway has its own name ("payOS", "Giả (thử)"); an unknown one shows the API's value.
+  const providerKey = `providers.${item.provider}` as 'providers.fake';
   const rows: Array<[string, React.ReactNode]> = [
     [t('detail.kind'), t(`kinds.${item.kind}`)],
     [t('detail.plan'), planText(item)],
@@ -20,7 +22,7 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
     [t('detail.at'), t('detail.atValue', { date: format.date(item.occurred_at, 'full'), time: format.time(item.occurred_at) })],
     [t('detail.period'), periodText(format, item)],
     [t('detail.status'), <StatusChip key="status" status={item.status} />],
-    ...(item.provider ? [[t('detail.provider'), item.provider === 'fake' ? t('providers.fake') : item.provider] as [string, string]] : []),
+    ...(item.provider ? [[t('detail.provider'), t.has(providerKey) ? t(providerKey) : item.provider] as [string, string]] : []),
     ...(item.provider_transaction_id ? [[t('detail.id'), item.provider_transaction_id] as [string, string]] : []),
   ];
   return (
