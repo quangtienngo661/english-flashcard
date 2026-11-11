@@ -81,7 +81,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   --r-key:.25rem;--r-ctl:.5rem;--r-row:.625rem;--r-card:.875rem;--r-dlg:1rem;
   color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;color-scheme:light}
 .wm[data-mode="dark"]{--bg:#0f1220;--surface:#171b2a;--surface-2:#1d2233;--ink:#eceef5;--muted:#a6adc4;--ghost:#353c53;--line:#2a3044;--accent:#8da2ff;
-  --accent-soft:#1f2747;--on-accent:#0f1220;--pass:#62c98f;--pass-soft:#142a1e;--fail:#ff8d80;--fail-soft:#311a18;--warn:#f0c04a;
+  /* Soft tints raised above Figma Dark (#1f2747, #142a1e, #311a18) so colours do not sink into the dark ground (owner 12/11). */
+  --accent-soft:color-mix(in oklab,#8da2ff 20%,#171b2a);--on-accent:#0f1220;--pass:#62c98f;--pass-soft:color-mix(in oklab,#62c98f 18%,#171b2a);
+  --fail:#ff8d80;--fail-soft:color-mix(in oklab,#ff8d80 18%,#171b2a);--warn:#f0c04a;
   --sh-card:0 1px 2px rgb(0 0 0/.4),0 10px 28px -14px rgb(0 0 0/.6);--sh-row:0 1px 2px rgb(0 0 0/.35),0 4px 12px -8px rgb(0 0 0/.6);
   --sh-pop:0 2px 6px rgb(0 0 0/.4),0 24px 56px -24px rgb(0 0 0/.7);--sh-soft:0 1px 2px rgb(0 0 0/.4),0 14px 34px -14px rgb(0 0 0/.7);
   --sh-lift:0 30px 60px -30px rgb(0 0 0/.85);--sh-btn:none;
@@ -277,8 +279,15 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .result{border-radius:var(--r-card);border:1px solid color-mix(in oklab,var(--fail) 40%,transparent);background:var(--fail-soft);padding:24px;display:grid;gap:16px}
 .result .head{display:flex;align-items:center;gap:12px}
 .xbadge{width:28px;height:28px;border-radius:50%;background:var(--fail);color:var(--on-accent);display:grid;place-content:center;flex:none}
-.result .ans{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:14px 16px;border-radius:var(--r-row);background:var(--surface);border:1px solid var(--line)}
+.result .ans{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:14px 16px;border-radius:var(--r-row);
+  background:var(--pass-soft);border:1px solid color-mix(in oklab,var(--pass) 40%,transparent)}
+.result .ans .eyebrow{color:var(--pass);font-weight:500}
 .result .ans .w{font-family:var(--f-display);font-weight:800;font-size:1.875rem;line-height:1.1;color:var(--pass);letter-spacing:-0.015em}
+.result .ans .iconbtn{background:color-mix(in oklab,var(--pass) 14%,var(--surface));border-color:color-mix(in oklab,var(--pass) 40%,transparent);color:var(--pass)}
+.wm[data-mode="dark"] .result{border-color:color-mix(in oklab,var(--fail) 60%,transparent)}
+.wm[data-mode="dark"] .result .ans{border-color:color-mix(in oklab,var(--pass) 60%,transparent)}
+.wm[data-mode="dark"] .result .ans .w{color:#86e6ae}
+.wm[data-mode="dark"] .result .b-sec{border-color:color-mix(in oklab,var(--ink) 28%,transparent)}
 .result .acts{display:flex;justify-content:flex-end;gap:10px}
 .shortcuts{display:flex;justify-content:center;gap:18px;font-size:.8125rem;color:var(--muted)}
 .shortcuts span{display:inline-flex;align-items:center;gap:6px}
@@ -632,8 +641,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     <div class="btn-row" style="display:flex;gap:10px"><button class="pbtn" type="button" id="replay">Mở lại hộp thoại</button></div>
     <div class="row" id="dialogs">
       <figure><figcaption>Thêm từ, hộp 1</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-add"></div></figure>
-      <figure><figcaption>Chọn nhóm, cách A: nhuộm màu nhóm, dấu ✓</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickA"></div></figure>
-      <figure><figcaption>Chọn nhóm, cách B: chồng thẻ nhỏ nhấc lên</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickB"></div></figure>
+      <figure><figcaption>Chọn nhóm, cách A (không chọn): nhuộm màu nhóm, dấu ✓</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickA"></div></figure>
+      <figure><figcaption>Chọn nhóm, cách B (đã chọn 12/11): chồng thẻ nhỏ nhấc lên</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickB"></div></figure>
     </div>
     <figure><figcaption>Thêm từ, hộp 4 (Tra bằng AI) trên máy tính: cột trái ô nhập và kết quả, cột phải thẻ xem trước ngay đầu hộp (chỗ 23)</figcaption>
       <div class="desk" data-h="660"><div class="wm mesh" id="dlg-ai"></div></div>
@@ -658,7 +667,6 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     <div class="s-head"><h2>Còn mở</h2></div>
     <ul class="note" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
       <li>Chỗ 24 (khung xương lúc tải): chưa chụp. Bản Docker trên máy đang chạy code cũ; cần chạy app ở nhánh giao diện mới rồi chụp.</li>
-      <li>Danh sách chọn nhóm: chọn cách A hay B.</li>
       <li>Bốn đề xuất Claude đang coi là đã đồng ý: artifact tối ở 390 và 1440; danh sách màn có phần riêng; vẽ trang công khai từ nhánh M8b; CI chạy ba script (câu chữ không dùng, JSON-LD, dung lượng JS).</li>
       <li>Trang Nhóm: chi tiết theo artifact Vòng cung; trang này chỉ vẽ phần thay đổi.</li>
       <li>Màu bậc ở chế độ tối và bóng tối là bản đề xuất, kiểm lại khi code M9b.</li>

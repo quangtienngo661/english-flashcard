@@ -67,7 +67,8 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Bỏ chữ "ngăn": gọi "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên (code đã gọi `level` 0–5). Nghiên cứu: `SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`. Màu không được là tín hiệu duy nhất; Bậc 1–3 xanh nhạt cần chữ hoặc viền.
 - Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
-- Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm, chồng thẻ nhỏ màu nhóm thay ô vuông; vẽ 2 cách để chọn.
+- Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm. Chốt cách B (12/11): chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, dấu ✓ cuối dòng.
+- Chế độ tối: màu không được chìm. Panel "Chưa đúng" có ô đáp án nền xanh nhạt, viền xanh, chữ đáp án xanh sáng; các nền nhạt ở chế độ tối (`accent-soft`, `pass-soft`, `fail-soft`) nâng lên 18–20% màu trên nền card thay cho giá trị Figma Dark.
 - Panel giới thiệu ở Đăng ký / Đăng nhập: thêm chi tiết để thấy việc học từ (đường nhớ qua Bậc 1–5, thẻ từ, từ đến hạn, câu luyện).
 
 **Mockup tổng hợp (12/11/2026):** https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL (`docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`).
