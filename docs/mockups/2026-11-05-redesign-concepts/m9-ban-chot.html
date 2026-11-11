@@ -295,7 +295,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .wrong{color:var(--fail);text-decoration:line-through;text-decoration-thickness:2px;border:1.5px dashed var(--fail);background:var(--fail-soft);border-radius:var(--r-ctl);padding:0 8px}
 .right{color:var(--pass);border:1.5px solid var(--pass);background:var(--pass-soft);border-radius:var(--r-ctl);padding:0 8px}
 /* Word page: the pronunciation and forms block sits between two hairlines (owner 12/11). */
-.pron{display:flex;flex-direction:column;gap:12px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+/* Visible on the mesh ground: --line alone (#e1e5ee) almost vanished there, more so in the scaled desktop frame. */
+.pron{display:flex;flex-direction:column;gap:12px;padding:18px 0;border-top:2px solid color-mix(in oklab,var(--ink) 16%,transparent);
+  border-bottom:2px solid color-mix(in oklab,var(--ink) 16%,transparent)}
 /* Sentence translation after answering: its own soft block under the sentence, not a loose grey line. */
 .trans{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--r-row);
   background:color-mix(in oklab,var(--accent) 7%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 22%,transparent)}
