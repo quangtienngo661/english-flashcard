@@ -15,7 +15,7 @@ export type NavEntry = {
   etaNote?: 'apiReady' | 'unconfirmed';
 };
 
-/** 27 items in 6 groups ("Chính sách & điều khoản" is the legal documents, 03/11/2026): the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4) and Đơn hàng (launch prep B, 04/11/2026); "Cấu hình" replaced Thao tác and Prompt (nhóm B M2); "Judge" is nhóm B M3; "Câu AI thật" is nhóm B M4. */
+/** 28 items in 6 groups ("Chính sách & điều khoản" is the legal documents, 03/11/2026; "Hỏi đáp trang chủ" is the home page FAQ, M8): the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4) and Đơn hàng (launch prep B, 04/11/2026); "Cấu hình" replaced Thao tác and Prompt (nhóm B M2); "Judge" is nhóm B M3; "Câu AI thật" is nhóm B M4. */
 export const NAV: NavEntry[] = [
   { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: ['ai.view'], available: true },
   { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
@@ -43,6 +43,7 @@ export const NAV: NavEntry[] = [
   { group: 'ai', path: '/ai/calls', labelKey: 'nav.aiCalls', needs: ['settings.manage'], available: true },
   { group: 'system', path: '/settings', labelKey: 'nav.settings', needs: ['settings.manage'], available: true },
   { group: 'system', path: '/legal', labelKey: 'nav.legal', needs: ['settings.manage'], available: true },
+  { group: 'system', path: '/faq', labelKey: 'nav.faq', needs: ['settings.manage'], available: true },
   { group: 'system', path: '/staff', labelKey: 'nav.staff', needs: ['roles.manage'], available: true },
 ];
 

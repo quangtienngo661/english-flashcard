@@ -30,6 +30,9 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'legal_versions.created_by': 'keep-id',
   'legal_versions.updated_by': 'keep-id',
   'legal_versions.published_by': 'keep-id',
+  // Home page FAQ: who wrote or last changed an item is a staff audit trail (NULL for the seeded items)
+  'landing_faq_items.created_by': 'keep-id',
+  'landing_faq_items.updated_by': 'keep-id',
   'background_jobs.created_by': 'keep-id',
   // Notifications
   'reminder_prefs.user_id': 'erase',

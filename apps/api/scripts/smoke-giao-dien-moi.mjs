@@ -10,6 +10,7 @@
 // `correct` / `wrong` after a reload; GET /v1/me/calendar and /days/:date (counts, items,
 // kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words;
 // M6.1: lemma, question_type and ai on GET /v1/practice/reports.
+// M8.1: GET /v1/public/faq (seeded items, drafts hidden, order by position) and the admin FAQ routes (create, publish, 409, delete).
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -259,6 +260,36 @@ async function main() {
     for (const w of words) w.itemId = rows(`SELECT id FROM learning_items WHERE user_id = '${L.id}' AND sense_id = '${w.senseId}'`)[0][0];
     ok(`admin ${adminEmail}; learner ${L.email}; group ${groupId} with ${words.map((w) => w.lemma).join(', ')}`);
   }, { fatal: true });
+
+  // M8.1 (design §10.7): the 6 questions the migration seeds as published, in position order.
+  const SEEDED_FAQ = [
+    'Gói Pro có tự gia hạn không?', 'Hết Pro thì từ và lịch ôn có mất không?', 'Dùng trên điện thoại được không?',
+    'Mua thêm khi Pro còn hạn thì sao?', 'Có được hoàn tiền không?', 'AI có chấm bài của tôi không?',
+  ];
+  await step('1b. FAQ: public list without a token; an admin adds a draft, publishes it, hits a stale version, deletes it', async () => {
+    const publicQuestions = async () => {
+      const res = await api('GET', '/v1/public/faq');
+      check(res.status === 200, `public faq ${res.status} ${res.text}`);
+      check(res.json.items.every((item) => j(Object.keys(item)) === j(['question', 'answer'])), `public item shape ${res.text}`);
+      return res.json.items.map((item) => item.question);
+    };
+    check(j(await publicQuestions()) === j(SEEDED_FAQ), 'the seeded questions in order');
+    const draft = await want(api('POST', '/v1/admin/faq', { as: admin, idem: true,
+      body: { question: `Smoke FAQ ${run}?`, answer: 'Một câu nháp.', position: 15, published: false } }), 201, 'create faq');
+    check(draft.row_version === 1 && draft.published === false && draft.updated_by?.email === admin.email, `created ${j(draft)}`);
+    check(j(await publicQuestions()) === j(SEEDED_FAQ), 'a draft does not reach the public list');
+    const live = await want(api('PATCH', `/v1/admin/faq/${draft.id}`, { as: admin, idem: true, body: { expected_version: 1, published: true } }), 200, 'publish faq');
+    check(live.row_version === 2 && live.published === true, `published ${j(live)}`);
+    const after = await publicQuestions();
+    check(after.length === 7 && after[1] === `Smoke FAQ ${run}?`, `public after publish ${j(after)}`);
+    await wantProblem(api('PATCH', `/v1/admin/faq/${draft.id}`, { as: admin, idem: true, body: { expected_version: 1, answer: 'Cũ.' } }),
+      409, 'faq-version-conflict', 'stale expected_version');
+    const del = await api('DELETE', `/v1/admin/faq/${draft.id}`, { as: admin });
+    check(del.status === 204, `delete ${del.status} ${del.text}`);
+    check(j(await publicQuestions()) === j(SEEDED_FAQ), 'back to the 6 seeded questions');
+    check(count('SELECT count(*) FROM landing_faq_items WHERE published') === 6, 'six published rows in the table');
+    ok('6 seeded → draft hidden → 7 with the new one second → 409 faq-version-conflict → 6 after delete');
+  });
 
   await step('2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0', async () => {
     const group = await myGroup();
