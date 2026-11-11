@@ -958,7 +958,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     var words = [c.lemma].concat(c.forms || []).sort(function (a, b) { return b.length - a.length; });
     return fcEsc(sentence).replace(new RegExp('\\b(' + words.join('|') + ')\\b', 'i'), '<span class="tw">$1</span>');
   }
-  function toastHtml() { return '<div class="toast show"><span class="fl">' + ico('flame', 's') + '</span>Chuỗi 2 ngày liên tiếp</div>'; }
+  function toastHtml() { return '<div class="toast show"><span class="fl">' + ico('flame', 's') + '</span>2-day streak</div>'; }
   function deck(root, opts) {
     var stack = root.querySelector('.fc-stack'), pA = root.querySelector('.fc-pile.again'), pK = root.querySelector('.fc-pile.known');
     var bA = root.querySelector('[data-a="again"]'), bF = root.querySelector('[data-a="flip"]'), bK = root.querySelector('[data-a="known"]'), nudgeEl = root.querySelector('.fc-nudge');
@@ -968,13 +968,13 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     function makeCard(k) {
       var c = FC[k], el = document.createElement('article');
       el.className = 'fc'; el.dataset.idx = String(k); el.dataset.depth = '3';
-      var stageTxt = 'Đang ở ' + LVN[c.stage] + (c.stage ? ' · ôn lại sau ' + LVD[c.stage] : '');
+      var stageTxt = c.stage ? 'Level ' + c.stage + ' · review in ' + ['', '1 day', '3 days', '7 days', '14 days', '30 days'][c.stage] : 'New word';
       el.innerHTML = '<div class="flip"><section class="face front"><div class="ftop"><span class="pos">' + c.pos + '</span><span class="say">' + ico('vol', 's') + '</span></div>' +
-        '<div class="word"><p class="lemma">' + fcEsc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint2">' + (opts.phone ? 'Chạm vào thẻ để lật' : 'Bấm vào thẻ hoặc Space để lật') + '</p></section>' +
+        '<div class="word"><p class="lemma">' + fcEsc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint2">' + (opts.phone ? 'Tap the card to flip' : 'Click the card or press Space to flip') + '</p></section>' +
         '<section class="face back"><div class="ftop"><span class="bl">' + fcEsc(c.lemma) + '<i>' + c.pos + '</i></span><span class="say">' + ico('vol', 's') + '</span></div>' +
-        '<p class="def">' + fcEsc(c.def) + '</p><p class="vi">' + fcEsc(c.vi) + '</p><div class="ex"><span class="eyebrow">câu mẫu</span><p style="margin:0">' + fcMark(c.ex, c) + '</p></div><p class="stagep">' + stageTxt + '</p></section></div>' +
-        '<span class="stamp again">' + ico('x', 's') + 'Cần ôn lại<small>về Bậc 1</small></span>' +
-        '<span class="stamp known">' + ico('check', 's') + 'Đã biết<small>lên ' + LVN[Math.min(c.stage + 1, 5)] + '</small></span>';
+        '<p class="def">' + fcEsc(c.def) + '</p><p class="vi">' + fcEsc(c.vi) + '</p><div class="ex"><span class="eyebrow">example</span><p style="margin:0">' + fcMark(c.ex, c) + '</p></div><p class="stagep">' + stageTxt + '</p></section></div>' +
+        '<span class="stamp again">' + ico('x', 's') + 'Still learning<small>back to Level 1</small></span>' +
+        '<span class="stamp known">' + ico('check', 's') + 'Know<small>up to Level ' + Math.min(c.stage + 1, 5) + '</small></span>';
       bindDrag(el);
       return el;
     }
@@ -1001,7 +1001,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     }
     function setButtons() {
       bA.setAttribute('aria-disabled', String(!flipped)); bK.setAttribute('aria-disabled', String(!flipped));
-      bF.querySelector('.ft').textContent = flipped ? 'Xem mặt trước' : 'Lật thẻ';
+      bF.querySelector('.ft').textContent = flipped ? 'Show front' : 'Flip card';
     }
     function flip() {
       var top = topCard(); if (!top || ended) return;
@@ -1010,7 +1010,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     function say(t) { clearTimeout(nt); nudgeEl.textContent = t; if (t) nt = setTimeout(function () { nudgeEl.textContent = ''; }, 2200); }
     function nudge() {
       var top = topCard(); if (!top) return;
-      say('Lật thẻ để xem nghĩa trước đã.');
+      say('Flip the card to see the meaning first.');
       if (reduced() || !top.animate) return;
       top.animate([{ transform: 'none' }, { transform: 'translateX(-9px) rotate(-1.2deg)' }, { transform: 'translateX(8px) rotate(1deg)' }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
     }
@@ -1051,7 +1051,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
         d.lx = e.clientX; d.lt = now;
         d.dx = flipped ? rx : Math.sign(rx) * Math.min(56, Math.abs(rx) * .3);
         d.dy = flipped ? ry : ry * .3;
-        if (!flipped && Math.abs(rx) > 40) say('Lật thẻ để xem nghĩa trước đã.');
+        if (!flipped && Math.abs(rx) > 40) say('Flip the card to see the meaning first.');
         setDrag(el, d.dx, d.dy, flipped && Math.abs(d.dx) > TH ? (d.dx < 0 ? 'again' : 'known') : null);
       });
       function end(e) {
@@ -1101,9 +1101,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       if (ended) return; ended = true;
       var done = results.filter(Boolean), kn = done.filter(function (r) { return r.ans === 'known'; }).length;
       var box = document.createElement('div'); box.className = 'fc-sum';
-      box.innerHTML = '<div class="dt rv" style="--k:0;font-weight:800;font-size:1.875rem">Xong ' + done.length + ' thẻ.</div>' +
-        '<p class="rv mut" style="--k:1;margin:0">' + kn + ' đã biết · ' + (done.length - kn) + ' cần ôn lại, về Bậc 1</p>' +
-        '<button class="btn b-sec rv" style="--k:2" type="button">Ôn lại từ đầu</button>';
+      box.innerHTML = '<div class="dt rv" style="--k:0;font-weight:800;font-size:1.875rem">' + done.length + ' cards done.</div>' +
+        '<p class="rv mut" style="--k:1;margin:0">' + kn + ' known · ' + (done.length - kn) + ' still learning, back to Level 1</p>' +
+        '<button class="btn b-sec rv" style="--k:2" type="button">Start over</button>';
       stack.appendChild(box); box.querySelector('button').addEventListener('click', restart);
     }
     function restart() {
@@ -1120,25 +1120,25 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   function fcwHtml(phone) {
     return '<div class="fcw' + (phone ? ' ph' : '') + '"><div class="fc-arena"' + (phone ? '' : ' style="max-width:780px;margin:0 auto;min-height:540px"') + '>' +
-      '<div class="fc-pile again"><span class="pn">0</span><span class="pl">' + ico('chl', 's') + 'Cần ôn lại</span><ul class="fc-minis"></ul></div>' +
+      '<div class="fc-pile again"><span class="pn">0</span><span class="pl">' + ico('chl', 's') + 'Still learning</span><ul class="fc-minis"></ul></div>' +
       '<div class="fc-stack"></div>' +
-      '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Đã biết' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
+      '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Know' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
       '<p class="fc-nudge" aria-live="polite"></p>' +
-      '<div class="fc-acts"><button class="btn b-again" type="button" data-a="again">' + ico('arrl', 's') + 'Cần ôn lại<span class="kc2">1</span></button>' +
-      '<button class="btn b-flip" type="button" data-a="flip">' + ico('rot', 's') + '<span class="ft">Lật thẻ</span><span class="kc2">Space</span></button>' +
-      '<button class="btn b-know" type="button" data-a="known">' + ico('check', 's') + 'Đã biết<span class="kc2">2</span>' + ico('arr', 's') + '</button></div>' +
-      '<div class="fc-legend"><span><span class="kc2">Space</span>Lật thẻ</span><span><span class="kc2">1</span><span class="kc2">←</span>Cần ôn lại</span>' +
-      '<span><span class="kc2">2</span><span class="kc2">→</span>Đã biết</span><span><span class="kc2">Esc</span>Dừng</span></div></div>';
+      '<div class="fc-acts"><button class="btn b-again" type="button" data-a="again">' + ico('arrl', 's') + 'Still learning<span class="kc2">1</span></button>' +
+      '<button class="btn b-flip" type="button" data-a="flip">' + ico('rot', 's') + '<span class="ft">Flip card</span><span class="kc2">Space</span></button>' +
+      '<button class="btn b-know" type="button" data-a="known">' + ico('check', 's') + 'Know<span class="kc2">2</span>' + ico('arr', 's') + '</button></div>' +
+      '<div class="fc-legend"><span><span class="kc2">Space</span>Flip card</span><span><span class="kc2">1</span><span class="kc2">←</span>Still learning</span>' +
+      '<span><span class="kc2">2</span><span class="kc2">→</span>Know</span><span><span class="kc2">Esc</span>Stop</span></div></div>';
   }
   function learnHead(phone, id) {
     return phone ?
-      '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="xbtn" type="button" aria-label="Đóng phiên ôn">' + ico('x', 's') + '</button></div>' +
+      '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">studying</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="xbtn" type="button" aria-label="Close session" style="width:32px;height:32px">' + ico('x', 's') + '</button></div>' +
       '<div style="padding:12px 16px 0" class="sbar"><div class="prog"><i id="' + id + '-bar" style="width:0%"></i></div><span class="mut sm" id="' + id + '-left"></span></div>' :
-      '<div style="max-width:1024px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:20px"><div><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.375rem">Đề 12 · Writing</div></div>' +
-      '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i id="' + id + '-bar" style="width:0%;transition:width 300ms var(--ease-out)"></i></div><span class="mut sm" id="' + id + '-left"></span></div><button class="xbtn" type="button" aria-label="Đóng phiên ôn" title="Đóng phiên ôn (Esc)" style="width:40px;height:40px">' + ico('x', 's') + '</button></div>';
+      '<div style="max-width:1024px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:20px"><div><div class="eyebrow">studying</div><div class="dt" style="font-weight:800;font-size:1.375rem">Đề 12 · Writing</div></div>' +
+      '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i id="' + id + '-bar" style="width:0%;transition:width 300ms var(--ease-out)"></i></div><span class="mut sm" id="' + id + '-left"></span></div><button class="xbtn" type="button" aria-label="Close session" title="Close session (Esc)" style="width:32px;height:32px">' + ico('x', 's') + '</button></div>';
   }
   function progressFn(id) {
-    return function (i, n) { var b = $(id + '-bar'), l = $(id + '-left'); if (b) b.style.width = (i / n * 100) + '%'; if (l) l.textContent = 'còn ' + (n - i) + ' thẻ'; };
+    return function (i, n) { var b = $(id + '-bar'), l = $(id + '-left'); if (b) b.style.width = (i / n * 100) + '%'; if (l) l.textContent = (n - i) + ' cards left'; };
   }
   $('learn-desk').innerHTML = learnHead(false, 'ld') + '<div style="position:relative;display:flex;justify-content:center;height:28px;margin-top:10px" id="toast-d"></div><div style="padding-top:6px">' + fcwHtml(false) + '</div>';
   $('learn-phone').innerHTML = learnHead(true, 'lp') + '<div style="padding:10px 16px 0;display:flex;justify-content:center;min-height:44px" id="toast-p"></div><div style="padding:6px 16px 0">' + fcwHtml(true) + '</div>';
@@ -1157,26 +1157,26 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 
   // ---------- Phiên luyện ----------
   function sessionBar(done, total, ok, no) {
-    return '<div style="max-width:760px;margin:0 auto;padding:22px 0 0" class="sbar"><span class="iconbtn">' + ico('x') + '</span><div class="prog"><i style="width:' + (done / total * 100) + '%"></i></div>' +
+    return '<div style="max-width:760px;margin:0 auto;padding:22px 0 0" class="sbar"><span class="iconbtn" style="width:32px;height:32px" aria-label="Close session">' + ico('x', 's') + '</span><div class="prog"><i style="width:' + (done / total * 100) + '%"></i></div>' +
       '<span class="mono mut">' + done + '/' + total + '</span><span class="cnt ok">' + ico('check', 's') + ok + '</span><span class="cnt no">' + ico('x', 's') + no + '</span></div>';
   }
   function shortcuts(list) { return '<div class="shortcuts">' + list.map(function (s) { return '<span><span class="kbd">' + s[0] + '</span>' + s[1] + '</span>'; }).join('') + '</div>'; }
   function resultPanel(word, meaning, def, note) {
-    return '<div class="result"><div class="head"><span class="xbadge">' + ico('x', 's') + '</span><span class="dt" style="font-weight:800;font-size:1.5rem;color:var(--fail)">Chưa đúng</span></div>' +
-      '<div class="ans"><span class="eyebrow" style="width:100%">đáp án</span><span class="w">' + word + '</span><span class="b" style="font-size:1.125rem">' + meaning + '</span><span class="iconbtn" style="width:34px;height:34px;border-radius:50%;margin-left:auto">' + ico('vol', 's') + '</span><span class="mut" style="width:100%">' + def + '</span></div>' +
-      '<p class="sm mut">' + note + '</p><div class="acts"><button class="btn b-sec" type="button">Câu tiếp</button><button class="btn b-pri" type="button">Cần ôn lại <span class="kbd">Enter</span></button></div></div>';
+    return '<div class="result"><div class="head"><span class="xbadge">' + ico('x', 's') + '</span><span class="dt" style="font-weight:800;font-size:1.5rem;color:var(--fail)">Not quite</span></div>' +
+      '<div class="ans"><span class="eyebrow" style="width:100%">answer</span><span class="w">' + word + '</span><span class="b" style="font-size:1.125rem">' + meaning + '</span><span class="iconbtn" style="width:34px;height:34px;border-radius:50%;margin-left:auto">' + ico('vol', 's') + '</span><span class="mut" style="width:100%">' + def + '</span></div>' +
+      '<p class="sm mut">' + note + '</p><div class="acts"><button class="btn b-sec" type="button">Next</button><button class="btn b-pri" type="button">Review again <span class="kbd">Enter</span></button></div></div>';
   }
   $('pr-ask').innerHTML = sessionBar(4, 10, 3, 1) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
-    '<div class="card" style="gap:16px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">điền từ vào câu</span><span class="qchip">câu AI</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Báo lỗi</button></div>' +
+    '<div class="card" style="gap:16px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">fill in the blank</span><span class="qchip">AI sentence</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Report</button></div>' +
     '<div class="sent" id="cloze-sent"></div></div>' +
-    '<div class="hint"><div class="hd">' + ico('bulb', 's') + 'Gợi ý 1/2<span class="dots"><i class="on"></i><i></i></span></div>' +
-    '<span class="n on">1</span><span class="lb">Định nghĩa</span><span>To guess a number or cost by using the information you have.</span>' +
-    '<span class="n">2</span><span class="lb mut">Chữ cái đầu</span><span><button class="btn b-sec b-sm" type="button">Mở gợi ý 2 <span class="kbd">H</span></button></span></div>' +
-    shortcuts([['Enter', 'Kiểm tra'], ['H', 'Gợi ý'], ['Esc', 'Dừng phiên']]) + '</div>';
+    '<div class="hint"><div class="hd">' + ico('bulb', 's') + 'Hint 1 of 2<span class="dots"><i class="on"></i><i></i></span></div>' +
+    '<span class="n on">1</span><span class="lb">Definition</span><span>To guess a number or cost by using the information you have.</span>' +
+    '<span class="n">2</span><span class="lb mut">First letter</span><span><button class="btn b-sec b-sm" type="button">Show hint 2 <span class="kbd">H</span></button></span></div>' +
+    shortcuts([['Enter', 'Check'], ['H', 'Hint'], ['Esc', 'Stop']]) + '</div>';
   // The blank is a real input inside the sentence; Enter checks it and the result replaces it in place.
   function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function clozeReset() {
-    $('cloze-sent').innerHTML = 'We need to <input class="inl" id="cloze-in" value="est" autocomplete="off" spellcheck="false" aria-label="Từ còn thiếu"> the cost before signing.';
+    $('cloze-sent').innerHTML = 'We need to <input class="inl" id="cloze-in" value="est" autocomplete="off" spellcheck="false" aria-label="Missing word"> the cost before signing.';
     var cin = $('cloze-in');
     // Width = the typed text measured in the input's own font, plus its side padding and the caret, so no empty tail is left.
     var mirror = document.createElement('span');
@@ -1201,35 +1201,35 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   clozeReset();
   $('cloze-reset').addEventListener('click', clozeReset);
   $('pr-wrong').innerHTML = sessionBar(5, 10, 3, 2) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
-    '<div class="card" style="gap:14px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">điền từ vào câu</span><span class="qchip">câu AI</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Báo lỗi</button></div>' +
+    '<div class="card" style="gap:14px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">fill in the blank</span><span class="qchip">AI sentence</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Report</button></div>' +
     '<div class="sent">The <span class="wrong">shippment</span> <span class="right">shipment</span> arrived two days late.</div>' +
-    '<div class="trans">' + ico('lang') + '<span class="tt">Lô hàng đến trễ hai ngày.</span><span class="qchip">AI dịch</span></div></div>' +
-    resultPanel('shipment', 'lô hàng', 'A load of goods sent together.', 'Nhấn Enter để đưa shipment lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.') +
-    shortcuts([['Enter', 'Cần ôn lại'], ['Esc', 'Dừng phiên']]) + '</div>';
+    '<div class="trans">' + ico('lang') + '<span class="tt">Lô hàng đến trễ hai ngày.</span><span class="qchip">AI translation</span></div></div>' +
+    resultPanel('shipment', 'lô hàng', 'A load of goods sent together.', 'Press Enter to put shipment at the top of the group, back to Level 1. Next keeps its schedule.') +
+    shortcuts([['Enter', 'Review again'], ['Esc', 'Stop']]) + '</div>';
 
   // ---------- Ôn ----------
   $('rv-desk').innerHTML = sessionBar(6, 8, 4, 2) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
-    '<div class="card" style="gap:12px"><span class="qchip" style="align-self:flex-start">gõ từ · theo nghĩa</span>' +
+    '<div class="card" style="gap:12px"><span class="qchip" style="align-self:flex-start">type the word · from meaning</span>' +
     '<div class="dt" style="font-weight:800;font-size:2rem;line-height:1.2">phân bổ, chia phần (ngân sách, thời gian)</div>' +
     '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:baseline;border-top:1px solid var(--line);padding-top:12px">' +
-    '<span class="mono mut">bạn gõ</span><span class="mono" style="font-size:1.125rem;color:var(--fail);text-decoration:line-through">alocate</span>' +
-    '<span class="mono mut">đáp án</span><span class="mono" style="font-size:1.125rem;color:var(--pass);font-weight:500">a<u>ll</u>ocate</span></div></div>' +
-    resultPanel('allocate', 'phân bổ', 'To give something officially for a particular purpose.', 'Nhấn Enter để đưa allocate lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.') +
-    shortcuts([['Enter', 'Cần ôn lại'], ['Esc', 'Dừng phiên']]) + '</div>';
+    '<span class="mono mut">you typed</span><span class="mono" style="font-size:1.125rem;color:var(--fail);text-decoration:line-through">alocate</span>' +
+    '<span class="mono mut">answer</span><span class="mono" style="font-size:1.125rem;color:var(--pass);font-weight:500">a<u>ll</u>ocate</span></div></div>' +
+    resultPanel('allocate', 'phân bổ', 'To give something officially for a particular purpose.', 'Press Enter to put allocate at the top of the group, back to Level 1. Next keeps its schedule.') +
+    shortcuts([['Enter', 'Review again'], ['Esc', 'Stop']]) + '</div>';
   var ring = function () {
     var r = 70, c = 2 * Math.PI * r, ok = 6 / 8;
     return '<svg width="180" height="180" viewBox="0 0 180 180" aria-hidden="true"><circle cx="90" cy="90" r="' + r + '" fill="none" stroke="var(--fail)" stroke-width="16"/>' +
       '<circle cx="90" cy="90" r="' + r + '" fill="none" stroke="var(--pass)" stroke-width="16" stroke-dasharray="' + (c * ok) + ' ' + c + '" transform="rotate(-90 90 90)"/>' +
       '<text x="90" y="96" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="44" fill="var(--ink)">6<tspan font-size="24" fill="var(--muted)">/8</tspan></text>' +
-      '<text x="90" y="120" text-anchor="middle" font-family="Noto Sans" font-size="11" fill="var(--muted)">từ đúng</text></svg>';
+      '<text x="90" y="120" text-anchor="middle" font-family="Noto Sans" font-size="11" fill="var(--muted)">correct</text></svg>';
   };
-  $('rv-phone').innerHTML = '<div style="padding:14px 16px 0" class="sbar"><span class="iconbtn">' + ico('x') + '</span><div class="prog"><i style="width:100%"></i></div><span class="mono mut">8/8</span><span class="cnt ok">' + ico('check', 's') + '6</span><span class="cnt no">' + ico('x', 's') + '2</span></div>' +
+  $('rv-phone').innerHTML = '<div style="padding:14px 16px 0" class="sbar"><span class="iconbtn" style="width:32px;height:32px" aria-label="Close session">' + ico('x', 's') + '</span><div class="prog"><i style="width:100%"></i></div><span class="mono mut">8/8</span><span class="cnt ok">' + ico('check', 's') + '6</span><span class="cnt no">' + ico('x', 's') + '2</span></div>' +
     '<div style="padding:16px"><div class="card m" style="gap:14px"><div style="display:flex;justify-content:center">' + ring() + '</div>' +
-    '<div class="t-page-m">Xong 8 từ.</div><p class="mut">Từ đến hạn của nhóm Đề 12 · Writing.</p>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [['5', 'Đúng, lên bậc', 'var(--pass)'], ['1', 'Đúng, giữ bậc', 'var(--accent)'], ['1', 'Sai, giữ bậc', 'var(--ink)'], ['1', 'Cần ôn lại', 'var(--fail)']].map(function (t) {
+    '<div class="t-page-m">8 words done.</div><p class="mut">Due words in Đề 12 · Writing.</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [['5', 'Right, level up', 'var(--pass)'], ['1', 'Right, same level', 'var(--accent)'], ['1', 'Wrong, same level', 'var(--ink)'], ['1', 'Review again', 'var(--fail)']].map(function (t) {
       return '<div style="border-radius:var(--r-row);background:var(--surface);box-shadow:var(--sh-row);border:1px solid var(--line);padding:12px"><div class="dt" style="font-weight:800;font-size:1.75rem;line-height:1;color:' + t[2] + '">' + t[0] + '</div><div class="sm">' + t[1] + '</div></div>';
-    }).join('') + '</div><div class="b">Còn 6 từ mới trong nhóm này</div><p class="sm mut">Học bây giờ thì ngày mai chúng có trong phiên ôn.</p>' +
-    '<div style="display:flex;gap:12px;align-items:center"><button class="btn b-pri" type="button">Học</button><button class="btn b-ghost" type="button">Về trang chủ</button></div></div></div>';
+    }).join('') + '</div><div class="b">6 new words left in this group</div><p class="sm mut">Learn them now and they join the review tomorrow.</p>' +
+    '<div style="display:flex;gap:12px;align-items:center"><button class="btn b-pri" type="button">Learn</button><button class="btn b-ghost" type="button">Back to home</button></div></div></div>';
 
   // ---------- Luyện tập + Từ hay sai ----------
   function srcRow(icon, tone, title, desc, extra) {
