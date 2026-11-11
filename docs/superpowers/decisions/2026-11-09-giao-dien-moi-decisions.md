@@ -267,6 +267,53 @@ GM17 sau khi chốt, Claude tự quyết khi vẽ Figma (09/11/2026):
 
 Hai câu hỏi không kèm đề xuất của Claude, theo luật chủ dự án trả lời trước.
 
+## QM8. Câu hỏi khi viết plan M8 (chủ dự án chốt 11/11/2026)
+
+Nguồn: code facts và Figma facts M8 (`docs/preparation/GIAO_DIEN_MOI_PLAN_{CODE,FIGMA}_FACTS_2026-11-11-m8-*.md`). Các phương án được vẽ
+cạnh nhau ở trang [Bảy câu hỏi M8](https://claude.ai/artifact/H5V7kY8SrvQpNT47Lnmr67) (`docs/mockups/2026-11-05-redesign-concepts/m8-cau-hoi.html`).
+Hỏi theo luật: chủ dự án trả lời trước, không phương án nào được đánh dấu đề xuất; Claude nêu ý của mình sau câu trả lời.
+
+| # | Câu | Phương án đã đưa | Chủ dự án chọn |
+|---|---|---|---|
+| QM8-1a | Thanh trên: Figma bỏ "Đăng nhập", chỉ có "Dùng thử" | (a) theo Figma, không link Đăng nhập; (b) thêm link chữ "Đăng nhập" | ✅ Bỏ "Dùng thử", thay bằng hai nút **Đăng nhập** và **Đăng ký** |
+| QM8-1a′ | Nút nào màu navy | A1 Đăng nhập navy, Đăng ký trắng (chủ dự án nêu trước); A2 Đăng ký navy, Đăng nhập trắng (Claude đề xuất sau) | ✅ A2 ("theo bạn đề xuất") |
+| QM8-1b | Nút sáng/tối trên trang công khai | (a) bỏ, theo máy; (b) giữ nút | ✅ (b) |
+| QM8-1b′ | Nút sáng/tối trên điện thoại | B1 giữ trên thanh trên (đo cỡ thật ở 390 px: thiếu 51 px); B2 xuống chân trang | ✅ B2 |
+| QM8-2 | Bảng giá cho khách chưa đăng nhập | (a) giữ nút mua, đăng ký xong vào Gói học với kỳ đã chọn; (b) chọn kỳ để xem giá, nút "Tạo tài khoản"; (c) chỉ hiện ba giá | ✅ (c), kèm phần trăm giảm |
+| QM8-3 | Chuyển động trang chủ | (a) đúng số Figma; (b) theo luật motion; (c) lúc hiện theo Figma, phần lặp chạy một lượt | ✅ (a); bổ sung: hiệu ứng theo landing bản 3 (`landing-mo.html`, artifact `LxqBqZYrXejQt8cci67ucF`), bố cục theo Figma |
+| QM8-3′ | Nút dừng chuyển động (WCAG 2.2.2, mức A) | C1 có nút "Dừng chuyển động"; C2 không có | ✅ C2 |
+| QM8-3″ | Độ mờ trên điện thoại | Giới hạn 12 px (design §8.1) hoặc theo số Figma (tới 24 px) | ✅ Giới hạn 12 px ("theo điện thoại cũng được") |
+| QM8-4 | Văn bản pháp lý đã có tiêu đề, dòng ngày, Mục lục; Figma vẽ chúng thành khung trang | (a) code tự bỏ phần đầu; (b) chủ dự án sửa văn bản trong admin; (c) giữ văn bản, bỏ khung Figma | ✅ (b) |
+| QM8-5 | Nhãn "Dùng cho" ở Nguồn dữ liệu (API không có) | (a) thêm trường ở API và admin; (b) API tự suy ra; (c) bỏ nhãn | ✅ (c) |
+| QM8-6 | Câu chữ trang chủ (5 câu FAQ chưa có trả lời, câu hoàn tiền, vài câu không khớp app) | (a) chủ dự án viết; (b) Claude viết nháp, chủ dự án duyệt; (c) tạm chỉ hiện câu đã có trả lời | ✅ FAQ do admin quản lý, làm ngay ở M8; Claude viết nháp câu trả lời, chủ dự án kiểm sau |
+| QM8-7 | Favicon và ảnh chia sẻ link (không có khung Figma) | (a) giữ hình cũ, chỉ đổi font; (b) vẽ trong Figma trước rồi code; (c) Claude dựng bằng code | ✅ (b) |
+| QM8-8 | Các chỗ sửa từ audit giao diện 11/11 (`docs/audit/2026-11-11-ui-audit/`) | Đưa vào M8; tách thành đợt riêng | ✅ Chủ dự án tự polish và sửa lỗi M1–M7 ở phiên khác (cùng phiên với các chỉnh sửa theo khảo sát người dùng) |
+| QM8-9 | Dọn `app-ui/` và token cũ (đụng đúng các file M1–M7 sẽ polish) | Để đợt polish; giữ trong M8 (phiên polish chờ M8) | ✅ Để đợt polish (chủ dự án: "vậy cập nhật context và các tài liệu liên quan và mở pr…") |
+
+Ý của Claude sau câu trả lời, chủ dự án đã nghe:
+- **QM8-1a′:** đề xuất A2. Trang chủ chủ yếu để kéo người mới, và nút chính của phần đầu trang ("Bắt đầu miễn phí") cũng dẫn tới Đăng ký. Với
+  A1, màn hình có hai nút navy dẫn hai nơi.
+- **QM8-2:** đồng ý (c). Phần trăm tính từ giá đọc lúc build, làm tròn như trang Gói học; kỳ không rẻ hơn thì không hiện phần trăm.
+- **QM8-3:** đồng ý; luật "không lặp" viết cho màn dùng hằng ngày nên không áp cho trang chủ. Claude nêu một lần WCAG 2.2.2 (đọc ở
+  `w3c/wcag` `guidelines/sc/20/pause-stop-hide.html`): nội dung tự chuyển động quá 5 giây, chạy song song nội dung khác cần cách để dừng. Chủ dự án
+  chọn C2; design §15 ghi rủi ro.
+- **QM8-4:** đồng ý; dòng meta hiện cả số phiên bản ("Phiên bản N · Có hiệu lực từ…"), vì chính văn bản hứa số phiên bản ở đầu trang.
+- **QM8-5:** đồng ý; dòng ghi công vẫn hiện trên điện thoại vì giấy phép yêu cầu (Figma bỏ dòng này ở bản điện thoại).
+- **QM8-6:** chủ dự án hỏi các app khác có cho admin sửa FAQ không. Claude trả lời: sản phẩm có người không viết code cần sửa nội dung thường để FAQ
+  trong CMS hoặc công cụ help center; sản phẩm nhỏ thường để trong code. Với Wordmet, trang chủ dựng sẵn lúc build, nên FAQ sửa trong admin chỉ hiện
+  sau lần deploy web tiếp theo (như giá), trừ khi trang gọi API mỗi lần mở.
+- **QM8-7:** đồng ý; Claude vẽ khung favicon và ảnh chia sẻ 1200 × 630 trong Figma, chủ dự án duyệt trước khi code task đó.
+
+Claude tự quyết khi viết Part 8 (chủ dự án duyệt cùng plan):
+- **FAQ đọc lúc build, cùng lượt đọc giá** (QR3): trang chủ vẫn dựng sẵn; đăng FAQ trong admin rồi deploy lại web để trang chủ đổi. Màn admin ghi
+  rõ điều này. Cách gọi API mỗi lần mở bỏ vì trang chủ sẽ không còn tĩnh và phụ thuộc API lúc người xem mở trang.
+- **Đọc lúc build qua `next.config.ts` dạng hàm async**, đưa dữ liệu vào `env` (Next thay `process.env.X` bằng giá trị lúc build; đã đọc tài liệu
+  Next 16.4.5 qua context7). Không cần file sinh ra hay bước build riêng.
+- **Biến bắt buộc `LANDING_DATA_REQUIRED`** thay `PRICES_REQUIRED` (giờ gồm cả FAQ). Chưa đặt trong `deploy-web.yml` ở M8, vì workflow đó chưa có
+  địa chỉ API: đặt lúc Deploy (`deploy-checklist.md`).
+- **404 không có thanh trên** như Figma; card hiện theo cảnh 5.
+- **Nút sáng/tối** chuyển từ `app-chrome/` sang `site/layout/`; logo mới (`AppLogo`) chuyển sang `ui/Logo.tsx` để `site/` dùng được.
+
 ## QBG. Nền của app (chủ dự án chốt 10/11/2026)
 
 Chủ dự án thấy lưới chấm trên web "không ổn lắm", muốn đổi sang hướng 4 của vòng 8 ("Mesh + hạt + kính"). Hướng đó có hai phần nên

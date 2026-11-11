@@ -173,6 +173,12 @@ văn đổi màu (đang tạm ẩn), (4) vệt sáng chạy quanh viền ở ph�
 chạy, icon AI nhấp nhẹ. Các khung chỉ minh họa trạng thái, không ghi thời lượng. Cảnh 1 và 2 khớp `hero-in` và `Reveal` ở
 trên. Cảnh 3, 4, 5, 6 chưa có thông số trong các tài liệu đã đọc: khi làm, chốt số trước rồi ghi bổ sung vào đây.
 
+**Cập nhật 11/11/2026 (M8, QM8-3).** Đoạn trên đã cũ: cả sáu cảnh giờ có keyframe (đọc bằng `get_motion_context`; số đầy đủ ở
+`docs/preparation/GIAO_DIEN_MOI_PLAN_FIGMA_FACTS_2026-11-11-m8-a.md` §5 và `…-m8-b.md` §6.3). Chủ dự án chốt: trang chủ và 404 dùng hiệu ứng của
+landing bản 3 (`landing-mo.html`), phần bản 3 không có thì lấy số trong các cảnh Figma, bố cục theo Figma. Điện thoại mờ tối đa 12 px; không có nút
+dừng; giảm chuyển động thì hiện ngay trạng thái cuối. Màu `#2445D6` trong cảnh 2, 3 đổi thành accent `#1e3a8a`. Số cụ thể M8 dùng: Part 8 của
+plan (`docs/superpowers/plans/2026-11-10-giao-dien-moi.md`, task M8.6).
+
 ## 8. Giảm chuyển động
 
 Áp cho cả giao diện mới và code (`prefers-reduced-motion: reduce`):

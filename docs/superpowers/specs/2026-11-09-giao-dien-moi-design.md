@@ -314,15 +314,16 @@ Dời file trong đợt này:
 |---|---|---|
 | `features/learner/word/pronunciation.ts`, `app-ui/speech.ts`, `app-ui/audio-player.ts` | `lib/speech/` | M1 (để `ui/SpeakButton` không import `features/`) |
 | `components/landing/*`, `components/sections/*`, `components/layout/*`, `components/seo/*`, `components/interactive/*` | `site/landing/`, `site/legal/`, `site/layout/`, `site/seo/`, `site/interactive/` | M8 |
-| `app-ui/*` còn lại, `components/ui/*` | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M8 |
+| `components/ui/*` | thay bằng `ui/*` và `site/layout/` | M8 |
+| `app-ui/*` còn lại | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M7; phần còn lại ở đợt polish trước M9 (QM8-9) |
 
 Ngoại lệ (code facts web S10, S11): luật của `ui/` bỏ qua file test (`src/ui/**/*.test.{ts,tsx}`), vì `renderApp` (`app-ui/test-utils.tsx`)
 import `@/app-shell/*`; `TurnstileWidget` không vào `ui/` (import `@/app-shell/config`), chuyển sang `features/learner/auth/` ở M2;
 `app-ui/speech-test-support.ts` dời cùng `lib/speech/`.
 
 Một test lint dùng `ESLint.lintText` với đường dẫn ảo (ví dụ `src/ui/Probe.tsx` import `@/features/...`) và kiểm có lỗi, để luật có "răng";
-không ghi file mẫu lên đĩa (sẽ làm `pnpm lint` của CI fail); timeout riêng 30 giây (lần chạy đầu khoảng 3,2 giây). `app-ui/`, `components/` xóa khi
-không còn file nào dùng (cuối M8); bản cũ nằm trong tag.
+không ghi file mẫu lên đĩa (sẽ làm `pnpm lint` của CI fail); timeout riêng 30 giây (lần chạy đầu khoảng 3,2 giây). `components/` xóa ở M8;
+`app-ui/` xóa ở đợt polish chủ dự án làm trước M9 (QM8-9); bản cũ nằm trong tag.
 
 ## 7. Token, theme, font, màu nhóm
 
@@ -337,7 +338,8 @@ Chuyển tiếp trong lúc màn cũ còn chạy (review I4). Token cũ và mới
   `packages/design-tokens/package.json`; thiếu thì `@import` và `createRequire(...).resolve(...)` trong `tokens.test.ts` báo
   `ERR_PACKAGE_PATH_NOT_EXPORTED`.
 - M1–M7: `apps/web/src/app/globals.css` import cả bộ cũ (`theme.css`, `dark.css`, `island.css`) và bộ mới. Màn đã làm lại chỉ dùng token `wm-`.
-- M8: khi `grep` không còn class cũ trong `apps/web/src`, bỏ import bộ cũ khỏi web. Một test kiểm không còn class của bộ cũ trong `apps/web/src`.
+- Đợt polish trước M9 (QM8-9; danh sách việc ở delivery record, mục "Việc dọn chuyển sang đợt polish"): khi `grep` không còn class cũ trong
+  `apps/web/src`, bỏ import bộ cũ khỏi web. Một test kiểm không còn class của bộ cũ trong `apps/web/src`. M8 chỉ bỏ class cũ ở trang công khai.
 - Không sửa, không xóa gì trong `theme.css`: admin vẫn import (`apps/admin/src/styles/globals.css:2`) và có test riêng đọc nó
   (`apps/admin/src/styles/tokens.test.ts:8`). `dark.css`, `island.css`, `dark-pastel.css` chỉ xóa ở M9 sau khi kiểm admin không import.
 - Màu chỉ khai báo trong package, như luật hiện nay (README của package; UBC1). Kích thước trong token `wm-` viết bằng `rem`, như LP31 bắt với
@@ -491,8 +493,7 @@ vì `@theme` chỉ chứa biến và `@keyframes`. Component dùng token, không
 | Mọi hộp thoại và tấm trượt (GM15) | Cùng chuyển động của hộp Lịch: lớp mờ 200ms, hộp 240ms đường cong chính, tấm trượt từ `translateY(60px)` kèm hiện dần | §5, §6 |
 | Nút | Rê chuột `brightness(1.12)` 200ms; bấm `scale(.97)` 150ms | §6 |
 | Đơn hàng | Chấm "đang chờ" nhấp nháy 1,4 giây cho tới khi đơn đổi trạng thái (ngoại lệ duy nhất của luật không lặp) | §6 |
-| Trang chủ | `hero-in`, `hero-window-in`, `Reveal`, hỏi đáp 280ms như hiện nay | §7 (landing) |
-| Trang chủ cảnh 3–6 trong Figma (đoạn văn đổi màu, vệt sáng viền phần cuối, 404 hiện từ mờ, viền Pro sáng chạy) | Chưa có số: chốt số ở M8 rồi ghi bổ sung vào tài liệu motion | §7 |
+| Trang chủ, 404 (QM8-3, chủ dự án 11/11/2026) | Hiệu ứng theo landing bản 3 (`landing-mo.html`, artifact `LxqBqZYrXejQt8cci67ucF`): chữ hiện từng từ từ mờ sang nét, khối hiện khi cuộn tới, thẻ nổi nhấp nhô và lệch theo chuột, dải từ chạy ngang, bộ thẻ bay vào, ô demo tự chạy, quầng sáng quanh thẻ phần cuối. Phần bản 3 không có (chữ chủ đề đổi trong nhãn hero, viền Pro sáng chạy, 404) lấy số ở các cảnh Figma trang `2:3`. Điện thoại mờ tối đa 12 px; không có nút dừng (QM8-3′, rủi ro §15); người bật giảm chuyển động thấy ngay trạng thái cuối. Đoạn văn đổi màu ẩn như Figma | §7 |
 | Phiên luyện | Câu mới, đáp án đúng, chọn sai: dùng lại `card-rise`, `pop-in`, `wiggle-soft` hiện có cho tới khi tài liệu motion có số riêng | §7, §9 |
 
 ### 8.3 Chỗ lệch giữa giao diện mới và code (GM14: lấy số của giao diện mới)
@@ -633,8 +634,16 @@ Hộp Hủy gói (`SubscriptionRows.tsx`, `SettingsPage.tsx`) chưa có khung Fi
 
 **M8 — Trang công khai và SEO** (trang `0:1`): Trang chủ `5:13` / `9:108`; Chính sách bảo mật `14:172` / `17:260`; Điều khoản sử dụng `15:190` /
 `17:355`; Nguồn dữ liệu `16:210` / `18:283`; 404 `16:317` / `18:358`. SEO §11. Bảng giá trang chủ đọc giá lúc build (QR3, §10.6; trang chủ hiện
-không ghi giá: `components/landing/Plans.tsx:31`). Font ảnh OG (§5.8). Chuyển phần còn lại của `components/` sang `site/`, bỏ import token cũ (§7.1), xóa `app-ui/`
-và `components/`.
+không ghi giá: `components/landing/Plans.tsx:31`). Font ảnh OG (§5.8). Chuyển phần còn lại của `components/` sang `site/` và xóa `components/`.
+Quyết định của chủ dự án khi viết plan (QM8, decision record, 11/11/2026):
+- Thanh trên: hai nút Đăng nhập (trắng) và Đăng ký (navy) thay "Dùng thử"; nút sáng/tối ở thanh trên trên máy tính, ở chân trang trên điện thoại.
+- Bảng giá: ba giá Pro tĩnh kèm phần trăm giảm, không chọn kỳ, không nút mua (QM8-2).
+- Chuyển động theo §8.2 (QM8-3).
+- Chính sách, Điều khoản: khung theo Figma; chủ dự án bỏ phần đầu trùng trong văn bản ở admin; dòng meta có số phiên bản (QM8-4).
+- Nguồn dữ liệu: không có nhãn "Dùng cho"; dòng ghi công hiện cả trên điện thoại (QM8-5).
+- Hỏi đáp trên trang chủ do admin quản lý (§10.7), đọc lúc build cùng giá; Claude viết nháp câu trả lời (QM8-6).
+- Favicon và ảnh chia sẻ: vẽ khung trong Figma, chủ dự án duyệt, rồi mới code (QM8-7).
+- Không thuộc M8: xóa `app-ui/` và bỏ import token cũ (chuyển sang đợt polish trước M9, QM8-9); các chỗ sửa từ audit 11/11 (QM8-8).
 
 **M9 — Chế độ tối và rà soát.** Sửa phần tối theo mockup đã duyệt; xóa token cũ không dùng (§7.1); chạy toàn bộ kiểm thử §13; chụp mọi màn so với
 Figma; mở PR cuối vào `dev`.
@@ -788,13 +797,17 @@ xóa (còn trong tag).
 
 ### 10.6 Giá công khai cho trang chủ (QR3)
 
-- `GET /v1/public/prices` (mới, `@Public()`, module Settings, controller theo mẫu `legal/public-legal.controller.ts`):
+- `GET /v1/public/prices` (đã làm ở Part 1 của plan; `@Public()`, module Settings, controller theo mẫu `legal/public-legal.controller.ts`):
   `{ currency: 'VND', prices: { '1': number, '3': number, '12': number } }`, đọc cùng cài đặt với `GET /v1/me/app-config`
   (`settings/app-config.view.ts:13–16,42`; mặc định 79.000, 199.000, 599.000 ở `settings.definitions.ts:86`). Hiện giá chỉ có ở endpoint cần đăng nhập
   đó. Giới hạn theo IP bằng một luật mới `public.prices.ip` (60 lần mỗi phút).
-- Trang chủ đọc giá **lúc build** (`site/landing/prices.ts`, đợi tối đa 5 giây), nên vẫn dựng sẵn. Bảng giá và JSON-LD dùng cùng số.
-- Build không đọc được giá: khi biến `PRICES_REQUIRED=1` (đặt trong `deploy-web.yml`, tức lúc deploy thật) thì build fail; khi không có biến (CI của
-  PR, máy dev) thì dùng `site/landing/prices.fallback.ts` và in cảnh báo.
+- Trang chủ đọc giá **lúc build**, nên vẫn dựng sẵn. Bảng giá và JSON-LD dùng cùng số. Cách đọc (Part 8, QM8): `next.config.ts` thành hàm async,
+  lúc `next build` gọi `GET /v1/public/prices` và `GET /v1/public/faq` (§10.7), đợi tối đa 5 giây mỗi lần, rồi đưa kết quả vào `env`
+  (`WORDMET_LANDING_DATA`); Next thay `process.env.WORDMET_LANDING_DATA` bằng giá trị đó lúc build. `site/landing/landing-data.ts` đọc biến này, thiếu
+  thì dùng `site/landing/landing-data.fallback.ts`.
+- Build không đọc được dữ liệu: khi biến `LANDING_DATA_REQUIRED=1` thì build fail; khi không có biến (CI của PR, máy dev, `cf:docker`) thì dùng bản
+  dự phòng và in cảnh báo. M8 **chưa** đặt biến này trong `deploy-web.yml`, vì workflow đó chưa có địa chỉ API (`NEXT_PUBLIC_API_BASE_URL` trống,
+  code facts M8 site §0): đặt cả hai lúc Deploy (`deploy-checklist.md`).
 - Đổi giá trong admin thì phải deploy lại web để trang chủ đổi theo. Ghi vào `deploy-checklist.md`. Trang Gói học và lúc thanh toán vẫn đọc giá
   thật từ API như hiện nay.
 
@@ -803,6 +816,26 @@ xóa (còn trong tag).
 | Admin đổi giá 1 tháng từ 79.000 ₫ thành 89.000 ₫, chưa deploy lại | Trang chủ còn ghi 79.000 ₫; trang Gói học và thanh toán ghi 89.000 ₫ |
 | Deploy thật mà API không trả lời | Build fail, bản đang chạy giữ nguyên |
 | PR chạy CI không có API | Build dùng giá dự phòng, có cảnh báo; test pin giá dự phòng khớp `settings.definitions.ts` |
+
+### 10.7 Hỏi đáp trang chủ do admin quản lý (QM8-6, chủ dự án 11/11/2026)
+
+- **Module mới `faq`** (`apps/api/src/faq`, `prisma/models/faq.prisma`), chép cấu trúc của Legal. Không gộp vào Legal, vì số phiên bản của
+  Legal là phiên bản điều khoản người học phải đồng ý lại (code facts M8 FAQ §2).
+- **Bảng `landing_faq_items`:** thứ tự (số), câu hỏi, câu trả lời (chữ thường, có xuống dòng), đã đăng hay chưa, `row_version`, người tạo, người
+  sửa, thời gian. Chỉ tiếng Việt, vì trang chủ tiếng Anh chưa phục vụ (L4).
+- **Đọc công khai:** `GET /v1/public/faq` (`@Public()`, luật giới hạn riêng `public.faq.ip` 60 lần mỗi phút) trả
+  `{ items: [{ question, answer }] }`, chỉ câu đã đăng, theo thứ tự rồi theo thời gian tạo.
+- **Admin** (`settings.manage`): danh sách, thêm, sửa có kiểm `expected_version` (lệch thì 409 `faq-version-conflict`), xóa. Màn admin
+  "Hỏi đáp trang chủ" ghi rõ trang chủ chỉ đổi sau lần deploy web tiếp theo.
+- **Câu ban đầu:** migration nạp 6 câu, câu trả lời do Claude viết nháp và đã kiểm với code. Chủ dự án kiểm lại trong admin.
+- **Web đọc lúc build**, cùng lượt với giá (§10.6). Danh sách rỗng thì trang chủ không có phần Hỏi đáp.
+
+| Khi | Thì |
+|---|---|
+| Admin thêm câu, chưa tick "Đăng" | `GET /v1/public/faq` không có câu đó; trang chủ không đổi |
+| Admin đăng câu, chưa deploy lại web | Trang chủ vẫn hiện danh sách lúc build trước |
+| Hai admin cùng sửa một câu | Người lưu sau nhận 409 `faq-version-conflict`, tải lại rồi sửa |
+| Build không gọi được API | Dùng 6 câu dự phòng trong code (cùng nội dung câu ban đầu), có cảnh báo; `LANDING_DATA_REQUIRED=1` thì build fail |
 
 ## 11. SEO và metadata (M8)
 
@@ -818,6 +851,7 @@ xóa (còn trong tag).
 | Metadata từng trang công khai | Chính sách, Điều khoản, Nguồn dữ liệu có title, description, canonical, OG `url` riêng. Hiện Chính sách chỉ có description khi chưa đăng bản nào (`privacy/page.tsx:21`); Điều khoản, Nguồn dữ liệu không có description |
 | hreflang trang pháp lý | `/en/privacy`, `/en/terms`, `/en/sources` vẫn được phục vụ (chỉ trang chủ `/en` chuyển hướng, `lib/landing-locale.ts:7–11`). `alternates` của trang đè hết `alternates` của layout, nên mỗi trang tự khai canonical và hreflang `vi`, `en` của chính nó |
 | Ảnh OG từng trang | `opengraph-image.tsx` trong thư mục `privacy/`, `terms/`, `sources/`, dựng bằng font mới |
+| Favicon, icon app, ảnh OG theo nhận diện mới (QM8-7) | Figma chưa có khung: Claude vẽ khung "Favicon" và "Ảnh chia sẻ 1200 × 630" ở trang `0:1`, chủ dự án duyệt, rồi `icon.svg`, `apple-icon.tsx`, `opengraph-image.tsx` làm theo. Bỏ dấu "_ _" vàng và nền navy cũ |
 | Sitemap | Chỉ liệt kê trang được index (đưa trang `noindex` vào sitemap là tự mâu thuẫn). Lúc launch thêm `privacy`; `terms`, `sources` chỉ vào khi bỏ `noindex` của chúng (việc của launch, ghi ở `deploy-checklist.md`). `lastModified` lấy từ ngày hiệu lực văn bản. Một test ghim danh sách sitemap theo `NEXT_PUBLIC_INDEXABLE` (mẫu ở `lib/landing-locale.test.ts`) |
 | JSON-LD | `SoftwareApplication.offers` đang ghi `price: '0'`, `priceCurrency: 'USD'` (`components/seo/JsonLd.tsx`, chuyển sang `site/seo/`): đổi sang `VND`; giá các kỳ Pro lấy cùng số đọc lúc build như bảng giá (§10.6); thêm `Organization` (tên, url, logo). Rich result SoftwareApplication của Google bắt buộc có `aggregateRating` hoặc `review`, Wordmet không có và không bịa: mục tiêu là markup hợp lệ (Schema Markup Validator), không phải rich result |
 | Trang đăng nhập, đăng ký | Vẫn `noindex`, có title và description để link chia sẻ hiện đúng |
@@ -886,5 +920,10 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 - **11 hộp thoại chưa có khung Figma** (§9 M3–M7): dựng theo `Dialog` chung và hộp gần nhất; chủ dự án xem qua ảnh trong delivery record.
 - **Gói Miễn phí và câu AI:** một khung Figma (`131:4522`) vẽ AI khóa ở Miễn phí, lệch API hiện có; làm theo API.
 - **Ảnh OG:** thêm TTF Noto Sans có tiếng Việt làm Worker lớn hơn; đo ở M8.
+- **Trang chủ không có nút dừng chuyển động** (QM8-3′, chủ dự án chọn): dải từ, vệt sáng, quầng sáng chạy liên tục, chưa đạt WCAG 2.2.2 (mức A). Người
+  bật giảm chuyển động trong máy vẫn thấy trang đứng yên.
+- **Hỏi đáp và giá trên trang chủ chỉ đổi sau khi deploy lại web** (QR3, QM8-6): admin đăng xong, trang chủ vẫn hiện bản cũ tới lần deploy sau.
+- **Văn bản pháp lý trùng phần đầu** cho tới khi chủ dự án sửa trong admin (QM8-4): trước đó trang có hai tiêu đề và hai mục lục.
+- **Không còn link Gói học và Hỏi đáp ở chân trang** (theo Figma): người ở trang pháp lý về bảng giá qua link "Giá" ở thanh trên.
 - **Font nhãn:** JetBrains Mono không tải sớm, nên nhãn nhỏ có thể đổi font sau lần vẽ đầu.
 - **Hook hỏi mỗi lần merge** PR vào nhánh dài: thêm một bước bấm cho chủ dự án ở mỗi đợt.

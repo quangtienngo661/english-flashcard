@@ -188,6 +188,20 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
 - [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
 
+## Giao diện mới M8: trang công khai (design giao diện mới §10.6, §10.7, QM8, 11/11/2026)
+
+- [ ] **Đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API trong `deploy-web.yml` khi `api.wordmet.com` đã chạy.** Nguồn: design §10.6, Part 8
+  của plan (M8.3). Vì sao: trang chủ đọc giá và hỏi đáp lúc build. Workflow hiện chưa có địa chỉ API, nên mọi bản deploy đang dùng giá và hỏi đáp dự phòng
+  trong code. Đặt biến này khi chưa có API thì deploy `main` sẽ fail.
+- [ ] **Đổi giá hoặc đăng hỏi đáp trong admin xong thì deploy lại web.** Nguồn: design §10.6, §10.7. Vì sao: trang chủ dựng sẵn lúc build, nên giữ số và
+  câu cũ tới lần deploy sau. Trang Gói học và lúc thanh toán vẫn đọc giá thật.
+- [ ] **Chủ dự án sửa văn bản Chính sách bảo mật và Điều khoản sử dụng trong admin `/legal`:** bỏ tiêu đề, dòng "Phiên bản · Có hiệu lực",
+  đoạn mở và "Mục lục" viết tay ở đầu văn bản, rồi đăng bản mới. Nguồn: QM8-4. Vì sao: trang mới tự vẽ các phần đó, giữ lại thì trang có hai tiêu đề và
+  hai mục lục.
+- [ ] **Chủ dự án kiểm câu chữ nháp** trước launch: 6 câu trả lời hỏi đáp (admin "Hỏi đáp trang chủ"), các câu sửa trên trang chủ và câu "Không hoàn tiền
+  tự động." Nguồn: QM8-6.
+- [ ] **Ghi cỡ Worker sau khi đổi font ảnh chia sẻ** (M8.11), theo lệnh ở mục Worker.
+
 ## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
 
 - [ ] **`deploy-web.yml` phải build với `NEXT_PUBLIC_LEARNER_APP=on` và `NEXT_PUBLIC_API_BASE_URL` (host bắt đầu bằng `api.`) trước khi lên `main`.**
