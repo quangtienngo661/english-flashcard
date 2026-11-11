@@ -4,6 +4,7 @@ import { hasLocale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import { getLegal, pickLanguage } from '@/lib/legal';
+import { pageMetadata } from '@/lib/metadata';
 import { LegalDraft } from '@/site/legal/LegalDraft';
 import { LegalLayout } from '@/site/legal/LegalLayout';
 
@@ -15,11 +16,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: 'Legal' });
   const legal = await getLegal();
-  return {
-    title: t('privacyTitle'),
-    ...(legal ? {} : { description: t('draftNotice') }),
-    alternates: { canonical: `/${locale}/privacy` },
-  };
+  // Design §11: the draft notice describes the page while nothing is published or the API does not answer.
+  const description = legal ? t('privacyLead') : t('draftNotice');
+  return pageMetadata(locale, { path: '/privacy', title: t('privacyTitle'), description, index: true });
 }
 
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {

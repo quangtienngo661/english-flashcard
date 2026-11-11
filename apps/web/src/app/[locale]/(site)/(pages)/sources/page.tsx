@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { pageMetadata } from '@/lib/metadata';
 import { fetchSources } from '@/lib/sources';
 import { SourcesPage as SourcesPageBody } from '@/site/sources/SourcesPage';
 
@@ -13,7 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: 'Sources' });
-  return { title: t('title'), robots: { index: false, follow: false }, alternates: { canonical: `/${locale}/sources` } };
+  // noindex until launch (design §11).
+  return pageMetadata(locale, { path: '/sources', title: t('title'), description: t('intro'), index: false });
 }
 
 export default async function SourcesPage({ params }: { params: Promise<{ locale: string }> }) {
