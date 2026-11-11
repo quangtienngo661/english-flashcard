@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../api/field-errors';
+import { ApiError } from '../../api/problem';
 import { useApi } from '../../auth/session-context';
 import { useDialogDirtyClose } from '../../app/dirty-form';
 import { Banner } from '../../ui/Banner';
@@ -36,6 +37,8 @@ export function FaqDialog({ item, nextPosition }: { item: AdminFaqItem | null; n
       ? { question: item.question, answer: item.answer, position: item.position, published: item.published }
       : { question: '', answer: '', position: nextPosition, published: false },
   );
+  // The version the form was opened with: a list reload meanwhile must not make a stale form look current.
+  const [version] = useState(() => item?.row_version ?? 0);
   const [values, setValues] = useState<Values>(initial);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
@@ -54,9 +57,15 @@ export function FaqDialog({ item, nextPosition }: { item: AdminFaqItem | null; n
   const fields = { question: values.question.trim(), answer: values.answer.trim(), position: values.position ?? 0, published: values.published };
   const action = useSubmitAction(
     async (key) => {
-      const result = item ? await updateFaq(api, item.id, item.row_version, fields, key) : await createFaq(api, fields, key);
-      await queryClient.invalidateQueries({ queryKey: faqKeys.list });
-      return result;
+      try {
+        const result = item ? await updateFaq(api, item.id, version, fields, key) : await createFaq(api, fields, key);
+        await queryClient.invalidateQueries({ queryKey: faqKeys.list });
+        return result;
+      } catch (error) {
+        // A conflict means the cached list is stale: reload it so the list shows the other admin's change.
+        if (error instanceof ApiError && error.problem.slug === 'faq-version-conflict') void queryClient.invalidateQueries({ queryKey: faqKeys.list });
+        throw error;
+      }
     },
     JSON.stringify(values),
     () => setSaved(true),
