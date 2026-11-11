@@ -109,10 +109,16 @@ test('LB3E8: no CSP violation on /vi, /vi/app, /vi/app/login and /vi/app/groups 
 });
 
 // LB3E6: the CSP is per document, so the way from the landing into the app must be a full page load (a plain link, not next/link).
-// `:visible`: the header's sign-in link is hidden below the `sm` breakpoint, so on a phone the first link in the DOM is not one a visitor can press.
-test('LB3E6: from the landing, the link into the app loads a whole new page', async ({ page }) => {
+// `:visible`: only links a visitor can press (the header's Đăng nhập since M8.4, at every width). Each way in from the home page is tried.
+test('LB3E6: from the landing, the links into the app load a whole new page', async ({ page }) => {
   await page.goto('/vi');
-  await page.evaluate(() => { (window as unknown as { __marker: boolean }).__marker = true; });
-  await Promise.all([page.waitForURL(/\/vi\/app/), page.locator('a[href^="/vi/app"]:visible').first().click()]);
-  expect(await page.evaluate(() => (window as unknown as { __marker?: boolean }).__marker)).toBeUndefined();
+  const hrefs = await page.locator('a[href^="/vi/app"]:visible').evaluateAll((links) => [...new Set(links.map((a) => a.getAttribute('href')!))]);
+  // The control: Đăng nhập and the sign-up buttons were found.
+  expect(hrefs.sort()).toEqual(['/vi/app/login', '/vi/app/register']);
+  for (const href of hrefs) {
+    await page.goto('/vi');
+    await page.evaluate(() => { (window as unknown as { __marker: boolean }).__marker = true; });
+    await Promise.all([page.waitForURL(new RegExp(`${href}$`)), page.locator(`a[href="${href}"]:visible`).first().click()]);
+    expect(await page.evaluate(() => (window as unknown as { __marker?: boolean }).__marker), href).toBeUndefined();
+  }
 });
