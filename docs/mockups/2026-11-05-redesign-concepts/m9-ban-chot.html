@@ -599,11 +599,11 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 
   <!-- ===== Khung app + Hôm nay ===== -->
   <section class="s" id="hom-nay">
-    <div class="s-head"><h2>Khung app và Hôm nay</h2><div class="covers"><span class="tag">Chỗ 3 · theo bản chốt</span><span class="tag">Chỗ 8 · giữ</span><span class="tag">Chỗ 12 · giữ</span><span class="tag">Chỗ 13</span><span class="tag">Chỗ 14</span><span class="tag">Chỗ 22 · giữ</span><span class="tag">Chỗ 25</span><span class="tag new">Bỏ dòng "Sai: …"</span></div></div>
+    <div class="s-head"><h2>Khung app và Hôm nay</h2><div class="covers"><span class="tag">Chỗ 3 · theo bản chốt</span><span class="tag">Chỗ 8 · giữ</span><span class="tag">Chỗ 12 · giữ</span><span class="tag">Chỗ 13</span><span class="tag">Chỗ 14</span><span class="tag">Chỗ 22 · giữ</span><span class="tag">Chỗ 25</span><span class="tag new">Bỏ dòng "Sai: …"</span><span class="tag new">Nhóm của bạn: card chỉ số từ</span></div></div>
     <p class="note">Thanh trên máy tính theo artifact Nhóm (chữ, gạch dưới ở mục đang mở). Logo giữ khoảng chữ hiện tại (chỗ 12). Tab Luyện tập giữ icon ngôi nhà (chỗ 8). Điện thoại: thanh trên 56 px theo bản chốt, thanh tab giữ như hiện tại (chỗ 25).</p>
     <div class="row">
       <figure class="grow"><figcaption>Máy tính 1440</figcaption>
-        <div class="desk" data-h="980"><div class="wm mesh" id="today-desk"></div></div>
+        <div class="desk" data-h="1200"><div class="wm mesh" id="today-desk"></div></div>
       </figure>
       <figure><figcaption>Điện thoại 390</figcaption>
         <div class="phone wm mesh" style="height:844px" id="today-phone"></div>
@@ -825,14 +825,30 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   var byLevel = '<div class="card"><div class="t-sec">48 từ theo bậc</div>' + LV.map(function (l, i) {
     return '<div style="display:grid;grid-template-columns:64px 1fr 28px;gap:10px;align-items:center"><span class="sm b">' + l.n + '</span><div style="height:8px;border-radius:3px;background:var(--line);overflow:hidden"><i style="display:block;height:100%;width:' + (GROUP_COUNTS[i] / 11 * 100) + '%;background:var(--' + l.k + ');border-radius:3px"></i></div><span class="mono mut" style="text-align:right">' + GROUP_COUNTS[i] + '</span></div>';
   }).join('') + '<p class="cap">Rê chuột lên một bậc để xem "ôn lại sau N ngày".</p></div>';
+  // "Nhóm của bạn" (DeckRow in code, owner 11/11: cards share the row evenly, the rest behind "Xem cả"). Same stacked card as Nhóm,
+  // with the decided changes: only the word count on the card, radius C, 9B dark numbers, the shared section title.
+  var TODAY_DECKS = [
+    { g: 'g1', name: 'Đề 9 · Listening', total: 40, due: 18, next: 'commute' },
+    { g: 'g2', name: 'Đề 14 · Reading', total: 36, due: 11, next: 'prevalent' },
+    { g: 'g3', name: 'Từ gặp ngoài đời', total: 22, due: 6, next: 'overwhelmed' },
+    { g: 'g5', name: 'Đề 10 · Writing', total: 28, due: 3, next: 'allocate' }
+  ];
+  function deckRow(n, w) {
+    return '<div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap"><div class="' + (n > 2 ? 't-sec' : 't-sec-m') + '">Nhóm của bạn</div>' +
+      (n > 2 ? '<span class="eyebrow">4 nhóm khác còn thẻ chờ · bấm thẻ để mở</span>' : '') +
+      '<button class="btn b-ghost b-sm" type="button" style="margin-left:auto;padding:0">Xem cả 8 nhóm ' + ico('arr', 's') + '</button></div>' +
+      '<div style="display:flex;gap:' + (n > 2 ? 18 : 12) + 'px;padding-bottom:30px">' + TODAY_DECKS.slice(0, n).map(function (d) {
+        return '<div class="' + d.g + '" style="cursor:pointer">' + n2stack(d).replace('<div class="ms">', '<div class="ms" style="--w:' + w + 'px">') + '</div>';
+      }).join('') + '</div></div>';
+  }
   $('today-desk').innerHTML = topbar('Hôm nay') + '<div style="max-width:1280px;margin:0 auto;padding:36px 32px 48px;display:flex;flex-direction:column;gap:24px">' +
     '<div><div class="eyebrow">thứ tư, 12/11</div><h3 class="t-page">Hôm nay</h3></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 360px;gap:32px;align-items:start"><div style="display:flex;flex-direction:column;gap:24px">' + heroDesk + topics + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 360px;gap:32px;align-items:start"><div style="display:flex;flex-direction:column;gap:24px">' + heroDesk + deckRow(4, 196) + topics + '</div>' +
     '<div style="display:flex;flex-direction:column;gap:24px">' + recent(false) + byLevel + '</div></div></div>';
   $('today-phone').innerHTML = ptop() + '<div class="pscreen"><div><div class="eyebrow">thứ tư, 12/11</div><h3 class="t-page-m">Hôm nay</h3></div>' +
     '<div class="card m g0" style="border:2px solid color-mix(in oklab,var(--g) 70%,transparent);gap:14px"><div style="display:flex;align-items:center;gap:8px"><span class="dot"></span><span class="b">Đề 12 · Writing</span><span class="cap" style="margin-left:auto">48 từ</span></div>' +
     '<div style="display:flex;align-items:baseline;gap:10px"><span class="dt" style="font-weight:800;font-size:64px;line-height:.9;letter-spacing:-0.04em;color:var(--g-ink)">24</span><span class="mut">thẻ chờ</span></div>' + lvbar(GROUP_COUNTS) +
-    '<button class="btn b-pri" type="button" style="width:100%">Ôn 24 thẻ</button></div>' + recent(true) + '</div>' + tabbar('Hôm nay');
+    '<button class="btn b-pri" type="button" style="width:100%">Ôn 24 thẻ</button></div>' + deckRow(2, 170) + recent(true) + '</div>' + tabbar('Hôm nay');
 
   // ---------- Nhóm: "Vòng cung", ported from artifact 6z635GjwYNpctydnMoNHJD (N2 n2pos/n2stack/n2info/n2apply) ----------
   var NG = [

@@ -68,7 +68,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Ô "Gợi ý 1/2": căn lại theo một lưới (cột số, nội dung, nút "Mở gợi ý", chấm tiến độ).
 - Trang Một nhóm: thanh tiến độ và chip lọc có màu theo mức (ưu tiên đỏ, đến hạn vàng cam, mới xám, Bậc 1→5 xanh lá nhạt → đậm); danh sách từ thành bảng có tên cột (Từ vựng, Loại từ, Nghĩa, Bậc, Trạng thái).
 - Bỏ chữ "ngăn": gọi "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên (code đã gọi `level` 0–5). Nghiên cứu: `SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`. Màu không được là tín hiệu duy nhất; Bậc 1–3 xanh nhạt cần chữ hoặc viền.
-- Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
+- Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc". Áp cả cho hàng "Nhóm của bạn" ở Hôm nay (`DeckRow.tsx`, giữ nguyên trong code; mockup thêm 12/11 sau khi chủ dự án hỏi).
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
 - Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm. Chốt cách B (12/11): chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, dấu ✓ cuối dòng.
 - Lưu một từ vào **nhiều nhóm** cùng lúc (12/11): bấm dòng để bật tắt, cuối hộp ghi "Đã chọn n nhóm" và nút "Lưu vào n nhóm"; ô "Lưu vào nhóm" trong hộp Thêm từ hiện các nhóm đã chọn thành chip màu nhóm. Dữ liệu đã cho phép (bảng `group_items` nhiều–nhiều, `ItemState.group_ids[]`), nhưng `POST` thêm nhanh (`quick-add.controller.ts:19`) chỉ nhận một `group_id`: cần thêm trường `group_ids` (chỉ thêm, không đổi v1) hoặc web gọi thêm `POST /v1/groups/:id/items` cho các nhóm còn lại. Chốt cách làm khi viết plan.
