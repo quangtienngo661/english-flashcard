@@ -2,7 +2,7 @@ import type { LandingData } from './landing-data';
 
 /**
  * What the home page shows when `next build` could not read the API (M8.3): the seeded prices (design §10.6) and the six FAQ items
- * the M8.1 migration seeds, verbatim. Drafts the owner checks later (QM8-6); keep both copies equal.
+ * the M8.1 migration seeds, verbatim (as finalised in M8a, rulings R174–R176). Drafts the owner checks later (QM8-6); keep both copies equal.
  */
 export const FALLBACK_LANDING_DATA: LandingData = {
   prices: { '1': 79000, '3': 199000, '12': 599000 },
@@ -13,7 +13,7 @@ export const FALLBACK_LANDING_DATA: LandingData = {
     },
     {
       question: 'Hết Pro thì từ và lịch ôn có mất không?',
-      answer: 'Không. Từ, nhóm và lịch ôn của bạn vẫn còn. Bạn học tiếp với giới hạn của gói Miễn phí, ví dụ 3 phiên luyện mỗi ngày.',
+      answer: 'Không. Từ, nhóm và lịch ôn của bạn vẫn còn, và bạn vẫn ôn thẻ như trước. Bạn học tiếp với giới hạn của gói Miễn phí, ví dụ 3 phiên luyện mỗi ngày và ít lượt AI hơn mỗi tháng.',
     },
     {
       question: 'Dùng trên điện thoại được không?',
@@ -25,11 +25,11 @@ export const FALLBACK_LANDING_DATA: LandingData = {
     },
     {
       question: 'Có được hoàn tiền không?',
-      answer: 'Wordmet không hoàn tiền tự động. Nếu thanh toán gặp sự cố, gửi email tới support@wordmet.com kèm email tài khoản và mã chuyển khoản.',
+      answer: 'Không. Wordmet không hoàn tiền sau khi đã thanh toán, kể cả thời gian chưa dùng. Nếu thanh toán gặp sự cố, gửi email tới support@wordmet.com kèm email tài khoản và nội dung chuyển khoản (mã bắt đầu bằng WM).',
     },
     {
       question: 'AI có chấm bài của tôi không?',
-      answer: 'Không. AI chỉ soạn câu luyện. Đáp án được chấm theo quy tắc cố định, nên cùng một câu trả lời luôn có cùng kết quả.',
+      answer: 'Không. AI chỉ soạn câu luyện và các đáp án được chấp nhận. Câu trả lời của bạn được chấm theo quy tắc cố định, nên cùng một câu trả lời luôn có cùng kết quả.',
     },
   ],
   source: 'fallback',
