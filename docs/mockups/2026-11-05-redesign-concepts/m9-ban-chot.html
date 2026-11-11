@@ -270,6 +270,12 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .fc-legend>span{display:inline-flex;align-items:center;gap:6px}
 .fc-legend .kc2{background:var(--accent-soft);color:var(--accent)}
 .fcw.ph .kc2,.fcw.ph .fc-legend{display:none}
+.fc-acts .tail{display:inline-flex}
+/* Phone (owner 12/11): side buttons are icon-only squares so nothing overflows; no word chips drop into the piles. */
+.fcw.ph .b-again .lbl,.fcw.ph .b-know .lbl,.fcw.ph .b-know .tail{display:none}
+.fcw.ph .fc-acts .btn.b-again,.fcw.ph .fc-acts .btn.b-know{flex:0 0 52px;padding:0}
+.fcw.ph .fc-acts .b-again .ico,.fcw.ph .fc-acts .b-know .ico{width:20px;height:20px}
+.fcw.ph .fc-minis{display:none}
 .fc-sum{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;text-align:center}
 .fc-sum .rv{animation:blurIn 520ms var(--ease-out) both;animation-delay:calc(var(--k) * 90ms)}
 @keyframes blurIn{from{opacity:0;filter:blur(12px);transform:translateY(10px)}to{opacity:1;filter:blur(0);transform:none}}
@@ -1127,13 +1133,13 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   function fcwHtml(phone) {
     return '<div class="fcw' + (phone ? ' ph' : '') + '"><div class="fc-arena"' + (phone ? '' : ' style="max-width:780px;margin:0 auto;min-height:480px"') + '>' +
-      '<div class="fc-pile again"><span class="pn">0</span><span class="pl">' + ico('chl', 's') + 'Still learning</span><ul class="fc-minis"></ul></div>' +
+      '<div class="fc-pile again"><span class="pn">0</span><span class="pl">Still learning</span><ul class="fc-minis"></ul></div>' +
       '<div class="fc-stack"></div>' +
-      '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Know' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
+      '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Know</span><ul class="fc-minis"></ul></div></div>' +
       '<p class="fc-nudge" aria-live="polite"></p>' +
-      '<div class="fc-acts"><button class="btn b-again" type="button" data-a="again">' + ico('arrl', 's') + 'Still learning<span class="kc2">1</span></button>' +
+      '<div class="fc-acts"><button class="btn b-again" type="button" data-a="again" aria-label="Still learning">' + ico('arrl', 's') + '<span class="lbl">Still learning</span><span class="kc2">1</span></button>' +
       '<button class="btn b-flip" type="button" data-a="flip">' + ico('rot', 's') + '<span class="ft">Flip card</span><span class="kc2">Space</span></button>' +
-      '<button class="btn b-know" type="button" data-a="known">' + ico('check', 's') + 'Know<span class="kc2">2</span>' + ico('arr', 's') + '</button></div>' +
+      '<button class="btn b-know" type="button" data-a="known" aria-label="Know">' + ico('check', 's') + '<span class="lbl">Know</span><span class="kc2">2</span><span class="tail">' + ico('arr', 's') + '</span></button></div>' +
       '<div class="fc-legend"><span><span class="kc2">Space</span>Flip card</span><span><span class="kc2">1</span><span class="kc2">←</span>Still learning</span>' +
       '<span><span class="kc2">2</span><span class="kc2">→</span>Know</span><span><span class="kc2">Esc</span>Stop</span></div></div>';
   }
