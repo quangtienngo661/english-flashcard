@@ -70,7 +70,7 @@ $env:SWC_NATIVE_BINDING_CACHE = "$env:USERPROFILE\.cache\swc-native"
 
 ## Structure
 
-- `src/app/[locale]/(site)/page.tsx` only composes sections; components live in `src/components/{ui,layout,landing,sections,interactive,seo}`.
-- Client components (hooks only): `AppShowcase`, `ReviewCardDemo`, `ExerciseGallery`, `Reveal`, `ThemeToggleButton`.
+- Public pages: routes in `src/app/[locale]/(site)/` (`(pages)/` has the header and footer, `not-found.tsx` has no header); their components live in `src/site/{landing,legal,sources,layout,interactive,seo}`, which may not import `@/features/*` or `@/app-chrome/*`.
+- Client components (hooks only): `Reveal`, `FlyIn`, `TopicTicker`, `Parallax`, `Sweep`, `DemoLoops`, `ThemeToggleButton`, `FooterThemeSwitch`, `LegalToc`, `ReadingProgress`.
 - Copy: `messages/vi.json` and `messages/en.json` (the landing copy is the `Landing` namespace; `en` holds the Vietnamese text until the English landing is built).
 - Tokens: `src/app/globals.css` (`@theme`, rem units, WCAG-checked colours in `src/styles/tokens.test.ts`).
