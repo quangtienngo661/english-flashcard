@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { APP_CONFIG_KEY } from '@/app-shell/queries';
@@ -33,6 +33,17 @@ export function useBuyOrder(): { buy(months: Months, price: number): void; isPen
       { period_months: Number(chosen.current.months), expected_amount: chosen.current.price, locale },
       { idempotencyKey: key },
     ));
+
+  // Back from payOS may restore this page from the back/forward cache with the press still on: the button would spin until a reload.
+  useEffect(() => {
+    const restored = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      pressing.current = false;
+      setLeaving(false);
+    };
+    window.addEventListener('pageshow', restored);
+    return () => window.removeEventListener('pageshow', restored);
+  }, []);
 
   async function run(months: Months, price: number) {
     // The body is read when the request goes out (also on a retry of the same key), so it may not change while a press is in flight.
