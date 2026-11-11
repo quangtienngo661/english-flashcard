@@ -22,7 +22,6 @@ test.beforeEach(async ({ page }) => {
 test('E23: the landing carries the CSP and raises no violation', async ({ page }) => {
   const response = await page.goto('/vi');
   expect(response?.headers()['content-security-policy']).toContain("default-src 'self'");
-  await page.getByRole('tab', { name: copy.vi.Landing.showcase.tabs.lookup }).click();
   await page.waitForLoadState('networkidle');
   expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
 });

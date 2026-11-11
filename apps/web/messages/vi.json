@@ -19,234 +19,329 @@
   },
   "Landing": {
     "hero": {
-      "line1": "Học từ vựng tiếng Anh,",
-      "line2": "ghi nhớ và vận dụng",
-      "lead": "Ôn thẻ theo lịch, luyện tập cùng AI và lưu từ mới bạn gặp mỗi ngày.",
-      "signup": "Đăng ký",
-      "haveAccount": "Đã có tài khoản?",
-      "login": "Đăng nhập",
-      "note": "Miễn phí, không cần thẻ thanh toán."
+      "topicLabel": "Học từ vựng theo chủ đề bạn cần",
+      "topics": [
+        "IELTS",
+        "Công việc",
+        "Du lịch",
+        "Công nghệ",
+        "Đời sống"
+      ],
+      "line1": "Ôn từ đúng lúc,",
+      "line2": "luyện từ trong câu.",
+      "accent": "trong câu",
+      "lead": "Wordmet tra sẵn nghĩa, câu mẫu và phiên âm, rồi xếp lịch ôn cho từng từ. Thời gian học dành cho việc luyện từ trong câu.",
+      "signup": "Bắt đầu miễn phí",
+      "howTo": "Xem cách học"
     },
-    "showcase": {
-      "label": "Các phần chính của Wordmet",
-      "tabs": {
-        "review": "Ôn thẻ",
-        "groups": "Nhóm từ",
-        "practice": "Luyện tập AI",
-        "lookup": "Tra từ",
-        "addWord": "Thêm từ mới"
+    "stage": {
+      "cardLabel": "Thẻ từ · ôn lại sau 3 ngày",
+      "lemma": "mitigate",
+      "pos": "verb",
+      "ipa": "/ˈmɪt.ɪ.ɡeɪt/",
+      "definition": "to make something bad less serious",
+      "meaning": "giảm nhẹ",
+      "example": "Planting trees can help mitigate the effects of urban heat.",
+      "practiceTitle": "Điền từ vào câu",
+      "practiceCount": "Câu 4/20",
+      "sentence": "Cities need clear plans to mitigate the risk of flooding.",
+      "target": "mitigate",
+      "choices": [
+        "mitigate",
+        "fluctuate",
+        "deteriorate",
+        "advocate"
+      ],
+      "right": "Đúng",
+      "keyNext": "Enter: câu tiếp",
+      "keyHint": "H: gợi ý",
+      "addedTitle": "Đề 12 · Writing",
+      "addedNote": "vừa thêm",
+      "addedWords": [
+        "mitigate",
+        "allocate",
+        "viable",
+        "scrutiny"
+      ],
+      "addedMore": "+14 từ",
+      "addedMorePhone": "+15 từ",
+      "binWord": "deteriorate",
+      "binNote": "ôn lại sau",
+      "binValue": "7 ngày"
+    },
+    "strip": {
+      "row1": [
+        {
+          "word": "mitigate",
+          "pos": "verb"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj"
+        },
+        {
+          "word": "viable",
+          "pos": "adj"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb"
+        }
+      ],
+      "row2": [
+        {
+          "word": "scrutiny",
+          "pos": "noun"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj"
+        },
+        {
+          "word": "detrimental",
+          "pos": "adj"
+        },
+        {
+          "word": "alleviate",
+          "pos": "verb"
+        },
+        {
+          "word": "incentive",
+          "pos": "noun"
+        },
+        {
+          "word": "undermine",
+          "pos": "verb"
+        },
+        {
+          "word": "feasible",
+          "pos": "adj"
+        },
+        {
+          "word": "consensus",
+          "pos": "noun"
+        }
+      ]
+    },
+    "groups": {
+      "title": "Từ của mỗi đề thành một nhóm.",
+      "lead": "Mỗi từ có lịch ôn riêng.",
+      "cards": [
+        {
+          "word": "mitigate",
+          "pos": "verb",
+          "meaning": "giảm nhẹ"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb",
+          "meaning": "phân bổ"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj",
+          "meaning": "đáng kể"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb",
+          "meaning": "xấu đi"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj",
+          "meaning": "không tránh được"
+        },
+        {
+          "word": "viable",
+          "pos": "adj",
+          "meaning": "khả thi"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj",
+          "meaning": "phổ biến"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj",
+          "meaning": "miễn cưỡng"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb",
+          "meaning": "ủng hộ"
+        },
+        {
+          "word": "scrutiny",
+          "pos": "noun",
+          "meaning": "sự xem xét kỹ"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb",
+          "meaning": "dao động"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj",
+          "meaning": "mạch lạc"
+        }
+      ],
+      "caption": "IELTS Writing · Đề 12 · 12 từ · ôn lần đầu ngày mai",
+      "captionPhone": "Đề 12 · 12 từ · ôn lần đầu ngày mai"
+    },
+    "learn": {
+      "title": "Từ lúc gặp tới lúc dùng được",
+      "lead": "Ghi, nghe, luyện và ôn ở cùng một chỗ.",
+      "practice": {
+        "eyebrow": "Trong buổi học",
+        "title": "Luyện trong câu",
+        "body": "Điền và gõ từ vào câu, không chỉ chọn nghĩa. Sai thì thấy ngay đáp án trong câu.",
+        "demoTitle": "Điền từ vào câu",
+        "count": "Câu 7/20",
+        "scores": [
+          {
+            "n": "5",
+            "label": "đúng"
+          },
+          {
+            "n": "1",
+            "label": "sai"
+          },
+          {
+            "n": "13",
+            "label": "câu còn lại"
+          },
+          {
+            "n": "2",
+            "label": "từ ôn lại sau 7 ngày"
+          }
+        ],
+        "sentence": "Air quality tends to deteriorate in the dry season.",
+        "target": "deteriorate",
+        "choices": [
+          "deteriorate",
+          "allocate",
+          "advocate",
+          "mitigate"
+        ],
+        "right": "Đúng",
+        "wrong": "Sai"
+      },
+      "note": {
+        "eyebrow": "Sau khi làm đề",
+        "title": "Ghi từ",
+        "body": "Gõ cả dạng đã chia, Wordmet đưa về từ gốc.",
+        "typed": "deteriorated",
+        "lemma": "deteriorate",
+        "meaning": "verb · xấu đi"
+      },
+      "listen": {
+        "eyebrow": "Mỗi thẻ",
+        "title": "Nghe và đọc phiên âm",
+        "word": "viable",
+        "ipa": "/ˈvaɪ.ə.bəl/"
       },
       "review": {
-        "title": "Ôn tập theo lịch",
-        "body": "Lật thẻ, tự đánh giá. Wordmet xếp lịch ôn cho từng từ.",
-        "p1": "Sáu ngăn, từ Mới đến 30 ngày",
-        "p2": "Kèm câu mẫu và câu đã gặp",
-        "deck": "Kinh doanh · B1",
-        "word": "negotiate",
-        "pos": "động từ · B1",
-        "meaning": "đàm phán, thương lượng",
-        "exampleLabel": "Câu mẫu",
-        "example": "We need to negotiate a better price with the supplier.",
-        "seenLabel": "Câu bạn đã gặp",
-        "seen": "They agreed to negotiate the contract next week.",
-        "seenWord": "negotiate"
-      },
-      "groups": {
-        "title": "Nhóm từ vựng",
-        "body": "Bộ từ theo trình độ A1–C2, theo chủ đề hoặc do bạn tự tạo.",
-        "p1": "Tạo nhóm nhanh theo chủ đề",
-        "g1Name": "Kinh doanh · B1",
-        "g1Count": "113 từ",
-        "g1Waiting": "29 thẻ chờ",
-        "g2Name": "Du lịch · A2",
-        "g2Count": "40 từ",
-        "g2Waiting": "12 thẻ chờ",
-        "quickTitle": "Tạo nhóm nhanh theo chủ đề · Ẩm thực A2",
-        "w1": "recipe",
-        "w1m": "công thức nấu ăn",
-        "w2": "snack",
-        "w2m": "món ăn vặt",
-        "w3": "menu",
-        "w3m": "thực đơn",
-        "w4": "sugar",
-        "w4m": "đường"
-      },
-      "practice": {
-        "title": "Luyện tập với AI",
-        "body": "Nhiều dạng bài trong mỗi phiên, kể cả câu do AI biên soạn.",
-        "p1": "Chấm điểm theo quy tắc",
-        "p2": "Luyện riêng từ hay sai",
-        "sentenceBefore": "Both sides agreed to",
-        "word": "negotiate",
-        "sentenceAfter": "a new deal next month.",
-        "aiChip": "Câu AI",
-        "translationLabel": "AI dịch",
-        "translation": "Hai bên đồng ý đàm phán một thỏa thuận mới vào tháng sau."
-      },
-      "lookup": {
-        "title": "Tra cứu từ vựng",
-        "body": "Nghĩa, câu mẫu, phát âm và dạng chia trên một trang.",
-        "p1": "Tra cứu bằng AI",
-        "word": "profit",
-        "level": "B1",
-        "forms": "Dạng chia: profit · profits",
-        "pos": "noun",
-        "meaning": "lợi nhuận",
-        "definition": "Money you make from business after paying all costs.",
-        "example": "The shop made a small profit in its first year.",
-        "exampleWord": "profit",
-        "status": "Đang học · 1 câu đã gặp"
-      },
-      "addWord": {
-        "title": "Thêm từ mới",
-        "body": "Nhập từ và câu chứa từ. Wordmet tự nhận diện dạng chia.",
-        "p1": "Tự nhập nghĩa khi kho chưa có",
-        "word": "went",
-        "base": "go",
-        "sentence": "We went over the budget twice before the meeting.",
-        "deck": "Công việc"
+        "eyebrow": "Những ngày sau",
+        "title": "Ôn đúng lúc",
+        "body": "Mỗi ngày chỉ ôn những từ đến hạn. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "bins": [
+          {
+            "value": "1 ngày",
+            "label": "ôn lần đầu"
+          },
+          {
+            "value": "3 ngày",
+            "label": "nhớ lần hai"
+          },
+          {
+            "value": "7 ngày",
+            "label": "quen mặt"
+          },
+          {
+            "value": "14 ngày",
+            "label": "dùng được"
+          },
+          {
+            "value": "30 ngày",
+            "label": "nhớ lâu"
+          }
+        ]
       }
-    },
-    "why": {
-      "title": "Vì sao từ vựng nhanh bị quên",
-      "r1Title": "Nhận biết nghĩa là chưa đủ",
-      "r1Body": "Bạn cần tự dùng từ trong câu.",
-      "r2Title": "Thiếu ôn tập, trí nhớ suy giảm",
-      "r2Body": "Ôn đúng thời điểm giúp nhớ lâu hơn.",
-      "legendYes": "Có ôn tập",
-      "legendNo": "Không ôn tập",
-      "legendNote": "Hình minh họa",
-      "axisRemember": "Nhớ",
-      "axisDays": "30 ngày",
-      "figureLabel": "Minh họa: trí nhớ giảm dần nếu không ôn tập, và được giữ nếu ôn sau 1, 3, 7, 14 và 30 ngày"
-    },
-    "exercises": {
-      "title": "Nhiều dạng bài luyện tập",
-      "lead": "Chọn một dạng để làm thử.",
-      "rule": "AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
-      "list": "Các dạng bài",
-      "blank": "chỗ trống",
-      "free": "Miễn phí",
-      "pro": "Pro",
-      "aiChip": "Câu AI",
-      "again": "Làm lại",
-      "next": "Dạng bài tiếp theo",
-      "check": "Kiểm tra",
-      "placeholder": "Gõ từ tiếng Anh",
-      "hintLabel": "Gợi ý",
-      "reveal": "Xem đáp án",
-      "attempt": "Lần {n, number}",
-      "answerLabel": "Câu trả lời",
-      "right": "Đáp án đúng",
-      "wrong": "Đáp án sai",
-      "items": {
-        "mcq": {
-          "title": "triển khai, phát hành",
-          "label": "phần mềm",
-          "o1": "deploy",
-          "o2": "delay",
-          "o3": "deliver",
-          "o4": "decide"
-        },
-        "tf": {
-          "title": "borrow",
-          "sub": "cho mượn",
-          "true": "Đúng",
-          "false": "Sai"
-        },
-        "typeMeaning": {
-          "title": "cho rằng, mặc định là đúng",
-          "hint": "Chữ cái đầu: a… · 6 chữ"
-        },
-        "savedCloze": {
-          "source": "Câu bạn đã lưu",
-          "before": "Can I",
-          "after": "your charger for a minute?",
-          "hint": "Chữ cái đầu: b… · 6 chữ"
-        },
-        "aiCloze": {
-          "before": "The team",
-          "after": "the fix last night.",
-          "hint": "Chữ cái đầu: d… · 8 chữ"
-        },
-        "aiMeaning": {
-          "sentence": "Don't assume everyone has read the email.",
-          "bold": "assume",
-          "o1": "cho rằng",
-          "o2": "đảm nhận",
-          "o3": "giả vờ",
-          "o4": "đảm bảo"
-        },
-        "aiMcq": {
-          "before": "Could you",
-          "after": "me your pen for a second?",
-          "o1": "lend",
-          "o2": "borrow",
-          "o3": "rent",
-          "o4": "owe"
-        }
-      }
-    },
-    "review": {
-      "title": "Ôn tập đúng thời điểm",
-      "lead": "Từ đã nhớ lên ngăn sau, từ chưa nhớ quay về ngăn đầu.",
-      "p1": "Email nhắc khi đến hạn",
-      "p2": "Ôn thẻ không giới hạn",
-      "panelTitle": "430 từ theo ngăn",
-      "sample": "Dữ liệu mẫu",
-      "b0": "Mới",
-      "b1": "1 ngày",
-      "b2": "3 ngày",
-      "b3": "7 ngày",
-      "b4": "14 ngày",
-      "b5": "30 ngày",
-      "weakTitle": "Từ hay sai",
-      "weakBody": "Sai 2 trong 5 lần gần nhất.",
-      "w1": "arrive · sai 2/2",
-      "w2": "leave · sai 2/2"
-    },
-    "metOutside": {
-      "title": "Từ gặp hằng ngày thành bài luyện tập",
-      "lead": "Lưu từ kèm câu đã gặp để luyện điền từ với chính câu đó.",
-      "word": "borrow",
-      "sentence": "Can I borrow your charger for a minute?",
-      "arrow": "tạo bài điền từ",
-      "savedLabel": "Câu bạn đã lưu",
-      "before": "Can I",
-      "after": "your charger for a minute?"
     },
     "plans": {
-      "title": "Bắt đầu miễn phí",
+      "title": "Hai gói, không tự gia hạn.",
+      "lead": "Trả một lần cho mỗi kỳ. Hết kỳ, từ và lịch ôn của bạn vẫn còn.",
       "free": "Miễn phí",
-      "freeP1": "Ôn thẻ, lịch ôn tự động",
-      "freeP2": "Tra cứu, thêm từ mới",
-      "freeP3": "3 phiên luyện tập mỗi ngày",
+      "freeNote": "không cần thẻ thanh toán",
+      "freeList": [
+        "Ghi từ, tra nghĩa và nghe phiên âm",
+        "Lịch ôn tự động",
+        "3 phiên luyện mỗi ngày",
+        "Dùng thử câu luyện và tra từ bằng AI"
+      ],
+      "freeAds": "Có thể có quảng cáo.",
+      "freeSignup": "Tạo tài khoản miễn phí",
       "pro": "Pro",
-      "proP1": "Thêm phiên luyện tập",
-      "proP2": "Câu luyện tập AI",
-      "proP3": "Tra cứu bằng AI",
-      "proP4": "Không quảng cáo",
-      "freeAiPractice": "15/tháng",
-      "freeAiLookup": "5/tháng",
-      "signup": "Đăng ký",
-      "yes": "Có",
-      "no": "Không"
+      "proBadge": "Có AI",
+      "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",
+      "periods": {
+        "1": "1 tháng",
+        "3": "3 tháng",
+        "12": "12 tháng"
+      },
+      "saving": "−{percent}%",
+      "best": "Tiết kiệm nhất",
+      "perMonth": "mỗi tháng",
+      "perMonthApprox": "≈ {price} mỗi tháng",
+      "aiList": [
+        "AI đi cùng bạn",
+        "AI viết câu luyện cho từng từ bạn học",
+        "Tra từ bằng AI khi từ điển chưa có",
+        "Nhiều lượt AI hơn gói Miễn phí"
+      ],
+      "proList": [
+        "30 phiên luyện mỗi ngày",
+        "Không quảng cáo",
+        "Mọi thứ của gói Miễn phí"
+      ],
+      "proSignup": "Tạo tài khoản",
+      "noRefund": "Không hoàn tiền sau khi đã thanh toán."
     },
     "faq": {
       "title": "Câu hỏi thường gặp",
-      "q1": "Wordmet khác flashcard ở điểm nào?",
-      "a1": "Ngoài thẻ, Wordmet có bài tập vận dụng và lịch ôn tự động cho từng từ.",
-      "q2": "Wordmet có miễn phí không?",
-      "a2": "Có. Gói Miễn phí gồm ôn thẻ, tra cứu, 3 phiên luyện tập mỗi ngày và một số lượt AI mỗi tháng.",
-      "q3": "AI có chấm điểm không?",
-      "a3": "Không. AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
-      "q4": "Nên bắt đầu thế nào?",
-      "a4": "Chọn một nhóm theo trình độ hoặc chủ đề và ôn mỗi ngày."
+      "lead": "Không thấy câu bạn cần? Gửi tới {email}."
     },
     "final": {
-      "title": "Bắt đầu học cùng Wordmet",
-      "signup": "Đăng ký",
-      "note": "Miễn phí, không cần thẻ thanh toán."
+      "title": "Bắt đầu với đề bạn vừa làm.",
+      "note": "Miễn phí để bắt đầu. Không cần thẻ thanh toán.",
+      "signup": "Tạo tài khoản miễn phí"
     }
   },
   "Footer": {
@@ -1035,7 +1130,6 @@
       "noDecks": "Bạn chưa có nhóm nào. Tạo nhóm đầu tiên để lưu từ này.",
       "createFirst": "Tạo nhóm đầu tiên",
       "manualButton": "Nghĩa khác, tự nhập",
-      "save": "Lưu {word}",
       "saveShort": "Lưu",
       "openGroup": "Xem nhóm",
       "manualTitle": "Tự nhập nghĩa",
