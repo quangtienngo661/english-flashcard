@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
@@ -46,6 +46,8 @@ const routes = (entitlements: unknown, extra: Record<string, () => Response | Pr
   'GET /v1/me/entitlements': () => Response.json(entitlements),
   ...extra,
 });
+// A pending Button shows a spinner icon; React Aria drops the `aria-busy` the kit Button sets, so the icon is what tells it.
+const spinning = (button: HTMLElement) => button.querySelector('svg.lucide-loader-circle') !== null;
 // Intl puts a no-break space before "₫".
 const dong = (amount: number) => new RegExp(`^${amount.toLocaleString('vi-VN')}\\s₫$`);
 
@@ -175,6 +177,23 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(bodies).toEqual([
       { period_months: 12, expected_amount: 610000, locale: 'vi' }, { period_months: 12, expected_amount: 620000, locale: 'vi' },
     ]);
+  });
+
+  it('Back from the payment page restores Gói học from the back/forward cache (pageshow, persisted): the button works again', async () => {
+    const pageshow = (persisted: boolean) => Object.defineProperty(new Event('pageshow'), 'persisted', { value: persisted });
+    const view = renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
+    const buy = await screen.findByRole('button', { name: 'Mua gói Pro 12 tháng' });
+    await userEvent.click(buy);
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(spinning(buy)).toBe(true));
+    // A page that was loaded afresh (persisted false) is not a restored one: nothing changes.
+    act(() => { window.dispatchEvent(pageshow(false)); });
+    expect(spinning(buy)).toBe(true);
+    act(() => { window.dispatchEvent(pageshow(true)); });
+    expect(spinning(buy)).toBe(false);
+    await userEvent.click(buy);
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(2));
+    expect(view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/orders')).toHaveLength(2);
   });
 
   it('503 → "Chưa tạo được đơn. Thử lại sau ít phút." and the button works again', async () => {
