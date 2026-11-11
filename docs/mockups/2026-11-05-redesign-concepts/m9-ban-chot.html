@@ -255,16 +255,17 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 /* Action buttons (owner's reference 12/11): icon + label + key chip; flip filled accent, know filled green, again outlined red;
    a key legend under them on desktop only. */
 .fc-acts{display:flex;justify-content:center;gap:12px}
-.fc-acts .btn{gap:10px;min-height:48px;padding:0 20px;font-weight:700;box-shadow:none}
+/* Smaller (owner 12/11); "Know" is green text on the surface like "Still learning", not a filled green button. */
+.fc-acts .btn{gap:8px;min-height:40px;padding:0 14px;font-size:.875rem;font-weight:700;box-shadow:none}
 .fc-acts .b-again{background:var(--surface);color:var(--fail);border:1px solid var(--line)}
 .fc-acts .b-flip{background:var(--accent);color:var(--on-accent)}
-.fc-acts .b-know{background:var(--pass);color:#ffffff}
+.fc-acts .b-know{background:var(--surface);color:var(--pass);border:1px solid var(--line)}
 .wm[data-mode="dark"] .fc-acts .b-again{background:color-mix(in oklab,var(--fail) 6%,var(--surface));border-color:color-mix(in oklab,var(--ink) 14%,transparent)}
-.wm[data-mode="dark"] .fc-acts .b-know{background:color-mix(in oklab,#62c98f 52%,#171b2a);color:#eceef5}
+.wm[data-mode="dark"] .fc-acts .b-know{background:color-mix(in oklab,var(--pass) 6%,var(--surface));border-color:color-mix(in oklab,var(--ink) 14%,transparent)}
 .fc-acts .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
-.kc2{font:700 .75rem/1 var(--f-label);min-width:22px;height:22px;padding:0 6px;border-radius:var(--r-key);display:inline-grid;place-items:center;
+.kc2{font:700 .6875rem/1 var(--f-label);min-width:20px;height:20px;padding:0 5px;border-radius:var(--r-key);display:inline-grid;place-items:center;
   background:color-mix(in oklab,currentColor 16%,transparent)}
-.b-flip .kc2,.b-know .kc2{background:color-mix(in oklab,currentColor 22%,transparent)}
+.b-flip .kc2{background:color-mix(in oklab,currentColor 22%,transparent)}
 .fc-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font-size:.875rem;color:var(--muted)}
 .fc-legend>span{display:inline-flex;align-items:center;gap:6px}
 .fc-legend .kc2{background:var(--accent-soft);color:var(--accent)}
@@ -631,7 +632,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     <p class="note">Hiệu ứng lấy đúng từ artifact <a href="https://claude.ai/artifact/TrbJBKg6VFE3x6YkjD1XT7" style="color:var(--page-accent)">Chồng thẻ tan mờ</a>: thẻ phía sau mờ theo độ sâu; kéo thẻ thì thẻ nghiêng và hiện dấu, quá 110 px hoặc vuốt nhanh là chọn; thẻ đã chọn phóng 1,22 lần, mờ 18 px rồi tan trong 0,3 giây; thẻ kế tiếp hiện từ mờ 10 px; tên từ rơi vào đống. Chưa lật mà chọn thì thẻ lắc nhẹ. Khác bản gốc: lá bài dọc và đống sát thẻ (chỗ 1), góc bo C, "Bậc", từ đích in đậm gạch chân.</p>
     <div class="row">
       <figure class="grow"><figcaption>Máy tính 1440: bấm thẻ hoặc Space để lật, kéo thẻ sang trái hoặc phải, hoặc phím 1 / 2 (khi rê chuột trên khung)</figcaption>
-        <div class="desk" data-h="820"><div class="wm mesh" id="learn-desk"></div></div>
+        <div class="desk" data-h="730"><div class="wm mesh" id="learn-desk"></div></div>
       </figure>
       <figure><figcaption>Điện thoại 390: vuốt thẻ, đống nằm dưới thẻ</figcaption>
         <div class="phone wm mesh" style="height:844px" id="learn-phone"></div>
@@ -1125,7 +1126,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     return { flip: flip, commit: commit, finish: finish };
   }
   function fcwHtml(phone) {
-    return '<div class="fcw' + (phone ? ' ph' : '') + '"><div class="fc-arena"' + (phone ? '' : ' style="max-width:780px;margin:0 auto;min-height:540px"') + '>' +
+    return '<div class="fcw' + (phone ? ' ph' : '') + '"><div class="fc-arena"' + (phone ? '' : ' style="max-width:780px;margin:0 auto;min-height:480px"') + '>' +
       '<div class="fc-pile again"><span class="pn">0</span><span class="pl">' + ico('chl', 's') + 'Still learning</span><ul class="fc-minis"></ul></div>' +
       '<div class="fc-stack"></div>' +
       '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Know' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
@@ -1146,7 +1147,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   function progressFn(id) {
     return function (i, n) { var b = $(id + '-bar'), l = $(id + '-left'); if (b) b.style.width = (i / n * 100) + '%'; if (l) l.textContent = (n - i) + ' cards left'; };
   }
-  $('learn-desk').innerHTML = learnHead(false, 'ld') + '<div style="position:relative;display:flex;justify-content:center;height:28px;margin-top:10px" id="toast-d"></div><div style="padding-top:6px">' + fcwHtml(false) + '</div>';
+  $('learn-desk').innerHTML = learnHead(false, 'ld') + '<div style="position:absolute;top:72px;right:28px;z-index:8" id="toast-d"></div><div style="padding-top:20px">' + fcwHtml(false) + '</div>';
   $('learn-phone').innerHTML = learnHead(true, 'lp') + '<div style="padding:10px 16px 0;display:flex;justify-content:center;min-height:44px" id="toast-p"></div><div style="padding:6px 16px 0">' + fcwHtml(true) + '</div>';
   var deckD = deck($('learn-desk').querySelector('.fcw'), { onProgress: progressFn('ld'), toast: $('toast-d') });
   deck($('learn-phone').querySelector('.fcw'), { onProgress: progressFn('lp'), toast: $('toast-p'), maxChips: 1, phone: true });
