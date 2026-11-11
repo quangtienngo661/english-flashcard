@@ -28,9 +28,6 @@ import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
 import { QuickAddBox } from './QuickAddBox';
 
-/** Other decks with cards waiting shown as cards (Figma 117:4425 "Nhóm của bạn"); done and empty decks go into one line. */
-const TODAY_CARDS = 4;
-
 const LINK = 'text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent';
 
 /** Hôm nay (Figma 117:4425 / 117:4712, design §9 M3): the deck to review next, the last practice, the other decks, topics, the side column. */
@@ -203,13 +200,16 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
   );
 }
 
-/** "Nhóm của bạn" on Hôm nay: up to 4 other decks with cards waiting, then one line for decks done today and empty decks. */
+/**
+ * "Nhóm của bạn" on Hôm nay (Figma 117:4425): the other decks with cards waiting as cards, as many as fit the row (DeckRow, owner
+ * 11/11/2026), then one line for decks done today.
+ */
 function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSummary | null }) {
   const t = useTranslations('App.today');
   const locale = useLocale();
   const others = groups.filter((g) => g !== hero && waiting(g) > 0);
   // Owner 10/11/2026: a deck with no word is a card too (its face says "Chưa có từ"), after the decks with cards waiting.
-  const cards = [...others, ...groups.filter((g) => g.total === 0)].slice(0, TODAY_CARDS);
+  const cards = [...others, ...groups.filter((g) => g.total === 0)];
   const done = groups.filter((g) => g.total > 0 && waiting(g) === 0).map((g) => g.name);
   const note = done.length > 0 ? t('noteDone', { names: done.join(', ') }) : null;
   const router = useRouter();
@@ -245,7 +245,7 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
       {cards.length > 0 && (
         <DeckRow label={t('yourGroups')}>
           {cards.map((g) => (
-            <li key={g.id} className="shrink-0 snap-start">
+            <li key={g.id} className="deck-row-cell">
               <GroupStack group={g} size="today" depth={2} href={`/${locale}/app/group?id=${g.id}`} onOpen={(event) => openCard(event, g.id)} />
             </li>
           ))}
