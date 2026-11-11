@@ -35,6 +35,16 @@ test('the Privacy page has its own canonical, hreflang vi and en, and og:url', a
   expect(attr(html, /<link rel="alternate" hrefLang="en" href="([^"]+)"/i)).toMatch(/\/en\/privacy$/);
   expect(attr(html, /<meta property="og:url" content="([^"]+)"/)).toMatch(/\/vi\/privacy$/);
   expect(attr(html, /<meta name="description" content="([^"]+)"/)).toBeTruthy();
+  // M1 of the M8b review: the page's own `openGraph` and `twitter` must name the [locale] image again, the one /vi carries.
+  const home = await (await request.get('/vi')).text();
+  const path = (url: string | null) => (url ? new URL(url).pathname : null);
+  const homeImage = path(attr(home, /<meta property="og:image" content="([^"]+)"/));
+  expect(homeImage).toBe('/vi/opengraph-image/default');
+  expect(path(attr(html, /<meta property="og:image" content="([^"]+)"/))).toBe(homeImage);
+  expect(path(attr(html, /<meta name="twitter:image" content="([^"]+)"/))).toBe(homeImage);
+  expect(attr(html, /<meta property="og:image:width" content="([^"]+)"/)).toBe('1200');
+  expect(attr(html, /<meta property="og:image:height" content="([^"]+)"/)).toBe('630');
+  expect(attr(html, /<meta property="og:image:alt" content="([^"]+)"/)).toBe(copy.vi.Metadata.ogAlt);
 });
 
 // Design §11: sign-in pages stay noindex but carry their own title, so a shared link does not show the home page's.
