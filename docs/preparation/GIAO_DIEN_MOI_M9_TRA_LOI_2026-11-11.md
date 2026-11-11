@@ -68,6 +68,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
 - Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm. Chốt cách B (12/11): chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, dấu ✓ cuối dòng.
+- Box "Chưa đúng" dùng màu cam san hô như dòng nhóm đang chọn (đang thử, 12/11): nền `#e5603f` 10% (tối 16%) trên card, viền 1,5 px `#e5603f` 55%, tiêu đề tối `#e87052`.
 - Chế độ tối: màu không được chìm. Panel "Chưa đúng" có ô đáp án nền xanh nhạt, viền xanh, chữ đáp án xanh sáng; các nền nhạt ở chế độ tối (`accent-soft`, `pass-soft`, `fail-soft`) nâng lên 18–20% màu trên nền card thay cho giá trị Figma Dark.
 - Panel giới thiệu ở Đăng ký / Đăng nhập: thêm chi tiết để thấy việc học từ (đường nhớ qua Bậc 1–5, thẻ từ, từ đến hạn, câu luyện).
 

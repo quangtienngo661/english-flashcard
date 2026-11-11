@@ -284,7 +284,11 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .result .ans .eyebrow{color:var(--pass);font-weight:500}
 .result .ans .w{font-family:var(--f-display);font-weight:800;font-size:1.875rem;line-height:1.1;color:var(--pass);letter-spacing:-0.015em}
 .result .ans .iconbtn{background:color-mix(in oklab,var(--pass) 14%,var(--surface));border-color:color-mix(in oklab,var(--pass) 40%,transparent);color:var(--pass)}
-.wm[data-mode="dark"] .result{border-color:color-mix(in oklab,var(--fail) 60%,transparent)}
+/* Wrong box in the colour of the selected group row (owner 12/11: "box sai thử màu này"): coral wash, 1.5px coral line, coral title. */
+.result{background:color-mix(in oklab,#e5603f 10%,var(--surface));border:1.5px solid color-mix(in oklab,#e5603f 55%,transparent)}
+.wm[data-mode="dark"] .result{background:color-mix(in oklab,#e5603f 16%,var(--surface));border-color:color-mix(in oklab,#e5603f 55%,transparent)}
+.wm[data-mode="dark"] .result .head .dt{color:#e87052!important}
+.wm[data-mode="dark"] .result .xbadge{background:#e87052}
 .wm[data-mode="dark"] .result .ans{border-color:color-mix(in oklab,var(--pass) 60%,transparent)}
 .wm[data-mode="dark"] .result .ans .w{color:#86e6ae}
 .wm[data-mode="dark"] .result .b-sec{border-color:color-mix(in oklab,var(--ink) 28%,transparent)}
