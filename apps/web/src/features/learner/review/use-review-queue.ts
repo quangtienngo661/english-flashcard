@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
 import { showStreak } from '@/app-ui/StreakToast';
+import { writeStreak } from '../calendar/calendar-api';
 import { GROUPS_KEY, groupKey, type Card } from '../groups/groups-api';
 
 export type Answer = 'known' | 'review';
@@ -77,7 +78,10 @@ export function useReviewQueue(groupId: string | null, mode: QueueMode) {
           setSaving(unsaved.current.length);
           if (kept.current?.itemId === next.card.item_id) kept.current = null;
           // Đợt C DC9: only the first study of the learner's day carries it.
-          if (saved?.streak) showStreak(saved.streak.days);
+          if (saved?.streak) {
+            showStreak(saved.streak.days);
+            writeStreak(client, saved.streak.days);
+          }
           if (groupId) void client.invalidateQueries({ queryKey: groupKey(groupId) });
           void client.invalidateQueries({ queryKey: GROUPS_KEY });
         } catch (e) {

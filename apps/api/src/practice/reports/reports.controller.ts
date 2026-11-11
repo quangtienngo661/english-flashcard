@@ -46,6 +46,6 @@ export class MyReportsController {
 
   @Get()
   list(@Query({ schema: listQuery }) query: z.infer<typeof listQuery>, @CurrentLearner() learner: Learner) {
-    return this.reports.listMine(learner.userId, { pageSize: query.page_size, pageToken: query.page_token });
+    return this.reports.listMine(learner, { pageSize: query.page_size, pageToken: query.page_token });
   }
 }

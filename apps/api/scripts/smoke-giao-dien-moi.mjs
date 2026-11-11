@@ -8,7 +8,8 @@
 // What it checks (design §10.2–§10.6): GET /v1/public/prices; next_lemma and last_reviewed on GET /v1/groups against the queue;
 // GET /v1/practice/sessions/last (204, then the session's counts and wrong lemmas); M5.1: an answer's `level` and the session view's
 // `correct` / `wrong` after a reload; GET /v1/me/calendar and /days/:date (counts, items,
-// kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words.
+// kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words;
+// M6.1: lemma, question_type and ai on GET /v1/practice/reports.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -22,8 +23,11 @@ const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
 const PG_CONTAINER = process.env.SMOKE_PG_CONTAINER ?? 'english-learning-postgres-1';
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
 const PASSWORD = 'Smoke-Test-Pass-9!';
-const QUEUE_PREFIX = 'wordmet-gm-smoke';
-const DATABASE = 'english_learning_smoke_gm';
+// SMOKE_GM_SUFFIX (e.g. `_m6`): a session running beside another one gets its own database and queue prefix.
+const SUFFIX = process.env.SMOKE_GM_SUFFIX ?? '';
+if (!/^[a-z0-9_]*$/.test(SUFFIX)) throw new Error(`SMOKE_GM_SUFFIX ${SUFFIX} must be lower-case letters, digits or _.`);
+const QUEUE_PREFIX = `wordmet-gm-smoke${SUFFIX.replaceAll('_', '-')}`;
+const DATABASE = `english_learning_smoke_gm${SUFFIX}`;
 const run = randomUUID().slice(0, 8);
 
 // SMOKE_IGNORE_ENV_FILE=1: the API under test was started from exported variables, not from an env file.
@@ -192,7 +196,7 @@ const [W1, W2] = words;
 
 async function main() {
   const started = Date.now();
-  let admin; let L; let groupId; let wrongWord;
+  let admin; let L; let groupId; let wrongWord; let wrongItemId;
 
   const review = (body) => want(api('POST', '/v1/reviews', { as: L, body: { review_id: randomUUID(), ...body } }), 200, `review ${j(body)}`);
   const firstDueLemma = async () => {
@@ -301,7 +305,7 @@ async function main() {
         let res = await api('POST', `/v1/practice/items/${shown.item.item_id}/answer`, { as: L, idem: true, body: { text: 'zzzzzz' } });
         if (res.json?.result === 'try_again') res = await api('POST', `/v1/practice/items/${shown.item.item_id}/skip`, { as: L });
         check(res.status === 200 && res.json.result === 'wrong', `wrong answer ${res.status} ${res.text}`);
-        wrongWord = word;
+        wrongWord = word; wrongItemId = shown.item.item_id;
       }
     }
     await want(api('POST', `/v1/practice/sessions/${session.id}/finish`, { as: L }), 200, 'finish');
@@ -381,6 +385,18 @@ async function main() {
       check(row.ipa === (w.ipaUk || w.ipaUs || null) && row.example === w.example, `${row.lemma}: list ${j([row.ipa, row.example])} vs the CSV`);
     }
     ok(`total 3 on both pages, 0 for no match; rows ${j([...first.items, ...second.items].map((r) => [r.lemma, r.ipa, r.example]))}`);
+  });
+
+  await step('12. Report the wrong item; GET /v1/practice/reports shows its lemma, question_type and ai (M6.1)', async () => {
+    const reasons = await want(api('GET', '/v1/practice/report-reasons?kind=non_ai', { as: L }), 200, 'reasons');
+    const reason = reasons.items.find((r) => !r.note_required);
+    check(reason, `a non-AI reason without a required note ${j(reasons)}`);
+    await want(api('POST', `/v1/practice/items/${wrongItemId}/report`, { as: L, body: { reason: reason.code } }), 201, 'report');
+    const list = await want(api('GET', '/v1/practice/reports', { as: L }), 200, 'my reports');
+    const row = list.items.find((r) => r.item_id === wrongItemId);
+    check(row && row.lemma === wrongWord.lemma && row.question_type === 'type_word' && row.ai === false && row.reason_label === reason.label,
+      `report row ${j(row)} vs ${wrongWord.lemma}`);
+    ok(j({ lemma: row.lemma, question_type: row.question_type, ai: row.ai, reason_label: row.reason_label, status: row.status }));
   });
 
   console.log(`\n${failures.length === 0 ? 'ALL OK' : `${failures.length} step(s) FAILED`} — ${stepNo} steps in ${Math.round((Date.now() - started) / 1000)}s`);

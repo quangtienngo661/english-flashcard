@@ -3,9 +3,13 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { DotGridBackground } from '@/ui/DotGridBackground';
+import { FloatingButtons } from './FloatingButtons';
 import { MobileTabBar } from './MobileTabBar';
 import { PhoneHeader } from './PhoneHeader';
 import { TopBar } from './TopBar';
+
+// raw-ok: the last row scrolls clear of the floating buttons: tab bar + 100 px on phones, 124 px on desktop (M6 Figma A §6)
+const MAIN = 'mx-auto w-full max-w-320 flex-1 px-4 pb-[calc(10.125rem+env(safe-area-inset-bottom))] pt-6 outline-none md:pb-31 lg:px-8';
 
 /**
  * The frame of every page under a tab (design §5.4): skip link, a sticky glass header (TopBar with the search box from 768 px,
@@ -27,10 +31,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <TopBar />
         <PhoneHeader />
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-320 flex-1 px-4 pb-28 pt-6 outline-none md:pb-12 lg:px-8">
+      <main id="main" tabIndex={-1} className={MAIN}>
         {children}
       </main>
       <MobileTabBar />
+      <FloatingButtons />
     </div>
   );
 }

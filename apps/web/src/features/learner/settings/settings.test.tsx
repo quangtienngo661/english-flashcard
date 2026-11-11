@@ -151,6 +151,14 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.getByRole('link', { name: /Xóa tài khoản/ })).toBeInTheDocument();
   });
 
+  it('M6.8: a row "Báo lỗi của tôi" right after "Lịch sử giao dịch" opens /app/settings/reports', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    const reports = await screen.findByRole('link', { name: /Báo lỗi của tôi/ });
+    expect(reports).toHaveAttribute('href', '/vi/app/settings/reports');
+    const transactions = screen.getByRole('link', { name: /Lịch sử giao dịch/ });
+    expect(transactions.closest('li')?.nextElementSibling).toBe(reports.closest('li'));
+  });
+
   it('the transactions and current plan rows are links over the whole row (audit 26/10/2026 #10)', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
     const transactions = await screen.findByRole('link', { name: /Lịch sử giao dịch/ });

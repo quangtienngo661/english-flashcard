@@ -70,6 +70,7 @@ describe('app chrome (giao diện mới M1.9)', () => {
     expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
       'Tài khoản', 'Cài đặt', 'Lịch sử giao dịch', 'Báo lỗi của tôi', 'Chuyển sang giao diện tối', 'Đăng xuất',
     ]);
+    expect(within(menu).getByRole('menuitem', { name: 'Báo lỗi của tôi' })).toHaveAttribute('href', '/vi/app/settings/reports');
     expect(screen.getByText('Nguyễn Lan')).toBeInTheDocument();
     expect(screen.getByText('lan@example.com')).toBeInTheDocument();
   });
