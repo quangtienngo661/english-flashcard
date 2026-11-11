@@ -10,7 +10,8 @@ import { FAQ_QUESTION, FAQ_TITLE, FOCUS } from './styles';
 /**
  * "Câu hỏi thường gặp" `28:359` (phone `28:470`): the title and the support address on the left, the questions on the right from lg.
  * Native `<details name="faq">`: one open at a time, and it works with no JavaScript. The questions come from the admin's published FAQ,
- * read at build (M8.3); the page leaves the section out when there is none.
+ * read at build (M8.3); the page leaves the section out when there is none. The row's vertical padding sits on the summary, so the whole
+ * question row is the 63 px target (LR50; Figma's 18 px around a 27 px line) and the answer keeps Figma's 10 px gap (R242).
  */
 export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: FaqItem[] }) {
   if (items.length === 0) return null;
@@ -30,13 +31,13 @@ export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: F
         </div>
         <Reveal delay={120} className="flex flex-col gap-2.5 lg:w-165">
           {items.map((item, i) => (
-            <details key={item.question} name="faq" open={i === 0} className="group rounded-wm-lg bg-wm-surface px-5.5 py-4.5 open:shadow-wm-soft">
-              <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 rounded-wm-sm text-wm-ink [&::-webkit-details-marker]:hidden ${FOCUS}`}>
+            <details key={item.question} name="faq" open={i === 0} className="group rounded-wm-lg bg-wm-surface px-5.5 open:shadow-wm-soft">
+              <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 rounded-wm-sm py-4.5 text-wm-ink [&::-webkit-details-marker]:hidden ${FOCUS}`}>
                 <span className={FAQ_QUESTION}>{item.question}</span>
                 <Plus aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-muted group-open:hidden" />
                 <Minus aria-hidden className="mt-0.5 hidden size-5 shrink-0 text-wm-muted group-open:block" />
               </summary>
-              <p className="mt-2.5 font-wm-sans text-wm-base text-wm-muted">{item.answer}</p>
+              <p className="-mt-2 pb-4.5 font-wm-sans text-wm-base text-wm-muted">{item.answer}</p>
             </details>
           ))}
         </Reveal>
