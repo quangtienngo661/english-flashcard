@@ -65,6 +65,11 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
 - Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm, chồng thẻ nhỏ màu nhóm thay ô vuông; vẽ 2 cách để chọn.
+- Panel giới thiệu ở Đăng ký / Đăng nhập: thêm chi tiết để thấy việc học từ (đường nhớ qua Bậc 1–5, thẻ từ, từ đến hạn, câu luyện).
+
+**Mockup tổng hợp (12/11/2026):** https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL (`docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`).
+Là context cho thiết kế UI chính thức và cho M9, đợt polish. Còn mở: chỗ 24 (chụp thật, cần chạy app ở nhánh giao diện mới), cách A hay B
+cho danh sách chọn nhóm, bốn đề xuất câu 3/4/5/13 chưa được xác nhận rõ.
 
 ## Ghi chú cho Part 9
 
