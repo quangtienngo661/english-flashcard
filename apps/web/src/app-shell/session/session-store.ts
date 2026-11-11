@@ -45,7 +45,8 @@ export const LOGOUT_PENDING_KEY = 'wordmet-web-logout-pending';
 export type SessionState =
   /** `retryAt`: when the start-up refresh tries again after a 429 (ms since epoch, B25E30). */
   | { status: 'loading'; retryAt?: number }
-  | { status: 'signed-out'; notice: Notice | null }
+  /** `deleted`: this tab deleted the account and is already loading the account-deleted page (R154). */
+  | { status: 'signed-out'; notice: Notice | null; deleted?: true }
   /** The start-up refresh got a 5xx or no answer: the session is kept, the screen offers a retry (FE36). */
   | { status: 'unavailable' }
   | { status: 'change-password'; me: Me }
@@ -193,7 +194,7 @@ export class SessionStore {
    */
   endAfterDeletion(): void {
     this.token = null;
-    this.set({ status: 'signed-out', notice: null });
+    this.set({ status: 'signed-out', notice: null, deleted: true });
     this.broadcast({ type: 'logout' });
   }
 
