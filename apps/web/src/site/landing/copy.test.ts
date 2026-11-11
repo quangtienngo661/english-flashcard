@@ -49,7 +49,11 @@ describe('Landing copy (M8.5)', () => {
   it('L2 no waitlist is left: its namespace is gone and the legal pages no longer describe it', () => {
     for (const messages of [vi, en]) {
       expect('Waitlist' in messages).toBe(false);
-      expect(Object.keys(messages.Legal)).toEqual(['privacyTitle', 'termsTitle', 'draftNotice', 'effective', 'contents']);
+      // M8.7 adds the Figma chrome around the published text (leads, version line, scope, phone pill name, the two callouts).
+      expect(Object.keys(messages.Legal)).toEqual([
+        'privacyTitle', 'termsTitle', 'draftNotice', 'effective', 'contents', 'privacyLead', 'termsLead', 'versionLine', 'termsScope',
+        'contentsOpen', 'privacyHelpTitle', 'privacyHelpBody', 'termsHelpTitle', 'termsHelpBody',
+      ]);
       expect(JSON.stringify(messages.Legal)).not.toMatch(/waitlist|danh sách chờ|thông báo ra mắt|launch notification/i);
     }
   });

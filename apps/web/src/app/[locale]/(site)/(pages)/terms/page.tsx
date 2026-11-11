@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import { LegalDocument } from '@/components/sections/LegalDocument';
-import { LegalDraft } from '@/components/sections/LegalDraft';
 import { routing } from '@/i18n/routing';
 import { getLegal, pickLanguage } from '@/lib/legal';
-import { formatDay } from '@/lib/format-day';
+import { LegalDraft } from '@/site/legal/LegalDraft';
+import { LegalLayout } from '@/site/legal/LegalLayout';
 
 // Read from the API at each request: an admin publishes a new version without a deploy.
 export const dynamic = 'force-dynamic';
@@ -21,15 +20,18 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  const legal = await getLegal();
-  if (!legal) return <LegalDraft titleKey="termsTitle" />;
-  const t = await getTranslations({ locale, namespace: 'Legal' });
+  const [legal, t] = await Promise.all([getLegal(), getTranslations({ locale, namespace: 'Legal' })]);
+  const title = t('termsTitle');
+  const lead = t('termsLead');
+  if (!legal) return <LegalDraft title={title} lead={lead} />;
   return (
-    <LegalDocument
-      title={t('termsTitle')}
-      source={pickLanguage(legal.terms, locale)}
-      effective={legal.effective_date ? t('effective', { date: formatDay(legal.effective_date) }) : null}
-      contentsLabel={t('contents')}
+    <LegalLayout
+      kind="terms"
+      title={title}
+      lead={lead}
+      version={legal.version}
+      effectiveDate={legal.effective_date}
+      markdown={pickLanguage(legal.terms, locale)}
     />
   );
 }

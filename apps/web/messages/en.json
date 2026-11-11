@@ -356,15 +356,26 @@
     "termsTitle": "Terms of Use",
     "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
     "effective": "Effective from {date}",
-    "contents": "Contents"
+    "contents": "Contents",
+    "privacyLead": "What data Wordmet collects, what it is used for, who it is shared with, and your rights over your own data.",
+    "termsLead": "What you agree to when you use Wordmet: your account, the Pro plan, payments and your content.",
+    "versionLine": "Version {version}",
+    "termsScope": "Applies to wordmet.com",
+    "contentsOpen": "Show contents",
+    "privacyHelpTitle": "Still have a question about your data?",
+    "privacyHelpBody": "Write from your account's own email address. We reply within 2 working days.",
+    "termsHelpTitle": "A problem with a payment?",
+    "termsHelpBody": "Send your account email, the transfer description (it starts with WM) and a photo of the receipt."
   },
   "Sources": {
     "title": "Data sources",
     "intro": "Wordmet uses the openly licensed data sets below. Thank you to the people who made and shared them.",
     "empty": "There are no data sources to show yet.",
-    "license": "License",
-    "version": "Version",
-    "link": "Original site"
+    "license": "License: {license}",
+    "version": "Version {version}",
+    "link": "Original site",
+    "autoUpdate": "This page updates itself: it lists only the sources behind content learners can see.",
+    "count": "{count, plural, one {# source in use} other {# sources in use}}"
   },
   "NotFound": {
     "title": "Page not found",
