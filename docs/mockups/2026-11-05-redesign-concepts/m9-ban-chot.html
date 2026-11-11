@@ -259,7 +259,10 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .fcw.ph .fc-stack{grid-column:1/-1;justify-self:center;order:-1;width:330px;height:420px}
 .fcw.ph .fc-pile{min-height:0} .fcw.ph .fc-pile .pn{font-size:32px} .fcw.ph .fc-minis{min-height:0}
 .fcw.ph .fc .lemma{font-size:40px}
-.fcw.ph .fc-acts .btn{width:auto;flex:1}
+.fcw.ph .fc-acts{gap:8px}
+.fcw.ph .fc-acts .btn{width:auto;flex:1 1 0;min-width:0;padding:0 8px;font-size:.875rem}
+/* Phone: no keyboard, so no key hints (owner 12/11). */
+.fcw.ph .kbd{display:none}
 @media (prefers-reduced-motion: reduce){.fc[data-depth="1"],.fc[data-depth="2"]{filter:none}}
 .toast{display:inline-flex;align-items:center;gap:10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-row);
   box-shadow:var(--sh-pop);padding:10px 14px;font-size:.875rem;font-weight:600}
@@ -292,7 +295,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .result .ans .w{font-family:var(--f-display);font-weight:800;font-size:1.875rem;line-height:1.1;color:var(--pass);letter-spacing:-0.015em}
 .result .ans .iconbtn{background:color-mix(in oklab,var(--pass) 14%,var(--surface));border-color:color-mix(in oklab,var(--pass) 40%,transparent);color:var(--pass)}
 /* Wrong box in the colour of the selected group row (owner 12/11: "box sai thử màu này"): coral wash, 1.5px coral line, coral title. */
-.result{background:color-mix(in oklab,#e5603f 10%,var(--surface));border:1.5px solid color-mix(in oklab,#e5603f 55%,transparent)}
+/* Light keeps the deep red of the fail token (owner 12/11); dark uses the coral below. */
+.result{background:color-mix(in oklab,var(--fail) 9%,var(--surface));border:1.5px solid color-mix(in oklab,var(--fail) 62%,transparent)}
 .wm[data-mode="dark"] .result{background:color-mix(in oklab,#e5603f 16%,var(--surface));border-color:color-mix(in oklab,#e5603f 55%,transparent)}
 .wm[data-mode="dark"] .result .head .dt{color:#e87052!important}
 .wm[data-mode="dark"] .result .xbadge{background:#e87052}
@@ -379,6 +383,27 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   animation:lvc 14s linear infinite;animation-delay:inherit}
 @keyframes travel{from{offset-distance:2%}to{offset-distance:98%}}
 @keyframes lvc{0%{background:var(--lv0)}20%{background:var(--lv1)}40%{background:var(--lv2)}60%{background:var(--lv3)}80%{background:var(--lv4)}95%{background:var(--lv5)}}
+/* Stronger ground for the sign-up showcase (owner 12/11). */
+.show.show-bg{background-color:color-mix(in oklab,var(--accent) 13%,var(--bg));background-image:
+  radial-gradient(46% 36% at 18% 14%,color-mix(in oklab,var(--accent) 34%,transparent),transparent 70%),
+  radial-gradient(40% 30% at 88% 10%,color-mix(in oklab,var(--mark) 48%,transparent),transparent 70%),
+  radial-gradient(52% 40% at 82% 92%,color-mix(in oklab,var(--pass) 30%,transparent),transparent 70%),
+  radial-gradient(46% 40% at 8% 86%,color-mix(in oklab,var(--accent) 26%,transparent),transparent 70%)}
+.wm[data-mode="dark"] .show.show-bg{background-image:
+  radial-gradient(46% 36% at 18% 14%,color-mix(in oklab,var(--accent) 30%,transparent),transparent 70%),
+  radial-gradient(40% 30% at 88% 10%,color-mix(in oklab,var(--mark) 16%,transparent),transparent 70%),
+  radial-gradient(52% 40% at 82% 92%,color-mix(in oklab,var(--pass) 24%,transparent),transparent 70%),
+  radial-gradient(46% 40% at 8% 86%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 70%)}
+.show-bg .mpath path{stroke:color-mix(in oklab,var(--ink) 35%,transparent)}
+/* Typing demo in the showcase practice card. */
+.typing{display:inline-block;min-width:84px;border-bottom:2px solid var(--accent);color:var(--accent);padding:0 4px;border-radius:var(--r-ctl) var(--r-ctl) 0 0;
+  background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.typing::after{content:"";display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+.typing.done{color:var(--pass);border:1.5px solid var(--pass);border-radius:var(--r-ctl);background:var(--pass-soft)}
+.typing.done::after{display:none}
+@keyframes blink{50%{opacity:0}}
+.kpress{animation:kpress 380ms var(--ease-out)}
+@keyframes kpress{0%{transform:scale(1)}40%{transform:scale(.86);background:var(--accent);color:var(--on-accent);opacity:1}100%{transform:scale(1)}}
 .ghostchip{position:absolute;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:var(--r-ctl);background:color-mix(in oklab,var(--surface) 55%,transparent);
   color:color-mix(in oklab,var(--ink) 55%,transparent);z-index:0}
 .glow{position:absolute;inset:-10%;background-image:
@@ -925,7 +950,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       el.className = 'fc'; el.dataset.idx = String(k); el.dataset.depth = '3';
       var stageTxt = 'Đang ở ' + LVN[c.stage] + (c.stage ? ' · ôn lại sau ' + LVD[c.stage] : '');
       el.innerHTML = '<div class="flip"><section class="face front"><div class="ftop"><span class="pos">' + c.pos + '</span><span class="say">' + ico('vol', 's') + '</span></div>' +
-        '<div class="word"><p class="lemma">' + fcEsc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint2">Bấm vào thẻ hoặc Space để lật</p></section>' +
+        '<div class="word"><p class="lemma">' + fcEsc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint2">' + (opts.phone ? 'Chạm vào thẻ để lật' : 'Bấm vào thẻ hoặc Space để lật') + '</p></section>' +
         '<section class="face back"><div class="ftop"><span class="bl">' + fcEsc(c.lemma) + '<i>' + c.pos + '</i></span><span class="say">' + ico('vol', 's') + '</span></div>' +
         '<p class="def">' + fcEsc(c.def) + '</p><p class="vi">' + fcEsc(c.vi) + '</p><div class="ex"><span class="eyebrow">câu mẫu</span><p style="margin:0">' + fcMark(c.ex, c) + '</p></div><p class="stagep">' + stageTxt + '</p></section></div>' +
         '<span class="stamp again">' + ico('x', 's') + 'Cần ôn lại<small>về Bậc 1</small></span>' +
@@ -1096,7 +1121,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   $('learn-desk').innerHTML = learnHead(false, 'ld') + '<div style="position:relative;display:flex;justify-content:center;height:28px;margin-top:10px" id="toast-d"></div><div style="padding-top:6px">' + fcwHtml(false) + '</div>';
   $('learn-phone').innerHTML = learnHead(true, 'lp') + '<div style="padding:10px 16px 0;display:flex;justify-content:center;min-height:44px" id="toast-p"></div><div style="padding:6px 16px 0">' + fcwHtml(true) + '</div>';
   var deckD = deck($('learn-desk').querySelector('.fcw'), { onProgress: progressFn('ld'), toast: $('toast-d') });
-  deck($('learn-phone').querySelector('.fcw'), { onProgress: progressFn('lp'), toast: $('toast-p'), maxChips: 1 });
+  deck($('learn-phone').querySelector('.fcw'), { onProgress: progressFn('lp'), toast: $('toast-p'), maxChips: 1, phone: true });
   var overL = false, lDesk = $('learn-desk').parentElement;
   lDesk.addEventListener('mouseenter', function () { overL = true; });
   lDesk.addEventListener('mouseleave', function () { overL = false; });
@@ -1292,17 +1317,16 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="field"><label>Họ</label><div class="input">Nguyễn</div></div><div class="field"><label>Tên</label><div class="input">Lan</div></div></div>' +
     '<div class="field"><label>Email</label><div class="input focus">lan@example.com</div></div><div class="field"><label>Mật khẩu</label><div class="input"><span class="ph">Ít nhất 8 ký tự</span></div></div>' +
     '<button class="btn b-pri" type="button" style="width:100%">Tạo tài khoản</button></div><p class="sm mut" style="position:relative">Đã có tài khoản? <b style="color:var(--accent)">Đăng nhập</b></p></div>' +
-    '<div style="padding:24px"><div class="show mesh" style="height:852px;background-color:color-mix(in oklab,var(--accent) 6%,var(--bg))">' +
+    '<div style="padding:24px"><div class="show mesh show-bg" style="height:852px">' +
     '<svg class="mpath" viewBox="0 0 700 852" preserveAspectRatio="none" aria-hidden="true"><path id="mem" d="' + P + '"/></svg>' +
     '<span class="ghostchip" style="left:60px;top:90px">deadline</span><span class="ghostchip" style="left:470px;top:560px">negotiate</span><span class="ghostchip" style="left:90px;top:640px">commute</span>' +
     nodes.map(function (n) { return '<div class="node" data-t="' + n[0] + '" style="--c:var(--' + n[2] + ')"><i></i><span>' + n[1] + '</span></div>'; }).join('') +
     ['mitigate', 'allocate', 'viable', 'coherent'].map(function (w, i) { return '<span class="traveler" style="offset-path:path(\'' + P + '\');animation-delay:' + (-i * 3.5) + 's">' + w + '</span>'; }).join('') +
-    '<div class="card" style="position:absolute;left:110px;top:200px;width:330px;gap:8px;rotate:-2deg;box-shadow:var(--sh-pop);z-index:3"><span class="eyebrow">gặp trong bài báo · thứ hai</span><div class="dt" style="font-weight:800;font-size:2.25rem;line-height:1">mitigate</div><span class="sm mut">verb · /ˈmɪt.ɪ.ɡeɪt/</span><span>to make something bad less serious</span><span class="mut sm">giảm nhẹ</span>' +
-    '<div style="background:var(--surface-2);border-radius:var(--r-row);padding:10px 12px" class="sm">Planting trees can help <span class="tw">mitigate</span> urban heat.</div><div class="cap" style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:var(--lv1)"></i>Bậc 1 · ôn lại ngày mai</div></div>' +
-    '<div class="card" style="position:absolute;left:380px;top:430px;width:250px;gap:10px;rotate:2deg;box-shadow:var(--sh-pop);z-index:3;padding:18px"><span class="eyebrow">hôm nay</span><div style="display:flex;align-items:baseline;gap:8px"><b class="dt" style="font-weight:800;font-size:2.5rem;line-height:1;color:var(--accent)">12</b><span class="sm">từ đến hạn</span></div>' + lvbar([2, 4, 3, 2, 1, 0]) +
+    '<div class="card" style="position:absolute;left:110px;top:200px;width:330px;min-height:292px;rotate:-2deg;box-shadow:var(--sh-pop);z-index:3"><div id="sc-word" style="display:flex;flex-direction:column;gap:8px"></div></div>' +
+    '<div class="card" style="position:absolute;left:380px;top:430px;width:250px;gap:10px;rotate:2deg;box-shadow:var(--sh-pop);z-index:3;padding:18px"><span class="eyebrow">hôm nay</span><div style="display:flex;align-items:baseline;gap:8px"><b class="dt" id="sc-due" style="font-weight:800;font-size:2.5rem;line-height:1;color:var(--accent);display:inline-block;font-variant-numeric:tabular-nums">12</b><span class="sm">từ đến hạn</span></div>' + lvbar([2, 4, 3, 2, 1, 0]) +
     '<div class="lvlegend"><span style="--c:var(--lv-pri)"><b>2</b> ưu tiên</span><span style="--c:var(--lv-due)"><b>10</b> đến hạn</span></div></div>' +
-    '<div class="card" style="position:absolute;left:70px;top:520px;width:300px;gap:10px;rotate:-1.5deg;box-shadow:var(--sh-pop);z-index:2;padding:18px"><span class="qchip" style="align-self:flex-start">điền từ vào câu</span><span class="dt" style="font-weight:700;font-size:1.125rem;line-height:1.4">The new policy should <span style="display:inline-block;min-width:80px;border-bottom:2px solid var(--accent)">&nbsp;</span> the risk.</span>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">allocate</span><span class="chip on" style="--c:var(--pass)">mitigate</span><span class="chip">deteriorate</span></div></div>' +
+    '<div class="card" style="position:absolute;left:70px;top:530px;width:330px;gap:10px;rotate:-1.5deg;box-shadow:var(--sh-pop);z-index:2;padding:18px"><span class="qchip" style="align-self:flex-start">điền từ vào câu</span>' +
+    '<div id="sc-prac" class="dt" style="font-weight:700;font-size:1.1875rem;line-height:1.55;min-height:60px"></div><div id="sc-key" class="cap" style="display:flex;align-items:center;gap:8px;min-height:24px"></div></div>' +
     '<div style="position:absolute;left:24px;bottom:22px;right:24px;display:flex;justify-content:space-between;align-items:flex-end;z-index:3"><p class="sm" style="max-width:300px"><b>Đường nhớ của mỗi từ.</b> <span class="mut">Trả lời đúng thì lên bậc và lâu hơn mới gặp lại; sai thì về Bậc 1.</span></p><span class="eyebrow">69 từ đang đi trên đường này</span></div>' +
     '</div></div></div>';
   function placeNodes() {
@@ -1313,7 +1337,57 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       n.style.left = (p.x / box.width * 100) + '%'; n.style.top = (p.y / box.height * 100) + '%';
     });
   }
-  $('otp-phone').innerHTML = '<div style="padding:20px 16px"><span class="logo">wordmet<i>.</i></span></div><div style="padding:40px 20px;position:relative"><div class="glow"></div>' +
+  // Showcase loop: five words take turns in the word card; the practice card types the word into the blank, presses Enter, turns green.
+  var SC = [
+    { w: 'mitigate', pos: 'verb', ipa: '/ˈmɪt.ɪ.ɡeɪt/', def: 'to make something bad less serious', vi: 'giảm nhẹ', ex: ['Planting trees can help ', ' urban heat.'], src: 'gặp trong bài báo · thứ hai', lv: 1, q: ['The new policy should ', ' the risk.'] },
+    { w: 'allocate', pos: 'verb', ipa: '/ˈæl.ə.keɪt/', def: 'to give a share of something for a purpose', vi: 'phân bổ', ex: ['The council will ', ' more money to buses.'], src: 'gặp trong Đề 12 · thứ ba', lv: 2, q: ['We need to ', ' more time to testing.'] },
+    { w: 'viable', pos: 'adjective', ipa: '/ˈvaɪ.ə.bəl/', def: 'able to work successfully', vi: 'khả thi', ex: ['Solar power is now a ', ' option.'], src: 'gặp trong podcast · thứ tư', lv: 3, q: ['Is the plan financially ', '?'] },
+    { w: 'deteriorate', pos: 'verb', ipa: '/dɪˈtɪə.ri.ə.reɪt/', def: 'to become worse over time', vi: 'xấu đi', ex: ['Air quality tends to ', ' in the dry season.'], src: 'gặp trong Đề 9 · thứ năm', lv: 1, q: ['His health began to ', ' last winter.'] },
+    { w: 'coherent', pos: 'adjective', ipa: '/kəʊˈhɪə.rənt/', def: 'logical and well organised', vi: 'mạch lạc', ex: ['She gave a clear and ', ' answer.'], src: 'gặp trong phim · thứ sáu', lv: 4, q: ['Write a ', ' argument in your essay.'] }
+  ];
+  var LVNEXT = ['ngày mai', 'sau 3 ngày', 'sau 7 ngày', 'sau 14 ngày', 'sau 30 ngày'];
+  function scWord(d) {
+    return '<span class="eyebrow">' + d.src + '</span><div class="dt" style="font-weight:800;font-size:2.25rem;line-height:1">' + d.w + '</div>' +
+      '<span class="sm mut">' + d.pos + ' · ' + d.ipa + '</span><span>' + d.def + '</span><span class="mut sm">' + d.vi + '</span>' +
+      '<div style="background:var(--surface-2);border-radius:var(--r-row);padding:10px 12px" class="sm">' + d.ex[0] + '<span class="tw">' + d.w + '</span>' + d.ex[1] + '</div>' +
+      '<div class="cap" style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:var(--lv' + d.lv + ')"></i>Bậc ' + d.lv + ' · ôn lại ' + LVNEXT[d.lv - 1] + '</div>';
+  }
+  function scSwap(el, html) {
+    var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (rm || !el.animate) { el.innerHTML = html; return; }
+    el.animate([{ opacity: 1, filter: 'blur(0px)', transform: 'none' }, { opacity: 0, filter: 'blur(6px)', transform: 'translateY(-6px)' }], { duration: 220, easing: 'ease-in', fill: 'forwards' }).onfinish = function () {
+      el.innerHTML = html;
+      el.animate([{ opacity: 0, filter: 'blur(6px)', transform: 'translateY(8px)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.23,1,.32,1)', fill: 'forwards' });
+    };
+  }
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  async function scLoop() {
+    var wEl = $('sc-word'), pEl = $('sc-prac'), kEl = $('sc-key'), due = $('sc-due'), n = 12, k = 0;
+    if (!wEl) return;
+    var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (rm) { var d0 = SC[0]; wEl.innerHTML = scWord(d0); pEl.innerHTML = d0.q[0] + '<span class="typing done">' + d0.w + '</span>' + d0.q[1]; return; }
+    for (;;) {
+      var d = SC[k % SC.length];
+      if (k % SC.length === 0) { n = 12; due.textContent = n; }
+      scSwap(wEl, scWord(d));
+      scSwap(pEl, d.q[0] + '<span class="typing" id="sc-blank"></span>' + d.q[1]);
+      kEl.innerHTML = '';
+      await sleep(900);
+      var blank = $('sc-blank');
+      for (var i = 1; i <= d.w.length; i++) { if (blank) blank.textContent = d.w.slice(0, i); await sleep(85 + Math.random() * 50); }
+      await sleep(320);
+      kEl.innerHTML = '<span class="kbd" id="sc-enter" style="opacity:.8">Enter</span>';
+      var ek = $('sc-enter'); if (ek) ek.classList.add('kpress');
+      await sleep(260);
+      if (blank) blank.classList.add('done');
+      kEl.innerHTML = '<span style="color:var(--pass);font-weight:700;display:inline-flex;align-items:center;gap:4px">' + ico('check', 's') + 'Đúng</span><span class="mut">lên Bậc ' + Math.min(d.lv + 1, 5) + '</span>';
+      n = Math.max(0, n - 1); due.textContent = n;
+      if (due.animate) due.animate([{ transform: 'translateY(-40%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.3,1.4,.5,1)' });
+      await sleep(1700);
+      k++;
+    }
+  }
+  $('otp-phone').innerHTML ='<div style="padding:20px 16px"><span class="logo">wordmet<i>.</i></span></div><div style="padding:40px 20px;position:relative"><div class="glow"></div>' +
     '<div class="card" style="position:relative;gap:16px;border-radius:var(--r-dlg)"><h3 class="t-page-m">Nhập mã 6 số</h3><p class="sm mut">Mã đã gửi tới lan@example.com. Mã hết hạn sau 10 phút.</p>' +
     '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">' + ['4', '8', '1', '', '', ''].map(function (d, i) { return '<div class="input' + (i === 3 ? ' focus' : '') + '" style="text-align:center;font-family:var(--f-display);font-weight:800;font-size:1.5rem;padding:8px 0">' + (d || '&nbsp;') + '</div>'; }).join('') + '</div>' +
     '<button class="btn b-pri" type="button" style="width:100%">Xác minh</button><button class="btn b-ghost" type="button" style="align-self:center">Gửi lại mã</button></div></div>';
@@ -1357,7 +1431,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   segBtns.forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.mode); }); });
   var start = 'light'; try { start = localStorage.getItem('wm-m9-mode') || 'light'; } catch (e) {}
-  setMode(start); fit();
+  setMode(start); fit(); scLoop();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
 </script>
