@@ -293,6 +293,7 @@ describe('loadConfig', () => {
       'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
       'auth.captcha.ip': { by: 'ip', max: 60, windowSeconds: 60 },
       'public.prices.ip': { by: 'ip', max: 60, windowSeconds: 60 },
+      'public.faq.ip': { by: 'ip', max: 60, windowSeconds: 60 },
     });
   });
 
