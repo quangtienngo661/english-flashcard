@@ -32,19 +32,18 @@ const period = (label: string) => within(pricing().getByText(label, { exact: tru
 describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
   it('has the hero h1 and the section headings in Figma order', () => {
     renderHome();
-    const headings = screen
-      .getAllByRole('heading')
-      .filter((h) => h.tagName === 'H1' || h.tagName === 'H2')
-      .map((h) => `${h.tagName} ${h.textContent}`);
-    expect(headings).toEqual([
+    // Accessible names, not textContent: M8.6 splits each title into aria-hidden words beside one sr-only copy.
+    const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
+    const expected = [
       'H1 Ôn từ đúng lúc, luyện từ trong câu.',
       'H2 Từ của mỗi đề thành một nhóm.',
       'H2 Từ lúc gặp tới lúc dùng được',
       'H2 Hai gói, không tự gia hạn.',
       'H2 Câu hỏi thường gặp',
       'H2 Bắt đầu với đề bạn vừa làm.',
-    ]);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName('Ôn từ đúng lúc, luyện từ trong câu.');
+    ];
+    expect(headings.map((h) => h.tagName)).toEqual(expected.map((e) => e.slice(0, 2)));
+    headings.forEach((h, i) => expect(h).toHaveAccessibleName(expected[i].slice(3)));
   });
 
   it('the sections carry the anchors of the header and the hero (nhom-tu, cach-hoc, gia, hoi-dap)', () => {

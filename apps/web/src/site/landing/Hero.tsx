@@ -2,6 +2,10 @@ import { ArrowRight } from 'lucide-react';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { ButtonLink } from '@/ui/ButtonLink';
+import { Parallax } from '../interactive/Parallax';
+import { Reveal } from '../interactive/Reveal';
+import { SplitWords } from '../interactive/SplitWords';
+import { TopicTicker } from '../interactive/TopicTicker';
 import { Container } from '../layout/Container';
 import type { LandingCopy } from './copy';
 import { ChoiceRow, Glow, Marked, Progress, WaveBars } from './parts';
@@ -9,8 +13,9 @@ import { BIN_GLOW, FLOAT_VALUE, TEXT_17 } from './styles';
 
 /**
  * Figma Hero `5:24` (phone `9:115`): the topic pill, the title with "trong câu" in the accent colour, the lead, two buttons and the stage
- * (the app mock-up with its floating cards: two from xl, where Figma's offsets fit beside it, one below). Static markup; M8.6 adds the
- * word-by-word entrance, the topic ticker, the bobbing cards and the wave bars on the elements marked here.
+ * (the app mock-up with its floating cards: two from xl, where Figma's offsets fit beside it, one below). M8.6: everything comes in on
+ * load (bản 3's delays: pill 0, title 120 word by word, lead 620, buttons 760, stage 880), the topic list ticks, the cards bob and follow
+ * a fine pointer, the wave bars move.
  */
 export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage: LandingCopy['stage']; locale: AppLocale }) {
   const at = copy.line2.indexOf(copy.accent);
@@ -21,29 +26,32 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
       <Glow tone="accent" className="-top-5 left-1/2 -ml-160 h-126 w-192" />
       <Glow tone="mark" className="top-55 left-1/2 -ml-5 h-114 w-168" />
       <Container className="flex flex-col items-center gap-4.5 pt-11 pb-14 md:gap-5.5 md:pt-19 md:pb-18">
-        <p className="flex items-center gap-2 rounded-wm-pill border border-wm-line bg-wm-surface py-1.5 pr-3.5 pl-1.5 shadow-wm-soft">
-          {/* "Chủ đề (chạy vòng)": 20 px rows behind a window one row high; M8.6 moves the list. */}
+        <Reveal
+          as="p"
+          trigger="load"
+          blur={8}
+          className="flex items-center gap-2 rounded-wm-pill border border-wm-line bg-wm-surface py-1.5 pr-3.5 pl-1.5 shadow-wm-soft"
+        >
+          {/* "Chủ đề (chạy vòng)": 20 px rows behind a window one row high. */}
           <span data-topic-ticker="" className="h-5 w-21 shrink-0 overflow-hidden rounded-wm-md bg-wm-accent md:w-22.25">
-            <span className="flex flex-col">
-              {copy.topics.map((topic) => (
-                <span key={topic} className="flex h-5 items-center justify-center font-wm-sans text-wm-label text-wm-on-accent">
-                  {topic}
-                </span>
-              ))}
-            </span>
+            <TopicTicker topics={copy.topics} />
           </span>
           <span className="font-wm-sans text-wm-caption text-wm-muted md:text-wm-small">{copy.topicLabel}</span>
-        </p>
+        </Reveal>
 
-        <h1 id="hero-title" className="max-w-205 text-center font-wm-display text-wm-site-hero-mobile text-wm-ink lg:text-wm-site-hero">
-          {copy.line1} <br className="md:hidden" />
-          {before}
-          <span className="text-wm-accent">{copy.accent}</span>
-          {after}
-        </h1>
-        <p className={cn(TEXT_17, 'max-w-150 text-center text-wm-muted md:text-wm-lead')}>{copy.lead}</p>
+        <SplitWords
+          as="h1"
+          id="hero-title"
+          trigger="load"
+          delay={120}
+          className="max-w-205 text-center font-wm-display text-wm-site-hero-mobile text-wm-ink lg:text-wm-site-hero"
+          segments={[{ text: `${copy.line1} ` }, { br: 'md:hidden' }, { text: before }, { text: copy.accent, className: 'text-wm-accent' }, { text: after }]}
+        />
+        <Reveal as="p" trigger="load" delay={620} blur={10} className={cn(TEXT_17, 'max-w-150 text-center text-wm-muted md:text-wm-lead')}>
+          {copy.lead}
+        </Reveal>
 
-        <div className="flex flex-wrap justify-center gap-2.5 md:gap-3">
+        <Reveal trigger="load" delay={760} blur={8} className="flex flex-wrap justify-center gap-2.5 md:gap-3">
           <ButtonLink reload variant="primary" href={`/${locale}/app/register`}>
             {copy.signup}
             <ArrowRight aria-hidden className="size-4" />
@@ -51,7 +59,7 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
           <ButtonLink reload variant="secondary" href="#cach-hoc">
             {copy.howTo}
           </ButtonLink>
-        </div>
+        </Reveal>
 
         <Stage copy={stage} />
       </Container>
@@ -62,14 +70,16 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
 /** "Sân khấu" `5:42`: Figma places the floating cards in its coordinates (desktop (−110, −40) and (793, 288); phone (−4, −11)). */
 function Stage({ copy }: { copy: LandingCopy['stage'] }) {
   return (
-    <div className="relative w-full max-w-250 pt-23 xl:pt-10">
-      <div className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-stage lg:flex-row lg:gap-4.5 lg:p-5">
-        <WordCard copy={copy} />
-        <PracticeCard copy={copy} />
-      </div>
-      <AddedCard copy={copy} />
-      <BinCard copy={copy} />
-    </div>
+    <Reveal trigger="load" delay={880} blur={24} className="w-full max-w-250">
+      <Parallax className="relative pt-23 xl:pt-10">
+        <div className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-stage lg:flex-row lg:gap-4.5 lg:p-5">
+          <WordCard copy={copy} />
+          <PracticeCard copy={copy} />
+        </div>
+        <AddedCard copy={copy} />
+        <BinCard copy={copy} />
+      </Parallax>
+    </Reveal>
   );
 }
 

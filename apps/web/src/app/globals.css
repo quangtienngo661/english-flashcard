@@ -985,3 +985,424 @@
   .cstack-flip[data-flipped='true'], .cstack-back { transform: none; }
   .cstack-face[aria-hidden='true'] { opacity: 0; }
 }
+
+/* site motion */
+/* Giao diện mới M8.6: the motion of the public pages, landing bản 3 (docs/mockups/2026-11-05-redesign-concepts/landing-mo.html) mapped onto
+   Figma page 2:3 with the numbers of the plan's M8.6 Interfaces. Three rules hold for the whole block:
+   - Before JS the server HTML is the end state. Only `html.js` (added by the site's inline head script, S/layout/site-head-script.ts)
+     hides an element before it comes in, and every rule here sits under `html.js`.
+   - Reduced motion: the whole block is inside `prefers-reduced-motion: no-preference`, so nothing hides, moves or loops.
+   - Only transform, opacity and filter move (the closing glow turns a gradient angle, bản 3's own). Below 768 px no blur passes 12 px.
+   The code that marks the elements is in S/interactive/. */
+@property --wm-ang {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+:root {
+  --wm-site-ease: var(--ease-wm-out);
+  /* No cap above 768 px; phones cap every blur at 12 px (design §8.1). */
+  --wm-blur-cap: 999px;
+  /* Words: opacity 650 ms; blur 12 → 0 and .3em → 0 in 800 ms; 60 ms apart. */
+  --wm-site-word-fade: 650ms;
+  --wm-site-word-move: 800ms;
+  --wm-site-word-stagger: 60ms;
+  --wm-site-word-blur: 12px;
+  --wm-site-word-rise: 0.3em;
+  /* Reveal: opacity 700 ms; blur 16 → 0 and translateY(18px) scale(.985) → none in 900 ms. */
+  --wm-site-reveal-fade: 700ms;
+  --wm-site-reveal-move: 900ms;
+  --wm-site-reveal-blur: 16px;
+  --wm-site-reveal-rise: 18px;
+  --wm-site-reveal-scale: 0.985;
+  /* Halos 16 s / 19 s; the 404's 5 s. */
+  --wm-site-halo-a: 16s;
+  --wm-site-halo-b: 19s;
+  --wm-site-halo-404: 5s;
+  /* Wave bars 900 ms, 150 ms apart; floating cards bob 6 s (−5 px ↔ 6 px) and follow the pointer in 400 ms. */
+  --wm-site-wave: 900ms;
+  --wm-site-wave-step: -150ms;
+  --wm-site-bob: 6s;
+  --wm-site-bob-up: -5px;
+  --wm-site-bob-down: 6px;
+  --wm-site-parallax: 400ms;
+  /* Word strip: 52 s, the reversed row 64 s. */
+  --wm-site-strip: 52s;
+  --wm-site-strip-reverse: 64s;
+  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all); the caption comes in last, 8 px, 500 ms. */
+  --wm-site-flash: 1100ms;
+  --wm-site-caption: 500ms;
+  --wm-site-caption-rise: 8px;
+  /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
+  --wm-site-caret: 1s;
+  --wm-site-ping: 2.4s;
+  --wm-site-result: 400ms;
+  --wm-site-result-rise: 8px;
+  --wm-site-result-blur: 6px;
+  /* Closing card glow: one turn in 6 s, blur 40 px. Pro card: the light's blur, the badges' 3000 ms round. */
+  --wm-site-glow-turn: 6s;
+  --wm-site-glow-blur: 40px;
+  --wm-site-sweep-blur: 24px;
+  --wm-site-badge: 3000ms;
+  /* 404 (Figma scene 5, 24:427): card opacity 700 ms, rise 28 px and scale .96 in 1000 ms; "404" from −22 px at 250 ms; the text and the
+     button from 14 px at 450 / 550 / 680 ms; each 800 ms (opacity 600). */
+  --wm-site-404-card-fade: 700ms;
+  --wm-site-404-card-move: 1000ms;
+  --wm-site-404-card-rise: 28px;
+  --wm-site-404-card-scale: 0.96;
+  --wm-site-404-fade: 600ms;
+  --wm-site-404-move: 800ms;
+  --wm-site-404-drop: -22px;
+  --wm-site-404-rise: 14px;
+}
+
+@media (width < 48rem) {
+  :root {
+    --wm-blur-cap: 12px;
+  }
+}
+
+@keyframes wm-site-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes wm-site-word {
+  from {
+    filter: blur(min(var(--wm-site-word-blur), var(--wm-blur-cap)));
+    transform: translateY(var(--wm-site-word-rise));
+  }
+}
+@keyframes wm-site-reveal {
+  from {
+    filter: blur(min(var(--wm-blur, var(--wm-site-reveal-blur)), var(--wm-blur-cap)));
+    transform: translateY(var(--wm-site-reveal-rise)) scale(var(--wm-site-reveal-scale));
+  }
+}
+/* bản 3's drift: the blue halo right and down, growing; the yellow one left and up, shrinking. */
+@keyframes wm-site-drift-a {
+  to {
+    transform: translate(18%, 46px) scale(1.1);
+  }
+}
+@keyframes wm-site-drift-b {
+  to {
+    transform: translate(-20%, -34px) scale(0.92);
+  }
+}
+@keyframes wm-site-drift-404-a {
+  to {
+    transform: translate(50px, 30px);
+  }
+}
+@keyframes wm-site-drift-404-b {
+  to {
+    transform: translate(-40px, -24px);
+  }
+}
+@keyframes wm-site-wave {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* `translate`, not `transform`: the card keeps its `rotate` (Tailwind's rotate-* utilities) and its pointer offset (`transform`). */
+@keyframes wm-site-bob {
+  from {
+    translate: 0 var(--wm-site-bob-up);
+  }
+  to {
+    translate: 0 var(--wm-site-bob-down);
+  }
+}
+@keyframes wm-site-slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* 240 ms of 1100 ms = 21.82 %. */
+@keyframes wm-site-flash {
+  0% {
+    opacity: 0;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  21.82% {
+    opacity: 1;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wm-site-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--wm-site-caption-rise));
+  }
+}
+@keyframes wm-site-blink {
+  50% {
+    opacity: 0;
+  }
+}
+/* bản 3's ping as a ring that grows 16 px past the 52 px button (scale 84 / 52) and fades by 70 %. */
+@keyframes wm-site-ping {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.62);
+  }
+}
+@keyframes wm-site-turn {
+  to {
+    --wm-ang: 360deg;
+  }
+}
+/* Up to 1.18 in 250 ms (E), back in 350 ms (ease-in-out), then still until the 3000 ms round ends: 250 / 3000 = 8.33 %, 600 / 3000 = 20 %. */
+@keyframes wm-site-badge {
+  0% {
+    scale: 1;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  8.33% {
+    scale: 1.18;
+    animation-timing-function: ease-in-out;
+  }
+  20%,
+  100% {
+    scale: 1;
+  }
+}
+@keyframes wm-site-404-card {
+  from {
+    transform: translateY(var(--wm-site-404-card-rise)) scale(var(--wm-site-404-card-scale));
+  }
+}
+@keyframes wm-site-404-drop {
+  from {
+    transform: translateY(var(--wm-site-404-drop));
+  }
+}
+@keyframes wm-site-404-rise {
+  from {
+    transform: translateY(var(--wm-site-404-rise));
+  }
+}
+
+[data-wm-word] {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Reveal and Words (S/interactive/Reveal.tsx, SplitWords.tsx): hidden until `data-wm-in`, then one run of the keyframes above. */
+  html.js [data-wm-reveal='block']:not([data-wm-in]),
+  html.js [data-wm-reveal='words']:not([data-wm-in]) [data-wm-word] {
+    opacity: 0;
+  }
+  html.js [data-wm-reveal='block'][data-wm-in] {
+    animation:
+      wm-site-fade var(--wm-site-reveal-fade) var(--wm-site-ease) both,
+      wm-site-reveal var(--wm-site-reveal-move) var(--wm-site-ease) both;
+    animation-delay: var(--wm-delay, 0ms);
+  }
+  html.js [data-wm-reveal='words'][data-wm-in] [data-wm-word] {
+    animation:
+      wm-site-fade var(--wm-site-word-fade) var(--wm-site-ease) both,
+      wm-site-word var(--wm-site-word-move) var(--wm-site-ease) both;
+    animation-delay: calc(var(--wm-delay, 0ms) + var(--wm-i, 0) * var(--wm-site-word-stagger));
+  }
+
+  /* Halos (S/landing/parts.tsx Glow; the 404's from M8.7), off below 760 px. */
+  html.js [data-wm-halo='accent'] {
+    animation: wm-site-drift-a var(--wm-site-halo-a) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='mark'] {
+    animation: wm-site-drift-b var(--wm-site-halo-b) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='404-accent'] {
+    animation: wm-site-drift-404-a var(--wm-site-halo-404) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='404-mark'] {
+    animation: wm-site-drift-404-b var(--wm-site-halo-404) ease-in-out infinite alternate;
+  }
+  @media (width < 47.5rem) {
+    html.js [data-wm-halo] {
+      animation: none;
+    }
+  }
+
+  /* Wave bars: each bar 150 ms behind the one before. */
+  html.js [data-wave] > * {
+    animation: wm-site-wave var(--wm-site-wave) ease-in-out infinite;
+  }
+  html.js [data-wave] > :nth-child(2) {
+    animation-delay: calc(1 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(3) {
+    animation-delay: calc(2 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(4) {
+    animation-delay: calc(3 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(5) {
+    animation-delay: calc(4 * var(--wm-site-wave-step));
+  }
+
+  /* Floating cards: bob, and follow a fine pointer by their depth (S/interactive/Parallax.tsx writes --wm-px / --wm-py). */
+  html.js [data-float] {
+    transform: translate(calc(var(--wm-px, 0) * var(--wm-depth) * 1px), calc(var(--wm-py, 0) * var(--wm-depth) * 1px));
+    transition: transform var(--wm-site-parallax) var(--wm-site-ease);
+    animation: wm-site-bob var(--wm-site-bob) ease-in-out infinite alternate;
+  }
+  html.js [data-float='added'] {
+    --wm-depth: 14;
+  }
+  html.js [data-float='bin'] {
+    --wm-depth: 22;
+    animation-delay: -2s;
+  }
+
+  /* Word strip (S/interactive/Marquee.tsx). */
+  html.js [data-wm-marquee] {
+    animation: wm-site-slide var(--wm-site-strip) linear infinite;
+  }
+  html.js [data-wm-marquee='reverse'] {
+    animation-duration: var(--wm-site-strip-reverse);
+    animation-direction: reverse;
+  }
+
+  /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands; the caption comes in last. */
+  html.js [data-wm-fly] ul {
+    perspective: 1400px;
+  }
+  html.js [data-wm-fly]:not([data-wm-in]) [data-group-card] {
+    opacity: 0;
+  }
+  html.js [data-wm-fly]:not([data-wm-done]) [data-group-caption] {
+    opacity: 0;
+  }
+  html.js [data-wm-fly][data-wm-done] [data-group-caption] {
+    animation: wm-site-rise var(--wm-site-caption) var(--wm-site-ease) both;
+  }
+  html.js [data-group-card][data-wm-lit]::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: 0 0 0 1.5px var(--color-wm-accent);
+    animation: wm-site-flash var(--wm-site-flash) both;
+  }
+
+  /* Demo cards (S/interactive/DemoLoops.tsx): caret, the result row while the word is typed again, the listen ping. */
+  html.js [data-caret] {
+    animation: wm-site-blink var(--wm-site-caret) steps(1) infinite;
+  }
+  html.js [data-result] {
+    transition:
+      opacity var(--wm-site-result) var(--wm-site-ease),
+      transform var(--wm-site-result) var(--wm-site-ease),
+      filter var(--wm-site-result) var(--wm-site-ease);
+  }
+  html.js [data-result][data-wm-off] {
+    opacity: 0;
+    transform: translateY(var(--wm-site-result-rise));
+    filter: blur(var(--wm-site-result-blur));
+  }
+  html.js [data-listen] {
+    position: relative;
+    isolation: isolate;
+  }
+  html.js [data-listen]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--color-wm-accent);
+    animation: wm-site-ping var(--wm-site-ping) ease-out infinite;
+  }
+
+  /* Pro card (S/interactive/Sweep.tsx and the badges): drawn and pulsing only while the card is on screen (`data-wm-on`). */
+  html.js [data-wm-sweep][data-wm-on] {
+    display: block;
+    filter: blur(min(var(--wm-site-sweep-blur), var(--wm-blur-cap)));
+  }
+  html.js [data-wm-on] [data-ai-block] > li [data-ai-badge] {
+    animation: wm-site-badge var(--wm-site-badge) infinite both;
+    animation-delay: 900ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(2) [data-ai-badge] {
+    animation-delay: 1150ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(3) [data-ai-badge] {
+    animation-delay: 1400ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(4) [data-ai-badge] {
+    animation-delay: 1650ms;
+  }
+
+  /* Closing card: bản 3's glow running around the card while it is on screen; a 1.5 px ring on the transparent border and a blurred glow
+     inside it. */
+  html.js [data-final-card] {
+    position: relative;
+    isolation: isolate;
+  }
+  html.js [data-final-card][data-wm-on]::before,
+  html.js [data-final-card][data-wm-on]::after {
+    content: '';
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: wm-site-turn var(--wm-site-glow-turn) linear infinite;
+  }
+  html.js [data-final-card][data-wm-on]::before {
+    inset: -1.5px;
+    padding: 1.5px;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-accent) 74%, var(--color-wm-mark) 82%, transparent 94%);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+  html.js [data-final-card][data-wm-on]::after {
+    inset: 8%;
+    z-index: -1;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-glow-accent) 74%, var(--color-wm-glow-mark) 82%, transparent 94%);
+    filter: blur(min(var(--wm-site-glow-blur), var(--wm-blur-cap)));
+  }
+
+  /* 404 (Figma scene 5): it plays on load, so CSS alone runs it; M8.7 puts these attributes on its card. */
+  html.js [data-wm-404='card'] {
+    animation:
+      wm-site-fade var(--wm-site-404-card-fade) var(--wm-site-ease) both,
+      wm-site-404-card var(--wm-site-404-card-move) var(--wm-site-ease) both;
+  }
+  html.js [data-wm-404='code'] {
+    animation:
+      wm-site-fade var(--wm-site-404-fade) var(--wm-site-ease) both,
+      wm-site-404-drop var(--wm-site-404-move) var(--wm-site-ease) both;
+    animation-delay: 250ms;
+  }
+  html.js [data-wm-404='title'],
+  html.js [data-wm-404='body'],
+  html.js [data-wm-404='button'] {
+    animation:
+      wm-site-fade var(--wm-site-404-fade) var(--wm-site-ease) both,
+      wm-site-404-rise var(--wm-site-404-move) var(--wm-site-ease) both;
+    animation-delay: 450ms;
+  }
+  html.js [data-wm-404='body'] {
+    animation-delay: 550ms;
+  }
+  html.js [data-wm-404='button'] {
+    animation-delay: 680ms;
+  }
+}

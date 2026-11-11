@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn';
+import { Marquee } from '../interactive/Marquee';
 import type { LandingCopy } from './copy';
 
 type Word = LandingCopy['strip']['row1'][number];
@@ -8,22 +9,22 @@ const HIGHLIGHT = new Set(['allocate', 'viable', 'alleviate', 'feasible']);
 
 /**
  * "Dải từ IELTS" `6:40` (phone `9:213`): two rows of word chips, the second set further left, faded at both edges from md. Decorative
- * (the words come back in the groups section), so it is hidden from screen readers. M8.6 duplicates each row and moves it.
+ * (the words come back in the groups section), so it is hidden from screen readers. Each row is a Marquee (52 s; the second reversed, 64 s).
  */
 export function WordStrip({ copy }: { copy: LandingCopy['strip'] }) {
   return (
     <div aria-hidden className="relative flex flex-col gap-4 overflow-hidden py-1.5">
       <Row words={copy.row1} className="-ml-15" />
-      <Row words={copy.row2} className="-ml-55" />
+      <Row words={copy.row2} className="-ml-55" reverse />
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-50 bg-linear-to-r from-wm-bg to-transparent md:block" />
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-50 bg-linear-to-l from-wm-bg to-transparent md:block" />
     </div>
   );
 }
 
-function Row({ words, className }: { words: Word[]; className: string }) {
+function Row({ words, className, reverse }: { words: Word[]; className: string; reverse?: boolean }) {
   return (
-    <div data-strip-row="" className={cn('flex w-max gap-2.5', className)}>
+    <Marquee reverse={reverse} className={className}>
       {words.map(({ word, pos }) => {
         const lit = HIGHLIGHT.has(word);
         return (
@@ -39,6 +40,6 @@ function Row({ words, className }: { words: Word[]; className: string }) {
           </span>
         );
       })}
-    </div>
+    </Marquee>
   );
 }

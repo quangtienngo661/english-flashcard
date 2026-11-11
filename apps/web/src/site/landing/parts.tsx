@@ -1,16 +1,19 @@
 import { Check, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { Reveal } from '../interactive/Reveal';
+import { SplitWords } from '../interactive/SplitWords';
 import { BORDER_15, SECTION_TITLE, TEXT_17 } from './styles';
 
 /**
  * A soft halo behind a section ("Quầng sáng", Figma SVG ellipses): a radial gradient of `--color-wm-glow-accent` or `-mark`, placed
- * from the section's centre with margins so M8.6 can drift it with `transform`.
+ * from the section's centre with margins; `data-wm-halo` lets the site motion CSS drift it with `transform` (16 s / 19 s, off below 760 px).
  */
 export function Glow({ tone, className }: { tone: 'accent' | 'mark'; className: string }) {
   return (
     <div
       aria-hidden
+      data-wm-halo={tone}
       className={cn(
         'pointer-events-none absolute -z-10 rounded-full bg-radial to-transparent to-70%',
         tone === 'accent' ? 'from-wm-glow-accent' : 'from-wm-glow-mark',
@@ -20,15 +23,18 @@ export function Glow({ tone, className }: { tone: 'accent' | 'mark'; className: 
   );
 }
 
-/** A section title and its one-line lead, centred (left on a phone where Figma draws it so). */
+/**
+ * A section title and its one-line lead, centred (left on a phone where Figma draws it so). The title comes in word by word as it scrolls
+ * in, the lead 300 ms later with blur 8 (Figma scene 2, `13:206`).
+ */
 export function SectionHead({ id, title, lead, align = 'center' }: { id: string; title: string; lead: string; align?: 'center' | 'phone-left' }) {
   const place = align === 'center' ? 'items-center text-center' : 'items-start text-left md:items-center md:text-center';
   return (
     <div className={cn('flex flex-col gap-3', place)}>
-      <h2 id={id} className={SECTION_TITLE}>
-        {title}
-      </h2>
-      <p className={cn(TEXT_17, 'max-w-160 text-wm-muted')}>{lead}</p>
+      <SplitWords as="h2" id={id} className={SECTION_TITLE} segments={[{ text: title }]} />
+      <Reveal as="p" delay={300} blur={8} className={cn(TEXT_17, 'max-w-160 text-wm-muted')}>
+        {lead}
+      </Reveal>
     </div>
   );
 }
@@ -48,7 +54,7 @@ export function Marked({ sentence, target }: { sentence: string; target: string 
 
 const WAVE = ['h-1.5', 'h-3.5', 'h-4.5', 'h-2.5', 'h-1.75'];
 
-/** "Sóng âm": the pronunciation bars (3 px, `--accent`). M8.6 moves them. */
+/** "Sóng âm": the pronunciation bars (3 px, `--accent`); the site motion CSS scales them (900 ms, 150 ms apart). */
 export function WaveBars({ count = 5 }: { count?: 4 | 5 }) {
   return (
     <span aria-hidden data-wave="" className="inline-flex h-4.5 items-center gap-0.5">

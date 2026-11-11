@@ -5,6 +5,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 import { buildCsp, CSP_INLINE_FALLBACK } from './src/lib/csp';
 import { assertApiBaseUrl, assertTurnstileSiteKey, turnstileSiteKey } from './src/app-shell/config';
 import { THEME_SCRIPT_HASH } from './src/app-shell/theme/theme-script';
+import { SITE_HEAD_SCRIPT_HASH } from './src/site/layout/site-head-script';
 import { appPageExtensions, LEARNER_APP_ENABLED } from './src/lib/learner-app-flag';
 import { securityHeaders } from './src/lib/security-headers';
 import { readLandingDataOnce } from './scripts/read-landing-data.mjs';
@@ -21,7 +22,8 @@ const csp = buildCsp({
   // A production build served over plain http (local e2e on :3100) must not upgrade its own requests to https.
   dev: !siteUrl.startsWith('https://'),
   inline: CSP_INLINE_FALLBACK,
-  scriptHashes: [THEME_SCRIPT_HASH],
+  // The public pages run SITE_HEAD_SCRIPT (the theme script plus the motion's `js` class); THEME_SCRIPT alone stays listed.
+  scriptHashes: [THEME_SCRIPT_HASH, SITE_HEAD_SCRIPT_HASH],
 });
 
 const nextConfig: NextConfig = {

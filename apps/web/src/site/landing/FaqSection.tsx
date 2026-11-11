@@ -1,5 +1,7 @@
 import { Minus, Plus } from 'lucide-react';
 import { site } from '@/lib/site';
+import { Reveal } from '../interactive/Reveal';
+import { SplitWords } from '../interactive/SplitWords';
 import { Container } from '../layout/Container';
 import type { LandingCopy } from './copy';
 import type { FaqItem } from './landing-data';
@@ -17,18 +19,16 @@ export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: F
     <section id="hoi-dap" aria-labelledby="hoi-dap-title" className="scroll-mt-15 md:scroll-mt-17">
       <Container className="flex flex-col gap-6 pt-12 pb-10 md:pt-14 lg:flex-row lg:justify-center lg:gap-12">
         <div className="flex flex-col gap-3 lg:w-105">
-          <h2 id="hoi-dap-title" className={FAQ_TITLE}>
-            {copy.title}
-          </h2>
-          <p className="font-wm-sans text-wm-base text-wm-muted">
+          <SplitWords as="h2" id="hoi-dap-title" className={FAQ_TITLE} segments={[{ text: copy.title }]} />
+          <Reveal as="p" delay={300} blur={8} className="font-wm-sans text-wm-base text-wm-muted">
             {before}
             <a href={`mailto:${site.supportEmail}`} className={`rounded-wm-xs font-semibold text-wm-accent ${FOCUS}`}>
               {site.supportEmail}
             </a>
             {after}
-          </p>
+          </Reveal>
         </div>
-        <div className="flex flex-col gap-2.5 lg:w-165">
+        <Reveal delay={120} className="flex flex-col gap-2.5 lg:w-165">
           {items.map((item, i) => (
             <details key={item.question} name="faq" open={i === 0} className="group rounded-wm-lg bg-wm-surface px-5.5 py-4.5 open:shadow-wm-soft">
               <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 rounded-wm-sm text-wm-ink [&::-webkit-details-marker]:hidden ${FOCUS}`}>
@@ -39,7 +39,7 @@ export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: F
               <p className="mt-2.5 font-wm-sans text-wm-base text-wm-muted">{item.answer}</p>
             </details>
           ))}
-        </div>
+        </Reveal>
       </Container>
     </section>
   );

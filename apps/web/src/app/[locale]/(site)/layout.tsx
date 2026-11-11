@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
-import { THEME_SCRIPT } from '@/app-shell/theme/theme-script';
 import { JsonLd } from '@/components/seo/JsonLd';
 import type { AppLocale } from '@/i18n/routing';
+import { SITE_HEAD_SCRIPT } from '@/site/layout/site-head-script';
 import { SkipLink } from '@/site/layout/SkipLink';
 
 // What every public page shares, the 404 included: theme, JSON-LD, the skip link. The header, `main` and the footer are in (pages)/layout.tsx,
@@ -15,8 +15,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   return (
     <>
-      {/* Sets data-theme on <html> before the page paints, like the learner app (design landing-redesign §5). */}
-      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      {/* Sets data-theme on <html> before the page paints, like the learner app (design landing-redesign §5), and the `js` class the site
+          motion CSS waits for (M8.6): without it every element stays at its end state. */}
+      <script dangerouslySetInnerHTML={{ __html: SITE_HEAD_SCRIPT }} />
       <ThemeProvider>
         <JsonLd locale={locale} description={meta('description')} />
         <SkipLink label={t('skipToContent')} />
