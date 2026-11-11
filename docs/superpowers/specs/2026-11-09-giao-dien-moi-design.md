@@ -484,7 +484,7 @@ vì `@theme` chỉ chứa biến và `@keyframes`. Component dùng token, không
 
 | Màn | Chuyển động | Mục trong tài liệu motion |
 |---|---|---|
-| Ôn (flashcard) | Chồng thẻ tan mờ: lật 300ms, kéo, ngưỡng 110px hoặc 0,55 px/ms, thẻ tan, thẻ mới từ mờ thành nét, chip vào đống, số đếm nảy, màn xong phiên | §2 |
+| Học (lật thẻ, GM17) | Chồng thẻ tan mờ: lật 300ms, kéo, ngưỡng 110px hoặc 0,55 px/ms, thẻ tan, thẻ mới từ mờ thành nét, chip vào đống, số đếm nảy, màn xong phiên | §2 |
 | Nhóm | Băng chuyền "Trượt mờ" quay vòng, đổi nhóm 620ms, mở và đóng nhóm (FLIP 380ms), bảng chọn nhóm (phím F) | §3 |
 | Tra từ | "Từ hóa thẻ": thẻ cũ tan, thẻ mới tới, toast "Đã thêm…" 2,4 giây | §4 |
 | Lịch, Ngày | Nút lịch nổi, lớp mờ 200ms, hộp 240ms, tấm trượt từ 60px, sang Ngày trượt ±22px 220ms | §5 |

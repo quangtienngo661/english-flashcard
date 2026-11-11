@@ -846,7 +846,16 @@
       "home": "Về trang chủ",
       "emptyTitle": "Hôm nay nhóm này không còn thẻ nào.",
       "emptyBody": "Bạn vẫn có thể học lại mọi từ trong nhóm.",
-      "studyAll": "Học tất cả từ"
+      "studyAll": "Học tất cả từ",
+      "stampReview": "về ngăn 1 ngày",
+      "stampKnow": "lên ngăn {stage}",
+      "flipBack": "Xem mặt trước",
+      "nudge": "Lật thẻ để xem nghĩa trước đã.",
+      "legend": "Phím",
+      "stop": "Dừng phiên",
+      "pileList": "{name} · {count, number} thẻ",
+      "ring": "{known, number}/{total, number} thẻ đã biết",
+      "ringCaption": "đã biết"
     },
     "lookup": {
       "title": "Tra từ",
@@ -1704,7 +1713,14 @@
       "nothingTitle": "Nhóm này chưa có từ nào đã học.",
       "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
       "noteLeveled": "{lemma} lên ngăn {stage}.",
-      "noteKept": "{lemma} giữ ngăn {stage}."
+      "noteKept": "{lemma} giữ ngăn {stage}.",
+      "ring": "{correct, number}/{total, number} từ đúng",
+      "ringCaption": "từ đúng",
+      "compare": {
+        "label": "So chữ: bạn gõ {typed}, đáp án {answer}",
+        "typed": "bạn gõ",
+        "answer": "đáp án"
+      }
     },
     "streak": {
       "days": "{days, number} ngày liên tiếp"
