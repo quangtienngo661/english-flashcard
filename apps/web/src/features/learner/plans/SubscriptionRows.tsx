@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
@@ -47,6 +47,7 @@ function SubscriptionRow({ source }: { source: Source }) {
   const errorText = useErrorMessage();
   const [open, setOpen] = useState(false);
   const [requested, setRequested] = useState(false);
+  const lineRef = useRef<HTMLSpanElement>(null);
   const renewing = isAutoRenewing(source);
   const end = source.renews_at ?? source.ends_at;
   const endText = end ? format.date(new Date(end), 'numeric') : null;
@@ -55,6 +56,12 @@ function SubscriptionRow({ source }: { source: Source }) {
   const cancel = useSubmitOnce(async (key) => {
     await api.post(`/v1/me/subscriptions/${source.id}/cancel`, undefined, { idempotencyKey: key });
   });
+
+  // After a cancel the "Hủy gói" button that opened the dialog is gone, so the dialog cannot hand focus back to it: the line that now
+  // tells the result takes it. Run once the dialog is closing (no longer containing focus), not while it still is.
+  useEffect(() => {
+    if (requested && !open) lineRef.current?.focus();
+  }, [requested, open]);
 
   async function confirm() {
     try {
@@ -78,36 +85,35 @@ function SubscriptionRow({ source }: { source: Source }) {
 
   return (
     <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4">
-      <span className="font-wm-sans text-wm-small-strong text-wm-ink">{line}</span>
+      <span ref={lineRef} tabIndex={-1} className="font-wm-sans text-wm-small-strong text-wm-ink outline-none">{line}</span>
       {renewing && !requested && (
         <TextButton tone="delete" onPress={() => setOpen(true)}>
           {t('cancel')}
         </TextButton>
       )}
-      {open && (
-        <Dialog
-          isOpen
-          onOpenChange={(next) => { if (!cancel.busy) setOpen(next); }}
-          isDismissable={!cancel.busy}
-          title={t('dialogTitle')}
-          footer={
-            <>
-              <Button variant="secondary" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
-                {t('keep')}
-              </Button>
-              <Button variant="danger" onPress={() => void confirm()} isPending={cancel.busy}>
-                {t('confirm')}
-              </Button>
-            </>
-          }
-        >
-          {/* The M3 confirm dialogs (Figma "Xác nhận xóa" 121:4597): what the learner gives up in a fail-soft block. */}
-          <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
-            <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
-            <span>{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</span>
-          </p>
-        </Dialog>
-      )}
+      {/* Always mounted, so closing plays the kit's exit motion (GM15). */}
+      <Dialog
+        isOpen={open}
+        onOpenChange={(next) => { if (!cancel.busy) setOpen(next); }}
+        isDismissable={!cancel.busy}
+        title={t('dialogTitle')}
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
+              {t('keep')}
+            </Button>
+            <Button variant="danger" onPress={() => void confirm()} isPending={cancel.busy}>
+              {t('confirm')}
+            </Button>
+          </>
+        }
+      >
+        {/* The M3 confirm dialogs (Figma "Xác nhận xóa" 121:4597): what the learner gives up in a fail-soft block. */}
+        <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+          <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
+          <span>{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</span>
+        </p>
+      </Dialog>
     </Card>
   );
 }
