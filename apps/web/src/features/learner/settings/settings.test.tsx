@@ -104,6 +104,13 @@ describe('SettingsPage (K/50, Figma 120:4295 / 120:4559)', () => {
     expect(screen.getByRole('link', { name: 'Xem gói học' })).toHaveAttribute('href', '/vi/app/plans');
   });
 
+  it('Gói hiện tại while the plan loads reads "Đang tải…", not an ellipsis', async () => {
+    renderApp(<SettingsPage />, { routes: routes('free', { 'GET /v1/me/entitlements': () => new Promise<Response>(() => {}) }) });
+    await screen.findByRole('heading', { level: 1, name: 'Cài đặt' });
+    expect(screen.getAllByText('Đang tải…')).toHaveLength(1);
+    expect(screen.queryByText('…')).not.toBeInTheDocument();
+  });
+
   it('Gói hiện tại reads "Miễn phí" for Free', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
     expect(await screen.findByText('Miễn phí')).toBeInTheDocument();

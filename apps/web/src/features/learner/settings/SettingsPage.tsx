@@ -22,6 +22,7 @@ import { useDesktop } from '@/lib/use-desktop';
 import { Segmented } from '@/ui/Segmented';
 import { Select } from '@/ui/Select';
 import { Switch } from '@/ui/Switch';
+import { Skeleton } from '@/ui/Skeleton';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import { useReminders, useSetReminders, useUpdateProfile } from './settings-api';
@@ -49,6 +50,7 @@ function RowLink({ href, row, tone = 'normal', children }: { href: string; row?:
 export function SettingsPage() {
   const t = useTranslations('App.settings');
   const tPlan = useTranslations('App.chrome.plan');
+  const tCommon = useTranslations('App.common');
   const locale = useLocale() as AppLocale;
   const pathname = usePathname();
   const errorText = useErrorMessage();
@@ -93,7 +95,13 @@ export function SettingsPage() {
   const title = (id: (typeof SECTIONS)[number]) => t(SECTION_TITLE[id]);
 
   // "Pro · tới hết 07/02/2027": the plan in ink, the last day muted (Figma row 4); the plan name alone when no end is known.
-  let plan: ReactNode = <p>…</p>;
+  // Loading: a skeleton bar, read as "Đang tải…" rather than an ellipsis.
+  let plan: ReactNode = (
+    <div>
+      <Skeleton className="h-5 w-40" />
+      <span className="sr-only">{tCommon('loading')}</span>
+    </div>
+  );
   if (entitlements.data) {
     const lastDay = entitlements.data.plan === 'free' ? null : proLastDay(entitlements.data);
     plan = lastDay ? (

@@ -597,7 +597,6 @@
         "quarter": "3 tháng",
         "year": "12 tháng"
       },
-      "planInterval": "{plan} · {interval}",
       "used": "dùng {period}",
       "rowLabel": "{line1}, {date}, {amount}, {line2}, {status}. Xem chi tiết",
       "more": "Xem thêm",

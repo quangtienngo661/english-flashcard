@@ -597,7 +597,6 @@
         "quarter": "3 months",
         "year": "12 months"
       },
-      "planInterval": "{plan} · {interval}",
       "used": "active {period}",
       "rowLabel": "{line1}, {date}, {amount}, {line2}, {status}. See details",
       "more": "Show more",
