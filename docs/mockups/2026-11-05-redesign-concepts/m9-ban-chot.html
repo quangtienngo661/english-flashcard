@@ -1110,7 +1110,17 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   function clozeReset() {
     $('cloze-sent').innerHTML = 'We need to <input class="inl" id="cloze-in" value="est" autocomplete="off" spellcheck="false" aria-label="Từ còn thiếu"> the cost before signing.';
     var cin = $('cloze-in');
-    var size = function () { cin.style.width = Math.max(5, cin.value.length + 1.5) + 'ch'; };
+    // Width = the typed text measured in the input's own font, plus its side padding and the caret, so no empty tail is left.
+    var mirror = document.createElement('span');
+    mirror.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:0';
+    cin.parentNode.appendChild(mirror);
+    var size = function () {
+      var cs = getComputedStyle(cin);
+      mirror.style.font = cs.font; mirror.style.letterSpacing = cs.letterSpacing;
+      mirror.textContent = cin.value || 'xxxxx';
+      cin.style.width = Math.ceil(mirror.getBoundingClientRect().width / ((cin.closest('.wm').getBoundingClientRect().width / cin.closest('.wm').offsetWidth) || 1)) +
+        parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 3 + 'px';
+    };
     cin.addEventListener('input', size); size();
     cin.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return; e.preventDefault();
