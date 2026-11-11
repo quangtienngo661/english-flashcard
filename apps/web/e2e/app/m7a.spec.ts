@@ -99,3 +99,25 @@ test('Xóa tài khoản with a password: tick, email, password, "Xóa vĩnh vi�
     { confirm_email: 'lan@example.com', acknowledged: true, password: 'Secret#123' },
   ]);
 });
+
+test('Mục lục at 1440: "Tài khoản" is marked at the bottom of the page and after pressing it', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the Mục lục shows from lg only');
+  await signedInAs(page, 'pro');
+  await page.goto('/vi/app/settings');
+  const toc = page.getByRole('navigation', { name: 'Mục lục' });
+  const account = toc.getByRole('link', { name: 'Tài khoản' });
+  const atBottom = () => page.waitForFunction(() => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1);
+
+  // Pressed: the smooth scroll passes "Phím tắt"; once it has ended, "Tài khoản" is still the marked entry.
+  await account.click();
+  await atBottom();
+  await page.waitForTimeout(1200);
+  await expect(account).toHaveAttribute('aria-current', 'true');
+  await expect(toc.getByRole('link', { name: 'Phím tắt' })).not.toHaveAttribute('aria-current');
+
+  // Scrolled by hand: back to the top, then straight to the bottom.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(toc.getByRole('link', { name: 'Thông tin cá nhân' })).toHaveAttribute('aria-current', 'true');
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+  await expect(account).toHaveAttribute('aria-current', 'true');
+});
