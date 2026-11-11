@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { Check, Layers2, LoaderCircle, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -196,6 +197,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
             </span>
           </>
         )}
+        <CalendarBarButton />
       </header>
       <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
         {body}

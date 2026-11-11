@@ -25,7 +25,7 @@ const TEXT = {
 const BADGE = 'absolute -top-2.25 flex items-center gap-0.5 rounded-[0.6875rem] border-2 border-wm-bg bg-wm-mark py-0.75 pl-1.25 pr-2 font-wm-display text-[0.75rem] font-extrabold leading-none text-wm-mark-ink';
 
 /** The month in the strip: vi "T11", en "Nov" (Part 6 decisions). */
-function monthLabel(locale: AppLocale, month: string): string {
+export function monthLabel(locale: AppLocale, month: string): string {
   const number = Number(month.slice(5, 7));
   if (locale === 'vi') return `T${number}`;
   return new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, number - 1, 1));
