@@ -573,14 +573,6 @@
     "transactions": {
       "title": "Transaction history",
       "back": "Settings",
-      "cols": {
-        "date": "Date",
-        "kind": "Type",
-        "plan": "Plan and billing",
-        "amount": "Amount",
-        "period": "Active period",
-        "status": "Status"
-      },
       "kinds": {
         "purchase": "Purchase",
         "renewal": "Renewal",
@@ -606,32 +598,22 @@
         "year": "12 months"
       },
       "planInterval": "{plan} · {interval}",
-      "used": "Active {period}",
-      "detailLink": "Details",
-      "rowLabel": "{kind}, {date}, {plan}, {amount}active {period}, {status}. See details",
-      "footWeb": "Dates are in your time zone. Select Details to see the payment provider and transaction ID.",
-      "footPhone": "Tap a row to see the payment provider and transaction ID.",
+      "used": "active {period}",
+      "rowLabel": "{line1}, {date}, {amount}, {line2}, {status}. See details",
       "more": "Show more",
-      "planCard": "Plan",
-      "planUntil": "{plan} plan · through {date}",
-      "planOnly": "{plan} plan",
-      "aboutTitle": "About transactions",
-      "about1": "Purchase, Renewal, Billing change: a payment for Pro.",
-      "about2": "Refund: money returned to you; the original row says “Refunded”.",
-      "about3": "Trial and Plan granted: no charge.",
+      "planUntil": "{plan} through {date}",
       "detail": {
         "title": "Transaction details",
-        "kind": "Type",
-        "plan": "Plan",
-        "amount": "Amount",
         "at": "Time",
         "period": "Active period",
-        "status": "Status",
         "provider": "Payment provider",
         "id": "Transaction ID",
         "atValue": "{date}, {time}",
         "help": "Questions about this transaction? Send the transaction ID to the Wordmet team through Contact.",
-        "close": "Close"
+        "close": "Close",
+        "copy": "Copy transaction ID",
+        "copied": "Transaction ID copied.",
+        "dismiss": "Close transaction details"
       },
       "providers": {
         "fake": "Fake (test)",
@@ -639,9 +621,11 @@
       },
       "emptyTitle": "No transactions yet.",
       "emptyBody": "When you buy Pro or get a plan from the Wordmet team, it shows up here.",
-      "errorTitle": "We couldn’t load your transaction history.",
-      "errorBody": "Check your connection and try again.",
-      "retry": "Try again"
+      "noPeriod": "no period",
+      "foot": "dates in your time zone · select a row to see the payment provider and transaction ID",
+      "currentPlan": "Current plan",
+      "seePlans": "See plans →",
+      "error": "We couldn’t load your transaction history. Check your connection and try again."
     },
     "account": {
       "title": "Account",

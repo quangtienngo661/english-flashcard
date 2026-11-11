@@ -44,11 +44,11 @@ test.describe('M4b flows (mocked API)', () => {
     await page.getByRole('link', { name: copy.vi.App.settings.transactions }).click();
     await expect(page).toHaveURL(/\/vi\/app\/settings\/transactions$/);
     await expect(page.getByRole('heading', { level: 1, name: vi.title })).toBeVisible();
-    await page.getByRole('button', { name: /^Gia hạn, 15\/10\/2026/ }).click();
+    await page.getByRole('button', { name: /^Gia hạn · Pro · theo tháng, 15\/10\/2026/ }).click();
     const dialog = page.getByRole('dialog', { name: vi.detail.title });
     await expect(dialog.getByText(vi.providers.fake)).toBeVisible();
     await expect(dialog.getByText(LONG_TX)).toBeVisible();
-    await dialog.getByRole('button', { name: vi.detail.close }).click();
+    await dialog.getByRole('button', { name: vi.detail.close, exact: true }).click();
     await expect(dialog).toBeHidden();
     expect(requestCount(page, 'GET', '/v1/me/transactions')).toBe(1);
   });
@@ -67,10 +67,12 @@ for (const scheme of ['light', 'dark'] as const) {
       await signedInAs(page, 'pro', api(), { native_language: locale });
       await page.goto(`/${locale}/app/settings/transactions`);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      await expect(page.getByRole('list').getByRole('button').first()).toBeVisible();
+      // One list per month (M7.6): rows are found by name, not by the list.
+      const rows = page.getByRole('button', { name: locale === 'vi' ? /^Gia hạn/ : /^Renewal/ });
+      await expect(rows.first()).toBeVisible();
       await noSideScroll(page, `${locale} list`);
       expect(await seriousViolations(page), `${locale} list`).toEqual([]);
-      await page.getByRole('list').getByRole('button').nth(1).click();
+      await rows.first().click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await noSideScroll(page, `${locale} detail`);
       expect(await seriousViolations(page), `${locale} detail`).toEqual([]);

@@ -40,20 +40,25 @@ export function useTransactions() {
 }
 
 const DAY_MS = 86_400_000;
+// The year at the end of a date: vi "08/08/2026", en "Aug 8, 2026".
+const TRAILING_YEAR = /[,/]\s?\d{4}$/;
 
 /**
- * "15/10 – 14/11/2026", or both years when they differ. A paid period runs to the same time a month or a year later, so the
- * last day shown is the day before its end (frames K/95, M/95); a grant ends at midnight or when it was revoked (GI7).
+ * "08/08 – 07/11/2026" ("Aug 8 – Nov 7, 2026"), or two full dates when the years differ (M7 Figma A §6.1). A paid period runs to the
+ * same time a month or a year later, so the last day shown is the day before its end; a grant ends at midnight or when it was revoked
+ * (GI7), so its last moment is 1 ms before.
  */
-export function periodText(format: Format, item: Transaction): string | null {
-  if (item.period_end === null) return format.date(item.period_start, 'full');
+export function periodText(format: Format, item: Transaction): string {
+  const first = format.date(item.period_start, 'numeric');
+  if (item.period_end === null) return first;
   const end = new Date(item.period_end).getTime() - (item.kind === 'grant' ? 1 : DAY_MS);
-  const last = format.date(new Date(end), 'full');
-  const first = format.date(item.period_start, 'full');
+  const last = format.date(new Date(end), 'numeric');
   const sameYear = first.slice(-4) === last.slice(-4);
-  return `${sameYear ? format.date(item.period_start, 'dayMonth') : first} – ${last}`;
+  return `${sameYear ? first.replace(TRAILING_YEAR, '') : first} – ${last}`;
 }
 
-export function moneyText(format: Format, item: Transaction): string | null {
-  return item.amount_minor === null || item.currency === null ? null : format.money(item.amount_minor, item.currency);
+/** "199.000 ₫"; a refund "−79.000 ₫" (U+2212); a grant or a trial, which carry no money, "0 ₫" (M7 decision). */
+export function moneyText(format: Format, item: Transaction): string {
+  const amount = item.amount_minor === null || item.currency === null ? format.money(0, 'VND') : format.money(item.amount_minor, item.currency);
+  return item.kind === 'refund' ? `−${amount}` : amount;
 }
