@@ -114,3 +114,60 @@ test('final review #1: Ngày from a link, closed at once, stays closed (Next mus
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/vi\/app\/practice$/);
 });
+
+// M6.9 (Figma 95:344): phones carry the calendar button in the session bar, desktop keeps the floating one of the (focus) layout.
+const DECK = '00000000-0000-4000-8000-000000000801';
+const SESSION = '00000000-0000-4000-8000-000000000802';
+const typed = {
+  item_id: '00000000-0000-4000-8000-000000000812', round: 1, position: 1, type: 'type_word', prompt_style: 'meaning', hint_level: 0, state: 'unanswered',
+  tries: 0, reportable: false, ai: false, hints_available: { level1: true, level2: false, level3: false },
+  prompt: { kind: 'type_meaning', meaning: 'xấu đi', meaning_language: 'vi', context_label: null },
+};
+const card = {
+  item_id: '00000000-0000-4000-8000-000000000001', sense_id: '00000000-0000-4000-8000-000000000101', level: 1, due_date: '2026-11-08', priority: false, section: 'due',
+  content: {
+    sense_id: '00000000-0000-4000-8000-000000000101', scope: 'catalog', lemma: 'deploy', pos: 'verb', level: 'B1', context_label: null,
+    meaning: { text: 'triển khai', language: 'vi', translation_missing: false }, definition_en: null, examples: [], form_of: null, sentences: [],
+  },
+};
+function sessionApi(): Record<string, MockHandler> {
+  const view = { id: SESSION, kind: 'recall', source: 'group', group_id: DECK, group_filter: null, sort: 'queue', types: ['type_word'], prompt_style: 'meaning',
+    target_count: 1, status: 'active', round: 1, asked: 1, words: 1, ai_planned: 0, cloze_source: null, correct: 0, wrong: 0 };
+  return {
+    ...calendarApi(),
+    'GET /v1/groups': () => ({ json: { items: [{ id: DECK, name: 'Du lịch', version: 1, total: 1, today: { priority: 0, due: 1, new: 0 }, cells: [], backlog: 0 }] } }),
+    [`GET /v1/groups/${DECK}`]: () => ({ json: { id: DECK, name: 'Du lịch', version: 1, item_count: 1, removable_items: 0, created_at: '', updated_at: '' } }),
+    [`GET /v1/groups/${DECK}/queue`]: () => ({ json: { cards: [card] } }),
+    'GET /v1/words/deploy': () => ({ json: { lemma: 'deploy', inflections: [], sections: [] } }),
+    'POST /v1/practice/sessions': () => ({ status: 201, json: { session: view } }),
+    [`POST /v1/practice/sessions/${SESSION}/next`]: () => ({ json: { state: 'question', session: view, item: typed } }),
+  };
+}
+
+test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating one on desktop; L in the answer box types "l"', async ({ page }, info) => {
+  const phone = info.project.name === 'mobile';
+  await signedInAs(page, 'free', sessionApi());
+  await page.goto(`/vi/app/recall?group=${DECK}`);
+  const input = page.getByRole('textbox', { name: 'Câu trả lời' });
+  await expect(input).toBeVisible();
+  await input.pressSequentially('l');
+  await expect(input).toHaveValue('l');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const buttons = page.getByRole('button', { name: 'Lịch học' });
+  await expect(buttons).toHaveCount(1);
+  const box = await buttons.boundingBox();
+  // Phone: 32 × 34 in the top bar; desktop: the 62 × 66 floating button near the bottom.
+  if (phone) expect(box).toMatchObject({ width: 32, height: 34 });
+  else expect(box!.y).toBeGreaterThan(700);
+  await buttons.click();
+  await expect(page.getByRole('dialog', { name: 'Tháng 11, 2026' })).toBeVisible();
+  await noSideScroll(page);
+
+  await page.goto(`/vi/app/review?group=${DECK}`);
+  await expect(page.getByRole('group', { name: 'Thẻ 1 trên 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Lịch học' })).toHaveCount(1);
+  const learn = await page.getByRole('button', { name: 'Lịch học' }).boundingBox();
+  if (phone) expect(learn!.y).toBeLessThan(80);
+  else expect(learn!.y).toBeGreaterThan(700);
+  await noSideScroll(page);
+});

@@ -49,6 +49,12 @@ beforeEach(() => {
 });
 
 describe('ReviewSession (K/20–K/22)', () => {
+  it('M6.9: Học shows one "Lịch học" in its bar (phone)', async () => {
+    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    expect(screen.getAllByRole('button', { name: 'Lịch học' })).toHaveLength(1);
+  });
+
   it('front shows the word, its part of speech and "Ưu tiên"; Space flips to forms, meaning, example and the saved sentence', async () => {
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     // Both faces stay mounted (1C); the front is its own face.
