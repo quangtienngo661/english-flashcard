@@ -252,13 +252,19 @@ test.describe('M8 review I2: the page shows when React never runs', () => {
   // marked the page `wm-live`. Blocking every chunk stands in for a slow network or a chunk refused by SRI.
   test('with every JavaScript chunk blocked, no text of the home page is see-through after 3 s', async ({ page }) => {
     const blocked: string[] = [];
-    await page.route('**/_next/static/chunks/**', (route) => {
+    // Scripts only: the stylesheets sit in the same folder, and without them nothing is hidden in the first place.
+    await page.route(/\/_next\/static\/chunks\/.+\.js(\?|$)/, (route) => {
       blocked.push(route.request().url());
       return route.abort();
     });
     await page.goto('/vi');
-    // Controls: the inline head script ran and hid the blocks, and the chunks were refused, so React never marks the page live.
+    // Controls: the inline head script ran, the stylesheet with the hiding rules applies, and the scripts were refused, so React never
+    // marks the page live.
     expect(await page.evaluate(() => document.documentElement.classList.contains('js'))).toBe(true);
+    const hidingRule = await page.evaluate(() =>
+      [...document.styleSheets].some((sheet) => [...sheet.cssRules].some((rule) => rule.cssText.includes('[data-wm-reveal="block"]:not([data-wm-in])'))),
+    );
+    expect(hidingRule).toBe(true);
     expect(blocked.length).toBeGreaterThan(0);
     await page.waitForTimeout(3500);
     expect(await page.evaluate(() => document.documentElement.classList.contains('wm-live'))).toBe(false);
