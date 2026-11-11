@@ -158,6 +158,17 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .chip .sw{width:8px;height:8px;border-radius:2px;background:var(--c,var(--lv0))}
 .chip.on{color:var(--ink);border-color:color-mix(in oklab,var(--c,var(--accent)) 60%,transparent);background:color-mix(in oklab,var(--c,var(--accent)) 14%,var(--surface))}
 .chip.on b{color:var(--ink)}
+/* Level filter chips (owner 12/11): label and count on two lines; the whole chip carries the level colour, no colour square. */
+.lvrow{display:flex;gap:8px}
+.lvchip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:78px;padding:7px 12px 8px;border-radius:var(--r-ctl);cursor:pointer;
+  font:inherit;text-align:left;color:var(--ink);background:color-mix(in oklab,var(--c) 16%,var(--surface));border:1px solid color-mix(in oklab,var(--c) 42%,transparent);
+  transition:background-color 200ms ease,border-color 200ms ease,box-shadow 200ms ease,transform 150ms var(--ease-out);flex:none}
+.lvchip .l{font-size:.75rem;font-weight:600;white-space:nowrap}
+.lvchip b{font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.lvchip:hover{background:color-mix(in oklab,var(--c) 26%,var(--surface))}
+.lvchip:active{transform:scale(.97)}
+.lvchip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lvchip.on{background:color-mix(in oklab,var(--c) 40%,var(--surface));border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
 .tabs{display:flex;gap:24px;border-bottom:1px solid var(--line)}
 .tabs span{padding:10px 0;font-size:.9375rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 .tabs span.on{color:var(--ink);border-color:var(--accent)}
@@ -580,8 +591,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
             <div class="card">
               <div class="t-sec">Tab và bộ lọc</div>
               <div class="tabs"><span class="on">Nghĩa<i>3</i></span><span>Câu đã gặp<i>2</i></span><span>Dạng chia</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="chip on">Tất cả <b>48</b></span><span class="chip" style="--c:var(--lv-pri)"><i class="sw"></i>Ưu tiên <b>4</b></span><span class="chip" style="--c:var(--lv-due)"><i class="sw"></i>Đến hạn <b>14</b></span></div>
-              <p class="cap">Tab gạch dưới để chuyển phần trong trang. Chip bo 8 để lọc; chip theo mức mang ô màu của mức.</p>
+              <div class="lvrow" style="flex-wrap:wrap"><button class="lvchip on" type="button" style="--c:var(--accent)"><span class="l">Tất cả</span><b>48</b></button><button class="lvchip" type="button" style="--c:var(--lv-pri)"><span class="l">Ưu tiên</span><b>4</b></button><button class="lvchip" type="button" style="--c:var(--lv-due)"><span class="l">Đến hạn</span><b>14</b></button><button class="lvchip" type="button" style="--c:var(--lv3)"><span class="l">Bậc 3</span><b>11</b></button></div>
+              <p class="cap">Tab gạch dưới để chuyển phần trong trang. Chip lọc theo mức: cả chip mang màu của mức, chữ ở trên, số ở dưới; chip đang chọn đậm màu hơn và có viền.</p>
             </div>
             <div class="card">
               <div class="t-sec">Tô từ đích</div>
@@ -942,8 +953,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   var NEXT = ['—', 'ngày mai', 'hôm nay', 'sau 5 ngày', 'sau 9 ngày', 'sau 22 ngày'];
   var chipsRow = function (wrap) {
     var list = [['Tất cả', 48, 'accent', true], ['Ưu tiên', 4, 'lv-pri'], ['Đến hạn', 14, 'lv-due']].concat(LV.map(function (l, i) { return [l.n, GROUP_COUNTS[i], l.k]; }));
-    return '<div style="display:flex;gap:6px;' + (wrap ? 'flex-wrap:wrap' : 'overflow:hidden') + '">' + list.map(function (c) {
-      return '<span class="chip' + (c[3] ? ' on' : '') + '" style="--c:var(--' + c[2] + ')">' + (c[3] ? '' : '<i class="sw"></i>') + c[0] + ' <b>' + c[1] + '</b></span>';
+    return '<div class="lvrow" style="' + (wrap ? 'flex-wrap:wrap' : 'overflow:hidden') + '">' + list.map(function (c) {
+      return '<button class="lvchip' + (c[3] ? ' on' : '') + '" type="button" aria-pressed="' + !!c[3] + '" style="--c:var(--' + c[2] + ')"><span class="l">' + c[0] + '</span><b>' + c[1] + '</b></button>';
     }).join('') + '</div>';
   };
   var table = '<div class="card" style="padding:8px 8px 4px"><table class="tbl"><thead><tr><th>Từ vựng</th><th>Loại từ</th><th>Nghĩa</th><th>Bậc</th><th>Ôn lại</th><th>Trạng thái</th></tr></thead><tbody>' +
@@ -972,6 +983,11 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
         '<div style="text-align:right"><span class="lvpill" style="--c:var(--' + LV[w[3]].k + ')">' + LV[w[3]].n + '</span><div class="st ' + ST[w[4]][1] + '">' + ST[w[4]][0] + '</div></div></div>';
     }).join('') + '</div></div>' + tabbar('Nhóm');
 
+  // Level chips act as a single-choice filter.
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest && e.target.closest('.lvchip'); if (!c) return;
+    c.parentElement.querySelectorAll('.lvchip').forEach(function (x) { var on = x === c; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
+  });
   // ---------- Học: "Chồng thẻ tan mờ" engine, ported from artifact TrbJBKg6VFE3x6YkjD1XT7 ----------
   var FC = [
     { lemma: 'mitigate', pos: 'verb', ipa: '/ˈmɪt.ɪ.ɡeɪt/', def: 'to make something bad less serious', vi: 'giảm nhẹ', ex: 'Planting trees can help mitigate the effects of urban heat.', forms: ['mitigates', 'mitigated', 'mitigating'], stage: 1 },
