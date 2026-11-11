@@ -921,19 +921,22 @@
 
 /* The Hôm nay deck row (DeckRow.tsx): room inside the scroller for the stacks' shadows (a scroller clips both axes), taken back
    with a negative margin, and soft edges where more cards wait. */
+/* Hôm nay "Nhóm của bạn" (DeckRow.tsx, owner 11/11/2026): the cards share the row evenly and only those that fit are shown. --deck-min
+   is the narrowest a card may get (the old fixed sizes: 150 px phone, 176 px desktop); DeckRow reads it to count the columns. Each cell
+   is a size container and the card scales its em to the cell: the stack is 18.125em wide (.gstack). */
 .deck-row {
-  padding-top: 0.5rem;
-  padding-bottom: 2.75rem;
-  margin-bottom: -2rem;
+  --deck-min: 150px;
+  align-items: start;
 }
-.deck-row[data-more-next] {
-  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+@media (width >= 48rem) {
+  .deck-row { --deck-min: 176px; }
 }
-.deck-row[data-more-prev] {
-  mask-image: linear-gradient(to right, transparent, #000 3rem);
+.deck-row-cell {
+  min-width: 0;
+  container-type: inline-size;
 }
-.deck-row[data-more-prev][data-more-next] {
-  mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
+.deck-row-cell .gstack[data-size='today'] {
+  font-size: calc(100cqi / 18.125);
 }
 
 /* M5.7, the Học card stack (motion doc §2, prototype chong-the-mo.html). The cards share one grid cell, so the stack is as tall as the
