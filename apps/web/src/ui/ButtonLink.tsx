@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/cn';
-import { BUTTON_BASE, BUTTON_VARIANT, type ButtonVariant } from './Button';
+import { BUTTON_BASE, BUTTON_VARIANT, type ButtonVariant } from './button-styles';
 
 type Look = { variant?: ButtonVariant; size?: 'md' | 'lg' };
 type Props =
