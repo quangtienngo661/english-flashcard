@@ -25,7 +25,7 @@ export function SiteFooter({ locale }: { locale: AppLocale }) {
           <AppLogo />
         </a>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 md:contents">
-          <ul className="contents md:flex md:items-center md:gap-6">
+          <ul role="list" className="contents md:flex md:items-center md:gap-6">
             <li>
               <a href={`/${locale}/privacy`} className={link}>
                 {t('privacy')}
