@@ -274,6 +274,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 /* Phone (owner 12/11): side buttons are icon-only squares so nothing overflows; no word chips drop into the piles. */
 .fcw.ph .b-again .lbl,.fcw.ph .b-know .lbl,.fcw.ph .b-know .tail{display:none}
 .fcw.ph .fc-acts .btn.b-again,.fcw.ph .fc-acts .btn.b-know{flex:0 0 52px;padding:0}
+/* Flip card keeps its own width instead of filling the row (owner 12/11). */
+.fcw.ph .fc-acts .btn.b-flip{flex:0 0 auto;min-width:148px;padding:0 20px}
 .fcw.ph .fc-acts .b-again .ico,.fcw.ph .fc-acts .b-know .ico{width:20px;height:20px}
 .fcw.ph .fc-minis{display:none}
 .fc-sum{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;text-align:center}
