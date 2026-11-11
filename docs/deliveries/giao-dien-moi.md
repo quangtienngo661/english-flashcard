@@ -419,3 +419,18 @@ Nhánh `feat/giao-dien-moi-m6-session` (cắt từ `feat/giao-dien-moi-m6` sau k
 - Test: 3 unit cho nút (`calendar-bar-button.test.tsx`), 3 unit cho thanh phiên (phiên luyện, Ôn có `L` trong ô trả lời, Học), 1 e2e ở 390 và 1440 px trong `m6.spec.ts`.
 
 **Chưa kiểm:** chưa xem trên điện thoại thật; nút trong thanh chưa có ảnh chụp riêng.
+
+# Giao diện mới — as-built hàng "Nhóm của bạn" giãn đều (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-deck-row`, PR vào `refactor/giao-dien-moi`. Quyết định: R134.
+
+**Đã làm**
+- Hôm nay: thẻ nhóm chia đều bề rộng hàng, chỉ hiện số thẻ vừa chỗ (không nhỏ hơn 150 px điện thoại, 176 px desktop); bỏ cuộn ngang, kéo chuột, nút mũi tên và giới hạn 4 thẻ. "Xem tất cả N nhóm" ở đầu khối giữ nguyên.
+
+**Kiểm**
+- Web: lint, typecheck qua; unit `src/features/learner` 50 file, 710 test qua (`DeckRow.test` mới: 7 test theo bề rộng, chạy đỏ trước khi viết code).
+- E2e `node scripts/cf-docker.mjs` (m2, m3, overflow và một spec chụp tạm): 60 qua, 0 hỏng. Đo trên trang thật (API giả): 390 px → 2 thẻ 172 px; 1024 px → 5 thẻ 176 px lấp đủ 960 px; 1440 px → 4 thẻ 191 px; không cuộn ngang ở cả ba.
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật, chưa chụp chế độ tối và tiếng Anh.
+- Ít nhóm (ví dụ 2 thẻ ở 1440 px) thì nửa phải hàng để trống, theo R134.

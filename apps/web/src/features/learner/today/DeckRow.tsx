@@ -1,34 +1,28 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
-import { cn } from '@/lib/cn';
-import { useReducedMotion } from '@/lib/use-reduced-motion';
-
-/** A press that moved less than this is a click, not a drag. */
-const DRAG_PX = 6;
-/** One arrow press scrolls this share of the visible row. */
-const PAGE = 0.8;
+import { Children, useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
- * The deck cards of Hôm nay in one row (owner 10/11/2026): no scrollbar; drag with the mouse, swipe on touch, or the arrows on
- * each side (shown only where there is more to see). A drag never opens the card it ends on; a click still does.
+ * The deck cards of Hôm nay in one row (owner 11/11/2026): the cards share the row's width evenly and only as many as fit are shown;
+ * the rest are behind "Xem tất cả" in the heading. A card is never narrower than `--deck-min` (globals.css `.deck-row`); the columns
+ * come from the row's width, so a lone card keeps a column's width instead of stretching across the row.
  */
 export function DeckRow({ label, children }: { label: string; children: ReactNode }) {
-  const t = useTranslations('App.groups');
   const list = useRef<HTMLUListElement>(null);
-  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
-  const dragged = useRef(false);
-  const [edges, setEdges] = useState({ prev: false, next: false });
-  const reduced = useReducedMotion();
+  const [fit, setFit] = useState<number | null>(null);
 
   const measure = useCallback(() => {
     const el = list.current;
     if (!el) return;
-    setEdges({ prev: el.scrollLeft > 1, next: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    const width = el.clientWidth;
+    const style = window.getComputedStyle(el);
+    const min = parseFloat(style.getPropertyValue('--deck-min'));
+    const gap = parseFloat(style.columnGap) || 0;
+    // No layout yet (or no card size): show every card and let the grid's own auto-fill place them.
+    if (width <= 0 || !(min > 0)) return setFit(null);
+    setFit(Math.max(1, Math.floor((width + gap) / (min + gap))));
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     measure();
     const el = list.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -37,72 +31,16 @@ export function DeckRow({ label, children }: { label: string; children: ReactNod
     return () => observer.disconnect();
   }, [measure]);
 
-  function page(direction: 1 | -1) {
-    const el = list.current;
-    if (!el) return;
-    el.scrollBy({ left: direction * Math.round(el.clientWidth * PAGE), behavior: reduced ? 'auto' : 'smooth' });
-  }
-
-  function onPointerDown(event: PointerEvent<HTMLUListElement>) {
-    if (event.pointerType !== 'mouse' || event.button !== 0 || !list.current) return;
-    drag.current = { x: event.clientX, left: list.current.scrollLeft, moved: false };
-    dragged.current = false;
-  }
-  function onPointerMove(event: PointerEvent<HTMLUListElement>) {
-    const d = drag.current;
-    if (!d || !list.current) return;
-    const dx = event.clientX - d.x;
-    if (!d.moved && Math.abs(dx) < DRAG_PX) return;
-    d.moved = true;
-    list.current.scrollLeft = d.left - dx;
-  }
-  function onPointerUp() {
-    dragged.current = drag.current?.moved ?? false;
-    drag.current = null;
-  }
-
+  const cards = Children.toArray(children);
   return (
-    <div className="relative">
-      <ul
-        ref={list}
-        aria-label={label}
-        onScroll={measure}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
-        onClickCapture={(event) => {
-          if (!dragged.current) return;
-          dragged.current = false;
-          event.preventDefault();
-          event.stopPropagation();
-        }}
-        onDragStart={(event) => event.preventDefault()}
-        data-more-prev={edges.prev || undefined}
-        data-more-next={edges.next || undefined}
-        className="deck-row no-scrollbar -mx-4 flex snap-x snap-proximity gap-3.5 overflow-x-auto overscroll-x-contain px-4 select-none md:mx-0 md:gap-5 md:px-0"
-      >
-        {children}
-      </ul>
-      {edges.prev && <Arrow side="prev" label={t('prev')} onPress={() => page(-1)} />}
-      {edges.next && <Arrow side="next" label={t('next')} onPress={() => page(1)} />}
-    </div>
-  );
-}
-
-function Arrow({ side, label, onPress }: { side: 'prev' | 'next'; label: string; onPress: () => void }) {
-  const Icon = side === 'prev' ? ChevronLeft : ChevronRight;
-  return (
-    <button
-      type="button"
+    <ul
+      ref={list}
       aria-label={label}
-      onClick={onPress}
-      className={cn(
-        'absolute top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-wm-pill border border-wm-line bg-wm-surface text-wm-ink shadow-wm-soft outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:flex',
-        side === 'prev' ? '-left-5' : '-right-5',
-      )}
+      // raw-ok: the column count is measured at run time from the row's width, so it cannot be a class
+      style={fit === null ? undefined : { gridTemplateColumns: `repeat(${fit}, minmax(0, 1fr))` }}
+      className="deck-row grid gap-3.5 md:gap-5"
     >
-      <Icon aria-hidden className="size-4.5" />
-    </button>
+      {fit === null ? cards : cards.slice(0, fit)}
+    </ul>
   );
 }

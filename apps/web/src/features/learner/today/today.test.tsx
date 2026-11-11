@@ -130,11 +130,12 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('8 decks: 4 cards of the other waiting decks, never the hero, and [Xem tất cả 8 nhóm]', async () => {
+  it('8 decks: the other waiting decks in order, never the hero (how many show is DeckRow\'s width), and [Xem tất cả 8 nhóm]', async () => {
     const many = Array.from({ length: 8 }, (_, i) => group(`g-${i}`, `Nhóm ${i}`, { priority: 0, due: i + 1, new: 0 }));
     renderApp(<TodayPage />, { chrome: true, routes: routes(many) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
-    expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['Nhóm 6', 'Nhóm 5', 'Nhóm 4', 'Nhóm 3']);
+    // jsdom has no layout, so the row shows every card; DeckRow.test pins the count per width.
+    expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['Nhóm 6', 'Nhóm 5', 'Nhóm 4', 'Nhóm 3', 'Nhóm 2', 'Nhóm 1', 'Nhóm 0']);
     expect(screen.getByRole('region', { name: 'Nhóm 7' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem tất cả 8 nhóm →' })).toHaveAttribute('href', '/vi/app/groups');
   });
