@@ -33,7 +33,9 @@ async function setLanguage(page: Page, locale: 'vi' | 'en') {
   await page.goto(`/vi/app/settings`);
   await settle(page);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.locator('label').getByText(locale === 'vi' ? 'Tiếng Việt' : 'English', { exact: true }).click();
+  // M7.3: "Ngôn ngữ" is a select on Cài đặt (its name is "Language" once the app is in English).
+  await page.getByRole('button', { name: /Ngôn ngữ|Language/ }).click();
+  await page.getByRole('option', { name: locale === 'vi' ? 'Tiếng Việt' : 'English', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${locale}/app/settings`));
 }
 

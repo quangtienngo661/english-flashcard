@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
 import { THEME_STORAGE_KEY } from '@/app-shell/theme/theme';
@@ -64,11 +64,57 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe('SettingsPage (K/50)', () => {
-  it('D15: practice usage says "đã dùng 1/3" and when it reopens, in the learner zone', async () => {
+describe('SettingsPage (K/50, Figma 120:4295 / 120:4559)', () => {
+  it('shows the six section headings in order, under the title "Cài đặt"', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Cài đặt' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Thông tin cá nhân', 'Gói và mức sử dụng', 'Học tập', 'Thông báo', 'Phím tắt', 'Tài khoản',
+    ]);
+    expect(screen.queryByRole('link', { name: /Quay lại/ })).not.toBeInTheDocument();
+  });
+
+  it('Mục lục links the six sections; pressing "Tài khoản" marks it and moves focus to its heading', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    const toc = await screen.findByRole('navigation', { name: 'Mục lục' });
+    const links = within(toc).getAllByRole('link');
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['#personal', '#plan', '#learning', '#notifications', '#shortcuts', '#account']);
+    expect(links[0]).toHaveAttribute('aria-current', 'true');
+    const account = within(toc).getByRole('link', { name: 'Tài khoản' });
+    await userEvent.click(account);
+    expect(account).toHaveAttribute('aria-current', 'true');
+    expect(links[0]).not.toHaveAttribute('aria-current');
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Tài khoản' }));
+  });
+
+  it('personal details: name with "Sửa Họ và tên", birth date as dd/mm/yyyy with no action, email', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ birth_date: '2004-03-14' }) });
+    expect(await screen.findByText('Nguyễn Lan')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sửa Họ và tên' })).toHaveAttribute('href', '/vi/app/settings/account');
+    expect(screen.getByText('14/03/2004')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^Sửa/ })).toHaveLength(1);
+    expect(screen.getByText('lan@example.com')).toBeInTheDocument();
+  });
+
+  it('Gói hiện tại: Pro until the last day of pro_until in the learner zone, and "Xem gói học"', async () => {
+    renderApp(<SettingsPage />, {
+      routes: routes('pro', { 'GET /v1/me/entitlements': () => Response.json(entitlements('pro', { pro_until: '2027-02-07T17:00:00Z' })) }),
+    });
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Pro · tới hết 07/02/2027')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem gói học' })).toHaveAttribute('href', '/vi/app/plans');
+  });
+
+  it('Gói hiện tại reads "Miễn phí" for Free', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    expect(await screen.findByText('Miễn phí')).toBeInTheDocument();
+    expect(screen.queryByText(/tới hết/)).not.toBeInTheDocument();
+  });
+
+  it('D15: practice usage says "đã dùng 1/3" and when it reopens, in the learner zone, with no full stop', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
     expect(await screen.findByText('đã dùng 1/3')).toBeInTheDocument();
-    expect(screen.getByText('Còn 2 phiên, mở lại lúc 0:00.')).toBeInTheDocument();
+    expect(screen.getByText('Còn 2 phiên, mở lại lúc 0:00')).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Phiên luyện hôm nay' })).toHaveAttribute('aria-valuenow', '1');
   });
 
   it('LA3#13: Free with the monthly allowance: both AI rows show what is left and the first of next month (1/12), and no "Cần gói Pro"', async () => {
@@ -77,9 +123,10 @@ describe('SettingsPage (K/50)', () => {
     } });
     renderApp(<SettingsPage />, { routes: routes('free', { 'GET /v1/me/entitlements': () => Response.json(free) }) });
     expect(await screen.findByText('còn 12/15')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới vào 1/12.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 1/12')).toBeInTheDocument();
     expect(screen.getByText('còn 5/5')).toBeInTheDocument();
-    expect(screen.getByText('Lượt tra AI mới vào 1/12.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt tra AI mới vào 1/12')).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Lượt câu AI' })).toHaveAttribute('aria-valuenow', '12');
     expect(screen.queryByText('Cần gói Pro')).not.toBeInTheDocument();
   });
 
@@ -93,7 +140,7 @@ describe('SettingsPage (K/50)', () => {
   it('Pro: AI rows show what is left and the refill date', async () => {
     renderApp(<SettingsPage />, { routes: routes('pro') });
     expect(await screen.findByText('còn 287/300')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 15/11')).toBeInTheDocument();
     expect(screen.getByText('còn 96/100')).toBeInTheDocument();
   });
 
@@ -108,9 +155,10 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.queryByText(/mở lại lúc/)).not.toBeInTheDocument();
   });
 
-  it('changing the language stores it, then moves to the other prefix', async () => {
+  it('Ngôn ngữ is a select: picking "English" stores it, then moves to the other prefix', async () => {
     const { calls } = renderApp(<SettingsPage />, { routes: routes('free', { 'PATCH /v1/me': () => Response.json(makeMe({ native_language: 'en' })) }) });
-    await userEvent.click(await screen.findByRole('radio', { name: 'English' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Ngôn ngữ/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'English' }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/en/app/settings'));
     expect(calls.find((c) => c.method === 'PATCH' && c.path === '/v1/me')!.body).toEqual({ native_language: 'en' });
   });
@@ -122,6 +170,7 @@ describe('SettingsPage (K/50)', () => {
       </ThemeProvider>,
       { routes: routes() },
     );
+    expect(await screen.findByText('Sáng, tối hoặc theo máy')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('radio', { name: 'Tối' }));
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
   });
@@ -130,11 +179,19 @@ describe('SettingsPage (K/50)', () => {
     const { calls } = renderApp(<SettingsPage />, {
       routes: routes('free', { 'PATCH /v1/me/reminders': () => Response.json({ enabled: false, email_verified: true }) }),
     });
+    expect(await screen.findByText('Lúc 20:00 giờ của bạn, chỉ khi có từ đến hạn')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('switch', { name: /Nhắc học qua email/ }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH' && c.path === '/v1/me/reminders')).toBe(true));
     const call = calls.find((c) => c.method === 'PATCH' && c.path === '/v1/me/reminders')!;
     expect(call.body).toEqual({ enabled: false });
     expect(call.headers['Idempotency-Key']).toMatch(/[0-9a-f-]{36}/);
+  });
+
+  it('Phím tắt lists the five shortcuts with their keys', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    const section = await screen.findByRole('region', { name: 'Phím tắt' });
+    expect(within(section).getAllByText(/^(N|\/|Space|1|2|Esc)$/).map((k) => k.textContent)).toEqual(['N', '/', 'Space', '1', '2', 'Esc']);
+    expect(within(section).getByText('Cần ôn lại · Đã biết')).toBeInTheDocument();
   });
 
   it.each([true, false])('the email row shows only the email, without a verification invitation (verified=%s)', async (verified) => {
@@ -144,28 +201,56 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.queryByRole('link', { name: 'Xác minh email' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Xác minh email' })).not.toBeInTheDocument();
   });
+});
 
-  it('Lịch sử giao dịch opens its page (M4b); Xóa tài khoản is a link now, no longer "Sắp có" (Bước 8)', async () => {
+describe('SettingsPage account section (Bước 8, Figma 120:4507)', () => {
+  it('rows in order: Đăng nhập bằng, Lịch sử giao dịch, Báo lỗi của tôi, Đăng xuất, Xóa tài khoản', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
-    expect(await screen.findByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
-    expect(screen.getByRole('link', { name: /Xóa tài khoản/ })).toBeInTheDocument();
+    const section = await screen.findByRole('region', { name: 'Tài khoản' });
+    const text = section.textContent ?? '';
+    const at = ['Đăng nhập bằng', 'Lịch sử giao dịch', 'Báo lỗi của tôi', 'Đăng xuất', 'Xóa tài khoản'].map((label) => text.indexOf(label));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
-  it('M6.8: a row "Báo lỗi của tôi" right after "Lịch sử giao dịch" opens /app/settings/reports', async () => {
-    renderApp(<SettingsPage />, { routes: routes() });
-    const reports = await screen.findByRole('link', { name: /Báo lỗi của tôi/ });
-    expect(reports).toHaveAttribute('href', '/vi/app/settings/reports');
-    const transactions = screen.getByRole('link', { name: /Lịch sử giao dịch/ });
-    expect(transactions.closest('li')?.nextElementSibling).toBe(reports.closest('li'));
+  it('lists each sign-in method; links read with their row; "Xóa tài khoản" goes to the delete page', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: ['password', 'google'] }) });
+    const methods = await screen.findByRole('list', { name: 'Đăng nhập bằng' });
+    expect(within(methods).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Mật khẩu', 'Google']);
+    expect(screen.getByRole('link', { name: 'Xem Lịch sử giao dịch' })).toHaveAttribute('href', '/vi/app/settings/transactions');
+    expect(screen.getByRole('link', { name: 'Xem Báo lỗi của tôi' })).toHaveAttribute('href', '/vi/app/settings/reports');
+    expect(screen.getByRole('link', { name: 'Xóa tài khoản' })).toHaveAttribute('href', '/vi/app/settings/delete-account');
+    expect(screen.queryByRole('link', { name: /Đặt mật khẩu/ })).not.toBeInTheDocument();
   });
 
-  it('the transactions and current plan rows are links over the whole row (audit 26/10/2026 #10)', async () => {
-    renderApp(<SettingsPage />, { routes: routes() });
-    const transactions = await screen.findByRole('link', { name: /Lịch sử giao dịch/ });
-    expect(transactions).toContainElement(screen.getByText('Lịch sử giao dịch'));
-    const plan = await screen.findByRole('link', { name: /Gói hiện tại/ });
-    expect(plan).toHaveAttribute('href', '/vi/app/plans');
-    expect(plan).toContainElement(screen.getByText('Gói hiện tại'));
+  it('one "Đăng xuất" button, which posts /v1/auth/logout once', async () => {
+    const { count } = renderApp(<SettingsPage />, { routes: routes('free', { 'POST /v1/auth/logout': () => new Response(null, { status: 204 }) }) });
+    await screen.findByText('Đăng nhập bằng');
+    const buttons = screen.getAllByRole('button', { name: 'Đăng xuất' });
+    expect(buttons).toHaveLength(1);
+    await userEvent.click(buttons[0]!);
+    await waitFor(() => expect(count('POST', '/v1/auth/logout')).toBe(1));
+  });
+
+  it('a Google-only account gets "Đặt mật khẩu", which goes to forgot password', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ auth_method: 'google', sign_in_methods: ['google'] }) });
+    const set = await screen.findByRole('link', { name: /Đặt mật khẩu/ });
+    expect(set).toHaveAttribute('href', '/vi/app/forgot-password');
+    const methods = screen.getByRole('list', { name: 'Đăng nhập bằng' });
+    expect(within(methods).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Google']);
+  });
+
+  it('a staff account sees "Liên hệ admin để xóa tài khoản" and no link to the delete page', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ staff_role: 'editor', permissions: ['content.edit'] }) });
+    expect(await screen.findByText('Liên hệ admin để xóa tài khoản')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Xóa tài khoản/ })).not.toBeInTheDocument();
+  });
+
+  it('an older API answer without sign_in_methods is treated as password only', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: undefined, auth_method: undefined }) });
+    const methods = await screen.findByRole('list', { name: 'Đăng nhập bằng' });
+    expect(within(methods).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Mật khẩu']);
+    expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
   });
 });
 
@@ -195,36 +280,5 @@ describe('AccountPage (K/91, K/92)', () => {
     pickDate('Ngày sinh', '2000-01-02');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(await screen.findByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
-  });
-});
-
-describe('SettingsPage account section (Bước 8)', () => {
-  it('shows how the account signs in and links "Xóa tài khoản" to the delete page for a learner', async () => {
-    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: ['password', 'google'] }) });
-    expect(await screen.findByText('Đăng nhập bằng')).toBeInTheDocument();
-    expect(screen.getByText('Mật khẩu · Google')).toBeInTheDocument();
-    const del = screen.getByRole('link', { name: /Xóa tài khoản/ });
-    expect(del).toHaveAttribute('href', '/vi/app/settings/delete-account');
-    expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
-    expect(screen.queryByText('Sắp có')).not.toBeInTheDocument();
-  });
-
-  it('a Google-only account gets "Đặt mật khẩu", which goes to forgot password', async () => {
-    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ auth_method: 'google', sign_in_methods: ['google'] }) });
-    const set = await screen.findByRole('link', { name: /Đặt mật khẩu/ });
-    expect(set).toHaveAttribute('href', '/vi/app/forgot-password');
-    expect(screen.getByText('Google')).toBeInTheDocument();
-  });
-
-  it('a staff account sees "Liên hệ admin để xóa tài khoản" and no link to the delete page', async () => {
-    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ staff_role: 'editor', permissions: ['content.edit'] }) });
-    expect(await screen.findByText('Liên hệ admin để xóa tài khoản')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Xóa tài khoản/ })).not.toBeInTheDocument();
-  });
-
-  it('an older API answer without sign_in_methods is treated as password only', async () => {
-    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: undefined, auth_method: undefined }) });
-    expect(await screen.findByText('Mật khẩu')).toBeInTheDocument();
-    expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
   });
 });

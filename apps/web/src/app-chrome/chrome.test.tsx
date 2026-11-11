@@ -75,6 +75,15 @@ describe('app chrome (giao diện mới M1.9)', () => {
     expect(screen.getByText('lan@example.com')).toBeInTheDocument();
   });
 
+  it('AvatarMenu on /vi/app/settings marks "Cài đặt" as the open page (Figma 181:316)', async () => {
+    pathname = '/vi/app/settings';
+    renderApp(<AvatarMenu />, { routes: entitlements('free') });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản của bạn' }));
+    const menu = await screen.findByRole('menu');
+    const current = within(menu).getAllByRole('menuitem').filter((i) => i.getAttribute('aria-current') === 'page').map((i) => i.textContent);
+    expect(current).toEqual(['Cài đặt']);
+  });
+
   it('AvatarMenu → Đăng xuất signs out', async () => {
     const { count } = renderApp(<AvatarMenu />, {
       routes: { ...entitlements('free'), 'POST /v1/auth/logout': () => new Response(null, { status: 204 }) },
