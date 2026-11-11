@@ -21,6 +21,13 @@ describe('periodOffer and bestPeriod (M7 Figma B §1.3)', () => {
     expect(bestPeriod({ '1': 79000, '3': 150000, '12': 900000 })).toBe('3');
   });
 
+  it('equal savings keep 3 months as the best period (the first that reaches the largest saving)', () => {
+    const tie = { '1': 100000, '3': 240000, '12': 960000 };
+    expect(periodOffer(tie, '3').saving).toBe(20);
+    expect(periodOffer(tie, '12').saving).toBe(20);
+    expect(bestPeriod(tie)).toBe('3');
+  });
+
   it('a period that costs months × the monthly price, or more, has no struck price; none saves → no best period', () => {
     const flat = { '1': 79000, '3': 240000, '12': 948000 };
     expect(periodOffer(flat, '3')).toEqual({ price: 240000, struck: null, saving: null, perMonth: 80000 });

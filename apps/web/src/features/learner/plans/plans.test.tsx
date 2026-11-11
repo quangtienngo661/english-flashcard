@@ -141,6 +141,16 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(sentence.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('once the order is created the button keeps spinning while the browser leaves for the payment page', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
+    const buy = await screen.findByRole('button', { name: 'Mua gói Pro 12 tháng' });
+    await userEvent.click(buy);
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    // Let the press settle: the request's own busy flag is off again by now, so only the page leaving keeps the spinner.
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
+    expect(spinning(buy)).toBe(true);
+  });
+
   it('a double press is one order', async () => {
     const view = renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
     await userEvent.click(await screen.findByRole('radio', { name: /^3 tháng/ }));
@@ -403,6 +413,15 @@ describe('Hủy gói (Bước 8, design §8.2)', () => {
     const posts = view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/subscriptions/sub-1/cancel');
     expect(posts).toHaveLength(1);
     expect(posts[0].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('"Giữ gói" closes the dialog and hands focus back to "Hủy gói"', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('pro', [SUB])) });
+    const opener = await screen.findByRole('button', { name: 'Hủy gói' });
+    await userEvent.click(opener);
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Hủy gói?' })).getByRole('button', { name: 'Giữ gói' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Hủy gói' })).toHaveFocus());
   });
 
   it('after "Hủy gia hạn" succeeds the "Hủy gói" button is gone, so focus moves to the row\'s line, not to the page', async () => {

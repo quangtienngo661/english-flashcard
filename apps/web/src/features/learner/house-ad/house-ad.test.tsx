@@ -36,8 +36,8 @@ const routes = (entitlements: unknown = ent(), config: unknown = CONFIG()) => ({
   'GET /v1/me/app-config': () => Response.json(config),
 });
 
-async function mount(opts: Parameters<typeof renderApp>[1] = {}) {
-  const view = renderApp(<HouseAd />, { routes: routes(), ...opts });
+async function mount(opts: Parameters<typeof renderApp>[1] = {}, ui = <HouseAd />) {
+  const view = renderApp(ui, { routes: routes(), ...opts });
   // The two reads the dialog needs have landed before the first navigation of a test.
   await waitFor(() => {
     expect(view.calls.filter((c) => c.method === 'GET' && c.path === '/v1/me/entitlements')).toHaveLength(1);
@@ -74,6 +74,18 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     expect(stored()).toMatchObject({ count: 1 });
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     await waitFor(() => expect(dialog()).toBeNull());
+  });
+
+  it('"Để sau" closes the dialog and hands focus back to what had it before the dialog opened', async () => {
+    await mount({}, <><button type="button">Nhóm</button><HouseAd /></>);
+    const opener = screen.getByRole('button', { name: 'Nhóm' });
+    act(() => opener.focus());
+    await go('/vi/app/groups');
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' })).getByRole('button', { name: 'Để sau' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    // Settled: focus stays where it was given back.
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
+    expect(opener).toHaveFocus();
   });
 
   it('Tra từ shows it too, in English as well', async () => {

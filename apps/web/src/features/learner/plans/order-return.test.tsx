@@ -113,6 +113,18 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
     expect(screen.queryByText(/^Đang chờ xác nhận thanh toán$/)).not.toBeInTheDocument();
   });
 
+  it('the waiting dot blinks while the order is pending; a cancelled or expired order has a still dot', async () => {
+    // The dot is decoration (aria-hidden) inside the page's status element: its blink is the animation class.
+    const blinking = () => screen.getByRole('status').querySelectorAll('.animate-wm-pulse').length;
+    const pending = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('pending') } });
+    await screen.findByRole('heading', { level: 1, name: 'Đang chờ xác nhận thanh toán' });
+    expect(blinking()).toBe(1);
+    pending.unmount();
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('expired'), [READ]: answer('expired') } });
+    await screen.findByRole('heading', { level: 1, name: 'Đơn hàng đã hủy hoặc hết hạn' });
+    expect(blinking()).toBe(0);
+  });
+
   it('a check that fails (429, 404) does not stop the page from reading the order', async () => {
     renderApp(<OrderReturnPage />, { routes: { [CHECK]: () => problem(429, 'rate-limited'), [READ]: answer('paid') } });
     expect(await screen.findByText(/^Thanh toán thành công$/)).toBeInTheDocument();
