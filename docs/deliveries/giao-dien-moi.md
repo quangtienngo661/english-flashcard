@@ -136,6 +136,70 @@ Plan: "Part 7" trong file plan ở trên. Hai PR vào `refactor/giao-dien-moi`: 
 
 **Còn chờ chủ dự án:** không có câu hỏi mở. Các quyết định plan tự chốt nằm ở cuối Part 7 ("Decisions this part makes").
 
+# Giao diện mới — plan tóm tắt, phần 8: M8 Trang công khai và SEO (11/11/2026)
+
+Plan: "Part 8" trong file plan ở trên. Quyết định của chủ dự án: QM8-1 tới QM8-9 trong decision record; hình các phương án:
+[Bảy câu hỏi M8](https://claude.ai/artifact/H5V7kY8SrvQpNT47Lnmr67). Ba PR vào `refactor/giao-dien-moi`. M8a và M8b chạy song song được; M8c chờ
+M8b merge và chờ chủ dự án duyệt khung Figma. M8 không xóa `app-ui/`, không bỏ token cũ (xem mục ngay dưới).
+
+**M8a — Hỏi đáp trang chủ do admin quản lý**
+- M8.1: module FAQ ở API: bảng, migration nạp 6 câu nháp (đã kiểm với code), API công khai và API admin, bước smoke.
+- M8.2: màn admin "Hỏi đáp trang chủ" (danh sách, thêm, sửa, đăng, xóa), mục menu mới, test; mở PR M8a.
+
+**M8b — Trang công khai**
+- M8.3: đọc giá và hỏi đáp lúc build (có bản dự phòng), dời logo, nút sáng/tối và hàm tính giá sang chỗ dùng chung, nút link tải lại trang, token mới cho trang công khai.
+- M8.4: thanh trên mới (Đăng nhập trắng, Đăng ký navy; nút sáng/tối ở thanh trên trên máy tính, ở chân trang trên điện thoại), chân trang mới, trang 404 không có thanh trên.
+- M8.5: dựng lại trang chủ theo Figma (hero, dải từ, nhóm từ, cách học, bảng giá ba dòng kèm phần trăm, hỏi đáp, phần cuối); sửa nháp vài câu không khớp app.
+- M8.6: chuyển động theo landing bản 3 và các cảnh Figma; điện thoại mờ tối đa 12 px; giảm chuyển động thì đứng yên.
+- M8.7: dựng lại Chính sách, Điều khoản (mục lục dính, thanh tiến độ đọc, hộp liên hệ), Nguồn dữ liệu (không nhãn "Dùng cho"), 404.
+- M8.8: SEO: metadata từng trang, hreflang, sitemap, JSON-LD giá VND và Organization, tiêu đề trang đăng nhập, màu trình duyệt.
+- M8.9: xóa `components/`, viết lại e2e trang công khai, chụp bộ ảnh `gm-m8`, as-built, mở PR M8b.
+
+**M8c — Favicon và ảnh chia sẻ**
+- M8.10: vẽ khung Favicon và Ảnh chia sẻ trong Figma, gửi chủ dự án duyệt.
+- M8.11: code icon, ảnh chia sẻ cho trang chủ và ba trang pháp lý theo khung đã duyệt, đổi font ảnh từ Lexend, đo cỡ Worker; mở PR M8c.
+
+**Còn chờ chủ dự án:** không có câu hỏi mở cho plan. Câu chữ nháp (6 câu trả lời, 5 câu sửa, câu hoàn tiền) chủ dự án kiểm trong PR; khung Figma của
+M8.10 chủ dự án duyệt trước M8.11.
+
+# Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
+
+Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
+đó, nên chuyển từ M8 sang đợt này. Phải xong **trước PR cuối của M9** (design §14: `app-ui/` và token cũ phải xóa). Nguồn: code facts M8 cleanup
+(`docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-11-m8-cleanup.md`), kiểm lại trên nhánh dài sau khi M7 merge (`1c4c752e`).
+
+Còn import `app-ui/` (không tính test), 14 chỗ:
+- `app-shell/AppProviders.tsx` (`StreakToast`, `ToastRegion`), `app-shell/RequireSession.tsx` (`OfflineScreen`);
+- `practice/PracticePage.tsx`, `practice/WeakWordsPage.tsx` (`ErrorState`, `EmptyState`, `FullScreenSpinner`), `practice/CustomizeDialog.tsx` (`LockedFeature`);
+- `practice/session/PracticeSession.tsx` (`ErrorState`), `AlternativeFeedback.tsx`, `AnswerFeedback.tsx` (`SpeakWord`), `use-practice-session.ts` (`showStreak`);
+- `recall/RecallSession.tsx` (`NotFoundState`), `recall/RecallSummary.tsx` (`ErrorState`, `FullScreenSpinner`);
+- `review/ReviewSession.tsx` (`EmptyState`, `FullScreenSpinner`, `NotFoundState`), `review/use-review-queue.ts` (`showStreak`).
+
+Việc cần làm:
+1. Thêm bản mới cho các mảnh chưa có trong `ui/`: màn mất mạng, màn không tìm thấy, màn đang tải (khung xương thay spinner), toast chuỗi ngày. Khối
+   khóa tính năng dùng `ui/ProBadge` (`LockedFeature` đã có ở đó), nút nghe dùng `ui/SpeakButton`.
+2. Chuyển `renderApp`, `pickDate` (`app-ui/test-utils.tsx`, 60 file test) ra khỏi `app-ui/`. Design §6 chưa có chỗ cho file hỗ trợ test, cần chọn
+   một chỗ. Lưu ý: luật của `ui/` chỉ bỏ qua file `*.test.*`.
+3. Chuyển `app-ui/toast.test.tsx`, `streak-toast.test.tsx` sang `ui/`: đây là test duy nhất của hiệu ứng toast đóng. Không xóa theo thư mục.
+4. Xóa `app-ui/` (kể cả `Button.tsx`, mà `States.tsx` import bằng đường dẫn tương đối, và các file đã chết: `Flag`, `PronunciationLine`, `Select`).
+   Kiểm mỗi lần xóa bằng `pnpm typecheck`, không chỉ `git grep`.
+5. Bỏ import token cũ (`theme.css`, `dark.css`, `island.css`) trong `src/app/globals.css`. Trước đó chuyển những gì đang đọc biến cũ:
+   - nền và màu chữ của `body`, viền focus toàn cục (`globals.css` khoảng dòng 519–548);
+   - các hiệu ứng `menu-in`, `toast-in`, `feedback-in`, `pop-in`, `card-rise`, `wiggle-soft`, `panel-drop`, `summary-in`, cùng hiệu ứng đóng toast;
+   - `color-scheme: dark`, hiện chỉ có trong `dark.css`.
+6. Đổi các class cũ còn sót ở code mới:
+   - `app/[locale]/app/layout.app.tsx` (`bg-canvas text-ink`), `AppProviders.tsx` (`OfflineBand`);
+   - `groups/highlight.tsx` (`text-primary`: từ đích ở thẻ Học và hộp Thêm câu);
+   - `ui/PronunciationLine.tsx`, `ReportDialog.tsx`, `SessionNotice.tsx` (`rounded-sm` sẽ đổi từ 8 px thành 4 px khi bỏ `theme.css`), `GroupPage.tsx`.
+7. Thêm một test kiểm không còn class cũ trong `apps/web/src`. Gặp tên trùng mặc định của Tailwind (`rounded-sm`, `max-w-prose`) thì xử lý riêng.
+   Thu hẹp `styles/text-classes.test.ts`, sửa `styles/tokens.test.ts` (dòng kiểm import `island.css`).
+8. Sửa `lib/cn.ts`: thiếu các cỡ `wm-page-title*`, `wm-card-heading*`, `wm-app-title*`, nên `RecallSummary.tsx:47` mất cỡ tiêu đề trên điện thoại.
+   Đây là lỗi: viết test đỏ trước, sửa sau.
+9. Bỏ alias `wide` của `ui/Dialog` (R62) và cập nhật README của `packages/design-tokens`.
+
+Audit giao diện 11/11 (danh sách chỗ lệch so với bản chốt, ảnh đối chiếu): `docs/audit/2026-11-11-ui-audit/README.md` trong bản checkout chính
+(`E:\Working\Working project\english-learning`), để local, chưa commit (159 MB ảnh).
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).

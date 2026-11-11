@@ -68,7 +68,7 @@
 | 5 | `feat/giao-dien-moi-m5` | §9 M5 | `AnswerOption`, `ProgressBar`; Tùy chỉnh phiên with the `own_then_ai` tasks (`docs/deliveries/cloze-own-then-ai.md`); Học and Ôn screens |
 | 6 | `feat/giao-dien-moi-m6` | §9 M6, §10.4 | `CalendarButton`, `?lich=` / `?ngay=` parser, Lịch and Ngày dialogs, history redirect, `/app/settings/reports` |
 | 7 | `feat/giao-dien-moi-m7` | §9 M7 | `ChoiceCard`; settings, account, plans, orders, `HouseAd` |
-| 8 | `feat/giao-dien-moi-m8` | §9 M8, §10.6 web side, §11 | `site/`; prices read at build; OG fonts; old tokens dropped from web; `app-ui/`, `components/` deleted |
+| 8 | `feat/giao-dien-moi-m8a`, `-m8b`, `-m8c` (Part 8) | §9 M8, §10.6, §10.7, §11 | admin-managed FAQ; `site/`; prices and FAQ read at build; new icons and OG images; `components/` deleted. `app-ui/` and the old tokens move to the owner's polish round (QM8-9) |
 | 9 | `feat/giao-dien-moi-m9` | §9 M9, §13 rows run by hand | dark fixes; `scripts/compare-bundle-stats.mjs`; Lighthouse, frame-rate numbers; PR `refactor/giao-dien-moi` → `dev` |
 | Q4 | — | QR4 | placeholder below |
 
@@ -3161,3 +3161,574 @@ Paths are under `apps/web/` unless they start with `apps/api/` or `packages/`. `
   - text buttons keep each frame's "→" as drawn.
 
 **Open:** none. QR4 stays parked, and M7 does not touch the ads code.
+
+---
+
+# Part 8 — M8 Trang công khai và SEO (branches `feat/giao-dien-moi-m8a`, `feat/giao-dien-moi-m8b`, `feat/giao-dien-moi-m8c`)
+
+**Goal:**
+- M8a: an admin-managed FAQ for the home page (API module, admin screen).
+- M8b: rebuild the public site from Figma page `0:1` in `src/site/`: home, Chính sách bảo mật, Điều khoản sử dụng, Nguồn dữ liệu, 404.
+  - Prices and FAQ are read at build time; the motion follows landing bản 3.
+  - SEO per design §11; delete `components/`.
+- M8c: the new favicon, app icon and share images, after the owner approves Figma frames drawn for them.
+
+**Inputs:**
+- Design §5.2, §5.8, §6, §8.2 row "Trang chủ, 404", §9 M8, §10.6, §10.7, §11, §15.
+- Decisions QM8-1…QM8-9 in `docs/superpowers/decisions/2026-11-09-giao-dien-moi-decisions.md`.
+  - Pictures of every option: `docs/mockups/2026-11-05-redesign-concepts/m8-cau-hoi.html`, artifact `H5V7kY8SrvQpNT47Lnmr67`.
+- Motion source: `docs/mockups/2026-11-05-redesign-concepts/landing-mo.html` (landing bản 3, artifact `LxqBqZYrXejQt8cci67ucF`) and Figma page `2:3` scenes. Numbers are in "M8 Figma A §5" and "M8 Figma B §6.3".
+- Facts files `docs/preparation/GIAO_DIEN_MOI_PLAN_*_2026-11-11-m8-*.md`:
+  - code `site` ("M8 code S §n");
+  - code `cleanup` ("M8 code C §n"; only its public-site rows apply, see Order);
+  - code `faq` ("M8 code F §n");
+  - Figma `a` (home and motion, "M8 Figma A §n");
+  - Figma `b` (legal, sources, 404, "M8 Figma B §n").
+
+Paths are under `apps/web/` unless they start with `apps/api/`, `apps/admin/` or `packages/`. `S/` = `src/site/`, `PUB/` = `src/app/[locale]/(site)/`.
+
+**Order:**
+- **Out of M8 (QM8-8, QM8-9):**
+  - deleting `app-ui/` and dropping the old token imports. They move to the owner's polish round before M9; the list is in the delivery record, section "Việc dọn chuyển sang đợt polish".
+  - fixes from the UI audit of 11/11 (`docs/audit/2026-11-11-ui-audit/` in the main checkout, local).
+  - M8 changes no screen under `/app`, except the import path of the logo (M8.3) and of `periodOffer` (M8.3).
+- **M8a** (`feat/giao-dien-moi-m8a` from `origin/refactor/giao-dien-moi`, then `git merge docs/giao-dien-moi-plan-8`) and **M8b** (`feat/giao-dien-moi-m8b`, same start) share no files. They can run in parallel. Until M8a is merged, M8b builds with the fallback FAQ.
+- **M8c** (`feat/giao-dien-moi-m8c`) starts after M8b merges, and only after the owner approves the Figma frames of M8.10. M8.10 itself can be drawn while M8b is in progress.
+- Rulings continue from the highest `R<n>` in `giao-dien-moi-rulings.md` (R173 on 11/11/2026).
+
+## Part 8 constraints
+
+- **Render mode:** `/vi` and `/en` stay prerendered (`scripts/assert-render-mode.mjs`).
+  - No page under `PUB/` reads prices or FAQ at request time. They come only from `process.env.WORDMET_LANDING_DATA`, inlined at build (M8.3).
+  - `/privacy`, `/terms`, `/sources` keep `force-dynamic` and their per-request API reads (GM11).
+- **Folder rules:** `S/**` may not import `@/features/*` or `@/app-chrome/*` (`eslint.config.mjs:11`). Anything `site/` needs from there moves to `ui/`, `lib/` or `site/` first (M8.3).
+- **Links into the app** (`/{locale}/app/…`) are full page loads: plain `<a>` (`ButtonLink reload`). This is because of the per-document CSP nonce, `e2e/csp.spec.ts` LB3E6.
+- **No client messages on public pages:** `messages={null}` stays. Client islands get their copy as props, and no `ui/` component that calls `useTranslations` is used inside them (M8 code S §2.3).
+- **Copy:**
+  - Every visible string comes from the Figma copy tables (M8 Figma A §7, B §8), except the drafts this part writes on purpose (M8.1 seed, M8.5 claims), which the PR lists for the owner to check.
+  - `Landing` keeps the same keys in `vi.json` and `en.json`, and `en` keeps Vietnamese text (L4).
+  - Keys no screen reads any more are deleted in the same PR.
+- **Type:** public display styles follow Figma, Bricolage **Bold 700** (Display/Hero 80/1.2/−2.5 %, Display/Section 52/1.24/−2 %, Display/Page title 64/1.18/−2.5 %, mobile 35, 30, 38). "404" and the logo stay 800.
+  - Letter-spacing is a percent of the size, written in `em`. A ruling records this against design §3.1 ("800 cho tiêu đề").
+- **Tokens:** raw Figma values become `wm-` tokens in `packages/design-tokens/web.css` and `web-dark.css` (M8.3). Changing the package means the four admin checks.
+- **Motion:** M8.6 lists every number. Phone blur at most 12 px. No pause control (QM8-3′). Reduced motion shows the end state at once.
+- **Tests** query by role and visible text. Each defect fix found while working is a red-test commit, then the fix commit.
+
+## Part 8 Review Focus
+
+1. **Build with no API** (CI, `cf:docker`, a dev machine with the API stopped):
+   - `next build` finishes, logs one warning, and the home page shows the fallback prices (79.000 / 199.000 / 599.000 ₫) and the 6 fallback questions.
+   - With `LANDING_DATA_REQUIRED=1`, the build fails and the message names the URL it tried.
+   - Pinned in M8.3 (`read-landing-data.test.ts`) and M8.9 (e2e on the fallback build).
+2. **An admin edits the FAQ:**
+   - unpublished items never reach `GET /v1/public/faq`;
+   - the order follows `position`, then creation time;
+   - a stale `expected_version` gets 409 `faq-version-conflict`;
+   - an empty published list gives `{ items: [] }`, and the home page then has no FAQ section and no `#hoi-dap`.
+   - Pinned in M8.1 and M8.5.
+3. **Prices that change:**
+   - an admin sets 3 months to 240.000 (more than 3 × 79.000): that row shows no saving pill;
+   - the percentages always equal Gói học's, because both call `lib/period-offer.ts`.
+   - Pinned in M8.3 and M8.5.
+4. **Lan on a 390 px phone:**
+   - the top bar holds the logo, Đăng nhập and Đăng ký at 44 px height with no sideways scroll;
+   - the theme switch sits in the footer and her choice carries into `/vi/app/login` (`wordmet-web.theme`).
+   - Pinned in M8.4 and M8.9.
+5. **JavaScript off or reduced motion:**
+   - every section is visible with its final text;
+   - the FAQ opens natively;
+   - the legal table of contents is plain links that work.
+   - Pinned in M8.6, M8.7 and M8.9 (no-JS and reduced-motion e2e).
+
+### Task M8.1 (M8a): FAQ module in the API
+
+**Files:**
+- Create:
+  - `apps/api/prisma/models/faq.prisma`;
+  - `apps/api/prisma/migrations/20261114090000_landing_faq/migration.sql` (named after the newest folder `20261113100000`, M8 code F §0);
+  - `apps/api/src/faq/{faq.module,faq.service,faq.schemas,admin-faq.controller,public-faq.controller}.ts`;
+  - `apps/api/src/faq/{faq.service,public-faq.controller}.spec.ts`.
+- Modify:
+  - `apps/api/src/app.module.ts` (import `FaqModule`);
+  - `apps/api/src/common/config/app-config.ts` and its spec (rule `public.faq.ip`);
+  - `apps/api/src/identity/deletion/account-data-map.ts` (`landing_faq_items.created_by`, `.updated_by` → `keep-id`);
+  - `apps/api/scripts/smoke-giao-dien-moi.mjs` (a FAQ step).
+- Pattern to copy: `apps/api/src/legal/*` and `settings/public-prices.controller{,.spec}.ts` (M8 code F §1). FAQ is its own module, not part of Legal. Legal's version number is the terms version that learners re-accept (M8 code F §2).
+
+**Interfaces:**
+- Produces, Prisma model `LandingFaqItem` → table `landing_faq_items`:
+  - `id` uuid (default `gen_random_uuid()`);
+  - `position Int`, `question String`, `answer String`;
+  - `published Boolean @default(false)`;
+  - `rowVersion Int @default(1)` (`row_version`);
+  - `createdBy`, `updatedBy` `String? @db.Uuid`, where null means "seeded by the migration";
+  - `createdAt`, `updatedAt` `@db.Timestamptz`, written from `Clock`;
+  - index on `(published, position)`.
+- Produces the HTTP contract (design §10.7):
+  - `GET /v1/public/faq`, `@Public()`, `@RateLimit('public.faq.ip')` (60 per minute per IP): `{ items: { question: string; answer: string }[] }`. Only published items, ordered by `position` then `created_at`.
+  - Admin routes, class `@RequirePermission('settings.manage')`, writes `@RateLimit('user.write')`:
+    - `GET /v1/admin/faq`: `{ items: AdminFaqItem[] }`, all items, same order.
+    - `POST /v1/admin/faq` (201, `@Idempotent()`): body `{ question, answer, position, published? }`.
+    - `PATCH /v1/admin/faq/:id` (`@Idempotent()`): body `{ expected_version, question?, answer?, position?, published? }`, at least one field.
+    - `DELETE /v1/admin/faq/:id` (204).
+  - `AdminFaqItem = { id, position, question, answer, published, row_version, updated_at, updated_by: { id, email } | null }`.
+  - Validation (zod 4, `z.strictObject`):
+    - `question` trimmed, 1–300 characters; `answer` trimmed, 1–2000 characters, plain text with line breaks;
+    - `position` an integer 0–10 000; `expected_version` an integer ≥ 1.
+  - Problems: 404 `not-found`; 409 `faq-version-conflict` (an `updateMany where { id, rowVersion }` that changes 0 rows of an item that exists); 400 `validation-failed` with `violations`.
+- Produces the seed: the migration inserts 6 published items. Their text is the draft below, which the owner checks later (QM8-6). `S/landing/landing-data.fallback.ts` (M8.3) carries the same 6.
+
+| position | question | answer (draft) |
+|---|---|---|
+| 10 | Gói Pro có tự gia hạn không? | Không. Bạn trả một lần cho mỗi kỳ 1, 3 hoặc 12 tháng. Hết kỳ, tài khoản về gói Miễn phí và Wordmet không tự trừ tiền. |
+| 20 | Hết Pro thì từ và lịch ôn có mất không? | Không. Từ, nhóm và lịch ôn của bạn vẫn còn. Bạn học tiếp với giới hạn của gói Miễn phí, ví dụ 3 phiên luyện mỗi ngày. |
+| 30 | Dùng trên điện thoại được không? | Được. Wordmet chạy trên trình duyệt của điện thoại và máy tính, không cần cài ứng dụng. Từ và lịch ôn giống nhau trên mọi máy. |
+| 40 | Mua thêm khi Pro còn hạn thì sao? | Kỳ mới bắt đầu ngay sau khi kỳ đang dùng kết thúc, nên bạn không mất ngày nào. |
+| 50 | Có được hoàn tiền không? | Wordmet không hoàn tiền tự động. Nếu thanh toán gặp sự cố, gửi email tới support@wordmet.com kèm email tài khoản và mã chuyển khoản. |
+| 60 | AI có chấm bài của tôi không? | Không. AI chỉ soạn câu luyện. Đáp án được chấm theo quy tắc cố định, nên cùng một câu trả lời luôn có cùng kết quả. |
+
+- [ ] **Step 0: Check each draft claim against the code** before it goes into the migration. Rewrite any answer that is not true, and record the change as a ruling:
+  - row 20: what a learner keeps when Pro ends (`apps/api/src/entitlements/**`: groups, words, schedule, any Free cap such as a group limit);
+  - row 40: `upcoming_periods` and prepaid periods chaining (`entitlements`, launch prep B design §3.8);
+  - row 50: the refund clause of the Terms text (the published version in the local DB, or `docs/preparation/legal-drafts/` on branch `docs/launch-b-legal-drafts`), and the app's own sentence in `messages/vi.json` `App.plans`;
+  - row 60: grading is rule-based (`apps/api/src/practice/**` grading).
+- [ ] **Step 1: Write the failing tests** (`faq.service.spec.ts` with an in-memory fake Prisma, as `legal.service.spec.ts`):
+  - `published()` returns only published items, ordered by `position` then `createdAt`. Two items at the same position keep creation order. An empty table gives `[]`.
+  - `create` writes `rowVersion 1`, `createdBy` = `updatedBy` = the actor, and times from `FakeClock`.
+  - `update` with the right `expected_version` bumps `row_version` to 2 and sets `updatedBy`. A stale version gives 409 `faq-version-conflict`; an unknown id gives 404 `not-found`.
+  - `remove` of an unknown id gives 404.
+  - `public-faq.controller.spec.ts`:
+    - the exact body `{ items: [{ question, answer }] }` with no ids;
+    - `Reflect.getMetadata(IS_PUBLIC_KEY, …) === true`;
+    - the rate-limit metadata is exactly `['public.faq.ip']`.
+  - `app-config.spec.ts` table gains `'public.faq.ip': { by: 'ip', max: 60, windowSeconds: 60 }`. `account-data-map.spec.ts` passes with the two new columns.
+- [ ] **Step 2: Run** `pnpm --filter api test src/faq src/common/config src/identity/deletion` → FAIL (module missing, rule missing).
+- [ ] **Step 3: Implement.** The `.prisma` file and the SQL must agree, because CI checks drift. The migration ends with the 6 `INSERT`s above, `published = true`, `created_by` NULL.
+- [ ] **Step 4: Run** the API unit suite, lint, typecheck, build → PASS. Then on a fresh DB run `pnpm --filter api db:setup` → the migration applies, and `SELECT count(*) FROM landing_faq_items WHERE published` → 6.
+- [ ] **Step 5: Smoke.** Add a step after Setup in `smoke-giao-dien-moi.mjs`:
+  1. `GET /v1/public/faq` with no token → the 6 seeded questions in order;
+  2. the admin creates `{ position: 15, published: false }` → the public list is unchanged;
+  3. `PATCH published: true` → the public list has 7 items, the new one second;
+  4. a stale `expected_version` → 409 `faq-version-conflict`;
+  5. `DELETE` → back to 6.
+
+  Run it on a fresh `english_learning_smoke_gm` as its header says → PASS.
+- [ ] **Step 6: Commit** `feat(api): add an admin-managed faq for the home page`.
+
+### Task M8.2 (M8a): FAQ screen in admin
+
+**Files:**
+- Create: `apps/admin/src/features/faq/{faq-api.ts,FaqPage.tsx,FaqDialog.tsx,FaqPage.test.tsx}`, `apps/admin/e2e/faq.spec.ts`.
+- Modify:
+  - `apps/admin/src/app/routes.tsx` (route `faq`);
+  - `apps/admin/src/app/nav.ts` (`{ group: 'system', path: '/faq', labelKey: 'nav.faq', needs: ['settings.manage'], available: true }`, after `/legal`);
+  - `apps/admin/src/app/nav-icons.ts` (`'/faq': MessageCircleQuestion`);
+  - `apps/admin/src/api/problem.ts` (`faq-version-conflict` in `KNOWN_ERROR_SLUGS`);
+  - `apps/admin/messages/{vi,en}.json`;
+  - nav counts 27 → 28 in `src/app/nav.test.ts` and `e2e/shell.spec.ts`;
+  - `e2e/a11y.spec.ts` (page list).
+- Pattern: `features/legal/LegalPage.tsx` (list, `PageActions`, `Banner`, `DataList`) and `features/reports/ReasonDialog.tsx` (dialog with a number field for `position`) (M8 code F §3).
+
+**Interfaces:**
+- Consumes the routes of M8.1.
+- Copy (vi; `en` by meaning):
+  - nav "Hỏi đáp trang chủ"; page title "Hỏi đáp trang chủ";
+  - banner "Trang chủ chỉ hiện câu đã đăng, và cập nhật sau lần deploy web tiếp theo.";
+  - columns "Thứ tự", "Câu hỏi", "Trạng thái" (badges "Đã đăng" / "Nháp");
+  - buttons "Thêm câu hỏi", "Sửa", "Xóa";
+  - dialog fields "Câu hỏi", "Câu trả lời", "Thứ tự" (help "Số nhỏ đứng trước."), checkbox "Đăng lên trang chủ";
+  - delete confirm "Xóa câu hỏi này?", error `faq-version-conflict` "Câu hỏi vừa được người khác sửa. Tải lại rồi thử lại."
+
+- [ ] **Step 1: Write the failing tests** (`FaqPage.test.tsx`, handlers as `LegalPage.test.tsx`):
+  - the list shows the rows in API order with their badges;
+  - "Thêm câu hỏi" → fill → save sends `POST /v1/admin/faq` with the exact body and an `Idempotency-Key` header;
+  - "Sửa" → tick "Đăng lên trang chủ" sends `PATCH` with `expected_version` equal to the row's `row_version` and `published: true`;
+  - a 409 shows the conflict text;
+  - "Xóa" asks first, then sends `DELETE`;
+  - an editor (no `settings.manage`) does not see the nav item.
+  - `nav.test.ts` and `shell.spec.ts` pin 28 items.
+- [ ] **Step 2: Run** `pnpm --filter admin test src/features/faq src/app` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the four admin checks and the mocked e2e `faq.spec.ts`, `shell.spec.ts`, `a11y.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(admin): add the home page faq screen`. Then write the M8a as-built (delivery record), run every check of M8.1–M8.2, and open the PR `feat(api): add an admin-managed home page faq` into `refactor/giao-dien-moi`.
+
+### Task M8.3 (M8b): Shared pieces and landing data at build
+
+**Files:**
+- Move (update every importer in the same commit):
+  - `src/features/learner/plans/period-offer.ts` (+ test) → `src/lib/period-offer.ts`;
+  - `AppLogo` from `src/app-chrome/Logo.tsx` → `src/ui/Logo.tsx`. Importers: `TopBar`, `PhoneHeader`, `CardFrame`. The old landing `Logo` export is deleted with its file;
+  - `ThemeToggleButton` from `src/app-chrome/ThemeToggle.tsx` → `S/layout/ThemeToggle.tsx`, restyled to `wm-` (44 px square, `--line` border). The unused `ThemeToggle` wrapper is deleted, and `theme-toggle-button.test.tsx` moves with it.
+- Modify:
+  - `src/ui/ButtonLink.tsx` (prop `reload`);
+  - `next.config.ts`;
+  - `playwright.config.ts` and `scripts/cf-docker.mjs` (pass `LANDING_DATA_SOURCE=fallback` to the e2e build);
+  - `packages/design-tokens/{web,web-dark}.css` (public tokens below) and `src/styles/web-tokens.test.ts`;
+  - `docs/deliveries/giao-dien-cu-map.md` (rows for the public routes, root layout, OG image, icons, `globals.css`: M8 code C §5.2).
+- Create:
+  - `scripts/read-landing-data.mjs` (+ `.d.mts`, `read-landing-data.test.ts`);
+  - `S/landing/landing-data.ts`, `S/landing/landing-data.fallback.ts`, `S/landing/landing-data.test.ts`.
+
+**Interfaces:**
+- `ButtonLink({ …existing, reload?: boolean })`: with `reload`, it renders a plain `<a href>` with the same look, not `next/link`.
+- `readLandingData({ baseUrl: string, required: boolean, offline: boolean, timeoutMs?: number = 5000, fetchImpl?: typeof fetch }): Promise<string | undefined>`:
+  - it gets `${baseUrl}/v1/public/prices` and `${baseUrl}/v1/public/faq`;
+  - it returns `JSON.stringify({ prices: { '1', '3', '12' }, faq: [{ question, answer }] })` when both answer 200 with the right shape;
+  - otherwise it returns `undefined` and logs one warning that names the URL;
+  - with `required` it throws `Error('Landing data required but unavailable: <url> (<reason>)')`;
+  - `offline` returns `undefined` without fetching.
+- `next.config.ts` becomes `export default async function config(phase: string): Promise<NextConfig>`. The existing top-level checks are kept. It calls `readLandingData` only when `phase === PHASE_PRODUCTION_BUILD`, with:
+  - `baseUrl` = `API_INTERNAL_BASE_URL ?? NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000'`;
+  - `required` = `LANDING_DATA_REQUIRED === '1'`;
+  - `offline` = `LANDING_DATA_SOURCE === 'fallback'`.
+
+  It returns `withNextIntl({ ...nextConfig, env: { WORDMET_LANDING_DATA: data ?? '' } })`. Next replaces `process.env.WORDMET_LANDING_DATA` at build (Next 16 docs `next.config.js` `env`, async config).
+- `type LandingData = { prices: Prices; faq: { question: string; answer: string }[]; source: 'api' | 'fallback' }` (`Prices` from `lib/period-offer`).
+  - `parseLandingData(raw: string | undefined): LandingData` gives the fallback on empty, bad JSON or a bad shape.
+  - `landingData(): LandingData` = `parseLandingData(process.env.WORDMET_LANDING_DATA)`.
+  - `FALLBACK_LANDING_DATA` holds prices 79 000 / 199 000 / 599 000 and the 6 items of M8.1 verbatim, with `source: 'fallback'`.
+- New tokens (light and dark, `rem`), the Figma raw values of M8 Figma A §1, §2, §3 and B §2:
+  - `--shadow-wm-lift` (`0 50px 110px -40px` ink 38 %, `0 12px 32px -16px` ink 18 %);
+  - `--shadow-wm-stage` (hero mock-up);
+  - `--shadow-wm-pro-glow` (`0 0 48px 2px` accent 30 % plus the lift);
+  - `--color-wm-ai-from` `#1e3a8a`, `--color-wm-ai-to` `#3d78ff`;
+  - `--color-wm-glow-accent`, `--color-wm-glow-mark` (halos);
+  - `--container-wm-site: 72.5rem`;
+  - text styles `--text-wm-site-hero` (5rem/1.2/−0.025em/700), `-hero-mobile` (2.1875rem/1.24/−0.02em), `--text-wm-site-section` (3.25rem/1.24/−0.02em), `-section-mobile` (1.875rem/1.28/−0.015em), `--text-wm-site-page` (4rem/1.18/−0.025em), `-page-mobile` (2.375rem/1.22/−0.02em), `--text-wm-site-doc-heading` (1.75rem/1.3/−0.01em).
+
+- [ ] **Step 1: Write the failing tests:**
+  - `read-landing-data.test.ts` with a fake fetch:
+    - both 200 → the exact JSON string;
+    - prices 500 → `undefined` and one `console.warn` containing `/v1/public/prices`;
+    - FAQ times out after `timeoutMs` → `undefined`;
+    - `required` and a network error → rejects with the message above;
+    - `offline` → no fetch call;
+    - a FAQ body with an item missing `answer` → `undefined`.
+  - `landing-data.test.ts`:
+    - `parseLandingData(undefined).source === 'fallback'` and its prices equal the three numbers above;
+    - `''` and `'{'` → fallback;
+    - a valid string → `source: 'api'`, and its FAQ order is kept;
+    - `FALLBACK_LANDING_DATA.faq.length === 6`, and the first question is "Gói Pro có tự gia hạn không?".
+  - `lib/period-offer.test.ts` keeps its cases. Add `{ '1': 79000, '3': 240000, '12': 599000 }` → months `'3'` gives `struck: null`, `saving: null`.
+  - `ui/actions.test.tsx`: `ButtonLink reload` renders an `<a>` whose `href` is exact and which has no `next/link` client handler. Assert that a click is not `preventDefault`ed.
+  - `web-tokens.test.ts` pins the new values and the light/dark key parity.
+- [ ] **Step 2: Run** `pnpm vitest run scripts/read-landing-data.test.ts src/site src/lib/period-offer.test.ts src/ui src/styles` → FAIL.
+- [ ] **Step 3: Implement.** In `next.config.ts`, import `PHASE_PRODUCTION_BUILD` from `next/constants`.
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS; the four admin checks → PASS. Then `pnpm cf:docker` builds with `LANDING_DATA_SOURCE` unset and no API:
+  - the build log has the one warning;
+  - `pnpm assert:render-mode` passes;
+  - `grep -c "599.000" .next/server/app/vi.html` (or the prerendered `/vi` file the manifest names) is ≥ 1 after M8.5. Before M8.5, check that `process.env.WORDMET_LANDING_DATA` is inlined: grep the server chunk for the JSON.
+  - **UNVERIFIED until this step:** that the `env` inline reaches server components under Turbopack. If it does not, stop and record it.
+- [ ] **Step 5: Commit** `feat(web): read prices and faq at build and share the logo and theme switch`.
+
+### Task M8.4 (M8b): Site header, footer and route groups
+
+**Files:**
+- Create: `S/layout/{SiteHeader,SiteFooter,SkipLink,Container}.tsx`, `S/layout/site-chrome.test.tsx`; route group `PUB/(pages)/layout.tsx`.
+- Move: `PUB/page.tsx`, `privacy/`, `terms/`, `sources/` into `PUB/(pages)/` (URLs unchanged). `PUB/[...rest]/page.tsx` and `PUB/not-found.tsx` stay at `PUB/`, so the 404 renders without the header (Figma `16:317`).
+- Modify: `PUB/layout.tsx` keeps `THEME_SCRIPT`, `ThemeProvider`, `JsonLd`, `SkipLink` and `<main id="main">`. The header and footer move to `(pages)/layout.tsx`; the 404 renders its own footer.
+
+**Interfaces:**
+- `SiteHeader({ locale, onHome: boolean })` (server):
+  - sticky, `--bg` at 72 % with `backdrop-blur` (Figma component note `5:2`), height 68 (phone 60), `Container`;
+  - logo `ui/Logo` → `/{locale}`;
+  - desktop (`md`+): links "Nhóm từ" `#nhom-tu`, "Cách học" `#cach-hoc`, "Giá" `#gia` (on legal pages `/{locale}#…`), `ThemeToggle`, "Đăng nhập" (white secondary, `reload`) → `/{locale}/app/login`, "Đăng ký" (navy primary, `reload`) → `/{locale}/app/register`;
+  - phone: logo, "Đăng nhập", "Đăng ký" only, each ≥ 44 px tall (QM8-1a, QM8-1a′, QM8-1b′).
+- `SiteFooter({ locale })`:
+  - Figma `7:209` / `9:100`: logo, links "Chính sách bảo mật", "Điều khoản sử dụng", "Nguồn dữ liệu", "Liên hệ" (`mailto:` `site.contactEmail`), "© {year} Wordmet";
+  - phone only: a "Giao diện" control with "Sáng" / "Tối", a client island over `ThemeProvider`, the same storage key `wordmet-web.theme`.
+- Copy keys: `Nav` gains `login` "Đăng nhập", `signup` "Đăng ký", `groups` "Nhóm từ", `howTo` "Cách học", `pricing` "Giá", `theme` "Giao diện", `light` "Sáng", `dark` "Tối". `Landing.nav.*` and `Landing.footer.*` go.
+
+- [ ] **Step 1: Write the failing tests** (`site-chrome.test.tsx`, by role and text):
+  - the header has links "Đăng nhập" → `/vi/app/login` and "Đăng ký" → `/vi/app/register`, both plain anchors;
+  - "Giá" → `#gia` on the home and `/vi#gia` with `onHome=false`;
+  - the footer has the four links and "© 2026 Wordmet" (fake date);
+  - the phone theme control switches `data-theme` and writes `wordmet-web.theme`.
+  - `e2e/locale.spec.ts` LPE4 (`/vi/khong-ton-tai` → 404 with heading "Không tìm thấy trang") keeps passing.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the new public header and footer`.
+
+### Task M8.5 (M8b): Home page sections
+
+**Files:**
+- Create: `S/landing/{Hero,WordStrip,GroupsSection,LearnSection,PricingSection,FaqSection,FinalCta,copy}.tsx|ts`, `S/landing/landing.test.tsx`.
+- Modify: `PUB/(pages)/page.tsx`, `messages/{vi,en}.json` (`Landing` rewritten), `src/i18n/messages.test.ts` (LP30 goes: the FAQ now comes from data).
+- Delete:
+  - `components/landing/**`;
+  - `components/interactive/Reveal.tsx` and its test (replaced in M8.6);
+  - the `App.*` keys only the old landing read (`App.review.flip`, `App.addWord.save`, others `getAppCopy` used): grep `t('…')` first.
+
+**Interfaces:**
+- The page renders, in this order (Figma `5:13` / `9:108`, M8 Figma A §2, §4):
+  1. `Hero`: topic pill with the 5 topics, title with "trong câu" in accent, lead, buttons "Bắt đầu miễn phí" (primary, `reload` → register) and "Xem cách học" (secondary → `#cach-hoc`), stage mock-up and floating cards (desktop 2, phone 1);
+  2. `WordStrip`: two rows from §2.2;
+  3. `GroupsSection` `id="nhom-tu"`;
+  4. `LearnSection` `id="cach-hoc"`: 4 cards, "Nghe và đọc phiên âm" on desktop only;
+  5. `PricingSection` `id="gia"`;
+  6. `FaqSection` `id="hoi-dap"`, rendered only when `faq.length > 0`;
+  7. `FinalCta`.
+
+  The hidden paragraph section (`6:117`) is not built. Mock-ups are static markup with the copy of §2. Nothing comes from `App.*`.
+- `PricingSection({ prices })` (QM8-2):
+  - Free card per §2.6, with "Tạo tài khoản miễn phí" (secondary, `reload` → register) and "Có thể có quảng cáo.";
+  - Pro card: "Pro" plus chip "Có AI" (gradient tokens), the Pro line, then **three static rows**, one per period. Each row has its label, a pill `−{saving}%` when `periodOffer(prices, m).saving` ≥ 1, the price (`format.money`), and "≈ {perMonth} mỗi tháng" for 3 and 12 ("mỗi tháng" for 1);
+  - then the AI block, the check rows, one primary button "Tạo tài khoản" (`reload` → register), and the note "Không hoàn tiền tự động." (draft, QM8-6).
+  - No struck price, no selection, no script.
+- `FaqSection({ items })`: native `<details name="faq">`, first open, question SemiBold 17, answer Body/Base `--muted`; title "Câu hỏi thường gặp" and the lead line with support@wordmet.com.
+- Drafted copy changes for the owner to check (QM8-6), listed in the PR body:
+  - "Mỗi nhóm có lịch ôn riêng." → "Mỗi từ có lịch ôn riêng.";
+  - "Thẻ từ · ngăn 3 ngày" → "Thẻ từ · ôn lại sau 3 ngày";
+  - "lên ngăn · 7 ngày" → "ôn lại sau · 7 ngày";
+  - "2 từ lên ngăn 7 ngày" → "2 từ ôn lại sau 7 ngày";
+  - "Không hoàn tiền sau khi đã thanh toán." → "Không hoàn tiền tự động."
+
+- [ ] **Step 1: Write the failing tests** (`landing.test.tsx`, with `landingData()` stubbed):
+  - headings in order: hero h1 "Ôn từ đúng lúc, luyện từ trong câu.", then "Từ của mỗi đề thành một nhóm.", "Từ lúc gặp tới lúc dùng được", "Hai gói, không tự gia hạn.", "Câu hỏi thường gặp", "Bắt đầu với đề bạn vừa làm.";
+  - pricing with the fallback prices shows "79.000 ₫", "199.000 ₫", "599.000 ₫", "−16%", "−37%", "≈ 66.300 ₫ mỗi tháng", "≈ 49.900 ₫ mỗi tháng";
+  - with `{ '1': 79000, '3': 240000, '12': 599000 }`, the 3-month row has no "%";
+  - FAQ with 6 items gives 6 `group` (details) elements, the first open; with `[]` there is no "Câu hỏi thường gặp" heading;
+  - every link into `/vi/app/` is a plain anchor;
+  - `copy.test.ts`: `vi` and `en` have the same `Landing` keys, with no "!" and no "Vui lòng".
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement** in `S/landing/` with `wm-` classes only (no old token class in `S/**`).
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the home page from figma`.
+
+### Task M8.6 (M8b): Motion of the home page and the 404
+
+**Files:**
+- Create: `S/interactive/{motion.ts,SplitWords.tsx,Reveal.tsx,Marquee.tsx,FlyIn.tsx,Parallax.tsx,TopicTicker.tsx,Sweep.tsx,DemoLoops.tsx}`, `S/interactive/motion.test.tsx`; keyframes in `src/app/globals.css` under a `/* site motion */` block, every value from `wm-` tokens.
+- Source to port: `docs/mockups/2026-11-05-redesign-concepts/landing-mo.html`, CSS lines 51–257 and script lines 384–546.
+  - Without the "Xem motion" panel (`.ctl`, line 257 on, markup line 373) and the `--slow` multiplier.
+  - The mapping onto Figma's layout follows M8 Figma A §6.
+
+**Interfaces** (numbers, `E` = `cubic-bezier(0.23, 1, 0.32, 1)` = `--ease-wm-out`):
+- **Words** (hero title, section titles): split per word. Each word goes opacity 0 → 1 in 650 ms, `filter: blur(12px)` → 0 and `translateY(.3em)` → 0 in 800 ms, `E`, stagger 60 ms. It starts on load (hero) or on scroll-in (titles).
+- **Reveal** (blocks): blur 16 px → 0, `translateY(18px) scale(.985)` → none in 900 ms, opacity in 700 ms, `E`. IntersectionObserver threshold .22, `rootMargin 0 0 -8% 0`, once.
+- **Halos:** drift 16 s / 19 s `ease-in-out infinite alternate`, translate as in bản 3. Off below 760 px.
+- **Wave bars:** `scaleY(.3)` ↔ 1, 900 ms `ease-in-out infinite`, offsets −150 ms per bar.
+- **Floating cards:** bob 6 s `infinite alternate` (−5 px ↔ 6 px, keeping the card's rotation); pointer parallax on the hero (depth per card as bản 3, transition 400 ms `E`), fine pointers only.
+- **Word strip:** two tracks, 52 s and 64 s (the second reversed), linear infinite, the list duplicated for a seamless loop.
+- **Groups fly-in:** bản 3's fly-in (3D start positions, blur, scale .82) with Figma scene 2's timing:
+  - transform 1150 ms, opacity 517 ms, `E`, 55 ms apart in Figma's shuffled order;
+  - each card's border flashes to `--color-wm-accent` in 240 ms and back in 860 ms (not `#2445D6`);
+  - the caption pill comes in last, 500 ms.
+- **Demo cards** (LearnSection) run while on screen:
+  - typing with a caret blinking 1 s `steps(1)`;
+  - the listen button ping 2.4 s;
+  - the bins light in turn, 300 ms transitions.
+- **Topic ticker** (Figma scene 1): 20 px rows, each move 350 ms `cubic-bezier(.5,0,.5,1)`, hold 750 ms; the first row duplicated at the end for a seamless wrap.
+- **Final card:** bản 3's glow running around the card (`conic-gradient` on `--ang`, 6 s linear infinite, `blur(40px)`).
+- **Pro card** (Figma scene 6):
+  - a light sweeping around the border, one lap per 6000 ms linear, corner turns 200 ms;
+  - the four AI badges scale 1 → 1.18 in 250 ms (`E`) and back in 350 ms, starting 900 / 1150 / 1400 / 1650 ms, again every 3000 ms.
+- **404** (Figma scene 5):
+  - card: opacity 0 → 1 in 700 ms, `translateY(28px) scale(.96)` → none in 1000 ms;
+  - "404": y −22 → 0, starts at 250 ms, 800 ms (opacity 600);
+  - title, body, button: y 14 → 0 starting at 450 / 550 / 680 ms, 800 ms (opacity 600);
+  - halos drift 5 s `ease-in-out infinite alternate`.
+- **Phone (< 768 px):** every blur above 12 px uses 12 px (one CSS variable, `--wm-blur-cap`).
+- **Reduced motion:** no transition, no animation; every element at its end state from the first paint (bản 3's 240 ms fade is dropped).
+- **Before JS:** the server HTML is the end state. A `js` class set by the inline theme script (the public CSP allows it) is the only thing that hides elements before they animate.
+
+- [ ] **Step 1: Write the failing tests** (`motion.test.tsx`):
+  - `SplitWords` keeps the exact accessible text of the title (one `h1` whose name is the sentence) and marks the word spans `aria-hidden`, with an `sr-only` copy;
+  - with `matchMedia('(prefers-reduced-motion: reduce)')` true, no element has the hidden start class after mount;
+  - without the `js` class, no element is hidden;
+  - `Marquee` duplicates its children once and marks the copy `aria-hidden`.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS. Look at `/vi` in `pnpm dev:app` at 1440 and 390, side by side with `landing-mo.html`; note any difference as a ruling.
+- [ ] **Step 5: Commit** `feat(web): add the home page motion from landing round 3`.
+
+### Task M8.7 (M8b): Chính sách, Điều khoản, Nguồn dữ liệu, 404
+
+**Files:**
+- Create:
+  - `S/legal/{LegalLayout,LegalArticle,LegalToc,ReadingProgress,LegalCallout,LegalDraft}.tsx`;
+  - `S/sources/SourcesPage.tsx`;
+  - `S/legal/legal.test.tsx`, `S/sources/sources.test.tsx`.
+- Modify: `PUB/(pages)/{privacy,terms,sources}/page.tsx`, `PUB/not-found.tsx`, `messages/{vi,en}.json` (`Legal`, `Sources`, `NotFound`).
+- Delete: `components/sections/**`.
+
+**Interfaces:**
+- `LegalLayout({ title, lead, version, effectiveDate, kind: 'privacy' | 'terms', markdown })` (Figma `14:172` / `17:260`, `15:190` / `17:355`, M8 Figma B §2–§4):
+  - header block: meta "Phiên bản {version} · Có hiệu lực từ {date}" (QM8-4; Điều khoản adds " · Áp dụng cho wordmet.com"), title `--text-wm-site-page`, lead;
+  - `ReadingProgress`: 3 px bar under the header, sticky with it, width = article scroll progress;
+  - `LegalToc`, from the `##` headings (`lib/legal-outline.ts`):
+    - desktop: a 260 px sticky card on the **left**, current section filled `--accent-soft`;
+    - phone: a sticky pill "Mục lục" + the current section + a chevron. It opens an inline list under the pill (disclosure; the open state is not drawn, ruling) and closes on a link click;
+    - without JS: plain anchor links, no current state.
+  - `LegalArticle`: Markdown per M8 Figma B §3:
+    - h2 `--text-wm-site-doc-heading` (phone 24), 32 px above;
+    - p 17/1.7 (phone 16/1.7);
+    - `strong` 600;
+    - lists with a disc, 6 px apart;
+    - links SemiBold accent, underlined;
+    - h3, blockquote, table and code (not drawn) styled from §3.3 rules and recorded as a ruling;
+    - bare emails stay links.
+  - `LegalCallout` (desktop and phone): privacy "Còn câu hỏi về dữ liệu của bạn?" / "Gửi từ chính email của tài khoản. Phản hồi trong 02 ngày làm việc."; terms "Có vấn đề với thanh toán?" / "Gửi email tài khoản, mã chuyển khoản (bắt đầu bằng WM) và ảnh biên nhận."; button "support@wordmet.com →" (`mailto:`).
+  - `LegalDraft` (nothing published): the header block without meta, the notice `Legal.draftNotice`, the contact email.
+- `SourcesPage({ items })` (Figma `16:210` / `18:283`, M8 Figma B §5):
+  - title, lead in `--ink`, the note "Trang này tự cập nhật…" (desktop only), count heading "{count} nguồn đang dùng";
+  - one card per source: desktop two columns (name 28, version line, "Giấy phép: …", attribution, "Trang gốc" + icon + display URL); phone one column **with** the attribution (QM8-5), without the display URL;
+  - **no "Dùng cho" pill**;
+  - cards alternate `--surface` + card shadow and `--accent-soft`, as Figma;
+  - `null` or `[]` → `Sources.empty`.
+- `PUB/not-found.tsx` (Figma `16:317` / `18:358`): no header, card 600 / 358 wide, "404" (Bricolage ExtraBold 104/80, accent, `aria-hidden`), h1 "Không tìm thấy trang", body, button "Về trang chủ →" → `/`, halos, footer. Motion from M8.6.
+- New keys: `Legal.privacyLead`, `Legal.termsLead`, `Legal.versionLine`, `Legal.termsScope`, `Legal.contentsOpen` (accessible name of the phone pill), `Legal.{privacy,terms}Help{Title,Body}`, `Sources.autoUpdate`, `Sources.count`. The `Legal` key list pinned by `copy.test.ts:46` changes with them.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `legal.test.tsx`:
+    - with a published privacy text, the page has exactly one `h1` "Chính sách bảo mật", the line "Phiên bản 3 · Có hiệu lực từ 20/11/2026" (data `version: 3`, `effective_date: '2026-11-20'`), a `navigation` named "Mục lục" whose links point at the `##` ids, and the callout link `mailto:support@wordmet.com`;
+    - draft state: the notice text and no "Phiên bản";
+    - the phone pill toggles `aria-expanded`.
+  - `sources.test.tsx`:
+    - 3 items → "3 nguồn đang dùng" and 3 headings;
+    - attribution text present at every width (one DOM, no `hidden` on phone);
+    - no text starting "Dùng cho";
+    - `[]` → the empty sentence.
+  - `locale.spec.ts` LPE4 keeps passing.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the legal, sources and not-found pages`.
+
+### Task M8.8 (M8b): SEO and metadata
+
+**Files:**
+- Modify:
+  - `src/lib/metadata.ts` (+ `pageMetadata`);
+  - `PUB/(pages)/{privacy,terms,sources}/page.tsx`;
+  - the `(auth)` layouts under `src/app/[locale]/app/` (title and description, still `noindex`);
+  - `src/app/sitemap.ts`, `src/app/manifest.ts`;
+  - `src/app/[locale]/layout.tsx` (`viewport.themeColor`; delete the Lexend comment);
+  - `components/seo/JsonLd.tsx` → `S/seo/JsonLd.tsx`;
+  - `src/lib/landing-locale.test.ts`, `e2e/seo.spec.ts`.
+
+**Interfaces** (design §11):
+- `pageMetadata(locale, { path, title, description, index: boolean }): Metadata`:
+  - canonical `/{locale}{path}`;
+  - `alternates.languages` `{ vi: '/vi{path}', en: '/en{path}' }` for the legal and sources pages;
+  - `openGraph { url, title, description }`;
+  - `robots` from `index && site.indexable`.
+
+  Descriptions: privacy `Legal.privacyLead`, terms `Legal.termsLead`, sources `Sources.intro`. Terms and Sources stay `noindex`.
+- `JsonLd({ prices })` with `WebSite`, `SoftwareApplication`, `Organization`:
+  - `SoftwareApplication.offers` has three `Offer`s (`priceCurrency: 'VND'`, `price` from `landingData().prices`, names "Pro 1 tháng", "Pro 3 tháng", "Pro 12 tháng") plus Free at `0`;
+  - `Organization { name: 'Wordmet', url: site.url, logo: site.url + '/icon.svg' }`.
+- Sitemap:
+  - `/vi` always when indexable;
+  - `/vi/privacy` when indexable, with `lastModified` from `getLegal()?.effective_date` when the read succeeds;
+  - Terms and Sources not listed while they are `noindex`.
+- `viewport.themeColor`: light `#f6f7fa`, dark `#0f1220`. `manifest` `background_color` and `theme_color` `#f6f7fa`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `seo.spec.ts` LP10: the `ld+json` types are exactly `['WebSite', 'SoftwareApplication', 'Organization']`, and the offers have `priceCurrency` `VND` and prices `[0, 79000, 199000, 599000]` on the fallback build;
+  - `/vi/privacy` has canonical `/vi/privacy` and hreflang `vi` and `en`, and its `og:url` ends `/vi/privacy`;
+  - `/vi/app/login` has a title other than the home title and `noindex`;
+  - `landing-locale.test.ts`: the sitemap paths are `['/vi']` when not indexable, and `['/vi', '/vi/privacy']` with `NEXT_PUBLIC_INDEXABLE=true` (module reset).
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS.
+- [ ] **Step 5: Commit** `feat(web): add page metadata, sitemap rules and offers in vnd`.
+
+### Task M8.9 (M8b): Delete `components/`, e2e, shots, PR
+
+**Files:**
+- Delete: `src/components/**` (what remains after M8.5, M8.7, M8.8), `src/i18n/navigation.ts` if `git grep` finds no importer.
+- Modify:
+  - `e2e/landing.spec.ts`: rewrite. The M2.5 auth-layout block (`:550–576`) moves unchanged to `e2e/auth-layout.spec.ts`; the `components/` import (`:2`) goes.
+  - `e2e/{privacy,chrome,a11y,csp,locale}.spec.ts`;
+  - `e2e-shots/shots.spec.ts` (set `gm-m8`, signed out);
+  - `README.md:73`.
+
+- [ ] **Step 1: Rewrite the e2e first; they fail on the old markup:**
+  - LR20: "Đăng ký" in the header and the hero go to `/vi/app/register`.
+  - LR21: `/en` → 307 `/vi`.
+  - LR22: no sideways scroll at 320, 390, 768, 1440.
+  - LR23 and LR24: the theme carries into `/vi/app/login`, and dark paints first.
+  - LR25: with reduced motion, `getAnimations()` is empty after load.
+  - LR26, JavaScript off: every section heading, the 3 prices, an open FAQ and the legal contents links are present.
+  - LR27, LP25: axe with no serious or critical violation on `/vi`, `/vi/privacy`, `/vi/terms`, `/vi/sources`, `/vi/khong-ton-tai`, light and dark.
+  - LR28, E23: no CSP violation.
+  - LB3E6: the first visible `a[href^="/vi/app"]` does a full page load.
+  - LR50: every control ≥ 44 px.
+  - New:
+    - at 390 the header holds the logo, Đăng nhập and Đăng ký with each `boundingBox().height >= 44` and no overflow;
+    - the footer "Giao diện" control exists only below 768;
+    - pricing shows "−16%" and "−37%" on the fallback build;
+    - the FAQ has 6 items;
+    - the 404 has no `banner` landmark;
+    - `chrome.spec.ts`: the H1 is Bricolage Grotesque, weight 700.
+- [ ] **Step 2: Run** `pnpm cf:docker` with the e2e named above → PASS. Then the whole web suite: unit, lint, typecheck, build, `assert:render-mode`, full e2e.
+- [ ] **Step 3: Shots:** add set `gm-m8` (no sign-in) to `shots.spec.ts`:
+  - pages: `/vi`, `/vi/privacy`, `/vi/terms`, `/vi/sources`, `/vi/khong-ton-tai`;
+  - light and dark, at 390, 1024 and 1440.
+
+  Run it against `pnpm dev:app`. Put each shot next to its Figma frame in the as-built.
+- [ ] **Step 4: Docs:**
+  - M8b as-built in the delivery record, rulings from R174, and the PR body lists every drafted string for the owner (QM8-6);
+  - `deploy-checklist.md`: the "Landing mới" items done by M8, plus "set `LANDING_DATA_REQUIRED=1` with the API URL in `deploy-web.yml` at Deploy";
+  - `docs/deliveries/landing-redesign.md` gets a note that M8 replaced it.
+- [ ] **Step 5: Commit and PR** `feat(web): rebuild the public pages from figma` into `refactor/giao-dien-moi`, through `ship-pr`.
+
+### Task M8.10 (M8c): Figma frames for the favicon and share images (owner gate)
+
+- [ ] **Step 1:** load the `figma-use` skill. Every `use_figma` call starts on page 1 (owner's file habit), so switch to page `0:1` first. On page `0:1` draw:
+  - frame "Favicon": the mark at 16, 32, 180 (apple) and 512 px, light and dark, built from Logo `3:14` (for example the "w" with the accent full stop);
+  - frame "Ảnh chia sẻ 1200 × 630": `--bg` ground, the logo, the hero title of the page;
+  - three variants for Chính sách, Điều khoản, Nguồn dữ liệu (title and lead of each page).
+
+  Variables and text styles of the file only.
+- [ ] **Step 2:** take screenshots and send them to the owner. **Stop here until the owner approves or asks for changes.** Record the approved node ids in the rulings.
+
+### Task M8.11 (M8c): Icons, share images and their fonts
+
+**Files:**
+- Modify:
+  - `src/app/icon.svg`, `src/app/apple-icon.tsx`, `src/app/[locale]/opengraph-image.tsx`;
+  - `scripts/gen-og-fonts.mjs`, `src/app/[locale]/og-fonts.generated.ts`, `og-fonts.test.ts`;
+  - `assets/fonts/{OFL.txt,README.md}`.
+- Create: `PUB/(pages)/{privacy,terms,sources}/opengraph-image.tsx`, a shared renderer `S/seo/og-image.tsx`.
+- Delete: `assets/fonts/Lexend-*.ttf`.
+
+**Interfaces:**
+- `renderOgImage({ title, lead }): ImageResponse` (1200 × 630, from the approved frame).
+- Fonts are static TTFs, which `next/og` needs: Noto Sans Regular with Vietnamese, and Bricolage Grotesque ExtraBold. If upstream ships only variable files, make the static instances with `fonttools varLib.instancer` from the OFL sources. Record the source URL, licence and byte size in `assets/fonts/README.md`.
+- `og-fonts.generated.ts` exports `notoSansRegular`, `bricolageExtraBold`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `og-fonts.test.ts`: both exports start with the TTF magic `00 01 00 00`;
+  - `seo.spec.ts`: `/vi/opengraph-image`, `/vi/privacy/opengraph-image` → `image/png` 1200 × 630, and `og:image:alt` set per page.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.** Measure the Worker size before and after with the command in `deploy-checklist.md` (Worker section) and write both numbers there.
+- [ ] **Step 4: Run** the whole web suite in `cf:docker` → PASS. Look at the four images beside the Figma frames.
+- [ ] **Step 5: Commit, as-built, PR** `feat(web): add the new icons and share images` into `refactor/giao-dien-moi`.
+
+## Decisions this part makes
+
+The owner's decisions are QM8-1…QM8-9 in the decision record. Claude settled these while writing the part; the owner approves them with the plan:
+- **Three PRs.** M8a (API and admin) and M8b (web) share no files, so they can run in parallel. M8c waits for the Figma approval.
+- **FAQ is its own module**, `faq`, not part of Legal (M8 code F §2):
+  - it is read at build time with the prices;
+  - it is vi only, because the English home page is not served (L4);
+  - its answers are plain text;
+  - ordering is by a number field, as report reasons do; the admin has no drag-and-drop anywhere.
+- **The 6 drafted answers are seeded published.** The home page then shows them from the first deploy. The owner checks them in admin (QM8-6), and M8.1 Step 0 checks each claim against the code first.
+- **Build-time read through `next.config.ts` and `env`:**
+  - no generated file and no request-time `fetch`, so `/vi` stays prerendered whatever OpenNext does at run time;
+  - `LANDING_DATA_SOURCE=fallback` keeps e2e builds deterministic on a machine whose API is running;
+  - `LANDING_DATA_REQUIRED=1` is set only at Deploy.
+- **Route group `(pages)`**, so the 404 renders without the header, as Figma draws it.
+- **`periodOffer` moves to `lib/`**, so the home page and Gói học compute the same percentages; `AppLogo` moves to `ui/`; the theme button moves to `site/layout/`.
+- **Public display type is Bold 700** as Figma draws it (design §3.1 says 800). "404" and the logo stay 800.
+- **The phone table of contents** opens an inline list (not drawn in Figma).
+- **h3, blockquote, table and code** in the legal texts get styles from §3.3, because Figma draws none.
+- **Legal callouts** show on phone too, although Figma's phone frames are cut before them.
+- **The Điều khoản scope line** shows on phone too.
+- **No struck price on the home page.** QM8-2 (c) keeps rows simple; Gói học keeps its struck prices.
+
+**Open:** none. The drafted copy (FAQ answers, the five claim fixes, the refund note) is checked by the owner in the PRs, not before.
