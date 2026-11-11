@@ -158,6 +158,33 @@ describe('TransactionsPage (Figma 122:4203 / 122:4354)', () => {
     expect(await screen.findByText('Đã chép mã giao dịch.')).toBeInTheDocument();
   });
 
+  it('"Chép mã giao dịch" with no clipboard (insecure origin, some webviews): nothing thrown, no toast, the detail stays open', async () => {
+    const user = userEvent.setup();
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    const errors: unknown[] = [];
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    try {
+      renderApp(<><TransactionsPage /><ToastRegion /></>, { routes: routes() });
+      await user.click(await rowButton(/^Mua · Pro · 3 tháng, 01\/11\/2026/));
+      const dialog = await screen.findByRole('dialog', { name: 'Chi tiết giao dịch' });
+      // The toast queue outlives a test: count the toasts already showing rather than expecting none.
+      const toasts = () => screen.queryAllByText('Đã chép mã giao dịch.').length;
+      const before = toasts();
+      await user.click(within(dialog).getByRole('button', { name: 'Chép mã giao dịch' }));
+      expect(errors).toEqual([]);
+      expect(toasts()).toBe(before);
+      expect(screen.getByRole('dialog', { name: 'Chi tiết giao dịch' })).toBeInTheDocument();
+    } finally {
+      window.removeEventListener('error', onError);
+      if (original) Object.defineProperty(navigator, 'clipboard', original);
+    }
+  });
+
   it('Esc closes the detail and focus returns to the row', async () => {
     renderApp(<TransactionsPage />, { routes: routes() });
     const button = await rowButton(/^Mua · Pro · 3 tháng, 01\/11\/2026/);
