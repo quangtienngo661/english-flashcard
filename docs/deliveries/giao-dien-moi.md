@@ -620,3 +620,27 @@ Nhánh `feat/giao-dien-moi-m7a`, **một PR** vào `refactor/giao-dien-moi` cho 
 - Chưa chụp chế độ tối, tiếng Anh, khổ 1024 px; chưa xem trên điện thoại thật.
 - Chưa thấy chấm nhấp nháy và trạng thái giảm chuyển động trong trình duyệt thật (có unit test cho luật giảm chuyển động).
 - Chưa thử mua payOS thật, Google re-auth thật; nút "Hủy gói" chỉ thử với provider giả.
+
+# Giao diện mới — as-built M8a Hỏi đáp trang chủ: API và admin (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m8a` (từ `origin/refactor/giao-dien-moi` + nhánh plan `docs/giao-dien-moi-plan-8`), một PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R174–R180 trong `giao-dien-moi-rulings.md`. Không đụng `apps/web`; M8b đọc FAQ lúc build.
+
+**Đã làm**
+- Step 0 (M8.1): kiểm 6 câu nháp với code. Câu 10, 30, 40 đúng. Câu 20 thêm "vẫn ôn thẻ như trước" và "ít lượt AI hơn mỗi tháng" (R174); câu 50 đổi "mã chuyển khoản" thành "nội dung chuyển khoản (mã bắt đầu bằng WM)" và nói rõ không hoàn tiền phần chưa dùng, theo Điều khoản (R175); câu 60 nói AI soạn cả đáp án được chấp nhận (R176). Chữ cuối cùng nằm trong migration; M8b chép đúng 6 câu đó vào `landing-data.fallback.ts`.
+- API (M8.1): module riêng `faq` (chép cách của Legal), bảng `landing_faq_items` (migration `20261114090000_landing_faq`, nạp 6 câu đã đăng, người tạo NULL).
+  - `GET /v1/public/faq`: công khai, giới hạn `public.faq.ip` 60/phút/IP, trả `{ items: { question, answer }[] }` chỉ câu đã đăng, theo `position` rồi thời điểm tạo; không có câu nào thì `{ items: [] }` (R177).
+  - Admin `GET/POST /v1/admin/faq`, `PATCH/DELETE /v1/admin/faq/:id`, quyền `settings.manage`; POST và PATCH cần `Idempotency-Key`; PATCH sai `expected_version` trả 409 `faq-version-conflict`, đọc lại hàng trong cùng transaction (R180).
+  - `account-data-map`: `landing_faq_items.created_by`, `.updated_by` là `keep-id`.
+- Admin (M8.2): mục menu thứ 28 "Hỏi đáp trang chủ" (`/faq`, sau "Chính sách & điều khoản", editor không thấy); danh sách Thứ tự / Câu hỏi / Trạng thái, hộp Thêm / Sửa theo đường dẫn, Xóa có hỏi trước (R178, R179). Hộp sửa giữ phiên bản lúc mở form (R180).
+- Smoke `smoke:giao-dien-moi` thêm bước 1b: 6 câu nạp đúng thứ tự → câu nháp không lộ → đăng thì có 7, câu mới đứng thứ hai → `expected_version` cũ trả 409 → xóa thì về 6.
+
+**Kiểm**
+- API: unit 5288/5288 (364 file), lint, typecheck, build qua; schema drift trên DB mới "empty migration"; `db:setup` trên DB mới rồi `SELECT count(*) … WHERE published` = 6. Sau sửa review: test `src/faq` 13/13, typecheck qua.
+- Smoke trên DB mới `english_learning_smoke_gm_m8a` (API :3100, không `.env`): `ALL OK — 15 steps` (`giao-dien-moi-smoke-output.txt`, mục M8.1).
+- Admin: lint, typecheck qua; build qua với biến môi trường như CI; unit 1417/1417 (lượt chạy một mình; lượt đầu một file khác hết 5 s rồi qua khi chạy riêng, như M7); e2e mock `faq`, `shell`, `a11y` 47 qua, 3 skip (có sẵn). Sau sửa review: `src/features/faq` 11/11.
+- Review cả nhánh (subagent Opus): 1 Important (form sửa gửi `row_version` mới sau khi danh sách tải lại, ghi đè thay đổi của người khác), 4 Minor. Đã sửa Important (test đỏ rồi fix), M2, M3 (test pin version 3); để lại M4, M5 (R180).
+
+**Chưa kiểm / rủi ro**
+- Chưa gọi màn admin với API thật trong trình duyệt (chỉ e2e mock; API thật chỉ qua smoke).
+- Chủ dự án chưa duyệt chữ 6 câu trả lời (QM8-6), nhất là ba câu đã viết lại.
+- Sau 409 không có nút tải lại; admin đóng và mở lại hộp.
