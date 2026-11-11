@@ -50,7 +50,10 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Theo bản đã chốt: 3, 4, 5, 7, 9, 10, 11, 14, 17, 18, 20, 21, 23; 25 phần thanh trên (56 px).
 - Giữ hiện tại: 8 (icon ngôi nhà), 12 (khoảng chữ logo, tiêu đề hộp thoại), 16 (bề rộng thanh phiên), 19 (dòng nguồn Luyện tập), 22 (thẻ chủ đề có ô icon); 25 phần thanh tab.
 - Chỗ 1: lấy bản đã chốt (lá bài dọc) làm gốc, polish và sửa lỗi giao diện còn lại.
-- Chỗ 2 (đổi sau): từ đích trong câu in đậm gạch chân ở mọi chỗ; riêng trang giấy Tra từ (danh sách A–Z) giữ nền vàng.
+- Chỗ 2 (đổi sau, làm rõ 12/11): từ đích trong mọi câu ví dụ, kể cả trang giấy Tra từ, in đậm gạch chân. Nền vàng chỉ dùng cho câu lọc của Tra từ ("314 từ · trình độ tất cả, chủ đề tất cả, loại từ tất cả"), thay cho chữ gạch chân mở menu.
+- Câu điền từ: gõ thẳng vào chỗ trống trong câu (ô nhập nằm trong câu); Enter thì kết quả thay ngay tại chỗ.
+- Học: hiệu ứng theo artifact "Chồng thẻ tan mờ" `TrbJBKg6VFE3x6YkjD1XT7` (thẻ sau mờ theo độ sâu, kéo nghiêng có dấu, ngưỡng 110 px, thẻ chọn xong phóng 1,22 và tan mờ 18 px trong 0,3 giây, thẻ kế tiếp hiện từ mờ, chip tên từ rơi vào đống).
+- Nhóm: số đo, đường cong, độ nảy và các lớp thẻ theo đúng source artifact `6z635GjwYNpctydnMoNHJD` (N2, kiểu `arc`, khung 1200).
 - Chỗ 6: bỏ qua; trang Nhóm làm lại theo artifact `6z635GjwYNpctydnMoNHJD`, băng chuyền kiểu Vòng cung.
 - Chỗ 13: bỏ box "Gần đây" ở Luyện tập; gom tiêu đề mục và card về một kiểu cho mỗi vai trò.
 - Chỗ 15: theo câu 11B (tab gạch dưới; bộ lọc dạng chip).

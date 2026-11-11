@@ -197,25 +197,72 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .tabbar span.on .pill{background:var(--accent-soft)}
 .pscreen{padding:12px 16px 84px;display:flex;flex-direction:column;gap:16px}
 
-/* Learn card (Học) */
-.lcard{position:relative;border-radius:var(--r-dlg);background:var(--surface);box-shadow:var(--sh-pop),var(--sh-lift);perspective:1200px;cursor:pointer}
-.lcard .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 520ms var(--ease-out)}
-.lcard.flip .in{transform:rotateY(180deg)}
-.lcard .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--r-dlg);background:var(--surface);padding:22px;display:flex;flex-direction:column}
-.lcard .back{transform:rotateY(180deg)}
-.pile{display:flex;flex-direction:column;align-items:center;gap:2px}
-.pile .n{font-family:var(--f-display);font-weight:800;font-size:2.75rem;line-height:1;transition:transform 300ms var(--ease-out)}
-.pile .n.bump{transform:scale(1.25)}
-.pile .l{display:flex;align-items:center;gap:4px;font-weight:600}
+/* Học: "Chồng thẻ tan mờ", ported from artifact TrbJBKg6VFE3x6YkjD1XT7: depth blur, drag with tilt and stamps, the answered card
+   dissolves (scale 1.22, blur 18px), the next card blur-zooms in, word chips drop into the piles. Changes: radius C, Bậc, bold underline. */
+.fc-arena{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px}
+.fc-pile{display:grid;gap:4px;justify-items:center;text-align:center;align-content:center;min-height:200px}
+.fc-pile .pn{font-family:var(--f-display);font-weight:800;font-size:46px;line-height:1.2;font-variant-numeric:tabular-nums}
+.fc-pile .pl{display:flex;align-items:center;gap:6px;font-weight:600}
+.fc-pile.again{color:var(--fail)} .fc-pile.known{color:var(--pass)}
+.fc-pile.hot .pl{text-decoration:underline;text-underline-offset:4px}
+.fc-minis{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;align-items:center;min-height:120px}
+.fc-minis li{font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-key);padding:2px 8px;animation:chipIn 300ms var(--ease-out) both}
+@keyframes chipIn{from{opacity:0;filter:blur(6px);transform:translateY(-6px) scale(.96)}to{opacity:1;filter:blur(0);transform:none}}
+.fc-bump{animation:fcbump 220ms var(--ease-out)}
+@keyframes fcbump{from{transform:scale(1.12)}to{transform:none}}
+.fc-stack{position:relative;width:360px;height:470px}
+.fc{position:absolute;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;perspective:1400px;
+  transition:transform 300ms var(--ease-out),filter 300ms var(--ease-out),opacity 300ms var(--ease-out)}
+.fc[data-depth="0"]{z-index:4}
+.fc[data-depth="1"]{z-index:3;transform:translateY(16px) scale(.95);filter:blur(5px);opacity:.85}
+.fc[data-depth="2"]{z-index:2;transform:translateY(30px) scale(.9);filter:blur(9px);opacity:.5}
+.fc[data-depth="3"]{z-index:1;transform:translateY(40px) scale(.86);filter:blur(12px);opacity:0}
+.fc.dragging,.fc.following,.fc.notr{transition:none}
+.fc.dragging{cursor:grabbing}
+.fc.settle{transition:transform 380ms var(--ease-out),filter 380ms var(--ease-out),opacity 380ms var(--ease-out)}
+.fc.flying{pointer-events:none;z-index:6}
+.fc .flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 300ms var(--ease-out)}
+.fc.is-flipped .flip{transform:rotateY(180deg)}
+.fc .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-dlg);padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 48px -28px color-mix(in srgb,var(--ink) 45%,transparent)}
+.wm[data-mode="dark"] .fc .face{box-shadow:0 24px 48px -28px rgb(0 0 0/.85)}
+.fc .back{transform:rotateY(180deg)}
+.fc .ftop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fc .pos{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.fc .say{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.fc .word{flex:1;display:grid;place-content:center;text-align:center;gap:6px}
+.fc .lemma{font-family:var(--f-display);font-weight:700;font-size:46px;line-height:1.3;letter-spacing:-.01em;margin:0}
+.fc .ipa{font-size:18px;color:var(--muted);margin:0}
+.fc .hint2{text-align:center;font-size:13px;color:var(--muted);margin:0}
+.fc .bl{font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.3}
+.fc .bl i{font-family:var(--f-mono);font-style:normal;font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
+.fc .def{font-size:18px;line-height:1.5;margin:0}
+.fc .vi{font-size:15px;color:var(--muted);margin:0}
+.fc .ex{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:4px;font-size:16px;line-height:1.55}
+.fc .stagep{margin:auto 0 0;font-size:13px;color:var(--muted)}
+.fc .stamp{position:absolute;top:22px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:62%;padding:6px 10px;border-radius:var(--r-row);border:2px solid currentColor;
+  background:var(--surface);font-weight:700;font-size:15px;opacity:0;pointer-events:none;z-index:2}
+.fc .stamp small{display:block;width:100%;font-weight:500;font-size:12px}
+.fc .stamp.again{left:18px;color:var(--fail);transform:rotate(-7deg)}
+.fc .stamp.known{right:18px;color:var(--pass);transform:rotate(7deg)}
+.fc-nudge{min-height:1.6em;text-align:center;font-size:14px;color:var(--muted);margin:8px 0}
+.fc-acts{display:flex;justify-content:center;gap:10px}
+.fc-acts .btn{width:180px}
+.fc-acts .btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.fc-sum{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;text-align:center}
+.fc-sum .rv{animation:blurIn 520ms var(--ease-out) both;animation-delay:calc(var(--k) * 90ms)}
+@keyframes blurIn{from{opacity:0;filter:blur(12px);transform:translateY(10px)}to{opacity:1;filter:blur(0);transform:none}}
+.fcw.ph .fc-arena{grid-template-columns:1fr 1fr;gap:12px}
+.fcw.ph .fc-stack{grid-column:1/-1;justify-self:center;order:-1;width:330px;height:420px}
+.fcw.ph .fc-pile{min-height:0} .fcw.ph .fc-pile .pn{font-size:32px} .fcw.ph .fc-minis{min-height:0}
+.fcw.ph .fc .lemma{font-size:40px}
+.fcw.ph .fc-acts .btn{width:auto;flex:1}
+@media (prefers-reduced-motion: reduce){.fc[data-depth="1"],.fc[data-depth="2"]{filter:none}}
 .toast{display:inline-flex;align-items:center;gap:10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-row);
   box-shadow:var(--sh-pop);padding:10px 14px;font-size:.875rem;font-weight:600}
 .toast .fl{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:grid;place-content:center}
 .toast.show{animation:toast-in 420ms var(--ease-out) both}
 @keyframes toast-in{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:none}}
-.fly-r{animation:fly-r 460ms var(--ease-out) both}
-.fly-l{animation:fly-l 460ms var(--ease-out) both}
-@keyframes fly-r{to{transform:translateX(260px) rotate(10deg) scale(.6);opacity:0}}
-@keyframes fly-l{to{transform:translateX(-260px) rotate(-10deg) scale(.6);opacity:0}}
 
 /* Practice */
 .sbar{display:flex;align-items:center;gap:14px}
@@ -321,20 +368,58 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   radial-gradient(ellipse 50% 45% at 30% 30%,color-mix(in oklab,var(--accent) 26%,transparent),transparent 70%),
   radial-gradient(ellipse 45% 40% at 75% 70%,color-mix(in oklab,var(--mark) 12%,transparent),transparent 70%)}
 
-/* Arc carousel (Nhóm) */
-.arc{position:relative;height:520px}
-.acard{position:absolute;left:50%;top:40px;width:270px;height:340px;margin-left:-135px;border-radius:var(--r-dlg);background:var(--surface);
-  border:2px solid color-mix(in oklab,var(--g) 70%,transparent);box-shadow:var(--sh-pop);padding:22px;display:flex;flex-direction:column;
-  transition:transform 620ms cubic-bezier(.3,1.25,.5,1),opacity 450ms ease,filter 500ms ease}
-.acard .meta{font:500 .8125rem var(--f-mono);color:var(--muted)}
-.acard .nm{font-family:var(--f-display);font-weight:800;font-size:2.125rem;line-height:1.05;letter-spacing:-0.02em;margin-top:10px}
-.acard .num{margin-top:auto;display:flex;align-items:baseline;gap:8px}
-.acard .num b{font-family:var(--f-display);font-weight:800;font-size:3.5rem;line-height:1;color:var(--g-ink);letter-spacing:-0.03em}
-.acard .next{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:.875rem;color:var(--muted)}
-.acard .next b{color:var(--ink)}
-.halo{position:absolute;left:50%;top:60px;width:560px;height:360px;margin-left:-280px;border-radius:50%;filter:blur(60px);opacity:.85;background:var(--g-wash);
-  transition:background-color 700ms var(--ease-out)}
-.navbtn{position:absolute;top:210px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-content:center;cursor:pointer;z-index:9}
+/* Nhóm carousel, "Vòng cung": sizes, curve, bounce, stacked cards and glow copied from artifact 6z635GjwYNpctydnMoNHJD (N2, motion arc).
+   Changes from it: radius scale C, card meta shows only the word count, level colours on the bar, 9B dark number ink. */
+.wm .g3{--g:#d99a17;--g-ink:#916d28;--g-wash:#faf3e3;--g-soft:#eccc8b}
+.wm[data-mode="dark"] .g3{--g-ink:#d99a17;--g-wash:#362f27;--g-soft:#594624}
+.n2{--cur:#e5603f;position:relative;padding:30px 48px 52px;display:grid;gap:16px;justify-items:center;overflow:hidden;min-height:100%}
+.n2>*{position:relative;z-index:1}
+.n2 .glow2{position:absolute;z-index:0;left:0;right:0;top:0;height:640px;pointer-events:none;color:var(--cur);transition:color .7s var(--ease-out);
+  background:radial-gradient(46% 50% at 50% 40%,color-mix(in srgb,currentColor 26%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,currentColor 7%,transparent),transparent 80%)}
+.n2 .top{width:100%;display:flex;justify-content:space-between;align-items:end;gap:16px;z-index:5}
+.n2 .top h1{font-family:var(--f-display);font-size:40px;font-weight:800;letter-spacing:-.03em;margin:0}
+.n2 .top .tr{display:flex;align-items:center;gap:16px}
+.n2 .ddbtn{display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 12px 0 14px;border-radius:var(--r-ctl);border:1.5px solid var(--line);background:var(--surface);
+  font-weight:600;font-size:15px;color:var(--ink);box-shadow:0 10px 24px -16px rgb(27 36 68/.35)}
+.n2 .ddbtn i{width:10px;height:10px;border-radius:3px;background:var(--g)}
+.n2 .track{width:100%;height:450px;position:relative;user-select:none}
+.n2 .it{position:absolute;left:50%;top:34px;width:290px;margin-left:-145px;transform-origin:50% 130%;
+  transition:transform .66s cubic-bezier(.34,1.56,.64,1),opacity .45s var(--ease-out);cursor:pointer}
+.ms{--w:290px;position:relative;width:var(--w);aspect-ratio:63/80;font-size:calc(var(--w) / 13)}
+.sk{position:absolute;inset:0;background:var(--surface);border:1.5px solid color-mix(in srgb,var(--g) 45%,var(--line));border-radius:var(--r-dlg);
+  display:flex;flex-direction:column;gap:.35em;padding:1.15em 1.25em 1em;box-shadow:0 1.6em 3em -1.9em rgb(27 36 68/.5);overflow:hidden}
+.wm[data-mode="dark"] .sk{box-shadow:0 1.6em 3em -1.9em rgb(0 0 0/.85)}
+.sk.d1{transform:translateY(.95em) scale(.94);filter:blur(2.5px);opacity:.85;z-index:-1}
+.sk.d2{transform:translateY(1.8em) scale(.88);filter:blur(5px);opacity:.55;z-index:-2}
+.sk.d3{transform:translateY(2.5em) scale(.82);filter:blur(7px);opacity:.3;z-index:-3}
+.sk[data-top]{border:2px solid var(--g)}
+.sk.empty{border:1.5px dashed color-mix(in srgb,var(--g) 55%,transparent);background:color-mix(in srgb,var(--g) 8%,var(--surface))}
+.sk .gm{font-family:var(--f-mono);font-size:.78em;color:var(--muted)}
+.sk .gnm{font-family:var(--f-display);font-weight:800;font-size:2.05em;line-height:1.08;letter-spacing:-.03em;color:var(--ink);margin-top:.15em}
+.sk .gd{margin-top:auto;display:flex;align-items:baseline;gap:.3em}
+.sk .gd b{font-family:var(--f-display);font-weight:800;font-size:2.7em;line-height:.9;letter-spacing:-.045em;color:var(--g-ink);font-variant-numeric:tabular-nums}
+.sk .gd span{font-size:.9em;color:var(--muted);font-weight:600}
+.sk .gd.ok b{font-size:1.15em;letter-spacing:-.01em;color:var(--pass)}
+.sk .gd.empty b{font-size:1.15em;letter-spacing:-.01em;color:var(--muted)}
+.sk .nx{border-top:1px solid var(--line);padding-top:.55em;margin-top:.45em;font-size:.82em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sk .nx b{font-family:var(--f-display);font-weight:700;color:var(--ink);font-size:1.12em;margin-left:.25em}
+.n2 .it.on .ms{transition:transform .3s var(--ease-out)}
+.n2 .it.on:hover .ms{transform:translateY(-8px)}
+.n2 .it .open{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);white-space:nowrap;font-family:var(--f-mono);font-size:11px;color:var(--muted);opacity:0;transition:opacity .3s}
+.n2 .it.on .open{opacity:1}
+.n2 .arr{position:absolute;top:180px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;
+  z-index:30;box-shadow:0 10px 24px -16px rgb(27 36 68/.35);cursor:pointer;transition:transform .15s var(--ease-out)}
+.n2 .arr:active{transform:scale(.92)}
+.n2 .arr.l{left:0} .n2 .arr.r{right:0}
+.n2 .info{display:grid;justify-items:center;gap:10px;text-align:center;margin-top:6px}
+.n2 .info .lvbar{width:420px}
+.n2 .acts{display:flex;gap:12px 22px;align-items:center;flex-wrap:wrap;justify-content:center}
+
+/* Fill-in sentence: the blank itself is the input (owner 12/11). */
+.inl{font:inherit;color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,transparent);border:0;border-bottom:3px solid var(--accent);border-radius:var(--r-ctl) var(--r-ctl) 0 0;
+  padding:0 8px;margin:0 2px;min-width:5ch;outline:none;caret-color:var(--accent);vertical-align:baseline}
+.inl:focus{background:color-mix(in oklab,var(--accent) 12%,transparent)}
+.inl::placeholder{color:color-mix(in oklab,var(--accent) 45%,transparent)}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
@@ -419,9 +504,10 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
             <div class="card">
               <div class="t-sec">Tô từ đích</div>
               <p>Children are often more <span class="tw">resilient</span> than adults.</p>
-              <p class="cap">Mọi chỗ: chữ đậm, gạch chân màu nhấn.</p>
-              <p style="background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);border-radius:4px 10px 10px 4px;padding:10px 12px;font-style:italic">She wants to study <span class="mk" style="font-style:normal">abroad</span> next year.</p>
-              <p class="cap">Riêng trang giấy Tra từ: nền vàng.</p>
+              <p style="background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);border-radius:4px 10px 10px 4px;padding:10px 12px;font-style:italic">She wants to study <span class="tw" style="font-style:normal">abroad</span> next year.</p>
+              <p class="cap">Mọi câu ví dụ, kể cả trang giấy Tra từ: chữ đậm, gạch chân màu nhấn.</p>
+              <p class="sm">314 từ · trình độ <span class="mk">tất cả</span>, chủ đề <span class="mk">tất cả</span>, loại từ <span class="mk">tất cả</span></p>
+              <p class="cap">Nền vàng chỉ dùng cho câu lọc của Tra từ: phần bấm được để đổi bộ lọc.</p>
             </div>
           </div>
         </div>
@@ -446,9 +532,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   <!-- ===== Nhóm ===== -->
   <section class="s" id="nhom">
     <div class="s-head"><h2>Nhóm</h2><div class="covers"><span class="tag">Chỗ 6 · làm lại</span><span class="tag new">Vòng cung</span><span class="tag new">Card chỉ hiện số từ</span><span class="tag">Câu 9B</span></div></div>
-    <p class="note">Bản gốc của trang này là artifact <a href="https://claude.ai/artifact/6z635GjwYNpctydnMoNHJD" style="color:var(--page-accent)">Nhóm, kiểu Vòng cung</a>. Ở đây chỉ vẽ lại các thay đổi đã chốt: card chỉ hiện số từ, góc bo C, số theo màu nhóm cho nền tối. Bấm hai mũi tên để xem băng chuyền quay.</p>
-    <figure><figcaption>Máy tính 1440</figcaption>
-      <div class="desk" data-h="820"><div class="wm mesh" id="groups-desk"></div></div>
+    <p class="note">Vẽ lại đúng kích cỡ, đường cong và độ nảy của artifact <a href="https://claude.ai/artifact/6z635GjwYNpctydnMoNHJD" style="color:var(--page-accent)">Nhóm, kiểu Vòng cung</a> (khung 1200 như bản gốc): thẻ 290 px, lệch 193 px mỗi bậc, cong xuống 16·k², nghiêng 8° và nhỏ 10% mỗi bậc, nảy theo cubic-bezier(.34,1.56,.64,1) trong 0,66 giây. Khác bản gốc: góc bo theo mức C, card chỉ hiện số từ, thanh dưới tô theo bậc, số ở chế độ tối theo câu 9B. Bấm mũi tên, bấm thẻ bên cạnh, hoặc dùng phím ← → khi rê chuột trên khung.</p>
+    <figure><figcaption>Máy tính (1200 như bản gốc)</figcaption>
+      <div class="desk" data-w="1200" data-h="930"><div class="wm mesh" id="groups-desk"></div></div>
     </figure>
   </section>
 
@@ -469,12 +555,12 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   <!-- ===== Học ===== -->
   <section class="s" id="hoc">
     <div class="s-head"><h2>Học</h2><div class="covers"><span class="tag">Chỗ 1 · bản chốt + polish</span><span class="tag">Chỗ 2</span><span class="tag">Chỗ 9 · toast mới</span><span class="tag">Chỗ 16 · giữ 1024</span></div></div>
-    <p class="note">Lá bài dọc, hai đống đứng ngang giữa thẻ. Bấm thẻ hoặc "Lật thẻ" để lật; bấm "Cần ôn lại" hoặc "Đã biết" để thẻ bay vào đống. Polish: ba nút bằng nhau, phím tắt trong nút, đống sát thẻ, toast kiểu mới không đè nút.</p>
+    <p class="note">Hiệu ứng lấy đúng từ artifact <a href="https://claude.ai/artifact/TrbJBKg6VFE3x6YkjD1XT7" style="color:var(--page-accent)">Chồng thẻ tan mờ</a>: thẻ phía sau mờ theo độ sâu; kéo thẻ thì thẻ nghiêng và hiện dấu, quá 110 px hoặc vuốt nhanh là chọn; thẻ đã chọn phóng 1,22 lần, mờ 18 px rồi tan trong 0,3 giây; thẻ kế tiếp hiện từ mờ 10 px; tên từ rơi vào đống. Chưa lật mà chọn thì thẻ lắc nhẹ. Khác bản gốc: lá bài dọc và đống sát thẻ (chỗ 1), góc bo C, "Bậc", từ đích in đậm gạch chân.</p>
     <div class="row">
-      <figure class="grow"><figcaption>Máy tính 1440, mặt trước</figcaption>
-        <div class="desk" data-h="760"><div class="wm mesh" id="learn-desk"></div></div>
+      <figure class="grow"><figcaption>Máy tính 1440: bấm thẻ hoặc Space để lật, kéo thẻ sang trái hoặc phải, hoặc phím 1 / 2 (khi rê chuột trên khung)</figcaption>
+        <div class="desk" data-h="820"><div class="wm mesh" id="learn-desk"></div></div>
       </figure>
-      <figure><figcaption>Điện thoại 390, mặt sau</figcaption>
+      <figure><figcaption>Điện thoại 390: vuốt thẻ, đống nằm dưới thẻ</figcaption>
         <div class="phone wm mesh" style="height:844px" id="learn-phone"></div>
       </figure>
     </div>
@@ -485,7 +571,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     <div class="s-head"><h2>Phiên luyện</h2><div class="covers"><span class="tag">Chỗ 16 · giữ 760</span><span class="tag">Chỗ 17</span><span class="tag">Chỗ 18</span><span class="tag new">Panel "Chưa đúng"</span><span class="tag new">Ô Gợi ý</span></div></div>
     <p class="note">Ô Gợi ý căn theo lưới ba cột (số, tên gợi ý, nội dung); nút "Mở gợi ý 2" nằm đúng cột nội dung. Panel "Chưa đúng": đáp án thành dòng lớn ngay dưới tiêu đề; mọi khoảng cách 16 px. Dòng phím tắt ở giữa, ngay dưới panel.</p>
     <div class="row">
-      <figure class="grow"><figcaption>Đang trả lời, đã mở gợi ý 1</figcaption>
+      <figure class="grow"><figcaption>Đang trả lời, đã mở gợi ý 1. Gõ thẳng vào chỗ trống trong câu: thử gõ "estimate" hoặc một từ sai rồi nhấn Enter. <button class="pbtn" type="button" id="cloze-reset" style="min-height:32px;margin-left:8px">Gõ lại</button></figcaption>
         <div class="desk" data-h="700"><div class="wm mesh" id="pr-ask"></div></div>
       </figure>
     </div>
@@ -533,8 +619,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 
   <!-- ===== Tra từ ===== -->
   <section class="s" id="tra-tu">
-    <div class="s-head"><h2>Tra từ</h2><div class="covers"><span class="tag">Câu 8B · giấy tối</span><span class="tag">Chỗ 2 · giữ nền vàng</span><span class="tag">Chỗ 15</span></div></div>
-    <figure><figcaption>Điện thoại 390: trang giấy danh sách A–Z, từ đích nền vàng</figcaption>
+    <div class="s-head"><h2>Tra từ</h2><div class="covers"><span class="tag">Câu 8B · giấy tối</span><span class="tag">Chỗ 2</span><span class="tag new">Nền vàng cho câu lọc</span><span class="tag">Chỗ 15</span></div></div>
+    <figure><figcaption>Điện thoại 390: câu lọc có nền vàng ở phần bấm được; từ đích trong câu ví dụ in đậm gạch chân</figcaption>
       <div class="phone wm mesh" style="height:760px" id="lookup-phone"></div>
     </figure>
   </section>
@@ -667,46 +753,87 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     '<div style="display:flex;align-items:baseline;gap:10px"><span class="dt" style="font-weight:800;font-size:64px;line-height:.9;letter-spacing:-0.04em;color:var(--g-ink)">24</span><span class="mut">thẻ chờ</span></div>' + lvbar(GROUP_COUNTS) +
     '<button class="btn b-pri" type="button" style="width:100%">Ôn 24 thẻ</button></div>' + recent(true) + '</div>' + tabbar('Hôm nay');
 
-  // ---------- Nhóm (arc) ----------
-  var GROUPS = [
-    { g: 'g4', name: 'Đề 11 · Speaking', words: 30, wait: 0, next: 'take for granted', done: true },
-    { g: 'gE', name: 'Du lịch Nhật', words: 0, wait: 0, empty: true },
-    { g: 'g0', name: 'Đề 12 · Writing', words: 48, wait: 24, next: 'mitigate' },
-    { g: 'g1', name: 'Đề 9 · Listening', words: 40, wait: 8, next: 'commute' },
-    { g: 'g2', name: 'Đề 14 · Reading', words: 36, wait: 11, next: 'prevalent' }
+  // ---------- Nhóm: "Vòng cung", ported from artifact 6z635GjwYNpctydnMoNHJD (N2 n2pos/n2stack/n2info/n2apply) ----------
+  var NG = [
+    { g: 'g0', name: 'Đề 12 · Writing', total: 48, cells: [6, 9, 10, 11, 8, 4], due: 24, next: 'mitigate' },
+    { g: 'g1', name: 'Đề 9 · Listening', total: 40, cells: [4, 12, 9, 7, 5, 3], due: 18, next: 'commute' },
+    { g: 'g2', name: 'Đề 14 · Reading', total: 36, cells: [5, 8, 9, 6, 5, 3], due: 11, next: 'prevalent' },
+    { g: 'g3', name: 'Từ gặp ngoài đời', total: 22, cells: [3, 5, 6, 4, 3, 1], due: 6, next: 'overwhelmed' },
+    { g: 'g5', name: 'Đề 10 · Writing', total: 28, cells: [2, 4, 6, 7, 6, 3], due: 3, next: 'allocate' },
+    { g: 'g6', name: 'Công việc · B1', total: 24, cells: [2, 3, 5, 6, 5, 3], due: 0, next: 'colleague' },
+    { g: 'g4', name: 'Đề 11 · Speaking', total: 30, cells: [1, 3, 6, 8, 7, 5], due: 0, next: 'take for granted' },
+    { g: 'gE', name: 'Du lịch Nhật', total: 0, cells: [0, 0, 0, 0, 0, 0], due: 0, next: '' }
   ];
-  var center = 2;
-  function arcHtml() {
-    return GROUPS.map(function (g, i) {
-      var body = g.empty ? '<div class="num"><span class="mut b" style="font-size:1.25rem">Chưa có từ</span></div><div class="next">Thêm từ để bắt đầu</div>' :
-        g.done ? '<div class="num"><span class="b" style="color:var(--pass);font-size:1.25rem">' + ico('check', 's') + ' Xong hôm nay</span></div><div class="next">ôn gần nhất <b>' + g.next + '</b></div>' :
-        '<div class="num"><b>' + g.wait + '</b><span class="mut">thẻ chờ</span></div><div class="next">tiếp theo <b>' + g.next + '</b></div>';
-      return '<div class="acard ' + g.g + '" data-i="' + i + '"><span class="meta">' + (g.empty ? 'nhóm trống' : g.words + ' từ') + '</span><div class="nm">' + g.name + '</div>' + body + '</div>';
+  var GHEX = { g0: '#e5603f', g1: '#149384', g2: '#7a55d3', g3: '#d99a17', g4: '#4a9637', g5: '#d2427a', g6: '#2a86d1', gE: '#64708c' };
+  var nsel = 0, nvi = 0;
+  var nDue = NG.reduce(function (a, g) { return a + g.due; }, 0), nWait = NG.filter(function (g) { return g.due; }).length;
+  function nLayers(g) { return g.due > 16 ? 3 : g.due > 6 ? 2 : g.due > 0 ? 1 : 0; }
+  function n2pos(i) {
+    var n = NG.length, rel = i - nvi, k = ((rel % n) + n) % n; if (k >= n / 2) k -= n;
+    var a = Math.abs(k), step = 230;
+    return { k: k, t: 'translateX(' + (k * step * .84) + 'px) translateY(' + (k * k * 16) + 'px) rotate(' + (k * 8) + 'deg) scale(' + (1 - .1 * a) + ')', op: a > 2 ? 0 : +(1 - .25 * a).toFixed(2), z: 10 - a };
+  }
+  function n2stack(g) {
+    var L = g.total ? Math.max(nLayers(g), 1) : 0, back = '';
+    for (var d = L; d >= 1; d--) back += '<div class="sk d' + d + '"></div>';
+    var due = g.due ? '<div class="gd"><b>' + g.due + '</b><span>thẻ chờ</span></div>' : g.total ? '<div class="gd ok"><b>✓ Xong hôm nay</b></div>' : '<div class="gd empty"><b>Chưa có từ</b></div>';
+    var nx = g.total ? '<div class="nx">' + (g.due ? 'tiếp theo' : 'ôn gần nhất') + '<b>' + g.next + '</b></div>' : '<div class="nx">Thêm từ để bắt đầu</div>';
+    return '<div class="ms">' + back + '<div class="sk" data-top><span class="gm">' + (g.total ? g.total + ' từ' : 'nhóm trống') + '</span><div class="gnm">' + g.name + '</div>' + due + nx + '</div></div>';
+  }
+  function n2info(g) {
+    var main = g.total ? (g.due ? '<button class="btn b-pri" type="button">Ôn ' + g.due + ' thẻ <span class="kbd">↵</span></button>' : '<button class="btn b-pri" type="button">Học lại cả nhóm</button>') :
+      '<button class="btn b-pri" type="button">Thêm từ <span class="kbd">N</span></button>';
+    return '<div class="info ' + g.g + '"><span class="eyebrow">nhịp ôn: Mới → Bậc 5</span>' + (g.total ? lvbar(g.cells) : '<div class="lvbar"><i style="flex:1;--c:var(--line)"></i></div>') +
+      '<div class="acts">' + main + '<button class="btn b-ghost" type="button">Xem nhóm ' + ico('arr', 's') + '</button>' +
+      (g.total ? '<button class="btn b-ghost" type="button" style="color:var(--muted)">Học cả ' + g.total + ' từ</button>' : '') + '<button class="btn b-ghost" type="button" style="color:var(--muted)">Thêm từ</button></div></div>';
+  }
+  function n2render() {
+    var g = NG[nsel];
+    var items = NG.map(function (o, i) {
+      var p = n2pos(i);
+      return '<div class="it ' + o.g + (i === nsel ? ' on' : '') + '" data-i="' + i + '" data-k="' + p.k + '" style="transform:' + p.t + ';opacity:' + p.op + ';z-index:' + p.z + (p.op < .05 ? ';pointer-events:none' : '') + '">' +
+        n2stack(o) + '<span class="open">bấm để mở nhóm · ↓</span></div>';
     }).join('');
+    $('groups-desk').innerHTML = topbar('Nhóm') + '<div class="n2" id="n2" style="--cur:' + GHEX[g.g] + '"><div class="glow2" aria-hidden="true"></div>' +
+      '<div class="top"><div><h1>Nhóm của bạn</h1><span class="eyebrow">' + nDue + ' thẻ chờ trong ' + nWait + ' nhóm · ← → hoặc vuốt để đổi nhóm · bấm chồng giữa hoặc ↓ để mở</span></div>' +
+      '<div class="tr"><button class="ddbtn ' + g.g + '" type="button" id="n2dd"><i></i><span>' + g.name + '</span>' + ico('chd', 's') + '</button><button class="btn b-ghost" type="button">' + ico('plus', 's') + 'Tạo nhóm</button></div></div>' +
+      '<div class="track"><button class="arr l" type="button" aria-label="Nhóm trước" data-step="-1">' + ico('chl') + '</button>' + items +
+      '<button class="arr r" type="button" aria-label="Nhóm sau" data-step="1">' + ico('chr') + '</button></div>' + n2info(g) + '</div>';
   }
-  $('groups-desk').innerHTML = topbar('Nhóm') + '<div style="max-width:1280px;margin:0 auto;padding:36px 32px 0;position:relative">' +
-    '<div style="display:flex;align-items:flex-end;justify-content:space-between"><div><h3 class="t-page">Nhóm của bạn</h3><div class="eyebrow" style="margin-top:8px">43 thẻ chờ trong 5 nhóm · ← → hoặc vuốt để đổi nhóm</div></div>' +
-    '<div style="display:flex;gap:12px;align-items:center"><span class="chip g0" style="padding:8px 12px"><span class="dot"></span><span id="arc-name" style="color:var(--ink)">Đề 12 · Writing</span>' + ico('chd', 's') + '</span><button class="btn b-ghost" type="button">' + ico('plus', 's') + 'Tạo nhóm</button></div></div>' +
-    '<div class="arc" id="arc"><div class="halo g0" id="arc-halo"></div><button class="navbtn" type="button" style="left:60px" id="arc-prev" aria-label="Nhóm trước">' + ico('chl') + '</button>' + arcHtml() +
-    '<button class="navbtn" type="button" style="right:60px" id="arc-next" aria-label="Nhóm sau">' + ico('chr') + '</button></div>' +
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:-40px;position:relative;z-index:9"><div style="width:420px">' + lvbar(GROUP_COUNTS) + '</div>' +
-    '<div style="display:flex;gap:10px"><button class="btn b-pri" type="button">Ôn 24 thẻ <span class="kbd">Enter</span></button><button class="btn b-ghost" type="button">Xem nhóm ' + ico('arr', 's') + '</button><button class="btn b-ghost" type="button" style="color:var(--ink)">Học cả 48 từ</button><button class="btn b-ghost" type="button" style="color:var(--ink)">Thêm từ</button></div></div></div>';
-  function layoutArc() {
-    var cards = document.querySelectorAll('#arc .acard');
-    cards.forEach(function (c) {
-      var i = +c.dataset.i, d = i - center, ad = Math.abs(d);
-      var x = d * 250, y = ad * ad * 34 + ad * 18, r = d * 9, s = 1 - ad * 0.08;
-      c.style.transform = 'translate(' + x + 'px,' + y + 'px) rotate(' + r + 'deg) scale(' + s + ')';
-      c.style.zIndex = 10 - ad;
-      c.style.opacity = ad > 2 ? 0 : 1;
-      c.style.filter = ad ? 'saturate(.75) brightness(' + (ad === 1 ? .97 : .93) + ')' : 'none';
+  function n2apply() {
+    var root = $('n2'), g = NG[nsel], rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.style.setProperty('--cur', GHEX[g.g]);
+    root.querySelectorAll('.it').forEach(function (el) {
+      var i = +el.dataset.i, p = n2pos(i), jump = Math.abs(p.k - +el.dataset.k) > 3;
+      if (jump || rm) el.style.transition = 'none';
+      el.style.transform = p.t; el.style.opacity = p.op; el.style.zIndex = p.z; el.style.pointerEvents = p.op < .05 ? 'none' : '';
+      el.dataset.k = p.k; el.classList.toggle('on', i === nsel);
+      if (jump || rm) { void el.offsetWidth; el.style.transition = ''; }
     });
-    var g = GROUPS[center], halo = $('arc-halo');
-    halo.className = 'halo ' + g.g; $('arc-name').textContent = g.name;
-    $('arc-name').parentElement.className = 'chip ' + g.g;
+    var dd = $('n2dd'); dd.className = 'ddbtn ' + g.g; dd.querySelector('span').textContent = g.name;
+    var old = root.querySelector('.info'), tmp = document.createElement('div'); tmp.innerHTML = n2info(g); var info = tmp.firstChild; old.replaceWith(info);
+    if (rm || !info.animate) return;
+    Array.prototype.forEach.call(info.children, function (c, k) {
+      c.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 460, delay: k * 45, easing: 'cubic-bezier(.3,1.3,.5,1)', fill: 'backwards' });
+    });
   }
-  $('arc-prev').addEventListener('click', function () { center = Math.max(0, center - 1); layoutArc(); });
-  $('arc-next').addEventListener('click', function () { center = Math.min(GROUPS.length - 1, center + 1); layoutArc(); });
+  function n2go(target) {
+    var n = NG.length, d = ((target - nsel) % n + n) % n; if (d > n / 2) d -= n;
+    if (!d) return;
+    nvi += d; nsel = target; n2apply();
+  }
+  n2render();
+  $('groups-desk').addEventListener('click', function (e) {
+    var a = e.target.closest('.arr'); if (a) { n2go((nsel + +a.dataset.step + NG.length) % NG.length); return; }
+    var it = e.target.closest('.it'); if (it && !it.classList.contains('on')) n2go(+it.dataset.i);
+  });
+  var overN = false, nDesk = $('groups-desk').parentElement;
+  nDesk.addEventListener('mouseenter', function () { overN = true; });
+  nDesk.addEventListener('mouseleave', function () { overN = false; });
+  document.addEventListener('keydown', function (e) {
+    if (!overN || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    e.preventDefault(); n2go((nsel + (e.key === 'ArrowRight' ? 1 : -1) + NG.length) % NG.length);
+  });
 
   // ---------- Một nhóm ----------
   var WORDS = [
@@ -748,47 +875,217 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
         '<div style="text-align:right"><span class="lvpill" style="--c:var(--' + LV[w[3]].k + ')">' + LV[w[3]].n + '</span><div class="st ' + ST[w[4]][1] + '">' + ST[w[4]][0] + '</div></div></div>';
     }).join('') + '</div></div>' + tabbar('Nhóm');
 
-  // ---------- Học ----------
-  var front = '<div class="face"><div style="display:flex;align-items:center;gap:8px"><span class="mono mut">verb</span><span class="qchip" style="background:var(--fail-soft);color:var(--fail);border-color:transparent">Ưu tiên</span><span class="iconbtn" style="margin-left:auto;width:36px;height:36px;border-radius:50%">' + ico('vol', 's') + '</span></div>' +
-    '<div style="margin:auto 0;text-align:center"><div class="dt" style="font-weight:800;font-size:2.75rem;letter-spacing:-0.025em">mitigate</div><div class="mut" style="font-size:1.0625rem">/ˈmɪt.ɪ.ɡeɪt/</div></div>' +
-    '<div class="cap" style="text-align:center">Bấm vào thẻ hoặc Space để lật</div></div>';
-  var back = '<div class="face back" style="gap:10px"><div style="display:flex;align-items:baseline;gap:8px"><span class="dt" style="font-weight:800;font-size:1.625rem">mitigate</span><span class="mono mut">verb</span><span class="iconbtn" style="margin-left:auto;width:36px;height:36px;border-radius:50%">' + ico('vol', 's') + '</span></div>' +
-    '<div style="font-size:1.125rem">to make something bad less serious</div><div class="mut">giảm nhẹ</div><div style="border-top:1px solid var(--line);padding-top:10px" class="eyebrow">câu mẫu</div>' +
-    '<div style="font-size:1.0625rem">Planting trees can help <span class="tw">mitigate</span> urban heat.</div><div class="cap" style="margin-top:auto">Đang ở Bậc 1 · ôn lại sau 1 ngày</div></div>';
-  $('learn-desk').innerHTML = '<div style="max-width:1024px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:20px"><div><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.375rem">Đề 12 · Writing</div></div>' +
-    '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i style="width:22%"></i></div><span class="mut sm">còn 8 thẻ</span></div><button class="btn b-sec b-sm" type="button">Đóng phiên ôn <span class="kbd">Esc</span></button></div>' +
-    '<div style="position:relative;height:560px;display:flex;align-items:center;justify-content:center;gap:56px">' +
-    '<div class="pile" style="color:var(--fail)"><span class="n" id="pile-l">0</span><span class="l">' + ico('chl', 's') + 'Cần ôn lại</span></div>' +
-    '<div class="lcard" id="lcard-d" style="width:300px;height:420px"><div class="in">' + front + back + '</div></div>' +
-    '<div class="pile" style="color:var(--pass)"><span class="n" id="pile-r">0</span><span class="l">Đã biết' + ico('chr', 's') + '</span></div>' +
-    '<div style="position:absolute;top:18px;left:50%;transform:translateX(-50%)" id="toast-d"></div></div>' +
-    '<div style="display:flex;justify-content:center;gap:12px"><button class="btn b-sec" type="button" style="width:170px;color:var(--fail)" id="btn-l"><span class="kbd">1</span>Cần ôn lại</button><button class="btn b-sec" type="button" style="width:170px" id="btn-flip">Lật thẻ <span class="kbd">Space</span></button><button class="btn b-sec" type="button" style="width:170px;color:var(--pass)" id="btn-r">Đã biết <span class="kbd">2</span></button></div>';
-  $('learn-phone').innerHTML = '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="btn b-sec b-sm" type="button">Đóng</button></div>' +
-    '<div style="padding:12px 16px 0" class="sbar"><div class="prog"><i style="width:45%"></i></div><span class="mut sm">còn 5 thẻ</span></div>' +
-    '<div style="padding:10px 16px 0;display:flex;justify-content:center" id="toast-p"></div>' +
-    '<div style="padding:12px 20px 0"><div class="lcard flip" id="lcard-p" style="height:420px"><div class="in">' + front + back + '</div></div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;padding:18px 16px 0"><div class="pile" style="color:var(--fail)"><span class="n">1</span><span class="l">' + ico('chl', 's') + 'Cần ôn lại</span></div><div class="pile" style="color:var(--pass)"><span class="n">2</span><span class="l">Đã biết' + ico('chr', 's') + '</span></div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0"><button class="btn b-sec" type="button" style="color:var(--fail)">Cần ôn lại</button><button class="btn b-sec" type="button" style="color:var(--pass)">Đã biết</button></div>' +
-    '<div style="display:flex;justify-content:center;padding-top:10px"><button class="btn b-ghost" type="button" style="color:var(--ink)" id="flip-p">Xem mặt trước</button></div>';
-  function toastHtml() { return '<div class="toast show"><span class="fl">' + ico('flame', 's') + '</span>Chuỗi 2 ngày liên tiếp</div>'; }
-  var pileL = 0, pileR = 0, busy = false;
-  function sendCard(dir) {
-    var card = $('lcard-d'); if (busy) return; busy = true;
-    card.classList.add(dir === 'r' ? 'fly-r' : 'fly-l');
-    setTimeout(function () {
-      var n = $(dir === 'r' ? 'pile-r' : 'pile-l');
-      if (dir === 'r') { pileR++; n.textContent = pileR; $('toast-d').innerHTML = toastHtml(); } else { pileL++; n.textContent = pileL; }
-      n.classList.add('bump'); setTimeout(function () { n.classList.remove('bump'); }, 300);
-      card.classList.remove('fly-r', 'fly-l', 'flip'); busy = false;
-    }, 470);
+  // ---------- Học: "Chồng thẻ tan mờ" engine, ported from artifact TrbJBKg6VFE3x6YkjD1XT7 ----------
+  var FC = [
+    { lemma: 'mitigate', pos: 'verb', ipa: '/ˈmɪt.ɪ.ɡeɪt/', def: 'to make something bad less serious', vi: 'giảm nhẹ', ex: 'Planting trees can help mitigate the effects of urban heat.', forms: ['mitigates', 'mitigated', 'mitigating'], stage: 1 },
+    { lemma: 'allocate', pos: 'verb', ipa: '/ˈæl.ə.keɪt/', def: 'to give a share of something for a particular purpose', vi: 'phân bổ', ex: 'The council allocated more money to public transport.', forms: ['allocates', 'allocated', 'allocating'], stage: 0 },
+    { lemma: 'substantial', pos: 'adjective', ipa: '/səbˈstæn.ʃəl/', def: 'large in amount or importance', vi: 'đáng kể', ex: 'There has been a substantial rise in online learning.', forms: [], stage: 2 },
+    { lemma: 'deteriorate', pos: 'verb', ipa: '/dɪˈtɪə.ɹi.ə.ɹeɪt/', def: 'to become worse over time', vi: 'xấu đi', ex: 'Air quality tends to deteriorate in the dry season.', forms: ['deteriorates', 'deteriorated', 'deteriorating'], stage: 1 },
+    { lemma: 'inevitable', pos: 'adjective', ipa: '/ɪˈnɛv.ɪ.tə.bəl/', def: 'certain to happen and impossible to avoid', vi: 'không tránh được', ex: 'Some job losses are inevitable as factories automate.', forms: [], stage: 0 },
+    { lemma: 'viable', pos: 'adjective', ipa: '/ˈvaɪ.ə.bəl/', def: 'able to work successfully', vi: 'khả thi', ex: 'Solar power is now a viable option for many homes.', forms: [], stage: 3 },
+    { lemma: 'prevalent', pos: 'adjective', ipa: '/ˈpɹɛv.ə.lənt/', def: 'common in a particular place or group', vi: 'phổ biến', ex: 'Short videos are prevalent among teenagers.', forms: [], stage: 1 },
+    { lemma: 'reluctant', pos: 'adjective', ipa: '/ɹɪˈlʌk.tənt/', def: 'not wanting to do something', vi: 'miễn cưỡng', ex: 'Many students are reluctant to speak in class.', forms: [], stage: 0 }
+  ];
+  var LVN = ['Mới', 'Bậc 1', 'Bậc 2', 'Bậc 3', 'Bậc 4', 'Bậc 5'], LVD = ['', '1 ngày', '3 ngày', '7 ngày', '14 ngày', '30 ngày'];
+  function fcEsc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fcMark(sentence, c) {
+    var words = [c.lemma].concat(c.forms || []).sort(function (a, b) { return b.length - a.length; });
+    return fcEsc(sentence).replace(new RegExp('\\b(' + words.join('|') + ')\\b', 'i'), '<span class="tw">$1</span>');
   }
-  $('lcard-d').addEventListener('click', function () { this.classList.toggle('flip'); });
-  $('btn-flip').addEventListener('click', function () { $('lcard-d').classList.toggle('flip'); });
-  $('btn-r').addEventListener('click', function () { sendCard('r'); });
-  $('btn-l').addEventListener('click', function () { sendCard('l'); });
-  $('lcard-p').addEventListener('click', function () { this.classList.toggle('flip'); });
-  $('flip-p').addEventListener('click', function () { $('lcard-p').classList.toggle('flip'); });
-  $('toast-p').innerHTML = toastHtml();
+  function toastHtml() { return '<div class="toast show"><span class="fl">' + ico('flame', 's') + '</span>Chuỗi 2 ngày liên tiếp</div>'; }
+  function deck(root, opts) {
+    var stack = root.querySelector('.fc-stack'), pA = root.querySelector('.fc-pile.again'), pK = root.querySelector('.fc-pile.known');
+    var bA = root.querySelector('[data-a="again"]'), bF = root.querySelector('[data-a="flip"]'), bK = root.querySelector('[data-a="known"]'), nudgeEl = root.querySelector('.fc-nudge');
+    var TH = 110, EASE = 'cubic-bezier(0.23, 1, 0.32, 1)', i = 0, flipped = false, results = [], ended = false, nt = 0, toasted = false;
+    var reduced = function () { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; };
+    var scale = function () { return (stack.getBoundingClientRect().width / stack.offsetWidth) || 1; };
+    function makeCard(k) {
+      var c = FC[k], el = document.createElement('article');
+      el.className = 'fc'; el.dataset.idx = String(k); el.dataset.depth = '3';
+      var stageTxt = 'Đang ở ' + LVN[c.stage] + (c.stage ? ' · ôn lại sau ' + LVD[c.stage] : '');
+      el.innerHTML = '<div class="flip"><section class="face front"><div class="ftop"><span class="pos">' + c.pos + '</span><span class="say">' + ico('vol', 's') + '</span></div>' +
+        '<div class="word"><p class="lemma">' + fcEsc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint2">Bấm vào thẻ hoặc Space để lật</p></section>' +
+        '<section class="face back"><div class="ftop"><span class="bl">' + fcEsc(c.lemma) + '<i>' + c.pos + '</i></span><span class="say">' + ico('vol', 's') + '</span></div>' +
+        '<p class="def">' + fcEsc(c.def) + '</p><p class="vi">' + fcEsc(c.vi) + '</p><div class="ex"><span class="eyebrow">câu mẫu</span><p style="margin:0">' + fcMark(c.ex, c) + '</p></div><p class="stagep">' + stageTxt + '</p></section></div>' +
+        '<span class="stamp again">' + ico('x', 's') + 'Cần ôn lại<small>về Bậc 1</small></span>' +
+        '<span class="stamp known">' + ico('check', 's') + 'Đã biết<small>lên ' + LVN[Math.min(c.stage + 1, 5)] + '</small></span>';
+      bindDrag(el);
+      return el;
+    }
+    function topCard() { return stack.querySelector('.fc[data-depth="0"]:not(.flying)'); }
+    function arrive(el, wasFollowing) {
+      if (reduced() || !el.animate) return;
+      var from = wasFollowing ? { transform: el.style.transform || 'none', filter: el.style.filter || 'blur(0px)', opacity: el.style.opacity || '1' } :
+        { transform: 'translateY(16px) scale(.92)', filter: 'blur(10px)', opacity: .55 };
+      el.classList.add('notr'); el.style.transform = ''; el.style.filter = ''; el.style.opacity = '';
+      el.animate([from, { transform: 'none', filter: 'blur(0px)', opacity: 1 }], { duration: 300, easing: EASE }).onfinish = function () { el.classList.remove('notr'); };
+      requestAnimationFrame(function () { el.classList.remove('notr'); });
+    }
+    function fill() {
+      var want = [i, i + 1, i + 2, i + 3].filter(function (k) { return k < FC.length; });
+      Array.prototype.slice.call(stack.children).forEach(function (n) { if (n.classList.contains('fc') && !n.classList.contains('flying') && want.indexOf(+n.dataset.idx) < 0) n.remove(); });
+      want.forEach(function (k, d) {
+        var n = stack.querySelector('.fc[data-idx="' + k + '"]:not(.flying)'), fresh = !n;
+        if (fresh) { n = makeCard(k); stack.appendChild(n); void n.offsetWidth; }
+        var was = n.dataset.depth, wasF = n.classList.contains('following');
+        n.classList.remove('following'); n.dataset.depth = String(d);
+        if (d === 0 && was !== '0' && !fresh) arrive(n, wasF); else { n.style.transform = ''; n.style.filter = ''; n.style.opacity = ''; }
+      });
+      flipped = false; setButtons(); if (opts.onProgress) opts.onProgress(i, FC.length);
+    }
+    function setButtons() {
+      bA.setAttribute('aria-disabled', String(!flipped)); bK.setAttribute('aria-disabled', String(!flipped));
+      bF.querySelector('.ft').textContent = flipped ? 'Xem mặt trước' : 'Lật thẻ';
+    }
+    function flip() {
+      var top = topCard(); if (!top || ended) return;
+      flipped = !flipped; top.classList.toggle('is-flipped', flipped); setButtons(); say('');
+    }
+    function say(t) { clearTimeout(nt); nudgeEl.textContent = t; if (t) nt = setTimeout(function () { nudgeEl.textContent = ''; }, 2200); }
+    function nudge() {
+      var top = topCard(); if (!top) return;
+      say('Lật thẻ để xem nghĩa trước đã.');
+      if (reduced() || !top.animate) return;
+      top.animate([{ transform: 'none' }, { transform: 'translateX(-9px) rotate(-1.2deg)' }, { transform: 'translateX(8px) rotate(1deg)' }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+    }
+    function setDrag(top, dx, dy, armed) {
+      var p = Math.min(1, Math.abs(dx) / TH), rm = reduced();
+      top.style.transform = rm ? 'translateX(' + dx + 'px)' : 'translate(' + dx + 'px,' + (dy * .3) + 'px) rotate(' + Math.max(-14, Math.min(14, dx * .055)) + 'deg)';
+      if (!rm) top.style.filter = flipped ? 'blur(' + (p * 1.5).toFixed(2) + 'px)' : '';
+      top.querySelector('.stamp.again').style.opacity = dx < 0 && flipped ? String(p) : '0';
+      top.querySelector('.stamp.known').style.opacity = dx > 0 && flipped ? String(p) : '0';
+      pA.classList.toggle('hot', armed === 'again'); pK.classList.toggle('hot', armed === 'known');
+      var next = stack.querySelector('.fc[data-depth="1"]');
+      if (next && flipped && !rm) {
+        next.classList.add('following');
+        next.style.transform = 'translateY(' + (16 - 12 * p) + 'px) scale(' + (.95 + .04 * p) + ')';
+        next.style.filter = 'blur(' + ((1 - p) * 5).toFixed(2) + 'px)'; next.style.opacity = String(.85 + .15 * p);
+      }
+    }
+    function clearDrag(top) {
+      top.querySelectorAll('.stamp').forEach(function (s) { s.style.opacity = '0'; });
+      pA.classList.remove('hot'); pK.classList.remove('hot');
+      var next = stack.querySelector('.fc[data-depth="1"]');
+      if (next) { next.classList.remove('following'); next.style.transform = ''; next.style.filter = ''; next.style.opacity = ''; }
+    }
+    function bindDrag(el) {
+      var d = null;
+      el.addEventListener('pointerdown', function (e) {
+        if (d || ended || el.dataset.depth !== '0' || el.classList.contains('flying') || e.button > 0) return;
+        d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), lx: e.clientX, lt: performance.now(), v: 0, dx: 0, dy: 0, moved: 0, s: scale() };
+        el.setPointerCapture(e.pointerId);
+      });
+      el.addEventListener('pointermove', function (e) {
+        if (!d || e.pointerId !== d.id) return;
+        var rx = (e.clientX - d.x0) / d.s, ry = (e.clientY - d.y0) / d.s;
+        d.moved = Math.max(d.moved, Math.hypot(rx, ry)); if (d.moved < 4) return;
+        el.classList.add('dragging');
+        var now = performance.now(), dt = now - d.lt;
+        if (dt > 0) d.v = .7 * d.v + .3 * ((e.clientX - d.lx) / d.s / dt);
+        d.lx = e.clientX; d.lt = now;
+        d.dx = flipped ? rx : Math.sign(rx) * Math.min(56, Math.abs(rx) * .3);
+        d.dy = flipped ? ry : ry * .3;
+        if (!flipped && Math.abs(rx) > 40) say('Lật thẻ để xem nghĩa trước đã.');
+        setDrag(el, d.dx, d.dy, flipped && Math.abs(d.dx) > TH ? (d.dx < 0 ? 'again' : 'known') : null);
+      });
+      function end(e) {
+        if (!d || e.pointerId !== d.id) return;
+        var g = d; d = null;
+        try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+        if (g.moved < 6 && performance.now() - g.t0 < 400 && e.type === 'pointerup') { el.classList.remove('dragging'); flip(); return; }
+        var fast = Math.abs(g.v) > .55 && Math.abs(g.dx) > 30 && Math.sign(g.v) === Math.sign(g.dx);
+        if (flipped && (Math.abs(g.dx) > TH || fast)) { commit(g.dx < 0 ? 'again' : 'known', 'drag', g.v); return; }
+        el.classList.remove('dragging'); el.classList.add('settle');
+        el.style.transform = ''; el.style.filter = ''; el.style.opacity = ''; clearDrag(el);
+        setTimeout(function () { el.classList.remove('settle'); }, 400);
+      }
+      el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    }
+    function commit(ans, how, v) {
+      var top = topCard(); if (!top || ended) return;
+      if (!flipped) { nudge(); return; }
+      var k = +top.dataset.idx, c = FC[k];
+      results[k] = { lemma: c.lemma, ans: ans };
+      var cs = getComputedStyle(top), curT = cs.transform, curF = cs.filter, curO = cs.opacity;
+      top.classList.remove('dragging', 'settle'); top.classList.add('flying');
+      top.querySelectorAll('.stamp').forEach(function (s) { s.style.opacity = '0'; });
+      top.querySelector(ans === 'known' ? '.stamp.known' : '.stamp.again').style.opacity = '1';
+      pA.classList.remove('hot'); pK.classList.remove('hot');
+      var land = function () { top.remove(); if (i >= FC.length && !ended) finish(); };
+      addMini(ans === 'known' ? pK : pA, c.lemma, ans);
+      if (ans === 'known' && !toasted && opts.toast) { toasted = true; opts.toast.innerHTML = toastHtml(); }
+      if (reduced() || !top.animate) { setTimeout(land, 0); }
+      else {
+        var dir = ans === 'known' ? 1 : -1, base = curT === 'none' ? '' : curT + ' ', speed = Math.min(1, Math.abs(v || 0) / 2);
+        var to = base + 'translateX(' + (dir * (how === 'drag' ? 70 : 40)) + 'px) rotate(' + (dir * (how === 'drag' ? 3 : 5)) + 'deg) scale(1.22)';
+        top.animate([{ transform: curT === 'none' ? 'none' : curT, filter: curF === 'none' ? 'blur(0px)' : curF, opacity: curO }, { transform: to, filter: 'blur(18px)', opacity: 0 }],
+          { duration: how === 'drag' ? 300 - speed * 80 : 240, easing: EASE, fill: 'forwards' }).onfinish = land;
+      }
+      i += 1; fill();
+    }
+    function addMini(pile, word, ans) {
+      var box = pile.querySelector('.fc-minis'), li = document.createElement('li');
+      li.textContent = word; box.prepend(li);
+      while (box.children.length > (opts.maxChips || 5)) box.lastElementChild.remove();
+      var n = pile.querySelector('.pn');
+      n.textContent = String(results.filter(function (r) { return r && r.ans === ans; }).length);
+      if (!reduced()) { n.classList.remove('fc-bump'); void n.offsetWidth; n.classList.add('fc-bump'); }
+    }
+    function finish() {
+      if (ended) return; ended = true;
+      var done = results.filter(Boolean), kn = done.filter(function (r) { return r.ans === 'known'; }).length;
+      var box = document.createElement('div'); box.className = 'fc-sum';
+      box.innerHTML = '<div class="dt rv" style="--k:0;font-weight:800;font-size:1.875rem">Xong ' + done.length + ' thẻ.</div>' +
+        '<p class="rv mut" style="--k:1;margin:0">' + kn + ' đã biết · ' + (done.length - kn) + ' cần ôn lại, về Bậc 1</p>' +
+        '<button class="btn b-sec rv" style="--k:2" type="button">Ôn lại từ đầu</button>';
+      stack.appendChild(box); box.querySelector('button').addEventListener('click', restart);
+    }
+    function restart() {
+      i = 0; results = []; ended = false; toasted = false; stack.innerHTML = '';
+      [pA, pK].forEach(function (p) { p.querySelector('.fc-minis').innerHTML = ''; p.querySelector('.pn').textContent = '0'; });
+      if (opts.toast) opts.toast.innerHTML = '';
+      say(''); fill();
+    }
+    bF.addEventListener('click', flip);
+    bA.addEventListener('click', function () { commit('again', 'key'); });
+    bK.addEventListener('click', function () { commit('known', 'key'); });
+    fill();
+    return { flip: flip, commit: commit, finish: finish };
+  }
+  function fcwHtml(phone) {
+    return '<div class="fcw' + (phone ? ' ph' : '') + '"><div class="fc-arena"' + (phone ? '' : ' style="max-width:780px;margin:0 auto;min-height:540px"') + '>' +
+      '<div class="fc-pile again"><span class="pn">0</span><span class="pl">' + ico('chl', 's') + 'Cần ôn lại</span><ul class="fc-minis"></ul></div>' +
+      '<div class="fc-stack"></div>' +
+      '<div class="fc-pile known"><span class="pn">0</span><span class="pl">Đã biết' + ico('chr', 's') + '</span><ul class="fc-minis"></ul></div></div>' +
+      '<p class="fc-nudge" aria-live="polite"></p>' +
+      '<div class="fc-acts"><button class="btn b-sec" type="button" data-a="again" style="color:var(--fail)"><span class="kbd">1</span>Cần ôn lại</button>' +
+      '<button class="btn b-sec" type="button" data-a="flip"><span class="ft">Lật thẻ</span><span class="kbd">Space</span></button>' +
+      '<button class="btn b-sec" type="button" data-a="known" style="color:var(--pass)">Đã biết<span class="kbd">2</span></button></div></div>';
+  }
+  function learnHead(phone, id) {
+    return phone ?
+      '<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px"><div style="margin-right:auto"><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.25rem">Đề 12 · Writing</div></div><button class="btn b-sec b-sm" type="button">Đóng</button></div>' +
+      '<div style="padding:12px 16px 0" class="sbar"><div class="prog"><i id="' + id + '-bar" style="width:0%"></i></div><span class="mut sm" id="' + id + '-left"></span></div>' :
+      '<div style="max-width:1024px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:20px"><div><div class="eyebrow">học nhóm</div><div class="dt" style="font-weight:800;font-size:1.375rem">Đề 12 · Writing</div></div>' +
+      '<div class="sbar" style="flex:1;margin-left:40px"><div class="prog"><i id="' + id + '-bar" style="width:0%;transition:width 300ms var(--ease-out)"></i></div><span class="mut sm" id="' + id + '-left"></span></div><button class="btn b-sec b-sm" type="button">Đóng phiên ôn <span class="kbd">Esc</span></button></div>';
+  }
+  function progressFn(id) {
+    return function (i, n) { var b = $(id + '-bar'), l = $(id + '-left'); if (b) b.style.width = (i / n * 100) + '%'; if (l) l.textContent = 'còn ' + (n - i) + ' thẻ'; };
+  }
+  $('learn-desk').innerHTML = learnHead(false, 'ld') + '<div style="position:relative;display:flex;justify-content:center;height:28px;margin-top:10px" id="toast-d"></div><div style="padding-top:6px">' + fcwHtml(false) + '</div>';
+  $('learn-phone').innerHTML = learnHead(true, 'lp') + '<div style="padding:10px 16px 0;display:flex;justify-content:center;min-height:44px" id="toast-p"></div><div style="padding:6px 16px 0">' + fcwHtml(true) + '</div>';
+  var deckD = deck($('learn-desk').querySelector('.fcw'), { onProgress: progressFn('ld'), toast: $('toast-d') });
+  deck($('learn-phone').querySelector('.fcw'), { onProgress: progressFn('lp'), toast: $('toast-p'), maxChips: 1 });
+  var overL = false, lDesk = $('learn-desk').parentElement;
+  lDesk.addEventListener('mouseenter', function () { overL = true; });
+  lDesk.addEventListener('mouseleave', function () { overL = false; });
+  document.addEventListener('keydown', function (e) {
+    if (!overL || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ') { e.preventDefault(); deckD.flip(); }
+    else if (e.key === 'ArrowLeft' || e.key === '1') { e.preventDefault(); deckD.commit('again', 'key'); }
+    else if (e.key === 'ArrowRight' || e.key === '2') { e.preventDefault(); deckD.commit('known', 'key'); }
+    else if (e.key === 'Escape') deckD.finish();
+  });
 
   // ---------- Phiên luyện ----------
   function sessionBar(done, total, ok, no) {
@@ -803,12 +1100,28 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   $('pr-ask').innerHTML = sessionBar(4, 10, 3, 1) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
     '<div class="card" style="gap:16px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">điền từ vào câu</span><span class="qchip">câu AI</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Báo lỗi</button></div>' +
-    '<span class="eyebrow">gõ từ còn thiếu, đúng dạng trong câu</span><div class="sent">We need to <span style="display:inline-block;min-width:160px;border-bottom:3px solid var(--accent)">&nbsp;</span> the cost before signing.</div>' +
-    '<div class="input focus" style="font-size:1.125rem">est<span style="border-left:2px solid var(--accent);margin-left:1px"></span></div></div>' +
+    '<span class="eyebrow">gõ từ còn thiếu, đúng dạng trong câu</span><div class="sent" id="cloze-sent"></div></div>' +
     '<div class="hint"><div class="hd">' + ico('bulb', 's') + 'Gợi ý 1/2<span class="dots"><i class="on"></i><i></i></span></div>' +
     '<span class="n on">1</span><span class="lb">Định nghĩa</span><span>To guess a number or cost by using the information you have.</span>' +
     '<span class="n">2</span><span class="lb mut">Chữ cái đầu</span><span><button class="btn b-sec b-sm" type="button">Mở gợi ý 2 <span class="kbd">H</span></button></span></div>' +
     shortcuts([['Enter', 'Kiểm tra'], ['H', 'Gợi ý'], ['Esc', 'Dừng phiên']]) + '</div>';
+  // The blank is a real input inside the sentence; Enter checks it and the result replaces it in place.
+  function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function clozeReset() {
+    $('cloze-sent').innerHTML = 'We need to <input class="inl" id="cloze-in" value="est" autocomplete="off" spellcheck="false" aria-label="Từ còn thiếu"> the cost before signing.';
+    var cin = $('cloze-in');
+    var size = function () { cin.style.width = Math.max(5, cin.value.length + 1.5) + 'ch'; };
+    cin.addEventListener('input', size); size();
+    cin.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return; e.preventDefault();
+      var v = cin.value.trim(); if (!v) return;
+      var ok = v.toLowerCase() === 'estimate', span = document.createElement('span');
+      span.innerHTML = ok ? '<span class="right">' + escH(v) + '</span>' : '<span class="wrong">' + escH(v) + '</span> <span class="right">estimate</span>';
+      cin.replaceWith(span);
+    });
+  }
+  clozeReset();
+  $('cloze-reset').addEventListener('click', clozeReset);
   $('pr-wrong').innerHTML = sessionBar(5, 10, 3, 2) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
     '<div class="card" style="gap:14px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">điền từ vào câu</span><span class="qchip">câu AI</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Báo lỗi</button></div>' +
     '<span class="eyebrow">gõ từ còn thiếu, đúng dạng trong câu</span><div class="sent">The <span class="wrong">shippment</span> <span class="right">shipment</span> arrived two days late.</div>' +
@@ -888,13 +1201,13 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       '<div class="sm" style="font-style:italic;color:var(--paper-muted)">' + ex + '</div></div>';
   };
   $('lookup-phone').innerHTML = ptop() + '<div class="pscreen" style="gap:12px"><div class="search" style="flex:none;margin:0;height:44px">' + ico('search', 's') + 'Tìm từ</div>' +
-    '<div style="display:flex;gap:6px"><span class="chip">Mọi trình độ ' + ico('chd', 's') + '</span><span class="chip">Mọi chủ đề ' + ico('chd', 's') + '</span></div>' +
+    '<p class="sm" style="line-height:1.9">314 từ · trình độ <span class="mk" style="cursor:pointer">tất cả</span>, chủ đề <span class="mk" style="cursor:pointer">tất cả</span>, loại từ <span class="mk" style="cursor:pointer">tất cả</span></p>' +
     '<article style="background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);border-radius:4px 10px 10px 4px;box-shadow:var(--sh-lift);padding:16px 14px;display:flex;flex-direction:column;gap:6px">' +
     '<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--paper-ink);padding-bottom:6px"><b class="dt" style="font-size:1.125rem">abroad</b><span class="mono" style="color:var(--paper-muted)">trang 1</span><b class="dt" style="font-size:1.125rem">arrive</b></div>' +
     '<div style="display:flex;align-items:center;gap:10px;padding:8px 0 0" class="b"><span style="color:var(--paper-muted)">A</span><i style="flex:1;border-top:1px solid var(--paper-line)"></i></div>' +
-    entry('abroad', 'adv.', 'A2', 'ở nước ngoài, ra nước ngoài.', 'She wants to study <span class="mk" style="font-style:normal">abroad</span> next year.') +
-    entry('accommodation', 'n.', 'B2', 'chỗ ở.', 'The price includes flights and <span class="mk" style="font-style:normal">accommodation</span>.', true) +
-    entry('achieve', 'v.', 'B1', 'đạt được.', 'He finally <span class="mk" style="font-style:normal">achieved</span> his goal.') + '</article></div>' + tabbar('Tra từ');
+    entry('abroad', 'adv.', 'A2', 'ở nước ngoài, ra nước ngoài.', 'She wants to study <span class="tw" style="font-style:normal">abroad</span> next year.') +
+    entry('accommodation', 'n.', 'B2', 'chỗ ở.', 'The price includes flights and <span class="tw" style="font-style:normal">accommodation</span>.', true) +
+    entry('achieve', 'v.', 'B1', 'đạt được.', 'He finally <span class="tw" style="font-style:normal">achieved</span> his goal.') + '</article></div>' + tabbar('Tra từ');
 
   // ---------- Hộp thoại ----------
   var behind = '<div class="pscreen"><h3 class="t-page-m">Hôm nay</h3><div class="card m" style="height:180px"></div><div class="card m" style="height:140px"></div></div>' + tabbar('Hôm nay');
@@ -979,7 +1292,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     ['Câu 6–11', 'Chế độ tối theo B: không bóng nút, mờ đen 55%, giấy tối, số nhóm sáng hơn, nền landing bản 3, tab và chip', 'he-thong'],
     ['Góc bo C', 'Phím 4 · nút, ô, chip 8 · dòng 10 · card 14 · hộp thoại, thẻ Học 16', 'he-thong'],
     ['Bậc', 'Bỏ "ngăn": Mới, Bậc 1–5; màu ưu tiên đỏ, đến hạn vàng cam, Bậc 1→5 xanh nhạt → đậm', 'he-thong'],
-    ['Chỗ 1', 'Học: lá bài dọc, polish', 'hoc'], ['Chỗ 2', 'Từ đích đậm gạch chân; Tra từ giữ nền vàng', 'he-thong'],
+    ['Chỗ 1', 'Học: lá bài dọc, polish', 'hoc'], ['Chỗ 2', 'Từ đích trong câu ví dụ đậm gạch chân; nền vàng chỉ cho câu lọc Tra từ', 'he-thong'],
     ['Chỗ 3', 'Một kiểu tiêu đề trang', 'hom-nay'], ['Chỗ 4', 'Loại từ thật thay "unspecified"', 'trang-tu'], ['Chỗ 5', 'Nhãn bậc ghi đủ', 'trang-tu'],
     ['Chỗ 6', 'Nhóm làm lại, kiểu Vòng cung', 'nhom'], ['Chỗ 7', 'Tổng kết Ôn trên điện thoại', 'on'], ['Chỗ 8', 'Giữ icon ngôi nhà', 'hom-nay', 1],
     ['Chỗ 9', 'Năm màn sang giao diện mới, toast mới', 'hoc'], ['Chỗ 10', 'Từ hay sai: nút luyện lên đầu', 'luyen-tap'], ['Chỗ 11', 'Một mẫu hộp thoại', 'hop-thoai'],
@@ -996,8 +1309,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   // ---------- Scale desktop frames, mode switch ----------
   function fit() {
     document.querySelectorAll('.desk').forEach(function (d) {
-      var inner = d.firstElementChild, s = d.clientWidth / 1440, h = +d.dataset.h;
-      inner.style.transform = 'scale(' + s + ')'; inner.style.height = h + 'px'; d.style.height = Math.ceil(h * s) + 'px';
+      var inner = d.firstElementChild, w = +(d.dataset.w || 1440), s = d.clientWidth / w, h = +d.dataset.h;
+      inner.style.width = w + 'px'; inner.style.transform = 'scale(' + s + ')'; inner.style.height = h + 'px'; d.style.height = Math.ceil(h * s) + 'px';
     });
     placeNodes();
   }
@@ -1012,7 +1325,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   segBtns.forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.mode); }); });
   var start = 'light'; try { start = localStorage.getItem('wm-m9-mode') || 'light'; } catch (e) {}
-  setMode(start); layoutArc(); fit();
+  setMode(start); fit();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
 </script>
