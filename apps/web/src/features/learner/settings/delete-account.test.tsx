@@ -5,6 +5,7 @@ import { makeMe, problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { AccountDeleted } from '../auth/AccountDeleted';
 import { DeleteAccountPage } from './DeleteAccountPage';
+import vi_ from '../../../../messages/vi.json';
 
 const replace = vi.fn();
 let search = '';
@@ -121,6 +122,20 @@ describe('DeleteAccountPage (design §9.4)', () => {
     expect(await screen.findByText('Email bạn gõ chưa khớp với email của tài khoản.')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
     expect(view.store.state.status).toBe('signed-in');
+  });
+
+  it('M7.2 defect 1: entitlements failing to load shows the generic error text with Thử lại, not a bare button', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([], { 'GET /v1/me/entitlements': () => new Response(null, { status: 500 }) }) });
+    expect(await screen.findByText(vi_.App.errors.generic)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+  });
+
+  it('M7.2 defect 2: a 409 renewal-not-cancelled says the plan still renews and where to cancel it', async () => {
+    const view = renderApp(<DeleteAccountPage />, { routes: routes([], { 'POST /v1/me/account/delete': () => problem(409, 'renewal-not-cancelled') }) });
+    await fill(view, { password: 'pw' });
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
+    expect(await screen.findByText('Gói của bạn đang tự gia hạn. Hủy gói ở trang Gói học rồi thử lại.')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('P3: a wrong password is a 400 invalid-current-password: its text, and the transport neither refreshes nor sends the request again', async () => {

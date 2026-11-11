@@ -95,6 +95,21 @@ describe('TransactionsPage (K/95–K/95d, M/95–M/95c)', () => {
     expect(screen.getByText('Dùng thử và Cấp gói: không thu tiền.')).toBeInTheDocument();
   });
 
+  it('M7.2 defect 3: a payOS Pro learner (prepaid source, pro_until) sees the last day on the plan card', async () => {
+    const prepaid = { ...ENT, sources: [{ kind: 'prepaid', id: 'p1', status: null, starts_at: '2026-11-07T17:00:00.000Z', ends_at: '2027-02-07T17:00:00.000Z',
+      renews_at: null, cancel_at_period_end: null, pending_interval: null }], pro_until: '2027-02-07T17:00:00.000Z' };
+    renderApp(<TransactionsPage />, { routes: routes({ 'GET /v1/me/entitlements': () => Response.json(prepaid) }) });
+    expect(await screen.findByText('Gói Pro · tới hết 7/2/2027')).toBeInTheDocument();
+  });
+
+  it('M7.2 defect 4: a payOS transaction names its gateway "payOS"', async () => {
+    const payos = row('p1', { kind: 'purchase', interval: 'quarter', amount_minor: 199000, provider: 'payos', provider_transaction_id: '1000000123:FT26309ABC' });
+    renderApp(<TransactionsPage />, { routes: routes({ 'GET /v1/me/transactions?page_size=20': list([payos]) }) });
+    await userEvent.click(await rowButton(/Pro · 3 tháng/));
+    const dialog = await screen.findByRole('dialog', { name: 'Chi tiết giao dịch' });
+    expect(within(within(dialog).getByText('Cổng thanh toán').closest('div')!).getByText('payOS')).toBeInTheDocument();
+  });
+
   it('a row opens its detail: time, gateway "Giả (thử)" and the transaction id; Đóng closes it', async () => {
     renderApp(<TransactionsPage />, { routes: routes() });
     await userEvent.click(await rowButton(/^Gia hạn/));
