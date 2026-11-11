@@ -11,14 +11,24 @@ const longMe = { given_name: LONG.givenName, family_name: LONG.familyName, email
 
 for (const locale of ['vi', 'en'] as const) {
   test(`no horizontal scroll on M1 pages with long names (${locale})`, async ({ page }) => {
-    // M7.7: a payOS purchase with a long transaction id, so Lịch sử giao dịch has a row, not only its empty state.
+    await signedInAs(page, 'pro', {}, { ...longMe, native_language: locale });
+    for (const path of ['', '/settings', '/settings/account', '/settings/reports']) {
+      await page.goto(`/${locale}/app${path}`);
+      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+      await noSideScroll(page);
+    }
+  });
+
+  // M7.7, own test so the M1 one stays well inside the 30 s limit on a busy desktop run: a payOS purchase with a long transaction id,
+  // so Lịch sử giao dịch has a row, not only its empty state.
+  test(`no horizontal scroll on Xóa tài khoản and Lịch sử giao dịch with long names (${locale})`, async ({ page }) => {
     const purchase = {
       id: 't1', kind: 'purchase', plan: 'pro', interval: 'year', amount_minor: 599000, currency: 'VND', occurred_at: '2026-11-01T13:14:00.000Z',
       period_start: '2026-11-08T03:00:00.000Z', period_end: '2027-11-08T03:00:00.000Z', status: 'pending', provider: 'payos',
       provider_transaction_id: `payos_${'9'.repeat(60)}`,
     };
     await signedInAs(page, 'pro', { 'GET /v1/me/transactions': () => ({ json: { items: [purchase], next_page_token: null } }) }, { ...longMe, native_language: locale });
-    for (const path of ['', '/settings', '/settings/account', '/settings/reports', '/settings/delete-account', '/settings/transactions']) {
+    for (const path of ['/settings/delete-account', '/settings/transactions']) {
       await page.goto(`/${locale}/app${path}`);
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
       await noSideScroll(page);
