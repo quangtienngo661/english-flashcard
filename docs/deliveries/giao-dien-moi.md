@@ -620,3 +620,48 @@ Nhánh `feat/giao-dien-moi-m7a`, **một PR** vào `refactor/giao-dien-moi` cho 
 - Chưa chụp chế độ tối, tiếng Anh, khổ 1024 px; chưa xem trên điện thoại thật.
 - Chưa thấy chấm nhấp nháy và trạng thái giảm chuyển động trong trình duyệt thật (có unit test cho luật giảm chuyển động).
 - Chưa thử mua payOS thật, Google re-auth thật; nút "Hủy gói" chỉ thử với provider giả.
+
+# Giao diện mới — as-built M8b Trang công khai và SEO (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m8b`, một PR vào `refactor/giao-dien-moi` (M8.3–M8.9). Quyết định khi làm: R186–R248 trong `giao-dien-moi-rulings.md` (R174–R185 là của M8a, PR #265). Không đổi API; câu trả lời FAQ dự phòng chép đúng migration của M8a (R201).
+
+**Đã làm**
+- Dữ liệu lúc build (M8.3): `next.config.ts` async đọc `GET /v1/public/prices` và FAQ một lần (`scripts/read-landing-data.mjs`), đưa vào `env.WORDMET_LANDING_DATA`. Không đọc được thì dùng bản dự phòng và in một dòng cảnh báo; `LANDING_DATA_REQUIRED=1` làm build fail; `LANDING_DATA_SOURCE=fallback` cho e2e. `ui/Logo.tsx`, `periodOffer` chuyển sang `lib/` (hai thay đổi duy nhất chạm `/app`). `ButtonLink reload` cho link vào `/app` (LB3E6).
+- Thanh trên và chân trang (M8.4): Đăng nhập (trắng), Đăng ký (navy); nút đổi giao diện ở thanh trên từ 768 px, ở chân trang dưới 768 px (radio "Sáng" / "Tối"). Trang nằm trong `(pages)/`; 404 ở ngoài nên không có thanh trên (QM8-8).
+- Trang chủ (M8.5): hero, dải từ, nhóm từ, "Từ lúc gặp tới lúc dùng được", ba giá tĩnh kèm % tiết kiệm (kỳ tiết kiệm nhất nổi bật, R207), FAQ 6 câu, lời mời cuối. `components/landing/**` đã xóa.
+- Chuyển động (M8.6): hiệu ứng landing bản 3, bố cục Figma; CSS theo `data-*`, chỉ chạy khi có class `js` và `prefers-reduced-motion: no-preference`; blur tối đa 12 px trên điện thoại. Không có nút tạm dừng (QM8-3).
+- Chính sách, Điều khoản, Nguồn dữ liệu, 404 (M8.7): dòng meta hiện số phiên bản; mục lục (thu gọn trên điện thoại); Nguồn dữ liệu không có nhãn "Dùng cho". `components/sections/**` đã xóa.
+- SEO (M8.8): `pageMetadata` cho mọi trang công khai và trang đăng nhập / đăng ký; JSON-LD WebSite, SoftwareApplication, Organization với giá VND; sitemap lấy ngày hiệu lực của văn bản pháp lý; `themeColor` sáng / tối.
+- Dọn (M8.9): phần còn lại của `src/components/**` và `src/i18n/navigation.ts` đã xóa. e2e viết lại; Worker thứ hai ở cổng 3101 với API giả để thử trang pháp lý và nguồn ở server (R237).
+- **Lỗi e2e và ảnh tìm ra (test đỏ rồi fix):** link nút render ở server mất class (R240); logo và câu hỏi FAQ thấp hơn 44 px (R241, R242); thanh trên tràn 1 px ở 320 px (R243); nền trang là token cũ màu trắng (R244); ô "14 ngày" / "30 ngày" xuống hai dòng ở 390 px (R245); hai thẻ gói tràn lề ở 1024 px (R248).
+
+**Kiểm**
+- Web: `vitest run` 136 file, 1415/1415; lint, typecheck qua; `assert:render-mode` qua (`/vi`, `/en` vẫn prerender, dữ liệu build nằm trong chunk SSR và `vi.cache`).
+- Build không có API in đúng một dòng cảnh báo và dùng bản dự phòng (R192).
+- Admin (token đổi ở M8.3): lint, typecheck, test, build qua ở M8.3.
+- E2e `pnpm cf:docker` cả bộ, hai project: 430 qua, 18 skip, 0 hỏng, 3 flaky (m4, m7a, m5a; trang `/app`, qua khi chạy lại).
+
+**Ảnh** (vi, sáng và tối, 390 / 1024 / 1440 px; spec chụp tạm dưới `cf:docker`, không commit; trang chủ và 404 dùng dữ liệu dự phòng, pháp lý và nguồn dùng chữ của API giả). Bộ `gm-m8` cho stack thật có trong `e2e-shots/shots.spec.ts`.
+
+| Trang | Figma (desktop / phone) | Ảnh |
+|---|---|---|
+| Trang chủ | `5:13` / `9:108` | `gm-m8/vi-{light,dark}-home-{390,1024,1440}` |
+| Chính sách bảo mật | `14:172` / `17:260` | `gm-m8/vi-{light,dark}-privacy-*` |
+| Điều khoản sử dụng | `15:190` / `17:355` | `gm-m8/vi-{light,dark}-terms-*` |
+| Nguồn dữ liệu | `16:210` / `18:283` | `gm-m8/vi-{light,dark}-sources-*` |
+| 404 | `16:317` / `18:358` (motion `24:427`) | `gm-m8/vi-{light,dark}-404-*` |
+
+Figma không có khung tablet và khung tối; ảnh 1024 và ảnh tối so với khung desktop sáng.
+
+**Khác Figma, để lại**
+- Chữ Bricolage rộng hơn Figma khoảng 6–10 %, tiêu đề hero và lời mời cuối xuống dòng khác (R246, cần chủ dự án: nạp trục optical size thêm khoảng 90 KB font, đổi cả app).
+- Điện thoại: thẻ hero vẫn có câu ví dụ; lemma và câu luyện to hơn; hàng FAQ đóng không có bóng; chân trang cao hơn khung (link 44 px) (R247).
+- Thanh trên có Đăng nhập, Đăng ký, nút giao diện (Figma chỉ có "Dùng thử", QM8-1). Nút thẻ Pro là "Tạo tài khoản" (Figma "Mua gói Pro 12 tháng").
+
+**Chưa kiểm / rủi ro**
+- **R239:** tắt JS thì trang 404 trống (chữ nằm trong `<div hidden>` chờ JS chèn vào); 404 mở trực tiếp không có class `js` nên không chạy chuyển động. Stack `pnpm bootstrap` cũng vậy.
+- **R211:** nếu chunk JS không tải được sau khi script đầu trang đã thêm class `js`, các khối dưới hero ẩn.
+- Chưa xem chuyển động trên màn hình thật; ảnh chụp với `animations: 'disabled'`. Lần chụp đầu thẻ "Nghe và đọc phiên âm" bị mờ dù đã hiện hết (đoán là lỗi chụp cả trang).
+- Màu và độ mờ của vệt quét thẻ Pro lấy từ ảnh chụp (R216).
+- Chưa build với `NEXT_PUBLIC_INDEXABLE=true` để xem sitemap thật; chưa thử nhánh fail của `LANDING_DATA_REQUIRED=1` qua `cf:docker`.
+- Chưa chạy bộ `gm-m8` với stack thật, chưa xem trên điện thoại thật, chưa chụp tiếng Anh.
