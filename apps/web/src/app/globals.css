@@ -1201,6 +1201,17 @@
   display: inline-block;
 }
 
+/* Print matches `prefers-reduced-motion: no-preference` too: a block that has not scrolled in yet would print blank (M8b review I2, R249). */
+@media print {
+  html.js [data-wm-reveal],
+  html.js [data-wm-reveal] [data-wm-word],
+  html.js [data-group-card],
+  html.js [data-group-caption] {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* Reveal and Words (S/interactive/Reveal.tsx, SplitWords.tsx): hidden until `data-wm-in`, then one run of the keyframes above. */
   html.js [data-wm-reveal='block']:not([data-wm-in]),
