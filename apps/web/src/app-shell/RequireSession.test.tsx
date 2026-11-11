@@ -72,18 +72,27 @@ describe('RequireSession', () => {
     expect(store.state.status).toBe('signed-out');
   });
 
-  it('M7.7: a session that ends while a full page load is already leaving (account deleted) does not send the page to sign-in', async () => {
+  it('M7.7 / R154: the session ended by deleting the account does not send the page to sign-in (its own full load goes on)', async () => {
     at('/vi/app/settings/delete-account');
     const { store } = setup(signedIn());
     await screen.findByText('secret');
-    // DeleteForm: endAfterDeletion(), then hardReplace('/vi/app/account-deleted'), which marks the page as leaving.
-    leaving = true;
+    // Whatever the order DeleteForm uses, and even before hardReplace has marked the page as leaving.
     act(() => store.endAfterDeletion());
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
     expect(store.state.status).toBe('signed-out');
     expect(replace).not.toHaveBeenCalled();
+    expect(screen.queryByText('secret')).not.toBeInTheDocument();
+  });
+
+  it('R154: a full load that did not happen (Esc, a hash-only address) does not stop a later sign-out from going to sign-in', async () => {
+    at('/vi/app/settings');
+    const { store } = setup(signedIn());
+    await screen.findByText('secret');
+    leaving = true;
+    await act(() => store.logout());
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fsettings'));
   });
 
   it('E3/E4: a session that ended mid-use carries its reason to the sign-in page', async () => {
