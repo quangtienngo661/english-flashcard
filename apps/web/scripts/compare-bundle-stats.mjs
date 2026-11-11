@@ -5,20 +5,25 @@ import { fileURLToPath } from 'node:url';
 
 const isApp = (route, prefix) => route === prefix || route.startsWith(`${prefix}/`);
 
+const isBytes = (n) => typeof n === 'number' && Number.isFinite(n) && n > 0;
+
 export function compareBundles(baseline, stats, opts = {}) {
   const { prefix = '/[locale]/app', limit = 1.1 } = opts;
   const appStats = stats.filter((s) => isApp(s.route, prefix));
   if (appStats.length === 0) throw new Error('no app routes in stats');
+  for (const s of appStats) if (!isBytes(s.firstLoadUncompressedJsBytes)) throw new Error(`bad byte count for ${s.route}`);
   const after = new Map(appStats.map((s) => [s.route, s.firstLoadUncompressedJsBytes]));
   const before = Object.entries(baseline).filter(([route]) => isApp(route, prefix));
   const beforeMap = new Map(before);
   const rows = before
     .filter(([route]) => after.has(route))
     .map(([route, b]) => {
+      if (!isBytes(b)) throw new Error(`bad baseline for ${route}`);
       const a = after.get(route);
       return { route, before: b, after: a, ratio: a / b, over: a > b * limit };
     })
     .sort((x, y) => (x.route < y.route ? -1 : 1));
+  if (rows.length === 0) throw new Error('no routes to compare');
   const added = [...after.keys()].filter((r) => !beforeMap.has(r)).sort();
   const removed = [...beforeMap.keys()].filter((r) => !after.has(r)).sort();
   return { rows, added, removed };

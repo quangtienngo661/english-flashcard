@@ -38,4 +38,22 @@ describe('compare-bundle-stats', () => {
     expect(() => compareBundles({ [A]: 1 }, [])).toThrow('no app routes in stats');
     expect(() => compareBundles({ [A]: 1 }, [row('/[locale]', 1), row('/[locale]/privacy', 1)])).toThrow('no app routes in stats');
   });
+
+  it('throws on an app row without a finite positive byte count', () => {
+    for (const bad of [undefined, null, NaN, 0, -5, '100']) {
+      const stats = [{ route: A, firstLoadUncompressedJsBytes: bad }] as never;
+      expect(() => compareBundles({ [A]: 1 }, stats)).toThrow(`bad byte count for ${A}`);
+    }
+    expect(() => compareBundles({ [A]: 1 }, [{ route: A }] as never)).toThrow(`bad byte count for ${A}`);
+  });
+
+  it('throws on a baseline value that is not a finite positive number', () => {
+    expect(() => compareBundles({ [A]: 0 }, [row(A, 1)])).toThrow(`bad baseline for ${A}`);
+    expect(() => compareBundles({ [A]: 'x' as never }, [row(A, 1)])).toThrow(`bad baseline for ${A}`);
+  });
+
+  it('throws when no route is in both', () => {
+    expect(() => compareBundles({}, [row(A, 1)])).toThrow('no routes to compare');
+    expect(() => compareBundles({ [`${A}/x`]: 1 }, [row(A, 1)])).toThrow('no routes to compare');
+  });
 });
