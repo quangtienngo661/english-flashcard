@@ -186,6 +186,15 @@ test.describe('LR35 the page moves when motion is allowed', () => {
     const hero = await faded(page);
     expect(hero.out.filter((line) => line.startsWith('h1') || line.includes(L.hero.lead.slice(0, 20)))).toEqual([]);
   });
+
+  // M4 of the M8b review: every block that waits for the scroll has come in and ended at full opacity once the page was scrolled through.
+  test('after scrolling through the home page, no text is left see-through', async ({ page }) => {
+    await open(page);
+    await scrollThrough(page);
+    const { checked, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(out).toEqual([]);
+  });
   // The 404's entrance is not checked: a directly loaded 404 is drawn on the client, without the head script's `js` class (R239).
 });
 
@@ -196,6 +205,10 @@ test.describe('LR26 without JavaScript', () => {
     await page.goto('/vi');
     await expect(page.getByRole('heading', { level: 1, name: HERO_TITLE })).toBeVisible();
     for (const title of SECTION_TITLES) await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
+    // M4 of the M8b review: toBeVisible() does not look at opacity, so check nothing is drawn see-through either.
+    const { checked, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(out).toEqual([]);
 
     const plans = page.getByRole('region', { name: L.plans.title });
     for (const amount of Object.values(FALLBACK_LANDING_DATA.prices)) await expect(plans.getByText(vnd(amount), { exact: true })).toBeVisible();
