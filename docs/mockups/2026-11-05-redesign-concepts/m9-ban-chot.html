@@ -336,6 +336,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .hint .n{width:24px;height:24px;border-radius:50%;display:grid;place-content:center;font:600 .75rem var(--f-label);border:1.5px solid var(--ink)}
 .hint .n.on{background:var(--ink);color:var(--surface)}
 .hint .lb{font-weight:600;font-size:.875rem}
+.hint-mask{font-family:var(--f-display);font-weight:700;font-size:1.375rem;letter-spacing:.12em;color:var(--ink)}
 
 /* Table (Một nhóm) */
 .tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.9375rem}
@@ -1174,9 +1175,9 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   $('pr-ask').innerHTML = sessionBar(4, 10, 3, 1) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
     '<div class="card" style="gap:16px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">fill in the blank</span><span class="qchip">AI sentence</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Report</button></div>' +
     '<div class="sent" id="cloze-sent"></div></div>' +
-    '<div class="hint"><div class="hd">' + ico('bulb', 's') + 'Hint 1 of 2<span class="dots"><i class="on"></i><i></i></span></div>' +
+    '<div class="hint"><div class="hd">' + ico('bulb', 's') + '<span id="h-title">Hint 1 of 2</span><span class="dots"><i class="on"></i><i id="h-dot2"></i></span></div>' +
     '<span class="n on">1</span><span class="lb">Definition</span><span>To guess a number or cost by using the information you have.</span>' +
-    '<span class="n">2</span><span class="lb mut">First letter</span><span><button class="btn b-sec b-sm" type="button">Show hint 2 <span class="kbd">H</span></button></span></div>' +
+    '<span class="n" id="h2n">2</span><span class="lb mut" id="h2l">First letter</span><span id="h2c"><button class="btn b-sec b-sm" type="button" id="h2b">Show hint 2 <span class="kbd">H</span></button></span></div>' +
     shortcuts([['Enter', 'Check'], ['H', 'Hint'], ['Esc', 'Stop']]) + '</div>';
   // The blank is a real input inside the sentence; Enter checks it and the result replaces it in place.
   function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -1205,6 +1206,13 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
   }
   clozeReset();
   $('cloze-reset').addEventListener('click', clozeReset);
+  // Hint 2 shows the first letter and one underscore per remaining letter (owner 12/11: "e______", not dots).
+  function maskWord(w) { return w.charAt(0) + new Array(w.length).join('_'); }
+  $('h2b').addEventListener('click', function () {
+    $('h2c').innerHTML = '<span class="hint-mask" aria-label="Starts with e, 8 letters">' + maskWord('estimate') + '</span>';
+    $('h2n').classList.add('on'); $('h2l').classList.remove('mut');
+    $('h-title').textContent = 'Hint 2 of 2'; $('h-dot2').classList.add('on');
+  });
   $('pr-wrong').innerHTML = sessionBar(5, 10, 3, 2) + '<div style="max-width:760px;margin:24px auto 0;display:flex;flex-direction:column;gap:16px">' +
     '<div class="card" style="gap:14px"><div style="display:flex;gap:8px;align-items:center"><span class="qchip">fill in the blank</span><span class="qchip">AI sentence</span><button class="btn b-ghost b-sm" type="button" style="margin-left:auto">' + ico('flag', 's') + 'Report</button></div>' +
     '<div class="sent">The <span class="wrong">shippment</span> <span class="right">shipment</span> arrived two days late.</div>' +

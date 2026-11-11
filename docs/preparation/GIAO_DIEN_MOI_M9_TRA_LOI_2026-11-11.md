@@ -64,6 +64,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Bỏ JetBrains Mono (12/11, phản hồi người dùng không thích). Nhãn nhỏ, số đếm, phím tắt, IPA dùng Noto Sans; tiêu đề, từ lớn, số lớn giữ Bricolage Grotesque. Nguồn: báo cáo `docs/preparation/reports/Tiêu chí UI app tiếng Anh.md` và artifact "Phép thử giao diện Wordmet" `1q2VNZqNDPCeLATg8rnSb9` (Noto Sans đạt T1–T5, có số tabular sẵn). Trong code: thay token font mono của `wm-` và mọi chỗ dùng nó (đợt polish).
 - Góc bo theo kích cỡ, mức C: phím tắt, nhãn 4–5 px; nút, ô nhập, chip 8; dòng danh sách, menu 10; card 14; hộp thoại, thẻ Học 16 (viết bằng `rem`). Bên trong luôn bo ít hơn khung chứa.
 - Panel "Chưa đúng" (Phiên luyện, Ôn): khoảng cách đều; đáp án nổi bật, không còn nằm nhỏ ở góc phải.
+- Gợi ý chữ cái đầu: hiện chữ đầu và một dấu gạch dưới cho mỗi chữ còn lại, ví dụ `estimate` → "e_______" (không dùng dấu ba chấm).
 - Ô "Gợi ý 1/2": căn lại theo một lưới (cột số, nội dung, nút "Mở gợi ý", chấm tiến độ).
 - Trang Một nhóm: thanh tiến độ và chip lọc có màu theo mức (ưu tiên đỏ, đến hạn vàng cam, mới xám, Bậc 1→5 xanh lá nhạt → đậm); danh sách từ thành bảng có tên cột (Từ vựng, Loại từ, Nghĩa, Bậc, Trạng thái).
 - Bỏ chữ "ngăn": gọi "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên (code đã gọi `level` 0–5). Nghiên cứu: `SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`. Màu không được là tín hiệu duy nhất; Bậc 1–3 xanh nhạt cần chữ hoặc viền.
