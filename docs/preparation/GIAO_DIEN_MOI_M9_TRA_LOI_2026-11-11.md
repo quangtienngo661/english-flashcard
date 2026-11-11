@@ -51,6 +51,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Giữ hiện tại: 8 (icon ngôi nhà), 12 (khoảng chữ logo, tiêu đề hộp thoại), 16 (bề rộng thanh phiên), 19 (dòng nguồn Luyện tập), 22 (thẻ chủ đề có ô icon); 25 phần thanh tab.
 - Chỗ 1: lấy bản đã chốt (lá bài dọc) làm gốc, polish và sửa lỗi giao diện còn lại.
 - Chỗ 2 (đổi sau, làm rõ 12/11): từ đích trong mọi câu ví dụ, kể cả trang giấy Tra từ, in đậm gạch chân. Nền vàng chỉ dùng cho câu lọc của Tra từ ("314 từ · trình độ tất cả, chủ đề tất cả, loại từ tất cả"), thay cho chữ gạch chân mở menu.
+- Card câu hỏi: bỏ dòng hướng dẫn ("gõ từ còn thiếu, đúng dạng trong câu", "gõ từ tiếng Anh có nghĩa này"); chip loại câu đã đủ. Câu "AI dịch" thành một khối riêng ngay dưới câu: nền nhấn nhạt, viền, icon dịch, chữ 17 px, nhãn "AI dịch" bên phải.
 - Câu điền từ: gõ thẳng vào chỗ trống trong câu (ô nhập nằm trong câu); Enter thì kết quả thay ngay tại chỗ.
 - Học: hiệu ứng theo artifact "Chồng thẻ tan mờ" `TrbJBKg6VFE3x6YkjD1XT7` (thẻ sau mờ theo độ sâu, kéo nghiêng có dấu, ngưỡng 110 px, thẻ chọn xong phóng 1,22 và tan mờ 18 px trong 0,3 giây, thẻ kế tiếp hiện từ mờ, chip tên từ rơi vào đống).
 - Nhóm: số đo, đường cong, độ nảy và các lớp thẻ theo đúng source artifact `6z635GjwYNpctydnMoNHJD` (N2, kiểu `arc`, khung 1200).
