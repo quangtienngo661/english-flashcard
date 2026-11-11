@@ -30,6 +30,12 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | blank (fake widget) | the key of the Turnstile widget (wordmet.com, www and admin hosts) | Cloudflare Turnstile on the sign-up, sign-in and reset forms. Blank uses a fake widget that only an API with `TURNSTILE_MODE=fake` accepts; a build of `https://wordmet.com` with the app on and no key fails |
 | `API_INTERNAL_BASE_URL` | unset | unset | Server-only, read at run time. API origin for requests the web server makes (`/privacy`, `/terms`) when it reaches the API at another address than the browser; the Docker stack sets `http://api:3000`. Unset: `NEXT_PUBLIC_API_BASE_URL` |
+| `LANDING_DATA_REQUIRED` | unset | `1` once the production API answers | Build-time only. `1`: `next build` fails when it cannot read the landing's prices and FAQ from the API. Unset: it prints one `[landing-data]` warning and the home page uses the fallback prices and FAQ (`src/site/landing/landing-data.fallback.ts`) |
+| `LANDING_DATA_SOURCE` | unset | unset | Build-time only. `fallback`: `next build` does not read the API and the home page uses the fallback prices and FAQ (the e2e build sets it) |
+
+`next build` reads the landing's prices (`/v1/public/prices`) and FAQ (`/v1/public/faq`) once, from `API_INTERNAL_BASE_URL`, else
+`NEXT_PUBLIC_API_BASE_URL`, else `http://localhost:3000`, and bakes them into the prerendered `/vi` and `/en` (and the JSON-LD offers). A
+price or FAQ change in the admin shows on the home page only after the next build.
 
 `NEXT_PUBLIC_*` values are baked into the build. Changing them on the Cloudflare dashboard takes effect only after
 the next build and deploy.
