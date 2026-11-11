@@ -497,3 +497,21 @@ test.describe('M8 the review boxes on a phone', () => {
     }
   });
 });
+
+// Found in the M8.9 shots: at 1024 px the Free (360) and Pro (620) cards side by side are 1004 px wide in 944 px of content, so the row
+// stuck out 30 px on each side into the gutters (the section clips it, so the page did not scroll; R248).
+test.describe('M8 the plan cards stay inside the page', () => {
+  test('from 768 to 1440 px both plan cards keep the page gutters', async ({ page }, testInfo) => {
+    desktopOnly(testInfo);
+    for (const width of [768, 1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/vi');
+      const cards = page.getByRole('region', { name: L.plans.title }).getByRole('article');
+      await expect(cards).toHaveCount(2);
+      for (const box of [(await cards.nth(0).boundingBox())!, (await cards.nth(1).boundingBox())!]) {
+        expect(box.x, `${width} px: left edge`).toBeGreaterThanOrEqual(40);
+        expect(box.x + box.width, `${width} px: right edge`).toBeLessThanOrEqual(width - 40);
+      }
+    }
+  });
+});
