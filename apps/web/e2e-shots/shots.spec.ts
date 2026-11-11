@@ -62,6 +62,10 @@ test('milestone screenshots', async ({ page }) => {
     await gmM4(page);
     return;
   }
+  if (MILESTONE === 'gm-m7a') {
+    await gmM7a(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -311,6 +315,45 @@ async function gmM6(page: Page) {
     await page.goto(`/vi/app/${path}`);
     await settle(page);
     await shoot(page, name, true, widths);
+  }
+}
+
+/**
+ * M7a (Figma 120:4295 / 120:4559 Cài đặt, 181:5456 / 181:5748 avatar menu, 121:4297 / 121:4404 Tài khoản, 121:4503 / 121:4634 Xóa tài khoản,
+ * 122:4203 / 122:4354 Lịch sử giao dịch, 122:4484 / 182:5856 its detail) on a learner made with `learner:setup --plan pro --transactions`.
+ */
+async function gmM7a(page: Page) {
+  const widths = [390, 1440];
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  for (const [path, name] of [['settings', 'settings'], ['settings/account', 'account'], ['settings/delete-account', 'delete-account']] as const) {
+    await page.goto(`/vi/app/${path}`);
+    await settle(page);
+    await shoot(page, name, true, widths);
+  }
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app/settings');
+    await settle(page);
+    await page.getByRole('button', { name: 'Tài khoản của bạn' }).click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await shoot(page, 'settings-menu', false, [width]);
+    await page.keyboard.press('Escape');
+  }
+  await page.goto('/vi/app/settings/transactions');
+  const rows = page.getByRole('button', { name: /Xem chi tiết$/ });
+  await settle(page, rows.first());
+  await shoot(page, 'transactions', true, widths);
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await rows.first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await shoot(page, 'transaction-detail', false, [width]);
+    await page.keyboard.press('Escape');
   }
 }
 
@@ -582,9 +625,11 @@ async function m4b(page: Page) {
     await page.emulateMedia({ colorScheme: scheme });
     const name = (n: string) => `${locale}-${scheme}-${n}`;
     await page.goto(`/${locale}/app/settings/transactions`);
-    await settle(page, page.getByRole('list').getByRole('button').first());
+    // One list per month since M7.6: a row is a button whose name ends with "Xem chi tiết" / "See details".
+    const rows = page.getByRole('button', { name: /(Xem chi tiết|See details)$/ });
+    await settle(page, rows.first());
     await shoot(page, name('transactions'));
-    await page.getByRole('list').getByRole('button').nth(2).click();
+    await rows.nth(2).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.waitForLoadState('networkidle');
     await shoot(page, name('transaction-detail'), false);

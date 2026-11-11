@@ -20,7 +20,8 @@ vi.mock('next/navigation', () => ({
   // The router's path; null = same as the address bar.
   usePathname: () => routerPath ?? window.location.pathname,
 }));
-vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => false }));
+let leaving = false;
+vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => leaving }));
 
 function at(path: string) {
   window.history.replaceState(null, '', path);
@@ -49,6 +50,7 @@ const signedIn = (me = makeMe()): Record<string, Route> => ({
 
 beforeEach(() => {
   routerPath = null;
+  leaving = false;
   replace.mockReset();
 });
 afterEach(() => vi.restoreAllMocks());
@@ -68,6 +70,20 @@ describe('RequireSession', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fgroup%3Fid%3Dg1'));
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
     expect(store.state.status).toBe('signed-out');
+  });
+
+  it('M7.7: a session that ends while a full page load is already leaving (account deleted) does not send the page to sign-in', async () => {
+    at('/vi/app/settings/delete-account');
+    const { store } = setup(signedIn());
+    await screen.findByText('secret');
+    // DeleteForm: endAfterDeletion(), then hardReplace('/vi/app/account-deleted'), which marks the page as leaving.
+    leaving = true;
+    act(() => store.endAfterDeletion());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(store.state.status).toBe('signed-out');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('E3/E4: a session that ended mid-use carries its reason to the sign-in page', async () => {

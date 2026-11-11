@@ -120,7 +120,8 @@ export function meBody(over: Record<string, unknown> = {}) {
   };
 }
 
-/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks and no practice session for a learner;
+/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks, no practice session and an account delete
+ *  that succeeds for a learner;
  *  `extra` handlers on top. */
 export async function signedInAs(
   page: Page,
@@ -141,6 +142,8 @@ export async function signedInAs(
     'GET /v1/topics': () => ({ json: { items: [] } }),
     'GET /v1/practice/sessions/last': () => ({ status: 204 }),
     'GET /v1/me/streak': () => ({ json: { days: 0, studied_today: false } }),
+    // M7.7: the delete-account journey; the API answers 204 when the deletion finished at once.
+    'POST /v1/me/account/delete': () => ({ status: 204 }),
     ...extra,
   });
 }
