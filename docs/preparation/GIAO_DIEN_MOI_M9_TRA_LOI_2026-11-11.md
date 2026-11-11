@@ -19,6 +19,29 @@
 | 5b. Đo số khung hình trên điện thoại thật | Chủ dự án có máy và tự đo; truy cập qua bản deploy tạm hoặc chung mạng Wi-Fi với máy tính | Chưa kiểm cách nào chạy được: API chưa deploy và web gọi API theo một địa chỉ cố định (`ASSUMPTION`: phải đổi sang IP máy tính trong mạng LAN). Web chạy trên Cloudflare Workers, không phải Vercel |
 | 6. Tách file chữ `messages/{vi,en}.json` (mỗi file khoảng 82 KB, 1.497 câu) thành nhiều file | Chưa tách. Tách khi chủ dự án chỉnh lại câu chữ | Gửi cho trình duyệt chỉ phần chữ trang cần (`AppIntl.tsx` đang gửi cả nhóm `App`, khoảng 59 KB chưa nén): Claude đề xuất làm cùng lúc với việc tách file; chưa chốt |
 
+## Brainstorm tối 11/11/2026 (chủ dự án muốn triển khai M9 ngay)
+
+Chủ dự án nhờ Claude đề xuất trước cho mọi câu rồi trả lời ngay trên danh sách.
+
+| Câu | Đề xuất của Claude | Chủ dự án |
+|---|---|---|
+| Chia PR, viết Part 9 | Hai PR (M9a script + tải sau; M9b phần tối); Part 9 viết hai nửa | Làm tuần tự M9a rồi M9b, chỉ mở PR khi xong M9b (một PR M9). Claude hiểu: Part 9 viết một lần, duyệt một lần |
+| Khổ của artifact bản tối | 390 và 1440 | Chưa ghi chú |
+| Màn có phần riêng | Danh sách đã đưa, thêm Gói học, bộ lọc và tab (chỗ 15), thanh phiên (chỗ 16) | Chưa ghi chú |
+| Trang công khai | Vẽ ngay từ nhánh M8b | Chưa ghi chú |
+| Bóng nút, lớp mờ, giấy từ điển, số màu nhóm, hạt nền tối | Không bóng; đen 55%; giấy tối; bản sáng hơn ≥ 4,5:1; theo landing bản 3 | Nhờ vẽ artifact so sánh: https://claude.ai/artifact/H3B2PmZ1sdjxo2P9ymSYtW (`docs/mockups/2026-11-05-redesign-concepts/m9-toi-so-sanh.html`, câu 6–11). Chờ chọn |
+| Chỗ 15 (bộ lọc, tab) | Gom về tab gạch dưới và viên nền nhấn nhạt | Vẽ cùng artifact trên (câu 11). Chờ chọn |
+| Chỗ 16 (thanh phiên) | Một bề rộng chung, số đo lấy từ Figma | Chưa đo Figma |
+| Script nào vào CI | Câu chữ không dùng, hình dạng JSON-LD, dung lượng JS so với file số gốc | Chưa ghi chú |
+| Đo trên điện thoại | Chung Wi-Fi, web và API nhận IP máy tính | Đồng ý. Chủ dự án đã thử gọi API qua IP máy tính, có vẻ chạy được |
+| Việc Claude làm luôn (xóa token cũ, đổi tên `DotGridBackground`, `color-scheme`, màu thanh trình duyệt, ghi đo `GET /v1/groups` vào deploy-checklist) | — | Đồng ý |
+| QR4 | Vẫn gác lại | Gác lại vì chủ dự án chưa test được quảng cáo |
+
+**Trang so sánh 25 chỗ lệch có ô chọn (11/11/2026 tối).** Sau khi chốt thiết kế, chủ dự án đã nhờ các phiên khác thiết kế lại những chỗ chưa ổn, nên
+giao diện hiện tại có chỗ là bản mới hơn bản đã chốt. Mỗi thẻ ở https://claude.ai/artifact/87DRK6yvkNo6vc9jm571FU (bản 2) có ô tick "Giữ giao diện
+hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọn lưu trong db của artifact, collection `picks`, mỗi chỗ một document `d01`…`d25`
+(`{choice: 'current' | 'approved' | null, note, at}`); Claude đọc bằng `ArtifactData list`. Đợt polish sửa theo các lựa chọn này.
+
 ## Ghi chú cho Part 9
 
 - Thứ chặn M9: M8b (đang làm M8.5), M8c (chờ chủ dự án duyệt khung Figma favicon, ảnh chia sẻ).
