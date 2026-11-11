@@ -386,6 +386,22 @@ describe('Hủy gói (Bước 8, design §8.2)', () => {
     expect(posts[0].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('after "Hủy gia hạn" succeeds the "Hủy gói" button is gone, so focus moves to the row\'s line, not to the page', async () => {
+    let cancelled = false;
+    renderApp(<PlansPage />, {
+      routes: {
+        'GET /v1/me/app-config': () => Response.json(CONFIG),
+        'GET /v1/me/entitlements': () => Response.json(ent('pro', [{ ...SUB, cancel_at_period_end: cancelled }])),
+        'POST /v1/me/subscriptions/sub-1/cancel': () => { cancelled = true; return Response.json({ status: 'requested' }, { status: 202 }); },
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Hủy gói' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Hủy gói?' })).getByRole('button', { name: 'Hủy gia hạn' }));
+    const line = await screen.findByText('Gói kết thúc ngày 12/11/2026');
+    await waitFor(() => expect(line).toHaveFocus());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('B8E36: a 409 subscription-not-cancellable shows its text and the row is read again', async () => {
     renderApp(<><PlansPage /><ToastRegion /></>, {
       routes: {
