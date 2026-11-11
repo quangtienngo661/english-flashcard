@@ -38,6 +38,28 @@ Giao diện web cũ được cất trong tag `archive/giao-dien-cu-2026-11`, com
 | member: /welcome | `apps/web/src/app/[locale]/app/(member)/welcome/page.app.tsx` | `apps/web/src/features/learner/auth/WelcomeLanguage.tsx` |
 | member: /word | `apps/web/src/app/[locale]/app/(member)/word/page.app.tsx` | `apps/web/src/features/learner/word/WordPage.tsx` |
 
+## Trang công khai (route → component chính)
+
+Thêm ở M8.3 (11/11/2026, M8 code C §5.2): trang chủ, ba trang văn bản, 404 và layout của nhóm `(site)`, đều có trong tag.
+
+| Trang | Route | Component |
+|---|---|---|
+| Trang chủ | `apps/web/src/app/[locale]/(site)/page.tsx` | `apps/web/src/components/landing/*` (`Hero`, `AppShowcase`, `WhyForget`, `ExercisesSection`, `ReviewTiming`, `MetOutside`, `Plans`, `Faq`, `FinalCta`) |
+| Chính sách bảo mật | `apps/web/src/app/[locale]/(site)/privacy/page.tsx` | `apps/web/src/components/sections/LegalDocument.tsx`, `LegalDraft.tsx` |
+| Điều khoản sử dụng | `apps/web/src/app/[locale]/(site)/terms/page.tsx` | `apps/web/src/components/sections/LegalDocument.tsx`, `LegalDraft.tsx` |
+| Nguồn dữ liệu | `apps/web/src/app/[locale]/(site)/sources/page.tsx` | `apps/web/src/components/sections/SourcesList.tsx` |
+| 404 | `apps/web/src/app/[locale]/(site)/not-found.tsx`, `apps/web/src/app/[locale]/(site)/[...rest]/page.tsx` | (trong file) |
+| Layout trang công khai | `apps/web/src/app/[locale]/(site)/layout.tsx` | `apps/web/src/components/landing/LandingHeader.tsx`, `apps/web/src/components/layout/SiteFooter.tsx`, `SkipLink.tsx`, `apps/web/src/components/seo/JsonLd.tsx` |
+
+## File gốc của web (layout gốc, ảnh chia sẻ, icon, CSS)
+
+- `apps/web/src/app/[locale]/layout.tsx`
+- `apps/web/src/app/[locale]/opengraph-image.tsx` (và `og-fonts.generated.ts`, `og-fonts.test.ts`)
+- `apps/web/src/app/apple-icon.tsx`
+- `apps/web/src/app/icon.svg`
+- `apps/web/src/app/manifest.ts`
+- `apps/web/src/app/globals.css`
+
 ## Layout
 
 - `apps/web/src/app/[locale]/app/layout.app.tsx`

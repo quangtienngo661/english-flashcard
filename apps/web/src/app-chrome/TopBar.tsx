@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AvatarMenu } from './AvatarMenu';
-import { AppLogo } from './Logo';
+import { AppLogo } from '@/ui/Logo';
 import { currentTab, TABS } from './nav';
 import { PlanChipLink } from './PlanChip';
 import { TopSearch } from './TopSearch';

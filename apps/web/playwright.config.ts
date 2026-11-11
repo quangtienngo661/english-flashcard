@@ -28,6 +28,8 @@ export default defineConfig({
       NEXT_PUBLIC_AUDIO_BASE_URL: 'http://localhost:3000/v1/dev/audio',
       // Cloudflare's test site key (always passes): the form tests get a stub script from mockApi(), E23 loads the real widget.
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+      // M8.3: the e2e build never reads the API for the landing's prices and FAQ; the home page shows the fallback (M8 Review Focus 1).
+      LANDING_DATA_SOURCE: 'fallback',
       CLOUDFLARE_CF_FETCH_PATH: fileURLToPath(new URL('./.wrangler/e2e-cf.json', import.meta.url)),
     },
   },

@@ -1,4 +1,4 @@
-import { Logo } from '@/app-chrome/Logo';
+import { AppLogo } from '@/ui/Logo';
 import { Container } from '@/components/ui/Container';
 import type { AppLocale } from '@/i18n/routing';
 import { site } from '@/lib/site';
@@ -18,7 +18,7 @@ export function SiteFooter({
     <footer className="bg-surface">
       <Container className="flex flex-col gap-5 py-8 md:py-10">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <Logo tone="surface" />
+          <AppLogo />
           <ul className="flex flex-wrap gap-x-6">
             <li>
               <a href={`/${locale}#goi`} className={link}>

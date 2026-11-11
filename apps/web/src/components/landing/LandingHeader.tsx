@@ -1,5 +1,5 @@
-import { Logo } from '@/app-chrome/Logo';
-import { ThemeToggleButton } from '@/app-chrome/ThemeToggle';
+import { AppLogo } from '@/ui/Logo';
+import { ThemeToggleButton } from '@/site/layout/ThemeToggle';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Container } from '@/components/ui/Container';
 import type { AppLocale } from '@/i18n/routing';
@@ -14,7 +14,7 @@ export function LandingHeader({ copy, locale }: { copy: LandingCopy['nav']; loca
     <header className="sticky top-0 z-40 bg-navy text-on-navy">
       <Container className="flex h-16 items-center justify-between gap-4">
         <a href={`/${locale}`} className="shrink-0 rounded-control outline-none focus-visible:ring-2 focus-visible:ring-accent">
-          <Logo />
+          <AppLogo />
         </a>
         <nav aria-label={copy.label} className="hidden items-center gap-1.5 lg:flex">
           <a href={`/${locale}#tinh-nang`} className={anchor}>

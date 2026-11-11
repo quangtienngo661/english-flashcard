@@ -35,6 +35,12 @@ describe('periodOffer and bestPeriod (M7 Figma B §1.3)', () => {
     expect(bestPeriod(flat)).toBeNull();
   });
 
+  it('an admin sets 3 months above 3 × the monthly price (M8 Review Focus 3): no struck price, no saving pill', () => {
+    const prices = { '1': 79000, '3': 240000, '12': 599000 };
+    expect(periodOffer(prices, '3')).toEqual({ price: 240000, struck: null, saving: null, perMonth: 80000 });
+    expect(periodOffer(prices, '12')).toEqual({ price: 599000, struck: 948000, saving: 37, perMonth: 49900 });
+  });
+
   it('the monthly price rounds to the nearest 100 (66.350 → 66.400)', () => {
     expect(periodOffer({ '1': 100000, '3': 199050, '12': 900000 }, '3').perMonth).toBe(66400);
   });

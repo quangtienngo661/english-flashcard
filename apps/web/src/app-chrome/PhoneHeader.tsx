@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { AvatarMenu } from './AvatarMenu';
-import { AppLogo } from './Logo';
+import { AppLogo } from '@/ui/Logo';
 
 /** Figma "Thanh trên app/Mobile" (54:503), below 768 px: logo, a search button to Tra từ, the avatar. */
 export function PhoneHeader() {
