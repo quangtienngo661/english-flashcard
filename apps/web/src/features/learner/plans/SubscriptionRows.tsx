@@ -1,6 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
@@ -8,25 +9,28 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { ENTITLEMENTS_KEY, type Entitlements } from '@/app-shell/queries';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
+import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
 import { isAutoRenewing, subscriptionsOf } from './auto-renewing';
 
 type Source = Entitlements['sources'][number];
 
 /**
  * Design §8.2: one row per subscription the learner has. Renewing: "Gia hạn ngày …" and [Hủy gói]; cancelled: "Gói kết thúc ngày …".
- * A plan a staff member granted is not a subscription and has no button (it does not renew).
+ * A plan a staff member granted is not a subscription and has no button (it does not renew). Only the fake provider makes subscriptions
+ * today (payOS sells prepaid periods), so Figma has no frame: the rows and the dialog follow the M3 confirm dialogs (giao diện mới M7.9).
  */
 export function SubscriptionRows({ sources }: { sources: Source[] }) {
   const t = useTranslations('App.plans.subscriptions');
   const subscriptions = subscriptionsOf(sources);
   if (subscriptions.length === 0) return null;
   return (
-    <section aria-label={t('title')} className="flex w-full max-w-4xl flex-col gap-2">
-      <h2 className="text-caption font-semibold text-muted">{t('title')}</h2>
-      <ul className="divide-y divide-border rounded-card border border-border bg-surface px-4 md:px-5">
+    <section aria-label={t('title')} className="flex w-full flex-col gap-2">
+      <h2 className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('title')}</h2>
+      <ul className="flex flex-col gap-3">
         {subscriptions.map((source) => (
           <SubscriptionRow key={source.id} source={source} />
         ))}
@@ -45,7 +49,7 @@ function SubscriptionRow({ source }: { source: Source }) {
   const [requested, setRequested] = useState(false);
   const renewing = isAutoRenewing(source);
   const end = source.renews_at ?? source.ends_at;
-  const endText = end ? format.date(new Date(end), 'full') : null;
+  const endText = end ? format.date(new Date(end), 'numeric') : null;
 
   // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same write.
   const cancel = useSubmitOnce(async (key) => {
@@ -73,12 +77,12 @@ function SubscriptionRow({ source }: { source: Source }) {
   else line = endText ? t('endsOn', { date: endText }) : t('ends');
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-4">
-      <span className="text-ui font-semibold text-ink">{line}</span>
+    <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4">
+      <span className="font-wm-sans text-wm-small-strong text-wm-ink">{line}</span>
       {renewing && !requested && (
-        <Button variant="quiet" onPress={() => setOpen(true)}>
+        <TextButton tone="delete" onPress={() => setOpen(true)}>
           {t('cancel')}
-        </Button>
+        </TextButton>
       )}
       {open && (
         <Dialog
@@ -88,18 +92,22 @@ function SubscriptionRow({ source }: { source: Source }) {
           title={t('dialogTitle')}
           footer={
             <>
-              <Button variant="quiet" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
+              <Button variant="secondary" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
                 {t('keep')}
               </Button>
-              <Button variant="sticker" onPress={() => void confirm()} isPending={cancel.busy}>
+              <Button variant="danger" onPress={() => void confirm()} isPending={cancel.busy}>
                 {t('confirm')}
               </Button>
             </>
           }
         >
-          <p className="text-body text-ink">{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</p>
+          {/* The M3 confirm dialogs (Figma "Xác nhận xóa" 121:4597): what the learner gives up in a fail-soft block. */}
+          <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+            <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
+            <span>{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</span>
+          </p>
         </Dialog>
       )}
-    </li>
+    </Card>
   );
 }
