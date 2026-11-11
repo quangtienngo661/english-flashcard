@@ -11,13 +11,24 @@ export function nextHcmMidnight(now = new Date()): string {
 /**
  * A Free account has the monthly AI allowance since launch prep A (15 questions and 5 lookups, 3 and 0 used); `freeAi: false` is a Free
  * account whose AI the admin switched off (both numbers 0): the pools are empty and both AI features say plan-required.
+ * M7.13: `ads` (the house ad switch), `pro_until` and `sources` are left out unless given, as before.
  */
-export function entitlementsBody(plan: Plan, { freeAi = true }: { freeAi?: boolean } = {}) {
+export function entitlementsBody(
+  plan: Plan,
+  { freeAi = true, ads, pro_until, sources = [] }: {
+    freeAi?: boolean;
+    ads?: { show: boolean; interstitial_per_day: number; min_interval_minutes: number };
+    pro_until?: string | null;
+    sources?: Array<Record<string, unknown>>;
+  } = {},
+) {
   const later = new Date(Date.now() + 23 * 86_400_000).toISOString();
   const noAi = plan === 'free' && !freeAi;
   return {
     plan,
-    sources: [],
+    sources,
+    ...(ads !== undefined ? { ads } : {}),
+    ...(pro_until !== undefined ? { pro_until } : {}),
     pools: {
       practice_sessions: pool(plan === 'free' ? 3 : 30, 1, nextHcmMidnight()),
       ai_practice: noAi ? pool(0, 0, null) : plan === 'free' ? pool(15, 3, later) : pool(300, 13, later),

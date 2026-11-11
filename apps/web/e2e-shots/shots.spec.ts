@@ -66,6 +66,10 @@ test('milestone screenshots', async ({ page }) => {
     await gmM7a(page);
     return;
   }
+  if (MILESTONE === 'gm-m7b') {
+    await gmM7b(page);
+    return;
+  }
   for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
@@ -354,6 +358,71 @@ async function gmM7a(page: Page) {
     await expect(page.getByRole('dialog')).toBeVisible();
     await shoot(page, 'transaction-detail', false, [width]);
     await page.keyboard.press('Escape');
+  }
+}
+
+/**
+ * M7b (Figma 123:4196 / 123:4401 Gói học, 123:4598 / 123:4690 Đơn hàng paid, 123:4774 its other states, 75:2094 / 75:2373 Giới thiệu Pro) on a
+ * learner made with `learner:setup --plan trial` (a fake subscription that renews, so Gói học has its Hủy gói row; the dialog has no frame).
+ * No seed makes a payOS order or turns ads on, so `/v1/me/orders/*` is answered here and `/v1/me/entitlements` is the API's own answer with
+ * `plan`, `pro_until`, `sources` or `ads` changed (`page.route`).
+ */
+async function gmM7b(page: Page) {
+  const widths = [390, 1440];
+  const api = process.env.SHOTS_API_URL ?? 'http://localhost:3000';
+  const cors = { 'access-control-allow-origin': new URL(process.env.SHOTS_BASE_URL ?? 'http://localhost:3001').origin, 'access-control-allow-credentials': 'true' };
+  let patch: Record<string, unknown> = {};
+  await page.route(`${api}/v1/me/entitlements`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), ...patch } });
+  });
+  const ORDER = '7b3c9e1a-4d2f-4c8b-9a6e-2f1d0c5b8a73';
+  let status = 'paid';
+  const order = () => ({
+    id: ORDER, status, period_months: 3, amount: 199000, description: 'WM 3T 8F2C41D9', expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+    period: status === 'paid' ? { starts_at: new Date().toISOString(), ends_at: new Date(Date.now() + 92 * 86_400_000).toISOString() } : null,
+  });
+  await page.route(`${api}/v1/me/orders/**`, (route) =>
+    route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-methods': 'GET,POST', 'access-control-allow-headers': 'authorization,content-type,x-csrf-protection' } })
+      : route.fulfill({ headers: cors, json: order() }));
+
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+
+  patch = { plan: 'free', sources: [], pro_until: null, upcoming_periods: [] };
+  await page.goto('/vi/app/plans');
+  await settle(page);
+  await shoot(page, 'plans-free', true, widths);
+  patch = {};
+  await page.goto('/vi/app/plans');
+  await settle(page);
+  await shoot(page, 'plans-pro', true, widths);
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.getByRole('button', { name: 'Hủy gói' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await shoot(page, 'plans-cancel-dialog', false, [width]);
+    await page.keyboard.press('Escape');
+  }
+  for (const [state, title] of [['paid', 'Thanh toán thành công'], ['pending', 'Đang chờ xác nhận thanh toán']] as const) {
+    status = state;
+    await page.goto(`/vi/app/plans/order?order=${ORDER}`);
+    await settle(page, page.getByRole('heading', { level: 1, name: title }));
+    await shoot(page, `order-${state}`, true, widths);
+  }
+  patch = { plan: 'free', sources: [], pro_until: null, ads: { show: true, interstitial_per_day: 100, min_interval_minutes: 0 } };
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app');
+    await settle(page, page.getByRole('navigation', { name: 'Điều hướng chính' }));
+    await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhóm' }).click();
+    await expect(page.getByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeVisible();
+    await shoot(page, 'pro-dialog', false, [width]);
   }
 }
 

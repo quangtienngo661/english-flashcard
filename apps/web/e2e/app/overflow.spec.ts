@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { LONG } from '../support/fixtures';
-import { mockApi, problem, signedInAs } from '../support/mock-api';
+import { mockApi, ORDER_ID, orderApi, problem, signedInAs } from '../support/mock-api';
 
 // Review Focus 2: long content never makes the page scroll sideways (390 px in the mobile project, 1440 in desktop).
 async function noSideScroll(page: Page) {
@@ -31,6 +31,16 @@ for (const locale of ['vi', 'en'] as const) {
     for (const path of ['/settings/delete-account', '/settings/transactions']) {
       await page.goto(`/${locale}/app${path}`);
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+      await noSideScroll(page);
+    }
+  });
+
+  // M7.13: Gói học of a Free learner and a paid order page (its rows hold the plan, the amount and the order code).
+  test(`no horizontal scroll on Gói học and Đơn hàng with long names (${locale})`, async ({ page }) => {
+    await signedInAs(page, 'free', orderApi(), { ...longMe, native_language: locale });
+    for (const [path, title] of [['/plans', /./], [`/plans/order?order=${ORDER_ID}`, /^(Thanh toán thành công|Payment received)$/]] as const) {
+      await page.goto(`/${locale}/app${path}`);
+      await expect(page.getByRole('heading', { level: 1, name: title }).first()).toBeVisible();
       await noSideScroll(page);
     }
   });
