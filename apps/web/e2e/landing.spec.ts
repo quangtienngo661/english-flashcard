@@ -234,6 +234,27 @@ test.describe('LR26 without JavaScript', () => {
   });
 });
 
+test.describe('M8 review I2: the page shows when React never runs', () => {
+  // R249: the head script adds `js` (the blocks below the hero wait hidden for React), then takes it back after 3000 ms if React has not
+  // marked the page `wm-live`. Blocking every chunk stands in for a slow network or a chunk refused by SRI.
+  test('with every JavaScript chunk blocked, no text of the home page is see-through after 3 s', async ({ page }) => {
+    const blocked: string[] = [];
+    await page.route('**/_next/static/chunks/**', (route) => {
+      blocked.push(route.request().url());
+      return route.abort();
+    });
+    await page.goto('/vi');
+    // Controls: the inline head script ran and hid the blocks, and the chunks were refused, so React never marks the page live.
+    expect(await page.evaluate(() => document.documentElement.classList.contains('js'))).toBe(true);
+    expect(blocked.length).toBeGreaterThan(0);
+    await page.waitForTimeout(3500);
+    expect(await page.evaluate(() => document.documentElement.classList.contains('wm-live'))).toBe(false);
+    const { checked, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(out).toEqual([]);
+  });
+});
+
 test.describe('LR27 axe on the states a visitor opens', () => {
   // LP25 in a11y.spec.ts scans every public page as it loads; these are the states behind a click.
   for (const scheme of ['light', 'dark'] as const) {
