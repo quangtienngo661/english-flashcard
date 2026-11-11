@@ -60,6 +60,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Chỗ 24: chụp ảnh thật màn khung xương lúc tải.
 
 **Chỗ bổ sung:**
+- Bỏ JetBrains Mono (12/11, phản hồi người dùng không thích). Nhãn nhỏ, số đếm, phím tắt, IPA dùng Noto Sans; tiêu đề, từ lớn, số lớn giữ Bricolage Grotesque. Nguồn: báo cáo `docs/preparation/reports/Tiêu chí UI app tiếng Anh.md` và artifact "Phép thử giao diện Wordmet" `1q2VNZqNDPCeLATg8rnSb9` (Noto Sans đạt T1–T5, có số tabular sẵn). Trong code: thay token font mono của `wm-` và mọi chỗ dùng nó (đợt polish).
 - Góc bo theo kích cỡ, mức C: phím tắt, nhãn 4–5 px; nút, ô nhập, chip 8; dòng danh sách, menu 10; card 14; hộp thoại, thẻ Học 16 (viết bằng `rem`). Bên trong luôn bo ít hơn khung chứa.
 - Panel "Chưa đúng" (Phiên luyện, Ôn): khoảng cách đều; đáp án nổi bật, không còn nằm nhỏ ở góc phải.
 - Ô "Gợi ý 1/2": căn lại theo một lưới (cột số, nội dung, nút "Mở gợi ý", chấm tiến độ).
