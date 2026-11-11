@@ -51,7 +51,8 @@ function fakePrisma() {
       return { count: hit.length };
     },
   };
-  return { prisma: { landingFaqItem }, rows };
+  const prisma = { landingFaqItem, $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn(prisma) };
+  return { prisma, rows };
 }
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';

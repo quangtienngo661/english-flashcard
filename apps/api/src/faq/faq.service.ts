@@ -58,13 +58,17 @@ export class FaqService {
   /** Optimistic lock: the write matches only the version the admin opened; otherwise 404 or 409 `faq-version-conflict`. */
   async update(id: string, actorId: string, body: UpdateFaqBody): Promise<AdminFaqItem> {
     const { expected_version: expectedVersion, ...fields } = body;
-    const { count } = await this.prisma.landingFaqItem.updateMany({
-      where: { id, rowVersion: expectedVersion },
-      data: { ...fields, rowVersion: { increment: 1 }, updatedBy: actorId, updatedAt: this.clock.now() },
+    // One transaction, so the row read back is this write's result, not a later edit or delete that slipped in between.
+    const row = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.landingFaqItem.updateMany({
+        where: { id, rowVersion: expectedVersion },
+        data: { ...fields, rowVersion: { increment: 1 }, updatedBy: actorId, updatedAt: this.clock.now() },
+      });
+      const found = await tx.landingFaqItem.findUnique({ where: { id } });
+      if (!found) throw notFound();
+      if (count === 0) throw problem(409, 'faq-version-conflict', 'The item changed since you opened it');
+      return found;
     });
-    const row = await this.prisma.landingFaqItem.findUnique({ where: { id } });
-    if (!row) throw notFound();
-    if (count === 0) throw problem(409, 'faq-version-conflict', 'The item changed since you opened it');
     return this.view(row, await this.emailsOf([row]));
   }
 
