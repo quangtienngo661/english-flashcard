@@ -108,6 +108,11 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the home page faq slug has a message of its own', () => {
+    expect(KNOWN_ERROR_SLUGS).toContain('faq-version-conflict');
+    expect(errorMessageKey(problem({ slug: 'faq-version-conflict', status: 409 }))).toBe('errors.faq-version-conflict');
+  });
+
   it('the judge and cap slugs each have a message of their own', () => {
     for (const slug of ['judge-provider', 'judge-revision-conflict', 'judge-pass-running', 'admin-usd-cap', 'model-price-missing']) {
       expect(KNOWN_ERROR_SLUGS).toContain(slug);

@@ -23,6 +23,7 @@
     "example-not-held-out": "This example is no longer held-out. The list was reloaded.",
     "expected-invalid": "The expected answer is not valid.",
     "export-too-large": "Too many rows to export, narrow the filters",
+    "faq-version-conflict": "Someone else just edited this question. Reload and try again.",
     "few-shot-invalid": "A few-shot example breaks the rules.",
     "file-invalid": "The file is not valid",
     "file-too-large": "The file is too large (10 MB maximum)",
@@ -166,6 +167,7 @@
     "aiCalls": "Calls",
     "settings": "System settings",
     "legal": "Policies & terms",
+    "faq": "Home page FAQ",
     "staff": "Roles & staff"
   },
   "session": {
@@ -2824,6 +2826,43 @@
       "created": "Draft {number} created.",
       "published": "Version {number} published.",
       "deleted": "Draft {number} deleted."
+    }
+  },
+  "faq": {
+    "banner": "The home page shows only published questions, and updates after the next web deploy.",
+    "add": "Add question",
+    "edit": "Edit",
+    "editFor": "Edit question: {question}",
+    "delete": "Delete",
+    "deleteFor": "Delete question: {question}",
+    "cols": {
+      "position": "Order",
+      "question": "Question",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "empty": "There are no questions yet.",
+    "emptyHint": "Published questions show on the home page.",
+    "newTitle": "Add a question",
+    "editTitle": "Edit a question",
+    "form": {
+      "question": "Question",
+      "answer": "Answer",
+      "position": "Order",
+      "positionHint": "Smaller numbers come first.",
+      "published": "Publish on the home page",
+      "save": "Save",
+      "questionInvalid": "Enter a question of up to 300 characters.",
+      "answerInvalid": "Enter an answer of up to 2,000 characters.",
+      "positionInvalid": "Enter a whole number from 0 to 10,000."
+    },
+    "deleteDialog": {
+      "title": "Delete this question?",
+      "confirm": "Delete"
     }
   }
 }
