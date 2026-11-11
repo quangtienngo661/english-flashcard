@@ -70,6 +70,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Card nhóm chỉ hiện số từ ("48 từ"), bỏ "đã thuộc".
 - Hôm nay, khối "Lần luyện gần nhất": bỏ dòng "Sai: …".
 - Danh sách chọn nhóm (hộp Thêm từ): bỏ radio, dòng đang chọn nhuộm màu nhóm. Chốt cách B (12/11): chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, dấu ✓ cuối dòng.
+- Lưu một từ vào **nhiều nhóm** cùng lúc (12/11): bấm dòng để bật tắt, cuối hộp ghi "Đã chọn n nhóm" và nút "Lưu vào n nhóm"; ô "Lưu vào nhóm" trong hộp Thêm từ hiện các nhóm đã chọn thành chip màu nhóm. Dữ liệu đã cho phép (bảng `group_items` nhiều–nhiều, `ItemState.group_ids[]`), nhưng `POST` thêm nhanh (`quick-add.controller.ts:19`) chỉ nhận một `group_id`: cần thêm trường `group_ids` (chỉ thêm, không đổi v1) hoặc web gọi thêm `POST /v1/groups/:id/items` cho các nhóm còn lại. Chốt cách làm khi viết plan.
 - Box "Chưa đúng": chế độ tối dùng cam san hô như dòng nhóm đang chọn (nền `#e5603f` 16% trên card, viền 1,5 px 55%, tiêu đề `#e87052`); chế độ sáng giữ đỏ đậm của token `fail` (nền 9%, viền 62%).
 - Học: nút đóng phiên là dấu X (không còn "Đóng phiên ôn Esc"). Ba nút theo mẫu chủ dự án gửi: "← Cần ôn lại [1]" viền đỏ, "↻ Lật thẻ [Space]" nền nhấn, "✓ Đã biết [2] →" nền xanh lá; mờ khi chưa lật; dưới nút có hàng chú thích phím (Space, 1/←, 2/→, Esc) trên máy tính.
 - Trang một từ: cụm phát âm UK/US và dạng chia nằm giữa hai đường kẻ, tách khỏi tiêu đề phía trên và tab phía dưới; UK và US đứng gần nhau.

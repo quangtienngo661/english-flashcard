@@ -382,6 +382,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
 .mini i:nth-child(2){background:var(--surface);border:2px solid var(--g)}
 .gp .r.sel .mini i:nth-child(1){transform:rotate(-14deg) translate(-4px,3px)}
 .gp .r.sel .mini i:nth-child(2){transform:translateY(-3px)}
+.gchip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:var(--r-ctl);background:var(--g-wash);color:var(--g-ink);font-size:.8125rem;font-weight:600}
+.gchip .dot{width:8px;height:8px;border-radius:2px}
 .gp.optA .r .sq{width:12px;height:12px;border-radius:3px;background:var(--g)}
 .gp.optA .r.sel{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--g) 55%,transparent)}
 
@@ -698,7 +700,7 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     <div class="row" id="dialogs">
       <figure><figcaption>Thêm từ, hộp 1</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-add"></div></figure>
       <figure><figcaption>Chọn nhóm, cách A (không chọn): nhuộm màu nhóm, dấu ✓</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickA"></div></figure>
-      <figure><figcaption>Chọn nhóm, cách B (đã chọn 12/11): chồng thẻ nhỏ nhấc lên</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickB"></div></figure>
+      <figure><figcaption>Chọn nhóm, cách B (đã chọn 12/11): chồng thẻ nhỏ nhấc lên; chọn được nhiều nhóm, bấm dòng để bật tắt</figcaption><div class="phone wm mesh" style="height:844px" id="dlg-pickB"></div></figure>
     </div>
     <figure><figcaption>Thêm từ, hộp 4 (Tra bằng AI) trên máy tính: cột trái ô nhập và kết quả, cột phải thẻ xem trước ngay đầu hộp (chỗ 23)</figcaption>
       <div class="desk" data-h="660"><div class="wm mesh" id="dlg-ai"></div></div>
@@ -1291,7 +1293,8 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
     '<div class="field"><label>Từ</label><div class="input focus">went</div></div><div class="field"><label>Câu bạn gặp <span class="mut" style="font-weight:400">(không bắt buộc)</span></label><div class="input">She went to the market before sunrise.</div></div>' +
     '<p class="sm"><span class="tw">went</span> → <b>go</b> <span class="mut">· quá khứ của go</span></p>' +
     '<div class="opts"><div class="opt sel"><span class="radio"></span><div><b>go</b> <span class="mono mut">verb, A1</span><div class="sm mut">đi, di chuyển tới nơi khác</div></div></div><div class="opt"><span class="radio"></span><div><b>go</b> <span class="mono mut">noun, B2</span><div class="sm mut">lượt, lần thử</div></div></div></div>' +
-    '<div class="field"><label>Lưu vào nhóm</label><div class="input g0" style="display:flex;align-items:center;gap:10px"><span class="dot"></span>Đề 12 · Writing<span style="margin-left:auto;color:var(--muted)">' + ico('chd', 's') + '</span></div></div>' +
+    '<div class="field"><label>Lưu vào nhóm</label><div class="input" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px">' +
+    '<span class="gchip g0"><span class="dot"></span>Đề 12 · Writing</span><span class="gchip g1"><span class="dot"></span>Đề 9 · Listening</span><span style="margin-left:auto;color:var(--muted)">' + ico('chd', 's') + '</span></div></div>' +
     '<div class="ft"><button class="btn b-ghost" type="button" style="color:var(--muted)">Hủy</button><button class="btn b-pri" type="button">Lưu</button></div></div></div>';
   var PGROUPS = [['g0', 'Đề 12 · Writing', 48], ['g1', 'Đề 9 · Listening', 40], ['g2', 'Đề 14 · Reading', 36], ['g4', 'Đề 11 · Speaking', 30], ['g5', 'Cảm xúc', 12], ['gE', 'Du lịch Nhật', 0]];
   function picker(kind) {
@@ -1299,17 +1302,24 @@ figcaption{font-size:.8125rem;color:var(--page-muted)}
       return '<div class="r ' + g[0] + (sel ? ' sel' : '') + '" data-i="' + i + '">' + (kind === 'A' ? '<span class="sq"></span>' : '<span class="mini"><i></i><i></i></span>') +
         '<span class="nm">' + g[1] + '</span><span class="ct">' + g[2] + ' từ</span><svg class="ico ck"><use href="#i-check"/></svg></div>';
     };
-    return '<div class="scrim"><div class="dlg" style="gap:10px"><div class="dh"><h4>Lưu vào nhóm</h4><span class="xbtn">' + ico('x', 's') + '</span></div>' +
+    // Several groups can be picked (owner 12/11): rows toggle, the footer counts them and saves to all.
+    return '<div class="scrim"><div class="dlg" style="gap:10px"><div class="dh"><div style="margin-right:auto"><h4>Lưu vào nhóm</h4><p class="cap" style="margin-top:2px">Chọn được nhiều nhóm.</p></div><span class="xbtn">' + ico('x', 's') + '</span></div>' +
       '<div class="search" style="flex:none;margin:0;height:44px">' + ico('search', 's') + 'Tìm nhóm</div><div class="gp opt' + kind + '"><div class="sec">Dùng gần đây</div>' + row(PGROUPS[0], true, 0) +
-      '<div class="sec">Tất cả nhóm (6), A–Z</div>' + PGROUPS.slice(1).map(function (g, i) { return row(g, false, i + 1); }).join('') + '</div>' +
-      '<button class="btn b-ghost" type="button" style="align-self:flex-start;padding:0">' + ico('plus', 's') + 'Tạo nhóm mới</button></div></div>';
+      '<div class="sec">Tất cả nhóm (6), A–Z</div>' + PGROUPS.slice(1).map(function (g, i) { return row(g, i === 0, i + 1); }).join('') + '</div>' +
+      '<button class="btn b-ghost" type="button" style="align-self:flex-start;padding:0">' + ico('plus', 's') + 'Tạo nhóm mới</button>' +
+      '<div class="ft" style="border-top:1px solid var(--line);padding-top:12px"><span class="cap gp-count" style="margin-right:auto">Đã chọn 2 nhóm</span><button class="btn b-ghost" type="button" style="color:var(--muted)">Hủy</button><button class="btn b-pri gp-save" type="button">Lưu vào 2 nhóm</button></div></div></div>';
   }
   $('dlg-pickA').innerHTML = ptop() + behind + picker('A');
   $('dlg-pickB').innerHTML = ptop() + behind + picker('B');
   document.querySelectorAll('.gp').forEach(function (gp) {
     gp.addEventListener('click', function (e) {
       var r = e.target.closest('.r'); if (!r) return;
-      gp.querySelectorAll('.r').forEach(function (x) { x.classList.toggle('sel', x === r); });
+      r.classList.toggle('sel');
+      var n = gp.querySelectorAll('.r.sel').length, dlg = gp.closest('.dlg');
+      dlg.querySelector('.gp-count').textContent = n ? 'Đã chọn ' + n + ' nhóm' : 'Chưa chọn nhóm nào';
+      var save = dlg.querySelector('.gp-save');
+      save.textContent = n ? 'Lưu vào ' + n + ' nhóm' : 'Lưu';
+      save.setAttribute('aria-disabled', String(!n)); save.style.opacity = n ? '' : '.5';
     });
   });
   $('dlg-ai').innerHTML = topbar('Hôm nay') + '<div class="scrim mid" style="top:64px"><div class="dlg" style="width:720px;padding:26px"><div class="dh"><h4>Bạn vừa gặp từ nào?</h4><span class="xbtn">' + ico('x', 's') + '</span></div>' +
