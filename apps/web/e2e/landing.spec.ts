@@ -428,3 +428,30 @@ test.describe('LR30 no waitlist', () => {
     expect(sent).toEqual([]);
   });
 });
+
+// Found in M8.9: a server component that imports BUTTON_BASE from the 'use client' Button module gets a client reference, not the string,
+// so every ButtonLink of the public pages (all server-rendered) lost its button classes and showed as plain text (R240).
+test.describe('M8 the public pages draw their button links as buttons', () => {
+  const expectButton = async (link: import('@playwright/test').Locator, variant: 'primary' | 'secondary') => {
+    await expect(link).toHaveCSS('display', 'inline-flex');
+    await expect(link).toHaveCSS('min-height', '44px');
+    // Primary is filled with the accent; secondary with the surface: neither is transparent.
+    await expect(link).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(link).toHaveAttribute('data-variant', variant);
+  };
+
+  test('the header, hero, plans, final card, 404 and legal help box', async ({ page }) => {
+    await page.goto('/vi');
+    await expectButton(page.getByRole('banner').getByRole('link', { name: N.login, exact: true }), 'secondary');
+    await expectButton(page.getByRole('banner').getByRole('link', { name: N.signup, exact: true }), 'primary');
+    const main = page.getByRole('main');
+    await expectButton(main.getByRole('region', { name: HERO_TITLE }).getByRole('link', { name: L.hero.signup }), 'primary');
+    await expectButton(main.getByRole('link', { name: L.hero.howTo }), 'secondary');
+    await expectButton(main.getByRole('link', { name: L.plans.proSignup, exact: true }), 'primary');
+    await expectButton(main.getByRole('region', { name: L.final.title }).getByRole('link', { name: L.final.signup }), 'primary');
+    await page.goto('/vi/khong-ton-tai');
+    await expectButton(page.getByRole('link', { name: copy.vi.NotFound.home }), 'primary');
+    await page.goto(`${PUBLISHED}/vi/privacy`);
+    await expectButton(page.getByRole('region', { name: copy.vi.Legal.privacyHelpTitle }).getByRole('link'), 'primary');
+  });
+});
