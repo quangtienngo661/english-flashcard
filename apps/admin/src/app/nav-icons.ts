@@ -13,6 +13,7 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
+  MessageCircleQuestion,
   MessageSquareText,
   Receipt,
   Scale,
@@ -57,5 +58,6 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   '/ai/calls': History,
   '/settings': Settings,
   '/legal': Scale,
+  '/faq': MessageCircleQuestion,
   '/staff': ShieldUser,
 };

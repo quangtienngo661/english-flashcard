@@ -1,0 +1,17 @@
+// Questions and answers of the home page (giao diện mới §10.7), written by an admin. Only published items reach `GET /v1/public/faq`,
+// ordered by `position`, then creation time. `created_by` / `updated_by` are NULL for the items the migration seeded.
+model LandingFaqItem {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  position   Int
+  question   String
+  answer     String
+  published  Boolean  @default(false)
+  rowVersion Int      @default(1) @map("row_version")
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime @map("created_at") @db.Timestamptz
+  updatedBy  String?  @map("updated_by") @db.Uuid
+  updatedAt  DateTime @map("updated_at") @db.Timestamptz
+
+  @@index([published, position])
+  @@map("landing_faq_items")
+}

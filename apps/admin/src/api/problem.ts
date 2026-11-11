@@ -66,6 +66,7 @@ export const KNOWN_ERROR_SLUGS = [
   'example-not-held-out',
   'expected-invalid',
   'export-too-large',
+  'faq-version-conflict',
   'few-shot-invalid',
   'file-invalid',
   'file-too-large',
