@@ -76,7 +76,7 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Lưu một từ vào **nhiều nhóm** cùng lúc (12/11): bấm dòng để bật tắt, cuối hộp ghi "Đã chọn n nhóm" và nút "Lưu vào n nhóm"; ô "Lưu vào nhóm" trong hộp Thêm từ hiện các nhóm đã chọn thành chip màu nhóm. Dữ liệu đã cho phép (bảng `group_items` nhiều–nhiều, `ItemState.group_ids[]`), nhưng `POST` thêm nhanh (`quick-add.controller.ts:19`) chỉ nhận một `group_id`: cần thêm trường `group_ids` (chỉ thêm, không đổi v1) hoặc web gọi thêm `POST /v1/groups/:id/items` cho các nhóm còn lại. Chốt cách làm khi viết plan.
 - Box "Chưa đúng": chế độ tối dùng cam san hô như dòng nhóm đang chọn (nền `#e5603f` 16% trên card, viền 1,5 px 55%, tiêu đề `#e87052`); chế độ sáng giữ đỏ đậm của token `fail` (nền 9%, viền 62%).
 - Nhãn nhỏ và chip viết hoa chữ đầu ("Fill in the blank", "AI sentence", "Studying", "Hôm nay"…), không viết thường toàn bộ như kiểu nhãn mono cũ. Trong code viết thẳng chữ hoa trong file chữ, không dùng CSS.
-- Trong phiên (Học, Phiên luyện, Ôn) mọi chữ giao diện là tiếng Anh, không chỉ câu hỏi: nút (Still learning, Flip card, Know, Next, Review again), nhãn (answer, Hint 1 of 2, Definition, Level n), thông báo, tổng kết. Giữ tiếng Việt cho nội dung học: nghĩa tiếng Việt, câu dịch, câu hỏi theo nghĩa ở Ôn, tên nhóm (`ASSUMPTION`, chờ chủ dự án xác nhận). Nút X đóng phiên 32 px.
+- Trong phiên (Học, Phiên luyện, Ôn) mọi chữ giao diện là tiếng Anh, không chỉ câu hỏi: nút (Still learning, Flip card, Know, Next, Review again), nhãn (answer, Hint 1 of 2, Definition, Level n), thông báo, tổng kết. Giữ tiếng Việt cho nội dung học: nghĩa tiếng Việt, câu dịch, câu hỏi theo nghĩa ở Ôn, tên nhóm (chủ dự án xác nhận 12/11: "giữ nha"). Nút X đóng phiên 32 px.
 - Học: nút đóng phiên là dấu X (không còn "Đóng phiên ôn Esc"). Chồng thẻ đặt cao hơn (cách thanh đầu khoảng 20 px), thông báo chuỗi ngày nằm góc phải dưới nút X. Ba nút cao 40 px, chữ 14 px: "← Still learning [1]" chữ đỏ nền trắng (tối: nền card), "↻ Flip card [Space]" nền nhấn, "✓ Know [2] →" chữ xanh nền trắng (tối: nền card), không còn nền xanh đặc; mờ khi chưa lật; dưới nút có hàng chú thích phím (Space, 1/←, 2/→, Esc) trên máy tính.
 - Trang một từ: cụm phát âm UK/US và dạng chia nằm giữa hai đường kẻ (đậm hơn `--line`: ink 16%, vì `--line` gần như mất trên nền mesh), tách khỏi tiêu đề phía trên và tab phía dưới; UK và US đứng gần nhau.
 - Học: nhãn dưới số của hai đống ("Still learning", "Know") không kèm mũi tên, để canh giữa đúng với số. Trên điện thoại: hai nút bên là ô vuông chỉ có icon (← và ✓, có `aria-label`), nút "Flip card" chiếm phần còn lại; không có chip tên từ rơi vào đống khi vuốt.
@@ -86,8 +86,9 @@ hiện tại" hoặc "Sửa theo bản đã chốt" và ô ghi chú. Lựa chọ
 - Panel giới thiệu ở Đăng ký / Đăng nhập: thêm chi tiết để thấy việc học từ (đường nhớ qua Bậc 1–5, thẻ từ, từ đến hạn, câu luyện).
 
 **Mockup tổng hợp (12/11/2026):** https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL (`docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`).
-Là context cho thiết kế UI chính thức và cho M9, đợt polish. Còn mở: chỗ 24 (chụp thật, cần chạy app ở nhánh giao diện mới), cách A hay B
-cho danh sách chọn nhóm, bốn đề xuất câu 3/4/5/13 chưa được xác nhận rõ.
+Là context cho thiết kế UI chính thức và cho M9, đợt polish. Chủ dự án duyệt 12/11 ("nhìn sơ sơ thì mình thấy ok hết rồi", "ok rồi đó").
+Còn mở: chỗ 24 (chụp thật, cần chạy app ở nhánh giao diện mới); gửi cho trình duyệt chỉ phần chữ trang cần (câu 6); lưu nhiều nhóm qua
+trường `group_ids` hay gọi thêm API (chốt ở plan đợt polish).
 
 ## Ghi chú cho Part 9
 
