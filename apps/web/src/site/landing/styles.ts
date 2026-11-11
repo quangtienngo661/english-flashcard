@@ -25,8 +25,8 @@ export const FAQ_TITLE = 'font-wm-display text-wm-site-section-mobile text-wm-in
 // raw-ok: the closing title is Bricolage Bold 32 / 1.28, −1.5 % on a phone (`9:353`) and 60 / 1.24, −2 % from md (`7:202`)
 export const FINAL_TITLE = 'font-wm-display text-[2rem]/[1.28] font-bold tracking-[-0.015em] text-wm-ink md:text-[3.75rem]/[1.24] md:tracking-[-0.02em]';
 
-// raw-ok: the review boxes' values are Bricolage Bold 22 (`7:180`)
-export const BIN_VALUE = 'font-wm-display text-[1.375rem]/[1.3] font-bold';
+// raw-ok: the review boxes' values are Bricolage Bold 15 / 1.4 in the phone's pills (`9:291`, read from the frame) and 22 / 1.3 from md (`7:180`)
+export const BIN_VALUE = 'font-wm-display text-[0.9375rem]/[1.4] font-bold whitespace-nowrap md:text-[1.375rem]/[1.3]';
 
 // raw-ok: "7 ngày" on the floating card is Bricolage Bold 20 (`5:150`)
 export const FLOAT_VALUE = 'font-wm-display text-[1.25rem]/[1.3] font-bold';
