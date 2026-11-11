@@ -66,6 +66,8 @@ function redirectFor(
   pathname: string,
 ): string | null {
   if (state.status === 'signed-out') {
+    // Account deleted in this tab: it is already loading the account-deleted page, which sign-in would replace (M7.7, R154).
+    if (state.deleted) return null;
     // The full page load drops the in-memory notice: the reason travels in the address (E3, E4).
     const reason = state.notice === 'expired' || state.notice === 'rate-limited' ? `&reason=${state.notice}` : '';
     return `/${locale}/app/login?next=${encodeURIComponent(here)}${reason}`;

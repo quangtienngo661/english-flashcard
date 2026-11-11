@@ -70,6 +70,7 @@ export const KNOWN_ERROR_SLUGS = [
   'quota-exhausted',
   'rate-limited',
   'reauth-required',
+  'renewal-not-cancelled',
   'report-exists',
   'report-not-available',
   'sentence-limit-reached',

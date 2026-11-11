@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 // The new UI's tokens (design giao diện mới §7.1–§7.2): a `wm-` set beside the old one, read from the workspace package.
 const resolve = (file: string) => createRequire(import.meta.url).resolve(`@wordmet/design-tokens/${file}`);
@@ -53,7 +54,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
     expect(tokens(web, 'radius-wm').size).toBe(9);
-    expect(tokens(web, 'shadow-wm').size).toBe(8);
+    expect(tokens(web, 'shadow-wm').size).toBe(9);
   });
 
   it('pins the values the design names', () => {
@@ -63,6 +64,8 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect(tokens(web, 'radius-wm').get('xs')).toBe('0.1875rem');
     expect(tokens(web, 'text-wm').get('base')).toBe('1rem');
     expect(tokens(web, 'shadow-wm').get('btn')).toBe('0 0.625rem 1.75rem -0.625rem rgb(30 58 138 / 0.34)');
+    // The Pro card of Gói học (M7 Figma B §1.1: 0 40 70 -40 rgba(27,36,68,.42)).
+    expect(tokens(web, 'shadow-wm').get('pro')).toBe('0 2.5rem 4.375rem -2.5rem rgb(27 36 68 / 0.42)');
   });
 
   it('pins the auth heading sizes (M2 Figma §3: 44 / 38 page titles, 30 / 26 card headings)', () => {
@@ -71,6 +74,13 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect([text.get('page-title-mobile'), text.get('page-title-mobile--line-height')]).toEqual(['2.375rem', '1.22']);
     expect([text.get('card-heading'), text.get('card-heading--line-height')]).toEqual(['1.875rem', '1.3']);
     expect([text.get('card-heading-mobile'), text.get('card-heading-mobile--line-height')]).toEqual(['1.625rem', '1.3']);
+  });
+
+  it('pins the app page title sizes (M7 Figma A §1.1, §1.5: 44 / 30, line-height 1.1)', () => {
+    const text = tokens(web, 'text-wm');
+    expect([text.get('app-title'), text.get('app-title--line-height'), text.get('app-title--letter-spacing')]).toEqual(['2.75rem', '1.1', '-0.0255em']);
+    expect([text.get('app-title-mobile'), text.get('app-title-mobile--line-height'), text.get('app-title-mobile--letter-spacing')])
+      .toEqual(['1.875rem', '1.1', '-0.023em']);
   });
 });
 
@@ -124,5 +134,21 @@ describe('wm stage, group and motion tokens (M3)', () => {
     const ms = tokens(web, 'transition-duration-wm');
     expect(Object.fromEntries(['carousel', 'fade', 'blur', 'halo', 'rise', 'count', 'flip', 'page-in', 'lift'].map((k) => [k, ms.get(k)])))
       .toEqual({ carousel: '620ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
+  });
+});
+
+// The waiting dot of Đơn hàng (motion doc §6, design §8.2): opacity 1 → .3 → 1 in 1.4 s ease-in-out, until the order's status changes.
+describe('wm pulse (M7.10)', () => {
+  const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
+
+  it('declares --animate-wm-pulse and its keyframes', () => {
+    expect(tokens(web, 'animate-wm').get('pulse')).toBe('wm-pulse 1.4s ease-in-out infinite');
+    expect(web).toMatch(/@keyframes wm-pulse \{\s*50% \{\s*opacity: 0\.3;\s*\}\s*\}/);
+  });
+
+  it('reduced motion runs every animation once for 0.01 ms, so the endless dot stands still', () => {
+    const rule = /@media \(prefers-reduced-motion: reduce\) \{\s*html \{[^}]*\}\s*\*,\s*\*::before,\s*\*::after \{([^}]*)\}/.exec(globals);
+    expect(rule?.[1]).toContain('animation-duration: 0.01ms !important;');
+    expect(rule?.[1]).toContain('animation-iteration-count: 1 !important;');
   });
 });

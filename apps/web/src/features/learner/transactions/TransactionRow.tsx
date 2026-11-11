@@ -5,72 +5,83 @@ import { useTranslations } from 'next-intl';
 import { Button } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import { cn } from '@/lib/cn';
+import { StatusDot } from '@/ui/StatusDot';
 import { moneyText, periodText, type Transaction, type TransactionStatus } from './transactions-api';
 
-const STATUS_CHIP: Record<TransactionStatus, string> = {
-  succeeded: 'bg-success-soft',
-  pending: 'bg-primary-soft',
-  refunded: 'bg-accent-soft',
-  reversed: 'bg-neutral-soft',
+// M7 decision: succeeded pass, pending accent, refunded ghost (a muted label), reversed muted.
+const TONE: Record<TransactionStatus, 'pass' | 'accent' | 'ghost' | 'muted'> = {
+  succeeded: 'pass',
+  pending: 'accent',
+  refunded: 'ghost',
+  reversed: 'muted',
 };
 
-export function StatusChip({ status }: { status: TransactionStatus }) {
+export function TransactionStatusDot({ status }: { status: TransactionStatus }) {
   const t = useTranslations('App.transactions.statuses');
-  return <span className={cn('w-fit shrink-0 rounded-full px-2 py-0.5 text-caption font-semibold text-ink', STATUS_CHIP[status])}>{t(status)}</span>;
-}
-
-/** "Pro · theo tháng", "Pro · 3 tháng" for a prepaid purchase (no renewal to speak of), or the plan alone for a grant. */
-export function usePlanText() {
-  const t = useTranslations('App');
-  return (item: Transaction) => {
-    const plan = item.plan === 'pro' ? t('chrome.plan.pro') : item.plan;
-    if (item.interval === null) return plan;
-    const interval = item.provider === 'payos' ? t(`transactions.prepaidIntervals.${item.interval}`) : t(`transactions.intervals.${item.interval}`);
-    return t('transactions.planInterval', { plan, interval });
-  };
+  return <StatusDot tone={TONE[status]}>{t(status)}</StatusDot>;
 }
 
 /**
- * One row of K/95 (a line of the table from 768 px) and of M/95 (three stacked lines): the whole row opens the detail. The two
- * layouts are drawn for the eye only; the button's name reads the row once.
+ * The words of one transaction, shared by its row and its detail: line 1 "Mua · Pro · 3 tháng" (a payOS period in months, a
+ * subscription "theo tháng", a grant the plan alone), the date, the amount, line 2 "dùng {period}" or "không có kỳ" for a refund.
+ */
+export function useTransactionText() {
+  const t = useTranslations('App');
+  const format = useFormat();
+  return (item: Transaction) => {
+    const plan = item.plan === 'pro' ? t('chrome.plan.pro') : item.plan;
+    const interval = item.interval === null ? null
+      : item.provider === 'payos' ? t(`transactions.prepaidIntervals.${item.interval}`) : t(`transactions.intervals.${item.interval}`);
+    const period = periodText(format, item);
+    return {
+      line1: [t(`transactions.kinds.${item.kind}`), plan, interval].filter(Boolean).join(' · '),
+      date: format.date(item.occurred_at, 'numeric'),
+      amount: moneyText(format, item),
+      period,
+      line2: item.kind === 'refund' ? t('transactions.noPeriod') : t('transactions.used', { period }),
+    };
+  };
+}
+
+// raw-ok: Figma 122:4254 line 1 and amount are Noto Sans 15, between the button (15 medium) and base-strong (16)
+const FIFTEEN = 'font-wm-sans text-[0.9375rem] leading-snug';
+
+/**
+ * A row of Lịch sử giao dịch (Figma 122:4254 / 122:4366): the whole row is a button that opens the detail. Desktop: date column,
+ * line 1 over line 2, amount, status, chevron. Phones: line 2 in mono starting with the date, the amount over the status. The
+ * drawing is for the eye only; the button's name reads the row once.
  */
 export function TransactionRow({ item, onOpen }: { item: Transaction; onOpen: () => void }) {
   const t = useTranslations('App.transactions');
-  const format = useFormat();
-  const planText = usePlanText();
-  const kind = t(`kinds.${item.kind}`);
-  const date = format.date(item.occurred_at, 'full');
-  const plan = planText(item);
-  const money = moneyText(format, item);
-  const period = periodText(format, item) ?? '';
-  const label = t('rowLabel', { kind, date, plan, amount: money ? `${money}, ` : '', period, status: t(`statuses.${item.status}`) });
+  const text = useTransactionText()(item);
+  const label = t('rowLabel', { ...text, status: t(`statuses.${item.status}`) });
+  const amount = (
+    <span className={cn(FIFTEEN, 'whitespace-nowrap font-bold', item.kind === 'refund' ? 'text-wm-pass' : 'text-wm-ink')}>{text.amount}</span>
+  );
   return (
-    <li>
+    <li className="border-wm-line not-first:border-t">
       <Button
         aria-label={label}
         onPress={onOpen}
-        className="w-full cursor-pointer rounded-inner py-3 text-left outline-none hover:bg-canvas focus-visible:ring-2 focus-visible:ring-primary md:px-2"
+        className="flex w-full cursor-pointer items-center gap-3 px-1 py-3 text-left outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:gap-4 md:rounded-wm-lg md:px-3 md:py-4"
       >
-        <div aria-hidden className="flex flex-col gap-0.5 md:hidden">
-          <div className="flex items-start justify-between gap-2">
-            <span className="break-words text-ui font-semibold text-ink">{money ? `${kind} · ${money}` : kind}</span>
-            <StatusChip status={item.status} />
-          </div>
-          <span className="text-caption text-muted">{`${plan} · ${date}`}</span>
-          {item.kind !== 'refund' && <span className="text-caption text-muted">{t('used', { period })}</span>}
-        </div>
-        <div aria-hidden className="hidden items-center gap-3 text-ui md:grid md:grid-cols-7">
-          <span className="text-ink">{date}</span>
-          <span className="font-semibold text-ink">{kind}</span>
-          <span className="text-ink">{plan}</span>
-          <span className="text-ink">{money ?? '—'}</span>
-          <span className="text-ink">{period}</span>
-          <StatusChip status={item.status} />
-          <span className="flex items-center justify-end gap-0.5 font-semibold text-primary">
-            {t('detailLink')}
-            <ChevronRight className="size-4" />
+        <span aria-hidden className="hidden w-25 shrink-0 font-wm-mono text-wm-mono text-wm-muted md:block">{text.date}</span>
+        <span aria-hidden className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className={cn(FIFTEEN, 'break-words font-semibold text-wm-ink')}>{text.line1}</span>
+          <span className="break-words font-wm-mono text-wm-mono text-wm-muted md:font-wm-sans md:text-wm-small">
+            <span className="md:hidden">{`${text.date} · `}</span>
+            {text.line2}
           </span>
-        </div>
+        </span>
+        <span aria-hidden className="flex shrink-0 flex-col items-end gap-0.5 md:hidden">
+          {amount}
+          <TransactionStatusDot status={item.status} />
+        </span>
+        <span aria-hidden className="hidden w-27.5 shrink-0 text-right md:block">{amount}</span>
+        <span aria-hidden className="hidden w-32.5 shrink-0 md:block">
+          <TransactionStatusDot status={item.status} />
+        </span>
+        <ChevronRight aria-hidden className="size-4.5 shrink-0 text-wm-muted" />
       </Button>
     </li>
   );

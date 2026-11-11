@@ -113,6 +113,29 @@ Plan: "Part 6" trong file plan ở trên. Nhánh `feat/giao-dien-moi-m6`, làm s
 
 **Còn chờ chủ dự án:** QM6-1 (dòng báo lỗi trên điện thoại có hiện ngày gửi không).
 
+# Giao diện mới — plan tóm tắt, phần 7: M7 Cài đặt, tài khoản, gói học (11/11/2026)
+
+Plan: "Part 7" trong file plan ở trên. Hai PR vào `refactor/giao-dien-moi`: M7a (`feat/giao-dien-moi-m7a`, sau khi PR M6 merge), rồi M7b (`feat/giao-dien-moi-m7b`, sau khi M7a merge). Không đổi API.
+
+**M7a — Cài đặt, Tài khoản, Xóa tài khoản, Giao dịch**
+- M7.1: tiêu đề trang theo Figma (44 / 30) cho mọi trang dùng chung, chấm trạng thái, hàm chia theo tháng, khung xương ba khối.
+- M7.2: sửa bốn lỗi tìm thấy khi khảo sát: Xóa tài khoản lỗi không có chữ, thiếu câu báo "gói đang tự gia hạn", thẻ gói ở trang Giao dịch không có ngày với Pro mua qua payOS, cổng thanh toán hiện "payos" (test đỏ trước, sửa sau).
+- M7.3: dựng lại Cài đặt (mục lục bên trái, thẻ từng mục, ngôn ngữ, giao diện, nhắc học, các dòng Tài khoản theo thứ tự Figma) và tô mục đang mở trong menu ảnh đại diện.
+- M7.4: dựng lại Tài khoản (Hồ sơ, Email đăng nhập có nhãn đã xác minh, thẻ gói học).
+- M7.5: dựng lại Xóa tài khoản (cột xác nhận bên trái ở máy tính, thông tin trước ở điện thoại; giữ đường xác nhận bằng Google và chặn khi gói đang tự gia hạn).
+- M7.6: dựng lại Lịch sử giao dịch (chia theo tháng, dòng có chấm trạng thái, thẻ gói học) và hộp Chi tiết giao dịch (biên lai, nút chép mã giao dịch).
+- M7.7: thêm e2e cho M7a, chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m7a`, ghi as-built, mở PR.
+
+**M7b — Gói học, Đơn hàng, Giới thiệu Pro**
+- M7.8: thẻ chọn kỳ (`ChoiceCard`), hàm tính giá gạch, phần trăm tiết kiệm, giá mỗi tháng; tách logic mua thành một hook, hành vi giữ nguyên.
+- M7.9: dựng lại Gói học (hai thẻ gói, chọn kỳ bằng thẻ, nút "Mua gói Pro {kỳ}", chữ nhỏ và link Điều khoản, bảng so sánh luôn hiện) và hộp Hủy gói.
+- M7.10: dựng lại trang Đơn hàng (thẻ đã thanh toán, các trạng thái chờ có chấm nhấp nháy, trạng thái đã dừng; báo cho trình đọc màn hình khi đổi trạng thái).
+- M7.11: dựng lại hộp Giới thiệu Pro (viền navy, nhãn Pro, nút "Để sau"); không đụng phần quảng cáo (QR4).
+- M7.12: xóa các file giao diện cũ trong `app-ui/` không còn ai dùng.
+- M7.13: thêm e2e cho M7b, chạy toàn bộ kiểm thử, chụp bộ ảnh `gm-m7b`, ghi as-built, mở PR.
+
+**Còn chờ chủ dự án:** không có câu hỏi mở. Các quyết định plan tự chốt nằm ở cuối Part 7 ("Decisions this part makes").
+
 # Giao diện mới — as-built API (10/11/2026)
 
 Nhánh `feat/giao-dien-moi-api`, 9 commit `f33dd0fe`…`5f9ca6fc`, PR vào `refactor/giao-dien-moi`. Rulings R1–R5 ở [`giao-dien-moi-rulings.md`](giao-dien-moi-rulings.md).
@@ -422,7 +445,7 @@ Nhánh `feat/giao-dien-moi-m6-session` (cắt từ `feat/giao-dien-moi-m6` sau k
 
 # Giao diện mới — as-built hàng "Nhóm của bạn" giãn đều (11/11/2026)
 
-Nhánh `feat/giao-dien-moi-deck-row`, PR vào `refactor/giao-dien-moi`. Quyết định: R134.
+Nhánh `feat/giao-dien-moi-deck-row`, PR vào `refactor/giao-dien-moi`. Quyết định: R171 (PR #262 ghi R134; đổi số khi hợp nhất vào M7).
 
 **Đã làm**
 - Hôm nay: thẻ nhóm chia đều bề rộng hàng, chỉ hiện số thẻ vừa chỗ (không nhỏ hơn 150 px điện thoại, 176 px desktop); bỏ cuộn ngang, kéo chuột, nút mũi tên và giới hạn 4 thẻ. "Xem tất cả N nhóm" ở đầu khối giữ nguyên.
@@ -433,4 +456,103 @@ Nhánh `feat/giao-dien-moi-deck-row`, PR vào `refactor/giao-dien-moi`. Quyết 
 
 **Chưa kiểm / rủi ro**
 - Chưa chạy với API thật, chưa chụp chế độ tối và tiếng Anh.
-- Ít nhóm (ví dụ 2 thẻ ở 1440 px) thì nửa phải hàng để trống, theo R134.
+- Ít nhóm (ví dụ 2 thẻ ở 1440 px) thì nửa phải hàng để trống, theo R171.
+
+# Giao diện mới — as-built M7 Cài đặt, tài khoản, gói học (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m7a`, **một PR** vào `refactor/giao-dien-moi` cho cả M7a và M7b (chủ dự án 11/11/2026, R156; plan ghi hai PR). Quyết định khi làm: R134–R170 và R172–R173 trong `giao-dien-moi-rulings.md`. R171 là ruling của PR #262 (hàng "Nhóm của bạn"), đổi số từ R134 khi hợp nhất vì M7 đã dùng R134–R170. Không đổi API.
+
+**Đã làm: M7a (M7.1–M7.7)**
+- Bộ kit (M7.1): token `--text-wm-app-title` 44 / `-mobile` 30; `PageTitle` bỏ nét highlighter, giữ khoảng 20 px phía dưới (R134); `ui/StatusDot`; `lib/month-groups.ts` (`groupByMonth` theo múi giờ người học); `SkeletonBlocks`. "Báo lỗi của tôi" dùng `PageTitle`, `groupByMonth`, `StatusDot`.
+- Bốn defect (M7.2, test đỏ rồi fix):
+  - Xóa tài khoản: lỗi tải gói giờ có chữ.
+  - 409 `renewal-not-cancelled` có câu riêng; slug được thêm vào `KNOWN_ERROR_SLUGS` (R136).
+  - Thẻ gói ở Lịch sử giao dịch đọc `proLastDay` (`pro_until`, gói được cấp, gói tự gia hạn; cuối kỳ − 1 ms).
+  - "payos" hiện "payOS".
+- Cài đặt (M7.3):
+  - Sáu thẻ mục; Mục lục dính bên trái, chỉ hiện từ 1024 px, theo vị trí cuộn, bấm thì cuộn tới và chuyển focus (R137, R153).
+  - "Xem" / "Sửa" mang tên dòng (R138); thanh mức dùng đầy theo con số đang hiện (R139); dùng control của kit (R140).
+  - Một nút "Đăng xuất". Menu ảnh đại diện đánh dấu trang đang mở bằng `aria-current="page"` (R142).
+- Tài khoản (M7.4): thẻ "Hồ sơ" và "Email đăng nhập"; `CurrentPlanCard` chỉ hiện khi gói và con số đã tải xong (R144); bỏ cột bên phải.
+- Xóa tài khoản (M7.5): DOM là thẻ thông tin rồi thẻ xác nhận; từ 768 px, CSS `order` đưa thẻ xác nhận sang trái (R145). Kit controls; `?reauth=ok` hiện dòng "Đã xác nhận bằng Google" (R146).
+- Lịch sử giao dịch (M7.6):
+  - Mỗi tháng một thẻ; dòng có ngày, loại · gói · kỳ, số tiền, `StatusDot`.
+  - Cấp gói "0 ₫"; hoàn tiền "−" màu pass và "không có kỳ" (R147).
+  - Hộp chi tiết dùng `ui/Dialog`, có nút chép mã giao dịch kèm toast; không có clipboard thì không làm gì (R148).
+- Journey `m7a.spec.ts`, overflow riêng cho các trang M7a, bộ ảnh `gm-m7a` (M7.7).
+- **Defect cũ e2e tìm ra (R152, R154):** xóa tài khoản xong bị đưa về trang đăng nhập thay vì trang "đã xóa" (có từ Bước 8). `RequireSession` giờ giữ redirect chỉ khi session kết thúc vì xóa tài khoản (`deleted: true`).
+
+**Đã làm: M7b (M7.8–M7.13)**
+- `ui/ChoiceCard` / `ChoiceCardGroup` (react-aria `RadioGroup`, bo 14, R157). `periodOffer` / `bestPeriod`: giá gạch, phần trăm tiết kiệm, giá mỗi tháng làm tròn 100. Hai kỳ tiết kiệm bằng nhau thì giữ 3 tháng (R158).
+- `useBuyOrder`: logic mua cũ chuyển ra hook, không đổi hành vi; khóa kỳ và giá khi đang gửi (R158).
+- Gói học (M7.9):
+  - Hai thẻ cạnh nhau từ 1024 px, không phải 768 px như plan (R162). Thẻ Pro viền accent, token `--shadow-wm-pro` (R161).
+  - Ba `ChoiceCard`, mặc định 12 tháng; nút "Mua gói Pro {kỳ}"; chữ nhỏ theo đúng thứ tự, giữ link "Điều khoản sử dụng" (R160).
+  - Bảng so sánh luôn hiện (R161). Hủy gói vẫn ở Gói học, dựng lại bằng kit (R159).
+- Đơn hàng (M7.10):
+  - Một thẻ trong một `role="status"` luôn mounted (R165).
+  - Chấm chờ `animate-wm-pulse` 1,4 s, vẫn nhấp nháy sau mốc dừng 2 phút khi đơn còn `pending`; giảm chuyển động thì chấm đứng yên (R164).
+  - Ngày `dd/mm/yyyy`.
+- Giới thiệu Pro (M7.11): `ui/Dialog tone="pro"` (viền accent, `shadow-wm-pop`, giữa màn hình từ 768 px, R166); nhãn "Pro" và "có AI" trên tiêu đề, giá "Từ 79.000 ₫ cho 1 tháng", nút "Để sau" (R167). QR4: `git diff --stat` thư mục `ads` và `layout.app.tsx` rỗng.
+- Xóa file cũ (M7.12): `app-ui/{Dialog,Segmented,Switch,Checkbox,TextField,DateOfBirthField}.tsx` và `ui-kit.test.tsx`. Giữ lại:
+  - `app-ui/Button.tsx`, vì `States.tsx` import `./Button`;
+  - `States.tsx` (7 file dùng);
+  - `Locked.tsx` (`CustomizeDialog`);
+  - `date-of-birth.ts` (hai test auth).
+  Ghi ở R168. Lệnh grep `@/app-ui/` trong settings, transactions, plans, house-ad (bỏ file test) không in gì.
+- Journey `m7b.spec.ts` (mua 3 tháng bằng double click → một POST đúng body; hộp Pro; Hủy gói; axe; overflow 390), mock đơn hàng và hủy gói (R169), bộ ảnh `gm-m7b` (R170).
+
+**Kiểm**
+- Web: lint (gồm `check-tailwind-raw`) và typecheck qua; `vitest run` 137 file, 1386/1386 (lượt cuối, sau mọi sửa review).
+- Admin (token đổi ở M7.1, M7.9, M7.10): lint, typecheck, build (biến môi trường như CI) qua; test 1406/1406 ở M7a. Ở lượt M7b, test fail ngẫu nhiên vì quá 5 s khi máy bận, mỗi lần một nhóm khác; 9 file đó chạy riêng thì qua 155/155. Lượt cuối, chạy một mình trên nhánh đã đủ M7: 105 file, 1406/1406. Admin không có thay đổi code.
+- E2e `pnpm cf:docker` cả bộ:
+  - Sau M7a: 389 qua, 38 skip, 0 hỏng, 7 flaky (qua khi chạy lại, không file nào của M7).
+  - Sau M7b: 408 qua, 39 skip, 0 hỏng, 3 flaky (`cai-thien-a-practice`, `m5a`, `overflow` trang đăng nhập; không phải M7).
+  - Sau khi hợp nhất #262 và sửa review M7b: `m7b`, `m4`, `m3`, `overflow` 85 qua, 1 skip (có sẵn), 0 hỏng. Không chạy lại cả bộ sau lượt này.
+- `pnpm assert:render-mode` qua.
+- Review (subagent Opus):
+  - M7a: 1 Important (Mục lục không đánh dấu "Tài khoản" ở cuối trang) và 9 Minor. Đã sửa Important và Minor M1/M2 (cờ redirect kẹt), M5, M7, M9; mỗi lỗi hành vi có test đỏ rồi fix.
+  - M7b: 0 Important, 9 Minor. Đã sửa M1 (focus sau Hủy gói), M9 (nút mua quay mãi sau Back từ payOS), M2–M5 (test chặt hơn), M8 (chú thích cũ).
+- Test chập chờn "Esc đóng chi tiết, focus về dòng" do react-aria trả focus sau một khung hình; test chờ bằng `waitFor`, 10 lần liền qua.
+
+**Ảnh** (vi, sáng, 390 và 1440 px, API giả trong `cf:docker`, spec chụp là file tạm, không commit). Bộ `gm-m7a`, `gm-m7b` cho stack thật đã có trong `e2e-shots/shots.spec.ts`.
+
+| Màn | Figma (desktop / phone) | Ảnh |
+|---|---|---|
+| Cài đặt | `120:4295` / `120:4559` | `gm-m7a/vi-light-settings-*` |
+| Cài đặt, mở menu ảnh đại diện | `181:5456` / `181:5748` | `gm-m7a/vi-light-settings-menu-*` |
+| Tài khoản | `121:4297` / `121:4404` | `gm-m7a/vi-light-account-*` |
+| Xóa tài khoản | `121:4503` / `121:4634` | `gm-m7a/vi-light-delete-account-*` |
+| Lịch sử giao dịch | `122:4203` / `122:4354` | `gm-m7a/vi-light-transactions-*` |
+| Chi tiết giao dịch | `122:4484` / `182:5856` | `gm-m7a/vi-light-transaction-detail-*` |
+| Gói học (Miễn phí) | `123:4196` / `123:4401` | `gm-m7b/…plans-free-*` |
+| Gói học (Pro) | không có frame | `gm-m7b/…plans-pro-*` |
+| Đơn hàng thành công | `123:4598` / `123:4690` | `gm-m7b/…order-paid-*` |
+| Đơn hàng đang chờ | `123:4774` (desktop) | `gm-m7b/…order-pending-*` |
+| Giới thiệu Pro | `75:2094` / `75:2373` | `gm-m7b/…pro-dialog-*` |
+| Hủy gói | không có frame (theo hộp xác nhận M3) | `gm-m7b/…plans-cancel-dialog-*` |
+
+**Khác Figma, để lại**
+- Điện thoại:
+  - Nút lịch nổi (M6) che một phần nội dung ở Cài đặt, Tài khoản, Lịch sử giao dịch cho tới khi cuộn.
+  - Dòng 1 của giao dịch hoàn tiền xuống hai dòng.
+  - Tiêu đề cột "Miễn phí" của bảng so sánh xuống hai dòng.
+  - Hai nút của hộp Pro xếp dọc theo kit.
+- "Lưu thay đổi" bị tắt tới khi có thay đổi.
+- Hộp chi tiết rộng 512 px, Figma 520.
+- Thẻ chờ có thêm dòng email hỗ trợ.
+- Cỡ chữ gần nhất của token thay cho 14,5 / 13,5 / 15 px (R162).
+
+**Minor để lại (review)**
+- Xóa tài khoản: heading đi h1 → h3 → h2 (R145). axe không chặn vì spec chỉ fail ở mức serious / critical.
+- Gợi ý của Ngôn ngữ và Giao diện chưa gắn `aria-describedby`.
+- Vài test M7a còn yếu: màu hoàn tiền; overflow chưa mở menu ảnh đại diện và hộp chi tiết với dữ liệu dài.
+- Overflow 390 chưa phủ Gói học của người Pro có hàng gói tự gia hạn, và đơn đang chờ / không tìm thấy.
+- Câu "không tự gia hạn" ở đầu Gói học trái với hàng gói tự gia hạn. Chỉ provider giả tạo ra hàng đó.
+- **Ngoài M7, để cho M8:** `src/lib/cn.ts` không biết các cỡ `wm-app-title*`, `wm-page-title*`, `wm-card-heading*`. Vì vậy `RecallSummary.tsx:47` mất cỡ chữ tiêu đề trên điện thoại (review xếp Important). `AuthHeading.tsx:55` có thể mất `text-wm-ink`.
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy `SHOTS_MILESTONE=gm-m7a|gm-m7b pnpm shots` với stack thật (`learner:setup`); ảnh và e2e dùng API giả.
+- Chưa chụp chế độ tối, tiếng Anh, khổ 1024 px; chưa xem trên điện thoại thật.
+- Chưa thấy chấm nhấp nháy và trạng thái giảm chuyển động trong trình duyệt thật (có unit test cho luật giảm chuyển động).
+- Chưa thử mua payOS thật, Google re-auth thật; nút "Hủy gói" chỉ thử với provider giả.

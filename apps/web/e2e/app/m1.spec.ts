@@ -116,7 +116,7 @@ test.describe('M1 flows (mocked API)', () => {
     await page.goto('/vi/app/settings');
     await expect(page.getByText('đã dùng 1/30')).toBeVisible();
     await expect(page.getByText('còn 287/300')).toBeVisible();
-    await expect(page.getByText(/Còn 29 phiên, mở lại lúc 0:00\./)).toBeVisible();
+    await expect(page.getByText('Còn 29 phiên, mở lại lúc 0:00', { exact: true })).toBeVisible();
   });
 });
 

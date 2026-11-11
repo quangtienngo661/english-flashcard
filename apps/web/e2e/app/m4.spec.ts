@@ -272,8 +272,9 @@ test.describe('M4 flows (mocked API)', () => {
     await page.goto('/vi/app/plans');
     await expect(page.getByRole('heading', { level: 1, name: copy.vi.App.plans.title })).toBeVisible();
     await expect(page.getByText(`${APP_CONFIG.plans.pro.practice_sessions_per_day} phiên luyện mỗi ngày`)).toBeVisible();
-    await expect(page.getByRole('button', { name: copy.vi.App.plans.buy })).toBeVisible();
-    await expect(page.getByRole('radio', { name: copy.vi.App.plans.periods['12'] })).toBeChecked();
+    await expect(page.getByRole('radio', { name: /^12 tháng/ })).toBeChecked();
+    await expect(page.getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeVisible();
+    await expect(page.getByRole('table', { name: copy.vi.App.plans.compare })).toBeVisible();
   });
 });
 

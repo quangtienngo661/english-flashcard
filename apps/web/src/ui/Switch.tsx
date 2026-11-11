@@ -19,7 +19,7 @@ const TRACK = 'relative inline-flex h-6 w-11 shrink-0 items-center rounded-wm-pi
 const THUMB = 'size-5 rounded-wm-pill bg-wm-surface shadow-wm-row transition duration-150 ease-out-strong';
 const TEXT = 'flex min-w-0 flex-col';
 
-/** Same props as app-ui/Switch, `locked` included. */
+/** A controlled on/off switch with a label and an optional description; `locked` is a Pro-only switch on this plan. */
 export function Switch({ label, description, isSelected, onChange, isDisabled, locked = false }: Props) {
   const [showLocked, setShowLocked] = useState(false);
   if (locked) {

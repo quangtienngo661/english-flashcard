@@ -35,7 +35,7 @@ export type TextFieldProps = {
   autoFocus?: boolean;
 };
 
-/** Same props as app-ui/TextField; the look of Figma "Ô nhập" (34:345). The error is tied to the input. */
+/** A labelled text input, controlled (`value`, `onChange`); the look of Figma "Ô nhập" (34:345). The error is tied to the input. */
 export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: TextFieldProps) {
   const t = useTranslations('App.common');
   return (

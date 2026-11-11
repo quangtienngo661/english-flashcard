@@ -19,8 +19,9 @@ type Props = {
 };
 
 /**
- * Same props as app-ui/DateOfBirthField, on the new `TextField`. The browser's own date box (owner 27/10/2026), not the `dd/mm/yyyy`
- * text Figma draws. The under-13 line shows as soon as a date is picked (K/01b, K/92), so the form never sends a date the API would refuse.
+ * The birth date field, on the kit's `TextField`; `onChange` gets the ISO date, or null while it is not a valid 13+ birth date. The
+ * browser's own date box (owner 27/10/2026), not the `dd/mm/yyyy` text Figma draws. The under-13 line shows as soon as a date is picked
+ * (K/01b, K/92), so the form never sends a date the API would refuse.
  */
 export function DateOfBirthField({ label, initial = null, description, onChange, serverError = null, today = deviceToday() }: Props) {
   const t = useTranslations('App.ui.dob');

@@ -2491,3 +2491,673 @@ Paths are under `apps/web/` unless they start with `apps/api/`. `L/` = `src/feat
 
 **Open:**
 - QM6-1: date on phone rows of "Báo lỗi của tôi".
+
+---
+
+# Part 7 — M7 Cài đặt, tài khoản, gói học (branches `feat/giao-dien-moi-m7a`, `feat/giao-dien-moi-m7b`)
+
+**Goal:** Rebuild Cài đặt, Tài khoản, Xóa tài khoản and Lịch sử giao dịch with its detail (M7a). Then rebuild Gói học with `ChoiceCard`, the order page and the Giới thiệu Pro dialog (M7b). Fix four defects the survey found, and delete the old `app-ui` pieces nothing imports any more.
+
+**Inputs:**
+- Design §3.3, §5.4–§5.6, §7.5 (`ChoiceCard`), §8.2 rows "Mọi hộp thoại" and "Đơn hàng", §8.4, §9 M7, §12, §13.
+- Motion doc `motion-va-chuyen-canh.md` §6: the order dot goes opacity 1 → .3 → 1 in 1.4 s ease-in-out until the status changes; the red "đã dừng" dot is still.
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-11-m7-settings.md` ("M7 code S §n") and `…-m7-plans.md` ("M7 code P §n").
+- Figma facts `…_FIGMA_FACTS_2026-11-11-m7-a.md` (Cài đặt, avatar menu, Tài khoản, Xóa tài khoản, giao dịch; "M7 Figma A §n") and `…-m7-b.md` (Gói học, Đơn hàng, Giới thiệu Pro, "Thẻ chọn"; "M7 Figma B §n").
+
+Paths are under `apps/web/` unless they start with `apps/api/` or `packages/`. `L/` = `src/features/learner/`, `C/` = `src/app/[locale]/app/(member)/(chrome)/`, `M/` = `src/app/[locale]/app/(member)/`.
+
+**Order:**
+- No API change in M7.
+- **M7a** starts once the M6 PR (M6.1–M6.8, M6.10) is merged. M6.8 edits the files M7a rewrites (`SettingsPage`, `AvatarMenu`, `format.ts`, `chrome.test.tsx`, `overflow.spec.ts`), and M6 adds the default streak route that every chrome test needs (M7 code S §10). The M6.9 PR does not block. Run `git switch -c feat/giao-dien-moi-m7a origin/refactor/giao-dien-moi`, then `git merge docs/giao-dien-moi-plan-7`.
+- **M7b** starts once M7a is merged: `git switch -c feat/giao-dien-moi-m7b origin/refactor/giao-dien-moi`. M7b uses `StatusDot`, `SkeletonBlocks` and `proLastDay` from M7a, and M7.12 deletes old pieces only after both halves stop importing them.
+- Rulings continue from the highest `R<n>` in `giao-dien-moi-rulings.md`. M5b and M6 both started at R108; if both landed with those numbers, leave them and continue from the highest.
+
+## Part 7 constraints
+
+- **API:** unchanged. Request bodies pinned by tests stay identical:
+  - `PATCH /v1/me` sends only changed fields; `PATCH /v1/me/reminders { enabled }` carries an `Idempotency-Key`.
+  - `POST /v1/me/account/delete { confirm_email, acknowledged: true, password? }` and `POST /v1/auth/google/reauth { locale }`.
+  - `POST /v1/me/subscriptions/{id}/cancel` carries an `Idempotency-Key`.
+  - `POST /v1/me/orders { period_months, expected_amount, locale }` uses one `Idempotency-Key` per press, then `window.location.assign(checkout_url)`.
+  - `POST /v1/me/orders/:id/check` runs once; `GET /v1/me/orders/:id` repeats every 3 s for at most 2 min.
+- **Paths the API writes** keep their shape:
+  - `/{locale}/app/settings` (reminder emails);
+  - `/{locale}/app/settings/delete-account?reauth=ok|wrong-account|failed` (Google re-auth, `smoke-buoc-8`);
+  - `/{locale}/app/plans/order?order=<uuid>` (payOS return).
+  Readers of `useSearchParams` stay inside `Suspense`.
+- **Purchase copy stays on Gói học**, in this order after the buy button:
+  1. one payment per period and no auto-renew;
+  2. no automatic refund, with the support email;
+  3. the link "Điều khoản sử dụng". Figma drops it; M7.9 keeps it.
+  The Hủy gói dialog keeps "Không hoàn tiền cho thời gian còn lại." No VAT line, no payOS or VietQR wording (M7 code P §8.3).
+- **QR4:** M7 edits only `L/house-ad/HouseAd.tsx` and its test. `L/ads/AdsenseLoader.tsx`, `SHOWS_ON`, `house-ad-counter.ts` and the two ad lines of `M/layout.app.tsx` stay untouched.
+- **Dates and money:**
+  - Full dates on these screens are `dd/mm/yyyy` (`format.date(…, 'numeric')`), as every M7 frame draws them. Tests that pin `'full'` dates ("6/12/2026") change to "06/12/2026".
+  - `lastDay` (end − 1 ms, DB35) stays for "tới hết" and "đến hết".
+  - Money goes through `format.money`.
+  - Month groups and "today" use the learner's zone (`useFormat`, `lib/learner-date`).
+- **Kit:** rebuilt screens use only `ui/`, `app-chrome/` and `wm-` tokens.
+  - End of M7a: `rg "@/app-ui/" src/features/learner/{settings,transactions} --glob '!*.test.*'` prints nothing.
+  - End of M7b: the same for `plans` and `house-ad`.
+- **Fields and controls** use the kit (`ui/TextField`, `PasswordField`, `DateOfBirthField`, `Checkbox`, `Select`, `Segmented`, `Switch`). The local fields, select, segmented and switch drawn on Cài đặt, Tài khoản and Xóa tài khoản are not copied (M7 Figma A Conflicts 1–4). A ruling records it.
+- **Copy:**
+  - Text comes from the frames, per the copy tables in M7 Figma A §8 and B §7, and `en.json` gets the same keys by meaning.
+  - Keys no screen reads any more are deleted in the same PR. The exception is `App.deleteAccount.{doneTitle,doneBody,pendingTitle,pendingBody,toLogin}`, which `AccountDeleted` (M2) reads.
+- **Tests** query by role and visible text. `e2e-shots/shots.spec.ts` `setLanguage()` changes together with the Settings language control (M7.3), because 19 shots call it.
+- **Defect fixes** are a red-test commit, then the fix commit (M7.2).
+
+## Part 7 Review Focus
+
+1. **Lan buys Pro 3 tháng.**
+   - The button reads "Mua gói Pro 3 tháng".
+   - One press, or a double click, sends one `POST /v1/me/orders` with `expected_amount` equal to the 3-month price shown on the card.
+   - 409 `price-changed` reloads the prices and shows "Giá vừa đổi, xem lại trước khi mua".
+   Pinned in M7.8 (hook) and M7.9 (page).
+2. **Lan's Pro comes from payOS:** a `prepaid` source, `pro_until` set, no subscription.
+   - Cài đặt, Lịch sử giao dịch and Gói học show the same last day: `pro_until` − 1 ms in her zone.
+   - Today the transactions card shows no date.
+   Pinned in M7.2, M7.3, M7.6, M7.9.
+3. **Minh signs in only with Google and deletes his account.**
+   - "Xác nhận bằng Google" goes to the API's `start_url`.
+   - Back with `?reauth=ok`, the delete button enables once he ticks the box and types the email.
+   - 403 `reauth-required` re-enables the Google button.
+   - With a renewing subscription, the block and the link to Gói học replace the form.
+   Pinned in M7.2 (messages) and M7.5.
+4. **Lan leaves the order page open while payOS confirms.**
+   - The waiting card's dot blinks.
+   - When the status turns `paid`, the new text is announced (`role="status"`).
+   - Reading stops after 2 minutes.
+   - With reduced motion the dot is still.
+   Pinned in M7.10.
+5. **A long name and a long email at 390 px** (R20) on Cài đặt, Tài khoản, Xóa tài khoản, Lịch sử giao dịch and Gói học: no sideways scroll; the sign-in methods row and the avatar menu wrap or truncate. Pinned in `overflow.spec.ts` (M7.7, M7.13).
+
+### Task M7.1 (M7a): Page title, status dot, month groups, skeleton blocks
+
+**Files:**
+- Modify: `packages/design-tokens/web.css` (two type tokens), `src/app-chrome/PageTitle.tsx`, `src/ui/Skeleton.tsx`, `C/loading.app.tsx`.
+- Create: `src/ui/StatusDot.tsx`, `src/ui/StatusDot.test.tsx`, `src/lib/month-groups.ts`, `src/lib/month-groups.test.ts`.
+- Modify: `L/settings/reports/MyReportsPage.tsx` (its raw `TITLE` becomes `PageTitle`; its inline grouping at `:31-36` becomes `groupByMonth`), `L/settings/reports/ReportRow.tsx` (its dot becomes `StatusDot`).
+
+**Interfaces:**
+- Produces:
+  - Tokens `--text-wm-app-title: 2.75rem` (line-height 1.1, letter-spacing -0.0255em, weight 800) and `--text-wm-app-title-mobile: 1.875rem` (1.1, -0.023em, 800). These are the Figma page titles 44 / 30 (M7 Figma A §1.1; M5 Figma A line 31).
+  - `PageTitle({ children, aside?, meta? })`, same props. The `h1` becomes `font-wm-display text-wm-app-title-mobile md:text-wm-app-title text-wm-ink`, without the highlighter stroke. Its users: Cài đặt, Tài khoản, Xóa tài khoản, Lịch sử giao dịch, Báo lỗi của tôi, Luyện tập, Từ hay sai.
+  - `StatusDot({ tone: 'pass' | 'accent' | 'muted' | 'ghost' | 'fail', children })`: an 8 px round dot (`aria-hidden`) and the label in Noto Sans SemiBold 14. The label takes the tone's colour, except `ghost`, whose label is `--muted`.
+  - `groupByMonth<T>(items: T[], at: (item: T) => string, zone: string): { key: string; items: T[] }[]`. `key` is `YYYY-MM` in `zone`. Input order is kept, and a new group starts whenever the month changes.
+  - `SkeletonBlocks()` in `ui/Skeleton.tsx`: the `role="status"` "Đang tải…" title block and three card blocks that `C/loading.app.tsx` draws today. `C/loading.app.tsx` renders it.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `groupByMonth([], …)` is `[]`; one item gives one group.
+  - Items at `2026-11-08T10:00:00Z`, `2026-10-31T17:30:00Z`, `2026-10-28T10:00:00Z`:
+    - with zone `Asia/Ho_Chi_Minh`, the keys are `['2026-11', '2026-10']` with 2 and 1 items;
+    - with `UTC`, they are `['2026-11', '2026-10']` with 1 and 2 items.
+  - November, October, November in that order gives three groups (no merge).
+  - `<StatusDot tone="pass">Thành công</StatusDot>`: `getByText('Thành công')` exists, and the wrapper's accessible text is exactly "Thành công".
+  - `my-reports.test.tsx` keeps passing.
+- [ ] **Step 2: Run** `pnpm vitest run src/lib/month-groups.test.ts src/ui/StatusDot.test.tsx L/settings/reports` → FAIL (the files do not exist).
+- [ ] **Step 3: Implement.** The month of an item is `monthOf(todayIn(zone, new Date(at(item))))` from `lib/learner-date` (M6.2).
+- [ ] **Step 4: Run** → PASS. Then run the whole web unit suite → PASS. `packages/design-tokens` changed, so also run the four admin checks → PASS.
+- [ ] **Step 5: Commit** `feat(web): add the app page title, status dot and month groups`.
+
+### Task M7.2 (M7a): Four defects found by the survey
+
+**Defects** (M7 code S §1.3–§1.5, §11):
+1. Xóa tài khoản: when `GET /v1/me/entitlements` fails, `ErrorState message=""` shows only "Thử lại", with no text.
+2. Xóa tài khoản: 409 `renewal-not-cancelled` has no message, so it shows `App.errors.generic`.
+3. Lịch sử giao dịch: the plan card ignores `prepaid` sources and `pro_until`. A payOS Pro learner sees "Gói Pro" with no date.
+4. Chi tiết giao dịch: `provider: 'payos'` prints "payos".
+
+**Files:**
+- Modify: `L/settings/DeleteAccountPage.tsx`, `L/settings/delete-account.test.tsx`, `L/transactions/TransactionsPage.tsx` (`TransactionsAside`), `L/transactions/TransactionDetail.tsx`, `L/transactions/transactions.test.tsx`, `messages/{vi,en}.json`.
+- Create: `L/plans/pro-last-day.ts`, `L/plans/pro-last-day.test.ts`.
+
+**Interfaces:**
+- Produces `proLastDay(entitlements): string | null` (the entitlements type of `app-shell/queries.ts`). It returns the ISO time 1 ms before the first of these that exists, else `null`:
+  - `pro_until`;
+  - the `ends_at` of a `grant_plan` source;
+  - the `renews_at ?? ends_at` of a `subscription` source.
+  M7.3 and M7.6 print it with `'numeric'`. Gói học keeps its own `pro_until ?? source.ends_at` rule, which its tests pin.
+- New keys:
+  - `App.errors.renewal-not-cancelled`: vi "Gói của bạn đang tự gia hạn. Hủy gói ở trang Gói học rồi thử lại.", en "Your plan still renews. Cancel it on the Plans page, then try again.";
+  - `App.transactions.providers.payos`: "payOS".
+
+- [ ] **Step 1: Write the failing tests:**
+  - Xóa tài khoản with entitlements answering 500: the page shows the text of `App.errors.generic` (read from `messages/vi.json` in the test) and the button "Thử lại".
+  - Xóa tài khoản: the POST answers 409 `renewal-not-cancelled`, and the form shows "Gói của bạn đang tự gia hạn. Hủy gói ở trang Gói học rồi thử lại."
+  - `proLastDay`:
+    - `{ pro_until: '2027-02-07T17:00:00Z' }` → `'2027-02-07T16:59:59.999Z'`;
+    - a `grant_plan` with `ends_at` and no `pro_until` → its end − 1 ms;
+    - a renewing subscription → `renews_at` − 1 ms;
+    - Free with no sources → `null`.
+  - Lịch sử giao dịch, learner with a `prepaid` source and `pro_until: '2027-02-07T17:00:00Z'`, zone `Asia/Ho_Chi_Minh`: the plan card shows the date 7/2/2027. The old card's `'full'` style is kept here; M7.6 changes the look.
+  - A `payos` transaction's detail shows "payOS".
+- [ ] **Step 2: Run** `pnpm vitest run L/settings L/transactions L/plans/pro-last-day.test.ts` → the four page cases fail for the stated reasons, and `pro-last-day` fails to import.
+- [ ] **Step 3: Commit** the tests alone: `test(web): pin four settings and transactions defects`.
+- [ ] **Step 4: Fix:**
+  - `ErrorState` takes `useErrorMessage()(entitlements.error)`.
+  - Add the two keys.
+  - `TransactionsAside` reads `proLastDay`.
+  - The provider label reads `providers.<provider>` when that key exists, else the raw value.
+- [ ] **Step 5: Run** → PASS. **Commit** `fix(web): fix four settings and transactions defects`.
+
+### Task M7.3 (M7a): Cài đặt and the avatar menu
+
+**Files:**
+- Modify:
+  - `L/settings/SettingsPage.tsx` (rewrite), `L/settings/UsageSection.tsx`, `L/settings/Shortcuts.tsx` (`ui/Kbd`), `L/settings/settings.test.tsx`;
+  - `src/app-chrome/AvatarMenu.tsx` (active item; the doc comment cites R11, R12), `src/app-chrome/chrome.test.tsx`;
+  - `messages/{vi,en}.json` (`App.settings`);
+  - `e2e-shots/shots.spec.ts:32-38` (`setLanguage`), `e2e/app/m1.spec.ts:114-120` (usage texts), `e2e/app/b8-set-password.spec.ts` if the link name changes.
+- Create: `L/settings/SettingsRows.tsx` (`SettingsSection`, `SettingsRow`), `L/settings/SettingsToc.tsx`.
+
+**Interfaces:**
+- Consumes: `proLastDay` (M7.2), `PageTitle` (M7.1), `ui/Select` `size="sm"`, `ui/Segmented` `compact` / `fullWidth`, `ui/Switch`, `ui/TextButton`, `ui/Tag`, `ui/Kbd`.
+- Produces:
+  - `SettingsSection({ id, title, children })`: an `h2` card.
+  - `SettingsRow({ label, hint?, value?, control?, wide? })`: one row. `wide` puts the bar or the segmented on line 2 on phones.
+
+**Behaviour** (`120:4295` / `120:4559`, M7 Figma A §1–§3):
+- **Desktop:**
+  - Title "Cài đặt", no back link.
+  - A sticky `nav` "Mục lục" (200 px) with six links to the section ids. The entry of the section nearest the top has `aria-current="true"`, the `--surface` fill and `Shadow/Card`; it is tracked with an IntersectionObserver. Clicking an entry scrolls to the section (instantly under reduced motion) and moves focus to its heading.
+  - Sections sit in the remaining column, 16 px apart.
+- **Phone:** no Mục lục and no Phím tắt section. Rows stack: label and control on line 1; value, bar or segmented on line 2.
+- **Section card:** `--surface`, 1 px `--line`, `rounded-wm-xl` (20, not Figma's 18; R8), `Shadow/Card`, padding 24 / 24 / 6 (phone 16 / 16 / 6). The heading is Bricolage Bold 20. Every row has a top hairline and `py-4`.
+- **Rows in order:**
+  - **Thông tin cá nhân:**
+    - Họ và tên, with text button "Sửa" → `/app/settings/account`;
+    - Ngày sinh in `dd/mm/yyyy`, no action;
+    - Email.
+  - **Gói và mức sử dụng:**
+    - Gói hiện tại: "Pro · tới hết 07/02/2027" from `proLastDay` (plan name only when it is `null`), or "Miễn phí"; text button "Xem gói học" → `/app/plans`;
+    - the three usage rows.
+  - **Học tập:**
+    - Ngôn ngữ: `Select size="sm"`, no flags, options "Tiếng Việt", "English";
+    - Giao diện: `Segmented compact`, `fullWidth` below `md`.
+  - **Thông báo:** the reminder switch.
+  - **Phím tắt:** desktop only.
+  - **Tài khoản:**
+    - Đăng nhập bằng: a list with one item per method (check icon, `--pass`). A Google-only account gets the row "Đặt mật khẩu" → `/app/forgot-password` right after it (B8-2).
+    - Lịch sử giao dịch: "Xem".
+    - Báo lỗi của tôi: "Xem".
+    - Đăng xuất: a text button with an icon on both sizes, calling `store.logout()`.
+    - Xóa tài khoản: a red text button → the delete page. Staff see the text "Liên hệ admin để xóa tài khoản" instead.
+- **Usage bars:**
+  - Keep `role="meter"`. Track `--line` 6 px, radius 3; fill `--accent`.
+  - Each bar fills by the number its text shows, as today: used for practice, remaining for AI (M7 Figma A Conflict 7; a ruling).
+  - `limit 0` keeps the "Cần gói Pro" tag.
+  - The refill day keeps the `dayMonth` style ("1/12"); Figma's "01/12" is sample text, and no new date style is added for one line.
+- **Link names:** "Xem" and "Sửa" read with their row: "Xem Lịch sử giao dịch", "Xem Báo lỗi của tôi", "Sửa Họ và tên". The visible text is unchanged.
+- **Copy** (M7 Figma A §8):
+  - `themeHint` "Sáng, tối hoặc theo máy";
+  - `remindersHint` "Lúc {time} giờ của bạn, chỉ khi có từ đến hạn";
+  - `practiceLeft`, `aiPracticeRefill(Time)`, `aiLookupRefill(Time)` drop the final ".";
+  - new keys `planUntil` "{plan} · tới hết {date}", `view` "Xem", `toc` "Mục lục", `languageVi` "Tiếng Việt", `languageEn` "English" (labels were hard-coded);
+  - keys of the old phone language dialog are deleted.
+- **Avatar menu:** the item of the open page gets `aria-current="page"` and the `--bg` fill (note on `181:316`).
+- **Shots helper:** `setLanguage(page, 'en')` opens the "Ngôn ngữ" select on Cài đặt and picks "English".
+
+- [ ] **Step 1: Write the failing tests** (`settings.test.tsx`, `chrome.test.tsx`):
+  - Section headings, in order: "Thông tin cá nhân", "Gói và mức sử dụng", "Học tập", "Thông báo", "Phím tắt", "Tài khoản".
+  - The `navigation` "Mục lục" has six links with `href` `#personal`, `#plan`, `#learning`, `#notifications`, `#shortcuts`, `#account`. Pressing "Tài khoản" gives it `aria-current="true"`.
+  - Gói hiện tại reads "Pro · tới hết 07/02/2027" (with `pro_until: '2027-02-07T17:00:00Z'` and zone `Asia/Ho_Chi_Minh`), and "Miễn phí" for Free. Link "Xem gói học" → `/vi/app/plans`.
+  - Usage texts: "đã dùng 1/3", "Còn 2 phiên, mở lại lúc 0:00" (no "."), "còn 12/15", "Lượt câu AI mới vào 1/12", and "Cần gói Pro" ×2 for the Free-without-AI fixture.
+  - Ngôn ngữ: open the button "Ngôn ngữ", pick option "English" → `PATCH /v1/me` body `{ native_language: 'en' }`, then `replace('/en/app/settings')`.
+  - Radio "Tối" → storage `dark`. Switch /Nhắc học qua email/ → body and key as today.
+  - Tài khoản rows in document order: "Đăng nhập bằng", "Lịch sử giao dịch", "Báo lỗi của tôi", "Đăng xuất", "Xóa tài khoản".
+  - The list "Đăng nhập bằng" has items "Mật khẩu" and "Google".
+  - Links:
+    - "Xem Lịch sử giao dịch" → `/vi/app/settings/transactions`;
+    - "Xem Báo lỗi của tôi" → `/vi/app/settings/reports`;
+    - "Xóa tài khoản" → `/vi/app/settings/delete-account`.
+  - Exactly one button "Đăng xuất"; pressing it posts `/v1/auth/logout` once.
+  - Google-only: link "Đặt mật khẩu" → `/vi/app/forgot-password`, and the list has only "Google". Staff: the text "Liên hệ admin để xóa tài khoản" and no delete link.
+  - Avatar menu opened on `/vi/app/settings`: menuitem "Cài đặt" has `aria-current="page"`, the others do not.
+- [ ] **Step 2: Run** `pnpm vitest run L/settings src/app-chrome` → FAIL.
+- [ ] **Step 3: Implement.** Update `m1.spec.ts` usage texts and `setLanguage()`.
+- [ ] **Step 4: Run** → PASS. Then `pnpm cf:docker e2e/app/m1.spec.ts e2e/app/b8-set-password.spec.ts e2e/app/overflow.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild settings and mark the open page in the avatar menu`.
+
+### Task M7.4 (M7a): Tài khoản
+
+**Files:**
+- Modify: `L/settings/AccountPage.tsx`, `L/settings/settings.test.tsx` (AccountPage block), `messages/{vi,en}.json` (`App.account`).
+- Create: `L/settings/CurrentPlanCard.tsx`, shared with M7.6.
+
+**Interfaces:**
+- Produces `CurrentPlanCard({ title, line, href, linkLabel })`:
+  - a card with radius 14 and padding 20 × 16 (phone 16);
+  - a 40 px `--accent-soft` tile with a star icon;
+  - title Noto Sans Bold 16, line Regular 14 `--muted`;
+  - a `TextButton`-styled link with `linkLabel`.
+
+**Behaviour** (`121:4297` / `121:4404`, M7 Figma A §4):
+- Back link "Cài đặt", title "Tài khoản". One 720 px column, left-aligned; full width on phones. No aside: the shortcut list stays on Cài đặt only.
+- Card (radius 20, padding 24 / 16, gap 28):
+  - **"Hồ sơ"** (`h2`):
+    - Tên and Họ (không bắt buộc) side by side from `sm`, stacked on phones;
+    - Ngày sinh (`DateOfBirthField`, 220 px wide from `sm`, description "Wordmet dành cho người từ 13 tuổi.");
+    - "Lưu thay đổi" (`ui/Button` primary, left-aligned, not full width).
+  - **"Email đăng nhập"** (`h2`): the email as text (SemiBold 16, `break-all`), then `Tag tone="pass"` with a check "Đã xác minh", only when `email_verified`.
+- `CurrentPlanCard` under the card:
+  - Pro: "Gói Pro" / "{count} phiên luyện mỗi ngày";
+  - Free: "Gói Miễn phí" / the Free count;
+  - link "Xem gói →" → `/app/plans`.
+- Save behaviour is unchanged: only changed fields are sent; under 13 shows the inline line; success toasts "Đã lưu thay đổi.".
+- Keys:
+  - new `profile` "Hồ sơ", `loginEmail` "Email đăng nhập", `ageHint`, `planTitle` "Gói {plan}", `planSessions` "{count, number} phiên luyện mỗi ngày", `seePlan` "Xem gói →";
+  - `planCard`, `planLine` and the field label `email` are deleted if nothing else reads them.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Headings "Hồ sơ" and "Email đăng nhập" exist.
+  - No textbox "Email"; the text "lan@example.com" and "Đã xác minh" are shown. An unverified fixture has no "Đã xác minh".
+  - "Wordmet dành cho người từ 13 tuổi." is shown.
+  - A Pro learner sees "Gói Pro" and "30 phiên luyện mỗi ngày", and link "Xem gói →" → `/vi/app/plans`.
+  - No `complementary` region.
+  - The existing save cases pass: button disabled until a change, `PATCH` body `{ given_name: 'Mai' }`, the under-13 line.
+- [ ] **Step 2: Run** `pnpm vitest run L/settings` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the account page`.
+
+### Task M7.5 (M7a): Xóa tài khoản
+
+**Files:** `L/settings/DeleteAccountPage.tsx`, `L/settings/delete-account.test.tsx`, `messages/{vi,en}.json` (`App.deleteAccount`).
+
+**Behaviour** (`121:4503` / `121:4634`, M7 Figma A §5):
+- Back link "Cài đặt", title "Xóa tài khoản".
+- **Order:** the DOM has the info card first, then the confirm card, so the reading order is the same on every size.
+  - From `md`, a 960 px row: CSS `order` moves the confirm card to the left (400 px); the info card takes the rest.
+  - Phones keep the DOM order, which is the Figma phone order.
+- **Info card:**
+  - two `h3` lists, "Những gì bị xóa" and "Những gì còn được giữ";
+  - markers "×" (`--fail`) and "·" (`--muted`) are `aria-hidden`;
+  - on phones the second list has a top hairline.
+- **Confirm card "Xác nhận xóa"** (`h2`), in order:
+  1. A warning note (`role="note"`, `--fail-soft`, alert icon) "Thời gian Pro còn lại sẽ mất, không hoàn tiền.", only when `pro_until`.
+  2. `ui/Checkbox` "Tôi hiểu dữ liệu sẽ mất và không khôi phục được".
+  3. `TextField` "Gõ lại email của bạn".
+  4. `PasswordField` "Mật khẩu", or for a Google-only account:
+     - secondary button "Xác nhận bằng Google";
+     - "Đã xác nhận bằng Google" once `?reauth=ok`;
+     - alert lines for `wrong-account` and `failed`.
+  5. `FormError`.
+  6. `ui/Button variant="danger"` "Xóa vĩnh viễn", left-aligned, disabled until ready.
+- **Renewing subscription:** the confirm card holds the block text and the link "Đến trang Gói" instead of the form.
+- **States:** pending shows `SkeletonBlocks`; error shows `ErrorState` (message from M7.2).
+- Copy: new `confirmTitle` "Xác nhận xóa"; `understand` becomes "Tôi hiểu dữ liệu sẽ mất và không khôi phục được" if it differs. The other lines already match.
+
+- [ ] **Step 1: Write the failing tests:**
+  - Heading "Những gì bị xóa" precedes heading "Xác nhận xóa" in document order.
+  - The `note` "Thời gian Pro còn lại sẽ mất, không hoàn tiền." is present only with `pro_until`.
+  - "Xóa vĩnh viễn" has `data-variant="danger"`.
+  - Every existing case passes:
+    - the labels;
+    - the POST body;
+    - `replace('/vi/app/account-deleted[?pending=1]')`;
+    - signed-out store;
+    - the `?reauth=` states;
+    - 403 re-enabling the Google button;
+    - the blocked case for `active|grace|on_hold|trialing`;
+    - the `AccountDeleted` block.
+- [ ] **Step 2: Run** `pnpm vitest run L/settings/delete-account.test.tsx` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the delete account page`.
+
+### Task M7.6 (M7a): Lịch sử giao dịch and Chi tiết giao dịch
+
+**Files:**
+- `L/transactions/{TransactionsPage,TransactionRow,TransactionDetail}.tsx`, `L/transactions/transactions-api.ts`, `L/transactions/transactions.test.tsx`;
+- `messages/{vi,en}.json` (`App.transactions`);
+- `e2e/app/m4b.spec.ts`.
+
+**Behaviour** (`122:4203` / `122:4354`; detail `122:4484` / `182:5856`; M7 Figma A §6–§7):
+- **Page:**
+  - Back link "Cài đặt", title.
+  - Month groups from `groupByMonth`. The label is `format.date(first, 'monthLabel')` in an `h2` (mono 12, `--muted`).
+  - Each month is a card (radius 20; padding 12 × 6, phone 16 × 4) holding a `ul`. Rows are separated by a top hairline.
+- **Row:** a react-aria `Button` filling the `li`, which opens the detail as today.
+  - **Desktop:**
+    - the date (100 px, mono 12);
+    - line 1 "{kind} · {plan}[ · {interval}]" (SemiBold 15) over line 2 "dùng {period}" or "không có kỳ" (Regular 14, `--muted`);
+    - the amount (110 px, right-aligned, Bold 15). Refunds show "−" before the amount, in `--pass`. A grant without money shows "0 ₫";
+    - `StatusDot` (130 px);
+    - a chevron.
+  - **Phone:**
+    - line 2 is mono 12 and starts with the date: "01/11/2026 · dùng 08/11/2026 – 07/02/2027";
+    - the amount sits over the status on the right.
+- **Status tones:** `succeeded` pass, `pending` accent, `refunded` ghost, `reversed` muted.
+- **Interval:** payOS shows `prepaidIntervals` ("3 tháng"); other providers show `intervals`, as today.
+- **Period:**
+  - Within one year: `dd/mm – dd/mm/yyyy` ("08/08 – 07/11/2026").
+  - Across years: two full dates ("08/11/2026 – 07/02/2027").
+  - English: "Aug 8 – Nov 7, 2026".
+  - The end is minus one day for paid periods and minus 1 ms for grants, as today.
+- **Footnote** (mono 12, `--muted`, both sizes): "ngày theo múi giờ của bạn · bấm một dòng để xem cổng thanh toán và mã giao dịch".
+- **`CurrentPlanCard`:**
+  - title "{plan} tới hết {date}" from `proLastDay`; "Gói Miễn phí" when Free; the plan name alone when it is `null`;
+  - line "Gói học hiện tại";
+  - link "Xem gói học →".
+- **States:** "Xem thêm" (`ui/Button secondary`), `EmptyState`, `ErrorState` with retry, `SkeletonBlocks` while pending.
+- **Detail** (`ui/Dialog`, `md`):
+  - title "Chi tiết giao dịch" with the × close;
+  - the receipt: mono line 1 in lower case ("mua · pro · 3 tháng"), the amount (Bricolage ExtraBold 40), `StatusDot`;
+  - a dashed `--line` rule;
+  - rows Thời điểm ("01/11/2026, 20:14"), Kỳ được dùng, Cổng thanh toán (hidden without a provider), Mã giao dịch (hidden without an id). Mã giao dịch is mono 13 with a button "Chép mã giao dịch": it calls `navigator.clipboard.writeText` and toasts "Đã chép mã giao dịch.";
+  - the help text (not for grants);
+  - footer "Đóng" (secondary).
+- **Row accessible name:** "{line 1}, {date}, {amount}, {line 2}, {status}. Xem chi tiết".
+- **Keys:**
+  - `used` becomes "dùng {period}";
+  - new `noPeriod`, `foot` (replaces `footWeb` and `footPhone`), `currentPlan` "Gói học hiện tại", `planUntil` "{plan} tới hết {date}", `seePlans` "Xem gói học →", `detail.copy`, `detail.copied`;
+  - delete `cols.*`, `aboutTitle`, `about1..3`, `planGrant`, `planOnly` and the detail rows folded into the receipt (`detail.kind`, `detail.plan`, `detail.amount`, `detail.status`) once nothing reads them.
+
+- [ ] **Step 1: Write the failing tests** (zone `Asia/Ho_Chi_Minh`):
+  - Month headings in order: "tháng 11, 2026", "tháng 8, 2026", "tháng 7, 2026".
+  - A payOS quarter purchase row is named `Mua · Pro · 3 tháng, 01/11/2026, 199.000 ₫, dùng 08/11/2026 – 07/02/2027, Thành công. Xem chi tiết`.
+  - A same-year period reads "dùng 08/08 – 07/11/2026".
+  - A refund row shows "−79.000 ₫" and "không có kỳ".
+  - A grant row shows "Cấp gói · Pro" and "0 ₫".
+  - The card reads "Pro tới hết 07/02/2027", with link "Xem gói học →" → `/vi/app/plans`.
+  - **Detail:** the dialog "Chi tiết giao dịch" contains:
+    - "mua · pro · 3 tháng", "199.000 ₫", "Thành công";
+    - "01/11/2026, 20:14", "payOS" and the id.
+  - Button "Chép mã giao dịch" calls the clipboard with the id, and the toast reads "Đã chép mã giao dịch.".
+  - Esc closes it, and focus returns to the row button.
+  - A grant's detail has no "Cổng thanh toán", no "Mã giao dịch" and no help text.
+  - The paging, empty, error and English cases keep passing, with the new names.
+- [ ] **Step 2: Run** `pnpm vitest run L/transactions` → FAIL.
+- [ ] **Step 3: Implement.** In `m4b.spec.ts`, find rows with `getByRole('button', { name: /^Gia hạn/ })` instead of `getByRole('list').getByRole('button')`: there is now one list per month.
+- [ ] **Step 4: Run** → PASS. Then `pnpm cf:docker e2e/app/m4b.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the transactions page and its detail`.
+
+### Task M7.7 (M7a): M7a check, journey, screenshots, PR
+
+**Files:**
+- Create: `e2e/app/m7a.spec.ts`.
+- Modify:
+  - `e2e/app/overflow.spec.ts` (add `/settings/delete-account`, `/settings/transactions`);
+  - `e2e/support/mock-api.ts` (scripted `POST /v1/me/account/delete` → 204);
+  - `e2e-shots/shots.spec.ts` (set `gm-m7a`: Cài đặt, Cài đặt with the menu open, Tài khoản, Xóa tài khoản, Lịch sử giao dịch, Chi tiết giao dịch; 390 and 1440);
+  - `docs/deliveries/giao-dien-moi.md` (M7a as-built), `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Write the journey:**
+  - Cài đặt → "Xem Lịch sử giao dịch" → a row → the detail → Esc → focus on that row.
+  - Cài đặt → "Ngôn ngữ" → "English" → `/en/app/settings` with the English title.
+  - Xóa tài khoản with a password: tick the box, type the email and the password, press "Xóa vĩnh viễn" → `/vi/app/account-deleted`.
+  - axe on Cài đặt, Tài khoản, Xóa tài khoản, Lịch sử giao dịch and the detail.
+  - No sideways scroll at 390.
+- [ ] **Step 2: Run the checks:**
+  - web lint, typecheck, test, `pnpm cf:docker` (all specs);
+  - admin: the four checks (M7.1 changed tokens).
+  - All pass. Record the counts.
+- [ ] **Step 3: Take screenshots:** `SHOTS_MILESTONE=gm-m7a pnpm shots` with a learner set up by `pnpm learner:setup --plan pro --transactions`, next to their Figma frame IDs.
+- [ ] **Step 4: Commit** `test(web): add the m7a journey and the gm-m7a screenshot set` and `docs(web): record m7a as built`.
+- [ ] **Step 5: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild settings, account and transactions`. Merge after CI is green and the owner says yes.
+
+### Task M7.8 (M7b): `ChoiceCard`, period offers, the buy hook
+
+**Files:**
+- Create: `src/ui/ChoiceCard.tsx`, `src/ui/ChoiceCard.test.tsx`, `L/plans/period-offer.ts`, `L/plans/period-offer.test.ts`, `L/plans/use-buy-order.ts`.
+- Modify: `L/plans/PlansPage.tsx`: `BuyBlock` calls the hook, with no visible change.
+
+**Interfaces:**
+- Produces `ChoiceCardGroup({ label, hideLabel?, value, onChange, children })` (react-aria `RadioGroup`, vertical, gap 16) and `ChoiceCard({ value, title, note?, trailing?, isDisabled? })` (react-aria `Radio`).
+  - Layout: flex row, gap 12, padding 16 × 12, `rounded-wm-lg` (14).
+  - An 18 px radio: unselected has a `--ghost` ring; selected has an `--accent` ring and dot.
+  - `title` is SemiBold 15 `--ink`. `note` is mono Bold 11 `--pass`, beside the title from `md` and under it on phones. `trailing` sits at the right end.
+  - Unselected: 1.5 px `--line`. Selected: 1.5 px `--accent` and `bg-wm-accent/4`.
+  - Focus-visible: the 3 px accent ring (§3.3). Disabled: 50 % opacity.
+  - `ui/` may not import `app-shell`, so prices arrive already formatted inside `trailing`.
+- Produces `periodOffer(prices: Record<'1' | '3' | '12', number>, months: '1' | '3' | '12'): { price: number; struck: number | null; saving: number | null; perMonth: number }`:
+  - `struck` = `months × prices['1']` when that is greater than `price`, else `null`;
+  - `saving` = `Math.round((1 − price / struck) × 100)` when `struck`, else `null`;
+  - `perMonth` = `price / months` rounded to the nearest 100.
+- Produces `bestPeriod(prices): '3' | '12' | null`: the period with the largest `saving`, or `null` when none saves.
+- Produces `useBuyOrder(): { buy(months: '1' | '3' | '12', price: number): void; isPending: boolean; error: string | null }`. It moves today's logic out of `PlansPage.tsx:207-266` without changing it:
+  - `useSubmitOnce` with the payload id `${months}:${price}`;
+  - `POST /v1/me/orders`, then `window.location.assign`;
+  - 409 `price-changed` invalidates `APP_CONFIG_KEY` and shows `priceChanged`;
+  - 503 or `provider-unavailable` shows `buyUnavailable`;
+  - anything else shows `useErrorMessage`;
+  - `isPending` stays `true` while leaving for payOS.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `periodOffer` with `{ 1: 79000, 3: 199000, 12: 599000 }`:
+    - `'1'` → `{ price: 79000, struck: null, saving: null, perMonth: 79000 }`;
+    - `'3'` → `{ price: 199000, struck: 237000, saving: 16, perMonth: 66300 }`;
+    - `'12'` → `{ price: 599000, struck: 948000, saving: 37, perMonth: 49900 }`;
+    - `bestPeriod` → `'12'`.
+  - With `{ 1: 79000, 3: 240000, 12: 948000 }`: `'3'` and `'12'` both give `struck: null`, and `bestPeriod` → `null`.
+  - With `{ 1: 100000, 3: 199050, 12: 900000 }`: `'3'` gives `perMonth` 66400 (66 350 rounds up).
+  - `ChoiceCard`, three cards in a group "Kỳ hạn":
+    - three `radio`s;
+    - pressing the second checks it and calls `onChange('3')`;
+    - Arrow Down moves the selection;
+    - the `trailing` text is part of the radio's name;
+    - a disabled card cannot be checked.
+  - Run `plans.test.tsx` before the extraction and record the pass count.
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/ChoiceCard.test.tsx L/plans/period-offer.test.ts` → FAIL.
+- [ ] **Step 3: Implement**, then move the buy logic into `useBuyOrder`.
+- [ ] **Step 4: Run** → PASS. `plans.test.tsx` passes with the same count as before.
+- [ ] **Step 5: Commit** `feat(web): add choice cards, period offers and the buy hook`.
+
+### Task M7.9 (M7b): Gói học and the Hủy gói dialog
+
+**Files:**
+- Modify: `L/plans/{PlansPage,PlanCard,CompareTable,SubscriptionRows}.tsx`, `L/plans/plans.test.tsx`, `messages/{vi,en}.json` (`App.plans`), `e2e/app/m4.spec.ts` (plans case), `packages/design-tokens/web.css` (`--shadow-wm-pro`).
+
+**Interfaces:**
+- Consumes: `ChoiceCardGroup`, `ChoiceCard`, `periodOffer`, `bestPeriod`, `useBuyOrder` (M7.8); `SkeletonBlocks` (M7.1); `ui/Dialog`, `Button`, `ButtonLink`, `TextButton`, `Tag`, `Card`, `States`.
+- Produces token `--shadow-wm-pro: 0 40px 70px -40px rgb(27 36 68 / 0.42)` (Figma Pro card).
+
+**Behaviour** (`123:4196` / `123:4401`, M7 Figma B §1):
+- **Header**, centred:
+  - `h1`: Free "Học đều mỗi ngày, lên Pro khi cần"; Pro "Bạn đang dùng gói Pro"; trial as today;
+  - lead "Trả một lần cho mỗi kỳ, không tự gia hạn. Hết kỳ, bạn về gói Miễn phí." (`--muted`, 16 / phone 15).
+  - The eyebrow and the period segmented go away.
+- **Two cards:** in a row from `md` (Free 470 px, Pro takes the rest, top-aligned), stacked on phones. Radius 20 (R8), padding 28 / 20.
+  - **Free** (a `section` named by its `h2` "Miễn phí"), in order:
+    1. tag "gói hiện tại" for a Free learner;
+    2. "0 ₫" with "không thu tiền";
+    3. the four check rows, numbers from the API. When both Free AI numbers are 0, the `aiOff` row shows as today;
+    4. "Có thể có quảng cáo.";
+    5. mono "bạn đang dùng gói này" for a Free learner.
+  - **Pro** (2 px `--accent` border, `shadow-wm-pro`), in order:
+    1. `h2` "Pro", tag "có AI", and also "gói hiện tại" for a Pro learner;
+    2. "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.";
+    3. for a Pro learner, "Tới hết {date}" and the upcoming periods, as today, with numeric dates;
+    4. `ChoiceCardGroup` "Kỳ hạn" (label hidden) with three `ChoiceCard`s, "12 tháng" checked by default. Each card has:
+       - title "1 tháng", "3 tháng", "12 tháng";
+       - note "−16%", or "−37% · tiết kiệm nhất" on `bestPeriod` only;
+       - trailing: the struck price (`--muted`, line-through, `aria-hidden`; Figma's `--ghost` is about 1.6:1), the price (Bricolage Bold 18), then "mỗi tháng" for 1 month or "≈ {perMonth} mỗi tháng".
+    5. the six check rows (M7 Figma B §1.2), numbers from the API;
+    6. the full-width primary button. It reads "Mua gói Pro {period}" for Free. A Pro learner keeps today's `periodState` labels: "Đang dùng kỳ này", "Nâng cấp lên {period}", or "Mua gói Pro {period}";
+    7. the error line;
+    8. the small print: "Trả một lần, dùng {period}, không tự gia hạn. Không hoàn tiền tự động; cần hỗ trợ, liên hệ <mail>{email}</mail>." and the link "Điều khoản sử dụng"; `startsOn` for a Pro learner as today.
+- **Comparison:** "So sánh chi tiết các gói" (`h2`, Bricolage Bold 22) and the table in a card, always shown (no toggle).
+  - The `table` is named by that heading (`aria-labelledby`).
+  - The header row "tính năng" · "Miễn phí" · "Pro" is mono 11.
+  - Values are the texts "Có" and "Không"; the Pro column is SemiBold `--accent`. Numbers come from the API.
+- **`SubscriptionRows`** (fake-provider subscriptions only, M7 code P §1.2 item 3) keeps its texts and moves to the kit:
+  - a `Card` row with `TextButton tone="delete"` "Hủy gói";
+  - `ui/Dialog` "Hủy gói?" with the `--fail-soft` warning block of the M3 confirm dialogs;
+  - `Button secondary` "Giữ gói" and `Button danger` "Hủy gia hạn".
+- **States:** pending shows `SkeletonBlocks`; error shows `ErrorState`.
+- **Keys:**
+  - new `lead`, `freePriceNote` "không thu tiền", `freeAds`, `proBadge` "có AI", `perMonth`, `perMonthApprox`, `saving`, `savingBest`;
+  - changed `buy` "Mua gói Pro {period}", `oneTime` "Trả một lần, dùng {period}, không tự gia hạn.", `noRefund` "Không hoàn tiền tự động; cần hỗ trợ, liên hệ <mail>{email}</mail>.", `proLine`;
+  - `proList` becomes six items, `yours` "gói hiện tại", `usingThis` "bạn đang dùng gói này", `compareTable.feature` "tính năng";
+  - deleted: `eyebrow`, `granted`, `renews`, `endsOn`, `backToFree`, `yoursGift` and the old `proList` keys.
+
+- [ ] **Step 1: Write the failing tests.** Rewrite the `plans.test.tsx` cases whose markup changes, and keep the behaviour cases:
+  - **Free learner:**
+    - region "Miễn phí" has "gói hiện tại", "0 ₫", "Có thể có quảng cáo." and "bạn đang dùng gói này";
+    - region "Pro" has the radiogroup "Kỳ hạn" with radio `/^12 tháng/` checked, and the button "Mua gói Pro 12 tháng".
+  - **Offers:**
+    - radio `/^3 tháng/` contains "−16%", "199.000 ₫" and "≈ 66.300 ₫ mỗi tháng";
+    - `/^12 tháng/` contains "−37% · tiết kiệm nhất" and "≈ 49.900 ₫ mỗi tháng";
+    - `/^1 tháng/` contains "mỗi tháng" and no "−".
+  - **Choose and buy:**
+    - checking `/^3 tháng/` → the button reads "Mua gói Pro 3 tháng", and the small print starts "Trả một lần, dùng 3 tháng, không tự gia hạn.";
+    - pressing it → `POST /v1/me/orders` body `{ period_months: 3, expected_amount: 199000, locale: 'vi' }`, a UUID `Idempotency-Key`, and `window.location.assign(checkout_url)`.
+  - The small print and the link "Điều khoản sử dụng" come after the buy button in document order.
+  - **Comparison:** a `table` named "So sánh chi tiết các gói" exists, and no button has that name. The Free cell of "Phiên luyện mỗi ngày" is "3".
+  - **Pro learner** (prepaid, `pro_until: '2026-12-31T17:00:00Z'`):
+    - `h1` "Bạn đang dùng gói Pro";
+    - region "Pro" has "gói hiện tại" and "Tới hết 31/12/2026";
+    - region "Miễn phí" has no "gói hiện tại".
+  - The LB1E28 price-changed case, the 503 case, the English case and the five Hủy gói cases keep passing (their texts do not change).
+- [ ] **Step 2: Run** `pnpm vitest run L/plans` → FAIL.
+- [ ] **Step 3: Implement.** In `m4.spec.ts`, the plans case expects radio `/12 tháng/` checked and button "Mua gói Pro 12 tháng".
+- [ ] **Step 4: Run** → PASS. Then `pnpm cf:docker e2e/app/m4.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the plans page with choice cards`.
+
+### Task M7.10 (M7b): Đơn hàng
+
+**Files:**
+- Modify: `L/plans/OrderReturnPage.tsx`, `L/plans/order-return.test.tsx`.
+- Modify `packages/design-tokens/web.css`: add `--animate-wm-pulse` and `@keyframes wm-pulse` next to the other `wm-` animations.
+
+**Behaviour** (`123:4598` / `123:4690`, `123:4774`; M7 Figma B §2–§3; motion doc §6):
+- **Layout:**
+  - One card, centred: 560 px from `md`, full width on phones; radius 20, padding 24 / 16.
+  - No page title besides the card's `h1`, and no back link.
+  - The card sits inside one `role="status"` element that stays mounted across states, so a change is announced.
+- **Paid:**
+  1. a 40 px `--pass-soft` circle with a check;
+  2. `h1` "Thanh toán thành công";
+  3. "Gói Pro có hiệu lực đến hết **{date}**." (`'numeric'`, `lastDay`);
+  4. the detail block (`--bg`, radius 14): Gói, Số tiền, Mã đơn hàng;
+  5. `ButtonLink` "Bắt đầu học" → `/app`, then `TextButton` "Xem gói" → `/app/plans`.
+- **Waiting** (checking, `pending`, `needs_review`, `closed`):
+  - a 10 px `--accent` dot with `animate-wm-pulse` (opacity 1 → .3 → 1, 1.4 s ease-in-out, infinite);
+  - `h1` in Bricolage Bold 22, and the body as today; `contact` gives the support email for review.
+  - The global reduced-motion rule (`globals.css`, one iteration of 0.01 ms) leaves the dot still.
+- **Ended and not found** (`expired`, `cancelled`, `failed`, 404, no or bad `?order=`): a still 10 px `--fail` dot, the `h1`, the body, and `ButtonLink` "Đến trang Gói học". Not found keeps its own title.
+- **Error:** `ErrorState`.
+- Polling, the single `check` and the invalidations on `paid` are unchanged. The dot keeps blinking while the status is `pending`, also after the 2-minute stop, because the motion doc ends the blink at a status change (a ruling).
+
+- [ ] **Step 1: Write the failing tests:**
+  - The 11 cases keep passing, with "Gói Pro có hiệu lực đến hết 05/12/2026.".
+  - The waiting card is inside an element with `role="status"`.
+  - A pending read followed by a `paid` read leaves the same `status` element (same node) holding "Thanh toán thành công".
+  - Not found has the link "Đến trang Gói học".
+- [ ] **Step 2: Run** `pnpm vitest run L/plans/order-return.test.tsx` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(web): rebuild the order page with the waiting dot`.
+
+### Task M7.11 (M7b): Giới thiệu Pro
+
+**Files:** `L/house-ad/HouseAd.tsx`, `L/house-ad/house-ad.test.tsx`, `src/ui/Dialog.tsx` (prop `tone`), its test, `messages/{vi,en}.json` (`App.houseAd`).
+
+**Interfaces:** `ui/Dialog` gains `tone?: 'default' | 'pro'`. `pro` adds a 2 px `--accent` border on every side, top corners only on the sheet. Nothing else changes.
+
+**Behaviour** (`75:2094` / `75:2373`, M7 Figma B §5):
+- **Dialog:** `ui/Dialog tone="pro"` with `shadow-wm-pop` (§3.3; Figma's own shadow is a leftover raw value), centred from `md` like every other dialog (Figma draws it under the top bar; a ruling).
+- **Content**, in order:
+  1. Tags "Pro" and "có AI" above the title (`Tag tone="accent" mono`).
+  2. Title "Học nhiều hơn với Pro" and the × "Đóng" (44 px hit area on phones).
+  3. The lead.
+  4. The three check rows.
+  5. The price line: one paragraph "Từ {price} cho 1 tháng", with the price in Bricolage ExtraBold 40.
+- **Footer**, right-aligned: `TextButton tone="muted"` "Để sau" (closes), then `ButtonLink` "Xem gói Pro →" → `/app/plans` (closes).
+- When and where it opens, and the counter, stay as they are.
+- Keys: new `later` "Để sau", `badgePro` "Pro", `badgeAi` "có AI".
+
+- [ ] **Step 1: Write the failing tests:**
+  - The 14 cases keep passing. The price case matches the paragraph's full text "Từ 79.000 ₫ cho 1 tháng".
+  - The dialog contains the texts "Pro" and "có AI".
+  - "Để sau" closes it, and the stored counter keeps the count written when it opened.
+  - `ui/Dialog` with `tone="pro"` has the same accessible name and closes on Esc.
+- [ ] **Step 2: Run** `pnpm vitest run L/house-ad src/ui` → FAIL.
+- [ ] **Step 3: Implement.** Do not touch `SHOWS_ON`, the effect or `house-ad-counter.ts`.
+- [ ] **Step 4: Run** → PASS. Check: `git diff --stat origin/refactor/giao-dien-moi -- src/features/learner/ads 'src/app/[locale]/app/(member)/layout.app.tsx'` → empty.
+- [ ] **Step 5: Commit** `feat(web): restyle the pro dialog`.
+
+### Task M7.12 (M7b): Delete the old pieces M7 orphaned
+
+**Files:**
+- Delete each of `src/app-ui/{Button,Dialog,Segmented,Switch,Checkbox,TextField,DateOfBirthField}.tsx` that nothing imports.
+- Remove their cases from `src/app-ui/ui-kit.test.tsx`.
+- `app-ui/States` and the `Toast` re-export stay for M8.
+
+- [ ] **Step 1: Find importers:** for each name run `git grep -l "app-ui/<Name>'" -- src e2e ':!src/app-ui/ui-kit.test.tsx'`. Delete the files with no output. List the others in the as-built with their importers.
+- [ ] **Step 2: Check:** `rg "@/app-ui/" src/features/learner/{settings,transactions,plans,house-ad} --glob '!*.test.*'` prints nothing. `pnpm typecheck` and `pnpm test` pass.
+- [ ] **Step 3: Commit** `refactor(web): delete old ui pieces that m7 orphaned`.
+
+### Task M7.13 (M7b): M7b check, journey, screenshots, PR
+
+**Files:**
+- Create: `e2e/app/m7b.spec.ts`.
+- Modify:
+  - `e2e/support/mock-api.ts`: scripted `POST /v1/me/orders`, `POST /v1/me/orders/:id/check`, `GET /v1/me/orders/:id`, `POST /v1/me/subscriptions/:id/cancel`;
+  - `e2e/support/fixtures.ts`: `entitlementsBody` takes optional `ads`, `pro_until`, `sources`;
+  - `e2e/app/overflow.spec.ts`: add `/plans` and `/plans/order?order=<uuid>`;
+  - `e2e-shots/shots.spec.ts`: set `gm-m7b` with Gói học (Free and Pro), Đơn hàng (paid and pending) and Giới thiệu Pro, at 390 and 1440. No seed makes an order or turns ads on, so the order and Pro dialog shots answer `/v1/me/orders/*` and `ads.show` with `page.route`; the record says so;
+  - `docs/deliveries/giao-dien-moi.md` (M7 as-built), `docs/deliveries/giao-dien-moi-rulings.md`.
+
+- [ ] **Step 1: Write the journey:**
+  - **Buy:**
+    1. Gói học (Free) → radio "3 tháng" → "Mua gói Pro 3 tháng".
+    2. The mocked `checkout_url` is `/vi/app/plans/order?order=<uuid>`, so the order page opens.
+    3. "Đang chờ xác nhận thanh toán" shows, then the next read is `paid` and "Thanh toán thành công" shows.
+    4. "Bắt đầu học" → `/vi/app`.
+  - **Pro dialog:** a Free learner with `ads.show: true` goes from Hôm nay → tab "Nhóm" → the dialog "Học nhiều hơn với Pro" opens → "Để sau" closes it. No request goes to `pagead2.googlesyndication.com`.
+  - **Cancel:** a learner with a renewing fake subscription goes Gói học → "Hủy gói" → "Hủy gia hạn" → one POST, then "Đã gửi yêu cầu hủy gia hạn".
+  - axe on Gói học, Đơn hàng (paid and pending), Giới thiệu Pro and the Hủy gói dialog.
+  - No sideways scroll at 390.
+- [ ] **Step 2: Run the checks:**
+  - web lint, typecheck, test, `pnpm cf:docker` (all specs), `pnpm assert:render-mode`;
+  - admin: the four checks (M7.9 and M7.10 changed tokens).
+  - All pass. Record the counts.
+- [ ] **Step 3: Take screenshots:** `SHOTS_MILESTONE=gm-m7b pnpm shots`, next to their Figma frame IDs.
+- [ ] **Step 4: Commit** `test(web): add the m7b journey and the gm-m7b screenshot set` and `docs(web): record m7 as built`.
+- [ ] **Step 5: Open the PR** with `ship-pr`: base `refactor/giao-dien-moi`, title `feat(web): rebuild plans, orders and the pro dialog`. Merge after CI is green and the owner says yes.
+
+## Part 7 self-review notes (11/11/2026)
+
+**Coverage:**
+- §9 M7:
+  - Cài đặt and the avatar menu → M7.3;
+  - Tài khoản → M7.4;
+  - Xóa tài khoản → M7.5;
+  - giao dịch and its detail → M7.6;
+  - Gói học → M7.9;
+  - Đơn hàng and its other states → M7.10;
+  - Giới thiệu Pro → M7.11;
+  - Hủy gói → M7.9 (see the decisions).
+- §7.5 `ChoiceCard` → M7.8. §8.2 order dot → M7.10; dialog motion (GM15) through `ui/Dialog` in M7.6, M7.9, M7.11. §8.4 → M7.10.
+- §12 copy → each task's keys. §13 journeys with axe, overflow and shots → M7.7, M7.13. §14 per milestone → M7.7, M7.13.
+- Roadmap row 7 ("`ChoiceCard`; settings, account, plans, orders, `HouseAd`") → all of the above.
+- The survey's defects → M7.2. Old pieces orphaned → M7.12.
+
+**Decisions this part makes.** Each is recorded as a ruling when executed.
+- **Two PRs:** M7a for the settings side, M7b for the plans side, as M5 was split.
+- **Hủy gói stays on Gói học** and is rebuilt there.
+  - Cài đặt has no cancel code and no Figma row; design §9 M7 named `SettingsPage.tsx` by mistake.
+  - The dialog appears only for fake-provider subscriptions, because payOS sells prepaid periods.
+- **`ChoiceCard`** follows the period cards drawn on Gói học (price on the right, saving note, 18 px radio), not component `34:383`, which cannot hold a price. Radius 14, since there is no 12 token.
+- **Kit fields, select, segmented and switch** replace the local versions drawn on Cài đặt, Tài khoản and Xóa tài khoản.
+- **Radii:** cards 20 (R8), not Figma's 18; tags 6, not 5.
+- **Struck prices** use `--muted` and are hidden from screen readers; the saving is in the note.
+- **The link "Điều khoản sử dụng"** stays in the small print, although Figma drops it.
+- **The comparison table** is always shown, as in Figma; the toggle goes away.
+- **Shadows:** the Pro card gets token `--shadow-wm-pro`. The Pro dialog uses `--shadow-wm-pop` and is centred like the other dialogs.
+- **Usage bars** fill by the number their text shows. The refill day keeps "1/12".
+- **`PageTitle`** takes the Figma 44 / 30 look for every user, Luyện tập and Từ hay sai included. Báo lỗi của tôi drops its raw title.
+- **Xóa tài khoản:** the DOM order is info, then form, on every size. Desktop moves the form left with CSS `order`.
+- **Transactions:**
+  - grants show "0 ₫";
+  - status tones: pass, accent, ghost, muted;
+  - the transaction id has a copy button with a toast;
+  - "payos" prints "payOS".
+- **Order page:** the dot blinks while the status is `pending`, also after polling stops. The card lives in one `role="status"` element.
+- **Settings:**
+  - Mục lục follows the scroll and moves focus on click (Figma is static);
+  - "Xem" and "Sửa" carry their row label in the accessible name;
+  - text buttons keep each frame's "→" as drawn.
+
+**Open:** none. QR4 stays parked, and M7 does not touch the ads code.

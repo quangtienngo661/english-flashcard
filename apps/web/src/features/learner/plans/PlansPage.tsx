@@ -1,31 +1,35 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
-import { APP_CONFIG_KEY, useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
-import { useApi } from '@/app-shell/session/session-context';
-import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Segmented } from '@/app-ui/Segmented';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { cn } from '@/lib/cn';
+import { useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
 import { site } from '@/lib/site';
+import { Button } from '@/ui/Button';
+import { ChoiceCard, ChoiceCardGroup } from '@/ui/ChoiceCard';
+import { SkeletonBlocks } from '@/ui/Skeleton';
+import { ErrorState } from '@/ui/States';
+import { Tag } from '@/ui/Tag';
 import { CompareTable } from './CompareTable';
 import { PlanCard } from './PlanCard';
+import { bestPeriod, periodOffer, type Months, type Prices } from './period-offer';
 import { SubscriptionRows } from './SubscriptionRows';
+import { useBuyOrder } from './use-buy-order';
 
 type Source = Entitlements['sources'][number];
-type Months = '1' | '3' | '12';
 const MONTHS: Months[] = ['1', '3', '12'];
 /** "tới hết 31/12/2026": an end at the first instant of 1/1 is the last day before it. */
 const lastDay = (endsAt: string) => new Date(Date.parse(endsAt) - 1);
 const DAY_MS = 86_400_000;
+
+// raw-ok: Figma's "0 ₫" is Bricolage ExtraBold 40 / -0.84, a size no token has (as the receipt amount of M7.6)
+const FREE_PRICE = 'font-wm-display text-[2.5rem] font-extrabold leading-tight tracking-[-0.021em] text-wm-ink';
+// raw-ok: the price of a period card is Bricolage Bold 18, a size no token has
+const PERIOD_PRICE = 'font-wm-display text-[1.125rem] font-bold leading-snug text-wm-ink';
+const LINK = 'font-semibold text-wm-accent underline underline-offset-2 outline-none focus-visible:outline-3 focus-visible:outline-wm-accent';
 
 /**
  * How long the running prepaid period is: 1, 3 or 12 months (launch prep B: a period is bought for one of these and runs from its start
@@ -39,9 +43,9 @@ export function prepaidMonths(source: { kind: string; starts_at: string | null; 
 }
 
 /**
- * K/52, K/53 `/app/plans`, full screen: Free and Pro, numbers from `plans` (design §8.7); no usage here (copy doc §12). Pro is bought here
- * for 1, 3 or 12 months, paid once through payOS and not renewed (launch prep B design §3.8); a learner who is Pro can buy another period,
- * which follows the one running.
+ * Gói học `/app/plans` (Figma 123:4196 / 123:4401, M7 Figma B §1): a centred header, Free and Pro side by side from 1024 px, the
+ * subscription rows (fake provider only), and the comparison table. Pro is bought here for 1, 3 or 12 months, paid once through payOS
+ * and not renewed (launch prep B design §3.8); a learner who is Pro can buy another period, which follows the one running.
  */
 export function PlansPage() {
   const t = useTranslations('App.plans');
@@ -50,10 +54,9 @@ export function PlansPage() {
   const config = useAppConfig();
   const entitlements = useEntitlements();
   const [months, setMonths] = useState<Months>('12');
-  const [compare, setCompare] = useState(false);
 
   let body;
-  if (config.isPending || entitlements.isPending) body = <FullScreenSpinner />;
+  if (config.isPending || entitlements.isPending) body = <SkeletonBlocks />;
   else if (config.isError || entitlements.isError) {
     const failed = config.isError ? config : entitlements;
     body = <ErrorState message={errorText(failed.error)} onRetry={() => void failed.refetch()} />;
@@ -63,104 +66,146 @@ export function PlansPage() {
     const plan = entitlements.data.plan;
     const source: Source | undefined = entitlements.data.sources.find((s) => s.kind === 'grant_plan' || s.kind === 'subscription' || s.kind === 'prepaid');
     const onPro = plan === 'pro';
-    const gift = onPro && source?.kind === 'grant_plan';
     // Where the unbroken Pro ends (a plan grant or the last prepaid period of a chain); a subscription or a trial still shows its own end.
     const endsAt = entitlements.data.pro_until ?? source?.ends_at ?? null;
-    const end = endsAt ? format.date(lastDay(endsAt), 'full') : null;
+    const end = endsAt ? format.date(lastDay(endsAt), 'numeric') : null;
     const upcoming = entitlements.data.upcoming_periods ?? [];
     const prices = plans.pro.prices;
-    // Owner 27/10/2026: no line under "Bạn đang dùng gói Pro"; the Pro card already says until when.
-    const subtitle = plan === 'trial' && end ? t('trialUntil', { date: end }) : null;
+    const freeAi = plans.free.ai_practice_per_cycle + plans.free.ai_lookup_per_cycle > 0;
 
     body = (
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <p className="text-caption font-semibold text-muted">{t('eyebrow')}</p>
-          <h1 className="text-display font-extrabold text-ink">{onPro ? t('titlePro') : plan === 'trial' ? t('titleTrial') : t('title')}</h1>
-          {subtitle && <p className="text-caption text-muted">{subtitle}</p>}
-          {prices && (
-            <Segmented
-              label={t('period')}
-              value={months}
-              onChange={setMonths}
-              options={MONTHS.map((id) => ({ id, label: t(`periods.${id}`) }))}
-            />
-          )}
-        </div>
-        <div className="grid w-full max-w-4xl items-start gap-5 md:grid-cols-2">
+      <>
+        {/* Owner 27/10/2026: no line about the end under "Bạn đang dùng gói Pro"; the Pro card already says until when. */}
+        <header className="mx-auto flex max-w-225 flex-col items-center gap-2 text-center">
+          <h1 className="font-wm-display text-wm-app-title-mobile text-wm-ink md:text-wm-app-title">
+            {onPro ? t('titlePro') : plan === 'trial' ? t('titleTrial') : t('title')}
+          </h1>
+          <p className="max-w-175 font-wm-sans text-wm-base text-wm-muted">{t('lead')}</p>
+          {plan === 'trial' && end && <p className="font-wm-sans text-wm-small text-wm-muted">{t('trialUntil', { date: end })}</p>}
+        </header>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <PlanCard
+            className="lg:w-117.5 lg:shrink-0"
             name={t('free')}
-            chip={plan === 'free' ? t('yours') : undefined}
+            tags={plan === 'free' && <Tag mono>{t('yours')}</Tag>}
+            intro={
+              <p className="flex flex-wrap items-baseline gap-2">
+                <span className={FREE_PRICE}>{format.money(0, 'VND')}</span>
+                <span className="font-wm-sans text-wm-small text-wm-muted">{t('freePriceNote')}</span>
+              </p>
+            }
             perks={[
               { text: t('freeList.review'), included: true },
               { text: t('freeList.lookup', { groups }), included: true },
               { text: t('freeList.sessions', { count: plans.free.practice_sessions_per_day }), included: true },
               // The monthly allowance, from the config; both numbers 0 means the admin switched Free AI off (LA3#11).
-              plans.free.ai_practice_per_cycle + plans.free.ai_lookup_per_cycle > 0
+              freeAi
                 ? { text: t('freeList.ai', { practice: plans.free.ai_practice_per_cycle, lookup: plans.free.ai_lookup_per_cycle }), included: true }
                 : { text: t('freeList.aiOff'), included: false },
             ]}
-          >
-            {plan === 'free' ? (
-              <p className="rounded-inner bg-success-soft px-4 py-2.5 text-center text-ui font-semibold text-success">{t('usingThis')}</p>
-            ) : (
-              <p className="rounded-inner bg-neutral-soft px-4 py-2.5 text-center text-ui text-ink">{t('backToFree')}</p>
-            )}
-          </PlanCard>
-          <PlanCard
-            name={t('pro')}
-            crown
-            highlight
-            badge={gift ? t('yoursGift') : onPro ? t('yours') : undefined}
-            perks={[
-              { text: t('proList.sessions', { count: plans.pro.practice_sessions_per_day }), included: true },
-              { text: t('proList.ai', { count: plans.pro.ai_practice_per_cycle }), included: true },
-              { text: t('proList.lookup', { count: plans.pro.ai_lookup_per_cycle }), included: true },
-              { text: t('proList.ads'), included: true },
-            ]}
-            footer={prices ? <BuyNotes startsAt={onPro && periodState(months, prepaidMonths(source)) !== 'locked' ? endsAt : null} /> : undefined}
-          >
-            {onPro && (
+            footer={
               <>
-                {end && <p className="text-ui text-ink">{t('until', { date: end })}</p>}
-                {upcoming.length > 0 && (
-                  <ul className="flex flex-col gap-0.5 text-caption text-muted">
-                    {upcoming.map((period, index) => (
-                      <li key={period.id}>
-                        {t(index === 0 ? 'nextPeriod' : 'thenPeriod', {
-                          from: format.date(period.starts_at, 'full'), to: format.date(lastDay(period.ends_at), 'full'),
-                        })}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <p className="font-wm-sans text-wm-small text-wm-muted">{t('freeAds')}</p>
+                {plan === 'free' && <p className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('usingThis')}</p>}
               </>
-            )}
-            {prices ? <BuyBlock months={months} price={prices[months]} runningMonths={onPro ? prepaidMonths(source) : null} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
-          </PlanCard>
+            }
+          />
+          <PlanCard
+            className="lg:flex-1"
+            highlight
+            name={t('pro')}
+            tags={
+              <>
+                <Tag tone="accent" mono>{t('proBadge')}</Tag>
+                {onPro && <Tag mono>{t('yours')}</Tag>}
+              </>
+            }
+            intro={
+              <>
+                <p className="font-wm-sans text-wm-small text-wm-muted">{t('proLine')}</p>
+                {onPro && (end || upcoming.length > 0) && (
+                  <div className="flex flex-col gap-0.5">
+                    {end && <p className="font-wm-sans text-wm-small-strong text-wm-ink">{t('until', { date: end })}</p>}
+                    {upcoming.length > 0 && (
+                      <ul className="flex flex-col gap-0.5 font-wm-sans text-wm-caption text-wm-muted">
+                        {upcoming.map((period, index) => (
+                          <li key={period.id}>
+                            {t(index === 0 ? 'nextPeriod' : 'thenPeriod', {
+                              from: format.date(period.starts_at, 'numeric'), to: format.date(lastDay(period.ends_at), 'numeric'),
+                            })}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                {prices && <PeriodChoice prices={prices} months={months} onChange={setMonths} />}
+              </>
+            }
+            perks={[
+              { text: t('proList.aiWrite'), included: true },
+              { text: t('proList.aiLookup'), included: true },
+              { text: t('proList.ai', { practice: plans.pro.ai_practice_per_cycle, lookup: plans.pro.ai_lookup_per_cycle }), included: true },
+              { text: t('proList.sessions', { count: plans.pro.practice_sessions_per_day }), included: true },
+              { text: t('proList.ads'), included: true },
+              { text: t('proList.allFree'), included: true },
+            ]}
+            footer={
+              prices && (
+                <BuyBlock
+                  months={months}
+                  price={prices[months]}
+                  runningMonths={onPro ? prepaidMonths(source) : null}
+                  // The new period starts where the running Pro ends: the raw end, not the last day.
+                  startsAt={onPro ? endsAt : null}
+                />
+              )
+            }
+          />
         </div>
         <SubscriptionRows sources={entitlements.data.sources} />
-        <button
-          type="button"
-          aria-expanded={compare}
-          onClick={() => setCompare((v) => !v)}
-          className="flex items-center gap-1 rounded-sm text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {t('compare')}
-          <ChevronDown aria-hidden className={cn('size-4 transition-transform', compare && 'rotate-180')} />
-        </button>
-        {compare && (
-          <div className="w-full max-w-4xl">
-            <CompareTable plans={plans} groups={groups} />
-          </div>
-        )}
-      </div>
+        <CompareTable plans={plans} groups={groups} />
+      </>
     );
   }
 
   return (
     // The (chrome) layout draws the frame and the main landmark (giao diện mới M1.10).
-    <div className="mx-auto w-full max-w-6xl">{body}</div>
+    <div className="mx-auto flex w-full max-w-290 flex-col gap-5 md:gap-6">{body}</div>
+  );
+}
+
+/** The three period cards (M7 Figma B §1.3): saving note, struck price (not read: the note says the saving), price, price a month. */
+function PeriodChoice({ prices, months, onChange }: { prices: Prices; months: Months; onChange: (months: Months) => void }) {
+  const t = useTranslations('App.plans');
+  const format = useFormat();
+  const best = bestPeriod(prices);
+  return (
+    <ChoiceCardGroup label={t('period')} hideLabel value={months} onChange={onChange}>
+      {MONTHS.map((id) => {
+        const offer = periodOffer(prices, id);
+        const saving = offer.saving !== null && offer.saving >= 1 ? offer.saving : null;
+        return (
+          <ChoiceCard
+            key={id}
+            value={id}
+            title={t(`periods.${id}`)}
+            note={saving === null ? undefined : t(id === best ? 'savingBest' : 'saving', { percent: saving })}
+            trailing={
+              <span className="flex flex-col items-end">
+                {offer.struck !== null && (
+                  <span aria-hidden className="font-wm-sans text-wm-mono text-wm-muted line-through">{format.money(offer.struck, 'VND')}</span>
+                )}
+                <span className={PERIOD_PRICE}>{format.money(offer.price, 'VND')}</span>
+                <span className="font-wm-sans text-wm-mono text-wm-muted">
+                  {id === '1' ? t('perMonth') : t('perMonthApprox', { price: format.money(offer.perMonth, 'VND') })}
+                </span>
+              </span>
+            }
+          />
+        );
+      })}
+    </ChoiceCardGroup>
   );
 }
 
@@ -172,95 +217,56 @@ function periodState(months: Months, runningMonths: number | null): 'buy' | 'loc
 }
 
 /**
- * The small print at the bottom of the Pro card (owner 05/11/2026): when the new period starts (on Pro, unless the button is locked), no
- * automatic renewal or refund with the support email, and the Terms.
+ * The full-width buy button and what follows it (owner 05/11/2026, Part 7 constraints): the error line, when the new period starts (on
+ * Pro, unless the button is locked), one payment with no renewal and no automatic refund with the support email, then the Terms.
  */
-function BuyNotes({ startsAt }: { startsAt: string | null }) {
+function BuyBlock({ months, price, runningMonths, startsAt }: {
+  months: Months;
+  price: number;
+  /** The length of the running prepaid period: the same length is locked, a longer one is an upgrade (owner 05/11/2026). */
+  runningMonths: number | null;
+  startsAt: string | null;
+}) {
   const t = useTranslations('App.plans');
   const locale = useLocale();
   const format = useFormat();
+  const order = useBuyOrder();
+  const state = periodState(months, runningMonths);
+  const period = t(`periods.${months}`);
+  const locked = state === 'locked';
+
   return (
-    <div className="flex flex-col gap-2 border-t border-border pt-3">
-      {startsAt && <p className="text-caption text-muted">{t('startsOn', { date: format.date(startsAt, 'full') })}</p>}
-      <p className="text-caption text-muted">
+    <div className="flex flex-col gap-3">
+      <Button
+        variant={locked ? 'secondary' : 'primary'}
+        className="w-full"
+        isDisabled={locked}
+        onPress={() => order.buy(months, price)}
+        isPending={order.isPending}
+      >
+        {locked ? t('currentPeriod') : state === 'upgrade' ? t('upgrade', { period }) : t('buy', { period })}
+        {!locked && <ArrowRight aria-hidden className="size-4" />}
+      </Button>
+      {order.error && (
+        <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
+          {order.error}
+        </p>
+      )}
+      {startsAt && !locked && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('startsOn', { date: format.date(startsAt, 'numeric') })}</p>}
+      <p className="font-wm-sans text-wm-caption text-wm-muted">
+        {t('oneTime', { period })}{' '}
         {t.rich('noRefund', {
           email: site.supportEmail,
           mail: (chunks) => (
-            <a href={`mailto:${site.supportEmail}`} className="font-semibold text-primary underline underline-offset-2">
+            <a href={`mailto:${site.supportEmail}`} className={LINK}>
               {chunks}
             </a>
           ),
         })}
       </p>
-      <Link href={`/${locale}/terms`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
+      <Link href={`/${locale}/terms`} className={`w-fit font-wm-sans text-wm-caption ${LINK}`}>
         {t('termsLink')}
       </Link>
-    </div>
-  );
-}
-
-/**
- * The price of the chosen period, the sentence that says what is bought, and [Mua] (design §3.8). A press creates the order with the price
- * the learner saw: if it changed meanwhile the server answers 409 `price-changed`, the prices are read again and nothing is charged. A
- * created order sends the browser to the payOS page (a full page load: the next stop is another site).
- */
-function BuyBlock({ months, price, runningMonths }: {
-  months: Months;
-  price: number;
-  /** The length of the running prepaid period: the same length is locked, a longer one is an upgrade (owner 05/11/2026). */
-  runningMonths: number | null;
-}) {
-  const t = useTranslations('App.plans');
-  const locale = useLocale();
-  const format = useFormat();
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const errorText = useErrorMessage();
-  const [error, setError] = useState<string | null>(null);
-  const [leaving, setLeaving] = useState(false);
-  const state = periodState(months, runningMonths);
-  const locked = state === 'locked';
-  const upgrade = state === 'upgrade';
-
-  // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same order, a press with other content a new one.
-  const create = useSubmitOnce((key) =>
-    api.post<{ order_id: string; checkout_url: string }>(
-      '/v1/me/orders', { period_months: Number(months), expected_amount: price, locale }, { idempotencyKey: key },
-    ));
-
-  async function buy() {
-    setError(null);
-    try {
-      const created = await create.submit(`${months}:${price}`);
-      if (created === undefined) return;
-      setLeaving(true);
-      window.location.assign(created.checkout_url);
-    } catch (failure) {
-      if (failure instanceof ApiError && failure.problem.slug === 'price-changed') {
-        void queryClient.invalidateQueries({ queryKey: APP_CONFIG_KEY });
-        setError(t('priceChanged'));
-      } else if (failure instanceof ApiError && (failure.problem.status === 503 || failure.problem.slug === 'provider-unavailable')) {
-        setError(t('buyUnavailable'));
-      } else {
-        setError(errorText(failure));
-      }
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-h2 font-extrabold text-ink">{format.money(price, 'VND')}</span>
-        <span className="text-ui text-muted">{t('oneTime', { period: t(`periods.${months}`) })}</span>
-      </p>
-      <Button variant={locked ? 'quiet' : 'sticker'} size="lg" isDisabled={locked} onPress={() => void buy()} isPending={create.busy || leaving}>
-        {locked ? t('currentPeriod') : upgrade ? t('upgrade', { period: t(`periods.${months}`) }) : t('buy')}
-      </Button>
-      {error && (
-        <p role="alert" className="text-ui text-danger">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

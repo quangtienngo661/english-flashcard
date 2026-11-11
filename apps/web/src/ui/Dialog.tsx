@@ -22,17 +22,19 @@ type Props = {
   footer?: ReactNode;
   /** Off while a request is in flight, so Esc or an outside tap cannot hide a pending action. */
   isDismissable?: boolean;
+  /** `pro`: a 2 px accent border on every side (Giới thiệu Pro, M7 Figma B §5.2); the sheet keeps its top corners only. */
+  tone?: 'default' | 'pro';
 };
 
 /**
- * Same props as app-ui/Dialog. From 48rem a centred modal, below it a bottom sheet; the shape follows the width with CSS only, so
- * resizing keeps what the learner typed. Motion (GM15, motion §5–§6): the backdrop fades in 200ms; the modal rises 12px in 240ms, the
- * sheet comes from 60px while fading in; both close in 150ms on the accelerating curve. The backdrop is mark-ink, the same navy in
- * both themes (ink turns light in dark mode).
+ * A controlled dialog (`isOpen`, `onOpenChange`) with a title, content and footer buttons. From 48rem a centred modal, below it a
+ * bottom sheet; the shape follows the width with CSS only, so resizing keeps what the learner typed. Motion (GM15, motion §5–§6): the
+ * backdrop fades in 200ms; the modal rises 12px in 240ms, the sheet comes from 60px while fading in; both close in 150ms on the
+ * accelerating curve. The backdrop is mark-ink, the same navy in both themes (ink turns light in dark mode).
  */
 const WIDTH = { md: 'md:max-w-lg', lg: 'md:max-w-2xl', xl: 'md:max-w-215' } as const;
 
-export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, size, wide, children, footer, isDismissable = true }: Props) {
+export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, size, wide, children, footer, isDismissable = true, tone = 'default' }: Props) {
   return (
     <ModalOverlay
       isOpen={isOpen}
@@ -45,6 +47,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
           'max-h-dvh w-full overflow-y-auto rounded-t-wm-modal bg-wm-surface px-5 pb-6 pt-5 shadow-wm-pop outline-none md:rounded-wm-modal md:p-7',
           'motion-safe:data-entering:animate-wm-sheet-in motion-safe:data-exiting:animate-wm-pop-out md:motion-safe:data-entering:animate-wm-dialog-in',
           WIDTH[size ?? (wide ? 'lg' : 'md')],
+          tone === 'pro' && 'border-2 border-wm-accent',
         )}
       >
         <AriaDialog className="flex flex-col gap-4 outline-none">
