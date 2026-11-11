@@ -410,3 +410,12 @@ Nhánh `feat/giao-dien-moi-m6`, PR vào `refactor/giao-dien-moi`. Quyết địn
 - Chuyển cảnh Lịch ↔ Ngày chưa trượt ±22 px, đổi ngày chưa nhích 4 px (R126).
 - Chưa chụp chế độ tối, tiếng Anh, 1024 px; màu tối của token luyện tập là tạm (R124).
 - Chưa xem trên điện thoại thật.
+
+# Giao diện mới — as-built M6.9 Nút lịch trong thanh phiên (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m6-session` (cắt từ `feat/giao-dien-moi-m6` sau khi hợp nhất M5b), PR thứ hai của M6. Quyết định: R133.
+
+- Điện thoại: phiên luyện, Ôn và Học có nút lịch 32 × 34 ở cuối hàng đầu (Figma `95:344`), bấm mở Lịch; máy tính giữ nút nổi của layout `(focus)`.
+- Test: 3 unit cho nút (`calendar-bar-button.test.tsx`), 3 unit cho thanh phiên (phiên luyện, Ôn có `L` trong ô trả lời, Học), 1 e2e ở 390 và 1440 px trong `m6.spec.ts`.
+
+**Chưa kiểm:** chưa xem trên điện thoại thật; nút trong thanh chưa có ảnh chụp riêng.
