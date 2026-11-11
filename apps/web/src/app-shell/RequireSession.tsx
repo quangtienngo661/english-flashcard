@@ -9,7 +9,7 @@ import type { AppLocale } from '@/i18n/routing';
 import { createApiClient } from './api/client';
 import { prefixFix } from './locale-prefix';
 import { chromeShape } from './skeleton-shape';
-import { hardReplace } from './navigate';
+import { hardReplace, isLeaving } from './navigate';
 import { useSession } from './session/session-context';
 import type { SessionState } from './session/session-store';
 import { deviceTimezone, timezoneToSync } from './timezone-sync';
@@ -37,8 +37,10 @@ export function RequireSession({ children }: { children: ReactNode }) {
   // Only computed once the session has an answer, which never happens during prerender (state is `loading` there).
   const target = state.status === 'loading' || state.status === 'unavailable' ? null : redirectFor(state, locale, hereFrom(pathname), pathname);
 
+  // A page already leaving by a full load (account deleted → account-deleted) keeps that destination: sending it to sign-in now
+  // would replace it (M7.7).
   useEffect(() => {
-    if (target) hardReplace(target);
+    if (target && !isLeaving()) hardReplace(target);
   }, [target]);
 
   // E11: once per app start; a failure is ignored and the next start tries again.
