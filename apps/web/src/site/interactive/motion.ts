@@ -34,9 +34,12 @@ export function blurCap(): number {
 }
 
 type Watch = (visible: boolean) => void;
-const observers = new Map<string, { io: IntersectionObserver; watches: Map<Element, Watch> }>();
+const observers = new Map<string, { io: IntersectionObserver; watches: Map<Element, Set<Watch>> }>();
 
-/** One IntersectionObserver per option set for the whole page; each element registers a callback on it. */
+/**
+ * One IntersectionObserver per option set for the whole page; each element registers callbacks on it. One element can have several (the
+ * Pro card: its Reveal loop and its Sweep), so it is unobserved only when its last callback is cleaned up.
+ */
 function observe(el: Element, init: IntersectionObserverInit, watch: Watch): () => void {
   if (typeof IntersectionObserver === 'undefined') {
     watch(true);
@@ -45,15 +48,25 @@ function observe(el: Element, init: IntersectionObserverInit, watch: Watch): () 
   const key = `${init.threshold}|${init.rootMargin ?? ''}`;
   let entry = observers.get(key);
   if (!entry) {
-    const watches = new Map<Element, Watch>();
-    const io = new IntersectionObserver((records) => records.forEach((r) => watches.get(r.target)?.(r.isIntersecting)), init);
+    const watches = new Map<Element, Set<Watch>>();
+    const io = new IntersectionObserver(
+      (records) => records.forEach((r) => watches.get(r.target)?.forEach((w) => w(r.isIntersecting))),
+      init,
+    );
     entry = { io, watches };
     observers.set(key, entry);
   }
   const { io, watches } = entry;
-  watches.set(el, watch);
+  let set = watches.get(el);
+  if (!set) {
+    set = new Set();
+    watches.set(el, set);
+  }
+  set.add(watch);
   io.observe(el);
   return () => {
+    const current = watches.get(el);
+    if (!current?.delete(watch) || current.size > 0) return;
     watches.delete(el);
     io.unobserve(el);
   };
