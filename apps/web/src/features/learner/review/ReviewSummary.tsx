@@ -1,11 +1,14 @@
 'use client';
 
+import { ListChecks } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { ListChecks } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
+import { Kbd } from '@/ui/Kbd';
+import { WordChip } from '@/ui/WordChip';
 import type { GroupSummary } from '../groups/groups-api';
 
-/** Each block rises 50ms after the one before it (motion audit #6); with reduced motion they all show at once. */
 // Design §8.3, GM20: summary blocks rise for 400 ms, 90 ms apart (Phiên luyện, Học, Ôn).
 export const STAGGER = [
   'motion-safe:animate-summary-in',
@@ -16,56 +19,92 @@ export const STAGGER = [
 ] as const;
 
 /**
- * K/22, M/32: how many cards were done, split into Know and Still learning. Enter goes home (keys in ReviewSession). Đợt C §4.1:
- * a deck that still has due words offers Ôn beside the way home.
+ * K/22, M/32 (Figma 80:3557 / 80:3601): the ring of cards known, then the words of each pile, then the way on. Enter goes home (keys in
+ * ReviewSession). Đợt C §4.1: a deck that still has due words offers Ôn beside the way home.
  */
-export function ReviewSummary({ counts, group }: { counts: { known: number; review: number }; group?: GroupSummary }) {
+export function ReviewSummary({ counts, piles, group }: {
+  counts: { known: number; review: number };
+  piles: { known: string[]; review: string[] };
+  group?: GroupSummary;
+}) {
   const t = useTranslations('App.review');
   const tDeck = useTranslations('App.deck');
   const due = group ? group.today.priority + group.today.due : 0;
   const locale = useLocale();
+  const total = counts.known + counts.review;
   return (
-    <section className="flex w-full flex-col gap-5">
-      <div className={`flex flex-col gap-2 ${STAGGER[0]}`}>
-        <h1 className="text-display font-extrabold text-ink">{t('doneTitle', { count: counts.known + counts.review })}</h1>
-        {counts.review > 0 && <p className="text-ui text-muted">{t('doneBody')}</p>}
+    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+      <div className={STAGGER[0]}>
+        <Ring known={counts.known} total={total} label={t('ring', { known: counts.known, total })} caption={t('ringCaption')} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className={`flex flex-col gap-1 rounded-card bg-surface p-4 shadow-ledge-soft ${STAGGER[1]}`}>
-          <span data-testid="known-count" className="text-h2 font-extrabold text-success">
-            {counts.known}
-          </span>
-          <span className="text-ui text-ink">{t('know')}</span>
+      <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
+        <div className={`flex flex-col gap-2 ${STAGGER[1]}`}>
+          <h1 className="font-wm-display text-wm-card-heading-mobile text-wm-ink md:text-wm-card-heading">{t('doneTitle', { count: total })}</h1>
+          {counts.review > 0 && <p className="font-wm-sans text-wm-small text-wm-muted">{t('doneBody')}</p>}
         </div>
-        <div className={`flex flex-col gap-1 rounded-card bg-surface p-4 shadow-ledge-soft ${STAGGER[2]}`}>
-          <span data-testid="review-count" className="text-h2 font-extrabold text-warning">
-            {counts.review}
-          </span>
-          <span className="text-ui text-ink">{t('stillLearning')}</span>
+        <div className={`grid gap-4 md:grid-cols-2 ${STAGGER[2]}`}>
+          <PileList tone="review" title={t('pileList', { name: t('stillLearning'), count: counts.review })} words={piles.review} count={counts.review} testId="review-count" />
+          <PileList tone="known" title={t('pileList', { name: t('know'), count: counts.known })} words={piles.known} count={counts.known} testId="known-count" />
         </div>
-      </div>
-      <div className={`flex flex-col gap-3 md:flex-row ${STAGGER[3]}`}>
-        {due > 0 && group && (
-          <Link
-            href={`/${locale}/app/recall?group=${group.id}`}
-            className="flex min-h-control-touch items-center justify-center gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none hover:brightness-95 focus-visible:ring-2 focus-visible:ring-primary md:min-w-48"
-          >
-            <ListChecks aria-hidden className="size-5 shrink-0" />
-            {tDeck('recall')}
+        <div className={`flex flex-col gap-3 md:flex-row md:flex-wrap ${STAGGER[3]}`}>
+          {due > 0 && group && (
+            <Link href={`/${locale}/app/recall?group=${group.id}`} className={cn(BUTTON_BASE, BUTTON_VARIANT.primary)}>
+              <ListChecks aria-hidden className="size-4.5 shrink-0" />
+              {tDeck('recall')}
+            </Link>
+          )}
+          <Link href={`/${locale}/app`} className={cn(BUTTON_BASE, due > 0 ? BUTTON_VARIANT.secondary : BUTTON_VARIANT.primary)}>
+            {t('home')}
+            <span className="hidden md:inline-flex">
+              <Kbd>Enter</Kbd>
+            </span>
           </Link>
-        )}
-        <Link
-          href={`/${locale}/app`}
-          className={
-            due > 0
-              ? 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner border-2 border-border-strong bg-surface px-4.5 text-body font-semibold text-ink shadow-button-secondary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary md:min-w-64'
-              : 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary md:w-fit md:min-w-64'
-          }
-        >
-          {t('home')}
-          <kbd className="hidden rounded-sm border border-current px-1.5 text-caption md:inline">Enter</kbd>
-        </Link>
+        </div>
       </div>
     </section>
+  );
+}
+
+function PileList({ tone, title, words, count, testId }: { tone: 'review' | 'known'; title: string; words: string[]; count: number; testId: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <p className={cn('flex items-baseline gap-2 font-wm-sans text-wm-small-strong', tone === 'review' ? 'text-wm-fail' : 'text-wm-pass')}>
+        <span data-testid={testId} className="font-wm-display text-wm-card-title">
+          {count}
+        </span>
+        <span aria-hidden>{title.split(' · ')[0]}</span>
+      </p>
+      {words.length > 0 && (
+        <ul aria-label={title} className="flex flex-wrap gap-1.5">
+          {words.map((word, i) => (
+            <li key={`${i}-${word}`}>
+              <WordChip word={word} tone={tone === 'review' ? 'review' : 'normal'} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** A ring of the cards known out of the cards done (green), the rest to review (red). */
+function Ring({ known, total, label, caption }: { known: number; total: number; label: string; caption: string }) {
+  const r = 70;
+  const length = 2 * Math.PI * r;
+  const reviewLength = total > 0 ? ((total - known) / total) * length : 0;
+  return (
+    <div role="img" aria-label={label} className="relative flex size-40 items-center justify-center">
+      <svg aria-hidden viewBox="0 0 160 160" className="absolute inset-0 size-full -rotate-90">
+        <circle cx="80" cy="80" r={r} fill="none" strokeWidth="12" className={total > 0 ? 'stroke-wm-pass' : 'stroke-wm-line'} />
+        {reviewLength > 0 && <circle cx="80" cy="80" r={r} fill="none" strokeWidth="12" className="stroke-wm-fail" strokeDasharray={`${reviewLength} ${length}`} />}
+      </svg>
+      <span aria-hidden className="flex flex-col items-center">
+        <span className="flex items-baseline font-wm-display text-wm-ink">
+          <span className="text-wm-lemma">{known}</span>
+          <span className="text-wm-word text-wm-muted">/{total}</span>
+        </span>
+        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+      </span>
+    </div>
   );
 }

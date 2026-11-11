@@ -327,26 +327,66 @@ không commit. Xem ảnh lần đầu bắt hai lỗi hiển thị (chữ "Enter
 - Chưa xem trên điện thoại thật.
 - "Luyện thêm một phiên" xin lại `ai_planned` (số câu AI phiên trước dùng thật), không phải số người học đã chọn (R101).
 
-# Giao diện mới — as-built M6 Lịch học (11/11/2026)
+# Giao diện mới — as-built M5b Học (chồng thẻ), Ôn (so chữ) (11/11/2026)
 
-Nhánh `feat/giao-dien-moi-m6`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R107–R125 trong `giao-dien-moi-rulings.md` (đánh số tiếp từ R106 của M5a; đổi số nếu M5b dùng trùng). QM6-1: chủ dự án chọn B (R123). M6.9 (nút lịch trên thanh phiên ở điện thoại) chưa làm, chờ M5b merge, sẽ là PR thứ hai từ `feat/giao-dien-moi-m6-session`.
+Nhánh `feat/giao-dien-moi-m5b`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R107–R113 trong `giao-dien-moi-rulings.md`. QM5-2 = (a) (chủ dự án 11/11/2026):
+thẻ Học tan ngay khi chấm, việc lưu chạy sau lưng.
 
 **Đã làm**
-- API (M6.1): `GET /v1/practice/reports` thêm `lemma` (một lần `ContentService.cardContent` cho cả trang), `question_type`, `ai`. Smoke bước 12; `smoke:giao-dien-moi` nhận `SMOKE_GM_SUFFIX` (R108).
+- Chồng thẻ (M5.7): `lib/stack-motion.ts` (tan, đến, rung, về chỗ, chip bay vào, số nảy; giảm chuyển động chỉ còn đổi độ mờ ≤ 200 ms); `review/useCardDrag.ts` (kéo
+  ngang quá 110 px hoặc vuốt nhanh thì chấm, thẻ chưa lật chỉ nhích và nhắc); `review/CardStack.tsx` (tối đa 3 thẻ phía sau, chỉ thẻ trên cùng gọi
+  `GET /v1/words/{lemma}`, dấu "Cần ôn lại · về ngăn 1 ngày" / "Đã biết · lên ngăn X"); `review/Pile.tsx`, `ui/WordChip.tsx`; CSS `.cstack*` trong `globals.css`.
+- Học (M5.8): hai chồng "Cần ôn lại" / "Đã biết" hai bên thẻ, nút trả lời `aria-disabled` tới khi lật, Space lật hai chiều, 1/← và 2/→ chấm, Esc dừng; thanh
+  tiến độ với "còn N thẻ"; lưu lần lượt sau lưng, lưu hỏng thì lùi về đúng thẻ đó (R107); tổng kết có vòng "x/y thẻ đã biết" và danh sách từ của từng chồng.
+- Ôn (M5.9): dòng so chữ `recall/CompareLine` khi gõ sai rồi bấm "Xem đáp án"; tổng kết Ôn có vòng "x/y từ đúng"; e2e đầu tiên của trang Ôn (`e2e/app/recall.spec.ts`).
+
+**Kiểm**
+- Web: lint, typecheck qua; `vitest run` 120 file, 1236/1236 (trước ba sửa của review); sau sửa, review/recall/practice 217/217.
+- E2e `cf:docker` cả bộ: 375 qua, 1 qua ở lần thử lại (`cai-thien-a-practice` desktop, chờ URL phiên), 38 skip, 0 hỏng. Sau sửa của review: `m2`, `cai-thien-a-speak`,
+  `recall` 47 qua, 1 skip.
+- Khung hình Học, 20 thẻ, CPU chậm 4 lần, Chromium headless không GPU, API giả: 40,8 fps, trung vị 16,7 ms, p95 50 ms, 21 khung trên 50 ms trong 739 khung (khoảng 18 giây).
+- Review cuối cả nhánh (subagent, Opus): 0 Critical, 2 Important, 9 Minor. Đã sửa, test đỏ rồi fix: (I1) Esc hoặc thẻ cuối khi còn lần lưu đang chờ hiện tổng kết
+  ngay, Enter rời trang có thể bỏ các lần lưu chưa gửi, nay hiện spinner tới khi lưu xong; (I2) dấu kéo của lần chấm trước hiện trên thẻ sau khi lật bằng Space;
+  (Minor 3, nâng lên vì Review Focus 3) giảm chuyển động mà thẻ phía sau vẫn phóng to và làm mờ khi kéo.
+- Lint bắt thêm một giá trị Tailwind thô chưa đánh dấu ở lưới Học (commit M5.8); đã đánh dấu `raw-ok`.
+
+**Ảnh `gm-m5b`** (390 và 1440 px, sáng; 15 ảnh ở `apps/web/test-results/shots/gm-m5b/`, không commit): Học mặt trước, mặt sau, đang kéo (1440), tổng kết; Ôn trắc
+nghiệm, chọn sai, so chữ, tổng kết. Ảnh kéo cho thấy chữ trên thẻ bị bôi chọn khi kéo; đã sửa (`user-select: none`) nhưng chưa chụp lại.
+
+**Minor để lại (review cuối)**
+1. Kéo ngay lúc thẻ mới đang đến (300 ms) thì thẻ không theo tay, rồi nhảy.
+2. Lưu hỏng và một phím bấm rơi đúng vào khoảng giữa hai lần render có thể ghi sai thẻ vào chồng.
+3. Key của thẻ đang tan trùng nếu chấm lại cùng thẻ trong khoảng 240 ms sau lưu hỏng.
+4. Thẻ đang tan mất dòng dạng từ và đổi chiều cao.
+5. `CompareLine` là `role="group"` chỉ có con `aria-hidden`, trình đọc màn hình có thể bỏ qua khi duyệt.
+6. "Xem đáp án" trả ô gõ về từ sai đầu tiên, bỏ phần đang gõ lại.
+7. Lùi về thẻ 1 sau lưu hỏng thì focus không về nút lật.
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật ở trình duyệt; ảnh, e2e và đo khung hình đều dùng API giả.
+- Chưa thử trên điện thoại thật: kéo ngang để chấm trong khi mặt sau dài vẫn cuộn dọc (`touch-action: pan-y`), tốc độ khung hình có GPU.
+- Chưa chụp chế độ tối, tiếng Anh, 1024 px; ảnh kéo chưa chụp lại sau sửa bôi chọn.
+
+# Giao diện mới — as-built M6 Lịch học (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-m6`, PR vào `refactor/giao-dien-moi`. Quyết định khi làm: R114–R132 trong `giao-dien-moi-rulings.md` (đánh số tiếp từ R106 của M5a; đổi số nếu M5b dùng trùng). QM6-1: chủ dự án chọn B (R130). M6.9 (nút lịch trên thanh phiên ở điện thoại) chưa làm, chờ M5b merge, sẽ là PR thứ hai từ `feat/giao-dien-moi-m6-session`.
+
+**Đã làm**
+- API (M6.1): `GET /v1/practice/reports` thêm `lemma` (một lần `ContentService.cardContent` cho cả trang), `question_type`, `ai`. Smoke bước 12; `smoke:giao-dien-moi` nhận `SMOKE_GM_SUFFIX` (R115).
 - Ngày theo múi giờ người học (M6.2): `lib/learner-date.ts` (`todayIn`, `monthOf`, `addDays`, `addMonths`, `elapsedDays`…), `format.date` thêm `monthYear` ("Tháng 11, 2026") và `monthLabel` ("tháng 11, 2026"); query `useStreak`, `useCalendarMonth`, `useCalendarDay`, `useDayAnswers`; câu trả lời có `streak` ghi thẳng vào cache chuỗi ngày (phiên luyện, Ôn, Học).
 - Nút lịch nổi (M6.3): dải tháng "T11" / "Nov", ngày hôm nay, huy hiệu chuỗi ngày (ẩn khi 0), chú thích "Lịch học" + phím L, rê chuột tải trước tháng. Điện thoại: nằm trên nút "+" ở Hôm nay (cách 12 px), ẩn ở Từ tồn đọng và Chủ đề. Layout `(focus)` có nút trên máy tính. `AddFab` chuyển từ Hôm nay vào chồng nút của `AppChrome`.
-- Host lịch (M6.4): `?lich=` / `?ngay=` theo ba luật của design §5.6, `history.state` đánh dấu bước của tab này (R112, R124, R125), phím L bật / tắt, hai hộp nạp bằng `next/dynamic`. "Mở lịch học" ở Hôm nay và "Gần đây" của Luyện tập là `CalendarLink`.
-- Hộp Lịch (M6.5): tổng tháng ("7/8", "55", "130", "4"), lưới ngày có chấm và dải ngày liền nhau, phím mũi tên, Enter, đổi tháng (mốc 2026-01, khóa tháng sau ở tháng hiện tại), "Về hôm nay", trạng thái tải và lỗi. Token mới `--color-wm-practice`, `--color-wm-practice-ink` (R117).
+- Host lịch (M6.4): `?lich=` / `?ngay=` theo ba luật của design §5.6, `history.state` đánh dấu bước của tab này (R119, R131, R132), phím L bật / tắt, hai hộp nạp bằng `next/dynamic`. "Mở lịch học" ở Hôm nay và "Gần đây" của Luyện tập là `CalendarLink`.
+- Hộp Lịch (M6.5): tổng tháng ("7/8", "55", "130", "4"), lưới ngày có chấm và dải ngày liền nhau, phím mũi tên, Enter, đổi tháng (mốc 2026-01, khóa tháng sau ở tháng hiện tại), "Về hôm nay", trạng thái tải và lỗi. Token mới `--color-wm-practice`, `--color-wm-practice-ink` (R124).
 - Hộp Ngày (M6.6): ngày trước / sau, câu tóm tắt, bộ lọc Tất cả / Học / Ôn / Luyện, thẻ Học (chip theo màu nhóm, 10 chip rồi "+N từ"), thẻ Ôn (Đã biết / Cần ôn lại), thẻ Luyện tập theo từng phiên với "Xem đủ N câu", ba trạng thái trống.
 - Trang lịch sử cũ (M6.7): `/app/practice/history` chỉ còn chuyển hướng phía server (`?tab=reports` → Báo lỗi, `?date=` → `?ngay=`, còn lại `?lich`); xóa `HistoryPage`, `MyReportsTab` và key `App.practice.history`.
-- "Báo lỗi của tôi" (M6.8): `/app/settings/reports`, chia theo tháng, dòng có ngày (điện thoại ở đầu dòng 2, R123), kiểu câu, "câu AI" / "Đã trả lại 1 lượt câu AI", trạng thái có chấm; dòng trong Cài đặt, mục menu ảnh đại diện, câu báo sau khi gửi báo lỗi.
+- "Báo lỗi của tôi" (M6.8): `/app/settings/reports`, chia theo tháng, dòng có ngày (điện thoại ở đầu dòng 2, R130), kiểu câu, "câu AI" / "Đã trả lại 1 lượt câu AI", trạng thái có chấm; dòng trong Cài đặt, mục menu ảnh đại diện, câu báo sau khi gửi báo lỗi.
 
 **Kiểm**
 - API: lint, `tsc --noEmit`, build qua; `pnpm test` 362 file, 5275/5275. Smoke 14/14 trên DB mới (`giao-dien-moi-smoke-output.txt`).
 - Web: lint (gồm `check-tailwind-raw`), typecheck qua; `vitest run` 128 file, 1280/1280.
 - Admin (token đổi): lint, typecheck, build (biến môi trường như CI) qua; `vitest run` 1394/1406 lượt đầu (12 test quá thời gian khi máy bận), chạy lại riêng 216/216.
-- E2e `pnpm cf:docker` cả bộ, lượt đầu: 376 qua, 38 skip, 4 hỏng (2 test × 2 khổ: axe tương phản ở số ngày ngoài tháng; redirect `?date=` không mở Ngày). Sau R125: `m4`, `m6`, `overflow` 61/61. Lượt cả bộ cuối (sau mọi sửa): 381 qua, 38 skip, 1 flaky (`landing.spec.ts` LR45 ở 320 px, qua ở lần thử lại, không thuộc M6), 0 hỏng.
-- Review cuối cả nhánh (subagent Opus): 1 Important (Lịch tự mở lại sau khi đóng hộp mở từ link) và 5 Minor; đã sửa Important và Minor #5 (phím số lọt xuống phiên), mỗi cái test đỏ rồi fix (R124).
+- E2e `pnpm cf:docker` cả bộ, lượt đầu: 376 qua, 38 skip, 4 hỏng (2 test × 2 khổ: axe tương phản ở số ngày ngoài tháng; redirect `?date=` không mở Ngày). Sau R132: `m4`, `m6`, `overflow` 61/61. Lượt cả bộ cuối (sau mọi sửa): 381 qua, 38 skip, 1 flaky (`landing.spec.ts` LR45 ở 320 px, qua ở lần thử lại, không thuộc M6), 0 hỏng.
+- Review cuối cả nhánh (subagent Opus): 1 Important (Lịch tự mở lại sau khi đóng hộp mở từ link) và 5 Minor; đã sửa Important và Minor #5 (phím số lọt xuống phiên), mỗi cái test đỏ rồi fix (R131).
 
 **Ảnh `gm-m6`** (390 và 1440 px, sáng, tiếng Việt; 14 ảnh ở `apps/web/test-results/shots/gm-m6/`, không commit). Chụp bằng API giả trong `cf:docker` như M2, M5a (spec chụp là file tạm), vì cổng 3000/3001 đang là stack `pnpm bootstrap` của bản checkout chính. Bộ `gm-m6` cho stack thật đã có trong `e2e-shots/shots.spec.ts`.
 
@@ -363,10 +403,10 @@ Nhánh `feat/giao-dien-moi-m6`, PR vào `refactor/giao-dien-moi`. Quyết địn
 1. Trong Ngày, sau khi lùi qua đầu tháng (01/11 → 31/10), nút ghi "Lịch tháng 10" nhưng quay lại về Lịch tháng 11 (mục lịch sử cũ).
 2. Ngày có hơn 100 mục: "+N từ" có thể ghi "+0 từ" khi trang sau còn mục; hơn 200 mục thì trang 3 không tải.
 3. "Xem đủ N câu": hàm tải trang mới mỗi lần render, có thể hủy trang đang tải rồi tải lại; khối phiên cũ có thể trống tới khi tải xong.
-4. Mở `?ngay=` từ link ở tab mới rồi bấm Back hai lần thì rời app (R112, theo luật 3 của design).
+4. Mở `?ngay=` từ link ở tab mới rồi bấm Back hai lần thì rời app (R119, theo luật 3 của design).
 
 **Chưa kiểm / rủi ro**
 - Chưa chạy với API thật trong trình duyệt; ảnh và e2e dùng API giả.
-- Chuyển cảnh Lịch ↔ Ngày chưa trượt ±22 px, đổi ngày chưa nhích 4 px (R119).
-- Chưa chụp chế độ tối, tiếng Anh, 1024 px; màu tối của token luyện tập là tạm (R117).
+- Chuyển cảnh Lịch ↔ Ngày chưa trượt ±22 px, đổi ngày chưa nhích 4 px (R126).
+- Chưa chụp chế độ tối, tiếng Anh, 1024 px; màu tối của token luyện tập là tạm (R124).
 - Chưa xem trên điện thoại thật.

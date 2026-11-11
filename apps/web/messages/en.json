@@ -934,7 +934,16 @@
       "home": "Back to Today",
       "emptyTitle": "No cards left in this deck today.",
       "emptyBody": "You can still study every word in the deck.",
-      "studyAll": "Study all words"
+      "studyAll": "Study all words",
+      "stampReview": "back to the 1-day stage",
+      "stampKnow": "up to the {stage} stage",
+      "flipBack": "See the front",
+      "nudge": "Turn the card over to see the meaning first.",
+      "legend": "Keys",
+      "stop": "Stop",
+      "pileList": "{name} · {count, plural, one {# card} other {# cards}}",
+      "ring": "{known, number}/{total, number} cards known",
+      "ringCaption": "known"
     },
     "lookup": {
       "title": "Look up",
@@ -1740,7 +1749,14 @@
       "nothingTitle": "This deck has no learned words yet.",
       "nothingBody": "Learn a few new words first, then come back to review.",
       "noteLeveled": "{lemma} moved up to the {stage} stage.",
-      "noteKept": "{lemma} stays in the {stage} stage."
+      "noteKept": "{lemma} stays in the {stage} stage.",
+      "ring": "{correct, number}/{total, number} right",
+      "ringCaption": "right",
+      "compare": {
+        "label": "Letters: you typed {typed}, the answer is {answer}",
+        "typed": "you typed",
+        "answer": "answer"
+      }
     },
     "streak": {
       "days": "{days, number}-day streak"

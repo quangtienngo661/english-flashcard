@@ -154,3 +154,43 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect((calls as Call[]).filter((c) => c.path === '/v1/practice/sessions')).toHaveLength(0);
   });
 });
+
+describe('Ôn, the rebuilt screens (M5.9)', () => {
+  const typed = {
+    item_id: 'r-2', round: 1, position: 2, type: 'type_word', prompt_style: 'meaning',
+    prompt: { kind: 'type_meaning', meaning: 'xấu đi', meaning_language: 'vi', context_label: null },
+    hints_available: { level1: true, level2: false, level3: false }, hint_level: 0, state: 'unanswered', tries: 0, reportable: true,
+  };
+  const wrongTyped = (calls: Call[]) => calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/r-2/answer').map((c) => c.body);
+
+  it('GM19: "deteriorated" is sent unchanged and graded wrong; after "Xem đáp án" the compare line shows the extra "d"', async () => {
+    const v = renderApp(<RecallSession />, { routes: routes({
+      [`POST /v1/practice/sessions/${S}/next`]: () => Response.json({ state: 'question', session: view({ asked: 2 }), item: typed }),
+      'POST /v1/practice/items/r-2/answer': () => Response.json({ result: 'try_again', tries: 1 }),
+      'POST /v1/practice/items/r-2/skip': () => Response.json(answer({
+        result: 'wrong', skipped: true, correct: { lemma: 'deteriorate', text: 'deteriorate', choice_index: null, is_true: null },
+        meaning: 'xấu đi', highlight_needs_review: true, schedule: null,
+      })),
+    }) });
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Câu trả lời' }), 'deteriorated{Enter}');
+    await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.');
+    expect(wrongTyped(v.calls)).toEqual([{ text: 'deteriorated' }]);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem đáp án' }));
+    const line = await screen.findByRole('group', { name: 'So chữ: bạn gõ deteriorated, đáp án deteriorate' });
+    expect(line.querySelector('[data-mark="extra"]')).toHaveTextContent('d');
+  });
+
+  it('a reportable item in Ôn still shows no Báo lỗi and no AI label', async () => {
+    renderApp(<RecallSession />, { routes: routes() });
+    await screen.findByText('hành lý');
+    expect(screen.queryByRole('button', { name: 'Báo lỗi' })).not.toBeInTheDocument();
+    expect(screen.queryByText('câu AI')).not.toBeInTheDocument();
+  });
+
+  it('the summary has the ring of right answers', async () => {
+    renderApp(<RecallSession />, { routes: routes({
+      [`POST /v1/practice/sessions/${S}/next`]: () => Response.json({ state: 'finished', session: view({ status: 'finished', asked: 8 }) }),
+    }) });
+    expect(await screen.findByRole('img', { name: '5/8 từ đúng' })).toHaveTextContent('5/8');
+  });
+});

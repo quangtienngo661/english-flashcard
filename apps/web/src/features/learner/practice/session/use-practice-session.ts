@@ -332,7 +332,9 @@ export function usePracticeSession(recall?: { groupId: string }) {
       guarded(async () => {
         if (phase?.kind !== 'question') return;
         const item = phase.item;
-        recordFinal(item, await api.post<AnswerResult>(`/v1/practice/items/${item.item_id}/skip`, {}), null);
+        // M5.9: the word typed before "Xem đáp án" stays, so the sentence and Ôn's compare line can show it against the answer.
+        const typedBefore = phase.outcome?.kind === 'try_again' ? phase.outcome.typed : null;
+        recordFinal(item, await api.post<AnswerResult>(`/v1/practice/items/${item.item_id}/skip`, {}), typedBefore ? { text: typedBefore } : null);
       }),
     /** Cần ôn lại / Đã biết on one row of an alternative card: reviews that word only and stays on the card (session synonyms design §3.2). */
     reviewWord: (senseId: string, action: 'needs_review' | 'known') =>

@@ -90,8 +90,8 @@ describe('ReviewSession (K/20–K/22)', () => {
     const meaning = within(back as HTMLElement).getByText('triển khai');
     const example = within(back as HTMLElement).getByText('Câu mẫu');
     expect(meaning.compareDocumentPosition(example) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // The next card rises in.
-    expect(card).toHaveClass('motion-safe:animate-card-rise');
+    // M5.8: the card is the top of the Học stack; its arrival is a Web Animation (card-stack.test.tsx), not a CSS class.
+    expect(card.closest('.cstack')).not.toBeNull();
   });
 
   it('keys 2 and 1 answer Know / Still learning, each press with a new review_id; the summary counts them', async () => {
@@ -114,24 +114,20 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByTestId('review-count')).toHaveTextContent('1');
   });
 
-  it('motion audit #4, #6: the phone progress bar slides by transform, not width; the summary blocks rise 50ms apart', async () => {
+  it('M5.8: one progress bar counts the cards done; the summary blocks rise 90 ms apart', async () => {
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    const bar = screen.getByTestId('review-progress');
-    expect(bar.style.transform).toBe('translateX(-50%)');
-    expect(bar.style.width).toBe('');
-    expect(bar).toHaveClass('motion-safe:transition-transform');
+    expect(screen.getByRole('progressbar', { name: 'còn 2 thẻ' })).toHaveAttribute('aria-valuenow', '0');
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
     await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
-    expect(screen.getByTestId('review-progress').style.transform).toBe('translateX(0%)');
+    expect(screen.getByRole('progressbar', { name: 'còn 1 thẻ' })).toHaveAttribute('aria-valuenow', '1');
 
     await userEvent.keyboard(' ');
     await userEvent.keyboard('1');
     const heading = await screen.findByRole('heading', { name: 'Xong 2 thẻ.' });
-    expect(heading.parentElement).toHaveClass('motion-safe:animate-summary-in');
-    expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
-    expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:180ms]');
+    expect(heading.parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
+    expect(screen.getByTestId('known-count').closest('[class*="animate-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
     // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
     expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
   });

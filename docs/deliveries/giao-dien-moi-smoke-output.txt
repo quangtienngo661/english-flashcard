@@ -195,7 +195,7 @@ $ node scripts/smoke-giao-dien-moi.mjs
 ALL OK — 13 steps in 17s
 
 # pnpm smoke:giao-dien-moi — 11/11/2026, M6.1 (lemma, question_type, ai on GET /v1/practice/reports), API + worker built from feat/giao-dien-moi-m6,
-# fresh DB english_learning_smoke_gm_m6 (SMOKE_GM_SUFFIX=_m6, R108), AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke-m6, PORT=3206;
+# fresh DB english_learning_smoke_gm_m6 (SMOKE_GM_SUFFIX=_m6, R115), AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke-m6, PORT=3206;
 # .env made from .env.example with generated secrets.
 
 $ node scripts/smoke-giao-dien-moi.mjs
