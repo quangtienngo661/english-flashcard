@@ -15,7 +15,7 @@ const AI_ICONS = [Bot, Pen, Search, Zap];
 
 /**
  * "Giá" `33:306` (phone `33:416`), owner QM8-2 (c): the three Pro prices read at build, each with its saving, and no purchase here. Free
- * and Pro cards side by side from lg (360 + 620). Every number comes from `periodOffer`, like Gói học's, so the two never disagree.
+ * and Pro cards side by side from xl (360 + 620 = 1004 px, more than the 944 px of content at 1024; R248). Every number comes from `periodOffer`, like Gói học's, so the two never disagree.
  * M8.6: the cards come in (Free, then Pro 120 ms later and without blur, Figma scene 6); while the Pro card is on screen a light runs
  * around it (Sweep) and its four AI badges pulse (CSS, `data-wm-on`).
  */
@@ -27,7 +27,7 @@ export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['pl
       <Glow tone="mark" className="top-65 left-1/2 ml-90 h-95 w-115" />
       <Container className="flex flex-col gap-8 pt-12 pb-10 md:items-center md:gap-11 md:pt-18 md:pb-12">
         <SectionHead id="gia-title" title={copy.title} lead={copy.lead} align="phone-left" />
-        <div className="flex w-full flex-col gap-6 lg:w-auto lg:flex-row lg:items-stretch">
+        <div className="flex w-full flex-col gap-6 xl:w-auto xl:flex-row xl:items-stretch">
           <FreeCard copy={copy} register={register} />
           <ProCard copy={copy} prices={prices} register={register} />
         </div>
@@ -38,7 +38,7 @@ export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['pl
 
 function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: string }) {
   return (
-    <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-2xl border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 lg:w-90">
+    <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-2xl border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 xl:w-90">
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{copy.free}</h3>
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className={cn(FREE_PRICE, 'text-wm-ink')}>{formatVnd(0)}</span>
@@ -46,7 +46,7 @@ function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: st
       </p>
       <CheckList items={copy.freeList} />
       <p className="font-wm-sans text-wm-small text-wm-muted">{copy.freeAds}</p>
-      <ButtonLink reload variant="secondary" href={register} className="w-full lg:mt-auto">
+      <ButtonLink reload variant="secondary" href={register} className="w-full xl:mt-auto">
         {copy.freeSignup}
       </ButtonLink>
     </Reveal>
@@ -57,7 +57,7 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
   const best = bestPeriod(prices);
   const [aiTitle, ...aiRows] = copy.aiList;
   return (
-    <Reveal loop delay={120} blur={0} className="relative isolate flex flex-col lg:w-155">
+    <Reveal loop delay={120} blur={0} className="relative isolate flex flex-col xl:w-155">
       <Sweep />
       <article
         data-pro-card=""
