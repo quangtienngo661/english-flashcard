@@ -108,12 +108,35 @@ describe('FaqPage (list)', { timeout: 20_000 }, () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: t.editTitle })).toBeNull());
   });
 
-  it('409 faq-version-conflict shows the conflict text', async () => {
-    renderApp(`/faq/${ID1}`, { [LIST]: () => json({ items }), [`PATCH /v1/admin/faq/${ID1}`]: () => problem(409, 'faq-version-conflict') });
+  it('409 faq-version-conflict shows the conflict text and reloads the list', async () => {
+    let reads = 0;
+    const r = renderApp(`/faq/${ID1}`, {
+      [LIST]: () => { reads += 1; return json({ items }); },
+      [`PATCH /v1/admin/faq/${ID1}`]: () => problem(409, 'faq-version-conflict'),
+    });
     const dialog = await screen.findByRole('dialog', { name: t.editTitle });
     await userEvent.type(within(dialog).getByLabelText(t.form.question), ' nhé');
     await userEvent.click(within(dialog).getByRole('button', { name: t.form.save }));
     expect(await within(dialog).findByText(vi.errors['faq-version-conflict'])).toBeInTheDocument();
+    expect(patches(r.calls)[0].body).toMatchObject({ expected_version: 3 });
+    // The next try must not reuse the stale row_version from the cache.
+    await waitFor(() => expect(reads).toBe(2));
+  });
+
+  it('a list reload while the form is open does not move expected_version: the PATCH sends the version the form was opened with', async () => {
+    let reads = 0;
+    const r = renderApp(`/faq/${ID1}`, {
+      // Someone else saved ID1 meanwhile: the reloaded list has row_version 4.
+      [LIST]: () => json({ items: ++reads === 1 ? items : [items[0], item({ row_version: 4 })] }),
+      [`PATCH /v1/admin/faq/${ID1}`]: () => problem(409, 'faq-version-conflict'),
+    });
+    const dialog = await screen.findByRole('dialog', { name: t.editTitle });
+    await userEvent.type(within(dialog).getByLabelText(t.form.question), ' nhé');
+    await r.client.invalidateQueries({ queryKey: ['faq'] });
+    await waitFor(() => expect(reads).toBe(2));
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.save }));
+    await waitFor(() => expect(patches(r.calls)).toHaveLength(1));
+    expect(patches(r.calls)[0].body).toMatchObject({ expected_version: 3, question: 'Wordmet có miễn phí không? nhé' });
   });
 
   it('[Xóa] asks first; [Hủy] sends nothing, confirming sends DELETE and reloads the list', async () => {
