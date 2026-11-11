@@ -19,6 +19,12 @@
   /* No dark mockup yet (GM4, M9): the amber reads on the dark surface; the number takes the lighter amber. */
   --color-wm-practice: #d99a17;
   --color-wm-practice-ink: #e0b450;
+  /* Public pages: no dark frame drawn (M8 Figma A §4). The chip starts at the dark accent so its --on-accent text stays readable; the
+     halos keep their light alpha on the dark accent. */
+  --color-wm-ai-from: #8da2ff;
+  --color-wm-ai-to: #3d78ff;
+  --color-wm-glow-accent: rgb(141 162 255 / 0.28);
+  --color-wm-glow-mark: rgb(255 216 74 / 0.42);
 
   /* Same light values until the dark mockups (GM4, M9). Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
      colour utility; stage-5-solid is the flat square of "Từ theo ngăn" (M3 Figma A §5). */

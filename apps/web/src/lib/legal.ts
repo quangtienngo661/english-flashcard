@@ -26,11 +26,12 @@ const TIMEOUT_MS = 2500;
 
 /**
  * Read on the server at each request (no cache: an admin publishes without a deploy). `null` while nothing is published, and also
- * when the API cannot be reached: the pages then show the draft notice instead of an error.
+ * when the API cannot be reached: the pages then show the draft notice instead of an error. The sitemap passes `'force-cache'`: a
+ * `no-store` read would render it per request instead of once at build (M8.8).
  */
-export async function fetchLegal(): Promise<PublicLegal | null> {
+export async function fetchLegal(mode: RequestCache = 'no-store'): Promise<PublicLegal | null> {
   try {
-    const response = await fetch(`${serverApiBaseUrl()}/v1/legal/current`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(`${serverApiBaseUrl()}/v1/legal/current`, { cache: mode, signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!response.ok) return null;
     const body: unknown = await response.json();
     return isPublicLegal(body) ? body : null;

@@ -4,7 +4,7 @@ import { useLocale } from 'next-intl';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DotGridBackground } from '@/ui/DotGridBackground';
-import { AppLogo } from './Logo';
+import { AppLogo } from '@/ui/Logo';
 
 /** Classes of the Figma centred card (36:385 and the other card pages): 480 px, padding 24 / 40, radius 28, line border, lift shadow. */
 export const AUTH_CARD =

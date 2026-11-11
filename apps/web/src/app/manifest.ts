@@ -6,8 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Wordmet',
     start_url: '/',
     display: 'browser',
-    background_color: '#faf8f5',
-    theme_color: '#faf8f5',
+    // The light page background (`--color-wm-bg`, design §11); the dark one only fits viewport.themeColor ([locale]/layout.tsx).
+    background_color: '#f6f7fa',
+    theme_color: '#f6f7fa',
     icons: [
       { src: '/icon.svg', type: 'image/svg+xml', sizes: 'any' },
       { src: '/apple-icon', type: 'image/png', sizes: '180x180' },

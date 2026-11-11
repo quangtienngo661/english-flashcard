@@ -40,6 +40,11 @@ async function setLanguage(page: Page, locale: 'vi' | 'en') {
 }
 
 test('milestone screenshots', async ({ page }) => {
+  // M8b: the public pages need no account.
+  if (MILESTONE === 'gm-m8') {
+    await gmM8(page);
+    return;
+  }
   test.skip(!email || !password, 'SHOTS_EMAIL / SHOTS_PASSWORD not set');
   // Signed-out pages first (a signed-in visit to them redirects into the app), then sign in once.
   if (MILESTONE === 'gm-m1') {
@@ -792,4 +797,35 @@ async function m5b(page: Page) {
     await expect(page).toHaveURL(/\/app\/lookup$/, { timeout: 30_000 });
   }
   await setLanguage(page, 'vi');
+}
+
+/**
+ * Giao diện mới M8b (plan Part 8, Task M8.9): the public pages, signed out, vi, light and dark, 390 / 1024 / 1440 px. Each page is loaded at
+ * its width and scrolled through first, so every section that comes in on scroll has come in; the shot waits for the entrances to end
+ * (the endless loops keep running). With the real API the legal pages show the published text and Nguồn dữ liệu its sources.
+ */
+async function gmM8(page: Page) {
+  const pages = [['/vi', 'home'], ['/vi/privacy', 'privacy'], ['/vi/terms', 'terms'], ['/vi/sources', 'sources'], ['/vi/khong-ton-tai', '404']] as const;
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const [path, name] of pages) {
+      for (const width of WIDTHS) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        await settle(page);
+        // Slowly, so each section is on screen for a frame and its observer sees it (a fast fling skips some).
+        for (let y = 0; y < 14000; y += 400) {
+          await page.mouse.wheel(0, 400);
+          await page.waitForTimeout(120);
+        }
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect
+          .poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length))
+          .toBe(0);
+        // `animations: 'disabled'` stops the endless loops for the capture: with them running, a full-page capture drew the "Nghe và đọc
+        // phiên âm" card blurred although the page had it in place (R247).
+        await page.screenshot({ path: `test-results/shots/${MILESTONE}/vi-${scheme}-${name}-${width}.png`, fullPage: true, animations: 'disabled' });
+      }
+    }
+  }
 }

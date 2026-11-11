@@ -3,22 +3,11 @@
 import { LoaderCircle } from 'lucide-react';
 import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components';
 import { cn } from '@/lib/cn';
+import { BUTTON_BASE, BUTTON_VARIANT, type ButtonVariant } from './button-styles';
 
-// Figma "Nút" (3:12): Chính = accent with the navy glow, Phụ = surface with a line and the soft shadow; pass and danger for
-// "Đã biết" and destructive actions. No shadow when disabled. Hover brightness(1.12) 200ms, press scale(.97) 150ms (GM14, motion §6).
-export type ButtonVariant = 'primary' | 'secondary' | 'pass' | 'danger';
-
-export const BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-wm-accent text-wm-on-accent shadow-wm-btn',
-  secondary: 'border border-wm-line bg-wm-surface text-wm-ink shadow-wm-soft',
-  pass: 'bg-wm-pass text-wm-on-accent shadow-wm-btn-pass',
-  danger: 'bg-wm-fail text-wm-on-accent shadow-wm-btn-fail',
-};
-
-export const BUTTON_BASE =
-  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-wm-button px-5 font-wm-sans text-wm-button outline-none ' +
-  'transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 ' +
-  'focus-visible:outline-wm-accent motion-safe:active:scale-97 motion-safe:data-pressed:scale-97 motion-safe:data-pressed:duration-150';
+// The look lives in button-styles.ts, a plain module: a server component (ButtonLink on the public pages) that imported these strings from
+// this 'use client' file would get client references instead of the classes (R240). Re-exported for the app screens that import them here.
+export { BUTTON_BASE, BUTTON_VARIANT, type ButtonVariant } from './button-styles';
 
 export const BUTTON_DISABLED = 'disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:brightness-100';
 

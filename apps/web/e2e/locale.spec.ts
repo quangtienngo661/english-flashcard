@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { copy } from './copy';
 
 const root = async (request: import('@playwright/test').APIRequestContext, headers: Record<string, string>) =>
   request.get('/', { headers, maxRedirects: 0 });
@@ -40,7 +41,7 @@ test.describe('locale at the root', () => {
   test('LPE4 /vi/khong-ton-tai returns 404 with Vietnamese not-found copy', async ({ page }) => {
     const res = await page.goto('/vi/khong-ton-tai');
     expect(res?.status()).toBe(404);
-    await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: copy.vi.NotFound.title })).toBeVisible();
   });
 
   test('LPE5 /fr ends on a 404 page', async ({ page }, testInfo) => {
@@ -55,7 +56,7 @@ test.describe('locale at the root', () => {
     await page.setExtraHTTPHeaders({ 'accept-language': 'en-US,en;q=0.9' });
     await page.goto('/');
     await expect(page).toHaveURL(/\/vi$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Học từ vựng tiếng Anh');
+    await expect(page.getByRole('heading', { level: 1, name: `${copy.vi.Landing.hero.line1} ${copy.vi.Landing.hero.line2}` })).toBeVisible();
   });
 
   test('D2 the English legal pages are not redirected', async ({ request }) => {

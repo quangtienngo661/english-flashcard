@@ -7,8 +7,13 @@ import { Kbd } from './Kbd';
 import { Tag } from './Tag';
 import { TextButton } from './TextButton';
 
+// Like next/link, the mock handles the click itself (client navigation): the browser's own navigation is prevented.
 vi.mock('next/link', () => ({
-  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest} onClick={(event) => event.preventDefault()}>
+      {children}
+    </a>
+  ),
 }));
 
 describe('ui actions and surfaces', () => {
@@ -34,6 +39,25 @@ describe('ui actions and surfaces', () => {
   it('ButtonLink is a link with its href', () => {
     render(<ButtonLink href="/vi/app/plans">Xem gói</ButtonLink>);
     expect(screen.getByRole('link', { name: 'Xem gói' })).toHaveAttribute('href', '/vi/app/plans');
+  });
+
+  it('a ButtonLink without reload navigates on the client (next/link handles the click)', () => {
+    render(<ButtonLink href="/vi/app/plans">Xem gói</ButtonLink>);
+    expect(fireEvent.click(screen.getByRole('link', { name: 'Xem gói' }))).toBe(false);
+  });
+
+  it('ButtonLink reload is a plain anchor: exact href, the same look, and the click is left to the browser (full page load)', () => {
+    render(
+      <>
+        <ButtonLink href="/vi/app/register" reload variant="secondary">Đăng ký</ButtonLink>
+        <ButtonLink href="/vi/app/login" variant="secondary">Đăng nhập</ButtonLink>
+      </>,
+    );
+    const link = screen.getByRole('link', { name: 'Đăng ký' });
+    expect(link.getAttribute('href')).toBe('/vi/app/register');
+    expect(link.className).toBe(screen.getByRole('link', { name: 'Đăng nhập' }).className);
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.click(link)).toBe(true);
   });
 
   it('TextButton is a button', () => {
