@@ -23,7 +23,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         {/* Prices from the build (M8.3), so the force-dynamic legal pages do not read them per request either. */}
         <JsonLd locale={locale} description={meta('description')} prices={landingData().prices} />
         <SkipLink label={t('skipToContent')} />
-        {children}
+        {/* Figma's ground is `--bg` (the body keeps the old `--color-surface` the app uses, R244). `isolate`, so the sections' halos at
+            z-index −10 paint above this background and not under it. */}
+        <div className="isolate min-h-dvh bg-wm-bg">{children}</div>
       </ThemeProvider>
     </>
   );
