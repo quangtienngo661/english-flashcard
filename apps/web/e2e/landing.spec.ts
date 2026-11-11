@@ -455,3 +455,45 @@ test.describe('M8 the public pages draw their button links as buttons', () => {
     await expectButton(page.getByRole('region', { name: copy.vi.Legal.privacyHelpTitle }).getByRole('link'), 'primary');
   });
 });
+
+// Found in the M8.9 shots: the public pages showed the body's old `--color-surface` (white; #242b3d in dark) instead of Figma's `--bg` ground
+// (R244). Read from an empty corner of each page, so the colour is the ground and not a card.
+test.describe('M8 the public pages stand on --bg', () => {
+  const ground = { light: 'rgb(246, 247, 250)', dark: 'rgb(15, 18, 32)' } as const;
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`every public page is painted ${ground[scheme]} in ${scheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const path of [...PAGES, `${PUBLISHED}/vi/privacy`]) {
+        await page.goto(path);
+        await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+        const paint = await page.evaluate(() => {
+          // The first painted background under the bottom-left corner of the window, through the stack of boxes there.
+          for (const el of document.elementsFromPoint(4, window.innerHeight - 4)) {
+            const colour = getComputedStyle(el).backgroundColor;
+            if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
+          }
+          return 'none';
+        });
+        expect(paint, path).toBe(ground[scheme]);
+      }
+    });
+  }
+});
+
+// Found in the M8.9 shots: at 390 px the review boxes sat in three columns, so "14 ngày" and "30 ngày" broke onto two lines; Figma's phone
+// frame (`9:291`) wraps them as pills, 3 + 2 (R245).
+test.describe('M8 the review boxes on a phone', () => {
+  test('no review box value breaks onto a second line', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'the phone project (390 px)');
+    await page.goto('/vi');
+    const learn = page.getByRole('region', { name: L.learn.title });
+    for (const { value } of L.learn.review.bins) {
+      const lines = await learn.getByText(value, { exact: true }).evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+      });
+      expect(lines, value).toBe(1);
+    }
+  });
+});
