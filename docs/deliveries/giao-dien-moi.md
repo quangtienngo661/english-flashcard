@@ -349,3 +349,18 @@ nghiệm, chọn sai, so chữ, tổng kết. Ảnh kéo cho thấy chữ trên 
 - Chưa chạy với API thật ở trình duyệt; ảnh, e2e và đo khung hình đều dùng API giả.
 - Chưa thử trên điện thoại thật: kéo ngang để chấm trong khi mặt sau dài vẫn cuộn dọc (`touch-action: pan-y`), tốc độ khung hình có GPU.
 - Chưa chụp chế độ tối, tiếng Anh, 1024 px; ảnh kéo chưa chụp lại sau sửa bôi chọn.
+
+# Giao diện mới — as-built hàng "Nhóm của bạn" giãn đều (11/11/2026)
+
+Nhánh `feat/giao-dien-moi-deck-row`, PR vào `refactor/giao-dien-moi`. Quyết định: R114.
+
+**Đã làm**
+- Hôm nay: thẻ nhóm chia đều bề rộng hàng, chỉ hiện số thẻ vừa chỗ (không nhỏ hơn 150 px điện thoại, 176 px desktop); bỏ cuộn ngang, kéo chuột, nút mũi tên và giới hạn 4 thẻ. "Xem tất cả N nhóm" ở đầu khối giữ nguyên.
+
+**Kiểm**
+- Web: lint, typecheck qua; unit `src/features/learner` 50 file, 710 test qua (`DeckRow.test` mới: 7 test theo bề rộng, chạy đỏ trước khi viết code).
+- E2e `node scripts/cf-docker.mjs` (m2, m3, overflow và một spec chụp tạm): 60 qua, 0 hỏng. Đo trên trang thật (API giả): 390 px → 2 thẻ 172 px; 1024 px → 5 thẻ 176 px lấp đủ 960 px; 1440 px → 4 thẻ 191 px; không cuộn ngang ở cả ba.
+
+**Chưa kiểm / rủi ro**
+- Chưa chạy với API thật, chưa chụp chế độ tối và tiếng Anh.
+- Ít nhóm (ví dụ 2 thẻ ở 1440 px) thì nửa phải hàng để trống, theo R114.
