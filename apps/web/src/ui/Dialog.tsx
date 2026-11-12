@@ -40,7 +40,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable={isDismissable}
-      className="fixed inset-0 z-50 flex items-end justify-center overscroll-contain bg-wm-mark-ink/30 backdrop-blur-wm-overlay md:items-center md:p-4 motion-safe:data-entering:animate-wm-overlay-in motion-safe:data-exiting:animate-wm-pop-out"
+      className="fixed inset-0 z-50 flex items-end justify-center overscroll-contain bg-wm-scrim backdrop-blur-wm-overlay md:items-center md:p-4 motion-safe:data-entering:animate-wm-overlay-in motion-safe:data-exiting:animate-wm-pop-out"
     >
       <Modal
         className={cn(

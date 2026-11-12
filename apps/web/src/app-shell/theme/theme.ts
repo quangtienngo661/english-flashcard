@@ -2,6 +2,9 @@
 export type ThemeChoice = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
+// The page background of each theme, for the browser bar (`<meta name="theme-color">`).
+export const THEME_COLOR = { light: '#f6f7fa', dark: '#0f1220' } as const;
+
 export const THEME_STORAGE_KEY = 'wordmet-web.theme';
 const CHOICES: readonly ThemeChoice[] = ['light', 'dark', 'system'];
 

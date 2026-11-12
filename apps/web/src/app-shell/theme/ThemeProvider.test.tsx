@@ -25,6 +25,51 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
+function osPrefersDark(dark: boolean) {
+  window.matchMedia = vi.fn().mockReturnValue({
+    matches: dark,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }) as unknown as typeof window.matchMedia;
+}
+
+describe('ThemeProvider browser bar', () => {
+  const bars = () => [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map((m) => m.content);
+  beforeEach(() => {
+    document.head.innerHTML =
+      '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1220"><meta name="theme-color" content="#f6f7fa">';
+  });
+  afterEach(() => {
+    document.head.innerHTML = '';
+  });
+  const mount = () =>
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+
+  it('stored dark with a light OS paints both bars dark', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    osPrefersDark(false);
+    mount();
+    expect(bars()).toEqual(['#0f1220', '#0f1220']);
+  });
+
+  it('stored light with a dark OS paints both bars light', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
+    osPrefersDark(true);
+    mount();
+    expect(bars()).toEqual(['#f6f7fa', '#f6f7fa']);
+  });
+
+  it('system follows the OS', () => {
+    osPrefersDark(true);
+    mount();
+    expect(bars()).toEqual(['#0f1220', '#0f1220']);
+  });
+});
+
 describe('ThemeProvider', () => {
   it('setChoice stores the choice and themes <html>', () => {
     render(

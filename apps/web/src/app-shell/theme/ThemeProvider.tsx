@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
-import { readThemeChoice, resolveTheme, THEME_STORAGE_KEY, writeThemeChoice, type ResolvedTheme, type ThemeChoice } from './theme';
+import { readThemeChoice, resolveTheme, THEME_COLOR, THEME_STORAGE_KEY, writeThemeChoice, type ResolvedTheme, type ThemeChoice } from './theme';
 
 type ThemeValue = { choice: ThemeChoice; resolved: ResolvedTheme; setChoice: (choice: ThemeChoice) => void };
 
@@ -42,7 +42,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const resolved = resolveTheme(choice, system === 'dark');
 
   useEffect(() => {
-    if (current !== null) document.documentElement.dataset.theme = resolved;
+    if (current === null) return;
+    document.documentElement.dataset.theme = resolved;
+    // Next renders one theme-color per OS scheme; the stored choice may disagree with the OS, so both follow the theme.
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+      meta.content = THEME_COLOR[resolved];
+    });
   }, [current, resolved]);
 
   // The landing shares <html>; it must never keep the app's theme after a client-side navigation.
