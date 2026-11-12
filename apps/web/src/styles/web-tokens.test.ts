@@ -57,7 +57,9 @@ function mixOklab(a: string, b: string, p: number): string {
 const TEXT_PAIRS: Array<[string, string]> = [
   ['ink', 'bg'], ['ink', 'surface'], ['muted', 'bg'], ['muted', 'surface'], ['on-accent', 'accent'], ['accent', 'surface'],
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
-  ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
+  ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'],
+  // F.14: the result ticket's text on its wash (the muted note, the answer word, the meaning).
+  ['muted', 'wrong-soft'], ['pass', 'wrong-soft'], ['ink', 'wrong-soft'], ['muted', 'pass-soft'], ['ink', 'pass-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
   // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
   ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'], ['pass', 'surface'],
 ];
@@ -112,6 +114,13 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
     expect(style('block-title')).toEqual(['1.375rem', '1.25', '-0.012em', '700']);
     expect(style('block-title-mobile')).toEqual(['1.25rem', '1.25', '-0.012em', '700']);
+  });
+
+  it('pins the result ticket type (F.14: Bricolage 800, 1.25rem title, 1.7rem lead)', () => {
+    const text = tokens(web, 'text-wm');
+    const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
+    expect(style('ticket-title')).toEqual(['1.25rem', '1.2', '-0.01em', '800']);
+    expect(style('ticket-lead')).toEqual(['1.7rem', '1.1', '-0.02em', '800']);
   });
 
   it('pins the app page title sizes (M7 Figma A §1.1, §1.5: 44 / 30, line-height 1.1)', () => {
@@ -243,7 +252,9 @@ describe('wm dark and level tokens (M9.8)', () => {
     expect([dark.get('scrim'), dark.get('paper'), dark.get('paper-line'), dark.get('halo-mark')])
       .toEqual(['rgb(0 0 0 / 0.55)', '#1e2334', '#2e3449', 'rgb(255 216 74 / 0.12)']);
     expect([dark.get('wrong-soft'), dark.get('wrong-line'), dark.get('wrong-ink')]).toEqual(['#352731', 'rgb(229 96 63 / 0.55)', '#e87052']);
-    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fbedeb', 'rgb(184 53 42 / 0.62)', '#b8352a']);
+    // F.14: the result ticket's wash is fail 12 % on surface (oklab); its line fail at 55 %.
+    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fae7e4', 'rgb(184 53 42 / 0.55)', '#b8352a']);
+    expect(mixOklab(light.get('fail')!, light.get('surface')!, 0.12)).toBe(light.get('wrong-soft'));
     expect([dark.get('accent-soft'), dark.get('pass-soft'), dark.get('fail-soft')]).toEqual(['#2c334f', '#24373c', '#3c2f3a']);
   });
 

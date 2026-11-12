@@ -246,6 +246,11 @@ describe('AI question types (K/78a–K/81)', () => {
     it('CS4: a try-again with reason null keeps the spelling text', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: null });
       expect(await screen.findByText(/Check the spelling and try again/)).toBeInTheDocument();
+      // F.14: the wrong ticket with no answer; the footer reads reveal, Hint, Try again.
+      const panel = screen.getByText(/Check the spelling/).closest<HTMLElement>('[data-feedback]')!;
+      expect(panel).toHaveTextContent(/^Not quite\s*Check the spelling and try again\. The answer stays hidden\.\s*A right answer on a retry/);
+      expect(panel).not.toHaveTextContent('deploy');
+      expect(within(panel).getAllByRole('button').map((b) => b.textContent)).toEqual(['Show answer', 'Hint', 'Try again']);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
     });
 
