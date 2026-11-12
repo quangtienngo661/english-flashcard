@@ -14,7 +14,6 @@ export function AuthShowcase({ variant }: { variant: ShowcaseVariant }) {
   return (
     <div aria-hidden className="relative isolate h-full overflow-hidden rounded-wm-card bg-wm-accent-soft">
       <div className="auth-panel-glow absolute inset-0 -z-10" />
-      <div className="dot-grid absolute inset-0 -z-10 opacity-45" />
       <ReviewPath />
       <Chip className="left-11 top-16" word="deadline" dot="bg-wm-fail" />
       <Chip className="bottom-1/3 left-14" word="negotiate" dot="bg-wm-mark" />

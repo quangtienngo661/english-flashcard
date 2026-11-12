@@ -133,7 +133,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     await userEvent.keyboard('1');
     const heading = await screen.findByRole('heading', { name: 'Xong 2 thẻ.' });
     expect(heading.parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
-    expect(screen.getByTestId('known-count').closest('[class*="animate-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
+    expect(screen.getByTestId('known-count').closest('[class*="animate-wm-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
     // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
     expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
   });

@@ -66,13 +66,13 @@ export function StreakToast({ placement = 'bottom' }: { placement?: StreakPlacem
         <p
           key={current.id}
           className={cn(
-            'flex items-center gap-2.5 rounded-wm-row border border-wm-line bg-wm-surface px-3.5 py-2.5 font-wm-sans text-wm-small font-semibold text-wm-ink shadow-wm-pop motion-safe:animate-toast-in',
-            'transition-opacity duration-fast ease-exit',
+            'flex items-center gap-2.5 rounded-wm-row border border-wm-line bg-wm-surface px-3.5 py-2.5 font-wm-sans text-wm-small font-semibold text-wm-ink shadow-wm-pop motion-safe:animate-wm-toast-in',
+            'transition-opacity duration-150 ease-wm-exit',
             phase.leaving && 'opacity-0',
           )}
         >
           <span aria-hidden className="grid size-5.5 shrink-0 place-content-center rounded-wm-key bg-wm-accent-soft text-wm-accent">
-            <Flame className="size-3.5 origin-bottom motion-safe:animate-streak-flame" />
+            <Flame className="size-3.5 origin-bottom motion-safe:animate-wm-streak-flame" />
           </span>
           {t('days', { days: current.days })}
         </p>

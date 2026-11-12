@@ -79,7 +79,7 @@ export function CalendarButton({ size }: { size: 'lg' | 'sm' }) {
       {days > 0 && <span id={describedBy} className="sr-only">{t('streak', { days })}</span>}
       <span
         aria-hidden
-        className="pointer-events-none absolute right-full top-1/2 mr-3 flex -translate-y-1/2 translate-x-1.5 items-center gap-2 whitespace-nowrap rounded-wm-control bg-wm-ink px-2.5 py-1.5 font-wm-sans text-wm-small-strong text-wm-surface opacity-0 transition duration-150 ease-wm-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-md:hidden"
+        className="pointer-events-none absolute right-full top-1/2 mr-3 flex -translate-y-1/2 translate-x-1.5 items-center gap-2 whitespace-nowrap rounded-wm-control border border-wm-line bg-wm-surface px-2.5 py-1.5 font-wm-sans text-wm-small-strong text-wm-ink opacity-0 shadow-wm-pop transition duration-150 ease-wm-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-md:hidden"
       >
         {t('label')}
         <Kbd>L</Kbd>

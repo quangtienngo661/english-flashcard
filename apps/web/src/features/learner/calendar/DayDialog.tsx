@@ -187,7 +187,7 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
             onClick={() => setFilter(tab.id)}
             className={cn(
               'rounded-wm-control px-3 py-1.5 font-wm-sans text-wm-label font-semibold outline-none transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-40',
-              filter === tab.id ? 'bg-wm-ink text-wm-surface' : 'text-wm-muted enabled:hover:text-wm-ink',
+              filter === tab.id ? 'bg-wm-level-all-tint-strong text-wm-ink ring-1 ring-inset ring-wm-accent' : 'text-wm-muted enabled:hover:text-wm-ink',
             )}
           >
             {tab.label}

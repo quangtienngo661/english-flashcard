@@ -28,7 +28,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
   const [before, after] = at < 0 ? [sentence, ''] : [sentence.slice(0, at), sentence.slice(at + BLANK.length)];
   return (
     <div className="flex flex-col gap-3">
-      <div data-feedback className="flex gap-3 rounded-wm-row bg-wm-accent-soft p-4 motion-safe:animate-feedback-in">
+      <div data-feedback className="flex gap-3 rounded-wm-row bg-wm-accent-soft p-4 motion-safe:animate-wm-feedback-in">
         <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-accent" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="font-wm-display text-wm-word text-wm-accent">{t('alternativeLabel')}</p>

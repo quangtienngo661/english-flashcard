@@ -64,9 +64,9 @@ export function AppProviders({ children, store }: { children: ReactNode; store?:
 function OfflineBand({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('App');
   return (
-    <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-danger-soft px-4 py-2 text-ui text-ink">
+    <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-wm-fail-soft px-4 py-2 font-wm-sans text-wm-small text-wm-ink">
       <span>{t('offline.message')}</span>
-      <button type="button" onClick={onRetry} className="font-semibold text-primary underline underline-offset-2">
+      <button type="button" onClick={onRetry} className="font-semibold text-wm-accent underline underline-offset-2">
         {t('common.retry')}
       </button>
     </div>

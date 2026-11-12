@@ -77,7 +77,7 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 border-wm-wrong-line bg-wm-wrong-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7">
+    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 border-wm-wrong-line bg-wm-wrong-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-wm-panel-drop md:mx-5.5 md:px-7">
       <div className="flex items-center gap-3">
         <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-wrong-ink text-wm-on-accent">
           <X aria-hidden className="size-4.5" />

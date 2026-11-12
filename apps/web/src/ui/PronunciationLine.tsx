@@ -25,10 +25,10 @@ export function PronunciationLine({ text, line, align = 'start', className }: {
     <p className={cn('flex flex-wrap items-center gap-x-4 gap-y-1', align === 'center' && 'justify-center', className)}>
       {items.map((item) => (
         <span key={item.voice} className="inline-flex items-center gap-0.5">
-          {item.label && <span className="text-caption font-semibold text-muted">{item.label}</span>}
+          {item.label && <span className="text-wm-caption font-semibold text-wm-muted">{item.label}</span>}
           <SpeakButton text={text} voice={item.voice} audioUrl={item.audio} />
           {item.ipa && (
-            <span translate="no" className="break-all text-body text-ink">
+            <span translate="no" className="break-all text-wm-base text-wm-ink">
               /{item.ipa}/
             </span>
           )}

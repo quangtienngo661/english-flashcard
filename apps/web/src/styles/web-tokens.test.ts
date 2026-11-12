@@ -156,6 +156,17 @@ describe('wm group and motion tokens (M3)', () => {
     expect(Object.fromEntries(['carousel', 'fade', 'blur', 'halo', 'rise', 'count', 'flip', 'page-in', 'lift'].map((k) => [k, ms.get(k)])))
       .toEqual({ carousel: '620ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
   });
+
+  it('P.6: the strong ease-out and the kit curves keep the values they had in globals.css and theme.css', () => {
+    const ease = tokens(web, 'ease-wm');
+    expect(Object.fromEntries(['out-strong', 'standard', 'enter', 'exit', 'spring'].map((k) => [k, ease.get(k)]))).toEqual({
+      'out-strong': 'cubic-bezier(0.23, 1, 0.32, 1)',
+      standard: 'cubic-bezier(0.2, 0, 0, 1)',
+      enter: 'cubic-bezier(0.05, 0.7, 0.1, 1)',
+      exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)',
+      spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    });
+  });
 });
 
 // The waiting dot of Đơn hàng (motion doc §6, design §8.2): opacity 1 → .3 → 1 in 1.4 s ease-in-out, until the order's status changes.

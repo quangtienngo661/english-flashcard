@@ -60,7 +60,7 @@ export function TopBar() {
       <button
         type="button"
         onClick={() => addWord.open()}
-        className="flex min-h-10 shrink-0 items-center gap-2 rounded-wm-control bg-wm-accent py-2 pl-4 pr-3 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:active:scale-97"
+        className="flex min-h-10 shrink-0 items-center gap-2 rounded-wm-control bg-wm-accent py-2 pl-4 pr-3 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none transition duration-200 ease-wm-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:active:scale-97"
       >
         <Plus aria-hidden className="size-4" />
         {t('addWord')}

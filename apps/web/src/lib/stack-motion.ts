@@ -4,7 +4,7 @@
  * helper animates opacity only, for 200 ms or less; nothing moves, scales, turns or blurs.
  */
 
-/** The main curve (`--ease-out-strong`). */
+/** The main curve (`--ease-wm-out-strong`). */
 export const STACK_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 export function prefersReducedMotion(): boolean {

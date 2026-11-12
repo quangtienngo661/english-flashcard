@@ -101,7 +101,7 @@ function Hero({ group }: { group: GroupSummary }) {
   const { priority, due, new: fresh } = group.today;
   const legend = [
     ['bg-wm-accent', t('legendPriority', { count: priority })],
-    ['bg-wm-ink', t('legendDue', { count: due })],
+    ['bg-wm-level-due', t('legendDue', { count: due })],
     ['bg-wm-ghost', t('legendNew', { count: fresh })],
   ] as const;
   return (
@@ -118,7 +118,7 @@ function Hero({ group }: { group: GroupSummary }) {
           className="max-w-110"
           segments={[
             { size: priority, fill: priority, tone: 'bg-wm-accent', label: legend[0][1] },
-            { size: due, fill: due, tone: 'bg-wm-ink', label: legend[1][1] },
+            { size: due, fill: due, tone: 'bg-wm-level-due', label: legend[1][1] },
             { size: fresh, fill: fresh, tone: 'bg-wm-ghost', label: legend[2][1] },
           ].filter((s) => s.size > 0)}
         />

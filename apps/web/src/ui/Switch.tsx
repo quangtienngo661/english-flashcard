@@ -15,8 +15,8 @@ type Props = {
 };
 
 // Figma "Công tắc" (138:324): a fully round track, accent when on.
-const TRACK = 'relative inline-flex h-6 w-11 shrink-0 items-center rounded-wm-pill transition duration-150 ease-out-strong';
-const THUMB = 'size-5 rounded-wm-pill bg-wm-surface shadow-wm-row transition duration-150 ease-out-strong';
+const TRACK = 'relative inline-flex h-6 w-11 shrink-0 items-center rounded-wm-pill transition duration-150 ease-wm-out-strong';
+const THUMB = 'size-5 rounded-wm-pill bg-wm-surface shadow-wm-row transition duration-150 ease-wm-out-strong';
 const TEXT = 'flex min-w-0 flex-col';
 
 /** A controlled on/off switch with a label and an optional description; `locked` is a Pro-only switch on this plan. */

@@ -78,9 +78,8 @@ describe('ui actions and surfaces', () => {
     expect(container.firstChild).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('AppBackground draws the mesh background, not the dot grid', () => {
+  it('AppBackground draws the mesh background', () => {
     const { container } = render(<AppBackground />);
     expect(container.firstChild).toHaveClass('app-mesh');
-    expect(container.firstChild).not.toHaveClass('dot-grid');
   });
 });

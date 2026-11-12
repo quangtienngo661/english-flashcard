@@ -30,8 +30,8 @@ export function ThemeToggleButton({ toLight, toDark }: { toLight: string; toDark
       className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none transition duration-200 hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
     >
       <span className="relative block size-5 overflow-hidden">
-        {leaving && glyph(leaving, `out-${turn}`, 'absolute inset-0 size-5 motion-safe:animate-theme-icon-out motion-reduce:hidden')}
-        {glyph(resolved, `in-${turn}`, turn > 0 ? 'absolute inset-0 size-5 motion-safe:animate-theme-icon-in' : 'absolute inset-0 size-5')}
+        {leaving && glyph(leaving, `out-${turn}`, 'absolute inset-0 size-5 motion-safe:animate-wm-theme-icon-out motion-reduce:hidden')}
+        {glyph(resolved, `in-${turn}`, turn > 0 ? 'absolute inset-0 size-5 motion-safe:animate-wm-theme-icon-in' : 'absolute inset-0 size-5')}
       </span>
     </button>
   );

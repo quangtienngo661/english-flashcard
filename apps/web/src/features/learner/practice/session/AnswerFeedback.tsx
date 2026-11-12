@@ -81,7 +81,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
     <div
       data-feedback
       className={cn(
-        '-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7',
+        '-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-wm-panel-drop md:mx-5.5 md:px-7',
         right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
       )}
     >

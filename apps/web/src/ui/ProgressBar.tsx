@@ -15,7 +15,7 @@ export function ProgressBar({ value, max, label, className }: Props) {
       className={cn('h-1.5 w-full overflow-hidden rounded-wm-pill bg-wm-line', className)}
     >
       <div
-        className="h-full rounded-wm-pill bg-wm-accent transition-all duration-300 ease-out-strong"
+        className="h-full rounded-wm-pill bg-wm-accent transition-all duration-300 ease-wm-out-strong"
         // raw-ok: the fill width is data, not a design value
         style={{ width: `${ratio * 100}%` }}
       />

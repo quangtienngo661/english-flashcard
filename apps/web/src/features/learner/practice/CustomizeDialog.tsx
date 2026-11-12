@@ -311,7 +311,7 @@ function CustomizeForm({
             />
           </div>
           {aiCaption}
-          <div className={cn('flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1 transition-opacity duration-300 ease-out-strong', ai === 0 && 'opacity-45')}>
+          <div className={cn('flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1 transition-opacity duration-300 ease-wm-out-strong', ai === 0 && 'opacity-45')}>
             <TypeRow label={t('types.cloze')} on={aiCloze} onChange={setAiCloze} isDisabled={ai === 0} />
             <TypeRow label={t('types.mcq_sentence')} on={aiMc} onChange={setAiMc} isDisabled={ai === 0}>
               <Segmented<McPick>
@@ -329,7 +329,7 @@ function CustomizeForm({
             </TypeRow>
           </div>
           {learnerPlaces && ai > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 motion-safe:animate-feedback-in">
+            <div className="flex flex-wrap items-center justify-between gap-3 motion-safe:animate-wm-feedback-in">
               <span className="font-wm-sans text-wm-small-strong text-wm-ink">{tc('placement')}</span>
               <Segmented<'even' | 'random'>
                 label={tc('placement')}
@@ -423,7 +423,7 @@ function TypeRow({ label, on, onChange, isDisabled, help, children }: {
   return (
     <div
       className={cn(
-        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-control bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
+        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-control bg-wm-surface px-3 py-1.5 transition duration-200 ease-wm-out-strong',
         on && !isDisabled ? 'shadow-wm-row' : 'shadow-none',
       )}
     >
@@ -439,7 +439,7 @@ function TypeRow({ label, on, onChange, isDisabled, help, children }: {
 }
 
 /** A red line that appears under a choice eases in (owner 10/11/2026: opening and closing parts should feel smooth). */
-const APPEAR_ERROR = 'font-wm-sans text-wm-small-strong text-wm-fail motion-safe:animate-feedback-in';
+const APPEAR_ERROR = 'font-wm-sans text-wm-small-strong text-wm-fail motion-safe:animate-wm-feedback-in';
 
 /** K/71 (not enough AI units: needed, left, when they refill) and K/72 (one general line, D11), right above the start. */
 function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { kind: 'locked' }>; onDrop: () => void }) {
@@ -454,7 +454,7 @@ function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { 
       : t('quotaRefillDate', { date: format.date(problem.resetsAt, 'dayMonth') });
   }
   return (
-    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-row bg-wm-fail-soft p-4 motion-safe:animate-feedback-in">
+    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-row bg-wm-fail-soft p-4 motion-safe:animate-wm-feedback-in">
       {problem.kind === 'quota' ? (
         <>
           <p className="font-wm-sans text-wm-base-strong text-wm-fail">{t('quotaTitle')}</p>

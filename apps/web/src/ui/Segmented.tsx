@@ -36,7 +36,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
           <Radio
             key={option.id}
             value={option.id}
-            className={`cursor-pointer whitespace-nowrap rounded-wm-pill text-center ${size} font-wm-sans text-wm-muted outline-none transition duration-200 ease-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row data-disabled:cursor-not-allowed data-disabled:opacity-60`}
+            className={`cursor-pointer whitespace-nowrap rounded-wm-pill text-center ${size} font-wm-sans text-wm-muted outline-none transition duration-200 ease-wm-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row data-disabled:cursor-not-allowed data-disabled:opacity-60`}
           >
             {option.label}
           </Radio>

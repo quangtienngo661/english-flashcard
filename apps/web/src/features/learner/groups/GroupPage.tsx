@@ -253,7 +253,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                   onClick={() => setFilter(f.id)}
                   className={cn(
                     'flex min-h-9 shrink-0 items-baseline gap-1 rounded-wm-control border px-3 py-1.5 text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
-                    pressed ? 'border-wm-ink bg-wm-ink text-wm-surface' : 'border-wm-line bg-wm-surface text-wm-muted hover:text-wm-ink',
+                    pressed ? 'border-wm-accent bg-wm-level-all-tint-strong text-wm-ink ring-1 ring-inset ring-wm-accent' : 'border-wm-line bg-wm-surface text-wm-muted hover:text-wm-ink',
                   )}
                 >
                   <span>{f.label}</span>
@@ -335,7 +335,7 @@ function EmptyDeck() {
       <h2 id="empty-deck" className="text-balance font-wm-display text-wm-card-title text-wm-ink">
         {t('emptyTitle')}
       </h2>
-      <p className="max-w-prose text-pretty text-wm-base text-wm-muted">{t('emptyBody')}</p>
+      <p className="max-w-160 text-pretty text-wm-base text-wm-muted">{t('emptyBody')}</p>
       <Link
         href={`/${locale}/app/lookup`}
         className="flex min-h-11 items-center gap-2 text-wm-button text-wm-accent outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"

@@ -12,7 +12,7 @@ export function GoogleButton({ onPress, children }: { onPress: () => void; child
     <AriaButton
       type="button"
       onPress={onPress}
-      className="flex min-h-12 w-full items-center justify-center gap-3 rounded-wm-control border-2 border-wm-line bg-wm-surface px-4 font-wm-sans text-wm-button text-wm-ink outline-none transition duration-200 ease-out-strong hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+      className="flex min-h-12 w-full items-center justify-center gap-3 rounded-wm-control border-2 border-wm-line bg-wm-surface px-4 font-wm-sans text-wm-button text-wm-ink outline-none transition duration-200 ease-wm-out-strong hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
     >
       <GoogleMark />
       {children}

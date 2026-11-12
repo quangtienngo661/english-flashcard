@@ -11,11 +11,11 @@ import type { GroupSummary } from '../groups/groups-api';
 
 // Design §8.3, GM20: summary blocks rise for 400 ms, 90 ms apart (Phiên luyện, Học, Ôn).
 export const STAGGER = [
-  'motion-safe:animate-summary-in',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:90ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:180ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:270ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:360ms]',
+  'motion-safe:animate-wm-summary-in',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:90ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:180ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:270ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:360ms]',
 ] as const;
 
 /**

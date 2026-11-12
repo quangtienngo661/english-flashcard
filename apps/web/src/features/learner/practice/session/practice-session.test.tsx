@@ -340,14 +340,14 @@ describe('PracticeSession (K/60–K/67)', () => {
     renderApp(<PracticeSession />, { routes: routes() });
     await screen.findByText('triển khai');
     const card = screen.getByText('triển khai').closest('section')!;
-    expect(card).toHaveClass('motion-safe:animate-card-rise');
+    expect(card).toHaveClass('motion-safe:animate-wm-card-rise');
     await userEvent.keyboard('2');
     await screen.findByText('Chưa đúng');
-    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
-    expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wm-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wm-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
-    expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
-    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-panel-drop');
+    expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-wm-pop-in');
+    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-wm-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
@@ -367,7 +367,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^1Đúng/ }));
     expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^1Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
+    expect(screen.getByRole('button', { name: /^1Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
     await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
@@ -459,7 +459,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(1);
     // Figma 119:4608: the ring reads 7/10 right; blocks rise 90 ms apart (design §8.3).
     expect(screen.getByRole('img', { name: '7/10 câu đúng' })).toHaveTextContent('7/10');
-    expect(screen.getByRole('heading', { name: 'Xong 10 câu.' }).closest('[class*="animate-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
+    expect(screen.getByRole('heading', { name: 'Xong 10 câu.' }).closest('[class*="animate-wm-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
     expect(screen.getByText('Nhóm Công nghệ, trộn 3 kiểu câu. Hôm nay còn 1/3 phiên luyện.')).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Cần ôn lại · 3 từ' });
     expect(within(list).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();

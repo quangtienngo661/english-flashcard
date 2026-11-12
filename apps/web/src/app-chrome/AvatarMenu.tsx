@@ -60,7 +60,7 @@ export function AvatarMenu() {
       <Popover
         placement="bottom end"
         offset={8}
-        className="w-72 rounded-wm-row bg-wm-surface p-2 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:data-exiting:animate-wm-pop-out"
+        className="w-72 rounded-wm-row bg-wm-surface p-2 shadow-wm-pop motion-safe:data-entering:animate-wm-menu-in motion-safe:data-exiting:animate-wm-pop-out"
       >
         <div className="px-3 pb-3 pt-2">
           <p className="truncate font-wm-sans text-wm-base-strong text-wm-ink">{displayName(me, locale)}</p>

@@ -59,7 +59,7 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
       )}
       <Popover
         offset={4}
-        className="w-(--trigger-width) min-w-52 overflow-y-auto overscroll-contain rounded-wm-row bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out"
+        className="w-(--trigger-width) min-w-52 overflow-y-auto overscroll-contain rounded-wm-row bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-wm-menu-in motion-safe:placement-top:data-entering:animate-wm-menu-in-up motion-safe:data-exiting:animate-wm-menu-out"
       >
         <ListBox items={items} className="outline-none">
           {(item) => (
