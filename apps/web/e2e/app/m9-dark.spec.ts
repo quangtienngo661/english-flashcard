@@ -43,6 +43,15 @@ for (const c of cases) {
         .toEqual(expect.arrayContaining([c.bar]));
       const bars = await page.evaluate(() => [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map((m) => m.content));
       expect(bars.every((b) => b === c.bar)).toBe(true);
+      // A client-side navigation makes Next render fresh metas with the OS values; the bar must stay on the in-app theme.
+      await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Hôm nay' }).click();
+      await expect(page).toHaveURL(/\/vi\/app$/);
+      await expect
+        .poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map((m) => m.content)))
+        .toEqual(expect.arrayContaining([c.bar]));
+      await expect
+        .poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].every((m) => m.content === (document.documentElement.dataset.theme === 'dark' ? '#0f1220' : '#f6f7fa'))))
+        .toBe(true);
       await page.keyboard.press('l');
       await expect(page.getByRole('dialog')).toBeVisible();
       await expect.poll(() => scrimOf(page)).toBe(c.scrim);

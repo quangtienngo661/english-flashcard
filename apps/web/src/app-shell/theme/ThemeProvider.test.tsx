@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { THEME_STORAGE_KEY } from './theme';
 import { ThemeProvider, useTheme } from './ThemeProvider';
 
@@ -67,6 +67,29 @@ describe('ThemeProvider browser bar', () => {
     osPrefersDark(true);
     mount();
     expect(bars()).toEqual(['#0f1220', '#0f1220']);
+  });
+
+  it('repaints metas that Next re-renders after a client navigation', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    osPrefersDark(false);
+    mount();
+    document.head.innerHTML =
+      '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1220"><meta name="theme-color" content="#f6f7fa">';
+    await waitFor(() => expect(bars()).toEqual(['#0f1220', '#0f1220']));
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = '#f6f7fa';
+    document.head.append(meta);
+    await waitFor(() => expect(bars()).toEqual(['#0f1220', '#0f1220', '#0f1220']));
+  });
+
+  it('leaving the provider restores each bar to its server value by media', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    osPrefersDark(false);
+    const { unmount } = mount();
+    expect(bars()).toEqual(['#0f1220', '#0f1220']);
+    unmount();
+    expect(bars()).toEqual(['#0f1220', '#f6f7fa']);
   });
 });
 
