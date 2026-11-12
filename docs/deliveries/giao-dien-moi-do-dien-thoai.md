@@ -27,7 +27,11 @@ Cả hai cách còn mở, chủ dự án chọn. Mỗi cách có giới hạn ri
 
 Điện thoại và PC cùng một mạng Wi-Fi. Thay `<IP>` bằng IP của PC (`ipconfig`, dòng IPv4 của mạng Wi-Fi).
 
-Điều kiện có trước (máy mới): Postgres, Redis, Mailpit đang chạy (`pnpm bootstrap infra` hoặc `docker compose up -d`); file môi trường của API đã tạo từ file mẫu (mục Local setup trong `CLAUDE.md`); `pnpm db:setup` trong `apps/api` đã chạy. Tài khoản đăng nhập phải có ít nhất 20 thẻ để học: `pnpm bootstrap seed` nạp nội dung mẫu và một người học (xem `docs/deliveries/docker-bootstrap.md`).
+Điều kiện có trước (máy mới): Postgres, Redis, Mailpit đang chạy (`pnpm bootstrap infra` hoặc `docker compose up -d`); file môi trường của API đã tạo từ file mẫu (mục Local setup trong `CLAUDE.md`); `pnpm db:setup` trong `apps/api` đã chạy. File mẫu đã đặt sẵn `TURNSTILE_MODE=fake`, `AI_FAKE_ENABLED=true`, `BILLING_FAKE_ENABLED=true`, là ba cờ mà script nạp dữ liệu đòi.
+
+Dữ liệu để học: `pnpm bootstrap seed` không dùng được ở cách A, vì nó chạy trong container `api` của profile `app` (`scripts/bootstrap.mjs`, nhánh `seed`) mà cách A không có, và bật profile đó sẽ tranh cổng 3000 với API trên máy. Thay vào đó, sau khi API và worker (bước 2) đã chạy, trong `apps/api` chạy `pnpm learner:setup -- --admin <email admin> --learner <email người học> --plan pro` (đầu file `apps/api/scripts/learner-test-setup.mjs`). Script tạo hai tài khoản, nhập và đăng 304 dòng của `fixtures/learner-sample.csv`, cấp Pro. Chưa kiểm số thẻ đến hạn của người học sau khi nạp; phiên Học cần ít nhất 20 thẻ, nếu thiếu thì thêm từ vào một nhóm trước khi đo.
+
+Âm thanh: chỉ phát khi API trên máy chạy với `AUDIO_STORAGE_FAKE_ENABLED=true` (route `dev/audio` trả 404 nếu không, `dev-audio.controller.ts`) và `TTS_FAKE_ENABLED=true`. File mẫu đặt cả hai là `false` (dòng 110 và 119), nên với cấu hình mặc định thì âm thanh không phát. Đặt hai biến này trong file môi trường của API trước khi chạy `pnpm run:dev`. Chưa kiểm file âm thanh có được tạo ra sau khi nạp dữ liệu hay không.
 
 1. Thêm `http://<IP>:3001` vào `CORS_ORIGINS` trong `apps/api/.env`. Giá trị mặc định ở `apps/api/.env.example:50` chỉ có các địa chỉ `localhost`.
 2. API: trong `apps/api`, chạy `pnpm build` rồi `pnpm run:dev`. API nghe trên mọi giao diện mạng, cổng 3000 (`apps/api/src/main.ts:18` gọi `listen` không chỉ host).
