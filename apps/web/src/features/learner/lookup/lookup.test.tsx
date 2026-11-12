@@ -257,7 +257,7 @@ describe('Tra từ: stacks stay put', () => {
 });
 
 describe('Tra từ: "Nhóm khác" waits for the items', () => {
-  it('is disabled while the word\'s items load, then opens the picker', async () => {
+  it('is disabled while the word\'s items load', async () => {
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
     renderApp(<LookupPage />, {
