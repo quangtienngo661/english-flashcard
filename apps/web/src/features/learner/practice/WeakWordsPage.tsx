@@ -106,7 +106,7 @@ export function WeakWordsPage() {
         }
       >
         {groups.isPending ? (
-          <SkeletonBlocks />
+          <SkeletonBlocks title={false} />
         ) : groups.isError ? (
           <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
         ) : groups.data.total === 0 ? (

@@ -9,13 +9,16 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cn('rounded-wm-row bg-wm-line motion-safe:animate-pulse', className)} />;
 }
 
-/** A soft navigation inside the chrome (design §5.5): a title block and three card blocks, announced as "Đang tải…". */
-export function SkeletonBlocks() {
+/**
+ * A soft navigation inside the chrome (design §5.5): a title block and three card blocks, announced as "Đang tải…". `title={false}`
+ * drops the title block when the page already shows its real title.
+ */
+export function SkeletonBlocks({ title = true }: { title?: boolean }) {
   const t = useTranslations('App.common');
   return (
     <div role="status" className="flex flex-col gap-4">
       <span className="sr-only">{t('loading')}</span>
-      <Skeleton className="h-9 w-56" />
+      {title && <Skeleton className="h-9 w-56" />}
       <Skeleton className="h-36 w-full rounded-wm-card" />
       <Skeleton className="h-36 w-full rounded-wm-card" />
       <Skeleton className="h-36 w-full rounded-wm-card" />
