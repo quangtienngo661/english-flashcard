@@ -8,14 +8,16 @@ const HOUR = 3_600_000;
 
 function setup() {
   const deleteMany = vi.fn(async () => ({ count: 0 }));
+  const loginFailures = vi.fn(async () => ({ count: 0 }));
   const prisma = {
     refreshToken: { updateMany: vi.fn(async () => ({ count: 0 })) },
     otpCode: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     sessionChain: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     otpFailureWindow: { deleteMany },
+    loginFailure: { deleteMany: loginFailures },
   } as unknown as PrismaClient;
   const scheduler = { register: vi.fn() } as unknown as MaintenanceScheduler;
-  return { service: new IdentityCleanupService(prisma, scheduler), deleteMany };
+  return { service: new IdentityCleanupService(prisma, scheduler), deleteMany, loginFailures };
 }
 
 describe('IdentityCleanupService otp_failure_windows (B1-5, LA2#7)', () => {
@@ -34,5 +36,19 @@ describe('IdentityCleanupService otp_failure_windows (B1-5, LA2#7)', () => {
     const { service, deleteMany } = setup();
     deleteMany.mockResolvedValueOnce({ count: 3 });
     expect(await service.runOnce(NOW)).toMatchObject({ otpFailureWindows: 3 });
+  });
+});
+
+describe('IdentityCleanupService login_failures (F4)', () => {
+  it('deletes a row last written more than 24 hours ago; a 15-minute lock has long ended by then', async () => {
+    const { service, loginFailures } = setup();
+    await service.runOnce(NOW);
+    expect(loginFailures).toHaveBeenCalledExactlyOnceWith({ where: { updatedAt: { lt: new Date(NOW.getTime() - 24 * HOUR) } } });
+  });
+
+  it('reports how many it deleted', async () => {
+    const { service, loginFailures } = setup();
+    loginFailures.mockResolvedValueOnce({ count: 5 });
+    expect(await service.runOnce(NOW)).toMatchObject({ loginFailures: 5 });
   });
 });

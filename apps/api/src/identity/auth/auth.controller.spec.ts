@@ -48,7 +48,9 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
     expect(res.body).toEqual({ access_token: 'access', refresh_token: 'refresh', token_type: 'Bearer', expires_in: 120 });
     expect(res.headers['set-cookie']).toBeUndefined();
     expect(hit).toHaveBeenCalledWith('auth.login.ip', expect.any(String));
-    expect(login).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
+    // F4: the service gets the same client ip the per-ip limit was charged to (req.ip), to key the login lock on it.
+    const ip = hit.mock.calls.find(([rule]) => rule === 'auth.login.ip')![1];
+    expect(login).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ cookie: expect.any(Function) }), ip);
   });
   it('FE5: accept_terms false, missing or "true" -> 400 validation-failed and register is not called', async () => {
     const { accept_terms: _omitted, ...missing } = body;
