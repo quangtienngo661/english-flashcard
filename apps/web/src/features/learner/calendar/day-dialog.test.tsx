@@ -89,6 +89,17 @@ describe('DayDialog (Figma 103:3820 / 103:4248)', () => {
     expect(screen.getAllByText('Học 1 từ mới')).toHaveLength(2);
   });
 
+  it('the "Tất cả" chip is enabled when the day has activity and disabled when its total is 0', async () => {
+    const active = renderApp(<DayDialog {...props()} />, { routes: routes() });
+    await screen.findByRole('region', { name: 'Ôn 22 lượt' });
+    expect(screen.getByRole('button', { name: /^Tất cả/ })).toBeEnabled();
+    active.unmount();
+    const empty = { ...DAY, counts: { ...DAY.counts, learned: 0, practice_questions: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0 }, items: [] };
+    // Zero counts with a session still listed is the only way the body (and so the chips) shows with a total of 0; with none, the empty state replaces it.
+    renderApp(<DayDialog {...props()} />, { routes: routes({ 'GET /v1/me/calendar/days/2026-11-05?kind=all&page_size=100': () => Response.json(empty) }) });
+    expect(await screen.findByRole('button', { name: /^Tất cả/ })).toBeDisabled();
+  });
+
   it('12 learned words show 10 and "+2 từ"; pressing it shows all 12', async () => {
     const words = [...LEARNED, 'extra', 'more'];
     const day = { ...DAY, counts: { ...DAY.counts, learned: 12 }, items: words.map((lemma, i) => item('learned', lemma, i)) };

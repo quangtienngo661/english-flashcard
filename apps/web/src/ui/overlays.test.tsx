@@ -14,11 +14,29 @@ import { ReportDialog } from '@/features/learner/practice/session/ReportDialog';
 import { TransactionDetail } from '@/features/learner/transactions/TransactionDetail';
 import { DeleteMyWordDialog, EditMyWordDialog } from '@/features/learner/word/MyWordDialogs';
 import { SavedSentencesDialog } from '@/features/learner/word/SavedSentencesDialog';
+import { BacklogPage } from '@/features/learner/groups/BacklogPage';
+import { GroupPage } from '@/features/learner/groups/GroupPage';
+import { HouseAd } from '@/features/learner/house-ad/HouseAd';
+import { PracticePage } from '@/features/learner/practice/PracticePage';
+import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { SkeletonPage } from './Skeleton';
 import { showToast, ToastRegion } from './Toast';
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+const GID = '22222222-2222-4222-8222-222222222222';
+const nav = vi.hoisted(() => ({ path: '/vi/app', listeners: new Set<() => void>() }));
+vi.mock('next/navigation', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (listener: () => void) => { nav.listeners.add(listener); return () => nav.listeners.delete(listener); };
+  const params = new URLSearchParams({ id: '22222222-2222-4222-8222-222222222222' });
+  return {
+    usePathname: () => useSyncExternalStore(subscribe, () => nav.path, () => nav.path),
+    useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+    useSearchParams: () => params,
+  };
+});
+vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
+vi.setConfig({ testTimeout: 30_000 });
 
 function Harness({ isDismissable = true, onOpenChange }: { isDismissable?: boolean; onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(true);
@@ -134,6 +152,78 @@ describe('ui overlays', () => {
 
   // Part 10 P.15 (chỗ 11): every dialog has the × box named by its close label, and its cancel is a text button, not an outline `Button`
   // (the shared `Button` marks itself with data-variant; `TextButton` does not).
+  // Control for the "not outline" proof below: the shared Button does mark itself, so a missing mark means "not a Button".
+  it('control: the shared Button with variant="secondary" renders data-variant', () => {
+    renderApp(<Button variant="secondary">Hủy</Button>);
+    expect(screen.getByRole('button', { name: 'Hủy' })).toHaveAttribute('data-variant', 'secondary');
+  });
+
+  describe('dialog sweep, dialogs inside pages', () => {
+    const pool = { limit: 3, used: 0, remaining: 3, resets_at: null };
+    const SUMMARY = { id: GID, name: 'IELTS', version: 1, total: 4, today: { priority: 0, due: 0, new: 0 }, cells: [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: 1, due: 0 })), backlog: 1, available: { due: 0, new: 0 } };
+    const backlogRow = { item_id: '00000000-0000-4000-8000-000000000001', sense_id: 's1', level: 2, due_date: '2026-08-01', days_overdue: 61,
+      content: { lemma: 'word1', pos: 'noun', meaning: { text: 'nghĩa 1', language: 'vi', translation_missing: false }, examples: [] } };
+    const ENT = { plan: 'free', sources: [], pools: { practice_sessions: pool, ai_practice: pool, ai_lookup: pool }, features: { 'ai.practice': { allowed: true, reason: null }, 'ai.lookup': { allowed: true, reason: null } }, trial_eligible: false, ai_available: { enabled: true, cap_reached: false }, ads: { show: true, interstitial_per_day: 3, min_interval_minutes: 10 } };
+    const CFG = {
+      practice: { max_questions_per_session: 20, default_questions_per_session: 12, session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even', scope_questions_max: 100 },
+      reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 100 },
+      plans: { free: { practice_sessions_per_day: 3 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100, prices: { '1': 79000 } } },
+    };
+    const routes = {
+      [`GET /v1/groups/${GID}`]: () => Response.json({ id: GID, name: 'IELTS', version: 1, item_count: 4, removable_items: 3, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' }),
+      'GET /v1/groups': () => Response.json({ items: [SUMMARY] }),
+      [`GET /v1/groups/${GID}/backlog?page_size=100`]: () => Response.json({ items: [backlogRow], next_page_token: null }),
+      [`GET /v1/groups/${GID}/items?content=true&page_size=50`]: () => Response.json({ items: [], next_page_token: null }),
+      'GET /v1/me/app-config': () => Response.json(CFG),
+      'GET /v1/me/entitlements': () => Response.json(ENT),
+      'GET /v1/practice/sessions/current': () => Response.json({ type: 'http://x/problems/not-found', status: 404, title: 'n' }, { status: 404 }),
+      'GET /v1/practice/weak-words/groups': () => Response.json({ total: 0, items: [] }),
+      'GET /v1/practice/weak-words?page_size=2': () => Response.json({ items: [], next_page_token: null }),
+      'GET /v1/practice/history?page_size=3': () => Response.json({ items: [], next_page_token: null }),
+    };
+    const expectFrame = async (close: string, cancel?: string) => {
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getAllByRole('button', { name: close }).filter((b) => b.querySelector('svg'))).toHaveLength(1);
+      if (cancel) {
+        const textual = within(dialog).getAllByRole('button', { name: cancel }).filter((b) => !b.querySelector('svg'));
+        expect(textual).toHaveLength(1);
+        expect(textual[0]).not.toHaveAttribute('data-variant');
+      }
+    };
+
+    it('BacklogPage: the forget confirm has the × and a text cancel', async () => {
+      renderApp(<BacklogPage />, { chrome: true, routes });
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word1' }, { timeout: 5000 }));
+      await userEvent.click(screen.getByRole('button', { name: 'Bỏ khỏi việc học' }));
+      await expectFrame('Đóng', 'Giữ lại');
+    });
+
+    it('GroupPage: the delete-group confirm has the × and a text cancel', async () => {
+      renderApp(<GroupPage />, { chrome: true, routes });
+      await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm' }, { timeout: 5000 }));
+      await userEvent.click(await screen.findByRole('menuitem', { name: 'Xóa nhóm' }));
+      await expectFrame('Đóng', 'Giữ nhóm');
+    });
+
+    it('HouseAd: the Pro dialog shown after a navigation has the × and a text "Để sau"', async () => {
+      localStorage.clear();
+      nav.path = '/vi/app';
+      renderApp(<HouseAd />, { routes });
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+      await act(async () => { nav.path = '/vi/app/groups'; nav.listeners.forEach((listener) => listener()); });
+      await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' });
+      await expectFrame('Đóng', 'Để sau');
+    });
+
+    it('CustomizeDialog: has the × (it has no cancel; Bắt đầu is its only footer action)', async () => {
+      renderApp(<PracticePage />, { routes });
+      const list = await screen.findByRole('list', { name: 'Luyện theo nguồn khác' });
+      await userEvent.click(within(list).getByRole('button', { name: 'Tùy chỉnh: Theo nhóm' }));
+      const dialog = await screen.findByRole('dialog', { name: /Tùy chỉnh phiên/ });
+      expect(within(dialog).getAllByRole('button', { name: 'Đóng' }).filter((b) => b.querySelector('svg'))).toHaveLength(1);
+    });
+  });
+
   describe('dialog sweep', () => {
     const noop = () => {};
     const SENSE = { sense_id: 's1', lemma: 'rizz', pos: 'noun', meaning: { text: 'sức hút' }, sentence_count: 0 };
