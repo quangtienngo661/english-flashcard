@@ -42,7 +42,7 @@ export async function registerVerified(email: string, password: string): Promise
   await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: E2E_TURNSTILE_TOKEN }), 201, `register ${email}`);
   // Registration already mails one code; asking for another would invalidate it and race the mail delivery.
   const code = await otpCodeFor(email, before + 1);
-  await expectStatus(await post('/v1/auth/verify-email', { email, code, password, client: 'web' }), 200, 'verify email');
+  await expectStatus(await post('/v1/auth/verify-email', { email, code, password, client: 'web', turnstile_token: E2E_TURNSTILE_TOKEN }), 200, 'verify email');
 }
 
 /** Makes `email` an admin through the CLI, which loads the API's own environment (no secret passes through the tests). */

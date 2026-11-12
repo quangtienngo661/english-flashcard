@@ -163,7 +163,7 @@ async function newestCode(email, atLeast, { allowMissing = false } = {}) {
 }
 
 async function verifyCode(email, code) {
-  return want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
+  return want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
 }
 
 async function requestAndVerify(email) {
@@ -182,7 +182,7 @@ async function ensureAccount(email) {
     actor.created = true;
     // Re-registration in the cooldown may keep the earlier code; resend if no new mail arrives or the code is refused.
     const code = await newestCode(email, before + 1, { allowMissing: true });
-    const first = code ? await api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }) : null;
+    const first = code ? await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }) : null;
     actor.token = first?.status === 200 ? first.json.access_token : (await requestAndVerify(email)).access_token;
   } else if (registered.status === 409) {
     actor.token = await loginToken(email);

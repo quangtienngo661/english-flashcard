@@ -112,7 +112,7 @@ async function registerAdmin() {
   await want(api('POST', '/v1/auth/register', {
     body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register admin');
   const code = await otpCodeFor(email, before + 1);
-  await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify admin email');
+  await want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, 'verify admin email');
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
   execFileSync(process.execPath, ['dist/cli/admin-grant.js', email], { stdio: 'pipe' });
   const login = await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 200, 'admin login');
@@ -126,7 +126,7 @@ async function registerLearner() {
   await want(api('POST', '/v1/auth/register', {
     body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register learner');
   const code = await otpCodeFor(email, before + 1);
-  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify learner email');
+  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, 'verify learner email');
   await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'set native_language');
   ok(`learner ${email} registered, verified with native_language=vi, timezone ${TIMEZONE}`);
   return verified.access_token;
