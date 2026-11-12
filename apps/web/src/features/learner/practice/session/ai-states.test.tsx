@@ -182,8 +182,8 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(screen.queryByRole('link', { name: 'Check the word in My words' })).toBeNull();
     await userEvent.keyboard('1');
     expect(await screen.findByRole('link', { name: 'Check the word in My words' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
-    expect(screen.getByRole('button', { name: /Know/ }).querySelector('kbd')).toHaveTextContent('Enter');
-    expect(screen.getByRole('button', { name: /Review again/ }).querySelector('kbd')).toHaveTextContent('1');
+    expect(screen.getByRole('button', { name: /Know/ })).toHaveTextContent(/^Know$/);
+    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
     expect(screen.queryByRole('button', { name: /Next/ })).not.toBeInTheDocument();
   });
 

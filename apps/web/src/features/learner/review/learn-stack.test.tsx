@@ -218,13 +218,14 @@ describe('Học layout (P.17, mockup L227-304)', () => {
     expect(within(known).getByText('1')).toBeInTheDocument();
   });
 
-  it('desktop: buttons carry their label and key; the legend lists Space, 1/←, 2/→ and Esc; piles show number and label without arrows', async () => {
+  it('desktop: buttons carry only their label; the legend lists Space, 1/←, 2/→ and Esc; piles show number and label without arrows', async () => {
     desktop(true);
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     const card = await top(1);
-    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^Still learning1$/);
-    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^Know2$/);
-    expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip cardSpace$/);
+    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^Still learning$/);
+    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^Know$/);
+    expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip card$/);
+    expect(document.querySelectorAll('button kbd')).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Know' })).toHaveAttribute('aria-keyshortcuts', '2 ArrowRight');
     const legend = screen.getByRole('list', { name: 'Keys' });
     expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SpaceFlip card', '1←Still learning', '2→Know', 'EscStop']);

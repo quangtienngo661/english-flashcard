@@ -91,6 +91,17 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.getByText('We use Docker to the app to the production server.')).toHaveTextContent('We use Docker to deploy the app to the production server.');
   });
 
+  it('F.15: the blank is sized by a hidden mirror of its text, not by a size attribute', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    const blank = await screen.findByRole('textbox', { name: 'Missing word' });
+    expect(blank).not.toHaveAttribute('size');
+    await userEvent.type(blank, 'deploy');
+    const mirror = blank.previousElementSibling as HTMLElement;
+    expect(mirror).toHaveAttribute('aria-hidden', 'true');
+    expect(mirror).toHaveTextContent(/^deploy$/);
+    expect(blank.parentElement).toBe(mirror.parentElement);
+  });
+
   it('P.13: a wrong typed word is struck in the sentence, the answer beside it', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true })),
@@ -109,7 +120,7 @@ describe('AI question types (K/78a–K/81)', () => {
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/skip')).toHaveLength(1));
   });
 
-  it('A16: [Xem đáp án] gives case 4: Still learning is primary with Enter', async () => {
+  it('A16: [Xem đáp án] gives case 4: Still learning is primary', async () => {
     const r = renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true, show_known: false, highlight_needs_review: true })),
       'POST /v1/practice/items/it-c/review': () => Response.json({ action: 'needs_review', item_id: 'it-c', level: 1 }),
@@ -117,8 +128,9 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Show answer' }));
     const primary = await screen.findByRole('button', { name: /Review again/ });
-    expect(primary.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(screen.getByRole('button', { name: 'Next' }).querySelector('kbd')).toBeNull();
+    expect(primary).toHaveTextContent(/^Review again$/);
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveTextContent(/^Next$/);
+    expect(document.querySelector('button kbd')).toBeNull();
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     await screen.findByText('deployed', { selector: 'strong' });
@@ -142,6 +154,32 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.getByText('Sentence multiple choice')).toBeInTheDocument();
     expect(screen.queryByText('Choose the word that fills the gap')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^1deployed/ })).toBeInTheDocument();
+  });
+
+  it('F.14: a wrong sentence-MCQ pick is struck in the sentence, before the right word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(sentenceMcq, {
+      'POST /v1/practice/items/it-s/answer': () => Response.json(result({
+        result: 'wrong', show_known: false, highlight_needs_review: true, correct: { lemma: 'deploy', text: 'deployed', choice_index: 0, is_true: null },
+      })),
+    }) });
+    await screen.findByText('We ___ the app to the server yesterday.');
+    await userEvent.keyboard('4');
+    await screen.findAllByText('Not quite');
+    const sentence = screen.getByText('We the app to the server yesterday.');
+    expect(within(sentence).getByRole('deletion')).toHaveTextContent('delayed');
+    expect(sentence).toHaveTextContent('We delayed deployed the app to the server yesterday.');
+  });
+
+  it('F.14: a right sentence-MCQ pick fills the blank with no struck word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(sentenceMcq, {
+      'POST /v1/practice/items/it-s/answer': () => Response.json(result({ correct: { lemma: 'deploy', text: 'deployed', choice_index: 0, is_true: null } })),
+    }) });
+    await screen.findByText('We ___ the app to the server yesterday.');
+    await userEvent.keyboard('1');
+    await screen.findByText('Right');
+    const sentence = screen.getByText('We the app to the server yesterday.');
+    expect(within(sentence).queryByRole('deletion')).not.toBeInTheDocument();
+    expect(sentence).toHaveTextContent('We deployed the app to the server yesterday.');
   });
 
   it('copy doc §15 row 10: [Gợi ý] opens hint 1 in the numbered list with progress, then [Mở gợi ý 2]', async () => {
@@ -169,6 +207,26 @@ describe('AI question types (K/78a–K/81)', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
     expect(await screen.findByText('c___')).toBeInTheDocument();
     expect(screen.queryByText('c')).not.toBeInTheDocument();
+  });
+
+  it('F.13: a legacy hint {first_letter, length} shows l___ to the eye and l… · 4 letters to a screen reader', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { first_letter: 'l', length: 4 } }),
+    }) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
+    expect(await screen.findByText('l___')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('l… · 4 letters')).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('F.13: a legacy hint of length 1 shows only the letter', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { first_letter: 'a', length: 1 } }),
+    }) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
+    expect(await screen.findByText('a', { selector: '[aria-hidden="true"]' })).toBeInTheDocument();
+    expect(screen.queryByText('a_')).not.toBeInTheDocument();
   });
 
   it('a hint that is not a first letter is shown as the API sends it', async () => {
@@ -199,6 +257,11 @@ describe('AI question types (K/78a–K/81)', () => {
     it('CS4: a try-again with reason null keeps the spelling text', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: null });
       expect(await screen.findByText(/Check the spelling and try again/)).toBeInTheDocument();
+      // F.14: the wrong ticket with no answer; the footer reads reveal, Hint, Try again.
+      const panel = screen.getByText(/Check the spelling/).closest<HTMLElement>('[data-feedback]')!;
+      expect(panel).toHaveTextContent(/^Not quite\s*Check the spelling and try again\. The answer stays hidden\.\s*A right answer on a retry/);
+      expect(panel).not.toHaveTextContent('deploy');
+      expect(within(panel).getAllByRole('button').map((b) => b.textContent)).toEqual(['Show answer', 'Hint', 'Try again']);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
     });
 

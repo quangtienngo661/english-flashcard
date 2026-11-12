@@ -10,6 +10,9 @@ const en = copy.en.App.practice;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const SESSION = uuid(410);
 const PRIVATE = uuid(620);
+// [Bắt đầu] loads the session page in full (hardReplace); with four workers running axe the Worker render, the chunks and the first
+// /next can take longer than the default 5 s, on 8c1b6a06 too. Only the first check after that load waits longer.
+const AFTER_LOAD = { timeout: 15_000 };
 /** M/78d: the longest AI sentence (300 characters). */
 const LONG_SENTENCE = `We use Docker to ___ ${'the newest internationalization-ready microservices '.repeat(6)}`.slice(0, 299) + '.';
 const base = { round: 1, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false, ai: true };
@@ -94,15 +97,33 @@ test.describe('M5a flows (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({
       types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'], ai_count: 3,
     });
-    await expect(page.getByText(en.session.ai.preparingTitle)).toBeVisible();
+    await expect(page.getByText(en.session.ai.preparingTitle)).toBeVisible(AFTER_LOAD);
     // P.13: the blank is the input, inside the sentence.
     await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     await expect(page.getByText('We use Docker to the app to the production server.')).toBeVisible();
     await expect(page.getByText(en.session.aiChip)).toBeVisible();
     await page.getByRole('button', { name: /^Hint/ }).click();
     await expect(page.getByText('d___')).toBeVisible();
-    await page.getByRole('textbox', { name: en.session.blankLabel }).fill('deploy');
-    await page.getByRole('textbox', { name: en.session.blankLabel }).press('Enter');
+    // F.15: the blank is sized by its text: narrower with 3 letters than with 12, and no wider than the text plus its padding and border.
+    const blankBox = page.getByRole('textbox', { name: en.session.blankLabel });
+    const blankWidth = () => blankBox.evaluate((el) => el.getBoundingClientRect().width);
+    await blankBox.pressSequentially('dep');
+    const widthShort = await blankWidth();
+    await blankBox.fill('');
+    await blankBox.pressSequentially('deployments1');
+    const widthLong = await blankWidth();
+    expect(widthShort).toBeLessThan(widthLong);
+    const slack = await blankBox.evaluate((el) => {
+      const mirror = el.previousElementSibling as HTMLElement;
+      const range = document.createRange();
+      range.selectNodeContents(mirror);
+      const style = getComputedStyle(el);
+      const frame = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+      return el.getBoundingClientRect().width - range.getBoundingClientRect().width - frame;
+    });
+    expect(slack).toBeLessThanOrEqual(1);
+    await blankBox.fill('deploy');
+    await blankBox.press('Enter');
     // The answer takes the blank's place; the translation is its own block in the card (Vietnamese route).
     await expect(page.getByRole('textbox')).toHaveCount(0);
     await expect(page.getByRole('region', { name: en.session.translationAi })).toBeVisible();
@@ -116,7 +137,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await expect(page.getByText(en.session.ai.errorTitle)).toBeVisible();
+    await expect(page.getByText(en.session.ai.errorTitle)).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: en.session.ai.retry }).click();
     await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     const nexts = requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`);
@@ -128,7 +149,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await expect(page.getByText(en.session.ai.fallback)).toBeVisible();
+    await expect(page.getByText(en.session.ai.fallback)).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: en.session.ai.dismiss }).click();
     await expect(page.getByText(en.session.ai.fallback)).toHaveCount(0);
   });
@@ -171,6 +192,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
+    await expect(page.getByRole('button', { name: /^(1\s?)?deployed/ })).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: /^(1\s?)?deployed/ }).click();
     await page.getByRole('button', { name: en.session.report.button }).click();
     const report = page.getByRole('dialog', { name: en.session.report.title });
@@ -205,7 +227,7 @@ for (const scheme of ['light', 'dark'] as const) {
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
       // P.13: the blank is an input inside the sentence, so the sentence's own text has no "___".
-      await expect(page.getByText(LONG_SENTENCE.replace('___ ', ''))).toBeVisible();
+      await expect(page.getByText(LONG_SENTENCE.replace('___ ', ''))).toBeVisible(AFTER_LOAD);
       // Review I3: the band does not name the word, nor link to it, before the answer.
       await expect(page.getByText(en.session.ai.notRecognizedAny)).toBeVisible();
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toHaveCount(0);
@@ -214,8 +236,11 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('textbox').fill('deploy');
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /Next/ })).toBeVisible();
-      await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveText('Enter');
-      await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveText('1');
+      await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveCount(0);
+      // F.12: Enter is named in the key legend, which phones (below md) do not show.
+      const wide = (page.viewportSize()?.width ?? 0) >= 768;
+      await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(wide ? 1 : 0);
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);

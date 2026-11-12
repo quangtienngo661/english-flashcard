@@ -126,7 +126,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
-  it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
+  it.each(cases)('$title', async ({ id, answer, action, note }) => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)),
     }) });
@@ -134,10 +134,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
     const buttons = screen.getAllByRole('button').filter((b) => /^(Review again|Know|Next)/.test(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again1', 'KnowEnter'] : id === 4 ? ['Next', 'Review againEnter'] : ['Review again1', 'NextEnter']);
-    const bold = screen.getByRole('button', { name: new RegExp(primary) });
-    expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(buttons.find((b) => b !== bold)?.querySelector('kbd')?.textContent).not.toBe('Enter');
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again', 'Know'] : id === 4 ? ['Next', 'Review again'] : ['Review again', 'Next']);
+    buttons.forEach((b) => expect(b.querySelector('kbd')).toBeNull());
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
     const reviewPath = '/v1/practice/items/item-4/review';
@@ -184,10 +182,13 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     const next = await screen.findByRole('button', { name: /Next/ });
-    expect(next.querySelector('kbd')).toHaveTextContent('Enter');
+    expect(next).toHaveTextContent(/^Next$/);
+    expect(next.querySelector('kbd')).toBeNull();
     expect(screen.queryByRole('button', { name: /Review again|Know/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'answer' })).toHaveTextContent(/deploy\s*triển khai \(phần mềm\)/);
-    expect(next.parentElement?.nextElementSibling).toBeNull();
+    // F.14: no case note on the stub; the meaning leads, the answer word follows it.
+    const panel = next.closest<HTMLElement>('[data-feedback]')!;
+    expect(panel).toHaveTextContent(/^Not quite\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next$/);
+    expect(next.nextElementSibling).toBeNull();
     await userEvent.keyboard('12');
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
@@ -307,6 +308,25 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Review again/ }));
   });
 
+  it.each(cases)('F.14: focus still lands on the primary action ($primary) of case $id', async ({ answer, primary, note }) => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
+    await screen.findByText(note);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: new RegExp(`^${primary}$`) }));
+  });
+
+  it('F.14: a right answer without a level move keeps the case note on the stub, then the meaning and the answer word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    const panel = (await screen.findByText('Right')).closest<HTMLElement>('[data-feedback]')!;
+    expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
+    expect(panel).toHaveTextContent(/^Right\s*deploy isn't due yet, so its schedule stays the same\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Review again\s*Next$/);
+  });
+
   it('try_again keeps focus in the word box (Review Focus 5)', async () => {
     renderApp(<PracticeSession />, {
       session: true,
@@ -331,13 +351,15 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
     expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Right answer');
     expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Your choice');
-    // P.13 (mockup L332-349): the answer is its own big line under "Not quite", with its meaning and definition.
+    // F.14 (the result ticket): "Not quite" and the case note on the stub, the meaning as the lead with its definition, then the answer
+    // word with its speaker; the nested answer box is gone.
     const panel = screen.getByText('Not quite').closest<HTMLElement>('[data-feedback]')!;
-    const answerBlock = within(panel).getByRole('group', { name: 'answer' });
-    expect(within(answerBlock).getByText('deploy')).toBeInTheDocument();
-    expect(within(answerBlock).getByText('triển khai (phần mềm)')).toBeInTheDocument();
-    expect(within(answerBlock).getByText('to start using a new system')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Review again/ }).querySelector('kbd')).toHaveTextContent('Enter');
+    expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
+    expect(within(panel).getByText('triển khai (phần mềm)')).toBeInTheDocument();
+    expect(within(panel).getByText('to start using a new system')).toBeInTheDocument();
+    expect(within(panel).getByText('deploy')).toBeInTheDocument();
+    expect(panel).toHaveTextContent(/^Not quite\s*Press Enter to put deploy.*schedule\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next\s*Review again$/);
+    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
@@ -418,7 +440,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Try 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Show answer/ }));
-    expect(await screen.findByRole('group', { name: 'answer' })).toHaveTextContent(/cache\s*bộ nhớ đệm/);
+    // F.14: the wrong ticket now shows the meaning as its lead, then the answer word.
+    await waitFor(() => expect(document.querySelector('[data-feedback]')).toHaveTextContent(/bộ nhớ đệm\s*to start using a new system\s*cache/));
     expect(posts(v.calls, '/v1/practice/items/item-6/skip')).toHaveLength(1);
   });
 
@@ -625,8 +648,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Your answer' }), 'cash{Enter}');
     await screen.findByRole('button', { name: /Try again/ });
-    const enter = screen.getAllByRole('button').filter((b) => b.querySelector('kbd')?.textContent === 'Enter');
-    expect(enter.map((b) => b.textContent)).toEqual(['Try againEnter']);
+    expect(screen.getByRole('button', { name: /Try again/ })).toHaveTextContent(/^Try again$/);
+    expect(document.querySelector('button kbd')).toBeNull();
   });
 
   it('M4 review: changing the choice after a lost answer sends a new Idempotency-Key', async () => {

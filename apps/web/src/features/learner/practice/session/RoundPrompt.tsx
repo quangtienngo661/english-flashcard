@@ -4,7 +4,6 @@ import { RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/ui/Button';
 import type { PracticeSessionView } from '../practice-api';
-import { ButtonKey } from './QuestionCard';
 import { useSummary } from './SessionSummary';
 
 /** K/65: the words ran out before the question count; asked once (Bước 4 §7.2). */
@@ -26,16 +25,12 @@ export function RoundPrompt({ session, onContinue, busy }: { session: PracticeSe
         )}
       </section>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button variant="primary" size="lg" className="justify-between" isPending={busy} onPress={() => onContinue(true)}>
-          <span className="flex items-center gap-2">
-            <RotateCcw aria-hidden className="size-4" />
-            {t('go', { left })}
-          </span>
-          <ButtonKey>Enter</ButtonKey>
+        <Button variant="primary" size="lg" isPending={busy} onPress={() => onContinue(true)}>
+          <RotateCcw aria-hidden className="size-4" />
+          {t('go', { left })}
         </Button>
-        <Button variant="secondary" size="lg" className="justify-between" isDisabled={busy} onPress={() => onContinue(false)}>
+        <Button variant="secondary" size="lg" isDisabled={busy} onPress={() => onContinue(false)}>
           {t('stop')}
-          <ButtonKey>Esc</ButtonKey>
         </Button>
       </div>
       <p className="text-wm-caption text-wm-muted">{t('note')}</p>

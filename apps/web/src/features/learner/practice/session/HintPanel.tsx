@@ -7,7 +7,6 @@ import { useId } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
-import { ButtonKey } from './QuestionCard';
 import type { Item } from './use-practice-session';
 
 type HintStep = { kind: 'definition' | 'example' | 'meaning' | 'first_letter'; text: string };
@@ -21,6 +20,9 @@ export const hintLevels = (item: Item) => ([1, 2, 3] as const).filter((n) => ite
 const GRID = 'grid grid-cols-[1.5rem_7rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-3';
 // raw-ok: mockup L361 sets the first-letter hint in Bricolage 22 px with 0.12em tracking.
 const MASK = 'font-wm-display text-wm-block-title tracking-[0.12em] text-wm-ink';
+
+// raw-ok: f04 sets the legacy first-letter hint (l___) with a tighter 0.02em tracking so the underscores read as one run.
+const LEGACY_MASK = 'font-wm-display text-wm-block-title tracking-[0.02em] text-wm-ink';
 
 /**
  * K/63 "Gợi ý" box (copy doc §15 point 10; P.13, mockup L352-361), its own box 16 px under the question card: the title with progress dots at its right, then one row per level on
@@ -44,7 +46,7 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   if (opened.length === 0) return null;
   const nextLevel = levels.find((n) => n > item.hint_level);
   return (
-    <section aria-labelledby={titleId} className={cn(GRID, 'mt-4 rounded-wm-card border border-wm-hint-line bg-wm-accent-soft px-5 py-4.5')}>
+    <section aria-labelledby={titleId} className={cn(GRID, 'relative z-10 mt-4 rounded-wm-card border border-wm-hint-line bg-wm-accent-soft px-5 py-4.5')}>
       <div className="col-span-full flex items-center gap-2">
         <Lightbulb aria-hidden className="size-4 shrink-0 text-wm-ink" />
         <h3 id={titleId} className="text-wm-small-strong text-wm-ink">
@@ -79,14 +81,18 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
                   'kind' in value ? (
                     value.kind === 'first_letter' ? <span className={MASK}>{`${value.text}___`}</span> : value.text
                   ) : (
-                    t('letters', { first: value.first_letter, length: value.length })
+                    <>
+                      <span aria-hidden className={LEGACY_MASK}>
+                        {value.first_letter + '_'.repeat(Math.max(0, value.length - 1))}
+                      </span>
+                      <span className="sr-only">{t('letters', { first: value.first_letter, length: value.length })}</span>
+                    </>
                   )
                 ) : (
                   n === nextLevel &&
                   !locked && (
                     <Button variant="secondary" className="w-fit md:min-h-9 md:px-3" onPress={() => onOpen(n)}>
                       {t('open', { n })}
-                      <ButtonKey>H</ButtonKey>
                     </Button>
                   )
                 )}

@@ -1,13 +1,13 @@
 'use client';
 
-import { Lightbulb, X } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
 import { FIELD_BOX } from '@/ui/field-styles';
 import { TextButton } from '@/ui/TextButton';
-import { ButtonKey } from './QuestionCard';
+import { ResultTicket } from './AnswerFeedback';
 import type { Outcome } from './use-practice-session';
 
 /** What a typed answer field holds and does: the text, read-only after a final result, and Enter's two meanings (send, or retype). */
@@ -78,36 +78,47 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
   const field = useAnswerField(outcome, onSubmit);
   return (
     <>
-      <input
-        aria-label={t('blankLabel')}
-        data-answer-input
-        value={field.shown}
-        onChange={(e) => field.setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-          e.preventDefault();
-          field.submit();
-        }}
-        readOnly={field.final}
-        autoFocus
-        enterKeyHint="done"
-        {...FIELD_PROPS}
-        // The width follows the text in characters: `size` needs no style and no measuring.
-        size={Math.max(5, field.shown.length + 1)}
-        className={cn(
-          'mx-0.5 max-w-full rounded-t-wm-control border-0 border-b-3 bg-wm-blank-soft px-2 align-baseline outline-none focus-visible:bg-wm-blank-soft-focus',
-          field.retry ? 'border-wm-fail text-wm-fail caret-wm-fail' : 'border-wm-accent text-wm-accent caret-wm-accent',
-        )}
-      />
+      {/* The mirror holds the shown text with the input's own font, padding and border; the input fills the same grid cell, so the width follows the text in every browser. */}
+      <span className="inline-grid max-w-full align-baseline">
+        <span
+          aria-hidden
+          className={cn(
+            // raw-ok: the blank is at least 5 characters wide
+            'invisible col-start-1 row-start-1 min-w-[5ch] whitespace-pre border-b-3 border-transparent px-2',
+          )}
+        >
+          {field.shown}
+        </span>
+        <input
+          aria-label={t('blankLabel')}
+          data-answer-input
+          value={field.shown}
+          onChange={(e) => field.setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            field.submit();
+          }}
+          readOnly={field.final}
+          autoFocus
+          enterKeyHint="done"
+          {...FIELD_PROPS}
+          className={cn(
+            // w-0 keeps the input's own default width out of the grid track; min-w-full then fills the cell the mirror sizes.
+            'col-start-1 row-start-1 w-0 min-w-full rounded-t-wm-control border-0 border-b-3 bg-wm-blank-soft px-2 outline-none focus-visible:bg-wm-blank-soft-focus',
+            field.retry ? 'border-wm-fail text-wm-fail caret-wm-fail' : 'border-wm-accent text-wm-accent caret-wm-accent',
+          )}
+        />
+      </span>
       {field.retry && <span className="ml-1 align-middle font-wm-sans text-wm-meta text-wm-fail">{t('attempt', { n: field.tries })}</span>}
     </>
   );
 }
 
 /**
- * K/64 "Chưa đúng" for a wrong typed answer that can still be retried, under the card like the result (Figma 178:5326; P.13):
- * [Xem đáp án] (text), [Gợi ý H], [Làm lại Enter]. A session word is spelt right: the spelling text would mislead, and the owner
- * wants no line instead (07/11/2026).
+ * K/64 "Chưa đúng" for a wrong typed answer that can still be retried, in the wrong result ticket (F.14, D2) with no answer:
+ * [Xem đáp án] (muted text), [Gợi ý], [Làm lại]; the keys are unchanged. A session word is spelt right: the spelling text would
+ * mislead, and the owner wants no line instead (07/11/2026).
  */
 export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onReveal, busy }: {
   sessionWord: boolean;
@@ -119,32 +130,28 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div data-feedback className="mt-4 flex flex-col gap-4 rounded-wm-card border-2 border-wm-wrong-line bg-wm-wrong-soft p-5 shadow-wm-card motion-safe:animate-wm-panel-drop md:p-6">
-      <div className="flex items-center gap-3">
-        <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-wrong-ink text-wm-on-accent">
-          <X aria-hidden className="size-4.5" />
-        </span>
-        <p className="font-wm-display text-wm-card-title text-wm-wrong-ink">{t('wrong')}</p>
-      </div>
+    <ResultTicket
+      right={false}
+      actions={
+        <>
+          <TextButton tone="muted" className="px-3" isDisabled={busy} onPress={onReveal}>
+            {t('reveal')}
+          </TextButton>
+          {hintAvailable && (
+            <Button variant="secondary" onPress={onHint}>
+              <Lightbulb aria-hidden className="size-4" />
+              {t('hint.button')}
+            </Button>
+          )}
+          <Button variant="primary" onPress={onRetry}>
+            {t('retry')}
+          </Button>
+        </>
+      }
+    >
       {!sessionWord && <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('tryAgainBody')}</p>}
       <p className="font-wm-sans text-wm-small text-wm-muted">{t('tryAgainNote')}</p>
-      <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:justify-end">
-        <TextButton tone="muted" className="col-span-2 row-start-2 justify-center md:col-auto md:row-auto md:mr-auto" isDisabled={busy} onPress={onReveal}>
-          {t('reveal')}
-        </TextButton>
-        {hintAvailable && (
-          <Button variant="secondary" onPress={onHint}>
-            <Lightbulb aria-hidden className="size-4" />
-            {t('hint.button')}
-            <ButtonKey>H</ButtonKey>
-          </Button>
-        )}
-        <Button variant="primary" className={hintAvailable ? undefined : 'col-span-2'} onPress={onRetry}>
-          {t('retry')}
-          <ButtonKey>Enter</ButtonKey>
-        </Button>
-      </div>
-    </div>
+    </ResultTicket>
   );
 }
 

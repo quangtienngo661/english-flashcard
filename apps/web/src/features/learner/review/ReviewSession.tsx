@@ -15,7 +15,6 @@ import { EmptyState } from '@/ui/States';
 import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { useDesktop } from '@/lib/use-desktop';
-import { Kbd } from '@/ui/Kbd';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';
 import { StreakToast } from '@/ui/StreakToast';
@@ -156,7 +155,7 @@ export function ReviewSession() {
           )}
           {/* Mockup L270-304: 40 px buttons, 14 px bold; on a phone the side ones are 52 px icon squares and Flip card keeps its width. */}
           <div className="flex w-full justify-center gap-2 md:gap-3">
-            <AnswerButton tone="review" desktop={desktop} disabled={!session.flipped} onPress={() => rate('review')} label={t('review.stillLearning')} keyCap="1" />
+            <AnswerButton tone="review" desktop={desktop} disabled={!session.flipped} onPress={() => rate('review')} label={t('review.stillLearning')} />
             <button
               ref={flipButton}
               type="button"
@@ -169,9 +168,8 @@ export function ReviewSession() {
             >
               <RotateCcw aria-hidden className="size-4" />
               {flipLabel}
-              {desktop && <Kbd>Space</Kbd>}
             </button>
-            <AnswerButton tone="known" desktop={desktop} disabled={!session.flipped} onPress={() => rate('known')} label={t('review.know')} keyCap="2" />
+            <AnswerButton tone="known" desktop={desktop} disabled={!session.flipped} onPress={() => rate('known')} label={t('review.know')} />
           </div>
           {desktop && (
             <KeyLegend
@@ -236,8 +234,8 @@ const ACTION =
  * `aria-label`; on a phone a 52 px square with the icon only. Before the card is turned they stay pressable but `aria-disabled` at 50 %:
  * a press shakes the card and says why (prototype chong-the-mo.html:271), instead of doing nothing.
  */
-function AnswerButton({ tone, desktop, disabled, onPress, label, keyCap }: {
-  tone: 'review' | 'known'; desktop: boolean; disabled: boolean; onPress: () => void; label: string; keyCap: string;
+function AnswerButton({ tone, desktop, disabled, onPress, label }: {
+  tone: 'review' | 'known'; desktop: boolean; disabled: boolean; onPress: () => void; label: string;
 }) {
   const Icon = tone === 'review' ? ArrowLeft : Check;
   return (
@@ -259,7 +257,6 @@ function AnswerButton({ tone, desktop, disabled, onPress, label, keyCap }: {
       {desktop && (
         <>
           {label}
-          <Kbd>{keyCap}</Kbd>
           {tone === 'known' && <ArrowRight aria-hidden className="size-4" />}
         </>
       )}

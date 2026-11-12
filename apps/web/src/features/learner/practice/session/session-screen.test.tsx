@@ -101,6 +101,8 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     const panel = (await screen.findByText('Right')).closest('[data-feedback]') as HTMLElement;
     const move = within(panel).getByRole('group', { name: 'From Level 1 to Level 2' });
     expect(move).toHaveTextContent('Level 1Level 2');
+    // F.14: the move is the stub's note; the case note follows the answer word.
+    expect(panel).toHaveTextContent(/^Right\s*Level 1\s*Level 2\s*xấu đi\s*to become worse in quality\s*deteriorate\s*Enter means Know/);
   });
 
   it('no move line when the word has no level (left the schedule) or is already at the last level', async () => {

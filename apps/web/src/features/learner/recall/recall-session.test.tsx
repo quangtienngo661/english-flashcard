@@ -85,6 +85,8 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
     expect(await screen.findByText('luggage moved up to Level 4.')).toBeInTheDocument();
+    // F.14: the schedule note sits on the ticket's stub, beside "Right".
+    expect(screen.getByText('Right').closest('[data-feedback]')).toHaveTextContent(/^Right\s*luggage moved up to Level 4\.\s*hành lý/);
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Review again/ })).toBeInTheDocument();
   });
