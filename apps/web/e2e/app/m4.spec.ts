@@ -327,8 +327,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.keyboard.press(kind === 1 ? '1' : '2');
         const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
         await expect(primary).toBeVisible();
-        await expect(primary.locator('kbd')).toHaveText('Enter');
-        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) }).locator('kbd', { hasText: 'Enter' })).toHaveCount(0);
+        await expect(primary.locator('kbd')).toHaveCount(0);
+        await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(1);
         if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
         const where = `${locale} case ${kind} feedback (${scheme})`;
         await noSideScroll(page, where);

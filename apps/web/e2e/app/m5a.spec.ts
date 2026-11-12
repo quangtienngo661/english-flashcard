@@ -214,8 +214,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('textbox').fill('deploy');
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /Next/ })).toBeVisible();
-      await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveText('Enter');
-      await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveText('1');
+      await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveCount(0);
+      await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(1);
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);

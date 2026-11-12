@@ -109,7 +109,7 @@ describe('AI question types (K/78a–K/81)', () => {
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/skip')).toHaveLength(1));
   });
 
-  it('A16: [Xem đáp án] gives case 4: Still learning is primary with Enter', async () => {
+  it('A16: [Xem đáp án] gives case 4: Still learning is primary', async () => {
     const r = renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true, show_known: false, highlight_needs_review: true })),
       'POST /v1/practice/items/it-c/review': () => Response.json({ action: 'needs_review', item_id: 'it-c', level: 1 }),
@@ -117,8 +117,9 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Show answer' }));
     const primary = await screen.findByRole('button', { name: /Review again/ });
-    expect(primary.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(screen.getByRole('button', { name: 'Next' }).querySelector('kbd')).toBeNull();
+    expect(primary).toHaveTextContent(/^Review again$/);
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveTextContent(/^Next$/);
+    expect(document.querySelector('button kbd')).toBeNull();
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     await screen.findByText('deployed', { selector: 'strong' });

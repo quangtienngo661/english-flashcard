@@ -26,7 +26,7 @@ import { AnswerFeedback, feedbackCase } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
 import { PreparingState } from './PreparingState';
-import { ButtonKey, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
+import { PromptTitle, QuestionCard, promptKind } from './QuestionCard';
 import { ReportDialog } from './ReportDialog';
 import { RoundPrompt } from './RoundPrompt';
 import { SentenceText, TranslationBlock, type BlankFill } from './SentenceQuestions';
@@ -397,7 +397,6 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
           {item.hint_level === 0 && nextHint !== undefined ? (
             <Button variant="secondary" onPress={() => state.setHintLevel(nextHint)}>
               {t('hint.button')}
-              <ButtonKey>H</ButtonKey>
             </Button>
           ) : (
             <span />

@@ -7,7 +7,6 @@ import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
 import { FIELD_BOX } from '@/ui/field-styles';
 import { TextButton } from '@/ui/TextButton';
-import { ButtonKey } from './QuestionCard';
 import type { Outcome } from './use-practice-session';
 
 /** What a typed answer field holds and does: the text, read-only after a final result, and Enter's two meanings (send, or retype). */
@@ -136,12 +135,10 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
           <Button variant="secondary" onPress={onHint}>
             <Lightbulb aria-hidden className="size-4" />
             {t('hint.button')}
-            <ButtonKey>H</ButtonKey>
           </Button>
         )}
         <Button variant="primary" className={hintAvailable ? undefined : 'col-span-2'} onPress={onRetry}>
           {t('retry')}
-          <ButtonKey>Enter</ButtonKey>
         </Button>
       </div>
     </div>

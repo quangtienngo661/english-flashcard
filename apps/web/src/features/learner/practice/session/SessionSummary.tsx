@@ -16,7 +16,6 @@ import { TextButton } from '@/ui/TextButton';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
 import { STAGGER } from '../../review/ReviewSummary';
-import { ButtonKey } from './QuestionCard';
 import type { Summary, SummaryWord } from './use-practice-session';
 
 export function useSummary(sessionId: string) {
@@ -161,7 +160,6 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
             {/* Owner 10/11/2026: a boxed button, so the way back reads as an action (was a grey text link). */}
             <Link href={`/${locale}/app/practice`} className={`${BUTTON_BASE} ${BUTTON_VARIANT.secondary} md:ml-auto`}>
               {ts('home')}
-              <ButtonKey>Enter</ButtonKey>
             </Link>
           </div>
         </div>

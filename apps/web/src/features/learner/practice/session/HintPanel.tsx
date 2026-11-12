@@ -7,7 +7,6 @@ import { useId } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
-import { ButtonKey } from './QuestionCard';
 import type { Item } from './use-practice-session';
 
 type HintStep = { kind: 'definition' | 'example' | 'meaning' | 'first_letter'; text: string };
@@ -86,7 +85,6 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
                   !locked && (
                     <Button variant="secondary" className="w-fit md:min-h-9 md:px-3" onPress={() => onOpen(n)}>
                       {t('open', { n })}
-                      <ButtonKey>H</ButtonKey>
                     </Button>
                   )
                 )}

@@ -126,7 +126,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
-  it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
+  it.each(cases)('$title', async ({ id, answer, action, note }) => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)),
     }) });
@@ -134,10 +134,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
     const buttons = screen.getAllByRole('button').filter((b) => /^(Review again|Know|Next)/.test(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again1', 'KnowEnter'] : id === 4 ? ['Next', 'Review againEnter'] : ['Review again1', 'NextEnter']);
-    const bold = screen.getByRole('button', { name: new RegExp(primary) });
-    expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(buttons.find((b) => b !== bold)?.querySelector('kbd')?.textContent).not.toBe('Enter');
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again', 'Know'] : id === 4 ? ['Next', 'Review again'] : ['Review again', 'Next']);
+    buttons.forEach((b) => expect(b.querySelector('kbd')).toBeNull());
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
     const reviewPath = '/v1/practice/items/item-4/review';
@@ -184,7 +182,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     const next = await screen.findByRole('button', { name: /Next/ });
-    expect(next.querySelector('kbd')).toHaveTextContent('Enter');
+    expect(next).toHaveTextContent(/^Next$/);
+    expect(next.querySelector('kbd')).toBeNull();
     expect(screen.queryByRole('button', { name: /Review again|Know/ })).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'answer' })).toHaveTextContent(/deploy\s*triển khai \(phần mềm\)/);
     expect(next.parentElement?.nextElementSibling).toBeNull();
@@ -337,7 +336,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(within(answerBlock).getByText('deploy')).toBeInTheDocument();
     expect(within(answerBlock).getByText('triển khai (phần mềm)')).toBeInTheDocument();
     expect(within(answerBlock).getByText('to start using a new system')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Review again/ }).querySelector('kbd')).toHaveTextContent('Enter');
+    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
@@ -625,8 +624,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Your answer' }), 'cash{Enter}');
     await screen.findByRole('button', { name: /Try again/ });
-    const enter = screen.getAllByRole('button').filter((b) => b.querySelector('kbd')?.textContent === 'Enter');
-    expect(enter.map((b) => b.textContent)).toEqual(['Try againEnter']);
+    expect(screen.getByRole('button', { name: /Try again/ })).toHaveTextContent(/^Try again$/);
+    expect(document.querySelector('button kbd')).toBeNull();
   });
 
   it('M4 review: changing the choice after a lost answer sends a new Idempotency-Key', async () => {

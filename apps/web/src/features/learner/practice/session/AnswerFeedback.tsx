@@ -7,7 +7,6 @@ import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
 import { LEVEL_FILL, toLevel, useLevelName, type Level } from '@/ui/levels';
-import { ButtonKey } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
 
 export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
@@ -58,19 +57,16 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
       onPress={() => onReview('needs_review')}
     >
       {t('stillLearning')}
-      <ButtonKey>{kind === 4 ? 'Enter' : '1'}</ButtonKey>
     </Button>
   );
   const forward = kind === 1 ? (
     <Button key="know" variant="pass" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('known')}>
       <Check aria-hidden className="size-4.5" />
       {t('know')}
-      <ButtonKey>Enter</ButtonKey>
     </Button>
   ) : (
     <Button key="next" variant={kind === 4 ? 'secondary' : 'primary'} autoFocus={focusPrimary && kind !== 4} isPending={busy} onPress={onNext}>
       {t('next')}
-      {kind !== 4 && <ButtonKey>Enter</ButtonKey>}
     </Button>
   );
   const buttons: ReactNode[] = kind === 4 ? [forward, review] : [review, forward];
