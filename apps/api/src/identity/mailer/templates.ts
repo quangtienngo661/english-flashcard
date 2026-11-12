@@ -79,6 +79,15 @@ export function emailChangedConfirmMail(newEmail: string, learnerAppUrl: string)
   };
 }
 
+/** Review 07/11 F2: registration answers the same for a taken email; the owner of the account gets this instead of a code. */
+export function accountExistsMail(to: string, learnerAppUrl: string): MailMessage {
+  return {
+    to,
+    subject: 'Bạn đã có tài khoản Wordmet / You already have a Wordmet account',
+    text: `Có người vừa dùng email này để đăng ký Wordmet, nhưng bạn đã có tài khoản Wordmet với email này. Đăng nhập tại ${learnerAppUrl}, hoặc dùng Quên mật khẩu ở trang đăng nhập nếu không nhớ mật khẩu. Nếu không phải bạn, bỏ qua thư này.\n\nSomeone just used this email to sign up for Wordmet, but you already have a Wordmet account with this email. Sign in at ${learnerAppUrl}, or use Forgot password on the sign-in page if you do not remember your password. If this was not you, ignore this email.`,
+  };
+}
+
 export function otpLockedMail(to: string, purpose: OtpPurpose): MailMessage {
   const vi = purpose === 'verify_email' ? 'Xác minh email' : 'Đặt lại mật khẩu';
   const en = purpose === 'verify_email' ? 'Email verification' : 'Password reset';

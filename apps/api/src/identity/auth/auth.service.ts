@@ -11,6 +11,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, sendPrepared, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
 import { dateValue, localDate } from '../../common/time/local-date.js';
+import { accountExistsMail } from '../mailer/templates.js';
 import { MIN_AGE, isOldEnough } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
@@ -25,6 +26,7 @@ import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
 import { TermsVersion } from '../profile/terms-version.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
+type RegisterOutcome = { kind: 'code'; userId: string; mail: boolean } | { kind: 'exists'; mail: boolean } | { kind: 'silent' };
 
 @Injectable()
 export class AuthService {
@@ -61,9 +63,9 @@ export class AuthService {
     const mailAllowed = await this.otp.tryLimitEmail(email);
     // A preallocated ID lets even a new account follow the lock-first protocol.
     const newUserId = randomUUID();
-    let outcome: { userId: string; mail: boolean };
+    let outcome: RegisterOutcome;
     try {
-      outcome = await this.prisma.$transaction(async (tx) => {
+      outcome = await this.prisma.$transaction(async (tx): Promise<RegisterOutcome> => {
         const existing = await tx.user.findUnique({ where: { email } });
         const userId = existing?.id ?? newUserId;
         await withUserLock(tx, userId);
@@ -76,24 +78,27 @@ export class AuthService {
         if (!existing) {
           await tx.user.create({ data: { id: userId, email, ...data, createdAt: now } });
           await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
-          return { userId, mail: true };
+          return { kind: 'code', userId, mail: true };
         }
         const user = await tx.user.findUnique({ where: { id: userId } });
-        if (user?.status === 'deleting') throw this.emailTaken('account-deleting');
-        if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
+        // Every case answers like a fresh sign-up, so the response does not reveal an account (review F2).
+        if (!user || user.status === 'deleting') return { kind: 'silent' };
+        if (user.emailVerifiedAt !== null || user.status !== 'active') return { kind: 'exists', mail: mailAllowed };
         // No mailbox proof yet: the new password and profile wait until verify-email confirms them (review F3).
         const pending = { passwordHash: hash, givenName: data.givenName, familyName: data.familyName, birthDate: data.birthDate,
           timezone, termsVersion, termsAcceptedAt: now, createdAt: now };
         await tx.pendingRegistration.upsert({ where: { userId }, create: { userId, ...pending }, update: pending });
-        return { userId, mail: mailAllowed };
+        return { kind: 'code', userId, mail: mailAllowed };
       }, transactionOptions);
     } catch (error) {
-      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-        throw this.emailTaken();
-      }
+      // A concurrent first registration of the same email won the unique index; its own request mails the code.
+      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') return { email };
       throw error;
     }
-    if (outcome.mail) {
+    if (outcome.kind === 'exists' && outcome.mail) {
+      this.dispatcher.afterResponse(res, [sendPrepared(accountExistsMail(email, this.config.learnerAppUrl))]);
+    }
+    if (outcome.kind === 'code' && outcome.mail) {
       const { userId } = outcome;
       const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
         await withUserLock(tx, userId);
@@ -210,10 +215,6 @@ export class AuthService {
 
   private invalidOtp(): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
-  }
-  private emailTaken(reason?: 'account-deleting'): ProblemDetailsException {
-    return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken',
-      ...(reason ? { extensions: { reason } } : {}) });
   }
   private validationFailed(extensions?: Record<string, unknown>): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed', extensions });
