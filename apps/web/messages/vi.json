@@ -1200,6 +1200,7 @@
       "pickDone": "Xong",
       "pickerHint": "Chọn được nhiều nhóm.",
       "selectedCount": "{count, plural, =0 {Chưa chọn nhóm nào} other {Đã chọn # nhóm}}",
+      "saveManual": "Lưu từ",
       "saveToCount": "Lưu vào {count, number} nhóm",
       "fullNotSaved": "{group} đã đầy. Chưa lưu từ.",
       "fullUnknown": "Một nhóm đã đầy. Chưa lưu từ.",

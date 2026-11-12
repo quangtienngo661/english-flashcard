@@ -1200,6 +1200,7 @@
       "pickDone": "Done",
       "pickerHint": "You can choose several decks.",
       "selectedCount": "{count, plural, =0 {No deck chosen} one {# deck chosen} other {# decks chosen}}",
+      "saveManual": "Save word",
       "saveToCount": "{count, plural, one {Save to # deck} other {Save to # decks}}",
       "fullNotSaved": "{group} is full. Nothing was saved.",
       "fullUnknown": "A deck is full. Nothing was saved.",
