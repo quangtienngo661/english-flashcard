@@ -157,7 +157,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
   const line = [t('lastLine', { date, count: last.questions }), name].filter(Boolean).join(' · ');
   const wrong = last.questions - last.correct;
   return (
-    <section aria-labelledby="last-practice" className="flex flex-col gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:flex-row md:items-center md:gap-6 md:px-6 md:py-5">
+    <Card as="section" aria-labelledby="last-practice" className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 md:py-5">
       <div className="flex shrink-0 items-baseline gap-2 md:flex-col md:items-center md:gap-0">
         <span className="font-wm-display text-3xl font-extrabold tracking-tight text-wm-ink">
           {last.correct}/{last.questions}
@@ -165,9 +165,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
         <span className="text-wm-meta text-wm-muted">{t('lastCorrect')}</span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h2 id="last-practice" className="text-wm-button text-wm-ink">
-          {t('lastTitle')}
-        </h2>
+        <SectionTitle id="last-practice">{t('lastTitle')}</SectionTitle>
         <p className="text-wm-meta text-wm-muted wrap-anywhere">{line}</p>
         <div className="flex items-center gap-3">
           <span role="img" aria-label={t('lastBar', { correct: last.correct, wrong })} className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-pill bg-wm-line">
@@ -193,7 +191,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
         </Link>
         <CalendarLink className={LINK}>{t('lastCalendar')}</CalendarLink>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -270,7 +268,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
   return (
     <>
       {backlog && backlog.backlog > 0 && days !== undefined && (
-        <section aria-label={t('backlogTitle', { count: backlog.backlog })} className="flex items-center gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+        <Card as="section" aria-label={t('backlogTitle', { count: backlog.backlog })} className="flex items-center gap-4">
           <span className="font-wm-display text-5xl font-extrabold leading-none tracking-tight text-wm-fail">{format.number(backlog.backlog)}</span>
           <div className="min-w-0 flex-1">
             <p className="text-wm-button text-wm-ink">{t('backlogLabel')}</p>
@@ -279,7 +277,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
           <Link href={`/${locale}/app/group/backlog?id=${backlog.id}`} className={cn(LINK, 'shrink-0')}>
             {t('see')}
           </Link>
-        </section>
+        </Card>
       )}
       <Card as="section" aria-labelledby="by-level" className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
