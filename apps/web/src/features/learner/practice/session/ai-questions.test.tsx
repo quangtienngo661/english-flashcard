@@ -91,6 +91,17 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.getByText('We use Docker to the app to the production server.')).toHaveTextContent('We use Docker to deploy the app to the production server.');
   });
 
+  it('F.15: the blank is sized by a hidden mirror of its text, not by a size attribute', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    const blank = await screen.findByRole('textbox', { name: 'Missing word' });
+    expect(blank).not.toHaveAttribute('size');
+    await userEvent.type(blank, 'deploy');
+    const mirror = blank.previousElementSibling as HTMLElement;
+    expect(mirror).toHaveAttribute('aria-hidden', 'true');
+    expect(mirror).toHaveTextContent(/^deploy$/);
+    expect(blank.parentElement).toBe(mirror.parentElement);
+  });
+
   it('P.13: a wrong typed word is struck in the sentence, the answer beside it', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true })),
