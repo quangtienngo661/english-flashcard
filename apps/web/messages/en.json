@@ -1159,6 +1159,7 @@
       "createNew": "Create a new deck",
       "createNamed": "Create deck “{name}”",
       "recent": "Recently used",
+      "others": "Other decks ({count, number})",
       "all": "All decks ({count, number}), A–Z",
       "results": "Results ({count, number})",
       "noneNamed": "No deck named “{name}”.",

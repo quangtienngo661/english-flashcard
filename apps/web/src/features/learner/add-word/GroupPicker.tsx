@@ -49,6 +49,8 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
   const matches = query ? sorted.filter((g) => g.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi'))) : sorted;
   const exact = groups.some((g) => g.name.toLocaleLowerCase('vi') === query.toLocaleLowerCase('vi'));
   const recent = groups.filter((g) => recentIds.includes(g.id));
+  // A recent deck is listed once: the A–Z list holds the others.
+  const others = sorted.filter((g) => !recent.includes(g));
 
   function type(next: string) {
     setText(next);
@@ -90,7 +92,7 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
       ) : (
         <div className="-mx-1 flex max-h-88 flex-col gap-3 overflow-y-auto px-1">
           {recent.length > 0 && list(t('recent'), recent)}
-          {list(t('all', { count: groups.length }), sorted)}
+          {others.length > 0 && list(recent.length > 0 ? t('others', { count: others.length }) : t('all', { count: groups.length }), others)}
         </div>
       )}
     </div>

@@ -1159,6 +1159,7 @@
       "createNew": "Tạo nhóm mới",
       "createNamed": "Tạo nhóm “{name}”",
       "recent": "Dùng gần đây",
+      "others": "Nhóm khác ({count, number})",
       "all": "Tất cả nhóm ({count, number}), A–Z",
       "results": "Kết quả ({count, number})",
       "noneNamed": "Chưa có nhóm nào tên “{name}”.",

@@ -38,7 +38,7 @@ const routes = (extra = {}) => ({
 });
 const quickAdds = (calls: Array<{ method: string; path: string; body: unknown }>) => calls.filter((c) => c.method === 'POST' && c.path === '/v1/quick-add');
 const sense = { sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } };
-const all = () => screen.findByRole('listbox', { name: 'Tất cả nhóm (3), A–Z' });
+const all = () => screen.findByRole('listbox', { name: /^(Tất cả nhóm \(3\), A–Z|Nhóm khác \(\d+\))$/ });
 
 beforeEach(() => {
   window.localStorage.clear();
