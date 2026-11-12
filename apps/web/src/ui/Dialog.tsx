@@ -11,12 +11,10 @@ type Props = {
   title: string;
   /** Next to the title (a chip). */
   titleAside?: ReactNode;
-  /** Shows a close (×) button with this name at the top right. */
-  closeLabel?: string;
+  /** Name of the close (×) button at the top right; every dialog has one (mockup L383). */
+  closeLabel: string;
   /** Max width from 48rem: `md` 512 px (default), `lg` 672 px, `xl` 860 px (Overlay 4, two columns). */
   size?: 'md' | 'lg' | 'xl';
-  /** Alias of `size="lg"`, kept until M8 so untouched callers compile. */
-  wide?: boolean;
   children?: ReactNode;
   /** Buttons: right-aligned on wide screens, full width under 768 px. */
   footer?: ReactNode;
@@ -34,7 +32,7 @@ type Props = {
  */
 const WIDTH = { md: 'md:max-w-lg', lg: 'md:max-w-2xl', xl: 'md:max-w-215' } as const;
 
-export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, size, wide, children, footer, isDismissable = true, tone = 'default' }: Props) {
+export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, size = 'md', children, footer, isDismissable = true, tone = 'default' }: Props) {
   return (
     <ModalOverlay
       isOpen={isOpen}
@@ -46,7 +44,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
         className={cn(
           'max-h-dvh w-full overflow-y-auto rounded-t-wm-dialog bg-wm-surface px-5 pb-6 pt-5 shadow-wm-pop outline-none md:rounded-wm-dialog md:p-7',
           'motion-safe:data-entering:animate-wm-sheet-in motion-safe:data-exiting:animate-wm-pop-out md:motion-safe:data-entering:animate-wm-dialog-in',
-          WIDTH[size ?? (wide ? 'lg' : 'md')],
+          WIDTH[size],
           tone === 'pro' && 'border-2 border-wm-accent',
         )}
       >
@@ -60,16 +58,15 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
                   </Heading>
                   {titleAside}
                 </div>
-                {closeLabel && (
-                  <Button
-                    aria-label={closeLabel}
-                    onPress={close}
-                    isDisabled={!isDismissable}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-wm-control text-wm-muted outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-wm-accent disabled:opacity-50 md:size-9"
-                  >
-                    <X aria-hidden className="size-5" />
-                  </Button>
-                )}
+                {/* A 36 px box with a line border (mockup L383); the ::after widens the touch area to 44 px. */}
+                <Button
+                  aria-label={closeLabel}
+                  onPress={close}
+                  isDisabled={!isDismissable}
+                  className="relative flex size-9 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-muted outline-none after:absolute after:-inset-1 hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-wm-accent disabled:opacity-50"
+                >
+                  <X aria-hidden className="size-5" />
+                </Button>
               </div>
               {children}
               {footer && <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">{footer}</div>}

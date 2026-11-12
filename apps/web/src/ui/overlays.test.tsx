@@ -65,14 +65,14 @@ describe('ui overlays', () => {
     ['lg', 'md:max-w-2xl'],
     ['xl', 'md:max-w-215'],
   ] as const)('size="%s" gives the dialog its max width (%s); xl is the 860 px box of Overlay 4', (size, width) => {
-    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" size={size}><p>x</p></Dialog>);
+    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" closeLabel="Đóng" size={size}><p>x</p></Dialog>);
     const modal = screen.getByRole('dialog', { name: 'Hộp' }).parentElement!;
     expect(modal.className.split(' ')).toContain(width);
   });
 
   it('tone="pro" keeps the name and Esc, and adds the 2 px accent border; the default tone has none (giao diện mới M7.11)', async () => {
     const onOpenChange = vi.fn();
-    renderApp(<Dialog isOpen onOpenChange={onOpenChange} title="Học nhiều hơn với Pro" tone="pro"><p>x</p></Dialog>);
+    renderApp(<Dialog isOpen onOpenChange={onOpenChange} title="Học nhiều hơn với Pro" closeLabel="Đóng" tone="pro"><p>x</p></Dialog>);
     const modal = screen.getByRole('dialog', { name: 'Học nhiều hơn với Pro' }).parentElement!;
     expect(modal.className.split(' ')).toEqual(expect.arrayContaining(['border-2', 'border-wm-accent']));
     await userEvent.keyboard('{Escape}');
@@ -80,13 +80,20 @@ describe('ui overlays', () => {
   });
 
   it('the default tone has no border', () => {
-    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp"><p>x</p></Dialog>);
+    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" closeLabel="Đóng"><p>x</p></Dialog>);
     expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).not.toContain('border-wm-accent');
   });
 
-  it('wide stays an alias of size="lg" until M8', () => {
-    renderApp(<Dialog isOpen onOpenChange={() => {}} title="Hộp" wide><p>x</p></Dialog>);
-    expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).toContain('md:max-w-2xl');
+  // Part 10 P.4 (mockup L383): every dialog shows the × (closeLabel is required); `wide` is gone (R62 ends).
+  it('the × is always there, a button named by closeLabel, and the dialog takes no wide prop', () => {
+    renderApp(
+      // @ts-expect-error wide was removed in Part 10 P.4; size="lg" replaces it.
+      <Dialog isOpen onOpenChange={() => {}} title="Hộp" closeLabel="Đóng hộp" wide>
+        <p>x</p>
+      </Dialog>,
+    );
+    expect(screen.getByRole('button', { name: 'Đóng hộp' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Hộp' }).parentElement!.className.split(' ')).toContain('md:max-w-lg');
   });
 
   it('showToast with a link shows it in the toast', async () => {

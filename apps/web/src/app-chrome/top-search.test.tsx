@@ -76,7 +76,7 @@ describe('TopSearch (giao diện mới M4.3)', () => {
     renderApp(
       <>
         <TopSearch />
-        <Dialog isOpen onOpenChange={() => {}} title="Hộp">
+        <Dialog isOpen onOpenChange={() => {}} title="Hộp" closeLabel="Đóng">
           <button type="button">trong hộp</button>
         </Dialog>
       </>,

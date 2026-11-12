@@ -68,6 +68,7 @@ type ResumeProps = {
 /** K/77 (E35): asked before `POST /practice/sessions` while a session is open; a new one closes the old. */
 export function ResumeDialog({ current, groups, isOpen, onClose, onResume, onStartNew, busy }: ResumeProps) {
   const t = useTranslations('App.practice.resumeDialog');
+  const tc = useTranslations('App.common');
   const label = useSourceLabel();
   if (!current) return null;
   const done = doneCount(current);
@@ -78,6 +79,7 @@ export function ResumeDialog({ current, groups, isOpen, onClose, onResume, onSta
       onOpenChange={(open) => !open && onClose()}
       isDismissable={!busy}
       title={t('title', { done, total })}
+      closeLabel={tc('close')}
       footer={
         <>
           <Button variant="secondary" isPending={busy} onPress={onStartNew}>

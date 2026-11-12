@@ -10,6 +10,7 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
 import { TextField } from '@/ui/TextField';
 import { showToast } from '@/ui/Toast';
 import { GROUP_NAME_MAX } from './group-name';
@@ -70,7 +71,7 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
   }
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.createTitle')} isDismissable={!press.busy}>
+    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.createTitle')} closeLabel={t('common.close')} isDismissable={!press.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField
           label={t('groups.nameLabel')}
@@ -82,9 +83,9 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
           autoFocus
         />
         <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('common.cancel')}
-          </Button>
+          </TextButton>
           <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim()}>
             {t('groups.createSubmit')}
           </Button>
@@ -125,13 +126,13 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
   }
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.renameTitle')} isDismissable={!press.busy}>
+    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.renameTitle')} closeLabel={t('common.close')} isDismissable={!press.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('groups.nameLabel')} value={name} onChange={setName} maxLength={GROUP_NAME_MAX} showCount error={error} autoFocus />
         <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('common.cancel')}
-          </Button>
+          </TextButton>
           <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim() || name.trim() === group.name}>
             {t('groups.renameSubmit')}
           </Button>
@@ -144,6 +145,7 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
 /** K/14: says how many words leave learning (`removable_items`) before deleting. */
 function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo?: string; onClose: () => void }) {
   const t = useTranslations('App.groups');
+  const tc = useTranslations('App.common');
   const locale = useLocale();
   const errorText = useErrorMessage();
   const { deleteGroup } = useGroupMutations();
@@ -169,12 +171,13 @@ function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('deleteTitle', { name: group.name })}
+      closeLabel={tc('close')}
       isDismissable={!press.busy}
       footer={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('keep')}
-          </Button>
+          </TextButton>
           <Button variant="danger" onPress={() => void onDelete()} isPending={press.busy} isDisabled={!detail}>
             {removable > 0 ? t('deleteSubmit', { count: removable }) : t('deleteSubmitNone')}
           </Button>

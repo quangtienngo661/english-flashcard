@@ -245,12 +245,13 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
         isOpen={confirmForget}
         onOpenChange={(open) => !open && setConfirmForget(false)}
         title={t('forgetTitle', { count: selected.size })}
+        closeLabel={tCommon('close')}
         isDismissable={!forget.busy}
         footer={
           <>
-            <Button variant="secondary" onPress={() => setConfirmForget(false)}>
+            <TextButton tone="muted" onPress={() => setConfirmForget(false)} className="justify-center">
               {t('keep')}
-            </Button>
+            </TextButton>
             <Button variant="danger" isPending={forget.busy} onPress={() => void run(forget, 'forgotten')}>
               {t('forgetConfirm', { count: selected.size })}
             </Button>

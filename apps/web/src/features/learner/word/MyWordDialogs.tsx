@@ -11,6 +11,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY } from '../groups/groups-api';
 import { bareIpa, cleanExamples, EditSuggestionForm, type WordDraft } from '../add-word/EditSuggestionForm';
@@ -95,12 +96,13 @@ export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('editTitle')}
+      closeLabel={tc('close')}
       isDismissable={!save.busy}
       footer={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button isPending={save.busy} onPress={() => void submit()}>
             {t('saveChanges')}
           </Button>
@@ -149,12 +151,13 @@ export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClo
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('deleteTitle', { word: sense.lemma })}
+      closeLabel={tc('close')}
       isDismissable={!remove.busy}
       footer={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button variant="danger" isPending={remove.busy} onPress={() => void confirm()}>
             {t('delete')}
           </Button>

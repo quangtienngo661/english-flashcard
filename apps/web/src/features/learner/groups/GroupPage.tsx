@@ -349,6 +349,7 @@ function EmptyDeck() {
 
 function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   const t = useTranslations('App.group');
+  const tCommon = useTranslations('App.common');
   const levelName = useLevelName();
   const locale = useLocale() as AppLocale;
   const errorText = useErrorMessage();
@@ -412,12 +413,13 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
         isOpen={confirm}
         onOpenChange={(isOpen) => !isOpen && setConfirm(false)}
         title={t('removeLastTitle', { word })}
+        closeLabel={tCommon('close')}
         isDismissable={!busy}
         footer={
           <>
-            <Button variant="secondary" onPress={() => setConfirm(false)}>
+            <TextButton tone="muted" onPress={() => setConfirm(false)} className="justify-center">
               {t('keep')}
-            </Button>
+            </TextButton>
             <Button variant="danger" onPress={() => void remove()} isPending={busy}>
               {t('removeLastConfirm')}
             </Button>

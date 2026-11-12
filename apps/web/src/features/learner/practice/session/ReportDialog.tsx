@@ -10,6 +10,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import { cn } from '@/lib/cn';
 
@@ -86,9 +87,9 @@ export function ReportDialog({ itemId, kind, privateWord = false, lemma = null, 
       closeLabel={tc('close')}
       footer={
         <>
-          <Button variant="secondary" size="lg" isDisabled={send.busy} onPress={onClose}>
+          <TextButton tone="muted" isDisabled={send.busy} onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button variant="primary" size="lg" isPending={send.busy} onPress={() => void submit()}>
             {t('send')}
           </Button>
