@@ -11,7 +11,7 @@ import type { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { FakeMailer } from '../../common/mail/fake-mailer.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import { otpLockedMail } from '../mailer/templates.js';
+import { accountExistsMail, otpLockedMail } from '../mailer/templates.js';
 import type { SessionService } from '../sessions/session.service.js';
 import type { PasswordHasher } from './password-hasher.service.js';
 import type { OtpService } from './otp.service.js';
@@ -144,35 +144,51 @@ describe('registration and login (unit, isolated persistence)', () => {
     expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
     for (const method of Object.values(tx.otpFailureWindow)) expect(method).not.toHaveBeenCalled();
   });
-  it.each(['verified', 'locked', 'deleted'])('A13-2: email of a %s account -> 409 email-taken', async (state) => {
+  it.each([
+    ['verified', true], ['verified', false], ['locked', true], ['locked', false],
+  ] as const)('F2: email of a %s account -> the fresh sign-up answer, no change, an "account exists" mail (allowed: %s)', async (state, allowed) => {
+    otp.tryLimitEmail.mockResolvedValue(allowed);
     tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: state === 'verified' ? clock.now() : null,
       status: state === 'verified' ? 'active' : state });
-    await expect(auth.register(body, res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
-    expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
-    expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
-    expect(res.listenerCount('close')).toBe(0); expect(otp.issueInTx).not.toHaveBeenCalled();
+    await expect(auth.register(body, res)).resolves.toEqual({ email: user.email });
+    expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+    expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.passwordCredential.create).not.toHaveBeenCalled();
+    expect(tx.pendingRegistration.upsert).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(otp.tryLimitEmail).toHaveBeenCalledExactlyOnceWith(user.email);
+    expect(mailer.sent).toEqual([]); expect(res.listenerCount('close')).toBe(allowed ? 1 : 0);
+    res.emit('close'); await dispatcher.drain();
+    // No code is issued: the mail only points the owner at sign-in and Forgot password.
+    expect(otp.issueInTx).not.toHaveBeenCalled(); expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(mailer.sent).toEqual(allowed ? [accountExistsMail(user.email, config.learnerAppUrl)] : []);
   });
-  it('B8 (design §6.2): the email of a deleting account → 409 email-taken with reason account-deleting', async () => {
+  it('F2: the email of a deleting account -> the fresh sign-up answer and no mail at all', async () => {
     tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: clock.now(), status: 'deleting' });
-    await expect(auth.register(body, res)).rejects.toMatchObject({
-      status: 409, problemType: 'email-taken', extensions: { reason: 'account-deleting' },
-    });
+    await expect(auth.register(body, res)).resolves.toEqual({ email: user.email });
     expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
+    expect(tx.pendingRegistration.upsert).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
+    res.emit('close'); await dispatcher.drain(); expect(mailer.sent).toEqual([]);
   });
-  it('A13-2d: verification commits between the read and the lock -> 409, nothing written', async () => {
+  it('F2: the account found by email was deleted before the lock -> the fresh sign-up answer and no mail', async () => {
+    tx.user.findUnique.mockImplementation(async ({ where }) => (where.email ? { id: user.id } : null));
+    await expect(auth.register(body, res)).resolves.toEqual({ email: user.email });
+    expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.pendingRegistration.upsert).not.toHaveBeenCalled();
+    expect(res.listenerCount('close')).toBe(0);
+  });
+  it('A13-2d: verification commits between the read and the lock -> nothing written, the "account exists" mail instead of a code', async () => {
     const events: string[] = [];
     tx.user.findUnique.mockImplementation(async ({ where }) => {
       events.push(where.email ? 'locate' : 'reread');
       return { ...user, emailVerifiedAt: where.email ? null : clock.now() };
     });
     tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
-    await expect(auth.register(body, res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
+    await expect(auth.register(body, res)).resolves.toEqual({ email: user.email });
     expect(events).toEqual(['locate', 'lock', 'reread']);
     expect(tx.pendingRegistration.upsert).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
     expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.passwordCredential.create).not.toHaveBeenCalled();
     expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
     expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
-    expect(committed).toBe(false); expect(res.listenerCount('close')).toBe(0); expect(otp.issueInTx).not.toHaveBeenCalled();
+    res.emit('close'); await dispatcher.drain();
+    expect(otp.issueInTx).not.toHaveBeenCalled(); expect(mailer.sent).toEqual([accountExistsMail(user.email, config.learnerAppUrl)]);
   });
   it.each([
     [{ email: 'invalid' }, undefined],
@@ -223,9 +239,9 @@ describe('registration and login (unit, isolated persistence)', () => {
     await expect(auth.register(body, res)).rejects.toMatchObject({ status: 503 });
     expect(hasher.hash).not.toHaveBeenCalled(); expect(prisma.$transaction).not.toHaveBeenCalled();
   });
-  it('B1#2: two concurrent first registrations hit the email unique constraint -> 409 and no mail', async () => {
+  it('B1#2/F2: two concurrent first registrations hit the email unique constraint -> the fresh sign-up answer and no mail', async () => {
     tx.user.create.mockRejectedValue({ code: 'P2002' });
-    await expect(auth.register(body, res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
+    await expect(auth.register(body, res)).resolves.toEqual({ email: user.email });
     expect(committed).toBe(false); expect(res.listenerCount('close')).toBe(0); expect(otp.issueInTx).not.toHaveBeenCalled();
   });
   it('B1#34: an unexpected database error rolls back and schedules no mail', async () => {
