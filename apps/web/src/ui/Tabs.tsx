@@ -45,7 +45,7 @@ export function Tabs({ items, selected, label, onSelect, hrefs }: Props) {
         <ul className="flex flex-wrap gap-x-6 border-b border-wm-line">
           {items.map((item) => (
             <li key={item.id}>
-              <a href={hrefs[item.id]} aria-current={item.id === selected ? 'true' : undefined} className={cn(ITEM, item.id === selected ? ON : OFF)}>
+              <a href={hrefs[item.id]} aria-current={item.id === selected ? 'location' : undefined} className={cn(ITEM, item.id === selected ? ON : OFF)}>
                 <Label item={item} />
               </a>
             </li>
