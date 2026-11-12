@@ -34,6 +34,7 @@ function contrast(map: Map<string, string>, fg: string, bg: string): number {
 const TEXT_PAIRS: Array<[string, string]> = [
   ['ink', 'bg'], ['ink', 'surface'], ['muted', 'bg'], ['muted', 'surface'], ['on-accent', 'accent'], ['accent', 'surface'],
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
+  ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
 ];
 
 describe('wm design tokens (web.css, web-dark.css)', () => {
@@ -54,7 +55,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
     expect(tokens(web, 'radius-wm').size).toBe(9);
-    expect(tokens(web, 'shadow-wm').size).toBe(11);
+    expect(tokens(web, 'shadow-wm').size).toBe(14);
   });
 
   it('pins the values the design names', () => {
@@ -188,5 +189,68 @@ describe('wm public site tokens (M8.3)', () => {
   ])('pins --text-wm-%s: %s / %s / %s, Bold 700', (name, size, lineHeight, letterSpacing) => {
     expect([text.get(name), text.get(`${name}--line-height`), text.get(`${name}--letter-spacing`), text.get(`${name}--font-weight`)])
       .toEqual([size, lineHeight, letterSpacing, '700']);
+  });
+});
+
+// M9.8: dark values, the new tokens whose light value equals an old literal, and the level colours.
+describe('wm dark and level tokens (M9.8)', () => {
+  const shadow = tokens(web, 'shadow-wm');
+  const darkShadow = tokens(webDark, 'shadow-wm');
+  const KEYS = [0, 1, 2, 3, 4, 5, 6, 'empty'] as const;
+  const WASH = ['#38262d', '#172e38', '#272445', '#362f27', '#1f2f2c', '#352137', '#1a2c45', '#23293a'];
+  const SOFT = ['#5d3231', '#164449', '#392f63', '#594624', '#28452e', '#572845', '#1d3f63', '#31384b'];
+
+  it('keeps the old light literals for the new tokens', () => {
+    expect([light.get('scrim'), light.get('paper'), light.get('paper-line'), light.get('halo-mark')])
+      .toEqual(['rgb(27 36 68 / 0.3)', '#fbfaf6', '#e8e4d8', 'rgb(255 216 74 / 0.34)']);
+    expect(shadow.get('paper')).toBe('0 1.5rem 3rem -1.75rem rgb(27 36 68 / 0.45)');
+    expect(shadow.get('paper-card')).toBe('0 1.875rem 3.75rem -1.875rem rgb(27 36 68 / 0.55)');
+    expect(shadow.get('contact')).toBe('0 0.0625rem 0.125rem rgb(27 36 68 / 0.06)');
+  });
+
+  it('pins the new tokens and the changed soft tints in dark', () => {
+    expect([dark.get('scrim'), dark.get('paper'), dark.get('paper-line'), dark.get('halo-mark')])
+      .toEqual(['rgb(0 0 0 / 0.55)', '#1e2334', '#2e3449', 'rgb(255 216 74 / 0.12)']);
+    expect([dark.get('wrong-soft'), dark.get('wrong-line'), dark.get('wrong-ink')]).toEqual(['#352731', 'rgb(229 96 63 / 0.55)', '#e87052']);
+    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fbedeb', 'rgb(184 53 42 / 0.62)', '#b8352a']);
+    expect([dark.get('accent-soft'), dark.get('pass-soft'), dark.get('fail-soft')]).toEqual(['#2c334f', '#24373c', '#3c2f3a']);
+  });
+
+  it('has a dark shadow for every light shadow, none in the light navy, and no button shadow', () => {
+    expect([...darkShadow.keys()].sort()).toEqual([...shadow.keys()].sort());
+    for (const [name, value] of darkShadow) {
+      expect(value, name).not.toContain('27 36 68');
+      expect(value, name).not.toContain('30 58 138');
+    }
+    for (const k of ['btn', 'btn-pass', 'btn-fail']) expect(darkShadow.get(k), k).toBe('none');
+    expect(darkShadow.get('card')).toBe('0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.625rem 1.75rem -0.875rem rgb(0 0 0 / 0.6)');
+    expect(darkShadow.get('paper')).toBe('0 1.5rem 3rem -1.75rem rgb(0 0 0 / 0.7)');
+  });
+
+  it('pins the raised dark group washes and softs', () => {
+    KEYS.forEach((n, i) => {
+      expect(dark.get(`group-${n}-wash`), `${n} wash`).toBe(WASH[i]);
+      expect(dark.get(`group-${n}-soft`), `${n} soft`).toBe(SOFT[i]);
+    });
+  });
+
+  it.each(KEYS)('dark group %s: ink reads on its wash and on the surface, and the title ink reads on the wash', (n) => {
+    const map = new Map(dark);
+    expect(contrast(map, `group-${n}-ink`, `group-${n}-wash`)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(map, `group-${n}-ink`, 'surface')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(map, 'ink', `group-${n}-wash`)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('writes the level colours as #rrggbb in both files; light darkens with the level, dark brightens', () => {
+    const names = ['level-0', 'level-1', 'level-2', 'level-3', 'level-4', 'level-5', 'level-priority', 'level-due'];
+    for (const map of [light, dark]) for (const k of names) expect(map.get(k), k).toMatch(/^#[0-9a-f]{6}$/);
+    const lum = (map: Map<string, string>) => [1, 2, 3, 4, 5].map((n) => luminance(map.get(`level-${n}`) ?? ''));
+    const strictly = (xs: number[], cmp: (a: number, b: number) => boolean) => xs.every((x, i) => i === 0 || cmp(xs[i - 1], x));
+    expect(strictly(lum(light), (a, b) => a > b)).toBe(true);
+    expect(strictly(lum(dark), (a, b) => a < b)).toBe(true);
+  });
+
+  it('sets color-scheme: dark first in the dark block', () => {
+    expect(webDark).toMatch(/\[data-theme='dark'\] \{\s*color-scheme: dark;/);
   });
 });

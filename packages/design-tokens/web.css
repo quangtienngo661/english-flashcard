@@ -27,6 +27,24 @@
   --color-wm-glow-accent: rgb(30 58 138 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
 
+  /* M9: backdrop of dialogs, the Tra từ paper sheet, the mesh's yellow halo, the "Chưa đúng" box (fail 9 % on white, oklab), level colours
+     (0 none, 1-5 darken with the level; priority and due mark rows). Dark values in web-dark.css. */
+  --color-wm-scrim: rgb(27 36 68 / 0.3);
+  --color-wm-paper: #fbfaf6;
+  --color-wm-paper-line: #e8e4d8;
+  --color-wm-halo-mark: rgb(255 216 74 / 0.34);
+  --color-wm-wrong-soft: #fbedeb;
+  --color-wm-wrong-line: rgb(184 53 42 / 0.62);
+  --color-wm-wrong-ink: #b8352a;
+  --color-wm-level-0: #a3abbd;
+  --color-wm-level-1: #b9e4c7;
+  --color-wm-level-2: #7ccd9b;
+  --color-wm-level-3: #3fae6c;
+  --color-wm-level-4: #218c4f;
+  --color-wm-level-5: #106a39;
+  --color-wm-level-priority: #c4372c;
+  --color-wm-level-due: #e0a21b;
+
   /* Radius (Wordmet số đo) */
   /* 3px: the 9px colour squares of legends and stage rows (Figma, M3). */
   --radius-wm-xs: 0.1875rem;
@@ -53,6 +71,11 @@
   /* Public pages (M8 Figma A §2.1, §2.6): the hero app mock-up and its floating cards (5:43), and the Pro card's glow ring (33:340). */
   --shadow-wm-stage: 0 2.5rem 6.25rem -3.125rem rgb(30 58 138 / 0.3), 0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38);
   --shadow-wm-pro-glow: 0 0 3rem 0.125rem rgb(30 58 138 / 0.3), 0 2.5rem 6.25rem -3.125rem rgb(30 58 138 / 0.3), 0 3.125rem 6.875rem -2.5rem rgb(27 36 68 / 0.38);
+
+  /* Tra từ paper sheet and card (.lk-paper, .lk-card) and the contact layer of a stack face (.gstack-face). */
+  --shadow-wm-paper: 0 1.5rem 3rem -1.75rem rgb(27 36 68 / 0.45);
+  --shadow-wm-paper-card: 0 1.875rem 3.75rem -1.875rem rgb(27 36 68 / 0.55);
+  --shadow-wm-contact: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06);
 
   /* The public pages' content column (1160 px, M8 Figma A §1, B §2.1). */
   --container-wm-site: 72.5rem;
