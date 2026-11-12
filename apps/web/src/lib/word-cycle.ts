@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // The word-typing loop shared by the sign-up showcase and the landing hero: type the word into the blank, press Enter, turn green,
 // the due count falls, then the next word. Timings are the mockup's (L1453-1474).
@@ -19,22 +19,30 @@ export function cycleNext(step: CycleStep, lengths: readonly number[], dueStart:
 }
 
 /**
- * The loop's current frame. With `motion` off it returns the final frame of the first word (typed, answered, one fewer due) and
- * schedules nothing; turning it back on continues from where the loop was, one timer at a time.
+ * The loop's current frame. Before the loop has advanced its first step, `motion` off returns the final frame of the first word
+ * (typed, answered, one fewer due) and schedules nothing. Once it has run, `motion` off freezes on the current frame (no timer) and
+ * turning it back on continues from that frame with one timer at a time, so a pause never jumps.
  * `start: 'first'` begins at the first word's empty blank; `'final'` begins on its final frame.
+ * `lengths` is compared by value, so a new array with the same numbers does not restart the timer.
  */
 export function useWordCycle({ lengths, motion, start, dueStart = 12 }: {
   lengths: readonly number[]; motion: boolean; start: 'first' | 'final'; dueStart?: number;
 }): CycleStep {
-  const final: CycleStep = { k: 0, typed: lengths[0], phase: 'done', due: dueStart - 1 };
-  const [running, setRunning] = useState<CycleStep>(start === 'final' ? final : { k: 0, typed: 0, phase: 'typing', due: dueStart });
+  const key = lengths.join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` stands for the values of `lengths`
+  const stable = useMemo(() => lengths, [key]);
+  const final = useMemo<CycleStep>(() => ({ k: 0, typed: stable[0], phase: 'done', due: dueStart - 1 }), [stable, dueStart]);
+  const [state, setState] = useState<{ step: CycleStep; started: boolean }>({
+    step: start === 'final' ? final : { k: 0, typed: 0, phase: 'typing', due: dueStart },
+    started: false,
+  });
 
   useEffect(() => {
     if (!motion) return;
-    const [ms, after] = cycleNext(running, lengths, dueStart);
-    const timer = setTimeout(() => setRunning(after), ms);
+    const [ms, after] = cycleNext(state.step, stable, dueStart);
+    const timer = setTimeout(() => setState({ step: after, started: true }), ms);
     return () => clearTimeout(timer);
-  }, [motion, running, lengths, dueStart]);
+  }, [motion, state, stable, dueStart]);
 
-  return motion ? running : final;
+  return motion || state.started ? state.step : final;
 }
