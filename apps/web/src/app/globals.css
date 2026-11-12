@@ -933,6 +933,34 @@
     transform: translate(-20%, -34px) scale(0.92);
   }
 }
+/* F.19: the one glow layer behind the prices (Figma f06): three radial colours, blurred, drifting 18 s. */
+.wm-price-drift {
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(36% 40% at 30% 40%, var(--color-wm-drift-accent), transparent 70%),
+    radial-gradient(34% 36% at 70% 55%, var(--color-wm-drift-mark), transparent 70%),
+    radial-gradient(40% 40% at 50% 90%, var(--color-wm-drift-pass), transparent 70%);
+  filter: blur(28px);
+}
+@media (width < 48rem) {
+  .wm-price-drift {
+    filter: blur(12px);
+  }
+}
+@keyframes wm-price-drift {
+  0% {
+    transform: translate(-6%, -4%) scale(1);
+  }
+  50% {
+    transform: translate(5%, 3%) scale(1.08);
+  }
+  100% {
+    transform: translate(-3%, 6%) scale(1.02);
+  }
+}
 @keyframes wm-site-drift-404-a {
   to {
     transform: translate(50px, 30px);
@@ -1086,8 +1114,12 @@
   html.js [data-wm-halo='404-mark'] {
     animation: wm-site-drift-404-b var(--wm-site-halo-404) ease-in-out infinite alternate;
   }
+  html.js .wm-price-drift {
+    animation: wm-price-drift 18s ease-in-out infinite alternate;
+  }
   @media (width < 47.5rem) {
-    html.js [data-wm-halo] {
+    html.js [data-wm-halo],
+    html.js .wm-price-drift {
       animation: none;
     }
   }

@@ -30,6 +30,10 @@
   --color-wm-ai-to: #3d78ff;
   --color-wm-glow-accent: rgb(30 58 138 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
+  /* Drift layer behind the prices (F.19): accent, mark and pass at 22 / 26 / 16 %, alpha baked in. */
+  --color-wm-drift-accent: rgb(30 58 138 / 0.22);
+  --color-wm-drift-mark: rgb(255 216 74 / 0.26);
+  --color-wm-drift-pass: rgb(27 122 70 / 0.16);
 
   /* M9: backdrop of dialogs, the Tra từ paper sheet, the mesh's yellow halo, the "Chưa đúng" box (fail 9 % on white, oklab), level colours
      (0 none, 1-5 darken with the level; priority and due mark rows). Dark values in web-dark.css. */
