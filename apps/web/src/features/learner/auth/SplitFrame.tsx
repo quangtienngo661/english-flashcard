@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AUTH_CARD, HomeLogoLink } from '@/app-chrome/CardFrame';
 import { cn } from '@/lib/cn';
-import { DotGridBackground } from '@/ui/DotGridBackground';
+import { AppBackground } from '@/ui/AppBackground';
 import { AuthShowcase } from './AuthShowcase';
 
 /**
@@ -17,7 +17,7 @@ export function SplitFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
     <main id="main" tabIndex={-1} className="relative isolate flex min-h-dvh overflow-x-clip outline-none xl:gap-0 xl:p-4">
-      <DotGridBackground />
+      <AppBackground />
       <div className="flex min-w-0 flex-1 flex-col items-center px-4 pb-8 pt-5 md:justify-center md:py-20 xl:justify-start xl:px-12 xl:pb-6 xl:pt-5">
         <HomeLogoLink className="mb-6 self-start md:absolute md:left-16 md:top-9 md:mb-0 xl:static xl:mb-0" />
         <div className="relative w-full max-w-120 xl:my-auto xl:max-w-100 xl:py-10">
