@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import { cn } from '@/lib/cn';
-import { Button } from '@/ui/Button';
+import { TextButton } from '@/ui/TextButton';
 import { Dialog } from '@/ui/Dialog';
 import { showToast } from '@/ui/Toast';
 import { TransactionStatusDot, useTransactionText } from './TransactionRow';
@@ -58,9 +58,9 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
       title={t('detail.title')}
       closeLabel={t('detail.dismiss')}
       footer={
-        <Button variant="secondary" onPress={onClose}>
+        <TextButton tone="muted" onPress={onClose} className="justify-center">
           {t('detail.close')}
-        </Button>
+        </TextButton>
       }
     >
       <div className="flex flex-col items-center gap-2 py-1 text-center">
