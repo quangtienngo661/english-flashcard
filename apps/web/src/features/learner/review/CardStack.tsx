@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { shownPos } from '@/lib/pos';
 import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
 import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
@@ -184,7 +185,7 @@ function LightFront({ card }: { card: Card }) {
   return (
     <div className={cn(FACE, 'items-center justify-center gap-1 p-6 text-center')}>
       <span className="break-all font-wm-display text-wm-lemma text-wm-ink">{card.content.lemma}</span>
-      <span className="font-wm-sans text-wm-small text-wm-muted">{card.content.pos}</span>
+      <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(card.content.pos)}</span>
     </div>
   );
 }
@@ -214,7 +215,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Badges card={card} />
           <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
             <span className="break-all font-wm-display text-wm-section text-wm-ink">{content.lemma}</span>
-            <span className="font-wm-sans text-wm-base text-wm-muted">{content.pos}</span>
+            <span className="font-wm-sans text-wm-base text-wm-muted">{shownPos(content.pos)}</span>
           </span>
         </button>
         {/* Outside the turn button (review plan I3): a press reads the word and never turns the card. */}
@@ -228,7 +229,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Badges card={card} />
           <p className="flex flex-wrap items-baseline gap-x-2">
             <span className="break-all font-wm-display text-wm-card-title text-wm-ink">{content.lemma}</span>
-            <span className="font-wm-sans text-wm-small text-wm-muted">{content.pos}</span>
+            <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(content.pos)}</span>
           </p>
           <PronunciationLine text={content.lemma} line={pron} />
           <p className="break-words font-wm-display text-wm-card-heading-mobile text-wm-ink">{content.meaning.text}</p>

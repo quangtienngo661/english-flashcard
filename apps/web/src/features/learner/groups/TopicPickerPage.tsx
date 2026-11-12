@@ -12,6 +12,7 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { useFormat } from '@/app-shell/format';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
+import { shownPos } from '@/lib/pos';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
 import { Select } from '@/ui/Select';
@@ -214,7 +215,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
                   )}
                   <span className={cn('min-w-0 flex-1', decks && 'opacity-50')}>
                     <span className="mr-2 font-wm-display text-wm-word text-wm-ink wrap-anywhere">{s.lemma}</span>
-                    <span className="text-wm-meta text-wm-muted">{s.pos}</span>
+                    <span className="text-wm-meta text-wm-muted">{shownPos(s.pos)}</span>
                     <span className="block text-wm-small text-wm-muted wrap-anywhere">{s.meaning.text}</span>
                   </span>
                   {decks && (

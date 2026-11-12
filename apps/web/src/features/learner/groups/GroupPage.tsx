@@ -14,6 +14,7 @@ import { useAddWord, useAddWordScope } from '@/features/learner/add-word/add-wor
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
+import { shownPos } from '@/lib/pos';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { Skeleton } from '@/ui/Skeleton';
@@ -391,7 +392,7 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
           {word}
         </Link>
       </td>
-      <td className={cn(cell, 'hidden text-wm-meta text-wm-muted md:table-cell')}>{card.content.pos}</td>
+      <td className={cn(cell, 'hidden text-wm-meta text-wm-muted md:table-cell')}>{shownPos(card.content.pos)}</td>
       <td className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
         {card.content.meaning.text}
         {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
