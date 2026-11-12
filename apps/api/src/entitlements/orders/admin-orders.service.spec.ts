@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
-import type { BillingAdapter } from '../billing/billing-adapter.js';
+import type { BillingAdapter, CheckoutState } from '../billing/billing-adapter.js';
 import type { GrantSource } from '../rules/plan-rules.js';
 import { AdminOrdersService } from './admin-orders.service.js';
 import type { AdminOrderDetailRow, AdminOrderRow, OrderUpdate } from './orders.repository.js';
@@ -18,7 +18,7 @@ const row = (over: Partial<AdminOrderRow> = {}): AdminOrderRow => ({
   resolvedAt: null, resolutionNote: null, refundPayerName: null, refundPayerAccount: null, refundPayerBank: null, refundSavedAt: null, ...over,
 });
 
-function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetailRow>; cancel?: 'ok' | 'fail' | 'none'; grants?: GrantSource[]; emailLookup?: string | null } = {}) {
+function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetailRow>; cancel?: 'ok' | 'fail' | 'none'; link?: CheckoutState['status'] | null | 'fail'; grants?: GrantSource[]; emailLookup?: string | null } = {}) {
   const store = new Map((opts.rows ?? [row()]).map((r) => [r.id, { ...r }]));
   const calls: string[] = [];
   const updates: Array<{ id: string; from: string; data: OrderUpdate }> = [];
@@ -51,7 +51,7 @@ function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetail
       return true;
     }),
   };
-  const applier = { confirmManual: vi.fn(async (_input: unknown) => ({ outcome: 'opened-period' as const, userId: USER, periodId: 'period-9' })) };
+  const applier = { confirmManual: vi.fn(async (_input: unknown) => { calls.push('confirm'); return { outcome: 'opened-period' as const, userId: USER, periodId: 'period-9' }; }) };
   const identity = {
     findUserIdByEmail: vi.fn(async (_email: string) => (opts.emailLookup === undefined ? USER : opts.emailLookup)),
     emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === USER).map((id) => [id, 'lan@example.com']))),
@@ -67,7 +67,12 @@ function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetail
     calls.push(`cancel-checkout(inTx=${inTx})`);
     if (opts.cancel === 'fail') throw new Error('payos said no');
   });
-  if (opts.cancel !== 'none') registry.register({ provider: 'payos', cancelCheckout } as unknown as BillingAdapter);
+  const getCheckout = vi.fn(async (_code: number): Promise<CheckoutState | null> => {
+    calls.push(`get-checkout(inTx=${inTx})`);
+    if (opts.link === 'fail') throw new Error('payos down');
+    return opts.link === null ? null : { status: opts.link ?? 'PENDING', amount: 79000, amountPaid: 0, transactions: [] };
+  });
+  if (opts.cancel !== 'none') registry.register({ provider: 'payos', cancelCheckout, getCheckout } as unknown as BillingAdapter);
   const logs: LogEntry[] = [];
   const logger = new AppLogger({ write: (entry) => logs.push(entry) });
   const prisma = {
@@ -77,7 +82,7 @@ function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetail
     }),
   };
   const service = new AdminOrdersService(prisma as never, new FakeClock(NOW), identity as never, sources as never, registry, orders as never, applier as never, logger);
-  return { service, store, calls, updates, orders, applier, identity, cancelCheckout, periods, logs, prisma };
+  return { service, store, calls, updates, orders, applier, identity, cancelCheckout, getCheckout, periods, logs, prisma };
 }
 
 describe('AdminOrdersService.list (design §3.9)', () => {
@@ -175,6 +180,49 @@ describe('AdminOrdersService.confirmPayment (T11–T14)', () => {
     const { service, applier } = setup();
     applier.confirmManual.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 409 }));
     await expect(service.confirmPayment(ADMIN, 'order-1', { reference: 'r', amount: 1, reason: 'r' })).rejects.toMatchObject({ status: 409 });
+  });
+
+  // Launch B deferred minor M4 (owner 12/11/2026): once Pro is granted by hand the QR is not needed, and a second transfer on the old
+  // link must not be absorbed silently. The link is cancelled first, outside any lock, as "Hủy đơn" does.
+  const input = { reference: 'FT2611-BANK', amount: 79000, reason: 'saw it in the bank app' };
+
+  it('M4: cancels the payOS link outside any lock, then confirms', async () => {
+    const { service, calls, cancelCheckout, getCheckout } = setup();
+    await service.confirmPayment(ADMIN, 'order-1', input);
+    expect(cancelCheckout).toHaveBeenCalledWith(1_000_000_123);
+    expect(getCheckout).not.toHaveBeenCalled();
+    expect(calls).toEqual(['cancel-checkout(inTx=false)', 'confirm']);
+  });
+
+  it.each(['PENDING', 'UNDERPAID', 'PROCESSING', 'FAILED', 'fail'] as const)(
+    'M4: the cancel fails and the link may still take money (%s) → 503 provider-unavailable, nothing confirmed', async (link) => {
+      const { service, applier, logs } = setup({ cancel: 'fail', link });
+      await expect(service.confirmPayment(ADMIN, 'order-1', input)).rejects.toMatchObject({ status: 503, problemType: 'provider-unavailable' });
+      expect(applier.confirmManual).not.toHaveBeenCalled();
+      expect(logs).toContainEqual(expect.objectContaining({ level: 'warn', event: 'order_confirm_link_open', order_ref: 'order-1' }));
+    });
+
+  it.each(['PAID', 'CANCELLED', 'EXPIRED', null] as const)(
+    'M4: the cancel fails because the link no longer takes money (%s) → the confirmation goes on', async (link) => {
+      const { service, applier, calls } = setup({ cancel: 'fail', link });
+      await service.confirmPayment(ADMIN, 'order-1', input);
+      expect(applier.confirmManual).toHaveBeenCalledOnce();
+      expect(calls).toEqual(['cancel-checkout(inTx=false)', 'get-checkout(inTx=false)', 'confirm']);
+    });
+
+  it('M4: payOS is not asked when there is no link, payOS is not set up, or the order already has a period or is closed', async () => {
+    for (const ctx of [
+      setup({ rows: [row({ paymentLinkId: null })] }),
+      setup({ rows: [row({ paidVia: 'payos', status: 'paid' })] }),
+      setup({ rows: [row({ status: 'closed' })] }),
+    ]) {
+      await ctx.service.confirmPayment(ADMIN, 'order-1', input);
+      expect(ctx.cancelCheckout).not.toHaveBeenCalled();
+      expect(ctx.applier.confirmManual).toHaveBeenCalledOnce();
+    }
+    const off = setup({ cancel: 'none' });
+    await off.service.confirmPayment(ADMIN, 'order-1', input);
+    expect(off.applier.confirmManual).toHaveBeenCalledOnce();
   });
 });
 
