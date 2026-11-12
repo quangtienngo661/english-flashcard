@@ -71,6 +71,17 @@ describe('My word page (K/88)', () => {
     expect(screen.getByRole('button', { name: 'Xóa từ' })).toBeInTheDocument();
   });
 
+  it('a part of speech that was never set ("unspecified") is printed nowhere on the page', async () => {
+    const unset = page({ pos: 'unspecified' });
+    unset.sections[0].pos = 'unspecified';
+    open([unset]);
+    await screen.findByRole('heading', { level: 1, name: 'rizz' });
+    await screen.findByRole('region', { name: 'Bạn đang học' });
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /unspecified/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'sức hút, khả năng tán tỉnh' })).toBeInTheDocument();
+  });
+
   it('a private word the learner typed has no "AI gợi ý" label or source line', async () => {
     open([page({ ai_suggested: false })]);
     await screen.findByRole('heading', { level: 1, name: 'rizz' });

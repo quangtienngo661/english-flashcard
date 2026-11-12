@@ -327,6 +327,18 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(row).toHaveTextContent('Đề 12 · WritingBậc 2');
   });
 
+  it('"Bạn đang học" names the level and the interval: "Bậc 2 · ôn lại sau 3 ngày"', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const block = await screen.findByRole('region', { name: 'Bạn đang học' });
+    expect(within(block).getByText(/ôn lại sau 3 ngày/)).toHaveTextContent(/^Bậc 2 · ôn lại sau 3 ngày$/);
+  });
+
+  it('an example sentence marks the learned word as a strong element', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const [first] = await screen.findAllByRole('article');
+    expect(within(first).getByRole('strong')).toHaveTextContent(/^record$/);
+  });
+
   it('"Thêm câu đã gặp" with two learned meanings asks which one, and saves the sentence to it', async () => {
     const { calls } = renderApp(<WordPage />, {
       routes: recordRoutes({ [`POST /v1/senses/${uuid(23)}/sentences`]: () => Response.json({ id: uuid(63) }, { status: 201 }) }),

@@ -9,6 +9,8 @@
   --color-wm-muted: #525a78;
   --color-wm-ghost: #c9cedc;
   --color-wm-line: #e1e5ee;
+  /* Word page hairlines (mockup L322): ink #1b2444 16 % on surface #ffffff, oklab */
+  --color-wm-rule: #d6d8df;
   --color-wm-accent: #1e3a8a;
   --color-wm-accent-soft: #e7ecf8;
   --color-wm-on-accent: #ffffff;

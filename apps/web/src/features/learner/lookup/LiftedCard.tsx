@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
+import { shownPos } from '@/lib/pos';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { toLevel, useLevelName } from '@/ui/levels';
 import type { GroupSummary } from '../groups/groups-api';
@@ -22,7 +23,7 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
   const tw = useTranslations('App.word');
   const levelName = useLevelName();
   const locale = useLocale();
-  const meta = [sense?.pos ?? word.pos_list.join(', '), sense?.level ?? word.level, sense?.topics[0]?.name].filter(Boolean).join(' · ');
+  const meta = [shownPos(sense?.pos) || word.pos_list.filter((p) => shownPos(p)).join(', '), sense?.level ?? word.level, sense?.topics[0]?.name].filter(Boolean).join(' · ');
   const example = sense ? sense.examples[0] : word.example;
   const deck = item ? groups.find((g) => item.group_ids.includes(g.id)) : undefined;
   return (

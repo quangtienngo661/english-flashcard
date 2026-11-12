@@ -46,7 +46,7 @@ export function LookupFilters({ value, total, onChange }: { value: LookupParams;
   );
 }
 
-/** A filter value in the sentence: underlined accent text that opens its menu. */
+/** A filter value in the sentence: yellow-marked text that opens its menu (mockup L593-595). */
 function FilterMenu({ label, children, items, onAction }: {
   label: string;
   children: ReactNode;
@@ -57,7 +57,7 @@ function FilterMenu({ label, children, items, onAction }: {
     <MenuTrigger>
       <Button
         aria-label={label}
-        className="rounded-wm-key font-semibold text-wm-accent underline decoration-2 underline-offset-4 outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+        className="rounded-wm-key bg-wm-mark px-1 font-semibold text-wm-mark-ink outline-none hover:brightness-95 focus-visible:outline-3 focus-visible:outline-wm-accent"
       >
         {children}
       </Button>
