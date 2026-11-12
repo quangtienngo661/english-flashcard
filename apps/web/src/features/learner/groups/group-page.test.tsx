@@ -97,7 +97,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
 
   it('"nhịp ôn": one segment per stage, filled with its waiting cards', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const bar = await screen.findByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' });
+    const bar = await screen.findByRole('figure', { name: 'Nhịp ôn: mới → 30 ngày' });
     expect(within(bar).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual([
       'Mới: 0 thẻ chờ trong 1 từ', '1 ngày: 2 thẻ chờ trong 2 từ', '3 ngày: 0 thẻ chờ trong 0 từ',
       '7 ngày: 0 thẻ chờ trong 1 từ', '14 ngày: 0 thẻ chờ trong 0 từ', '30 ngày: 0 thẻ chờ trong 0 từ',
@@ -106,7 +106,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
 
   it('English names the first stage "New"', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
-    const bar = await screen.findByRole('figure', { name: 'review rhythm: new → 30 days' });
+    const bar = await screen.findByRole('figure', { name: 'Review rhythm: new → 30 days' });
     expect(within(bar).getAllByRole('listitem')[0].getAttribute('aria-label')).toMatch(/^New: /);
   });
 
@@ -160,9 +160,9 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     const list = await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
     const deploy = within(list).getByRole('listitem', { name: 'deploy' });
     expect(within(deploy).getByText('Ngăn 1 ngày')).toBeInTheDocument();
-    expect(within(deploy).getByText('ưu tiên')).toBeInTheDocument();
+    expect(within(deploy).getByText('Ưu tiên')).toBeInTheDocument();
     expect(within(within(list).getByRole('listitem', { name: 'went' })).getByText('từ mới')).toBeInTheDocument();
-    await waitFor(() => expect(within(within(list).getByRole('listitem', { name: 'release' })).getByText('nghĩa đã đổi')).toBeInTheDocument());
+    await waitFor(() => expect(within(within(list).getByRole('listitem', { name: 'release' })).getByText('Nghĩa đã đổi')).toBeInTheDocument());
   });
 
   it('filter chips show every stage with its count, press one at a time and filter the rows', async () => {

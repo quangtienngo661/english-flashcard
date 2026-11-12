@@ -39,7 +39,7 @@ describe('MonthDialog (Figma 102:3278 / 102:3948)', () => {
     expect(await within(dialog).findByText('6 ngày liên tiếp')).toBeInTheDocument();
     const totals = await within(dialog).findByRole('list', { name: 'Tổng tháng' });
     expect(within(totals).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      '7/8ngày có học', '55từ mới đã học', '130lượt ôn', '4phiên luyện',
+      '7/8Ngày có học', '55Từ mới đã học', '130Lượt ôn', '4Phiên luyện',
     ]);
     expect(within(dialog).getByRole('button', { name: 'Tháng sau' })).toBeDisabled();
     expect(within(dialog).getByRole('button', { name: 'Tháng trước' })).toBeEnabled();

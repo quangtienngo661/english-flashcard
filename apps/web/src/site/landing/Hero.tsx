@@ -97,7 +97,7 @@ function WordCard({ copy }: { copy: LandingCopy['stage'] }) {
         <span className="text-wm-muted md:hidden"> · {copy.meaning}</span>
       </p>
       <p className="hidden font-wm-sans text-wm-button font-normal text-wm-muted md:block">{copy.meaning}</p>
-      <p className="rounded-wm-row bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
+      <p className="rounded-wm-control bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
         <Marked sentence={copy.example} target={copy.target} />
       </p>
     </div>

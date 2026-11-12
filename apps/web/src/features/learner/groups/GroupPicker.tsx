@@ -185,7 +185,7 @@ function Row({ id, group, selected, active, onHover, onPick }: {
       onMouseMove={onHover}
       onClick={onPick}
       className={cn(
-        'flex min-h-10 cursor-pointer items-center gap-3 rounded-wm-row px-2 py-2',
+        'flex min-h-10 cursor-pointer items-center gap-3 rounded-wm-control px-2 py-2',
         selected ? tone.wash : active && 'bg-wm-bg',
         active && 'outline-2 -outline-offset-2 outline-wm-accent/40',
       )}

@@ -1,25 +1,7 @@
 // @vitest-environment node
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { hits, sources } from './scan-src';
 
 // Part 10 P.2: labels use Noto Sans (the body font), cased in the message files, never by CSS.
-const SRC = fileURLToPath(new URL('..', import.meta.url));
-
-function files(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return name === 'app-ui' ? [] : files(path);
-    return /\.(ts|tsx|css)$/.test(name) && !/\.test\.(ts|tsx)$/.test(name) ? [path] : [];
-  });
-}
-
-const sources = files(SRC).map((path) => ({ file: relative(SRC, path).split(sep).join('/'), text: readFileSync(path, 'utf8') }));
-
-function hits(pattern: RegExp): string[] {
-  return sources.flatMap(({ file, text }) => text.split('\n').flatMap((line, i) => (pattern.test(line) ? [`${file}:${i + 1}`] : [])));
-}
-
 describe('no mono font, no CSS case transforms (P.2)', () => {
   it('scans real files (control)', () => {
     expect(sources.length).toBeGreaterThan(100);

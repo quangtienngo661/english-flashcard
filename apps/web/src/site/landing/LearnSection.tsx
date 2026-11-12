@@ -34,7 +34,7 @@ export function LearnSection({ copy }: { copy: LandingCopy['learn'] }) {
                 <span data-typed="">{note.typed}</span>
                 <span aria-hidden data-caret="" className="ml-px h-4.75 w-0.5 bg-wm-accent" />
               </p>
-              <p data-result="" className="flex items-baseline justify-between gap-3 rounded-wm-row bg-wm-surface px-3 py-2 shadow-wm-soft">
+              <p data-result="" className="flex items-baseline justify-between gap-3 rounded-wm-control bg-wm-surface px-3 py-2 shadow-wm-soft">
                 <span className="font-wm-display text-wm-word text-wm-ink">{note.lemma}</span>
                 <span className="font-wm-sans text-wm-caption text-wm-muted">{note.meaning}</span>
               </p>

@@ -59,7 +59,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
   it('heads with the word, no meaning count (owner 27/10/2026), the level range in "Cùng chủ đề" (M4.6); one block per meaning under its part of speech', async () => {
     renderApp(<WordPage />, { routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'left' })).toBeInTheDocument();
-    expect(within(await screen.findByRole('region', { name: 'Cùng chủ đề: Hướng' })).getByText('trình độ A1 – A2')).toBeInTheDocument();
+    expect(within(await screen.findByRole('region', { name: 'Cùng chủ đề: Hướng' })).getByText('Trình độ A1 – A2')).toBeInTheDocument();
     expect(screen.queryByText('3 nghĩa')).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 3)).toEqual(['adjective', 'adverb', 'verb']);
     const blocks = screen.getAllByRole('article');
@@ -87,9 +87,9 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         [`GET /v1/items?sense_ids=${uuid(4)}`]: () => Response.json({ items: [] }),
       }),
     });
-    const line = await screen.findByText('dạng chia');
+    const line = (await screen.findAllByText('Dạng chia')).find((el) => el.closest('p'))!;
     const p = line.closest('p')!;
-    expect(p).toHaveTextContent('dạng chia go · goes · going · went · gone');
+    expect(p).toHaveTextContent('Dạng chia go · goes · going · went · gone');
     expect(within(p).getAllByRole('link').map((a) => a.textContent)).toEqual(['went']);
   });
 
@@ -345,7 +345,7 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
   it('"Cùng chủ đề": the topic, the level range, the other words and a link to the topic page', async () => {
     renderApp(<WordPage />, { routes: recordRoutes() });
     const box = await screen.findByRole('region', { name: 'Cùng chủ đề: Công việc' });
-    expect(within(box).getByText('trình độ A2 – B1')).toBeInTheDocument();
+    expect(within(box).getByText('Trình độ A2 – B1')).toBeInTheDocument();
     expect(await within(box).findByRole('link', { name: 'schedule A2' })).toHaveAttribute('href', '/vi/app/word?w=schedule');
     expect(within(box).queryByRole('link', { name: /^record/ })).not.toBeInTheDocument();
     expect(within(box).getByRole('link', { name: 'Xem chủ đề Công việc →' })).toHaveAttribute('href', '/vi/app/topic?code=work&level=A2');

@@ -424,7 +424,7 @@ function TypeRow({ label, on, onChange, isDisabled, help, children }: {
   return (
     <div
       className={cn(
-        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-row bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
+        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-control bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
         on && !isDisabled ? 'shadow-wm-row' : 'shadow-none',
       )}
     >

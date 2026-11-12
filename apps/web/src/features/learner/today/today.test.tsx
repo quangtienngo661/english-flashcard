@@ -51,9 +51,9 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
   it('the hero is the first deck of the Today order: big waiting count, the three-part bar, Học · Ôn', async () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     const hero = await screen.findByRole('region', { name: 'Công nghệ' });
-    expect(within(hero).getByText('ôn tiếp · có thẻ ưu tiên')).toBeInTheDocument();
+    expect(within(hero).getByText('Ôn tiếp · có thẻ ưu tiên')).toBeInTheDocument();
     expect(within(hero).getByText('10')).toBeInTheDocument();
-    expect(within(hero).getByText('thẻ chờ hôm nay')).toBeInTheDocument();
+    expect(within(hero).getByText('Thẻ chờ hôm nay')).toBeInTheDocument();
     expect(within(hero).getByText('nhóm có 18 từ · 0 đã thuộc')).toBeInTheDocument();
     expect(within(hero).getByText('2 ưu tiên')).toBeInTheDocument();
     expect(within(hero).getByText('5 đến hạn')).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
     const name = within(list).getByRole('link', { name: 'IELTS' });
     expect(name).toHaveAttribute('href', '/vi/app/group?id=g-ielts');
-    expect(name.closest('li')).toHaveTextContent('tiếp theo commute');
+    expect(name.closest('li')).toHaveTextContent('Tiếp theo commute');
   });
 
   it('an empty deck is a card after the waiting ones (owner 10/11/2026); decks done today go into one note line; no card menu', async () => {

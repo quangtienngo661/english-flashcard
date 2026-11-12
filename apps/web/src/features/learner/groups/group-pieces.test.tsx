@@ -22,7 +22,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
     expect(screen.getByText('Đề 12 · Writing')).toBeInTheDocument();
     expect(screen.getByText('24')).toBeInTheDocument();
     expect(screen.getByText('thẻ chờ')).toBeInTheDocument();
-    expect(screen.getByText('tiếp theo').parentElement).toHaveTextContent('tiếp theo mitigate');
+    expect(screen.getByText('Tiếp theo').parentElement).toHaveTextContent('Tiếp theo mitigate');
     expect(behind(container)).toBe(3);
   });
 
@@ -30,7 +30,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
     const g = deck({ priority: 0, due: 0, new: 0 }, [6, 9, 10, 11, 8, 4], { last_reviewed: { lemma: 'take for granted', at: '2026-11-08T08:00:00Z' } });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
     expect(screen.getByText('✓ Xong hôm nay')).toBeInTheDocument();
-    expect(screen.getByText('ôn gần nhất').parentElement).toHaveTextContent('ôn gần nhất take for granted');
+    expect(screen.getByText('Ôn gần nhất').parentElement).toHaveTextContent('Ôn gần nhất take for granted');
     expect(screen.queryByText('thẻ chờ')).toBeNull();
     expect(behind(container)).toBe(0);
   });
@@ -46,7 +46,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
 
   it('leaves the footer out when the API sends no next card', () => {
     renderApp(<GroupStack group={deck({ priority: 0, due: 3, new: 0 })} size="today" />);
-    expect(screen.queryByText('tiếp theo')).toBeNull();
+    expect(screen.queryByText('Tiếp theo')).toBeNull();
   });
 
   it.each([[1, 1], [6, 1], [7, 2], [16, 2], [17, 3]])('%i waiting → %i cards behind', (due, depth) => {
