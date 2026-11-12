@@ -213,7 +213,7 @@ describe('AdminOrdersService.confirmPayment (T11–T14)', () => {
   it('M4: payOS is not asked when there is no link, payOS is not set up, or the order already has a period or is closed', async () => {
     for (const ctx of [
       setup({ rows: [row({ paymentLinkId: null })] }),
-      setup({ rows: [row({ paidVia: 'payos', status: 'paid' })] }),
+      setup({ rows: [row({ paidVia: 'webhook', status: 'paid' })] }),
       setup({ rows: [row({ status: 'closed' })] }),
     ]) {
       await ctx.service.confirmPayment(ADMIN, 'order-1', input);
