@@ -45,9 +45,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (current === null) return;
     document.documentElement.dataset.theme = resolved;
     // Next renders one theme-color per OS scheme; the stored choice may disagree with the OS, so both follow the theme.
-    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
-      meta.content = THEME_COLOR[resolved];
-    });
+    // Next also re-creates them on every client navigation, so the observer repaints any meta added or changed after this run.
+    const paint = () => {
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+        if (meta.content !== THEME_COLOR[resolved]) meta.content = THEME_COLOR[resolved];
+      });
+    };
+    paint();
+    const observer = new MutationObserver(paint);
+    observer.observe(document.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
+    return () => {
+      observer.disconnect();
+      // Leaving the provider (the landing has none): back to the server values, by media.
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+        meta.content = meta.getAttribute('media') === DARK_QUERY ? THEME_COLOR.dark : THEME_COLOR.light;
+      });
+    };
   }, [current, resolved]);
 
   // The landing shares <html>; it must never keep the app's theme after a client-side navigation.
