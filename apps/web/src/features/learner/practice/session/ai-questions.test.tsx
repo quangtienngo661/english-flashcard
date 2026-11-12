@@ -145,6 +145,32 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.getByRole('button', { name: /^1deployed/ })).toBeInTheDocument();
   });
 
+  it('F.14: a wrong sentence-MCQ pick is struck in the sentence, before the right word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(sentenceMcq, {
+      'POST /v1/practice/items/it-s/answer': () => Response.json(result({
+        result: 'wrong', show_known: false, highlight_needs_review: true, correct: { lemma: 'deploy', text: 'deployed', choice_index: 0, is_true: null },
+      })),
+    }) });
+    await screen.findByText('We ___ the app to the server yesterday.');
+    await userEvent.keyboard('4');
+    await screen.findAllByText('Not quite');
+    const sentence = screen.getByText('We the app to the server yesterday.');
+    expect(within(sentence).getByRole('deletion')).toHaveTextContent('delayed');
+    expect(sentence).toHaveTextContent('We delayed deployed the app to the server yesterday.');
+  });
+
+  it('F.14: a right sentence-MCQ pick fills the blank with no struck word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(sentenceMcq, {
+      'POST /v1/practice/items/it-s/answer': () => Response.json(result({ correct: { lemma: 'deploy', text: 'deployed', choice_index: 0, is_true: null } })),
+    }) });
+    await screen.findByText('We ___ the app to the server yesterday.');
+    await userEvent.keyboard('1');
+    await screen.findByText('Right');
+    const sentence = screen.getByText('We the app to the server yesterday.');
+    expect(within(sentence).queryByRole('deletion')).not.toBeInTheDocument();
+    expect(sentence).toHaveTextContent('We deployed the app to the server yesterday.');
+  });
+
   it('copy doc §15 row 10: [Gợi ý] opens hint 1 in the numbered list with progress, then [Mở gợi ý 2]', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
