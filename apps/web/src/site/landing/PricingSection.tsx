@@ -17,7 +17,7 @@ const AI_ICONS = [Bot, Pen, Search, Zap];
  * "Giá" `33:306` (phone `33:416`), owner QM8-2 (c): the three Pro prices read at build, each with its saving, and no purchase here. Free
  * and Pro cards side by side from xl (360 + 620 = 1004 px, more than the 944 px of content at 1024; R248). Every number comes from `periodOffer`, like Gói học's, so the two never disagree.
  * M8.6: the cards come in (Free, then Pro 120 ms later and without blur, Figma scene 6); while the Pro card is on screen a light runs
- * around it (Sweep) and its four AI badges pulse (CSS, `data-wm-on`).
+ * around it (Sweep) and its four AI badges pulse (CSS, `data-wm-on`). F.19: one glow layer (`.wm-price-drift`) drifts behind both cards.
  */
 export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['plans']; prices: Prices; locale: AppLocale }) {
   const register = `/${locale}/app/register`;
