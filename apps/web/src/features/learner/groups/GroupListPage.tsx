@@ -192,10 +192,10 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
     <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
       <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
       <div className="w-full max-w-105">
-        <LevelBar counts={rhythm(group.cells).map((c) => c.total)} />
+        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-        <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
+      <DeckButtons group={group} className="justify-center gap-3 pt-2" buttonClassName="w-37.5" />
+      <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
           prefetch
