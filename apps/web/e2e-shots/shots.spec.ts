@@ -37,6 +37,13 @@ async function shoot(page: Page, name: string, fullPage = true, where: Where = W
   }
 }
 
+/** A frame or set the run could not shoot: printed, and listed in the test's annotations so the report shows what is missing. */
+function missed(what: string, why: string) {
+  const line = `chưa chụp: ${what} — ${why.split('\n')[0]}`;
+  console.log(line);
+  test.info().annotations.push({ type: 'chưa chụp', description: line });
+}
+
 const signedIn = new WeakSet<Page>();
 /** Signs the learner in once per page; true when it did so now. */
 async function signIn(page: Page) {
@@ -440,8 +447,7 @@ async function gmM7b(page: Page, opts?: ShotOpts) {
     await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhóm' }).click();
     await expect(page.getByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeVisible();
     await shoot(page, 'pro-dialog', false, only(out, width));
-  }  // gm-m9 goes on with other sets on this page: they must see the API's own answers again.
-  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  }
 }
 
 async function gmM4(page: Page, opts?: ShotOpts) {
@@ -898,7 +904,7 @@ async function gmM5(page: Page, opts?: ShotOpts) {
     await hint.click();
     await expect(page.getByRole('heading', { level: 3, name: /^Gợi ý \d+\/\d+/ })).toBeVisible();
     await shoot(page, 'session-hint', false, out);
-  }
+  } else missed('gm-m5 session-hint', 'the question has no Gợi ý button');
   const wrong = async () => {
     await field.fill('zzzqx');
     await field.press('Enter');
@@ -910,7 +916,7 @@ async function gmM5(page: Page, opts?: ShotOpts) {
   const summary = page.getByRole('heading', { level: 1, name: /^Xong \d+ câu\.$/ });
   const round = page.getByRole('heading', { level: 1, name: /^Bạn đã làm hết \d+ từ$/ });
   let shotRound = false;
-  for (let i = 0; i < 150 && !(await summary.isVisible()); i++) {
+  for (let i = 0; i < 60 && !(await summary.isVisible()); i++) {
     if (await round.isVisible()) {
       if (!shotRound) await shoot(page, 'session-round', false, out);
       shotRound = true;
@@ -922,6 +928,7 @@ async function gmM5(page: Page, opts?: ShotOpts) {
     } else await page.waitForTimeout(300);
   }
   await expect(summary).toBeVisible({ timeout: 30_000 });
+  if (!shotRound) missed('gm-m5 session-round', 'the deck has at least as many words as questions, so the round prompt never came');
   await shoot(page, 'session-summary', true, out);
 
   await page.goto('/vi/app/practice/weak');
@@ -967,26 +974,50 @@ async function gmM5(page: Page, opts?: ShotOpts) {
  * M9.6 (QM9-5): every screen of the new UI, light and dark, at 390 / 768 / 1024 / 1440 px, to `test-results/shots/gm-m9/<set>/`. Per scheme: the
  * pages that need no account (public pages, sign-in and account pages), then one sign-in and the signed-in sets. The session cookie is cleared
  * between schemes so the second pass starts signed out too. gm-m7a wants a learner on Pro with transactions and gm-m7b a trial learner; one
- * account cannot be both, so the run covers whichever of the two the learner fits (the other set's waits fail loudly).
+ * account cannot be both, so the other one is listed as `chưa chụp` in the annotations and the run goes on.
  */
 async function gmM9(page: Page) {
   const widths = [390, 768, 1024, 1440];
+  let shot = 0;
+  // Each set runs on its own: a set the learner cannot reach (gm-m7a and gm-m7b want different plans) is listed as missed and the run goes on.
+  // The test fails at the end only when no set was shot at all, so one run gives the most shots and the annotations show what is missing.
+  const attempt = async (label: string, run: () => Promise<void>) => {
+    try {
+      await run();
+      shot++;
+    } catch (error) {
+      missed(label, error instanceof Error ? error.message : String(error));
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' });
+    }
+  };
   for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme });
+    // Signed out for real: the session cookie and anything the app keeps in the browser, then the login page must show.
     await page.context().clearCookies();
     signedIn.delete(page);
+    await page.goto('/vi/app/login');
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+    await page.goto('/vi/app/login');
+    await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible({ timeout: 60_000 });
     const of = (set: string): ShotOpts => ({ dir: `gm-m9/${set}`, widths, scheme });
-    await gmM8(page, of('gm-m8'));
-    await gmM1(page, of('gm-m1'), 'out');
-    await gmM2(page, of('gm-m2'), 'out');
-    await signIn(page);
-    await gmM1(page, of('gm-m1'), 'in');
-    await gmM2(page, of('gm-m2'), 'in');
-    await gmM3(page, of('gm-m3'));
-    await gmM4(page, of('gm-m4'));
-    await gmM5(page, of('gm-m5'));
-    await gmM6(page, of('gm-m6'));
-    await gmM7a(page, of('gm-m7a'));
-    await gmM7b(page, of('gm-m7b'));
+    await attempt(`${scheme} gm-m8`, () => gmM8(page, of('gm-m8')));
+    await attempt(`${scheme} gm-m1 signed out`, () => gmM1(page, of('gm-m1'), 'out'));
+    await attempt(`${scheme} gm-m2 signed out`, () => gmM2(page, of('gm-m2'), 'out'));
+    await attempt(`${scheme} sign-in`, async () => {
+      await signIn(page);
+    });
+    await attempt(`${scheme} gm-m1`, () => gmM1(page, of('gm-m1'), 'in'));
+    await attempt(`${scheme} gm-m2`, () => gmM2(page, of('gm-m2'), 'in'));
+    await attempt(`${scheme} gm-m3`, () => gmM3(page, of('gm-m3')));
+    await attempt(`${scheme} gm-m4`, () => gmM4(page, of('gm-m4')));
+    await attempt(`${scheme} gm-m5`, () => gmM5(page, of('gm-m5')));
+    await attempt(`${scheme} gm-m6`, () => gmM6(page, of('gm-m6')));
+    await attempt(`${scheme} gm-m7a`, () => gmM7a(page, of('gm-m7a')));
+    await attempt(`${scheme} gm-m7b`, () => gmM7b(page, of('gm-m7b')));
   }
+  expect(shot, 'no set could be shot').toBeGreaterThan(0);
 }
