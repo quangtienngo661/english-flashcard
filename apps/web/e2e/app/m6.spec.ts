@@ -163,12 +163,13 @@ test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating 
   const phone = info.project.name === 'mobile';
   await signedInAs(page, 'free', sessionApi());
   await page.goto(`/vi/app/recall?group=${DECK}`);
-  const input = page.getByRole('textbox', { name: 'Câu trả lời' });
+  const input = page.getByRole('textbox', { name: 'Your answer' });
   await expect(input).toBeVisible();
   await input.pressSequentially('l');
   await expect(input).toHaveValue('l');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const buttons = page.getByRole('button', { name: 'Lịch học' });
+  // The session bar's button is English (QM9-9); Lịch itself is mounted outside the session and keeps the route's language.
+  const buttons = page.getByRole('button', { name: 'Study calendar' });
   await expect(buttons).toHaveCount(1);
   const box = await buttons.boundingBox();
   // Phone: 32 × 34 in the top bar; desktop: the 62 × 66 floating button near the bottom.
@@ -179,9 +180,9 @@ test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating 
   await noSideScroll(page);
 
   await page.goto(`/vi/app/review?group=${DECK}`);
-  await expect(page.getByRole('group', { name: 'Thẻ 1 trên 1' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Lịch học' })).toHaveCount(1);
-  const learn = await page.getByRole('button', { name: 'Lịch học' }).boundingBox();
+  await expect(page.getByRole('group', { name: 'Card 1 of 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Study calendar' })).toHaveCount(1);
+  const learn = await page.getByRole('button', { name: 'Study calendar' }).boundingBox();
   if (phone) expect(learn!.y).toBeLessThan(80);
   else expect(learn!.y).toBeGreaterThan(700);
   await noSideScroll(page);

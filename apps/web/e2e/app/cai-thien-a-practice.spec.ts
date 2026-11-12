@@ -4,6 +4,8 @@ import { seriousViolations } from '../support/axe';
 import { problem, requests, signedInAs, type MockHandler } from '../support/mock-api';
 
 const vi = copy.vi.App.practice;
+// Sessions speak English on every route (QM9-9, SessionIntl).
+const en = copy.en.App.practice;
 const SESSION = '00000000-0000-4000-8000-000000000410';
 const ITEM = '00000000-0000-4000-8000-000000000511';
 const SENTENCE = 'We use Docker to ___ the app to the production server.';
@@ -69,15 +71,15 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
       types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze'], cloze_source: 'own', ai_count: 0,
     });
     await expect(page.getByText(SENTENCE)).toBeVisible();
-    await expect(page.getByText(vi.session.kind.cloze, { exact: true })).toBeVisible();
-    await expect(page.getByText(vi.session.aiChip, { exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: vi.session.report.button })).toHaveCount(0);
+    await expect(page.getByText(en.session.kind.cloze, { exact: true })).toBeVisible();
+    await expect(page.getByText(en.session.aiChip, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: en.session.report.button })).toHaveCount(0);
     expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/prepare`)).toHaveLength(0);
     await page.getByRole('textbox').fill('deploy');
     await page.getByRole('textbox').press('Enter');
-    await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toBeVisible();
-    await expect(page.getByText(vi.session.translation, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(vi.session.translationAi, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Next/ })).toBeVisible();
+    await expect(page.getByText(en.session.translation, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(en.session.translationAi, { exact: true })).toHaveCount(0);
   });
 
   test('Pro: saved sentences and AI fill-in both on → own_then_ai, and the line that explains it', async ({ page }) => {

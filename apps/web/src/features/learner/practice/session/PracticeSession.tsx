@@ -2,12 +2,13 @@
 
 import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { Check, Layers2, LoaderCircle, X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { KeyLegend } from '@/ui/KeyLegend';
@@ -42,7 +43,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   const t = useTranslations('App.practice.session');
   const tr = useTranslations('App.recall');
   const tc = useTranslations('App.common');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const errorText = useErrorMessage();
   const state = usePracticeSession(recall);
   const { phase, session } = state;
@@ -425,7 +426,7 @@ function Ended({ message, href, label }: { message: string; href: string; label?
 function NothingLearned({ groupId }: { groupId: string }) {
   const t = useTranslations('App.recall');
   const tDeck = useTranslations('App.deck');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   return (
     <div className="flex flex-col items-start gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-display text-wm-word text-wm-ink">{t('nothingTitle')}</p>

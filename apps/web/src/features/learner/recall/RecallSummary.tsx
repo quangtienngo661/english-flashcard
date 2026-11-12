@@ -1,9 +1,10 @@
 'use client';
 
 import { Layers2, ListChecks } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { ErrorState } from '@/ui/States';
 import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
@@ -21,7 +22,7 @@ import { STAGGER } from '../review/ReviewSummary';
 export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const t = useTranslations('App.recall');
   const tDeck = useTranslations('App.deck');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const errorText = useErrorMessage();
   const summary = useSummary(session.id);
   const group = useGroups().data?.items.find((g) => g.id === session.group_id);

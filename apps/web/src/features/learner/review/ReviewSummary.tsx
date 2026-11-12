@@ -1,8 +1,9 @@
 'use client';
 
 import { ListChecks } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { cn } from '@/lib/cn';
 import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Kbd } from '@/ui/Kbd';
@@ -30,7 +31,7 @@ export function ReviewSummary({ counts, piles, group }: {
   const t = useTranslations('App.review');
   const tDeck = useTranslations('App.deck');
   const due = group ? group.today.priority + group.today.due : 0;
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const total = counts.known + counts.review;
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">

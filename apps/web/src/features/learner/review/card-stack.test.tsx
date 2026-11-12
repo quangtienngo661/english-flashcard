@@ -39,21 +39,21 @@ function drag(el: HTMLElement, to: number, { steps = 4, ms = 50 } = {}) {
 describe('useCardDrag', () => {
   it('a drag of 120 px to the right rates the card known', () => {
     const onRate = vi.fn();
-    renderApp(<DragProbe onRate={onRate} />, { chrome: false });
+    renderApp(<DragProbe onRate={onRate} />, { session: true, chrome: false });
     drag(screen.getByTestId('card'), 120, { steps: 6, ms: 80 });
     expect(onRate).toHaveBeenCalledExactlyOnceWith('known');
   });
 
   it('a drag of 120 px to the left rates it to review', () => {
     const onRate = vi.fn();
-    renderApp(<DragProbe onRate={onRate} />, { chrome: false });
+    renderApp(<DragProbe onRate={onRate} />, { session: true, chrome: false });
     drag(screen.getByTestId('card'), -120, { steps: 6, ms: 80 });
     expect(onRate).toHaveBeenCalledExactlyOnceWith('review');
   });
 
   it('a slow drag of 80 px rates nothing and the card goes back', () => {
     const onRate = vi.fn();
-    renderApp(<DragProbe onRate={onRate} />, { chrome: false });
+    renderApp(<DragProbe onRate={onRate} />, { session: true, chrome: false });
     const card = screen.getByTestId('card');
     drag(card, 80, { steps: 4, ms: 100 });
     expect(onRate).not.toHaveBeenCalled();
@@ -62,13 +62,13 @@ describe('useCardDrag', () => {
 
   it('a fast flick (60 px in 100 ms) rates the card', () => {
     const onRate = vi.fn();
-    renderApp(<DragProbe onRate={onRate} />, { chrome: false });
+    renderApp(<DragProbe onRate={onRate} />, { session: true, chrome: false });
     drag(screen.getByTestId('card'), 60, { steps: 2, ms: 50 });
     expect(onRate).toHaveBeenCalledExactlyOnceWith('known');
   });
 
   it('the stamp shows once the drag passes half the threshold', () => {
-    renderApp(<DragProbe onRate={() => {}} />, { chrome: false });
+    renderApp(<DragProbe onRate={() => {}} />, { session: true, chrome: false });
     const card = screen.getByTestId('card');
     fireEvent.pointerDown(card, { clientX: 0, clientY: 0, button: 0, isPrimary: true, pointerId: 1 });
     now += 100;
@@ -80,7 +80,7 @@ describe('useCardDrag', () => {
   });
 
   it('a rating drag clears its stamp, so the next card turned over shows none (final review I2)', () => {
-    renderApp(<DragProbe onRate={() => {}} />, { chrome: false });
+    renderApp(<DragProbe onRate={() => {}} />, { session: true, chrome: false });
     const card = screen.getByTestId('card');
     drag(card, 130, { steps: 6, ms: 80 });
     expect(card).toHaveTextContent('none');
@@ -88,7 +88,7 @@ describe('useCardDrag', () => {
 
   it('a card not turned over never rates, whatever the drag', () => {
     const onRate = vi.fn();
-    renderApp(<DragProbe onRate={onRate} flipped={false} />, { chrome: false });
+    renderApp(<DragProbe onRate={onRate} flipped={false} />, { session: true, chrome: false });
     drag(screen.getByTestId('card'), 200, { steps: 2, ms: 50 });
     expect(onRate).not.toHaveBeenCalled();
   });
@@ -105,6 +105,7 @@ const card = (n: number): Card => ({
 describe('CardStack', () => {
   it('only the top card loads its word page (the cards behind draw a light front)', async () => {
     const view = renderApp(<CardStack cards={[card(1), card(2), card(3), card(4)]} current={0} flipped={false} onFlip={() => {}} onRate={() => {}} />, {
+      session: true,
       chrome: false,
       routes: {
         'GET /v1/words/word1': () => Response.json({ inflections: [] }),
@@ -136,6 +137,7 @@ describe('CardStack', () => {
       );
     }
     renderApp(<Harness />, {
+      session: true,
       chrome: false,
       routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }), 'GET /v1/words/word2': () => Response.json({ inflections: [] }) },
     });
@@ -156,11 +158,12 @@ describe('CardStack', () => {
       matches: query.includes('reduce'), media: query, onchange: null,
       addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
     }) as MediaQueryList);
-    const { container } = renderApp(<CardStack cards={[card(1), card(2)]} current={0} flipped onFlip={() => {}} onRate={() => {}} label="Thẻ 1" />, {
+    const { container } = renderApp(<CardStack cards={[card(1), card(2)]} current={0} flipped onFlip={() => {}} onRate={() => {}} label="Card 1" />, {
+      session: true,
       chrome: false,
       routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }) },
     });
-    const top = await screen.findByRole('group', { name: 'Thẻ 1' });
+    const top = await screen.findByRole('group', { name: 'Card 1' });
     fireEvent.pointerDown(top, { clientX: 0, clientY: 0, button: 0, isPrimary: true, pointerId: 1 });
     now += 100;
     fireEvent.pointerMove(top, { clientX: 80, clientY: 0, pointerId: 1 });

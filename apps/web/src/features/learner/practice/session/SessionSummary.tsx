@@ -2,12 +2,13 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { useEntitlements } from '@/app-shell/queries';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
@@ -45,7 +46,7 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
 export function SessionSummary({ session, sourceLabel }: { session: PracticeSessionView; sourceLabel: string }) {
   const t = useTranslations('App.practice');
   const ts = useTranslations('App.practice.session.summary');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();

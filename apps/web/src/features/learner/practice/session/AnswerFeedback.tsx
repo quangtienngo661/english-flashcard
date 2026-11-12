@@ -1,8 +1,9 @@
 'use client';
 
 import { ArrowRight, Check, X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
@@ -35,7 +36,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   const t = useTranslations('App.practice.session');
   const tRecall = useTranslations('App.recall');
   const levelName = useLevelName();
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const right = result.result === 'correct';
   const kind = feedbackCase(result);
   const lemma = result.correct.lemma;

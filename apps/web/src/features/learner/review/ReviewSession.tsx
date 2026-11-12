@@ -2,13 +2,14 @@
 
 import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ApiError, NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { NotFoundState } from '@/ui/NotFoundState';
 import { EmptyState } from '@/ui/States';
 import { SkeletonBlocks } from '@/ui/Skeleton';
@@ -32,7 +33,7 @@ const NUDGE_MS = 2200;
  */
 export function ReviewSession() {
   const t = useTranslations('App');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const params = useSearchParams();
   const raw = params.get('group');
   const id = isId(raw) ? raw.toLowerCase() : null;

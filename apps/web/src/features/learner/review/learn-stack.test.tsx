@@ -2,6 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/test-utils/render-app';
+import { testRoute } from '@/test-utils/route-locale';
 import type { Route } from '@/app-shell/session/test-support';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';
@@ -10,6 +11,7 @@ import { ReviewSession } from './ReviewSession';
 // review is saved behind it, one at a time; a lost save brings the card back with the same review_id.
 const G = '22222222-2222-4222-8222-222222222222';
 vi.mock('next/navigation', () => ({
+  useParams: () => ({ locale: testRoute.locale }),
   usePathname: () => '/vi/app/review',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => new URLSearchParams({ group: G }),
@@ -38,32 +40,32 @@ const routes = (extra: Record<string, Route> = {}): Record<string, Route> => ({
 });
 const reviews = (calls: Array<{ method: string; path: string; body: unknown }>) =>
   calls.filter((c) => c.method === 'POST' && c.path === '/v1/reviews').map((c) => c.body as { item_id: string; answer: string; review_id: string });
-const top = (n: number) => screen.findByRole('group', { name: `Thẻ ${n} trên 3` });
+const top = (n: number) => screen.findByRole('group', { name: `Card ${n} of 3` });
 
 describe('Học, the card stack (M5.8)', () => {
   it('Space turns the card over and Space again turns it back ("Xem mặt trước")', async () => {
-    renderApp(<ReviewSession />, { routes: routes() });
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
     const first = await top(1);
     await userEvent.keyboard(' ');
     expect(first).toHaveAttribute('data-flipped', 'true');
-    expect(screen.getByRole('button', { name: /Xem mặt trước/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /See the front/ })).toBeInTheDocument();
     await userEvent.keyboard(' ');
     expect(first).toHaveAttribute('data-flipped', 'false');
-    expect(screen.getByRole('button', { name: /Lật thẻ/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Flip card/ })).toBeInTheDocument();
   });
 
   it('2 before turning the card over sends nothing and says to turn it first; the answers are aria-disabled', async () => {
-    const { calls } = renderApp(<ReviewSession />, { routes: routes() });
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
-    expect(screen.getByRole('button', { name: /Đã biết/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: /Know/ })).toHaveAttribute('aria-disabled', 'true');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('Lật thẻ để xem nghĩa trước đã.')).toBeInTheDocument();
+    expect(await screen.findByText('Flip the card to see the meaning first.')).toBeInTheDocument();
     expect(reviews(calls)).toHaveLength(0);
     expect(await top(1)).toBeInTheDocument();
   });
 
   it('→ after turning sends known once and moves on; ← sends review', async () => {
-    const { calls } = renderApp(<ReviewSession />, { routes: routes() });
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
     await userEvent.keyboard(' ');
     await userEvent.keyboard('{ArrowRight}');
@@ -79,6 +81,7 @@ describe('Học, the card stack (M5.8)', () => {
     const gate = new Promise<void>((resolve) => { release = resolve; });
     let first = true;
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes({
         'POST /v1/reviews': async () => {
           if (first) {
@@ -107,6 +110,7 @@ describe('Học, the card stack (M5.8)', () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes({ 'POST /v1/reviews': async () => { await gate; return Response.json({ level: 2 }); } }),
     });
     await top(1);
@@ -115,15 +119,16 @@ describe('Học, the card stack (M5.8)', () => {
     await top(2);
     await userEvent.keyboard('{Escape}');
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('heading', { name: /^Xong/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /done\.$/ })).not.toBeInTheDocument();
     release();
-    expect(await screen.findByRole('heading', { name: /^Xong/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /done\.$/ })).toBeInTheDocument();
     expect(reviews(calls)).toHaveLength(1);
   });
 
   it('QM5-2 (a): a lost save brings the card back, turned over, with the error; the retry sends the same review_id', async () => {
     let fail = true;
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes({
         'POST /v1/reviews': () => {
           if (fail) {
@@ -137,25 +142,25 @@ describe('Học, the card stack (M5.8)', () => {
     await top(1);
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.')).toBeInTheDocument();
+    expect(await screen.findByText("We couldn't save your answer. Check your connection and try again.")).toBeInTheDocument();
     expect(await top(1)).toHaveAttribute('data-flipped', 'true');
-    expect(within(screen.getByRole('region', { name: 'Đã biết' })).queryByText('deploy')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Know' })).queryByText('deploy')).not.toBeInTheDocument();
     await userEvent.keyboard('2');
     await top(2);
     await waitFor(() => expect(reviews(calls)).toHaveLength(2));
     expect(reviews(calls)[1].review_id).toBe(reviews(calls)[0].review_id);
   });
 
-  it('the piles show the words; the summary lists the words of "Cần ôn lại"', async () => {
-    renderApp(<ReviewSession />, { routes: routes() });
+  it('the piles show the words; the summary lists the words of "Still learning"', async () => {
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
     for (const key of ['1', '2', '1']) {
       await userEvent.keyboard(' ');
       await userEvent.keyboard(key);
     }
-    expect(await screen.findByRole('heading', { name: 'Xong 3 thẻ.' })).toBeInTheDocument();
-    const review = screen.getByRole('list', { name: 'Cần ôn lại · 2 thẻ' });
+    expect(await screen.findByRole('heading', { name: '3 cards done.' })).toBeInTheDocument();
+    const review = screen.getByRole('list', { name: 'Still learning · 2 cards' });
     expect(within(review).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy', 'merge']);
-    expect(within(screen.getByRole('list', { name: 'Đã biết · 1 thẻ' })).getByText('cache')).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Know · 1 card' })).getByText('cache')).toBeInTheDocument();
   });
 });
