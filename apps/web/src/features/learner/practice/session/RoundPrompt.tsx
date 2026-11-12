@@ -25,13 +25,11 @@ export function RoundPrompt({ session, onContinue, busy }: { session: PracticeSe
         )}
       </section>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button variant="primary" size="lg" className="justify-between" isPending={busy} onPress={() => onContinue(true)}>
-          <span className="flex items-center gap-2">
-            <RotateCcw aria-hidden className="size-4" />
-            {t('go', { left })}
-          </span>
+        <Button variant="primary" size="lg" isPending={busy} onPress={() => onContinue(true)}>
+          <RotateCcw aria-hidden className="size-4" />
+          {t('go', { left })}
         </Button>
-        <Button variant="secondary" size="lg" className="justify-between" isDisabled={busy} onPress={() => onContinue(false)}>
+        <Button variant="secondary" size="lg" isDisabled={busy} onPress={() => onContinue(false)}>
           {t('stop')}
         </Button>
       </div>
