@@ -91,10 +91,30 @@ describe('WeakWordsPage (K/56)', () => {
     expect(screen.queryByRole('button', { name: /^Luyện/ })).not.toBeInTheDocument();
   });
 
-  it('phones: the "Luyện" card comes before the first word row in document order', async () => {
+  const viewport = (width: number) => {
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*(\d+)px/.exec(query);
+      return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+    }) as unknown as typeof window.matchMedia;
+  };
+  const originalMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = originalMedia;
+  });
+
+  it('phones (390 px): the "Luyện" card comes before the first word row in document order', async () => {
+    viewport(390);
     renderApp(<WeakWordsPage />, { routes: base() });
     const start = await screen.findByRole('button', { name: 'Luyện 6 từ' });
     const first = (await screen.findByText('cache')).closest('li')!;
     expect(start.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('desktop (1280 px): the list comes before the "Luyện" card, so Tab order matches the screen', async () => {
+    viewport(1280);
+    renderApp(<WeakWordsPage />, { routes: base() });
+    const start = await screen.findByRole('button', { name: 'Luyện 6 từ' });
+    const first = (await screen.findByText('cache')).closest('li')!;
+    expect(first.compareDocumentPosition(start) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

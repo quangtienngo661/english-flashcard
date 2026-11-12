@@ -182,7 +182,7 @@ export function PracticePage() {
   return (
     <>
       <PageTitle>{t('title')}</PageTitle>
-      {/* Owner 10/11/2026: today's sessions top the side column, level with the quick-practice card, Gần đây under it. On phones
+      {/* Owner 10/11/2026: today's sessions top the side column, level with the quick-practice card, the shortcuts under it. On phones
           the sessions card still comes first, so the side items are placed in a grid instead of one aside column. */}
       <div
         className={cn(
