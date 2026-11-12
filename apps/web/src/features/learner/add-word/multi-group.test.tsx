@@ -79,11 +79,11 @@ describe('GroupPicker: several groups (QP1)', () => {
     expect(JSON.parse(window.localStorage.getItem(LAST_GROUP_KEY)!)).toEqual([DE12, DE9]);
   });
 
-  it('a 409 naming Đề 9 says so and shows no success toast', async () => {
+  it('a 409 naming Đề 9 in its group_id extension (not in detail, final review I2) says so and shows no success toast', async () => {
     const onClose = vi.fn();
     window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE14]));
     renderApp(<><DeckPickerDialog sense={sense} onClose={onClose} /><ToastRegion /></>, {
-      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: DE9 }) }),
+      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { group_id: DE9, detail: 'This group is full.' }) }),
     });
     const list = await all();
     await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
@@ -134,7 +134,7 @@ describe('AddWordSheet: the groups field (QP1)', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, stored);
     const onClose = vi.fn();
     renderApp(<><AddWordSheet initialWord="went" onClose={onClose} /><ToastRegion /></>, {
-      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: DE9 }) }),
+      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { group_id: DE9, detail: 'This group is full.' }) }),
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     expect(await screen.findByText('Đề 9 đã đầy. Chưa lưu từ.', {}, { timeout: 5000 })).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('AddWordSheet: the groups field (QP1)', () => {
   it('a 409 naming a group that is not in the list says a group is full, with no blank name', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE12]));
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, {
-      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: uuid(999) }) }),
+      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { group_id: uuid(999), detail: 'This group is full.' }) }),
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     expect(await screen.findByText('Một nhóm đã đầy. Chưa lưu từ.', {}, { timeout: 5000 })).toBeInTheDocument();

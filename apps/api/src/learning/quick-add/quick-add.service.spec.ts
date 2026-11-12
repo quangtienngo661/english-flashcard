@@ -56,12 +56,12 @@ describe('QuickAddService with several groups (QP1)', () => {
     expect(items.linkInTx).not.toHaveBeenCalled();
   });
 
-  it('the second group is full → 409 group-full naming that group in detail', async () => {
+  it('the second group is full → 409 group-full naming that group in the group_id extension, detail stays human (final review I2)', async () => {
     const { service, items } = setup(true);
     vi.mocked(items.linkInTx)
       .mockResolvedValueOnce({ item_id: 'i1', created: true } as never)
       .mockRejectedValueOnce(new ProblemDetailsException({ status: 409, title: 'Group full', type: 'group-full' }));
     await expect(service.quickAdd('u1', 'vi', { groupIds: ['g1', 'g2'], senseId: 's1' }))
-      .rejects.toMatchObject({ status: 409, problemType: 'group-full', problemDetail: 'g2' });
+      .rejects.toMatchObject({ status: 409, problemType: 'group-full', extensions: { group_id: 'g2' }, problemDetail: 'One of the chosen groups is full.' });
   });
 });
