@@ -275,20 +275,12 @@ describe('English (design §7.1–§7.2)', () => {
   });
 });
 
-describe('PracticePage — Recent (K/51)', () => {
-  const recent = (over: Record<string, unknown>) => ({
-    item_id: 'r1', session_id: 'x', sense_id: 's1', lemma: 'vital', type: 'cloze', prompt_style: 'sentence', prompt: { kind: 'cloze', sentence: 'Sleep is ___ for good health.' },
-    answer: 'crucial', correct: { lemma: 'vital', text: 'vital', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, hint_level: 0,
-    review_action: null, answered_at: '2026-11-07T03:00:00Z', local_date: '2026-11-07', translation: null, alternative: true, ...over,
-  });
-
-  it('Recent: an alternative answer says what was typed and the asked word', async () => {
-    renderApp(<PracticePage />, { routes: routes({
-      'GET /v1/practice/history?page_size=3': () => Response.json({ items: [recent({}), recent({ item_id: 'r2', lemma: 'habit', answer: 'habit', correct: { lemma: 'habit', text: 'habit', choice_index: null, is_true: null }, alternative: false })], next_page_token: null }),
-    }) });
-    const section = await screen.findByRole('region', { name: 'Gần đây' });
-    expect(await within(section).findByText('bạn gõ crucial, đáp án thay thế cho vital')).toBeInTheDocument();
-    // A plain right answer keeps today's line.
-    expect(within(section).getByText('đúng')).toBeInTheDocument();
+describe('PracticePage — no recent box', () => {
+  it('has no "Gần đây" region or heading, and does not read the history', async () => {
+    const view = renderApp(<PracticePage />, { routes: routes() });
+    await screen.findByRole('region', { name: 'Hôm nay' });
+    expect(screen.queryByRole('region', { name: 'Gần đây' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Gần đây' })).not.toBeInTheDocument();
+    expect(view.calls.some((c) => c.path.startsWith('/v1/practice/history'))).toBe(false);
   });
 });

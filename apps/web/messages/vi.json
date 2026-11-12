@@ -1401,21 +1401,6 @@
         "body": "{plan} có {limit, number} phiên luyện mỗi ngày, mở lại lúc {time}. Trong lúc chờ, ôn thẻ không giới hạn.",
         "review": "Ôn thẻ"
       },
-      "recent": {
-        "title": "Gần đây",
-        "history": "Mở lịch học",
-        "empty": "Bạn chưa làm câu nào.",
-        "correct": "đúng",
-        "typed": "bạn gõ {answer}, đáp án {correct}",
-        "alternative": "bạn gõ {answer}, đáp án thay thế cho {correct}",
-        "chose": "bạn chọn {answer}, đáp án {correct}",
-        "choseTf": "bạn chọn {answer}",
-        "skipped": "bỏ qua, đáp án {correct}",
-        "true": "Đúng",
-        "false": "Sai",
-        "right": "Đúng",
-        "wrong": "Sai"
-      },
       "shortcuts": {
         "title": "Phím tắt trong phiên",
         "choose": "Chọn đáp án",

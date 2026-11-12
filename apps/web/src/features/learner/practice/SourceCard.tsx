@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
+import { PRELOAD_CUSTOMIZE } from './use-practice-starter';
 
 /** A source's tag (Figma "Nguồn" rows): `--bg`, radius 6, 13 px; `fail` for the weak words. */
 export const CHIP = 'inline-flex max-w-full items-center rounded-wm-key bg-wm-bg px-2 py-0.5 font-wm-sans text-wm-label text-wm-ink';
@@ -95,7 +96,7 @@ export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, on
               </Button>
             )}
             {/* Owner 10/11/2026: a boxed button with its word, so it is seen (was an icon next to the start, 27/10/2026). */}
-            <Button variant="secondary" className="min-h-10 px-3.5" aria-label={t('customize', { name })} onPress={onCustomize}>
+            <Button variant="secondary" className="min-h-10 px-3.5" aria-label={t('customize', { name })} onPress={onCustomize} {...PRELOAD_CUSTOMIZE}>
               <SlidersHorizontal aria-hidden className="size-4" />
               {t('customizeButton')}
             </Button>

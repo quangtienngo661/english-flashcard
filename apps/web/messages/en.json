@@ -1401,21 +1401,6 @@
         "body": "The {plan} includes {limit, number} practice sessions a day, resetting at {time}. Meanwhile, review cards as much as you like.",
         "review": "Review cards"
       },
-      "recent": {
-        "title": "Recent",
-        "history": "Open the study calendar",
-        "empty": "No questions answered yet.",
-        "correct": "right",
-        "typed": "you typed {answer}, answer {correct}",
-        "alternative": "you typed {answer}, alternative to {correct}",
-        "chose": "you chose {answer}, answer {correct}",
-        "choseTf": "you chose {answer}",
-        "skipped": "skipped, answer {correct}",
-        "true": "True",
-        "false": "False",
-        "right": "Right",
-        "wrong": "Wrong"
-      },
       "shortcuts": {
         "title": "Session shortcuts",
         "choose": "Choose an answer",

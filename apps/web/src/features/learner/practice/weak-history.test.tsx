@@ -90,4 +90,11 @@ describe('WeakWordsPage (K/56)', () => {
     expect(await screen.findByText('Chưa có từ nào hay sai.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Luyện/ })).not.toBeInTheDocument();
   });
+
+  it('phones: the "Luyện" card comes before the first word row in document order', async () => {
+    renderApp(<WeakWordsPage />, { routes: base() });
+    const start = await screen.findByRole('button', { name: 'Luyện 6 từ' });
+    const first = (await screen.findByText('cache')).closest('li')!;
+    expect(start.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

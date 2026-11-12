@@ -8,6 +8,7 @@ import { Button } from '@/ui/Button';
 import { Kbd } from '@/ui/Kbd';
 import { TextButton } from '@/ui/TextButton';
 import { RULE_TYPES } from './practice-api';
+import { PRELOAD_CUSTOMIZE } from './use-practice-starter';
 
 /** K/51 "Luyện nhanh" (Figma 99:3169): today's words across decks, the three types, and the default number of questions. */
 export function TodayHero({ words, groups, count, onStart, onCustomize, busy, error }: {
@@ -45,7 +46,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
               {t('hero.start', { count })}
               <ArrowRight aria-hidden className="size-4" />
             </Button>
-            <TextButton onPress={onCustomize}>{t('hero.customize')}</TextButton>
+            <TextButton onPress={onCustomize} {...PRELOAD_CUSTOMIZE}>{t('hero.customize')}</TextButton>
           </div>
         </>
       )}

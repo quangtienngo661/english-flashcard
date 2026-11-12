@@ -11,7 +11,6 @@
   { "key": "App.practice.current.source.*", "why": "src/features/learner/practice/CurrentSessionCard.tsx:23 t(session.source)" },
   { "key": "App.practice.customize.sorts.*", "why": "src/features/learner/practice/CustomizeDialog.tsx:371 tc(`sorts.${id}`)" },
   { "key": "App.practice.noWords.*", "why": "src/features/learner/practice/use-practice-starter.tsx:98 t(`noWords.${known}`)" },
-  { "key": "App.practice.recent.*", "why": "src/features/learner/practice/history-format.ts:15-16 t('chose'|'choseTf'), t(item.answer); other keys read by variable in the same file" },
   { "key": "App.practice.reports.status.*", "why": "src/features/learner/settings/reports/ReportRow.tsx:44 t(`status.${report.status}`)" },
   { "key": "App.practice.session.ask.*", "why": "src/features/learner/practice/session/QuestionCard.tsx:54 t(`ask.${kind}`)" },
   { "key": "App.practice.session.kind.*", "why": "src/features/learner/practice/session/QuestionCard.tsx:43, PracticeSession.tsx:215 t(`kind.${kind}`)" },
