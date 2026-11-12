@@ -50,12 +50,12 @@ describe('Tabs', () => {
     expect(screen.getByRole('tab', { name: 'Mới' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('with hrefs it is a nav of links; the selected one is aria-current', () => {
+  it('with hrefs it is a nav of links; the selected one is aria-current="location"', () => {
     render(<Tabs label="Mục" items={ITEMS} selected="all" hrefs={{ all: '#nghia', due: '#cau', new: '#dang' }} />);
     expect(screen.getByRole('navigation', { name: 'Mục' })).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tất cả 12' })).toHaveAttribute('href', '#nghia');
-    expect(screen.getByRole('link', { name: 'Tất cả 12' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('link', { name: 'Tất cả 12' })).toHaveAttribute('aria-current', 'location');
     expect(screen.getByRole('link', { name: 'Mới' })).not.toHaveAttribute('aria-current');
   });
 });
