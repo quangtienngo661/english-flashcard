@@ -488,3 +488,64 @@ Chủ dự án gửi từng tin trên mockup; Claude sửa mockup sau mỗi tin.
 - **Màu mức có token ở M9b**, đợt polish mới dùng; màu ngăn cũ giữ tới lúc đó.
 - **Lưu nhiều nhóm**: thêm trường `group_ids` vào API hay web gọi thêm `POST /v1/groups/:id/items`, chốt ở plan đợt polish.
 
+
+## QP. Plan đợt polish (chủ dự án chốt 12/11/2026)
+
+Nguồn: Part 10 của plan (`docs/superpowers/plans/2026-11-10-giao-dien-moi.md`), code facts
+`docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-12-polish-{kit,screens}.md`. Chủ dự án trả lời trước, Claude nêu ý kiến sau.
+
+### Tóm tắt
+
+| # | Quyết định | Chọn | Ai chốt |
+|---|---|---|---|
+| QP1 | Lưu một từ vào nhiều nhóm | Thêm `group_ids` vào `POST /v1/quick-add`, một transaction | Chủ dự án; Claude đồng ý |
+| QP2 | Đưa đợt polish vào `refactor/giao-dien-moi` | Một PR sau P.18 | Chủ dự án; Claude đồng ý |
+| QP3 | Gợi ý chữ cái đầu của câu điền từ | Giữ `e___` (không hiện số chữ) | Chủ dự án; Claude đồng ý |
+| QP4 | Màu chữ "Đến hạn" | Thêm token `warn`, làm đậm tới khi đạt 4,5:1 | Chủ dự án |
+
+### QP1. Lưu một từ vào nhiều nhóm
+
+Bối cảnh: mockup bản chốt cho chọn nhiều nhóm ("Lưu vào n nhóm"). Dữ liệu đã cho phép (`group_items` nhiều–nhiều), nhưng `POST /v1/quick-add` chỉ
+nhận một `group_id`. Mọi endpoint ghi dùng chung giới hạn `user.write` 30 lần mỗi phút.
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Thêm `group_ids` vào quick-add, lưu mọi nhóm trong transaction đang có | Lưu hết hoặc không lưu gì; một lần ghi | Đổi API (chỉ thêm trường), thêm spec | ✅ |
+| b. Không đổi API; web gọi quick-add rồi `POST /v1/groups/:id/items` cho từng nhóm còn lại | Không đổi API | Có thể lưu một phần, phải báo nhóm nào hỏng; mỗi nhóm một lần ghi | |
+
+Claude đồng ý với a: không có trạng thái lưu dở để giải thích, và service đã chạy một transaction. Trần 10 nhóm mỗi lần là đề xuất của Claude
+trong plan (design không có con số).
+
+### QP2. Số PR
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| Một PR sau P.18 | Một lượt CI, một lần duyệt | PR lớn | ✅ |
+| Mỗi milestone (PL-a, PL-b, PL-c) một PR | PR nhỏ, CI riêng | Ba lượt CI, ba lần duyệt | |
+
+Claude đồng ý; commit theo thứ tự milestone để dễ đọc PR lớn.
+
+### QP3. Gợi ý chữ cái đầu
+
+Bối cảnh: mockup vẽ `e_______` (mỗi chữ còn lại một dấu gạch). Ở Bước 7 chủ dự án đã bỏ số chữ cho câu điền từ (D9 Bước 7: "điền từ thì ba nấc
+gợi ý, bỏ số chữ"); API chỉ gửi chữ cái đầu, web hiện `e___` với mọi từ (CS20).
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| Hiện số chữ `e_______` | Khớp mockup | API gửi lại độ dài; đảo D9 Bước 7 và CS20 | |
+| Giữ `e___` | Không đổi API; giữ quyết định Bước 7 | Lệch mockup ở chỗ này | ✅ |
+
+Claude đồng ý: mockup vẽ `e_______` khi chưa đối chiếu với quyết định Bước 7. Câu gõ từ không phải AI giữ gợi ý hiện có.
+
+### QP4. Màu chữ "Đến hạn"
+
+Bối cảnh: chưa có token `warn`; màu `#b07a12` của mockup chỉ đạt 3,72:1 trên nền trắng (chữ nhỏ cần 4,5:1). Claude đề xuất làm đậm tới khi đạt và
+ghi ruling. Chủ dự án: "vậy thì bổ sung". Giá trị tối `#f0c04a` đạt 10:1 trên nền card tối.
+
+### Đề xuất kỹ thuật duyệt cùng Part 10
+
+- Chữ trong phiên bằng tiếng Anh: provider lồng với `locale="en"` để số nhiều đúng; link và khối chỉ dành cho tiếng Việt đọc ngôn ngữ của địa chỉ
+  (`/vi`); khoảng 475 dòng test phiên đổi sang chữ tiếng Anh. Chủ dự án: "ok".
+- `--ease-out-strong` (khối token cũ) chuyển thành token `wm-` trước khi xóa khối cũ. Chủ dự án: "ok".
+- Các đề xuất còn lại ở mục "Decisions this part makes" cuối Part 10 (góc bo theo vai trò, `text-wm-meta`, `ui/levels.ts`, `TargetWord`, × luôn
+  hiện, mũi tên là icon, test helper ở `src/test-utils/`).

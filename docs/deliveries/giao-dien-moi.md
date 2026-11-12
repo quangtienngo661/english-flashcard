@@ -215,8 +215,8 @@ Plan: "Part 10" trong file plan ở trên. Làm theo [mockup bản chốt](https
 **Cuối đợt**
 - P.18: kiểm lại 25 chỗ lệch, thu hẹp danh sách khóa chữ cho phép, chạy toàn bộ kiểm thử, chụp bộ ảnh 4 khổ sáng và tối, ghi as-built, mở PR.
 
-**Còn chờ chủ dự án:** ba câu O1 (lưu nhiều nhóm: thêm `group_ids` vào API hay gọi thêm API cho từng nhóm), O2 (một PR hay mỗi milestone một PR),
-O3 (gợi ý chữ cái đầu hiện số chữ `e_______` hay giữ `e___`). P.6 dừng lại cho chủ dự án xem ảnh khung xương (chỗ 24) trước khi sửa.
+**Chủ dự án đã chốt (12/11, QP1–QP4):** lưu nhiều nhóm bằng trường `group_ids` của quick-add (một transaction); một PR cho cả đợt; giữ gợi ý
+`e___`; thêm màu `warn` đủ tương phản. **Còn chờ:** duyệt plan trước khi code; P.6 dừng cho chủ dự án xem ảnh khung xương (chỗ 24).
 
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 

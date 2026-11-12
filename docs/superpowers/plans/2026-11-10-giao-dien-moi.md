@@ -4161,7 +4161,7 @@ The owner's decisions are QM9-1…QM9-9 in the decision record. Claude settled t
 - **PL-b, các màn:** Hôm nay, Một nhóm, trang một từ, Tra từ, Luyện tập, Từ hay sai, Phiên luyện, Ôn, Học, the Thêm từ dialogs with the
   multi-group picker, Đăng nhập / Đăng ký.
 - **PL-c, motion:** Nhóm "Vòng cung" carousel; Học "Chồng thẻ tan mờ" layout.
-- Then the check of the 25 audit picks, the full shot set and the PR(s) into `refactor/giao-dien-moi` (P.18).
+- Then the check of the 25 audit picks, the full shot set and one PR into `refactor/giao-dien-moi` (P.18).
 
 **Inputs:**
 - Decisions QM9-1 … QM9-9 (decision record, end), and the answers file `docs/preparation/GIAO_DIEN_MOI_M9_TRA_LOI_2026-11-11.md`, sections "Đã chốt
@@ -4178,11 +4178,12 @@ The owner's decisions are QM9-1…QM9-9 in the decision record. Claude settled t
 Paths are under `apps/web/` unless they start with `apps/api/`, `packages/`, `docs/` or `.github/`.
 
 **Order:**
-- `feat/giao-dien-moi-polish` from `origin/refactor/giao-dien-moi` **after PR #268 (M9) merges**, then `git merge docs/giao-dien-moi-plan-polish`.
+- `feat/giao-dien-moi-polish` from `origin/refactor/giao-dien-moi` (`cdcab4aa` or later: PR #268, M9, merged 12/11/2026 with CI green), then
+  `git merge docs/giao-dien-moi-plan-polish`.
   If M8c merges first, merge `origin/refactor/giao-dien-moi` again before P.18.
 - PL-a (P.1 → P.6), then PL-b (P.7 → P.15), then PL-c (P.16, P.17), then P.18. One task after another: every PL-b task uses the PL-a pieces, and
   P.11 changes the copy the later session tasks test against.
-- How many PRs: **open decision O2** below. The tasks are the same either way; each milestone ends with the whole web suite green.
+- **One PR** into `refactor/giao-dien-moi` after P.18 (owner, O2). Each milestone still ends with the whole web suite green.
 - Rulings continue from R265 (R264 is the highest on 12/11/2026).
 
 ## Part 10 constraints
@@ -4205,7 +4206,7 @@ Paths are under `apps/web/` unless they start with `apps/api/`, `packages/`, `do
 - **Admin:** `theme.css` is not edited and stays exported. Any change in `packages/design-tokens` runs admin `pnpm lint`, `pnpm typecheck`,
   `pnpm test`, `pnpm build`.
 - **Ads (QR4 parked):** `AdsenseLoader`, `SHOWS_ON` and `house-ad-counter.ts` stay untouched.
-- **API (only if O1 = a):** additive within v1, the same zod `strictObject` style, `@Idempotent`, `user.write` rate limit; no backend e2e (D38).
+- **API (P.12 only):** additive within v1, the same zod `strictObject` style, `@Idempotent`, `user.write` rate limit; no backend e2e (D38).
 - **Tests** query by role and visible text. A test that pinned old copy or an old shape changes in the same commit as the behaviour, with the
   reason in the commit body.
 
@@ -4214,7 +4215,7 @@ Paths are under `apps/web/` unless they start with `apps/api/`, `packages/`, `do
 1. **A learner whose browser is in Vietnamese opens a session.** All chrome is English and plural-correct ("1 card left", "2 cards left"), while
    the meaning, the translation and the group name stay Vietnamese, and "Back to home" goes to `/vi/app`, not `/en/app`. Pinned in P.11.
 2. **Saving one word into three groups when one group is full.** The learner is told which group did not take it, and is never left believing all
-   three saved. Pinned in P.12 (behaviour depends on O1).
+   three saved: nothing is saved and the full group is named. Pinned in P.12.
 3. **Levels for a colour-blind learner, and in dark mode.** Every level chip, bar segment and table cell carries its name or number; level text on
    its tint reaches 4.5:1 in light and dark. Pinned in P.1 (contrast test) and P.8.
 4. **Nothing reads an old token after the imports go.** A class or `var(--…)` from `theme.css`, `dark.css` or the old `@theme` block left in `src`
@@ -4222,19 +4223,16 @@ Paths are under `apps/web/` unless they start with `apps/api/`, `packages/`, `do
 5. **Fast input in the motion screens.** Pressing → five times on Nhóm, or 1/2 faster than the dissolve on Học, never leaves a card stuck between
    two positions or counts an answer twice. Pinned in P.16 and P.17.
 
-## Open decisions (owner answers first; Claude's proposal comes after)
+## Owner decisions on this part (12/11/2026)
 
-- **O1, saving one word into several groups.** Data already allows it (`group_items` many-to-many, `ItemState.group_ids[]`). Two ways:
-  (a) `POST /v1/quick-add` gains `group_ids: uuid[]`; the API links every group in the transaction it already runs (`quick-add.service.ts:57-81`),
-  so all groups save or none do, and it costs one write of the 30-per-minute `user.write` limit; (b) the API is unchanged; the web calls quick-add
-  for the first group, then `POST /v1/groups/:id/items` once per other group; a full group fails alone, so some groups may save and others not, and
-  each call costs one write. P.12 is written for both; the answer picks its steps.
-- **O2, how the polish reaches `refactor/giao-dien-moi`.** One PR after P.18, or one PR per milestone (PL-a, PL-b, PL-c), each with its own CI
-  run and review.
-- **O3, the first-letter hint.** The mockup shows `e_______` (the first letter, then one `_` for each other letter). In Bước 7 the owner dropped
-  the letter count for fill-in sentences ("điền từ thì ba nấc gợi ý, bỏ số chữ", D9 Bước 7); the API sends only the letter
-  (`ai-question.ts:27-34`) and the web shows `e___` whatever the length (CS20). Non-AI typed questions still send the count. Showing `e_______`
-  on fill-in sentences means the API sends the length again. P.13 is written with the hint shape as one function, so either answer is one step.
+Asked after the plan was written; the owner answered first, then Claude gave its view. Recorded as QP1–QP4 in the decision record.
+- **O1, saving one word into several groups → (a) `group_ids` in `POST /v1/quick-add`.** One transaction: every group saves or none does; one write
+  of the 30-per-minute `user.write` limit. Claude agrees: no half-saved state to explain, and the service already runs one transaction
+  (`quick-add.service.ts:57-81`).
+- **O2 → one PR** after P.18. Claude agrees; the cost is one large review, eased by the milestone order of the commits.
+- **O3 → keep `e___`** for fill-in sentences (CS20, D9 Bước 7); the API does not change. Claude agrees: the mockup's `e_______` was drawn without
+  the Bước 7 decision in view. Non-AI typed questions keep their current hint.
+- **`warn` colour → add it** (owner: "vậy thì bổ sung"): a new token, darkened until it reaches 4.5:1 (P.1).
 - Not open (chụp rồi hỏi): **chỗ 24.** The owner asked to see the loading skeleton first. P.6 Step 1 shoots it on this branch and stops for the
   owner's choice before the skeleton part of Step 4.
 
@@ -4536,13 +4534,13 @@ Một nhóm, Nhóm (P.16) and the word page (P.9).
 - [ ] **Step 4: Run** web unit, lint, typecheck; `pnpm cf:docker e2e/app/{m5a,m5b,m6,cai-thien-a-speak}.spec.ts` → PASS.
 - [ ] **Step 5: Commit** `feat(web): show session copy in english for every locale`.
 
-### Task P.12: Thêm từ dialogs, the multi-group picker (O1)
+### Task P.12: Thêm từ dialogs, the multi-group picker (QP1)
 
 **Files:**
 - Web: `add-word/GroupPicker.tsx` (`DeckList`), `add-word/AddWordSheet.tsx` (`deckField` :218-238, `deck` state :101, `save` :106-142,
   `writeLastGroup`), `add-word/last-group.ts`, `add-word/AiLookupResult.tsx` (chỗ 23), tests `add-word/add-word.test.tsx`,
   `add-word/locked-add-word.test.tsx`, `m4-overlays.test.tsx`, `ai-lookup.test.tsx`.
-- API, only if O1 = a: `apps/api/src/learning/quick-add/quick-add.controller.ts:18-36`, `quick-add.service.ts:54-84`, their specs; the smoke
+- API: `apps/api/src/learning/quick-add/quick-add.controller.ts:18-36`, `quick-add.service.ts:54-84`, their specs; the smoke
   `pnpm smoke:giao-dien-moi` gains one step.
 
 **Interfaces (Produces):**
@@ -4551,32 +4549,27 @@ Một nhóm, Nhóm (P.16) and the word page (P.9).
   "Đã chọn {n} nhóm" and the button "Lưu vào {n} nhóm". Rows toggle on click and Space; Enter confirms.
 - `AddWordSheet` "Lưu vào nhóm" field: the chosen groups as chips in their colours (`gchip`, mockup L413–414). `lockedGroupId` (opened from a
   group page) preselects that group and still allows others. `last-group.ts` stores an array (old single-id values are read as `[id]`).
-- O1 = a: body `group_ids: z.array(z.uuid()).min(1).max(10)` replaces `group_id` in a new strict schema accepted beside the old one
+- API: body `group_ids: z.array(z.uuid()).min(1).max(10)` replaces `group_id` in a new strict schema accepted beside the old one
   (`group_id` still accepted, additive within v1); duplicates collapse; every id must be owned; `linkInTx` runs per group in the same transaction;
   one full group → 409 `group-full` with the group's id in the Problem Details `detail`, nothing saved. Max 10 is a ruling (no design number).
-- O1 = b: the web calls quick-add with the first group, then `POST /v1/groups/:id/items` per other group, each with its own Idempotency-Key
-  `${key}:add:${groupId}`; the toast names the groups that did not take the word and why (full, gone). `user.write` 30/min is the limit.
 - Hộp 4 (Tra bằng AI) on desktop: two columns from the top of the dialog — left the inputs and the result, right the preview card level with the
   "Từ" field (chỗ 23, mockup L1346–1355 frame "hộp 4").
 
-- [ ] **Step 1: Failing tests (web):** choosing "Đề 12" and "Đề 9" then pressing "Lưu vào 2 nhóm" sends the request(s) for both ids; the field
-  shows two chips; reopening the dialog preselects both (last groups); a stored old single id still preselects one group. The O1-specific failure
-  case: (a) a 409 for one id shows "Đề 9 đã đầy. Chưa lưu từ." and nothing is reported saved; (b) a 409 on the second call shows "Đã lưu vào Đề
-  12. Đề 9 đã đầy." Copy follows the Vietnamese style rule.
-- [ ] **Step 2 (O1 = a): Failing API specs:** `group_ids` with two owned groups links both in one transaction; a foreign id → 404 and no link;
+- [ ] **Step 1: Failing tests (web):** choosing "Đề 12" and "Đề 9" then pressing "Lưu vào 2 nhóm" sends one quick-add with `group_ids` holding both ids;
+  the field shows two chips; reopening the dialog preselects both (last groups); a stored old single id still preselects one group; a 409 naming
+  "Đề 9" shows "Đề 9 đã đầy. Chưa lưu từ." and no success toast. Copy follows the Vietnamese style rule.
+- [ ] **Step 2: Failing API specs:** `group_ids` with two owned groups links both in one transaction; a foreign id → 404 and no link;
   a full second group → 409 and the first link rolled back; `group_id` alone still works; `group_ids` and `group_id` together → 400.
-- [ ] **Step 3: Run** → FAIL. **Step 4: Implement.** **Step 5: Run** web unit; API `pnpm lint`, `pnpm typecheck`, `pnpm test`; (a) the smoke on a
+- [ ] **Step 3: Run** → FAIL. **Step 4: Implement.** **Step 5: Run** web unit; API `pnpm lint`, `pnpm typecheck`, `pnpm test`; the smoke on a
   fresh DB; `pnpm cf:docker e2e/app/m4.spec.ts` → PASS.
-- [ ] **Step 6: Commit** (a) `feat(api): accept several groups in quick-add` first, then `feat(web): save a word into several groups`; then
+- [ ] **Step 6: Commit** `feat(api): accept several groups in quick-add` first, then `feat(web): save a word into several groups`; then
   `feat(web): lay out the ai lookup dialog in two columns from the top`.
 
 ### Task P.13: Phiên luyện and Ôn
 
 **Files:** `practice/session/{QuestionCard,SentenceQuestions,TypeWordQuestion,AnswerFeedback,HintPanel,PracticeSession}.tsx`,
 `recall/CompareLine.tsx`, `recall/RecallSummary.tsx`; tests `practice-session.test.tsx`, `ai-questions.test.tsx`, `session-screen.test.tsx`,
-`recall/recall-session.test.tsx`. API only if O3 = show the count: `apps/api/src/practice/ai/ai-question.ts:27-34` and its spec.
-
-**Interfaces (Produces):** `maskWord(hint: HintStep): string` in `practice/session/hint-text.ts` — the one place the hint shape lives.
+`recall/recall-session.test.tsx`. No API change (QP3).
 
 - The instruction line under the question chip goes (`App.practice.session.ask.*` deleted); the chip says the kind (QM9-9).
 - Fill-in sentence: the blank is the input — an `input` inside the sentence, `min-width: 5ch`, growing with the text, accent underline 3 px and
@@ -4590,18 +4583,16 @@ Một nhóm, Nhóm (P.16) and the word page (P.9).
 - Key legend: centred, right under the panel (chỗ 17), desktop only.
 - Hint box: a three-column grid 24 px / 112 px / 1fr (number, hint name, content); "Show hint 2" sits in the content column; progress dots at the
   right of the title; first-letter text in Bricolage 22 px with 0.12em tracking (mockup L352–361). `bg-wm-ink` circles → ink border, filled when on.
-- First letter: O3 = keep → `e___` (CS20 unchanged); O3 = count → `e_______` (mockup L1253 `maskWord`), and the API adds `length` to the
-  `first_letter` hint of AI fill-in sentences (stored hints of old questions without it fall back to `e___`).
+- First letter: unchanged (QP3): `e___` for fill-in sentences (CS20), the non-AI typed hint as today. Only its box and font change.
 - Ôn summary on a phone keeps its title size (the `cn` fix of P.4) and the "Sai, giữ bậc" / "Cần ôn lại" boxes use the right colours (chỗ 7).
 - Close X 32 px (`size-8`).
 
 - [ ] **Step 1: Failing tests:** the sentence has a `textbox` named by the blank; typing "estimate" and Enter shows "correct" in the sentence and
   no separate textbox; a wrong answer shows the typed word struck and the answer; no "Gõ từ còn thiếu" / "Type the missing word" text; "AI
   translation" region after answering in `vi`; Ôn's "you typed" sits inside the question card (`within(card)`); hint grid: "Show hint 2" button
-  inside the second row; `maskWord({ kind: 'first_letter', text: 'e', length: 8 })` is `e_______` (O3 = count) or `e___` (O3 = keep), and
-  `maskWord({ kind: 'first_letter', text: 'e' })` (no length) is `e___` either way. The Ôn summary colours (chỗ 7) are pinned in the e2e step, since jsdom
+  inside the second row; CS20 (`c___` for `crucial`) still passes. The Ôn summary colours (chỗ 7) are pinned in the e2e step, since jsdom
   computes no CSS.
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement** (O3 = count: API spec first, `feat(api): send the word length with the first-letter hint`).
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.**
 - [ ] **Step 4: Run** web unit; `pnpm cf:docker e2e/app/{m5a,m5b,cai-thien-a-speak}.spec.ts` with a check that the Ôn summary boxes' colours match
   the tokens → PASS.
 - [ ] **Step 5: Commit** `feat(web): type into the blank and reshape the answer and hint panels`.
@@ -4698,14 +4689,14 @@ in `carousel.ts`, pure: `step = phone ? 128 : 230`; `x = k·step·0.84`; `y = 16
 - [ ] **Step 2: Allow file.** Replace `App.errors.*`, `App.transactions.*`, `Landing.*` with exact keys or narrower prefixes read by variable
   (M9 minor; `App.practice.recent.*` went in P.10). `node scripts/check-message-keys.mjs` → 0 unused, 0 stale.
 - [ ] **Step 3: Whole suite.** Web unit, lint, typecheck, `pnpm cf:docker` (full e2e and render mode), `pnpm cf:docker --bundle-stats` and the
-  compare (limits 110 %, 118 % for the two plan pages) → PASS; admin's four checks; API checks and the smoke if O1 = a or O3 = count.
+  compare (limits 110 %, 118 % for the two plan pages) → PASS; admin's four checks; API lint, typecheck, unit and `pnpm smoke:giao-dien-moi` on a fresh DB.
 - [ ] **Step 4: Shots.** `SHOTS_MILESTONE=gm-polish` (a copy of the gm-m9 set, same 4 widths, light and dark) on this branch's `pnpm bootstrap`
   stack; look at every frame beside the mockup frame of the same screen; differences become fixes or rulings. Frames the seed cannot reach are
   "chưa chụp".
 - [ ] **Step 5: Docs.** Polish as-built in `docs/deliveries/giao-dien-moi.md` (rulings from R265); design §7.1 (session copy English, "Hint 1 of
   2"), §7.2 (levels, radius C, fonts), §9 (polish done), §14 (polish condition met); `packages/design-tokens/README.md`; mark "việc dọn chuyển sang
   đợt polish" done.
-- [ ] **Step 6: PR(s)** through `ship-pr` into `refactor/giao-dien-moi`, per O2.
+- [ ] **Step 6: PR** through `ship-pr` into `refactor/giao-dien-moi`, one PR for the whole round (QP2).
 
 ## Decisions this part makes
 
@@ -4723,7 +4714,7 @@ The owner's decisions are QM9-1 … QM9-9. Claude settled these while writing th
 - **Test helpers move to `src/test-utils/`**, outside `ui/` (its lint rule forbids feature imports) and outside `app-ui/` (deleted).
 - **`--ease-wm-out-strong`** keeps the curve new code depends on before the old block goes.
 - **The skeleton task stops for the owner** after the shot (chỗ 24 note "chụp lại chỗ này mình xem").
-- **O1 = a caps `group_ids` at 10** (no design number).
+- **`group_ids` is capped at 10** (no design number).
 
-**Open:** O1, O2, O3 above. Not in this part: "mỗi trang chỉ gửi phần chữ trang đó cần" and splitting the message files (QM9-8), the OG image font
+**Open:** none for the owner before execution (chỗ 24 is asked inside P.6). Not in this part: "mỗi trang chỉ gửi phần chữ trang đó cần" and splitting the message files (QM9-8), the OG image font
 (M8c), QR4 (ads), the phone frame-rate measurement (QM9-7, owner).
