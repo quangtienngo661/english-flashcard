@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 // Plan part 2, M2.5 (design §5.4, Figma 35:308 / 35:405): from 1280 px sign-in and sign-up sit beside the brand panel again (this
 // replaces LR43 of 03/11/2026); narrower screens get the centred card with no panel.
@@ -38,7 +38,8 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
       await page.goto(path);
       await expect(page.getByText('mitigate').first()).toBeVisible();
       type Box = { x: number; y: number; width: number; height: number };
-      const keepOut = await page.evaluate(() => {
+      // One evaluate for every box: the register page can shift the panel between two separate reads, which made the first attempt flaky.
+      const measured = await page.evaluate(() => {
         const path = document.querySelector('svg path[stroke-dasharray]') as SVGPathElement;
         const m = path.getScreenCTM()!;
         const points: Array<{ x: number; y: number }> = [];
@@ -46,37 +47,44 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
           const p = path.getPointAtLength(d);
           points.push({ x: p.x * m.a + m.e, y: p.y * m.d + m.f });
         }
-        const nodes = Array.from(document.querySelectorAll('svg foreignObject')).filter((f) => /Mới|Bậc/.test(f.textContent ?? ''));
         const rect = (e: Element) => {
           const r = e.getBoundingClientRect();
           return { x: r.x, y: r.y, width: r.width, height: r.height };
         };
+        const byText = (text: string, up: number) => {
+          let e = Array.from(document.querySelectorAll('div, p, span, b')).find((n) => n.children.length === 0 && n.textContent === text) ?? null;
+          for (let i = 0; e && i < up; i++) e = e.parentElement;
+          return e ? rect(e) : null;
+        };
+        const nodes = Array.from(document.querySelectorAll('svg foreignObject')).filter((f) => /Mới|Bậc/.test(f.textContent ?? ''));
         const nodeBoxes = nodes.flatMap((f) => {
           const row = f.firstElementChild!;
           return [rect(row.children[0]), rect(row.children[1])];
         });
-        return { points, nodes: nodes.length, nodeBoxes };
+        return {
+          points,
+          nodes: nodes.length,
+          nodeBoxes,
+          panel: {
+            'word card': byText('to make something bad less serious', 2),
+            'Hôm nay card': byText('Hôm nay', 1),
+            'practice card': byText('Điền từ vào câu', 1),
+            'ghost chip deadline': byText('deadline', 0),
+            'ghost chip negotiate': byText('negotiate', 0),
+            'ghost chip commute': byText('commute', 0),
+            caption: byText('Đường nhớ của mỗi từ.', 2),
+          } as Record<string, Box | null>,
+        };
       });
-      expect(keepOut.nodes, 'the six level nodes are drawn').toBe(6);
-      expect(keepOut.points.length, 'the path is sampled').toBeGreaterThanOrEqual(100);
+      expect(measured.nodes, 'the six level nodes are drawn').toBe(6);
+      expect(measured.points.length, 'the path is sampled').toBeGreaterThanOrEqual(100);
       const hit = (a: Box, b: Box) => !(a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height);
-      const corridor: Box[] = keepOut.points.map((p) => ({ x: p.x - 23, y: p.y - 8, width: 46, height: 16 }));
-      const panel: Array<[string, Locator]> = [
-        ['word card', page.getByText('to make something bad less serious', { exact: true }).locator('xpath=../..')],
-        ['Hôm nay card', page.getByText('Hôm nay', { exact: true }).locator('xpath=..')],
-        ['practice card', page.getByText('Điền từ vào câu', { exact: true }).locator('xpath=..')],
-        ['ghost chip deadline', page.getByText('deadline', { exact: true })],
-        ['ghost chip negotiate', page.getByText('negotiate', { exact: true })],
-        ['ghost chip commute', page.getByText('commute', { exact: true })],
-        ['caption', page.getByText('Đường nhớ của mỗi từ.', { exact: true }).locator('xpath=../..')],
-      ];
-      for (const [name, locator] of panel) {
-        const box = await locator.boundingBox();
+      const corridor: Box[] = measured.points.map((p) => ({ x: p.x - 23, y: p.y - 8, width: 46, height: 16 }));
+      for (const [name, box] of Object.entries(measured.panel)) {
         expect(box, `${name} is drawn`).not.toBeNull();
         expect(corridor.some((c) => hit(box!, c)), `${name} ${JSON.stringify(box)} stays off the path`).toBe(false);
-        expect(keepOut.nodeBoxes.some((n) => hit(box!, n)), `${name} ${JSON.stringify(box)} stays off the node dots and labels`).toBe(false);
+        expect(measured.nodeBoxes.some((n) => hit(box!, n)), `${name} ${JSON.stringify(box)} stays off the node dots and labels`).toBe(false);
       }
-      await page.screenshot({ path: '../../.superpowers/sdd/2026-11-10-giao-dien-moi/shots/F17-showcase-1440.png' });
     });
 
     for (const width of [1024, 390]) {

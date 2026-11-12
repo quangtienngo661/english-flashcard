@@ -22,6 +22,9 @@ const PATH = 'M 55 774 C 183 713, 210 571, 274 479 S 384 306, 475 234 S 549 122,
 /** Points of the path at 2 %, 17 %, 37 %, 57 %, 77 % and 95 % of its length (mockup nodes, plus "Mới" at the start). */
 const NODES: Array<[x: number, y: number, level: Level]> = [[71, 766, 0], [167, 674, 1], [251, 517, 2], [350, 368, 3], [471, 237, 4], [564, 110, 5]];
 
+/** Each label sits on the side of its dot away from the cards: right for Mới, Bậc 2, 3 and 4, left for Bậc 1 and 5 (Bậc 3 to the right: the word card's foot is on its left). */
+const LABEL_LEFT: ReadonlySet<Level> = new Set<Level>([1, 5]);
+
 /** Travelling words, each 3.5 s behind the one before; with reduced motion they stand still at a level's stretch of the path. */
 const TRAVELLERS: Array<{ word: string; delay: number; still: string; stillLevel: Level }> = [
   { word: 'mitigate', delay: 0, still: '15%', stillLevel: 0 },
@@ -65,9 +68,9 @@ export function AuthShowcase() {
         <svg viewBox="0 0 640 868" className="absolute inset-0 size-full overflow-visible">
           <path d={PATH} fill="none" strokeWidth="2" strokeDasharray="3 7" className="stroke-wm-showcase-path" />
           {NODES.map(([x, y, level]) => (
-            <foreignObject key={level} x={x - 70} y={y - 11} width="140" height="48">
-              <div className="flex flex-col items-center gap-1">
-                <span className="grid size-5.5 place-items-center">
+            <foreignObject key={level} x={LABEL_LEFT.has(level) ? x - 150 + 11 : x - 11} y={y - 11} width="150" height="22">
+              <div className={cn('flex items-center gap-1.5', LABEL_LEFT.has(level) && 'flex-row-reverse')}>
+                <span className="grid size-5.5 shrink-0 place-items-center">
                   <span className={cn('col-start-1 row-start-1 size-5.5 rounded-wm-pill opacity-22', LEVEL_FILL[level])} />
                   <span className={cn('col-start-1 row-start-1 size-3.5 rounded-wm-pill', LEVEL_FILL[level])} />
                 </span>
@@ -96,11 +99,14 @@ export function AuthShowcase() {
           ))}
         </svg>
 
-        <GhostChip className="left-14 top-23" word="deadline" />
-        <GhostChip className="left-110 top-157" word="negotiate" />
-        <GhostChip className="left-120 top-12" word="commute" />
+        <GhostChip className="left-85 top-38 rotate-4" word="deadline" />
+        <GhostChip className="left-115 top-70" word="negotiate" />
+        <GhostChip className="left-24 top-4" word="commute" />
 
-        <Card className="absolute left-25 top-51 z-3 min-h-73 w-80 -rotate-2 p-5 shadow-wm-pop md:p-5">
+        <Card
+          // raw-ok: the owner-approved tilt of the word card, -2.5deg, which has no Tailwind step
+          className="absolute left-6 top-15 z-3 min-h-73 w-70 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
+        >
           <div key={step.k} className={cn('flex flex-col gap-2', motion && 'animate-wm-showcase-swap')}>
             <p className="font-wm-display text-wm-lemma text-wm-ink">{word.word}</p>
             <p className="font-wm-sans text-wm-small text-wm-muted">{word.pos}</p>
@@ -116,7 +122,7 @@ export function AuthShowcase() {
           </div>
         </Card>
 
-        <Card className="absolute left-86 top-110 z-3 flex w-60 rotate-2 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+        <Card className="absolute left-95 top-105 z-3 flex w-60 rotate-3 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
           <p className="font-wm-sans text-wm-label text-wm-muted">{t('today')}</p>
           <p className="flex items-baseline gap-2">
             <span key={step.due} className={cn('inline-block font-wm-display text-wm-page-title tabular-nums text-wm-accent', motion && 'animate-wm-showcase-drop')}>
@@ -141,7 +147,10 @@ export function AuthShowcase() {
           </span>
         </Card>
 
-        <Card className="absolute left-16 top-135 z-2 flex w-80 -rotate-1 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+        <Card
+          // raw-ok: the owner-approved tilt of the practice card, -1.5deg, which has no Tailwind step
+          className="absolute left-66 top-150 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
+        >
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
           <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', motion && 'animate-wm-showcase-swap')}>
             {word.question[0]}
