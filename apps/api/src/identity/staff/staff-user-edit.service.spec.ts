@@ -19,6 +19,7 @@ describe('StaffService learner create / updateUser / resetPassword (unit, isolat
     $executeRaw: vi.fn(),
     user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     passwordCredential: { create: vi.fn(), upsert: vi.fn() },
+    otpCode: { updateMany: vi.fn() },
   };
   const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn() } };
   const budget = { assertAvailable: vi.fn() };
@@ -88,25 +89,35 @@ describe('StaffService learner create / updateUser / resetPassword (unit, isolat
       await staff.updateUser(actorId, targetId, { birth_date: '2000-02-29' }, res);
       expect(tx.user.update.mock.calls[0][0].data.birthDate).toEqual(new Date('2000-02-29T00:00:00Z'));
     });
-    it('a new email is normalized, counted as verified, and the old address gets a notice', async () => {
+    // Review 07/11 F12: a hijacked admin must not be able to move an account to an address it controls and walk in by password reset.
+    it('F12: a new email is normalized and unverified, every session is revoked, live codes die; old address notice, new address confirm mail', async () => {
       const detail = await staff.updateUser(actorId, targetId, { email: ' Mai@Example.COM ' }, res);
-      expect(tx.user.update.mock.calls[0][0].data).toMatchObject({ email: 'mai@example.com', emailVerifiedAt: clock.now() });
+      expect(tx.user.update.mock.calls[0][0].data).toMatchObject({ email: 'mai@example.com', emailVerifiedAt: null });
       expect(detail.email).toBe('mai@example.com');
-      const [notice] = await mailsSent();
-      expect(notice.to).toBe('lan@example.com');
-      expect(notice.text).toContain('mai@example.com');
-      expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+      expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, targetId, 'email_changed');
+      expect(tx.otpCode.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: clock.now() },
+      });
+      const mails = await mailsSent();
+      expect(mails.map((mail) => mail.to)).toEqual(['lan@example.com', 'mai@example.com']);
+      expect(mails[0].text).toContain('mai@example.com');
+      expect(mails[1].subject).toBe('Xác nhận email Wordmet mới / Confirm your new Wordmet email');
+      expect(mails[1].text).toContain(config.learnerAppUrl);
+      expect(mails[1].text).toContain('Quên mật khẩu');
     });
-    it('the same email (any case) is not a change: no write of email, no mail', async () => {
+    it('the same email (any case) is not a change: no write of email, no mail, sessions and codes untouched', async () => {
       await staff.updateUser(actorId, targetId, { email: 'LAN@example.com', given_name: 'Lan' }, res);
       expect(tx.user.update.mock.calls[0][0].data).not.toHaveProperty('email');
       expect(await mailsSent()).toEqual([]);
+      expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+      expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
     });
-    it('an email taken by another account → 409 email-taken', async () => {
+    it('an email taken by another account → 409 email-taken, nothing revoked', async () => {
       tx.user.update.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
       await expect(staff.updateUser(actorId, targetId, { email: 'taken@example.com' }, res))
         .rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
       expect(await mailsSent()).toEqual([]);
+      expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
     });
     it('an invalid timezone or email → 400 before any write; a missing user → 404', async () => {
       await expect(staff.updateUser(actorId, targetId, { timezone: 'Mars/Base' }, res)).rejects.toMatchObject({ status: 400 });
