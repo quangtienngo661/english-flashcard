@@ -33,6 +33,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
   const otp = { checkInTx: vi.fn() };
   const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn() },
     passwordCredential: { update: vi.fn(), upsert: vi.fn() }, sessionChain: { findUnique: vi.fn() },
+    pendingRegistration: { deleteMany: vi.fn() },
     loginFailure: {} as ReturnType<typeof fakeLoginFailures>['table'] };
   const prisma = { user: { findUnique: vi.fn() }, $transaction: vi.fn() };
   const subject = { userId: 'user', sessionChainId: 'old-chain' };
@@ -187,6 +188,8 @@ describe('password change and reset (unit, isolated persistence)', () => {
     // F4: a reset clears the failure rows of every ip for this account, and no one else's.
     expect(failures.table.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: subject.userId } });
     expect(failures.size()).toBe(1); expect(failures.get('someone-else', keyOf(ip))).toMatchObject({ failedCount: 2 });
+    // F3: a reset wins over a re-registration that is still waiting for its code.
+    expect(tx.pendingRegistration.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: subject.userId } });
     expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, subject.userId, 'password_reset');
     expect(sessions.startChain).not.toHaveBeenCalled(); expect(committed).toBe(true); expect(mailer.sent).toEqual([]);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
@@ -209,7 +212,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
       .rejects.toMatchObject({ status: 400, problemType: 'invalid-otp', problemTitle: 'Invalid OTP' });
     expect(committed).toBe(!['invalid email', 'unknown email'].includes(reason));
     expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
-    expect(failures.table.deleteMany).not.toHaveBeenCalled();
+    expect(failures.table.deleteMany).not.toHaveBeenCalled(); expect(tx.pendingRegistration.deleteMany).not.toHaveBeenCalled();
     expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
   });
   it('B1-6: an unknown email costs the same hashing as a known one, so the response time does not reveal accounts', async () => {

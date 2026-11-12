@@ -40,6 +40,7 @@ function setup(existing: Existing = null) {
     },
     passwordCredential: { deleteMany: vi.fn(async () => { calls.push('delete-password'); return { count: 1 }; }) },
     loginFailure: { deleteMany: vi.fn(async () => { calls.push('delete-login-failures'); return { count: 2 }; }) },
+    pendingRegistration: { deleteMany: vi.fn(async () => { calls.push('delete-pending'); return { count: 1 }; }) },
     otpCode: { updateMany: vi.fn(async () => ({ count: 0 })) },
     userIdentity: { create: vi.fn(async () => { calls.push('create-identity'); return {}; }) },
   };
@@ -115,12 +116,14 @@ describe('GoogleAuthService.complete', () => {
     const id = randomUUID();
     s = setup({ id, status: 'active', emailVerifiedAt: null });
     await s.service.complete(ticket(), body(), s.res);
-    expect(s.calls).toEqual(['update-user', 'delete-login-failures', 'delete-password', 'revoke-chains', 'create-identity', 'start-chain']);
+    expect(s.calls).toEqual(['update-user', 'delete-login-failures', 'delete-password', 'delete-pending', 'revoke-chains', 'create-identity', 'start-chain']);
     expect(s.tx.user.create).not.toHaveBeenCalled();
     expect(s.tx.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id, emailVerifiedAt: null, status: 'active' } }));
     expect(s.updated[0]).toMatchObject({ emailVerifiedAt: clock.now() });
     // F4: the login lock lives in login_failures now; a fresh sign-up clears every ip's row of the account.
     expect(s.tx.loginFailure.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: id } });
+    // F3: a re-registration still waiting for its code goes with the old password.
+    expect(s.tx.pendingRegistration.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: id } });
     expect(s.sessions.revokeAllForUser).toHaveBeenCalledWith(s.tx, id, 'google-signup');
     expect(s.tx.userIdentity.create).toHaveBeenCalledWith({ data: { userId: id, provider: 'google', subject: 'sub-1' } });
   });

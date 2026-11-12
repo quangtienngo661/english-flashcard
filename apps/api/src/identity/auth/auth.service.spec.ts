@@ -30,6 +30,7 @@ describe('registration and login (unit, isolated persistence)', () => {
   const sessions = { startChain: vi.fn(), revokeAllForUser: vi.fn() };
   const tx = { $executeRaw: vi.fn(), user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     passwordCredential: { create: vi.fn(), upsert: vi.fn() }, otpCode: { updateMany: vi.fn() },
+    pendingRegistration: { upsert: vi.fn(), deleteMany: vi.fn() },
     otpFailureWindow: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
     loginFailure: {} as ReturnType<typeof fakeLoginFailures>['table'] };
   const prisma = { user: { findUnique: vi.fn() }, $transaction: vi.fn() };
@@ -105,53 +106,40 @@ describe('registration and login (unit, isolated persistence)', () => {
     expect(otp.issueInTx).toHaveBeenCalledExactlyOnceWith(tx, tx.user.create.mock.calls[0][0].data.id, 'verify_email');
     expect(mailer.sent).toHaveLength(1);
   });
-  it.each([true, false])('A13-2b/A13-2c: re-register replaces data and revokes earlier chains; mails only outside cooldown (%s)', async (allowed) => {
+  it.each([true, false])('F3: re-registering an unverified account only stores a pending row; mails only outside cooldown (%s)', async (allowed) => {
     const events: string[] = [];
     const existing = { ...user, emailVerifiedAt: null };
     failures.seed({ userId: user.id, ipKey: keyOf(ip), failedCount: 7, lockedUntil: clock.now() });
-    failures.seed({ userId: user.id, ipKey: keyOf('unknown'), failedCount: 2 });
     failures.seed({ userId: 'someone-else', ipKey: keyOf(ip), failedCount: 4 });
     otp.tryLimitEmail.mockResolvedValue(allowed);
     tx.user.findUnique.mockImplementation(async ({ where }) => {
       events.push(where.email ? 'locate' : 'reread'); return where.email ? { id: user.id } : existing;
     });
     tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
-    tx.user.updateMany.mockImplementation(async () => { events.push('write'); return { count: 1 }; });
-    tx.passwordCredential.upsert.mockImplementation(async () => { events.push('password'); });
-    const clearFailures = failures.table.deleteMany.getMockImplementation()!;
-    failures.table.deleteMany.mockImplementationOnce(async (args) => { events.push('failures'); return clearFailures(args); });
-    sessions.revokeAllForUser.mockImplementation(async () => { events.push('revoke'); });
-    await expect(auth.register({ ...body, family_name: 'Nguyen' }, res)).resolves.toEqual({ email: user.email });
-    expect(events).toEqual(['locate', 'lock', 'reread', 'write', 'failures', 'password', 'revoke']);
+    tx.pendingRegistration.upsert.mockImplementation(async () => { events.push('pending'); });
+    await expect(auth.register({ ...body, password: 'Another1!', given_name: 'Mallory', family_name: 'Nguyen' }, res))
+      .resolves.toEqual({ email: user.email });
+    expect(events).toEqual(['locate', 'lock', 'reread', 'pending']);
     expect(tx.$executeRaw.mock.calls[0][1]).toBe(`identity.user:${user.id}`);
-    expect(tx.user.findUnique).toHaveBeenNthCalledWith(1, { where: { email: user.email } });
     expect(tx.user.findUnique).toHaveBeenNthCalledWith(2, { where: { id: user.id } });
-    expect(tx.user.updateMany).toHaveBeenCalledExactlyOnceWith({
-      where: { id: user.id, emailVerifiedAt: null, status: 'active' },
-      data: { timezone: 'Asia/Saigon', givenName: 'Lan', familyName: 'Nguyen', birthDate: new Date('2000-01-01T00:00:00Z'),
-        termsAcceptedAt: clock.now(), termsVersion: config.termsVersion, updatedAt: clock.now() },
-    });
-    // F4: re-registration clears every ip's failure row of this account, and no one else's.
-    expect(failures.table.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id } });
-    expect(failures.size()).toBe(1); expect(failures.get('someone-else', keyOf(ip))).toMatchObject({ failedCount: 4 });
-    expect(tx.passwordCredential.upsert).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id },
-      create: { userId: user.id, hash: 'new-hash', updatedAt: clock.now() }, update: { hash: 'new-hash', updatedAt: clock.now() } });
-    expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'reregistered');
-    expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
-    expect(tx.passwordCredential.create).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    const pending = { passwordHash: 'new-hash', givenName: 'Mallory', familyName: 'Nguyen', birthDate: new Date('2000-01-01T00:00:00Z'),
+      timezone: 'Asia/Saigon', termsVersion: config.termsVersion, termsAcceptedAt: clock.now(), createdAt: clock.now() };
+    expect(tx.pendingRegistration.upsert).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id },
+      create: { userId: user.id, ...pending }, update: pending });
+    // The account itself keeps its password, profile, login-failure rows and sessions until the mailbox code confirms.
+    expect(tx.user.updateMany).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled(); expect(tx.user.create).not.toHaveBeenCalled();
+    expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.passwordCredential.create).not.toHaveBeenCalled();
+    expect(failures.table.deleteMany).not.toHaveBeenCalled(); expect(failures.size()).toBe(2);
+    expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
     expect(otp.tryLimitEmail).toHaveBeenCalledExactlyOnceWith(user.email);
-    expect(otp.tryLimitEmail.mock.invocationCallOrder[0]).toBeLessThan(prisma.$transaction.mock.invocationCallOrder[0]);
     expect(committed).toBe(true); expect(otp.issueInTx).not.toHaveBeenCalled(); expect(mailer.sent).toEqual([]);
     expect(res.listenerCount('close')).toBe(allowed ? 1 : 0);
     res.emit('close'); await dispatcher.drain();
     if (allowed) {
       expect(otp.issueInTx).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'verify_email');
-      expect(otp.noteIssued).toHaveBeenCalledExactlyOnceWith(user.id, 'verify_email', expect.objectContaining({ to: user.email }));
-      expect(events).toEqual(['locate', 'lock', 'reread', 'write', 'failures', 'password', 'revoke', 'lock']);
       expect(mailer.sent).toHaveLength(1); expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     } else {
-      expect(otp.issueInTx).not.toHaveBeenCalled(); expect(otp.noteIssued).not.toHaveBeenCalled();
-      expect(mailer.sent).toEqual([]); expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(otp.issueInTx).not.toHaveBeenCalled(); expect(mailer.sent).toEqual([]); expect(prisma.$transaction).toHaveBeenCalledOnce();
     }
     expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
     for (const method of Object.values(tx.otpFailureWindow)) expect(method).not.toHaveBeenCalled();
@@ -171,16 +159,16 @@ describe('registration and login (unit, isolated persistence)', () => {
     });
     expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
   });
-  it.each(['reread', 'conditional write'])('A13-2d: verification commits between the read and the lock -> 409, password unchanged (%s)', async (guard) => {
+  it('A13-2d: verification commits between the read and the lock -> 409, nothing written', async () => {
     const events: string[] = [];
     tx.user.findUnique.mockImplementation(async ({ where }) => {
       events.push(where.email ? 'locate' : 'reread');
-      return { ...user, emailVerifiedAt: where.email || guard === 'conditional write' ? null : clock.now() };
+      return { ...user, emailVerifiedAt: where.email ? null : clock.now() };
     });
     tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
-    tx.user.updateMany.mockImplementation(async () => { events.push('write'); return { count: 0 }; });
     await expect(auth.register(body, res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
-    expect(events).toEqual(guard === 'reread' ? ['locate', 'lock', 'reread'] : ['locate', 'lock', 'reread', 'write']);
+    expect(events).toEqual(['locate', 'lock', 'reread']);
+    expect(tx.pendingRegistration.upsert).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
     expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.passwordCredential.create).not.toHaveBeenCalled();
     expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
     expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
@@ -391,7 +379,7 @@ describe('registration and login (unit, isolated persistence)', () => {
       expect(await auth.verifyEmail(input, res)).toEqual(issued);
       expect(events).toEqual(['password', 'lock', 'reread', 'code', 'verified', 'session']);
       expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('stored-hash', input.password);
-      expect(tx.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, include: { passwordCredential: true } });
+      expect(tx.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, include: { passwordCredential: true, pendingRegistration: true } });
       expect(otp.checkInTx).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'verify_email', input.code);
       expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { emailVerifiedAt: clock.now() } });
       expect(sessions.startChain).toHaveBeenCalledExactlyOnceWith(tx, { userId: user.id, client: input.client, deviceLabel: input.device_label });
@@ -405,14 +393,78 @@ describe('registration and login (unit, isolated persistence)', () => {
       expect(tx.otpCode.updateMany).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
       for (const method of Object.values(tx.otpFailureWindow)) expect(method).not.toHaveBeenCalled();
     });
-    it("A13-7c: after a re-register with another password, the owner's code with the owner's old password -> 400 invalid-otp; account stays unverified", async () => {
-      const account = { ...user, emailVerifiedAt: null, passwordCredential: { hash: 'reregistered-hash' } };
-      prisma.user.findUnique.mockResolvedValue(account);
-      hasher.verify.mockImplementation(async (hash, password) => hash === 'stored-hash' && password === input.password);
-      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
-      expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('reregistered-hash', input.password);
-      expect(account.emailVerifiedAt).toBeNull(); expect(tx.user.update).not.toHaveBeenCalled();
-      expect(prisma.$transaction).not.toHaveBeenCalled(); expect(otp.checkInTx).not.toHaveBeenCalled();
+    describe('F3: a re-registration waits in pending_registrations until the code confirms it', () => {
+      // Lan registered with password A; someone re-registered her email with password B and another name.
+      const passwordA = 'PasswordA1!';
+      const passwordB = 'PasswordB1!';
+      const pending = { userId: user.id, passwordHash: 'pending-hash', givenName: 'Mallory', familyName: 'Tran',
+        birthDate: new Date('1990-02-03T00:00:00Z'), timezone: 'Europe/London', termsVersion: 'terms-2',
+        termsAcceptedAt: new Date('2026-10-07T11:00:00Z'), createdAt: new Date('2026-10-07T11:00:00Z') };
+      const lan = { ...user, emailVerifiedAt: null, givenName: 'Lan', pendingRegistration: pending };
+      beforeEach(() => {
+        prisma.user.findUnique.mockResolvedValue(lan); tx.user.findUnique.mockResolvedValue(lan);
+        hasher.verify.mockImplementation(async (hash, password) =>
+          (hash === 'stored-hash' && password === passwordA) || (hash === 'pending-hash' && password === passwordB));
+        failures.seed({ userId: user.id, ipKey: keyOf(ip), failedCount: 3 });
+      });
+
+      it("Lan's code with her own password A -> verified, keeps A and her profile; the pending row is gone", async () => {
+        expect(await auth.verifyEmail({ ...input, password: passwordA }, res)).toEqual(issued);
+        expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('stored-hash', passwordA);
+        expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { emailVerifiedAt: clock.now() } });
+        expect(tx.pendingRegistration.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id } });
+        expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+        expect(failures.size()).toBe(1); expect(sessions.startChain).toHaveBeenCalledOnce(); expect(committed).toBe(true);
+      });
+      it('the code with the pending password B -> verified with B and the new profile; sessions revoked, login failures cleared', async () => {
+        const events: string[] = [];
+        tx.user.update.mockImplementation(async () => { events.push('profile'); });
+        tx.passwordCredential.upsert.mockImplementation(async () => { events.push('password'); });
+        sessions.revokeAllForUser.mockImplementation(async () => { events.push('revoke'); });
+        tx.pendingRegistration.deleteMany.mockImplementation(async () => { events.push('pending'); });
+        sessions.startChain.mockImplementation(async () => { events.push('session'); return issued; });
+        expect(await auth.verifyEmail({ ...input, password: passwordB }, res)).toEqual(issued);
+        expect(hasher.verify.mock.calls).toEqual([['stored-hash', passwordB], ['pending-hash', passwordB]]);
+        expect(otp.checkInTx).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'verify_email', input.code);
+        expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: {
+          givenName: 'Mallory', familyName: 'Tran', birthDate: pending.birthDate, timezone: 'Europe/London', termsVersion: 'terms-2',
+          termsAcceptedAt: pending.termsAcceptedAt, emailVerifiedAt: clock.now(), updatedAt: clock.now() } });
+        expect(tx.passwordCredential.upsert).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id },
+          create: { userId: user.id, hash: 'pending-hash', updatedAt: clock.now() }, update: { hash: 'pending-hash', updatedAt: clock.now() } });
+        expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'reregistered');
+        expect(failures.table.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id } }); expect(failures.size()).toBe(0);
+        expect(tx.pendingRegistration.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { userId: user.id } });
+        expect(events).toEqual(['profile', 'password', 'revoke', 'pending', 'session']);
+      });
+      it('a password matching neither -> 400 invalid-otp, nothing checked or written', async () => {
+        await expect(auth.verifyEmail({ ...input, password: 'Neither1!' }, res)).rejects.toMatchObject(invalid);
+        expect(hasher.verify).toHaveBeenCalledTimes(2);
+        expect(prisma.$transaction).not.toHaveBeenCalled(); expect(otp.checkInTx).not.toHaveBeenCalled();
+        expect(tx.user.update).not.toHaveBeenCalled(); expect(tx.pendingRegistration.deleteMany).not.toHaveBeenCalled();
+      });
+      it('without a pending row, a wrong password is tried against the credential only', async () => {
+        prisma.user.findUnique.mockResolvedValue({ ...lan, pendingRegistration: null });
+        await expect(auth.verifyEmail({ ...input, password: passwordB }, res)).rejects.toMatchObject(invalid);
+        expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('stored-hash', passwordB);
+      });
+      it('B with a wrong code -> 400 invalid-otp; the attempt counts and the pending row stays', async () => {
+        otp.checkInTx.mockResolvedValue({ kind: 'wrong' });
+        await expect(auth.verifyEmail({ ...input, password: passwordB }, res)).rejects.toMatchObject(invalid);
+        expect(otp.checkInTx).toHaveBeenCalledOnce(); expect(committed).toBe(true);
+        expect(tx.pendingRegistration.deleteMany).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+        expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+      });
+      it('B, but another re-registration replaced the pending row before the lock -> 400 invalid-otp, no code checked', async () => {
+        tx.user.findUnique.mockResolvedValue({ ...lan, pendingRegistration: { ...pending, passwordHash: 'newer-pending-hash' } });
+        await expect(auth.verifyEmail({ ...input, password: passwordB }, res)).rejects.toMatchObject(invalid);
+        expect(otp.checkInTx).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+        expect(tx.pendingRegistration.deleteMany).not.toHaveBeenCalled();
+      });
+      it('B, but a password reset removed the pending row before the lock -> 400 invalid-otp', async () => {
+        tx.user.findUnique.mockResolvedValue({ ...lan, pendingRegistration: null });
+        await expect(auth.verifyEmail({ ...input, password: passwordB }, res)).rejects.toMatchObject(invalid);
+        expect(otp.checkInTx).not.toHaveBeenCalled(); expect(tx.passwordCredential.upsert).not.toHaveBeenCalled();
+      });
     });
     it('A13-7d: hash changed between the password check and the lock -> 400 invalid-otp', async () => {
       tx.$executeRaw.mockImplementation(async () => {
@@ -484,7 +536,8 @@ describe('registration and login (unit, isolated persistence)', () => {
     });
     it('email with capitals and spaces -> same account', async () => {
       await auth.verifyEmail(input, res);
-      expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { email: user.email }, include: { passwordCredential: true } });
+      expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { email: user.email },
+        include: { passwordCredential: true, pendingRegistration: true } });
     });
     it('overlong NFC password -> 400 invalid-otp without lookup or Argon2', async () => {
       await expect(auth.verifyEmail({ ...input, password: '😀'.repeat(129) }, res)).rejects.toMatchObject(invalid);
