@@ -97,8 +97,8 @@ function Card({
       <Eyebrow>{eyebrow}</Eyebrow>
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{title}</h3>
       {body && <p className="font-wm-sans text-wm-base text-wm-muted">{body}</p>}
-      {/* Figma pins the demo to the card's foot (a spacer in `7:67`), so the two columns end level. */}
-      <div className="mt-auto pt-2">{children}</div>
+      {/* The demo follows the description at the normal gap; a card taller than its content (the tall practice card) keeps the spare height below. */}
+      <div className="pt-2">{children}</div>
     </Reveal>
   );
 }
