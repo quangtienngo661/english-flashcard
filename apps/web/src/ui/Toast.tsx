@@ -13,7 +13,7 @@ import {
   UNSTABLE_ToastRegion as AriaToastRegion,
 } from 'react-aria-components';
 
-// The only file that touches React Aria's UNSTABLE_ toast (moved from app-ui/Toast.tsx, which re-exports it until M8). New look:
+// The only file that touches React Aria's UNSTABLE_ toast. Look:
 // a pop-shadowed pill in mark-ink (navy in both themes), radius 16.
 
 export type ToastTone = 'neutral' | 'success' | 'danger';

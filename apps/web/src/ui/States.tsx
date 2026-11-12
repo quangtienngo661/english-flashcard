@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Button } from './Button';
 
-// The new look of app-ui/States (giao diện mới M4): same props, wm tokens. A section that is empty or failed; the rest of the page stays.
+// A section that is empty or failed; the rest of the page stays.
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (

@@ -10,7 +10,7 @@ const TONE = {
 
 type Props = { tone?: keyof typeof TONE; children: ReactNode };
 
-/** A small label or count chip (design §3.3: radius 6). */
+/** A small label or count chip (radius `key`, 4 px). */
 export function Tag({ tone = 'neutral', children }: Props) {
   return (
     <span

@@ -24,7 +24,7 @@ type Props = {
   size?: 'md' | 'sm';
 };
 
-/** Same props as app-ui/Select; Figma "Ô chọn" (46:326): the field look, a popover with the pop shadow. */
+/** Figma "Ô chọn" (46:326): the field look, a popover with the pop shadow. */
 export function Select({ label, hideLabel, items, value, onChange, isDisabled, placeholder, error, display, className, size = 'md' }: Props) {
   return (
     <AriaSelect
