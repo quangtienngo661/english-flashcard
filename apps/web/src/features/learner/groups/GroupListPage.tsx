@@ -194,7 +194,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
       <div className="w-full max-w-105">
         <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
       </div>
-      <DeckButtons group={group} className="justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="w-37.5 max-md:w-32" />
+      <DeckButtons group={group} className="gdeck justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="gdeck-btn w-37.5 max-md:w-32" />
       <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
