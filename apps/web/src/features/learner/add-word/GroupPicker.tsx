@@ -113,7 +113,10 @@ function DeckList({
   const t = useTranslations('App.addWord');
 
   function select(keys: Selection) {
-    const next = keys === 'all' ? groups.map((g) => g.id) : [...keys].map(String);
+    // Ctrl/Cmd+A asks for 'all': ignored, since it would pass the 10-group cap and, in the recent list, drop the other ticks
+    // (react-aria's ListBox does not expose `disallowSelectAll`).
+    if (keys === 'all') return;
+    const next = [...keys].map(String);
     // The chosen order is kept: what was ticked stays where it was, what was just ticked goes last.
     const ordered = [...value.filter((id) => next.includes(id)), ...next.filter((id) => !value.includes(id))];
     onChange(pinnedId && !ordered.includes(pinnedId) ? [pinnedId, ...ordered] : ordered);
