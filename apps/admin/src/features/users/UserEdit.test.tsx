@@ -65,6 +65,13 @@ describe('users: create, edit, reset (AD18)', { timeout: 20_000 }, () => {
     expect(patch?.body).toEqual({ given_name: 'Mai', birth_date: '2000-01-02' });
   });
 
+  it('F12: [Sửa] says a new email must be confirmed again and signs the user out', async () => {
+    renderApp(`/users/${LAN_ID}`, { [LIST]: () => json(page([user()])), [ONE]: () => json(detail()) });
+    await userEvent.click(await screen.findByRole('button', { name: t.detail.edit }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Email mới phải được xác nhận lại; người dùng bị đăng xuất, email cũ nhận thư báo.')).toBeInTheDocument();
+  });
+
   it('[Sửa] shows email-taken and age-below-minimum next to their fields', async () => {
     let answer = problem(409, 'email-taken');
     renderApp(`/users/${LAN_ID}`, {

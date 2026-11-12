@@ -38,6 +38,7 @@ describe('ForgotPasswordPage', () => {
       email: 'ten@wordmet.com',
       code: '482913',
       new_password: 'Abcdef1!x',
+      turnstile_token: 'fake-turnstile-token',
     });
   });
 

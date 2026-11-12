@@ -9,6 +9,7 @@ import { hardReplace } from '@/app-shell/navigate';
 import { clearPendingEmail, readPendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
 import { AuthCard, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
@@ -27,18 +28,28 @@ export function ResetPasswordForm() {
   const [typedEmail, setTypedEmail] = useState('');
   const email = pendingEmail ?? typedEmail.trim();
 
+  // Review 07/11 F7: the reset runs argon2 for anyone, so it needs a bot-check token.
+  const bot = useTurnstile();
   const { submit, busy } = useSubmitOnce(async () => {
-    await createApiClient({ send: store!.send }).post('/v1/auth/password/reset', {
-      email,
-      code: code.replace(/\s/g, ''),
-      new_password: password,
-    });
+    try {
+      await createApiClient({ send: store!.send }).post('/v1/auth/password/reset', {
+        email,
+        code: code.replace(/\s/g, ''),
+        new_password: password,
+        turnstile_token: bot.token,
+      });
+    } catch (failure) {
+      // The form stays on the page after a failure, so the spent token is replaced; a success leaves the page.
+      bot.reset();
+      throw failure;
+    }
     clearPendingEmail();
     hardReplace(`/${locale}/app/login?reset=1`);
   });
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     setErrors({});
     try {
       await submit();
@@ -67,7 +78,8 @@ export function ResetPasswordForm() {
         />
         <PasswordRules rules={errors.password ?? []} />
         <FormError message={errors.form ?? null} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email || !code || !password}>
+        {bot.widget}
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email || !code || !password || bot.token === null}>
           {t('reset.submit')}
         </Button>
       </form>

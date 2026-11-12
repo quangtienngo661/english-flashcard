@@ -82,12 +82,16 @@ export function VerifyEmailForm() {
   }, []);
   const wait = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
+  // One widget for both presses (verify and resend); each spends its token. Review 07/11 F7: verify-email needs one too.
+  const bot = useTurnstile();
   const { submit, busy } = useSubmitOnce(async () => {
     submitting.current = true;
     try {
-      await store!.verifyEmail(email, digits.join(''), password);
+      await store!.verifyEmail(email, digits.join(''), password, bot.token ?? undefined);
     } catch (failure) {
       submitting.current = false;
+      // The form stays on the page after a failure, so the spent token is replaced; a success leaves the page.
+      bot.reset();
       throw failure;
     }
     clearPendingEmail();
@@ -96,6 +100,7 @@ export function VerifyEmailForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     setError(null);
     try {
       await submit();
@@ -108,7 +113,6 @@ export function VerifyEmailForm() {
   }
 
   // One request per press: the API refuses a second code within 60 s.
-  const bot = useTurnstile();
   const resendPress = useSubmitOnce(async () => {
     try {
       await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'verify_email', email, turnstile_token: bot.token });
@@ -195,7 +199,7 @@ export function VerifyEmailForm() {
         )}
         {bot.widget}
         <FormError message={error} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password}>
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password || bot.token === null}>
           {t('verify.submit')}
         </Button>
       </form>

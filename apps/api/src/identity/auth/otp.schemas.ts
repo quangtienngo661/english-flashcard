@@ -6,6 +6,6 @@ export const otpRequestSchema = z.discriminatedUnion('purpose', [
   z.strictObject({ purpose: z.literal('reset_password'), email: z.string().max(320), turnstile_token: turnstileTokenSchema }),
 ]);
 export const verifyEmailSchema = registerSchema.pick({ email: true, password: true, client: true, device_label: true })
-  .extend({ code: z.string().max(20) });
+  .extend({ code: z.string().max(20), turnstile_token: turnstileTokenSchema });
 export type OtpRequest = z.infer<typeof otpRequestSchema>;
 export type VerifyEmailBody = z.infer<typeof verifyEmailSchema>;

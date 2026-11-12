@@ -70,6 +70,24 @@ export function emailChangedNoticeMail(oldEmail: string, newEmail: string): Mail
   };
 }
 
+/** Review 07/11 F12: sent to the new address after an admin changed the email; the account is unverified until this address confirms. */
+export function emailChangedConfirmMail(newEmail: string, learnerAppUrl: string): MailMessage {
+  return {
+    to: newEmail,
+    subject: 'Xác nhận email Wordmet mới / Confirm your new Wordmet email',
+    text: `Email đăng nhập của tài khoản Wordmet đã được đổi sang địa chỉ này. Để dùng tiếp, đăng nhập tại ${learnerAppUrl} bằng mật khẩu rồi nhập mã xác nhận gửi tới email này. Nếu bạn chỉ đăng nhập bằng Google hoặc không nhớ mật khẩu, dùng Quên mật khẩu ở trang đăng nhập.\n\nThe sign-in email of your Wordmet account was changed to this address. To keep using it, sign in at ${learnerAppUrl} with your password and enter the confirmation code sent here. If you only sign in with Google or forgot your password, use Forgot password on the sign-in page.`,
+  };
+}
+
+/** Review 07/11 F2: registration answers the same for a taken email; the owner of the account gets this instead of a code. */
+export function accountExistsMail(to: string, learnerAppUrl: string): MailMessage {
+  return {
+    to,
+    subject: 'Bạn đã có tài khoản Wordmet / You already have a Wordmet account',
+    text: `Có người vừa dùng email này để đăng ký Wordmet, nhưng bạn đã có tài khoản Wordmet với email này. Đăng nhập tại ${learnerAppUrl}, hoặc dùng Quên mật khẩu ở trang đăng nhập nếu không nhớ mật khẩu. Nếu không phải bạn, bỏ qua thư này.\n\nSomeone just used this email to sign up for Wordmet, but you already have a Wordmet account with this email. Sign in at ${learnerAppUrl}, or use Forgot password on the sign-in page if you do not remember your password. If this was not you, ignore this email.`,
+  };
+}
+
 export function otpLockedMail(to: string, purpose: OtpPurpose): MailMessage {
   const vi = purpose === 'verify_email' ? 'Xác minh email' : 'Đặt lại mật khẩu';
   const en = purpose === 'verify_email' ? 'Email verification' : 'Password reset';

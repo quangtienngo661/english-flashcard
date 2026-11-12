@@ -182,7 +182,7 @@ async function registerVerified(email) {
   await want(api('POST', '/v1/auth/register', {
     body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, `register ${email}`);
   const code = await otpCodeFor(email, before + 1);
-  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
+  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
   return verified.access_token;
 }
 

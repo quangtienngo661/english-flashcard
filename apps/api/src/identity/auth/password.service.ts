@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
@@ -12,6 +13,7 @@ import type { MailMessage } from '../../common/mail/mailer.js';
 import { passwordChangedMail, passwordResetMail } from '../mailer/templates.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
+import { clientIpKey } from './client-ip-key.js';
 import { accountLocked, decideCredential } from './credential-decision.js';
 import { OtpService, type OtpCheckOutcome } from './otp.service.js';
 import { PasswordHasher } from './password-hasher.service.js';
@@ -35,9 +37,10 @@ export class PasswordService {
     @Inject(OtpService) private readonly otp: OtpService,
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
-  async change(user: RequestUser, body: ChangeBody, res: Response): Promise<IssuedSession> {
+  async change(user: RequestUser, body: ChangeBody, res: Response, clientIp?: string): Promise<IssuedSession> {
     this.assertPolicy(body.new_password);
     const account = await this.prisma.user.findUnique({
       where: { id: user.userId }, include: { passwordCredential: true },
@@ -57,12 +60,12 @@ export class PasswordService {
       }
       // Revoked chains can still be named by valid access tokens (design §4).
       // Their transport metadata is sufficient; credential freshness decides the change.
-      const kind = await decideCredential(tx, { userId: user.userId, verifiedHash, passwordMatched }, this.clock);
+      const { kind, lockedUntil, newlyLocked } = await decideCredential(tx, {
+        userId: user.userId, verifiedHash, passwordMatched, ipKey: clientIpKey(clientIp, this.config.rateLimitHmacKey),
+      }, this.clock);
       if (kind === 'locked') {
-        const locked = await tx.user.findUnique({ where: { id: user.userId } });
-        if (!locked?.loginLockedUntil) throw new Error('Credential lock outcome has no expiry');
-        return { kind, lockedUntil: locked.loginLockedUntil,
-          newlyLocked: locked.loginLockedUntil.getTime() !== current.loginLockedUntil?.getTime() };
+        if (!lockedUntil) throw new Error('Credential lock outcome has no expiry');
+        return { kind, lockedUntil, newlyLocked };
       }
       if (kind !== 'ok') return { kind };
       // Only reachable with the right current password, so it reveals nothing to a caller who lacks it.
@@ -114,9 +117,12 @@ export class PasswordService {
         create: { userId: account.id, hash, updatedAt: now }, update: { hash, updatedAt: now } });
       await this.sessions.revokeAllForUser(tx, account.id, 'password_reset');
       await tx.user.update({ where: { id: account.id }, data: {
-        emailVerifiedAt: current.emailVerifiedAt ?? now, failedLoginCount: 0, loginLockedUntil: null,
-        mustChangePassword: false,
+        emailVerifiedAt: current.emailVerifiedAt ?? now, mustChangePassword: false,
       } });
+      // A reset clears the login lock of every ip for this account.
+      await tx.loginFailure.deleteMany({ where: { userId: account.id } });
+      // The mailbox owner chose a password: a re-registration still waiting for its code loses (review F3).
+      await tx.pendingRegistration.deleteMany({ where: { userId: account.id } });
       return { kind: 'ok', message: passwordResetMail(current.email) };
     }, transactionOptions);
     // The counted failure and lock have committed. Register the one-time notice

@@ -152,8 +152,8 @@ export class SessionStore {
     return { email };
   }
 
-  async verifyEmail(email: string, code: string, password: string): Promise<void> {
-    await this.startSession('/v1/auth/verify-email', { email, code, password, ...DEVICE });
+  async verifyEmail(email: string, code: string, password: string, turnstileToken?: string): Promise<void> {
+    await this.startSession('/v1/auth/verify-email', { email, code, password, ...(turnstileToken === undefined ? {} : { turnstile_token: turnstileToken }), ...DEVICE });
   }
 
   private async startSession(path: string, body: unknown): Promise<void> {

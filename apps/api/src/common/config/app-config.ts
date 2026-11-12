@@ -4,7 +4,6 @@ import { z } from 'zod';
 export const APP_CONFIG = 'APP_CONFIG';
 
 export type RateLimitRuleName =
-  | 'sample.create'
   | 'auth.register.ip'
   | 'auth.login.ip'
   | 'auth.verify.ip'
@@ -158,7 +157,6 @@ export interface AppConfig {
 }
 
 export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
-  'sample.create': { by: 'user', max: 10, windowSeconds: 60 },
   'auth.register.ip': { by: 'ip', max: 5, windowSeconds: 3600 },
   'auth.login.ip': { by: 'ip', max: 20, windowSeconds: 60 },
   // ASSUMPTION number, design 4.2.

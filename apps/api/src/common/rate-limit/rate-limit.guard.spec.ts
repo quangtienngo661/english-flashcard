@@ -9,7 +9,7 @@ import { RateLimitGuard } from './rate-limit.guard.js';
 import type { RateLimiter } from './rate-limiter.service.js';
 
 class TestController {
-  @RateLimit('sample.create', 'auth.login.ip', 'auth.otp.email.cooldown', 'auth.refresh.chain')
+  @RateLimit('practice.answer', 'auth.login.ip', 'auth.otp.email.cooldown', 'auth.refresh.chain')
   limited() {}
   plain() {}
 }
@@ -35,7 +35,7 @@ describe('RateLimitGuard', () => {
     });
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(hit.mock.calls).toEqual([
-      ['sample.create', 'user-1'], ['auth.login.ip', '203.0.113.7'],
+      ['practice.answer', 'user-1'], ['auth.login.ip', '203.0.113.7'],
       ['auth.otp.email.cooldown', 'foo@example.com'],
     ]);
   });

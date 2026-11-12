@@ -82,11 +82,14 @@ export function ForgotPasswordPage() {
     setViolations(local);
     setCodeError(null);
     if (local.length > 0) return;
+    if (bot.token === null) return;
     void once(async () => {
       try {
-        await api.post('/v1/auth/password/reset', { email: email.trim(), code: normalized, new_password: password });
+        // Review 07/11 F7: the reset runs argon2 for anyone, so it carries a bot-check token too.
+        await api.post('/v1/auth/password/reset', { email: email.trim(), code: normalized, new_password: password, turnstile_token: bot.token });
         navigate('/login', { replace: true });
       } catch (e) {
+        bot.reset();
         if (e instanceof ApiError) {
           const { problem } = e;
           if (problem.status === 429) lockWait.start(e.retryAfterSeconds ?? FALLBACK_WAIT_SECONDS);
@@ -175,7 +178,7 @@ export function ForgotPasswordPage() {
           error={violations.length > 0 ? t('account.passwordRules.notMet') : undefined}
         />
         {violations.length > 0 && <PasswordRules violations={violations} />}
-        <Button type="submit" size="touch" isPending={pending} isDisabled={locked} className="w-full">
+        <Button type="submit" size="touch" isPending={pending} isDisabled={locked || bot.token === null} className="w-full">
           {locked ? t('account.forgot.wait', { label: t('account.forgot.submit'), seconds: lockWait.remaining }) : t('account.forgot.submit')}
         </Button>
         {back}

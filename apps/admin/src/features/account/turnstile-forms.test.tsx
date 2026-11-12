@@ -114,7 +114,28 @@ describe('ForgotPasswordPage and the bot check', () => {
     await waitFor(() => expect(widget.resets).toBe(1));
   });
 
-  it('"resend" on the code step carries a token of its own, and the password step carries none', async () => {
+  it('F7 (review 07/11): a wrong code on the password step resets the widget, and the next press carries a new token', async () => {
+    let answer = () => problem(400, 'invalid-otp');
+    const { calls } = renderAccount(<ForgotPasswordPage />, {
+      path: '/forgot-password', routes: { ...refresh401, 'POST /v1/auth/otp': otp, 'POST /v1/auth/password/reset': () => answer() },
+    });
+    await userEvent.type(await screen.findByLabelText(vi.account.forgot.email), 'ten@wordmet.com');
+    await userEvent.click(screen.getByRole('button', { name: vi.account.forgot.send }));
+    await userEvent.type(await screen.findByLabelText(vi.account.forgot.code), '482913');
+    await userEvent.type(screen.getByLabelText(vi.account.forgot.newPassword), 'Abcdef1!x');
+    const resetsBefore = widget.resets;
+    await userEvent.click(screen.getByRole('button', { name: vi.account.forgot.submit }));
+    await waitFor(() => expect(widget.resets).toBe(resetsBefore + 1));
+    answer = otp;
+    await userEvent.click(screen.getByRole('button', { name: vi.account.forgot.submit }));
+    await waitFor(() => expect(tokensOf(calls, '/v1/auth/password/reset')).toHaveLength(2));
+    const [first, second] = tokensOf(calls, '/v1/auth/password/reset');
+    expect(first).toBeTruthy();
+    expect(second).toBeTruthy();
+    expect(second).not.toBe(first);
+  });
+
+  it('"resend" on the code step carries a token of its own, and the password step carries a fresh one (F7)', async () => {
     vitest.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const { calls } = renderAccount(<ForgotPasswordPage />, {
@@ -134,7 +155,9 @@ describe('ForgotPasswordPage and the bot check', () => {
       await userEvent.type(screen.getByLabelText(vi.account.forgot.newPassword), 'Abcdef1!x');
       await userEvent.click(screen.getByRole('button', { name: vi.account.forgot.submit }));
       await waitFor(() => expect(calls.some((c) => c.path === '/v1/auth/password/reset')).toBe(true));
-      expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).not.toHaveProperty('turnstile_token');
+      const [resetToken] = tokensOf(calls, '/v1/auth/password/reset');
+      expect(resetToken).toBeTruthy();
+      expect(resetToken).not.toBe(second);
     } finally {
       vitest.useRealTimers();
     }
