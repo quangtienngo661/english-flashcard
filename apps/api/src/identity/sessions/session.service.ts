@@ -14,6 +14,8 @@ import { open, seal } from './grace-cipher.js';
 import { newRefreshToken } from './refresh-token.js';
 
 const day = 86_400_000;
+/** How long a just-rotated token still returns its successor (concurrent tabs) instead of counting as reuse (review 07/11 F5). */
+const REFRESH_GRACE_MS = 2_000;
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
 export interface IssuedSession {
@@ -197,7 +199,7 @@ export class SessionService {
         where: { id: row.id, rotatedAt: null },
         data: {
           rotatedAt: now, successorId, successorCiphertext: seal(fresh.token, this.config.refreshGraceKey),
-          graceUntil: new Date(now.getTime() + 10_000),
+          graceUntil: new Date(now.getTime() + REFRESH_GRACE_MS),
         },
       });
       if (rotated.count === 0) continue;
