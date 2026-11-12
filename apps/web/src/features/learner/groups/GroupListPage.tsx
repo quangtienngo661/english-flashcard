@@ -150,7 +150,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   }, []);
 
   return (
-    <div ref={pageRef} className="flex flex-col gap-4 md:gap-5">
+    <div ref={pageRef} className="gpage flex flex-col gap-4 md:gap-5">
       <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
         <Title>
           <p className="text-wm-meta text-wm-muted">
@@ -194,7 +194,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
       <div className="w-full max-w-105">
         <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
       </div>
-      <DeckButtons group={group} className="justify-center gap-3 pt-2" buttonClassName="w-37.5" />
+      <DeckButtons group={group} className="justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="w-37.5 max-md:w-32" />
       <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
         <Link
           href={`/${locale}/app/group?id=${group.id}`}

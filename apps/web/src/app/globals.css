@@ -539,7 +539,7 @@
 @media (width >= 48rem) {
   .gcar-slot {
     top: 2.125rem;
-    transform: translateX(calc(var(--x) * 0.0625rem)) translateY(calc(var(--y) * 0.0625rem)) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+    transform: translateX(calc(var(--x) * 0.0625rem * var(--gk, 1))) translateY(calc(var(--y) * 0.0625rem * var(--gk, 1))) rotate(calc(var(--r) * 1deg)) scale(var(--s));
   }
 }
 .gcar-slot[data-abs='3'] { pointer-events: none; }
@@ -685,6 +685,41 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
+}
+
+/* Fit by height (owner f13, 13/11/2026): the stack, the track and the arc's offsets (--gk) shrink together on a short screen, so the title,
+   the carousel and the Below block fit 1280 x 800 and 1024 x 768 with no scroll. On a phone on its side (landscape, under 30rem high) Nhóm
+   turns into two columns: the carousel left, the Below block right (.gpage). */
+@media (width >= 48rem) and (height <= 51.25rem) {
+  .gstack[data-size='carousel'] { font-size: 0.7241rem; }
+  .gcar-track {
+    height: 21.25rem;
+    --gk: 0.7241;
+    --gcar-step: 8.745rem;
+  }
+  .gcar-slot { top: 1.5rem; }
+}
+@media (orientation: landscape) and (height <= 30rem) {
+  .gstack[data-size='carousel'] { font-size: 0.5173rem; }
+  .gcar-track {
+    height: 14rem;
+    --gk: 0.5173;
+    --gcar-step: 6.246rem;
+  }
+  .gcar-slot { top: 1rem; }
+  .gpage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1.5rem;
+    row-gap: 0.5rem;
+  }
+  .gpage > [data-part='0'] { grid-column: 2; grid-row: 1; }
+  .gpage > [data-part='0'] p { display: none; }
+  .gpage > [data-part='0'] h1 { font-size: 1.75rem; line-height: 1.1; }
+  .gpage > [data-part='0'] > div { margin-bottom: 0; }
+  .gpage > .relative { grid-column: 1; grid-row: 1 / span 2; }
+  .gpage > [data-part='3'] { grid-column: 2; grid-row: 2; padding-right: 5rem; }
 }
 
 /* How many stacks each side a press on the track can reach (GroupCarousel onTrackClick): one on phones, two from 48rem. */
