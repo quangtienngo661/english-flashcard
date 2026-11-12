@@ -8,6 +8,7 @@ import type { TurnstileVerdict } from '../turnstile/turnstile-client.js';
 import { TurnstileClient } from '../turnstile/turnstile-client.js';
 import { AuthService } from './auth.service.js';
 import { OtpService } from './otp.service.js';
+import { PasswordService } from './password.service.js';
 
 // Same isolation as auth.controller.spec: routing, the real TurnstileGuard, RateLimitGuard and validation run; persistence and the services are stubbed.
 describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', () => {
@@ -18,6 +19,8 @@ describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', 
   const login = vi.spyOn(AuthService.prototype, 'login');
   const requestReset = vi.spyOn(OtpService.prototype, 'requestPasswordReset');
   const requestVerify = vi.spyOn(OtpService.prototype, 'requestVerifyEmail');
+  const verifyEmail = vi.spyOn(AuthService.prototype, 'verifyEmail');
+  const reset = vi.spyOn(PasswordService.prototype, 'reset');
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const turnstile_token = 'tok-http-1';
   const registerBody = { email: 'a@example.com', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'web',
@@ -43,6 +46,8 @@ describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', 
     login.mockReset().mockResolvedValue(issued);
     requestReset.mockReset().mockResolvedValue(undefined);
     requestVerify.mockReset().mockResolvedValue(undefined);
+    verifyEmail.mockReset().mockResolvedValue(issued);
+    reset.mockReset().mockResolvedValue(undefined);
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -79,14 +84,42 @@ describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', 
     expect(rulesHit().slice(0, 3)).toEqual(['auth.captcha.ip', 'auth.otp.ip', 'mail.ip.daily']);
   });
 
-  it('LA1E14: verify-email takes no turnstile_token (unknown field → 400) and does not call the bot check', async () => {
-    const res = await ctx.http().post('/v1/auth/verify-email').send({ email: 'a@example.com', password: 'Password1!', code: '012345', client: 'web', turnstile_token });
-    expect(res.status).toBe(400);
-    expect(verify).not.toHaveBeenCalled();
+  // Review 07/11 F7 (replaces LA1E14): verify-email and password reset run argon2 for anyone, so the bot check goes in front of both.
+  const verifyBody = { email: 'a@example.com', password: 'Password1!', code: '012345', client: 'web', turnstile_token };
+  const resetBody = { email: 'a@example.com', code: '012345', new_password: 'Password1!', turnstile_token };
+
+  it('F7: verify-email with a good token → 200, the route counter counts after the bot check', async () => {
+    const res = await ctx.http().post('/v1/auth/verify-email').send(verifyBody);
+    expect(res.status).toBe(200);
+    expect(rulesHit()).toEqual(['auth.captcha.ip', 'auth.verify.ip']);
+    expect(verify).toHaveBeenCalledExactlyOnceWith(turnstile_token, expect.any(String));
+    expect(verifyEmail).toHaveBeenCalledTimes(1);
   });
+
+  it('F7: password reset with a good token → 204, the route counter counts after the bot check', async () => {
+    const res = await ctx.http().post('/v1/auth/password/reset').send(resetBody);
+    expect(res.status).toBe(204);
+    expect(rulesHit()).toEqual(['auth.captcha.ip', 'auth.reset.ip']);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([['verify-email', verifyBody], ['password/reset', resetBody]])(
+    'F7: %s with a wrong token → 400 captcha-failed, no argon2 work; Cloudflare down → 503, no bypass', async (route, body) => {
+      verdict = { kind: 'rejected', codes: ['invalid-input-response'] };
+      const wrong = await ctx.http().post(`/v1/auth/${route}`).send(body);
+      expect(wrong.status).toBe(400);
+      expect(wrong.body.type).toBe('https://api.example.com/problems/captcha-failed');
+      verdict = { kind: 'unavailable', reason: 'timeout' };
+      const down = await ctx.http().post(`/v1/auth/${route}`).send(body);
+      expect(down.status).toBe(503);
+      expect(down.body.type).toBe('https://api.example.com/problems/captcha-unavailable');
+      expect(verifyEmail).not.toHaveBeenCalled();
+      expect(reset).not.toHaveBeenCalled();
+    });
 
   it.each([
     ['register', registerBody], ['login', loginBody], ['otp', { purpose: 'reset_password', email: 'a@example.com', turnstile_token }],
+    ['verify-email', verifyBody], ['password/reset', resetBody],
   ])('LA1E15/LA1E1: %s without a token (also client mobile) is 400 validation-failed, with no check and no count', async (route, body) => {
     const { turnstile_token: _omitted, ...noToken } = body as Record<string, unknown>;
     for (const input of [noToken, { ...noToken, client: 'mobile' }]) {
