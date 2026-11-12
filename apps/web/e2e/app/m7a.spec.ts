@@ -21,6 +21,10 @@ async function noSideScroll(page: Page, where: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), where).toBe(true);
 }
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
+
 test('Cài đặt → Lịch sử giao dịch → a row → its detail → Esc puts focus back on the row', async ({ page }) => {
   await signedInAs(page, 'pro', api());
   await page.goto('/vi/app/settings');
@@ -50,6 +54,8 @@ test('Cài đặt → Lịch sử giao dịch → a row → its detail → Esc p
   await expect(detail).toBeHidden();
   await expect(row).toBeFocused();
 });
+  });
+}
 
 test('Cài đặt → Ngôn ngữ → English opens /en/app/settings in English', async ({ page }) => {
   let me = meBody({ native_language: 'vi' });
@@ -69,6 +75,10 @@ test('Cài đặt → Ngôn ngữ → English opens /en/app/settings in English'
   expect(requests(page, 'PATCH', '/v1/me').map((r) => r.body).filter((b) => 'native_language' in (b as object))).toEqual([{ native_language: 'en' }]);
 });
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
+
 test('Tài khoản: axe and no sideways scroll', async ({ page }) => {
   await signedInAs(page, 'pro');
   await page.goto('/vi/app/settings/account');
@@ -77,6 +87,12 @@ test('Tài khoản: axe and no sideways scroll', async ({ page }) => {
   expect(await seriousViolations(page)).toEqual([]);
   await noSideScroll(page, 'account');
 });
+  });
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
 
 test('Xóa tài khoản with a password: tick, email, password, "Xóa vĩnh viễn" → the account-deleted page', async ({ page }) => {
   await signedInAs(page, 'free');
@@ -99,6 +115,8 @@ test('Xóa tài khoản with a password: tick, email, password, "Xóa vĩnh vi�
     { confirm_email: 'lan@example.com', acknowledged: true, password: 'Secret#123' },
   ]);
 });
+  });
+}
 
 test('Mục lục at 1440: "Tài khoản" is marked at the bottom of the page and after pressing it', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'the Mục lục shows from lg only');

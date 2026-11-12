@@ -50,6 +50,10 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(NOW);
 });
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
+
 test('Hôm nay → Lịch → Ngày; Back → Lịch; Back → closed on the same path', async ({ page }) => {
   await signedInAs(page, 'free', calendarApi());
   await page.goto('/vi/app');
@@ -79,6 +83,8 @@ test('Hôm nay → Lịch → Ngày; Back → Lịch; Back → closed on the sam
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/vi\/app$/);
 });
+  });
+}
 
 test('L opens Lịch and Esc closes it', async ({ page }) => {
   await signedInAs(page, 'free', calendarApi());

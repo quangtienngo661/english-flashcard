@@ -10,6 +10,10 @@ async function noSideScroll(page: Page, where: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), where).toBe(true);
 }
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
+
 test('Gói học (Free) → 3 tháng → "Mua gói Pro 3 tháng" → the order page waits, then shows it paid → "Bắt đầu học"', async ({ page }) => {
   let status = 'pending';
   await signedInAs(page, 'free', orderApi(() => status));
@@ -48,6 +52,12 @@ test('Gói học (Free) → 3 tháng → "Mua gói Pro 3 tháng" → the order p
   await state.getByRole('link', { name: 'Bắt đầu học' }).click();
   await expect(page).toHaveURL(/\/vi\/app$/);
 });
+  });
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
 
 test('Hôm nay → Nhóm opens "Học nhiều hơn với Pro" for a Free learner with ads on; "Để sau" closes it; nothing goes to AdSense', async ({ page }) => {
   const adsense: string[] = [];
@@ -76,6 +86,12 @@ test('Hôm nay → Nhóm opens "Học nhiều hơn với Pro" for a Free learner
   await expect(dialog).toBeHidden();
   expect(adsense).toEqual([]);
 });
+  });
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(colorScheme, () => {
+    test.use({ colorScheme });
 
 test('Gói học with a renewing subscription → "Hủy gói" → "Hủy gia hạn" sends one cancel → "Đã gửi yêu cầu hủy gia hạn"', async ({ page }) => {
   await signedInAs(page, 'pro', {
@@ -101,3 +117,5 @@ test('Gói học with a renewing subscription → "Hủy gói" → "Hủy gia h�
   expect(cancels).toHaveLength(1);
   expect(cancels[0]?.headers['idempotency-key']).toMatch(/.+/);
 });
+  });
+}
