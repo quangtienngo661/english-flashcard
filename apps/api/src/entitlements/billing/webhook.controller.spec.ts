@@ -83,6 +83,13 @@ describe('billing webhook (design §9.2 steps 1–3, R16)', () => {
     expect(ok.body).toEqual({ body: { hello: 'world' } });
     const big = await ctx.http().post('/v1/test-echo').send({ pad: 'z'.repeat(101 * 1024) });
     expect(big.status).toBe(413);
+    expect(big.body.type).toMatch(/payload-too-large$/);
+  });
+
+  it('a JSON route given a charset other than utf-* answers 415 unsupported-media-type', async () => {
+    const res = await ctx.http().post('/v1/test-echo').set('Content-Type', 'application/json; charset=latin1').send('{"a":1}');
+    expect(res.status).toBe(415);
+    expect(res.body.type).toMatch(/unsupported-media-type$/);
   });
 
   it('B5#26/B5E44: a bad signature → 400 validation-failed, store not called', async () => {

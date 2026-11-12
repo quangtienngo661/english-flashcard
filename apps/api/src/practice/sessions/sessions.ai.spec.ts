@@ -5,7 +5,7 @@ import type { ContentService, Learner } from '../../content/index.js';
 import type { EntitlementsService } from '../../entitlements/index.js';
 import type { PracticeAiRequest, PracticeQuestion, PracticeSession, PracticeSessionItem, PrismaClient } from '../../generated/prisma/client.js';
 import type { LearningService, PracticeItem } from '../../learning/index.js';
-import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
+import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
 import type { AiQuestionGenerator, GenerateOutcome } from '../ai/ai-question-generator.service.js';
 import { AiRequestsRepository } from '../ai/ai-requests.repository.js';
 import type { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
@@ -34,11 +34,17 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown> = 
 }
 
 type Options = {
-  types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | null;
+  types: QuestionType[]; senseIds?: string[]; aiSenseIds?: string[]; aiPlanned?: number; clozeSource?: 'ai' | 'own' | 'own_then_ai' | null;
   aiStopped?: string | null; target?: number;
+  /** Practice AI count (09/11/2026): the session's stored placement; null = started without ai_count. */
+  aiPlacement?: string | null;
+  /** Practice settings over the defaults. */
+  practice?: Partial<AppSettings['practice']>;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
   aiAvailable?: (senseId: string) => QuestionType[]; prefetch?: number;
+  /** The builder finds no rule type for any word (no saved sentence, no other rule type chosen). */
+  skipBuild?: boolean;
 };
 
 function setup(options: Options) {
@@ -48,12 +54,12 @@ function setup(options: Options) {
     promptStyle: 'meaning', targetCount: options.target ?? senseIds.length, senseIds, status: 'active', continued: null,
     pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: options.clozeSource ?? null,
     aiPlanned: options.aiPlanned ?? 0, aiSenseIds: options.aiSenseIds ?? [], pendingAiRequestId: null,
-    aiStopped: options.aiStopped ?? null, aiNoticeShown: false,
+    aiStopped: options.aiStopped ?? null, aiNoticeShown: false, aiPlacement: options.aiPlacement ?? null,
   };
   const questions: PracticeQuestion[] = [];
   const items: PracticeSessionItem[] = [];
   const requests: PracticeAiRequest[] = [];
-  const counters = { generate: 0, confirm: 0, charged: 0, built: [] as QuestionType[][] };
+  const counters = { generate: 0, confirm: 0, charged: 0, built: [] as QuestionType[][], availability: [] as Array<Record<string, unknown>> };
 
   const question = (data: Partial<PracticeQuestion>): PracticeQuestion => {
     const row = {
@@ -159,10 +165,13 @@ function setup(options: Options) {
     }),
   };
   const builder = {
-    availability: async ({ senseIds: ids }: { senseIds: string[] }) =>
-      new Map(ids.map((id) => [id, options.aiAvailable ? options.aiAvailable(id) : (['cloze', 'mcq_sentence'] as QuestionType[])])),
+    availability: async (input: { senseIds: string[] }) => {
+      counters.availability.push(input);
+      return new Map(input.senseIds.map((id) => [id, options.aiAvailable ? options.aiAvailable(id) : (['cloze', 'mcq_sentence'] as QuestionType[])]));
+    },
     build: async ({ chosenTypes }: { chosenTypes: QuestionType[] }) => {
       counters.built.push(chosenTypes);
+      if (options.skipBuild) return { skip: 'no-type' as const };
       return {
         type: chosenTypes[0], promptStyle: 'meaning', prompt: { kind: 'type_meaning' }, answerKey: { asked_private: false },
         hints: { level1: null, level2: null }, blank: null, distractorSenseIds: [],
@@ -181,7 +190,7 @@ function setup(options: Options) {
     practiceSenses: async (_u: string, ids: string[]) => new Map(ids.map((id) => [id, sense(id)])),
     visibleSenseIds: async (_u: string, ids: string[]) => new Set(ids),
   };
-  const settings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, aiPrefetchCount: options.prefetch ?? 2 } };
+  const settings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, aiPrefetchCount: options.prefetch ?? 2, ...options.practice } };
   const service = new SessionsService(prisma, new FakeClock(now), { get: async () => settings } as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
     {} as PracticeStats, {} as AiSessionPlanner, generator as unknown as AiQuestionGenerator, aiRequests,
@@ -322,6 +331,73 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     expect(t.generator.run).not.toHaveBeenCalled();
   });
 
+  describe('cloze with source own_then_ai (a saved sentence first, else AI)', () => {
+    // The real builder decides per word; here s1 has a saved sentence and is not marked for AI, s2 has none and is.
+    it('round 1: the word with a saved sentence is asked from it with no AI call; the marked word goes through AI', async () => {
+      // The AI side offers the cloze only (the mock would otherwise also offer mcq_sentence and the request type would be random).
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', aiSenseIds: ['s2'], aiPlanned: 1, aiAvailable: () => ['cloze'] });
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.counters.built).toEqual([['cloze']]);
+      expect(t.questionOf(t.items[0])).toMatchObject({ source: 'own_sentence', senseId: 's1' });
+      expect(t.requests).toHaveLength(0);
+      t.answerLast();
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.requests).toHaveLength(1);
+      expect(t.requests[0]).toMatchObject({ senseId: 's2', type: 'cloze' });
+      expect(t.questionOf(t.items[1])).toMatchObject({ source: 'ai', senseId: 's2' });
+      expect(t.counters.built).toEqual([['cloze']]);
+    });
+
+    it('the AI slot asks the builder about the AI side only: cloze with clozeRole ai', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s2'], aiSenseIds: ['s2'], aiPlanned: 1 });
+      await t.service.next(learner, 'sess-1');
+      expect(t.counters.availability).toHaveLength(1);
+      expect(t.counters.availability[0]).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai' });
+    });
+
+    it('prepare makes requests only for words the AI side offers: cloze with clozeRole ai', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1', 's2', 's3'], aiSenseIds: ['s2', 's3'],
+        aiPlanned: 2, aiAvailable: (id) => (id === 's3' ? [] : ['cloze']) });
+      expect(await t.service.prepare(learner, 'sess-1')).toEqual({ prepared: 1, already_ready: 0, failed: 0 });
+      expect(t.requests.map((r) => r.senseId)).toEqual(['s2']);
+      expect(t.counters.availability.length).toBeGreaterThan(0);
+      for (const call of t.counters.availability) {
+        expect(call).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai' });
+      }
+    });
+
+    it('the AI fails for a word: the fallback is built from the rule types, and the saved-sentence cloze is one of them', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1,
+        generate: () => failed('ai-failed') });
+      expect(await t.service.next(learner, 'sess-1'))
+        .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-failed' });
+      expect(t.counters.built).toEqual([['type_word', 'cloze']]);
+    });
+
+    it('a word that is not marked is built from the rule types too, so a saved sentence can come up', async () => {
+      const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: [], aiPlanned: 0 });
+      await t.service.next(learner, 'sess-1');
+      expect(t.counters.built).toEqual([['type_word', 'cloze']]);
+      expect(t.requests).toHaveLength(0);
+    });
+
+    it('known limit: cloze only and the AI fails for a word with no saved sentence → the word is skipped, no ai_unavailable screen', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1, skipBuild: true,
+        aiAvailable: () => ['cloze'], generate: () => failed('ai-failed') });
+      const result = await t.service.next(learner, 'sess-1');
+      expect(result.state).toBe('waiting_continue');
+      expect(t.items).toHaveLength(0);
+      expect(t.generator.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('the AI is not asked once it has stopped for the session; the saved-sentence cloze still is', async () => {
+      const t = setup({ types: ['cloze'], clozeSource: 'own_then_ai', senseIds: ['s1', 's2'], aiSenseIds: ['s2'], aiPlanned: 1, aiStopped: 'quota-exhausted' });
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'cloze' } });
+      expect(t.generator.run).not.toHaveBeenCalled();
+      expect(t.counters.built).toEqual([['cloze']]);
+    });
+  });
+
   it('A3-4: own cloze stays after ai.practice is lost mid-session', async () => {
     const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own' });
     await t.service.next(learner, 'sess-1');
@@ -341,6 +417,73 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     const after = await t.service.next(learner, 'sess-1');
     expect(after.state).toBe('finished');
     expect(t.generator.run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('even placement in later rounds (practice ai count §5, 09/11/2026)', () => {
+  const words = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'];
+  const marked = ['s3', 's6', 's8'];
+
+  /**
+   * Fixed mode, target 20 on 8 words, continued, ai_planned 8. Round 1 is done with its 3 AI items; round 2 items follow, the first
+   * `aiPlaced − 3` of them AI. Every item is answered.
+   */
+  function later(state: { answered: number; aiPlaced: number; aiPlacement?: string | null; settingsPlacement?: 'even' | 'random' | 'learner' }) {
+    const t = setup({
+      types: ['type_word', 'cloze'], clozeSource: 'ai', senseIds: words, aiSenseIds: marked, aiPlanned: 8, target: 20,
+      aiPlacement: state.aiPlacement === undefined ? 'even' : state.aiPlacement,
+      practice: state.settingsPlacement ? { aiPlacement: state.settingsPlacement } : undefined,
+    });
+    t.session.continued = true;
+    let laterAi = state.aiPlaced - marked.length;
+    for (let n = 0; n < state.answered; n++) {
+      const senseId = words[n % words.length];
+      const round = n < words.length ? 1 : 2;
+      const ai = round === 1 ? marked.includes(senseId) : laterAi-- > 0;
+      const q = t.question({ senseId, type: ai ? 'cloze' : 'type_word', source: ai ? 'ai' : 'rule' });
+      t.items.push({
+        id: randomUUID(), sessionId: 'sess-1', userId: learner.userId, questionId: q.id, senseId, round, position: n + 1, askedAt: now,
+        answeredAt: now, answerRaw: 'x', answerNormalized: 'x', answersTried: [], tries: 1, skipped: false, result: 'correct', hintLevel: 0,
+        localDate: null, reviewAction: null, maxRetries: null, alternative: null, alternativeSenseId: null,
+        alternativeReviewAction: null, sessionWordTries: 0,
+      } as unknown as PracticeSessionItem);
+    }
+    return t;
+  }
+
+  /** Whether the next question is an AI one, with Math.random pinned so the old r ÷ q chance would answer the other way. */
+  async function nextIsAi(t: ReturnType<typeof later>, random: number): Promise<boolean> {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(random);
+    try {
+      const result = await t.service.next(learner, 'sess-1');
+      if (result.state !== 'question') throw new Error(`expected a question, got ${result.state}`);
+      return result.item.ai;
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  it('even: the 9th question (answered 8, budget 5) is an AI question', async () => {
+    // r ÷ q = 5 ÷ 12 ≈ 0.42; random 0.99 would say no.
+    expect(await nextIsAi(later({ answered: 8, aiPlaced: 3 }), 0.99)).toBe(true);
+  });
+
+  it('even: answered 9 with 4 AI placed (budget 4) → the 10th question is not AI', async () => {
+    // r ÷ q = 4 ÷ 11; random 0 would say yes.
+    expect(await nextIsAi(later({ answered: 9, aiPlaced: 4 }), 0)).toBe(false);
+  });
+
+  it('even: answered 16, budget 4 → the 17th question is AI', async () => {
+    expect(await nextIsAi(later({ answered: 16, aiPlaced: 4 }), 0.99)).toBe(true);
+  });
+
+  it('review focus 5: settings changed to random after start: the session still follows its stored even placement', async () => {
+    expect(await nextIsAi(later({ answered: 8, aiPlaced: 3, settingsPlacement: 'random' }), 0.99)).toBe(true);
+  });
+
+  it('legacy session (aiPlacement null) keeps the r ÷ q chance', async () => {
+    // answered 12, 4 AI placed: r ÷ q = 4 ÷ 8 = 0.5; random 0.99 → not AI.
+    expect(await nextIsAi(later({ answered: 12, aiPlaced: 4, aiPlacement: null }), 0.99)).toBe(false);
   });
 });
 

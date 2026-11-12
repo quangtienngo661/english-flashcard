@@ -28,9 +28,11 @@ export type AnswerResult = {
   alternative: { typed: string; rows: AlternativeRow[] } | null;
   /** Round C (H6): what the final answer did to the schedule; set only in a recall session (and only on the answer itself, not on a read of it). */
   schedule: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
+  /** Round C (H6): set only when this answer was the learner's first study of the day; null on a read of an answer. */
+  streak: { days: number } | null;
 };
 /** What `writeFinal` leaves behind: the stored item, the schedule change of a recall session and whether the session was one. */
-export type FinalOutcome = { item: ItemWithQuestion; schedule: AnswerResult['schedule']; recall: boolean };
+export type FinalOutcome = { item: ItemWithQuestion; schedule: AnswerResult['schedule']; recall: boolean; streak: AnswerResult['streak'] };
 /** One word of an alternative answer: the word typed (credited) or the word asked, each with its own review state. */
 export type AlternativeRow = {
   sense_id: string; lemma: string; meaning: string; role: 'typed' | 'asked'; show_known: boolean; action: ReviewAction | null;
@@ -190,8 +192,9 @@ export class AnswersService {
     // A recall session is not a practice session: it spends none.
     if (!recall) await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
     // A final result, a skip included, is a "lần học" of the learner's local day (nhóm B D39, B51); a "try again" never gets here.
-    await this.learning.recordActivity(item.userId, date, tx);
-    return { item: written, schedule, recall };
+    const { firstStudied } = await this.learning.recordActivity(item.userId, date, { studied: true }, tx);
+    const streak = firstStudied ? { days: (await this.learning.streakAsOf(item.userId, date, tx)).days } : null;
+    return { item: written, schedule, recall, streak };
   }
 
   /**
@@ -199,7 +202,8 @@ export class AnswersService {
    * passes its `tx` as `db`, so the learning item is read without a second connection.
    */
   async resultOf(userId: string, item: ItemWithQuestion, db?: Prisma.TransactionClient | PrismaClient,
-    recall: Pick<FinalOutcome, 'schedule' | 'recall'> = { schedule: null, recall: false }): Promise<AnswerResult> {
+    recall: Pick<FinalOutcome, 'schedule' | 'recall'> & { streak?: AnswerResult['streak'] } = { schedule: null, recall: false }):
+    Promise<AnswerResult> {
     const key = item.question.answerKey as AnswerKey;
     const prompt = item.question.prompt as Prompt;
     const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null, db);
@@ -215,7 +219,7 @@ export class AnswersService {
       // A recall session already moved the word (round C): "Đã biết" is never offered there.
       show_known: !recall.recall && alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
       highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
-      schedule: recall.schedule,
+      schedule: recall.schedule, streak: recall.streak ?? null,
     };
   }
 

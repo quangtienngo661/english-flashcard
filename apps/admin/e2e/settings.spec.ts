@@ -61,12 +61,42 @@ test.describe('Cài đặt hệ thống (A/70a–A/70f)', () => {
         problem(400, 'validation-failed', { violations: ['values.practice.default_questions_per_session: Expected at most max_questions_per_session'] }),
     });
     await page.goto('/settings?tab=practice');
-    await page.getByRole('textbox', { name: s.fields.practice.max_questions_per_session }).fill('5');
+    // The fixed maximum sits under its choice "Số câu tối đa mỗi phiên" (practice AI count, 09/11/2026).
+    await page.getByRole('group', { name: s.fields.practice.session_max_mode })
+      .getByRole('textbox', { name: s.fields.practice.max_questions_per_session }).fill('5');
     await page.getByRole('tab', { name: new RegExp(`^${s.tabs.reminders}`) }).click();
     await page.getByRole('button', { name: s.save }).click();
     const field = page.getByRole('textbox', { name: s.fields.practice.default_questions_per_session });
     await expect(field).toBeFocused();
     await expect(page.getByRole('tab', { name: new RegExp(`^${s.tabs.practice}`) })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('practice tab: switch the maximum to "Bằng số từ của phạm vi" and the AI cap to a fixed 3, save → PUT body has session_max_mode scope_words, ai_max_mode fixed, ai_max_fixed 3', async ({ page }) => {
+    await signedInAs(page, 'admin', {
+      ...settingsMocks,
+      'PUT /v1/admin/settings': () => ({ json: { version: 2, values: settingsView().values } }),
+    });
+    await page.goto('/settings?tab=practice');
+    const p = s.fields.practice;
+    const choose = async (field: string, option: string) => {
+      await page.getByRole('button', { name: new RegExp(field) }).click();
+      await page.getByRole('option', { name: option }).click();
+      // The popover closes with an exit animation; until it is gone its options ("Mức cố định" is in both selects) are still found.
+      await expect(page.getByRole('option')).toHaveCount(0);
+    };
+    await expect(page.getByText('Ví dụ: phiên 7 câu → tối đa 3 câu AI · phiên 10 câu → 5 · phiên 20 câu → 10')).toBeVisible();
+    await choose(p.session_max_mode, s.choices.session_max_mode.scope_words);
+    await expect(page.getByRole('group', { name: p.session_max_mode }).getByRole('textbox')).toHaveCount(0);
+    await choose(p.ai_max_mode, s.choices.ai_max_mode.fixed);
+    const fixed = page.getByRole('group', { name: p.ai_max_mode }).getByRole('textbox', { name: p.ai_max_fixed });
+    await fixed.fill('3');
+    await fixed.blur();
+    await expect(page.getByText('Ví dụ: phiên 7 câu → tối đa 3 câu AI · phiên 10 câu → 3 · phiên 20 câu → 3')).toBeVisible();
+    await page.getByRole('button', { name: s.save }).click();
+    await expect(page.getByText(s.saved)).toBeVisible();
+    expect(requests(page, 'PUT', '/v1/admin/settings')[0].body).toEqual({
+      version: 1, values: { practice: { session_max_mode: 'scope_words', ai_max_mode: 'fixed', ai_max_fixed: 3 } },
+    });
   });
 
   test('leaving with an unsaved change asks "Rời trang?"; [Ở lại] keeps the value', async ({ page }) => {

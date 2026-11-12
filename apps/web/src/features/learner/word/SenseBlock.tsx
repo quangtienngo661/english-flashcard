@@ -4,11 +4,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/app-ui/Button';
+import { PronunciationLine } from '@/app-ui/PronunciationLine';
 import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { highlightWord } from '../groups/highlight';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { DeleteMyWordDialog, EditMyWordDialog } from './MyWordDialogs';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
+import type { PronLine } from './pronunciation';
 import { wordHref, type ItemState, type PageSense } from './word-api';
 
 /** The meaning text with the base word of a form linked ("quá khứ của go"); the link is added after it when the text lacks it. */
@@ -37,7 +39,11 @@ function MeaningText({ sense }: { sense: PageSense }) {
  * One numbered meaning (K/31): part of speech and level, meaning, English definition, example; learning state or [Thêm vào nhóm].
  * A word of the learner's own (K/88) has no English definition (§15 point 11) and [Sửa] [Xóa từ] on the right instead.
  */
-export function SenseBlock({ index, sense, item, forms }: { index: number; sense: PageSense; item: ItemState | undefined; forms: string[] }) {
+export function SenseBlock({ index, sense, item, forms, ownLine }: {
+  index: number; sense: PageSense; item: ItemState | undefined; forms: string[];
+  /** Đợt C §5.3: this sense reads differently from its block (`lead` the metal), so it shows its own line. */
+  ownLine?: PronLine;
+}) {
   const t = useTranslations('App.word');
   const [dialog, setDialog] = useState<'sentences' | 'add' | 'edit' | 'delete' | null>(null);
   const mine = sense.scope === 'private';
@@ -77,6 +83,7 @@ export function SenseBlock({ index, sense, item, forms }: { index: number; sense
           <p className="break-words text-body font-semibold text-ink">
             <MeaningText sense={sense} />
           </p>
+          {ownLine && <PronunciationLine text={sense.lemma} line={ownLine} />}
           {!mine && sense.definition_en && sense.definition_en !== sense.meaning.text && <p className="break-words text-caption text-muted">{sense.definition_en}</p>}
           {sense.examples[0] && (
             <p className="flex items-start gap-1">

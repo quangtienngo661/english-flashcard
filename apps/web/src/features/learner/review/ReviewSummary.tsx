@@ -2,6 +2,8 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { ListChecks } from 'lucide-react';
+import type { GroupSummary } from '../groups/groups-api';
 
 /** Each block rises 50ms after the one before it (motion audit #6); with reduced motion they all show at once. */
 export const STAGGER = [
@@ -12,9 +14,14 @@ export const STAGGER = [
   'motion-safe:animate-summary-in motion-safe:[animation-delay:200ms]',
 ] as const;
 
-/** K/22, M/32: how many cards were done, split into Know and Still learning. Enter goes home (keys in ReviewSession). */
-export function ReviewSummary({ counts }: { counts: { known: number; review: number } }) {
+/**
+ * K/22, M/32: how many cards were done, split into Know and Still learning. Enter goes home (keys in ReviewSession). Đợt C §4.1:
+ * a deck that still has due words offers Ôn beside the way home.
+ */
+export function ReviewSummary({ counts, group }: { counts: { known: number; review: number }; group?: GroupSummary }) {
   const t = useTranslations('App.review');
+  const tDeck = useTranslations('App.deck');
+  const due = group ? group.today.priority + group.today.due : 0;
   const locale = useLocale();
   return (
     <section className="flex w-full flex-col gap-5">
@@ -36,13 +43,28 @@ export function ReviewSummary({ counts }: { counts: { known: number; review: num
           <span className="text-ui text-ink">{t('stillLearning')}</span>
         </div>
       </div>
-      <Link
-        href={`/${locale}/app`}
-        className={`flex min-h-control-touch items-center justify-between gap-3 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary md:w-fit md:min-w-64 ${STAGGER[3]}`}
-      >
-        {t('home')}
-        <kbd className="hidden rounded-sm border border-on-accent px-1.5 text-caption md:inline">Enter</kbd>
-      </Link>
+      <div className={`flex flex-col gap-3 md:flex-row ${STAGGER[3]}`}>
+        {due > 0 && group && (
+          <Link
+            href={`/${locale}/app/recall?group=${group.id}`}
+            className="flex min-h-control-touch items-center justify-center gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none hover:brightness-95 focus-visible:ring-2 focus-visible:ring-primary md:min-w-48"
+          >
+            <ListChecks aria-hidden className="size-5 shrink-0" />
+            {tDeck('recall')}
+          </Link>
+        )}
+        <Link
+          href={`/${locale}/app`}
+          className={
+            due > 0
+              ? 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner border-2 border-border-strong bg-surface px-4.5 text-body font-semibold text-ink shadow-button-secondary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary md:min-w-64'
+              : 'flex min-h-control-touch items-center justify-between gap-3 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary md:w-fit md:min-w-64'
+          }
+        >
+          {t('home')}
+          <kbd className="hidden rounded-sm border border-current px-1.5 text-caption md:inline">Enter</kbd>
+        </Link>
+      </div>
     </section>
   );
 }

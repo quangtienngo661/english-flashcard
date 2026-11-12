@@ -9,6 +9,7 @@ import { useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
 import { Button } from '@/app-ui/Button';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { DeckButtons } from '../groups/DeckButtons';
 import { GroupCard, sortForToday, waiting } from '../groups/GroupCard';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { useGroups, type GroupSummary } from '../groups/groups-api';
@@ -104,9 +105,7 @@ export function TodayPage() {
 /** The first deck with cards waiting (K/10 big card). */
 function Hero({ group }: { group: GroupSummary }) {
   const t = useTranslations('App.today');
-  const locale = useLocale();
   const count = waiting(group);
-  const review = `/${locale}/app/review?group=${group.id}`;
   return (
     // Owner 27/10/2026: the same hero card as Hôm nay on Luyện tập (light in the light theme, deep navy in the dark one).
     <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border border-on-hero/15 border-b-4 border-b-primary bg-hero p-5 text-on-hero md:p-7">
@@ -134,14 +133,7 @@ function Hero({ group }: { group: GroupSummary }) {
           </div>
         ))}
       </dl>
-      <div className="flex flex-wrap items-center gap-4">
-        <Link href={review} className="flex min-h-control-touch items-center rounded-inner bg-accent px-6 text-body font-semibold text-on-accent shadow-ledge-accent">
-          {t('review', { count })}
-        </Link>
-        <Link href={`${review}&mode=all`} className="text-ui font-semibold text-on-hero underline underline-offset-2">
-          {t('studyAll', { total: group.total })}
-        </Link>
-      </div>
+      <DeckButtons group={group} className="max-w-md" />
     </section>
   );
 }

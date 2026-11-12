@@ -10,14 +10,22 @@ export type QuestionType =
   // Bước 7 (design §5): cloze is AI-made or from the learner's own sentence (practice_sessions.cloze_source).
   | 'cloze' | 'meaning_in_sentence' | 'mcq_sentence';
 export type QuestionSource = 'rule' | 'ai' | 'own_sentence';
-export type ClozeSource = 'ai' | 'own';
+// 'own_then_ai' (09/11/2026): a word with a maskable saved sentence is asked from it (no AI, no unit); a word without one gets an AI
+// cloze. The choice is per word, so the session counts as an AI session (gate, units) while its saved-sentence words stay rule questions.
+export type ClozeSource = 'ai' | 'own' | 'own_then_ai';
+// Which side of an 'own_then_ai' cloze a lookup is about: the saved sentence, or the AI-written one.
+export type ClozeRole = 'own' | 'ai';
 
-// Always AI-made; cloze is AI-made only when the session's cloze source is 'ai'.
+// Always AI-made; cloze is AI-made when the session's cloze source is 'ai', and may be when it is 'own_then_ai'.
 export const AI_QUESTION_TYPES = ['meaning_in_sentence', 'mcq_sentence'] as const;
 
 export function isAiType(type: QuestionType, clozeSource: ClozeSource | null): boolean {
-  return (AI_QUESTION_TYPES as readonly QuestionType[]).includes(type) || (type === 'cloze' && clozeSource === 'ai');
+  return (AI_QUESTION_TYPES as readonly QuestionType[]).includes(type)
+    || (type === 'cloze' && (clozeSource === 'ai' || clozeSource === 'own_then_ai'));
 }
+
+/** Whether the session may ask a cloze from a saved sentence. */
+export const usesSavedSentences = (clozeSource: ClozeSource | null): boolean => clozeSource === 'own' || clozeSource === 'own_then_ai';
 
 // Why an AI question was not made (design §6.5, §7).
 export type AiFailure =

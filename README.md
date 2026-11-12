@@ -1,13 +1,14 @@
 # Wordmet
 
 An English vocabulary app for Vietnamese learners, organised by CEFR level (A1–C2) and topic. Learners save words into groups,
-review them with flashcards on an automatic schedule (Leitner boxes), and practise with non-AI questions and AI-written questions
-(graded by rules, never by the AI). The content team (`admin`, `editor`) writes, reviews and publishes words and grants plans in
+learn new words with flashcards, review them with short quizzes on an automatic schedule (Leitner boxes), hear UK and US
+pronunciations, and practise with non-AI questions and AI-written questions (graded by rules, never by the AI). The content team (`admin`, `editor`) writes, reviews and publishes words and grants plans in
 the admin app.
 
-> **Status:** in development, not deployed for real users. Only the landing page runs in production; the learner app
-> (`/vi/app`, `/en/app`) stays blocked in production until the Deploy step. There is no real payment provider yet (a fake one
-> only). Per-step status: [CLAUDE.md](CLAUDE.md) and [docs/deliveries/](docs/deliveries/).
+> **Status:** not launched yet. The landing page deploys from `main` to Cloudflare Workers; the learner app (`/vi/app`,
+> `/en/app`) is left out of production builds until the Deploy step ([what is left](docs/deliveries/deploy-checklist.md)).
+> Sign-in is email and password or Google; payments go through payOS (VietQR), with a fake payOS for local work and tests.
+> Per-step status: [CLAUDE.md](CLAUDE.md) and [docs/deliveries/](docs/deliveries/).
 
 ## What's inside
 
@@ -26,7 +27,9 @@ A mobile app (Flutter) will share the same API; it has not been started.
  apps/admin (staff) ───┘        │
                                 ├──► Redis ◄── worker (CSV import, publish, review reminder emails, AI eval)
                                 ├──► SMTP (locally: Mailpit)
-                                └──► OpenAI / Anthropic (through the `ai` module, with a fake provider)
+                                ├──► OpenAI / Anthropic (through the `ai` module, with a fake provider)
+                                ├──► payOS (payment links; its webhook calls the API back; fake payOS locally)
+                                └──► Google (sign-in; a fake Google for tests)
 ```
 
 ## Prerequisites

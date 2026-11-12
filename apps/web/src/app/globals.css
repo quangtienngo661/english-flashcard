@@ -203,6 +203,20 @@
   --animate-pop-in: pop-in 180ms var(--ease-spring) both;
   /* End-of-session summary: its blocks rise one after another, 50ms apart (motion audit #6). */
   --animate-summary-in: summary-in 250ms var(--ease-enter) both;
+  /* Đợt C DC9: the streak toast's flame bounces once, from its base, just after the pill lands (once a day, so it may delight). */
+  --animate-streak-flame: streak-flame 400ms var(--ease-spring) 120ms both;
+
+  @keyframes streak-flame {
+    0% {
+      transform: scale(0.9);
+    }
+    55% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
   /* The landing's first screen when the page opens (owner 03/11/2026): the words rise one after another, the app window settles in. */
   --animate-hero-in: hero-in 520ms var(--ease-out-strong) both;
   --animate-hero-window-in: hero-window-in 640ms var(--ease-out-strong) both;

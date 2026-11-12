@@ -360,7 +360,10 @@
     },
     "speak": {
       "word": "Nghe phát âm",
-      "sentence": "Nghe câu"
+      "sentence": "Nghe câu",
+      "uk": "Nghe giọng Anh-Anh",
+      "us": "Nghe giọng Anh-Mỹ",
+      "pending": "Đang tạo giọng đọc"
     },
     "auth": {
       "back": "Quay lại",
@@ -762,7 +765,8 @@
       "empty": "Nhóm chưa có từ nào.",
       "emptyTitle": "Nhóm này chưa có từ nào",
       "emptyBody": "Thêm những từ bạn bắt gặp khi đọc hoặc xem phim, hoặc chọn nhanh một bộ từ theo chủ đề trong Tra từ. Khi nhóm đã có từ, bạn có thể bắt đầu ôn tập.",
-      "emptyLookup": "Chọn từ theo chủ đề"
+      "emptyLookup": "Chọn từ theo chủ đề",
+      "metaMastered": "{count, number} từ · {mastered, number} đã thuộc · tạo ngày {date}"
     },
     "backlog": {
       "back": "Nhóm {name}",
@@ -1019,7 +1023,9 @@
         "example": "Câu ví dụ {n, number}",
         "addExample": "+ Thêm câu ví dụ",
         "exampleHint": "Tối đa 300 ký tự mỗi câu.",
-        "note": "Từ này mang nhãn AI gợi ý tới khi bạn sửa nghĩa, chủ đề hoặc câu ví dụ."
+        "note": "Từ này mang nhãn AI gợi ý tới khi bạn sửa nghĩa, chủ đề hoặc câu ví dụ.",
+        "ipa": "Phiên âm",
+        "ipaHint": "Không bắt buộc."
       },
       "recognizedShort": "{kind} của {base}",
       "lockedDeck": "Lưu vào nhóm: {name}",
@@ -1613,6 +1619,33 @@
         "yes": "Có",
         "no": "Không"
       }
+    },
+    "deck": {
+      "learn": "Học",
+      "recall": "Ôn",
+      "recallExtra": "Ôn tập",
+      "mastered": "{count, number} đã thuộc"
+    },
+    "recall": {
+      "header": "Ôn · {group}",
+      "headerNoName": "Ôn",
+      "doneTitle": "Xong {count, number} từ.",
+      "leveledUp": "Đúng, lên ngăn",
+      "correctKept": "Đúng, giữ ngăn",
+      "wrongKept": "Sai, giữ ngăn",
+      "needsReview": "Cần ôn lại",
+      "newLeftTitle": "Còn {count, number} từ mới trong nhóm này",
+      "newLeftBody": "Học bây giờ thì ngày mai chúng có trong phiên ôn.",
+      "again": "Ôn tiếp",
+      "home": "Về trang chủ",
+      "back": "Về nhóm",
+      "nothingTitle": "Nhóm này chưa có từ nào đã học.",
+      "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
+      "noteLeveled": "{lemma} lên ngăn {stage}.",
+      "noteKept": "{lemma} giữ ngăn {stage}."
+    },
+    "streak": {
+      "days": "{days, number} ngày liên tiếp"
     }
   }
 }

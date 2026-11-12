@@ -10,12 +10,19 @@ export type SessionView = {
   words: number;
   /** Bước 7 (design §6.1). */
   ai_planned: number; cloze_source: string | null;
+  /** Practice AI count (09/11/2026): 'even' | 'random'; null for a session started without `ai_count`. */
+  ai_placement: string | null;
 };
 
 export type ItemView = {
   item_id: string; round: number; position: number; type: QuestionType; prompt_style: PromptStyle; prompt: Prompt;
   hints_available: { level1: boolean; level2: boolean; level3: boolean }; hint_level: number; state: 'unanswered' | 'try_again'; tries: number;
   reportable: boolean;
+  /**
+   * This very question was written by AI. With cloze source 'own_then_ai' the session alone cannot say, since a saved-sentence cloze
+   * and an AI cloze share the session.
+   */
+  ai: boolean;
   /** The asked word is the learner's own (learner UI D12, K/81: a report shows it to the team). */
   private_word: boolean;
 };
@@ -27,7 +34,7 @@ export function sessionView(row: PracticeSession, items: Array<Pick<PracticeSess
     id: row.id, kind: row.kind === 'recall' ? 'recall' : 'practice', source: row.source, group_id: row.groupId, group_filter: row.groupFilter, sort: row.sort, types: row.types,
     prompt_style: row.promptStyle, target_count: row.targetCount, status: row.status,
     round: Math.max(1, ...items.map((i) => i.round)), asked: items.filter((i) => i.result !== 'void').length,
-    words: row.senseIds.length, ai_planned: row.aiPlanned, cloze_source: row.clozeSource,
+    words: row.senseIds.length, ai_planned: row.aiPlanned, cloze_source: row.clozeSource, ai_placement: row.aiPlacement,
   };
 }
 
@@ -44,6 +51,7 @@ export function itemView(item: ItemWithQuestion): ItemView {
     // learner's own sentence (§7.3).
     reportable: item.question.source === 'ai'
       || (!(item.question.answerKey as AnswerKey).asked_private && item.question.source !== 'own_sentence'),
+    ai: item.question.source === 'ai',
     private_word: (item.question.answerKey as AnswerKey).asked_private === true,
   };
 }

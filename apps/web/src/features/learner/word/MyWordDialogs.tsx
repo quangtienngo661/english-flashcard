@@ -12,7 +12,7 @@ import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
 import { showToast } from '@/app-ui/Toast';
 import { GROUPS_KEY } from '../groups/groups-api';
-import { cleanExamples, EditSuggestionForm, type WordDraft } from '../add-word/EditSuggestionForm';
+import { bareIpa, cleanExamples, EditSuggestionForm, type WordDraft } from '../add-word/EditSuggestionForm';
 import { wordHref, type PageSense } from './word-api';
 
 const draftOf = (sense: PageSense): WordDraft => ({
@@ -22,6 +22,7 @@ const draftOf = (sense: PageSense): WordDraft => ({
   level: sense.level ?? '',
   topic: sense.topics[0]?.code ?? '',
   examples: sense.examples.length > 0 ? sense.examples : [''],
+  ipa: sense.pronunciation?.custom ?? '',
 });
 
 type Patch = {
@@ -29,7 +30,8 @@ type Patch = {
   pos?: string | null;
   level?: string | null;
   topics?: string[];
-  senses?: Array<{ sense_id: string; meaning?: string; examples?: string[] }>;
+  /** Đợt C (H10, DC33): `ipa` belongs to this meaning; null clears it. */
+  senses?: Array<{ sense_id: string; meaning?: string; examples?: string[]; ipa?: string | null }>;
 };
 
 /** Only what changed (`PATCH /v1/my-words/{id}`): the API drops the "AI gợi ý" label when meaning, topics or examples change. */
@@ -42,8 +44,12 @@ function patchOf(sense: PageSense, before: WordDraft, after: WordDraft): Patch {
   const meaning = after.meaning.trim() !== before.meaning ? after.meaning.trim() : undefined;
   const examples = cleanExamples(after.examples);
   const examplesChanged = examples.join('\n') !== cleanExamples(before.examples).join('\n');
-  if (meaning !== undefined || examplesChanged) {
-    patch.senses = [{ sense_id: sense.sense_id, ...(meaning !== undefined ? { meaning } : {}), ...(examplesChanged ? { examples } : {}) }];
+  const ipaChanged = bareIpa(after.ipa) !== bareIpa(before.ipa);
+  if (meaning !== undefined || examplesChanged || ipaChanged) {
+    patch.senses = [{
+      sense_id: sense.sense_id, ...(meaning !== undefined ? { meaning } : {}), ...(examplesChanged ? { examples } : {}),
+      ...(ipaChanged ? { ipa: bareIpa(after.ipa) || null } : {}),
+    }];
   }
   return patch;
 }

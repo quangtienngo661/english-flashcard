@@ -11,6 +11,8 @@ export const contentSchema = z.strictObject({
   gloss_vi: cell.nullable().optional(), definition_en: cell.nullable().optional(),
   examples_en: z.array(cell).max(MAX_EXAMPLES).optional(), topics: z.array(cell).optional(),
   accepted_forms: z.array(cell).optional(),
+  // Round C (H11): UK / US transcription without slashes; checked by normalizeContent (`ipa-invalid` names the field and the character).
+  ipa_uk: cell.nullable().optional(), ipa_us: cell.nullable().optional(),
 });
 export type ContentBody = z.infer<typeof contentSchema>;
 
@@ -21,5 +23,7 @@ export function toContent(body: ContentBody): Partial<RevisionContent> {
     ...(body.examples_en !== undefined ? { examplesEn: body.examples_en } : {}),
     ...(body.topics !== undefined ? { topicCodes: body.topics } : {}),
     ...(body.accepted_forms !== undefined ? { acceptedForms: body.accepted_forms } : {}),
+    ...(body.ipa_uk !== undefined ? { ipaUk: body.ipa_uk } : {}),
+    ...(body.ipa_us !== undefined ? { ipaUs: body.ipa_us } : {}),
   };
 }

@@ -64,6 +64,42 @@ describe('availableTypes: Bước 7 types (design §6.2)', () => {
   });
 });
 
+describe('availableTypes: cloze with source own_then_ai (a saved sentence first, else AI)', () => {
+  const mixed = {
+    clozeSource: 'own_then_ai' as const, hasViMeaning: true, ownSentence: false, meaningPool: 3, mcqForms: 3, wordRejected: false,
+  };
+
+  // [role, has a maskable saved sentence, has what AI needs (a Vietnamese meaning), expected]
+  const rows: Array<['own' | 'ai' | undefined, boolean, boolean, QuestionType[]]> = [
+    ['own', true, true, ['cloze']],
+    ['own', true, false, ['cloze']],
+    ['own', false, true, []],
+    ['ai', false, true, ['cloze']],
+    ['ai', true, true, []],
+    ['ai', false, false, []],
+    [undefined, true, false, ['cloze']],
+    [undefined, false, true, ['cloze']],
+    [undefined, true, true, ['cloze']],
+    [undefined, false, false, []],
+  ];
+  for (const [clozeRole, ownSentence, hasViMeaning, expected] of rows) {
+    it(`role ${clozeRole ?? 'either'}, saved sentence ${ownSentence}, Vietnamese meaning ${hasViMeaning} → ${JSON.stringify(expected)}`, () => {
+      expect(availableTypes(word(), 0, ['cloze'], { ...mixed, clozeRole, ownSentence, hasViMeaning })).toEqual(expected);
+    });
+  }
+
+  it('the AI role only decides cloze: the other AI types do not care about a saved sentence', () => {
+    const facts = { ...mixed, clozeRole: 'ai' as const, ownSentence: true };
+    expect(availableTypes(word(), 0, ['cloze', 'meaning_in_sentence', 'mcq_sentence'], facts)).toEqual(['meaning_in_sentence', 'mcq_sentence']);
+  });
+
+  it('a function word or a word checked as not recognized has no AI cloze, but keeps its own saved sentence', () => {
+    expect(availableTypes(word({ function_word: true }), 0, ['cloze'], { ...mixed, clozeRole: 'ai' })).toEqual([]);
+    expect(availableTypes(word({ function_word: true }), 0, ['cloze'], { ...mixed, clozeRole: 'own', ownSentence: true })).toEqual(['cloze']);
+    expect(availableTypes(word(), 0, ['cloze'], { ...mixed, clozeRole: 'ai', wordRejected: true })).toEqual([]);
+  });
+});
+
 describe('chooseType', () => {
   it('chooseType prefers a different type', () => {
     for (let seed = 1; seed <= 50; seed++) {

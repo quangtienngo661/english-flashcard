@@ -2118,7 +2118,8 @@
       "entitlements": "Plans and quotas",
       "content": "Content",
       "ai": "AI",
-      "identity": "Accounts"
+      "identity": "Accounts",
+      "tts": "Voice"
     },
     "save": "Save changes",
     "saved": "Saved",
@@ -2146,18 +2147,23 @@
       "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document",
       "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything.",
       "free_ai_practice_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change",
-      "free_ai_lookup_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change"
+      "free_ai_lookup_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change",
+      "session_max_mode": "Word count: the maximum is the number of words in the scope the learner picks, at most 100",
+      "ai_max_fixed": "never above the session’s questions",
+      "ai_max_percent": "rounded down",
+      "ai_placement": "Let the learner choose: the Customize session dialog shows Spread evenly / Random once the learner picks at least 1 AI question"
     },
     "zeroMeaning": {
       "ai_prefetch_count": "off",
       "content_retention_days": "not kept",
       "free_ai_practice_per_cycle": "the Free plan has no AI questions",
       "free_ai_lookup_per_cycle": "the Free plan cannot use AI lookup",
-      "free_ai_daily_cap": "Free-plan users cannot use AI"
+      "free_ai_daily_cap": "Free-plan users cannot use AI",
+      "ai_max_fixed": "no AI questions"
     },
     "cross": {
       "stop_after_days": "and greater than the field above",
-      "default_questions_per_session": "and ≤ the maximum",
+      "default_questions_per_session": "and ≤ the maximum when Fixed number is chosen",
       "pro_practice_sessions_per_day": "and ≥ the Free plan"
     },
     "units": {
@@ -2172,7 +2178,8 @@
       "uses": "uses",
       "years": "years",
       "times": "times",
-      "vnd": "VND"
+      "vnd": "VND",
+      "questions": "questions"
     },
     "fields": {
       "reminders": {
@@ -2191,8 +2198,13 @@
         "active_window_days": "Most recent days that count as “still learning” (D7/D30)"
       },
       "practice": {
-        "max_questions_per_session": "Maximum questions per session",
+        "session_max_mode": "Maximum questions per session",
+        "max_questions_per_session": "Fixed number",
         "default_questions_per_session": "Default questions per session",
+        "ai_max_mode": "Maximum AI questions per session",
+        "ai_max_fixed": "Fixed number",
+        "ai_max_percent": "Share of the session’s questions",
+        "ai_placement": "AI question placement",
         "history_months": "Keep practice history for",
         "true_false_true_percent": "Share of true pairs in True/False",
         "idle_session_close_hours": "Close an abandoned session after",
@@ -2243,6 +2255,9 @@
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"
+      },
+      "tts": {
+        "daily_char_cap": "Daily TTS character cap"
       }
     },
     "aiUsage": {
@@ -2258,7 +2273,23 @@
       "change": "{old} → {new}",
       "by": "{email} · {at}",
       "unknownUser": "Deleted user"
-    }
+    },
+    "choices": {
+      "session_max_mode": {
+        "fixed": "Fixed number",
+        "scope_words": "Word count of the scope"
+      },
+      "ai_max_mode": {
+        "fixed": "Fixed number",
+        "percent": "Share of the session’s questions"
+      },
+      "ai_placement": {
+        "even": "Spread evenly",
+        "random": "Random",
+        "learner": "Let the learner choose"
+      }
+    },
+    "aiCapExample": "Example: a {q1}-question session → at most {a1} AI questions · {q2} questions → {a2} · {q3} questions → {a3}"
   },
   "words": {
     "search": "Search words",
@@ -2464,7 +2495,20 @@
         "retired": "retired"
       },
       "unknownUser": "deleted user",
-      "lastOnly": "Only the latest is kept, no history."
+      "lastOnly": "Only the latest is kept, no history.",
+      "ipaUk": "UK pronunciation",
+      "ipaUs": "US pronunciation",
+      "ipaSource": "Source: {name}",
+      "ipaSourceOwn": "Source: Wordmet",
+      "ipaInvalid": "“{char}” is not an IPA symbol.",
+      "audio": "Voice",
+      "audioReady": "Ready",
+      "audioPending": "Being made",
+      "audioFailed": "Failed",
+      "audioNone": "None yet",
+      "audioRetry": "Try again",
+      "audioRetried": "The voice is queued again.",
+      "audioLine": "{voice} · {status}"
     }
   },
   "topics": {

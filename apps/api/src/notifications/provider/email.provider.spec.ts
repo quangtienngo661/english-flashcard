@@ -7,10 +7,10 @@ import { EmailProvider } from './email.provider.js';
 import { NotSentError } from './notification-provider.js';
 
 const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
-const message = { kind: 'regular', language: 'vi' } as const;
+const message = { kind: 'regular', language: 'vi', streakDays: null } as const;
 
 function setup(over: { emails?: () => Promise<Map<string, string>>; budget?: () => Promise<boolean>; mail?: () => Promise<void> } = {}) {
-  const mailer = { send: vi.fn(over.mail ?? (async () => {})) };
+  const mailer = { send: vi.fn(over.mail ?? (async (..._args: unknown[]) => {})) };
   const provider = new EmailProvider(
     { verifiedEmails: over.emails ?? (async () => new Map([[USER, 'lan@example.com']])) } as unknown as IdentityService,
     { tryConsume: over.budget ?? (async () => true) } as unknown as MailBudget,
@@ -25,6 +25,12 @@ describe('EmailProvider.send', () => {
     const t = setup();
     expect(await t.provider.send(USER, message)).toBe('sent');
     expect(t.mailer.send).toHaveBeenCalledOnce();
+  });
+
+  it('round C: the streak line reaches the mail text', async () => {
+    const t = setup();
+    await t.provider.send(USER, { ...message, streakDays: 12 });
+    expect((t.mailer.send.mock.calls[0][0] as { text: string }).text.split(String.fromCharCode(10))[0]).toBe('Bạn đang có chuỗi 12 ngày. Học hôm nay để giữ chuỗi.');
   });
 
   it('no verified address → no-address; budget spent → budget-exhausted; neither calls the mailer', async () => {

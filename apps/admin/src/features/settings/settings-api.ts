@@ -1,7 +1,7 @@
 import type { ApiClient } from '../../api/client';
 
-export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai' | 'identity';
-export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity'];
+export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai' | 'identity' | 'tts';
+export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity', 'tts'];
 
 export type SettingValue = boolean | number | string | null;
 export type Values = Record<Section, Record<string, SettingValue>>;
@@ -24,14 +24,25 @@ export type SettingsView = {
   bounds: Record<Section, Record<string, Bound>>;
 };
 
-export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times' | 'vnd';
+export type Unit =
+  | 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times' | 'vnd' | 'questions';
 /**
  * `ratio`: a number between 0 and 1 with up to two decimals, shown as a percent in its hint. `usd`: dollars with up to two decimals; an empty
- * field is `null` where the bound is nullable.
+ * field is `null` where the bound is nullable. `choice` (practice AI count, 09/11/2026): one of `options`, shown as a dropdown.
+ * `showWhen`: the field shows only while the choice `key` of the same tab is `is`; it sits in that choice's row.
  */
-export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
+export type FieldSpec = {
+  key: string;
+  kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd' | 'choice';
+  unit?: Unit;
+  options?: readonly string[];
+  showWhen?: { key: string; is: string };
+};
 
-/** The 55 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A and the three Pro prices of launch prep B included). */
+/**
+ * The 61 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A, the three Pro prices of launch prep B and
+ * the five practice AI count keys included; those follow the mockup "Số câu AI và cài đặt luyện tập").
+ */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -49,8 +60,13 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'active_window_days', kind: 'int', unit: 'days' },
   ],
   practice: [
-    { key: 'max_questions_per_session', kind: 'int' },
+    { key: 'session_max_mode', kind: 'choice', options: ['fixed', 'scope_words'] },
+    { key: 'max_questions_per_session', kind: 'int', showWhen: { key: 'session_max_mode', is: 'fixed' } },
     { key: 'default_questions_per_session', kind: 'int' },
+    { key: 'ai_max_mode', kind: 'choice', options: ['fixed', 'percent'] },
+    { key: 'ai_max_fixed', kind: 'int', unit: 'questions', showWhen: { key: 'ai_max_mode', is: 'fixed' } },
+    { key: 'ai_max_percent', kind: 'int', unit: 'percent', showWhen: { key: 'ai_max_mode', is: 'percent' } },
+    { key: 'ai_placement', kind: 'choice', options: ['even', 'random', 'learner'] },
     { key: 'history_months', kind: 'int', unit: 'months' },
     { key: 'true_false_true_percent', kind: 'int', unit: 'percent' },
     { key: 'idle_session_close_hours', kind: 'int', unit: 'hours' },
@@ -100,6 +116,8 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'real_judge_limit', kind: 'int' },
   ],
   identity: [{ key: 'unverified_cleanup_days', kind: 'int', unit: 'days' }],
+  // Đợt C (H14): the Google TTS characters the worker may send a day (UTC); default 120000.
+  tts: [{ key: 'daily_char_cap', kind: 'int', unit: 'chars' }],
 };
 
 /** A field's DOM id and its name in errors: `<section>.<key>` (the API key without the `values.` prefix). */
@@ -115,6 +133,26 @@ export function fieldOfPath(path: string): string | null {
 }
 
 export const sectionOfField = (id: string) => id.slice(0, id.indexOf('.')) as Section;
+
+/** The tab's fields without those whose `showWhen` choice is set to another value. A hidden field keeps its draft value. */
+export function visibleFields(section: Section, values: Values): FieldSpec[] {
+  return SETTINGS_LAYOUT[section].filter((f) => !f.showWhen || values[section]?.[f.showWhen.key] === f.showWhen.is);
+}
+
+/** The choice a dependent field hangs on, or `null`. */
+export function parentOf(section: Section, key: string): string | null {
+  return SETTINGS_LAYOUT[section].find((f) => f.key === key)?.showWhen?.key ?? null;
+}
+
+/** The AI maximum of sessions of 7, 10 and 20 questions, by the API's rule (fixed: at most the session; percent: rounded down). */
+export function aiCapExamples(mode: string, fixed: number, percent: number): Array<{ questions: number; ai: number }> | null {
+  const n = mode === 'fixed' ? fixed : percent;
+  if (!Number.isInteger(n)) return null;
+  return [7, 10, 20].map((questions) => ({
+    questions,
+    ai: mode === 'fixed' ? Math.min(fixed, questions) : Math.floor((questions * percent) / 100),
+  }));
+}
 
 /** The keys whose draft differs from the server; a value set back to the server's is not a change. */
 export function changedValues(server: Values, draft: Values): Patch {
@@ -141,9 +179,10 @@ export function applyPatch(values: Values, patch: unknown): Values {
   for (const section of SECTIONS) {
     const part = (patch as Record<string, unknown>)[section];
     if (typeof part !== 'object' || part === null) continue;
-    for (const { key, kind } of SETTINGS_LAYOUT[section]) {
+    for (const { key, kind, options } of SETTINGS_LAYOUT[section]) {
       const value = (part as Record<string, unknown>)[key];
       const ok =
+        (kind === 'choice' && typeof value === 'string' && (options ?? []).includes(value)) ||
         (kind === 'bool' && typeof value === 'boolean') ||
         (kind === 'time' && typeof value === 'string') ||
         (kind === 'int' && (value === null || Number.isInteger(value))) ||

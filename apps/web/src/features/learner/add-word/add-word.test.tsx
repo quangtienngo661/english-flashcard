@@ -89,6 +89,31 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument();
   });
 
+  it('đợt C §5.3: a dictionary result shows its UK and US IPA with two speakers', async () => {
+    const withIpa = { ...goSense, pronunciation: { uk: 'ɡəʊ', us: 'ɡoʊ', custom: null, audio: { uk: null, us: null } } };
+    open('went', { routes: routes({
+      'GET /v1/lookup?q=went': () => Response.json({ senses: [], via_inflection: [{ kind: 'past', base: { entry_id: uuid(11), lemma: 'go', pos: 'verb' }, senses: [withIpa] }] }),
+    }) });
+    expect(await screen.findByText('/ɡəʊ/')).toBeInTheDocument();
+    expect(screen.getByText('/ɡoʊ/')).toBeInTheDocument();
+    // The speakers sit outside the option's label: a press on the meaning must never become a press on a speaker (a label sends its
+    // click to its first control, the speaker when the option has no radio).
+    expect(screen.getByRole('button', { name: 'Nghe giọng Anh-Anh' }).closest('label')).toBeNull();
+    expect(screen.getByText('/ɡəʊ/').closest('label')).toBeNull();
+  });
+
+  it('đợt C DC15: the manual form has an optional Phiên âm field; it is sent without slashes, and left out when empty', async () => {
+    window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
+    const { calls } = open('rizz', { routes: routes() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
+    const ipa = await screen.findByRole('textbox', { name: 'Phiên âm' });
+    expect(ipa).toHaveAccessibleDescription('Không bắt buộc.');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
+    await userEvent.type(ipa, '/rɪz/');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_id: TRAVEL, new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
+  });
+
   it('manual meaning needs only the meaning', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('rizz', { routes: routes() });

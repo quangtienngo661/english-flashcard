@@ -23,7 +23,8 @@ import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } f
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
 import { AiLookupPanel } from './AiLookupPanel';
 import { AiLookupResult } from './AiLookupResult';
-import { cleanExamples, draftFromSuggestion, EditSuggestionForm, type WordDraft } from './EditSuggestionForm';
+import { PronunciationLine } from '@/app-ui/PronunciationLine';
+import { bareIpa, cleanExamples, draftFromSuggestion, EditSuggestionForm, IPA_MAX, type WordDraft } from './EditSuggestionForm';
 import { GroupPicker } from './GroupPicker';
 import { readLastGroup, writeLastGroup } from './last-group';
 
@@ -61,6 +62,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   const [word, setWord] = useState(initialWord);
   const [sentence, setSentence] = useState('');
   const [meaning, setMeaning] = useState('');
+  const [ipa, setIpa] = useState('');
   const [picked, setPicked] = useState<string | null>(null);
   const [chosenDeck, setChosenDeck] = useState<string | null>(null);
   const [lastGroup] = useState(readLastGroup);
@@ -124,10 +126,13 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           ...(draft.topic ? { topics: [draft.topic] } : {}),
           ...formOf,
           examples: cleanExamples(draft.examples),
+          ...(bareIpa(draft.ipa) ? { ipa: bareIpa(draft.ipa) } : {}),
           ai_suggestion: true,
         },
       };
-    } else if (mode.current === 'manual') body = { group_id: target!, new_word: { lemma, meaning: meaning.trim(), ...formOf } };
+    } else if (mode.current === 'manual') {
+      body = { group_id: target!, new_word: { lemma, meaning: meaning.trim(), ...formOf, ...(bareIpa(ipa) ? { ipa: bareIpa(ipa) } : {}) } };
+    }
     else body = { group_id: target!, sense_id: chosenSense!.sense.sense_id };
     if (sentence.trim()) body.sentence = sentence.trim();
     const result = await api.post<QuickAddResult>('/v1/quick-add', body, { idempotencyKey: `${key}:add` });
@@ -329,6 +334,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} />
         {via && <p className="-mt-2 text-caption text-ink">{t('recognized', { kind: kind(via.kind), base: via.base.lemma })}</p>}
         <TextField label={t('meaning')} value={meaning} onChange={setMeaning} maxLength={300} error={fieldError} autoFocus />
+        <TextField label={t('edit.ipa')} description={t('edit.ipaHint')} value={ipa} onChange={setIpa} maxLength={IPA_MAX} spellCheck={false} />
         {sentenceField}
         {deckField}
         {failureLine}
@@ -373,24 +379,33 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
               <p className="text-ui font-semibold text-ink">{t('formOf', { word: lemma, kind: kind(via.kind), base: via.base.lemma })}</p>
             )}
             {options.map((o) => (
-              <label key={o.sense.sense_id} className={cn('flex items-start gap-2 py-1', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
-                {inDeck.has(o.sense.sense_id) ? (
-                  <span className="text-caption text-muted">{t('alreadyIn')}</span>
-                ) : (
-                  <input
-                    type="radio"
-                    name="add-word-sense"
-                    checked={chosenSense?.sense.sense_id === o.sense.sense_id}
-                    disabled={!!lockedGroupId && queue.isPending}
-                    onChange={() => setPicked(o.sense.sense_id)}
-                    className="mt-1 size-4 shrink-0 accent-primary"
-                  />
-                )}
-                <span className="min-w-0 break-words text-ui text-ink">
-                  <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
-                  <span className="block">{o.sense.meaning.text}</span>
-                </span>
-              </label>
+              // Đợt C §5.3: the reading sits under the option, outside its label: a label sends a press to its first control, which
+              // would be a speaker on an option with no radio ("đã có trong nhóm").
+              <div key={o.sense.sense_id} className="flex flex-col py-1">
+                <label className={cn('flex items-start gap-2', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
+                  {inDeck.has(o.sense.sense_id) ? (
+                    <span className="text-caption text-muted">{t('alreadyIn')}</span>
+                  ) : (
+                    <input
+                      type="radio"
+                      name="add-word-sense"
+                      checked={chosenSense?.sense.sense_id === o.sense.sense_id}
+                      disabled={!!lockedGroupId && queue.isPending}
+                      onChange={() => setPicked(o.sense.sense_id)}
+                      className="mt-1 size-4 shrink-0 accent-primary"
+                    />
+                  )}
+                  <span className="min-w-0 break-words text-ui text-ink">
+                    <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
+                    <span className="block">{o.sense.meaning.text}</span>
+                  </span>
+                </label>
+                <PronunciationLine
+                  text={o.sense.lemma}
+                  line={o.sense.pronunciation ? { scope: o.sense.scope, pronunciation: o.sense.pronunciation } : null}
+                  className={cn('mt-0.5', inDeck.has(o.sense.sense_id) ? 'pl-0' : 'pl-6')}
+                />
+              </div>
             ))}
           </div>
         )}

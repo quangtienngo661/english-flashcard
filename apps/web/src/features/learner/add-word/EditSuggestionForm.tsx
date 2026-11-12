@@ -13,8 +13,13 @@ const EXAMPLE_MAX = 300;
 const EXAMPLES_MAX = 2;
 const NONE = 'none';
 
-/** The fields a learner can change on their own word; '' means "not set" for part of speech, level and topic. */
-export type WordDraft = { lemma: string; pos: string; meaning: string; level: string; topic: string; examples: string[] };
+/** The fields a learner can change on their own word; '' means "not set" for part of speech, level, topic and IPA. */
+export type WordDraft = { lemma: string; pos: string; meaning: string; level: string; topic: string; examples: string[]; ipa: string };
+
+/** Đợt C (H10): the IPA as the API takes it, without the slashes a learner may type ("/rɪz/" → "rɪz"). */
+export const bareIpa = (v: string) => v.trim().replace(/^[/[]+/, '').replace(/[/\]]+$/, '').trim();
+/** The API's limit for a learner's IPA (`ipa_custom`, VarChar 100). */
+export const IPA_MAX = 100;
 
 export function draftFromSuggestion(s: AiLookupResult['suggestion']): WordDraft {
   return {
@@ -25,6 +30,7 @@ export function draftFromSuggestion(s: AiLookupResult['suggestion']): WordDraft 
     level: '',
     topic: '',
     examples: s.examples.slice(0, EXAMPLES_MAX),
+    ipa: '',
   };
 }
 
@@ -60,6 +66,8 @@ export function EditSuggestionForm({ value, onChange, meaningError, formOf }: {
         />
       </div>
       <TextField label={t('meaning')} value={value.meaning} onChange={(meaning) => set({ meaning })} maxLength={MEANING_MAX} error={meaningError} />
+      {/* Đợt C DC15: one optional field, not split by accent; nothing checks the symbols (it never goes to Google, DC22). */}
+      <TextField label={t('ipa')} description={t('ipaHint')} value={value.ipa} onChange={(ipa) => set({ ipa })} maxLength={IPA_MAX} spellCheck={false} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
           label={t('level')}

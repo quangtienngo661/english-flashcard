@@ -6,6 +6,7 @@ import { ApiError } from '@/app-shell/api/problem';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { showStreak } from '@/app-ui/StreakToast';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { CURRENT_KEY, type PracticeSessionView, type QuestionType } from '../practice-api';
 
@@ -53,6 +54,10 @@ export type AnswerResult = {
   translation: string | null;
   /** Set for an AI fill-in answered with a declared session word: the two rows of the card. Absent from an older API. */
   alternative?: { typed: string; rows: AlternativeRow[] } | null;
+  /** Đợt C (H6): what the answer did to the schedule, in an Ôn session only. */
+  schedule?: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
+  /** Đợt C (H6): the study streak, on the first study of the learner's day only. */
+  streak?: { days: number } | null;
 };
 
 export type AnswerBody = { choice: number } | { is_true: boolean } | { text: string };
@@ -83,11 +88,17 @@ export type Phase =
   | { kind: 'summary' }
   | { kind: 'advancing' }
   | { kind: 'none' }
+  /** Đợt C: an Ôn session of a deck with no learned word (409 `practice-no-words`, reason `nothing-learned`). */
+  | { kind: 'nothing_learned' }
   | { kind: 'closed' };
 
 export type SummaryWord = { sense_id: string; lemma: string; meaning: string; item_id: string; action: 'needs_review' | 'known' | null };
 /** `alternatives`: how many of the right answers were alternative answers; absent from an older API. */
-export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; alternatives?: number; words: SummaryWord[] };
+export type Summary = {
+  session: PracticeSessionView; asked: number; correct: number; wrong: number; alternatives?: number; words: SummaryWord[];
+  /** Đợt C (H7): an Ôn session only. */
+  recall?: { leveled_up: number; correct_kept: number } | null;
+};
 
 const isSlug = (error: unknown, slug: string) => error instanceof ApiError && error.problem.slug === slug;
 /** E29: after this long in "Đang tạo câu…" the learner gets the general error instead of waiting on. */
@@ -106,15 +117,32 @@ export const asksAi = (session: PracticeSessionView) =>
 /**
  * One practice session (K/60–K/67). Nothing is kept in the browser: the page reads `GET /practice/sessions/current` once and
  * the API knows where the learner is, so a reload or Back resumes (Review Focus 4). Each answer press is one `[I]` write.
+ * Đợt C: with `recall`, the page starts an Ôn session of that deck instead (one key per page, so a double mount starts one);
+ * a reload starts a new one, which closes the old Ôn session but never the open practice session.
  */
-export function usePracticeSession() {
+export function usePracticeSession(recall?: { groupId: string }) {
   const api = useApi();
   const client = useQueryClient();
   // Read once (as the review queue): a refetch must not swap the question under the learner.
   const [loaded, setLoaded] = useState(false);
+  const [startKey] = useState(() => crypto.randomUUID());
   const load = useQuery({
-    queryKey: ['practice', 'session-load'],
-    queryFn: async () => {
+    queryKey: ['practice', 'session-load', recall?.groupId ?? null],
+    queryFn: async (): Promise<{ session: PracticeSessionView; item: Item | null; preparing: boolean } | null | 'nothing_learned'> => {
+      if (recall) {
+        try {
+          const started = await api.post<{ session: PracticeSessionView }>(
+            '/v1/practice/sessions', { kind: 'recall', source: 'group', group_id: recall.groupId }, { idempotencyKey: startKey });
+          setLoaded(true);
+          return { session: started.session, item: null, preparing: false };
+        } catch (error) {
+          if (isSlug(error, 'practice-no-words') && (error as ApiError).problem.extensions?.reason === 'nothing-learned') {
+            setLoaded(true);
+            return 'nothing_learned';
+          }
+          throw error;
+        }
+      }
       try {
         const current = await api.get<{ session: PracticeSessionView; item: Item | null; preparing: boolean }>('/v1/practice/sessions/current');
         setLoaded(true);
@@ -145,9 +173,9 @@ export function usePracticeSession() {
   let phase: Phase | null = own?.phase ?? null;
   let session = own?.session ?? null;
   if (!own && load.data !== undefined) {
-    const data = load.data;
+    const data = load.data === 'nothing_learned' ? null : load.data;
     session = data?.session ?? null;
-    phase = data === null ? { kind: 'none' }
+    phase = load.data === 'nothing_learned' ? { kind: 'nothing_learned' } : data === null ? { kind: 'none' }
       : data.item ? { kind: 'question', item: data.item, outcome: null }
         : data.session.status === 'waiting_continue' ? { kind: 'round' } : { kind: 'advancing' };
   }
@@ -248,6 +276,8 @@ export function usePracticeSession() {
   });
 
   function recordFinal(item: Item, result: AnswerResult, chosen: AnswerBody | null) {
+    // Đợt C DC9: only the first study of the learner's day carries it (an answer from another tab carries none).
+    if (result.streak) showStreak(result.streak.days);
     if (session) setResults((r) => ({ ...r, [session!.asked]: result.result }));
     // The band stays with its question: K/76 names the word and links to it once the answer is shown (review I3).
     const notice = phase?.kind === 'question' ? phase.notice : null;

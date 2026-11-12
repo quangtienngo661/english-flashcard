@@ -360,7 +360,10 @@
     },
     "speak": {
       "word": "Listen",
-      "sentence": "Listen to the sentence"
+      "sentence": "Listen to the sentence",
+      "uk": "Play the UK pronunciation",
+      "us": "Play the US pronunciation",
+      "pending": "The voice is being made"
     },
     "auth": {
       "back": "Back",
@@ -762,7 +765,8 @@
       "empty": "This deck has no words yet.",
       "emptyTitle": "This deck has no words yet",
       "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
-      "emptyLookup": "Pick words by topic"
+      "emptyLookup": "Pick words by topic",
+      "metaMastered": "{count, plural, one {# word} other {# words}} · {mastered, number} mastered · created {date}"
     },
     "backlog": {
       "back": "{name} deck",
@@ -1019,7 +1023,9 @@
         "example": "Example {n, number}",
         "addExample": "+ Add an example",
         "exampleHint": "Up to 300 characters each.",
-        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples."
+        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples.",
+        "ipa": "Pronunciation",
+        "ipaHint": "Optional."
       },
       "recognizedShort": "{kind} of {base}",
       "lockedDeck": "Saving to deck: {name}",
@@ -1613,6 +1619,33 @@
         "yes": "Yes",
         "no": "No"
       }
+    },
+    "deck": {
+      "learn": "Learn",
+      "recall": "Review",
+      "recallExtra": "Extra review",
+      "mastered": "{count, number} mastered"
+    },
+    "recall": {
+      "header": "Review · {group}",
+      "headerNoName": "Review",
+      "doneTitle": "{count, plural, one {# word} other {# words}} done.",
+      "leveledUp": "Right, moved up",
+      "correctKept": "Right, same stage",
+      "wrongKept": "Wrong, same stage",
+      "needsReview": "Still learning",
+      "newLeftTitle": "{count, plural, one {# new word} other {# new words}} left in this deck",
+      "newLeftBody": "Learn them now and they join tomorrow's review.",
+      "again": "Review more",
+      "home": "Back to Today",
+      "back": "Back to the deck",
+      "nothingTitle": "This deck has no learned words yet.",
+      "nothingBody": "Learn a few new words first, then come back to review.",
+      "noteLeveled": "{lemma} moved up to the {stage} stage.",
+      "noteKept": "{lemma} stays in the {stage} stage."
+    },
+    "streak": {
+      "days": "{days, number}-day streak"
     }
   }
 }

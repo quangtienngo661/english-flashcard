@@ -32,6 +32,12 @@ function useHint() {
   };
   return (spec: FieldSpec, bound: Bound | undefined, defaultValue: SettingValue) => {
     const parts: string[] = [spec.key];
+    // A choice: "`key` · note · mặc định <label>" (practice AI count, 09/11/2026).
+    if (spec.kind === 'choice') {
+      if (spec.key in NOTE) parts.push(t(`notes.${spec.key as keyof typeof NOTE}`));
+      parts.push(t('hint.default', { value: typeof defaultValue === 'string' ? choiceLabel(t, spec.key, defaultValue) : shown(spec, defaultValue) }));
+      return parts.join(' · ');
+    }
     if (spec.kind === 'bool') parts.push(t('hint.onOff'));
     else if (bound) {
       const n = (v: number | string) => (typeof v === 'number' ? format.number(v) : v);
@@ -56,10 +62,20 @@ function useHint() {
 
 const CROSS = { stop_after_days: 1, default_questions_per_session: 1, pro_practice_sessions_per_day: 1 } as const;
 const EMPTY = { ai_cap_alert_percent: 1 } as const;
-const NOTE = { transaction_retention_years: 1, admin_daily_usd_cap: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1 } as const;
-const ZERO = {
-  ai_prefetch_count: 1, content_retention_days: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, free_ai_daily_cap: 1,
+const NOTE = {
+  transaction_retention_years: 1, admin_daily_usd_cap: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, session_max_mode: 1,
+  ai_max_fixed: 1, ai_max_percent: 1, ai_placement: 1,
 } as const;
+const ZERO = {
+  ai_prefetch_count: 1, content_retention_days: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, free_ai_daily_cap: 1, ai_max_fixed: 1,
+} as const;
+
+type SettingsT = ReturnType<typeof useTranslations<'settings'>>;
+/** The label of one value of a choice field, e.g. `ai_placement` `even` → "Rải đều"; the raw value when no label exists. */
+export function choiceLabel(t: SettingsT, key: string, value: string): string {
+  const id = `choices.${key}.${value}` as Parameters<SettingsT>[0];
+  return t.has(id) ? t(id) : value;
+}
 
 /** One setting: a switch, the send-time select or a number field, with its hint and error. */
 export function SettingsField({ section, spec, value, defaultValue, bound, error, onChange }: Props) {
@@ -70,6 +86,21 @@ export function SettingsField({ section, spec, value, defaultValue, bound, error
 
   if (spec.kind === 'bool') {
     return <Switch id={id} label={label} description={hint} isSelected={value === true} onChange={onChange} />;
+  }
+  if (spec.kind === 'choice') {
+    return (
+      <div className="max-w-md">
+        <Select
+          id={id}
+          label={label}
+          description={hint}
+          error={error}
+          value={typeof value === 'string' ? value : ''}
+          onChange={onChange}
+          items={(spec.options ?? []).map((option) => ({ id: option, label: choiceLabel(t, spec.key, option) }))}
+        />
+      </div>
+    );
   }
   if (spec.kind === 'time') {
     return (

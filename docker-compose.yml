@@ -68,6 +68,10 @@ services:
       ADMIN_APP_URL: http://localhost:${ADMIN_PORT:-5173}
       LEARNER_APP_URL: http://localhost:${WEB_PORT:-3001}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/v1/auth/google/callback}
+      # Round C: pronunciation audio from the fake TTS, kept in the container and served by the API's dev route (no Google, no R2).
+      TTS_FAKE_ENABLED: ${TTS_FAKE_ENABLED:-true}
+      AUDIO_STORAGE_FAKE_ENABLED: ${AUDIO_STORAGE_FAKE_ENABLED:-true}
+      AUDIO_PUBLIC_BASE_URL: ${AUDIO_PUBLIC_BASE_URL:-http://localhost:${API_PORT:-3000}/v1/dev/audio}
       CORS_ORIGINS: http://localhost:${API_PORT:-3000},http://localhost:${ADMIN_PORT:-5173},http://localhost:${WEB_PORT:-3001},http://127.0.0.1:${ADMIN_PORT:-5173}
     depends_on:
       postgres:
@@ -117,6 +121,8 @@ services:
         NEXT_PUBLIC_LEARNER_APP: 'on'
         # Blank = the fake widget, which the API accepts in TURNSTILE_MODE=fake (its compose default).
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+        # Round C: the origin of the pronunciation files, for the /app CSP media-src.
+        NEXT_PUBLIC_AUDIO_BASE_URL: ${AUDIO_PUBLIC_BASE_URL:-http://localhost:${API_PORT:-3000}/v1/dev/audio}
     environment:
       # The browser reaches the API at localhost; this container reaches it by service name (read on the server, e.g. /privacy).
       API_INTERNAL_BASE_URL: http://api:3000

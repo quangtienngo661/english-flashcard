@@ -2,6 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
+import { StreakToast } from '@/app-ui/StreakToast';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';
@@ -130,7 +131,8 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(heading.parentElement).toHaveClass('motion-safe:animate-summary-in');
     expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:50ms]');
     expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:100ms]');
-    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ })).toHaveClass('motion-safe:[animation-delay:150ms]');
+    // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
+    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:150ms]');
   });
 
   it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
@@ -226,6 +228,50 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeInTheDocument();
   });
 
+  it('đợt C DC9: the first flip of the day shows the streak toast; a later one without `streak` shows nothing new', async () => {
+    let first = true;
+    renderApp(<><ReviewSession /><StreakToast /></>, { routes: routes([DEPLOY, CACHE], {
+      'POST /v1/reviews': () => {
+        const streak = first ? { days: 13 } : null;
+        first = false;
+        return Response.json({ item_id: uuid(1), level: 1, due_date: '2026-10-21', priority: false, streak });
+      },
+    }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByText('13 ngày liên tiếp')).toBeInTheDocument();
+    expect(screen.getAllByText(/ngày liên tiếp/)).toHaveLength(1);
+  });
+
+  it('đợt C DC25: mode=new asks for the new words only', async () => {
+    params.current = new URLSearchParams({ group: G, mode: 'new' });
+    const { count } = renderApp(<ReviewSession />, { routes: routes([], { [`GET /v1/groups/${G}/queue?mode=new`]: () => Response.json({ cards: [card(4, 'board', { level: 0, section: 'new' })] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    expect(count('GET', `/v1/groups/${G}/queue?mode=new`)).toBe(1);
+    expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(0);
+  });
+
+  it('đợt C §4.1: after Học, a deck with due words offers Ôn; one without does not', async () => {
+    const summary = (due: number) => ({
+      id: G, name: 'Công nghệ', version: 1, total: 2, today: { priority: 0, due, new: 0 },
+      cells: [0, 2, 0, 0, 0, 0].map((total, level) => ({ level, total, due: 0 })), backlog: 0, available: { due, new: 0 },
+    });
+    const view = renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(4)] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    view.unmount();
+
+    renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(0)] }) }) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    expect(await screen.findByRole('heading', { name: 'Xong 1 thẻ.' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ôn' })).not.toBeInTheDocument();
+  });
+
   it('mode=all asks for every card and labels long-overdue ones', async () => {
     params.current = new URLSearchParams({ group: G, mode: 'all' });
     const { count } = renderApp(<ReviewSession />, { routes: routes([card(3, 'leave', { section: 'backlog' })]) });
@@ -289,7 +335,7 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    const uk = within(front).getByRole('button', { name: 'Nghe phát âm' });
+    const uk = within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' });
     const flip = within(front).getAllByRole('button').find((b) => b.textContent?.includes('deploy') && !b.getAttribute('aria-label'))!;
     expect(flip.contains(uk)).toBe(false);
     expect(uk.closest('button')).toBe(uk);
@@ -302,6 +348,25 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     expect(synth.speak).toHaveBeenCalledTimes(2);
   });
 
+  it('đợt C §5.3: both faces show UK and US with their IPA; a ready file plays, a missing one falls back to the browser voice', async () => {
+    const play = vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const uk = makeVoice('en-GB');
+    const synth = installSpeech([uk, makeVoice('en-US')]);
+    const luggage = card(5, 'luggage', {}, { pos: 'noun', pronunciation: { uk: 'ˈlʌɡ.ɪdʒ', us: 'ˈlʌɡɪdʒ', custom: null, audio: { uk: null, us: 'https://audio.test/us.mp3' } } });
+    renderApp(<ReviewSession />, { routes: routes([luggage]) });
+    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
+    expect(within(front).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
+    expect(within(front).getByText('/ˈlʌɡɪdʒ/')).toBeInTheDocument();
+    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }));
+    expect(play).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Anh' }));
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'luggage', voice: uk }));
+    await userEvent.keyboard(' ');
+    const back = screen.getByRole('group', { name: 'Thẻ 1 trên 1' }).querySelector<HTMLElement>('[data-face="back"]')!;
+    expect(within(back).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
+    play.mockRestore();
+  });
+
   it('back: the speaker icon by the word (US voice), a button by the example and by the saved sentence (local voice)', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
@@ -309,7 +374,7 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     await userEvent.keyboard(' ');
     const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
     await within(card).findByText('triển khai');
-    expect(within(card).getByRole('button', { name: 'Nghe phát âm' })).toBeInTheDocument();
+    expect(within(card).getAllByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).length).toBeGreaterThan(0);
     const sentences = within(card).getAllByRole('button', { name: 'Nghe câu' });
     expect(sentences).toHaveLength(2);
     await userEvent.click(sentences[1]);

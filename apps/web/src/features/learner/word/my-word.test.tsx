@@ -120,6 +120,26 @@ describe('My word page (K/88)', () => {
     expect(writes(calls, 'PATCH')[0].body).toEqual({ topics: ['travel'], senses: [{ sense_id: SENSE, examples: ["He's got serious rizz.!"] }] });
   });
 
+  it('đợt C DC33: the Phiên âm of this meaning is in the dialog; a change sends senses[].ipa only', async () => {
+    const { calls } = open([page({ pronunciation: { uk: null, us: null, custom: 'rɪz', audio: { uk: null, us: null } } })]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Sửa từ' });
+    const ipa = within(dialog).getByRole('textbox', { name: 'Phiên âm' });
+    expect(ipa).toHaveValue('rɪz');
+    await userEvent.clear(ipa);
+    await userEvent.type(ipa, '/rɪzː/');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
+    await waitFor(() => expect(writes(calls, 'PATCH')).toHaveLength(1));
+    expect(writes(calls, 'PATCH')[0].body).toEqual({ senses: [{ sense_id: SENSE, ipa: 'rɪzː' }] });
+  });
+
+  it("đợt C: the learner's own word shows one speaker with its own IPA, not split by accent", async () => {
+    open([page({ pronunciation: { uk: null, us: null, custom: 'rɪz', audio: { uk: null, us: null } } })]);
+    const block = await screen.findByRole('group', { name: 'noun' });
+    expect(within(block).getByText('/rɪz/')).toBeInTheDocument();
+    expect(within(block).queryByText('UK')).not.toBeInTheDocument();
+  });
+
   it('nothing changed → no request, the dialog closes', async () => {
     const { calls } = open([page()]);
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));

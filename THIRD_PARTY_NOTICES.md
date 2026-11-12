@@ -155,6 +155,15 @@ The "dontuse", "irregular", and "variant" file was created by me
 (Kevin Atkinson) from numerous sources.
 ```
 
+## Wiktionary — UK and US pronunciations (CC BY-SA 4.0)
+
+The transcriptions (IPA) of many words come from English Wiktionary (https://en.wiktionary.org), read through the Wiktextract dump published
+at https://kaikki.org (`apps/api/src/cli/ipa-build-csv.ts` builds the import CSV from it). Wiktionary text is available under the Creative
+Commons Attribution-ShareAlike 4.0 licence (https://creativecommons.org/licenses/by-sa/4.0/); the contributors of each entry are listed in
+its page history. The transcriptions were normalised before use (slashes dropped; some symbols changed to the ones the speech service takes,
+for example `r` to `ɹ`); a transcription staff edit by hand is recorded as Wordmet's own. Registered in the API as a third-party data source
+and shown on the public sources page while a published sense uses it.
+
 ## pluralize 8.0.0 (MIT)
 
 Used by the API only to recognise uncountable nouns, which get no library plural (D47).

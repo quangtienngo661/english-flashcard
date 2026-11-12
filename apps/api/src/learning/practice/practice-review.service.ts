@@ -87,7 +87,7 @@ export class PracticeReviewService {
       });
     }
     // One "lần học" for the call (nhóm B D39), and only when a log row was written: a stored replay or a refusal adds none.
-    if (wroteLog) await recordActivityIn(tx, userId, today);
+    if (wroteLog) await recordActivityIn(tx, userId, today, { studied: true });
     return outcomes;
   }
 }

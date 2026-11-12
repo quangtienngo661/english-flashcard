@@ -16,7 +16,7 @@ const conflicts = new Set(['private-word-exists', 'private-word-limit-reached', 
 
 export type NewWord = {
   lemma: string; pos?: string | null; meaning: string; level?: Level | null; topics?: string[];
-  form_of?: { entry_id: string; kind: InflectionKind }; examples?: string[]; ai_suggestion?: boolean;
+  form_of?: { entry_id: string; kind: InflectionKind }; examples?: string[]; ai_suggestion?: boolean; ipa?: string | null;
 };
 export type QuickAddInput = { groupId: string; senseId?: string; newWord?: NewWord; sentence?: string };
 export type QuickAddResult = {
@@ -54,7 +54,7 @@ export class QuickAddService {
   async quickAdd(userId: string, nativeLanguage: 'vi' | 'en', input: QuickAddInput): Promise<QuickAddResult> {
     const profile = await this.identity.getProfile(userId);
     if (!profile) throw notFound();
-    return contentProblems(() => this.prisma.$transaction(async (tx) => {
+    const result = await contentProblems(() => this.prisma.$transaction(async (tx) => {
       // Learning's lock first, then Content's owner lock inside createPrivateSense: the same order as deleteMyWord.
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, input.groupId);
@@ -67,7 +67,7 @@ export class QuickAddService {
           ownerId: userId, lemma: word.lemma, pos: word.pos ?? null, meaning: { text: word.meaning, language: nativeLanguage },
           level: word.level ?? null, topicCodes: word.topics ?? [],
           formOf: word.form_of ? { entryId: word.form_of.entry_id, kind: word.form_of.kind } : null,
-          examples: word.examples ?? [], aiSuggestion: word.ai_suggestion ?? false,
+          examples: word.examples ?? [], aiSuggestion: word.ai_suggestion ?? false, ipa: word.ipa ?? null,
         })).senseId;
       }
       const today = localDate(profile.timezone, this.clock.now());
@@ -79,6 +79,9 @@ export class QuickAddService {
         sentence_id: sentence?.id ?? null,
       };
     }, transactionOptions));
+    // After the commit (round C): the recordings of a new private word; a failure here never undoes the add.
+    if (result.created_word) await this.content.ensureAudio([result.sense_id]);
+    return result;
   }
 
   /** B3E17 / CR23: the private entry with its senses and sentences, plus their items, group links and log rows. */

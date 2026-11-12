@@ -102,3 +102,38 @@ describe('AdminCatalogQueries.listSenses missing parts (Task 37)', () => {
       .toEqual([['s1', ['example-missing']]]);
   });
 });
+
+describe('AdminCatalogQueries.getSense — ipa (round C, H12)', () => {
+  const sourceRow = { id: 'src-1', name: 'Wiktionary' };
+  const senseRow = (revision: Record<string, unknown>) => ({
+    id: 's1', entryId: 'e1', contextLabel: null, state: 'unpublished', liveRevisionId: null, replacesSenseId: null,
+    stateChangedBy: null, stateChangedAt: null,
+    entry: { lemma: 'lead', pos: 'noun', levels: [], functionWordDerived: false, functionWordOverride: null },
+    revisions: [{ id: 'r1', revisionNo: 1, status: 'draft', texts: [], examples: [], topicCodes: [], acceptedForms: [],
+      formKind: null, formOfEntryId: null, reviewedBy: null, reviewedAt: null, publishedBy: null, ...revision }],
+  });
+  const read = async (revision: Record<string, unknown>) => {
+    const identity = { emailsOf: vi.fn(async () => new Map()) };
+    const prisma = { sense: { findFirst: vi.fn(async () => senseRow(revision)) } };
+    const view = await new AdminCatalogQueries(prisma as unknown as PrismaClient, identity as unknown as IdentityService).getSense('s1');
+    return { view, prisma };
+  };
+
+  it('returns ipa_uk, ipa_us and the source as { id, name }', async () => {
+    const { view } = await read({ ipaUk: 'lɛd', ipaUs: 'liːd', ipaSourceId: 'src-1', ipaSource: sourceRow });
+    expect(view.content).toMatchObject({ ipa_uk: 'lɛd', ipa_us: 'liːd', ipa_source: { id: 'src-1', name: 'Wiktionary' } });
+  });
+
+  it('typed by hand → ipa_source null; no transcription → nulls', async () => {
+    const { view } = await read({ ipaUk: 'lɛd', ipaSourceId: null, ipaSource: null });
+    expect(view.content).toMatchObject({ ipa_uk: 'lɛd', ipa_us: null, ipa_source: null });
+    expect((await read({})).view.content).toMatchObject({ ipa_uk: null, ipa_us: null, ipa_source: null });
+  });
+
+  it('reads the source name with the revision', async () => {
+    const { prisma } = await read({});
+    const include = (prisma.sense.findFirst.mock.calls[0] as unknown as [{ include: { revisions: { include: Record<string, unknown> } } }])[0].include;
+    expect(include.revisions.include).toMatchObject({ ipaSource: { select: { id: true, name: true } } });
+  });
+});
+

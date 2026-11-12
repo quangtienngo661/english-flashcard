@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { applyPatch, changedValues, FIELD_ORDER, fieldOfPath, SETTINGS_LAYOUT, SECTIONS, timeOptions, type Values } from './settings-api';
+import {
+  aiCapExamples, applyPatch, changedValues, FIELD_ORDER, fieldOfPath, parentOf, SETTINGS_LAYOUT, SECTIONS, timeOptions, visibleFields, type Values,
+} from './settings-api';
 
 const values = (): Values => ({
   reminders: { enabled: true, send_time: '20:00' },
@@ -9,13 +11,25 @@ const values = (): Values => ({
   content: {},
   ai: {},
   identity: {},
+  tts: {},
 });
 
 describe('settings-api', () => {
-  it('the layout has the 55 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(55);
-    expect(new Set(FIELD_ORDER).size).toBe(55);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 22, 2, 10, 1]);
+  it('the layout has the 61 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B, one TTS cap of đợt C, five of the practice AI count), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(61);
+    expect(new Set(FIELD_ORDER).size).toBe(61);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 14, 22, 2, 10, 1, 1]);
+    // Practice AI count (09/11/2026): mockup order, each number field under the choice it depends on.
+    expect(SETTINGS_LAYOUT.practice.slice(0, 7)).toEqual([
+      { key: 'session_max_mode', kind: 'choice', options: ['fixed', 'scope_words'] },
+      { key: 'max_questions_per_session', kind: 'int', showWhen: { key: 'session_max_mode', is: 'fixed' } },
+      { key: 'default_questions_per_session', kind: 'int' },
+      { key: 'ai_max_mode', kind: 'choice', options: ['fixed', 'percent'] },
+      { key: 'ai_max_fixed', kind: 'int', unit: 'questions', showWhen: { key: 'ai_max_mode', is: 'fixed' } },
+      { key: 'ai_max_percent', kind: 'int', unit: 'percent', showWhen: { key: 'ai_max_mode', is: 'percent' } },
+      { key: 'ai_placement', kind: 'choice', options: ['even', 'random', 'learner'] },
+    ]);
+    expect(SETTINGS_LAYOUT.practice[7].key).toBe('history_months');
     // The three prices close the entitlements tab, in dong.
     expect(SETTINGS_LAYOUT.entitlements.slice(-3)).toEqual([
       { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },
@@ -93,5 +107,38 @@ describe('settings-api', () => {
     expect(options[1]).toBe('06:15');
     expect(options.at(-1)).toBe('22:00');
     expect(options).toHaveLength(65);
+  });
+
+  describe('practice AI count (09/11/2026)', () => {
+    it('applyPatch keeps a choice value only when it is one of the options', () => {
+      const next = applyPatch(values(), { practice: { session_max_mode: 'scope_words', ai_placement: 'bogus' } });
+      expect(next.practice.session_max_mode).toBe('scope_words');
+      expect(next.practice.ai_placement).toBeUndefined();
+    });
+
+    it('visibleFields hides the number field of the mode not chosen', () => {
+      const v = values();
+      v.practice = { ...v.practice, session_max_mode: 'scope_words', ai_max_mode: 'percent' };
+      const keys = visibleFields('practice', v).map((f) => f.key);
+      expect(keys).not.toContain('max_questions_per_session');
+      expect(keys).not.toContain('ai_max_fixed');
+      expect(keys).toContain('ai_max_percent');
+      expect(keys).toHaveLength(12);
+    });
+
+    it('parentOf names the choice a dependent field hangs on', () => {
+      expect(parentOf('practice', 'ai_max_percent')).toBe('ai_max_mode');
+      expect(parentOf('practice', 'max_questions_per_session')).toBe('session_max_mode');
+      expect(parentOf('practice', 'history_months')).toBeNull();
+    });
+
+    it('aiCapExamples follows the API rule for sessions of 7, 10 and 20 questions', () => {
+      expect(aiCapExamples('percent', 5, 50)).toEqual([{ questions: 7, ai: 3 }, { questions: 10, ai: 5 }, { questions: 20, ai: 10 }]);
+      expect(aiCapExamples('fixed', 5, 50)?.map((e) => e.ai)).toEqual([5, 5, 5]);
+      expect(aiCapExamples('percent', 5, 30)?.map((e) => e.ai)).toEqual([2, 3, 6]);
+      expect(aiCapExamples('fixed', 15, 50)?.map((e) => e.ai)).toEqual([7, 10, 15]);
+      expect(aiCapExamples('percent', 5, null as unknown as number)).toBeNull();
+      expect(aiCapExamples('fixed', null as unknown as number, 50)).toBeNull();
+    });
   });
 });

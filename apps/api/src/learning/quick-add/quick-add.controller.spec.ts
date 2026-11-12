@@ -22,3 +22,16 @@ describe('quick-add body — an AI suggestion (Bước 7 design §11.2, D22)', (
     expect(quickAddBody.safeParse(word({ ai_suggestion: 'yes' })).success).toBe(false);
   });
 });
+
+describe('quick-add body — the learner own ipa (round C, H10)', () => {
+  it('ipa is optional, trimmed, and loses its slashes', () => {
+    expect(quickAddBody.parse(word({ ipa: ' /ˈfəʊbiə/ ' })).new_word).toMatchObject({ ipa: 'ˈfəʊbiə' });
+    expect(quickAddBody.safeParse(word({})).success).toBe(true);
+    expect(quickAddBody.parse(word({ ipa: null })).new_word).toMatchObject({ ipa: null });
+  });
+
+  it('101 characters → refused; 100 → accepted', () => {
+    expect(quickAddBody.safeParse(word({ ipa: 'a'.repeat(101) })).success).toBe(false);
+    expect(quickAddBody.safeParse(word({ ipa: 'a'.repeat(100) })).success).toBe(true);
+  });
+});

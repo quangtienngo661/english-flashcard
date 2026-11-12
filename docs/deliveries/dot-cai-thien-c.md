@@ -50,3 +50,131 @@ Phiên BE (Sonnet 5.5, xhigh) làm Task 1–23; phiên UI làm Task 24–31 khi 
 29. Nút loa phát file có sẵn, rơi về giọng máy; CSP cho phép file âm thanh.
 30. Dòng phiên âm ở thẻ, trang một từ, tra từ, form từ riêng.
 31. Review giao diện bằng các skill UI, kiểm trên bản build; viết checklist cho chủ dự án.
+
+---
+
+# Đợt cải thiện C — as-built, phần backend (07/11/2026)
+
+Phiên BE xong Task 1–23. Mọi PR vào `dev`, CI xanh trước khi merge. Hợp đồng API (H1–H16 trong plan) **không đổi**; các chỗ khác plan ghi ở "Quyết định ngoài plan".
+
+| PR | Task | Merge vào `dev` |
+|---|---|---|
+| [#236](https://github.com/quangtienngo661/english-flashcard/pull/236) BE1 Học / Ôn | 1–7 | `0e172f50` |
+| [#237](https://github.com/quangtienngo661/english-flashcard/pull/237) BE2 chuỗi ngày | 8–10 | `58d568fa` |
+| [#239](https://github.com/quangtienngo661/english-flashcard/pull/239) BE3 phiên âm | 11–14 | `be0c27b9` |
+| [#242](https://github.com/quangtienngo661/english-flashcard/pull/242) BE4 giọng đọc | 15–19 | `ff10ee91` |
+| [#244](https://github.com/quangtienngo661/english-flashcard/pull/244) fix: `origin = 'recall'` | (lỗi của BE1) | `efac5cf4` |
+| [#246](https://github.com/quangtienngo661/english-flashcard/pull/246) BE5 nạp dữ liệu và smoke | 20–23 | `da8edd97` |
+
+**Lỗi smoke tìm ra (đã sửa ở #244).** Câu trả lời cuối của phiên Ôn trả 500 trên DB thật: `learning_log_origin_check` chỉ cho `'practice'`, còn `RecallAnswerService`
+ghi `origin = 'recall'`. Mọi unit test mock DB nên không thấy. Test mới `src/learning/log-origin-constraint.spec.ts` đọc các migration và fail khi lần định nghĩa
+cuối của constraint không cho mọi origin mà code ghi.
+
+## Đã dựng (khớp plan, trừ chỗ ghi riêng)
+
+- **Lịch.** `applyLearn`, `applyRecall` là hàm thuần cạnh `applyAnswer` (không đổi). Học: chỉ nấc 0 + "Đã biết" lên nấc 1; nấc ≥ 1 + "Đã biết" không đổi gì nhưng vẫn ghi một dòng
+  `learning_log` để trần mỗi ngày đếm. Ôn: đúng (không gợi ý) + đến hạn → lên nấc; đúng trên từ ưu tiên → chỉ bỏ cờ, hạn = hôm nay + khoảng của nấc đó (DC26).
+- **Phiên Ôn.** `practice_sessions.kind`, `practice_session_items.recall_outcome`, index mở theo `(user_id, kind)`. `start({ kind: 'recall' })`: nhóm, 2 loại câu cố định
+  (`mcq_definition`, `type_word`), kiểu `meaning`, thứ tự `queue`, số câu = `min(default, số từ dùng được)`, không `checkQuota`, không AI, không đóng phiên Luyện tập.
+  `writeFinal` gọi `LearningService.recallAnswer` trong cùng transaction (khoá `learning_items FOR UPDATE`).
+- **Chuỗi ngày.** `learning_activity_days.studied`; `recordActivityIn(..., { studied })` trả `firstStudied` (hai yêu cầu đua nhau cho cùng một ngày: đúng một cái nhận `true`, đã chạy thật với 2 và 3 lời gọi
+  song song). `streakDays` đếm lùi từ hôm nay (hoặc hôm qua nếu hôm nay chưa học), bỏ ngày trùng và ngày sau hôm nay, đọc tối đa 4000 ngày. Email nhắc thêm dòng chuỗi khi chuỗi ≥ 2 và hôm nay chưa học.
+- **Phiên âm.** 4 cột trên `sense_revisions`; `normalizeIpa` / `checkIpa`; hash cũ không đổi; admin/CSV/quick-add/PATCH như H10–H12, H15; `WordSense.pronunciation`.
+- **Giọng đọc.** `speech_audio` (khoá `sha256(voice|text|phonemes)`), queue `content-tts` (3 lần, backoff mũ 5 s, `concurrency 4`), `TtsAdapter` Google + fake, `AudioStorage` R2 + thư mục local,
+  trần ký tự mỗi ngày (setting `tts.daily_char_cap`), vòng quét 5 phút, dọn file mỗi tuần (chỉ dòng cũ hơn 7 ngày; xoá file trước, dòng sau).
+- **Nạp dữ liệu.** `pnpm ipa:build-csv`, `pnpm tts:backfill`; trang Nguồn dữ liệu hiện nguồn phiên âm; `THIRD_PARTY_NOTICES.md` có mục Wiktionary.
+
+## Dữ liệu Wiktextract thật (Task 20 bước 1) — khác giả định của plan
+
+Đọc bằng 5 file nhỏ theo từng từ của kaikki.org (`lead`, `record`, `read`, `live`, `luggage`, tổng 650 KB), **không** tải bản raw 2,9 GB. Cấu trúc thật:
+
+- Một dòng cho mỗi **(etymology, loại từ)**, không phải mỗi loại từ: `lead` có 6 mục tiếng Anh, `lead` danh từ có hai mục (`/lɛd/` và `/ˈliːd/`). Catalog không biết nghĩa nào thuộc etymology nào,
+  nên nếu các mục của cùng (từ, loại từ) cho phiên âm **khác nhau** thì giọng đó bị bỏ trống và đếm là "readings disagree" (người biên tập điền tay), không đoán.
+- `sounds[].ipa` luôn có dấu `/…/` hoặc `[…]`; chỉ nhận `/…/`. `etymology_number` là **chuỗi** (`"1"`).
+- Thẻ: `Received-Pronunciation`, `UK`, `General-American`, `US`; thẻ vùng (`Australia`, `Canada`, `Southern-US`, `Wales`, …) bị bỏ. Không thẻ = dùng cho cả hai giọng. Thứ tự: RP > UK, General-American > US.
+- Có mảnh như `/ɹə-/` (bị `checkIpa` từ chối vì dấu `-`) và `d͡ʒ` (có dấu nối, được nhận).
+- Fixture `apps/api/scripts/fixtures/wiktextract-sample.jsonl` là phần cắt từ dữ liệu thật đó (chỉ các trường `pickIpa` đọc) cộng một dòng tiếng Đức để kiểm bộ lọc.
+
+## Quyết định ngoài plan
+
+1. **Index mở phiên là `(user_id, kind)`** (plan Task 3) nên một người học chỉ có **một** phiên Ôn mở. Kịch bản "Review Focus 1" (hai phiên Ôn của hai nhóm cùng chứa một từ) vì thế không xảy ra; mở phiên Ôn
+   thứ hai đóng phiên thứ nhất. Smoke thay bằng "hai yêu cầu y hệt gửi cùng lúc": một cái 200, một cái 409, nấc tăng đúng một lần. `FOR UPDATE` trong `recallAnswer` vẫn giữ (nó còn chặn đua với "Cần ôn lại").
+2. `last_needs_review_at` (thứ tự "ưu tiên lâu nhất") bỏ qua dòng `origin = 'recall'`, vì câu sai trong Ôn ghi `answer = 'review'` nhưng không phải lần bấm "Cần ôn tập".
+3. `RecallAnswerService` ghi câu sai là `answer = 'review'`, `rating = 'Again'` (theo plan); câu đúng nhưng chưa đến hạn ghi `answer = 'known'`, `section = 'early'`.
+4. `LocalAudioStorage.publicUrl` = `<AUDIO_PUBLIC_BASE_URL>/<key>.mp3` (không có `tts/v1/`), vì H16 chỉ phục vụ `GET /v1/dev/audio/:file`; file vẫn nằm ở `<dir>/tts/v1/<key>.mp3`.
+   Với R2 URL là `<base>/tts/v1/<key>.mp3`. Tên file sai → 404 (không 400).
+5. Âm thanh chỉ bật khi có **cả** provider **và** storage (`AudioService.enabled`); thiếu một trong hai thì mọi thứ im lặng, app dùng giọng trình duyệt.
+6. Mở rộng ngoài "đăng": `unpublish` và `retire` cũng gọi `ensureForSenses` (ẩn một nghĩa của `lead` đổi số cách đọc, các nghĩa còn lại cần khoá mới); PATCH từ riêng gọi lại cho mọi nghĩa của từ (đổi chính tả đổi khoá).
+7. `mergeContent`: sửa tay `ipa_uk`/`ipa_us` (giá trị khác giá trị cũ) mà patch không có `ipa_source_id` thì `ipa_source_id` về `null`; `ipa_source_id` có trong `contentHash`.
+8. CSV: `ipa_source_id` không phải uuid → lỗi dòng `invalid-ipa-source`; uuid không có trong `data_sources` → cùng mã (trước khi vào `importContent`, để khỏi vi phạm khoá ngoại); phiên âm > 100 ký tự → `cell-too-long`;
+   ký tự lạ → `ipa-invalid`. File upload vẫn bắt buộc cột `headword` và `pos` (như mọi CSV khác), nên "CSV chỉ cột phiên âm" nghĩa là chỉ các cột nội dung phiên âm, kèm cột định danh.
+9. `GET /v1/admin/content/senses/:id` gắn `audio` ở controller (không ở `AdminCatalogQueries`); nghĩa không hiện → `{ uk: null, us: null }`.
+10. `tts:backfill` chỉ làm nghĩa **catalog**; từ riêng của người học có file khi được tạo hoặc sửa.
+11. Setting mới nằm ở mục riêng `tts` của `GET/PATCH /v1/admin/settings` (`tts.daily_char_cap`); web admin cần thêm mục này ở trang Cài đặt.
+12. Giá trị mặc định `TTS_VOICE_UK=en-GB-Wavenet-B`, `TTS_VOICE_US=en-US-Wavenet-D`: chỉ là ví dụ để chạy; chủ dự án nghe thử 10 từ rồi chọn (checklist deploy).
+
+## Smoke
+
+`pnpm smoke:dot-cai-thien-c` (14 bước: Học, Ôn, chuỗi, phiên âm, giọng đọc) chạy hai lần, mỗi lần trên DB mới, cộng `smoke:buoc-4` và `smoke:buoc-5` (`fetchState` bật và tắt).
+Kết quả cuối mỗi lần chạy: `docs/deliveries/dot-cai-thien-c-smoke-output.txt`. Cách chạy: đầu file `apps/api/scripts/smoke-dot-cai-thien-c.mjs`.
+
+## Chưa kiểm
+
+- Google Cloud TTS và R2 **thật** chưa được gọi lần nào (chưa có tài khoản): `GoogleTtsAdapter` và `R2AudioStorage` chỉ có test với client giả; kiểu của hai SDK được đọc trong package đã cài vì context7 không có tài liệu Node cho TTS.
+  Bảng ký hiệu IPA của `toGooglePhonemes` theo danh sách trong plan; Google có nhận từng chuỗi phoneme cụ thể hay không chưa thử.
+- `ipa:build-csv` chạy thật trên file raw 2,9 GB và catalog thật chưa thử (chạy trên fixture và DB rỗng); số lượng "readings disagree" trên dữ liệu thật chưa biết.
+- Dòng chuỗi trong email nhắc kiểm bằng unit test, chưa gửi qua Mailpit.
+- Khoá `speech_audio.text` chứa chữ của từ riêng cho tới lần dọn tuần sau khi từ bị xoá (≥ 7 ngày).
+
+---
+
+# Đợt cải thiện C — as-built, phần web và admin (07/11/2026)
+
+Phiên này làm Task 24–31 sau khi API tương ứng đã vào `dev`. Checklist tự kiểm: [`dot-cai-thien-c-checklist.md`](dot-cai-thien-c-checklist.md).
+
+| PR | Task | Merge vào `dev` |
+|---|---|---|
+| [#241](https://github.com/quangtienngo661/english-flashcard/pull/241) FE1 Học / Ôn và chuỗi ngày | 24–27 | `afcdb942` |
+| [#245](https://github.com/quangtienngo661/english-flashcard/pull/245) FE2 phiên âm và giọng đọc | 28–31 | `defcf5b1` |
+
+## Đã dựng
+
+- **Nút Học · Ôn** (`groups/DeckButtons.tsx`, hàm thuần `deckPlan` trong `groups/deck-actions.ts`): thẻ nhóm, trang nhóm, ô đầu trang Hôm nay. Có từ đến hạn: Học (`mode=new`, hoặc `mode=all` khi hết từ mới
+  hôm nay) · **Ôn** vàng. Chỉ có từ mới: **Học** vàng (thêm "Ôn tập" khi nhóm đã có từ đã học). Xong hôm nay: "Ôn tập" (phiên Ôn trên từ chưa đến hạn). Không số. "N đã thuộc" = ngăn 14 + 30 ngày.
+- **Trang Học** nhận `mode=new`; màn xong phiên có nút Ôn khi nhóm còn từ đến hạn.
+- **Trang Ôn** `/app/recall?group=` dùng lại `PracticeSession` với tham số `recall` (một khoá Idempotency mỗi lần mở trang): không bước tùy chỉnh, không "Đã biết", ghi chú "<từ> lên / giữ ngăn …" từ
+  `schedule` của câu trả lời, mọi lối ra về trang nhóm. Màn xong phiên riêng (`recall/RecallSummary.tsx`). 409 `nothing-learned` có trạng thái rỗng kèm nút Học.
+- **Toast chuỗi ngày** (`app-ui/StreakToast.tsx`): gắn một lần ở `AppProviders`, hiện khi response lật thẻ hoặc câu trả lời có `streak`; 3 giây, `pointer-events-none`, vùng `role="status"`; giảm chuyển động
+  thì không trượt, không nảy (`--animate-streak-flame`).
+- **Admin:** hai ô phiên âm (bỏ `/` trước khi gửi; nghĩa không có phiên âm gửi body như trước đợt C), dòng nguồn, lỗi `ipa-invalid` dưới ô, khung "Giọng đọc" với "Tạo lại", tab Cài đặt "Giọng đọc".
+- **Nút loa `Pronounce`** (`app-ui/SpeakButtons.tsx`, một `Audio` cho cả trang trong `audio-player.ts`): file có sẵn → phát file; không có hoặc lỗi → giọng máy cùng giọng; không có cả hai → nút mờ,
+  "Đang tạo giọng đọc" (DC34). CSP `/app` thêm `media-src` theo `NEXT_PUBLIC_AUDIO_BASE_URL`.
+- **Dòng phiên âm `PronunciationLine`**: hai mặt thẻ ôn, trang một từ (một dòng mỗi khối loại từ, dòng riêng cho nghĩa đọc khác, hàm `blockPronunciation`), kết quả tra từ, từ riêng (một loa, không chia UK / US).
+  Ô "Phiên âm" ("Không bắt buộc.") ở form tự nhập nghĩa, form sửa từ AI và hộp sửa từ riêng (`senses[].ipa` của đúng nghĩa đó).
+- **Docker local:** `docker-compose.yml` bật `TTS_FAKE_ENABLED`, `AUDIO_STORAGE_FAKE_ENABLED`, `AUDIO_PUBLIC_BASE_URL` mặc định cho API, và truyền `NEXT_PUBLIC_AUDIO_BASE_URL` khi build web.
+
+## Quyết định ngoài plan
+
+1. Chữ giao diện dùng **"ngăn"** (thuật ngữ cố định của app), không dùng "nấc" như design: "Đúng, lên ngăn", "<từ> giữ ngăn 3 ngày".
+2. Trang nhóm giữ ba chip ưu tiên / đến hạn / mới; "đã thuộc" thêm vào dòng meta ("40 từ · 12 đã thuộc · tạo ngày …") thay cho dòng tóm tắt mới của mockup.
+3. Trang Hôm nay bỏ link "Hoặc học tất cả N từ" ở ô đầu (mockup chỉ có cặp nút); "Học tất cả" vẫn ở menu ⋯ của thẻ nhóm.
+4. Ô "Ôn tiếp" ở màn xong phiên là link thường (`<a>`), vì cùng địa chỉ qua router không mở phiên mới.
+5. Dòng phiên âm ở kết quả tra từ nằm **ngoài** `<label>` của lựa chọn: nhãn chuyển cú bấm cho control đầu tiên, tức là nút loa khi lựa chọn không có radio ("đã có trong nhóm").
+   Lỗi này do e2e A14-2 bắt được trước khi merge; sửa ở PR #245 bằng hai commit (test đỏ, rồi sửa).
+6. Admin ghi "Chưa có" khi API trả `audio.uk = null`: API trả null cả cho nghĩa đã đăng trước đợt C mà chưa chạy `tts:backfill`, không chỉ nghĩa bị ẩn.
+
+## Đã kiểm
+
+- Test: web 95 file / 987 test, admin 105 file / 1.397 test; typecheck, lint, `check-tailwind-raw` sạch; CI xanh ở #241 và #245 (gồm e2e Playwright + axe của web).
+- Skill UI: `impeccable` (shape theo mockup, bộ phát hiện không báo gì), `emil-design-eng` (toast, nút loa), `web-design-guidelines` (thêm hover cho các nút mới).
+- **Chạy thật trên Docker local** (API, worker, Postgres thật; TTS giả và kho file giả), 07/11/2026:
+  - admin: lưu phiên âm có ký tự lạ → lỗi dưới ô; lưu đúng và đăng → "Có giọng" cho UK, US; tab "Giọng đọc" đọc giới hạn từ API.
+  - app học: trang Hôm nay có cặp nút; trang `schedule` hiện `UK /ˈʃedʒ.uːl/  US /ˈskedʒ.uːl/`, hai loa tải hai file mp3 khác nhau (`200`), Console không có lỗi CSP trên bản build production;
+    Học `mode=new` lên ngăn 1; lần học đầu ngày trả `streak: {days: 1}` và hiện toast; phiên Ôn: câu đúng chưa đến hạn ghi "giữ ngăn 1 ngày", màn xong phiên có ô "Đúng, giữ ngăn" và "Còn 16 từ mới";
+    khổ 375 px không cuộn ngang.
+
+## Chưa kiểm
+
+- Bản sửa dòng phiên âm ở kết quả tra từ (mục 5 ở trên) mới kiểm bằng unit test và CI e2e; image web trên Docker local lúc chạy thử được build trước bản sửa đó.
+- Điện thoại thật (vị trí toast trên vùng nút, giọng máy trên iOS / Android).
+- Chưa sửa: kết quả "Tra bằng AI" chưa hiện phiên âm; dừng phiên Ôn sớm bằng Esc thì góc trên ghi "Xong 8/8" (lỗi có từ trang Luyện tập).

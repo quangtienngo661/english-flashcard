@@ -56,13 +56,16 @@ const catalogEntryWithVisibleSense = Prisma.sql`e.scope = 'catalog' AND EXISTS (
 /**
  * The one definition of "this source is shown on the public sources page" (owner, 05/11/2026): a third-party source that is
  * in use for content learners can see. A normal source is in use through a level it gave to such an entry. AGID gives no
- * level: its licence notice is owed because the entry has library inflections, which come from it. Both the public list
+ * level: its licence notice is owed because the entry has library inflections, which come from it. A source that gave the live
+ * transcription of a visible catalog sense (round C, Wiktionary) is shown too. Both the public list
  * and the admin flag use this fragment, so they cannot disagree. Uses the alias `ds` for `data_sources`.
  */
 function sourceShownCondition(): Prisma.Sql {
   return Prisma.sql`ds.kind = 'third_party' AND (
     EXISTS (SELECT 1 FROM entry_levels el JOIN entries e ON e.id = el.entry_id
             WHERE el.source_id = ds.id AND ${catalogEntryWithVisibleSense})
+    OR EXISTS (SELECT 1 FROM sense_revisions r JOIN senses s ON s.live_revision_id = r.id JOIN entries e ON e.id = s.entry_id
+               WHERE r.ipa_source_id = ds.id AND s.state = 'open' AND e.scope = 'catalog')
     OR (ds.id = ${AGID_SOURCE_ID}::uuid AND EXISTS (
           SELECT 1 FROM entry_inflections ei JOIN entries e ON e.id = ei.entry_id
           WHERE ei.source = 'library' AND ${catalogEntryWithVisibleSense})))`;

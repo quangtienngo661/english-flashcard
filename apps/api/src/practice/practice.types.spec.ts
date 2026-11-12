@@ -5,6 +5,8 @@ describe('isAiType (design §5)', () => {
   const rows: Array<[Parameters<typeof isAiType>[0], Parameters<typeof isAiType>[1], boolean]> = [
     ['cloze', 'ai', true],
     ['cloze', 'own', false],
+    // Mixed source (09/11/2026): the session is an AI session (it needs ai.practice and units); which words really use AI is per word.
+    ['cloze', 'own_then_ai', true],
     ['cloze', null, false],
     ['mcq_sentence', null, true],
     ['meaning_in_sentence', 'own', true],

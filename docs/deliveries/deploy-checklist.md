@@ -41,9 +41,10 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 ## Chặn đồ giả ở production (đợt A, R3)
 
 - [ ] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`; rồi kiểm API từ chối khởi động khi bật một đồ giả.**
-  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (giữ cơ chế, chỉ thêm mục checklist).
+  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (02/11/2026 giữ cơ chế, chỉ thêm mục checklist; 07/11/2026 bỏ giá trị mặc định).
   Vì sao: `BILLING_PRODUCTION=true` cùng một đồ giả (thanh toán, AI, Google, hoặc `TURNSTILE_MODE` là `fake`/`off`) làm API và worker dừng ngay khi khởi động
-  (`apps/api/src/common/config/app-config.ts`, `superRefine`), nhưng chỉ khi chính biến `BILLING_PRODUCTION` được đặt; thiếu nó thì mọi đồ giả chạy được.
+  (`apps/api/src/common/config/app-config.ts`, `superRefine`). Từ 07/11/2026 biến này không có giá trị mặc định: thiếu nó thì API và worker cũng không khởi động, nên không còn
+  trường hợp quên biến mà đồ giả vẫn chạy. Đặt nhầm `false` ở production thì vẫn hở, nên mục này vẫn cần.
   Kiểm: trên môi trường production thật, thử bật từng đồ giả một và thấy API cùng worker dừng với tên hai biến trong thông báo, rồi bỏ đồ giả đó đi.
 
 ## Lượt AI cho Free và trial đã tắt (đợt A M3, 05/11/2026)
@@ -284,3 +285,29 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 - [ ] **Beacon Cloudflare Web Analytics.** Nguồn: design §5.4 (ASSUMPTION A6). Việc: trong Cloudflare dashboard xem Web Analytics đang tự chèn ở edge hay bằng snippet tay. Tự chèn thì thẻ chèn không có nonce và `'strict-dynamic'` chặn nó ở `/app`: tắt chèn tự động và đặt snippet tay có nonce (LB3E9), hoặc chấp nhận beacon không chạy ở `/app`. Kiểm: Console ở `/vi/app` không có vi phạm; thống kê trang landing vẫn chạy.
 - [ ] **Chạy lại mục Turnstile của spike M0 với code thật của đợt A.** Nguồn: `chuan-bi-launch-b-spike-csp.md`. Việc: e2e `LA1#14` (widget Turnstile thật ở `/vi/app/login`, cần mạng) nằm trong `e2e/csp.spec.ts` và chạy ở CI trên bản build Worker; xem nó xanh sau khi hợp nhất với đợt A.
 - [ ] **Đưa `assert:render-mode` vào mọi chỗ từng gọi `assert:static`.** Nguồn: M4 Task 22. Đã đổi ở `ci.yml`, `scripts/cf-docker.mjs` và `README.md` của `apps/web`; kiểm các nơi khác (lệnh deploy, tài liệu) không còn nhắc `assert:static`.
+
+## Đợt C: Học / Ôn, chuỗi ngày, phiên âm và giọng đọc (`docs/deliveries/dot-cai-thien-c.md`, 07/11/2026)
+
+- [ ] **Tạo tài khoản Google Cloud cho Text-to-Speech, bật billing và cảnh báo ngân sách.** Nguồn: design đợt C §5. Việc: project mới, bật Cloud Text-to-Speech API, một service account chỉ có quyền gọi API này, tạo khoá JSON.
+  Đặt cảnh báo ngân sách (ví dụ 5 USD). Vì sao: giọng WaveNet tính theo ký tự; trần mặc định 120.000 ký tự/ngày (setting `tts.daily_char_cap`, đổi ở admin) chỉ là lưới thứ hai.
+- [ ] **Hai biến cho API và worker: `GOOGLE_TTS_CREDENTIALS` (base64 của file JSON, một dòng) và `TTS_VOICE_UK`, `TTS_VOICE_US`.** Nguồn: `apps/api/.env.example`. Việc: `[Convert]::ToBase64String([IO.File]::ReadAllBytes('key.json'))`
+  rồi dán vào biến môi trường của host. Vì sao: thiếu thì app im lặng và dùng giọng trình duyệt; sai định dạng thì API từ chối khởi động và chỉ nói tên biến. **Là bí mật: không dán vào chat, không commit.**
+- [ ] **Nghe thử rồi chọn giọng.** Việc: nghe 10 từ trong design đợt C §7 với vài giọng `en-GB-Wavenet-*` và `en-US-Wavenet-*`, đặt hai biến giọng. Vì sao: đổi giọng sau này đổi **mọi khoá file**, nghĩa là tạo lại toàn bộ (tốn ký tự lần nữa).
+- [ ] **Bucket Cloudflare R2 cho file âm thanh, tên miền công khai `audio.wordmet.com`, rồi bốn biến lưu trữ và một biến địa chỉ.** Việc: tạo bucket, gắn custom domain, tạo API token R2 (đọc và ghi cho bucket đó);
+  đặt `AUDIO_STORAGE_ENDPOINT` (`https://<account>.r2.cloudflarestorage.com`), `AUDIO_STORAGE_BUCKET`, `AUDIO_STORAGE_ACCESS_KEY_ID`, `AUDIO_STORAGE_SECRET_ACCESS_KEY` (cả bốn cùng lúc, thiếu một thì API không khởi động)
+  và `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`. Vì sao: file có `Cache-Control: immutable` một năm, nên không cần CDN riêng. Hai khoá truy cập là bí mật.
+- [ ] **Web: `NEXT_PUBLIC_AUDIO_BASE_URL=https://audio.wordmet.com` cho bản build, và CSP `media-src` có origin này.** Nguồn: design §5.7. Vì sao: thiếu thì trình duyệt chặn file âm thanh và nút loa rơi về giọng máy.
+  Kiểm sau deploy: mở một từ đã có file, nút loa phát file (Network có request tới `audio.wordmet.com`), Console không có lỗi CSP.
+- [ ] **Không đặt `TTS_FAKE_ENABLED` và `AUDIO_STORAGE_FAKE_ENABLED` ở production.** Cả hai kết hợp với `BILLING_PRODUCTION=true` thì API không khởi động.
+- [ ] **Worker phải chạy.** Vì sao: tạo giọng đọc, vòng quét 5 phút và dọn tuần đều là job của worker (hàng `content-tts`); chỉ chạy API thì dòng `speech_audio` nằm ở `pending`.
+  Kiểm: sau khi đăng một nghĩa, `speech_audio` có hai dòng `ready` trong vài giây.
+- [ ] **Nạp phiên âm: `ipa:build-csv`, nhập CSV, đăng hàng loạt, `tts:backfill`.** Việc (theo thứ tự, chạy ở `apps/api`):
+  1. Tải bản raw Wiktextract (kaikki.org, JSONL nén 2,9 GB). Tạo nguồn dữ liệu "Wiktionary" (loại third_party, giấy phép CC BY-SA 4.0, link, ghi công) ở admin "Nguồn dữ liệu", lấy uuid.
+  2. `pnpm ipa:build-csv --in <raw.jsonl.gz> --out ipa.csv --source-id <uuid>`: in số nghĩa có phiên âm, không có trong Wiktionary, và "readings disagree" (hai cách đọc khác nhau, cần điền tay).
+  3. Nhập `ipa.csv` ở admin; nó tạo bản nháp mới cho từng nghĩa (giữ nguyên mọi trường khác). Xem bản nháp, rồi đăng hàng loạt.
+  4. `pnpm tts:backfill`: xếp hàng giọng đọc cho cả kho; worker làm dần (khoảng 2 file mỗi nghĩa; trần ký tự mỗi ngày chặn chi phí, hết trần thì việc chờ tới 00:00 UTC).
+  Vì sao: đăng một nghĩa chỉ tạo giọng cho nghĩa đó; kho cũ chưa có file nào.
+- [ ] **Chính sách bảo mật: thêm Google Cloud Text-to-Speech vào danh sách bên xử lý.** Nguồn: design §5.8. Việc: ghi rằng chỉ **chữ của từ** (kể cả từ riêng của người học) được gửi, không kèm tên hay tài khoản;
+  **sửa câu "không gửi từ vựng của bạn cho Google"** ở đoạn AdSense (hiện sai). Đăng bản mới qua `/legal` ở admin. Vì sao: từ riêng đi tới Google khi nó được tạo.
+- [ ] **Sau deploy, đọc `speech_audio`:** `SELECT status, count(*) FROM speech_audio GROUP BY 1;` Không nên có `failed` kéo dài; có thì mở nghĩa đó ở admin (trạng thái giọng có lý do), sửa nguyên nhân, bấm "Tạo lại" (`POST /v1/admin/content/senses/:id/audio/retry`).
+- [ ] **Bản đồ dữ liệu cá nhân: `speech_audio.text` có thể chứa từ riêng của người học.** Việc: ghi vào tài liệu xoá tài khoản rằng dòng này được dọn bởi job tuần (từ 7 ngày sau khi từ bị xoá). Chưa có đường xoá ngay.

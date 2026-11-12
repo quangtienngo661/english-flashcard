@@ -23,6 +23,7 @@ function validEnv(): NodeJS.ProcessEnv {
     LEARNER_APP_URL: 'https://wordmet.example.com',
     TERMS_VERSION: '2026-10-20',
     TURNSTILE_MODE: 'off',
+    BILLING_PRODUCTION: 'false',
   };
 }
 
@@ -369,6 +370,13 @@ describe('loadConfig', () => {
     expect(billing).toEqual({ production: false, fakeEnabled: true, fakeSecret: secret, fakeFetchState: false });
   });
 
+  it('Q13 (07/11/2026): BILLING_PRODUCTION has no default, so unset or blank refuses to start, naming only it', () => {
+    const { BILLING_PRODUCTION: _, ...unset } = validEnv();
+    expect(() => loadConfig(unset)).toThrow(/^Missing or invalid configuration variables: BILLING_PRODUCTION$/);
+    expect(() => loadConfig({ ...validEnv(), BILLING_PRODUCTION: '' })).toThrow(/^Missing or invalid configuration variables: BILLING_PRODUCTION$/);
+    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'false' }).billing.production).toBe(false);
+  });
+
   it.each(['BILLING_PRODUCTION', 'BILLING_FAKE_ENABLED', 'BILLING_FAKE_FETCH_STATE'])('%s accepts only true or false', (name) => {
     expect(() => loadConfig({ ...validEnv(), [name]: 'yes' })).toThrow(new RegExp(name));
   });
@@ -511,3 +519,105 @@ describe('EXPORT_MAX_ROWS in the example env files (B3-7, review of M2)', () => 
     expect(Number(valueIn(file))).toBe(loadConfig(validEnv()).pipeline.exportMaxRows);
   });
 });
+
+// Round C (design §5.4, §5.5): pre-made speech audio. Nothing is required: without the variables the app keeps the browser voice.
+describe('speech audio configuration (round C)', () => {
+  const credentials = (over: Record<string, unknown> = {}) => Buffer.from(JSON.stringify({
+    client_email: 'tts@project.iam.gserviceaccount.com', private_key: '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n',
+    project_id: 'wordmet-tts', ...over,
+  })).toString('base64');
+  const r2 = (): NodeJS.ProcessEnv => ({
+    ...validEnv(), AUDIO_STORAGE_ENDPOINT: 'https://account.r2.cloudflarestorage.com', AUDIO_STORAGE_BUCKET: 'wordmet-audio',
+    AUDIO_STORAGE_ACCESS_KEY_ID: 'key-id', AUDIO_STORAGE_SECRET_ACCESS_KEY: 'key-secret', AUDIO_PUBLIC_BASE_URL: 'https://audio.example.com',
+  });
+
+  it('nothing set → no storage, no provider, the voices default, the app starts', () => {
+    const config = loadConfig(validEnv());
+    expect(config.audio).toMatchObject({ storage: null, publicBaseUrl: null, r2: null });
+    expect(config.tts).toMatchObject({ provider: null, credentials: null });
+    expect(config.tts.voiceUk).toBe('en-GB-Wavenet-B');
+    expect(config.tts.voiceUs).toBe('en-US-Wavenet-D');
+  });
+
+  it('voices come from TTS_VOICE_UK and TTS_VOICE_US', () => {
+    const config = loadConfig({ ...validEnv(), TTS_VOICE_UK: 'en-GB-Wavenet-C', TTS_VOICE_US: 'en-US-Wavenet-F' });
+    expect(config.tts).toMatchObject({ voiceUk: 'en-GB-Wavenet-C', voiceUs: 'en-US-Wavenet-F' });
+  });
+
+  it('credentials: base64 of a JSON with client_email, private_key and project_id make the provider google', () => {
+    const config = loadConfig({ ...validEnv(), GOOGLE_TTS_CREDENTIALS: credentials() });
+    expect(config.tts.provider).toBe('google');
+    expect(config.tts.credentials).toEqual({
+      clientEmail: 'tts@project.iam.gserviceaccount.com', privateKey: '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n', projectId: 'wordmet-tts',
+    });
+  });
+
+  it('credentials that are not base64 JSON, or lack a field, stop the start and name the variable only', () => {
+    for (const bad of ['not-base64-json', Buffer.from('[]').toString('base64'), credentials({ client_email: undefined }),
+      credentials({ private_key: '' }), credentials({ project_id: undefined })]) {
+      expect(() => loadConfig({ ...validEnv(), GOOGLE_TTS_CREDENTIALS: bad }), bad).toThrow('Missing or invalid configuration variables: GOOGLE_TTS_CREDENTIALS');
+    }
+  });
+
+  it('a blank credentials line counts as unset', () => {
+    expect(loadConfig({ ...validEnv(), GOOGLE_TTS_CREDENTIALS: '  ' }).tts.provider).toBeNull();
+  });
+
+  it('the fake provider needs no credentials and wins over real ones', () => {
+    expect(loadConfig({ ...validEnv(), TTS_FAKE_ENABLED: 'true' }).tts.provider).toBe('fake');
+    expect(loadConfig({ ...validEnv(), TTS_FAKE_ENABLED: 'true', GOOGLE_TTS_CREDENTIALS: credentials() }).tts.provider).toBe('fake');
+  });
+
+  it('R2: the four storage variables together make storage r2, with the public base URL', () => {
+    const config = loadConfig(r2());
+    expect(config.audio).toMatchObject({ storage: 'r2', publicBaseUrl: 'https://audio.example.com', r2: {
+      endpoint: 'https://account.r2.cloudflarestorage.com', bucket: 'wordmet-audio', accessKeyId: 'key-id', secretAccessKey: 'key-secret' } });
+  });
+
+  it('R2: any one of the four missing → an "all keys together" error naming it', () => {
+    for (const name of ['AUDIO_STORAGE_ENDPOINT', 'AUDIO_STORAGE_BUCKET', 'AUDIO_STORAGE_ACCESS_KEY_ID', 'AUDIO_STORAGE_SECRET_ACCESS_KEY']) {
+      const env = r2();
+      delete (env as Record<string, string | undefined>)[name];
+      expect(() => loadConfig(env), name).toThrow(new RegExp(name));
+    }
+  });
+
+  it('R2 needs the public base URL, which must be an origin-style https or http URL', () => {
+    const env = r2();
+    delete (env as Record<string, string | undefined>).AUDIO_PUBLIC_BASE_URL;
+    expect(() => loadConfig(env)).toThrow(/AUDIO_PUBLIC_BASE_URL/);
+    expect(() => loadConfig({ ...r2(), AUDIO_PUBLIC_BASE_URL: 'ftp://x' })).toThrow(/AUDIO_PUBLIC_BASE_URL/);
+  });
+
+  it('the public base URL is stored without a trailing slash', () => {
+    expect(loadConfig({ ...r2(), AUDIO_PUBLIC_BASE_URL: 'https://audio.example.com/' }).audio.publicBaseUrl).toBe('https://audio.example.com');
+  });
+
+  it('the local fake storage needs a public base URL and defaults its folder', () => {
+    const fake = { ...validEnv(), AUDIO_STORAGE_FAKE_ENABLED: 'true', AUDIO_PUBLIC_BASE_URL: 'http://localhost:3000/v1/dev/audio' };
+    expect(loadConfig(fake).audio).toMatchObject({ storage: 'local', localDir: '.tmp/audio', publicBaseUrl: 'http://localhost:3000/v1/dev/audio' });
+    expect(loadConfig({ ...fake, AUDIO_STORAGE_FAKE_DIR: 'out/audio' }).audio.localDir).toBe('out/audio');
+    expect(() => loadConfig({ ...validEnv(), AUDIO_STORAGE_FAKE_ENABLED: 'true' })).toThrow(/AUDIO_PUBLIC_BASE_URL/);
+  });
+
+  it('the fake storage wins over R2 keys', () => {
+    expect(loadConfig({ ...r2(), AUDIO_STORAGE_FAKE_ENABLED: 'true' }).audio.storage).toBe('local');
+  });
+
+  it('production refuses both fakes, naming both variables', () => {
+    const prod = { ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true' };
+    expect(() => loadConfig({ ...prod, TTS_FAKE_ENABLED: 'true' })).toThrow(/BILLING_PRODUCTION, TTS_FAKE_ENABLED/);
+    expect(() => loadConfig({ ...prod, AUDIO_STORAGE_FAKE_ENABLED: 'true', AUDIO_PUBLIC_BASE_URL: 'http://localhost/x' }))
+      .toThrow(/BILLING_PRODUCTION, AUDIO_STORAGE_FAKE_ENABLED/);
+    expect(loadConfig({ ...prod, TTS_FAKE_ENABLED: 'false' }).tts.provider).toBeNull();
+  });
+
+  it('.env.example lists every new variable', () => {
+    const example = readFileSync(resolve(__dirname, '../../../.env.example'), 'utf8');
+    for (const name of ['GOOGLE_TTS_CREDENTIALS', 'TTS_VOICE_UK', 'TTS_VOICE_US', 'TTS_FAKE_ENABLED', 'AUDIO_STORAGE_ENDPOINT', 'AUDIO_STORAGE_BUCKET',
+      'AUDIO_STORAGE_ACCESS_KEY_ID', 'AUDIO_STORAGE_SECRET_ACCESS_KEY', 'AUDIO_PUBLIC_BASE_URL', 'AUDIO_STORAGE_FAKE_ENABLED', 'AUDIO_STORAGE_FAKE_DIR']) {
+      expect(example, name).toMatch(new RegExp(`^#?\\s*${name}=`, 'm'));
+    }
+  });
+});
+

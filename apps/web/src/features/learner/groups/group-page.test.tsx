@@ -126,10 +126,18 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(within(row).getByRole('link', { name: 'deploy' })).toHaveAttribute('href', '/vi/app/word?w=deploy');
   });
 
-  it('review button and the long-overdue link', async () => {
+  it('Học · Ôn (đợt C §4.1) and the long-overdue link', async () => {
     renderApp(<GroupPage />, { routes: routes() });
-    expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
+    expect(await screen.findByRole('link', { name: 'Học' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
+    expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    expect(screen.queryByRole('link', { name: /Ôn 3 thẻ/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /3 từ lâu chưa ôn/ })).toHaveAttribute('href', `/vi/app/group/backlog?id=${G}`);
+  });
+
+  it('the meta line counts the words mastered (stage 4 and 5) once there are some (DC11)', async () => {
+    const summary = { ...SUMMARY, cells: [0, 0, 1, 1, 1, 1].map((total, level) => ({ level, total, due: 0 })) };
+    renderApp(<GroupPage />, { routes: routes({ 'GET /v1/groups': () => Response.json({ items: [summary] }) }) });
+    expect(await screen.findByText(/^4 từ · 2 đã thuộc · tạo ngày/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('rows show the stage, priority and a changed meaning', async () => {

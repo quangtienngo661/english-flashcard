@@ -28,7 +28,7 @@ function setup(opts: { importResult?: ImportResult; reviewedForms?: Array<{ form
     lockEntryKey: vi.fn(async () => undefined),
     ensureEntry: vi.fn(async () => ({ entry: { id: 'entry-1' }, created: false, addedVariantIds: [] })),
     listLevels: vi.fn(async () => []),
-    getSource: vi.fn(async () => ({ id: 'src-1', kind: 'owner' })),
+    getSource: vi.fn(async (_id?: string) => ({ id: 'src-1', kind: 'owner' }) as { id: string; kind: string } | null),
     addImportedLevel: vi.fn(async () => ({ created: true, id: 'level-1' })),
     importContent: vi.fn(async () => opts.importResult ?? { kind: 'unchanged', senseId: 'sense-1' }),
     replaceInflections: vi.fn(async () => undefined),
@@ -151,5 +151,30 @@ describe('ImportRowProcessor form_of rows (T3 fix round 1)', () => {
 
     expect(content.importContent).toHaveBeenCalledWith(tx, expect.objectContaining({
       content: { formOf: formOf === 'clear' ? null : { entryId: 'entry-base', kind: 'past' } } }));
+  });
+});
+
+describe('ImportRowProcessor — the ipa source of a row (round C, H15)', () => {
+  const sourceId = '00000000-0000-4000-8000-0000000000bb';
+
+  it('a source that does not exist rejects the row with a message naming the cell, and imports nothing', async () => {
+    const { content, ctx, processor, batch } = setup();
+    content.getSource.mockImplementation(async (id?: string) => (id === sourceId ? null : { id: id ?? 'x', kind: 'owner' }));
+    const result = await processor.process(ctx, batch as never, row({ content: { ipaUk: 'lɛd', ipaSourceId: sourceId } }), { contentApplied: false });
+    expect(result).toMatchObject({ outcome: 'rejected', errors: [{ code: 'invalid-ipa-source', message: expect.stringContaining('ipa_source_id') }] });
+    expect(content.importContent).not.toHaveBeenCalled();
+  });
+
+  it('a source that exists goes through to importContent', async () => {
+    const { content, ctx, processor, batch } = setup();
+    await processor.process(ctx, batch as never, row({ content: { ipaUk: 'lɛd', ipaSourceId: sourceId } }), { contentApplied: false });
+    expect(content.importContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('a row without a source id (or clearing it) never looks a source up for the transcription', async () => {
+    const { content, ctx, processor, batch } = setup();
+    content.getSource.mockClear();
+    await processor.process(ctx, batch as never, row({ content: { ipaUk: 'lɛd', ipaSourceId: null } }), { contentApplied: false });
+    expect(content.getSource.mock.calls.filter(([id]) => id !== 'src-1')).toEqual([]);
   });
 });

@@ -34,11 +34,13 @@ describe('settings definitions', () => {
         max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
         idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null,
         ai_prefetch_count: 2,
+        session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even',
       },
       entitlements: ENTITLEMENT_DEFAULTS_API,
       content: { private_words_per_user: 10000, sentences_per_sense: 20 },
       ai: AI_DEFAULTS_API,
       identity: { unverified_cleanup_days: 7 },
+      tts: { daily_char_cap: 120000 },
     });
   });
 
@@ -133,7 +135,7 @@ describe('settings definitions', () => {
 
   it('toApiValues names every new key in snake_case', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
-    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity']);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity', 'tts']);
     expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
     for (const section of Object.values(api)) {
       for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z0-9]+)*$/);
@@ -231,6 +233,46 @@ describe('settings definitions', () => {
       .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
     expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { practice: { max_questions_per_session: 5 } })))
       .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+  });
+
+  describe('practice ai count (09/11/2026)', () => {
+    it('the three choices take only their values', () => {
+      expect(settingsValuesPatchSchema.safeParse({ practice: { session_max_mode: 'scope_words' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { session_max_mode: 'fixed' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { ai_max_mode: 'fixed' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { ai_placement: 'learner' } }).success).toBe(true);
+      expect(issues({ practice: { session_max_mode: 'scope' } })).toEqual(['practice.session_max_mode']);
+      expect(issues({ practice: { ai_max_mode: 'percentage' } })).toEqual(['practice.ai_max_mode']);
+      expect(issues({ practice: { ai_placement: 'both' } })).toEqual(['practice.ai_placement']);
+    });
+
+    it('ai_max_fixed and ai_max_percent are whole numbers 0–100', () => {
+      for (const key of ['ai_max_fixed', 'ai_max_percent']) {
+        expect(issues({ practice: { [key]: 0 } }), `${key}=0`).toEqual([]);
+        expect(issues({ practice: { [key]: 100 } }), `${key}=100`).toEqual([]);
+        for (const bad of [-1, 101, 2.5]) expect(issues({ practice: { [key]: bad } }), `${key}=${bad}`).toEqual([`practice.${key}`]);
+      }
+      expect(SETTINGS_BOUNDS.practice).toMatchObject({ ai_max_fixed: { min: 0, max: 100 }, ai_max_percent: { min: 0, max: 100 } });
+      for (const choice of ['session_max_mode', 'ai_max_mode', 'ai_placement']) expect(SETTINGS_BOUNDS.practice).not.toHaveProperty(choice);
+    });
+
+    it('JSON stored before the change gets the five defaults; a stored unknown choice falls back', () => {
+      expect(withDefaults({ practice: { maxQuestionsPerSession: 30, aiPlacement: 'bogus' } }).practice).toMatchObject({
+        maxQuestionsPerSession: 30, aiPlacement: 'even', sessionMaxMode: 'fixed', aiMaxMode: 'percent', aiMaxFixed: 5, aiMaxPercent: 50,
+      });
+    });
+
+    it('default ≤ maximum is checked only in the fixed mode', () => {
+      const over = { ...SETTINGS_DEFAULTS.practice, defaultQuestionsPerSession: 30, maxQuestionsPerSession: 20 };
+      expect(crossFieldViolations({ ...SETTINGS_DEFAULTS, practice: { ...over, sessionMaxMode: 'fixed' } }))
+        .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+      expect(crossFieldViolations({ ...SETTINGS_DEFAULTS, practice: { ...over, sessionMaxMode: 'scope_words' } })).toEqual([]);
+    });
+
+    it('a choice change is in the history diff', () => {
+      const random = applyPatch(SETTINGS_DEFAULTS, { practice: { ai_placement: 'random' } });
+      expect(changedFields(SETTINGS_DEFAULTS, random)).toEqual([{ key: 'practice.ai_placement', oldValue: 'even', newValue: 'random' }]);
+    });
   });
 
   it('B3E30: each bound accepts its edges and refuses one step outside, naming the key', () => {
@@ -473,3 +515,27 @@ describe('apiValueOf (M5-T1)', () => {
       .toMatchObject({ freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 });
   });
 });
+
+describe('round C (H14): tts.daily_char_cap', () => {
+  it('defaults to 120000 and is a whole number 0–1000000', () => {
+    expect(SETTINGS_DEFAULTS.tts.dailyCharCap).toBe(120_000);
+    expect(SETTINGS_BOUNDS.tts.daily_char_cap).toEqual({ min: 0, max: 1_000_000 });
+    expect(toApiValues(SETTINGS_DEFAULTS).tts).toEqual({ daily_char_cap: 120_000 });
+    for (const value of [0, 120_000, 1_000_000]) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual([]);
+    for (const value of [-1, 1_000_001, 1.5, null, '5']) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual(['tts.daily_char_cap']);
+  });
+
+  it('JSON stored before it gets the default; a stored value is kept; a stored value out of bounds falls back', () => {
+    expect(withDefaults({}).tts.dailyCharCap).toBe(120_000);
+    expect(withDefaults({ tts: { dailyCharCap: 50_000 } }).tts.dailyCharCap).toBe(50_000);
+    expect(withDefaults({ tts: { dailyCharCap: 2_000_000 } }).tts.dailyCharCap).toBe(120_000);
+  });
+
+  it('a patch applies and its change is in the history diff', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { tts: { daily_char_cap: 0 } });
+    expect(next.tts.dailyCharCap).toBe(0);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'tts.daily_char_cap', oldValue: 120_000, newValue: 0 }]);
+    expect(apiValueOf(next, 'tts.daily_char_cap')).toBe(0);
+  });
+});
+

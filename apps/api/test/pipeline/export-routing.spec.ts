@@ -8,13 +8,14 @@ import { AdminCatalogController } from '../../src/content/catalog/admin-catalog.
 import { AdminCatalogQueries } from '../../src/content/catalog/admin-catalog.queries.js';
 import { ContentService, type ExportRow } from '../../src/content/index.js';
 import { PermissionGuard } from '../../src/identity/staff/permission.guard.js';
+import { AudioService } from '../../src/content/audio/audio.service.js';
 import { ExportService } from '../../src/content-pipeline/export/export.service.js';
 import { SensesExportController } from '../../src/content-pipeline/export/senses-export.controller.js';
 
 const id = '12345678-abcd-4abc-8abc-123456789abc';
 const row: ExportRow = {
   headword: 'analyze/analyse', pos: 'verb', gloss_vi: '=HYPERLINK("x")', definition_en: 'Analyze.',
-  example_en_1: 'Analyze this.', example_en_2: '', example_en_3: '', topics: 'business', accepted_forms: '',
+  example_en_1: 'Analyze this.', example_en_2: '', example_en_3: '', topics: 'business', accepted_forms: '', ipa_uk: '', ipa_us: '', ipa_source_id: '',
   context_label: null, form_of: '', inflections: '', sense_id: id, revision: 2, _status: 'draft', _level: 'B1', _inflections: '',
 };
 
@@ -23,6 +24,7 @@ const row: ExportRow = {
 @Module({ controllers: [AdminCatalogController], providers: [
   { provide: AdminCatalogQueries, useValue: { getSense: (senseId: string) => ({ sense_id: senseId }) } },
   { provide: ContentService, useValue: { listExportRows: async () => ({ rows: [row] }) } },
+  { provide: AudioService, useValue: { statesForSense: async () => ({ uk: null, us: null }) } },
 ], exports: [ContentService] })
 class CatalogRoutingModule {}
 
@@ -55,9 +57,19 @@ describe('export controller routing (unit, no infrastructure)', () => {
     expect(exported.text).toContain('"\'=HYPERLINK(""x"")"');
     const detail = await http.get(`/v1/admin/content/senses/${id.toUpperCase()}`);
     expect(detail.status).toBe(200);
-    expect(detail.body).toEqual({ sense_id: id });
+    expect(detail.body).toEqual({ sense_id: id, audio: { uk: null, us: null } });
     expect((await http.get('/v1/admin/content/senses/bad-id')).status).toBe(404);
     expect((await http.get('/v1/admin/content/senses/zzzzzzzz-abcd-4abc-8abc-123456789abc')).status).toBe(400);
+  });
+
+  it('round C (H15): the sense export has the three transcription columns, filled from the row, right after accepted_forms', async () => {
+    const http = await start({ rows: [{ ...row, ipa_uk: 'lɛd', ipa_us: 'liːd', ipa_source_id: id }] });
+    const exported = await http.get('/v1/admin/content/senses/export');
+    const [header, line] = exported.text.replaceAll(String.fromCharCode(13), '').split(String.fromCharCode(10));
+    const columns = header.split(',');
+    expect(columns.slice(columns.indexOf('accepted_forms'), columns.indexOf('accepted_forms') + 4))
+      .toEqual(['accepted_forms', 'ipa_uk', 'ipa_us', 'ipa_source_id']);
+    expect(line).toContain(`lɛd,liːd,${id}`);
   });
 
   it('B2#55 (stream): oversize returns intact Problem Details before attachment headers or CSV bytes', async () => {

@@ -49,6 +49,8 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     billing: { production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true },
     ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
     payos: { mode: 'off', clientId: null, apiKey: null, checksumKey: null },
+    audio: { storage: null, publicBaseUrl: null, r2: null, localDir: '.tmp/audio' },
+    tts: { provider: null, voiceUk: 'en-GB-Wavenet-B', voiceUs: 'en-US-Wavenet-D', credentials: null },
     google: { mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: randomBytes(32) },
     turnstile: { mode: 'off', secretKey: null, allowedHostnames: [] },
     limits,

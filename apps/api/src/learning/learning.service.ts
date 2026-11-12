@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { recordActivityIn } from './activity/record-activity.js';
+import { streakAsOf } from './activity/streak.js';
 import {
   PracticeReadsService, type PracticeCheck, type PracticeItem, type PracticeScope,
 } from './practice/practice-reads.service.js';
@@ -57,6 +58,11 @@ export class LearningService {
     return this.practiceReviews.review(tx, userId, inputs);
   }
 
+  /** The learner's study streak on their local date `today` (round C): `days`, and whether today is already a study day. */
+  streakAsOf(userId: string, today: string, db?: Prisma.TransactionClient | PrismaClient): Promise<{ days: number; studiedToday: boolean }> {
+    return streakAsOf(db ?? this.prisma, userId, today);
+  }
+
   /** The final answer of a recall session on the schedule (round C), in the caller's transaction. */
   recallAnswer(tx: Prisma.TransactionClient, userId: string, input: RecallAnswerInput): Promise<RecallAnswerOutcome> {
     return this.recall.recallAnswer(tx, userId, input);
@@ -66,7 +72,8 @@ export class LearningService {
    * A "lần học" of the learner on their local date `localDate` (nhóm B D39, B51): one row per learner per day, however many calls.
    * Practice calls it with its `tx` as the last write of a final answer; the shared client is the default for any other caller.
    */
-  recordActivity(userId: string, localDate: string, db?: Prisma.TransactionClient | PrismaClient): Promise<void> {
-    return recordActivityIn(db ?? this.prisma, userId, localDate);
+  recordActivity(userId: string, localDate: string, opts: { studied: boolean }, db?: Prisma.TransactionClient | PrismaClient):
+    Promise<{ firstStudied: boolean }> {
+    return recordActivityIn(db ?? this.prisma, userId, localDate, opts);
   }
 }

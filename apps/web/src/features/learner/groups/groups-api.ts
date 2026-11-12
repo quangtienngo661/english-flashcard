@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useMemo } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
+import type { Pronunciation } from '../word/pronunciation';
 
 export type Cell = 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -68,6 +69,8 @@ export type Card = {
     examples: string[];
     form_of: { lemma: string; kind: string } | null;
     sentences: string[];
+    /** Đợt C (H9); absent from an older API. */
+    pronunciation?: Pronunciation;
   };
 };
 
