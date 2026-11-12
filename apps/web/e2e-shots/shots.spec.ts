@@ -194,7 +194,7 @@ async function gmM1(page: Page, opts?: ShotOpts, phase: Phase = 'all') {
   await setLanguage(page, 'vi');
   await page.goto('/vi/app/groups');
   await settle(page);
-  let link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+  let link = page.getByRole('link', { name: /Kinh doanh/ }).first();
   if (!(await link.count())) {
     await page.goto(`/vi/app/${TOPIC}`);
     await settle(page, page.getByRole('list').first());
@@ -202,7 +202,7 @@ async function gmM1(page: Page, opts?: ShotOpts, phase: Phase = 'all') {
     await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
     await page.goto('/vi/app/groups');
     await settle(page);
-    link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+    link = page.getByRole('link', { name: /Kinh doanh/ }).first();
   }
   const id = new URL((await link.getAttribute('href'))!, 'http://x').searchParams.get('id')!;
   for (const scheme of schemes) {
@@ -493,11 +493,17 @@ async function gmM4(page: Page, opts?: ShotOpts) {
   }
   // The learner's own word, made once by hand.
   await page.goto(`/vi/app/word?w=${OWN}`);
-  await settle(page);
+  // The "not found" state has its heading at level 2, so wait for any heading in the page.
+  await settle(page, page.getByRole('main').getByRole('heading').first());
   if (await page.getByText(`Không tìm thấy từ “${OWN}”`).isVisible()) {
     await page.getByRole('button', { name: 'Thêm từ này' }).click();
     await dialog.getByRole('button', { name: 'Tự nhập nghĩa' }).click();
     await dialog.getByRole('textbox', { name: 'Nghĩa' }).fill('từ thử cho bộ ảnh');
+    // The save needs a group: open the picker, take the first one and confirm it.
+    await dialog.getByRole('button', { name: /^Lưu vào nhóm: / }).click();
+    const picker = page.getByRole('dialog', { name: 'Lưu vào nhóm', exact: true });
+    await picker.getByRole('radio').first().check({ force: true });
+    await picker.getByRole('button', { name: /^Chọn / }).click();
     await dialog.getByRole('button', { name: 'Lưu từ' }).click();
     await expect(dialog).toBeHidden({ timeout: 30_000 });
   }
@@ -870,6 +876,15 @@ async function gmM5(page: Page, opts?: ShotOpts) {
 
   await page.goto('/vi/app/practice');
   await settle(page);
+  // A session left open by an earlier pass (or a failed one) would keep "Bắt đầu" from opening a new one: end it first.
+  const resume = page.getByRole('region', { name: 'Phiên đang dở' }).getByRole('link');
+  if (await resume.count()) {
+    await resume.click();
+    await page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /^Xong \d+ câu\.$/ })).toBeVisible({ timeout: 30_000 });
+    await page.goto('/vi/app/practice');
+    await settle(page);
+  }
   await shoot(page, 'practice', true, out);
   for (const width of widths) {
     // 131:3890: the setup as it opens.
@@ -914,21 +929,13 @@ async function gmM5(page: Page, opts?: ShotOpts) {
   await wrong();
   await shoot(page, 'session-wrong', false, out);
   const summary = page.getByRole('heading', { level: 1, name: /^Xong \d+ câu\.$/ });
+  // Stop the session here: stepping through every question clicked "Câu tiếp" while it re-rendered and hung the set, and a session
+  // left open stops the next pass from starting its own. The round prompt ("Bạn đã làm hết N từ") is shot only when it is already up.
   const round = page.getByRole('heading', { level: 1, name: /^Bạn đã làm hết \d+ từ$/ });
-  let shotRound = false;
-  for (let i = 0; i < 60 && !(await summary.isVisible()); i++) {
-    if (await round.isVisible()) {
-      if (!shotRound) await shoot(page, 'session-round', false, out);
-      shotRound = true;
-      await page.getByRole('button', { name: 'Kết thúc, xem tổng kết' }).click();
-    } else if (await page.getByRole('button', { name: /^Câu tiếp/ }).isVisible()) {
-      await page.getByRole('button', { name: /^Câu tiếp/ }).click();
-    } else if (await field.isVisible()) {
-      await wrong();
-    } else await page.waitForTimeout(300);
-  }
+  if (await round.isVisible()) await shoot(page, 'session-round', false, out);
+  else missed('gm-m5 session-round', 'the session was stopped after the first wrong answer, before the round prompt');
+  await page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }).click();
   await expect(summary).toBeVisible({ timeout: 30_000 });
-  if (!shotRound) missed('gm-m5 session-round', 'the deck has at least as many words as questions, so the round prompt never came');
   await shoot(page, 'session-summary', true, out);
 
   await page.goto('/vi/app/practice/weak');
@@ -981,12 +988,16 @@ async function gmM9(page: Page) {
   let shot = 0;
   // Each set runs on its own: a set the learner cannot reach (gm-m7a and gm-m7b want different plans) is listed as missed and the run goes on.
   // The test fails at the end only when no set was shot at all, so one run gives the most shots and the annotations show what is missing.
-  const attempt = async (label: string, run: () => Promise<void>) => {
+  // `counts` is false for the sign-in: it shoots nothing, so it must not make "nothing was shot" pass.
+  const attempt = async (label: string, run: () => Promise<void>, counts = true) => {
     try {
       await run();
-      shot++;
+      if (counts) shot++;
     } catch (error) {
       missed(label, error instanceof Error ? error.message : String(error));
+      // Leave nothing open for the next set: a dialog or a desktop-sized viewport would break its first step.
+      await page.keyboard.press('Escape').catch(() => undefined);
+      await page.setViewportSize({ width: 1440, height: 900 }).catch(() => undefined);
     } finally {
       await page.unrouteAll({ behavior: 'ignoreErrors' });
     }
@@ -1007,9 +1018,13 @@ async function gmM9(page: Page) {
     await attempt(`${scheme} gm-m8`, () => gmM8(page, of('gm-m8')));
     await attempt(`${scheme} gm-m1 signed out`, () => gmM1(page, of('gm-m1'), 'out'));
     await attempt(`${scheme} gm-m2 signed out`, () => gmM2(page, of('gm-m2'), 'out'));
-    await attempt(`${scheme} sign-in`, async () => {
-      await signIn(page);
-    });
+    await attempt(
+      `${scheme} sign-in`,
+      async () => {
+        await signIn(page);
+      },
+      false,
+    );
     await attempt(`${scheme} gm-m1`, () => gmM1(page, of('gm-m1'), 'in'));
     await attempt(`${scheme} gm-m2`, () => gmM2(page, of('gm-m2'), 'in'));
     await attempt(`${scheme} gm-m3`, () => gmM3(page, of('gm-m3')));

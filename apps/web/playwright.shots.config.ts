@@ -8,5 +8,11 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   timeout: 1_800_000,
-  use: { ...devices['Desktop Chrome'], baseURL: process.env.SHOTS_BASE_URL ?? 'http://localhost:3001' },
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: process.env.SHOTS_BASE_URL ?? 'http://localhost:3001',
+    // A locator that never shows must fail its set, not hold the run until the test timeout.
+    actionTimeout: 45_000,
+    navigationTimeout: 60_000,
+  },
 });
