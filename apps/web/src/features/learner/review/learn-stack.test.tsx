@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/test-utils/render-app';
 import { testRoute } from '@/test-utils/route-locale';
@@ -41,6 +41,16 @@ const routes = (extra: Record<string, Route> = {}): Record<string, Route> => ({
 const reviews = (calls: Array<{ method: string; path: string; body: unknown }>) =>
   calls.filter((c) => c.method === 'POST' && c.path === '/v1/reviews').map((c) => c.body as { item_id: string; answer: string; review_id: string });
 const top = (n: number) => screen.findByRole('group', { name: `Card ${n} of 3` });
+/** `useDesktop()` and the motion helpers read matchMedia; jsdom's default answers false (phone). */
+const media = window.matchMedia;
+const desktop = (on: boolean) => {
+  window.matchMedia = ((query: string) => ({
+    matches: on && query.includes('min-width'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia;
+};
+afterEach(() => {
+  window.matchMedia = media;
+});
 
 describe('Học, the card stack (M5.8)', () => {
   it('Space turns the card over and Space again turns it back ("Xem mặt trước")', async () => {
@@ -162,5 +172,86 @@ describe('Học, the card stack (M5.8)', () => {
     const review = screen.getByRole('list', { name: 'Still learning · 2 cards' });
     expect(within(review).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy', 'merge']);
     expect(within(screen.getByRole('list', { name: 'Know · 1 card' })).getByText('cache')).toBeInTheDocument();
+  });
+
+  it('Review Focus 5: 2 pressed twice in the same instant after a flip records one answer; no card is left behind', async () => {
+    desktop(true);
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes() });
+    await top(1);
+    await userEvent.keyboard(' ');
+    // Both presses land before React renders again (well inside 100 ms), so both handlers see card 1 turned over.
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '2' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '2' }));
+    });
+    expect(await top(2)).toHaveAttribute('data-flipped', 'false');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.getAllByRole('group')).toHaveLength(1);
+    expect(within(screen.getByRole('region', { name: 'Know' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy']);
+    await userEvent.keyboard('{Escape}');
+    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
+    expect(reviews(calls).map((b) => [b.item_id, b.answer])).toEqual([[uuid(1), 'known']]);
+  });
+});
+
+describe('Học layout (P.17, mockup L227-304)', () => {
+  it('phone: the card comes first, the piles under it; the side buttons are icons named "Still learning" and "Know"; no key hints', async () => {
+    desktop(false);
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
+    const card = await top(1);
+    const review = screen.getByRole('region', { name: 'Still learning' });
+    const known = screen.getByRole('region', { name: 'Know' });
+    expect(card.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(review.compareDocumentPosition(known) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^$/);
+    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^$/);
+    expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip card$/);
+    expect(document.querySelector('kbd')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Keys' })).not.toBeInTheDocument();
+    expect(within(card).getByText('Tap the card to flip')).toBeInTheDocument();
+    expect(within(card).queryByText('Click the card or press Space to flip')).not.toBeInTheDocument();
+    // No word chips drop into the piles on a phone, only the counts move.
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await top(2);
+    expect(within(known).queryByRole('listitem')).not.toBeInTheDocument();
+    expect(within(known).getByText('1')).toBeInTheDocument();
+  });
+
+  it('desktop: buttons carry their label and key; the legend lists Space, 1/←, 2/→ and Esc; piles show number and label without arrows', async () => {
+    desktop(true);
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
+    const card = await top(1);
+    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^Still learning1$/);
+    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^Know2$/);
+    expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip cardSpace$/);
+    expect(screen.getByRole('button', { name: 'Know' })).toHaveAttribute('aria-keyshortcuts', '2 ArrowRight');
+    const legend = screen.getByRole('list', { name: 'Keys' });
+    expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SpaceFlip card', '1←Still learning', '2→Know', 'EscStop']);
+    expect(within(card).getByText('Click the card or press Space to flip')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Still learning' })).toHaveTextContent(/^0Still learning$/);
+    expect(screen.getByRole('region', { name: 'Know' })).toHaveTextContent(/^0Know$/);
+  });
+
+  it('the X alone ends the session: a button named "Stop" with no text', async () => {
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
+    await top(1);
+    const stop = screen.getByRole('button', { name: 'Stop' });
+    expect(stop).toHaveTextContent(/^$/);
+    expect(stop).not.toHaveAttribute('title');
+    await userEvent.click(stop);
+    expect(await screen.findByRole('heading', { name: /done\.$/ })).toBeInTheDocument();
+  });
+
+  it('L-B-2: the back of the card names its level and when it comes back; a new word says "New word"', async () => {
+    const fresh = { ...card(4, 'board'), level: 0 };
+    renderApp(<ReviewSession />, { session: true, routes: routes({ [`GET /v1/groups/${G}/queue?mode=due`]: () => Response.json({ cards: [CARDS[0], fresh] }), 'GET /v1/words/board': () => Response.json({ inflections: [] }) }) });
+    const first = await screen.findByRole('group', { name: 'Card 1 of 2' });
+    const back = first.querySelector<HTMLElement>('[data-face="back"]')!;
+    expect(within(back).getByText('Level 1 · review in 1 day')).toBeInTheDocument();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    const second = await screen.findByRole('group', { name: 'Card 2 of 2' });
+    expect(within(second.querySelector<HTMLElement>('[data-face="back"]')!).getByText('New word')).toBeInTheDocument();
   });
 });

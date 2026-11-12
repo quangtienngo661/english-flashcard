@@ -74,7 +74,8 @@ describe('SessionIntl: session copy in English for every locale (QM9-9)', () => 
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Flip card/ })).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: '2 cards left' })).toBeInTheDocument();
-    expect(screen.getByText('Click the card or press Space to flip')).toBeInTheDocument();
+    // P.17: one hint per layout; jsdom answers matchMedia with false, so the phone one.
+    expect(screen.getByText('Tap the card to flip')).toBeInTheDocument();
     expect(screen.getByText('Công nghệ')).toBeInTheDocument();
 
     await userEvent.keyboard(' ');

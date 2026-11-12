@@ -87,6 +87,10 @@
   --color-wm-answer-line: rgb(98 201 143 / 0.4);
   --color-wm-blank-soft: rgb(141 162 255 / 0.07);
   --color-wm-blank-soft-focus: rgb(141 162 255 / 0.12);
+  /* P.17 (mockup L273-277): the Học side buttons. Light: the surface. Dark: fail-wash = color-mix(in oklab, fail 6%, surface),
+     pass-wash = color-mix(in oklab, pass 6%, surface). Precomputed. */
+  --color-wm-fail-wash: #23222f;
+  --color-wm-pass-wash: #1b2430;
   /* Level colours (ui/levels.ts): 0 is none, 1-5 brighten with the level. */
   --color-wm-level-0: #56607a;
   --color-wm-level-1: #1f4d35;

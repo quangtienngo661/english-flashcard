@@ -28,26 +28,52 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+/** How many session-corner toasts are mounted: while one is, the app-wide bottom toast stays empty, so a streak shows once. */
+let corners = 0;
+const cornerListeners = new Set<() => void>();
+
+function subscribeCorners(listener: () => void) {
+  cornerListeners.add(listener);
+  return () => cornerListeners.delete(listener);
+}
+
+function setCorners(next: number) {
+  corners = next;
+  for (const listener of cornerListeners) listener();
+}
+
 export type StreakPlacement = 'bottom' | 'session-corner';
 
 const PLACE: Record<StreakPlacement, string> = {
-  bottom: 'inset-x-0 bottom-28 justify-center px-4 md:bottom-8',
-  'session-corner': 'right-4 top-4 justify-end',
+  bottom: 'fixed inset-x-0 bottom-28 justify-center px-4 md:bottom-8',
+  // Mockup L1192: under the session bar, at its right end (below the X); the session's header is the positioned parent.
+  'session-corner': 'absolute right-4 top-full mt-3 justify-end md:right-6',
 };
 
 /**
  * Mockup L306-310: a surface pill with a 1 px line, the pop shadow, a flame in a 22 px accent-soft square and "N-day streak". Not the
  * shared toast queue: that one is text only, 5 s, with a close button. It never takes a tap (`pointer-events-none`), and the status
  * region is always there so a screen reader reads the text once when it appears. `placement`: bottom centre (above the answer buttons
- * on a phone), or the corner of a session screen.
+ * on a phone), or the corner of a session screen. A session screen mounts its own corner toast inside its subtree, so it speaks the
+ * session's language (English, QM9-9); the bottom one in AppProviders stays empty meanwhile.
  */
 export function StreakToast({ placement = 'bottom' }: { placement?: StreakPlacement }) {
   const t = useTranslations('App.streak');
   const current = useSyncExternalStore(subscribe, () => notice, () => null);
   const [phase, setPhase] = useState<{ id: number; leaving: boolean; gone: boolean } | null>(null);
+  // Only streaks that arrive after this toast mounted: a session opened later the same day must not replay the morning's toast.
+  const [since] = useState(() => nextId);
+  const cornerShown = useSyncExternalStore(subscribeCorners, () => corners > 0, () => false);
+  const yields = placement === 'bottom' && cornerShown;
 
   useEffect(() => {
-    if (!current) return;
+    if (placement !== 'session-corner') return;
+    setCorners(corners + 1);
+    return () => setCorners(corners - 1);
+  }, [placement]);
+
+  useEffect(() => {
+    if (!current || current.id < since) return;
     // Reset for the new notice from the store, then time its exit: the store is outside React, so this effect syncs with it.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase({ id: current.id, leaving: false, gone: false });
@@ -57,11 +83,11 @@ export function StreakToast({ placement = 'bottom' }: { placement?: StreakPlacem
       clearTimeout(leave);
       clearTimeout(remove);
     };
-  }, [current]);
+  }, [current, since]);
 
-  const visible = current !== null && phase?.id === current.id && !phase.gone;
+  const visible = !yields && current !== null && phase?.id === current.id && !phase.gone;
   return (
-    <div role="status" aria-live="polite" className={cn('pointer-events-none fixed z-60 flex', PLACE[placement])}>
+    <div role="status" aria-live="polite" className={cn('pointer-events-none z-60 flex', PLACE[placement])}>
       {visible && (
         <p
           key={current.id}

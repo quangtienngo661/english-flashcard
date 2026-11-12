@@ -233,7 +233,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.goto(`/${locale}/app${path ? `/${path}` : ''}`);
         if (flip) {
           await expect(page.getByRole('group').first()).toBeVisible();
-          await page.getByRole('button', { name: locale === 'vi' ? vi.review.flip : copy.en.App.review.flip }).click();
+          // Session copy is English in every locale (QM9-9).
+          await page.getByRole('button', { name: copy.en.App.review.flip }).click();
         }
         await ready(page);
         await noSideScroll(page, `${locale}/app/${path}${flip ? ' (back)' : ''}`);

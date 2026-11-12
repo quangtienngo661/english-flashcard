@@ -236,9 +236,9 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByRole('group', { name: 'Card 2 of 2' })).toBeInTheDocument();
   });
 
-  it('đợt C DC9: the first flip of the day shows the streak toast; a later one without `streak` shows nothing new', async () => {
+  it('đợt C DC9, P.17: the first flip of the day shows the streak toast in English at the corner; one toast only, a later save adds none', async () => {
     let first = true;
-    // The streak toast lives in AppProviders, outside SessionIntl, so it keeps the route's language (placement moves in P.17).
+    // AppProviders' own toast is mounted too, outside SessionIntl, as in production: Học's corner toast replaces it while the session is open.
     renderApp(<><SessionIntl><ReviewSession /></SessionIntl><StreakToast /></>, { routes: routes([DEPLOY, CACHE], {
       'POST /v1/reviews': () => {
         const streak = first ? { days: 13 } : null;
@@ -249,8 +249,13 @@ describe('ReviewSession (K/20–K/22)', () => {
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('13 ngày liên tiếp')).toBeInTheDocument();
-    expect(screen.getAllByText(/ngày liên tiếp/)).toHaveLength(1);
+    expect(await screen.findByText('13-day streak')).toBeInTheDocument();
+    expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('heading', { name: '2 cards done.' });
+    expect(screen.getAllByText(/streak/)).toHaveLength(1);
   });
 
   it('M6.2: the first flip of the day writes the streak cache; no GET /v1/me/streak follows', async () => {

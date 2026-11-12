@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { renderApp } from '@/test-utils/render-app';
 import { showStreak, StreakToast } from './StreakToast';
 
@@ -43,11 +44,50 @@ describe('StreakToast (đợt C DC9)', () => {
     expect(screen.getByRole('status')).toHaveTextContent('13-day streak');
   });
 
-  it('placement: bottom centre by default, the top-right corner for a session screen', () => {
+  it('placement: bottom centre by default; the session corner sits under its bar, at the right (mockup L1192)', () => {
     const { unmount } = renderApp(<StreakToast />);
-    expect(screen.getByRole('status')).toHaveClass('bottom-28');
+    expect(screen.getByRole('status')).toHaveClass('fixed', 'bottom-28');
     unmount();
     renderApp(<StreakToast placement="session-corner" />);
-    expect(screen.getByRole('status')).toHaveClass('top-4', 'right-4');
+    expect(screen.getByRole('status')).toHaveClass('absolute', 'top-full', 'right-4');
+  });
+
+  it('P.17: while a session corner toast is mounted the bottom one stays empty, so a streak shows once; it comes back when the session goes', () => {
+    function Screens() {
+      const [session, setSession] = useState(true);
+      return (
+        <>
+          <StreakToast />
+          {session && <StreakToast placement="session-corner" />}
+          <button type="button" onClick={() => setSession(false)}>leave</button>
+        </>
+      );
+    }
+    renderApp(<Screens />);
+    act(() => showStreak(5));
+    expect(screen.getAllByText('5 ngày liên tiếp')).toHaveLength(1);
+    const [bottom, corner] = screen.getAllByRole('status');
+    expect(bottom).toBeEmptyDOMElement();
+    expect(corner).toHaveTextContent('5 ngày liên tiếp');
+    fireEvent.click(screen.getByRole('button', { name: 'leave' }));
+    expect(screen.getByRole('status')).toHaveTextContent('5 ngày liên tiếp');
+  });
+
+  it('P.17: a toast mounted after a streak was shown does not show it again (a Học session opened later the same day)', () => {
+    renderApp(<StreakToast />);
+    act(() => showStreak(8));
+    act(() => vi.advanceTimersByTime(4_000));
+    function Later() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          {open && <StreakToast placement="session-corner" />}
+          <button type="button" onClick={() => setOpen(true)}>open</button>
+        </>
+      );
+    }
+    renderApp(<Later />);
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+    expect(screen.queryByText('8 ngày liên tiếp')).not.toBeInTheDocument();
   });
 });
