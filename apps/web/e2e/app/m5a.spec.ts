@@ -10,6 +10,9 @@ const en = copy.en.App.practice;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const SESSION = uuid(410);
 const PRIVATE = uuid(620);
+// [Bắt đầu] loads the session page in full (hardReplace); with four workers running axe the Worker render, the chunks and the first
+// /next can take longer than the default 5 s, on 8c1b6a06 too. Only the first check after that load waits longer.
+const AFTER_LOAD = { timeout: 15_000 };
 /** M/78d: the longest AI sentence (300 characters). */
 const LONG_SENTENCE = `We use Docker to ___ ${'the newest internationalization-ready microservices '.repeat(6)}`.slice(0, 299) + '.';
 const base = { round: 1, prompt_style: 'sentence', hint_level: 0, state: 'unanswered', tries: 0, reportable: true, private_word: false, ai: true };
@@ -94,7 +97,7 @@ test.describe('M5a flows (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({
       types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'], ai_count: 3,
     });
-    await expect(page.getByText(en.session.ai.preparingTitle)).toBeVisible();
+    await expect(page.getByText(en.session.ai.preparingTitle)).toBeVisible(AFTER_LOAD);
     // P.13: the blank is the input, inside the sentence.
     await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     await expect(page.getByText('We use Docker to the app to the production server.')).toBeVisible();
@@ -134,7 +137,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await expect(page.getByText(en.session.ai.errorTitle)).toBeVisible();
+    await expect(page.getByText(en.session.ai.errorTitle)).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: en.session.ai.retry }).click();
     await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     const nexts = requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`);
@@ -146,7 +149,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
-    await expect(page.getByText(en.session.ai.fallback)).toBeVisible();
+    await expect(page.getByText(en.session.ai.fallback)).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: en.session.ai.dismiss }).click();
     await expect(page.getByText(en.session.ai.fallback)).toHaveCount(0);
   });
@@ -189,6 +192,7 @@ test.describe('M5a flows (mocked API)', () => {
     const dialog = await openCustomize(page);
     await addAi(dialog, 2);
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
+    await expect(page.getByRole('button', { name: /^(1\s?)?deployed/ })).toBeVisible(AFTER_LOAD);
     await page.getByRole('button', { name: /^(1\s?)?deployed/ }).click();
     await page.getByRole('button', { name: en.session.report.button }).click();
     const report = page.getByRole('dialog', { name: en.session.report.title });
@@ -223,7 +227,7 @@ for (const scheme of ['light', 'dark'] as const) {
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
       // P.13: the blank is an input inside the sentence, so the sentence's own text has no "___".
-      await expect(page.getByText(LONG_SENTENCE.replace('___ ', ''))).toBeVisible();
+      await expect(page.getByText(LONG_SENTENCE.replace('___ ', ''))).toBeVisible(AFTER_LOAD);
       // Review I3: the band does not name the word, nor link to it, before the answer.
       await expect(page.getByText(en.session.ai.notRecognizedAny)).toBeVisible();
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toHaveCount(0);
