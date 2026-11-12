@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { BackLink } from '@/app-chrome/BackLink';
 import { PageColumns } from '@/app-chrome/PageColumns';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';

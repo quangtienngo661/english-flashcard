@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useEntitlements } from '@/app-shell/queries';
 import { cn } from '@/lib/cn';
 import { TextButton } from '@/ui/TextButton';
+import { TargetWord } from '@/ui/TargetWord';
 import type { LookupSense } from './add-word-api';
 import type { AiLookupResult as Result } from './ai-lookup-api';
 
@@ -84,11 +85,11 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
             </div>
             <p className="break-all font-wm-display text-wm-card-title text-wm-ink md:text-wm-lemma">{s.lemma}</p>
             <p className="break-words font-wm-display text-wm-word text-wm-ink">{s.meaning.text}</p>
-            {s.examples[0] && <p className="break-words font-wm-sans text-wm-base text-wm-ink">{marked(s.examples[0], s.lemma)}</p>}
+            {s.examples[0] && <p className="break-words font-wm-sans text-wm-base text-wm-ink"><TargetWord text={s.examples[0]} lemma={s.lemma} /></p>}
             {sentence.trim() && (
               <div className="hidden flex-col gap-1 md:flex">
                 <p className="text-wm-meta text-wm-muted">{t('yourSentence')}</p>
-                <p className="break-words font-wm-sans text-wm-small text-wm-ink">{marked(sentence.trim(), text)}</p>
+                <p className="break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.trim()} lemma={text} /></p>
               </div>
             )}
           </div>
@@ -112,19 +113,5 @@ function Badge({ ai = false, children }: { ai?: boolean; children: ReactNode }) 
     >
       {children}
     </span>
-  );
-}
-
-/** Figma "Từ tô": the first word that starts with the looked-up text, highlighted ("Stop **capping,** you never met him."). */
-function marked(sentence: string, word: string): ReactNode {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = escaped ? new RegExp(`\\b${escaped}\\w*`, 'i').exec(sentence) : null;
-  if (!match) return sentence;
-  return (
-    <>
-      {sentence.slice(0, match.index)}
-      <mark className="rounded-wm-key bg-wm-mark px-0.5 text-wm-mark-ink">{match[0]}</mark>
-      {sentence.slice(match.index + match[0].length)}
-    </>
   );
 }

@@ -84,7 +84,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(within(last).getByText('14/20')).toBeInTheDocument();
     expect(within(last).getByText(/20 câu · Công nghệ$/)).toBeInTheDocument();
     expect(within(last).getByText('Sai: deteriorate, allocate, viable, scrutiny')).toBeInTheDocument();
-    expect(within(last).getByRole('link', { name: 'Luyện lại từ sai →' })).toHaveAttribute('href', '/vi/app/practice/weak');
+    expect(within(last).getByRole('link', { name: 'Luyện lại từ sai' })).toHaveAttribute('href', '/vi/app/practice/weak');
   });
 
   it('M6.4: "Mở lịch học" links to ?lich=<month in the learner zone> and opens Lịch in place', async () => {
@@ -137,7 +137,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     // jsdom has no layout, so the row shows every card; DeckRow.test pins the count per width.
     expect(within(list).getAllByRole('link').map((a) => a.textContent)).toEqual(['Nhóm 6', 'Nhóm 5', 'Nhóm 4', 'Nhóm 3', 'Nhóm 2', 'Nhóm 1', 'Nhóm 0']);
     expect(screen.getByRole('region', { name: 'Nhóm 7' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem tất cả 8 nhóm →' })).toHaveAttribute('href', '/vi/app/groups');
+    expect(screen.getByRole('link', { name: 'Xem tất cả 8 nhóm' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
   it('pressing a deck card lifts it, then opens its deck (owner 10/11/2026: not an instant page change)', async () => {
@@ -198,7 +198,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(row).toHaveTextContent('52 từ');
     // The sample words say what the topic holds before opening it.
     expect(row).toHaveTextContent('budget, contract');
-    expect(screen.getByRole('link', { name: 'Xem mọi chủ đề trong Tra từ →' })).toHaveAttribute('href', '/vi/app/lookup');
+    expect(screen.getByRole('link', { name: 'Xem mọi chủ đề trong Tra từ' })).toHaveAttribute('href', '/vi/app/lookup');
   });
 
   it('no suggestion → the topic block is hidden', async () => {

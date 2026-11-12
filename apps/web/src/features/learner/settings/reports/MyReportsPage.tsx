@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { BackLink } from '@/app-chrome/BackLink';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { useFormat } from '@/app-shell/format';
 import { useSession } from '@/app-shell/session/session-context';
 import { useLearnerZone } from '@/lib/learner-date';

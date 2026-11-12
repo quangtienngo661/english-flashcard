@@ -123,7 +123,7 @@ describe('TransactionsPage (Figma 122:4203 / 122:4354)', () => {
     renderApp(<TransactionsPage />, { routes: routes() });
     expect(await screen.findByText('Pro tới hết 07/02/2027')).toBeInTheDocument();
     expect(screen.getByText('Gói học hiện tại')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem gói học →' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.getByRole('link', { name: 'Xem gói học' })).toHaveAttribute('href', '/vi/app/plans');
   });
 
   it('the plan card of a Free learner reads "Gói Miễn phí"', async () => {

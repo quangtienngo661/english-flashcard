@@ -26,8 +26,9 @@ export function TopicSuggestions() {
         <h2 id="topic-suggestions" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
           {t('suggestTitle')}
         </h2>
-        <Link href={`/${locale}/app/lookup`} className="text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
+        <Link href={`/${locale}/app/lookup`} className="inline-flex items-center gap-1 text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
           {t('suggestAll')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       </div>
       <ul className="grid gap-3 md:grid-cols-2">

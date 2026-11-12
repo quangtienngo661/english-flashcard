@@ -4,7 +4,7 @@ import { Check, Folder, Layers, Star, Target, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements, type Plan, type Pool } from '@/app-shell/queries';

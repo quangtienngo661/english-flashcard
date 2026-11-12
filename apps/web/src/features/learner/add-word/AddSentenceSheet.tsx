@@ -13,7 +13,7 @@ import { Select } from '@/ui/Select';
 import { TextButton } from '@/ui/TextButton';
 import { TextField } from '@/ui/TextField';
 import { showToast } from '@/ui/Toast';
-import { highlightWord } from '../groups/highlight';
+import { TargetWord } from '@/ui/TargetWord';
 import { sentencesKey, wordKey } from '../word/word-api';
 
 const SENTENCE_MAX = 300;
@@ -90,7 +90,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
           <div className="flex flex-col gap-1.5 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
             <p className="text-wm-meta text-wm-muted">{t('sentencePreview')}</p>
             <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
-            <p className="break-words font-wm-sans text-wm-base text-wm-ink">{highlightWord(text.trim(), sense.lemma)}</p>
+            <p className="break-words font-wm-sans text-wm-base text-wm-ink"><TargetWord text={text.trim()} lemma={sense.lemma} /></p>
           </div>
         )}
         <div className="flex flex-col-reverse gap-2 md:flex-row md:items-center md:justify-end md:gap-5">

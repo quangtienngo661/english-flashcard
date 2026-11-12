@@ -71,7 +71,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByText('deployed')).toBeInTheDocument();
     expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'They deploy updates every week.')).toBeInTheDocument();
     const seen = screen.getByText('Câu bạn đã gặp').parentElement!;
-    expect(within(seen).getByText('deploy', { selector: 'mark' })).toBeInTheDocument();
+    expect(within(seen).getByRole('strong')).toHaveTextContent(/^deploy$/);
     expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Đã biết/ })).toBeInTheDocument();
   });

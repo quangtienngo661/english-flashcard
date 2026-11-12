@@ -7,7 +7,7 @@ import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
 import { TextButton } from '@/ui/TextButton';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
-import { marked } from '../lookup/DictionaryPage';
+import { TargetWord } from '@/ui/TargetWord';
 import { LevelTag } from './LearningBlock';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
 import type { PronLine } from '@/lib/speech/pronunciation';
@@ -65,7 +65,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
           )}
           {sense.examples[0] && (
             <div className="flex items-start gap-1">
-              <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink">{marked(sense.examples[0], sense.lemma, forms)}</p>
+              <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sense.examples[0]} lemma={sense.lemma} forms={forms} /></p>
               <span className="shrink-0">
                 <SpeakSentence text={sense.examples[0]} />
               </span>

@@ -1,8 +1,10 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/cn';
+import { TargetWord } from '@/ui/TargetWord';
 import type { WordRow } from './lookup-api';
 
 /** Dictionary abbreviations of the parts of speech (Figma: "n.", "v.", "n., v."); others are written out. */
@@ -71,8 +73,9 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
         )}
         <span className="text-wm-muted">{t('pageFoot', { n: page })}</span>
         {onNext ? (
-          <button type="button" onClick={onNext} className="font-bold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
+          <button type="button" onClick={onNext} className="inline-flex items-center gap-1 font-bold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
             {t('next')}
+            <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
           </button>
         ) : (
           <span aria-hidden />
@@ -109,7 +112,7 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
         <b className="text-wm-meta font-bold text-wm-muted">1</b>
         <span className="min-w-0 break-words">{meaning}</span>
       </span>
-      {word.example && <span className="break-words font-wm-sans text-wm-small italic text-wm-muted">{marked(word.example, word.lemma)}</span>}
+      {word.example && <span className="break-words font-wm-sans text-wm-small italic text-wm-muted"><TargetWord text={word.example} lemma={word.lemma} /></span>}
     </button>
   );
 }
@@ -124,28 +127,4 @@ function groupByLetter(words: WordRow[]): Array<[string, WordRow[]]> {
     else out.push([letter, [word]]);
   }
   return out;
-}
-
-/**
- * The form of the word in its example, highlighted ("three **candidates** for"). `forms` (the word page's inflections) also
- * catch irregular forms ("went" for "go"); the longest candidate that matches wins.
- */
-export function marked(sentence: string, word: string, forms: string[] = []) {
-  const match = [word, ...forms]
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length)
-    .map((candidate) => {
-      const stem = candidate.length > 3 && /e$/.test(candidate) ? candidate.slice(0, -1) : candidate;
-      const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`\\b${escaped}\\w*`, 'i').exec(sentence);
-    })
-    .find((m) => m !== null);
-  if (!match) return sentence;
-  return (
-    <>
-      {sentence.slice(0, match.index)}
-      <mark className="rounded-wm-key bg-wm-mark px-0.75 not-italic text-wm-mark-ink">{match[0]}</mark>
-      {sentence.slice(match.index + match[0].length)}
-    </>
-  );
 }

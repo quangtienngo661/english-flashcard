@@ -96,7 +96,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
     const panel = (await screen.findByText('Đúng rồi')).closest('[data-feedback]') as HTMLElement;
-    const move = within(panel).getByRole('group', { name: 'Bậc 1 → Bậc 2' });
+    const move = within(panel).getByRole('group', { name: 'Từ Bậc 1 sang Bậc 2' });
     expect(move).toHaveTextContent('Bậc 1Bậc 2');
   });
 
@@ -106,7 +106,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
       await screen.findByText('xấu đi');
       await userEvent.keyboard('1');
       await screen.findByText('Đúng rồi');
-      expect(screen.queryByRole('group', { name: /^(Mới|Bậc \d) → Bậc \d$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /^Từ (Mới|Bậc \d) sang Bậc \d$/ })).not.toBeInTheDocument();
       v.unmount();
     }
   });

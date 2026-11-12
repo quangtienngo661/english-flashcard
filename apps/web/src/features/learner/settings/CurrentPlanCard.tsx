@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react';
+import { ArrowRight, Star } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
@@ -19,6 +19,7 @@ export function CurrentPlanCard({ title, line, href, linkLabel }: { title: strin
       </div>
       <Link href={href} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'shrink-0')}>
         {linkLabel}
+        <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
       </Link>
     </div>
   );

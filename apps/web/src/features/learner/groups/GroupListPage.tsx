@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -219,9 +220,10 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
           href={`/${locale}/app/group?id=${group.id}`}
           prefetch
           onClick={onOpen}
-          className="flex min-h-11 items-center text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+          className="flex min-h-11 items-center gap-1 text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
           {t('open')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
         <TextButton tone="muted" onPress={() => open(undefined, { groupId: group.id })} className={cn('hidden text-wm-button md:inline-flex')}>
           {t('addWord')}

@@ -51,7 +51,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
   it('"went" is recognised as a form of go; saving sends the base sense and the sentence to the last-used deck', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('went', { routes: routes() });
-    expect(await screen.findByText(inflection('went → go · quá khứ của go'))).toBeInTheDocument();
+    expect(await screen.findByText(inflection('went go · quá khứ của go'))).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /đi/ })).toBeChecked();
     expect(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ })).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Câu bạn gặp (không bắt buộc)' }), 'I went to the bank yesterday.');
@@ -189,7 +189,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     const { calls } = open('went', {
       routes: routes({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json(OK, { status: 201 })))) }),
     });
-    await screen.findByText(inflection('went → go · quá khứ của go'));
+    await screen.findByText(inflection('went go · quá khứ của go'));
     await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu' }));
     expect(quickAdds(calls)).toHaveLength(1);
     release();

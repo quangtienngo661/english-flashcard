@@ -107,6 +107,13 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect([text.get('card-heading-mobile'), text.get('card-heading-mobile--line-height')]).toEqual(['1.625rem', '1.3']);
   });
 
+  it('pins the section title sizes (P.4, mockup L126-127: Bricolage 700, 22 / 20, line-height 1.25, -0.012em)', () => {
+    const text = tokens(web, 'text-wm');
+    const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
+    expect(style('block-title')).toEqual(['1.375rem', '1.25', '-0.012em', '700']);
+    expect(style('block-title-mobile')).toEqual(['1.25rem', '1.25', '-0.012em', '700']);
+  });
+
   it('pins the app page title sizes (M7 Figma A §1.1, §1.5: 44 / 30, line-height 1.1)', () => {
     const text = tokens(web, 'text-wm');
     expect([text.get('app-title'), text.get('app-title--line-height'), text.get('app-title--letter-spacing')]).toEqual(['2.75rem', '1.1', '-0.0255em']);
@@ -282,6 +289,21 @@ describe('wm dark and level tokens (M9.8)', () => {
       const ratio = contrast(new Map([['ink', map.get('ink') ?? ''], ['tint', tint]]), 'ink', 'tint');
       return ratio < 4.5 ? `level-${n} ${p}% (${tint})=${ratio.toFixed(2)}` : null;
     })).filter(Boolean);
+    expect(below).toEqual([]);
+  });
+
+  // P.4: LevelChip reads its tints from tokens (precomputed oklab mixes, mockup L165, L173). `all` mixes the accent.
+  const TONES = ['0', '1', '2', '3', '4', '5', 'priority', 'due', 'all'];
+  it.each([['light', light], ['dark', dark]] as const)('the level tint tokens are the oklab mixes, and ink reads at 4.5:1 on them in %s', (_mode, map) => {
+    const surface = map.get('surface') ?? '';
+    const base = (tone: string) => map.get(tone === 'all' ? 'accent' : `level-${tone}`) ?? '';
+    expect(TONES.map((tone) => map.get(`level-${tone}-tint`))).toEqual(TONES.map((tone) => mixOklab(base(tone), surface, 0.18)));
+    expect(TONES.map((tone) => map.get(`level-${tone}-tint-strong`))).toEqual(TONES.map((tone) => mixOklab(base(tone), surface, 0.4)));
+    const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(' ');
+    expect(TONES.map((tone) => map.get(`level-${tone}-line`))).toEqual(TONES.map((tone) => `rgb(${hex(base(tone))} / 0.45)`));
+    const below = TONES.flatMap((tone) => ['tint', 'tint-strong'].map((k) => [tone, k, contrast(map, 'ink', `level-${tone}-${k}`)] as const))
+      .filter(([, , ratio]) => ratio < 4.5)
+      .map(([tone, k, ratio]) => `level-${tone}-${k}=${ratio.toFixed(2)}`);
     expect(below).toEqual([]);
   });
 

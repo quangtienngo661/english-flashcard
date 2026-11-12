@@ -46,6 +46,35 @@
   --color-wm-level-5: #106a39;
   --color-wm-level-priority: #c4372c;
   --color-wm-level-due: #e0a21b;
+  /* P.4: level chip tints (mockup L165, L173): tint = color-mix(in oklab, <tone> 18%, surface), tint-strong = 40 % (the chosen chip),
+     line = color-mix(<tone> 45%, transparent). Tones 0-5, priority, due, and all (on accent). Precomputed so the contrast test reads them. */
+  --color-wm-level-0-tint: #eeeff3;
+  --color-wm-level-0-tint-strong: #d9dde4;
+  --color-wm-level-0-line: rgb(163 171 189 / 0.45);
+  --color-wm-level-1-tint: #f3faf5;
+  --color-wm-level-1-tint-strong: #e3f4e8;
+  --color-wm-level-1-line: rgb(185 228 199 / 0.45);
+  --color-wm-level-2-tint: #e8f6ed;
+  --color-wm-level-2-tint-strong: #ccebd6;
+  --color-wm-level-2-line: rgb(124 205 155 / 0.45);
+  --color-wm-level-3-tint: #dff1e4;
+  --color-wm-level-3-tint-strong: #b8dfc3;
+  --color-wm-level-3-line: rgb(63 174 108 / 0.45);
+  --color-wm-level-4-tint: #daeade;
+  --color-wm-level-4-tint-strong: #add1b6;
+  --color-wm-level-4-line: rgb(33 140 79 / 0.45);
+  --color-wm-level-5-tint: #d6e3d9;
+  --color-wm-level-5-tint-strong: #a4c2ac;
+  --color-wm-level-5-line: rgb(16 106 57 / 0.45);
+  --color-wm-level-priority-tint: #f9ddd8;
+  --color-wm-level-priority-tint-strong: #efb3aa;
+  --color-wm-level-priority-line: rgb(196 55 44 / 0.45);
+  --color-wm-level-due-tint: #faefdc;
+  --color-wm-level-due-tint-strong: #f4dbb2;
+  --color-wm-level-due-line: rgb(224 162 27 / 0.45);
+  --color-wm-level-all-tint: #d2daeb;
+  --color-wm-level-all-tint-strong: #9eaed2;
+  --color-wm-level-all-line: rgb(30 58 138 / 0.45);
 
   /* Radius scale C, by element role (P.3; mockup L81-82). An inner element is always smaller than its container. */
   /* key: keycaps, small labels, counts, word chips in piles. */
@@ -126,6 +155,15 @@
   --text-wm-card-title--line-height: 1.3;
   --text-wm-card-title--letter-spacing: -0.0417em;
   --text-wm-card-title--font-weight: 700;
+  /* Section titles inside a page (P.4, mockup L126-127, L589): Bricolage 700, 22 desktop / 20 phone. */
+  --text-wm-block-title: 1.375rem;
+  --text-wm-block-title--line-height: 1.25;
+  --text-wm-block-title--letter-spacing: -0.012em;
+  --text-wm-block-title--font-weight: 700;
+  --text-wm-block-title-mobile: 1.25rem;
+  --text-wm-block-title-mobile--line-height: 1.25;
+  --text-wm-block-title-mobile--letter-spacing: -0.012em;
+  --text-wm-block-title-mobile--font-weight: 700;
   --text-wm-logo: 1.375rem;
   --text-wm-logo--line-height: 1.2;
   --text-wm-logo--letter-spacing: -0.0455em;

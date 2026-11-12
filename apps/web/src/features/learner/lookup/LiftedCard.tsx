@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
@@ -8,7 +9,7 @@ import { PronunciationLine } from '@/ui/PronunciationLine';
 import { toLevel, useLevelName } from '@/ui/levels';
 import type { GroupSummary } from '../groups/groups-api';
 import { wordHref, type ItemState, type PageSense } from '../word/word-api';
-import { marked } from './DictionaryPage';
+import { TargetWord } from '@/ui/TargetWord';
 import type { WordRow } from './lookup-api';
 
 /**
@@ -33,7 +34,7 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
         {sense?.pronunciation && <PronunciationLine text={word.lemma} line={{ scope: sense.scope, pronunciation: sense.pronunciation }} />}
         <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense?.meaning.text ?? word.meaning_preview}</p>
         {example && (
-          <p className="break-words border-t border-wm-line pt-3 font-wm-sans text-wm-base text-wm-ink">{marked(example, word.lemma)}</p>
+          <p className="break-words border-t border-wm-line pt-3 font-wm-sans text-wm-base text-wm-ink"><TargetWord text={example} lemma={word.lemma} /></p>
         )}
         <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 pt-1">
           {item && deck ? (
@@ -46,9 +47,10 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
           )}
           <Link
             href={wordHref(locale, word.lemma)}
-            className="ml-auto inline-flex min-h-11 items-center font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:min-h-0"
+            className="ml-auto inline-flex min-h-11 items-center gap-1 font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:min-h-0"
           >
             {t('openWordArrow')}
+            <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
           </Link>
         </div>
       </div>

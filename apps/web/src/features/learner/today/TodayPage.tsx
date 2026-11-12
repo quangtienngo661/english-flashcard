@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,7 +28,7 @@ import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
 import { QuickAddBox } from './QuickAddBox';
 
-const LINK = 'text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent';
+const LINK = 'inline-flex items-center gap-1 text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent';
 
 /** Hôm nay (Figma 117:4425 / 117:4712, design §9 M3): the deck to review next, the last practice, the other decks, topics, the side column. */
 export function TodayPage() {
@@ -189,6 +189,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
       <div className="flex shrink-0 gap-5 md:flex-col md:items-end md:gap-2">
         <Link href={`/${locale}/app/practice/weak`} className={LINK}>
           {t('lastRetry')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
         <CalendarLink className={LINK}>{t('lastCalendar')}</CalendarLink>
       </div>
@@ -236,6 +237,7 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
         <Link href={`/${locale}/app/groups`} aria-label={t('seeAll', { count: groups.length })} className={cn(LINK, 'ml-auto shrink-0')}>
           <span className="md:hidden">{t('seeAllShort')}</span>
           <span className="hidden md:inline">{t('seeAll', { count: groups.length })}</span>
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       </div>
       {cards.length > 0 && (

@@ -119,9 +119,9 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
   it('below the carousel: the rhythm bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
-    expect(screen.getByRole('figure', { name: 'Nhịp ôn: mới → 30 ngày' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: 'Nhịp ôn: mới đến 30 ngày' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-12');
-    expect(screen.getByRole('link', { name: 'Xem nhóm →' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
   });
 
   it('F opens the picker; "de 9" leaves Đề 9; Enter makes it the centre and closes the picker', async () => {

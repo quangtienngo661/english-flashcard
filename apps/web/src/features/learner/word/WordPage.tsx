@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -19,7 +20,7 @@ import { TextButton } from '@/ui/TextButton';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
 import { useAddWord } from '../add-word/add-word-context';
 import { useGroups } from '../groups/groups-api';
-import { marked } from '../lookup/DictionaryPage';
+import { TargetWord } from '@/ui/TargetWord';
 import type { WordRow } from '../lookup/lookup-api';
 import { FormsLine } from './FormsLine';
 import { LearningBlock } from './LearningBlock';
@@ -308,7 +309,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
             {rows.map(({ sentence, sense, n }) => (
               <li key={sentence.id} className="flex flex-col gap-1 py-4">
                 <div className="flex items-start gap-1">
-                  <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink">{marked(sentence.text, sense.lemma, forms)}</p>
+                  <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.text} lemma={sense.lemma} forms={forms} /></p>
                   <span className="shrink-0">
                     <SpeakSentence private text={sentence.text} />
                   </span>
@@ -390,9 +391,10 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
       {level && (
         <Link
           href={`/${locale}/app/topic?code=${encodeURIComponent(topic.code)}&level=${encodeURIComponent(level)}`}
-          className="self-start font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+          className="inline-flex items-center gap-1 self-start font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
           {t('seeTopic', { topic: topic.name })}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       )}
     </section>

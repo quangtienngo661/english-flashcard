@@ -85,6 +85,35 @@
   --color-wm-level-5: #8ae4b0;
   --color-wm-level-priority: #ff8d80;
   --color-wm-level-due: #f0c04a;
+  /* P.4: level chip tints (mockup L165, L173): tint = color-mix(in oklab, <tone> 18%, surface), tint-strong = 40 % (the chosen chip),
+     line = color-mix(<tone> 45%, transparent). Tones 0-5, priority, due, and all (on accent). Precomputed so the contrast test reads them. */
+  --color-wm-level-0-tint: #212637;
+  --color-wm-level-0-tint-strong: #2f3548;
+  --color-wm-level-0-line: rgb(86 96 122 / 0.45);
+  --color-wm-level-1-tint: #19242d;
+  --color-wm-level-1-tint-strong: #1b2f2f;
+  --color-wm-level-1-line: rgb(31 77 53 / 0.45);
+  --color-wm-level-2-tint: #1b2930;
+  --color-wm-level-2-tint-strong: #203c38;
+  --color-wm-level-2-line: rgb(39 112 74 / 0.45);
+  --color-wm-level-3-tint: #1e3035;
+  --color-wm-level-3-tint-strong: #254b41;
+  --color-wm-level-3-line: rgb(49 156 96 / 0.45);
+  --color-wm-level-4-tint: #22363a;
+  --color-wm-level-4-tint-strong: #2e584e;
+  --color-wm-level-4-line: rgb(76 194 131 / 0.45);
+  --color-wm-level-5-tint: #293a41;
+  --color-wm-level-5-tint-strong: #42645d;
+  --color-wm-level-5-line: rgb(138 228 176 / 0.45);
+  --color-wm-level-priority-tint: #3c2f3a;
+  --color-wm-level-priority-tint-strong: #6c474d;
+  --color-wm-level-priority-line: rgb(255 141 128 / 0.45);
+  --color-wm-level-due-tint: #383636;
+  --color-wm-level-due-tint-strong: #655841;
+  --color-wm-level-due-line: rgb(240 192 74 / 0.45);
+  --color-wm-level-all-tint: #2a304b;
+  --color-wm-level-all-tint-strong: #424d78;
+  --color-wm-level-all-line: rgb(141 162 255 / 0.45);
 
   /* Shadows: the light geometry in black (mockup lines 88-91); buttons carry none in dark (QM9-3, question 6B). */
   --shadow-wm-card: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.625rem 1.75rem -0.875rem rgb(0 0 0 / 0.6);

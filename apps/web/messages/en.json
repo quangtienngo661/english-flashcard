@@ -724,7 +724,7 @@
       "noPeriod": "no period",
       "foot": "dates in your time zone · select a row to see the payment provider and transaction ID",
       "currentPlan": "Current plan",
-      "seePlans": "See plans →",
+      "seePlans": "See plans",
       "error": "We couldn’t load your transaction history. Check your connection and try again."
     },
     "account": {
@@ -740,7 +740,7 @@
       "ageHint": "Wordmet is for people 13 and older.",
       "planTitle": "{plan} plan",
       "planSessions": "{count, plural, one {# practice session} other {# practice sessions}} a day",
-      "seePlan": "See plans →"
+      "seePlan": "See plans"
     },
     "today": {
       "title": "Today",
@@ -748,7 +748,7 @@
       "heroChip": "Up next",
       "heroLine": "{total, plural, one {# word} other {# words}} in the deck · {mastered, number} mastered",
       "yourGroups": "Your decks",
-      "seeAll": "See all {count, plural, one {# deck} other {# decks}} →",
+      "seeAll": "See all {count, plural, one {# deck} other {# decks}}",
       "emptyTitle": "No decks yet",
       "emptyBody": "Create your first deck to save the words you find and review them on schedule.",
       "createFirst": "Create your first deck",
@@ -763,7 +763,7 @@
       "legendPriority": "{count, number} priority",
       "legendDue": "{count, number} due",
       "legendNew": "{count, number} new",
-      "seeAllShort": "See all →",
+      "seeAllShort": "See all",
       "yourGroupsHint": "{count, plural, one {# other deck} other {# other decks}} with cards waiting · tap a card to open it",
       "noteDone": "Done today: {names}",
       "lastTitle": "Last practice",
@@ -771,7 +771,7 @@
       "lastLine": "{date} · {count, plural, one {# question} other {# questions}}",
       "lastBar": "{correct, number} right, {wrong, number} wrong",
       "lastWrong": "Wrong: {lemmas}",
-      "lastRetry": "Practise missed words →",
+      "lastRetry": "Practise missed words",
       "lastCalendar": "Open study calendar",
       "backlogLabel": "Not reviewed in a while"
     },
@@ -873,7 +873,7 @@
       "studyAll": "Study all {count, plural, one {# word} other {# words}}",
       "delete": "Delete deck",
       "suggestTitle": "Quick decks by topic",
-      "suggestAll": "See every topic in Look up →",
+      "suggestAll": "See every topic in Look up",
       "suggestCard": "{topic} · {level}",
       "suggestCount": "{count, plural, one {# word} other {# words}}",
       "createTitle": "Create deck",
@@ -895,16 +895,16 @@
       "renamed": "Deck renamed.",
       "deleted": "Deck “{name}” deleted.",
       "carousel": "Your decks",
-      "subtitle": "{due, plural, one {# card} other {# cards}} waiting in {groups, plural, one {# deck} other {# decks}} · ← → or swipe to switch · press the middle card or ↓ to open",
+      "subtitle": "{due, plural, one {# card} other {# cards}} waiting in {groups, plural, one {# deck} other {# decks}} · left and right keys or swipe to switch · press the middle card or ↓ to open",
       "subtitlePhone": "{due, plural, one {# card} other {# cards}} waiting in {groups, plural, one {# deck} other {# decks}} · swipe to switch · tap the middle card to open",
       "prev": "Previous deck",
       "next": "Next deck",
       "hint": "Press to open · ↓",
       "hintPhone": "Tap to open",
       "live": "{name}, {count, plural, one {# card} other {# cards}} waiting",
-      "rhythm": "Review rhythm: new → 30 days",
+      "rhythm": "Review rhythm: new to 30 days",
       "rhythmSegment": "{level}: {due, number} waiting of {total, number} words",
-      "open": "Open deck →",
+      "open": "Open deck",
       "pickerTitle": "Choose a deck (F)",
       "capWaiting": "Cards waiting",
       "capDone": "Done today",
@@ -1052,7 +1052,7 @@
       "summary": "{count, plural, one {# word} other {# words}} at level <lv>{level}</lv>, topic <tp>{topic}</tp>, part of speech <ps>{pos}</ps>.",
       "page": "page {n, number}",
       "pageFoot": "— {n, number} —",
-      "next": "Next page →",
+      "next": "Next page",
       "prev": "← Previous page",
       "card": "Card of the selected word",
       "stacksTitle": "Press a stack to add",
@@ -1060,7 +1060,7 @@
       "addHere": "+ add here",
       "hasIt": "✓ already in",
       "otherGroup": "Another group or a new one",
-      "openWordArrow": "Open the word page →"
+      "openWordArrow": "Open the word page"
     },
     "word": {
       "back": "Look up",
@@ -1098,7 +1098,7 @@
       "seenMeta": "meaning {n, number} · {meaning} · saved {date}",
       "sameTopicLabel": "Same topic",
       "levelRange": "Level {range}",
-      "seeTopic": "See the topic {topic} →",
+      "seeTopic": "See the topic {topic}",
       "mine": {
         "label": "My words",
         "aiLabel": "AI suggestion",
@@ -1157,7 +1157,7 @@
       "words": "{count, plural, one {# word} other {# words}}",
       "back": "Back",
       "quickTitle": "Add a word you just met",
-      "quickBody": "Type the word. Paste the sentence too if you have it. Wordmet spots word forms, like went → go.",
+      "quickBody": "Type the word. Paste the sentence too if you have it. Wordmet spots word forms, like went for go.",
       "quickSubmit": "Add",
       "kinds": {
         "third_person": "third-person form",
@@ -1594,7 +1594,7 @@
           "noteMissing": "Describe the problem to send this report.",
           "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
           "send": "Send report",
-          "done": "Report sent. See the outcome in Settings → My reports.",
+          "done": "Report sent. See the outcome in Settings, under My reports.",
           "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
           "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
           "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
@@ -1627,7 +1627,7 @@
         "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same.",
         "countRight": "{count, number} right",
         "countWrong": "{count, number} wrong",
-        "levelMove": "{from} → {to}",
+        "levelMove": "From {from} to {to}",
         "noteKnowTap": "Tap Know and {lemma} moves up a level.",
         "noteWrongTap": "Still learning: {lemma} goes to the top of its deck, back to Level 1. Next question keeps its schedule.",
         "legend": {

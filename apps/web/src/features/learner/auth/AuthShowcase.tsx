@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { TargetWord } from '@/ui/TargetWord';
 
 // The brand panel beside the sign-in and sign-up forms (Figma "Khung giới thiệu" in 35:308 and 35:405), from 1280 px only. It is a
 // picture of the app, not content: the whole panel is aria-hidden. "ngan" = three word cards in their review stages and "Hôm nay";
@@ -71,15 +71,11 @@ function WordCard({ className, stage, word, pos, gloss, meaning, example }: {
       <p className="font-wm-sans text-wm-small text-wm-muted">{meaning}</p>
       {example && (
         <p className="rounded-wm-row bg-wm-bg px-3 py-2.5 font-wm-sans text-wm-small text-wm-ink">
-          Planting trees can help <Mark>mitigate</Mark> urban heat.
+          <TargetWord text="Planting trees can help mitigate urban heat." lemma="mitigate" />
         </p>
       )}
     </div>
   );
-}
-
-function Mark({ children }: { children: ReactNode }) {
-  return <span className="rounded-wm-key bg-wm-mark px-0.5 text-wm-mark-ink">{children}</span>;
 }
 
 function Chip({ className, word, dot }: { className: string; word: string; dot: string }) {

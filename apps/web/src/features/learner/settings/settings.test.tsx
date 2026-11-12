@@ -282,7 +282,7 @@ describe('AccountPage (K/91, K/92)', () => {
     renderApp(<AccountPage />, { routes: routes('pro') });
     expect(await screen.findByText('30 phiên luyện mỗi ngày')).toBeInTheDocument();
     expect(screen.getByText('Gói Pro')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem gói →' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.getByRole('link', { name: 'Xem gói' })).toHaveAttribute('href', '/vi/app/plans');
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 

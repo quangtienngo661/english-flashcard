@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronDown } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRef, useState, type ReactNode } from 'react';
@@ -19,6 +19,7 @@ import { Select } from '@/ui/Select';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
 import { TextField } from '@/ui/TextField';
 import { showToast } from '@/ui/Toast';
+import { TargetWord } from '@/ui/TargetWord';
 import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
 import { LEVELS, useTopics } from '../lookup/lookup-api';
 import { wordHref } from '../word/word-api';
@@ -383,8 +384,10 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         {via && via.senses.length > 0 && (
           // Figma "Dạng gốc": went → go · quá khứ của go, the typed form highlighted.
           <p className="flex flex-wrap items-center gap-x-2 font-wm-sans text-wm-base text-wm-ink">
-            <mark className="rounded-wm-key bg-wm-mark px-1 text-wm-mark-ink">{lemma}</mark>
-            {' → '}
+            <span>
+              <TargetWord text={lemma} lemma={lemma} />
+            </span>{' '}
+            <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
             <b className="font-semibold">{via.base.lemma}</b>
             <span className="text-wm-muted">{` · ${t('inflection', { kind: kind(via.kind), base: via.base.lemma })}`}</span>
           </p>
@@ -503,7 +506,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={title}
-      closeLabel={failure?.deckGone ? undefined : tc('close')}
+      closeLabel={tc('close')}
       size={view === 'find' && aiShown ? 'xl' : 'md'}
       isDismissable={!save.busy}
       footer={footer}

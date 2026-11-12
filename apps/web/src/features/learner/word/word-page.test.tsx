@@ -348,6 +348,6 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(within(box).getByText('Trình độ A2 – B1')).toBeInTheDocument();
     expect(await within(box).findByRole('link', { name: 'schedule A2' })).toHaveAttribute('href', '/vi/app/word?w=schedule');
     expect(within(box).queryByRole('link', { name: /^record/ })).not.toBeInTheDocument();
-    expect(within(box).getByRole('link', { name: 'Xem chủ đề Công việc →' })).toHaveAttribute('href', '/vi/app/topic?code=work&level=A2');
+    expect(within(box).getByRole('link', { name: 'Xem chủ đề Công việc' })).toHaveAttribute('href', '/vi/app/topic?code=work&level=A2');
   });
 });

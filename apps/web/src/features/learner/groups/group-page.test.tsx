@@ -97,7 +97,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
 
   it('"nhịp ôn": one segment per level, filled with its waiting cards', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const bar = await screen.findByRole('figure', { name: 'Nhịp ôn: mới → 30 ngày' });
+    const bar = await screen.findByRole('figure', { name: 'Nhịp ôn: mới đến 30 ngày' });
     expect(within(bar).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual([
       'Mới: 0 thẻ chờ trong 1 từ', 'Bậc 1: 2 thẻ chờ trong 2 từ', 'Bậc 2: 0 thẻ chờ trong 0 từ',
       'Bậc 3: 0 thẻ chờ trong 1 từ', 'Bậc 4: 0 thẻ chờ trong 0 từ', 'Bậc 5: 0 thẻ chờ trong 0 từ',
@@ -106,7 +106,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
 
   it('English names the first level "New"', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
-    const bar = await screen.findByRole('figure', { name: 'Review rhythm: new → 30 days' });
+    const bar = await screen.findByRole('figure', { name: 'Review rhythm: new to 30 days' });
     expect(within(bar).getAllByRole('listitem')[0].getAttribute('aria-label')).toMatch(/^New: /);
   });
 

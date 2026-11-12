@@ -54,9 +54,9 @@ beforeEach(() => {
 });
 
 describe('Overlay 1: Bạn vừa gặp từ nào?', () => {
-  it('the inflection row reads "went → go · quá khứ của go" and the save button is "Lưu"', async () => {
+  it('the inflection row reads "went go · quá khứ của go" (the arrow is an icon) and the save button is "Lưu"', async () => {
     const { calls } = renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes });
-    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'went → go · quá khứ của go')).toBeInTheDocument();
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'went go · quá khứ của go')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(calls.filter((c) => c.path === '/v1/quick-add')).toHaveLength(1));
     expect(calls.find((c) => c.path === '/v1/quick-add')?.body).toEqual({ group_id: WORK, sense_id: uuid(1) });

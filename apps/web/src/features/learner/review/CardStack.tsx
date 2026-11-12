@@ -8,7 +8,7 @@ import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
 import { toLevel, useLevelName } from '@/ui/levels';
 import type { Card } from '../groups/groups-api';
-import { highlightWord } from '../groups/highlight';
+import { TargetWord } from '@/ui/TargetWord';
 import { useForms } from './use-forms';
 import { useCardDrag, type Rating } from './useCardDrag';
 
@@ -235,7 +235,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         {content.examples[0] && (
           <Block title={t('example')}>
             <p className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-              <span className="min-w-0 flex-1 break-words">{highlightWord(content.examples[0], content.lemma, forms)}</span>
+              <span className="min-w-0 flex-1 break-words"><TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} /></span>
               <span className="shrink-0">
                 <SpeakSentence text={content.examples[0]} />
               </span>
@@ -246,7 +246,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Block title={t('seen')} soft>
             {content.sentences.map((sentence) => (
               <p key={sentence} className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-                <span className="min-w-0 flex-1 break-words">{highlightWord(sentence, content.lemma, forms)}</span>
+                <span className="min-w-0 flex-1 break-words"><TargetWord text={sentence} lemma={content.lemma} forms={forms} /></span>
                 <span className="shrink-0">
                   <SpeakSentence private text={sentence} />
                 </span>

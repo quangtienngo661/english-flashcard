@@ -41,6 +41,7 @@ export function SubscriptionRows({ sources }: { sources: Source[] }) {
 
 function SubscriptionRow({ source }: { source: Source }) {
   const t = useTranslations('App.plans.subscriptions');
+  const tc = useTranslations('App.common');
   const format = useFormat();
   const api = useApi();
   const queryClient = useQueryClient();
@@ -84,7 +85,7 @@ function SubscriptionRow({ source }: { source: Source }) {
   else line = endText ? t('endsOn', { date: endText }) : t('ends');
 
   return (
-    <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4">
+    <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4 md:px-5 md:py-4">
       <span ref={lineRef} tabIndex={-1} className="font-wm-sans text-wm-small-strong text-wm-ink outline-none">{line}</span>
       {renewing && !requested && (
         <TextButton tone="delete" onPress={() => setOpen(true)}>
@@ -97,11 +98,12 @@ function SubscriptionRow({ source }: { source: Source }) {
         onOpenChange={(next) => { if (!cancel.busy) setOpen(next); }}
         isDismissable={!cancel.busy}
         title={t('dialogTitle')}
+        closeLabel={tc('close')}
         footer={
           <>
-            <Button variant="secondary" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
+            <TextButton tone="muted" onPress={() => setOpen(false)} isDisabled={cancel.busy} className="justify-center">
               {t('keep')}
-            </Button>
+            </TextButton>
             <Button variant="danger" onPress={() => void confirm()} isPending={cancel.busy}>
               {t('confirm')}
             </Button>

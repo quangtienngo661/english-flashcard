@@ -35,3 +35,9 @@ describe('cn keeps every wm title size next to a colour', () => {
     expect(cn(`${size} text-wm-ink`)).toBe(`${size} text-wm-ink`);
   });
 });
+
+describe('cn keeps the section title sizes (P.4)', () => {
+  it.each(['text-wm-block-title', 'text-wm-block-title-mobile'])('%s survives text-wm-ink', (size) => {
+    expect(cn(`${size} text-wm-ink`)).toBe(`${size} text-wm-ink`);
+  });
+});

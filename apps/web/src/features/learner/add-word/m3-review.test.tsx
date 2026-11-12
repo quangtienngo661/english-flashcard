@@ -68,7 +68,7 @@ describe('I-1: "Tạo nhóm và lưu" with no meaning to save', () => {
   it('an error while creating from the deck list is shown there', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base({ 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
-    await screen.findByText(inflection('went → go · quá khứ của go'));
+    await screen.findByText(inflection('went go · quá khứ của go'));
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'phỏng vấn');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));

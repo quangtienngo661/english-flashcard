@@ -724,7 +724,7 @@
       "noPeriod": "không có kỳ",
       "foot": "ngày theo múi giờ của bạn · bấm một dòng để xem cổng thanh toán và mã giao dịch",
       "currentPlan": "Gói học hiện tại",
-      "seePlans": "Xem gói học →",
+      "seePlans": "Xem gói học",
       "error": "Không tải được lịch sử giao dịch. Kiểm tra mạng rồi thử lại."
     },
     "account": {
@@ -740,7 +740,7 @@
       "ageHint": "Wordmet dành cho người từ 13 tuổi.",
       "planTitle": "Gói {plan}",
       "planSessions": "{count, number} phiên luyện mỗi ngày",
-      "seePlan": "Xem gói →"
+      "seePlan": "Xem gói"
     },
     "today": {
       "title": "Hôm nay",
@@ -748,7 +748,7 @@
       "heroChip": "Ôn tiếp",
       "heroLine": "nhóm có {total, number} từ · {mastered, number} đã thuộc",
       "yourGroups": "Nhóm của bạn",
-      "seeAll": "Xem tất cả {count, number} nhóm →",
+      "seeAll": "Xem tất cả {count, number} nhóm",
       "emptyTitle": "Chưa có nhóm nào",
       "emptyBody": "Tạo nhóm đầu tiên để lưu từ bạn gặp và ôn theo lịch.",
       "createFirst": "Tạo nhóm đầu tiên",
@@ -763,7 +763,7 @@
       "legendPriority": "{count, number} ưu tiên",
       "legendDue": "{count, number} đến hạn",
       "legendNew": "{count, number} mới",
-      "seeAllShort": "Xem tất cả →",
+      "seeAllShort": "Xem tất cả",
       "yourGroupsHint": "{count, number} nhóm khác còn thẻ chờ · bấm thẻ để mở nhóm",
       "noteDone": "Xong hôm nay: {names}",
       "lastTitle": "Lần luyện gần nhất",
@@ -771,7 +771,7 @@
       "lastLine": "{date} · {count, number} câu",
       "lastBar": "{correct, number} đúng, {wrong, number} sai",
       "lastWrong": "Sai: {lemmas}",
-      "lastRetry": "Luyện lại từ sai →",
+      "lastRetry": "Luyện lại từ sai",
       "lastCalendar": "Mở lịch học",
       "backlogLabel": "Từ lâu chưa ôn"
     },
@@ -873,7 +873,7 @@
       "studyAll": "Học tất cả {count, number} từ",
       "delete": "Xóa nhóm",
       "suggestTitle": "Tạo nhóm nhanh theo chủ đề",
-      "suggestAll": "Xem mọi chủ đề trong Tra từ →",
+      "suggestAll": "Xem mọi chủ đề trong Tra từ",
       "suggestCard": "{topic} · {level}",
       "suggestCount": "{count, number} từ",
       "createTitle": "Tạo nhóm",
@@ -895,16 +895,16 @@
       "renamed": "Đã đổi tên nhóm.",
       "deleted": "Đã xóa nhóm “{name}”.",
       "carousel": "Các nhóm của bạn",
-      "subtitle": "{due, number} thẻ chờ trong {groups, number} nhóm · ← → hoặc vuốt để đổi nhóm · bấm thẻ giữa hoặc ↓ để mở",
+      "subtitle": "{due, number} thẻ chờ trong {groups, number} nhóm · phím trái, phải hoặc vuốt để đổi nhóm · bấm thẻ giữa hoặc ↓ để mở",
       "subtitlePhone": "{due, number} thẻ chờ trong {groups, number} nhóm · vuốt để đổi nhóm · chạm thẻ giữa để mở",
       "prev": "Nhóm trước",
       "next": "Nhóm sau",
       "hint": "Bấm để mở nhóm · ↓",
       "hintPhone": "Chạm để mở nhóm",
       "live": "{name}, {count, number} thẻ chờ",
-      "rhythm": "Nhịp ôn: mới → 30 ngày",
+      "rhythm": "Nhịp ôn: mới đến 30 ngày",
       "rhythmSegment": "{level}: {due, number} thẻ chờ trong {total, number} từ",
-      "open": "Xem nhóm →",
+      "open": "Xem nhóm",
       "pickerTitle": "Chọn nhóm (F)",
       "capWaiting": "Còn thẻ chờ",
       "capDone": "Xong hôm nay",
@@ -1052,7 +1052,7 @@
       "summary": "{count, number} từ trình độ <lv>{level}</lv>, chủ đề <tp>{topic}</tp>, loại từ <ps>{pos}</ps>.",
       "page": "trang {n, number}",
       "pageFoot": "— {n, number} —",
-      "next": "Trang sau →",
+      "next": "Trang sau",
       "prev": "← Trang trước",
       "card": "Thẻ của từ đang chọn",
       "stacksTitle": "Bấm vào chồng để thêm",
@@ -1060,7 +1060,7 @@
       "addHere": "+ thêm vào đây",
       "hasIt": "✓ đã có",
       "otherGroup": "Nhóm khác hoặc tạo nhóm mới",
-      "openWordArrow": "Mở trang từ →"
+      "openWordArrow": "Mở trang từ"
     },
     "word": {
       "back": "Tra từ",
@@ -1098,7 +1098,7 @@
       "seenMeta": "nghĩa {n, number} · {meaning} · ghi ngày {date}",
       "sameTopicLabel": "Cùng chủ đề",
       "levelRange": "Trình độ {range}",
-      "seeTopic": "Xem chủ đề {topic} →",
+      "seeTopic": "Xem chủ đề {topic}",
       "mine": {
         "label": "Từ của tôi",
         "aiLabel": "AI gợi ý",
@@ -1157,7 +1157,7 @@
       "words": "{count, number} từ",
       "back": "Quay lại",
       "quickTitle": "Thêm từ vừa gặp",
-      "quickBody": "Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn. Wordmet tự nhận ra dạng chia, như went → go.",
+      "quickBody": "Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn. Wordmet tự nhận ra dạng chia, như went là dạng của go.",
       "quickSubmit": "Thêm",
       "kinds": {
         "third_person": "dạng ngôi thứ ba",
@@ -1594,7 +1594,7 @@
           "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
           "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
           "send": "Gửi báo lỗi",
-          "done": "Đã gửi báo lỗi. Xem kết quả trong Cài đặt → Báo lỗi của tôi.",
+          "done": "Đã gửi báo lỗi. Xem kết quả ở Cài đặt, mục Báo lỗi của tôi.",
           "infoAi": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai. Nếu đúng là AI viết sai câu, bạn được trả lại 1 lượt câu AI.",
           "privateWord": "Đội Wordmet sẽ thấy từ “{lemma}” bạn tự thêm để kiểm tra.",
           "privateWordUnknown": "Đội Wordmet sẽ thấy từ bạn tự thêm trong câu này để kiểm tra."
@@ -1627,7 +1627,7 @@
         "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên.",
         "countRight": "{count, number} câu đúng",
         "countWrong": "{count, number} câu sai",
-        "levelMove": "{from} → {to}",
+        "levelMove": "Từ {from} sang {to}",
         "noteKnowTap": "Bấm Đã biết thì {lemma} lên một bậc.",
         "noteWrongTap": "Cần ôn lại: {lemma} lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.",
         "legend": {

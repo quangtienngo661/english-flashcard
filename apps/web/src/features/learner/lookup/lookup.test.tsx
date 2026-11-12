@@ -104,7 +104,7 @@ describe('Tra từ: the dictionary page', () => {
     expect(entry.textContent).toBe('colleaguen.B11nghĩa colleague.');
     const budget = screen.getByRole('button', { name: /^budget/ });
     expect(within(budget).getByText('/ipa-budget/')).toBeInTheDocument();
-    expect(within(budget).getByText('budget', { selector: 'mark' })).toBeInTheDocument();
+    expect(within(budget).getByRole('strong')).toHaveTextContent(/^budget$/);
   });
 
   it('the own word carries "của tôi"', async () => {
@@ -127,7 +127,7 @@ describe('Tra từ: the dictionary page', () => {
 
   it('"Trang sau →" asks for page_token=p2; "← Trang trước" goes back without a request', async () => {
     const { calls } = renderApp(<LookupPage />, { routes: base() });
-    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau →' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
     expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
     expect(calls.some((c) => c.path === '/v1/words?page_size=20&level=B1&topic=work&page_token=p2')).toBe(true);
     expect(screen.getByText('— 2 —')).toBeInTheDocument();
@@ -179,7 +179,7 @@ describe('Tra từ: group stacks', () => {
 
   it('"Mở trang từ →" links to the selected word', async () => {
     renderApp(<LookupPage />, { routes: base() });
-    expect(await screen.findByRole('link', { name: 'Mở trang từ →' })).toHaveAttribute('href', '/vi/app/word?w=budget');
+    expect(await screen.findByRole('link', { name: 'Mở trang từ' })).toHaveAttribute('href', '/vi/app/word?w=budget');
   });
 });
 
