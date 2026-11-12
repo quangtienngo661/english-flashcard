@@ -4718,3 +4718,325 @@ The owner's decisions are QM9-1 … QM9-9. Claude settled these while writing th
 
 **Open:** none for the owner before execution (chỗ 24 is asked inside P.6). Not in this part: "mỗi trang chỉ gửi phần chữ trang đó cần" and splitting the message files (QM9-8), the OG image font
 (M8c), QR4 (ads), the phone frame-rate measurement (QM9-7, owner).
+
+# Part 11 — Sửa sau khi test tay (branch `feat/giao-dien-moi-polish`)
+
+**Goal:** the 19 fixes the owner locked on the review page after testing Part 10 by hand (artifact `TdRauzhidkQBLUss11Y5j2`, version 10,
+db `picks` f01–f19, read 13/11/2026), then the close-out of the whole polish round: the P.18 docs still open, one clean e2e run, one PR into
+`refactor/giao-dien-moi`. Plan approved by the owner 13/11/2026.
+
+**Inputs:**
+- Drawings: `.superpowers/sdd/2026-11-10-giao-dien-moi/polish-fixes/index.html` (git-ignored; the published page is the artifact above). Each task
+  names its drawing function.
+- Code facts: `fix-facts-A.md`, `fix-facts-B.md`, `fix-facts-C.md` in the same folder, read on `6f332eb6`.
+- Decisions: QF in the decision record (f01–f19 picks, D1–D9).
+
+**Order:** three lanes from the commit that adds this part: A (app, F.1–F.11), B (sessions, F.12–F.15), C (public pages and the sign-up
+panel, F.16–F.22), in worktrees `polish-fix-a`, `polish-fix-b`, `polish-fix-c` on branches `feat/giao-dien-moi-polish-fix-{a,b,c}`. Then F.23
+merge, F.24 docs, F.25 verify, F.26 ship. Rulings continue after the last one Part 10 used.
+
+## Owner decisions on this part (13/11/2026)
+
+- **D1 (f03 copy):** in Thêm từ, the deck step only picks decks and goes back to the form; its button reads "Xong" / "Done". The form's real
+  save buttons (Nhập nghĩa, Sửa gợi ý) read "Lưu vào n nhóm" with "Đã chọn n nhóm" on the left. DeckPickerDialog (Tra từ, word page) keeps
+  "Lưu vào n nhóm".
+- **D2 (f05):** the Right panel and the try-again panel use the same ticket shell; Right in pass tones. AlternativeFeedback unchanged this round.
+- **D3 (f05):** an open hint box stays between the card and the panel; the panel tucks under the hint box.
+- **D4 (f04):** "l___" is visual only; screen readers keep "l… · 4 letters".
+- **D5 (f08):** the hero practice card becomes the typing card (no choices, no key row); five words as in F.18.
+- **D6 (f11):** the caption pill goes; four wordings change (F.22).
+- **D7 (f12):** cards placed per showcaseC in the real 640×868 scene; ghost chips kept and moved off the path; node labels away from cards.
+- **D8 (extra):** "1 cards waiting" → "1 card waiting" (en).
+- **D9 (later, not this round):** 32 px close X on phones; no Check button for the blank on phones; session close names; phone corner toast;
+  "Tiếp theo"/"Ôn gần nhất" casing; grey trays in Tùy chỉnh phiên; "Lần luyện gần nhất" in the side column; audit2 after this round merges.
+- **Open risk:** field border #c7cad3 on white ≈1.6:1, under the 3:1 WCAG 1.4.11 asks of field boundaries; a separate a11y round.
+
+## Global constraints (every task)
+
+- Repo rules in `.superpowers/sdd/2026-11-10-giao-dien-moi/implementer-context.md`:
+  - wm tokens only.
+  - Colours only in `packages/design-tokens` (`web.css`, `web-dark.css`; `theme.css` stays frozen for admin).
+  - Radius roles; Noto Sans labels; Bricolage titles.
+  - Copy in vi + en, following the Vietnamese style rule. Session UI copy is English (QM9-9).
+  - Tests query by role and visible text.
+  - Conventional Commits, ending with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Red first:
+  - New behaviour: a failing test seen red, then the code.
+  - Defect fix: two commits, the red test then the fix.
+- Pure visual CSS changes (f01, f18, spacing) get no unit test. Each one is checked in the browser in light and dark, at desktop and 390 px, and the task report names the screenshot paths. Record this as a ledger ruling so reviewers do not flag "no test".
+- Every new motion has a reduced-motion branch: nothing moves and the final state shows.
+- Remove message keys a task orphans, in both vi and en. The key checks in `pnpm --filter web test` must stay green.
+
+## Batch A — app (lane A)
+
+**F.1 Nhóm glow (f01).** Files: `apps/web/src/app/globals.css` `.gcar-glow` (563–590), `groups/GroupCarousel.tsx:~117`.
+- Delete the `::after` full-box linear gradient. It is the visible rectangle.
+- Make the glow one radial, per `.car .glowA` in the drawing:
+  - background `radial-gradient(closest-side, tone 30%, tone 10% 55%, transparent)`;
+  - `mask-image: radial-gradient(60% 60% at 50% 45%, #000 40%, transparent 80%)`;
+  - box `inset: -2.5rem -10%`, so the glow fades out inside its own box on every side.
+- Keep the 0.7 s colour change and the existing tone classes.
+- Check in the browser: no edge at 1280 or 390, light or dark.
+
+**F.2 Block under the carousel (f02).** Files: `groups/GroupListPage.tsx` `Below` (187–214), `groups/DeckButtons.tsx`, `ui/LevelBar.tsx` (legend 62–68).
+- Row 1: Học then Ôn, both the same width (`w-37.5`, 150 px). The primary stays chosen by `deckPlan`. No key chip: the page has no Enter shortcut, and f14 removes chips.
+- Row 2, centred, gap 4/18 px: "Xem nhóm →" and the muted "Thêm từ". "Thêm từ" stays hidden below md, as now.
+- Legend: gap 4/12 px, `max-w-115`, items do not wrap internally. The six entries then fit on one line at md and wider.
+- Test (`group-list.test.tsx:132`): the buttons come before the two links in reading order. With only one deck action available, one button shows.
+
+**F.3 Fit by height (f13).** Files: `globals.css` `.gcar-track` (515–525), `.gcar-slot` (526–544), `--gcar-step`, `.gstack[data-size='carousel']` (410–418), `GroupListPage.tsx` `Carousel` (152–180), `app-chrome/FloatingButtons.tsx:11`.
+- `@media (min-width:48rem) and (max-height:51.25rem)`: a smaller stack font size and track height, so the title, carousel and Below fit 1280×800 and 1024×768 without scrolling.
+- `@media (orientation:landscape) and (max-height:30rem)`: Nhóm switches to two columns (carousel left, Below right) with a compact card.
+- The calendar button never overlaps a visible card.
+- New `e2e/app/viewports.spec.ts` at 844×390, 768×1024, 1024×768 and 1280×800:
+  1. No horizontal scroll on Hôm nay, Nhóm, Một nhóm, Tra từ, Luyện tập, Từ hay sai, Cài đặt and Lịch.
+  2. On Nhóm, Học and Ôn are fully on the first screen without scrolling.
+  3. On Nhóm, the calendar button's box does not intersect any card box.
+- Control: the spec first asserts the carousel is visible, so a zero-overlap result means "no overlap" and not "nothing was rendered".
+- Fix everything the spec finds and list each fix in the report.
+
+**F.4 Hôm nay deck hover (f18).** File: `globals.css` near `.deck-row-cell` (769–783).
+- Under `@media (hover:hover)`, `.deck-row-cell .gstack:hover` and `:has(a:focus-visible)` get:
+  - `translate: 0 -6px`;
+  - a stronger shadow tinted with the deck's own colour;
+  - a 0.3 s transition with the ease-out token.
+- `:active` uses scale 0.98.
+- The existing 170 ms press lift (`wm-card-lift`) keeps working.
+- Reduced motion: only the shadow changes.
+
+**F.5 Dialog footer and Thêm từ copy (f03, D1).** Files: `ui/Dialog.tsx:72`, `add-word/AddWordSheet.tsx` (picker footer 311–329, edit 345–356, manual 371–382), `App.addWord`.
+- Every dialog footer: `border-t border-wm-line pt-3.5` and a 12 px gap.
+- Picker view: the confirm button uses a new key `pickDone` ("Xong" / "Done").
+- Manual and edit views: the save button uses `saveToCount`, with `SelectedCount` on the left.
+- Delete `pickDeck`, `pickDecks` and `saveManual` once nothing uses them.
+- Tests: with 2 decks chosen, the manual view's "Lưu vào 2 nhóm" saves. The picker's "Xong" returns to the form and sends no request.
+
+**F.6 Picker lists a deck twice (f03, defect, 2 commits).** File: `add-word/GroupPicker.tsx:51, 91–94`.
+- Red test: a deck under "Dùng gần đây" appears exactly once.
+- Fix: the A–Z list leaves out the recent decks.
+- Heading, ruling: the A–Z list is headed by a new key `others` ("Nhóm khác ({count})" / "Other decks ({count})") when there are recent decks, and by `all` otherwise.
+
+**F.7 Typed number steppers (f16).** Rewrite `ui/Stepper.tsx` on react-aria `NumberField`.
+- Behaviour read this session in the installed react-aria 3.53.1 and react-stately 3.51.0:
+  - Enter and blur commit the value, and the commit clamps to min/max (`snap`).
+  - Text that does not parse resets to the current value.
+  - Empty text calls `onChange(NaN)`.
+  - The input is a textbox named by its label.
+- The props stay the same. `onChange` ignores NaN, so the last valid value stays.
+- `incrementAriaLabel` and `decrementAriaLabel` come from `App.ui.stepper.*`.
+- Look per `.stepA` in the drawing:
+  - one 36 px control with a 1 px border;
+  - − and + buttons 32 px wide;
+  - a 48 px input with centred tabular figures;
+  - inner dividers.
+- Size is 36 px on phones too. This is the approved size and it meets the WCAG AA 24 px minimum.
+- Tests (`ui/practice-kit.test.tsx`, `practice/customize-dialog.test.tsx`):
+  - type 7 and press Enter → 7;
+  - type 99 and blur with max 30 → 30;
+  - empty and blur → the previous value;
+  - ArrowUp → +1;
+  - − disabled at min and + disabled at max;
+  - a disabled field cannot be typed into.
+
+**F.8 Count boxes in the scope switch (f17).** Files: `ui/Segmented.tsx`, `practice/CustomizeDialog.tsx:243–258`, `ui/LevelChip.tsx:53`.
+- Move LevelChip's count-box classes into `ui/count-box.ts` and reuse them in LevelChip, with no visual change there.
+- Segmented options gain `count?: number`, rendered as `{label}{' '}<span>{count}</span>`.
+- When an option is selected, its box is `bg-wm-accent-soft text-wm-accent` with no ring.
+- Delete `filterOption`. The accessible names stay "Tất cả 61" and so on, so the current tests hold.
+
+**F.9 Day dialog without practice (f19).** File: `calendar/DayDialog.tsx` (Filter 35, tabs 170–175, block 215–233, `SessionBlock` ~300).
+- Remove the `practice` filter and the practice block.
+- "Tất cả" counts learned + reviewed. The summary line still says "N câu luyện".
+- A day with practice only shows the summary and `sectionNone`.
+- Remove the props, fetches and keys that only the practice block used.
+- Tests: `day-dialog.test.tsx` and e2e `m6.spec.ts:57/100/113`.
+
+**F.10 Tra từ "Nhóm khác" while items load (defect, 2 commits).** File: `lookup/LookupPage.tsx:~106–114`.
+- Red test: while the items are loading, "Nhóm khác" is disabled.
+- Fix: disable it until `items.isSuccess`, the same rule `StackTargets` uses.
+
+**F.11 "1 cards waiting" (D8, defect, 2 commits).** Files: `groups/GroupStack.tsx:63`, `App.stack.waiting`.
+- Red test: in en, one waiting card reads "1 card waiting".
+- Fix: en becomes `{count, plural, one {card waiting} other {cards waiting}}`, vi stays "thẻ chờ", and the count is passed in.
+
+## Batch B — sessions (lane B)
+
+**F.12 No key chips on buttons (f14).** Files: `review/ReviewSession.tsx` (`AnswerButton` 239–268, Flip 160–173), `practice/session/QuestionCard.tsx` (`ButtonKey`), `AnswerFeedback.tsx`, `TypeWordQuestion.tsx`, `HintPanel.tsx:89`, `PracticeSession.tsx:399–400`.
+- Remove every chip that sits inside a button, and delete `ButtonKey`.
+- The legends stay, and the shortcuts keep working.
+- Tests to update:
+  - `learn-stack.test.tsx:221/230`: buttons carry only their label, and the legend still lists Space, 1/←, 2/→ and Esc;
+  - the `practice-session.test.tsx` it.each names;
+  - `ai-states.test.tsx:171` and `ai-questions.test.tsx:120`;
+  - e2e `m4.spec.ts:330` and `m5a.spec.ts:217`, which now assert the legend instead of the chips.
+- `m2.spec.ts:178` (the keyboard flow) must still pass.
+
+**F.13 First-letter hint "l___" (f04, D4).** File: `practice/session/HintPanel.tsx:82`.
+- Legacy hints `{first_letter, length}`:
+  - show `first_letter + '_'.repeat(max(0, length-1))` in the `MASK` font with `tracking-[0.02em]`, marked `aria-hidden`;
+  - the screen-reader text stays `hint.letters`.
+- AI hints are unchanged ("e___", QP3).
+- Tests first (no test covers this shape today):
+  - `{first_letter:'l', length:4}` shows "l___" and screen readers get "l… · 4 letters";
+  - `length:1` shows only the letter.
+
+**F.14 Result ticket (f05, D2, D3).** Files: `AnswerFeedback.tsx`, `TypeWordQuestion.tsx` (`TryAgainPanel`), `HintPanel.tsx`, `PracticeSession.tsx` (`blankFill` 261–268), `globals.css` (panel-drop ~79/139), `packages/design-tokens/web.css`, `src/styles/web-tokens.test.ts`.
+- Position:
+  - the panel tucks under the card or hint box above it: `-mt-5.5`, `mx-4.5`, `rounded-b-wm-card`, no top border, padding 38/24/16 px;
+  - the card and the hint box are `relative z-10`.
+- Entrance:
+  - 420 ms ease-out from `translateY(-2.25rem)` and opacity 0, with no overshoot;
+  - `motion-safe` only.
+- Wrong panel (`panelC`):
+  - Stub row: a 24 px x badge and "Not quite" (Bricolage 800, 1.25rem, `wrong-ink`). On the right, the note that applies to the case; on phones it wraps under the title.
+  - A dashed perforation (1.5 px, fail at 40 %) with two 16 px notches in the page background colour.
+  - Lead line: the meaning (Bricolage 800, 1.7rem, ink), with the English definition beside it in muted text when it differs.
+  - Then the answer word (pass colour, 700) with the listen button.
+  - Footer: the secondary action as a muted TextButton, then the primary button. The buttons and their keys do not change.
+  - The nested green answer box goes away.
+- Right panel: the same shell in pass tones (`pass-soft`, pass border, check badge). The stub's note shows the level move "Bậc 1 → Bậc 2" when there is one.
+- TryAgainPanel: the wrong shell, with `tryAgainBody` and `tryAgainNote`. It shows no answer. Footer: reveal (muted), Hint, Try again.
+- Tokens, light only (dark is unchanged):
+  - `--color-wm-wrong-soft: #fae7e4` (fail at 12 % on surface, mixed in oklab);
+  - `--color-wm-wrong-line: rgb(184 53 42 / 0.55)`;
+  - pin both in `web-tokens.test.ts`.
+- Contrast on #fae7e4, computed this session: wrong-ink 4.93, muted 5.71, pass 4.51, ink 12.77.
+- Sentence above the panel: a wrong pick in `mcq_sentence` is struck through in the sentence before the correct word. `blankFill` sets `wrong` from `prompt.options[chosen.choice_index]`. Write the test first.
+- Tests to update: `practice-session.test.tsx:139/180/299`, `session-screen.test.tsx:97/106/133`, `ai-questions.test.tsx:94/190–215`, `recall-session.test.tsx:83/104`.
+- New tests: the struck MCQ pick, and focus still landing on the primary action.
+- The e2e `m4` axe checks must pass in light and dark.
+
+**F.15 Inline blank sized to its text (f15).** File: `TypeWordQuestion.tsx` `BlankInput` (76–105).
+- Wrap the input in an `inline-grid` with an invisible mirror (`<span aria-hidden class="whitespace-pre">` of the shown text, same font, padding and border).
+- The input sits in the same grid cell: `w-full min-w-[5ch]`.
+- Remove `size` and `mx-0.5`.
+- This works in every browser; it does not rely on `field-sizing`.
+- e2e (the cloze run in `m5a.spec.ts`):
+  - the input is narrower with 3 letters than with 12;
+  - the input's width minus the mirror's text width is no more than its padding plus border.
+
+## Batch C — public pages and the sign-up panel (lane C)
+
+**F.16 Shared typing engine and an answer box that fits (f12, item 19).** New `src/lib/word-cycle.ts` and `src/ui/TypingBlank.tsx`; changes in `auth/AuthShowcase.tsx` (36–83, 170–184).
+- Move `Step`, `next()` and the timer hook out of AuthShowcase as `cycleNext(step, wordLengths, dueStart)` and `useWordCycle({ lengths, motion, start: 'first' | 'final' })`.
+- Timings do not change: 900 ms, 100 ms per letter, 320 ms, 260 ms, 1700 ms. The due count resets each round.
+- `TypingBlank({ word, typed, done, motion })`:
+  - an invisible copy of the full word reserves exactly the word's width;
+  - the box therefore fits the word while typing and once green;
+  - `min-w-21` goes away.
+- Tests: unit tests for `cycleNext` (each phase's duration and next state, the wrap after word 5, the due reset). `auth-showcase.test.tsx` passes without changes.
+
+**F.17 Showcase layout (f12, D7).** Files: `AuthShowcase.tsx` (cards 127–198, ghost chips 123–125, node labels 91–103), `e2e/auth-layout.spec.ts`.
+- The 640×868 scene, PATH and NODES stay the same.
+- Starting values, checked this session against points sampled on the real path:
+
+  | Element | Classes | Rotation |
+  |---|---|---|
+  | Word card | `left-6 top-15 w-70` | −2.5° |
+  | Hôm nay card | `left-95 top-105 w-60` | 3° |
+  | Practice card | `left-66 top-150 w-88` | −1.5° |
+
+- Ghost chips:
+  - "commute" moves above the word card;
+  - "negotiate" moves to the right of the path, between Bậc 4 and the Hôm nay card;
+  - "deadline" is rotated 4°.
+- Each node label sits on the side of its dot away from the cards, and inside the scene.
+- e2e at 1440×900 with reduced motion: no card, ghost chip or caption box may intersect:
+  - any node dot or label;
+  - the path corridor: points every 8 px along the path, each grown to 46×16 px for a travelling chip.
+- Control: the test first asserts 6 nodes and at least 100 path points. Keep the existing test at L18.
+
+**F.18 Hero word cycle and pill (f08, f09, D5).** Files: `site/landing/Hero.tsx`, new `site/landing/HeroCycle.tsx` (`'use client'`), `site/landing/copy.ts`, `Landing.hero` and `Landing.stage` (vi and en, both Vietnamese). Delete `site/interactive/TopicTicker.tsx`.
+- Pill: the label only, with `pl-3.5`. Delete TopicTicker and `hero.topics`.
+- `HeroCycle` renders the word card and the practice card from `stage.cycle`: 5 entries of `{lemma, pos, ipa, definition, meaning, example, before, after, days, level}`.
+- Server HTML is the final frame of mitigate: typed in, green, "Đúng · lên Bậc 3". The first paint matches today's, minus the choices.
+- When `motionAllowed()` is true, the cycle starts from that final frame: lemma blur-fade, typing, Enter, green.
+- It pauses off screen (`whileInView`). With reduced motion or no JS it stays on the final frame.
+- Data:
+  - Row 1 is today's `stage` copy, the sentence "Cities need clear plans to ___ the risk of flooding.", and 3 days.
+  - Rows 2–5 take AuthShowcase's `WORDS` with the meanings phân bổ, khả thi, xấu đi, mạch lạc and 7/3/1/14 days.
+  - `cardLabel` becomes "Thẻ từ · ôn lại sau {days} ngày".
+- Practice card: title row, `Progress`, the sentence with `TypingBlank`, the result line. Delete `stage.choices`, `right`, `keyNext` and `keyHint`.
+- Tests:
+  - `landing.test.tsx:59` stays green;
+  - new: the server render shows mitigate filled in with "Đúng · lên Bậc 3";
+  - new: with motion allowed and fake timers, the card moves on to allocate;
+  - new: with reduced motion it stays on the final frame.
+- LR25, LR35 and "React never runs" (L253) must pass.
+
+**F.19 Glow drift behind the prices (f06).** Files: `PricingSection.tsx:26–27`, `parts.tsx`, `globals.css` (1077–1092, 926–935), `web.css`, `web-dark.css`.
+- Replace the two halos with one drift layer, per `.final .drift` in the drawing:
+  - `absolute -inset-[30%] -z-1`;
+  - three radial gradients: accent 22 % at 30 %/40 %, mark 26 % at 70 %/55 %, pass 16 % at 50 %/90 %, each fading to `transparent 70%`;
+  - blur 28 px, capped at 12 px below 768 px;
+  - animation 18 s ease-in-out infinite alternate: 0 % `translate(-6%,-4%) scale(1)`, 50 % `translate(5%,3%) scale(1.08)`, 100 % `translate(-3%,6%) scale(1.02)`.
+- It only animates under `html.js` with motion allowed, and stays off below 760 px as now.
+- New tokens `--color-wm-drift-accent`, `--color-wm-drift-mark` and `--color-wm-drift-pass` in both themes.
+- The Pro card's Sweep, badge and inner glow stay.
+
+**F.20 "Luyện trong câu" demo at the top (f07).** File: `LearnSection.tsx:101` (`mt-auto`).
+- The demo follows the description at the normal gap. Any spare height goes below the demo.
+- Check at 1280 and 390.
+
+**F.21 Nav links (f10).** File: `SiteHeader.tsx:17–18`.
+- `font-bold text-wm-ink hover:text-wm-accent`. The size stays `text-wm-button` (15 px) and there is no active style.
+- `site-chrome.test.tsx:55` stays as is.
+
+**F.22 Not only IELTS (f11, D6).** Files: `GroupsSection.tsx:44–47`, `interactive/FlyIn.tsx`, keys `Landing.groups`, `stage.addedTitle`, `learn.note.eyebrow` and `final.title`, plus comments in `WordStrip.tsx` and `GroupsSection.tsx`.
+- Remove the caption pill and its two keys. FlyIn now ends on the last card.
+- Apply the D6 wording.
+- First grep the whole `Landing` namespace and `landing-data.fallback.ts` for `IELTS|đề|Writing|TOEIC|band`. Control: the four known keys must show up. Report any other hit with a proposed wording; do not change it silently.
+- Test: `landing.test.tsx:49–57`, the region name.
+
+## Close-out (main session)
+
+**F.23 Merge the lanes** into `feat/giao-dien-moi-polish`.
+- Expect conflicts only in `globals.css`, `messages/*.json` and the token files.
+- After each merge, run unit tests, lint and typecheck.
+
+**F.24 Docs:**
+- Part 11 in the plan document.
+- In the delivery record: the summary, written at approval, plus the as-built for both Part 10 and Part 11.
+- The remaining P.18 work:
+  - rulings R265 onwards;
+  - design §7.1, §7.2, §9 and §14;
+  - plan line ~4554, where `detail` should be `extensions.group_id`;
+  - narrow the allow-file for `App.errors.*`, `App.transactions.*` and `Landing.*`.
+- A decision record section QF:
+  - f01–f19, with the options shown, the ✅ pick and your notes;
+  - D1–D9.
+- New items for you in `docs/deliveries/giao-dien-moi-polish-checklist.md`.
+
+**F.25 Verify:**
+- Web unit tests, lint, typecheck and the message key check.
+- Admin's four checks, because tokens change.
+- `pnpm cf:docker` full e2e once, with nothing else running. Earlier runs were inconclusive because of load.
+- Screenshots in light and dark at 1280 and 390 of every changed screen, attached to the as-built.
+- A whole-branch review on the most capable model, then one fix round.
+
+**F.26 Ship:**
+- Through `ship-pr`: push the branch and open one PR into `refactor/giao-dien-moi` with a four-section English body.
+- Report CI's actual verdict, and merge when it is green.
+- Then run `pnpm bootstrap` and seed for your manual pass.
+
+## Review focus (cases the tests above do not cover)
+
+1. The ticket at 320 px with a hint box open and a long meaning: the stub note wraps, and the notches stay on the perforation.
+2. The scope switch changes `sessionMax` while the field holds a typed value that is not committed yet: the commit clamps to the new max.
+3. The hero cycle when the tab is hidden, scrolled away and back: no burst of steps, and no layout jump. `TypingBlank` reserves the width and the word card has a minimum height.
+4. Nhóm in two columns at 844×390: the arrow keys and the live region still work, and nothing hides under the phone's home bar.
+5. A day with practice only: the summary, the empty line and disabled chips, with no crash.
+
+## Verification (end to end)
+
+- Commands: the web unit tests, lint and typecheck; admin's four checks; `pnpm cf:docker`. Then run `pnpm bootstrap` and seed, and do a browser pass at 1280×800, 844×390, 768×1024, 1024×768 and 390×844.
+- Screens for that pass:
+  - Nhóm and Hôm nay.
+  - Thêm từ: Nhập nghĩa and the deck picker.
+  - Tùy chỉnh phiên.
+  - Lịch → Ngày.
+  - Phiên luyện: wrong, right, try again, and with a hint open.
+  - Học and Ôn.
+  - Home page: hero, prices, Luyện trong câu, nav, the Nhóm từ block.
+  - Sign-up and sign-in at 1440×900.
+- Done when every check is green, CI on the PR is green, and the screenshots are in the as-built.

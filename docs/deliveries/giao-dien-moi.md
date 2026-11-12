@@ -218,6 +218,42 @@ Plan: "Part 10" trong file plan ở trên. Làm theo [mockup bản chốt](https
 **Chủ dự án đã chốt (12/11, QP1–QP4):** lưu nhiều nhóm bằng trường `group_ids` của quick-add (một transaction); một PR cho cả đợt; giữ gợi ý
 `e___`; thêm màu `warn` đủ tương phản. **Còn chờ:** duyệt plan trước khi code; P.6 dừng cho chủ dự án xem ảnh khung xương (chỗ 24).
 
+# Giao diện mới — plan tóm tắt, phần 11: sửa sau khi test tay (13/11/2026)
+
+Plan: "Part 11" trong file plan ở trên; 19 chỗ chủ dự án chốt trên [trang review](https://claude.ai/artifact/TdRauzhidkQBLUss11Y5j2) (bản 10).
+Quyết định: mục QF của decision record. Ba lane song song từ nhánh `feat/giao-dien-moi-polish`.
+
+**Lane A — app**
+- F.1: quầng màu sau băng chuyền Nhóm tan dần vào nền, không còn khung chữ nhật.
+- F.2: dưới băng chuyền: hai nút Học, Ôn cùng bề rộng; hàng dưới "Xem nhóm →" và "Thêm từ"; chú thích bậc một dòng.
+- F.3: Nhóm co theo chiều cao màn; điện thoại ngang hai cột; nút lịch không đè thẻ; e2e kiểm mọi màn ở 4 khổ.
+- F.4: thẻ nhóm ở Hôm nay nâng lên khi rê chuột hoặc Tab.
+- F.5: chân hộp thoại có đường kẻ và khoảng cách 12 px; Thêm từ: nút "Xong" ở bước chọn nhóm, nút lưu ghi "Lưu vào n nhóm".
+- F.6: hộp chọn nhóm không còn hiện một nhóm hai lần.
+- F.7: ô số câu ở Tùy chỉnh phiên gõ tay được, gọn 36 px.
+- F.8: số trong ô riêng ở nút chọn phạm vi Tất cả / Đến hạn / Ưu tiên.
+- F.9: hộp Ngày bỏ nút lọc Luyện và khối phiên luyện.
+- F.10: Tra từ: nút "Nhóm khác" chờ tải xong mới bấm được.
+- F.11: bản tiếng Anh ghi "1 card waiting".
+
+**Lane B — các phiên**
+- F.12: bỏ ô phím trên mọi nút trong phiên; hàng chú thích phím giữ.
+- F.13: gợi ý chữ cái đầu dạng "l___".
+- F.14: panel kết quả dạng vé, trượt ra từ dưới thẻ; đỏ đậm hơn một chút; câu chọn sai cũng gạch trong câu.
+- F.15: ô gõ trong câu co giãn theo chữ.
+
+**Lane C — trang công khai và bảng đăng ký**
+- F.16: tách bộ máy gõ chữ dùng chung; ô đáp án vừa đúng chữ.
+- F.17: bảng đăng ký: dời và nghiêng ba thẻ, không đè đường nhớ; e2e kiểm không chồng.
+- F.18: hero đổi năm từ và gõ chữ như bảng đăng ký; viên nhãn chỉ còn câu.
+- F.19: phần Giá: quầng màu trôi đều như khối cuối trang.
+- F.20: "Luyện trong câu": phần luyện lên ngay dưới mô tả.
+- F.21: link thanh trên chữ đậm.
+- F.22: bỏ viên chú thích IELTS, đổi bốn câu chỉ-IELTS sang ngữ cảnh chung.
+
+**Cuối đợt**
+- F.23: gộp ba lane. F.24: tài liệu và as-built (gồm phần P.18 còn nợ). F.25: kiểm tra đầy đủ, e2e sạch một lượt. F.26: một PR vào `refactor/giao-dien-moi`, merge khi CI xanh, bootstrap để chủ dự án test lại.
+
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
 Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
