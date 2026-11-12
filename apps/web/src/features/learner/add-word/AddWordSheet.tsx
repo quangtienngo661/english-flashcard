@@ -12,6 +12,7 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { ErrorState } from '@/ui/States';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
+import { shownPos } from '@/lib/pos';
 import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { FIELD_BOX, FIELD_ERROR, FIELD_LABEL } from '@/ui/field-styles';
@@ -271,6 +272,14 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     <TextField label={t('sentence')} value={sentence} onChange={setSentence} maxLength={SENTENCE_MAX} />
   );
 
+  // The two fields at the top of "Bạn vừa gặp từ nào?"; with an AI result they head the left column of the two-column layout.
+  const wordFields = (
+    <>
+      <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord && !aiShown} />
+      {sentenceField}
+    </>
+  );
+
   let title = t('title');
   let body: ReactNode;
   let footer: ReactNode;
@@ -373,8 +382,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   } else {
     body = (
       <div className="flex flex-col gap-4">
-        <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
-        {sentenceField}
+        {!aiShown && wordFields}
         {lemma && lookup.isPending && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && !aiShown && (
           <p className="rounded-wm-row bg-wm-bg p-3 font-wm-sans text-wm-small text-wm-ink">{t('noMatch', { word: lemma })}</p>
@@ -392,6 +400,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
             text={lemma}
             sentence={sentence}
             result={aiShown}
+            leading={wordFields}
             onChoose={(sense) => {
               setChosenFromAi({ text: lemma, sense });
               setPicked(sense.sense_id);
@@ -438,7 +447,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
                     )}
                     <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-ink">
                       <span className="font-semibold">{o.sense.lemma}</span>{' '}
-                      <span className="text-wm-meta text-wm-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
+                      <span className="text-wm-meta text-wm-muted">{[shownPos(o.sense.pos), o.sense.level].filter(Boolean).join(', ')}</span>
                       {saved && <span className="ml-2 text-wm-small-strong text-wm-pass">{t('alreadyIn')}</span>}
                       <span className="block text-wm-small text-wm-muted">{o.sense.meaning.text}</span>
                     </span>

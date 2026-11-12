@@ -87,6 +87,27 @@ describe('Overlay 4: AI result', () => {
     expect(within(preview).getByText('cap')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sửa rồi lưu' })).toBeInTheDocument();
   });
+
+  it('a part of speech nobody set ("unspecified") is never printed in the result or the preview', async () => {
+    const ai = () =>
+      Response.json({
+        suggestion: { part_of_speech: 'unspecified', lemma: 'cap', meaning: { text: 'nói dối, nói phét', language: 'vi' }, definition_en: null, examples: [] },
+        catalog_senses: [{ ...goSense, sense_id: uuid(5), lemma: 'cap', pos: 'unspecified' }],
+      });
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes: { ...routes, 'POST /v1/lookup/ai': ai } });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+  });
+
+  it('chỗ 23: the "Từ" field and the preview card share the grid, so the preview starts level with the field', async () => {
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    const preview = await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    const grid = preview.parentElement!.parentElement!;
+    expect(grid.contains(screen.getByRole('textbox', { name: 'Từ' }))).toBe(true);
+    expect(grid.contains(screen.getByRole('textbox', { name: 'Câu bạn gặp (không bắt buộc)' }))).toBe(true);
+  });
 });
 
 describe('Overlay 5: Lưu vào nhóm', () => {

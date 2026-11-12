@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useEntitlements } from '@/app-shell/queries';
 import { cn } from '@/lib/cn';
+import { shownPos } from '@/lib/pos';
 import { TextButton } from '@/ui/TextButton';
 import { TargetWord } from '@/ui/TargetWord';
 import type { LookupSense } from './add-word-api';
@@ -14,9 +15,12 @@ import type { AiLookupResult as Result } from './ai-lookup-api';
  * K/86, K/86b, Figma Overlay 4 (124:4907): "Kết quả cho “cap”" and the credits left; one list with the dictionary's meanings of that
  * word first, each with [Chọn] (D21 Bước 7), then the AI meaning; on the right (under it on phones) the card that will be saved.
  * The English definition is only for reference and is not saved; an English learner's meaning is that definition already, so the
- * line is not repeated.
+ * line is not repeated. `leading` (the "Từ" and sentence fields) sits at the top of the left column, so from 768 px the preview
+ * on the right starts level with the "Từ" field (chỗ 23, mockup "hộp 4").
  */
-export function AiLookupResult({ text, sentence, result, onChoose }: { text: string; sentence: string; result: Result; onChoose: (sense: LookupSense) => void }) {
+export function AiLookupResult({
+  text, sentence, result, onChoose, leading,
+}: { text: string; sentence: string; result: Result; onChoose: (sense: LookupSense) => void; leading?: ReactNode }) {
   const t = useTranslations('App.addWord.result');
   const pool = useEntitlements().data?.pools?.ai_lookup;
   const s = result.suggestion;
@@ -25,7 +29,8 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
       // raw-ok: Figma's two columns from 768 px, the list beside a 300 px preview
       className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18.75rem] md:gap-6"
     >
-      <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-4">
+        {leading}
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h3 className="break-words font-wm-display text-wm-word text-wm-ink">{t('title', { word: text })}</h3>
           {pool && <p className="text-wm-meta text-wm-muted">{t('used', { remaining: pool.remaining })}</p>}
@@ -36,7 +41,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
               {result.catalog_senses.map((sense, i) => (
                 <div key={sense.sense_id} className={cn('flex items-center gap-4 p-4', i > 0 && 'border-t border-wm-line')}>
                   <div className="min-w-0 flex-1">
-                    <p className="text-wm-meta text-wm-muted">{[sense.pos, sense.level].filter(Boolean).join(' · ')}</p>
+                    <p className="text-wm-meta text-wm-muted">{[shownPos(sense.pos), sense.level].filter(Boolean).join(' · ')}</p>
                     <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
                   </div>
                   <Badge>{t('dictionary')}</Badge>
@@ -52,7 +57,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
             <div className="flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <p className="text-wm-meta text-wm-muted">
-                  <span className="break-all font-semibold text-wm-ink">{s.lemma}</span> · {s.part_of_speech}
+                  <span className="break-all font-semibold text-wm-ink">{s.lemma}</span>{shownPos(s.part_of_speech) && ` · ${shownPos(s.part_of_speech)}`}
                 </p>
                 <p className="break-words font-wm-display text-wm-word text-wm-ink">{s.meaning.text}</p>
               </div>
@@ -79,7 +84,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
             className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:rotate-[1.2deg] md:p-6"
           >
             <div className="flex items-center gap-2">
-              <span className="text-wm-meta text-wm-muted">{s.part_of_speech}</span>
+              <span className="text-wm-meta text-wm-muted">{shownPos(s.part_of_speech)}</span>
               <span className="flex-1" />
               <Badge ai>{t('aiLabel')}</Badge>
             </div>
