@@ -79,7 +79,7 @@ describe('ThemeProvider browser bar', () => {
     const meta = document.createElement('meta');
     meta.name = 'theme-color';
     meta.content = '#f6f7fa';
-    document.head.append(meta);
+    document.head.appendChild(meta);
     await waitFor(() => expect(bars()).toEqual(['#0f1220', '#0f1220', '#0f1220']));
   });
 
