@@ -49,9 +49,10 @@ describe('ui overlays', () => {
     expect(screen.getByRole('dialog', { name: 'Tạo nhóm' })).toBeInTheDocument();
   });
 
-  it('SkeletonPage is a status that says Đang tải…', () => {
-    renderApp(<SkeletonPage shape="chrome" />);
-    expect(screen.getByRole('status')).toHaveTextContent('Đang tải…');
+  it.each(['chrome', 'columns', 'carousel', 'bare'] as const)('SkeletonPage %s is one status named Đang tải…', (shape) => {
+    renderApp(<SkeletonPage shape={shape} />);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status', { name: 'Đang tải…' })).toBeInTheDocument();
   });
 
   it('showToast shows its text in the region', async () => {
