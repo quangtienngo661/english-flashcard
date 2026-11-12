@@ -43,7 +43,7 @@ export function TopSearch() {
   }
 
   return (
-    <form role="search" onSubmit={onSubmit} className="flex w-65 min-w-32 shrink">
+    <form role="search" onSubmit={onSubmit} className="flex w-65 min-w-24 shrink">
       <label className="flex h-9.5 w-full min-w-0 items-center gap-2 rounded-wm-control border border-wm-line bg-wm-bg pl-3 pr-2 focus-within:border-wm-accent">
         <Search aria-hidden className="size-4 shrink-0 text-wm-muted" />
         <span className="sr-only">{t('placeholder')}</span>
