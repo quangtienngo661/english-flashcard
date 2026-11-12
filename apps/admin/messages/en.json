@@ -13,6 +13,7 @@
     "draft-exists": "This operation already has a draft. The page was reloaded.",
     "draft-version-conflict": "Someone else just edited the draft.",
     "email-already-verified": "This email is already verified",
+    "email-not-verified": "Email not confirmed. Use Forgot password to confirm it.",
     "email-taken": "This email is already in use",
     "entry-in-use": "This word is in use and cannot be deleted yet.",
     "eval-required": "The draft has no complete run on the newest example-set version.",
@@ -1702,7 +1703,7 @@
     "create": "Create user",
     "edit": {
       "title": "Edit {email}",
-      "emailHint": "A new email counts as verified; the old address gets a notice.",
+      "emailHint": "The new email must be confirmed again; the user is signed out and the old address gets a notice.",
       "emailInvalid": "Enter a valid email",
       "emailTaken": "Another account already uses this email.",
       "nameInvalid": "1 to 50 characters.",

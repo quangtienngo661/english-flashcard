@@ -56,6 +56,7 @@ export const KNOWN_ERROR_SLUGS = [
   'draft-exists',
   'draft-version-conflict',
   'email-already-verified',
+  'email-not-verified',
   'email-taken',
   'entry-in-use',
   'eval-required',

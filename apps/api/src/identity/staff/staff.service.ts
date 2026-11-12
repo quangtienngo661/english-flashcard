@@ -15,7 +15,7 @@ import { checkPasswordPolicy } from '../auth/password-policy.js';
 import type { StaffRole } from '../identity.types.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
-import { adminPasswordResetMail, emailChangedNoticeMail, learnerAccountMail, staffAccountMail } from '../mailer/templates.js';
+import { adminPasswordResetMail, emailChangedConfirmMail, emailChangedNoticeMail, learnerAccountMail, staffAccountMail } from '../mailer/templates.js';
 import { isOldEnough, MIN_AGE } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService } from '../sessions/session.service.js';
@@ -157,14 +157,16 @@ export class StaffService {
   }
 
   /**
-   * AD18: the admin edits names, birth date, timezone and email. A new email counts as verified (as on create) and the old
-   * address gets a notice; sessions stay. Birth date follows the sign-up rule in the user's (new) zone.
+   * AD18: the admin edits names, birth date, timezone and email. Birth date follows the sign-up rule in the user's (new) zone.
+   * Review 07/11 F12: a new email is unverified until that address confirms it, every session is revoked and live codes die, so a
+   * hijacked admin cannot move an account to an address it controls and walk in; the old address gets a notice, the new one a
+   * confirm mail.
    */
   async updateUser(actorId: string, targetId: string, body: UpdateUserBody, res: Response): Promise<AdminUserDetail> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
     const email = body.email === undefined ? undefined : normalizeEmail(body.email);
     if (timezone === null || email === null || (email !== undefined && !isValidEmailSyntax(email))) throw invalidInput();
-    const notice = await this.prisma.$transaction(async (tx) => {
+    const mails = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, targetId);
       const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true, status: true } });
       if (!target) throw staffUserNotFound();
@@ -178,7 +180,7 @@ export class StaffService {
           ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
           ...(body.birth_date !== undefined ? { birthDate: dateValue(body.birth_date) } : {}),
           ...(timezone !== undefined ? { timezone } : {}),
-          ...(emailChanged ? { email, emailVerifiedAt: this.clock.now() } : {}),
+          ...(emailChanged ? { email, emailVerifiedAt: null } : {}),
         }, select: { id: true } });
       } catch (error) {
         if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
@@ -186,12 +188,15 @@ export class StaffService {
         }
         throw error;
       }
-      return emailChanged ? emailChangedNoticeMail(target.email, email!) : null;
+      if (!emailChanged) return null;
+      await this.sessions.revokeAllForUser(tx, targetId, 'email_changed');
+      await tx.otpCode.updateMany({ where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: this.clock.now() } });
+      return [emailChangedNoticeMail(target.email, email!), emailChangedConfirmMail(email!, this.config.learnerAppUrl)];
     }, transactionOptions);
-    if (notice) this.dispatcher.afterResponse(res, [sendPrepared(notice)]);
+    if (mails) this.dispatcher.afterResponse(res, mails.map((mail) => sendPrepared(mail)));
     // Values may be personal data: field names only.
     this.logger.info('account_updated', { actor_id: actorId, target_id: targetId,
-      fields: Object.keys(body).filter((key) => key !== 'email' || notice !== null) });
+      fields: Object.keys(body).filter((key) => key !== 'email' || mails !== null) });
     return this.getUserDetail(targetId);
   }
 
