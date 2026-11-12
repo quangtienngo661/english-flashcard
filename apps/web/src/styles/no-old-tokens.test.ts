@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import oldThemeNames from './old-theme-names.json';
 import { hits, sources } from './scan-src';
 
 // Part 10 P.6 (Review Focus 4): the app stops importing theme.css, so a class or var() naming one of its tokens, or one of the old
@@ -30,7 +31,10 @@ function themeBlocks(css: string): string[] {
 
 const isWm = (name: string) => /(^|-)wm(-|$)/.test(name);
 const oldGlobals = [...new Set(themeBlocks(globals).flatMap(declared))].filter((name) => !isWm(name));
-const OLD = [...new Set([...declared(theme), ...oldGlobals])];
+// The 67 non-wm names of the old `@theme` block P.6 deleted from globals.css. Derived once from BASE 5e3e7f6e with the same rule as
+// `oldGlobals`: `git show 5e3e7f6e:apps/web/src/app/globals.css`, every custom property declared in an `@theme` block, minus `wm` names.
+// Frozen: the block is gone, so its names can no longer be read from the file.
+const OLD = [...new Set([...declared(theme), ...oldGlobals, ...oldThemeNames])];
 
 // The utility prefixes Tailwind builds from each namespace.
 const PREFIX: Array<[RegExp, string]> = [
@@ -56,7 +60,8 @@ function patternFor(name: string): RegExp {
 
 describe('no old token in src (P.6)', () => {
   it('reads the old names from the files and scans real sources (control)', () => {
-    expect(OLD).toEqual(expect.arrayContaining(['color-primary', 'radius-sm', 'ease-enter', 'font-sans']));
+    expect(OLD).toEqual(expect.arrayContaining(['color-primary', 'radius-sm', 'ease-enter', 'font-sans', 'container-prose', 'animate-menu-in']));
+    expect(oldThemeNames).toHaveLength(67);
     expect(sources.length).toBeGreaterThan(100);
     expect(sources.some((s) => s.file === 'app/globals.css')).toBe(true);
     // The matcher finds a class and a var() it should (theme.css itself still has both shapes).
