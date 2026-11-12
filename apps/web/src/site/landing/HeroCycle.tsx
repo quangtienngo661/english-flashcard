@@ -25,27 +25,52 @@ export function HeroCycle({ copy }: { copy: LandingCopy['stage'] }) {
   }, []);
 
   const step = useWordCycle({ lengths: copy.cycle.map((c) => c.lemma.length), motion, start: 'final' });
-  const word = copy.cycle[step.k % copy.cycle.length];
-  const swap = motion && step.k > 0 && 'animate-wm-showcase-swap';
+  const current = step.k % copy.cycle.length;
+  const word = copy.cycle[current];
+  const first = copy.cycle[0];
+  const swap = step.k > 0 && 'animate-wm-showcase-swap';
 
   return (
-    <div ref={ref} className="flex flex-col gap-3 lg:flex-row lg:gap-4.5">
+    <div ref={ref} data-hero-stage className="flex flex-col gap-3 lg:flex-row lg:gap-4.5">
       <div className="flex flex-col gap-3 rounded-wm-row bg-wm-bg p-4.5 text-left lg:w-107.5 lg:shrink-0">
-        <p className="font-wm-sans text-wm-label text-wm-muted">{fill(copy.cardLabel, { days: word.days })}</p>
-        <div key={step.k} className={cn('flex flex-col gap-3', swap)}>
-          <p className="font-wm-display text-wm-lemma text-wm-ink">{word.lemma}</p>
-          <p className="flex items-center gap-2.5 font-wm-sans text-wm-base text-wm-muted">
-            {word.pos} · {word.ipa}
-            <WaveBars />
+        <p aria-hidden className="font-wm-sans text-wm-label text-wm-muted">{fill(copy.cardLabel, { days: word.days })}</p>
+        {/* One static copy for assistive tech: the mitigate frame. The cycling layer below is aria-hidden. */}
+        <div className="sr-only">
+          <p>{first.lemma}</p>
+          <p>
+            {first.pos} · {first.ipa}
           </p>
-          <p className={cn(TEXT_17, 'text-wm-ink')}>
-            {word.definition}
-            <span className="text-wm-muted md:hidden"> · {word.meaning}</span>
+          <p>
+            {first.definition} · {first.meaning}
           </p>
-          <p className="hidden font-wm-sans text-wm-button font-normal text-wm-muted md:block">{word.meaning}</p>
-          <p className="rounded-wm-control bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
-            <Marked sentence={word.example} target={word.lemma} />
+          <p>
+            {first.before}
+            {first.lemma}
+            {first.after}
           </p>
+        </div>
+        {/* All five frames share one grid cell, so the card keeps the height of the tallest word. */}
+        <div aria-hidden className="grid">
+          {copy.cycle.map((w, i) => (
+            <div
+              key={w.lemma}
+              className={cn('col-start-1 row-start-1 flex flex-col gap-3', i !== current ? 'invisible' : swap)}
+            >
+              <p className="font-wm-display text-wm-lemma text-wm-ink">{w.lemma}</p>
+              <p className="flex items-center gap-2.5 font-wm-sans text-wm-base text-wm-muted">
+                {w.pos} · {w.ipa}
+                <WaveBars />
+              </p>
+              <p className={cn(TEXT_17, 'text-wm-ink')}>
+                {w.definition}
+                <span className="text-wm-muted md:hidden"> · {w.meaning}</span>
+              </p>
+              <p className="hidden font-wm-sans text-wm-button font-normal text-wm-muted md:block">{w.meaning}</p>
+              <p className="rounded-wm-control bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
+                <Marked sentence={w.example} target={w.lemma} />
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -55,11 +80,19 @@ export function HeroCycle({ copy }: { copy: LandingCopy['stage'] }) {
           <span>{copy.practiceCount}</span>
         </p>
         <Progress done={3} total={16} />
-        <p key={step.k} className={cn('min-h-15 font-wm-sans text-wm-lead text-wm-ink', swap)}>
-          {word.before}
-          <TypingBlank word={word.lemma} typed={step.typed} done={step.phase === 'done'} motion={motion} />
-          {word.after}
-        </p>
+        <div aria-hidden className="grid min-h-15 font-wm-sans text-wm-lead text-wm-ink">
+          {copy.cycle.map((w, i) => (
+            <p key={w.lemma} className={cn('col-start-1 row-start-1', i !== current ? 'invisible' : swap)}>
+              {w.before}
+              {i === current ? (
+                <TypingBlank word={w.lemma} typed={step.typed} done={step.phase === 'done'} motion={motion} />
+              ) : (
+                <TypingBlank word={w.lemma} typed={w.lemma.length} done motion={false} />
+              )}
+              {w.after}
+            </p>
+          ))}
+        </div>
         <p className="flex min-h-6 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
           {step.phase === 'enter' && (
             <kbd className="rounded-wm-key border border-wm-line bg-wm-surface px-1.5 font-wm-sans text-wm-meta text-wm-muted">Enter</kbd>

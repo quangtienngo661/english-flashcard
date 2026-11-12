@@ -107,7 +107,7 @@ export function AuthShowcase() {
           // raw-ok: the tilt of the word card from the F.17 brief, -2.5deg, which has no Tailwind step
           className="absolute left-6 top-15 z-3 min-h-73 w-70 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
         >
-          <div key={step.k} className={cn('flex flex-col gap-2', motion && 'animate-wm-showcase-swap')}>
+          <div key={step.k} className={cn('flex flex-col gap-2', step.k > 0 && 'animate-wm-showcase-swap')}>
             <p className="font-wm-display text-wm-lemma text-wm-ink">{word.word}</p>
             <p className="font-wm-sans text-wm-small text-wm-muted">{word.pos}</p>
             <p className="font-wm-sans text-wm-base text-wm-ink">{word.gloss}</p>
@@ -152,7 +152,7 @@ export function AuthShowcase() {
           className="absolute left-66 top-150 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
         >
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
-          <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', motion && 'animate-wm-showcase-swap')}>
+          <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', step.k > 0 && 'animate-wm-showcase-swap')}>
             {word.question[0]}
             <TypingBlank word={word.word} typed={step.typed} done={step.phase === 'done'} motion={motion} />
             {word.question[1]}
