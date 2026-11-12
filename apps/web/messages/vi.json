@@ -1193,6 +1193,7 @@
       "selectedCount": "{count, plural, =0 {Chưa chọn nhóm nào} other {Đã chọn # nhóm}}",
       "saveToCount": "Lưu vào {count, number} nhóm",
       "fullNotSaved": "{group} đã đầy. Chưa lưu từ.",
+      "fullUnknown": "Một nhóm đã đầy. Chưa lưu từ.",
       "addAnother": "Thêm nhóm khác",
       "ai": {
         "button": "Tra bằng AI",

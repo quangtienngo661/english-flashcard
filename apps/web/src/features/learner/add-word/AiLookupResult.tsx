@@ -15,22 +15,16 @@ import type { AiLookupResult as Result } from './ai-lookup-api';
  * K/86, K/86b, Figma Overlay 4 (124:4907): "Kết quả cho “cap”" and the credits left; one list with the dictionary's meanings of that
  * word first, each with [Chọn] (D21 Bước 7), then the AI meaning; on the right (under it on phones) the card that will be saved.
  * The English definition is only for reference and is not saved; an English learner's meaning is that definition already, so the
- * line is not repeated. `leading` (the "Từ" and sentence fields) sits at the top of the left column, so from 768 px the preview
- * on the right starts level with the "Từ" field (chỗ 23, mockup "hộp 4").
+ * line is not repeated. It renders two grid cells for the sheet's two-column body (list in the left column under the "Từ" and
+ * sentence fields, preview in the right column from the top), so from 768 px the preview starts level with the "Từ" field (chỗ 23).
  */
-export function AiLookupResult({
-  text, sentence, result, onChoose, leading,
-}: { text: string; sentence: string; result: Result; onChoose: (sense: LookupSense) => void; leading?: ReactNode }) {
+export function AiLookupResult({ text, sentence, result, onChoose }: { text: string; sentence: string; result: Result; onChoose: (sense: LookupSense) => void }) {
   const t = useTranslations('App.addWord.result');
   const pool = useEntitlements().data?.pools?.ai_lookup;
   const s = result.suggestion;
   return (
-    <div
-      // raw-ok: Figma's two columns from 768 px, the list beside a 300 px preview
-      className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18.75rem] md:gap-6"
-    >
-      <div className="flex min-w-0 flex-col gap-4">
-        {leading}
+    <>
+      <div className="flex min-w-0 flex-col gap-3 md:col-start-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h3 className="break-words font-wm-display text-wm-word text-wm-ink">{t('title', { word: text })}</h3>
           {pool && <p className="text-wm-meta text-wm-muted">{t('used', { remaining: pool.remaining })}</p>}
@@ -74,7 +68,7 @@ export function AiLookupResult({
           </section>
         </div>
       </div>
-      <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-3 md:col-start-2 md:row-span-2 md:row-start-1 md:self-start">
         <section aria-label={t('preview')} className="flex flex-col gap-3">
           <p aria-hidden className="text-wm-meta text-wm-muted">
             {t('preview')}
@@ -104,7 +98,7 @@ export function AiLookupResult({
           {t('caution')}
         </p>
       </div>
-    </div>
+    </>
   );
 }
 

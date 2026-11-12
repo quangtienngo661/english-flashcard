@@ -78,7 +78,7 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
         />
       </label>
       {query && !exact && matches.length > 0 && (
-        <CreateRow label={t('createNamed', { name: query })} onPress={() => onCreate(query.slice(0, GROUP_NAME_MAX))} />
+        <CreateRow label={t('createNamed', { name: query })} onPress={() => onCreate(query.slice(0, GROUP_NAME_MAX))} disabled={value.length >= QUICK_ADD_GROUPS_MAX} />
       )}
       {!query && <CreateRow label={t('createNew')} onPress={() => box.current?.focus()} />}
       {query ? (
@@ -97,9 +97,10 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
   );
 }
 
-function CreateRow({ label, onPress }: { label: string; onPress: () => void }) {
+/** `disabled` once 10 groups are ticked: a new group would be the 11th, which one request cannot carry. */
+function CreateRow({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onPress} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.add, 'self-start text-left')}>
+    <button type="button" onClick={onPress} disabled={disabled} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.add, 'self-start text-left disabled:opacity-50')}>
       <Plus aria-hidden className="size-4 shrink-0" />
       <span className="min-w-0 break-words">{label}</span>
     </button>

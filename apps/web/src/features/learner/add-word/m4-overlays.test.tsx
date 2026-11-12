@@ -100,6 +100,17 @@ describe('Overlay 4: AI result', () => {
     expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
   });
 
+  it('typing in "Từ" while the AI result shows keeps the focus and every character', async () => {
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    const field = screen.getByRole('textbox', { name: 'Từ' });
+    await userEvent.type(field, 'ab');
+    expect(screen.getByRole('textbox', { name: 'Từ' })).toBe(field);
+    expect(field).toHaveValue('capab');
+    expect(field).toHaveFocus();
+  });
+
   it('chỗ 23: the "Từ" field and the preview card share the grid, so the preview starts level with the field', async () => {
     renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));

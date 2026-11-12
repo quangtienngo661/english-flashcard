@@ -1193,6 +1193,7 @@
       "selectedCount": "{count, plural, =0 {No deck chosen} one {# deck chosen} other {# decks chosen}}",
       "saveToCount": "{count, plural, one {Save to # deck} other {Save to # decks}}",
       "fullNotSaved": "{group} is full. Nothing was saved.",
+      "fullUnknown": "A deck is full. Nothing was saved.",
       "addAnother": "Add another deck",
       "ai": {
         "button": "Look up with AI",

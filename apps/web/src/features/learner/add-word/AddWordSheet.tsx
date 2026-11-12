@@ -197,7 +197,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       else if (slug === 'group-full') {
         // The API names the full group; an answer without a name is only unambiguous when there was one group.
         const full = fullGroupId(error) ?? (decks.length === 1 ? decks[0] : null);
-        setFailure({ text: full !== null ? t('fullNotSaved', { group: nameOf(full) }) : errorText(error) });
+        setFailure({ text: full !== null ? (nameOf(full) ? t('fullNotSaved', { group: nameOf(full) }) : t('fullUnknown')) : errorText(error) });
       }
       else if (slug === 'private-word-limit-reached') setFailure({ text: t('privateLimit') });
       else if (slug === 'sentence-limit-reached') setFailure({ text: t('sentenceLimit') });
@@ -272,12 +272,13 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     <TextField label={t('sentence')} value={sentence} onChange={setSentence} maxLength={SENTENCE_MAX} />
   );
 
-  // The two fields at the top of "Bạn vừa gặp từ nào?"; with an AI result they head the left column of the two-column layout.
+  // The two fields at the top of "Bạn vừa gặp từ nào?". They stay at this one place in the tree, so typing keeps focus when an AI
+  // result is showing; the body turns into the two-column grid around them (chỗ 23).
   const wordFields = (
-    <>
-      <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord && !aiShown} />
+    <div className="flex min-w-0 flex-col gap-4 md:col-start-1">
+      <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
       {sentenceField}
-    </>
+    </div>
   );
 
   let title = t('title');
@@ -381,8 +382,11 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     );
   } else {
     body = (
-      <div className="flex flex-col gap-4">
-        {!aiShown && wordFields}
+      <div
+        // raw-ok: Figma's two columns from 768 px, the fields and the list beside a 300 px preview
+        className={cn('flex flex-col gap-4', aiShown && 'md:grid md:grid-cols-[minmax(0,1fr)_18.75rem] md:gap-x-6')}
+      >
+        {wordFields}
         {lemma && lookup.isPending && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && !aiShown && (
           <p className="rounded-wm-row bg-wm-bg p-3 font-wm-sans text-wm-small text-wm-ink">{t('noMatch', { word: lemma })}</p>
@@ -400,7 +404,6 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
             text={lemma}
             sentence={sentence}
             result={aiShown}
-            leading={wordFields}
             onChoose={(sense) => {
               setChosenFromAi({ text: lemma, sense });
               setPicked(sense.sense_id);
@@ -482,6 +485,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         {!lockedGroupId && deckField}
           </>
         )}
+        <div className="flex flex-col gap-4 md:col-span-full empty:hidden">
         {lockedGroupId && deckField}
         {lockedGroupId && (
           <div className="flex min-w-0 flex-col gap-3">
@@ -497,6 +501,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           </div>
         )}
         {failureLine}
+        </div>
       </div>
     );
     footer = aiShown ? (

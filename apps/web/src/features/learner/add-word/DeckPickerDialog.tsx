@@ -70,7 +70,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       onClose();
     } catch (failure) {
       const full = fullGroupId(failure);
-      setError(full !== null ? t('fullNotSaved', { group: nameOf(full) }) : errorText(failure));
+      setError(full === null ? errorText(failure) : nameOf(full) ? t('fullNotSaved', { group: nameOf(full) }) : t('fullUnknown'));
     } finally {
       newName.current = null;
     }

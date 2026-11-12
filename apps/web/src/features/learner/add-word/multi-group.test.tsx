@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/ui/Toast';
+import { ToastRegion, toastQueue } from '@/ui/Toast';
 import { renderApp } from '@/test-utils/render-app';
 import { AddWordSheet } from './AddWordSheet';
 import { DeckPickerDialog } from './DeckPickerDialog';
@@ -40,7 +40,12 @@ const quickAdds = (calls: Array<{ method: string; path: string; body: unknown }>
 const sense = { sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } };
 const all = () => screen.findByRole('listbox', { name: 'Tất cả nhóm (3), A–Z' });
 
-beforeEach(() => window.localStorage.clear());
+beforeEach(() => {
+  window.localStorage.clear();
+  // The toast queue is module state: a toast from an earlier test must not hide or fake one here.
+  for (const toast of [...toastQueue.visibleToasts]) toastQueue.close(toast.key);
+});
+const noSuccessToast = () => expect(screen.queryByText(/Đã lưu từ|Đã thêm/)).not.toBeInTheDocument();
 
 describe('GroupPicker: several groups (QP1)', () => {
   it('is a multiselectable listbox; rows toggle on click and Space, Enter confirms; the footer counts', async () => {
@@ -76,16 +81,19 @@ describe('GroupPicker: several groups (QP1)', () => {
 
   it('a 409 naming Đề 9 says so and shows no success toast', async () => {
     const onClose = vi.fn();
+    window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE14]));
     renderApp(<><DeckPickerDialog sense={sense} onClose={onClose} /><ToastRegion /></>, {
       routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: DE9 }) }),
     });
     const list = await all();
     await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
     await userEvent.click(within(list).getByRole('option', { name: /Đề 9/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu vào 2 nhóm' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu vào 3 nhóm' }));
     expect(await screen.findByText('Đề 9 đã đầy. Chưa lưu từ.', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Lưu vào 2 nhóm' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lưu vào 3 nhóm' })).toBeInTheDocument();
+    noSuccessToast();
+    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(JSON.stringify([DE14]));
   });
 });
 
@@ -122,7 +130,8 @@ describe('AddWordSheet: the groups field (QP1)', () => {
   });
 
   it('a 409 naming Đề 9 shows "Đề 9 đã đầy. Chưa lưu từ." and no success toast', async () => {
-    window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE12, DE9]));
+    const stored = JSON.stringify([DE12, DE9]);
+    window.localStorage.setItem(LAST_GROUP_KEY, stored);
     const onClose = vi.fn();
     renderApp(<><AddWordSheet initialWord="went" onClose={onClose} /><ToastRegion /></>, {
       routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: DE9 }) }),
@@ -131,6 +140,31 @@ describe('AddWordSheet: the groups field (QP1)', () => {
     expect(await screen.findByText('Đề 9 đã đầy. Chưa lưu từ.', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    noSuccessToast();
+    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(stored);
+  });
+
+  it('a 409 naming a group that is not in the list says a group is full, with no blank name', async () => {
+    window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE12]));
+    renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, {
+      routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { detail: uuid(999) }) }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
+    expect(await screen.findByText('Một nhóm đã đầy. Chưa lưu từ.', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('with 10 groups ticked a new group cannot be added, so the request never goes past the API maximum', async () => {
+    const many = Array.from({ length: 11 }, (_, i) => deck(uuid(400 + i), `Đề ${i + 1}`));
+    window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(many.slice(0, 10).map((g) => g.id)));
+    const { calls } = renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, {
+      routes: routes({ 'GET /v1/groups': () => Response.json({ items: many }), 'POST /v1/groups': () => Response.json({ id: uuid(500), name: 'Đề', version: 1 }, { status: 201 }) }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm/ }));
+    await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'Đề');
+    const create = await screen.findByRole('button', { name: 'Tạo nhóm “Đề”' });
+    expect(create).toBeDisabled();
+    await userEvent.click(create);
+    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(0);
   });
 
   it('opened from a group page: that group is preselected and pinned, and others can be added', async () => {
