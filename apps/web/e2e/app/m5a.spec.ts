@@ -101,8 +101,26 @@ test.describe('M5a flows (mocked API)', () => {
     await expect(page.getByText(en.session.aiChip)).toBeVisible();
     await page.getByRole('button', { name: /^Hint/ }).click();
     await expect(page.getByText('d___')).toBeVisible();
-    await page.getByRole('textbox', { name: en.session.blankLabel }).fill('deploy');
-    await page.getByRole('textbox', { name: en.session.blankLabel }).press('Enter');
+    // F.15: the blank is sized by its text: narrower with 3 letters than with 12, and no wider than the text plus its padding and border.
+    const blankBox = page.getByRole('textbox', { name: en.session.blankLabel });
+    const blankWidth = () => blankBox.evaluate((el) => el.getBoundingClientRect().width);
+    await blankBox.pressSequentially('dep');
+    const widthShort = await blankWidth();
+    await blankBox.fill('');
+    await blankBox.pressSequentially('deployments1');
+    const widthLong = await blankWidth();
+    expect(widthShort).toBeLessThan(widthLong);
+    const slack = await blankBox.evaluate((el) => {
+      const mirror = el.previousElementSibling as HTMLElement;
+      const range = document.createRange();
+      range.selectNodeContents(mirror);
+      const style = getComputedStyle(el);
+      const frame = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+      return el.getBoundingClientRect().width - range.getBoundingClientRect().width - frame;
+    });
+    expect(slack).toBeLessThanOrEqual(1);
+    await blankBox.fill('deploy');
+    await blankBox.press('Enter');
     // The answer takes the blank's place; the translation is its own block in the card (Vietnamese route).
     await expect(page.getByRole('textbox')).toHaveCount(0);
     await expect(page.getByRole('region', { name: en.session.translationAi })).toBeVisible();

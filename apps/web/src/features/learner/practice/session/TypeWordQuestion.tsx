@@ -78,27 +78,32 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
   const field = useAnswerField(outcome, onSubmit);
   return (
     <>
-      <input
-        aria-label={t('blankLabel')}
-        data-answer-input
-        value={field.shown}
-        onChange={(e) => field.setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-          e.preventDefault();
-          field.submit();
-        }}
-        readOnly={field.final}
-        autoFocus
-        enterKeyHint="done"
-        {...FIELD_PROPS}
-        // The width follows the text in characters: `size` needs no style and no measuring.
-        size={Math.max(5, field.shown.length + 1)}
-        className={cn(
-          'mx-0.5 max-w-full rounded-t-wm-control border-0 border-b-3 bg-wm-blank-soft px-2 align-baseline outline-none focus-visible:bg-wm-blank-soft-focus',
-          field.retry ? 'border-wm-fail text-wm-fail caret-wm-fail' : 'border-wm-accent text-wm-accent caret-wm-accent',
-        )}
-      />
+      {/* The mirror holds the shown text with the input's own font, padding and border; the input fills the same grid cell, so the width follows the text in every browser. */}
+      <span className="inline-grid max-w-full align-baseline">
+        <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-pre border-b-3 border-transparent px-2">
+          {field.shown}
+        </span>
+        <input
+          aria-label={t('blankLabel')}
+          data-answer-input
+          value={field.shown}
+          onChange={(e) => field.setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            field.submit();
+          }}
+          readOnly={field.final}
+          autoFocus
+          enterKeyHint="done"
+          {...FIELD_PROPS}
+          className={cn(
+            // raw-ok: the blank is at least 5 characters wide
+            'col-start-1 row-start-1 w-full min-w-[5ch] rounded-t-wm-control border-0 border-b-3 bg-wm-blank-soft px-2 outline-none focus-visible:bg-wm-blank-soft-focus',
+            field.retry ? 'border-wm-fail text-wm-fail caret-wm-fail' : 'border-wm-accent text-wm-accent caret-wm-accent',
+          )}
+        />
+      </span>
       {field.retry && <span className="ml-1 align-middle font-wm-sans text-wm-meta text-wm-fail">{t('attempt', { n: field.tries })}</span>}
     </>
   );
