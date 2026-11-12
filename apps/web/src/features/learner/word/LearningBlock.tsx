@@ -38,6 +38,7 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
   const [open, setOpen] = useState(false);
   // `due_date` is the learner's own day already (as R45): formatted in UTC so no zone moves it.
   const due = useMemo(() => createFormat(locale, 'UTC').date(item.due_date, 'weekdayDayMonth'), [locale, item.due_date]);
+  const interval = levelInterval(toLevel(item.level));
   const decks = item.group_ids.flatMap((id) => groups.find((g) => g.id === id) ?? []);
 
   return (
@@ -58,7 +59,7 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
         />
         <p className="font-wm-sans text-wm-small text-wm-ink">
           <strong className="font-semibold">{levelName(toLevel(item.level))}</strong>
-          {levelInterval(toLevel(item.level)) && ` · ${levelInterval(toLevel(item.level))}`}
+          {interval && ` · ${interval}`}
         </p>
         <div className="flex items-center justify-between gap-3 border-t border-wm-line py-2 font-wm-sans text-wm-small">
           <span className="text-wm-muted">{t('nextReview')}</span>

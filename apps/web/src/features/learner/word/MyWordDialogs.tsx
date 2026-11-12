@@ -1,5 +1,6 @@
 'use client';
 
+import { shownPos } from '@/lib/pos';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -19,7 +20,7 @@ import { wordHref, type PageSense } from './word-api';
 
 const draftOf = (sense: PageSense): WordDraft => ({
   lemma: sense.lemma,
-  pos: sense.pos ?? '',
+  pos: shownPos(sense.pos),
   meaning: sense.meaning.text,
   level: sense.level ?? '',
   topic: sense.topics[0]?.code ?? '',

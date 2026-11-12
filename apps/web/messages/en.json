@@ -1169,8 +1169,8 @@
         "superlative": "superlative"
       },
       "sentenceTitle": "Add a saved sentence",
-      "sentenceSub": "{word}, {pos}: {meaning} · {count, plural, one {# sentence} other {# sentences}} so far",
-      "sentenceSubNone": "{word}, {pos}: {meaning}",
+      "sentenceSub": "{lead}: {meaning} · {count, plural, one {# sentence} other {# sentences}} so far",
+      "sentenceSubNone": "{lead}: {meaning}",
       "sentenceField": "Sentence",
       "sentenceSense": "Meaning",
       "sentenceHint": "Up to 300 characters. The sentence shows on the back of the card, with the word highlighted.",
