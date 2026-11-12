@@ -68,6 +68,20 @@ describe('GroupPicker: several groups (QP1)', () => {
     expect(quickAdds(calls)[0].body).toEqual({ group_ids: [DE9], sense_id: uuid(1) });
   });
 
+  it('Ctrl+A selects nothing, so the 10-group cap holds (final review minor 1)', async () => {
+    const many = Array.from({ length: 12 }, (_, i) => deck(uuid(400 + i), `Đề ${i + 1}`));
+    renderApp(<DeckPickerDialog sense={sense} inGroups={[]} onClose={() => {}} />, {
+      routes: routes({ 'GET /v1/groups': () => Response.json({ items: many }) }),
+    });
+    const list = await screen.findByRole('listbox', { name: 'Tất cả nhóm (12), A–Z' });
+    await userEvent.click(within(list).getByRole('option', { name: /Đề 10/ }));
+    expect(screen.getByText('Đã chọn 1 nhóm')).toBeInTheDocument();
+    await userEvent.keyboard('{Control>}a{/Control}');
+    expect(screen.getByText('Đã chọn 1 nhóm')).toBeInTheDocument();
+    expect(within(list).getAllByRole('option', { selected: true })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Lưu vào 1[0-9] nhóm/ })).not.toBeInTheDocument();
+  });
+
   it('"Lưu vào 2 nhóm" sends one quick-add with both ids', async () => {
     const { calls } = renderApp(<><DeckPickerDialog sense={sense} inGroups={[]} onClose={() => {}} /><ToastRegion /></>, { routes: routes() });
     const list = await all();
