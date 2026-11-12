@@ -11,10 +11,10 @@ export default function Loading() {
       <span className="sr-only">{t('loading')}</span>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <Skeleton className="h-11 w-56" />
-        <Skeleton className="h-12 w-44 rounded-wm-lg" />
+        <Skeleton className="h-12 w-44 rounded-wm-control" />
       </div>
-      <Skeleton className="mx-auto mt-6 h-67 w-52 rounded-wm-2xl md:h-92 md:w-72" />
-      <Skeleton className="mx-auto h-11 w-80 rounded-wm-button" />
+      <Skeleton className="mx-auto mt-6 h-67 w-52 rounded-wm-dialog md:h-92 md:w-72" />
+      <Skeleton className="mx-auto h-11 w-80 rounded-wm-control" />
     </div>
   );
 }

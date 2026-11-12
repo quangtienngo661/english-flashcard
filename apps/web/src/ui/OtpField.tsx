@@ -74,7 +74,7 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
             onPaste={onPaste}
             data-filled={digit ? '' : undefined}
             className={
-              'h-13.5 min-w-0 flex-1 rounded-wm-md border-2 border-wm-line bg-wm-surface text-center font-wm-display text-wm-card-title text-wm-ink ' +
+              'h-13.5 min-w-0 flex-1 rounded-wm-control border-2 border-wm-line bg-wm-surface text-center font-wm-display text-wm-card-title text-wm-ink ' +
               'caret-wm-accent outline-none focus:border-wm-accent focus-visible:ring-4 focus-visible:ring-wm-accent/16 ' +
               'data-filled:border-wm-accent data-filled:bg-wm-accent-soft md:h-15 md:w-13 md:flex-none'
             }

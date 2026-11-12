@@ -72,7 +72,7 @@ export function SwitchAuthLink({ question, label, href }: { question: string; la
   return (
     <p className="text-center font-wm-sans text-wm-small text-wm-muted">
       {question}{' '}
-      <Link href={href} className="rounded-wm-sm font-semibold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
+      <Link href={href} className="rounded-wm-control font-semibold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
         {label}
       </Link>
     </p>
@@ -85,7 +85,7 @@ export function ConsentLink({ href, newTab, children }: { href: string; newTab?:
     <Link
       href={href}
       target={newTab ? '_blank' : undefined}
-      className="w-fit rounded-wm-sm font-semibold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+      className="w-fit rounded-wm-control font-semibold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
     >
       {children}
     </Link>
@@ -97,7 +97,7 @@ export function LabelLink({ href, children }: { href: string; children: ReactNod
   return (
     <Link
       href={href}
-      className="-my-3.5 rounded-wm-sm py-3.5 font-wm-sans text-wm-label text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:my-0 md:py-0"
+      className="-my-3.5 rounded-wm-control py-3.5 font-wm-sans text-wm-label text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent md:my-0 md:py-0"
     >
       {children}
     </Link>
@@ -108,7 +108,7 @@ export function LabelLink({ href, children }: { href: string; children: ReactNod
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-wm-md bg-wm-fail-soft px-3 py-2 font-wm-sans text-wm-small text-wm-fail">
+    <p role="alert" className="rounded-wm-row bg-wm-fail-soft px-3 py-2 font-wm-sans text-wm-small text-wm-fail">
       {message}
     </p>
   );

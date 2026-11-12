@@ -64,7 +64,7 @@ export function WeakWordsPage() {
           <>
             {count > 0 && (
               // Figma "Luyện từ hay sai": the count in red, the line, [Tùy chỉnh] and the start.
-              <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+              <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
                 <span className="text-wm-meta text-wm-muted">{t('cardChip')}</span>
                 <h2 id="weak-card" className="font-wm-display text-wm-section text-wm-fail">
                   {t('cardCount', { count })}
@@ -110,7 +110,7 @@ export function WeakWordsPage() {
         ) : groups.data.total === 0 ? (
           <EmptyState title={t('emptyTitle')} body={t('emptyBody')} />
         ) : (
-          <section className="flex flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-5 shadow-wm-card md:px-6">
+          <section className="flex flex-col gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:px-6">
             <div className="w-full md:w-72">
               <Select
                 label={t('group')}
@@ -174,7 +174,7 @@ function WeakList({ words }: { words: WeakWord[] }) {
               </span>
             </span>
             <span className="hidden items-center gap-1.5 font-wm-sans text-wm-small text-wm-ink md:col-span-2 md:flex">
-              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', STAGE_DOT[w.level] ?? STAGE_DOT[0])} />
+              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-key', STAGE_DOT[w.level] ?? STAGE_DOT[0])} />
               {tStage(STAGE_KEYS[w.level] ?? 's0')}
             </span>
             <span className="hidden text-wm-meta text-wm-muted md:col-span-2 md:block">

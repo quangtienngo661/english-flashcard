@@ -15,7 +15,7 @@ export function Tag({ tone = 'neutral', children }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-wm-sm px-2 py-0.5',
+        'inline-flex items-center gap-1 rounded-wm-key px-2 py-0.5',
         'font-wm-sans text-wm-label',
         TONE[tone],
       )}

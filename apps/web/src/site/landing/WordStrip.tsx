@@ -31,7 +31,7 @@ function Row({ words, className, reverse }: { words: Word[]; className: string; 
           <span
             key={word}
             className={cn(
-              'inline-flex items-baseline gap-2 rounded-wm-lg border px-4 py-2.5',
+              'inline-flex items-baseline gap-2 rounded-wm-control border px-4 py-2.5',
               lit ? 'border-wm-accent bg-wm-accent-soft shadow-wm-btn' : 'border-wm-line bg-wm-surface shadow-wm-soft',
             )}
           >

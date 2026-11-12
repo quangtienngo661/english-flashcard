@@ -94,7 +94,7 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
       onFocus={onSelect}
       className={cn(
         // raw-ok: the entry's hover box reaches into the page margin by its own padding
-        'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-md px-2.5 py-2 text-left outline-none',
+        'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-row px-2.5 py-2 text-left outline-none',
         'hover:bg-wm-ink/4 focus-visible:outline-3 focus-visible:outline-wm-accent',
       )}
     >
@@ -144,7 +144,7 @@ export function marked(sentence: string, word: string, forms: string[] = []) {
   return (
     <>
       {sentence.slice(0, match.index)}
-      <mark className="rounded-xs bg-wm-mark px-0.75 not-italic text-wm-mark-ink">{match[0]}</mark>
+      <mark className="rounded-wm-key bg-wm-mark px-0.75 not-italic text-wm-mark-ink">{match[0]}</mark>
       {sentence.slice(match.index + match[0].length)}
     </>
   );

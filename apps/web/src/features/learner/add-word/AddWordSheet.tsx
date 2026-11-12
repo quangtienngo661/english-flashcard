@@ -218,7 +218,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   const deckField = lockedGroupId ? (
     <p className="font-wm-sans text-wm-small text-wm-ink">{t('lockedDeck', { name: deckName })}</p>
   ) : noDecks ? (
-    <div className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-bg p-3">
+    <div className="flex flex-col items-start gap-2 rounded-wm-row bg-wm-bg p-3">
       <p className="font-wm-sans text-wm-small text-wm-ink">{t('noDecks')}</p>
       <Button variant="secondary" onPress={openPicker}>
         {t('createFirst')}
@@ -356,7 +356,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         {sentenceField}
         {lemma && lookup.isPending && <p className="font-wm-sans text-wm-caption text-wm-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && !aiShown && (
-          <p className="rounded-wm-md bg-wm-bg p-3 font-wm-sans text-wm-small text-wm-ink">{t('noMatch', { word: lemma })}</p>
+          <p className="rounded-wm-row bg-wm-bg p-3 font-wm-sans text-wm-small text-wm-ink">{t('noMatch', { word: lemma })}</p>
         )}
         {lemma && lookup.isError && (
           <>
@@ -383,7 +383,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         {via && via.senses.length > 0 && (
           // Figma "Dạng gốc": went → go · quá khứ của go, the typed form highlighted.
           <p className="flex flex-wrap items-center gap-x-2 font-wm-sans text-wm-base text-wm-ink">
-            <mark className="rounded-xs bg-wm-mark px-1 text-wm-mark-ink">{lemma}</mark>
+            <mark className="rounded-wm-key bg-wm-mark px-1 text-wm-mark-ink">{lemma}</mark>
             {' → '}
             <b className="font-semibold">{via.base.lemma}</b>
             <span className="text-wm-muted">{` · ${t('inflection', { kind: kind(via.kind), base: via.base.lemma })}`}</span>
@@ -397,7 +397,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
               return (
                 // Đợt C §5.3: the reading sits under the option, outside its label: a label sends a press to its first control, which
                 // would be a speaker on an option with no radio ("đã có trong nhóm").
-                <div key={o.sense.sense_id} className={cn('flex flex-col gap-1 rounded-wm-md p-3', i > 0 && 'border-t border-wm-line', chosen && 'bg-wm-accent/6')}>
+                <div key={o.sense.sense_id} className={cn('flex flex-col gap-1 rounded-wm-row p-3', i > 0 && 'border-t border-wm-line', chosen && 'bg-wm-accent/6')}>
                   <label className={cn('flex items-start gap-3', !saved && 'cursor-pointer')}>
                     {saved ? (
                       <span aria-hidden className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-wm-pass-soft text-wm-pass">

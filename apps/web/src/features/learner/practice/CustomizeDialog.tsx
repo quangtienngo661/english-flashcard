@@ -77,7 +77,7 @@ export function CustomizeDialog({ target, onClose, ...rest }: Props) {
       isDismissable={!rest.busy}
       size={target.source === 'group' || target.source === 'weak' ? 'xl' : 'lg'}
       title={t('customize.title')}
-      titleAside={<span className="rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(SOURCE_NAME[target.source] as 'hero.title')}</span>}
+      titleAside={<span className="rounded-wm-key bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(SOURCE_NAME[target.source] as 'hero.title')}</span>}
       closeLabel={tc('close')}
     >
       <CustomizeForm target={target} {...rest} />
@@ -218,7 +218,7 @@ function CustomizeForm({
                 ...STAGE_KEYS.map((key, level) => ({
                   id: String(level),
                   label: tc('stageOption', { stage: tStage(key), count: group.cells.find((c) => c.level === level)?.total ?? 0 }),
-                  icon: <span aria-hidden className={cn('size-2.5 rounded-wm-xs', STAGE_DOT[level])} />,
+                  icon: <span aria-hidden className={cn('size-2.5 rounded-wm-key', STAGE_DOT[level])} />,
                 })),
               ]}
               value={stage === null ? 'all' : String(stage)}
@@ -231,7 +231,7 @@ function CustomizeForm({
           </div>
         )}
       </div>
-      <RadioGroup aria-label={t('customize.group')} value={groupId} onChange={setGroupId} className="flex max-h-72 flex-col gap-0.5 overflow-y-auto rounded-wm-lg bg-wm-bg p-1">
+      <RadioGroup aria-label={t('customize.group')} value={groupId} onChange={setGroupId} className="flex max-h-72 flex-col gap-0.5 overflow-y-auto rounded-wm-row bg-wm-bg p-1">
         {source === 'weak' && <GroupRow id="all" label={t('customize.allGroups', { count: weakGroups.data?.total ?? 0 })} name={t('customize.allGroups', { count: weakGroups.data?.total ?? 0 })} />}
         {source === 'weak'
           ? (weakGroups.data?.items ?? []).map((g) => (
@@ -267,7 +267,7 @@ function CustomizeForm({
         {wordsColumn}
         <section className="flex min-w-0 flex-1 flex-col gap-3">
           <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('questions')}</h3>
-          <div className="flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg p-1">
+          <div className="flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1">
             <TypeRow label={t('types.mcq_definition')} on={mcq} onChange={setMcq} />
             <TypeRow label={t('types.true_false_definition')} on={trueFalse} onChange={setTrueFalse} />
             {/* Owner 10/11/2026: a row's own choice stays in place when the row is off, only locked. */}
@@ -312,7 +312,7 @@ function CustomizeForm({
             />
           </div>
           {aiCaption}
-          <div className={cn('flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg p-1 transition-opacity duration-300 ease-out-strong', ai === 0 && 'opacity-45')}>
+          <div className={cn('flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1 transition-opacity duration-300 ease-out-strong', ai === 0 && 'opacity-45')}>
             <TypeRow label={t('types.cloze')} on={aiCloze} onChange={setAiCloze} isDisabled={ai === 0} />
             <TypeRow label={t('types.mcq_sentence')} on={aiMc} onChange={setAiMc} isDisabled={ai === 0}>
               <Segmented<McPick>
@@ -405,9 +405,9 @@ function GroupRow({ id, label, name, count, tone, isDisabled }: { id: string; la
       value={id}
       aria-label={label}
       isDisabled={isDisabled}
-      className="group flex min-h-11 cursor-pointer items-center gap-2.5 rounded-wm-md px-3 font-wm-sans text-wm-small text-wm-ink outline-none data-disabled:cursor-default data-disabled:opacity-45 data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:font-semibold data-selected:shadow-wm-row md:min-h-9"
+      className="group flex min-h-11 cursor-pointer items-center gap-2.5 rounded-wm-control px-3 font-wm-sans text-wm-small text-wm-ink outline-none data-disabled:cursor-default data-disabled:opacity-45 data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:font-semibold data-selected:shadow-wm-row md:min-h-9"
     >
-      {tone ? <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', tone.bg)} /> : <span aria-hidden className="size-2.5 shrink-0" />}
+      {tone ? <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-key', tone.bg)} /> : <span aria-hidden className="size-2.5 shrink-0" />}
       <span className="min-w-0 flex-1 truncate">{name}</span>
       {count !== undefined && <span className="text-wm-meta text-wm-muted">{count}</span>}
       <Check aria-hidden className="size-4 shrink-0 text-wm-accent opacity-0 group-data-selected:opacity-100" />
@@ -424,7 +424,7 @@ function TypeRow({ label, on, onChange, isDisabled, help, children }: {
   return (
     <div
       className={cn(
-        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-md bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
+        'flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-wm-row bg-wm-surface px-3 py-1.5 transition duration-200 ease-out-strong',
         on && !isDisabled ? 'shadow-wm-row' : 'shadow-none',
       )}
     >
@@ -455,7 +455,7 @@ function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { 
       : t('quotaRefillDate', { date: format.date(problem.resetsAt, 'dayMonth') });
   }
   return (
-    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-lg bg-wm-fail-soft p-4 motion-safe:animate-feedback-in">
+    <div role="alert" className="flex flex-col items-start gap-1.5 rounded-wm-row bg-wm-fail-soft p-4 motion-safe:animate-feedback-in">
       {problem.kind === 'quota' ? (
         <>
           <p className="font-wm-sans text-wm-base-strong text-wm-fail">{t('quotaTitle')}</p>

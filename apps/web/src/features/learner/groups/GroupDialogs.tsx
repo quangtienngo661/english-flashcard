@@ -183,7 +183,7 @@ function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo
     >
       {/* Figma "Xác nhận xóa" (121:4597): what is lost in a fail-soft block, the danger button, keep as secondary. */}
       {removable > 0 ? (
-        <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+        <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
           <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
           <span>{t.rich('deleteBody', { count: removable, b: (chunks) => <strong>{chunks}</strong> })}</span>
         </p>

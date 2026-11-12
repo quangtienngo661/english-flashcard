@@ -46,7 +46,7 @@ export function TransactionsPage() {
             <h2 id={`transactions-${month.key}`} className="text-wm-meta font-medium text-wm-muted">
               {format.date(month.items[0].occurred_at, 'monthLabel')}
             </h2>
-            <ul className="rounded-wm-xl border border-wm-line bg-wm-surface px-4 py-1 shadow-wm-card md:px-3 md:py-1.5">
+            <ul className="rounded-wm-card border border-wm-line bg-wm-surface px-4 py-1 shadow-wm-card md:px-3 md:py-1.5">
               {month.items.map((item) => (
                 <TransactionRow key={item.id} item={item} onOpen={() => setOpen(item)} />
               ))}

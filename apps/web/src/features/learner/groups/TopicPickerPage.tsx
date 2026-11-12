@@ -52,7 +52,7 @@ export function TopicPickerPage() {
       {valid ? (
         <Picker code={code} level={level} groupId={groupId} />
       ) : (
-        <h1 className="rounded-wm-xl bg-wm-surface p-6 font-wm-display text-wm-card-title text-wm-ink shadow-wm-card">{t('notFound')}</h1>
+        <h1 className="rounded-wm-card bg-wm-surface p-6 font-wm-display text-wm-card-title text-wm-ink shadow-wm-card">{t('notFound')}</h1>
       )}
     </>
   );
@@ -159,7 +159,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
         <span className="sr-only">{tCommon('loading')}</span>
         <Skeleton className="h-11 w-64" />
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-14 w-full rounded-wm-md" />
+          <Skeleton key={i} className="h-14 w-full rounded-wm-row" />
         ))}
       </div>
     );
@@ -185,7 +185,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
       {senses.length === 0 ? (
         <p className="text-wm-base text-wm-muted">{t('none')}</p>
       ) : (
-        <section className="rounded-wm-xl border border-wm-line bg-wm-surface p-2 shadow-wm-card">
+        <section className="rounded-wm-card border border-wm-line bg-wm-surface p-2 shadow-wm-card">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Checkbox isSelected={allTicked} onChange={(on) => setSelected(on ? new Set(unlearned.map((s) => s.sense_id)) : new Set())}>
               <span className="text-wm-button">{t('selectAll', { count: unlearned.length })}</span>
@@ -201,12 +201,12 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
                   key={s.sense_id}
                   aria-label={s.lemma}
                   className={cn(
-                    'flex flex-wrap items-center gap-x-4 gap-y-1 rounded-wm-lg border-t border-wm-line px-4 py-3',
+                    'flex flex-wrap items-center gap-x-4 gap-y-1 rounded-wm-row border-t border-wm-line px-4 py-3',
                     selected.has(s.sense_id) && 'bg-wm-accent/5',
                   )}
                 >
                   {decks ? (
-                    <span aria-hidden className="size-5 shrink-0 rounded-wm-sm border-2 border-wm-ghost opacity-40" />
+                    <span aria-hidden className="size-5 shrink-0 rounded-wm-key border-2 border-wm-ghost opacity-40" />
                   ) : (
                     <Checkbox isSelected={selected.has(s.sense_id)} onChange={(on) => toggle(s.sense_id, on)}>
                       <span className="sr-only">{t('select', { word: s.lemma })}</span>
@@ -219,7 +219,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
                   </span>
                   {decks && (
                     <span className="flex w-full min-w-0 items-center gap-2 pl-9 text-wm-caption text-wm-muted md:w-auto md:max-w-1/2 md:pl-0">
-                      {first && <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', groupTone(first.id, first.total).bg)} />}
+                      {first && <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', groupTone(first.id, first.total).bg)} />}
                       <span className="min-w-0 wrap-anywhere">{deckName(decks) ? t('learning', { groups: deckName(decks) }) : t('learningNoGroup')}</span>
                     </span>
                   )}

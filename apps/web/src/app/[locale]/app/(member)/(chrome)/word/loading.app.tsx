@@ -17,9 +17,9 @@ export default function Loading() {
           <Skeleton className="h-7 w-72 max-w-full" />
           <Skeleton className="h-7 w-64 max-w-full" />
           <Skeleton className="h-11 w-full" />
-          <Skeleton className="h-72 rounded-wm-xl" />
+          <Skeleton className="h-72 rounded-wm-card" />
         </div>
-        <Skeleton className="h-64 rounded-wm-xl lg:w-80 lg:shrink-0" />
+        <Skeleton className="h-64 rounded-wm-card lg:w-80 lg:shrink-0" />
       </div>
     </div>
   );

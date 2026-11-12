@@ -42,7 +42,7 @@ export function ChoiceCard({ value, title, note, trailing, isDisabled }: CardPro
       value={value}
       isDisabled={isDisabled}
       // raw-ok: Figma draws the period cards with a 1.5 px border, between the 1 and 2 px utilities
-      className="group flex cursor-pointer items-center gap-3 rounded-wm-lg border-[1.5px] border-wm-line px-4 py-3 outline-none transition duration-200 ease-out-strong data-selected:border-wm-accent data-selected:bg-wm-accent/4 data-focus-visible:outline-3 data-focus-visible:outline-offset-2 data-focus-visible:outline-wm-accent data-disabled:cursor-not-allowed data-disabled:opacity-50"
+      className="group flex cursor-pointer items-center gap-3 rounded-wm-row border-[1.5px] border-wm-line px-4 py-3 outline-none transition duration-200 ease-out-strong data-selected:border-wm-accent data-selected:bg-wm-accent/4 data-focus-visible:outline-3 data-focus-visible:outline-offset-2 data-focus-visible:outline-wm-accent data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
       <span
         aria-hidden

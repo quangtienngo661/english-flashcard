@@ -78,7 +78,7 @@ export function LookupPage() {
       </div>
       {bulk && <BulkAddSheet filter={params} onClose={() => setBulk(false)} />}
       {list.isPending ? (
-        <Skeleton className="h-96 w-full rounded-wm-md" />
+        <Skeleton className="h-96 w-full rounded-wm-row" />
       ) : list.isError ? (
         <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} />
       ) : !selected ? (
@@ -143,7 +143,7 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
   }
   return (
     <form role="search" onSubmit={submit}>
-      <label className="flex h-11 items-center gap-2.5 rounded-wm-lg border-2 border-wm-accent bg-wm-surface pl-4 pr-3 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-12">
+      <label className="flex h-11 items-center gap-2.5 rounded-wm-control border-2 border-wm-accent bg-wm-surface pl-4 pr-3 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-12">
         <Search aria-hidden className="size-5 shrink-0 text-wm-accent" />
         <span className="sr-only">{t('searchLabel')}</span>
         <input
@@ -155,7 +155,7 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
           placeholder={t('searchLabel')}
           className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted"
         />
-        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 text-wm-meta font-bold text-wm-ink">
+        <kbd aria-hidden className="shrink-0 rounded-wm-key border border-wm-line bg-wm-bg px-1.5 text-wm-meta font-bold text-wm-ink">
           /
         </kbd>
       </label>

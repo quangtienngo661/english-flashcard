@@ -14,7 +14,7 @@ export function RoundPrompt({ session, onContinue, busy }: { session: PracticeSe
   const left = Math.max(0, session.target_count - session.asked);
   return (
     <div className="flex flex-col gap-4">
-      <section className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-5 shadow-wm-card md:p-6">
+      <section className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:p-6">
         <span className="w-fit rounded-full bg-wm-accent px-2.5 py-0.5 text-wm-label text-wm-on-accent">{t('chip', { round: session.round })}</span>
         <h1 className="font-wm-display text-wm-card-title text-wm-ink">{t('title', { words: session.words })}</h1>
         <p className="text-wm-small text-wm-muted">{t('body', { target: session.target_count, words: session.words, left })}</p>

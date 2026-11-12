@@ -10,6 +10,6 @@ export const BUTTON_VARIANT: Record<ButtonVariant, string> = {
 };
 
 export const BUTTON_BASE =
-  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-wm-button px-5 font-wm-sans text-wm-button outline-none ' +
+  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-wm-control px-5 font-wm-sans text-wm-button outline-none ' +
   'transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 ' +
   'focus-visible:outline-wm-accent motion-safe:active:scale-97 motion-safe:data-pressed:scale-97 motion-safe:data-pressed:duration-150';

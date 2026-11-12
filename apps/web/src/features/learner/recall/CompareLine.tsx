@@ -41,7 +41,7 @@ export function CompareLine({ typed, answer }: { typed: string; answer: string }
   const t = useTranslations('App.recall.compare');
   const letters = compareLetters(typed, answer);
   return (
-    <div role="group" aria-label={t('label', { typed, answer })} className="flex flex-col gap-1.5 rounded-wm-lg bg-wm-surface px-4 py-3">
+    <div role="group" aria-label={t('label', { typed, answer })} className="flex flex-col gap-1.5 rounded-wm-row bg-wm-surface px-4 py-3">
       <Row label={t('typed')} letters={letters.typed} />
       <Row label={t('answer')} letters={letters.answer} />
     </div>
@@ -58,8 +58,8 @@ function Row({ label, letters }: { label: string; letters: Letter[] }) {
             key={i}
             data-mark={letter.mark}
             className={cn(
-              letter.mark === 'extra' && 'rounded-wm-xs bg-wm-fail-soft text-wm-fail line-through',
-              letter.mark === 'missing' && 'rounded-wm-xs bg-wm-pass-soft text-wm-pass underline decoration-2 underline-offset-4',
+              letter.mark === 'extra' && 'rounded-wm-key bg-wm-fail-soft text-wm-fail line-through',
+              letter.mark === 'missing' && 'rounded-wm-key bg-wm-pass-soft text-wm-pass underline decoration-2 underline-offset-4',
             )}
           >
             {letter.char}

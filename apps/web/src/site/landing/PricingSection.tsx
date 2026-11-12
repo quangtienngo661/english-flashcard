@@ -38,7 +38,7 @@ export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['pl
 
 function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: string }) {
   return (
-    <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-2xl border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 xl:w-90">
+    <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 xl:w-90">
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{copy.free}</h3>
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className={cn(FREE_PRICE, 'text-wm-ink')}>{formatVnd(0)}</span>
@@ -61,7 +61,7 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
       <Sweep />
       <article
         data-pro-card=""
-        className="relative isolate flex flex-1 flex-col gap-5 overflow-hidden rounded-wm-2xl border-2 border-wm-accent bg-wm-surface p-6 shadow-wm-pro-glow md:p-8"
+        className="relative isolate flex flex-1 flex-col gap-5 overflow-hidden rounded-wm-card border-2 border-wm-accent bg-wm-surface p-6 shadow-wm-pro-glow md:p-8"
       >
         <Glow tone="accent" className="-top-30.5 left-29.5 h-65 w-140" />
         <div className="flex items-center gap-2.5">
@@ -81,7 +81,7 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
           ))}
         </ul>
 
-        <ul data-ai-block="" className="flex flex-col gap-3 rounded-wm-lg border border-wm-accent bg-linear-to-r from-wm-accent/9 to-wm-mark/20 px-4.5 py-4">
+        <ul data-ai-block="" className="flex flex-col gap-3 rounded-wm-row border border-wm-accent bg-linear-to-r from-wm-accent/9 to-wm-mark/20 px-4.5 py-4">
           {[aiTitle, ...aiRows].map((row, i) => {
             const Icon = AI_ICONS[i];
             return (
@@ -116,7 +116,7 @@ function Period({ copy, prices, months, best }: { copy: LandingCopy['plans']; pr
   return (
     <li
       className={cn(
-        'relative flex items-center justify-between gap-3 rounded-wm-lg p-4 md:flex-col md:items-start md:justify-start md:gap-1.5',
+        'relative flex items-center justify-between gap-3 rounded-wm-row p-4 md:flex-col md:items-start md:justify-start md:gap-1.5',
         best ? 'border-2 border-wm-accent bg-wm-accent-soft shadow-wm-btn' : 'border border-wm-line bg-wm-bg',
       )}
     >

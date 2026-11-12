@@ -16,7 +16,7 @@ const TONE: Record<TextButtonTone, string> = {
 };
 
 export const TEXT_BUTTON_BASE =
-  'inline-flex min-h-11 items-center gap-1.5 rounded-wm-sm font-wm-sans text-wm-small-strong outline-none md:min-h-0 ' +
+  'inline-flex min-h-11 items-center gap-1.5 rounded-wm-control font-wm-sans text-wm-small-strong outline-none md:min-h-0 ' +
   'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 

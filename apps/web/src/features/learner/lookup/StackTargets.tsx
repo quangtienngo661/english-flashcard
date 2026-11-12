@@ -76,7 +76,7 @@ export function StackTargets({ groups, senseId, lemma, inGroups }: {
                 aria-label={t('addTo', { group: group.name })}
                 disabled={has || !senseId || inGroups === null}
                 onClick={() => void add(group)}
-                className="lk-stack rounded-wm-md text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-wm-accent"
+                className="lk-stack rounded-wm-row text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-wm-accent"
               >
                 <GroupStack group={group} size="lookup" depth={1} />
               </button>

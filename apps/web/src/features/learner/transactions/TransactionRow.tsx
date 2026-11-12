@@ -63,7 +63,7 @@ export function TransactionRow({ item, onOpen }: { item: Transaction; onOpen: ()
       <Button
         aria-label={label}
         onPress={onOpen}
-        className="flex w-full cursor-pointer items-center gap-3 px-1 py-3 text-left outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:gap-4 md:rounded-wm-lg md:px-3 md:py-4"
+        className="flex w-full cursor-pointer items-center gap-3 px-1 py-3 text-left outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:gap-4 md:rounded-wm-row md:px-3 md:py-4"
       >
         <span aria-hidden className="hidden w-25 shrink-0 text-wm-meta text-wm-muted md:block">{text.date}</span>
         <span aria-hidden className="flex min-w-0 flex-1 flex-col gap-0.5">

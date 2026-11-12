@@ -38,9 +38,9 @@ export function StageBar({
             // raw-ok: the segment width is data (its share of the whole bar)
             style={{ flexGrow: s.size, flexBasis: 0 }}
           >
-            <span className="relative block h-2.5 overflow-hidden rounded-wm-sm bg-wm-ink/14">
+            <span className="relative block h-2.5 overflow-hidden rounded-wm-pill bg-wm-ink/14">
               <span
-                className={cn('absolute inset-y-0 left-0 block rounded-wm-sm', s.tone)}
+                className={cn('absolute inset-y-0 left-0 block rounded-wm-pill', s.tone)}
                 // raw-ok: the fill width is data
                 style={{ width: `${s.size > 0 ? Math.min(100, (s.fill / s.size) * 100) : 0}%` }}
               />

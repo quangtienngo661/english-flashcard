@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 
 /** A placeholder block while content loads. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn('rounded-wm-md bg-wm-line motion-safe:animate-pulse', className)} />;
+  return <div aria-hidden className={cn('rounded-wm-row bg-wm-line motion-safe:animate-pulse', className)} />;
 }
 
 /** A soft navigation inside the chrome (design §5.5): a title block and three card blocks, announced as "Đang tải…". */
@@ -15,9 +15,9 @@ export function SkeletonBlocks() {
     <div role="status" className="flex flex-col gap-4">
       <span className="sr-only">{t('loading')}</span>
       <Skeleton className="h-9 w-56" />
-      <Skeleton className="h-36 w-full rounded-wm-xl" />
-      <Skeleton className="h-36 w-full rounded-wm-xl" />
-      <Skeleton className="h-36 w-full rounded-wm-xl" />
+      <Skeleton className="h-36 w-full rounded-wm-card" />
+      <Skeleton className="h-36 w-full rounded-wm-card" />
+      <Skeleton className="h-36 w-full rounded-wm-card" />
     </div>
   );
 }
@@ -34,9 +34,9 @@ export function SkeletonPage({ shape }: { shape: 'chrome' | 'bare' }) {
       {shape === 'chrome' && <Skeleton className="h-16 rounded-none md:h-18" />}
       <div className="mx-auto flex w-full max-w-320 flex-col gap-4 px-4 pt-6 md:px-8">
         <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-36 w-full rounded-wm-xl" />
-        <Skeleton className="h-36 w-full rounded-wm-xl" />
-        <Skeleton className="h-36 w-full rounded-wm-xl" />
+        <Skeleton className="h-36 w-full rounded-wm-card" />
+        <Skeleton className="h-36 w-full rounded-wm-card" />
+        <Skeleton className="h-36 w-full rounded-wm-card" />
       </div>
       {shape === 'chrome' && <Skeleton className="fixed inset-x-0 bottom-0 h-16 rounded-none md:hidden" />}
     </div>

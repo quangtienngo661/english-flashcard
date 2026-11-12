@@ -20,7 +20,7 @@ export function QuickAddBox() {
   }
 
   return (
-    <section aria-labelledby="quick-add" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+    <section aria-labelledby="quick-add" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
       <h2 id="quick-add" className="font-wm-display text-xl font-bold text-wm-ink">
         {t('quickTitle')}
       </h2>

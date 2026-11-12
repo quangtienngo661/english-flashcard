@@ -33,7 +33,7 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
           className="flex items-center gap-2 rounded-wm-pill border border-wm-line bg-wm-surface py-1.5 pr-3.5 pl-1.5 shadow-wm-soft"
         >
           {/* "Chủ đề (chạy vòng)": 20 px rows behind a window one row high. */}
-          <span data-topic-ticker="" className="h-5 w-21 shrink-0 overflow-hidden rounded-wm-md bg-wm-accent md:w-22.25">
+          <span data-topic-ticker="" className="h-5 w-21 shrink-0 overflow-hidden rounded-wm-control bg-wm-accent md:w-22.25">
             <TopicTicker topics={copy.topics} />
           </span>
           <span className="font-wm-sans text-wm-caption text-wm-muted md:text-wm-small">{copy.topicLabel}</span>
@@ -72,7 +72,7 @@ function Stage({ copy }: { copy: LandingCopy['stage'] }) {
   return (
     <Reveal trigger="load" delay={880} blur={24} className="w-full max-w-250">
       <Parallax className="relative pt-23 xl:pt-10">
-        <div className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-stage lg:flex-row lg:gap-4.5 lg:p-5">
+        <div className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-3.5 shadow-wm-stage lg:flex-row lg:gap-4.5 lg:p-5">
           <WordCard copy={copy} />
           <PracticeCard copy={copy} />
         </div>
@@ -85,7 +85,7 @@ function Stage({ copy }: { copy: LandingCopy['stage'] }) {
 
 function WordCard({ copy }: { copy: LandingCopy['stage'] }) {
   return (
-    <div className="flex flex-col gap-3 rounded-wm-lg bg-wm-bg p-4.5 text-left lg:w-107.5 lg:shrink-0">
+    <div className="flex flex-col gap-3 rounded-wm-row bg-wm-bg p-4.5 text-left lg:w-107.5 lg:shrink-0">
       <p className="font-wm-sans text-wm-label text-wm-muted">{copy.cardLabel}</p>
       <p className="font-wm-display text-wm-lemma text-wm-ink">{copy.lemma}</p>
       <p className="flex items-center gap-2.5 font-wm-sans text-wm-base text-wm-muted">
@@ -97,7 +97,7 @@ function WordCard({ copy }: { copy: LandingCopy['stage'] }) {
         <span className="text-wm-muted md:hidden"> · {copy.meaning}</span>
       </p>
       <p className="hidden font-wm-sans text-wm-button font-normal text-wm-muted md:block">{copy.meaning}</p>
-      <p className="rounded-wm-md bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
+      <p className="rounded-wm-row bg-wm-surface p-3 font-wm-sans text-wm-base text-wm-ink">
         <Marked sentence={copy.example} target={copy.target} />
       </p>
     </div>
@@ -106,7 +106,7 @@ function WordCard({ copy }: { copy: LandingCopy['stage'] }) {
 
 function PracticeCard({ copy }: { copy: LandingCopy['stage'] }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-wm-lg bg-wm-bg p-4.5 text-left">
+    <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-wm-row bg-wm-bg p-4.5 text-left">
       <p className="flex justify-between gap-3 font-wm-sans text-wm-caption text-wm-muted">
         <span>{copy.practiceTitle}</span>
         <span>{copy.practiceCount}</span>
@@ -130,11 +130,11 @@ function PracticeCard({ copy }: { copy: LandingCopy['stage'] }) {
 
 /** "vừa thêm" `5:135` (phone 200 wide, three words and "+15 từ"; desktop 230 wide, four words and "+14 từ"). */
 function AddedCard({ copy }: { copy: LandingCopy['stage'] }) {
-  const chip = 'rounded-wm-sm px-2 py-0.5 font-wm-sans text-wm-caption';
+  const chip = 'rounded-wm-key px-2 py-0.5 font-wm-sans text-wm-caption';
   return (
     <div
       data-float="added"
-      className="absolute -top-2.75 -left-1 flex w-50 -rotate-5 flex-col gap-2 rounded-wm-lg border border-wm-line bg-wm-surface px-4 py-3.5 text-left shadow-wm-stage backdrop-blur-wm-sm xl:-top-10 xl:-left-27.5 xl:w-57.5"
+      className="absolute -top-2.75 -left-1 flex w-50 -rotate-5 flex-col gap-2 rounded-wm-card border border-wm-line bg-wm-surface px-4 py-3.5 text-left shadow-wm-stage backdrop-blur-wm-sm xl:-top-10 xl:-left-27.5 xl:w-57.5"
     >
       <p className="flex justify-between gap-2 font-wm-sans text-wm-label text-wm-muted">
         <span>{copy.addedTitle}</span>
@@ -158,7 +158,7 @@ function BinCard({ copy }: { copy: LandingCopy['stage'] }) {
   return (
     <div
       data-float="bin"
-      className="absolute top-72 left-198.25 hidden w-62.5 rotate-4 flex-col gap-2 rounded-wm-lg border border-wm-line bg-wm-surface px-4 py-3.5 text-left shadow-wm-stage xl:flex"
+      className="absolute top-72 left-198.25 hidden w-62.5 rotate-4 flex-col gap-2 rounded-wm-card border border-wm-line bg-wm-surface px-4 py-3.5 text-left shadow-wm-stage xl:flex"
     >
       <p className="flex justify-between gap-2 font-wm-sans text-wm-label">
         <span className="text-wm-ink">{copy.binWord}</span>

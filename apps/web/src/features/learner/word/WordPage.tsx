@@ -55,7 +55,7 @@ export function WordPage() {
         <div role="status" className="flex flex-col gap-4">
           <span className="sr-only">{tc('loading')}</span>
           <Skeleton className="h-14 w-60 max-w-full md:h-20" />
-          <Skeleton className="h-60 rounded-wm-xl" />
+          <Skeleton className="h-60 rounded-wm-card" />
         </div>
       )}
     </>
@@ -146,7 +146,7 @@ function WordHead({ data }: { data: WordPageData }) {
   const aiSuggested = senses.some((s) => s.ai_suggested);
   const bases = [...new Set(senses.flatMap((s) => (s.form_of ? [s.form_of.lemma] : [])))];
   const onlyForms = senses.every((s) => s.form_of);
-  const chip = 'rounded-wm-xs bg-wm-accent-soft px-1.5 py-0.5 text-wm-meta text-wm-accent';
+  const chip = 'rounded-wm-key bg-wm-accent-soft px-1.5 py-0.5 text-wm-meta text-wm-accent';
 
   return (
     <header className="flex flex-col gap-3">
@@ -155,7 +155,7 @@ function WordHead({ data }: { data: WordPageData }) {
         {own && <span className={chip}>{t('mine.label')}</span>}
         {aiSuggested && <span className={chip}>{t('mine.aiLabel')}</span>}
       </div>
-      {aiSuggested && <p className="rounded-wm-md bg-wm-accent-soft px-3 py-2 font-wm-sans text-wm-small text-wm-ink">{t('mine.aiSource')}</p>}
+      {aiSuggested && <p className="rounded-wm-row bg-wm-accent-soft px-3 py-2 font-wm-sans text-wm-small text-wm-ink">{t('mine.aiSource')}</p>}
       {own && (
         <div className="flex flex-wrap gap-x-5">
           <TextButton onPress={() => setDialog('edit')}>{t('mine.edit')}</TextButton>
@@ -265,7 +265,7 @@ function MeaningsOfPos({ pos, count, children }: { pos: string; count: number; c
         </h2>
         <span className="text-wm-meta text-wm-muted">{t('senses', { count })}</span>
       </div>
-      <div className="flex flex-col divide-y divide-wm-line rounded-wm-xl border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
+      <div className="flex flex-col divide-y divide-wm-line rounded-wm-card border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
         {children}
       </div>
     </section>
@@ -302,7 +302,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
           </TextButton>
         )}
       </div>
-      <div className="rounded-wm-xl border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
+      <div className="rounded-wm-card border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
         {rows.length > 0 ? (
           <ul className="flex flex-col divide-y divide-wm-line">
             {rows.map(({ sentence, sense, n }) => (
@@ -358,12 +358,12 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
     <section
       id="cung-chu-de"
       aria-label={t('sameTopic', { topic: topic.name })}
-      className="flex scroll-mt-24 flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6"
+      className="flex scroll-mt-24 flex-col gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6"
     >
       <div className="flex flex-col gap-2">
         <p className="text-wm-meta text-wm-muted">{t('sameTopicLabel')}</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="rounded-wm-md bg-wm-accent-soft px-3 py-0.5 font-wm-display text-wm-word text-wm-accent">{topic.name}</span>
+          <span className="rounded-wm-control bg-wm-accent-soft px-3 py-0.5 font-wm-display text-wm-word text-wm-accent">{topic.name}</span>
           {range && <span className="text-wm-meta text-wm-muted">{t('levelRange', { range })}</span>}
         </div>
       </div>
@@ -373,7 +373,7 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
             <li key={w.lemma} className="min-w-0">
               <Link
                 href={wordHref(locale, w.lemma)}
-                className="flex items-center justify-between gap-2 rounded-wm-md bg-wm-bg px-3 py-2 outline-none hover:bg-wm-accent-soft focus-visible:outline-3 focus-visible:outline-wm-accent"
+                className="flex items-center justify-between gap-2 rounded-wm-row bg-wm-bg px-3 py-2 outline-none hover:bg-wm-accent-soft focus-visible:outline-3 focus-visible:outline-wm-accent"
               >
                 <span className="min-w-0 truncate font-wm-sans text-wm-small-strong text-wm-ink">{w.lemma}</span>
                 {w.level && (

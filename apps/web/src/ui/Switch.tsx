@@ -32,7 +32,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
           aria-checked={false}
           aria-disabled
           onClick={() => setShowLocked(true)}
-          className="flex w-full items-center justify-between gap-4 rounded-wm-sm text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+          className="flex w-full items-center justify-between gap-4 rounded-wm-control text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
         >
           <span className={TEXT}>
             <span className="flex items-center gap-2 font-wm-sans text-wm-base-strong text-wm-ink">

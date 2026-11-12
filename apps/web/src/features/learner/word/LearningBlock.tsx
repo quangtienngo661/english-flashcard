@@ -22,7 +22,7 @@ export function StageTag({ level, group }: { level: number; group?: string }) {
   const stage = level === 0 ? tStage('s0') : t('stageTag', { stage: tStage(STAGE_KEYS[level] ?? 's30') });
   return (
     <span className="inline-flex items-center gap-1.5 font-wm-sans text-wm-small text-wm-ink">
-      <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_FILL[level] ?? STAGE_FILL[5])} />
+      <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', STAGE_FILL[level] ?? STAGE_FILL[5])} />
       {group ? `${stage} · ${group}` : stage}
     </span>
   );
@@ -43,7 +43,7 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
   const stage = (level: number) => tStage(STAGE_KEYS[level] ?? 's30');
 
   return (
-    <section aria-labelledby="dang-hoc" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+    <section aria-labelledby="dang-hoc" className="flex flex-col gap-2 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
       <h2 id="dang-hoc" className="text-wm-meta text-wm-muted">
         {t('learningTitle')}
       </h2>

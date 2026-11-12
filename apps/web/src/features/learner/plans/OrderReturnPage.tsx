@@ -135,7 +135,7 @@ export function OrderReturnPage() {
             </p>
           </div>
         </div>
-        <dl className="flex flex-col rounded-wm-lg bg-wm-bg px-4 py-1">
+        <dl className="flex flex-col rounded-wm-row bg-wm-bg px-4 py-1">
           <Row label={t('rowPlan')} value={t('planValue', { period: tPlans(`periods.${String(paid.period_months) as '1' | '3' | '12'}`) })} />
           <Row label={t('rowAmount')} value={format.money(paid.amount, 'VND')} />
           <Row label={t('rowCode')} value={paid.description} />

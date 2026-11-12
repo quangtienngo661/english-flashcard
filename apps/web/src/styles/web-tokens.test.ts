@@ -54,15 +54,16 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .flatMap((prefix) => [...tokens(web, prefix)].map(([name, value]) => [`${prefix}-${name}`, value]))
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
-    expect(tokens(web, 'radius-wm').size).toBe(9);
+    expect(tokens(web, 'radius-wm').size).toBe(6);
     expect(tokens(web, 'shadow-wm').size).toBe(14);
   });
 
   it('pins the values the design names', () => {
     expect(light.get('accent')).toBe('#1e3a8a');
     expect(dark.get('accent')).toBe('#8da2ff');
-    expect(tokens(web, 'radius-wm').get('button')).toBe('0.625rem');
-    expect(tokens(web, 'radius-wm').get('xs')).toBe('0.1875rem');
+    // Radius scale C by element role (P.3; mockup L81-82): inner is always smaller than its container.
+    expect(Object.fromEntries(tokens(web, 'radius-wm')))
+      .toEqual({ key: '0.25rem', control: '0.5rem', row: '0.625rem', card: '0.875rem', dialog: '1rem', pill: '62.4375rem' });
     expect(tokens(web, 'text-wm').get('base')).toBe('1rem');
     // Labels, counts, keycaps and IPA (P.2): Noto Sans 12 / 1.4, weight 500; the mono token is gone.
     const text = tokens(web, 'text-wm');

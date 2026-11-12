@@ -109,7 +109,7 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
       )}
       {failure?.kind === 'locked' && <LockedFeature />}
       {failure && failure.kind !== 'locked' && (
-        <div role="alert" className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-bg p-3">
+        <div role="alert" className="flex flex-col items-start gap-2 rounded-wm-row bg-wm-bg p-3">
           <p className="font-wm-sans text-wm-small text-wm-ink">
             {failure.kind === 'failed' ? t('failed') : failure.kind === 'quota' ? [t('quota'), refill].filter(Boolean).join(' ') : failure.text}
           </p>

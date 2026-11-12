@@ -43,7 +43,7 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
             <AriaButton
               aria-label={t('detail.copy')}
               onPress={copy}
-              className="flex size-11 shrink-0 items-center justify-center rounded-wm-sm text-wm-muted outline-none hover:bg-wm-bg hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent md:size-8"
+              className="flex size-11 shrink-0 items-center justify-center rounded-wm-control text-wm-muted outline-none hover:bg-wm-bg hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent md:size-8"
             >
               <Copy aria-hidden className="size-4" />
             </AriaButton>

@@ -47,7 +47,7 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
   else if (notice.reason === 'quota-exhausted') text = [t('fallbackQuota'), refill(notice.resetsAt)].filter(Boolean).join(' ');
   else text = t('fallback');
   return (
-    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-wm-lg border border-wm-accent bg-wm-accent-soft px-4 py-3">
+    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-wm-row border border-wm-accent bg-wm-accent-soft px-4 py-3">
       <p className="text-wm-small text-wm-ink">
         {text}
         {lemma && (
@@ -61,7 +61,7 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
         type="button"
         aria-label={t('dismiss')}
         onClick={onDismiss}
-        className="shrink-0 rounded-sm p-0.5 text-wm-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+        className="shrink-0 rounded-wm-control p-0.5 text-wm-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <X aria-hidden className="size-4" />
       </button>

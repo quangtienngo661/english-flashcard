@@ -18,7 +18,7 @@ export const DOC_H3 = 'font-wm-display text-[1.125rem]/[1.3] font-bold text-wm-i
 export const DOC_LIST = 'flex flex-col gap-1.5 pl-[1.5em]';
 
 /** Body links: SemiBold accent, underlined (design §3.3: a link in a sentence is underlined). */
-export const DOC_LINK = 'rounded-wm-xs font-semibold text-wm-accent underline underline-offset-4 outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
+export const DOC_LINK = 'rounded-wm-key font-semibold text-wm-accent underline underline-offset-4 outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
 
 // raw-ok: the callout title is Bricolage Bold 22 / 1.3, −1 % (`14:350`), a size no token has
 export const CALLOUT_TITLE = 'font-wm-display text-[1.375rem]/[1.3] font-bold tracking-[-0.01em] text-wm-ink';

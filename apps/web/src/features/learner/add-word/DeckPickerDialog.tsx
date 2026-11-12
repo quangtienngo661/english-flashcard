@@ -110,7 +110,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
         </>
       }
     >
-      <p className="w-fit break-words rounded-wm-xs bg-wm-mark px-1.5 py-0.5 font-wm-sans text-wm-small text-wm-mark-ink">
+      <p className="w-fit break-words rounded-wm-key bg-wm-mark px-1.5 py-0.5 font-wm-sans text-wm-small text-wm-mark-ink">
         <b className="font-semibold">{sense.lemma}</b>, {sense.pos}: {sense.meaning.text}
       </p>
       <GroupPicker groups={groups} value={deck} onChange={setChosen} onCreate={(name) => void onCreate(name)} onUnmatched={setUnmatched} recentId={lastGroup} />

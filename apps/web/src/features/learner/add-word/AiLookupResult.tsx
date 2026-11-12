@@ -29,7 +29,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
           <h3 className="break-words font-wm-display text-wm-word text-wm-ink">{t('title', { word: text })}</h3>
           {pool && <p className="text-wm-meta text-wm-muted">{t('used', { remaining: pool.remaining })}</p>}
         </div>
-        <div className="flex flex-col overflow-hidden rounded-wm-lg border border-wm-line bg-wm-surface shadow-wm-card">
+        <div className="flex flex-col overflow-hidden rounded-wm-card border border-wm-line bg-wm-surface shadow-wm-card">
           {result.catalog_senses.length > 0 && (
             <section aria-label={t('catalog')} className="flex flex-col">
               {result.catalog_senses.map((sense, i) => (
@@ -75,7 +75,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
           </p>
           <div
             // raw-ok: Figma tilts the desktop preview card 1.2°; phones keep it straight
-            className="flex flex-col gap-3 rounded-wm-lg border border-wm-line bg-wm-surface p-5 shadow-wm-card md:rotate-[1.2deg] md:p-6"
+            className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:rotate-[1.2deg] md:p-6"
           >
             <div className="flex items-center gap-2">
               <span className="text-wm-meta text-wm-muted">{s.part_of_speech}</span>
@@ -106,7 +106,7 @@ function Badge({ ai = false, children }: { ai?: boolean; children: ReactNode }) 
   return (
     <span
       className={cn(
-        'shrink-0 rounded-wm-sm px-2 py-0.5 text-wm-meta font-bold',
+        'shrink-0 rounded-wm-key px-2 py-0.5 text-wm-meta font-bold',
         ai ? 'bg-wm-accent-soft text-wm-accent' : 'bg-wm-bg text-wm-muted',
       )}
     >
@@ -123,7 +123,7 @@ function marked(sentence: string, word: string): ReactNode {
   return (
     <>
       {sentence.slice(0, match.index)}
-      <mark className="rounded-xs bg-wm-mark px-0.5 text-wm-mark-ink">{match[0]}</mark>
+      <mark className="rounded-wm-key bg-wm-mark px-0.5 text-wm-mark-ink">{match[0]}</mark>
       {sentence.slice(match.index + match[0].length)}
     </>
   );

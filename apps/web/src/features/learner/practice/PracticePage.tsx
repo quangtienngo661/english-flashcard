@@ -84,7 +84,7 @@ export function PracticePage() {
           <h2 id="other-sources" className="font-wm-display text-wm-card-title text-wm-ink">
             {t('sources.title')}
           </h2>
-          <ul aria-labelledby="other-sources" className="flex flex-col rounded-wm-xl border border-wm-line bg-wm-surface px-5 shadow-wm-card">
+          <ul aria-labelledby="other-sources" className="flex flex-col rounded-wm-card border border-wm-line bg-wm-surface px-5 shadow-wm-card">
             <SourceCard
               name={t('sources.group.name')}
               icon={Folder}
@@ -225,7 +225,7 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
     <section
       aria-labelledby="usage-title"
       className={cn(
-        'flex w-full flex-col gap-2.5 rounded-wm-xl border bg-wm-surface px-5 py-4 shadow-wm-card',
+        'flex w-full flex-col gap-2.5 rounded-wm-card border bg-wm-surface px-5 py-4 shadow-wm-card',
         out ? 'border-wm-fail' : 'border-wm-line',
       )}
     >
@@ -233,7 +233,7 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
         <h2 id="usage-title" className="font-wm-sans text-wm-small-strong text-wm-ink">
           {t('title')}
         </h2>
-        <span className="rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(`plan.${plan}`)}</span>
+        <span className="rounded-wm-key bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t(`plan.${plan}`)}</span>
       </div>
       {pool.limit > 0 && (
         <>
@@ -253,7 +253,7 @@ function Recent() {
   const history = useRecentHistory(3);
   const items = history.data?.items ?? [];
   return (
-    <section aria-labelledby="recent-title" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+    <section aria-labelledby="recent-title" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <h2 id="recent-title" className="font-wm-display text-wm-base text-wm-ink">
         {t('recent.title')}
       </h2>
@@ -267,7 +267,7 @@ function Recent() {
                 <span
                   role="img"
                   aria-label={right ? tRecent('right') : tRecent('wrong')}
-                  className={cn('mt-0.5 flex size-5.5 shrink-0 items-center justify-center rounded-wm-sm', right ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
+                  className={cn('mt-0.5 flex size-5.5 shrink-0 items-center justify-center rounded-wm-key', right ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
                 >
                   {right ? <Check aria-hidden className="size-3.5" /> : <X aria-hidden className="size-3.5" />}
                 </span>
@@ -297,7 +297,7 @@ function Shortcuts() {
     [['Esc'], t('stop')],
   ] as const;
   return (
-    <section aria-labelledby="shortcuts-title" className="hidden flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex">
+    <section aria-labelledby="shortcuts-title" className="hidden flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex">
       <h2 id="shortcuts-title" className="font-wm-display text-wm-base text-wm-ink">
         {t('title')}
       </h2>

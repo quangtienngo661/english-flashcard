@@ -36,7 +36,7 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
       className={className ?? 'group flex w-full min-w-0 flex-col gap-1.5'}
     >
       <Label className={hideLabel ? 'sr-only' : FIELD_LABEL}>{label}</Label>
-      <Button className={`flex w-full items-center justify-between gap-2 rounded-wm-md border-2 border-wm-line bg-wm-surface text-left font-wm-sans text-wm-ink outline-none ${size === 'sm' ? 'min-h-9 px-2.5 py-1 text-wm-small' : 'min-h-12 px-3.5 py-2 text-wm-base'} focus-visible:border-wm-accent focus-visible:ring-4 focus-visible:ring-wm-accent/16 disabled:opacity-60 group-data-invalid:border-wm-fail`}>
+      <Button className={`flex w-full items-center justify-between gap-2 rounded-wm-control border-2 border-wm-line bg-wm-surface text-left font-wm-sans text-wm-ink outline-none ${size === 'sm' ? 'min-h-9 px-2.5 py-1 text-wm-small' : 'min-h-12 px-3.5 py-2 text-wm-base'} focus-visible:border-wm-accent focus-visible:ring-4 focus-visible:ring-wm-accent/16 disabled:opacity-60 group-data-invalid:border-wm-fail`}>
         <SelectValue className="flex min-w-0 items-center gap-2 truncate data-placeholder:text-wm-muted">
           {({ selectedItem, defaultChildren }) => {
             const item = selectedItem as SelectItem | null;
@@ -59,14 +59,14 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
       )}
       <Popover
         offset={4}
-        className="w-(--trigger-width) min-w-52 overflow-y-auto overscroll-contain rounded-wm-modal bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out"
+        className="w-(--trigger-width) min-w-52 overflow-y-auto overscroll-contain rounded-wm-row bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out"
       >
         <ListBox items={items} className="outline-none">
           {(item) => (
             <ListBoxItem
               id={item.id}
               textValue={item.label}
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-wm-sm px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft data-selected:bg-wm-accent-soft"
+              className="flex cursor-pointer items-center justify-between gap-2 rounded-wm-control px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft data-selected:bg-wm-accent-soft"
             >
               {({ isSelected }) => (
                 <>

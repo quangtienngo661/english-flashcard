@@ -29,7 +29,7 @@ export function ReportRow({ report }: { report: MyReport }) {
     ? t(report.refunded === null ? 'refunding' : 'notRefundable') : null;
   const date = format.date(report.created_at, 'numeric');
   return (
-    <li className="flex items-center gap-3 border-wm-line px-1 py-3 not-first:border-t md:gap-4 md:rounded-wm-lg md:px-3 md:py-4">
+    <li className="flex items-center gap-3 border-wm-line px-1 py-3 not-first:border-t md:gap-4 md:rounded-wm-row md:px-3 md:py-4">
       <span className="hidden w-25 shrink-0 text-wm-meta text-wm-muted md:block">{date}</span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className={cn(LINE_1, 'break-words')}>{`${word} · ${report.reason_label}`}</span>

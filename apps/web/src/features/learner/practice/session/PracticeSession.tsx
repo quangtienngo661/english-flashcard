@@ -163,7 +163,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   const width = done ? 'max-w-220' : 'max-w-190';
   const legend = phase?.kind === 'question' ? legendItems(phase.item, phase.outcome) : [];
   const closeClass =
-    'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
+    'flex size-11 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
     'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:size-9';
   return (
     <div className="flex flex-1 flex-col">
@@ -409,7 +409,7 @@ function Loading() {
 function Ended({ message, href, label }: { message: string; href: string; label?: string }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-display text-wm-word text-wm-ink">{message}</p>
       <Link
         href={href}
@@ -427,12 +427,12 @@ function NothingLearned({ groupId }: { groupId: string }) {
   const tDeck = useTranslations('App.deck');
   const locale = useLocale();
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-display text-wm-word text-wm-ink">{t('nothingTitle')}</p>
       <p className="font-wm-sans text-wm-base text-wm-muted">{t('nothingBody')}</p>
       <Link
         href={`/${locale}/app/review?group=${groupId}&mode=new`}
-        className="inline-flex min-h-11 items-center gap-2 rounded-wm-button bg-wm-accent px-5 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+        className="inline-flex min-h-11 items-center gap-2 rounded-wm-control bg-wm-accent px-5 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <Layers2 aria-hidden className="size-5 shrink-0" />
         {tDeck('learn')}

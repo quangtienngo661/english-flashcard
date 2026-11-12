@@ -87,7 +87,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
         )}
         {text.trim() && (
           // Figma "Xem trước mặt sau thẻ": the meaning and the sentence with the word highlighted, as on the back of the card.
-          <div className="flex flex-col gap-1.5 rounded-wm-lg border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
+          <div className="flex flex-col gap-1.5 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
             <p className="text-wm-meta text-wm-muted">{t('sentencePreview')}</p>
             <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
             <p className="break-words font-wm-sans text-wm-base text-wm-ink">{highlightWord(text.trim(), sense.lemma)}</p>

@@ -104,7 +104,7 @@ export function SpeakButton({ text, voice, audioUrl, size = 32, className }: {
         <span
           id={tipId}
           role="tooltip"
-          className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded-wm-sm bg-wm-mark-ink px-2 py-1 text-wm-small text-wm-mark opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+          className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded-wm-control bg-wm-mark-ink px-2 py-1 text-wm-small text-wm-mark opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
         >
           {t('pending')}
         </span>

@@ -52,7 +52,7 @@ function filterCount(summary: GroupSummary | undefined, filter: WordFilter, tota
 /** Stage dots of the word rows (design §7.3); stage 5's dot is a gradient, so the row uses its flat colour. */
 const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
-const ALERT = 'flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card';
+const ALERT = 'flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card';
 
 /** Một nhóm (Figma 84:3552 / 84:3749): `/app/group?id=` — the stack from the carousel, today's counts, the rhythm bar and every word. */
 export function GroupPage() {
@@ -84,8 +84,8 @@ export function GroupPage() {
         ) : (
           <div role="status" className="flex flex-col gap-5 md:flex-row md:items-center md:gap-11">
             <span className="sr-only">{tCommon('loading')}</span>
-            <Skeleton className="h-74 w-52 rounded-wm-xl" />
-            <Skeleton className="h-40 flex-1 rounded-wm-xl" />
+            <Skeleton className="h-74 w-52 rounded-wm-card" />
+            <Skeleton className="h-40 flex-1 rounded-wm-card" />
           </div>
         )}
       </>
@@ -172,7 +172,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                 : t('meta', { count: detail.item_count, date: created })}
           </p>
           <h1 id="group-title" className="flex items-center gap-3 font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">
-            <span aria-hidden className={cn('size-3.25 shrink-0 rounded-wm-xs md:size-4', tone.bg)} />
+            <span aria-hidden className={cn('size-3.25 shrink-0 rounded-wm-key md:size-4', tone.bg)} />
             <span className="min-w-0 wrap-anywhere">{detail.name}</span>
           </h1>
           {summary && !empty && (
@@ -184,7 +184,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                   ['chipNew', summary.today.new],
                 ] as const
               ).map(([key, count]) => (
-                <li key={key} className="flex items-baseline gap-1 rounded-wm-md bg-wm-surface px-3 py-1.25 text-wm-small text-wm-ink shadow-wm-soft">
+                <li key={key} className="flex items-baseline gap-1 rounded-wm-key bg-wm-surface px-3 py-1.25 text-wm-small text-wm-ink shadow-wm-soft">
                   <b className={cn('font-wm-display font-extrabold', tone.ink)}>{format.number(count)}</b>{' '}
                   {/* The copy is "{count} ưu tiên": the number is drawn apart, in the deck ink. */}
                   {t(key, { count }).replace(/^\S+\s/, '')}
@@ -229,7 +229,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
           {summary && summary.backlog > 0 && (
             <Link
               href={`/${locale}/app/group/backlog?id=${detail.id}`}
-              className="flex w-fit items-center gap-3 rounded-wm-md bg-wm-fail-soft px-3 py-2 text-wm-small-strong text-wm-fail outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
+              className="flex w-fit items-center gap-3 rounded-wm-row bg-wm-fail-soft px-3 py-2 text-wm-small-strong text-wm-fail outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
             >
               {t('backlog', { count: summary.backlog })}
               <span className="text-wm-accent">{t('backlogSee')}</span>
@@ -255,7 +255,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                   aria-pressed={pressed}
                   onClick={() => setFilter(f.id)}
                   className={cn(
-                    'flex min-h-9 shrink-0 items-baseline gap-1 rounded-wm-md border px-3 py-1.5 text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
+                    'flex min-h-9 shrink-0 items-baseline gap-1 rounded-wm-control border px-3 py-1.5 text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
                     pressed ? 'border-wm-ink bg-wm-ink text-wm-surface' : 'border-wm-line bg-wm-surface text-wm-muted hover:text-wm-ink',
                   )}
                 >
@@ -269,7 +269,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             <div role="status" className="flex flex-col gap-2">
               <span className="sr-only">{t('allWords', { count: total })}</span>
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-wm-lg" />
+                <Skeleton key={i} className="h-14 w-full rounded-wm-row" />
               ))}
             </div>
           ) : words.isError ? (
@@ -297,7 +297,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   );
 }
 
-const MENU_ITEM = 'cursor-pointer rounded-wm-sm px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft';
+const MENU_ITEM = 'cursor-pointer rounded-wm-control px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft';
 
 /** The deck's ⋯ menu: rename, study every word, delete. */
 function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; total: number; onRename: () => void; onDelete: () => void }) {
@@ -306,11 +306,11 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
     <MenuTrigger>
       <AriaButton
         aria-label={t('group.menu')}
-        className="flex size-11 items-center justify-center rounded-wm-md text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent"
+        className="flex size-11 items-center justify-center rounded-wm-control text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent"
       >
         <MoreHorizontal aria-hidden className="size-5" />
       </AriaButton>
-      <Popover placement="bottom end" className="w-56 rounded-wm-lg border border-wm-line bg-wm-surface p-1 shadow-wm-pop">
+      <Popover placement="bottom end" className="w-56 rounded-wm-row border border-wm-line bg-wm-surface p-1 shadow-wm-pop">
         <Menu className="outline-none">
           <MenuItem className={MENU_ITEM} onAction={onRename}>
             {t('groups.rename')}
@@ -334,7 +334,7 @@ function EmptyDeck() {
   const t = useTranslations('App.group');
   const locale = useLocale();
   return (
-    <section data-in="2" aria-labelledby="empty-deck" className="flex flex-col items-start gap-4 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
+    <section data-in="2" aria-labelledby="empty-deck" className="flex flex-col items-start gap-4 rounded-wm-card bg-wm-surface p-6 shadow-wm-card md:p-8">
       <h2 id="empty-deck" className="text-balance font-wm-display text-wm-card-title text-wm-ink">
         {t('emptyTitle')}
       </h2>
@@ -383,7 +383,7 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   }
 
   return (
-    <li aria-label={word} className="flex items-center gap-4 rounded-wm-lg bg-wm-surface px-4 py-3 shadow-wm-row">
+    <li aria-label={word} className="flex items-center gap-4 rounded-wm-row bg-wm-surface px-4 py-3 shadow-wm-row">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-baseline md:gap-4">
         <Link
           href={`/${locale}/app/word?w=${encodeURIComponent(word)}`}
@@ -394,11 +394,11 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
         <span className="hidden w-24 shrink-0 text-wm-meta text-wm-muted md:block">{card.content.pos}</span>
         <span className="min-w-0 flex-1 text-wm-small text-wm-muted wrap-anywhere md:text-wm-base md:text-wm-ink">
           {card.content.meaning.text}
-          {card.sense_changed && <span className="ml-2 rounded-wm-sm bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
+          {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
         </span>
       </div>
       <span className="hidden w-32.5 shrink-0 items-center gap-1.5 text-wm-caption text-wm-muted md:flex">
-        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_DOT[card.level])} />
+        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', STAGE_DOT[card.level])} />
         {stage}
       </span>
       <span className={cn('shrink-0 text-right text-wm-label md:w-30', card.priority ? 'text-wm-fail' : statusTone(card))}>{status}</span>
@@ -427,7 +427,7 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
           </>
         }
       >
-        <p role="note" className="rounded-wm-lg bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+        <p role="note" className="rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
           {t('removeLastBody')}
         </p>
       </Dialog>

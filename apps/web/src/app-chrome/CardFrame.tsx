@@ -8,12 +8,12 @@ import { AppLogo } from '@/ui/Logo';
 
 /** Classes of the Figma centred card (36:385 and the other card pages): 480 px, padding 24 / 40, radius 28, line border, lift shadow. */
 export const AUTH_CARD =
-  'flex w-full max-w-120 flex-col gap-4.5 rounded-wm-2xl border border-wm-line bg-wm-surface p-6 shadow-wm-lift md:gap-5 md:p-10';
+  'flex w-full max-w-120 flex-col gap-4.5 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-lift md:gap-5 md:p-10';
 
 export function HomeLogoLink({ className }: { className?: string }) {
   const locale = useLocale();
   return (
-    <Link href={`/${locale}`} className={`w-fit rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-wm-accent ${className ?? ''}`}>
+    <Link href={`/${locale}`} className={`w-fit rounded-wm-key outline-none focus-visible:outline-3 focus-visible:outline-wm-accent ${className ?? ''}`}>
       <AppLogo />
     </Link>
   );

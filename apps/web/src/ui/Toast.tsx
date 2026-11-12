@@ -55,7 +55,7 @@ export function ToastRegion() {
           toast={toast}
           // raw-ok: each toast needs its own view-transition name so only the closing one animates out
           style={{ viewTransitionName: toast.key } as CSSProperties}
-          className={`flex max-w-lg items-center gap-4 rounded-wm-modal px-4 py-3 font-wm-sans text-wm-small shadow-wm-pop outline-none [view-transition-class:toast] focus-visible:outline-3 focus-visible:outline-wm-mark motion-safe:animate-toast-in ${TONE[toast.content.tone]}`}
+          className={`flex max-w-lg items-center gap-4 rounded-wm-row px-4 py-3 font-wm-sans text-wm-small shadow-wm-pop outline-none [view-transition-class:toast] focus-visible:outline-3 focus-visible:outline-wm-mark motion-safe:animate-toast-in ${TONE[toast.content.tone]}`}
         >
           <AriaToastContent className="min-w-0 wrap-anywhere">
             <Text slot="title">{toast.content.text}</Text>
@@ -64,12 +64,12 @@ export function ToastRegion() {
             <Link
               href={toast.content.link.href}
               onClick={() => toastQueue.close(toast.key)}
-              className="shrink-0 rounded-wm-sm px-1 font-semibold underline underline-offset-2 outline-none focus-visible:outline-3 focus-visible:outline-wm-mark"
+              className="shrink-0 rounded-wm-control px-1 font-semibold underline underline-offset-2 outline-none focus-visible:outline-3 focus-visible:outline-wm-mark"
             >
               {toast.content.link.label}
             </Link>
           )}
-          <Button slot="close" className="shrink-0 rounded-wm-sm px-1 font-semibold outline-none focus-visible:outline-3 focus-visible:outline-wm-mark">
+          <Button slot="close" className="shrink-0 rounded-wm-control px-1 font-semibold outline-none focus-visible:outline-3 focus-visible:outline-wm-mark">
             {t('close')}
           </Button>
         </AriaToast>

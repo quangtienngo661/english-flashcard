@@ -36,7 +36,7 @@ export function SplitFrame({ children }: { children: ReactNode }) {
 function AuthFooter() {
   const t = useTranslations('App.auth.footer');
   const locale = useLocale();
-  const link = 'rounded-wm-sm outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent';
+  const link = 'rounded-wm-control outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent';
   return (
     <footer className="hidden w-full gap-5 font-wm-sans text-wm-caption text-wm-muted xl:flex">
       <span>{t('copyright', { year: new Date().getFullYear() })}</span>

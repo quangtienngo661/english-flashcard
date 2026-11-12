@@ -22,7 +22,7 @@ const TEXT = {
   sm: { month: 'text-[0.5625rem]', day: 'text-[1.375rem]' },
 } as const;
 // raw-ok: Figma badge radius 11 px, 2 px border in --bg, Bricolage ExtraBold 12; it sits 9 px above the button's top edge
-const BADGE = 'absolute -top-2.25 flex items-center gap-0.5 rounded-[0.6875rem] border-2 border-wm-bg bg-wm-mark py-0.75 pl-1.25 pr-2 font-wm-display text-[0.75rem] font-extrabold leading-none text-wm-mark-ink';
+const BADGE = 'absolute -top-2.25 flex items-center gap-0.5 rounded-wm-control border-2 border-wm-bg bg-wm-mark py-0.75 pl-1.25 pr-2 font-wm-display text-[0.75rem] font-extrabold leading-none text-wm-mark-ink';
 
 /** The month in the strip: vi "T11", en "Nov" (Part 6 decisions). */
 export function monthLabel(locale: AppLocale, month: string): string {
@@ -58,13 +58,13 @@ export function CalendarButton({ size }: { size: 'lg' | 'sm' }) {
       aria-hidden={isOpen || undefined}
       inert={isOpen || undefined}
       className={cn(
-        'group relative flex flex-col rounded-wm-modal bg-wm-surface text-wm-ink shadow-wm-pop outline-none transition duration-200 ease-wm-out',
+        'group relative flex flex-col rounded-wm-dialog bg-wm-surface text-wm-ink shadow-wm-pop outline-none transition duration-200 ease-wm-out',
         'hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
         SIZE[size].box,
         isOpen && 'pointer-events-none opacity-0',
       )}
     >
-      <span aria-hidden className={cn('flex items-center rounded-t-wm-modal bg-wm-accent font-bold text-wm-on-accent', SIZE[size].strip, TEXT[size].month)}>
+      <span aria-hidden className={cn('flex items-center rounded-t-wm-dialog bg-wm-accent font-bold text-wm-on-accent', SIZE[size].strip, TEXT[size].month)}>
         {monthLabel(locale, month)}
       </span>
       <span aria-hidden className={cn('flex flex-1 items-center justify-center font-wm-display font-extrabold leading-none', TEXT[size].day)}>
@@ -79,7 +79,7 @@ export function CalendarButton({ size }: { size: 'lg' | 'sm' }) {
       {days > 0 && <span id={describedBy} className="sr-only">{t('streak', { days })}</span>}
       <span
         aria-hidden
-        className="pointer-events-none absolute right-full top-1/2 mr-3 flex -translate-y-1/2 translate-x-1.5 items-center gap-2 whitespace-nowrap rounded-wm-md bg-wm-ink px-2.5 py-1.5 font-wm-sans text-wm-small-strong text-wm-surface opacity-0 transition duration-150 ease-wm-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-md:hidden"
+        className="pointer-events-none absolute right-full top-1/2 mr-3 flex -translate-y-1/2 translate-x-1.5 items-center gap-2 whitespace-nowrap rounded-wm-control bg-wm-ink px-2.5 py-1.5 font-wm-sans text-wm-small-strong text-wm-surface opacity-0 transition duration-150 ease-wm-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-md:hidden"
       >
         {t('label')}
         <Kbd>L</Kbd>

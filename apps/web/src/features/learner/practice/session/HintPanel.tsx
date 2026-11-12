@@ -36,7 +36,7 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   if (opened.length === 0) return null;
   const nextLevel = levels.find((n) => n > item.hint_level);
   return (
-    <section className="flex flex-col gap-2 rounded-wm-lg bg-wm-accent-soft p-3">
+    <section className="flex flex-col gap-2 rounded-wm-row bg-wm-accent-soft p-3">
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-wm-small-strong text-wm-ink">
           <Lightbulb aria-hidden className="size-4" />

@@ -49,7 +49,7 @@ export function BacklogPage() {
     <>
       <BackLink {...back} />
       {notFound ? (
-        <div className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+        <div className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
           <h1 className="font-wm-display text-wm-card-title text-wm-ink">{t('group.notFound')}</h1>
           <Link href={`/${locale}/app/groups`} className="text-wm-small-strong text-wm-accent">
             {t('group.toList')}
@@ -182,7 +182,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
           {t('relearnAll', { count: items.length })}
         </Button>
       )}
-      <section aria-label={t('list')} className="rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+      <section aria-label={t('list')} className="rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
         {list.isPending ? (
           <ListSkeleton label={tCommon('loading')} />
         ) : items.length === 0 ? (
@@ -201,14 +201,14 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
               {rows.map((item) => (
                 <li
                   key={item.item_id}
-                  className={cn('flex items-center gap-4 rounded-wm-md border-t border-wm-line px-4 py-3', selected.has(item.item_id) && 'bg-wm-accent/5')}
+                  className={cn('flex items-center gap-4 rounded-wm-row border-t border-wm-line px-4 py-3', selected.has(item.item_id) && 'bg-wm-accent/5')}
                 >
                   <Checkbox isSelected={selected.has(item.item_id)} onChange={(on) => toggle(item.item_id, on)}>
                     <span className="sr-only">{t('select', { word: item.content.lemma })}</span>
                   </Checkbox>
                   <span className="min-w-0 flex-1 font-wm-display text-wm-word text-wm-ink wrap-anywhere md:w-47.5 md:flex-none">{item.content.lemma}</span>
                   <span className="hidden min-w-0 flex-1 text-wm-base text-wm-muted wrap-anywhere md:block">{item.content.meaning.text}</span>
-                  <span aria-hidden className="hidden h-1.5 w-37.5 shrink-0 overflow-hidden rounded-wm-sm bg-wm-line md:block">
+                  <span aria-hidden className="hidden h-1.5 w-37.5 shrink-0 overflow-hidden rounded-wm-pill bg-wm-line md:block">
                     <span
                       className="block h-full bg-wm-muted"
                       // raw-ok: the bar is this word's overdue days against the longest in the list
@@ -257,7 +257,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
           </>
         }
       >
-        <p role="note" className="rounded-wm-lg bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+        <p role="note" className="rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
           {t('forgetBody')}
         </p>
       </Dialog>
@@ -270,7 +270,7 @@ function ListSkeleton({ label }: { label: string }) {
     <div role="status" className="flex flex-col gap-3">
       <span className="sr-only">{label}</span>
       {[0, 1, 2].map((i) => (
-        <Skeleton key={i} className="h-12 w-full rounded-wm-md" />
+        <Skeleton key={i} className="h-12 w-full rounded-wm-row" />
       ))}
     </div>
   );

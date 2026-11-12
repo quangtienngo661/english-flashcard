@@ -45,10 +45,10 @@ export function GroupListPage() {
         <div role="status" className="flex flex-col items-center gap-5">
           <span className="sr-only">{tCommon('loading')}</span>
           <Skeleton className="h-11 w-56 self-start" />
-          <Skeleton className="h-92 w-72 rounded-wm-2xl" />
+          <Skeleton className="h-92 w-72 rounded-wm-dialog" />
         </div>
       ) : groups.isError ? (
-        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
           <p className="text-wm-base text-wm-ink">{tCommon('errorPageTitle')}</p>
           <Button variant="secondary" onPress={() => void groups.refetch()}>
             {tCommon('retry')}
@@ -57,7 +57,7 @@ export function GroupListPage() {
       ) : order.length === 0 ? (
         <>
           <Title />
-          <section className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
+          <section className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card md:p-8">
             <h2 className="font-wm-display text-wm-card-title text-wm-ink">{tToday('emptyTitle')}</h2>
             <p className="text-wm-base text-wm-muted">{tToday('emptyBody')}</p>
             <Button size="lg" onPress={() => open({ kind: 'create' })}>

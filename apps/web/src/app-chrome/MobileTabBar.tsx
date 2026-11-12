@@ -23,7 +23,7 @@ export function MobileTabBar() {
             key={id}
             href={`/${locale}${path}`}
             aria-current={isActive ? 'page' : undefined}
-            className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-wm-md outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
+            className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-wm-accent"
           >
             <span className={cn('flex h-7 w-12 items-center justify-center rounded-wm-pill', isActive && 'bg-wm-accent-soft text-wm-accent')}>
               <Icon aria-hidden className={cn('size-5', !isActive && 'text-wm-muted')} />

@@ -39,7 +39,7 @@ export function AiUnavailableState({ reason, resetsAt, lemma, error, busy, onRet
     title = t('errorTitle');
   }
   return (
-    <section className="flex flex-col gap-3 rounded-wm-xl bg-wm-surface p-6">
+    <section className="flex flex-col gap-3 rounded-wm-card bg-wm-surface p-6">
       <h1 className="font-wm-display text-wm-word text-wm-ink">{title}</h1>
       {body && <p className="text-wm-base text-wm-ink">{body}</p>}
       {lemma && retryable && (

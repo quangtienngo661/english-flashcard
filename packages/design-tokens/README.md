@@ -105,7 +105,7 @@ namespace (a `--duration-fast` token generates no CSS; checked 15/10/2026).
 ## The `wm-` set (new web UI)
 
 `web.css` and `web-dark.css` hold the tokens of the new web UI (design `docs/superpowers/specs/2026-11-09-giao-dien-moi-design.md` §7, Figma
-file `JKnyUUtGjpGpfKK4PqBfdY`). Every name carries `wm-` (`--color-wm-accent`, `--radius-wm-button`, `--shadow-wm-card`, `--text-wm-base`,
+file `JKnyUUtGjpGpfKK4PqBfdY`). Every name carries `wm-` (`--color-wm-accent`, `--radius-wm-card`, `--shadow-wm-card`, `--text-wm-base`,
 `--blur-wm-lg`, `--transition-duration-wm-in`, `--ease-wm-close`), so it never collides with `theme.css`, whose `accent`, `ink` and `primary`
 mean other colours. `apps/web` imports both sets until its old screens are gone (M8); rebuilt screens use only `wm-` tokens. Admin imports
 neither. Sizes are in rem. `web-dark.css` redefines every `--color-wm-*` under `[data-theme='dark']`.
@@ -116,3 +116,7 @@ Dark section (M9, mockup `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.
 black version (buttons: `none`), and adds `scrim`, `paper`, `paper-line`, `halo-mark`, `wrong-soft/-line/-ink` and the `level-0` … `level-5`,
 `level-priority`, `level-due` colours (light values in `web.css` equal the literals they replace). Stage and practice colours keep their light
 values in dark until the polish round. A dark colour a contrast test reads is `#rrggbb`, with the mix in a comment.
+
+Radius scale C is by element role, not size: `--radius-wm-key` 4 px (keycaps, small labels, counts), `-control` 8 (buttons, inputs, chips), `-row` 10
+(list rows, menus, popovers, toasts, hint blocks), `-card` 14, `-dialog` 16 (dialogs, sheets, the Học card) and `-pill`. An inner element is always smaller
+than its container. Labels use Noto Sans (`--text-wm-meta`, 12 px / 500); the mono font is gone.
