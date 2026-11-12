@@ -104,7 +104,7 @@ export function AuthShowcase() {
         <GhostChip className="left-24 top-4" word="commute" />
 
         <Card
-          // raw-ok: the owner-approved tilt of the word card, -2.5deg, which has no Tailwind step
+          // raw-ok: the tilt of the word card from the F.17 brief, -2.5deg, which has no Tailwind step
           className="absolute left-6 top-15 z-3 min-h-73 w-70 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
         >
           <div key={step.k} className={cn('flex flex-col gap-2', motion && 'animate-wm-showcase-swap')}>
@@ -148,7 +148,7 @@ export function AuthShowcase() {
         </Card>
 
         <Card
-          // raw-ok: the owner-approved tilt of the practice card, -1.5deg, which has no Tailwind step
+          // raw-ok: the tilt of the practice card from the F.17 brief, -1.5deg, which has no Tailwind step
           className="absolute left-66 top-150 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
         >
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
