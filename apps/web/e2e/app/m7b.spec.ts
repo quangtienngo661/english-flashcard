@@ -75,7 +75,7 @@ test('Hôm nay → Nhóm opens "Học nhiều hơn với Pro" for a Free learner
   const dialog = page.getByRole('dialog', { name: 'Học nhiều hơn với Pro' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Pro', { exact: true })).toBeVisible();
-  await expect(dialog.getByText('có AI', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Có AI', { exact: true })).toBeVisible();
   await expect(dialog.getByText('30 phiên luyện mỗi ngày')).toBeVisible();
   await expect(dialog.getByText('Từ 79.000 ₫ cho 1 tháng')).toBeVisible();
   await expect(dialog.getByRole('link', { name: 'Xem gói Pro' })).toHaveAttribute('href', '/vi/app/plans');
