@@ -35,8 +35,8 @@ describe('compareLetters', () => {
 
 describe('CompareLine', () => {
   it('reads both words and marks the extra and missing letters', () => {
-    renderApp(<CompareLine typed="detoriorate" answer="deteriorate" />, { chrome: false });
-    const line = screen.getByRole('group', { name: 'So chữ: bạn gõ detoriorate, đáp án deteriorate' });
+    renderApp(<CompareLine typed="detoriorate" answer="deteriorate" />, { session: true, chrome: false });
+    const line = screen.getByRole('group', { name: 'Letters: you typed detoriorate, the answer is deteriorate' });
     expect(line.querySelector('[data-mark="extra"]')).toHaveTextContent('o');
     expect(line.querySelector('[data-mark="missing"]')).toHaveTextContent('e');
   });

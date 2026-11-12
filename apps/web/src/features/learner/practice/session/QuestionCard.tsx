@@ -22,7 +22,7 @@ export function ButtonKey({ children }: { children: ReactNode }) {
 
 /**
  * The question card (Figma 100:3164 "Câu hỏi và kết quả", M5 Figma A §3): kind chip, "câu AI" chip, [Báo lỗi] at the right,
- * the mono instruction, then the question. The result panel tucks under it (`AnswerFeedback`).
+ * then the question. The chip names the kind; no instruction line under it (QM9-9, P.13). The result panel follows (`AnswerFeedback`).
  */
 export function QuestionCard({ prompt, ai = false, reportable, reported, onReport, children }: {
   prompt: Prompt;
@@ -48,7 +48,6 @@ export function QuestionCard({ prompt, ai = false, reportable, reported, onRepor
           </TextButton>
         )}
       </div>
-      <p className="text-wm-meta text-wm-muted">{t(`ask.${kind}`)}</p>
       {children}
     </section>
   );

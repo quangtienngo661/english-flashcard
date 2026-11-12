@@ -1,6 +1,5 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { bump, chipIn } from '@/lib/stack-motion';
 import { cn } from '@/lib/cn';
@@ -9,10 +8,12 @@ import { WordChip } from '@/ui/WordChip';
 const SHOWN = 5;
 
 /**
- * One pile beside the Học stack (prototype chong-the-mo.html:149-151, 385-392): its count in large type, its name, and the last five
- * words, newest on top. A new word slides in, the count bumps.
+ * One pile beside the Học stack (mockup L222-229, L1172-1174): its count in large type, its name under it, both centred, no arrows. On
+ * desktop the last five words drop in under them, newest on top; a phone shows the count only (mockup L293). The count bumps when it grows.
  */
-export function Pile({ tone, label, words, className }: { tone: 'review' | 'known'; label: string; words: string[]; className?: string }) {
+export function Pile({ tone, label, words, chips = true, className }: {
+  tone: 'review' | 'known'; label: string; words: string[]; chips?: boolean; className?: string;
+}) {
   const countRef = useRef<HTMLSpanElement>(null);
   const seen = useRef(words.length);
   useEffect(() => {
@@ -20,25 +21,21 @@ export function Pile({ tone, label, words, className }: { tone: 'review' | 'know
     seen.current = words.length;
   }, [words.length]);
   const shown = words.slice(-SHOWN).reverse();
-  const Icon = tone === 'review' ? ChevronLeft : ChevronRight;
+  const color = tone === 'review' ? 'text-wm-fail' : 'text-wm-pass';
   return (
-    <section
-      aria-label={label}
-      className={cn('flex min-w-0 flex-col gap-2', tone === 'known' && 'md:items-end md:text-right', className)}
-    >
-      <p className={cn('flex items-center gap-1 font-wm-sans text-wm-small-strong', tone === 'review' ? 'text-wm-fail' : 'text-wm-pass md:flex-row-reverse')}>
-        <Icon aria-hidden className="size-4" />
-        {label}
-      </p>
-      <span ref={countRef} className={cn('inline-block font-wm-display text-wm-lemma', tone === 'review' ? 'text-wm-fail' : 'text-wm-pass')}>
+    <section aria-label={label} className={cn('flex min-w-0 flex-col items-center gap-1 text-center', className)}>
+      <span ref={countRef} className={cn('inline-block font-wm-display text-wm-lemma tabular-nums', color)}>
         {words.length}
       </span>
-      <ul className={cn('flex flex-col gap-1.5', tone === 'known' && 'md:items-end')}>
-        {shown.map((word, i) => (
-          // Keyed by the word's place in the whole pile, so older chips keep their element and only the new one slides in.
-          <PileChip key={words.length - 1 - i} word={word} tone={tone} fresh={i === 0} />
-        ))}
-      </ul>
+      <p className={cn('font-wm-sans text-wm-small-strong', color)}>{label}</p>
+      {chips && (
+        <ul className="mt-2 flex flex-col items-center gap-1">
+          {shown.map((word, i) => (
+            // Keyed by the word's place in the whole pile, so older chips keep their element and only the new one slides in.
+            <PileChip key={words.length - 1 - i} word={word} tone={tone} fresh={i === 0} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

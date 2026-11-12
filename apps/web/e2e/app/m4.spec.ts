@@ -5,6 +5,8 @@ import { APP_CONFIG, entitlementsBody, LONG, nextHcmMidnight } from '../support/
 import { problem, requests, signedInAs, type MockHandler } from '../support/mock-api';
 
 const vi = copy.vi.App.practice;
+// Sessions speak English on every route (QM9-9, SessionIntl).
+const en = copy.en.App.practice;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const DECK = uuid(301);
 const SESSION = uuid(400);
@@ -154,43 +156,44 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
     await page.keyboard.press('h');
     await expect(page.getByText('to start using a new system')).toBeVisible();
-    await page.getByRole('button', { name: vi.session.report.button }).click();
-    const dialog = page.getByRole('dialog', { name: vi.session.report.title });
+    await page.getByRole('button', { name: en.session.report.button }).click();
+    const dialog = page.getByRole('dialog', { name: en.session.report.title });
     await dialog.getByText('Nghĩa sai', { exact: true }).click();
-    await dialog.getByRole('button', { name: vi.session.report.send }).click();
-    await expect(page.getByText(vi.session.report.done)).toBeVisible();
+    await dialog.getByRole('button', { name: en.session.report.send }).click();
+    await expect(page.getByText(en.session.report.done)).toBeVisible();
     await expect(dialog).toBeHidden();
     await page.keyboard.press('2');
-    await expect(page.getByText(vi.session.wrong, { exact: true })).toBeVisible();
+    await expect(page.getByText(en.session.wrong, { exact: true })).toBeVisible();
     await page.keyboard.press('Enter');
 
     // True/false, right.
-    await expect(page.getByText(vi.session.ask.true_false)).toBeVisible();
+    // P.13: no instruction line; the chip names the kind.
+    await expect(page.getByText(en.session.kind.true_false, { exact: true })).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
-    await page.getByRole('button', { name: /^(1\s?)?Đúng/ }).click();
-    await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Đã biết/ }).click();
+    await page.getByRole('button', { name: /^(1\s?)?True/ }).click();
+    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Know/ }).click();
 
     // Typing: a miss, then the right word.
-    const answer = page.getByRole('textbox', { name: vi.session.answerLabel });
+    const answer = page.getByRole('textbox', { name: en.session.answerLabel });
     await answer.fill('cash');
-    await page.getByRole('button', { name: vi.session.check }).click();
-    await expect(page.getByText(vi.session.tryAgainBody)).toBeVisible();
+    await page.getByRole('button', { name: en.session.check }).click();
+    await expect(page.getByText(en.session.tryAgainBody)).toBeVisible();
     await answer.fill('cache');
     await answer.press('Enter');
     await expect(page.getByText('cache · bộ nhớ đệm', { exact: true })).toBeVisible();
     await page.keyboard.press('Enter');
 
     // Round prompt, one more question, then the summary.
-    await expect(page.getByText('Bạn đã làm hết 3 từ')).toBeVisible();
+    await expect(page.getByText("You've done all 3 words")).toBeVisible();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('textbox', { name: vi.session.answerLabel })).toBeVisible();
-    await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('cache');
+    await expect(page.getByRole('textbox', { name: en.session.answerLabel })).toBeVisible();
+    await page.getByRole('textbox', { name: en.session.answerLabel }).fill('cache');
     await page.keyboard.press('Enter');
-    await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Đã biết/ }).click();
-    await expect(page.getByRole('heading', { name: 'Xong 4 câu.' })).toBeVisible();
-    await page.getByRole('list', { name: /Cần ôn lại · 1 từ/ }).getByRole('button', { name: vi.session.summary.review }).click();
+    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Know/ }).click();
+    await expect(page.getByRole('heading', { name: '4 questions done.' })).toBeVisible();
+    await page.getByRole('list', { name: /Review again · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
     await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(503)}/review`)).toHaveLength(0);
@@ -313,7 +316,7 @@ for (const scheme of ['light', 'dark'] as const) {
     test(`axe and overflow: case 1 and case 4 feedback (${locale}, ${scheme})`, async ({ page }) => {
       test.setTimeout(120_000);
       await page.emulateMedia({ colorScheme: scheme });
-      const t = copy[locale].App.practice.session;
+      const t = copy.en.App.practice.session;
       for (const kind of [1, 4] as const) {
         await signedInAs(page, 'free', {
           ...practiceApi({ long: true, open: true }),
@@ -331,7 +334,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await noSideScroll(page, where);
         expect(await seriousViolations(page), where).toEqual([]);
         await page.keyboard.press('Enter');
-        await expect(page.getByText(t.ask.true_false)).toBeVisible();
+        await expect(page.getByText(t.kind.true_false, { exact: true })).toBeVisible();
         expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: kind === 1 ? 'known' : 'needs_review' }]);
         expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
       }
@@ -361,12 +364,12 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.goto('/vi/app/practice/session');
   await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
   await page.keyboard.press('1');
-  await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
+  await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: /^(1\s?)?Đúng/ }).click();
-  await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /Đã biết/ }).click();
-  await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));
+  await page.getByRole('button', { name: /^(1\s?)?True/ }).click();
+  await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Know/ }).click();
+  await page.getByRole('textbox', { name: en.session.answerLabel }).fill('x'.repeat(100));
   await noSideScroll(page, 'typed answer');
 });
 

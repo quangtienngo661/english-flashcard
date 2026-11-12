@@ -4,9 +4,10 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
+import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
-import { toLevel, useLevelName } from '@/ui/levels';
+import { toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import type { Card } from '../groups/groups-api';
 import { TargetWord } from '@/ui/TargetWord';
 import { useForms } from './use-forms';
@@ -52,6 +53,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const [leaving, setLeaving] = useState<Leaving[]>([]);
   const [follow, setFollow] = useState(0);
   const top = cards[current] as Card | undefined;
+  /** The card already rated (Review Focus 5): a second press before React renders again still sees it on top, turned over. */
+  const rated = useRef<string | null>(null);
 
   function rateNow(rating: Rating, how: 'drag' | 'key', speed = 0) {
     if (!top) return;
@@ -60,6 +63,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       onNudge?.();
       return;
     }
+    if (rated.current === top.item_id) return;
+    rated.current = top.item_id;
     const from = topRef.current?.style.transform ?? '';
     setLeaving((list) => [...list, { card: top, direction: rating === 'known' ? 1 : -1, how, speed, from }]);
     setFollow(0);
@@ -82,6 +87,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const shownTop = useRef<string | null>(null);
   useLayoutEffect(() => {
     const id = top?.item_id ?? null;
+    // A new top card (or the same card back after a lost save) can be rated again.
+    rated.current = null;
     if (id && shownTop.current && shownTop.current !== id && topRef.current) {
       topRef.current.style.transform = '';
       void arrive(topRef.current);
@@ -189,6 +196,10 @@ function LightFront({ card }: { card: Card }) {
  */
 function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flipped: boolean; onFlip: () => void; still?: boolean }) {
   const t = useTranslations('App.review');
+  const desktop = useDesktop();
+  const levelName = useLevelName();
+  const levelInterval = useLevelInterval();
+  const level = toLevel(card.level);
   const { content } = card;
   const forms = useForms(still ? undefined : content.lemma);
   const pron = content.pronunciation ? { scope: content.scope, pronunciation: content.pronunciation } : null;
@@ -209,8 +220,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         {/* Outside the turn button (review plan I3): a press reads the word and never turns the card. */}
         <PronunciationLine text={content.lemma} line={pron} align="center" className="px-6" />
         <span className="self-center px-6 pb-6 pt-3 font-wm-sans text-wm-caption text-wm-muted">
-          <span className="hidden md:inline">{t('hintWeb')}</span>
-          <span className="md:hidden">{t('hintPhone')}</span>
+          {desktop ? t('hintWeb') : t('hintPhone')}
         </span>
       </div>
       <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'cstack-back')}>
@@ -254,6 +264,10 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
             ))}
           </Block>
         )}
+        {/* Mockup L1020, L1024: the level line at the foot of the back face. */}
+        <p className="mt-auto px-6 pb-5 pt-3 font-wm-sans text-wm-caption text-wm-muted">
+          {level === 0 ? t('newWord') : `${levelName(level)} · ${levelInterval(level)}`}
+        </p>
       </div>
     </div>
   );

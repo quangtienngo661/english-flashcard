@@ -1,7 +1,8 @@
 'use client';
 
 import { Check, CircleCheck } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { Button } from '@/ui/Button';
 import { SpeakWord } from '@/ui/SpeakButton';
 import type { AnswerResult } from './use-practice-session';
@@ -22,7 +23,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
   busy: boolean;
 }) {
   const t = useTranslations('App.practice.session');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const rows = result.alternative?.rows ?? [];
   const at = sentence.indexOf(BLANK);
   const [before, after] = at < 0 ? [sentence, ''] : [sentence.slice(0, at), sentence.slice(at + BLANK.length)];

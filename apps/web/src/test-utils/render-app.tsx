@@ -4,12 +4,14 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import en from '../../messages/en.json';
 import vi from '../../messages/vi.json';
+import { SessionIntl } from '@/app-shell/SessionIntl';
 import { SessionProvider } from '@/app-shell/session/session-context';
 import { SessionStore, type Me } from '@/app-shell/session/session-store';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '@/app-shell/session/test-support';
 import { AppChrome } from '@/app-chrome/AppChrome';
 import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
+import { testRoute } from './route-locale';
 
 /** Renders app UI with the App copy, a QueryClient and a signed-in session whose API answers `routes`. */
 export function renderApp(
@@ -20,6 +22,7 @@ export function renderApp(
     routes = {},
     instantWaits = false,
     chrome = false,
+    session = false,
   }: {
     locale?: 'vi' | 'en';
     me?: Me;
@@ -28,6 +31,8 @@ export function renderApp(
     instantWaits?: boolean;
     /** Wraps the UI in the (chrome) layout: AddWordProvider and AppChrome (giao diện mới M1.10). */
     chrome?: boolean;
+    /** Wraps the UI in SessionIntl, as the (focus) layout does: session copy in English whatever `locale` (the route's) is (QM9-9). */
+    session?: boolean;
   } = {},
 ) {
   const f = makeFetch({
@@ -42,11 +47,13 @@ export function renderApp(
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, ...(instantWaits ? { wait: async () => {} } : {}) });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const messages = { App: (locale === 'vi' ? vi : en).App };
+  testRoute.locale = locale;
+  const content = session ? <SessionIntl>{ui}</SessionIntl> : ui;
   const view = render(
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <QueryClientProvider client={client}>
         <SessionProvider store={store}>
-          <ThemeProvider>{chrome ? <AddWordProvider><AppChrome>{ui}</AppChrome></AddWordProvider> : ui}</ThemeProvider>
+          <ThemeProvider>{chrome ? <AddWordProvider><AppChrome>{content}</AppChrome></AddWordProvider> : content}</ThemeProvider>
         </SessionProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>,

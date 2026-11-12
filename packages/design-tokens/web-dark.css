@@ -76,6 +76,21 @@
   --color-wm-wrong-soft: #352731;
   --color-wm-wrong-line: rgb(229 96 63 / 0.55);
   --color-wm-wrong-ink: #e87052;
+  /* P.13 (mockup L321-331, L338, L352, L509-511): session blocks. translation-soft = color-mix(in oklab, accent 7%, surface);
+     translation-line and hint-line = color-mix(accent 22%, transparent); translation-chip-line = color-mix(accent 30%, transparent);
+     answer-line = color-mix(pass 40%, transparent) ("Not quite" answer block); blank-soft = color-mix(accent 7%, transparent), blank-soft-focus
+     = 12 % (the fill-in input). Precomputed. */
+  --color-wm-translation-soft: #1e2337;
+  --color-wm-translation-line: rgb(141 162 255 / 0.22);
+  --color-wm-translation-chip-line: rgb(141 162 255 / 0.3);
+  --color-wm-hint-line: rgb(141 162 255 / 0.22);
+  --color-wm-answer-line: rgb(98 201 143 / 0.4);
+  --color-wm-blank-soft: rgb(141 162 255 / 0.07);
+  --color-wm-blank-soft-focus: rgb(141 162 255 / 0.12);
+  /* P.17 (mockup L273-277): the Học side buttons. Light: the surface. Dark: fail-wash = color-mix(in oklab, fail 6%, surface),
+     pass-wash = color-mix(in oklab, pass 6%, surface). Precomputed. */
+  --color-wm-fail-wash: #23222f;
+  --color-wm-pass-wash: #1b2430;
   /* Level colours (ui/levels.ts): 0 is none, 1-5 brighten with the level. */
   --color-wm-level-0: #56607a;
   --color-wm-level-1: #1f4d35;

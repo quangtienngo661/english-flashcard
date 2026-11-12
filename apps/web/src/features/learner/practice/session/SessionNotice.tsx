@@ -1,9 +1,10 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useFormat } from '@/app-shell/format';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { useSession } from '@/app-shell/session/session-context';
 import { refillKind } from '../../settings/refill';
 import { wordHref } from '../../word/word-api';
@@ -26,7 +27,7 @@ export function useAiRefillLine() {
 /** The link to the learner's word (K/74a, K/76): "Xem lại từ trong Từ của tôi" (copy doc §17.1). */
 export function SeeWordLink({ lemma }: { lemma: string }) {
   const t = useTranslations('App.practice.session.ai');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   return (
     <Link href={wordHref(locale, lemma)} className="font-semibold text-wm-accent underline underline-offset-2">
       {t('seeWord')}

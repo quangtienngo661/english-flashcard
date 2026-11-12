@@ -180,16 +180,16 @@ test.describe('M2 flows (mocked API)', () => {
     const { handlers } = decksApi([summary(G, 'Công nghệ')]);
     await signedInAs(page, 'free', handlers);
     await page.goto(`/vi/app/review?group=${G}`);
-    await expect(page.getByRole('group', { name: 'Thẻ 1 trên 2' })).toBeVisible();
-    await expect(page.getByText('còn 2 thẻ')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Card 1 of 2' })).toBeVisible();
+    await expect(page.getByText('2 cards left')).toBeVisible();
     await page.keyboard.press('Space');
     await expect(page.getByText('triển khai')).toBeVisible();
     await expect(page.getByText('deploys')).toBeVisible();
     await page.keyboard.press('2');
-    await expect(page.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Card 2 of 2' })).toBeVisible();
     await page.keyboard.press('Space');
     await page.keyboard.press('1');
-    await expect(page.getByRole('heading', { name: 'Xong 2 thẻ.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '2 cards done.' })).toBeVisible();
     const answers = requests(page, 'POST', '/v1/reviews').map((r) => r.body as { answer: string; review_id: string });
     expect(answers.map((a) => a.answer)).toEqual(['known', 'review']);
     expect(answers[0].review_id).not.toBe(answers[1].review_id);
@@ -233,7 +233,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.goto(`/${locale}/app${path ? `/${path}` : ''}`);
         if (flip) {
           await expect(page.getByRole('group').first()).toBeVisible();
-          await page.getByRole('button', { name: locale === 'vi' ? vi.review.flip : copy.en.App.review.flip }).click();
+          // Session copy is English in every locale (QM9-9).
+          await page.getByRole('button', { name: copy.en.App.review.flip }).click();
         }
         await ready(page);
         await noSideScroll(page, `${locale}/app/${path}${flip ? ' (back)' : ''}`);

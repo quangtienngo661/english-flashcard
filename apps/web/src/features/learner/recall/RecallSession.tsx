@@ -1,7 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { NotFoundState } from '@/ui/NotFoundState';
 import { isId } from '../groups/groups-api';
 import { PracticeSession } from '../practice/session/PracticeSession';
@@ -9,7 +10,7 @@ import { PracticeSession } from '../practice/session/PracticeSession';
 /** Đợt C §4.4 `/app/recall?group=`: an Ôn session of one deck, on the practice session screen without its setup step. */
 export function RecallSession() {
   const t = useTranslations('App.group');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const raw = useSearchParams().get('group');
   if (!isId(raw))
     return (

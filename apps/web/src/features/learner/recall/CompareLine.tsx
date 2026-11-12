@@ -35,24 +35,25 @@ export function compareLetters(typed: string, answer: string): { typed: Letter[]
 
 /**
  * Figma 209:5902 "so chữ": once the answer is shown, the typed word above the answer, extra letters struck in red, missing ones
- * underlined in green. Screen readers get both words in one name; the marks are visual only.
+ * underlined in green. Screen readers get both words in one name; the marks are visual only. P.13 (chỗ 18, mockup L1270-1272): it takes
+ * the answer field's place inside the question card, under a hairline; the typed word struck in red, the answer in green.
  */
 export function CompareLine({ typed, answer }: { typed: string; answer: string }) {
   const t = useTranslations('App.recall.compare');
   const letters = compareLetters(typed, answer);
   return (
-    <div role="group" aria-label={t('label', { typed, answer })} className="flex flex-col gap-1.5 rounded-wm-row bg-wm-surface px-4 py-3">
-      <Row label={t('typed')} letters={letters.typed} />
-      <Row label={t('answer')} letters={letters.answer} />
+    <div role="group" aria-label={t('label', { typed, answer })} className="flex flex-col gap-1.5 border-t border-wm-line pt-3 motion-safe:animate-wm-feedback-in">
+      <Row label={t('typed')} letters={letters.typed} tone="text-wm-fail line-through decoration-2" />
+      <Row label={t('answer')} letters={letters.answer} tone="text-wm-pass" />
     </div>
   );
 }
 
-function Row({ label, letters }: { label: string; letters: Letter[] }) {
+function Row({ label, letters, tone }: { label: string; letters: Letter[]; tone: string }) {
   return (
-    <p aria-hidden className="flex flex-wrap items-baseline gap-3">
-      <span className="w-16 shrink-0 text-wm-meta text-wm-muted">{label}</span>
-      <span className="text-wm-word tracking-wide text-wm-ink">
+    <p aria-hidden className="flex flex-wrap items-baseline gap-3.5">
+      <span className="w-20 shrink-0 text-wm-meta text-wm-muted">{label}</span>
+      <span className={cn('min-w-0 break-all text-wm-word tracking-wide', tone)}>
         {letters.map((letter, i) => (
           <span
             key={i}

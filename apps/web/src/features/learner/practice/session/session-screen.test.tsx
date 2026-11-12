@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { SessionIntl } from '@/app-shell/SessionIntl';
 import { renderApp } from '@/test-utils/render-app';
+import { testRoute } from '@/test-utils/route-locale';
 import { CalendarHost } from '@/features/learner/calendar/CalendarHost';
 import type { Route } from '@/app-shell/session/test-support';
 import { PracticeSession } from './PracticeSession';
@@ -9,6 +11,7 @@ import { PracticeSession } from './PracticeSession';
 // M5.4: the rebuilt session screen (Figma 100:3164, 178:5326, 178:5546, 178:5755; round 15 4E).
 const hardReplace = vi.fn();
 vi.mock('next/navigation', () => ({
+  useParams: () => ({ locale: testRoute.locale }),
   usePathname: () => '/vi/app/practice/session',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -63,85 +66,85 @@ const routes = (item: unknown, over: Record<string, Route> = {}): Record<string,
 
 describe('PracticeSession, the rebuilt screen (M5.4)', () => {
   it('an AI item shows the "câu AI" chip and Báo lỗi, and reports with the AI reasons', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes(cloze()) });
-    await screen.findByText('Air quality tends to ___ in the dry season.');
-    expect(screen.getByText('Câu AI')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Báo lỗi' }));
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    expect(screen.getByText('AI sentence')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     await screen.findByRole('dialog');
     expect(v.calls.some((c) => c.path === '/v1/practice/report-reasons?kind=ai')).toBe(true);
   });
 
   it('ai: false shows no "câu AI" chip even on a cloze; Báo lỗi there opens the non-AI reasons', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes(cloze({ ai: false })) });
-    await screen.findByText('Air quality tends to ___ in the dry season.');
-    expect(screen.queryByText('câu AI')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Báo lỗi' }));
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes(cloze({ ai: false })) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    expect(screen.queryByText('AI sentence')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     await screen.findByRole('dialog');
     expect(v.calls.some((c) => c.path === '/v1/practice/report-reasons?kind=non_ai')).toBe(true);
     expect(v.calls.some((c) => c.path === '/v1/practice/report-reasons?kind=ai')).toBe(false);
   });
 
   it('Ôn shows neither the AI chip nor Báo lỗi, even on a reportable item', async () => {
-    renderApp(<PracticeSession recall={{ groupId: TECH }} />, { routes: routes(null, {
+    renderApp(<PracticeSession recall={{ groupId: TECH }} />, { session: true, routes: routes(null, {
       'POST /v1/practice/sessions': () => Response.json({ session: view({ kind: 'recall', cloze_source: null }) }),
       [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ kind: 'recall' }), item: mcq({ ai: true }) }),
     }) });
     await screen.findByText('xấu đi');
-    expect(screen.queryByText('câu AI')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Báo lỗi' })).not.toBeInTheDocument();
+    expect(screen.queryByText('AI sentence')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
   });
 
   it('a right answer at level 1 shows the move "Bậc 1 → Bậc 2" under "Đúng rồi"', async () => {
-    renderApp(<PracticeSession />, { routes: routes(mcq()) });
+    renderApp(<PracticeSession />, { session: true, routes: routes(mcq()) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    const panel = (await screen.findByText('Đúng rồi')).closest('[data-feedback]') as HTMLElement;
-    const move = within(panel).getByRole('group', { name: 'Từ Bậc 1 sang Bậc 2' });
-    expect(move).toHaveTextContent('Bậc 1Bậc 2');
+    const panel = (await screen.findByText('Right')).closest('[data-feedback]') as HTMLElement;
+    const move = within(panel).getByRole('group', { name: 'From Level 1 to Level 2' });
+    expect(move).toHaveTextContent('Level 1Level 2');
   });
 
   it('no move line when the word has no level (left the schedule) or is already at the last level', async () => {
     for (const level of [null, 5]) {
-      const v = renderApp(<PracticeSession />, { routes: routes(mcq(), { 'POST /v1/practice/items/item-8/answer': () => Response.json(result({ level })) }) });
+      const v = renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), { 'POST /v1/practice/items/item-8/answer': () => Response.json(result({ level })) }) });
       await screen.findByText('xấu đi');
       await userEvent.keyboard('1');
-      await screen.findByText('Đúng rồi');
-      expect(screen.queryByRole('group', { name: /^Từ (Mới|Bậc \d) sang Bậc \d$/ })).not.toBeInTheDocument();
+      await screen.findByText('Right');
+      expect(screen.queryByRole('group', { name: /^From (New|Level \d) to Level \d$/ })).not.toBeInTheDocument();
       v.unmount();
     }
   });
 
   it('a reload whose view says correct 5, wrong 2 shows ✓5 ✗2 and "câu 8 / 20"; an answer adds to the counts', async () => {
-    renderApp(<PracticeSession />, { routes: routes(mcq(), {
+    renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), {
       'POST /v1/practice/items/item-8/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true, choice_index: 0 })),
     }) });
     await screen.findByText('xấu đi');
-    const bar = screen.getByRole('progressbar', { name: 'câu 8 / 20' });
+    const bar = screen.getByRole('progressbar', { name: 'question 8 / 20' });
     expect(bar).toHaveAttribute('aria-valuenow', '8');
-    expect(screen.getByText('câu 8 / 20')).toBeInTheDocument();
-    expect(screen.getByLabelText('5 câu đúng')).toHaveTextContent('5');
-    expect(screen.getByLabelText('2 câu sai')).toHaveTextContent('2');
+    expect(screen.getByText('question 8 / 20')).toBeInTheDocument();
+    expect(screen.getByLabelText('5 right')).toHaveTextContent('5');
+    expect(screen.getByLabelText('2 wrong')).toHaveTextContent('2');
     await userEvent.keyboard('3');
-    await screen.findByText('Chưa đúng');
-    expect(screen.getByLabelText('3 câu sai')).toHaveTextContent('3');
-    expect(screen.getByLabelText('5 câu đúng')).toHaveTextContent('5');
+    await screen.findByText('Not quite');
+    expect(screen.getByLabelText('3 wrong')).toHaveTextContent('3');
+    expect(screen.getByLabelText('5 right')).toHaveTextContent('5');
   });
 
   it('MCQ wrong: the picked option reads "Bạn chọn", the right one "Đáp án đúng", the others are dimmed', async () => {
-    renderApp(<PracticeSession />, { routes: routes(mcq(), {
+    renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), {
       'POST /v1/practice/items/item-8/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true })),
     }) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('3');
-    await screen.findByText('Chưa đúng');
-    expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent('Bạn chọn');
-    expect(screen.getByRole('button', { name: /deteriorate/ })).toHaveTextContent('Đáp án đúng');
-    expect(screen.getByRole('button', { name: /evaporate/ })).not.toHaveTextContent(/Bạn chọn|Đáp án đúng/);
+    await screen.findByText('Not quite');
+    expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent('Your choice');
+    expect(screen.getByRole('button', { name: /deteriorate/ })).toHaveTextContent('Right answer');
+    expect(screen.getByRole('button', { name: /evaporate/ })).not.toHaveTextContent(/Your choice|Right answer/);
     expect(screen.getByRole('button', { name: /evaporate/ })).toHaveClass('opacity-60');
   });
 
-  it('keys keep today\'s actions: 1 answers, Enter = Đã biết then next, H opens a hint, Esc ends', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes(mcq(), {
+  it('keys keep today\'s actions: 1 answers, Enter = Know then next, H opens a hint, Esc ends', async () => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), {
       'POST /v1/practice/items/item-9/answer': () => Response.json(result()),
       [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ asked: 9, correct: 6 }), item: mcq({ item_id: 'item-9', position: 9 }) }),
       'POST /v1/practice/items/item-9/hint': () => Response.json({ level: 1, hint: { kind: 'definition', text: 'to become worse' } }),
@@ -150,34 +153,34 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     }) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    await screen.findByText('Đúng rồi');
+    await screen.findByText('Right');
     await userEvent.keyboard('{Enter}');
-    await screen.findByText('câu 9 / 20');
+    await screen.findByText('question 9 / 20');
     expect(v.calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/item-8/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
-    expect(screen.getByLabelText('6 câu đúng')).toBeInTheDocument();
+    expect(screen.getByLabelText('6 right')).toBeInTheDocument();
     await userEvent.keyboard('h');
     await screen.findByText('to become worse');
     await userEvent.keyboard('{Escape}');
-    await screen.findByText('Xong 9 câu.');
+    await screen.findByText('9 questions done.');
   });
 
   it('the key legend names the keys of the result on screen', async () => {
-    renderApp(<PracticeSession />, { routes: routes(mcq()) });
+    renderApp(<PracticeSession />, { session: true, routes: routes(mcq()) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    await screen.findByText('Đúng rồi');
-    const legend = screen.getByRole('list', { name: 'Phím' });
-    expect(within(legend).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['EnterĐã biết', '1Cần ôn lại', 'EscDừng phiên']);
+    await screen.findByText('Right');
+    const legend = screen.getByRole('list', { name: 'Keys' });
+    expect(within(legend).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['EnterKnow', '1Review again', 'EscStop']);
   });
 
   it('review M1: after a try-again, Enter in the field does not send the same wrong word again; the word is selected to retype', async () => {
     const typedItem = { ...cloze({ ai: false }), item_id: 'item-8' };
-    const v = renderApp(<PracticeSession />, { routes: routes(typedItem, {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes(typedItem, {
       'POST /v1/practice/items/item-8/answer': () => Response.json({ result: 'try_again', tries: 1 }),
     }) });
-    const field = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    const field = await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.type(field, 'deteriorated{Enter}');
-    await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.');
+    await screen.findByText('Check the spelling and try again. The answer stays hidden.');
     await userEvent.type(field, '{Enter}');
     const answers = () => v.calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/item-8/answer');
     expect(answers()).toHaveLength(1);
@@ -201,18 +204,19 @@ describe('M6.9: the calendar button in the session bar (phone, Figma 95:344)', (
   });
 
   it('the practice session shows one "Lịch học" in its bar', async () => {
-    renderApp(<PracticeSession />, { routes: routes(mcq()) });
+    renderApp(<PracticeSession />, { session: true, routes: routes(mcq()) });
     await screen.findByText('xấu đi');
-    expect(screen.getAllByRole('button', { name: 'Lịch học' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Study calendar' })).toHaveLength(1);
   });
 
   it('Ôn: the bar button opens "Tháng 11, 2026"; L typed in the answer box types "l"', async () => {
-    renderApp(<CalendarHost><PracticeSession recall={{ groupId: TECH }} /></CalendarHost>, { routes: recall(typeWord) });
-    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    // Lịch is mounted by the (member) layout, outside SessionIntl: the button is English, the dialog keeps the route's language.
+    renderApp(<CalendarHost><SessionIntl><PracticeSession recall={{ groupId: TECH }} /></SessionIntl></CalendarHost>, { routes: recall(typeWord) });
+    const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'l');
     expect(input).toHaveValue('l');
     expect(screen.queryByRole('dialog')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Lịch học' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Study calendar' }));
     expect(await screen.findByRole('dialog', { name: 'Tháng 11, 2026' })).toBeInTheDocument();
   });
 });
