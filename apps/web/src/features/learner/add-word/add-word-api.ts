@@ -46,7 +46,9 @@ export function useLookup(q: string) {
 /** The most groups one quick add can name (the API refuses more). */
 export const QUICK_ADD_GROUPS_MAX = 10;
 
-/** A 409 `group-full` from quick add carries the full group's id in `detail`; null when the error is something else. */
+/** A 409 `group-full` from quick add names the full group in its `group_id` extension; null when the error is something else. */
 export function fullGroupId(error: unknown): string | null {
-  return error instanceof ApiError && error.problem.slug === 'group-full' ? (error.problem.detail ?? null) : null;
+  if (!(error instanceof ApiError) || error.problem.slug !== 'group-full') return null;
+  const id = error.problem.extensions?.group_id;
+  return typeof id === 'string' ? id : null;
 }

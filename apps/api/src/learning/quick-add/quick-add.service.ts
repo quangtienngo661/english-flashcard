@@ -87,13 +87,16 @@ export class QuickAddService {
     return result;
   }
 
-  /** QP1: a full group refuses the whole add, and the problem names which group it was. */
+  /** QP1: a full group refuses the whole add; the problem names that group in the `group_id` extension (machine-readable, final review I2). */
   private async linkOrNameFullGroup(tx: Prisma.TransactionClient, userId: string, groupId: string, senseId: string, today: string) {
     try {
       return await this.items.linkInTx(tx, userId, groupId, senseId, today);
     } catch (error) {
       if (error instanceof ProblemDetailsException && error.problemType === 'group-full') {
-        throw new ProblemDetailsException({ status: 409, title: 'Group full', type: 'group-full', detail: groupId });
+        throw new ProblemDetailsException({
+          status: 409, title: 'Group full', type: 'group-full',
+          detail: 'One of the chosen groups is full.', extensions: { group_id: groupId },
+        });
       }
       throw error;
     }
