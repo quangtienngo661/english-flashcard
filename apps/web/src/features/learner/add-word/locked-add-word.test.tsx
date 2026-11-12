@@ -187,7 +187,7 @@ describe('Locked add-word sheet (A14)', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Close' }).at(-1)!);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });

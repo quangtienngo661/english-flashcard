@@ -499,7 +499,8 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     );
   }
 
-  if (failure?.deckGone) footer = <Button variant="secondary" onPress={onClose}>{tc('close')}</Button>;
+  // Deck gone: only the × closes it (one button named Close, P.4 fix round 1).
+  if (failure?.deckGone) footer = undefined;
 
   return (
     <Dialog
