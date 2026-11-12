@@ -191,6 +191,15 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     await waitFor(() => expect(within(cells('release')[2]).getByText('Nghĩa đã đổi')).toBeInTheDocument());
   });
 
+  it('an unset part of speech ("unspecified") leaves the cell empty (final review I1)', async () => {
+    const unset = { ...WORDS[0], content: { ...WORDS[0].content, pos: 'unspecified' } };
+    renderApp(<GroupPage />, { chrome: true, routes: routes({ [`GET ${WORDS_URL}`]: () => Response.json({ items: [unset, ...WORDS.slice(1)], next_page_token: null }) }) });
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    const cells = within(within(table).getByRole('row', { name: 'deploy' })).getAllByRole('cell');
+    expect(cells[1].textContent).toBe('');
+    expect(within(table).queryByText(/unspecified/)).toBeNull();
+  });
+
   it('level chips are buttons "Bậc 1 2" with aria-pressed, one pressed at a time, and filter the rows', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });

@@ -119,6 +119,28 @@ describe('CardStack', () => {
     expect(view.calls.filter((c) => c.path.startsWith('/v1/words/')).map((c) => c.path)).toEqual(['/v1/words/word1']);
   });
 
+  it('an unset part of speech ("unspecified") is never printed, front, back or behind (final review I1)', async () => {
+    const unset = (n: number): Card => ({ ...card(n), content: { ...card(n).content, pos: 'unspecified' } });
+    renderApp(<CardStack cards={[unset(1), unset(2)]} current={0} flipped={false} onFlip={() => {}} onRate={() => {}} />, {
+      session: true,
+      chrome: false,
+      routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }) },
+    });
+    await screen.findAllByText('word1');
+    expect(screen.getByText('word2')).toBeInTheDocument();
+    expect(screen.queryByText(/unspecified/)).toBeNull();
+  });
+
+  it('control: a set part of speech is printed on the front and the back', async () => {
+    renderApp(<CardStack cards={[card(1)]} current={0} flipped={false} onFlip={() => {}} onRate={() => {}} />, {
+      session: true,
+      chrome: false,
+      routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }) },
+    });
+    await screen.findAllByText('word1');
+    expect(screen.getAllByText('verb')).toHaveLength(2);
+  });
+
   it('with reduced motion, rating animates only opacity, within 200 ms', async () => {
     const animate = vi.fn(() => ({ finished: Promise.resolve(), cancel: () => {}, onfinish: null }));
     Object.defineProperty(Element.prototype, 'animate', { value: animate, configurable: true, writable: true });
