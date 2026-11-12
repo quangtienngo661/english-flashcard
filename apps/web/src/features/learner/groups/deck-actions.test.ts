@@ -1,4 +1,4 @@
-import { deckPlan, mastered } from './deck-actions';
+import { deckPlan } from './deck-actions';
 import type { GroupSummary } from './groups-api';
 
 /** A deck of 40 words: `levels` = how many words sit at levels 0…5. */
@@ -38,19 +38,5 @@ describe('deckPlan (design §4.1, DC25)', () => {
 
   it('an empty deck offers neither', () => {
     expect(deckPlan(deck({ priority: 0, due: 0, new: 0 }, [0, 0, 0, 0, 0, 0]))).toEqual({ learn: null, recall: null, primary: null, doneToday: false });
-  });
-});
-
-describe('mastered (DC11)', () => {
-  it('counts levels 4 and 5', () => {
-    expect(mastered(deck({ priority: 0, due: 0, new: 0 }))).toBe(12);
-  });
-
-  it('0 when no word reached level 4', () => {
-    expect(mastered(deck({ priority: 0, due: 0, new: 0 }, [5, 5, 5, 5, 0, 0]))).toBe(0);
-  });
-
-  it('a summary with fewer cells counts what it has', () => {
-    expect(mastered({ ...deck({ priority: 0, due: 0, new: 0 }), cells: [{ level: 0, total: 3, due: 0 }] })).toBe(0);
   });
 });

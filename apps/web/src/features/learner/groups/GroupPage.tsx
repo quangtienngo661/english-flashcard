@@ -363,7 +363,9 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
   const level = toLevel(card.level);
   const state = rowState(card);
   const status = state.key === 'dueOn' ? t('dueOn', { date: createFormat(locale, 'UTC').date(`${card.due_date}T00:00:00Z`, 'dayMonth') }) : t(state.key);
-  const cell = cn('px-4 py-3 align-middle', !last && 'border-b border-wm-line');
+  // One divider per word: under the whole row on desktop, under the second grid row (meaning and status) on phones.
+  const cell = cn('px-4 py-3 align-middle', !last && 'md:border-b md:border-wm-line');
+  const phoneDivider = !last && 'border-b border-wm-line';
 
   async function remove() {
     if (busy) return;
@@ -390,7 +392,7 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
         </Link>
       </td>
       <td className={cn(cell, 'hidden text-wm-meta text-wm-muted md:table-cell')}>{card.content.pos}</td>
-      <td className={cn(cell, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
+      <td className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
         {card.content.meaning.text}
         {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
       </td>
@@ -400,7 +402,7 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
           {levelName(level)}
         </span>
       </td>
-      <td className={cn(cell, 'col-start-2 row-start-2 pt-0 md:pt-3')}>
+      <td className={cn(cell, phoneDivider, 'col-start-2 row-start-2 pt-0 md:pt-3')}>
         <div className="flex items-center justify-end gap-2 md:justify-between">
           <span className={cn('text-wm-label', state.tone)}>{status}</span>
           <TextButton
