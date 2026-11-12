@@ -35,3 +35,29 @@ describe('quick-add body — the learner own ipa (round C, H10)', () => {
     expect(quickAddBody.safeParse(word({ ipa: 'a'.repeat(100) })).success).toBe(true);
   });
 });
+
+describe('quick-add body — several groups (QP1)', () => {
+  const OTHER = '00000000-0000-4000-8000-0000000000a2';
+  const base = { sense_id: '00000000-0000-4000-8000-0000000000b1' };
+
+  it('group_ids with two ids is accepted; group_id alone still is', () => {
+    expect(quickAddBody.parse({ ...base, group_ids: [GROUP, OTHER] }).group_ids).toEqual([GROUP, OTHER]);
+    expect(quickAddBody.safeParse({ ...base, group_id: GROUP }).success).toBe(true);
+  });
+
+  it('duplicate ids collapse, keeping the first order', () => {
+    expect(quickAddBody.parse({ ...base, group_ids: [GROUP, OTHER, GROUP] }).group_ids).toEqual([GROUP, OTHER]);
+  });
+
+  it('group_ids and group_id together, or neither → refused', () => {
+    expect(quickAddBody.safeParse({ ...base, group_id: GROUP, group_ids: [GROUP] }).success).toBe(false);
+    expect(quickAddBody.safeParse({ ...base }).success).toBe(false);
+  });
+
+  it('0 ids → refused; 10 → accepted; 11 → refused', () => {
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    expect(quickAddBody.safeParse({ ...base, group_ids: [] }).success).toBe(false);
+    expect(quickAddBody.safeParse({ ...base, group_ids: ids(10) }).success).toBe(true);
+    expect(quickAddBody.safeParse({ ...base, group_ids: ids(11) }).success).toBe(false);
+  });
+});

@@ -15,8 +15,13 @@ const uuid = z.uuid().transform((value) => value.toLowerCase());
 const bounded = (max: number) => z.string().transform(normalizeText)
   .refine((value) => !value.includes('\0') && [...value].length >= 1 && [...value].length <= max);
 
+/** QP1: a word can join up to this many groups in one request. */
+export const QUICK_ADD_GROUPS_MAX = 10;
+
 export const quickAddBody = z.strictObject({
-  group_id: uuid,
+  // Either the old single `group_id` or `group_ids` (additive within v1); both together are refused.
+  group_id: uuid.optional(),
+  group_ids: z.array(uuid).min(1).max(QUICK_ADD_GROUPS_MAX).transform((ids) => [...new Set(ids)]).optional(),
   sense_id: uuid.optional(),
   new_word: z.strictObject({
     lemma: bounded(LEMMA_MAX),
@@ -33,7 +38,8 @@ export const quickAddBody = z.strictObject({
     ipa: ownIpa.nullable().optional(),
   }).optional(),
   sentence: bounded(SENTENCE_MAX).optional(),
-}).refine((body) => (body.sense_id === undefined) !== (body.new_word === undefined));
+}).refine((body) => (body.sense_id === undefined) !== (body.new_word === undefined))
+  .refine((body) => (body.group_id === undefined) !== (body.group_ids === undefined));
 
 @Controller('quick-add')
 @LearnerContent()
@@ -47,7 +53,7 @@ export class QuickAddController {
   @RateLimit('user.write')
   add(@Body({ schema: quickAddBody }) body: z.infer<typeof quickAddBody>, @CurrentLearner() learner: Learner) {
     return this.quickAdd.quickAdd(learner.userId, learner.nativeLanguage, {
-      groupId: body.group_id, senseId: body.sense_id, newWord: body.new_word, sentence: body.sentence,
+      groupIds: body.group_ids ?? [body.group_id!], senseId: body.sense_id, newWord: body.new_word, sentence: body.sentence,
     });
   }
 }

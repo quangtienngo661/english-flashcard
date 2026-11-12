@@ -10,6 +10,7 @@
 // `correct` / `wrong` after a reload; GET /v1/me/calendar and /days/:date (counts, items,
 // kind filter, a page token bound to its kind); GET /v1/me/streak; a bad month → 400; M4.1: total, ipa and example on GET /v1/words;
 // M6.1: lemma, question_type and ai on GET /v1/practice/reports.
+// QP1: POST /v1/quick-add with group_ids (two groups, a foreign id saves nothing, both fields → 400).
 // M8.1: GET /v1/public/faq (seeded items, drafts hidden, order by position) and the admin FAQ routes (create, publish, 409, delete).
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFileSync } from 'node:child_process';
@@ -428,6 +429,26 @@ async function main() {
     check(row && row.lemma === wrongWord.lemma && row.question_type === 'type_word' && row.ai === false && row.reason_label === reason.label,
       `report row ${j(row)} vs ${wrongWord.lemma}`);
     ok(j({ lemma: row.lemma, question_type: row.question_type, ai: row.ai, reason_label: row.reason_label, status: row.status }));
+  });
+
+  await step('13. POST /v1/quick-add with group_ids: one word in two groups; a foreign id saves nothing; both fields together → 400 (QP1)', async () => {
+    const mine = async (name) => (await want(api('POST', '/v1/groups', { as: L, idem: true, body: { name: `${name} ${run}` } }), 201, `group ${name}`)).id;
+    const [g1, g2] = [await mine('QP1 a'), await mine('QP1 b')];
+    const other = await registerLearner(`smokegm-o-${run}@example.com`);
+    const foreign = (await want(api('POST', '/v1/groups', { as: other, idem: true, body: { name: `QP1 foreign ${run}` } }), 201, 'foreign group')).id;
+    const lemmaA = `qpone${run.replaceAll(/[^a-z]/g, 'x')}`;
+    const newWord = (lemma) => ({ lemma, meaning: 'một nghĩa thử' });
+    const links = (lemma) => count(`SELECT count(*) FROM group_items gi JOIN learning_items li ON li.id = gi.item_id JOIN senses s ON s.id = li.sense_id
+      JOIN entries e ON e.id = s.entry_id WHERE e.lemma = '${lemma}' AND li.user_id = '${L.id}'`);
+    const saved = await want(api('POST', '/v1/quick-add', { as: L, idem: true, body: { group_ids: [g1, g2, g1], new_word: newWord(lemmaA) } }), 201, 'quick-add two groups');
+    check(saved.created_word === true && links(lemmaA) === 2, `created_word ${saved.created_word}, links ${links(lemmaA)}`);
+    const lemmaB = `${lemmaA}b`;
+    await wantProblem(api('POST', '/v1/quick-add', { as: L, idem: true, body: { group_ids: [g1, foreign], new_word: newWord(lemmaB) } }), 404, 'not-found', 'foreign group');
+    check(count(`SELECT count(*) FROM entries WHERE lemma = '${lemmaB}'`) === 0, 'a foreign group id left a private word behind');
+    await want(api('POST', '/v1/quick-add', { as: L, idem: true, body: { group_id: g1, new_word: newWord(`${lemmaA}c`) } }), 201, 'old group_id still works');
+    const both = await api('POST', '/v1/quick-add', { as: L, idem: true, body: { group_id: g1, group_ids: [g2], new_word: newWord(`${lemmaA}d`) } });
+    check(both.status === 400, `both fields: ${both.status} ${both.text}`);
+    ok(`${lemmaA} in 2 groups; foreign id → 404 with no ${lemmaB}; group_id alone 201; both fields 400`);
   });
 
   console.log(`\n${failures.length === 0 ? 'ALL OK' : `${failures.length} step(s) FAILED`} — ${stepNo} steps in ${Math.round((Date.now() - started) / 1000)}s`);
