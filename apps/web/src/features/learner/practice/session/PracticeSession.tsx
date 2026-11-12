@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
-import { ErrorState } from '@/app-ui/States';
+import { ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';

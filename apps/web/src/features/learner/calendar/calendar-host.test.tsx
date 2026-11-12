@@ -2,7 +2,7 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useInsertionEffect, useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { CalendarHost } from './CalendarHost';
 import { useCalendar } from './calendar-context';
 

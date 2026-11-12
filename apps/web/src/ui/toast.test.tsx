@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, screen, within } from '@testing-library/react';
-import { renderApp } from './test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { ToastRegion, showToast, toastQueue } from './Toast';
 
 // Motion audit #5: a toast closes inside a view transition (styled in globals.css); adding one never starts a transition.

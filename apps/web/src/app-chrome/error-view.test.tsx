@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { ErrorView } from './ErrorView';
 
 describe('ErrorView (design §5.5)', () => {

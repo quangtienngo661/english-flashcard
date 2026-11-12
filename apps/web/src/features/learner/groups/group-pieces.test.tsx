@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { StageBar } from '@/ui/StageBar';
 import { DeckButtons } from './DeckButtons';
 import { GroupStack } from './GroupStack';

@@ -3,7 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { makeMe } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { HouseAd } from './HouseAd';
 import { houseAdKey } from './house-ad-counter';
 

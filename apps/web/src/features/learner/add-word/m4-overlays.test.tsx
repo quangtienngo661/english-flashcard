@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordProvider, useAddWord } from './add-word-context';
 import { AddWordSheet } from './AddWordSheet';
 import { DeckPickerDialog } from './DeckPickerDialog';

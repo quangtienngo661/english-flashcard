@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen, waitFor } from '@testing-library/react';
 import { problem, tokenResponse } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AuthGate } from './AuthGate';
 
 const hardReplace = vi.fn();

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
-import { showStreak } from '@/app-ui/StreakToast';
+import { showStreak } from '@/ui/StreakToast';
 import { writeStreak } from '../calendar/calendar-api';
 import { GROUPS_KEY, groupKey, type Card } from '../groups/groups-api';
 

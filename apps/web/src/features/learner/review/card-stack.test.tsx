@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen } from '@testing-library/react';
 import { useRef, useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import type { Card } from '../groups/groups-api';
 import { CardStack, type CardStackHandle } from './CardStack';
 import { useCardDrag } from './useCardDrag';

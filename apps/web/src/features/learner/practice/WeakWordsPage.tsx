@@ -11,7 +11,8 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
 import { useApi, useSession } from '@/app-shell/session/session-context';
-import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { EmptyState, ErrorState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
 import { Select } from '@/ui/Select';
@@ -104,7 +105,7 @@ export function WeakWordsPage() {
       >
         <PageTitle>{t('title')}</PageTitle>
         {groups.isPending ? (
-          <FullScreenSpinner />
+          <SkeletonBlocks />
         ) : groups.isError ? (
           <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
         ) : groups.data.total === 0 ? (

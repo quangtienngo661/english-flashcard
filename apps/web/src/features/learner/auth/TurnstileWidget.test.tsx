@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen } from '@testing-library/react';
 import { createRef } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
 
 const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';

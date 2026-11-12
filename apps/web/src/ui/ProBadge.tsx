@@ -4,7 +4,7 @@ import { Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
-/** The small "Pro" label on a feature the plan does not include (restyled from app-ui/Locked.tsx). */
+/** The small "Pro" label on a feature the plan does not include (copy doc §3.3). */
 export function ProBadge() {
   const t = useTranslations('App.ui');
   return (

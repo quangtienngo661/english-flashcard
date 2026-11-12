@@ -2,8 +2,8 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
-import { ToastRegion } from '@/app-ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
+import { ToastRegion } from '@/ui/Toast';
 import { PlansPage } from './PlansPage';
 
 vi.mock('next/navigation', () => ({

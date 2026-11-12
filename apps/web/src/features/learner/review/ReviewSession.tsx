@@ -9,7 +9,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ApiError, NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
-import { EmptyState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
+import { NotFoundState } from '@/ui/NotFoundState';
+import { EmptyState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Kbd } from '@/ui/Kbd';
@@ -97,7 +99,7 @@ export function ReviewSession() {
   };
   let body: ReactNode;
   if (notFound) body = <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />;
-  else if (session.queue.isPending || session.finishing) body = <FullScreenSpinner />;
+  else if (session.queue.isPending || session.finishing) body = <SkeletonBlocks />;
   else if (session.done) body = <ReviewSummary counts={session.counts} piles={piles} group={summary} />;
   else if (total === 0)
     body = (

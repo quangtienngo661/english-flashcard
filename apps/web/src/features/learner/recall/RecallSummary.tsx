@@ -4,7 +4,8 @@ import { Layers2, ListChecks } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { ErrorState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { useGroups } from '../groups/groups-api';
@@ -24,7 +25,7 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const errorText = useErrorMessage();
   const summary = useSummary(session.id);
   const group = useGroups().data?.items.find((g) => g.id === session.group_id);
-  if (summary.isPending) return <FullScreenSpinner />;
+  if (summary.isPending) return <SkeletonBlocks />;
   if (summary.isError) return <ErrorState message={errorText(summary.error)} onRetry={() => void summary.refetch()} />;
   const data = summary.data;
   const recall = data.recall ?? { leveled_up: 0, correct_kept: 0 };

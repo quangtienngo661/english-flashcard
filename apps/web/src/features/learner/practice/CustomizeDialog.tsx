@@ -8,7 +8,7 @@ import { Radio, RadioGroup } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
-import { LockedFeature } from '@/app-ui/Locked';
+import { LockedFeature } from '@/ui/ProBadge';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';

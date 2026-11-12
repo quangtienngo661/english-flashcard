@@ -6,7 +6,7 @@ import CardLayout from '@/app/[locale]/app/(auth)/(card)/layout.app';
 import SplitLayout from '@/app/[locale]/app/(auth)/(split)/layout.app';
 import ChromeLayout from '@/app/[locale]/app/(member)/(chrome)/layout.app';
 import FocusLayout from '@/app/[locale]/app/(member)/(focus)/layout.app';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { GroupPage } from '@/features/learner/groups/GroupPage';
 import { SettingsPage } from '@/features/learner/settings/SettingsPage';
 import { TodayPage } from '@/features/learner/today/TodayPage';
