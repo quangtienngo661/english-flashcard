@@ -78,6 +78,24 @@
   --color-wm-level-all-tint-strong: #9eaed2;
   --color-wm-level-all-line: rgb(30 58 138 / 0.45);
 
+  /* P.14 sign-in and sign-up panel (mockup L180, L418-443). ground: accent 13 % on bg (oklab); glow-1..4: the four radial glows (accent 34 %,
+     mark 48 %, pass 30 %, accent 26 % on transparent); path: the memory path, ink 35 % on transparent; ghost-chip / ghost-ink: the faint
+     background chips, surface 55 % and ink 55 % on transparent; node-label: bg 80 % on transparent; blank: the typed blank, accent 8 % on
+     transparent. field-line: input border on the mesh, ink 22 % on surface (oklab). card-glow-accent: the glow behind the form card, accent
+     22 % on transparent (its yellow is --color-wm-halo-mark). */
+  --color-wm-showcase-ground: #d7deec;
+  --color-wm-showcase-glow-1: rgb(30 58 138 / 0.34);
+  --color-wm-showcase-glow-2: rgb(255 216 74 / 0.48);
+  --color-wm-showcase-glow-3: rgb(27 122 70 / 0.3);
+  --color-wm-showcase-glow-4: rgb(30 58 138 / 0.26);
+  --color-wm-showcase-path: rgb(27 36 68 / 0.35);
+  --color-wm-showcase-ghost-chip: rgb(255 255 255 / 0.55);
+  --color-wm-showcase-ghost-ink: rgb(27 36 68 / 0.55);
+  --color-wm-showcase-node-label: rgb(246 247 250 / 0.8);
+  --color-wm-showcase-blank: rgb(30 58 138 / 0.08);
+  --color-wm-field-line: #c7cad3;
+  --color-wm-card-glow-accent: rgb(30 58 138 / 0.22);
+
   /* Radius scale C, by element role (P.3; mockup L81-82). An inner element is always smaller than its container. */
   /* key: keycaps, small labels, counts, word chips in piles. */
   --radius-wm-key: 0.25rem;

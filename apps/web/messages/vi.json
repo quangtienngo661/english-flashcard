@@ -457,14 +457,21 @@
     "auth": {
       "passwordMismatch": "Mật khẩu nhập lại chưa khớp.",
       "showcase": {
-        "interval": "Thẻ từ · ôn lại sau {days, number} ngày",
-        "group": "Thẻ từ · {group}",
         "today": "Hôm nay",
         "due": "từ đến hạn",
-        "more": "+{count, number} từ",
         "allocate": "phân bổ",
         "viable": "khả thi",
-        "mitigate": "giảm nhẹ"
+        "mitigate": "giảm nhẹ",
+        "deteriorate": "xấu đi",
+        "coherent": "mạch lạc",
+        "days": "{days, plural, other {# ngày}}",
+        "practice": "Điền từ vào câu",
+        "result": "Đúng · lên {level}",
+        "priority": "{count, number} ưu tiên",
+        "dueCount": "{count, number} đến hạn",
+        "pathTitle": "Đường nhớ của mỗi từ.",
+        "pathBody": "Trả lời đúng thì lên bậc và lâu hơn mới gặp lại; sai thì về Bậc 1.",
+        "onPath": "{count, number} từ đang đi trên đường này"
       },
       "footer": {
         "copyright": "© {year} Wordmet",

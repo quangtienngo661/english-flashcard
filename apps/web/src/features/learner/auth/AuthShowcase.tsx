@@ -1,107 +1,237 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
+import { Card } from '@/ui/Card';
+import { LEVEL_FILL, LEVEL_INTERVAL_DAYS, useLevelInterval, useLevelName, type Level } from '@/ui/levels';
 import { TargetWord } from '@/ui/TargetWord';
 
-// The brand panel beside the sign-in and sign-up forms (Figma "Khung giới thiệu" in 35:308 and 35:405), from 1280 px only. It is a
-// picture of the app, not content: the whole panel is aria-hidden. "ngan" = three word cards in their review stages and "Hôm nay";
-// "de12" = one word card and its group card (sign-up).
-export type ShowcaseVariant = 'ngan' | 'de12';
+// The panel beside the sign-in and sign-up forms, from 1280 px only (P.14, mockup L418-460, L1395-1480). It tells the learning loop: words
+// travel a dashed memory path from "Mới" to "Bậc 5", the word card cycles five words, the practice card types the word into the blank and
+// turns green, and the due count falls. It is a picture of the app, not content: the whole panel is aria-hidden. With reduced motion
+// nothing moves and the final frame of each loop shows at once.
 
-export function AuthShowcase({ variant }: { variant: ShowcaseVariant }) {
+// The scene is drawn at 640 x 868 (the panel at 1440 x 900) and scales with rem; the SVG and the travelling words share these coordinates.
+const PATH = 'M 55 774 C 183 713, 210 571, 274 479 S 384 306, 475 234 S 549 122, 585 71';
+
+/** Points of the path at 2 %, 17 %, 37 %, 57 %, 77 % and 95 % of its length (mockup nodes, plus "Mới" at the start). */
+const NODES: Array<[x: number, y: number, level: Level]> = [[71, 766, 0], [167, 674, 1], [251, 517, 2], [350, 368, 3], [471, 237, 4], [564, 110, 5]];
+
+/** Travelling words, each 3.5 s behind the one before; with reduced motion they stand still at a level's stretch of the path. */
+const TRAVELLERS: Array<{ word: string; delay: number; still: string; stillLevel: Level }> = [
+  { word: 'mitigate', delay: 0, still: '15%', stillLevel: 0 },
+  { word: 'allocate', delay: -3.5, still: '40%', stillLevel: 2 },
+  { word: 'viable', delay: -7, still: '62%', stillLevel: 3 },
+  { word: 'coherent', delay: -10.5, still: '85%', stillLevel: 4 },
+];
+
+const LEVEL_ANIMATION: Record<Exclude<Level, 0>, string> = {
+  1: 'animate-wm-showcase-level-1', 2: 'animate-wm-showcase-level-2', 3: 'animate-wm-showcase-level-3',
+  4: 'animate-wm-showcase-level-4', 5: 'animate-wm-showcase-level-5',
+};
+
+type DemoWord = {
+  word: 'mitigate' | 'allocate' | 'viable' | 'deteriorate' | 'coherent';
+  pos: string; gloss: string; example: string; question: [string, string]; level: Exclude<Level, 0>;
+};
+
+// Demo data, not copy: the same in every locale except the meaning (App.auth.showcase.<word>).
+const WORDS: DemoWord[] = [
+  { word: 'mitigate', pos: 'verb · /ˈmɪt.ɪ.ɡeɪt/', gloss: 'to make something bad less serious', example: 'Planting trees can help mitigate urban heat.', question: ['The new policy should ', ' the risk.'], level: 1 },
+  { word: 'allocate', pos: 'verb · /ˈæl.ə.keɪt/', gloss: 'to give a share of something for a purpose', example: 'The council will allocate more money to buses.', question: ['We need to ', ' more time to testing.'], level: 2 },
+  { word: 'viable', pos: 'adjective · /ˈvaɪ.ə.bəl/', gloss: 'able to work successfully', example: 'Solar power is now a viable option.', question: ['Is the plan financially ', '?'], level: 3 },
+  { word: 'deteriorate', pos: 'verb · /dɪˈtɪə.ri.ə.reɪt/', gloss: 'to become worse over time', example: 'Air quality tends to deteriorate in the dry season.', question: ['His health began to ', ' last winter.'], level: 1 },
+  { word: 'coherent', pos: 'adjective · /kəʊˈhɪə.rənt/', gloss: 'logical and well organised', example: 'She gave a clear and coherent answer.', question: ['Write a ', ' argument in your essay.'], level: 4 },
+];
+
+const DUE_START = 12;
+
+type Step = { k: number; typed: number; phase: 'typing' | 'enter' | 'done'; due: number };
+
+const FIRST: Step = { k: 0, typed: 0, phase: 'typing', due: DUE_START };
+/** The last frame of the first word's loop: typed, answered, one fewer due. */
+const FINAL: Step = { k: 0, typed: WORDS[0].word.length, phase: 'done', due: DUE_START - 1 };
+
+/** The next frame of the loop and how long the current one stays (mockup L1453-1474, typing at a steady 100 ms a letter). */
+function next(step: Step): [ms: number, Step] {
+  const length = WORDS[step.k % WORDS.length].word.length;
+  if (step.phase === 'typing' && step.typed === 0) return [900, { ...step, typed: 1 }];
+  if (step.phase === 'typing' && step.typed < length) return [100, { ...step, typed: step.typed + 1 }];
+  if (step.phase === 'typing') return [320, { ...step, phase: 'enter' }];
+  if (step.phase === 'enter') return [260, { ...step, phase: 'done', due: Math.max(0, step.due - 1) }];
+  const k = step.k + 1;
+  return [1700, { k, typed: 0, phase: 'typing', due: k % WORDS.length === 0 ? DUE_START : step.due }];
+}
+
+export function AuthShowcase() {
   const t = useTranslations('App.auth.showcase');
-  return (
-    <div aria-hidden className="relative isolate h-full overflow-hidden rounded-wm-card bg-wm-accent-soft">
-      <div className="auth-panel-glow absolute inset-0 -z-10" />
-      <ReviewPath />
-      <Chip className="left-11 top-16" word="deadline" dot="bg-wm-fail" />
-      <Chip className="bottom-1/3 left-14" word="negotiate" dot="bg-wm-mark" />
-      <Chip className="bottom-16 left-107" word="commute" dot="bg-wm-pass" />
+  const levelName = useLevelName();
+  const levelInterval = useLevelInterval();
+  const motion = !useReducedMotion();
+  const [running, setRunning] = useState<Step>(FIRST);
 
-      <div className="absolute left-1/2 top-1/2 h-132 w-115 -translate-x-1/2 -translate-y-1/2">
-        {variant === 'ngan' ? (
-          <>
-            <WordCard className="left-25 top-0 rotate-7 opacity-80" stage={t('interval', { days: 7 })} word="allocate" pos="verb · /ˈæl.ə.keɪt/" gloss="to give something to someone for a purpose" meaning={t('allocate')} />
-            <WordCard className="left-12.5 top-3 rotate-3" stage={t('interval', { days: 3 })} word="viable" pos="adj · /ˈvaɪ.ə.bəl/" gloss="able to work as intended" meaning={t('viable')} />
-            <WordCard className="left-0 top-4.5 -rotate-2" stage={t('interval', { days: 1 })} word="mitigate" pos="verb · /ˈmɪt.ɪ.ɡeɪt/" gloss="to make something bad less serious" meaning={t('mitigate')} example />
-            <div className="absolute left-62 top-97.5 flex rotate-4 flex-col gap-2 rounded-wm-card bg-wm-surface px-4.5 py-4 shadow-wm-lift backdrop-blur-wm-sm">
-              <p className="font-wm-sans text-wm-label text-wm-muted">{t('today')}</p>
-              <p className="flex items-baseline gap-2">
-                <span className="font-wm-display text-wm-lemma text-wm-accent">12</span>
-                <span className="font-wm-sans text-wm-base text-wm-ink">{t('due')}</span>
-              </p>
-              <span className="flex gap-1">
-                {[true, true, false, false, false].map((on, i) => (
-                  <span key={i} className={cn('h-2 w-7.5 rounded-wm-pill', on ? 'bg-wm-accent' : 'bg-wm-line')} />
-                ))}
-              </span>
-            </div>
-          </>
-        ) : (
-          <>
-            <WordCard className="left-24 top-8 -rotate-2" stage={t('group', { group: 'Đề 12' })} word="mitigate" pos="verb · /ˈmɪt.ɪ.ɡeɪt/" gloss="to make something bad less serious" meaning={t('mitigate')} example />
-            <div className="absolute left-2.5 top-81 flex w-62 -rotate-3 flex-col gap-2 rounded-wm-card bg-wm-surface px-4 py-3.5 shadow-wm-lift">
-              <p className="font-wm-sans text-wm-label text-wm-ink">Đề 12 · Writing</p>
-              <p className="flex flex-wrap gap-1">
-                {['mitigate', 'allocate', 'viable', t('more', { count: 9 })].map((w) => (
-                  <span key={w} className="rounded-wm-key bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-caption text-wm-accent">
-                    {w}
+  useEffect(() => {
+    if (!motion) return;
+    const [ms, after] = next(running);
+    const timer = setTimeout(() => setRunning(after), ms);
+    return () => clearTimeout(timer);
+  }, [motion, running]);
+
+  const step = motion ? running : FINAL;
+  const word = WORDS[step.k % WORDS.length];
+
+  return (
+    <div aria-hidden className="auth-showcase-ground relative isolate h-full overflow-hidden rounded-wm-dialog">
+      <div className="absolute left-1/2 top-1/2 h-217 w-160 -translate-x-1/2 -translate-y-1/2">
+        <svg viewBox="0 0 640 868" className="absolute inset-0 size-full overflow-visible">
+          <path d={PATH} fill="none" strokeWidth="2" strokeDasharray="3 7" className="stroke-wm-showcase-path" />
+          {NODES.map(([x, y, level]) => (
+            <foreignObject key={level} x={x - 70} y={y - 11} width="140" height="48">
+              <div className="flex flex-col items-center gap-1">
+                <span className="grid size-5.5 place-items-center">
+                  <span className={cn('col-start-1 row-start-1 size-5.5 rounded-wm-pill opacity-22', LEVEL_FILL[level])} />
+                  <span className={cn('col-start-1 row-start-1 size-3.5 rounded-wm-pill', LEVEL_FILL[level])} />
+                </span>
+                <span className="whitespace-nowrap rounded-wm-key bg-wm-showcase-node-label px-1.5 font-wm-sans text-wm-meta text-wm-muted">
+                  {level === 0 ? levelName(0) : `${levelName(level)} · ${t('days', { days: LEVEL_INTERVAL_DAYS[level] })}`}
+                </span>
+              </div>
+            </foreignObject>
+          ))}
+          {TRAVELLERS.map((traveller) => (
+            <g
+              key={traveller.word}
+              className={cn(motion && 'animate-wm-showcase-travel')}
+              // raw-ok: the memory path is SVG geometry, and each word has its own delay (or its own still point with reduced motion)
+              style={{ offsetPath: `path('${PATH}')`, offsetRotate: '0deg', offsetDistance: motion ? undefined : traveller.still, '--wm-travel-delay': `${traveller.delay}s` } as CSSProperties}
+            >
+              <foreignObject x="-70" y="-14" width="140" height="28">
+                <div className="flex h-full items-center justify-center">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap rounded-wm-control border border-wm-line bg-wm-surface px-2.5 py-0.5 font-wm-display text-wm-meta font-bold text-wm-ink opacity-90 shadow-wm-row">
+                    <LevelSquare motion={motion} still={traveller.stillLevel} />
+                    {traveller.word}
                   </span>
-                ))}
-              </p>
-            </div>
-          </>
-        )}
+                </div>
+              </foreignObject>
+            </g>
+          ))}
+        </svg>
+
+        <GhostChip className="left-14 top-23" word="deadline" />
+        <GhostChip className="left-110 top-157" word="negotiate" />
+        <GhostChip className="left-120 top-12" word="commute" />
+
+        <Card className="absolute left-25 top-51 z-3 min-h-73 w-80 -rotate-2 p-5 shadow-wm-pop md:p-5">
+          <div key={step.k} className={cn('flex flex-col gap-2', motion && 'animate-wm-showcase-swap')}>
+            <p className="font-wm-display text-wm-lemma text-wm-ink">{word.word}</p>
+            <p className="font-wm-sans text-wm-small text-wm-muted">{word.pos}</p>
+            <p className="font-wm-sans text-wm-base text-wm-ink">{word.gloss}</p>
+            <p className="font-wm-sans text-wm-small text-wm-muted">{t(word.word)}</p>
+            <p className="rounded-wm-row bg-wm-bg px-3 py-2.5 font-wm-sans text-wm-small text-wm-ink">
+              <TargetWord text={word.example} lemma={word.word} />
+            </p>
+            <p className="flex items-center gap-1.5 font-wm-sans text-wm-meta text-wm-muted">
+              <span className={cn('size-2 rounded-wm-key', LEVEL_FILL[word.level])} />
+              {`${levelName(word.level)} · ${levelInterval(word.level)}`}
+            </p>
+          </div>
+        </Card>
+
+        <Card className="absolute left-86 top-110 z-3 flex w-60 rotate-2 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+          <p className="font-wm-sans text-wm-label text-wm-muted">{t('today')}</p>
+          <p className="flex items-baseline gap-2">
+            <span key={step.due} className={cn('inline-block font-wm-display text-wm-page-title tabular-nums text-wm-accent', motion && 'animate-wm-showcase-drop')}>
+              {step.due}
+            </span>
+            <span className="font-wm-sans text-wm-small text-wm-ink">{t('due')}</span>
+          </p>
+          <span className="flex h-2.5 gap-1">
+            {LEVEL_BAR.map(([level, grow]) => (
+              <span key={level} className={cn('rounded-wm-key', grow, LEVEL_FILL[level])} />
+            ))}
+          </span>
+          <span className="flex flex-wrap gap-x-3.5 gap-y-1 font-wm-sans text-wm-meta text-wm-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-wm-key bg-wm-level-priority" />
+              {t('priority', { count: 2 })}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-wm-key bg-wm-level-due" />
+              {t('dueCount', { count: 10 })}
+            </span>
+          </span>
+        </Card>
+
+        <Card className="absolute left-16 top-135 z-2 flex w-80 -rotate-1 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+          <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
+          <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', motion && 'animate-wm-showcase-swap')}>
+            {word.question[0]}
+            <span
+              className={cn(
+                'inline-block min-w-21 px-1',
+                step.phase === 'done'
+                  ? 'rounded-wm-control border border-wm-pass bg-wm-pass-soft text-wm-pass'
+                  : 'rounded-t-wm-control border-b-2 border-wm-accent bg-wm-showcase-blank text-wm-accent',
+              )}
+            >
+              {word.word.slice(0, step.typed)}
+              {motion && step.phase !== 'done' && <span className="ml-px inline-block h-4 w-0.5 bg-wm-accent align-middle animate-wm-showcase-caret" />}
+            </span>
+            {word.question[1]}
+          </p>
+          <p className="flex min-h-6 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
+            {step.phase === 'enter' && (
+              <kbd className={cn('rounded-wm-key border border-wm-line bg-wm-surface px-1.5 font-wm-sans text-wm-meta text-wm-muted', motion && 'animate-wm-showcase-key')}>
+                Enter
+              </kbd>
+            )}
+            {step.phase === 'done' && (
+              <span className="inline-flex items-center gap-1 text-wm-small-strong text-wm-pass">
+                <Check className="size-4" strokeWidth={2.5} />
+                {t('result', { level: levelName(Math.min(5, word.level + 1) as Level) })}
+              </span>
+            )}
+          </p>
+        </Card>
+
+        {/* Bottom right, clear of the path's start ("Mới" sits bottom left). */}
+        <div className="absolute bottom-5.5 right-6 z-3 flex max-w-75 flex-col gap-1.5">
+          <p className="font-wm-sans text-wm-small">
+            <b className="font-semibold text-wm-ink">{t('pathTitle')}</b> <span className="text-wm-muted">{t('pathBody')}</span>
+          </p>
+          <p className="font-wm-sans text-wm-label text-wm-muted">{t('onPath', { count: 69 })}</p>
+        </div>
       </div>
     </div>
   );
 }
 
-function WordCard({ className, stage, word, pos, gloss, meaning, example }: {
-  className: string; stage: string; word: string; pos: string; gloss: string; meaning: string; example?: boolean;
-}) {
-  return (
-    <div className={cn('absolute flex w-85 flex-col gap-2.5 rounded-wm-card bg-wm-surface p-5 shadow-wm-lift', className)}>
-      <p className="font-wm-sans text-wm-label text-wm-muted">{stage}</p>
-      <p className="font-wm-display text-wm-lemma text-wm-ink">{word}</p>
-      <p className="font-wm-sans text-wm-small text-wm-muted">{pos}</p>
-      <p className="font-wm-sans text-wm-base text-wm-ink">{gloss}</p>
-      <p className="font-wm-sans text-wm-small text-wm-muted">{meaning}</p>
-      {example && (
-        <p className="rounded-wm-row bg-wm-bg px-3 py-2.5 font-wm-sans text-wm-small text-wm-ink">
-          <TargetWord text="Planting trees can help mitigate urban heat." lemma="mitigate" />
-        </p>
-      )}
-    </div>
-  );
-}
+/** The due card's level bar (mockup: 2, 4, 3, 2, 1 words at Mới … Bậc 4). */
+const LEVEL_BAR: Array<[Level, string]> = [[0, 'grow-2'], [1, 'grow-4'], [2, 'grow-3'], [3, 'grow-2'], [4, 'grow']];
 
-function Chip({ className, word, dot }: { className: string; word: string; dot: string }) {
+/** The travelling word's square: Mới underneath, each level fading in at its stretch of the path. */
+function LevelSquare({ motion, still }: { motion: boolean; still: Level }) {
   return (
-    <span className={cn('absolute flex items-center gap-1.5 rounded-wm-key bg-wm-bg px-2 py-1 font-wm-display text-wm-small-strong text-wm-ink shadow-wm-row', className)}>
-      <span className={cn('size-2 rounded-wm-key', dot)} />
-      {word}
+    <span className="relative size-2 shrink-0">
+      <span className={cn('absolute inset-0 rounded-wm-key', LEVEL_FILL[0])} />
+      {([1, 2, 3, 4, 5] as const).map((level) => (
+        <span
+          key={level}
+          className={cn('absolute inset-0 rounded-wm-key', LEVEL_FILL[level], motion ? cn('opacity-0', LEVEL_ANIMATION[level]) : level === still ? 'opacity-100' : 'opacity-0')}
+        />
+      ))}
     </span>
   );
 }
 
-// "Đường ôn (Mới → 30 ngày)": the dashed path a word travels through the six review stages, bottom left to top right.
-function ReviewPath() {
-  const stages: Array<[number, number, number]> = [[48, 820, 4], [180, 751, 4], [270, 630, 4], [565, 139, 4], [588, 112, 4], [604, 96, 5]];
+/** A faint background word under the cards (chỗ 20). */
+function GhostChip({ className, word }: { className: string; word: string }) {
   return (
-    <svg viewBox="0 0 640 868" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 size-full">
-      <path
-        d="M48 820 C 120 800 210 730 270 630 S 480 260 565 139 S 590 108 604 96"
-        fill="none"
-        strokeWidth="1.5"
-        strokeDasharray="3 6"
-        strokeLinecap="round"
-        className="stroke-wm-ghost"
-      />
-      {stages.map(([x, y, r], i) => (
-        <circle key={i} cx={x} cy={y} r={r} className={i === stages.length - 1 ? 'fill-wm-accent' : 'fill-wm-ghost'} />
-      ))}
-    </svg>
+    <span className={cn('absolute z-0 rounded-wm-control bg-wm-showcase-ghost-chip px-2.5 py-1 font-wm-display text-wm-meta font-semibold text-wm-showcase-ghost-ink', className)}>
+      {word}
+    </span>
   );
 }

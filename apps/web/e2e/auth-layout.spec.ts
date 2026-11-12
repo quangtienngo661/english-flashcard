@@ -13,6 +13,22 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
       expect(heading!.x + heading!.width, 'the title ends in the left half').toBeLessThanOrEqual(720);
     });
 
+    // P.14 (chỗ 20): the faint background chips sit under the panel's cards, never on the word card. Reduced motion keeps the word card on
+    // "mitigate"; its position does not depend on motion. The card is the definition's grandparent (card > swapped content > line).
+    test(`at 1440 x 900 ${path} the "negotiate" chip does not overlap the word card`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+      const chip = await page.getByText('negotiate', { exact: true }).boundingBox();
+      const card = await page.getByText('to make something bad less serious', { exact: true }).locator('xpath=../..').boundingBox();
+      expect(chip, 'the negotiate chip is drawn').not.toBeNull();
+      expect(card, 'the word card is drawn').not.toBeNull();
+      const apart =
+        chip!.x >= card!.x + card!.width || card!.x >= chip!.x + chip!.width || chip!.y >= card!.y + card!.height || card!.y >= chip!.y + chip!.height;
+      expect(apart, `chip ${JSON.stringify(chip)} and word card ${JSON.stringify(card)} do not intersect`).toBe(true);
+    });
+
     for (const width of [1024, 390]) {
       test(`at ${width} px ${path} has no panel and its card is centred`, async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');

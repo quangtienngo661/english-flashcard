@@ -457,14 +457,21 @@
     "auth": {
       "passwordMismatch": "The passwords don’t match.",
       "showcase": {
-        "interval": "Word card · review in {days, plural, one {# day} other {# days}}",
-        "group": "Word card · {group}",
         "today": "Today",
         "due": "words due",
-        "more": "+{count, number} words",
         "allocate": "allot",
         "viable": "workable",
-        "mitigate": "lessen"
+        "mitigate": "lessen",
+        "deteriorate": "worsen",
+        "coherent": "clear",
+        "days": "{days, plural, one {# day} other {# days}}",
+        "practice": "Fill in the blank",
+        "result": "Correct · up to {level}",
+        "priority": "{count, number} priority",
+        "dueCount": "{count, number} due",
+        "pathTitle": "Each word's memory path.",
+        "pathBody": "Answer right and it moves up a level and comes back later; answer wrong and it goes back to Level 1.",
+        "onPath": "{count, plural, one {# word} other {# words}} on this path"
       },
       "footer": {
         "copyright": "© {year} Wordmet",
