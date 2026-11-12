@@ -2,6 +2,7 @@
 
 import { ToggleButton } from 'react-aria-components';
 import { cn } from '@/lib/cn';
+import { COUNT_BOX_REST } from './count-box';
 import type { Level } from './levels';
 
 export type LevelChipTone = Level | 'all' | 'priority' | 'due';
@@ -50,7 +51,7 @@ export function LevelChip({ tone, label, count, pressed, onPress, isDisabled }: 
       )}
     >
       <span className="whitespace-nowrap text-wm-label">{label}</span>{' '}
-      <span className={cn('inline-grid h-6 min-w-6 place-items-center rounded-wm-key bg-wm-surface px-1.5 text-wm-meta font-bold tabular-nums text-wm-ink ring-1 ring-inset', t.count)}>
+      <span className={cn(COUNT_BOX_REST, t.count)}>
         {count}
       </span>
     </ToggleButton>

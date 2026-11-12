@@ -1462,7 +1462,6 @@
         "wordCount": "{count, plural, one {# word} other {# words}}",
         "groupRow": "{name} · {count, plural, one {# word} other {# words}}",
         "filterLabel": "Which words",
-        "filterOption": "{name} {count, number}",
         "levelMenu": "One level only",
         "levelOption": "{level} · {count, number}",
         "questions": "Questions",

@@ -1,11 +1,13 @@
 'use client';
 
 import { Label, Radio, RadioGroup } from 'react-aria-components';
+import { cn } from '@/lib/cn';
+import { COUNT_BOX, COUNT_BOX_REST } from './count-box';
 
 type Props<T extends string> = {
   label: string;
   value: T;
-  options: Array<{ id: T; label: string }>;
+  options: Array<{ id: T; label: string; count?: number }>;
   onChange: (id: T) => void;
   isDisabled?: boolean;
   /** Fill the width given, each option an equal share (the word filter of Tùy chỉnh phiên). */
@@ -38,7 +40,17 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
             value={option.id}
             className={`cursor-pointer whitespace-nowrap rounded-wm-pill text-center ${size} font-wm-sans text-wm-muted outline-none transition duration-200 ease-wm-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row data-disabled:cursor-not-allowed data-disabled:opacity-60`}
           >
-            {option.label}
+            {({ isSelected }) => (
+              <>
+                {option.label}
+                {option.count !== undefined && (
+                  <>
+                    {' '}
+                    <span className={cn('ms-1.5', isSelected ? `${COUNT_BOX} bg-wm-accent-soft text-wm-accent` : `${COUNT_BOX_REST} ring-wm-line`)}>{option.count}</span>
+                  </>
+                )}
+              </>
+            )}
           </Radio>
         ))}
       </div>

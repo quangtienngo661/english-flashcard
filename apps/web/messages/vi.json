@@ -1462,7 +1462,6 @@
         "wordCount": "{count, number} từ",
         "groupRow": "{name} · {count, number} từ",
         "filterLabel": "Lấy từ nào",
-        "filterOption": "{name} {count, number}",
         "levelMenu": "Chỉ một bậc",
         "levelOption": "{level} · {count, number}",
         "questions": "Câu hỏi",

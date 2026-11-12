@@ -91,6 +91,15 @@ describe('ui fields', () => {
     expect(onChange).toHaveBeenLastCalledWith('dark');
   });
 
+  it('Segmented shows a count box after the label and keeps the name "Tất cả 61"', () => {
+    renderApp(
+      <Segmented label="Từ" value="all" onChange={() => {}} options={[{ id: 'all', label: 'Tất cả', count: 61 }, { id: 'due', label: 'Cần ôn', count: 3 }]} />,
+    );
+    expect(screen.getByRole('radio', { name: 'Tất cả 61' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Cần ôn 3' })).not.toBeChecked();
+    expect(screen.getByText('61')).toBeInTheDocument();
+  });
+
   it('Select picks an item and calls onChange with its id', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
