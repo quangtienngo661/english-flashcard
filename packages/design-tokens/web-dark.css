@@ -33,7 +33,7 @@
   --color-wm-ai-to: #3d78ff;
   --color-wm-glow-accent: rgb(141 162 255 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
-  /* Drift layer behind the prices (F.19): the dark accent and pass colours; alphas follow the dark showcase glows (accent .26 like card-glow, mark .16 like glow-2, pass .24 like glow-3). */
+  /* Drift layer behind the prices (F.19): the dark accent and pass colours; strengths 22 / 26 / 16 % (accent, mark, pass), the same as the drawing's .final .drift in both themes. */
   --color-wm-drift-accent: rgb(141 162 255 / 0.22);
   --color-wm-drift-mark: rgb(255 216 74 / 0.26);
   --color-wm-drift-pass: rgb(98 201 143 / 0.16);

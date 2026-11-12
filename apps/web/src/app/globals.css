@@ -872,9 +872,8 @@
   /* Word strip: 52 s, the reversed row 64 s. */
   --wm-site-strip: 52s;
   --wm-site-strip-reverse: 64s;
-  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all); the caption comes in last, 8 px, 500 ms. */
+  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all). */
   --wm-site-flash: 1100ms;
-  --wm-site-caption-rise: 8px;
   /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
   --wm-site-caret: 1s;
   --wm-site-ping: 2.4s;
@@ -1005,12 +1004,6 @@
   }
   100% {
     opacity: 0;
-  }
-}
-@keyframes wm-site-rise {
-  from {
-    opacity: 0;
-    transform: translateY(var(--wm-site-caption-rise));
   }
 }
 @keyframes wm-site-blink {
