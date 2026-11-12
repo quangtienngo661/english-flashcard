@@ -2,7 +2,6 @@
 
 import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
-import type { HistoryItem } from '../practice/practice-api';
 
 /** `GET /v1/me/streak` (design §10.2). */
 export type Streak = { days: number; studied_today: boolean };
@@ -33,12 +32,10 @@ export type CalendarDayView = {
   practice_sessions: PracticeSessionOfDay[];
   next_page_token: string | null;
 };
-type HistoryPage = { items: HistoryItem[]; next_page_token: string | null };
 
 export const STREAK_KEY = ['me', 'streak'] as const;
 export const calendarMonthKey = (month: string) => ['me', 'calendar', month] as const;
 export const calendarDayKey = (date: string) => ['me', 'calendar', 'day', date] as const;
-export const dayAnswersKey = (date: string) => ['practice', 'history', date] as const;
 
 const PAGE = 100;
 const token = (pageParam: string) => (pageParam ? `&page_token=${encodeURIComponent(pageParam)}` : '');
@@ -59,18 +56,6 @@ export function useCalendarDay(date: string, enabled = true) {
   return useInfiniteQuery({
     queryKey: calendarDayKey(date),
     queryFn: ({ pageParam }) => api.get<CalendarDayView>(`/v1/me/calendar/days/${date}?kind=all&page_size=${PAGE}${token(pageParam)}`),
-    initialPageParam: '',
-    getNextPageParam: (last) => last.next_page_token ?? undefined,
-    enabled,
-  });
-}
-
-/** The day's graded practice answers, newest first; the Ngày dialog groups them by `session_id`. */
-export function useDayAnswers(date: string, enabled = true) {
-  const api = useApi();
-  return useInfiniteQuery({
-    queryKey: dayAnswersKey(date),
-    queryFn: ({ pageParam }) => api.get<HistoryPage>(`/v1/practice/history?date=${date}&page_size=${PAGE}${token(pageParam)}`),
     initialPageParam: '',
     getNextPageParam: (last) => last.next_page_token ?? undefined,
     enabled,
