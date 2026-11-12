@@ -182,7 +182,7 @@ export function ReviewSession() {
 
   const showProgress = !notFound && !session.done && total > 0;
   const closeClass =
-    'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
+    'flex size-11 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
     'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:size-9';
   return (
     <div className="flex flex-1 flex-col">
@@ -200,7 +200,7 @@ export function ReviewSession() {
         {showProgress && (
           <>
             <ProgressBar value={session.index} max={total} label={t('review.left', { count: left })} className="min-w-12 flex-1" />
-            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('review.left', { count: left })}</span>
+            <span className="shrink-0 text-wm-meta text-wm-muted">{t('review.left', { count: left })}</span>
           </>
         )}
         <CalendarBarButton />

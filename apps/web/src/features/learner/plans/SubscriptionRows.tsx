@@ -29,7 +29,7 @@ export function SubscriptionRows({ sources }: { sources: Source[] }) {
   if (subscriptions.length === 0) return null;
   return (
     <section aria-label={t('title')} className="flex w-full flex-col gap-2">
-      <h2 className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('title')}</h2>
+      <h2 className="text-wm-meta font-medium text-wm-muted">{t('title')}</h2>
       <ul className="flex flex-col gap-3">
         {subscriptions.map((source) => (
           <SubscriptionRow key={source.id} source={source} />
@@ -109,7 +109,7 @@ function SubscriptionRow({ source }: { source: Source }) {
         }
       >
         {/* The M3 confirm dialogs (Figma "Xác nhận xóa" 121:4597): what the learner gives up in a fail-soft block. */}
-        <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+        <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
           <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
           <span>{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</span>
         </p>

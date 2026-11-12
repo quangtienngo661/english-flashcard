@@ -157,7 +157,7 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute top-6 z-10 flex flex-col rounded-wm-md border-2 bg-wm-surface px-3 py-1.5 font-wm-display text-wm-word',
+        'pointer-events-none absolute top-6 z-10 flex flex-col rounded-wm-control border-2 bg-wm-surface px-3 py-1.5 font-wm-display text-wm-word',
         side === 'review' ? 'right-6 rotate-7 border-wm-fail text-wm-fail' : 'left-6 -rotate-7 border-wm-pass text-wm-pass',
         !shown && 'invisible',
       )}
@@ -170,7 +170,7 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
   );
 }
 
-const FACE = 'cstack-face flex min-h-80 flex-col overflow-hidden rounded-wm-2xl border border-wm-line bg-wm-surface shadow-wm-card md:min-h-96';
+const FACE = 'cstack-face flex min-h-80 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-96';
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
 function LightFront({ card }: { card: Card }) {
@@ -225,7 +225,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           {forms.length > 0 && (
             <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">
               {forms.map((form) => (
-                <li key={form} className="rounded-wm-sm border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
+                <li key={form} className="rounded-wm-key border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
                   {form}
                 </li>
               ))}
@@ -270,7 +270,7 @@ function Block({ title, soft = false, children }: { title: string; soft?: boolea
 
 function Badges({ card }: { card: Card }) {
   const t = useTranslations('App.review');
-  if (card.section === 'backlog') return <span className="w-fit rounded-wm-sm bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail">{t('backlog')}</span>;
-  if (card.priority) return <span className="w-fit rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('priority')}</span>;
+  if (card.section === 'backlog') return <span className="w-fit rounded-wm-key bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail">{t('backlog')}</span>;
+  if (card.priority) return <span className="w-fit rounded-wm-key bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('priority')}</span>;
   return null;
 }

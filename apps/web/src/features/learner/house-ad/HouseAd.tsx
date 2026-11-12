@@ -79,8 +79,8 @@ export function HouseAd() {
     >
       {/* Drawn above the title: first in the column by CSS order, read after the title. */}
       <div className="-order-1 flex gap-1.5">
-        <Tag tone="accent" mono>{t('badgePro')}</Tag>
-        <Tag tone="accent" mono>{t('badgeAi')}</Tag>
+        <Tag tone="accent">{t('badgePro')}</Tag>
+        <Tag tone="accent">{t('badgeAi')}</Tag>
       </div>
       <p className="font-wm-sans text-wm-small text-wm-muted">{t('lead')}</p>
       <ul className="flex flex-col gap-2 font-wm-sans text-wm-small text-wm-ink">

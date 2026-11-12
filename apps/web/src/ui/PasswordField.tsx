@@ -19,7 +19,7 @@ export function PasswordField(props: Omit<TextFieldProps, 'type' | 'trailing'>) 
           aria-pressed={shown}
           aria-label={shown ? t('hidePassword') : t('showPassword')}
           onClick={() => setShown((v) => !v)}
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-wm-md text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-wm-accent"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-wm-control text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-wm-accent"
         >
           {shown ? <EyeOff aria-hidden className="size-5" /> : <Eye aria-hidden className="size-5" />}
         </button>

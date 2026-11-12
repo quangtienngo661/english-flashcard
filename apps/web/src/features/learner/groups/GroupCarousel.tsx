@@ -135,7 +135,7 @@ export function GroupCarousel({
             <ArrowButton side="next" label={t('next')} onPress={() => onStep(1)} />
           </>
         )}
-        <p aria-hidden data-part="2" className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
+        <p aria-hidden data-part="2" className="gcar-hint text-wm-meta text-wm-muted">
           <span className="md:hidden">{t('hintPhone')}</span>
           <span className="hidden md:inline">{t('hint')}</span>
         </p>

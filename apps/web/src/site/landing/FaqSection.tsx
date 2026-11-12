@@ -23,7 +23,7 @@ export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: F
           <SplitWords as="h2" id="hoi-dap-title" className={FAQ_TITLE} segments={[{ text: copy.title }]} />
           <Reveal as="p" delay={300} blur={8} className="font-wm-sans text-wm-base text-wm-muted">
             {before}
-            <a href={`mailto:${site.supportEmail}`} className={`rounded-wm-xs font-semibold text-wm-accent ${FOCUS}`}>
+            <a href={`mailto:${site.supportEmail}`} className={`rounded-wm-key font-semibold text-wm-accent ${FOCUS}`}>
               {site.supportEmail}
             </a>
             {after}
@@ -31,8 +31,8 @@ export function FaqSection({ copy, items }: { copy: LandingCopy['faq']; items: F
         </div>
         <Reveal delay={120} className="flex flex-col gap-2.5 lg:w-165">
           {items.map((item, i) => (
-            <details key={item.question} name="faq" open={i === 0} className="group rounded-wm-lg bg-wm-surface px-5.5 open:shadow-wm-soft">
-              <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 rounded-wm-sm py-4.5 text-wm-ink [&::-webkit-details-marker]:hidden ${FOCUS}`}>
+            <details key={item.question} name="faq" open={i === 0} className="group rounded-wm-card bg-wm-surface px-5.5 open:shadow-wm-soft">
+              <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 rounded-wm-control py-4.5 text-wm-ink [&::-webkit-details-marker]:hidden ${FOCUS}`}>
                 <span className={FAQ_QUESTION}>{item.question}</span>
                 <Plus aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-muted group-open:hidden" />
                 <Minus aria-hidden className="mt-0.5 hidden size-5 shrink-0 text-wm-muted group-open:block" />

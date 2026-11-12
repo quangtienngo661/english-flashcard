@@ -111,7 +111,7 @@ describe('Tra từ: the dictionary page', () => {
     renderApp(<LookupPage />, {
       routes: base({ 'GET /v1/words?page_size=20&level=B1&topic=work': () => Response.json({ items: [row('rizz', { has_private: true })], next_page_token: null, total: 1 }) }),
     });
-    expect(within(await screen.findByRole('button', { name: /^rizz/ })).getByText('của tôi')).toBeInTheDocument();
+    expect(within(await screen.findByRole('button', { name: /^rizz/ })).getByText('Của tôi')).toBeInTheDocument();
   });
 
   it('the first entry is lifted by default; ↓ moves the selection and the card follows', async () => {

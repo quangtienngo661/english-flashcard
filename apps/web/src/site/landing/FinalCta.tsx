@@ -20,7 +20,7 @@ export function FinalCta({ copy, locale }: { copy: LandingCopy['final']; locale:
         <Reveal
           loop
           data-final-card=""
-          className={`mx-auto flex max-w-230 flex-col items-center gap-4 rounded-wm-2xl border-transparent bg-wm-surface px-6 py-9 text-center shadow-wm-lift md:gap-5 md:p-18 ${BORDER_15}`}
+          className={`mx-auto flex max-w-230 flex-col items-center gap-4 rounded-wm-card border-transparent bg-wm-surface px-6 py-9 text-center shadow-wm-lift md:gap-5 md:p-18 ${BORDER_15}`}
         >
           <SplitWords as="h2" id="cuoi-title" className={`max-w-190 ${FINAL_TITLE}`} segments={[{ text: copy.title }]} />
           <p className="font-wm-sans text-wm-base text-wm-muted">{copy.note}</p>

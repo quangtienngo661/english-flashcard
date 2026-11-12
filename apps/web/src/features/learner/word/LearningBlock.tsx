@@ -18,7 +18,7 @@ export function LevelTag({ level, group }: { level: number; group?: string }) {
   const name = levelName(toLevel(level));
   return (
     <span className="inline-flex items-center gap-1.5 font-wm-sans text-wm-small text-wm-ink">
-      <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', LEVEL_FILL[toLevel(level)])} />
+      <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', LEVEL_FILL[toLevel(level)])} />
       {group ? `${name} · ${group}` : name}
     </span>
   );
@@ -38,13 +38,13 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
   const decks = item.group_ids.flatMap((id) => groups.find((g) => g.id === id) ?? []);
 
   return (
-    <section aria-labelledby="dang-hoc" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
-      <h2 id="dang-hoc" className="font-wm-mono text-wm-mono lowercase text-wm-muted">
+    <section aria-labelledby="dang-hoc" className="flex flex-col gap-2 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+      <h2 id="dang-hoc" className="text-wm-meta text-wm-muted">
         {t('learningTitle')}
       </h2>
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{sense.pos}</span>
+        <span className="text-wm-meta text-wm-muted">{sense.pos}</span>
       </p>
       <StageBar
         aria-label={t('levelBar', { level: levelName(toLevel(item.level)) })}

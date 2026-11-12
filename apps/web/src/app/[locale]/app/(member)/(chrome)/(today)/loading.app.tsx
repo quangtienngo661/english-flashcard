@@ -14,17 +14,17 @@ export default function Loading() {
       <Skeleton className="h-11 w-48" />
       <div className="flex flex-col gap-6 xl:flex-row xl:gap-8">
         <div className="flex min-w-0 flex-1 flex-col gap-5">
-          <Skeleton className="h-64 w-full rounded-wm-2xl" />
-          <Skeleton className="h-32 w-full rounded-wm-xl" />
+          <Skeleton className="h-64 w-full rounded-wm-card" />
+          <Skeleton className="h-32 w-full rounded-wm-card" />
           <div className="flex gap-5 overflow-hidden">
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-56 w-44 shrink-0 rounded-wm-xl" />
+              <Skeleton key={i} className="h-56 w-44 shrink-0 rounded-wm-card" />
             ))}
           </div>
         </div>
         <div className="flex w-full flex-col gap-4 xl:w-90 xl:shrink-0">
-          <Skeleton className="h-52 w-full rounded-wm-xl" />
-          <Skeleton className="h-28 w-full rounded-wm-xl" />
+          <Skeleton className="h-52 w-full rounded-wm-card" />
+          <Skeleton className="h-28 w-full rounded-wm-card" />
         </div>
       </div>
     </div>

@@ -47,17 +47,19 @@
   --color-wm-level-priority: #c4372c;
   --color-wm-level-due: #e0a21b;
 
-  /* Radius (Wordmet số đo) */
-  /* 3px: the 9px colour squares of legends and level rows (Figma, M3). */
-  --radius-wm-xs: 0.1875rem;
-  --radius-wm-sm: 0.375rem;
-  --radius-wm-md: 0.625rem;
-  --radius-wm-lg: 0.875rem;
-  --radius-wm-xl: 1.25rem;
-  --radius-wm-2xl: 1.75rem;
+  /* Radius scale C, by element role (P.3; mockup L81-82). An inner element is always smaller than its container. */
+  /* key: keycaps, small labels, counts, word chips in piles. */
+  --radius-wm-key: 0.25rem;
+  /* control: buttons, inputs, selects, chips, icon buttons. */
+  --radius-wm-control: 0.5rem;
+  /* row: list rows, menus, popovers, toasts, hint and translation blocks. */
+  --radius-wm-row: 0.625rem;
+  /* card: cards, panels, the "Chưa đúng" box. */
+  --radius-wm-card: 0.875rem;
+  /* dialog: dialogs, sheets, the Học card, Nhóm stack cards. */
+  --radius-wm-dialog: 1rem;
+  /* pill: progress bars, avatar, phone tab pill. */
   --radius-wm-pill: 62.4375rem;
-  --radius-wm-button: 0.625rem;
-  --radius-wm-modal: 1rem;
 
   /* Shadows (effect styles Card, Row, Pop, Shadow/Soft, Lift; button shadows set on the buttons) */
   --shadow-wm-card: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06), 0 0.625rem 1.75rem -0.875rem rgb(27 36 68 / 0.2);
@@ -164,10 +166,10 @@
   --text-wm-caption--line-height: 1.4;
   --text-wm-caption--letter-spacing: 0;
   --text-wm-caption--font-weight: 400;
-  --text-wm-mono: 0.75rem;
-  --text-wm-mono--line-height: 1.4;
-  --text-wm-mono--letter-spacing: 0;
-  --text-wm-mono--font-weight: 400;
+  --text-wm-meta: 0.75rem;
+  --text-wm-meta--line-height: 1.4;
+  --text-wm-meta--letter-spacing: 0;
+  --text-wm-meta--font-weight: 500;
   /* Public display styles (Part 8 constraints: Bricolage Bold 700; letter-spacing = Figma percent written in em). */
   --text-wm-site-hero: 5rem;
   --text-wm-site-hero--line-height: 1.2;

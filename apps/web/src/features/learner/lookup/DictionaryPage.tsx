@@ -42,7 +42,7 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
         className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 border-b-2 border-wm-ink pb-1.5"
       >
         <span className="truncate font-wm-display text-wm-small font-extrabold md:text-wm-word">{words[0]?.lemma}</span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('page', { n: page })}</span>
+        <span className="text-wm-meta text-wm-muted">{t('page', { n: page })}</span>
         <span className="truncate text-right font-wm-display text-wm-small font-extrabold md:text-wm-word">{words.at(-1)?.lemma}</span>
       </header>
       <div className="mt-4 flex flex-col" onKeyDown={onKeyDown}>
@@ -61,7 +61,7 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
           </section>
         ))}
       </div>
-      <footer className="mt-5 flex items-center justify-between gap-3 font-wm-mono text-wm-mono">
+      <footer className="mt-5 flex items-center justify-between gap-3 text-wm-meta">
         {onPrev ? (
           <button type="button" onClick={onPrev} className="font-bold text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent">
             {t('prev')}
@@ -94,7 +94,7 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
       onFocus={onSelect}
       className={cn(
         // raw-ok: the entry's hover box reaches into the page margin by its own padding
-        'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-md px-2.5 py-2 text-left outline-none',
+        'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-row px-2.5 py-2 text-left outline-none',
         'hover:bg-wm-ink/4 focus-visible:outline-3 focus-visible:outline-wm-accent',
       )}
     >
@@ -102,11 +102,11 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
         <span className="break-all font-wm-display text-wm-word font-extrabold tracking-tight text-wm-ink md:text-wm-logo">{word.lemma}</span>
         {word.ipa && <span className="font-wm-sans text-wm-small text-wm-muted">/{word.ipa}/</span>}
         {word.pos_list.length > 0 && <i className="font-wm-sans text-wm-small text-wm-muted">{word.pos_list.map((p) => POS_SHORT[p] ?? p).join(', ')}</i>}
-        {word.level && <span className="font-wm-mono text-wm-mono font-bold text-wm-muted">{word.level}</span>}
-        {word.has_private && <span className="font-wm-mono text-wm-mono text-wm-accent">{t('mineTag')}</span>}
+        {word.level && <span className="text-wm-meta font-bold text-wm-muted">{word.level}</span>}
+        {word.has_private && <span className="text-wm-meta text-wm-accent">{t('mineTag')}</span>}
       </span>
       <span className="flex items-baseline gap-1.5 font-wm-sans text-wm-base text-wm-ink">
-        <b className="font-wm-mono text-wm-mono font-bold text-wm-muted">1</b>
+        <b className="text-wm-meta font-bold text-wm-muted">1</b>
         <span className="min-w-0 break-words">{meaning}</span>
       </span>
       {word.example && <span className="break-words font-wm-sans text-wm-small italic text-wm-muted">{marked(word.example, word.lemma)}</span>}
@@ -144,7 +144,7 @@ export function marked(sentence: string, word: string, forms: string[] = []) {
   return (
     <>
       {sentence.slice(0, match.index)}
-      <mark className="rounded-xs bg-wm-mark px-0.75 not-italic text-wm-mark-ink">{match[0]}</mark>
+      <mark className="rounded-wm-key bg-wm-mark px-0.75 not-italic text-wm-mark-ink">{match[0]}</mark>
       {sentence.slice(match.index + match[0].length)}
     </>
   );

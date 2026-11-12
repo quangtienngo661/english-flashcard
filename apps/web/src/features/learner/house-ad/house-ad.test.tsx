@@ -205,7 +205,7 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await go('/vi/app/groups');
     const box = await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' });
     expect(within(box).getByText('Pro')).toBeInTheDocument();
-    expect(within(box).getByText('có AI')).toBeInTheDocument();
+    expect(within(box).getByText('Có AI')).toBeInTheDocument();
     const opened = stored();
     expect(opened).toMatchObject({ count: 1 });
     await userEvent.click(within(box).getByRole('button', { name: 'Để sau' }));

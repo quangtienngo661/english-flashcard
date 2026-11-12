@@ -8,15 +8,15 @@ const TONE = {
   fail: 'bg-wm-fail-soft text-wm-fail',
 } as const;
 
-type Props = { tone?: keyof typeof TONE; /** JetBrains Mono label ("noun · A2"). */ mono?: boolean; children: ReactNode };
+type Props = { tone?: keyof typeof TONE; children: ReactNode };
 
 /** A small label or count chip (design §3.3: radius 6). */
-export function Tag({ tone = 'neutral', mono = false, children }: Props) {
+export function Tag({ tone = 'neutral', children }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-wm-sm px-2 py-0.5',
-        mono ? 'font-wm-mono text-wm-mono' : 'font-wm-sans text-wm-label',
+        'inline-flex items-center gap-1 rounded-wm-key px-2 py-0.5',
+        'font-wm-sans text-wm-meta',
         TONE[tone],
       )}
     >

@@ -10,7 +10,7 @@ export function NotFoundState({ title, back }: { title?: string; back?: { href: 
   const locale = useLocale();
   const link = back ?? { href: `/${locale}/app`, label: t('home') };
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
       <SearchX aria-hidden className="size-8 text-wm-muted" />
       <h1 className="font-wm-display text-wm-card-title text-wm-ink">{title ?? t('notFoundTitle')}</h1>
       <p className="font-wm-sans text-wm-base text-wm-muted">{t('notFoundBody')}</p>

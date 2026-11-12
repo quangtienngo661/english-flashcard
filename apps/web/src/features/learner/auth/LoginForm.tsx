@@ -91,7 +91,7 @@ export function LoginForm() {
       banner={
         <>
           {locked && (
-            <div role="alert" className="flex gap-3 rounded-wm-md border border-wm-fail bg-wm-fail-soft p-4">
+            <div role="alert" className="flex gap-3 rounded-wm-row border border-wm-fail bg-wm-fail-soft p-4">
               <Lock aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-fail" />
               <div className="flex flex-col gap-1 font-wm-sans text-wm-small text-wm-ink">
                 <p className="font-semibold">{t('login.lockedTitle')}</p>
@@ -100,7 +100,7 @@ export function LoginForm() {
             </div>
           )}
           {info && (
-            <div role="status" className="flex flex-col items-start gap-2 rounded-wm-md bg-wm-accent-soft p-3 font-wm-sans text-wm-small text-wm-ink">
+            <div role="status" className="flex flex-col items-start gap-2 rounded-wm-row bg-wm-accent-soft p-3 font-wm-sans text-wm-small text-wm-ink">
               {info}
               {notice === 'logout-failed' && (
                 <Button variant="secondary" onPress={() => void store?.retryLogout()}>

@@ -64,7 +64,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(screen.getByText('Trả một lần cho mỗi kỳ, không tự gia hạn. Hết kỳ, bạn về gói Miễn phí.')).toBeInTheDocument();
     expect(screen.queryByText('Gói học')).not.toBeInTheDocument();
     const free = screen.getByRole('region', { name: 'Miễn phí' });
-    expect(within(free).getByText('gói hiện tại')).toBeInTheDocument();
+    expect(within(free).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(free).getByText(dong(0))).toBeInTheDocument();
     expect(within(free).getByText('không thu tiền')).toBeInTheDocument();
     expect(within(free).getByText('Ôn thẻ, lịch ôn, nhắc học qua email')).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(within(free).getByText('12 câu AI và 4 lượt tra AI mỗi tháng')).toBeInTheDocument();
     expect(within(free).queryByText('Câu AI và tra bằng AI: cần gói Pro')).not.toBeInTheDocument();
     expect(within(free).getByText('Có thể có quảng cáo.')).toBeInTheDocument();
-    expect(within(free).getByText('bạn đang dùng gói này')).toBeInTheDocument();
+    expect(within(free).getByText('Bạn đang dùng gói này')).toBeInTheDocument();
     expect(screen.queryByText(/Không cần thẻ ngân hàng/)).not.toBeInTheDocument();
     expect(screen.queryByText(/XX\.000/)).not.toBeInTheDocument();
     expect(screen.queryByText('Phiên luyện hôm nay')).not.toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
   it('Free: the Pro card has "có AI", its line, the period cards with 12 tháng checked, the six perks and "Mua gói Pro 12 tháng"', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     const pro = await screen.findByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('có AI')).toBeInTheDocument();
+    expect(within(pro).getByText('Có AI')).toBeInTheDocument();
     expect(within(pro).queryByText('gói hiện tại')).not.toBeInTheDocument();
     expect(within(pro).getByText('Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.')).toBeInTheDocument();
     const periods = within(pro).getByRole('radiogroup', { name: 'Kỳ hạn' });
@@ -218,11 +218,11 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     renderApp(<PlansPage />, { routes: routes(ent('pro', [PREPAID], { pro_until: '2026-12-31T17:00:00Z', upcoming_periods: [] })) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Bạn đang dùng gói Pro' })).toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('gói hiện tại')).toBeInTheDocument();
+    expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 31/12/2026')).toBeInTheDocument();
     const free = screen.getByRole('region', { name: 'Miễn phí' });
     expect(within(free).queryByText('gói hiện tại')).not.toBeInTheDocument();
-    expect(within(free).queryByText('bạn đang dùng gói này')).not.toBeInTheDocument();
+    expect(within(free).queryByText('Bạn đang dùng gói này')).not.toBeInTheDocument();
   });
 
   it('GG3: Pro given by the team: card says "gói hiện tại" and until when (pro_until); no line under the title (owner 27/10/2026)', async () => {
@@ -230,7 +230,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(await screen.findByRole('heading', { level: 1, name: 'Bạn đang dùng gói Pro' })).toBeInTheDocument();
     expect(screen.queryByText(/Đội Wordmet cấp từ/)).not.toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('gói hiện tại')).toBeInTheDocument();
+    expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 31/12/2026')).toBeInTheDocument();
     expect(within(pro).queryByText(/từ và lịch ôn giữ nguyên/)).not.toBeInTheDocument();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
@@ -245,7 +245,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
       })),
     });
     const pro = await screen.findByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('gói hiện tại')).toBeInTheDocument();
+    expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 05/12/2027')).toBeInTheDocument();
     expect(within(pro).getByText('Kỳ tiếp theo: 06/12/2026 – 05/12/2027')).toBeInTheDocument();
     // The running period is 1 month and 12 is chosen: a longer period is an upgrade, which starts where the chain ends.
@@ -319,7 +319,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(await screen.findByRole('heading', { level: 2, name: 'So sánh chi tiết các gói' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'So sánh chi tiết các gói' })).not.toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'So sánh chi tiết các gói' });
-    expect(within(table).getAllByRole('columnheader').map((c) => c.textContent)).toEqual(['tính năng', 'Miễn phí', 'Pro']);
+    expect(within(table).getAllByRole('columnheader').map((c) => c.textContent)).toEqual(['Tính năng', 'Miễn phí', 'Pro']);
     const cells = (row: RegExp) => within(within(table).getByRole('row', { name: row })).getAllByRole('cell').map((c) => c.textContent);
     expect(cells(/Phiên luyện mỗi ngày/)).toEqual(['4', '25']);
     expect(cells(/Số nhóm/)).toEqual(['90', '90']);

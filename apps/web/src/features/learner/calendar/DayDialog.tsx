@@ -35,9 +35,9 @@ const FIRST_DAY = `${FIRST_MONTH}-01`;
 const CHIPS = 10;
 const ROWS = 5;
 const ICON_BUTTON =
-  'flex size-8.5 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none transition-colors duration-150 md:size-9 ' +
+  'flex size-8.5 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none transition-colors duration-150 md:size-9 ' +
   'hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-35';
-const CARD = 'flex flex-col gap-3 rounded-wm-lg border border-wm-line bg-wm-surface p-4 shadow-wm-card';
+const CARD = 'flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card';
 // Figma 103:4044 sizes no text token has: date 30 / 24, card title 17, chip and answer lemma 14 / 15, score 20.
 const RAW = {
   // raw-ok: as above
@@ -110,7 +110,7 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
 
       <div key={date} aria-live="polite" className="flex flex-col gap-4 px-4 pb-6 pt-2 motion-safe:animate-wm-overlay-in md:px-7 md:pb-7">
         <div className="flex flex-col gap-1">
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{date === today ? t('todaySuffix', { weekday }) : weekday}</span>
+          <span className="text-wm-meta text-wm-muted">{date === today ? t('todaySuffix', { weekday }) : weekday}</span>
           <Heading slot="title" className={cn('font-wm-display font-extrabold text-wm-ink', RAW.date)}>{dayMonth}</Heading>
           {first && <p className="font-wm-sans text-wm-small text-wm-muted">{summary(first.counts)}</p>}
         </div>
@@ -122,9 +122,9 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
         ) : !first || !answers.data ? (
           <div role="status" className="flex flex-col gap-3">
             <span className="sr-only">{t('loading')}</span>
-            <Skeleton className="h-9 w-72 rounded-wm-md" />
-            <Skeleton className="h-32 w-full rounded-wm-lg" />
-            <Skeleton className="h-40 w-full rounded-wm-lg" />
+            <Skeleton className="h-9 w-72 rounded-wm-control" />
+            <Skeleton className="h-32 w-full rounded-wm-card" />
+            <Skeleton className="h-40 w-full rounded-wm-card" />
           </div>
         ) : first.counts.learned + first.counts.reviewed + first.counts.practice_questions === 0 && first.practice_sessions.length === 0 ? (
           <Empty text={t('none')} />
@@ -147,7 +147,7 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="rounded-wm-lg border border-dashed border-wm-line bg-wm-surface p-4.5 font-wm-sans text-wm-small text-wm-muted">{text}</p>;
+  return <p className="rounded-wm-row border border-dashed border-wm-line bg-wm-surface p-4.5 font-wm-sans text-wm-small text-wm-muted">{text}</p>;
 }
 
 function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, loadAnswers, locale, time }: {
@@ -177,7 +177,7 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
   const practiceShown = show('practice') && view.sessions.length > 0;
   return (
     <>
-      <div role="group" aria-label={t('filterLabel')} className="flex w-fit flex-wrap gap-0.5 rounded-wm-md border border-wm-line bg-wm-surface p-0.75">
+      <div role="group" aria-label={t('filterLabel')} className="flex w-fit flex-wrap gap-0.5 rounded-wm-row border border-wm-line bg-wm-surface p-0.75">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -186,7 +186,7 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
             disabled={tab.count === 0}
             onClick={() => setFilter(tab.id)}
             className={cn(
-              'rounded-wm-sm px-3 py-1.5 font-wm-sans text-wm-label font-semibold outline-none transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-40',
+              'rounded-wm-control px-3 py-1.5 font-wm-sans text-wm-label font-semibold outline-none transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-40',
               filter === tab.id ? 'bg-wm-ink text-wm-surface' : 'text-wm-muted enabled:hover:text-wm-ink',
             )}
           >
@@ -252,7 +252,7 @@ function Section({ title, hint, dot, children }: { title: string; hint?: string;
       <div className="flex items-center gap-2">
         <span aria-hidden className={cn('size-2.25 shrink-0 rounded-full', dot)} />
         <h3 className={cn('min-w-0 flex-1 font-wm-display font-bold text-wm-ink', RAW.cardTitle)}>{title}</h3>
-        {hint && <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{hint}</span>}
+        {hint && <span className="shrink-0 text-wm-meta text-wm-muted">{hint}</span>}
       </div>
       {children}
     </section>
@@ -270,14 +270,14 @@ function Chips({ items, tone, locale, more, again = false }: {
   const [open, setOpen] = useState(false);
   const shown = open ? items : items.slice(0, CHIPS);
   const hidden = items.length - shown.length;
-  const chip = cn('flex items-center gap-1.5 rounded-wm-sm px-2 py-1', again ? 'bg-wm-fail-soft' : 'bg-wm-bg');
+  const chip = cn('flex items-center gap-1.5 rounded-wm-key px-2 py-1', again ? 'bg-wm-fail-soft' : 'bg-wm-bg');
   return (
     <ul className="flex flex-wrap items-center gap-1.5">
       {shown.map((item) => {
         const square = tone(item.group_id);
         return (
           <li key={`${item.kind}-${item.item_id}`} className={chip}>
-            {square && <span aria-hidden className={cn('size-1.75 shrink-0 rounded-wm-xs', square)} />}
+            {square && <span aria-hidden className={cn('size-1.75 shrink-0 rounded-wm-key', square)} />}
             {item.lemma ? (
               <Link href={wordHref(locale, item.lemma)} className="font-wm-display text-wm-small font-bold text-wm-ink outline-none hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent">
                 {item.lemma}
@@ -326,7 +326,7 @@ function SessionBlock({ session, answers, hint, answersLeft, loadAnswers, time }
   const passWidth = { width: `${passShare}%` };
   return (
     <div className="flex flex-col gap-2 border-wm-line not-first:border-t not-first:pt-3">
-      {hint && <span className="font-wm-mono text-wm-mono text-wm-muted">{hint}</span>}
+      {hint && <span className="text-wm-meta text-wm-muted">{hint}</span>}
       <div className="flex flex-wrap items-center gap-3">
         <span className="flex items-baseline gap-1.5">
           <span className={cn('font-wm-display font-extrabold text-wm-ink', RAW.score)}>{`${session.correct}/${session.questions}`}</span>
@@ -338,12 +338,12 @@ function SessionBlock({ session, answers, hint, answersLeft, loadAnswers, time }
             <span className="h-full bg-wm-pass" style={passWidth} />
           }
         </span>
-        <span className="flex items-center gap-1 rounded-wm-sm bg-wm-pass-soft py-0.75 pl-1.5 pr-2 font-wm-sans text-wm-label font-bold text-wm-pass">
+        <span className="flex items-center gap-1 rounded-wm-key bg-wm-pass-soft py-0.75 pl-1.5 pr-2 font-wm-sans text-wm-label font-bold text-wm-pass">
           <Check aria-hidden className="size-3" />
           <span aria-hidden>{session.correct}</span>
           <span className="sr-only">{t('rightCount', { count: session.correct })}</span>
         </span>
-        <span className="flex items-center gap-1 rounded-wm-sm bg-wm-fail-soft py-0.75 pl-1.5 pr-2 font-wm-sans text-wm-label font-bold text-wm-fail">
+        <span className="flex items-center gap-1 rounded-wm-key bg-wm-fail-soft py-0.75 pl-1.5 pr-2 font-wm-sans text-wm-label font-bold text-wm-fail">
           <X aria-hidden className="size-3" />
           <span aria-hidden>{wrong}</span>
           <span className="sr-only">{t('wrongCount', { count: wrong })}</span>
@@ -352,13 +352,13 @@ function SessionBlock({ session, answers, hint, answersLeft, loadAnswers, time }
       <ul className="flex flex-col">
         {rows.map((item) => (
           <li key={item.item_id} className="flex items-center gap-3 border-wm-line py-2 not-first:border-t">
-            <span className="w-11 shrink-0 font-wm-mono text-wm-mono text-wm-muted">{time(item.answered_at)}</span>
+            <span className="w-11 shrink-0 text-wm-meta text-wm-muted">{time(item.answered_at)}</span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className={cn('break-words font-wm-display font-bold text-wm-ink', RAW.lemma)}>{item.lemma}</span>
               <span className="break-words font-wm-sans text-wm-caption font-normal text-wm-muted">{answerLine(item, t)}</span>
             </span>
             <span
-              className={cn('flex size-5.5 shrink-0 items-center justify-center rounded-wm-sm', item.result === 'correct' ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
+              className={cn('flex size-5.5 shrink-0 items-center justify-center rounded-wm-key', item.result === 'correct' ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
             >
               {item.result === 'correct' ? <Check aria-hidden className="size-3" /> : <X aria-hidden className="size-3" />}
               <span className="sr-only">{t(item.result === 'correct' ? 'resultRight' : 'resultWrong')}</span>

@@ -22,7 +22,7 @@ export function PlanCard({ name, tags, intro, perks, footer, highlight = false, 
     <section
       aria-labelledby={id}
       className={cn(
-        'flex min-w-0 flex-col gap-4 rounded-wm-xl bg-wm-surface p-5 md:p-7',
+        'flex min-w-0 flex-col gap-4 rounded-wm-card bg-wm-surface p-5 md:p-7',
         highlight ? 'border-2 border-wm-accent shadow-wm-pro' : 'border border-wm-line shadow-wm-card',
         className,
       )}

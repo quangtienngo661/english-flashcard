@@ -47,7 +47,7 @@ export function GroupPicker({ groups, value, onChange, onCreate, onUnmatched, re
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex min-h-11 items-center gap-2 rounded-wm-md border-2 border-wm-line bg-wm-surface px-3.5 focus-within:border-wm-accent focus-within:ring-4 focus-within:ring-wm-accent/16">
+      <label className="flex min-h-11 items-center gap-2 rounded-wm-control border-2 border-wm-line bg-wm-surface px-3.5 focus-within:border-wm-accent focus-within:ring-4 focus-within:ring-wm-accent/16">
         <Search aria-hidden className="size-4.5 shrink-0 text-wm-muted" />
         <input
           ref={box}
@@ -94,22 +94,22 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
   const name = useId();
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-col gap-0.5">
-      <p aria-hidden className="pb-1 font-wm-mono text-wm-mono text-wm-muted">
+      <p aria-hidden className="pb-1 text-wm-meta text-wm-muted">
         {label}
       </p>
       {groups.map((g) => (
         <label
           key={g.id}
           className={cn(
-            'flex min-h-11 cursor-pointer items-center gap-3 rounded-wm-md px-3 py-2.5 hover:bg-wm-accent/4 has-focus-visible:outline-3 has-focus-visible:outline-wm-accent',
+            'flex min-h-11 cursor-pointer items-center gap-3 rounded-wm-control px-3 py-2.5 hover:bg-wm-accent/4 has-focus-visible:outline-3 has-focus-visible:outline-wm-accent',
             value === g.id && 'bg-wm-accent/6',
           )}
         >
           <input type="radio" name={name} checked={value === g.id} onChange={() => onChange(g.id)} className="size-4.5 shrink-0 accent-wm-accent outline-none" />
-          <span data-group-square aria-hidden className={cn('size-2.25 shrink-0 rounded-xs', groupTone(g.id, g.total).bg)} />
+          <span data-group-square aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', groupTone(g.id, g.total).bg)} />
           <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-base-strong text-wm-ink">{g.name}</span>
           {g.total > 0 && <MiniLevels group={g} />}
-          <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('words', { count: g.total })}</span>
+          <span className="shrink-0 text-wm-meta text-wm-muted">{t('words', { count: g.total })}</span>
         </label>
       ))}
     </div>
@@ -127,7 +127,7 @@ function MiniLevels({ group }: { group: GroupSummary }) {
         <span
           key={c.level}
           aria-label={`${levelName(toLevel(c.level))}: ${c.total}`}
-          className={cn('block h-1.25 w-2 rounded-xs', c.total > 0 ? LEVEL_FILL[toLevel(c.level)] : 'bg-wm-ink/14')}
+          className={cn('block h-1.25 w-2 rounded-wm-key', c.total > 0 ? LEVEL_FILL[toLevel(c.level)] : 'bg-wm-ink/14')}
         />
       ))}
     </figure>

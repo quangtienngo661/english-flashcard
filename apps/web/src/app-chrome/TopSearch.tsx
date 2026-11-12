@@ -44,7 +44,7 @@ export function TopSearch() {
 
   return (
     <form role="search" onSubmit={onSubmit} className="flex w-65 min-w-32 shrink">
-      <label className="flex h-9.5 w-full min-w-0 items-center gap-2 rounded-wm-md border border-wm-line bg-wm-bg pl-3 pr-2 focus-within:border-wm-accent">
+      <label className="flex h-9.5 w-full min-w-0 items-center gap-2 rounded-wm-control border border-wm-line bg-wm-bg pl-3 pr-2 focus-within:border-wm-accent">
         <Search aria-hidden className="size-4 shrink-0 text-wm-muted" />
         <span className="sr-only">{t('placeholder')}</span>
         <input
@@ -56,7 +56,7 @@ export function TopSearch() {
           placeholder={t('placeholder')}
           className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-small text-wm-ink outline-none placeholder:text-wm-muted"
         />
-        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 font-wm-sans text-wm-mono text-wm-muted">
+        <kbd aria-hidden className="shrink-0 rounded-wm-key border border-wm-line bg-wm-bg px-1.5 font-wm-sans text-wm-meta text-wm-muted">
           /
         </kbd>
       </label>

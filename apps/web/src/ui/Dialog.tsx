@@ -44,7 +44,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
     >
       <Modal
         className={cn(
-          'max-h-dvh w-full overflow-y-auto rounded-t-wm-modal bg-wm-surface px-5 pb-6 pt-5 shadow-wm-pop outline-none md:rounded-wm-modal md:p-7',
+          'max-h-dvh w-full overflow-y-auto rounded-t-wm-dialog bg-wm-surface px-5 pb-6 pt-5 shadow-wm-pop outline-none md:rounded-wm-dialog md:p-7',
           'motion-safe:data-entering:animate-wm-sheet-in motion-safe:data-exiting:animate-wm-pop-out md:motion-safe:data-entering:animate-wm-dialog-in',
           WIDTH[size ?? (wide ? 'lg' : 'md')],
           tone === 'pro' && 'border-2 border-wm-accent',
@@ -65,7 +65,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
                     aria-label={closeLabel}
                     onPress={close}
                     isDisabled={!isDismissable}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-wm-md text-wm-muted outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-wm-accent disabled:opacity-50 md:size-9"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-wm-control text-wm-muted outline-none hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-wm-accent disabled:opacity-50 md:size-9"
                   >
                     <X aria-hidden className="size-5" />
                   </Button>

@@ -30,7 +30,7 @@ export function GroupsSection({ copy }: { copy: LandingCopy['groups'] }) {
                 data-group-card=""
                 data-fly-step={String(FLY_ORDER.includes(word) ? FLY_ORDER.indexOf(word) : FLY_ORDER.length + i)}
                 className={cn(
-                  'relative flex h-16 flex-col justify-center gap-0.5 rounded-wm-lg bg-wm-surface px-4 md:h-18.5 md:w-52.5',
+                  'relative flex h-16 flex-col justify-center gap-0.5 rounded-wm-row bg-wm-surface px-4 md:h-18.5 md:w-52.5',
                   word === LIT ? cn(BORDER_15, 'border-wm-accent shadow-wm-btn') : 'border border-wm-line shadow-wm-soft',
                 )}
               >

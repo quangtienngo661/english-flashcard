@@ -99,7 +99,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   const asked = data?.asked ?? session.asked;
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+      <section className="flex flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
         {data && (
           <div className={STAGGER[0]}>
             <Ring correct={data.correct} wrong={data.wrong} label={ts('ring', { correct: data.correct, total: data.asked })} caption={ts('ringCaption')} />
@@ -188,7 +188,7 @@ function Ring({ correct, wrong, label, caption }: { correct: number; wrong: numb
           <span className="text-wm-section">{correct}</span>
           <span className="text-wm-card-title text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

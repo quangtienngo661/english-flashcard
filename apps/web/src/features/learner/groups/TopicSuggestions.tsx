@@ -51,22 +51,22 @@ function TopicCard({ item }: { item: TopicSuggestion }) {
     <Link
       href={`/${locale}/app/topic?code=${encodeURIComponent(item.topic.code)}&level=${encodeURIComponent(item.level)}`}
       aria-label={`${title}, ${count}`}
-      className="group flex h-full items-center gap-3.5 rounded-wm-xl border border-wm-line bg-wm-surface p-3.5 shadow-wm-row outline-none transition duration-200 ease-out-strong hover:border-wm-accent/30 hover:shadow-wm-card focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:hover:-translate-y-0.5"
+      className="group flex h-full items-center gap-3.5 rounded-wm-card border border-wm-line bg-wm-surface p-3.5 shadow-wm-row outline-none transition duration-200 ease-out-strong hover:border-wm-accent/30 hover:shadow-wm-card focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:hover:-translate-y-0.5"
     >
-      <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-wm-lg bg-wm-accent-soft text-wm-accent">
+      <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-wm-control bg-wm-accent-soft text-wm-accent">
         <Layers className="size-5" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate font-wm-display text-base font-bold text-wm-ink">{item.topic.name}</span>
-          <Tag tone="accent" mono>
+          <Tag tone="accent">
             {item.level}
           </Tag>
         </span>
         {samples.length > 0 && <span className="truncate text-wm-caption text-wm-muted">{samples.join(', ')}…</span>}
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{count}</span>
+        <span className="text-wm-meta text-wm-muted">{count}</span>
         <span
           aria-hidden
           className="flex size-8 items-center justify-center rounded-wm-pill bg-wm-bg text-wm-muted transition duration-200 ease-out-strong group-hover:bg-wm-accent group-hover:text-wm-on-accent"

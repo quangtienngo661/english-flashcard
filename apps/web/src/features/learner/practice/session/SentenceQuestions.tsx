@@ -31,7 +31,7 @@ export function SentenceText({ sentence, highlight, fill }: { sentence: string; 
         {fill.wrong && (
           <Chip tone="fail" struck={struck}>
             {fill.wrong}
-            {fill.attempt !== undefined && <span className="ml-2 align-middle font-wm-mono text-wm-mono lowercase">{t('attempt', { n: fill.attempt })}</span>}
+            {fill.attempt !== undefined && <span className="ml-2 align-middle text-wm-meta">{t('attempt', { n: fill.attempt })}</span>}
           </Chip>
         )}
         {fill.right && <Chip tone="pass">{fill.right}</Chip>}
@@ -57,7 +57,7 @@ function Chip({ tone, struck = false, children }: { tone: 'pass' | 'fail'; struc
   return (
     <span
       className={cn(
-        'mx-1 inline-block rounded-wm-md border-2 px-3',
+        'mx-1 inline-block rounded-wm-control border-2 px-3',
         tone === 'pass' ? 'border-wm-pass bg-wm-pass-soft text-wm-pass' : 'border-wm-fail bg-wm-fail-soft text-wm-fail',
         struck && 'border-dashed line-through',
       )}

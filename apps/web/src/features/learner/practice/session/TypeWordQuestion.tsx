@@ -51,7 +51,7 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
           placeholder={t('answerPlaceholder')}
           className={cn(FIELD_BOX, 'pr-16 font-semibold placeholder:font-normal', retry && 'border-wm-fail')}
         />
-        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 font-wm-mono text-wm-mono lowercase text-wm-fail">{t('attempt', { n: outcome.tries })}</span>}
+        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-wm-meta text-wm-fail">{t('attempt', { n: outcome.tries })}</span>}
       </div>
       {!final && (
         <Button type="submit" variant={retry ? 'secondary' : 'primary'} className="px-8" isDisabled={!text.trim()} isPending={disabled}>
@@ -77,7 +77,7 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 border-wm-wrong-line bg-wm-wrong-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7">
+    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 border-wm-wrong-line bg-wm-wrong-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7">
       <div className="flex items-center gap-3">
         <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-wrong-ink text-wm-on-accent">
           <X aria-hidden className="size-4.5" />

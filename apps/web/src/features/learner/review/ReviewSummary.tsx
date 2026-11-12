@@ -33,7 +33,7 @@ export function ReviewSummary({ counts, piles, group }: {
   const locale = useLocale();
   const total = counts.known + counts.review;
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
       <div className={STAGGER[0]}>
         <Ring known={counts.known} total={total} label={t('ring', { known: counts.known, total })} caption={t('ringCaption')} />
       </div>
@@ -103,7 +103,7 @@ function Ring({ known, total, label, caption }: { known: number; total: number; 
           <span className="text-wm-lemma">{known}</span>
           <span className="text-wm-word text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

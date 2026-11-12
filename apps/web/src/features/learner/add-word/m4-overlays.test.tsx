@@ -82,7 +82,7 @@ describe('Overlay 4: AI result', () => {
   it('shows the preview card "thẻ sẽ lưu · xem trước" with the AI meaning', async () => {
     renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    const preview = await screen.findByRole('region', { name: 'thẻ sẽ lưu · xem trước' });
+    const preview = await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
     expect(within(preview).getByText('nói dối, nói phét')).toBeInTheDocument();
     expect(within(preview).getByText('cap')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sửa rồi lưu' })).toBeInTheDocument();

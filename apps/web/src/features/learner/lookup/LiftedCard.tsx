@@ -26,9 +26,9 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
   const deck = item ? groups.find((g) => item.group_ids.includes(g.id)) : undefined;
   return (
     <section aria-label={t('card')} className="relative">
-      <div aria-hidden className="lk-card-behind absolute inset-0 rounded-wm-xl border border-wm-line bg-wm-surface" />
-      <div key={word.lemma} className="lk-card relative flex min-h-80 flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{meta}</p>
+      <div aria-hidden className="lk-card-behind absolute inset-0 rounded-wm-card border border-wm-line bg-wm-surface" />
+      <div key={word.lemma} className="lk-card relative flex min-h-80 flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6">
+        <p className="text-wm-meta text-wm-muted">{meta}</p>
         <h2 className="break-all font-wm-display text-wm-lemma font-extrabold leading-tight text-wm-ink">{word.lemma}</h2>
         {sense?.pronunciation && <PronunciationLine text={word.lemma} line={{ scope: sense.scope, pronunciation: sense.pronunciation }} />}
         <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense?.meaning.text ?? word.meaning_preview}</p>
@@ -38,7 +38,7 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
         <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 pt-1">
           {item && deck ? (
             <p className="flex min-w-0 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
-              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-xs', groupTone(deck.id, deck.total).bg)} />
+              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-key', groupTone(deck.id, deck.total).bg)} />
               {item.level === 0 ? tw('levelNew', { group: deck.name }) : tw('level', { group: deck.name, level: levelName(toLevel(item.level)) })}
             </p>
           ) : (

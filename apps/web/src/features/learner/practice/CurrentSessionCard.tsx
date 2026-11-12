@@ -36,7 +36,7 @@ export function CurrentSessionCard({ current, groups, out }: { current: CurrentS
   return (
     <section
       aria-labelledby="current-session"
-      className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface px-5 py-4 shadow-wm-card md:flex-row md:items-center md:gap-5"
+      className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface px-5 py-4 shadow-wm-card md:flex-row md:items-center md:gap-5"
     >
       <span aria-hidden className="font-wm-display text-wm-card-title text-wm-accent">
         {done}/{total}

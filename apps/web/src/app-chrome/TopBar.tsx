@@ -27,7 +27,7 @@ export function TopBar() {
   const addWord = useAddWord();
   return (
     <div className="hidden h-16 items-center gap-3 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
-      <Link href={`/${locale}/app`} className="shrink-0 rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
+      <Link href={`/${locale}/app`} className="shrink-0 rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
         <AppLogo />
       </Link>
       <nav aria-label={t('mainNav')} className="flex min-w-0 items-center gap-1">
@@ -39,7 +39,7 @@ export function TopBar() {
               href={`/${locale}${path}`}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
+                'flex items-center gap-2 whitespace-nowrap rounded-wm-control px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
                 isActive ? 'bg-wm-accent-soft text-wm-accent' : 'text-wm-muted hover:text-wm-ink',
               )}
             >
@@ -60,11 +60,11 @@ export function TopBar() {
       <button
         type="button"
         onClick={() => addWord.open()}
-        className="flex min-h-10 shrink-0 items-center gap-2 rounded-wm-button bg-wm-accent py-2 pl-4 pr-3 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:active:scale-97"
+        className="flex min-h-10 shrink-0 items-center gap-2 rounded-wm-control bg-wm-accent py-2 pl-4 pr-3 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none transition duration-200 ease-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent motion-safe:active:scale-97"
       >
         <Plus aria-hidden className="size-4" />
         {t('addWord')}
-        <kbd className="rounded-wm-sm border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-mono text-wm-on-accent">N</kbd>
+        <kbd className="rounded-wm-key border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-meta text-wm-on-accent">N</kbd>
       </button>
       <PlanChipLink />
       <AvatarMenu />

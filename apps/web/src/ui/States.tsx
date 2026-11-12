@@ -8,7 +8,7 @@ import { Button } from './Button';
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
       <h2 className="break-words font-wm-display text-wm-card-title text-wm-ink">{title}</h2>
       {body && <p className="font-wm-sans text-wm-base text-wm-muted">{body}</p>}
       {action}
@@ -19,7 +19,7 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const t = useTranslations('App.common');
   return (
-    <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+    <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-sans text-wm-base text-wm-ink">{message}</p>
       <Button variant="secondary" onPress={onRetry}>
         {t('retry')}

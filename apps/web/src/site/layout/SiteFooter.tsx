@@ -13,14 +13,14 @@ export function SiteFooter({ locale }: { locale: AppLocale }) {
   const t = useTranslations('Footer');
   const nav = useTranslations('Nav');
   const link =
-    'inline-flex min-h-11 items-center rounded-wm-sm font-wm-sans text-wm-small text-wm-muted outline-none transition-colors duration-200 hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
+    'inline-flex min-h-11 items-center rounded-wm-control font-wm-sans text-wm-small text-wm-muted outline-none transition-colors duration-200 hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
     <footer>
       <Container className="flex flex-col gap-4 pt-8 pb-10 md:flex-row md:items-center md:justify-between md:gap-6 md:pt-10 md:pb-12">
         {/* A link home, also because AppLogo's aria-label is not allowed on a bare span (axe aria-prohibited-attr). */}
         <a
           href={`/${locale}`}
-          className="inline-flex min-h-11 items-center self-start rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:self-auto"
+          className="inline-flex min-h-11 items-center self-start rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:self-auto"
         >
           <AppLogo />
         </a>

@@ -162,7 +162,7 @@ export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClo
       }
     >
       {/* M3's confirm look (Figma "Xác nhận xóa" 121:4597): what is lost in a fail-soft block. */}
-      <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+      <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
         <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
         <span>{t('deleteBody')}</span>
       </p>

@@ -31,7 +31,7 @@ export function Checkbox({
       isInvalid={isInvalid}
       className="group flex items-start gap-2.5 font-wm-sans text-wm-small text-wm-ink outline-none"
     >
-      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-wm-sm border-2 border-wm-ghost bg-wm-surface group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-invalid:border-wm-fail group-data-selected:border-wm-accent group-data-selected:bg-wm-accent">
+      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-wm-key border-2 border-wm-ghost bg-wm-surface group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-invalid:border-wm-fail group-data-selected:border-wm-accent group-data-selected:bg-wm-accent">
         {isSelected && <Check aria-hidden className="size-3.5 text-wm-on-accent" />}
       </span>
       <span

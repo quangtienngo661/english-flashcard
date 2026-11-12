@@ -9,14 +9,14 @@ export default function Loading() {
   return (
     <div role="status" className="flex flex-col gap-6">
       <span className="sr-only">{t('loading')}</span>
-      <Skeleton className="h-11 w-full rounded-wm-lg md:h-12" />
+      <Skeleton className="h-11 w-full rounded-wm-control md:h-12" />
       <Skeleton className="h-7 w-80 max-w-full" />
       <div
         // raw-ok: the same two columns as the page
         className="grid gap-9 lg:grid-cols-[minmax(0,1fr)_23.75rem]"
       >
-        <Skeleton className="h-150 rounded-wm-md" />
-        <Skeleton className="order-first h-80 rounded-wm-xl lg:order-none" />
+        <Skeleton className="h-150 rounded-wm-row" />
+        <Skeleton className="order-first h-80 rounded-wm-card lg:order-none" />
       </div>
     </div>
   );

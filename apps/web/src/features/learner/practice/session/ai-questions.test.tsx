@@ -73,7 +73,7 @@ describe('AI question types (K/78a–K/81)', () => {
   it('K/78a cloze: "câu AI", the sentence with its blank, [Kiểm tra] sends the typed word', async () => {
     const r = renderApp(<PracticeSession />, { routes: routes(cloze(), { 'POST /v1/practice/items/it-c/answer': () => Response.json(result()) }) });
     expect(await screen.findByText('We use Docker to ___ the app to the production server.')).toBeInTheDocument();
-    expect(screen.getByText('câu AI')).toBeInTheDocument();
+    expect(screen.getByText('Câu AI')).toBeInTheDocument();
     expect(screen.getByText('Điền từ vào câu')).toBeInTheDocument();
     expect(screen.getByText('Gõ từ còn thiếu, đúng dạng trong câu')).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox'), 'deploy');

@@ -13,7 +13,6 @@
 @theme inline {
   --font-wm-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
   --font-wm-display: var(--font-bricolage), var(--font-noto-sans), sans-serif;
-  --font-wm-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 /* Dialog and sheet motion of the new UI (GM15, motion §5–§6): enter on the main curve, close in 150ms on the accelerating one. */
@@ -614,7 +613,6 @@
 .gstack[data-size='carousel'] .gstack-behind[data-behind='2'] { filter: blur(0.156em); }
 .gstack[data-size='carousel'] .gstack-behind[data-behind='3'] { filter: blur(0.234em); }
 .gstack-meta {
-  font-family: var(--font-wm-mono);
   font-size: 1.0875em;
   font-weight: 500;
   color: var(--color-wm-muted);

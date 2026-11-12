@@ -15,7 +15,7 @@ export function displayName(me: Pick<Me, 'given_name' | 'family_name' | 'email'>
 }
 
 const ITEM =
-  'flex min-h-11 cursor-pointer items-center gap-3 rounded-wm-md px-3 py-2 font-wm-sans text-wm-small-strong text-wm-ink outline-none data-current:bg-wm-bg data-focused:bg-wm-accent-soft';
+  'flex min-h-11 cursor-pointer items-center gap-3 rounded-wm-control px-3 py-2 font-wm-sans text-wm-small-strong text-wm-ink outline-none data-current:bg-wm-bg data-focused:bg-wm-accent-soft';
 const ICON = 'size-4 text-wm-muted';
 
 /** A ref that puts `aria-current="page"` (and `data-current`, for the fill) on the item of the open page. */
@@ -60,7 +60,7 @@ export function AvatarMenu() {
       <Popover
         placement="bottom end"
         offset={8}
-        className="w-72 rounded-wm-modal bg-wm-surface p-2 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:data-exiting:animate-wm-pop-out"
+        className="w-72 rounded-wm-row bg-wm-surface p-2 shadow-wm-pop motion-safe:data-entering:animate-menu-in motion-safe:data-exiting:animate-wm-pop-out"
       >
         <div className="px-3 pb-3 pt-2">
           <p className="truncate font-wm-sans text-wm-base-strong text-wm-ink">{displayName(me, locale)}</p>
