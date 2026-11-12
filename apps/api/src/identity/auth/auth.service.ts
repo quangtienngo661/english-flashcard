@@ -16,6 +16,7 @@ import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import type { LoginBody, RegisterBody } from './auth.schemas.js';
+import { clientIpKey } from './client-ip-key.js';
 import { accountLocked, decideCredential } from './credential-decision.js';
 import { OtpService, otpLocked } from './otp.service.js';
 import type { VerifyEmailBody } from './otp.schemas.js';
@@ -82,9 +83,10 @@ export class AuthService {
         if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
         const updated = await tx.user.updateMany({
           where: { id: userId, emailVerifiedAt: null, status: 'active' },
-          data: { ...data, failedLoginCount: 0, loginLockedUntil: null },
+          data,
         });
         if (updated.count === 0) throw this.emailTaken();
+        await tx.loginFailure.deleteMany({ where: { userId } });
         await tx.passwordCredential.upsert({ where: { userId },
           create: { userId, hash, updatedAt: now }, update: { hash, updatedAt: now } });
         await this.sessions.revokeAllForUser(tx, userId, 'reregistered');
@@ -107,7 +109,7 @@ export class AuthService {
     return { email };
   }
 
-  async login(body: LoginBody, res: Response): Promise<IssuedSession> {
+  async login(body: LoginBody, res: Response, clientIp?: string): Promise<IssuedSession> {
     const email = normalizeEmail(body.email);
     const failedSubject = { email_hmac: createHmac('sha256', this.config.rateLimitHmacKey)
       .update(email ?? body.email).digest('hex') };
@@ -127,15 +129,11 @@ export class AuthService {
     const passwordMatched = await this.hasher.verify(verifiedHash, body.password);
     const outcome = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, account.id);
-      const before = await tx.user.findUnique({ where: { id: account.id }, select: { loginLockedUntil: true } });
-      const kind = await decideCredential(tx, { userId: account.id, verifiedHash, passwordMatched }, this.clock);
-      if (kind !== 'ok') {
-        // Distinguish a newly established lock for logging from a request that
-        // merely observed an existing lock. No extra public outcome is needed.
-        const current = kind === 'locked' ? await tx.user.findUnique({ where: { id: account.id } }) : null;
-        return { kind, newlyLocked: kind === 'locked' && current?.loginLockedUntil !== null
-          && current?.loginLockedUntil?.getTime() !== before?.loginLockedUntil?.getTime() };
-      }
+      const { kind, newlyLocked } = await decideCredential(tx, {
+        userId: account.id, verifiedHash, passwordMatched, ipKey: clientIpKey(clientIp, this.config.rateLimitHmacKey),
+      }, this.clock);
+      // newlyLocked tells a lock this request established (logged) from one it merely observed.
+      if (kind !== 'ok') return { kind, newlyLocked };
       const user = await tx.user.findUnique({ where: { id: account.id }, select: { emailVerifiedAt: true } });
       if (user?.emailVerifiedAt === null) return { kind: 'unverified' as const };
       return { kind, session: await this.sessions.startChain(tx, {

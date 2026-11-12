@@ -1,4 +1,9 @@
-/** Stub for the red commit; the fix commit implements it. */
-export function clientIpKey(_ip: string | undefined, _hmacKey: Buffer): string {
-  throw new Error('clientIpKey not implemented');
+import { createHmac } from 'node:crypto';
+
+/**
+ * The key a login failure row is stored under (F4): HMAC-SHA256 of the client ip, cut to 32 hex characters as
+ * `RateLimiter` keys an ip, so no raw ip is stored. A request without an ip shares the hashed key `unknown`.
+ */
+export function clientIpKey(ip: string | undefined, hmacKey: Buffer): string {
+  return createHmac('sha256', hmacKey).update(ip || 'unknown').digest('hex').slice(0, 32);
 }

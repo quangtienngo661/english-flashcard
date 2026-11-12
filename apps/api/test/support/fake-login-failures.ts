@@ -45,6 +45,6 @@ export function fakeLoginFailures() {
     },
     get: (userId: string, ipKey: string) => rows.get(id({ userId, ipKey })),
     size: () => rows.size,
-    writes: () => [table.upsert, table.update, table.deleteMany].flatMap((method) => method.mock.calls),
+    writes: (): unknown[][] => [...table.upsert.mock.calls, ...table.update.mock.calls, ...table.deleteMany.mock.calls],
   };
 }

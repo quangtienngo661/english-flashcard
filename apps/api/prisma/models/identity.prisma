@@ -6,8 +6,6 @@ model User {
   nativeLanguage   String?   @map("native_language")
   timezone         String
   status           String    @default("active")
-  failedLoginCount Int       @default(0) @map("failed_login_count")
-  loginLockedUntil DateTime? @map("login_locked_until") @db.Timestamptz
   mustChangePassword Boolean @default(false) @map("must_change_password")
   givenName        String?   @map("given_name") @db.VarChar(50)
   familyName       String?   @map("family_name") @db.VarChar(50)
@@ -30,6 +28,7 @@ model User {
   sessionChains      SessionChain[]
   otpCodes           OtpCode[]
   otpFailureWindows  OtpFailureWindow[]
+  loginFailures      LoginFailure[]
 
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("users")
@@ -107,6 +106,20 @@ model OtpFailureWindow {
 
   @@id([userId, purpose])
   @@map("otp_failure_windows")
+}
+
+/// Wrong passwords per account and client ip (F4): ten lock that pair for 15 minutes; `ip_key` is an HMAC, never the raw ip.
+model LoginFailure {
+  userId      String    @map("user_id") @db.Uuid
+  ipKey       String    @map("ip_key")
+  failedCount Int       @default(0) @map("failed_count")
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz
+  updatedAt   DateTime  @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, ipKey])
+  @@map("login_failures")
 }
 
 model UserIdentity {

@@ -25,7 +25,7 @@ export class PasswordController {
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
   ): Promise<TokenResponse> {
-    const session = await this.passwords.change(req.user!, body, res);
+    const session = await this.passwords.change(req.user!, body, res, req.ip);
     return writeSession(res, session, this.clock.now(), this.config.jwt.accessTtlSeconds);
   }
 

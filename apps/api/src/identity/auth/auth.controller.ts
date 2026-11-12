@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, Inject, Post, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Body, Controller, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { Public } from '../sessions/public.decorator.js';
@@ -36,9 +36,10 @@ export class AuthController {
   @Turnstile('auth.login.ip')
   async login(
     @Body({ schema: loginSchema }) body: LoginBody,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<TokenResponse> {
-    const session = await this.auth.login(body, res);
+    const session = await this.auth.login(body, res, req.ip);
     return writeSession(res, session, this.clock.now(), this.config.jwt.accessTtlSeconds);
   }
 }

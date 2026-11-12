@@ -102,7 +102,7 @@ describe('AccountDeletionRequests.deleteOwn (design §7.2 step 1)', () => {
 
   it('F4: without a client ip the failure counts on the hashed "unknown" key', async () => {
     const s = setup({}, { passwordMatches: false });
-    await expect(own(s, {}, null, undefined)).rejects.toMatchObject({ status: 400, problemType: 'invalid-current-password' });
+    await expect(s.service.deleteOwn({ userId: USER, sessionChainId: randomUUID() }, body, { res, googleReauthUserId: null })).rejects.toMatchObject({ status: 400, problemType: 'invalid-current-password' });
     expect(s.failures.get(USER, keyOf('unknown'))).toMatchObject({ failedCount: 1 }); expect(s.failures.size()).toBe(1);
   });
 
