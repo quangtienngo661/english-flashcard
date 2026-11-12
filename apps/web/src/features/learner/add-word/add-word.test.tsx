@@ -138,6 +138,17 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     expect(quickAdds(calls)).toHaveLength(0);
   });
 
+  it('L-A-1: manual form with no deck chosen reads [Lưu từ], not "Lưu vào 0 nhóm", and asks for a deck on save', async () => {
+    window.localStorage.setItem(LAST_GROUP_KEY, uuid(999));
+    const { calls } = open('rizz', { routes: routes() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
+    expect(screen.queryByRole('button', { name: /Lưu vào \d+ nhóm/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    expect(await screen.findByText('Chọn một nhóm để lưu từ.')).toBeInTheDocument();
+    expect(quickAdds(calls)).toHaveLength(0);
+  });
+
   it('K/40b: no deck yet → "Tạo nhóm đầu tiên" and no save button', async () => {
     open('went', { routes: routes({}, []) });
     expect(await screen.findByText('Bạn chưa có nhóm nào. Tạo nhóm đầu tiên để lưu từ này.')).toBeInTheDocument();
