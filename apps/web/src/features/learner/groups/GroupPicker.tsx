@@ -105,7 +105,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
   const caption = { waiting: t('capWaiting'), done: t('capDone'), empty: t('capEmpty') };
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex min-h-11 items-center gap-2 rounded-wm-control border-2 border-wm-line bg-wm-bg px-3 focus-within:border-wm-accent">
+      <label className="flex min-h-11 items-center gap-2 rounded-wm-control border-2 border-wm-line bg-wm-surface px-3 focus-within:border-wm-accent">
         <Search aria-hidden className="size-4 shrink-0 text-wm-muted" />
         <input
           role="combobox"

@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Folder, Layers, Star, Target, X } from 'lucide-react';
+import { Folder, Layers, Star, Target } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
@@ -13,16 +13,15 @@ import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { Kbd } from '@/ui/Kbd';
 import { ProgressBar } from '@/ui/ProgressBar';
-import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
-import { CalendarLink } from '../calendar/CalendarLink';
+import { Card } from '@/ui/Card';
+import { SectionTitle } from '@/ui/SectionTitle';
 import { useGroups } from '../groups/groups-api';
 import { CurrentSessionCard } from './CurrentSessionCard';
-import { answerSummary } from './history-format';
 import { OutOfSessions } from './OutOfSessions';
 import { TodayHero } from './PracticeHero';
 import { CHIP, CHIP_FAIL, SourceCard } from './SourceCard';
 import { usePracticeStarter } from './use-practice-starter';
-import { RULE_TYPES, useRecentHistory, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
+import { RULE_TYPES, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
 
 type Origin = Exclude<Source, 'today'> | 'hero';
 const ORIGINS: Origin[] = ['hero', 'group', 'weak', 'priority', 'all'];
@@ -82,10 +81,9 @@ export function PracticePage() {
         {current.data && <CurrentSessionCard current={current.data} groups={decks} out={out} />}
 
         <section className="flex flex-col gap-3">
-          <h2 id="other-sources" className="font-wm-display text-wm-card-title text-wm-ink">
-            {t('sources.title')}
-          </h2>
-          <ul aria-labelledby="other-sources" className="flex flex-col rounded-wm-card border border-wm-line bg-wm-surface px-5 shadow-wm-card">
+          <SectionTitle id="other-sources">{t('sources.title')}</SectionTitle>
+          <Card as="div" className="px-5 py-0 md:px-5 md:py-0">
+          <ul aria-labelledby="other-sources" className="flex flex-col">
             <SourceCard
               name={t('sources.group.name')}
               icon={Folder}
@@ -176,6 +174,7 @@ export function PracticePage() {
               reopensAt={reopensAt}
             />
           </ul>
+          </Card>
         </section>
       </div>
     );
@@ -183,7 +182,7 @@ export function PracticePage() {
   return (
     <>
       <PageTitle>{t('title')}</PageTitle>
-      {/* Owner 10/11/2026: today's sessions top the side column, level with the quick-practice card, Gần đây under it. On phones
+      {/* Owner 10/11/2026: today's sessions top the side column, level with the quick-practice card, the shortcuts under it. On phones
           the sessions card still comes first, so the side items are placed in a grid instead of one aside column. */}
       <div
         className={cn(
@@ -199,7 +198,6 @@ export function PracticePage() {
         )}
         <div className="flex min-w-0 xl:col-start-1 xl:row-span-3 xl:row-start-1">{body}</div>
         <aside className="flex flex-col gap-5 xl:col-start-2 xl:row-start-2">
-          <Recent />
           <Shortcuts />
         </aside>
       </div>
@@ -223,12 +221,10 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
     line = t('out', { time, wait });
   } else if (time) line = t('note', { time });
   return (
-    <section
-      aria-labelledby="usage-title"
-      className={cn(
-        'flex w-full flex-col gap-2.5 rounded-wm-card border bg-wm-surface px-5 py-4 shadow-wm-card',
-        out ? 'border-wm-fail' : 'border-wm-line',
-      )}
+    <Card
+      as="section"
+      labelledBy="usage-title"
+      className={cn('flex w-full flex-col gap-2.5 px-5 py-4 md:px-5 md:py-4', out && 'border border-wm-fail')}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="usage-title" className="font-wm-sans text-wm-small-strong text-wm-ink">
@@ -243,48 +239,7 @@ function UsageCard({ pool, plan, out }: { pool: Pool; plan: Plan; out: boolean }
         </>
       )}
       {line && <p className="font-wm-sans text-wm-caption text-wm-muted">{line}</p>}
-    </section>
-  );
-}
-
-/** K/51 "Gần đây": the last questions answered, with a link to the history (the calendar replaces it in M6). */
-function Recent() {
-  const t = useTranslations('App.practice');
-  const tRecent = useTranslations('App.practice.recent');
-  const history = useRecentHistory(3);
-  const items = history.data?.items ?? [];
-  return (
-    <section aria-labelledby="recent-title" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
-      <h2 id="recent-title" className="font-wm-display text-wm-base text-wm-ink">
-        {t('recent.title')}
-      </h2>
-      {history.isSuccess && items.length === 0 && <p className="font-wm-sans text-wm-small text-wm-muted">{t('recent.empty')}</p>}
-      {items.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {items.map((item) => {
-            const right = item.result === 'correct';
-            return (
-              <li key={item.item_id} className="flex items-start gap-3">
-                <span
-                  role="img"
-                  aria-label={right ? tRecent('right') : tRecent('wrong')}
-                  className={cn('mt-0.5 flex size-5.5 shrink-0 items-center justify-center rounded-wm-key', right ? 'bg-wm-pass-soft text-wm-pass' : 'bg-wm-fail-soft text-wm-fail')}
-                >
-                  {right ? <Check aria-hidden className="size-3.5" /> : <X aria-hidden className="size-3.5" />}
-                </span>
-                <span className="flex min-w-0 flex-col">
-                  <span className="break-words font-wm-sans text-wm-small-strong text-wm-ink">{item.lemma}</span>
-                  <span className="break-words font-wm-sans text-wm-caption text-wm-muted">
-                    {answerSummary(item, (key, values) => tRecent(key as 'correct', values))}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <CalendarLink className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'w-fit')}>{t('recent.history')}</CalendarLink>
-    </section>
+    </Card>
   );
 }
 
@@ -298,10 +253,8 @@ function Shortcuts() {
     [['Esc'], t('stop')],
   ] as const;
   return (
-    <section aria-labelledby="shortcuts-title" className="hidden flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex">
-      <h2 id="shortcuts-title" className="font-wm-display text-wm-base text-wm-ink">
-        {t('title')}
-      </h2>
+    <Card as="section" labelledBy="shortcuts-title" className="hidden flex-col gap-3 md:flex">
+      <SectionTitle id="shortcuts-title">{t('title')}</SectionTitle>
       <ul className="flex flex-col gap-2">
         {rows.map(([keys, label]) => (
           <li key={label} className="flex items-center gap-2 font-wm-sans text-wm-small text-wm-muted">
@@ -314,6 +267,6 @@ function Shortcuts() {
           </li>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }

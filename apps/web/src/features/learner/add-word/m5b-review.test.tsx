@@ -68,7 +68,7 @@ describe('M5b review findings', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Chọn' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
-    expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: RUN.sense_id });
+    expect(quickAdds(calls)[0].body).toEqual({ group_ids: [TRAVEL], sense_id: RUN.sense_id });
     expect((await screen.findAllByText('Đã lưu từ “run” vào nhóm “Du lịch”.')).length).toBeGreaterThan(0);
   });
 

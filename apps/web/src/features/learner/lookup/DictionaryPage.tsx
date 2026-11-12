@@ -4,11 +4,15 @@ import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/cn';
+import { shownPos } from '@/lib/pos';
 import { TargetWord } from '@/ui/TargetWord';
 import type { WordRow } from './lookup-api';
 
 /** Dictionary abbreviations of the parts of speech (Figma: "n.", "v.", "n., v."); others are written out. */
 const POS_SHORT: Record<string, string> = { noun: 'n.', verb: 'v.', adjective: 'adj.', adverb: 'adv.', pronoun: 'pron.', preposition: 'prep.', conjunction: 'conj.' };
+
+/** "n., v." for the parts of speech that were set; empty when none was. */
+const posLabel = (list: string[]) => list.filter((p) => shownPos(p)).map((p) => POS_SHORT[p] ?? p).join(', ');
 
 /**
  * Figma "Trang từ điển" (85:3285): a paper page with a running header (first word · trang N · last word), letter headings and one
@@ -104,7 +108,7 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
       <span className="flex flex-wrap items-baseline gap-x-1.5">
         <span className="break-all font-wm-display text-wm-word font-extrabold tracking-tight text-wm-ink md:text-wm-logo">{word.lemma}</span>
         {word.ipa && <span className="font-wm-sans text-wm-small text-wm-muted">/{word.ipa}/</span>}
-        {word.pos_list.length > 0 && <i className="font-wm-sans text-wm-small text-wm-muted">{word.pos_list.map((p) => POS_SHORT[p] ?? p).join(', ')}</i>}
+        {posLabel(word.pos_list) && <i className="font-wm-sans text-wm-small text-wm-muted">{posLabel(word.pos_list)}</i>}
         {word.level && <span className="text-wm-meta font-bold text-wm-muted">{word.level}</span>}
         {word.has_private && <span className="text-wm-meta text-wm-accent">{t('mineTag')}</span>}
       </span>
@@ -112,7 +116,12 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
         <b className="text-wm-meta font-bold text-wm-muted">1</b>
         <span className="min-w-0 break-words">{meaning}</span>
       </span>
-      {word.example && <span className="break-words font-wm-sans text-wm-small italic text-wm-muted"><TargetWord text={word.example} lemma={word.lemma} /></span>}
+      {word.example && (
+        // The italic example keeps its target upright, bold and underlined (mockup L1342, L723).
+        <span className="break-words font-wm-sans text-wm-small italic text-wm-muted [&_strong]:not-italic">
+          <TargetWord text={word.example} lemma={word.lemma} />
+        </span>
+      )}
     </button>
   );
 }

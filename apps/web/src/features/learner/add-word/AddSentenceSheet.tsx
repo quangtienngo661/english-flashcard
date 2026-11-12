@@ -1,5 +1,6 @@
 'use client';
 
+import { shownPos } from '@/lib/pos';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
@@ -43,7 +44,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
     await api.post(`/v1/senses/${sense.sense_id}/sentences`, { text: text.trim() }, { idempotencyKey: key });
     return true;
   });
-  const info = { word: sense.lemma, pos: sense.pos, meaning: sense.meaning.text, count: sense.sentence_count };
+  const info = { lead: [sense.lemma, shownPos(sense.pos)].filter(Boolean).join(', '), meaning: sense.meaning.text, count: sense.sentence_count };
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,7 +75,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
         {senses && senses.length > 1 && (
           <Select
             label={t('sentenceSense')}
-            items={senses.map((s) => ({ id: s.sense_id, label: `${s.pos} · ${s.meaning.text}` }))}
+            items={senses.map((s) => ({ id: s.sense_id, label: shownPos(s.pos) ? `${shownPos(s.pos)} · ${s.meaning.text}` : s.meaning.text }))}
             value={sense.sense_id}
             onChange={setChosen}
           />

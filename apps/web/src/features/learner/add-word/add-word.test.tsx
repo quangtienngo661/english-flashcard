@@ -57,7 +57,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Câu bạn gặp (không bắt buộc)' }), 'I went to the bank yesterday.');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
-    expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: uuid(1), sentence: 'I went to the bank yesterday.' });
+    expect(quickAdds(calls)[0].body).toEqual({ group_ids: [TRAVEL], sense_id: uuid(1), sentence: 'I went to the bank yesterday.' });
     expect(await screen.findByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${TRAVEL}`);
   });
@@ -71,7 +71,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({
-      group_id: TECH, new_word: { lemma: 'deployed', meaning: 'đã triển khai', form_of: { entry_id: uuid(12), kind: 'past' } },
+      group_ids: [TECH], new_word: { lemma: 'deployed', meaning: 'đã triển khai', form_of: { entry_id: uuid(12), kind: 'past' } },
     });
   });
 
@@ -113,7 +113,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
     await userEvent.type(ipa, '/rɪz/');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
-    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_id: TRAVEL, new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
   });
 
   it('manual meaning needs only the meaning', async () => {
@@ -126,7 +126,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     expect(quickAdds(calls)).toHaveLength(0);
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
-    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_id: TRAVEL, new_word: { lemma: 'rizz', meaning: 'sức hút' } }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút' } }));
   });
 
   it('E21: the last-used deck was deleted → "Chọn nhóm", and saving asks for a deck', async () => {
@@ -162,8 +162,8 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(calls.find((c) => c.method === 'POST' && c.path === '/v1/groups')!.body).toEqual({ name: 'phỏng vấn' });
-    expect(quickAdds(calls)[0].body).toMatchObject({ group_id: NEW, sense_id: uuid(1) });
-    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(NEW);
+    expect(quickAdds(calls)[0].body).toMatchObject({ group_ids: [NEW], sense_id: uuid(1) });
+    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(JSON.stringify([NEW]));
   });
 
   it('409 private-word-exists links to the word the learner already has', async () => {
@@ -180,7 +180,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     open('went', { routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
-    expect(await screen.findByText('Nhóm “Du lịch” đã đầy. Chọn nhóm khác.')).toBeInTheDocument();
+    expect(await screen.findByText('Du lịch đã đầy. Chưa lưu từ.')).toBeInTheDocument();
   });
 
   it('a double click sends one quick add (Review Focus 1); the saved deck becomes the last used', async () => {
@@ -193,7 +193,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu' }));
     expect(quickAdds(calls)).toHaveLength(1);
     release();
-    await waitFor(() => expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(TECH));
+    await waitFor(() => expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(JSON.stringify([TECH])));
     expect(quickAdds(calls)[0].headers['Idempotency-Key']).toBeTruthy();
   });
 
@@ -201,9 +201,9 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     open('went', { routes: routes() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
-    const recent = await screen.findByRole('radiogroup', { name: 'Dùng gần đây' });
-    expect(within(recent).getAllByRole('radio').map((r) => r.closest('label')?.textContent)).toEqual(['Du lịch3 từ']);
-    const all = screen.getByRole('radiogroup', { name: 'Tất cả nhóm (2), A–Z' });
-    expect(within(all).getAllByRole('radio').map((r) => r.closest('label')?.textContent)).toEqual(['Công nghệ3 từ', 'Du lịch3 từ']);
+    const recent = await screen.findByRole('listbox', { name: 'Dùng gần đây' });
+    expect(within(recent).getAllByRole('option').map((o) => o.textContent)).toEqual(['Du lịch3 từ']);
+    const all = screen.getByRole('listbox', { name: 'Tất cả nhóm (2), A–Z' });
+    expect(within(all).getAllByRole('option').map((o) => o.textContent)).toEqual(['Công nghệ3 từ', 'Du lịch3 từ']);
   });
 });

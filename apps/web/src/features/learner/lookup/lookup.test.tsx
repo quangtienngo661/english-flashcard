@@ -75,6 +75,15 @@ describe('Tra từ: search and filters', () => {
     expect(Object.fromEntries(lastUrl(nav.replace).searchParams)).toEqual({ level: 'A2', topic: 'work' });
   });
 
+  it('the three filter values are buttons that keep their names and open their menus', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Chủ đề: Công việc' }));
+    expect(await screen.findByRole('menuitem', { name: 'Du lịch' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Loại từ: tất cả' }));
+    expect(await screen.findByRole('menuitem', { name: 'noun' })).toBeInTheDocument();
+  });
+
   it('the search box sends its text with the filters on Enter', async () => {
     renderApp(<LookupPage />, { routes: base() });
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm từ, ví dụ: mitigate' }), 'budget{Enter}');
@@ -105,6 +114,13 @@ describe('Tra từ: the dictionary page', () => {
     const budget = screen.getByRole('button', { name: /^budget/ });
     expect(within(budget).getByText('/ipa-budget/')).toBeInTheDocument();
     expect(within(budget).getByRole('strong')).toHaveTextContent(/^budget$/);
+  });
+
+  it('a part of speech that was never set ("unspecified") is not printed in an entry', async () => {
+    renderApp(<LookupPage />, { routes: base({ 'GET /v1/words?page_size=20&level=B1&topic=work': () => Response.json({ items: [row('budget', { pos_list: ['unspecified'] })], next_page_token: null, total: 1 }) }) });
+    const entry = await screen.findByRole('button', { name: /^budget/ });
+    expect(entry).toHaveTextContent('budget');
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
   });
 
   it('the own word carries "của tôi"', async () => {

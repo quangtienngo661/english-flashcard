@@ -3,13 +3,15 @@
 import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Heading } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { addDays } from '@/lib/learner-date';
+import { Card } from '@/ui/Card';
+import { LevelChip } from '@/ui/LevelChip';
 import { Skeleton } from '@/ui/Skeleton';
 import { ErrorState } from '@/ui/States';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
@@ -37,7 +39,7 @@ const ROWS = 5;
 const ICON_BUTTON =
   'flex size-8.5 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none transition-colors duration-150 md:size-9 ' +
   'hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-35';
-const CARD = 'flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card';
+const CARD = 'flex flex-col gap-3 border border-wm-line p-4 md:p-4';
 // Figma 103:4044 sizes no text token has: date 30 / 24, card title 17, chip and answer lemma 14 / 15, score 20.
 const RAW = {
   // raw-ok: as above
@@ -166,10 +168,10 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
   const totals = new Map((groups.data?.items ?? []).map((g) => [g.id, g.total]));
   const tone = (groupId: string | null) => (groupId ? groupTone(groupId, totals.get(groupId) ?? 1).bg : null);
   const tabs: { id: Filter; label: string; count: number }[] = [
-    { id: 'all', label: t('all'), count: 1 },
-    { id: 'learn', label: t('filterLearn', { count: counts.learned }), count: counts.learned },
-    { id: 'review', label: t('filterReview', { count: counts.reviewed }), count: counts.reviewed },
-    { id: 'practice', label: t('filterPractice', { count: counts.practice_questions }), count: counts.practice_questions },
+    { id: 'all', label: t('all'), count: counts.learned + counts.reviewed + counts.practice_questions },
+    { id: 'learn', label: t('filterLearn'), count: counts.learned },
+    { id: 'review', label: t('filterReview'), count: counts.reviewed },
+    { id: 'practice', label: t('filterPractice'), count: counts.practice_questions },
   ];
   const show = (section: Filter) => filter === 'all' || filter === section;
   const learnShown = show('learn') && view.learned.length > 0;
@@ -177,21 +179,9 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
   const practiceShown = show('practice') && view.sessions.length > 0;
   return (
     <>
-      <div role="group" aria-label={t('filterLabel')} className="flex w-fit flex-wrap gap-0.5 rounded-wm-row border border-wm-line bg-wm-surface p-0.75">
+      <div role="group" aria-label={t('filterLabel')} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            aria-pressed={filter === tab.id}
-            disabled={tab.count === 0}
-            onClick={() => setFilter(tab.id)}
-            className={cn(
-              'rounded-wm-control px-3 py-1.5 font-wm-sans text-wm-label font-semibold outline-none transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-40',
-              filter === tab.id ? 'bg-wm-level-all-tint-strong text-wm-ink ring-1 ring-inset ring-wm-accent' : 'text-wm-muted enabled:hover:text-wm-ink',
-            )}
-          >
-            {tab.label}
-          </button>
+          <LevelChip key={tab.id} tone="all" label={tab.label} count={tab.count} pressed={filter === tab.id} isDisabled={tab.count === 0} onPress={() => setFilter(tab.id)} />
         ))}
       </div>
 
@@ -247,15 +237,16 @@ function DayBody({ filter, setFilter, counts, view, moreItems, answersLeft, load
 }
 
 function Section({ title, hint, dot, children }: { title: string; hint?: string; dot: string; children: React.ReactNode }) {
+  const headingId = useId();
   return (
-    <section aria-label={title} className={CARD}>
+    <Card as="section" labelledBy={headingId} className={CARD}>
       <div className="flex items-center gap-2">
         <span aria-hidden className={cn('size-2.25 shrink-0 rounded-full', dot)} />
-        <h3 className={cn('min-w-0 flex-1 font-wm-display font-bold text-wm-ink', RAW.cardTitle)}>{title}</h3>
+        <h3 id={headingId} className={cn('min-w-0 flex-1 font-wm-display font-bold text-wm-ink', RAW.cardTitle)}>{title}</h3>
         {hint && <span className="shrink-0 text-wm-meta text-wm-muted">{hint}</span>}
       </div>
       {children}
-    </section>
+    </Card>
   );
 }
 

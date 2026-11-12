@@ -55,7 +55,7 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await sheet.getByRole('textbox', { name: vi.addWord.word, exact: true }).fill('deploy');
     await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(page.getByText(fill(vi.addWord.saved, { word: 'deploy', group: NAME }))).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: FIRST.sense_id });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: FIRST.sense_id });
     await expect(sheet).toBeHidden();
   });
 
@@ -71,7 +71,7 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await expect(senses.getByRole('radio', { name: /bố trí/ })).toBeChecked();
     await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(sheet).toBeHidden();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: SECOND.sense_id });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: SECOND.sense_id });
   });
 
   test('A14-7: topic navigation preselects the deck and Add all posts to it without creating a deck', async ({ page }) => {

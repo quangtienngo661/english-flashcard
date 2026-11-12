@@ -70,11 +70,11 @@ test.describe('M3 flows (mocked API)', () => {
     await adjective.getByRole('button', { name: vi.word.addToGroup }).click();
     const dialog = page.getByRole('dialog', { name: vi.addWord.pickerTitle });
     // The phone sheet slides up first; wait until it has settled before choosing the deck.
-    await expect(dialog.getByRole('radio', { name: /Du lịch/ }).first()).toBeInViewport();
-    await dialog.getByText('Du lịch', { exact: true }).first().click();
-    await dialog.getByRole('button', { name: 'Lưu vào nhóm' }).click();
+    await expect(dialog.getByRole('option', { name: /Du lịch/ }).first()).toBeInViewport();
+    await dialog.getByRole('option', { name: /Du lịch/ }).first().click();
+    await dialog.getByRole('button', { name: 'Lưu vào 1 nhóm' }).click();
     await expect(page.getByText('Đã thêm “left” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', `/v1/groups/${DECK}/items`)[0].body).toEqual({ sense_id: uuid(1) });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: uuid(1) });
   });
 
   test('N opens Thêm từ; "went" is saved as go to the last-used deck', async ({ page }) => {
@@ -90,7 +90,7 @@ test.describe('M3 flows (mocked API)', () => {
     await sheet.getByRole('textbox', { name: vi.addWord.sentence }).fill('I went to the bank yesterday.');
     await sheet.getByRole('button', { name: 'Lưu', exact: true }).click();
     await expect(page.getByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: uuid(3), sentence: 'I went to the bank yesterday.' });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: uuid(3), sentence: 'I went to the bank yesterday.' });
   });
 
   test('a word Wordmet does not have: manual meaning', async ({ page }) => {
@@ -104,7 +104,7 @@ test.describe('M3 flows (mocked API)', () => {
     await manual.getByRole('textbox', { name: vi.addWord.meaning }).fill('sức hút');
     await manual.getByRole('button', { name: vi.addWord.saveManual }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, new_word: { lemma: 'rizz', meaning: 'sức hút' } });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], new_word: { lemma: 'rizz', meaning: 'sức hút' } });
   });
 
   test('saved sentences: one more, then the limit says so with a way to the list', async ({ page }) => {

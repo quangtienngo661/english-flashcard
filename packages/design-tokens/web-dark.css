@@ -9,6 +9,8 @@
   --color-wm-muted: #a6adc4;
   --color-wm-ghost: #353c53;
   --color-wm-line: #2a3044;
+  /* Word page hairlines (mockup L322): ink #eceef5 16 % on surface #171b2a, oklab */
+  --color-wm-rule: #333846;
   --color-wm-accent: #8da2ff;
   /* #8da2ff 20 % on #171b2a, oklab */
   --color-wm-accent-soft: #2c334f;
@@ -129,6 +131,23 @@
   --color-wm-level-all-tint: #2a304b;
   --color-wm-level-all-tint-strong: #424d78;
   --color-wm-level-all-line: rgb(141 162 255 / 0.45);
+
+  /* P.14 sign-in and sign-up panel (mockup L180, L418-443; dark glows L438-442). ground: #8da2ff 13 % on #0f1220 (oklab); glow-1..4: accent
+     30 %, mark 16 %, pass 24 %, accent 22 % on transparent; path: ink 35 %; ghost-chip / ghost-ink: surface 55 %, ink 55 %; node-label: bg
+     80 %; blank: accent 8 %, all on transparent. field-line: ink #eceef5 22 % on surface #171b2a (oklab). card-glow-accent: accent 26 % on
+     transparent (mockup L456). */
+  --color-wm-showcase-ground: #1d2238;
+  --color-wm-showcase-glow-1: rgb(141 162 255 / 0.3);
+  --color-wm-showcase-glow-2: rgb(255 216 74 / 0.16);
+  --color-wm-showcase-glow-3: rgb(98 201 143 / 0.24);
+  --color-wm-showcase-glow-4: rgb(141 162 255 / 0.22);
+  --color-wm-showcase-path: rgb(236 238 245 / 0.35);
+  --color-wm-showcase-ghost-chip: rgb(23 27 42 / 0.55);
+  --color-wm-showcase-ghost-ink: rgb(236 238 245 / 0.55);
+  --color-wm-showcase-node-label: rgb(15 18 32 / 0.8);
+  --color-wm-showcase-blank: rgb(141 162 255 / 0.08);
+  --color-wm-field-line: #3f4352;
+  --color-wm-card-glow-accent: rgb(141 162 255 / 0.26);
 
   /* Shadows: the light geometry in black (mockup lines 88-91); buttons carry none in dark (QM9-3, question 6B). */
   --shadow-wm-card: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.625rem 1.75rem -0.875rem rgb(0 0 0 / 0.6);

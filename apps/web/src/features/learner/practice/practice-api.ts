@@ -142,14 +142,6 @@ export function useWeakPreview(size: number) {
   });
 }
 
-export function useRecentHistory(size: number) {
-  const api = useApi();
-  return useQuery({
-    queryKey: ['practice', 'recent', size],
-    queryFn: () => api.get<{ items: HistoryItem[]; next_page_token: string | null }>(`/v1/practice/history?page_size=${size}`),
-  });
-}
-
 /** `POST /v1/practice/sessions` `[I]`; the API closes any open session first. */
 export function useStartSession() {
   const api = useApi();

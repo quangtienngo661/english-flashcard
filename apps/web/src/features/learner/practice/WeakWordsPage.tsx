@@ -15,13 +15,14 @@ import { EmptyState, ErrorState } from '@/ui/States';
 import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
 import { Select } from '@/ui/Select';
 import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
 import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
 import { localDay } from './days';
 import { RULE_TYPES, useWeakGroups, type WeakWord } from './practice-api';
-import { usePracticeStarter } from './use-practice-starter';
+import { PRELOAD_CUSTOMIZE, usePracticeStarter } from './use-practice-starter';
 
 const PAGE = 50;
 
@@ -59,12 +60,14 @@ export function WeakWordsPage() {
   return (
     <>
       <BackLink {...back} />
+      <PageTitle>{t('title')}</PageTitle>
       <PageColumns
+        asideFirstBelow
         aside={
           <>
             {count > 0 && (
               // Figma "Luyện từ hay sai": the count in red, the line, [Tùy chỉnh] and the start.
-              <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+              <Card as="section" labelledBy="weak-card" className="flex flex-col gap-3">
                 <span className="text-wm-meta text-wm-muted">{t('cardChip')}</span>
                 <h2 id="weak-card" className="font-wm-display text-wm-section text-wm-fail">
                   {t('cardCount', { count })}
@@ -82,12 +85,12 @@ export function WeakWordsPage() {
                     <Button variant="primary" isPending={starter.pending('weak')} onPress={start}>
                       <span className="truncate">{chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}</span>
                     </Button>
-                    <TextButton className="justify-center" onPress={() => starter.customize({ source: 'weak', groupId: chosen?.group_id })}>
+                    <TextButton className="justify-center" {...PRELOAD_CUSTOMIZE} onPress={() => starter.customize({ source: 'weak', groupId: chosen?.group_id })}>
                       {t('customize')}
                     </TextButton>
                   </div>
                 )}
-              </section>
+              </Card>
             )}
             <section aria-labelledby="weak-rules" className="flex flex-col gap-2 px-1">
               <h2 id="weak-rules" className="font-wm-sans text-wm-base-strong text-wm-ink">
@@ -102,7 +105,6 @@ export function WeakWordsPage() {
           </>
         }
       >
-        <PageTitle>{t('title')}</PageTitle>
         {groups.isPending ? (
           <SkeletonBlocks />
         ) : groups.isError ? (
@@ -110,7 +112,7 @@ export function WeakWordsPage() {
         ) : groups.data.total === 0 ? (
           <EmptyState title={t('emptyTitle')} body={t('emptyBody')} />
         ) : (
-          <section className="flex flex-col gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:px-6">
+          <Card as="section" className="flex flex-col gap-4">
             <div className="w-full md:w-72">
               <Select
                 label={t('group')}
@@ -129,7 +131,7 @@ export function WeakWordsPage() {
                 {t('more')}
               </TextButton>
             )}
-          </section>
+          </Card>
         )}
         {starter.dialogs}
       </PageColumns>

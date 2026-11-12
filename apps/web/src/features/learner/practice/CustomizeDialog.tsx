@@ -39,8 +39,8 @@ import {
 export type CustomizeTarget = { source: Source; groupId?: string };
 
 type Props = {
-  /** The source being set up; null while closed. */
-  target: CustomizeTarget | null;
+  /** The source being set up; the caller renders the dialog only while there is one. */
+  target: CustomizeTarget;
   onClose: () => void;
   groups: GroupSummary[];
   onStart: (body: StartBody) => void;
@@ -68,7 +68,6 @@ const todayWords = (g: GroupSummary) => g.today.priority + g.today.due + g.today
 export function CustomizeDialog({ target, onClose, ...rest }: Props) {
   const t = useTranslations('App.practice');
   const tc = useTranslations('App.common');
-  if (!target) return null;
   return (
     <Dialog
       isOpen

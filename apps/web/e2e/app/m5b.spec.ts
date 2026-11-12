@@ -73,7 +73,7 @@ test.describe('M5b flows (mocked API)', () => {
     await edit.getByRole('button', { name: vi.addWord.saveManual }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({
-      group_id: DECK,
+      group_ids: [DECK],
       new_word: { lemma: 'rizz', meaning: 'sức hút, khả năng tán tỉnh', pos: 'noun', level: 'B2', examples: ["He's got serious rizz."], ai_suggestion: true },
       sentence: 'That guy has so much rizz.',
     });

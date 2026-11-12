@@ -27,22 +27,24 @@ const TONE: Record<LevelChipTone, { rest: string; on: string; count: string }> =
  * A level filter chip (mockup L161-173): the whole chip carries the tone, the name beside it (colour is never the only signal), the count
  * in its own box on the surface. Ink text on every tint reaches 4.5:1 (web-tokens.test.ts). A toggle: `aria-pressed`.
  */
-export function LevelChip({ tone, label, count, pressed, onPress }: {
+export function LevelChip({ tone, label, count, pressed, onPress, isDisabled }: {
   tone: LevelChipTone;
   label: string;
   count: number;
   pressed: boolean;
   onPress: () => void;
+  isDisabled?: boolean;
 }) {
   const t = TONE[tone];
   return (
     <ToggleButton
       isSelected={pressed}
+      isDisabled={isDisabled}
       onChange={() => onPress()}
       className={cn(
         'inline-flex h-9 shrink-0 items-center gap-2 rounded-wm-control border pl-3 pr-1.5 font-wm-sans text-wm-ink outline-none data-selected:ring-1 data-selected:ring-inset',
         'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
-        'motion-safe:transition motion-safe:duration-200 motion-safe:data-pressed:scale-97',
+        'motion-safe:transition motion-safe:duration-200 motion-safe:data-pressed:scale-97 data-disabled:cursor-not-allowed data-disabled:opacity-40',
         t.rest,
         t.on,
       )}

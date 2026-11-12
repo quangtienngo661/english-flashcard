@@ -93,14 +93,14 @@ describe('a learner own word is queued after its transaction (round C, task 17)'
 
   it('a new word: ensureAudio runs once, after the commit, for its sense', async () => {
     const { service, content, order } = quickAdd();
-    await service.quickAdd('u1', 'vi', { groupId: 'g1', newWord: { lemma: 'phobia', meaning: 'nỗi sợ' } });
+    await service.quickAdd('u1', 'vi', { groupIds: ['g1'], newWord: { lemma: 'phobia', meaning: 'nỗi sợ' } });
     expect(order).toEqual(['committed', 'ensure']);
     expect(content.ensureAudio).toHaveBeenCalledExactlyOnceWith(['sense-new']);
   });
 
   it('an existing sense: nothing is queued', async () => {
     const { service, content } = quickAdd();
-    await service.quickAdd('u1', 'vi', { groupId: 'g1', senseId: 's1' });
+    await service.quickAdd('u1', 'vi', { groupIds: ['g1'], senseId: 's1' });
     expect(content.ensureAudio).not.toHaveBeenCalled();
   });
 

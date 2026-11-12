@@ -12,10 +12,14 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useApi } from '@/app-shell/session/session-context';
 import { blockPronunciation, type PronLine } from '@/lib/speech/pronunciation';
+import { shownPos } from '@/lib/pos';
 import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
+import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
 import { SpeakButton, SpeakSentence } from '@/ui/SpeakButton';
 import { EmptyState, ErrorState } from '@/ui/States';
+import { Tabs } from '@/ui/Tabs';
 import { TextButton } from '@/ui/TextButton';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
 import { useAddWord } from '../add-word/add-word-context';
@@ -70,7 +74,6 @@ const senseList = (data: WordPageData) => data.sections.flatMap((s) => s.senses)
  * 1024 px. Below that the two columns dissolve (`contents`) and `order` puts "Bạn đang học" after the head and "Cùng chủ đề" last.
  */
 function WordBody({ data }: { data: WordPageData }) {
-  const t = useTranslations('App.word');
   const senses = senseList(data);
   const items = useSenseItems(senses.map((s) => s.sense_id)).data;
   const groups = useGroups().data?.items ?? [];
@@ -89,9 +92,9 @@ function WordBody({ data }: { data: WordPageData }) {
         <div className="order-1 lg:order-none">
           <WordHead data={data} />
         </div>
-        <nav aria-label={t('tabsLabel')} className="order-3 lg:order-none">
-          <Tabs count={senses.length} sentences={showSentences ? sentenceTotal : null} forms={hasForms} topic={Boolean(topic)} />
-        </nav>
+        <div className="order-3 lg:order-none">
+          <WordTabs count={senses.length} sentences={showSentences ? sentenceTotal : null} forms={hasForms} topic={Boolean(topic)} />
+        </div>
         <div id="nghia" className="order-4 flex scroll-mt-24 flex-col gap-5 lg:order-none">
           {data.sections.map((section, s) => {
             const { perSense } = blockPronunciation(section.senses);
@@ -165,7 +168,7 @@ function WordHead({ data }: { data: WordPageData }) {
           </TextButton>
         </div>
       )}
-      <div className="flex flex-col gap-3 md:gap-2">
+      <div className="flex flex-col gap-3 border-y-2 border-wm-rule py-4 md:gap-3 md:py-4.5">
         {data.sections.map((section, s) => (
           <PosReading key={`${section.pos}-${s}`} pos={section.pos} lemma={data.lemma} line={blockPronunciation(section.senses).shared} />
         ))}
@@ -195,9 +198,9 @@ function PosReading({ pos, lemma, line }: { pos: string; lemma: string; line: Pr
         { voice: 'us' as const, label: 'US', ipa: p.us, audio: p.audio.us },
       ];
   return (
-    <div role="group" aria-label={pos} className="flex gap-3 md:items-center md:gap-4">
-      <span className="w-10 shrink-0 pt-1 text-wm-meta text-wm-accent md:w-19 md:pt-0">{pos}</span>
-      <div className="flex min-w-0 flex-col gap-1 md:flex-row md:flex-wrap md:items-center md:gap-x-6">
+    <div role={shownPos(pos) ? 'group' : undefined} aria-label={shownPos(pos) || undefined} className="flex gap-3 md:items-center md:gap-4">
+      <span className="w-10 shrink-0 pt-1 text-wm-meta text-wm-accent md:w-19 md:pt-0">{shownPos(pos)}</span>
+      <div className="flex min-w-0 flex-col gap-1 md:flex-row md:flex-wrap md:items-center md:gap-x-4">
         {voices.map((v) => (
           <span key={v.voice} className="inline-flex items-center gap-2">
             {v.label && <span className="font-wm-sans text-wm-small text-wm-muted">{v.label}</span>}
@@ -220,55 +223,36 @@ function BaseForms({ base, label, current }: { base: string; label: string; curr
   return <FormsLine label={label} base={base} forms={page.data?.inflections ?? []} current={current} />;
 }
 
-/** Figma tabs (118:4512): jump links inside the page, with counts; they wrap on phones. */
-function Tabs({ count, sentences, forms, topic }: { count: number; sentences: number | null; forms: boolean; topic: boolean }) {
+/** Jump links inside the page (mockup L591), with counts; they wrap on phones. */
+function WordTabs({ count, sentences, forms, topic }: { count: number; sentences: number | null; forms: boolean; topic: boolean }) {
   const t = useTranslations('App.word');
   const tabs = [
-    { href: '#nghia', label: t('tabMeanings'), count },
-    ...(sentences !== null ? [{ href: '#cau-da-gap', label: t('tabSentences'), count: sentences }] : []),
-    ...(forms ? [{ href: '#dang-chia', label: t('tabForms'), count: null }] : []),
-    ...(topic ? [{ href: '#cung-chu-de', label: t('tabTopic'), count: null }] : []),
+    { id: 'meanings', href: '#nghia', label: t('tabMeanings'), count },
+    ...(sentences !== null ? [{ id: 'sentences', href: '#cau-da-gap', label: t('tabSentences'), count: sentences }] : []),
+    ...(forms ? [{ id: 'forms', href: '#dang-chia', label: t('tabForms') }] : []),
+    ...(topic ? [{ id: 'topic', href: '#cung-chu-de', label: t('tabTopic') }] : []),
   ];
   return (
-    <ul className="flex flex-wrap gap-x-6 border-b border-wm-line">
-      {tabs.map((tab, i) => (
-        <li key={tab.href}>
-          <a
-            href={tab.href}
-            className={
-              i === 0
-                ? '-mb-px flex items-baseline border-b-2 border-wm-ink py-3 font-wm-sans text-wm-button text-wm-ink outline-none focus-visible:outline-3 focus-visible:outline-wm-accent'
-                : 'flex items-baseline py-3 font-wm-sans text-wm-button text-wm-muted outline-none hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent'
-            }
-          >
-            {tab.label}
-            {tab.count !== null && (
-              <>
-                {' '}
-                <span className="ml-1.5 text-wm-meta text-wm-muted">{tab.count}</span>
-              </>
-            )}
-          </a>
-        </li>
-      ))}
-    </ul>
+    <Tabs
+      label={t('tabsLabel')}
+      selected="meanings"
+      items={tabs.map(({ id, label, count }) => ({ id, label, count }))}
+      hrefs={Object.fromEntries(tabs.map((tab) => [tab.id, tab.href]))}
+    />
   );
 }
 
 function MeaningsOfPos({ pos, count, children }: { pos: string; count: number; children: ReactNode }) {
   const t = useTranslations('App.word');
   const id = `pos-${pos}`;
+  const name = shownPos(pos);
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
+    <section aria-labelledby={name ? id : undefined} aria-label={name ? undefined : t('tabMeanings')} className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2">
-        <h2 id={id} className="font-wm-display text-wm-logo font-bold text-wm-ink">
-          {pos}
-        </h2>
+        {name && <SectionTitle id={id}>{name}</SectionTitle>}
         <span className="text-wm-meta text-wm-muted">{t('senses', { count })}</span>
       </div>
-      <div className="flex flex-col divide-y divide-wm-line rounded-wm-card border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
-        {children}
-      </div>
+      <Card className="flex flex-col divide-y divide-wm-line px-4 py-0.5 md:px-6">{children}</Card>
     </section>
   );
 }
@@ -293,9 +277,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
   return (
     <section id="cau-da-gap" aria-labelledby="cau-da-gap-title" className="flex scroll-mt-24 flex-col gap-3">
       <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-3">
-        <h2 id="cau-da-gap-title" className="font-wm-display text-wm-logo font-bold text-wm-ink">
-          {t('seenTitle')}
-        </h2>
+        <SectionTitle id="cau-da-gap-title">{t('seenTitle')}</SectionTitle>
         <p className="text-wm-meta text-wm-muted md:flex-1">{t('seenCaption')}</p>
         {learned.length > 0 && (
           <TextButton tone="add" className="self-start" onPress={() => setDialog({ kind: 'add' })}>
@@ -303,7 +285,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
           </TextButton>
         )}
       </div>
-      <div className="rounded-wm-card border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
+      <Card className="px-4 py-0.5 md:px-6">
         {rows.length > 0 ? (
           <ul className="flex flex-col divide-y divide-wm-line">
             {rows.map(({ sentence, sense, n }) => (
@@ -323,7 +305,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
         ) : (
           loaded && <p className="py-4 font-wm-sans text-wm-small text-wm-muted">{t('noSentences')}</p>
         )}
-      </div>
+      </Card>
       {dialog?.kind === 'add' && learned[0] && (
         <AddSentenceSheet
           sense={learned[0]}
@@ -356,47 +338,45 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
   const level = (levelRange(inTopic) ?? range)?.split(' – ')[0];
 
   return (
-    <section
-      id="cung-chu-de"
-      aria-label={t('sameTopic', { topic: topic.name })}
-      className="flex scroll-mt-24 flex-col gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6"
-    >
-      <div className="flex flex-col gap-2">
-        <p className="text-wm-meta text-wm-muted">{t('sameTopicLabel')}</p>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="rounded-wm-control bg-wm-accent-soft px-3 py-0.5 font-wm-display text-wm-word text-wm-accent">{topic.name}</span>
-          {range && <span className="text-wm-meta text-wm-muted">{t('levelRange', { range })}</span>}
+    <section id="cung-chu-de" aria-label={t('sameTopic', { topic: topic.name })} className="scroll-mt-24">
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <p className="text-wm-meta text-wm-muted">{t('sameTopicLabel')}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="rounded-wm-control bg-wm-accent-soft px-3 py-0.5 font-wm-display text-wm-word text-wm-accent">{topic.name}</span>
+            {range && <span className="text-wm-meta text-wm-muted">{t('levelRange', { range })}</span>}
+          </div>
         </div>
-      </div>
-      {others.length > 0 && (
-        <ul className="grid grid-cols-2 gap-1.5">
-          {others.map((w) => (
-            <li key={w.lemma} className="min-w-0">
-              <Link
-                href={wordHref(locale, w.lemma)}
-                className="flex items-center justify-between gap-2 rounded-wm-row bg-wm-bg px-3 py-2 outline-none hover:bg-wm-accent-soft focus-visible:outline-3 focus-visible:outline-wm-accent"
-              >
-                <span className="min-w-0 truncate font-wm-sans text-wm-small-strong text-wm-ink">{w.lemma}</span>
-                {w.level && (
-                  <>
-                    {' '}
-                    <span className="shrink-0 text-wm-meta text-wm-muted">{w.level}</span>
-                  </>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      {level && (
-        <Link
-          href={`/${locale}/app/topic?code=${encodeURIComponent(topic.code)}&level=${encodeURIComponent(level)}`}
-          className="inline-flex items-center gap-1 self-start font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
-        >
-          {t('seeTopic', { topic: topic.name })}
-          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
-        </Link>
-      )}
+        {others.length > 0 && (
+          <ul className="grid grid-cols-2 gap-1.5">
+            {others.map((w) => (
+              <li key={w.lemma} className="min-w-0">
+                <Link
+                  href={wordHref(locale, w.lemma)}
+                  className="flex items-center justify-between gap-2 rounded-wm-row bg-wm-bg px-3 py-2 outline-none hover:bg-wm-accent-soft focus-visible:outline-3 focus-visible:outline-wm-accent"
+                >
+                  <span className="min-w-0 truncate font-wm-sans text-wm-small-strong text-wm-ink">{w.lemma}</span>
+                  {w.level && (
+                    <>
+                      {' '}
+                      <span className="shrink-0 text-wm-meta text-wm-muted">{w.level}</span>
+                    </>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {level && (
+          <Link
+            href={`/${locale}/app/topic?code=${encodeURIComponent(topic.code)}&level=${encodeURIComponent(level)}`}
+            className="inline-flex items-center gap-1 self-start font-wm-sans text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+          >
+            {t('seeTopic', { topic: topic.name })}
+            <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
+          </Link>
+        )}
+      </Card>
     </section>
   );
 }

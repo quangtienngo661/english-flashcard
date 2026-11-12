@@ -148,14 +148,14 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         <WordPage />
         <ToastRegion />
       </>,
-      { routes: routes({ [`POST /v1/groups/${G}/items`]: () => Response.json({ item_id: uuid(91), level: 0, due_date: '2026-10-23', created: true }) }) },
+      { routes: routes({ 'POST /v1/quick-add': () => Response.json({ item_id: uuid(91), sense_id: uuid(1), created_item: true, created_word: false, sentence_id: null }, { status: 201 }) }) },
     );
     const adjective = (await screen.findAllByRole('article'))[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Thêm vào nhóm' }));
     const dialog = await screen.findByRole('dialog', { name: 'Lưu vào nhóm' });
-    await userEvent.click(within(dialog).getAllByRole('radio', { name: /IELTS/ })[0]);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào nhóm' }));
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === `/v1/groups/${G}/items`)?.body).toEqual({ sense_id: uuid(1) }));
+    await userEvent.click(within(dialog).getAllByRole('option', { name: /IELTS/ })[0]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào 1 nhóm' }));
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === '/v1/quick-add')?.body).toEqual({ group_ids: [G], sense_id: uuid(1) }));
     expect(await screen.findByText('Đã thêm “left” vào nhóm “IELTS”.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${G}`);
   });
@@ -325,6 +325,18 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(within(block).getByText('Thứ Năm, 12/11')).toBeInTheDocument();
     const row = (await within(block).findByText('Đề 12 · Writing')).closest('div')!;
     expect(row).toHaveTextContent('Đề 12 · WritingBậc 2');
+  });
+
+  it('"Bạn đang học" names the level and the interval: "Bậc 2 · ôn lại sau 3 ngày"', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const block = await screen.findByRole('region', { name: 'Bạn đang học' });
+    expect(within(block).getByText(/ôn lại sau 3 ngày/)).toHaveTextContent(/^Bậc 2 · ôn lại sau 3 ngày$/);
+  });
+
+  it('an example sentence marks the learned word as a strong element', async () => {
+    renderApp(<WordPage />, { routes: recordRoutes() });
+    const [first] = await screen.findAllByRole('article');
+    expect(within(first).getByRole('strong')).toHaveTextContent(/^record$/);
   });
 
   it('"Thêm câu đã gặp" with two learned meanings asks which one, and saves the sentence to it', async () => {
