@@ -8,22 +8,27 @@ const isApp = (route, prefix) => route === prefix || route.startsWith(`${prefix}
 const isBytes = (n) => typeof n === 'number' && Number.isFinite(n) && n > 0;
 
 export function compareBundles(baseline, stats, opts = {}) {
-  const { prefix = '/[locale]/app', limit = 1.1 } = opts;
+  const { prefix = '/[locale]/app', limit = 1.1, limits = {} } = opts;
   const appStats = stats.filter((s) => isApp(s.route, prefix));
   if (appStats.length === 0) throw new Error('no app routes in stats');
   for (const s of appStats) if (!isBytes(s.firstLoadUncompressedJsBytes)) throw new Error(`bad byte count for ${s.route}`);
   const after = new Map(appStats.map((s) => [s.route, s.firstLoadUncompressedJsBytes]));
   const before = Object.entries(baseline).filter(([route]) => isApp(route, prefix));
   const beforeMap = new Map(before);
+  for (const [route, l] of Object.entries(limits)) {
+    if (typeof l !== 'number' || !Number.isFinite(l) || l <= 1) throw new Error(`bad limit for ${route}`);
+  }
   const rows = before
     .filter(([route]) => after.has(route))
     .map(([route, b]) => {
       if (!isBytes(b)) throw new Error(`bad baseline for ${route}`);
       const a = after.get(route);
-      return { route, before: b, after: a, ratio: a / b, over: a > b * limit };
+      const rowLimit = limits[route] ?? limit;
+      return { route, before: b, after: a, ratio: a / b, limit: rowLimit, over: a > b * rowLimit };
     })
     .sort((x, y) => (x.route < y.route ? -1 : 1));
   if (rows.length === 0) throw new Error('no routes to compare');
+  for (const route of Object.keys(limits)) if (!rows.some((r) => r.route === route)) throw new Error(`unknown limit route ${route}`);
   const added = [...after.keys()].filter((r) => !beforeMap.has(r)).sort();
   const removed = [...beforeMap.keys()].filter((r) => !after.has(r)).sort();
   return { rows, added, removed };
@@ -52,13 +57,21 @@ function main(argv) {
       routes[s.route] = s.firstLoadUncompressedJsBytes;
     }
     if (Object.keys(routes).length === 0) throw new Error('no app routes in stats');
-    const baseline = { source: 'archive/giao-dien-cu-2026-11', commit, next: next ?? 'unknown', built: new Date().toISOString().slice(0, 10), routes };
+    let old = {};
+    try {
+      old = JSON.parse(readFileSync(baselinePath, 'utf8'));
+    } catch {}
+    const kept = {};
+    if (old.limits) kept.limits = old.limits;
+    if (old.limitsWhy) kept.limitsWhy = old.limitsWhy;
+    const baseline = { source: 'archive/giao-dien-cu-2026-11', commit, next: next ?? 'unknown', built: new Date().toISOString().slice(0, 10), routes, ...kept };
     writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
     console.log(`wrote ${baselinePath} with ${Object.keys(routes).length} routes`);
     return 0;
   }
-  const { rows, added, removed } = compareBundles(JSON.parse(readFileSync(baselinePath, 'utf8')).routes, readStats(argv[0] ?? defaultStats));
-  for (const r of rows) console.log(`${r.over ? 'OVER ' : 'ok   '}${r.route}  before ${kb(r.before)}  after ${kb(r.after)}  ${(r.ratio * 100).toFixed(1)}%`);
+  const base = JSON.parse(readFileSync(baselinePath, 'utf8'));
+  const { rows, added, removed } = compareBundles(base.routes, readStats(argv[0] ?? defaultStats), { limits: base.limits });
+  for (const r of rows) console.log(`${r.over ? 'OVER ' : 'ok   '}${r.route}  before ${kb(r.before)}  after ${kb(r.after)}  ${(r.ratio * 100).toFixed(1)}%  (limit ${Math.round(r.limit * 100)}%)`);
   console.log(`added (only in the new UI): ${added.length ? added.join(', ') : 'none'}`);
   console.log(`removed (only in the old UI): ${removed.length ? removed.join(', ') : 'none'}`);
   return rows.some((r) => r.over) ? 1 : 0;

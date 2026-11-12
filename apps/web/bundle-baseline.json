@@ -32,5 +32,10 @@
     "/[locale]/app/verify-email": 926297,
     "/[locale]/app/welcome": 963927,
     "/[locale]/app/word": 978865
-  }
+  },
+  "limits": {
+    "/[locale]/app/plans": 1.18,
+    "/[locale]/app/plans/order": 1.18
+  },
+  "limitsWhy": "owner 12/11/2026: plans pages over 110 % after M9.3; lazy CalendarHost regroups chunks onto other routes; 118 % keeps ~30 KB drift margin"
 }

@@ -6,7 +6,7 @@ const row = (route: string, bytes: number) => ({ route, firstLoadUncompressedJsB
 describe('compare-bundle-stats', () => {
   it('passes at exactly 110 % and flags one byte more', () => {
     const base = { [A]: 100_000 };
-    expect(compareBundles(base, [row(A, 110_000)]).rows).toEqual([{ route: A, before: 100_000, after: 110_000, ratio: 1.1, over: false }]);
+    expect(compareBundles(base, [row(A, 110_000)]).rows).toEqual([{ route: A, before: 100_000, after: 110_000, ratio: 1.1, limit: 1.1, over: false }]);
     expect(compareBundles(base, [row(A, 110_001)]).rows[0]?.over).toBe(true);
   });
 
@@ -55,5 +55,30 @@ describe('compare-bundle-stats', () => {
   it('throws when no route is in both', () => {
     expect(() => compareBundles({}, [row(A, 1)])).toThrow('no routes to compare');
     expect(() => compareBundles({ [`${A}/x`]: 1 }, [row(A, 1)])).toThrow('no routes to compare');
+  });
+  describe('per-route limits', () => {
+    const P = `${A}/plans`;
+    const base = { [A]: 100_000, [P]: 100_000 };
+    it('uses the override for its route only', () => {
+      const r = compareBundles(base, [row(A, 112_000), row(P, 112_000)], { limits: { [P]: 1.18 } });
+      expect(r.rows.find((x) => x.route === P)).toMatchObject({ over: false, limit: 1.18 });
+      expect(r.rows.find((x) => x.route === A)).toMatchObject({ over: true, limit: 1.1 });
+    });
+    it('flags the same route over without the override', () => {
+      expect(compareBundles(base, [row(A, 100_000), row(P, 112_000)]).rows.find((x) => x.route === P)?.over).toBe(true);
+    });
+    it('passes at exactly 118 % and flags 118.01 %', () => {
+      expect(compareBundles(base, [row(A, 1), row(P, 118_000)], { limits: { [P]: 1.18 } }).rows.find((x) => x.route === P)?.over).toBe(false);
+      expect(compareBundles(base, [row(A, 1), row(P, 118_010)], { limits: { [P]: 1.18 } }).rows.find((x) => x.route === P)?.over).toBe(true);
+    });
+    it('throws on an override for a route that is not compared', () => {
+      expect(() => compareBundles(base, [row(A, 1), row(P, 1)], { limits: { [`${A}/gone`]: 1.18 } })).toThrow(`unknown limit route ${A}/gone`);
+      expect(() => compareBundles(base, [row(A, 1)], { limits: { [P]: 1.18 } })).toThrow(`unknown limit route ${P}`);
+    });
+    it('throws on an override that is not a finite number above 1', () => {
+      for (const bad of [1, 0.9, NaN, Infinity, '1.2']) {
+        expect(() => compareBundles(base, [row(A, 1), row(P, 1)], { limits: { [P]: bad as never } })).toThrow(`bad limit for ${P}`);
+      }
+    });
   });
 });
