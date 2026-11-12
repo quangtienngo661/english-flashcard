@@ -60,7 +60,7 @@ export function GroupStack({
           <p className="gstack-state text-wm-muted">{t('noWords')}</p>
         ) : count > 0 ? (
           <p className="gstack-count">
-            <b className={tone.ink}>{count}</b> <span>{t('waiting')}</span>
+            <b className={tone.ink}>{count}</b> <span>{t('waiting', { count })}</span>
           </p>
         ) : (
           <p className="gstack-state text-wm-pass">{t('done')}</p>

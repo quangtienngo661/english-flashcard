@@ -1829,7 +1829,7 @@
     "stack": {
       "words": "{count, plural, one {# word} other {# words}}",
       "empty": "empty deck",
-      "waiting": "cards waiting",
+      "waiting": "{count, plural, one {card waiting} other {cards waiting}}",
       "next": "Next",
       "done": "✓ Done for today",
       "last": "Last reviewed",
