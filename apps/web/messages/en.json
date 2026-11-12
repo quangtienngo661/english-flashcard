@@ -902,7 +902,7 @@
       "hint": "Press to open · ↓",
       "hintPhone": "Tap to open",
       "live": "{name}, {count, plural, one {# card} other {# cards}} waiting",
-      "rhythm": "Review rhythm: new to 30 days",
+      "rhythm": "Review rhythm: New → Level 5",
       "rhythmSegment": "{level}: {due, number} waiting of {total, number} words",
       "open": "Open deck",
       "pickerTitle": "Choose a deck (F)",
@@ -931,12 +931,11 @@
       "filterPriority": "Priority",
       "filterDue": "Due",
       "filterNew": "New",
-      "filterLevel": "Level {level}",
       "priorityTag": "Priority",
       "senseChanged": "Meaning changed",
-      "dueToday": "due today",
-      "dueOn": "next review {date}",
-      "newWord": "new word",
+      "dueToday": "Due today",
+      "dueOn": "Next review {date}",
+      "newWord": "New word",
       "removeLabel": "Remove {word} from the deck",
       "removeLastTitle": "Remove “{word}” from the deck?",
       "removeLastBody": "This word is only in this deck. Removing it takes it out of your reviews and its progress is lost.",
@@ -951,10 +950,14 @@
       "emptyTitle": "This deck has no words yet",
       "emptyBody": "Add the words you come across while reading or watching, or pick a set of words by topic in Look up. Once the deck has words, you can start reviewing.",
       "emptyLookup": "Pick words by topic",
-      "metaMastered": "{count, plural, one {# word} other {# words}} · created {date} · {mastered, number} mastered",
       "loadMoreUnknown": "More words",
       "todayChips": "Today",
-      "metaNoDate": "{count, plural, one {# word} other {# words}} · {mastered, number} mastered"
+      "metaNoDate": "{count, plural, one {# word} other {# words}}",
+      "colWord": "Word",
+      "colPos": "Part of speech",
+      "colMeaning": "Meaning",
+      "colLevel": "Level",
+      "colState": "Status"
     },
     "backlog": {
       "back": "{name} deck",
@@ -1237,7 +1240,8 @@
     },
     "levels": {
       "name": "{level, select, 0 {New} other {Level {level}}}",
-      "interval": "{days, plural, one {review in # day} other {review in # days}}"
+      "interval": "{days, plural, one {review in # day} other {review in # days}}",
+      "bar": "Words by level"
     },
     "errors": {
       "generic": "Something went wrong. Try again later.",

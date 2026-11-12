@@ -18,7 +18,7 @@ import { HelpTip } from '@/ui/HelpTip';
 import { PageTitle } from '@/ui/PageTitle';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName } from '@/ui/levels';
 import { sortForToday, waiting } from '../groups/deck-actions';
 import { CalendarLink } from '../calendar/CalendarLink';
@@ -114,7 +114,7 @@ function Hero({ group }: { group: GroupSummary }) {
         <p className="text-wm-meta text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
         <h2 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight wrap-anywhere text-wm-ink md:text-4xl">{group.name}</h2>
         <p className="text-wm-small text-wm-muted">{t('heroLine', { total: group.total })}</p>
-        <StageBar
+        <SegmentBar
           aria-label={t('heroBar')}
           className="max-w-110"
           segments={[

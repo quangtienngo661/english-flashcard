@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react';
 import { renderApp } from '@/test-utils/render-app';
-import { StageBar } from '@/ui/StageBar';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { DeckButtons } from './DeckButtons';
 import { GroupStack } from './GroupStack';
 import type { GroupSummary } from './groups-api';
@@ -65,10 +65,10 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   });
 });
 
-describe('StageBar', () => {
+describe('SegmentBar', () => {
   it('is a figure with one item per segment', () => {
     renderApp(
-      <StageBar
+      <SegmentBar
         aria-label="nhịp ôn"
         segments={[
           { size: 6, fill: 6, tone: 'bg-wm-accent', label: 'Mới: 6/6' },

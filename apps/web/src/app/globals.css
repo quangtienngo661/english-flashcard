@@ -72,6 +72,7 @@
   --animate-wm-theme-icon-in: wm-theme-icon-in 250ms var(--ease-wm-enter) both;
   --animate-wm-theme-icon-out: wm-theme-icon-out 250ms var(--ease-wm-exit) both;
   /* Learner sessions (owner 27/10/2026, docs/audit/2026-10-26-motion-nguoi-hoc.md): next card, answer feedback, the wiggle (300ms). */
+  --animate-wm-bar-grow: wm-bar-grow 700ms var(--ease-wm-out) both;
   --animate-wm-card-rise: wm-card-rise 200ms var(--ease-wm-enter) both;
   --animate-wm-feedback-in: wm-feedback-in 160ms var(--ease-wm-enter) both;
   /* Owner 10/11/2026: the result panel slides down from under the question card, with a slight settle at the end. */
@@ -116,6 +117,11 @@
     to {
       transform: translateY(-100%);
       opacity: 0;
+    }
+  }
+  @keyframes wm-bar-grow {
+    from {
+      transform: scaleX(0);
     }
   }
   @keyframes wm-card-rise {

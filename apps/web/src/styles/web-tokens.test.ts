@@ -59,7 +59,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
   ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
   // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
-  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'],
+  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'], ['pass', 'surface'],
 ];
 
 describe('wm design tokens (web.css, web-dark.css)', () => {

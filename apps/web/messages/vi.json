@@ -902,7 +902,7 @@
       "hint": "Bấm để mở nhóm · ↓",
       "hintPhone": "Chạm để mở nhóm",
       "live": "{name}, {count, number} thẻ chờ",
-      "rhythm": "Nhịp ôn: mới đến 30 ngày",
+      "rhythm": "nhịp ôn: Mới → Bậc 5",
       "rhythmSegment": "{level}: {due, number} thẻ chờ trong {total, number} từ",
       "open": "Xem nhóm",
       "pickerTitle": "Chọn nhóm (F)",
@@ -931,12 +931,11 @@
       "filterPriority": "Ưu tiên",
       "filterDue": "Đến hạn",
       "filterNew": "Mới",
-      "filterLevel": "Bậc {level}",
       "priorityTag": "Ưu tiên",
       "senseChanged": "Nghĩa đã đổi",
-      "dueToday": "cần ôn hôm nay",
-      "dueOn": "ôn lại {date}",
-      "newWord": "từ mới",
+      "dueToday": "Đến hạn hôm nay",
+      "dueOn": "Ôn lại {date}",
+      "newWord": "Từ mới",
       "removeLabel": "Bỏ {word} khỏi nhóm",
       "removeLastTitle": "Bỏ “{word}” khỏi nhóm?",
       "removeLastBody": "Từ này chỉ có trong nhóm này. Bỏ đi thì từ rời khỏi việc ôn và mất tiến độ.",
@@ -951,10 +950,14 @@
       "emptyTitle": "Nhóm này chưa có từ nào",
       "emptyBody": "Thêm những từ bạn bắt gặp khi đọc hoặc xem phim, hoặc chọn nhanh một bộ từ theo chủ đề trong Tra từ. Khi nhóm đã có từ, bạn có thể bắt đầu ôn tập.",
       "emptyLookup": "Chọn từ theo chủ đề",
-      "metaMastered": "{count, number} từ · tạo ngày {date} · {mastered, number} đã thuộc",
       "loadMoreUnknown": "Xem thêm từ",
       "todayChips": "Hôm nay",
-      "metaNoDate": "{count, number} từ · {mastered, number} đã thuộc"
+      "metaNoDate": "{count, number} từ",
+      "colWord": "Từ vựng",
+      "colPos": "Loại từ",
+      "colMeaning": "Nghĩa",
+      "colLevel": "Bậc",
+      "colState": "Trạng thái"
     },
     "backlog": {
       "back": "Nhóm {name}",
@@ -1237,7 +1240,8 @@
     },
     "levels": {
       "name": "{level, select, 0 {Mới} other {Bậc {level}}}",
-      "interval": "{days, plural, other {ôn lại sau # ngày}}"
+      "interval": "{days, plural, other {ôn lại sau # ngày}}",
+      "bar": "Số từ theo bậc"
     },
     "errors": {
       "generic": "Có lỗi xảy ra. Thử lại sau.",

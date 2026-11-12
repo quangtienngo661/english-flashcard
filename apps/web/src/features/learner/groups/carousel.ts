@@ -33,7 +33,7 @@ export function carouselSlots(count: number, centre: number): CarouselSlot[] {
 
 export type RhythmCell = { level: number; total: number; due: number };
 
-/** "nhịp ôn": one segment per stage 0–5, width ∝ words in the stage, fill ∝ its waiting cards (prototype `rhythm`, :663). */
+/** "nhịp ôn": one entry per level 0–5 with its words and its waiting cards (prototype `rhythm`, :663). */
 export function rhythm(cells: readonly RhythmCell[]): RhythmCell[] {
   return [0, 1, 2, 3, 4, 5].map((level) => {
     const cell = cells.find((c) => c.level === level);

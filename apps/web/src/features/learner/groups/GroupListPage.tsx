@@ -10,7 +10,7 @@ import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { TextButton } from '@/ui/TextButton';
 import { toLevel, useLevelName } from '@/ui/levels';
 import { useAddWord } from '../add-word/add-word-context';
@@ -204,7 +204,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
   return (
     <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
       <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
-      <StageBar
+      <SegmentBar
         aria-label={t('rhythm')}
         className="max-w-105"
         segments={rhythm(group.cells).map((c) => ({

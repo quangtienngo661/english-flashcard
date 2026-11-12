@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-export type StageSegment = {
-  /** Segment width share (e.g. words in the stage). */
+export type BarSegment = {
+  /** Segment width share (e.g. its words). */
   size: number;
   /** Filled part, in the same unit as `size`. */
   fill: number;
@@ -16,13 +16,13 @@ export type StageSegment = {
  * A bar of segments (Figma "nhịp ôn", "Ưu tiên · đến hạn · mới"): each segment's width follows `size`, its fill `fill / size`.
  * `labels` (one per segment) are printed under it.
  */
-export function StageBar({
+export function SegmentBar({
   segments,
   labels,
   className,
   'aria-label': ariaLabel,
 }: {
-  segments: StageSegment[];
+  segments: BarSegment[];
   labels?: ReactNode[];
   className?: string;
   'aria-label': string;

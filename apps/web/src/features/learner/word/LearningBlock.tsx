@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { createFormat } from '@/app-shell/format';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
-import { StageBar } from '@/ui/StageBar';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { TextButton } from '@/ui/TextButton';
 import { LEVEL_FILL, LEVELS, toLevel, useLevelName } from '@/ui/levels';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
@@ -46,7 +46,7 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
         <span className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</span>
         <span className="text-wm-meta text-wm-muted">{sense.pos}</span>
       </p>
-      <StageBar
+      <SegmentBar
         aria-label={t('levelBar', { level: levelName(toLevel(item.level)) })}
         className="my-2"
         segments={LEVELS.map((i) => ({ size: 1, fill: i <= item.level ? 1 : 0, tone: LEVEL_FILL[i], label: levelName(i) }))}
