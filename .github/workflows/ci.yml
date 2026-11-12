@@ -104,6 +104,10 @@ jobs:
       - name: E2E tests (Playwright + axe)
         run: pnpm test:e2e
 
+      - name: JS size against the old UI
+        # Compares first-load JS of every /[locale]/app route with bundle-baseline.json (old UI, archive tag); fails over 110 % (design §5.7).
+        run: node scripts/compare-bundle-stats.mjs
+
       - name: Render mode (landing static, app per request)
         run: pnpm assert:render-mode
         env:
