@@ -81,15 +81,10 @@ export class AuthService {
         const user = await tx.user.findUnique({ where: { id: userId } });
         if (user?.status === 'deleting') throw this.emailTaken('account-deleting');
         if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
-        const updated = await tx.user.updateMany({
-          where: { id: userId, emailVerifiedAt: null, status: 'active' },
-          data,
-        });
-        if (updated.count === 0) throw this.emailTaken();
-        await tx.loginFailure.deleteMany({ where: { userId } });
-        await tx.passwordCredential.upsert({ where: { userId },
-          create: { userId, hash, updatedAt: now }, update: { hash, updatedAt: now } });
-        await this.sessions.revokeAllForUser(tx, userId, 'reregistered');
+        // No mailbox proof yet: the new password and profile wait until verify-email confirms them (review F3).
+        const pending = { passwordHash: hash, givenName: data.givenName, familyName: data.familyName, birthDate: data.birthDate,
+          timezone, termsVersion, termsAcceptedAt: now, createdAt: now };
+        await tx.pendingRegistration.upsert({ where: { userId }, create: { userId, ...pending }, update: pending });
         return { userId, mail: mailAllowed };
       }, transactionOptions);
     } catch (error) {
@@ -159,22 +154,44 @@ export class AuthService {
     const email = normalizeEmail(body.email);
     if ([...normalizePassword(body.password)].length > 128) throw this.invalidOtp();
     const account = email ? await this.prisma.user.findUnique({
-      where: { email }, include: { passwordCredential: true },
+      where: { email }, include: { passwordCredential: true, pendingRegistration: true },
     }) : null;
     if (!account?.passwordCredential) {
       await this.hasher.verifyDummy(body.password);
       throw this.invalidOtp();
     }
-    const verifiedHash = account.passwordCredential.hash;
-    if (!await this.hasher.verify(verifiedHash, body.password)) throw this.invalidOtp();
+    // The current password wins; a pending re-registration's password counts only when it does not match (review F3).
+    const pendingHash = account.pendingRegistration?.passwordHash;
+    let matched: { hash: string; pending: boolean } | null = null;
+    if (await this.hasher.verify(account.passwordCredential.hash, body.password)) matched = { hash: account.passwordCredential.hash, pending: false };
+    else if (pendingHash && await this.hasher.verify(pendingHash, body.password)) matched = { hash: pendingHash, pending: true };
+    if (!matched) throw this.invalidOtp();
+    const { hash: verifiedHash, pending: pendingMatched } = matched;
     const outcome = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, account.id);
-      const current = await tx.user.findUnique({ where: { id: account.id }, include: { passwordCredential: true } });
-      if (!current || current.passwordCredential?.hash !== verifiedHash
+      const current = await tx.user.findUnique({
+        where: { id: account.id }, include: { passwordCredential: true, pendingRegistration: true },
+      });
+      const currentHash = pendingMatched ? current?.pendingRegistration?.passwordHash : current?.passwordCredential?.hash;
+      if (!current || currentHash !== verifiedHash
         || current.status !== 'active' || current.emailVerifiedAt !== null) return { kind: 'no_live_code' as const };
       const result = await this.otp.checkInTx(tx, account.id, 'verify_email', body.code);
       if (result.kind !== 'ok') return result;
-      await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: this.clock.now() } });
+      const now = this.clock.now();
+      const pending = current.pendingRegistration;
+      if (pendingMatched && pending) {
+        const { givenName, familyName, birthDate, timezone, termsVersion, termsAcceptedAt } = pending;
+        await tx.user.update({ where: { id: account.id }, data: {
+          givenName, familyName, birthDate, timezone, termsVersion, termsAcceptedAt, emailVerifiedAt: now, updatedAt: now,
+        } });
+        await tx.passwordCredential.upsert({ where: { userId: account.id },
+          create: { userId: account.id, hash: verifiedHash, updatedAt: now }, update: { hash: verifiedHash, updatedAt: now } });
+        await this.sessions.revokeAllForUser(tx, account.id, 'reregistered');
+        await tx.loginFailure.deleteMany({ where: { userId: account.id } });
+      } else {
+        await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: now } });
+      }
+      if (pending) await tx.pendingRegistration.deleteMany({ where: { userId: account.id } });
       const session = await this.sessions.startChain(tx, {
         userId: account.id, client: body.client, deviceLabel: body.device_label,
       });

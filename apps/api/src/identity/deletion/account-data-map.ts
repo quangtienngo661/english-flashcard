@@ -19,6 +19,7 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'otp_codes.user_id': 'erase',
   'otp_failure_windows.user_id': 'erase',
   'login_failures.user_id': 'erase',
+  'pending_registrations.user_id': 'erase',
   'user_identities.user_id': 'erase',
   'deleted_accounts.user_id': 'keep-id',
   // Common

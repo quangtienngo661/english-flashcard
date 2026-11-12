@@ -29,6 +29,7 @@ model User {
   otpCodes           OtpCode[]
   otpFailureWindows  OtpFailureWindow[]
   loginFailures      LoginFailure[]
+  pendingRegistration PendingRegistration?
 
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("users")
@@ -146,3 +147,19 @@ model DeletedAccount {
   @@map("deleted_accounts")
 }
 
+// Security review 07/11 F3: a re-registration of an unverified email; applied only when the mailbox code confirms it.
+model PendingRegistration {
+  userId          String   @id @map("user_id") @db.Uuid
+  passwordHash    String   @map("password_hash")
+  givenName       String   @map("given_name") @db.VarChar(50)
+  familyName      String?  @map("family_name") @db.VarChar(50)
+  birthDate       DateTime @map("birth_date") @db.Date
+  timezone        String
+  termsVersion    String   @map("terms_version")
+  termsAcceptedAt DateTime @map("terms_accepted_at") @db.Timestamptz
+  createdAt       DateTime @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pending_registrations")
+}

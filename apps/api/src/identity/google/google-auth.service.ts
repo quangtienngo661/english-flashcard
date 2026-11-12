@@ -284,6 +284,7 @@ export class GoogleAuthService {
           if (updated.count === 0) throw emailTaken();
           await tx.loginFailure.deleteMany({ where: { userId } });
           await tx.passwordCredential.deleteMany({ where: { userId } });
+          await tx.pendingRegistration.deleteMany({ where: { userId } });
           await tx.otpCode.updateMany({ where: { userId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: now } });
           await this.sessions.revokeAllForUser(tx, userId, 'google-signup');
         }

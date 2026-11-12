@@ -121,6 +121,8 @@ export class PasswordService {
       } });
       // A reset clears the login lock of every ip for this account.
       await tx.loginFailure.deleteMany({ where: { userId: account.id } });
+      // The mailbox owner chose a password: a re-registration still waiting for its code loses (review F3).
+      await tx.pendingRegistration.deleteMany({ where: { userId: account.id } });
       return { kind: 'ok', message: passwordResetMail(current.email) };
     }, transactionOptions);
     // The counted failure and lock have committed. Register the one-time notice
