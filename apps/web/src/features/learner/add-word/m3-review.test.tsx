@@ -170,7 +170,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
-    expect(await screen.findByRole('button', { name: 'Chọn Du lịch' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Xong' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lưu vào nhóm' })).not.toBeInTheDocument();
   });
 });

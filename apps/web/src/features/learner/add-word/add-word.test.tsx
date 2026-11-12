@@ -68,7 +68,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
     expect(await screen.findByText(/Wordmet nhận ra đây là quá khứ của deploy và đã gắn sẵn/)).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'đã triển khai');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({
       group_ids: [TECH], new_word: { lemma: 'deployed', meaning: 'đã triển khai', form_of: { entry_id: uuid(12), kind: 'past' } },
@@ -112,7 +112,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     expect(ipa).toHaveAccessibleDescription('Không bắt buộc.');
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
     await userEvent.type(ipa, '/rɪz/');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
   });
 
@@ -121,11 +121,11 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     const { calls } = open('rizz', { routes: routes() });
     expect(await screen.findByText('Wordmet chưa có từ “rizz”. Tự nhập nghĩa để lưu.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tự nhập nghĩa' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     expect(await screen.findByText('Nhập nghĩa của từ.')).toBeInTheDocument();
     expect(quickAdds(calls)).toHaveLength(0);
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút' } }));
   });
 
@@ -171,7 +171,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     open('rizz', { routes: routes({ 'POST /v1/quick-add': () => problem(409, 'private-word-exists') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
     await userEvent.type(await screen.findByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     expect(await screen.findByText('Bạn đã có từ “rizz” trong Từ của tôi.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mở từ này' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
   });

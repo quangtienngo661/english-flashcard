@@ -319,9 +319,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           </Button>
         ) : (
           decks.length > 0 && (
-            <Button onPress={() => setView(back)}>
-              {decks.length === 1 ? t('pickDeck', { group: nameOf(decks[0]) }) : t('pickDecks', { count: decks.length })}
-            </Button>
+            <Button onPress={() => setView(back)}>{t('pickDone')}</Button>
           )
         )}
         <SelectedCount count={decks.length} />
@@ -349,9 +347,10 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         </TextButton>
         {!noDecks && (
           <Button isPending={save.busy} onPress={() => void submit()}>
-            {t('saveManual')}
+            {t('saveToCount', { count: decks.length })}
           </Button>
         )}
+        <SelectedCount count={decks.length} />
       </>
     );
   } else if (view === 'manual') {
@@ -375,9 +374,10 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         </TextButton>
         {!noDecks && (
           <Button isPending={save.busy} onPress={() => void submit()}>
-            {t('saveManual')}
+            {t('saveToCount', { count: decks.length })}
           </Button>
         )}
+        <SelectedCount count={decks.length} />
       </>
     );
   } else {

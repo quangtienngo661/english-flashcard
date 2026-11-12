@@ -153,7 +153,7 @@ describe('Locked add-word sheet (A14)', () => {
     await screen.findByRole('heading', { name: 'Sửa trước khi lưu' }, slow);
     expect(screen.getByText('Lưu vào nhóm: Du lịch')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', ai_suggestion: true } }));
   });
 
@@ -164,7 +164,7 @@ describe('Locked add-word sheet (A14)', () => {
     expect(screen.getByText('Lưu vào nhóm:', { exact: false })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm|Tạo nhóm đầu tiên/ })).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_ids: [TRAVEL], new_word: { meaning: 'sức hút' } }));
   });
 

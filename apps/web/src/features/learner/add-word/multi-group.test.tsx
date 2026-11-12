@@ -148,7 +148,7 @@ describe('AddWordSheet: the groups field (QP1)', () => {
     await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
     await userEvent.click(within(list).getByRole('option', { name: /Đề 9/ }));
     expect(screen.getByText('Đã chọn 2 nhóm')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Chọn 2 nhóm' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }));
     const field = screen.getByRole('button', { name: /Lưu vào nhóm/ });
     expect(within(field).getByText('Đề 12')).toBeInTheDocument();
     expect(within(field).getByText('Đề 9')).toBeInTheDocument();
@@ -160,6 +160,22 @@ describe('AddWordSheet: the groups field (QP1)', () => {
     const again = await screen.findByRole('button', { name: /Lưu vào nhóm/ });
     await waitFor(() => expect(within(again).getByText('Đề 12')).toBeInTheDocument());
     expect(within(again).getByText('Đề 9')).toBeInTheDocument();
+  });
+
+  it('manual view: the picker Xong sends nothing and returns to the form; Lưu vào 2 nhóm then saves to both', async () => {
+    const { calls } = renderApp(<AddWordSheet initialWord="rizz" onClose={() => {}} />, { routes: routes({ 'GET /v1/lookup?q=rizz': () => Response.json({ senses: [], via_inflection: [] }) }) });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm/ }));
+    const list = await all();
+    await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
+    await userEvent.click(within(list).getByRole('option', { name: /Đề 9/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }));
+    expect(quickAdds(calls)).toHaveLength(0);
+    expect(screen.getByText('Đã chọn 2 nhóm')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu vào 2 nhóm' }));
+    await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
+    expect(quickAdds(calls)[0].body).toEqual({ group_ids: [DE12, DE9], new_word: { lemma: 'rizz', meaning: 'sức hút' } });
   });
 
   it('a stored old single id still preselects one group', async () => {
@@ -221,7 +237,7 @@ describe('AddWordSheet: the groups field (QP1)', () => {
     await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
     expect(within(list).getByRole('option', { name: /Đề 12/ })).toHaveAttribute('aria-selected', 'true');
     await userEvent.click(within(list).getByRole('option', { name: /Đề 14/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Chọn 2 nhóm' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({ group_ids: [DE12, DE14], sense_id: uuid(1) });
