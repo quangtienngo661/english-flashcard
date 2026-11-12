@@ -8,6 +8,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   timeout: 1_800_000,
+  // Playwright empties its output dir at the start of a run; keep it apart from test-results/shots so a partial re-run (SHOTS_ONLY) cannot delete the other sets.
+  outputDir: 'test-results/.pw',
   use: {
     ...devices['Desktop Chrome'],
     baseURL: process.env.SHOTS_BASE_URL ?? 'http://localhost:3001',

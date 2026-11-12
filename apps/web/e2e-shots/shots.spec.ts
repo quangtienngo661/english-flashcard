@@ -39,7 +39,7 @@ async function shoot(page: Page, name: string, fullPage = true, where: Where = W
 
 /** A frame or set the run could not shoot: printed, and listed in the test's annotations so the report shows what is missing. */
 function missed(what: string, why: string) {
-  const line = `chưa chụp: ${what} — ${why.split('\n')[0]}`;
+  const line = `chưa chụp: ${what} — ${why.split('\n').slice(0, 5).join(' | ')}`;
   console.log(line);
   test.info().annotations.push({ type: 'chưa chụp', description: line });
 }
@@ -990,6 +990,8 @@ async function gmM9(page: Page) {
   // The test fails at the end only when no set was shot at all, so one run gives the most shots and the annotations show what is missing.
   // `counts` is false for the sign-in: it shoots nothing, so it must not make "nothing was shot" pass.
   const attempt = async (label: string, run: () => Promise<void>, counts = true) => {
+    // SHOTS_ONLY=gm-m5 re-runs just the sets whose label contains it (and always the sign-in).
+    if (process.env.SHOTS_ONLY && !label.includes(process.env.SHOTS_ONLY) && !label.includes('sign-in')) return;
     try {
       await run();
       if (counts) shot++;
