@@ -86,6 +86,7 @@ Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi
 - [ ] **Đo search/browse của người học khi bảng có từ riêng (B2-5) và đo mở phiên có 50 từ dạng AI, mỗi từ một query (B7-5).** Nguồn:
   [B2-5](../superpowers/reviews/buoc-1-8/buoc-2-and-2-5.md#b2-5) (`apps/api/test/content/lookup.scale.e2e-spec.ts`, `pnpm test:scale`),
   [B7-5](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b7-5) (`question-builder.service.ts:94-103`). Vì sao: hai chỗ này là `ASSUMPTION` chưa đo.
+- [ ] **Đo lại `GET /v1/groups` với 100 nhóm × 2.000 từ trên máy chủ thật.** Nguồn: [`giao-dien-moi.md`](giao-dien-moi.md) (as-built M3; `pnpm test:scale`). Vì sao: trên máy dev, median 399 ms khi chạy một mình, ngưỡng 500 ms; chạy song song với `pnpm test` đo 582 ms, vượt ngưỡng.
 
 ## Admin web
 
