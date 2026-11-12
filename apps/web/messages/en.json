@@ -746,7 +746,7 @@
       "title": "Today",
       "heroChipPriority": "Up next · priority cards",
       "heroChip": "Up next",
-      "heroLine": "{total, plural, one {# word} other {# words}} in the deck · {mastered, number} mastered",
+      "heroLine": "{total, plural, one {# word} other {# words}} in the deck",
       "yourGroups": "Your decks",
       "seeAll": "See all {count, plural, one {# deck} other {# decks}}",
       "emptyTitle": "No decks yet",
@@ -757,6 +757,7 @@
       "see": "See",
       "levelsTitle": "{count, plural, one {# word} other {# words}} by level",
       "levelsHint": "Due / total",
+      "levelHelp": "Review interval of {level}",
       "allDone": "All cards done for today. More tomorrow.",
       "heroWaiting": "Cards waiting today",
       "heroBar": "Cards waiting today by kind",
@@ -770,7 +771,6 @@
       "lastCorrect": "Right",
       "lastLine": "{date} · {count, plural, one {# question} other {# questions}}",
       "lastBar": "{correct, number} right, {wrong, number} wrong",
-      "lastWrong": "Wrong: {lemmas}",
       "lastRetry": "Practise missed words",
       "lastCalendar": "Open study calendar",
       "backlogLabel": "Not reviewed in a while"
@@ -1835,7 +1835,7 @@
       "days": "{days, number}-day streak"
     },
     "stack": {
-      "words": "{count, number} words · {mastered, number} mastered",
+      "words": "{count, plural, one {# word} other {# words}}",
       "empty": "empty deck",
       "waiting": "cards waiting",
       "next": "Next",

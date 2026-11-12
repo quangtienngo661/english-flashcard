@@ -18,7 +18,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   it('normal face: words, name, waiting count and the next card', () => {
     const g = deck({ priority: 4, due: 14, new: 6 }, [6, 9, 10, 11, 8, 4], { next_lemma: 'mitigate' });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
-    expect(screen.getByText('48 từ · 12 đã thuộc')).toBeInTheDocument();
+    expect(screen.getByText('48 từ')).toBeInTheDocument();
     expect(screen.getByText('Đề 12 · Writing')).toBeInTheDocument();
     expect(screen.getByText('24')).toBeInTheDocument();
     expect(screen.getByText('thẻ chờ')).toBeInTheDocument();

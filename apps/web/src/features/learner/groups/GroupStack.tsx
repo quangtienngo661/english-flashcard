@@ -6,7 +6,7 @@ import type { MouseEvent, Ref } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stackDepth } from './carousel';
-import { mastered, waiting } from './deck-actions';
+import { waiting } from './deck-actions';
 import type { GroupSummary } from './groups-api';
 
 /**
@@ -52,7 +52,7 @@ export function GroupStack({
         <div key={n} aria-hidden data-behind={n} className={cn('gstack-behind', tone.soft)} />
       ))}
       <div className={cn('gstack-face', tone.border)}>
-        <p className="gstack-meta">{empty ? t('empty') : t('words', { count: group.total, mastered: mastered(group) })}</p>
+        <p className="gstack-meta">{empty ? t('empty') : t('words', { count: group.total })}</p>
         <p className="gstack-name">{name}</p>
         <div className="gstack-grow" />
         {empty ? (

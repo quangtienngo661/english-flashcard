@@ -746,7 +746,7 @@
       "title": "Hôm nay",
       "heroChipPriority": "Ôn tiếp · có thẻ ưu tiên",
       "heroChip": "Ôn tiếp",
-      "heroLine": "nhóm có {total, number} từ · {mastered, number} đã thuộc",
+      "heroLine": "nhóm có {total, number} từ",
       "yourGroups": "Nhóm của bạn",
       "seeAll": "Xem tất cả {count, number} nhóm",
       "emptyTitle": "Chưa có nhóm nào",
@@ -757,6 +757,7 @@
       "see": "Xem",
       "levelsTitle": "{count, number} từ theo bậc",
       "levelsHint": "Đến hạn / tổng",
+      "levelHelp": "Khoảng ôn lại của {level}",
       "allDone": "Xong hết thẻ hôm nay. Mai ôn tiếp.",
       "heroWaiting": "Thẻ chờ hôm nay",
       "heroBar": "Thẻ chờ hôm nay theo loại",
@@ -770,7 +771,6 @@
       "lastCorrect": "Đúng",
       "lastLine": "{date} · {count, number} câu",
       "lastBar": "{correct, number} đúng, {wrong, number} sai",
-      "lastWrong": "Sai: {lemmas}",
       "lastRetry": "Luyện lại từ sai",
       "lastCalendar": "Mở lịch học",
       "backlogLabel": "Từ lâu chưa ôn"
@@ -1835,7 +1835,7 @@
       "days": "{days, number} ngày liên tiếp"
     },
     "stack": {
-      "words": "{count, number} từ · {mastered, number} đã thuộc",
+      "words": "{count, number} từ",
       "empty": "nhóm trống",
       "waiting": "thẻ chờ",
       "next": "Tiếp theo",
