@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useRef, useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -12,8 +13,11 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { sortForToday } from '../groups/deck-actions';
 import { useGroups } from '../groups/groups-api';
 import { ResumeDialog } from './CurrentSessionCard';
-import { CustomizeDialog, type CustomizeTarget } from './CustomizeDialog';
+import type { CustomizeTarget } from './CustomizeDialog';
 import { useCurrentSession, useStartSession, type AiStartProblem, type StartBody } from './practice-api';
+
+// Design §5.7: the dialog's code loads on the first open, not with every page.
+const CustomizeDialog = dynamic(() => import('./CustomizeDialog').then((m) => m.CustomizeDialog), { ssr: false });
 
 const NO_WORDS_REASONS = ['group-empty', 'source-empty', 'no-word-fits-types'] as const;
 
@@ -107,20 +111,22 @@ export function usePracticeStarter<Origin extends string>() {
 
   const dialogs = (
     <>
-      <CustomizeDialog
-        target={customize}
-        onClose={() => {
-          setCustomize(null);
-          setAiProblem(null);
-        }}
-        groups={decks}
-        onStart={(body) => request('dialog', body)}
-        busy={busy && origin === 'dialog'}
-        error={errors.dialog ?? null}
-        outLine={reopensAt ? t('usage.outShort', { time: reopensAt }) : null}
-        aiProblem={aiProblem}
-        onClearAiProblem={() => setAiProblem(null)}
-      />
+      {customize && (
+        <CustomizeDialog
+          target={customize}
+          onClose={() => {
+            setCustomize(null);
+            setAiProblem(null);
+          }}
+          groups={decks}
+          onStart={(body) => request('dialog', body)}
+          busy={busy && origin === 'dialog'}
+          error={errors.dialog ?? null}
+          outLine={reopensAt ? t('usage.outShort', { time: reopensAt }) : null}
+          aiProblem={aiProblem}
+          onClearAiProblem={() => setAiProblem(null)}
+        />
+      )}
       <ResumeDialog
         current={current.data ?? null}
         groups={decks}
