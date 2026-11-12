@@ -150,7 +150,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   }, []);
 
   return (
-    <div ref={pageRef} className="flex flex-col gap-4 md:gap-5">
+    <div ref={pageRef} className="gpage flex flex-col gap-4 md:gap-5">
       <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
         <Title>
           <p className="text-wm-meta text-wm-muted">
@@ -192,10 +192,10 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
     <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
       <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
       <div className="w-full max-w-105">
-        <LevelBar counts={rhythm(group.cells).map((c) => c.total)} />
+        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-        <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
+      <DeckButtons group={group} className="gdeck justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="gdeck-btn w-37.5 max-md:w-32" />
+      <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
           prefetch

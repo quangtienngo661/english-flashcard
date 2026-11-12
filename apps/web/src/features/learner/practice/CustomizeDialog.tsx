@@ -245,9 +245,9 @@ function CustomizeForm({
           fullWidth
           value={stage !== null ? 'stage' : filter}
           options={[
-            { id: 'all', label: tc('filterOption', { name: tc('filterAllWords'), count: group.total }) },
-            { id: 'due', label: tc('filterOption', { name: tc('filterDue'), count: todayWords(group) }) },
-            { id: 'priority', label: tc('filterOption', { name: tc('filterPriority'), count: group.today.priority }) },
+            { id: 'all', label: tc('filterAllWords'), count: group.total },
+            { id: 'due', label: tc('filterDue'), count: todayWords(group) },
+            { id: 'priority', label: tc('filterPriority'), count: group.today.priority },
           ]}
           onChange={(id) => {
             if (id === 'stage') return;

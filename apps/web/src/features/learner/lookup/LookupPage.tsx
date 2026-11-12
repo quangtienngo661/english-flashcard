@@ -106,7 +106,11 @@ export function LookupPage() {
               inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
             />
             <div className="flex flex-col items-start gap-1">
-              {sense && <TextButton onPress={() => setPicker(true)}>{t('otherGroup')}</TextButton>}
+              {sense && (
+                <TextButton isDisabled={!items.isSuccess} onPress={() => setPicker(true)}>
+                  {t('otherGroup')}
+                </TextButton>
+              )}
             </div>
           </div>
         </div>

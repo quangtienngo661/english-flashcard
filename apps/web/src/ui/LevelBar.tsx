@@ -10,7 +10,7 @@ import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName } from './levels';
  * the segments grow in from the left (700 ms, none under reduced motion). The legend below names every level with its count, in full.
  * Hovering or focusing a segment shows the level name, the count and the review interval. `counts` has six entries, level 0 first.
  */
-export function LevelBar({ counts, size = 'md' }: { counts: readonly number[]; size?: 'md' | 'lg' }) {
+export function LevelBar({ counts, size = 'md', centered = false }: { counts: readonly number[]; size?: 'md' | 'lg'; centered?: boolean }) {
   const t = useTranslations('App.levels');
   const tWords = useTranslations('App.stack');
   const levelName = useLevelName();
@@ -54,9 +54,9 @@ export function LevelBar({ counts, size = 'md' }: { counts: readonly number[]; s
           );
         })}
       </div>
-      <ul aria-label={t('bar')} className="flex flex-wrap gap-x-3.5 gap-y-1 text-wm-meta text-wm-muted">
+      <ul aria-label={t('bar')} className={cn('flex flex-wrap gap-y-1 text-wm-meta text-wm-muted', centered ? 'mx-auto max-w-115 justify-center gap-x-3' : 'gap-x-3.5')}>
         {LEVELS.map((level) => (
-          <li key={level} className="inline-flex items-center gap-1.5">
+          <li key={level} className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
             <b className="font-bold tabular-nums text-wm-ink">{counts[level] ?? 0}</b> {levelName(level)}
           </li>

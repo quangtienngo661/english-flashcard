@@ -529,7 +529,7 @@
   left: 50%;
   translate: -50% 0;
   transform-origin: 50% 130%;
-  transform: translateX(calc(var(--xp) * 0.0625rem)) translateY(calc(var(--y) * 0.0625rem)) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+  transform: translateX(calc(var(--xp) * 0.0625rem * var(--gk, 1))) translateY(calc(var(--y) * 0.0625rem * var(--gk, 1))) rotate(calc(var(--r) * 1deg)) scale(var(--s));
   opacity: var(--o);
   z-index: var(--z);
   transition:
@@ -539,7 +539,7 @@
 @media (width >= 48rem) {
   .gcar-slot {
     top: 2.125rem;
-    transform: translateX(calc(var(--x) * 0.0625rem)) translateY(calc(var(--y) * 0.0625rem)) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+    transform: translateX(calc(var(--x) * 0.0625rem * var(--gk, 1))) translateY(calc(var(--y) * 0.0625rem * var(--gk, 1))) rotate(calc(var(--r) * 1deg)) scale(var(--s));
   }
 }
 .gcar-slot[data-abs='3'] { pointer-events: none; }
@@ -558,27 +558,20 @@
   right: 0;
   text-align: center;
 }
-/* The glow behind the arc in the centre group's colour (mockup L468-469), its colour changing in 700ms. The mockup mixes the colour
-   to 26% and 7%; here each gradient runs from the full colour at that opacity, which draws the same (no mixed colour value). */
+/* The glow behind the arc in the centre group's colour, its colour changing in 700ms. One radial that fades out inside its own box
+   (the mask), so no edge shows on any side (owner f01, 13/11/2026; drawing `.car .glowA`). */
 .gcar-glow {
   position: absolute;
-  inset: -2rem 0 0;
+  inset: -2.5rem -10%;
   pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, currentColor 30%, transparent),
+    color-mix(in srgb, currentColor 10%, transparent) 55%,
+    transparent
+  );
+  mask-image: radial-gradient(60% 60% at 50% 45%, #000 40%, transparent 80%);
   transition: color var(--transition-duration-wm-halo) var(--ease-wm-out);
-}
-.gcar-glow::before,
-.gcar-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-.gcar-glow::before {
-  background: radial-gradient(46% 50% at 50% 40%, currentColor, transparent 72%);
-  opacity: 0.26;
-}
-.gcar-glow::after {
-  background: linear-gradient(180deg, currentColor, transparent 80%);
-  opacity: 0.07;
 }
 .gcar-glow.border-wm-group-0 { color: var(--color-wm-group-0); }
 .gcar-glow.border-wm-group-1 { color: var(--color-wm-group-1); }
@@ -694,6 +687,56 @@
   .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
 }
 
+/* Fit by height (owner f13, 13/11/2026): the stack, the track and the arc's offsets (--gk) shrink together on a short screen, so the title,
+   the carousel and the Below block fit 1280 x 800 and 1024 x 768 with no scroll. On a phone on its side (landscape, under 30rem high) Nhóm
+   turns into two columns: the carousel left, the Below block right (.gpage). */
+@media (width >= 48rem) and (height <= 51.25rem) {
+  .gstack[data-size='carousel'] { font-size: 0.7241rem; }
+  .gcar-track {
+    height: 21.25rem;
+    --gk: 0.7241;
+    --gcar-step: 8.745rem;
+  }
+  .gcar-slot { top: 1.5rem; }
+}
+@media (orientation: landscape) and (height <= 30rem) {
+  .gstack[data-size='carousel'] { font-size: 0.5173rem; }
+  .gcar-track {
+    height: 14rem;
+    --gk: 0.5173;
+    --gcar-step: 6.246rem;
+  }
+  .gcar-slot { top: 1rem; }
+  /* Under 48rem the phone offsets and step apply: the stack shrinks from 0.7241rem to 0.5173rem, so they shrink by the same 0.7144. */
+  @media (width < 48rem) {
+    .gcar-track {
+      --gk: 0.7144;
+      --gcar-step: 4.801rem;
+    }
+  }
+  .gpage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1.5rem;
+    row-gap: 0.5rem;
+  }
+  /* DOM order is the reading order: the title row across the top, then the carousel (left), then the Below block (right). */
+  .gpage > [data-part='0'] { grid-column: 1 / -1; grid-row: 1; flex-direction: row; align-items: center; justify-content: space-between; }
+  .gpage > [data-part='0'] p { display: none; }
+  .gpage > [data-part='0'] h1 { font-size: 1.75rem; line-height: 1.1; }
+  .gpage > [data-part='0'] > div { margin-bottom: 0; }
+  .gpage > .relative { grid-column: 1; grid-row: 2; }
+  .gpage > [data-part='3'] { grid-column: 2; grid-row: 2; padding-right: 5rem; }
+  /* Under 48rem the Below block's own buttons already keep 4.5rem clear of the calendar button. */
+  @media (width < 48rem) {
+    .gpage > [data-part='3'] { padding-right: 0; }
+    /* Học and Ôn side by side, so both stay above the tab bar (4.5rem of the row stays clear of the calendar button). */
+    .gdeck { flex-wrap: nowrap; gap: 0.5rem; }
+    .gdeck-btn { width: 7rem; }
+  }
+}
+
 /* How many stacks each side a press on the track can reach (GroupCarousel onTrackClick): one on phones, two from 48rem. */
 .gcar-track { --gcar-reach: 1; }
 @media (width >= 48rem) {
@@ -779,6 +822,37 @@
 }
 .deck-row-cell .gstack[data-size='today'] {
   font-size: calc(100cqi / 18.125);
+}
+/* Hover and keyboard focus lift a deck on Hôm nay (owner f18): up 6px, a stronger shadow in the deck's own colour; pressing scales it
+   down. The 170 ms press lift (wm-card-lift) still plays on top. Reduced motion: only the shadow changes. */
+@media (hover: hover) {
+  .deck-row-cell .gstack {
+    transition: translate 0.3s var(--ease-wm-out), scale 0.3s var(--ease-wm-out);
+  }
+  .deck-row-cell .gstack .gstack-face {
+    transition: box-shadow 0.3s var(--ease-wm-out);
+  }
+  .deck-row-cell .gstack:hover,
+  .deck-row-cell .gstack:has(a:focus-visible) {
+    translate: 0 -6px;
+  }
+  .deck-row-cell .gstack:hover .gstack-face,
+  .deck-row-cell .gstack:has(a:focus-visible) .gstack-face {
+    box-shadow:
+      var(--shadow-wm-contact),
+      0 3.2em 4.6em -2.6em color-mix(in srgb, var(--gstack-tone, var(--color-wm-ink)) 85%, transparent);
+  }
+  .deck-row-cell .gstack:active {
+    scale: 0.98;
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+  .deck-row-cell .gstack:hover,
+  .deck-row-cell .gstack:has(a:focus-visible),
+  .deck-row-cell .gstack:active {
+    translate: none;
+    scale: none;
+  }
 }
 
 /* M5.7, the Học card stack (motion doc §2, prototype chong-the-mo.html). The cards share one grid cell, so the stack is as tall as the

@@ -163,7 +163,7 @@ test.describe('M5a flows (mocked API)', () => {
     await expect(dialog.getByText(vi.customize.quotaTitle)).toBeVisible();
     await expect(dialog.getByText(/Phiên này cần 5 lượt câu AI, bạn còn 2\./)).toBeVisible();
     await dialog.getByRole('button', { name: vi.customize.dropAi }).click();
-    await expect(dialog.getByRole('group', { name: 'Câu AI viết' })).toContainText('0');
+    await expect(dialog.getByRole('textbox', { name: 'Câu AI viết' })).toHaveValue('0');
   });
 
   test('K/81: an AI question about the learner\'s own word is reported without a consent box', async ({ page }) => {

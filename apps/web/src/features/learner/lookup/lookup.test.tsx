@@ -255,3 +255,22 @@ describe('Tra từ: stacks stay put', () => {
     expect(names()).toEqual(before);
   });
 });
+
+describe('Tra từ: "Nhóm khác" waits for the items', () => {
+  it('is disabled while the word\'s items load', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    renderApp(<LookupPage />, {
+      routes: base({
+        [`GET /v1/items?sense_ids=${uuid(1)}`]: async () => {
+          await gate;
+          return Response.json({ items: [{ sense_id: uuid(1), item_id: uuid(90), level: 3, due_date: '2026-11-12', priority: false, group_ids: [WORK] }] });
+        },
+      }),
+    });
+    const other = await screen.findByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' });
+    expect(other).toBeDisabled();
+    release();
+    await waitFor(() => expect(other).toBeEnabled());
+  });
+});

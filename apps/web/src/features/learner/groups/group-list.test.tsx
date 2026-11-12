@@ -139,6 +139,16 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
   });
 
+  it('under the carousel the Học · Ôn buttons come before "Xem nhóm" and "Thêm từ"', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    const order = (name: string) => screen.getByRole('link', { name });
+    const before = (a: HTMLElement, b: HTMLElement) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const open = order('Xem nhóm');
+    expect(before(order('Ôn'), open)).toBe(true);
+    expect(before(open, screen.getByRole('button', { name: 'Thêm từ' }))).toBe(true);
+  });
+
   it('F opens the picker; "de 9" leaves Đề 9; Enter makes it the centre and closes the picker', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();

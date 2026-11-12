@@ -102,7 +102,7 @@ test.describe('M3 flows (mocked API)', () => {
     await sheet.getByRole('button', { name: vi.addWord.ai.manual }).click();
     const manual = page.getByRole('dialog', { name: vi.addWord.manualTitle });
     await manual.getByRole('textbox', { name: vi.addWord.meaning }).fill('sức hút');
-    await manual.getByRole('button', { name: vi.addWord.saveManual }).click();
+    await manual.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], new_word: { lemma: 'rizz', meaning: 'sức hút' } });
   });

@@ -26,11 +26,11 @@ export function TopBar() {
   const onLookup = /\/app\/lookup$/.test(pathname);
   const addWord = useAddWord();
   return (
-    <div className="hidden h-16 items-center gap-3 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
+    <div className="hidden h-16 items-center gap-2 border-b lg:gap-5 border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:flex lg:px-8">
       <Link href={`/${locale}/app`} className="shrink-0 rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
         <AppLogo />
       </Link>
-      <nav aria-label={t('mainNav')} className="flex min-w-0 items-center gap-1">
+      <nav aria-label={t('mainNav')} className="flex shrink-0 items-center gap-0.5 lg:gap-1">
         {TABS.map(({ id, path, icon: Icon }) => {
           const isActive = id === active;
           return (
@@ -39,7 +39,7 @@ export function TopBar() {
               href={`/${locale}${path}`}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-2 whitespace-nowrap rounded-wm-control px-3 py-2 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
+                'flex items-center gap-2 whitespace-nowrap rounded-wm-control px-2 py-2 lg:px-3 font-wm-sans text-wm-button outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
                 isActive ? 'bg-wm-accent-soft text-wm-accent' : 'text-wm-muted hover:text-wm-ink',
               )}
             >
@@ -64,7 +64,7 @@ export function TopBar() {
       >
         <Plus aria-hidden className="size-4" />
         {t('addWord')}
-        <kbd className="rounded-wm-key border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-meta text-wm-on-accent">N</kbd>
+        <kbd className="hidden rounded-wm-key border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-meta text-wm-on-accent lg:block">N</kbd>
       </button>
       <PlanChipLink />
       <AvatarMenu />
