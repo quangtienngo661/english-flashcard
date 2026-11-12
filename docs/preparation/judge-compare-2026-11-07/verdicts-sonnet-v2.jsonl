@@ -1,0 +1,102 @@
+{"id": 0, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"clean\" fits (\"I clean my teeth twice a day\") and is a common A1 word."}
+{"id": 1, "verdict": "fail_minor", "other_words": ["heed"], "reason": "\"heed\" fits (\"pay heed to the teacher\") but is formal and rare."}
+{"id": 2, "verdict": "fail_minor", "other_words": ["picturesque", "pretty"], "reason": "\"picturesque\" fits and keeps the meaning but is rare; \"pretty\" is possible but repeats \"beautiful views\"."}
+{"id": 3, "verdict": "fail_minor", "other_words": ["round"], "reason": "\"round\" fits (\"a round of chess\") but is a less usual choice than \"game\"."}
+{"id": 4, "verdict": "fail_major", "other_words": ["deal"], "reason": "\"deal\" fits (\"signed a three-year deal with the club\") and is a common A2 word."}
+{"id": 5, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"bubble\", repeats \"bubbles come up\" and does not mean boil, so only \"boil\" fits."}
+{"id": 6, "verdict": "fail_minor", "other_words": ["play", "battle"], "reason": "\"play\" (against one another) fits sports loosely, but it is less natural for athletics and \"compete\" is clearly the usual word."}
+{"id": 7, "verdict": "fail_major", "other_words": ["team"], "reason": "\"team\" fits (\"a team of 20 people\") and is a common A2 word."}
+{"id": 8, "verdict": "fail_minor", "other_words": ["bill"], "reason": "\"bill\" fits in some varieties of English (\"keep the bill from the shop\") but is regional for a shop receipt."}
+{"id": 9, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"lemon\", is yellow but not long and not what monkeys eat, so only \"banana\" fits."}
+{"id": 10, "verdict": "fail_minor", "other_words": ["associate"], "reason": "\"business associate\" fits but is a formal, rarer word."}
+{"id": 11, "verdict": "fail_minor", "other_words": ["application"], "reason": "\"application\" is the full form of \"app\" and fits (\"weather application\")."}
+{"id": 12, "verdict": "fail_minor", "other_words": ["put"], "reason": "\"put it on your phone\" is possible but informal and a looser meaning than \"install\"."}
+{"id": 13, "verdict": "fail_major", "other_words": ["difficult", "hard", "tough"], "reason": "\"difficult\" or \"hard\" fits (\"make your job very difficult and leave you feeling under pressure\") and these are common words."}
+{"id": 14, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"list\", is not what a waiter gives you to choose food from, so only \"menu\" fits."}
+{"id": 15, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"money\", does not sound natural after \"official\", so only \"currency\" fits."}
+{"id": 16, "verdict": "fail_major", "other_words": ["washing"], "reason": "\"washing\" fits (\"I do the washing every Sunday\") and is a common A2 word."}
+{"id": 17, "verdict": "fail_major", "other_words": ["guess", "put"], "reason": "\"guess\" or \"put\" (\"put the cost at $2,000\") fits and these are common words."}
+{"id": 18, "verdict": "fail_minor", "other_words": ["call", "session"], "reason": "\"call\" or \"session\" fits (\"team call every Monday\") but changes the kind of event slightly and is a less usual choice."}
+{"id": 19, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"cook\" fits (\"cook the cake in the oven\") and is a common A1 word."}
+{"id": 20, "verdict": "fail_major", "other_words": ["buy"], "reason": "\"buy\" fits (\"buy much of its oil from other countries\") and is a common A1 word."}
+{"id": 21, "verdict": "fail_major", "other_words": ["memory", "reminder"], "reason": "\"reminder\" or \"memory\" fits (\"a reminder of my trip\") and both are common words."}
+{"id": 22, "verdict": "fail_major", "other_words": ["raise"], "reason": "\"raise\" fits (\"raise the number of students from 20 to 30\") and is a common A2 word."}
+{"id": 23, "verdict": "fail_minor", "other_words": ["division", "section"], "reason": "\"division\" fits (\"the sales division\") but is a rarer, more formal word."}
+{"id": 24, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"trouble\", does not match \"pay back the money she owed\", so only \"debt\" fits."}
+{"id": 25, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"owner\", does not define someone who puts money in to make a profit, and the article \"An\" excludes most nouns, so only \"investor\" fits."}
+{"id": 26, "verdict": "fail_minor", "other_words": ["reuse"], "reason": "\"reuse\" fits loosely (\"reuse old paper by turning it into new paper\") but is a close variant with a different meaning."}
+{"id": 27, "verdict": "fail_minor", "other_words": ["recall"], "reason": "\"recall\" fits (\"I can't recall her name\") but is formal and rarer."}
+{"id": 28, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"app\", does not fit \"web ___, such as Chrome or Firefox\", so only \"browser\" fits."}
+{"id": 29, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"salt\", is white but does not make tea sweet, so only \"sugar\" fits."}
+{"id": 30, "verdict": "fail_minor", "other_words": ["uncooked"], "reason": "\"uncooked\" fits (\"the fish is uncooked\") but is a close variant of \"raw\"."}
+{"id": 31, "verdict": "fail_major", "other_words": ["payment"], "reason": "\"payment\" fits (\"proof of payment\") and is a common A2 word."}
+{"id": 32, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"brunch\", is not the first meal of the day, so only \"breakfast\" fits."}
+{"id": 33, "verdict": "fail_major", "other_words": ["out", "outing"], "reason": "\"out\" fits (\"a day out to the zoo\") and is a common A1 word."}
+{"id": 34, "verdict": "fail_minor", "other_words": ["press", "double-click"], "reason": "\"press\" (on the button) is possible but less usual with a mouse, and \"double-click\" is a variant."}
+{"id": 35, "verdict": "fail_major", "other_words": ["piece"], "reason": "\"piece\" fits (\"a thin piece of bread\") and is a common A1 word."}
+{"id": 36, "verdict": "fail_minor", "other_words": ["maker", "make"], "reason": "\"maker\" or \"make\" fits (\"a famous maker of sports shoes\") but is a slightly different, less common word."}
+{"id": 37, "verdict": "fail_minor", "other_words": ["timer"], "reason": "\"timer\" can fit (\"my phone's timer goes off at 6 a.m.\") but is a weaker choice than \"alarm\"."}
+{"id": 38, "verdict": "fail_major", "other_words": ["employ", "choose"], "reason": "\"employ\" fits (\"decided to employ Maria as the new cook\") and is a common B1 word."}
+{"id": 39, "verdict": "fail_minor", "other_words": ["host"], "reason": "\"host\" fits (\"the website's host\") but is rarer and less precise."}
+{"id": 40, "verdict": "fail_major", "other_words": ["item", "thing"], "reason": "\"item\" or \"thing\" fits (\"every item you need to make the cake\") and both are common words."}
+{"id": 41, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"manage\", is awkward here (\"can't manage to buy a car\" because of money), so only \"afford\" fits."}
+{"id": 42, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"bargain\", is natural but means a cheap price, not an agreement, so only \"deal\" fits."}
+{"id": 43, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"cook\" fits (\"cook the eggs in a pan with a little hot oil\") and is a common A1 word."}
+{"id": 44, "verdict": "fail_major", "other_words": ["glad", "good"], "reason": "\"glad\" or \"good\" fits (\"I feel glad, not sad\") and both are common words."}
+{"id": 45, "verdict": "fail_minor", "other_words": ["gain"], "reason": "\"gain\" fits (\"made a gain of $200\") but is rarer and more formal."}
+{"id": 46, "verdict": "fail_minor", "other_words": ["display"], "reason": "\"display\" fits (\"the display on my phone is broken\") but is a slightly technical synonym."}
+{"id": 47, "verdict": "fail_minor", "other_words": ["land"], "reason": "\"land\" fits only if they arrive by plane (\"as soon as you land at the airport\"), so it is a narrow variant."}
+{"id": 48, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"cover\", is a real restaurant charge but means a seating fee, not service, so only \"service\" fits."}
+{"id": 49, "verdict": "fail_major", "other_words": ["service", "repair"], "reason": "\"service\" fits (\"service the machines regularly, changing the oil\") and is a common word."}
+{"id": 50, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"partners\", does not cover customers and local residents, so only \"stakeholders\" fits."}
+{"id": 51, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"holidays\", is not the name for Saturday and Sunday, so only \"weekend\" fits."}
+{"id": 52, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"trade\", is natural but means buy and sell, not make savings grow, so only \"invest\" fits."}
+{"id": 53, "verdict": "fail_major", "other_words": ["save", "get"], "reason": "\"save\" fits (\"click the arrow to save the file to your computer\") and is a common A1 word."}
+{"id": 54, "verdict": "fail_major", "other_words": ["programmer", "engineer"], "reason": "\"programmer\" or \"engineer\" fits (\"the software programmer wrote the code\") and both are common words."}
+{"id": 55, "verdict": "fail_major", "other_words": ["plan"], "reason": "\"plan\" fits (\"his plan was to control the middle of the board\") and is a common A1 word."}
+{"id": 56, "verdict": "fail_minor", "other_words": ["atlas"], "reason": "\"atlas\" fits (\"the atlas shows all the roads and towns\") but is a rarer word."}
+{"id": 57, "verdict": "fail_major", "other_words": ["board"], "reason": "\"board\" fits (\"passengers will board at Dover\") and is a common A2 word."}
+{"id": 58, "verdict": "fail_major", "other_words": ["bag", "case"], "reason": "\"bag\" fits (\"packed her clothes in a bag and pulled it on its wheels\") and is a common A1 word."}
+{"id": 59, "verdict": "fail_major", "other_words": ["cooking", "food"], "reason": "\"cooking\" fits (\"French cooking, the traditional style of cooking\") and is a common A1 word."}
+{"id": 60, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"settle\", does not take \"for\" with this meaning, so only \"pay\" fits."}
+{"id": 61, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"app\", is not a place to keep photos so they show on phone and computer the way \"cloud\" is, so only \"cloud\" fits."}
+{"id": 62, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"starving\", does not take \"very\" naturally, so only \"hungry\" fits."}
+{"id": 63, "verdict": "fail_minor", "other_words": ["mate", "buddy"], "reason": "\"mate\" or \"buddy\" fits (\"my best mate\") but is informal or regional."}
+{"id": 64, "verdict": "fail_minor", "other_words": ["baggage"], "reason": "\"baggage\" fits (\"baggage cart\") and is a close variant of \"luggage\"."}
+{"id": 65, "verdict": "fail_major", "other_words": ["deal"], "reason": "\"deal\" fits (\"agreed to a deal, combining into a single company\") and is a common A2 word, though less exact."}
+{"id": 66, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"card\", does not make sense with \"opened a bank ___ to save my money\", so only \"account\" fits."}
+{"id": 67, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"give\", means for free, so it does not fit \"I want to buy your old bike\"; only \"sell\" fits."}
+{"id": 68, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"coffee\", is not made with a bag of black leaves, so only \"tea\" fits."}
+{"id": 69, "verdict": "fail_minor", "other_words": ["cordless", "Bluetooth"], "reason": "\"cordless\" or \"Bluetooth\" fits (\"cordless headphones\") but is rarer or repeats \"via Bluetooth\"."}
+{"id": 70, "verdict": "fail_major", "other_words": ["important"], "reason": "\"important\" fits (\"the email was marked important\") and is a common A2 word."}
+{"id": 71, "verdict": "fail_minor", "other_words": ["occupied"], "reason": "\"occupied\" fits (\"too occupied to talk\") but is rarer and formal."}
+{"id": 72, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"records\", is plural and clashes with \"which stores\", so only \"database\" fits."}
+{"id": 73, "verdict": "fail_major", "other_words": ["monument", "sight"], "reason": "\"monument\" fits (\"a famous Paris monument\") and is a common B1 word."}
+{"id": 74, "verdict": "fail_major", "other_words": ["change"], "reason": "\"change\" fits (\"change your economy ticket to business class\") and is a common A1 word."}
+{"id": 75, "verdict": "fail_major", "other_words": ["protect", "lock"], "reason": "\"protect\" or \"lock\" fits (\"protect your messages using a secret key\") and both are common words."}
+{"id": 76, "verdict": "fail_major", "other_words": ["run"], "reason": "\"run\" fits (\"she will run the shop and its staff\") and is a common A1 word."}
+{"id": 77, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"clean\" fits (\"clean your hands with soap and water\") and is a common A1 word."}
+{"id": 78, "verdict": "fail_major", "other_words": ["get", "take"], "reason": "\"get\" or \"take\" fits (\"get a book from the library and give it back\") and both are common A1 words."}
+{"id": 79, "verdict": "fail_major", "other_words": ["plan", "arrange"], "reason": "\"plan\" or \"arrange\" fits (\"arrange the school trip\") and both are common words."}
+{"id": 80, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"experience\", is natural after \"user\" but means trải nghiệm, not the buttons and menus, so only \"interface\" fits."}
+{"id": 81, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"brew\", is used for beer or tea and does not fit grape juice turning sugar into alcohol, so only \"ferment\" fits."}
+{"id": 82, "verdict": "fail_major", "other_words": ["schedule"], "reason": "\"schedule\" fits (\"schedule invoice payments so the system sends them on the due date\") and is a common B1 word."}
+{"id": 83, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"am\" (\"I am at a bank\"), changes the meaning from working to being present, so only \"work\" fits."}
+{"id": 84, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"internet\", is awkward after \"an\" and not natural, so only \"online\" fits."}
+{"id": 85, "verdict": "fail_minor", "other_words": ["yearly"], "reason": "\"yearly\" fits (\"its yearly sports day\") and is a close variant of \"annual\"."}
+{"id": 86, "verdict": "fail_major", "other_words": ["mess", "junk"], "reason": "\"mess\" fits (\"cleared the mess off her desk\") and is a common A2 word."}
+{"id": 87, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"right\", contradicts \"not right\", so only \"left\" fits."}
+{"id": 88, "verdict": "fail_major", "other_words": ["upload", "release"], "reason": "\"upload\" or \"release\" fits (\"upload the app to the production server\") and both are common words."}
+{"id": 89, "verdict": "fail_major", "other_words": ["sales", "revenue"], "reason": "\"sales\" fits (\"the shop's annual sales ... was $2 million\") and is a common A2 word."}
+{"id": 90, "verdict": "fail_major", "other_words": ["organized", "clean"], "reason": "\"organized\" fits (\"neat and organized\") and is a common B1 word."}
+{"id": 91, "verdict": "fail_major", "other_words": ["responsibility"], "reason": "\"responsibility\" fits (\"limits the company's legal responsibility\") and is a common A2 word."}
+{"id": 92, "verdict": "fail_major", "other_words": ["overseas"], "reason": "\"overseas\" fits (\"study overseas\") and is a common B1 word."}
+{"id": 93, "verdict": "fail_major", "other_words": ["top", "decorate", "sprinkle"], "reason": "\"top\" or \"decorate\" fits (\"top it with a few fresh parsley leaves\") and both are common words."}
+{"id": 94, "verdict": "fail_major", "other_words": ["wait", "stopover"], "reason": "\"wait\" fits (\"a two-hour wait at Seoul airport\") and is a common A2 word."}
+{"id": 95, "verdict": "fail_minor", "other_words": ["isolated", "distant"], "reason": "\"isolated\" fits (\"an isolated village\") but is a higher-level word."}
+{"id": 96, "verdict": "fail_major", "other_words": ["total", "income"], "reason": "\"total\" or \"income\" fits (\"the company's sales total was $1 million\") and both are common words."}
+{"id": 97, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"delightful\", has ten letters, not the nine in the hint, so only \"delicious\" fits."}
+{"id": 98, "verdict": "fail_minor", "other_words": ["delay", "stall"], "reason": "\"delay\" or \"stall\" fits (\"tend to delay by cleaning my room\") but is a looser, rarer use."}
+{"id": 99, "verdict": "fail_major", "other_words": ["profitable", "valuable"], "reason": "\"profitable\" or \"valuable\" fits (\"won a profitable contract\") and both are common words."}
+{"id": 100, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"suitable\", takes \"for\" not \"with\", so only \"compatible\" fits."}
+{"id": 101, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"other\", is natural but loses the meaning \"left\" that the L clue gives, so only \"left\" fits."}
