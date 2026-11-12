@@ -87,6 +87,43 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
       }
     });
 
+    // F.17 fix round 1: the three cards keep at least 4 px from each other and from the bottom-right caption (real boxes, rotation included).
+    test(`at 1440 x 900 ${path} each card keeps 4 px from the other cards and from the caption`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+      await expect(page.getByText('mitigate').first()).toBeVisible();
+      type Box = { x: number; y: number; width: number; height: number };
+      const boxes = await page.evaluate(() => {
+        const byText = (text: string, up: number) => {
+          let e = Array.from(document.querySelectorAll('div, p, span, b')).find((n) => n.children.length === 0 && n.textContent === text) ?? null;
+          for (let i = 0; e && i < up; i++) e = e.parentElement;
+          if (!e) return null;
+          const r = e.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height };
+        };
+        return {
+          'word card': byText('to make something bad less serious', 2),
+          'Hôm nay card': byText('Hôm nay', 1),
+          'practice card': byText('Điền từ vào câu', 1),
+          caption: byText('Đường nhớ của mỗi từ.', 2),
+        } as Record<string, Box | null>;
+      });
+      // Distance between two boxes along the axis where they are apart; negative when they overlap.
+      const gap = (a: Box, b: Box) => Math.max(a.x - (b.x + b.width), b.x - (a.x + a.width), a.y - (b.y + b.height), b.y - (a.y + a.height));
+      for (const [name, box] of Object.entries(boxes)) expect(box, `${name} is drawn`).not.toBeNull();
+      const pairs: Array<[string, string]> = [
+        ['word card', 'Hôm nay card'], ['word card', 'practice card'], ['Hôm nay card', 'practice card'],
+        ['word card', 'caption'], ['Hôm nay card', 'caption'], ['practice card', 'caption'],
+      ];
+      const gaps = pairs.map(([a, b]) => `${a} / ${b}: ${gap(boxes[a]!, boxes[b]!).toFixed(1)} px`);
+      console.log(`F17 gaps (${path}): ${gaps.join('; ')}`);
+      for (const [a, b] of pairs) {
+        expect(gap(boxes[a]!, boxes[b]!), `${a} ${JSON.stringify(boxes[a])} and ${b} ${JSON.stringify(boxes[b])} keep 4 px apart`).toBeGreaterThanOrEqual(4);
+      }
+    });
+
     for (const width of [1024, 390]) {
       test(`at ${width} px ${path} has no panel and its card is centred`, async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
