@@ -97,6 +97,35 @@ describe('GroupPicker: several groups (QP1)', () => {
   });
 });
 
+describe('DeckPickerDialog: the toast names what really changed (final review I3)', () => {
+  // The word is already learned (an item exists), so quick add answers created_item: false even when it links a new group.
+  const LINKED = { ...OK, created_item: false };
+  async function saveTo(names: RegExp[], inGroups: string[]) {
+    renderApp(<><DeckPickerDialog sense={sense} inGroups={inGroups} onClose={() => {}} /><ToastRegion /></>, {
+      routes: routes({ 'POST /v1/quick-add': () => Response.json(LINKED, { status: 201 }) }),
+    });
+    const list = await all();
+    for (const name of names) await userEvent.click(within(list).getByRole('option', { name }));
+    await userEvent.click(screen.getByRole('button', { name: `Lưu vào ${names.length} nhóm` }));
+  }
+
+  it('a word in Đề 12 saved to Đề 9 says it was added to Đề 9', async () => {
+    await saveTo([/Đề 9/], [DE12]);
+    expect(await screen.findByText('Đã thêm “go” vào nhóm “Đề 9”.', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByText(/đã có trong nhóm/)).not.toBeInTheDocument();
+  });
+
+  it('saved to Đề 12 and Đề 9 while already in Đề 12, it names only Đề 9 as added', async () => {
+    await saveTo([/Đề 12/, /Đề 9/], [DE12]);
+    expect(await screen.findByText('Đã thêm “go” vào nhóm “Đề 9”.', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('control: saved only to the group it is already in, it says "already in"', async () => {
+    await saveTo([/Đề 12/], [DE12]);
+    expect(await screen.findByText('“go” đã có trong nhóm “Đề 12”.', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+});
+
 describe('AddWordSheet: the groups field (QP1)', () => {
   it('chooses two groups in the picker; the field shows two chips; saving sends group_ids; reopening preselects both', async () => {
     const first = renderApp(<><AddWordSheet initialWord="went" onClose={() => {}} /><ToastRegion /></>, { routes: routes() });
