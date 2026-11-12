@@ -40,5 +40,5 @@ test('LA2#12: a Google-only learner sets a password from Settings, through the f
 
   await expect(page).toHaveURL(/\/vi\/app\/login\?reset=1$/);
   await expect(page.getByText(vi.auth.login.passwordReset)).toBeVisible();
-  expect(requests(page, 'POST', '/v1/auth/password/reset')[0]?.body).toEqual({ email: 'lan@example.com', code: '482913', new_password: 'Aa1!aaaa' });
+  expect(requests(page, 'POST', '/v1/auth/password/reset')[0]?.body).toEqual({ email: 'lan@example.com', code: '482913', new_password: 'Aa1!aaaa', turnstile_token: 'e2e-turnstile-token' });
 });
