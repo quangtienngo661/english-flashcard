@@ -30,7 +30,7 @@ type Props = {
  * A controlled dialog (`isOpen`, `onOpenChange`) with a title, content and footer buttons. From 48rem a centred modal, below it a
  * bottom sheet; the shape follows the width with CSS only, so resizing keeps what the learner typed. Motion (GM15, motion §5–§6): the
  * backdrop fades in 200ms; the modal rises 12px in 240ms, the sheet comes from 60px while fading in; both close in 150ms on the
- * accelerating curve. The backdrop is mark-ink, the same navy in both themes (ink turns light in dark mode).
+ * accelerating curve. The backdrop is the `scrim` token (navy 30 % in light, black 55 % in dark).
  */
 const WIDTH = { md: 'md:max-w-lg', lg: 'md:max-w-2xl', xl: 'md:max-w-215' } as const;
 

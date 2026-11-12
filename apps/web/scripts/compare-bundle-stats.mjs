@@ -1,5 +1,6 @@
 // Compares the first-load JS of the app routes with the old UI (design §5.7).
-// Input: .next/diagnostics/route-bundle-stats.json (Turbopack builds only) against bundle-baseline.json.
+// Input: .next/diagnostics/route-bundle-stats.json (Turbopack builds only) against bundle-baseline.json. Locally pass
+// .docker-out/route-bundle-stats.json: the default path is CI's fresh Turbopack build and may be stale or not Turbopack here.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
