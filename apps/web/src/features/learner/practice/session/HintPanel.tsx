@@ -21,6 +21,9 @@ const GRID = 'grid grid-cols-[1.5rem_7rem_minmax(0,1fr)] items-center gap-x-3.5 
 // raw-ok: mockup L361 sets the first-letter hint in Bricolage 22 px with 0.12em tracking.
 const MASK = 'font-wm-display text-wm-block-title tracking-[0.12em] text-wm-ink';
 
+// raw-ok: f04 sets the legacy first-letter hint (l___) with a tighter 0.02em tracking so the underscores read as one run.
+const LEGACY_MASK = 'font-wm-display text-wm-block-title tracking-[0.02em] text-wm-ink';
+
 /**
  * K/63 "Gợi ý" box (copy doc §15 point 10; P.13, mockup L352-361), its own box 16 px under the question card: the title with progress dots at its right, then one row per level on
  * three columns (number, hint name, content); the next locked row has [Show hint N] (key H) in its content column. `POST …/hint` only
@@ -78,7 +81,12 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
                   'kind' in value ? (
                     value.kind === 'first_letter' ? <span className={MASK}>{`${value.text}___`}</span> : value.text
                   ) : (
-                    t('letters', { first: value.first_letter, length: value.length })
+                    <>
+                      <span aria-hidden className={LEGACY_MASK}>
+                        {value.first_letter + '_'.repeat(Math.max(0, value.length - 1))}
+                      </span>
+                      <span className="sr-only">{t('letters', { first: value.first_letter, length: value.length })}</span>
+                    </>
                   )
                 ) : (
                   n === nextLevel &&
