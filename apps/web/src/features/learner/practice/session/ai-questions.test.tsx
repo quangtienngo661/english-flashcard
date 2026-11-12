@@ -172,6 +172,26 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.queryByText('c')).not.toBeInTheDocument();
   });
 
+  it('F.13: a legacy hint {first_letter, length} shows l___ to the eye and l… · 4 letters to a screen reader', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { first_letter: 'l', length: 4 } }),
+    }) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
+    expect(await screen.findByText('l___')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('l… · 4 letters')).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('F.13: a legacy hint of length 1 shows only the letter', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { first_letter: 'a', length: 1 } }),
+    }) });
+    await screen.findByRole('textbox', { name: 'Missing word' });
+    await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
+    expect(await screen.findByText('a', { selector: '[aria-hidden="true"]' })).toBeInTheDocument();
+    expect(screen.queryByText('a_')).not.toBeInTheDocument();
+  });
+
   it('a hint that is not a first letter is shown as the API sends it', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze({ hint_level: 2 }), {
       'POST /v1/practice/items/it-c/hint': (call) => Response.json((call.body as { level: number }).level === 1
