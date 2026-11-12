@@ -2,6 +2,10 @@
 
 The judge text of plan Appendix C2 (`docs/superpowers/plans/2026-11-07-session-synonyms.md`), for `generate_sentence_mcq`. Not in the app yet.
 
+**10/11/2026:** "Think the problem through before you answer." added as the last line (owner approved): through the API, Sonnet 5.5
+high gave no thinking on the fill-in judge without it ([../AI_PROMPTS_CHECK_2026-11-10.md](../AI_PROMPTS_CHECK_2026-11-10.md),
+finding C). The 07/11 result (20/20 pass) came from a Claude Code session, without the line.
+
 Criterion: `[{"code":"single_correct_option","question":"Does exactly one option fit the blank, with no option a synonym of the answer?"}]`
 
 ```
@@ -25,4 +29,6 @@ Answer with three lists of the same length, one entry per criterion, in the orde
 - codes: the criterion code.
 - verdicts: "pass", "fail_major" or "fail_minor".
 - reasons: one short English sentence; name the distractor when there is one.
+
+Think the problem through before you answer.
 ```

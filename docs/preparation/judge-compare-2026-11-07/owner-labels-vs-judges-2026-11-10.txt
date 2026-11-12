@@ -1,0 +1,321 @@
+Owner's hand labels (single_answer) vs the AI judges, 10/11/2026 (updated after the 6-criteria-split runs on Haiku and Terra).
+Labels: owner-labels-2026-11-10.json (from the Fill-in Label Sheet artifact). Sentences: Haiku 5.5 xhigh and Terra xhigh, draft-1 prompt, the 20 test words.
+Judges: Opus 5.5 medium with text v2; Sonnet 5.5 high with the 7-criteria text (no thinking); the 7-criteria text plus the think line (Haiku only); judge-instructions-6-criteria.md (Haiku only); judge-instructions-6-criteria-split.md (both writers; owner decision of 10/11/2026: only a same-meaning word fails single_answer).
+Card numbers (#) are the order on the sheet. Built by comparison scripts in the session scratchpad.
+
+(missing) Sonnet high, 6-crit terra: verdicts-api-terra-xhigh-sonnet-high-6-criteria.jsonl
+owner: 37 labelled; pass 33, minor 3, major 1
+not saved: #2 terra-93 garnish, #3 haiku-43 fry, #32 terra-90 tidy
+
+judge                       n  same  judge pass/minor/major  owner-pass judged major  owner-major judged major
+Opus medium, v2             37    15                 18/4/15                  14 of 33                    0 of 1
+Sonnet high, 7-crit         37    21                 21/16/0                   0 of 33                    0 of 1
+Sonnet high, 7-crit+think   19     9                  10/6/3                   3 of 18                    0 of 1
+Sonnet high, 6-crit         19     6                  7/1/11                  11 of 18                    0 of 1
+Sonnet high, 6-crit split   37    23                  26/5/6                   5 of 33                    0 of 1
+
+per sentence (card number, owner, then each judge on single_answer):
+# 1 haiku-3   game       owner pass   pass  pass  pass  pass  pass  
+# 4 haiku-9   banana     owner major  pass  pass  pass  pass  pass   note:with A1, this sentence is kinda hard to understand
+# 5 terra-75  encrypt    owner pass   minor pass  .     .     minor 
+# 6 terra-12  install    owner pass   pass  minor .     .     pass  
+# 7 haiku-21  souvenir   owner pass   major pass  minor major minor 
+# 8 haiku-77  wash       owner pass   major pass  minor major pass  
+# 9 terra-26  recycle    owner pass   pass  pass  .     .     pass  
+#10 haiku-50  stakeholder owner pass   major pass  pass  major pass  
+#11 terra-77  wash       owner pass   minor pass  .     .     pass  
+#12 haiku-12  install    owner pass   major pass  pass  pass  pass  
+#13 terra-3   game       owner pass   pass  pass  .     .     pass  
+#14 terra-35  slice      owner minor  major minor .     .     major 
+#15 terra-29  sugar      owner pass   pass  minor .     .     pass  
+#16 terra-38  hire       owner pass   major minor .     .     major 
+#17 haiku-78  borrow     owner pass   major pass  minor major pass  
+#18 terra-19  bake       owner minor  pass  pass  .     .     pass   note:not very clear
+#19 haiku-38  hire       owner pass   major minor minor major major  fits:employ
+#20 haiku-35  slice      owner pass   major minor minor major major 
+#21 terra-9   banana     owner pass   pass  pass  .     .     pass  
+#22 haiku-74  upgrade    owner pass   major minor pass  major pass  
+#23 haiku-93  garnish    owner pass   major minor major major major 
+#24 terra-80  interface  owner pass   pass  pass  .     .     pass  
+#25 terra-58  suitcase   owner pass   major minor .     .     pass  
+#26 haiku-90  tidy       owner pass   major minor minor major major 
+#27 terra-50  stakeholder owner pass   pass  pass  .     .     pass  
+#28 haiku-0   brush      owner pass   pass  minor pass  pass  pass  
+#29 haiku-19  bake       owner pass   major pass  major major pass  
+#30 terra-21  souvenir   owner pass   minor minor .     .     minor 
+#31 haiku-29  sugar      owner pass   pass  minor pass  pass  pass  
+#33 terra-0   brush      owner minor  pass  minor .     .     pass   note:not very clear to me
+#34 haiku-80  interface  owner pass   pass  pass  pass  pass  pass  
+#35 haiku-26  recycle    owner pass   pass  pass  pass  pass  pass  
+#36 haiku-75  encrypt    owner pass   minor pass  pass  minor minor 
+#37 terra-78  borrow     owner pass   pass  pass  .     .     pass  
+#38 haiku-58  suitcase   owner pass   major minor major major minor 
+#39 terra-43  fry        owner pass   pass  pass  .     .     pass  
+#40 terra-74  upgrade    owner pass   pass  minor .     .     pass  
+columns: Opus medium, v2 | Sonnet high, 7-crit | Sonnet high, 7-crit+think | Sonnet high, 6-crit | Sonnet high, 6-crit split
+
+owner non-pass, with the 7-crit judge on clue, level and grammar:
+#4 haiku-9 banana (A1): Cartoon characters often slip on a yellow ___ peel and fall flat on their backs. [banana]
+   owner major with A1, this sentence is kinda hard to understand
+   7-crit enough_clue pass: The cartoon slip, yellow and peel clues strongly point to banana.
+   7-crit level_fit major: The words 'cartoon', 'characters', 'slip', 'peel' and 'flat' are above A1 and 'often' is A2, so the sentence is well above A1.
+   7-crit grammar_natural pass: 'a yellow banana peel' is grammatical and natural with the singular form.
+   opus v2 pass: The closest candidate, "lemon", fits "yellow ___ peel" grammatically, but it means quả chanh, not quả chuối, and slipping on a peel is the classic banana cartoon gag.
+#33 terra-0 brush (A1): I ___ my teeth and my hair every morning, but not with the same thing! [brush]
+   owner minor not very clear to me
+   7-crit enough_clue pass: Teeth, hair and morning point clearly to 'brush', and the hint about a different tool supports it.
+   7-crit level_fit minor: The sentence is fairly long for A1 and 'not with the same thing' is a slightly complex structure; 'every morning' and 'teeth' are fine.
+   7-crit grammar_natural pass: 'I brush my teeth and my hair every morning' is grammatical and natural with the base form after 'I'.
+   opus v2 pass: The closest candidates, "clean" and "wash", each fit only one object ("clean my teeth", "wash my hair") and "comb" fits only hair, so only "brush" works for both teeth and hair.
+#18 terra-19 bake (A2): I can ___, but I can't cook; my cakes are good, but my dinners are terrible. [bake]
+   owner minor not very clear
+   7-crit enough_clue pass: The contrast with 'cook' and the mention of good cakes point clearly to 'bake'.
+   7-crit level_fit minor: 'Terrible' is B1 and the sentence is fairly long with a semicolon, slightly above A2.
+   7-crit grammar_natural pass: 'I can bake, but I can't cook' is grammatical and natural with the bare verb.
+   opus v2 pass: The closest candidate, "make", is unnatural without an object, and "roast" or "grill" do not fit the cakes clue, so only "bake" fits.
+#14 terra-35 slice (A2): At this shop, you can buy pizza by the ___ instead of ordering a whole one. [slice]
+   owner minor 
+   7-crit enough_clue pass: "pizza by the ___ instead of ordering a whole one" clearly points to a portion of pizza, i.e. slice.
+   7-crit level_fit pass: The words are simple (shop, buy, pizza, instead, ordering, whole), and "instead of" and "whole" are around A2, so they suit the level.
+   7-crit grammar_natural pass: "by the slice" is natural and grammatical, and the singular noun is the required form.
+   opus v2 major: The common A1 word "piece" fits: "buy pizza by the piece" is natural English and keeps the meaning "miếng".
+
+owner pass where Opus v2 said major (the judge reason):
+#12 haiku-12 install (B1): You need administrator rights to ___ new programs on this shared computer.
+   opus: Common words such as "set up", "put" (put programs on a computer) and "add" fit naturally and keep the meaning "cài đặt", so a learner writing one of them would be marked wrong.
+#29 haiku-19 bake (A2): Every morning, the café staff arrive before dawn to ___ fresh bread in the oven.
+   opus: "Make" fits naturally ("make fresh bread in the oven") and is a common A1 word, so a learner who writes it would be marked wrong.
+#7 haiku-21 souvenir (B1): Tourists usually buy a cheap ___ at the airport, like a keyring or a mug printed with the city name.
+   opus: "Gift" (or "present") fits naturally, as in "buy a cheap gift at the airport, like a keyring or a mug", and is a common A2 word that keeps the sense of quà.
+#20 haiku-35 slice (A2): Add a thin ___ of lemon to your tea for extra flavour.
+   opus: "Piece" fits naturally in "a thin piece of lemon", keeps the meaning "miếng mỏng", and is a common A1 word.
+#19 haiku-38 hire (B1): The shop plans to ___ three extra staff for the busy Christmas season.
+   opus: "Employ" fits naturally ("plans to employ three extra staff") with the same meaning and is a common word at B1 level; "recruit" also fits.
+   owner fits: employ
+#10 haiku-50 stakeholder (B2): Unlike shareholders, who mainly care about profit, every ___ with an interest in the company, from workers to local residents, deserves a voice in major decisions.
+   opus: The common words "party" and "group" fit naturally ("every party/group with an interest in the company"), and the phrase "with an interest in" already supplies the meaning "bên liên quan".
+#38 haiku-58 suitcase (A2): Before the trip, I spent an hour packing my clothes into a large ___ with wheels.
+   opus: The common A1 word "bag" fits naturally ("packing my clothes into a large bag with wheels"), and so does "case", so a learner who writes either would be marked wrong.
+#22 haiku-74 upgrade (B2): My old laptop is too slow for video editing, so I plan to ___ its processor to a faster model this summer.
+   opus: "Change" fits naturally ("change its processor to a faster model") and is a common A1 word, so a learner could write it and be marked wrong.
+#8 haiku-77 wash (A1): Mum put the dirty socks in the machine to ___ them.
+   opus: "Clean" fits naturally ("put the dirty socks in the machine to clean them"), keeps the meaning of giặt, and is a common A1 word.
+#17 haiku-78 borrow (A1): Can I ___ your pen for a minute? I'll give it back after class.
+   opus: The common A1 words "use", "have" and "take" all fit naturally ("Can I use your pen for a minute? I'll give it back"), and in this context they convey borrowing.
+#26 haiku-90 tidy (A2): Mum asked us to keep our bedrooms ___ and put all the toys back in the box.
+   opus: "Neat" (and also "clean") fits naturally in "keep our bedrooms ___" with the meaning gọn gàng, and both are common words an A2 learner knows.
+#23 haiku-93 garnish (B2): Before serving the soup, the chef will ___ it with a sprig of parsley, mainly for colour.
+   opus: "Decorate" fits naturally ("decorate it with a sprig of parsley, mainly for colour"), keeps the meaning "trang trí", and is a common word learners know; "top" also fits.
+#16 terra-38 hire (B1): As manager, she can ___ and fire staff, so she decides who joins the team and who has to leave.
+   opus: "Employ" (a common B1 word) also fits: "she can employ and fire staff" is natural and keeps the meaning, even though "hire and fire" is the usual phrase.
+#25 terra-58 suitcase (A2): Dad spends so much time on business trips that he lives out of a ___.
+   opus: "Bag" fits naturally ("he lives out of a bag" is a common phrasing for a traveller's luggage), and it is a common A1 word.
+
+=== 6-criteria-split judge, every sentence with its reason (# here is the word id, not the card number) ===
+
+===== haiku: 20 sentences, US$0.1369, thinking median 456, 0 with none =====
+single_answer          pass 13  minor 3  major 4
+session_single_answer  pass 20  minor 0  major 0
+sense_match            pass 20  minor 0  major 0
+enough_clue            pass 20  minor 0  major 0
+grammar_natural        pass 18  minor 2  major 0
+translation_ok         pass 20  minor 0  major 0
+6-criteria majors kept major: slice→major, hire→major, tidy→major, garnish→major; changed: bake→pass, souvenir→minor, fry→pass, stakeholder→pass, suitcase→minor, upgrade→pass, wash→pass, borrow→pass
+
+#0 brush (A1, chải, đánh (răng, tóc)): Every night, you should ___ your long hair with soft bristles to get rid of tangles. [brush]
+  owner pass | opus v2 pass | 6-crit pass | split pass: The closest candidate I tried, "comb", also means chải, but it clashes with "soft bristles" because a comb has teeth, so it does not fit naturally.
+
+#3 game (A1, trò chơi): After dinner, our family sat down to play a board ___ together. [game]
+  owner pass | opus v2 pass | 6-crit pass | split pass: The closest candidate I tried, 'puzzle', does not make a natural 'board puzzle', and no other common word meaning trò chơi fits after 'board'.
+
+#9 banana (A1, quả chuối): Cartoon characters often slip on a yellow ___ peel and fall flat on their backs. [banana]
+  owner major | opus v2 pass | 6-crit pass | split pass: The closest candidate, lemon, could fit after 'yellow' but means quả chanh, not quả chuối, so no word with the same meaning fits.
+
+#12 install (B1, cài đặt): You need administrator rights to ___ new programs on this shared computer. [install]
+  owner pass | opus v2 major | 6-crit pass | split pass: The closest candidate I tried, 'download', fits but means tải xuống, not cài đặt, and 'add' is only a more general word.
+
+#19 bake (A2, nướng (bằng lò)): Every morning, the café staff arrive before dawn to ___ fresh bread in the oven. [bake]
+  owner pass | opus v2 major | 6-crit major | split pass: The closest candidates, "cook" and "make", fit but are wider than nướng (bằng lò), and "roast" and "toast" do not fit fresh bread, so no same-meaning word fits.
+
+#21 souvenir (B1, quà lưu niệm): Tourists usually buy a cheap ___ at the airport, like a keyring or a mug printed with the city name. [souvenir]
+  owner pass | opus v2 major | 6-crit major | split minor: Rare synonyms "memento" and "keepsake" also fit and mean quà lưu niệm, while the common "gift" fits only as the wider quà tặng.
+
+#26 recycle (A2, tái chế): Our school teaches students to reduce, reuse and ___ waste. [recycle]
+  owner pass | opus v2 pass | 6-crit pass | split pass: The closest candidate, 'reprocess', means tái chế but is rare, and 'reuse' is already in the sentence and means tái sử dụng, so no common word has the same meaning.
+
+#29 sugar (A1, đường): Melt the butter in a pan, then stir in a cup of brown ___ until it dissolves. [sugar]
+  owner pass | opus v2 pass | 6-crit pass | split pass: The closest candidates, salt and syrup, do not fit: neither is normally called brown, and "brown rice" or "brown flour" would not dissolve, so only sugar fits.
+
+#35 slice (A2, lát, miếng mỏng): Add a thin ___ of lemon to your tea for extra flavour. [slice]
+  owner pass | opus v2 major | 6-crit major | split major: "piece" fits naturally ("a thin piece of lemon") and, with "thin", means miếng mỏng, which is part of meaning_vi, and it is a very common word.
+
+#38 hire (B1, thuê, tuyển dụng): The shop plans to ___ three extra staff for the busy Christmas season. [hire]
+  owner pass | opus v2 major | 6-crit major | split major: "employ" fits naturally ("plans to employ three extra staff") and also means tuyển dụng, and it is a common word at B1; "recruit" also fits.
+
+#43 fry (A2, chiên, rán): Crispy chips are made by ___ thin potato slices in hot oil until golden brown. [frying]
+  owner - | opus v2 major | 6-crit major | split pass: The closest candidate, 'cooking', fits but is wider than chiên, rán, and 'deep-frying' is only a more specific kind of frying, so no other common word has the same meaning.
+
+#50 stakeholder (B2, bên liên quan): Unlike shareholders, who mainly care about profit, every ___ with an interest in the company, from workers to local residents, deserves a voice in major decisions. [stakeholder]
+  owner pass | opus v2 major | 6-crit major | split pass: The closest candidates, "person" and "party", fit only as more general words (người, bên) and do not mean bên liên quan; "shareholder" contradicts the contrast in the sentence.
+
+#58 suitcase (A2, va li): Before the trip, I spent an hour packing my clothes into a large ___ with wheels. [suitcase]
+  owner pass | opus v2 major | 6-crit major | split minor: "case" (a large case with wheels) is natural and is a clipped variant of suitcase, while "bag" fits only as the wider word túi.
+
+#74 upgrade (B2, nâng cấp): My old laptop is too slow for video editing, so I plan to ___ its processor to a faster model this summer. [upgrade]
+  owner pass | opus v2 major | 6-crit major | split pass: The closest candidates are 'replace', which needs 'with' rather than 'to' here, and 'change', which only fits as a more general word; no word with the same meaning as nâng cấp fits.
+
+#75 encrypt (B2, mã hóa): Before sending the file, ___ it so that only a recipient with the matching decryption key can read its contents. [encrypt/encrypting]
+  owner pass | opus v2 minor | 6-crit minor | split minor: "encode" also fits and can be translated as mã hóa, but it is a less exact, more general technical term; "lock" and "secure" only fit as wider words.
+  split grammar_natural minor: "encrypt" works as an imperative, but "encrypting" is listed and gives a fragment after 'Before sending the file,'.
+
+#77 wash (A1, rửa, giặt): Mum put the dirty socks in the machine to ___ them. [wash]
+  owner pass | opus v2 major | 6-crit major | split pass: The closest candidate, 'clean', fits only as a more general word (làm sạch), and 'launder' is rare, so no common word has the same meaning as wash.
+
+#78 borrow (A1, mượn): Can I ___ your pen for a minute? I'll give it back after class. [borrow]
+  owner pass | opus v2 major | 6-crit major | split pass: The closest candidate, 'use', fits naturally but means dùng, which is wider than mượn; 'lend' does not fit, and 'take' and 'have' mean lấy and có.
+
+#80 interface (B2, giao diện): The new software has a clean graphical user ___ that even first-time users can understand. [interface/interfaces]
+  owner pass | opus v2 pass | 6-crit pass | split pass: The closest candidates I tried, 'design' and 'layout', do not form a natural phrase after 'graphical user', so only 'interface' fits.
+  split grammar_natural minor: 'interfaces' is listed as accepted but does not fit after the singular article 'a'; 'interface' is correct.
+
+#90 tidy (A2, gọn gàng): Mum asked us to keep our bedrooms ___ and put all the toys back in the box. [tidy]
+  owner pass | opus v2 major | 6-crit major | split major: "neat" fits naturally (keep our bedrooms neat) and also means gọn gàng, and it is a common word at this level.
+
+#93 garnish (B2, trang trí món ăn): Before serving the soup, the chef will ___ it with a sprig of parsley, mainly for colour. [garnish]
+  owner pass | opus v2 major | 6-crit major | split major: "decorate" fits naturally (decorate it with a sprig of parsley) and also means trang trí, and it is a common B1 word; "top" fits only as a more general word.
+
+===== terra: 20 sentences, US$0.1401, thinking median 448, 0 with none =====
+single_answer          pass 15  minor 2  major 3
+session_single_answer  pass 20  minor 0  major 0
+sense_match            pass 20  minor 0  major 0
+enough_clue            pass 19  minor 0  major 1
+grammar_natural        pass 19  minor 0  major 1
+translation_ok         pass 20  minor 0  major 0
+
+#0 brush (A1, chải, đánh (răng, tóc)): I ___ my teeth and my hair every morning, but not with the same thing! [brush]
+  owner minor | opus v2 pass | 6-crit not run | split pass: The closest candidate, "clean", fits teeth but not hair, and "comb" and "wash" fit only one of the two, so only "brush" fits both.
+  split grammar_natural major: "I brushed my teeth and my hair every morning" is also natural as a past habit, but accepted_answers lists only "brush".
+
+#3 game (A1, trò chơi): My favorite board ___ is chess. [game]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The fixed phrase 'board game' leaves no real synonym; the closest candidate, 'activity', is not natural after 'board' and does not mean trò chơi.
+
+#9 banana (A1, quả chuối): For breakfast, I take the skin off a long yellow ___ and eat it. [banana]
+  owner pass | opus v2 pass | 6-crit not run | split pass: Closest candidates such as plantain, mango and lemon either do not fit a long yellow fruit you peel or are rare and mean something different, so only banana fits.
+
+#12 install (B1, cài đặt): After downloading the program, I opened its setup file and clicked '___' to add it to my computer. [Install/install]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidates are 'Run' and 'Add'; 'Run' fits but means chạy, and 'Add' fits only as a more general word, so none has the meaning cài đặt.
+
+#19 bake (A2, nướng (bằng lò)): I can ___, but I can't cook; my cakes are good, but my dinners are terrible. [bake]
+  owner minor | opus v2 pass | 6-crit not run | split pass: The closest candidate, 'cook', does not fit because the sentence says 'I can't cook', and 'roast' does not fit the cakes clue, so only 'bake' works.
+
+#21 souvenir (B1, quà lưu niệm): I bought myself a tiny model of the Eiffel Tower as a ___ to remember my trip to Paris. [souvenir]
+  owner pass | opus v2 minor | 6-crit not run | split minor: "keepsake" and "memento" also fit and mean a remembrance item, but both are rare for a B1 learner; "reminder" is wider and a bit redundant with "to remember", and "gift" clashes with "bought myself".
+
+#26 recycle (A2, tái chế): At school, we learned the three Rs: reduce, reuse and ___. [recycle]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidates, 'repair' and 'repurpose', fit poorly after 'reduce, reuse' and do not mean tái chế, so no same-meaning word fits.
+
+#29 sugar (A1, đường): My brother puts brown ___ in his tea to make it sweet, but I use white. [sugar]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidate, honey, does not fit with brown and white, and sweetener is only a wider word, so sugar is the only same-meaning word.
+
+#35 slice (A2, lát, miếng mỏng): At this shop, you can buy pizza by the ___ instead of ordering a whole one. [slice]
+  owner minor | opus v2 major | 6-crit not run | split major: "piece" fits naturally ("by the piece") and is a common A1 word meaning miếng, the same as meaning_vi, so a learner could be marked wrong.
+
+#38 hire (B1, thuê, tuyển dụng): As manager, she can ___ and fire staff, so she decides who joins the team and who has to leave. [hire]
+  owner pass | opus v2 major | 6-crit not run | split major: "employ" (also "recruit") fits as "employ and fire staff" and means thuê/tuyển dụng, and a B1 learner knows it, even though "hire and fire" is the usual collocation.
+
+#43 fry (A2, chiên, rán): We can boil the potatoes or deep-___ them in hot oil to make chips. [fry]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidate I tried, 'cook', does not fit after 'deep-' (no natural 'deep-cook'), and 'deep-bake' and 'deep-roast' are not natural either.
+
+#50 stakeholder (B2, bên liên quan): Before building the factory, the company asked all its ___—not just shareholders, but also workers, customers and local residents—for their views. [stakeholders]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidates, 'people' and 'groups', are only more general (người, nhóm) and sound odd after 'all its'; no common word means bên liên quan here.
+
+#58 suitcase (A2, va li): Dad spends so much time on business trips that he lives out of a ___. [suitcase]
+  owner pass | opus v2 major | 6-crit not run | split pass: The closest candidate, "bag", fits naturally but only as a more general word (túi); "backpack" means balo, not va li.
+
+#74 upgrade (B2, nâng cấp): Your ticket is for economy, but the airline may ___ you at no extra cost if there are empty seats in first class. [upgrade]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidate I tried, 'move', only fits as a more general word (chuyển), and 'promote' and 'bump' are unnatural here, so no word with the same meaning fits.
+
+#75 encrypt (B2, mã hóa): This app uses the same secret key to ___ and decrypt messages. [encrypt]
+  owner pass | opus v2 minor | 6-crit not run | split minor: "encode" also means mã hóa and could fit, but it is a technical near-synonym and sounds odd beside "decrypt"; "scramble" and "lock" do not carry the same meaning.
+
+#77 wash (A1, rửa, giặt): Before lunch, please ___ with soap and water, then dry your hands. [wash]
+  owner pass | opus v2 minor | 6-crit not run | split pass: The closest candidate I tried was 'clean', which is only a more general word (làm sạch) and sounds odd with no object; 'scrub' is stronger and less common, so no same-meaning common word fits.
+
+#78 borrow (A1, mượn): Can I ___ your bike from you for the weekend? I'll give it back on Monday. [borrow]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidates are 'rent', which means thuê rather than mượn, and 'take', which is only a more general word and sounds odd with 'from you'; 'lend' does not fit 'Can I ___ ... from you'.
+
+#80 interface (B2, giao diện): The app's user ___ (UI) is simple, so new users can find what they need quickly. [interface]
+  owner pass | opus v2 pass | 6-crit not run | split pass: The closest candidates, 'design' and 'layout', do not form a natural phrase after 'user', and 'experience' matches UX rather than the UI given, so only 'interface' fits.
+
+#90 tidy (A2, gọn gàng): I always put my toys away to keep my room clean and ___. [tidy]
+  owner - | opus v2 major | 6-crit not run | split major: "neat" fits naturally ("clean and neat") and also means gọn gàng, and it is a common word at this level, so a correct learner answer could be marked wrong.
+
+#93 garnish (B2, trang trí món ăn): In our cooking crossword, the answer to '___ the soup with parsley to make it look nice' has seven letters. [garnish]
+  owner - | opus v2 pass | 6-crit not run | split pass: The closest candidate, 'decorate', means trang trí but has eight letters, which contradicts the sentence's 'seven letters'; 'top' and 'season' do not fit the meaning either.
+  split enough_clue major: The sentence relies on the letter count ('seven letters') as a clue, and that is not a clue about meaning.
+
+=== 6-criteria judge (before the split), Haiku only ===
+6-crit vs Opus v2 on single_answer: same verdict 19/20, same major-or-not 19/20, both major 12
+
+#0 brush (A1): Every night, you should ___ your long hair with soft bristles to get rid of tangles. [brush]
+  owner pass | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidate, "comb", does not fit because combs have teeth, not soft bristles, and "detangle" is rare and redundant with "get rid of tangles".
+
+#3 game (A1): After dinner, our family sat down to play a board ___ together. [game]
+  owner pass | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidates, 'puzzle' and 'sport', do not form a natural phrase after 'board' (only 'board game' is the fixed expression).
+
+#9 banana (A1): Cartoon characters often slip on a yellow ___ peel and fall flat on their backs. [banana]
+  owner major | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidate, lemon, is yellow, but 'yellow lemon peel' is redundant and the cartoon slipping gag is the banana peel, so no other common word fits.
+
+#12 install (B1): You need administrator rights to ___ new programs on this shared computer. [install]
+  owner pass | opus v2 major | 7-crit+think pass | 6-crit pass: The closest candidates, "download" and "add", are natural but mean "tải xuống" and "thêm", not "cài đặt", and "set up" is two words, so only "install" fits.
+
+#19 bake (A2): Every morning, the café staff arrive before dawn to ___ fresh bread in the oven. [bake]
+  owner pass | opus v2 major | 7-crit+think major | 6-crit major: "cook" and "make" both fit naturally ("cook fresh bread in the oven") and are common A1 words, so a learner could be marked wrong.
+
+#21 souvenir (B1): Tourists usually buy a cheap ___ at the airport, like a keyring or a mug printed with the city name. [souvenir]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: "gift" (also "present") is a common word that fits naturally after "a cheap" with a keyring or mug, so a learner who writes it would be marked wrong.
+
+#26 recycle (A2): Our school teaches students to reduce, reuse and ___ waste. [recycle]
+  owner pass | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidates, 'sort' and 'separate', break the well-known 'reduce, reuse and recycle' triad and are less natural, and no other common word fits.
+
+#29 sugar (A1): Melt the butter in a pan, then stir in a cup of brown ___ until it dissolves. [sugar]
+  owner pass | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidates, "salt" and "honey", do not work: "brown salt" and "brown honey" are not natural, and "brown" plus "dissolves" points to "sugar".
+
+#35 slice (A2): Add a thin ___ of lemon to your tea for extra flavour. [slice]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: "piece" fits naturally ("a thin piece of lemon") and is a common word, and "wedge" also fits, so a learner who writes "piece" would be marked wrong.
+
+#38 hire (B1): The shop plans to ___ three extra staff for the busy Christmas season. [hire]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: "employ" fits naturally ("employ three extra staff") and keeps the meaning, and learners around B1 know it; "recruit" also fits.
+
+#43 fry (A2): Crispy chips are made by ___ thin potato slices in hot oil until golden brown. [frying]
+  owner - | opus v2 major | 7-crit+think minor | 6-crit major: "cooking" fits naturally ("made by cooking thin potato slices in hot oil until golden brown") and is a common A1 word, so a learner who writes it would be marked wrong.
+
+#50 stakeholder (B2): Unlike shareholders, who mainly care about profit, every ___ with an interest in the company, from workers to local residents, deserves a voice in major decisions. [stakeholder]
+  owner pass | opus v2 major | 7-crit+think pass | 6-crit major: "person" (also "party" or "individual") fits naturally in "every ___ with an interest in the company", and "person" is a very common A1 word, so a learner who writes it would be marked wrong.
+
+#58 suitcase (A2): Before the trip, I spent an hour packing my clothes into a large ___ with wheels. [suitcase]
+  owner pass | opus v2 major | 7-crit+think major | 6-crit major: "bag" (and "case") fits naturally as "a large bag with wheels", and it is a common A1 word, so a learner who writes it would be marked wrong.
+
+#74 upgrade (B2): My old laptop is too slow for video editing, so I plan to ___ its processor to a faster model this summer. [upgrade]
+  owner pass | opus v2 major | 7-crit+think pass | 6-crit major: "change" fits naturally ("change its processor to a faster model") and is a common A2 word, and "update" also fits, so the learner may be marked wrong.
+
+#75 encrypt (B2): Before sending the file, ___ it so that only a recipient with the matching decryption key can read its contents. [encrypt/encrypting]
+  owner pass | opus v2 minor | 7-crit+think pass | 6-crit minor: "encode" also fits and is a close, less common variant, while common words like "lock" or "protect" lose the meaning "mã hóa", so the problem is minor.
+  6-crit grammar_natural minor: "encrypt" works as an imperative, but "encrypting" in accepted_answers leaves a fragment ("Before sending the file, encrypting it so that...") and does not fit.
+
+#77 wash (A1): Mum put the dirty socks in the machine to ___ them. [wash]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: "clean" (a common A1 word) fits naturally: "to clean them" keeps the meaning of dirty socks going in the machine, so a learner could be marked wrong.
+
+#78 borrow (A1): Can I ___ your pen for a minute? I'll give it back after class. [borrow]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: "use" fits naturally ("Can I use your pen for a minute?") and is a common A1 word, and "have" also fits, so a learner could be marked wrong.
+
+#80 interface (B2): The new software has a clean graphical user ___ that even first-time users can understand. [interface/interfaces]
+  owner pass | opus v2 pass | 7-crit+think pass | 6-crit pass: The closest candidates, 'design' and 'display', do not work because 'graphical user interface' is the fixed phrase and 'graphical user design/display' is not natural.
+  6-crit grammar_natural minor: The plural 'interfaces' is listed in accepted_answers but does not fit after 'a', although the singular 'interface' is correct.
+  6-crit translation_ok minor: The Vietnamese is accurate overall, but 'clean' is rendered as 'rõ ràng' (clear) instead of something like 'gọn gàng', which shifts the shade slightly.
+
+#90 tidy (A2): Mum asked us to keep our bedrooms ___ and put all the toys back in the box. [tidy]
+  owner pass | opus v2 major | 7-crit+think minor | 6-crit major: The common A1 word "clean" fits naturally ("keep our bedrooms clean and put all the toys back"), and "neat" fits too, so a learner could be marked wrong.
+
+#93 garnish (B2): Before serving the soup, the chef will ___ it with a sprig of parsley, mainly for colour. [garnish]
+  owner pass | opus v2 major | 7-crit+think major | 6-crit major: "decorate" (and also "top") fits naturally after "will" with "it with a sprig of parsley", and is a common word a B1 learner knows, so they would be marked wrong.

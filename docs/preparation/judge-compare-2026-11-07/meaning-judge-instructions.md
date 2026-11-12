@@ -3,6 +3,10 @@
 A new judge text for `generate_meaning_question`, written for this test in the style of plan Appendix C2. Not in the app; no judge for this
 operation exists yet.
 
+**10/11/2026:** "Think the problem through before you answer." added as the last line (owner approved): through the API, Sonnet 5.5
+high gave no thinking on the fill-in judge without it ([../AI_PROMPTS_CHECK_2026-11-10.md](../AI_PROMPTS_CHECK_2026-11-10.md),
+finding C). The 07/11 result (20/20 pass) came from a Claude Code session, without the line.
+
 Criterion: `[{"code":"single_meaning","question":"In this sentence, does the word clearly have the meaning in meaning_vi, and none of the meanings in other_meanings_vi?"}]`
 
 ```
@@ -26,4 +30,6 @@ Answer with three lists of the same length, one entry per criterion, in the orde
 - codes: the criterion code.
 - verdicts: "pass", "fail_major" or "fail_minor".
 - reasons: one short English sentence; name the other meaning when there is one.
+
+Think the problem through before you answer.
 ```

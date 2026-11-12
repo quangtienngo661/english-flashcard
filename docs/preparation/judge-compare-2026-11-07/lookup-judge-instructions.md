@@ -3,6 +3,10 @@
 A new judge text for `lookup_word`, written for this test in the style of plan Appendix C2. Not in the app; no judge for this operation
 exists yet.
 
+**10/11/2026:** "Think the problem through before you answer." added as the last line (owner approved): through the API, Sonnet 5.5
+high gave no thinking on the fill-in judge without it ([../AI_PROMPTS_CHECK_2026-11-10.md](../AI_PROMPTS_CHECK_2026-11-10.md),
+finding C). The 07/11 result (20/20 on the key and the judge) came from a Claude Code session, without the line.
+
 Criterion: `[{"code":"right_meaning","question":"Are lemma and part_of_speech right, and are meaning_vi, definition_en and the examples the meaning of text as used in context_sentence (or its most common meaning when there is none)?"}]`
 
 ```
@@ -26,4 +30,6 @@ Answer with three lists of the same length, one entry per criterion, in the orde
 - codes: the criterion code.
 - verdicts: "pass", "fail_major" or "fail_minor".
 - reasons: one short English sentence; name the field that is wrong when there is one.
+
+Think the problem through before you answer.
 ```
