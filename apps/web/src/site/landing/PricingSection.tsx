@@ -17,14 +17,13 @@ const AI_ICONS = [Bot, Pen, Search, Zap];
  * "Giá" `33:306` (phone `33:416`), owner QM8-2 (c): the three Pro prices read at build, each with its saving, and no purchase here. Free
  * and Pro cards side by side from xl (360 + 620 = 1004 px, more than the 944 px of content at 1024; R248). Every number comes from `periodOffer`, like Gói học's, so the two never disagree.
  * M8.6: the cards come in (Free, then Pro 120 ms later and without blur, Figma scene 6); while the Pro card is on screen a light runs
- * around it (Sweep) and its four AI badges pulse (CSS, `data-wm-on`).
+ * around it (Sweep) and its four AI badges pulse (CSS, `data-wm-on`). F.19: one glow layer (`.wm-price-drift`) drifts behind both cards.
  */
 export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['plans']; prices: Prices; locale: AppLocale }) {
   const register = `/${locale}/app/register`;
   return (
     <section id="gia" aria-labelledby="gia-title" className="relative isolate scroll-mt-15 overflow-x-clip md:scroll-mt-17">
-      <Glow tone="accent" className="-top-10 left-1/2 ml-35 h-130 w-155" />
-      <Glow tone="mark" className="top-65 left-1/2 ml-90 h-95 w-115" />
+      <div aria-hidden className="wm-price-drift" />
       <Container className="flex flex-col gap-8 pt-12 pb-10 md:items-center md:gap-11 md:pt-18 md:pb-12">
         <SectionHead id="gia-title" title={copy.title} lead={copy.lead} align="phone-left" />
         <div className="flex w-full flex-col gap-6 xl:w-auto xl:flex-row xl:items-stretch">

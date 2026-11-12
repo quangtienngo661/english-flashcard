@@ -33,6 +33,10 @@
   --color-wm-ai-to: #3d78ff;
   --color-wm-glow-accent: rgb(141 162 255 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
+  /* Drift layer behind the prices (F.19): the dark accent and pass colours; strengths 22 / 26 / 16 % (accent, mark, pass), the same as the drawing's .final .drift in both themes. */
+  --color-wm-drift-accent: rgb(141 162 255 / 0.22);
+  --color-wm-drift-mark: rgb(255 216 74 / 0.26);
+  --color-wm-drift-pass: rgb(98 201 143 / 0.16);
 
   /* Group colours by ID (design §7.4). Dark (mockup lines 102-108, 465): -wash is the colour 16 % on #171b2a (srgb), -soft 34 %;
      -ink is the lifted ink, >= 4.5:1 on its wash and on the surface. */

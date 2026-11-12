@@ -19,7 +19,7 @@ function seeded(seed: number) {
 /**
  * The groups fly-in (M8.6): bản 3's 3D scatter (translate3d from depth, rotateX/Y/Z, blur 8–18 px, scale .82) on Figma's timing and
  * shuffled order (`data-fly-step` on each `[data-group-card]`). Each card sets `data-wm-lit` as it lands (the CSS flashes its border); after
- * the last, `data-wm-done` brings the caption in. Renders `display: contents`, so the list and caption keep their places in the column.
+ * the last, `data-wm-done` marks the end state. Renders `display: contents`, so the list keeps its place in the column.
  */
 export function FlyIn({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);

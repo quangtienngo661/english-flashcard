@@ -2,12 +2,14 @@
 
 import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
+import { useWordCycle } from '@/lib/word-cycle';
 import { Card } from '@/ui/Card';
 import { LEVEL_FILL, LEVEL_INTERVAL_DAYS, useLevelInterval, useLevelName, type Level } from '@/ui/levels';
 import { TargetWord } from '@/ui/TargetWord';
+import { TypingBlank } from '@/ui/TypingBlank';
 
 // The panel beside the sign-in and sign-up forms, from 1280 px only (P.14, mockup L418-460, L1395-1480). It tells the learning loop: words
 // travel a dashed memory path from "Mới" to "Bậc 5", the word card cycles five words, the practice card types the word into the blank and
@@ -19,6 +21,9 @@ const PATH = 'M 55 774 C 183 713, 210 571, 274 479 S 384 306, 475 234 S 549 122,
 
 /** Points of the path at 2 %, 17 %, 37 %, 57 %, 77 % and 95 % of its length (mockup nodes, plus "Mới" at the start). */
 const NODES: Array<[x: number, y: number, level: Level]> = [[71, 766, 0], [167, 674, 1], [251, 517, 2], [350, 368, 3], [471, 237, 4], [564, 110, 5]];
+
+/** Each label sits on the side of its dot away from the cards: right for Mới, Bậc 2, 3 and 4, left for Bậc 1 and 5 (Bậc 3 to the right: the word card's foot is on its left). */
+const LABEL_LEFT: ReadonlySet<Level> = new Set<Level>([1, 5]);
 
 /** Travelling words, each 3.5 s behind the one before; with reduced motion they stand still at a level's stretch of the path. */
 const TRAVELLERS: Array<{ word: string; delay: number; still: string; stillLevel: Level }> = [
@@ -47,40 +52,14 @@ const WORDS: DemoWord[] = [
   { word: 'coherent', pos: 'adjective · /kəʊˈhɪə.rənt/', gloss: 'logical and well organised', example: 'She gave a clear and coherent answer.', question: ['Write a ', ' argument in your essay.'], level: 4 },
 ];
 
-const DUE_START = 12;
-
-type Step = { k: number; typed: number; phase: 'typing' | 'enter' | 'done'; due: number };
-
-const FIRST: Step = { k: 0, typed: 0, phase: 'typing', due: DUE_START };
-/** The last frame of the first word's loop: typed, answered, one fewer due. */
-const FINAL: Step = { k: 0, typed: WORDS[0].word.length, phase: 'done', due: DUE_START - 1 };
-
-/** The next frame of the loop and how long the current one stays (mockup L1453-1474, typing at a steady 100 ms a letter). */
-function next(step: Step): [ms: number, Step] {
-  const length = WORDS[step.k % WORDS.length].word.length;
-  if (step.phase === 'typing' && step.typed === 0) return [900, { ...step, typed: 1 }];
-  if (step.phase === 'typing' && step.typed < length) return [100, { ...step, typed: step.typed + 1 }];
-  if (step.phase === 'typing') return [320, { ...step, phase: 'enter' }];
-  if (step.phase === 'enter') return [260, { ...step, phase: 'done', due: Math.max(0, step.due - 1) }];
-  const k = step.k + 1;
-  return [1700, { k, typed: 0, phase: 'typing', due: k % WORDS.length === 0 ? DUE_START : step.due }];
-}
+const LENGTHS = WORDS.map((w) => w.word.length);
 
 export function AuthShowcase() {
   const t = useTranslations('App.auth.showcase');
   const levelName = useLevelName();
   const levelInterval = useLevelInterval();
   const motion = !useReducedMotion();
-  const [running, setRunning] = useState<Step>(FIRST);
-
-  useEffect(() => {
-    if (!motion) return;
-    const [ms, after] = next(running);
-    const timer = setTimeout(() => setRunning(after), ms);
-    return () => clearTimeout(timer);
-  }, [motion, running]);
-
-  const step = motion ? running : FINAL;
+  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'first' });
   const word = WORDS[step.k % WORDS.length];
 
   return (
@@ -89,9 +68,9 @@ export function AuthShowcase() {
         <svg viewBox="0 0 640 868" className="absolute inset-0 size-full overflow-visible">
           <path d={PATH} fill="none" strokeWidth="2" strokeDasharray="3 7" className="stroke-wm-showcase-path" />
           {NODES.map(([x, y, level]) => (
-            <foreignObject key={level} x={x - 70} y={y - 11} width="140" height="48">
-              <div className="flex flex-col items-center gap-1">
-                <span className="grid size-5.5 place-items-center">
+            <foreignObject key={level} x={LABEL_LEFT.has(level) ? x - 150 + 11 : x - 11} y={y - 11} width="150" height="22">
+              <div className={cn('flex items-center gap-1.5', LABEL_LEFT.has(level) && 'flex-row-reverse')}>
+                <span className="grid size-5.5 shrink-0 place-items-center">
                   <span className={cn('col-start-1 row-start-1 size-5.5 rounded-wm-pill opacity-22', LEVEL_FILL[level])} />
                   <span className={cn('col-start-1 row-start-1 size-3.5 rounded-wm-pill', LEVEL_FILL[level])} />
                 </span>
@@ -120,12 +99,15 @@ export function AuthShowcase() {
           ))}
         </svg>
 
-        <GhostChip className="left-14 top-23" word="deadline" />
-        <GhostChip className="left-110 top-157" word="negotiate" />
-        <GhostChip className="left-120 top-12" word="commute" />
+        <GhostChip className="left-85 top-38 rotate-4" word="deadline" />
+        <GhostChip className="left-115 top-70" word="negotiate" />
+        <GhostChip className="left-24 top-4" word="commute" />
 
-        <Card className="absolute left-25 top-51 z-3 min-h-73 w-80 -rotate-2 p-5 shadow-wm-pop md:p-5">
-          <div key={step.k} className={cn('flex flex-col gap-2', motion && 'animate-wm-showcase-swap')}>
+        <Card
+          // raw-ok: the tilt of the word card from the F.17 brief, -2.5deg, which has no Tailwind step
+          className="absolute left-6 top-15 z-3 min-h-73 w-70 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
+        >
+          <div key={step.k} className={cn('flex flex-col gap-2', step.k > 0 && 'animate-wm-showcase-swap')}>
             <p className="font-wm-display text-wm-lemma text-wm-ink">{word.word}</p>
             <p className="font-wm-sans text-wm-small text-wm-muted">{word.pos}</p>
             <p className="font-wm-sans text-wm-base text-wm-ink">{word.gloss}</p>
@@ -140,7 +122,7 @@ export function AuthShowcase() {
           </div>
         </Card>
 
-        <Card className="absolute left-86 top-110 z-3 flex w-60 rotate-2 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+        <Card className="absolute left-95 top-105 z-3 flex w-60 rotate-3 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
           <p className="font-wm-sans text-wm-label text-wm-muted">{t('today')}</p>
           <p className="flex items-baseline gap-2">
             <span key={step.due} className={cn('inline-block font-wm-display text-wm-page-title tabular-nums text-wm-accent', motion && 'animate-wm-showcase-drop')}>
@@ -165,21 +147,14 @@ export function AuthShowcase() {
           </span>
         </Card>
 
-        <Card className="absolute left-16 top-135 z-2 flex w-80 -rotate-1 flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5">
+        <Card
+          // raw-ok: the tilt of the practice card from the F.17 brief, -1.5deg, which has no Tailwind step
+          className="absolute left-66 top-150 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
+        >
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
-          <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', motion && 'animate-wm-showcase-swap')}>
+          <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', step.k > 0 && 'animate-wm-showcase-swap')}>
             {word.question[0]}
-            <span
-              className={cn(
-                'inline-block min-w-21 px-1',
-                step.phase === 'done'
-                  ? 'rounded-wm-control border border-wm-pass bg-wm-pass-soft text-wm-pass'
-                  : 'rounded-t-wm-control border-b-2 border-wm-accent bg-wm-showcase-blank text-wm-accent',
-              )}
-            >
-              {word.word.slice(0, step.typed)}
-              {motion && step.phase !== 'done' && <span className="ml-px inline-block h-4 w-0.5 bg-wm-accent align-middle animate-wm-showcase-caret" />}
-            </span>
+            <TypingBlank word={word.word} typed={step.typed} done={step.phase === 'done'} motion={motion} />
             {word.question[1]}
           </p>
           <p className="flex min-h-6 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">

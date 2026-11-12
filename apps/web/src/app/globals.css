@@ -968,10 +968,8 @@
   /* Word strip: 52 s, the reversed row 64 s. */
   --wm-site-strip: 52s;
   --wm-site-strip-reverse: 64s;
-  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all); the caption comes in last, 8 px, 500 ms. */
+  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all). */
   --wm-site-flash: 1100ms;
-  --wm-site-caption: 500ms;
-  --wm-site-caption-rise: 8px;
   /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
   --wm-site-caret: 1s;
   --wm-site-ping: 2.4s;
@@ -1029,6 +1027,34 @@
     transform: translate(-20%, -34px) scale(0.92);
   }
 }
+/* F.19: the one glow layer behind the prices (Figma f06): three radial colours, blurred, drifting 18 s. */
+.wm-price-drift {
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(36% 40% at 30% 40%, var(--color-wm-drift-accent), transparent 70%),
+    radial-gradient(34% 36% at 70% 55%, var(--color-wm-drift-mark), transparent 70%),
+    radial-gradient(40% 40% at 50% 90%, var(--color-wm-drift-pass), transparent 70%);
+  filter: blur(28px);
+}
+@media (width < 48rem) {
+  .wm-price-drift {
+    filter: blur(12px);
+  }
+}
+@keyframes wm-price-drift {
+  0% {
+    transform: translate(-6%, -4%) scale(1);
+  }
+  50% {
+    transform: translate(5%, 3%) scale(1.08);
+  }
+  100% {
+    transform: translate(-3%, 6%) scale(1.02);
+  }
+}
 @keyframes wm-site-drift-404-a {
   to {
     transform: translate(50px, 30px);
@@ -1074,12 +1100,6 @@
   }
   100% {
     opacity: 0;
-  }
-}
-@keyframes wm-site-rise {
-  from {
-    opacity: 0;
-    transform: translateY(var(--wm-site-caption-rise));
   }
 }
 @keyframes wm-site-blink {
@@ -1143,8 +1163,7 @@
 @media print {
   html.js [data-wm-reveal],
   html.js [data-wm-reveal] [data-wm-word],
-  html.js [data-group-card],
-  html.js [data-group-caption] {
+  html.js [data-group-card] {
     opacity: 1 !important;
     animation: none !important;
   }
@@ -1182,8 +1201,12 @@
   html.js [data-wm-halo='404-mark'] {
     animation: wm-site-drift-404-b var(--wm-site-halo-404) ease-in-out infinite alternate;
   }
+  html.js .wm-price-drift {
+    animation: wm-price-drift 18s ease-in-out infinite alternate;
+  }
   @media (width < 47.5rem) {
-    html.js [data-wm-halo] {
+    html.js [data-wm-halo],
+    html.js .wm-price-drift {
       animation: none;
     }
   }
@@ -1228,18 +1251,12 @@
     animation-direction: reverse;
   }
 
-  /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands; the caption comes in last. */
+  /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands. */
   html.js [data-wm-fly] ul {
     perspective: 1400px;
   }
   html.js [data-wm-fly]:not([data-wm-in]) [data-group-card] {
     opacity: 0;
-  }
-  html.js [data-wm-fly]:not([data-wm-done]) [data-group-caption] {
-    opacity: 0;
-  }
-  html.js [data-wm-fly][data-wm-done] [data-group-caption] {
-    animation: wm-site-rise var(--wm-site-caption) var(--wm-site-ease) both;
   }
   html.js [data-group-card][data-wm-lit]::after {
     content: '';

@@ -20,13 +20,6 @@
   "Landing": {
     "hero": {
       "topicLabel": "Học từ vựng theo chủ đề bạn cần",
-      "topics": [
-        "IELTS",
-        "Công việc",
-        "Du lịch",
-        "Công nghệ",
-        "Đời sống"
-      ],
       "line1": "Ôn từ đúng lúc,",
       "line2": "luyện từ trong câu.",
       "accent": "trong câu",
@@ -35,27 +28,73 @@
       "howTo": "Xem cách học"
     },
     "stage": {
-      "cardLabel": "Thẻ từ · ôn lại sau 3 ngày",
-      "lemma": "mitigate",
-      "pos": "verb",
-      "ipa": "/ˈmɪt.ɪ.ɡeɪt/",
-      "definition": "to make something bad less serious",
-      "meaning": "giảm nhẹ",
-      "example": "Planting trees can help mitigate the effects of urban heat.",
+      "cardLabel": "Thẻ từ · ôn lại sau {days} ngày",
       "practiceTitle": "Điền từ vào câu",
       "practiceCount": "Câu 4/20",
-      "sentence": "Cities need clear plans to mitigate the risk of flooding.",
-      "target": "mitigate",
-      "choices": [
-        "mitigate",
-        "fluctuate",
-        "deteriorate",
-        "advocate"
+      "result": "Đúng · lên Bậc {level}",
+      "cycle": [
+        {
+          "lemma": "mitigate",
+          "pos": "verb",
+          "ipa": "/ˈmɪt.ɪ.ɡeɪt/",
+          "definition": "to make something bad less serious",
+          "meaning": "giảm nhẹ",
+          "example": "Planting trees can help mitigate the effects of urban heat.",
+          "before": "Cities need clear plans to ",
+          "after": " the risk of flooding.",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "allocate",
+          "pos": "verb",
+          "ipa": "/ˈæl.ə.keɪt/",
+          "definition": "to give a share of something for a purpose",
+          "meaning": "phân bổ",
+          "example": "The council will allocate more money to buses.",
+          "before": "We need to ",
+          "after": " more time to testing.",
+          "days": 7,
+          "level": 4
+        },
+        {
+          "lemma": "viable",
+          "pos": "adjective",
+          "ipa": "/ˈvaɪ.ə.bəl/",
+          "definition": "able to work successfully",
+          "meaning": "khả thi",
+          "example": "Solar power is now a viable option.",
+          "before": "Is the plan financially ",
+          "after": "?",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "deteriorate",
+          "pos": "verb",
+          "ipa": "/dɪˈtɪə.ri.ə.reɪt/",
+          "definition": "to become worse over time",
+          "meaning": "xấu đi",
+          "example": "Air quality tends to deteriorate in the dry season.",
+          "before": "His health began to ",
+          "after": " last winter.",
+          "days": 1,
+          "level": 2
+        },
+        {
+          "lemma": "coherent",
+          "pos": "adjective",
+          "ipa": "/kəʊˈhɪə.rənt/",
+          "definition": "logical and well organised",
+          "meaning": "mạch lạc",
+          "example": "She gave a clear and coherent answer.",
+          "before": "Write a ",
+          "after": " argument in your essay.",
+          "days": 14,
+          "level": 5
+        }
       ],
-      "right": "Đúng",
-      "keyNext": "Enter: câu tiếp",
-      "keyHint": "H: gợi ý",
-      "addedTitle": "Đề 12 · Writing",
+      "addedTitle": "Bài báo sáng nay",
       "addedNote": "vừa thêm",
       "addedWords": [
         "mitigate",
@@ -148,7 +187,7 @@
       ]
     },
     "groups": {
-      "title": "Từ của mỗi đề thành một nhóm.",
+      "title": "Từ của mỗi bài thành một nhóm.",
       "lead": "Mỗi từ có lịch ôn riêng.",
       "cards": [
         {
@@ -211,9 +250,7 @@
           "pos": "adj",
           "meaning": "mạch lạc"
         }
-      ],
-      "caption": "IELTS Writing · Đề 12 · 12 từ · ôn lần đầu ngày mai",
-      "captionPhone": "Đề 12 · 12 từ · ôn lần đầu ngày mai"
+      ]
     },
     "learn": {
       "title": "Từ lúc gặp tới lúc dùng được",
@@ -254,7 +291,7 @@
         "wrong": "Sai"
       },
       "note": {
-        "eyebrow": "Sau khi làm đề",
+        "eyebrow": "Sau khi đọc một bài",
         "title": "Ghi từ",
         "body": "Gõ cả dạng đã chia, Wordmet đưa về từ gốc.",
         "typed": "deteriorated",
@@ -339,7 +376,7 @@
       "lead": "Không thấy câu bạn cần? Gửi tới {email}."
     },
     "final": {
-      "title": "Bắt đầu với đề bạn vừa làm.",
+      "title": "Bắt đầu với bài bạn vừa đọc.",
       "note": "Miễn phí để bắt đầu. Không cần thẻ thanh toán.",
       "signup": "Tạo tài khoản miễn phí"
     }
