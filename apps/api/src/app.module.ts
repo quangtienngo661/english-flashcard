@@ -14,12 +14,11 @@ import { LegalModule } from './legal/legal.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PracticePortsModule } from './practice/maintenance/private-senses-cleanup.provider.js';
 import { PracticeModule } from './practice/practice.module.js';
-import { SampleModule } from './sample/sample.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
   imports: [
-    SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
+    IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
     LearningModule, LegalModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
   ],
   controllers: [HealthController],
