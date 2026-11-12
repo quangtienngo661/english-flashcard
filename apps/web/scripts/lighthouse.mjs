@@ -45,8 +45,8 @@ function main(argv) {
   for (const page of PAGES) {
     for (const form of FORMS) {
       const outPath = `.lighthouse/${page.name}-${form}`;
-      // shell: true so pnpm (pnpm.cmd on Windows) resolves on both platforms; env passes CHROME_PATH through.
-      const r = spawnSync('pnpm', lighthouseArgs(`${baseUrl}${page.path}`, outPath, form), { stdio: 'inherit', shell: true, env: process.env });
+      // A shell only on Windows, where pnpm is pnpm.cmd (a shell on Linux triggers DEP0190); env passes CHROME_PATH through.
+      const r = spawnSync('pnpm', lighthouseArgs(`${baseUrl}${page.path}`, outPath, form), { stdio: 'inherit', shell: process.platform === 'win32', env: process.env });
       if (r.status !== 0) {
         failed = true;
         console.error(`lighthouse failed for ${page.path} (${form})`);
