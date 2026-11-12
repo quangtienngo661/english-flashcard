@@ -352,7 +352,7 @@ Nhánh `feat/giao-dien-moi-m3`, PR vào `refactor/giao-dien-moi`. API không đ�
 - **Bộ ảnh `gm-m3` chưa chụp được.** Script đã có (`SHOTS_MILESTONE=gm-m3 pnpm shots`); stack `pnpm bootstrap` ở cổng 3001 đang chạy code của bản checkout chính, còn app của nhánh này chạy ở cổng khác thì API từ chối Origin. Chạy lại script khi stack ở 3001 là code của nhánh này.
 - Xóa nhóm từ Một nhóm: e2e desktop thấy lần tải lại trang Nhóm (`hardReplace`) chưa xong trong thời gian của test; bản điện thoại chuyển trang bình thường; unit test xác nhận gọi `hardReplace('/vi/app/groups')`. Đường này có từ trước M3.
 - Tiêu đề và số lớn dùng thang cỡ chữ mặc định của Tailwind (R44); đổi sang token tiêu đề của M2 ở đợt sau.
-- Màu nhóm, màu ngăn ở chế độ tối dùng giá trị sáng cho tới M9.
+- Màu nhóm ở chế độ tối có giá trị tối từ M9; màu ngăn tối vẫn dùng giá trị sáng, thay bằng màu mức ở đợt polish.
 
 # Giao diện mới — as-built M4 Tra từ, trang một từ, Thêm từ (10/11/2026)
 

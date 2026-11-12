@@ -389,6 +389,27 @@ Card, Row, Pop lấy từ ba effect style cùng tên trong Figma (đã đọc ng
 nút chính và nút đỏ là bóng đặt tay trên từng nút sau lượt "trả bóng nút"; nút xanh lấy từ biến thể `Lựa chọn / Trạng thái=Đúng` (`3:35`); nút phụ
 dùng effect style `Shadow/Soft` của biến thể `Nút / Kiểu=Phụ` (`3:8`). Nút bị tắt không có bóng.
 
+**Giá trị tối của M9** (QM9-2, QM9-3). Nguồn: mockup bản chốt `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html` (mục Hệ thống); code ở
+`packages/design-tokens/web-dark.css`, giá trị sáng tương ứng ở `web.css`. Nền card tối là `#171b2a`; phần trộn tính bằng oklab, riêng màu nhóm bằng srgb.
+
+| Token | Sáng | Tối |
+|---|---|---|
+| `accent-soft` | `#e7ecf8` | `#2c334f` (`accent` 20 % trên card) |
+| `pass-soft` / `fail-soft` | `#e4f2ea` / `#f8e7e5` | `#24373c` / `#3c2f3a` (18 %) |
+| `scrim` (lớp mờ sau hộp thoại) | `rgb(27 36 68 / .3)` | `rgb(0 0 0 / .55)` |
+| `paper` / `paper-line` (giấy Tra từ) | `#fbfaf6` / `#e8e4d8` | `#1e2334` / `#2e3449` |
+| `halo-mark` (quầng vàng của nền mesh) | `rgb(255 216 74 / .34)` | `rgb(255 216 74 / .12)` |
+| `wrong-soft` / `wrong-line` / `wrong-ink` (box "Chưa đúng") | `#fbedeb` / `rgb(184 53 42 / .62)` / `#b8352a` | `#352731` / `rgb(229 96 63 / .55)` / `#e87052` |
+| `group-<n>-wash` / `-soft` | 12 % / 50 % màu nhóm trên trắng | 16 % / 34 % màu nhóm trên card (nhóm 0: `#38262d` / `#5d3231`) |
+| `group-<n>-ink` (nhóm 0-6) | `#984941`, `#17696c`, `#56429d`, `#916d28`, `#376d45`, `#8c3765`, `#29629d` | `#e87052`, `#37a396`, `#9d81de`, `#d99a17`, `#62a451`, `#dc6c97`, `#4c99d8`; từ 4,6:1 trên dòng đang chọn |
+| `level-0` ... `level-5` | `#a3abbd`, `#b9e4c7`, `#7ccd9b`, `#3fae6c`, `#218c4f`, `#106a39` | `#56607a`, `#1f4d35`, `#27704a`, `#319c60`, `#4cc283`, `#8ae4b0` |
+| `level-priority` / `level-due` | `#c4372c` / `#e0a21b` | `#ff8d80` / `#f0c04a` |
+
+Bóng tối: hình học của bóng sáng, màu đen thay navy. Lớp ngoài, lớp trong: `card` .4 và .6; `row` .35 và .6; `pop` .4 và .7; `soft` .4 và .7; `lift` .85 và .4;
+`stage` .6 và .7; `pro` .7; `paper` .7; `paper-card` .85; `contact` .4. Ba bóng nút (`btn`, `btn-pass`, `btn-fail`) là `none`: nút không bóng ở chế độ tối.
+`pro-glow` giữ quầng `rgb(141 162 255 / .18)`. Hạt của nền mesh tối là nhiễu thô `soft-light` 7 % (`globals.css`, theo landing bản 3). Màu mức dành cho đợt
+polish thay màu ngăn; màu ngăn tối chưa đổi.
+
 ### 7.3 Màu ngăn
 
 Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, đồng, bạc, vàng, lục bảo, ánh kim), lấy từ component "Chip ngăn" (`54:656`)
@@ -403,7 +424,7 @@ Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, �
 | 14 ngày | `#dcf3ea` | `#1f9d75` | `#0c654c` |
 | 30 ngày | gradient `#ffe0f2` → `#fff2d1` (35%) → `#dbffeb` (70%) → `#d9f0ff` | gradient góc `#ff8ad9` → `#ffd46b` → `#8cffb5` → `#7ad6ff` | `#3b2f6b` |
 
-Chữ trên nền đều ≥ 5,9:1. Khai báo `--color-wm-stage-<n>-bg|dot|ink` trong `web.css`; bản tối chốt cùng mockup tối (GM4), trước đó dùng giá trị sáng. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
+Chữ trên nền đều ≥ 5,9:1. Khai báo `--color-wm-stage-<n>-bg|dot|ink` trong `web.css`; màu ngăn ở chế độ tối vẫn là giá trị sáng (M9 không đổi); đợt polish thay bằng màu mức (§7.2). Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
 (`app-redesign-plan.md`, "Ý tưởng chung").
 
 ### 7.4 Màu nhóm (GM5)
@@ -420,7 +441,7 @@ nhận ra nhóm ở băng chuyền, bảng chọn nhóm, Hôm nay; thứ tự nh
 - **Màu cho chữ** (số thẻ chờ "24"): tương phản trên trắng đo được `#d99a17` 2,45, `#e5603f` 3,46, `#149384` 3,79, `#4a9637` 3,68, `#2a86d1` 3,87,
   `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Chỉ hổ phách dưới 3:1, nên `--color-wm-group-3-ink` = `#bb8414` (3,27:1); sáu màu còn lại dùng
   chính nó làm `-ink`. Kiểm ≥ 3:1 (chữ ≥ 24 px) trong test token.
-- Bản Dark của bảy màu chốt cùng mockup tối (GM4); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
+- Bản Dark của bảy màu và các biến `-soft`, `-wash`, `-ink` chốt ở M9 (bảng §7.2); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
 - **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Chủ dự án giữ cách theo ID (QR5).
 
 | Khi | Thì |
@@ -457,7 +478,7 @@ Dựng trên `react-aria-components` 1.22.1 (đã có) cho phần cần truy c�
 | Chip từ `96:322` | `WordChip` | |
 | Nút loa `54:657` | `SpeakButton` | Dùng lại logic `app-ui/speech.ts`, `audio-player.ts` |
 | Ô ngày lịch `96:404` | phần của hộp Lịch | |
-| Nền app `95:315`, `95:321` (mesh + hạt từ 10/11/2026) | `DotGridBackground`, đổi tên `AppBackground` ở M9a | CSS, hạt bằng SVG `feTurbulence` nhúng `data:` |
+| Nền app `95:315`, `95:321` (mesh + hạt từ 10/11/2026) | `AppBackground` (tên cũ `DotGridBackground`, đổi ở M9a) | CSS, hạt bằng SVG `feTurbulence` nhúng `data:` |
 | Nút lịch nổi `95:343`, Nút lịch trong thanh `95:344` | `CalendarButton` (`app-chrome/`) | Phím `L` |
 | Thanh trên app (Desktop theo tab, Mobile) `54:502`, `54:503` | `TopBar` (`app-chrome/`) | Kính mờ: `backdrop-filter: blur(24px) saturate(1.6)` |
 | Thanh tab dưới `54:637` | `MobileTabBar` (`app-chrome/`) | |
@@ -532,7 +553,7 @@ chỗ lệch ở §3.1. Bỏ `<AppShell>` ở 17 chỗ gọi (§5.4); `renderApp
 Thêm từ (`group-list.test.tsx:56–57`, `group-page.test.tsx:60,69,300,307,319`). Test đỏ vì đổi font và sửa trong cùng PR: `e2e/chrome.spec.ts:4–15`
 (ghim H1 là Lexend). Font ảnh OG đổi ở M8 cùng trang công khai.
 Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả lời sai, hộp Thêm từ, Đăng nhập) bằng HTML từ biến Dark của Figma, gửi chủ dự
-án duyệt (GM4); phần tối sửa ở M9. Bản tối được chốt sau đó bằng trang so sánh và mockup bản chốt (QM9-2, QM9-3), thay cho 5 mockup này.
+án duyệt (GM4). Bản tối được chốt sau đó, và M9 sửa theo, bằng trang so sánh và mockup bản chốt (QM9-2, QM9-3), thay cho 5 mockup này.
 
 **M2 — Đăng nhập và tài khoản** (trang `35:307`).
 
@@ -651,7 +672,7 @@ Quyết định của chủ dự án khi viết plan (QM8, decision record, 11/1
 - **M9a — Kiểm thử thành script, tải sau, dọn nhỏ.**
   - Script giữ trong repo (QM9-4): khóa chữ không dùng và hình dạng JSON-LD (chạy trong bộ unit, nên CI chạy); so dung lượng JS với bản cũ, ngưỡng
     10% (§5.7; bước riêng trong job `web` của CI); Lighthouse (lệnh tay); bộ ảnh `gm-m9`: mọi màn ở 390, 768, 1024, 1440, sáng và tối (lệnh tay,
-    stack thật; QM9-5); đo khung hình trên điện thoại thật qua chung Wi-Fi với máy tính (QM9-6).
+    stack thật; QM9-5); đo khung hình trên điện thoại thật qua chung Wi-Fi với máy tính (QM9-7).
   - Tải sau (§5.7): Tùy chỉnh phiên và Giới thiệu Pro qua `next/dynamic`, như Thêm từ, Lịch, Ngày.
   - Đổi tên `DotGridBackground` thành `AppBackground`; ghi việc đo lại `GET /v1/groups` trên máy chủ thật vào `deploy-checklist.md`.
 - **M9b — Chế độ tối theo bản chốt** (QM9-2, QM9-3; số đo ở `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`, mục Hệ thống):
