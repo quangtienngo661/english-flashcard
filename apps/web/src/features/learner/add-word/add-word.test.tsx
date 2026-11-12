@@ -197,13 +197,14 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     expect(quickAdds(calls)[0].headers['Idempotency-Key']).toBeTruthy();
   });
 
-  it('the deck list shows recently used first, then all decks A–Z with their sizes', async () => {
+  it('a recently used deck is listed once: under "Dùng gần đây", and the A–Z list holds the others', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     open('went', { routes: routes() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     const recent = await screen.findByRole('listbox', { name: 'Dùng gần đây' });
     expect(within(recent).getAllByRole('option').map((o) => o.textContent)).toEqual(['Du lịch3 từ']);
-    const all = screen.getByRole('listbox', { name: 'Tất cả nhóm (2), A–Z' });
-    expect(within(all).getAllByRole('option').map((o) => o.textContent)).toEqual(['Công nghệ3 từ', 'Du lịch3 từ']);
+    const others = screen.getByRole('listbox', { name: 'Nhóm khác (1)' });
+    expect(within(others).getAllByRole('option').map((o) => o.textContent)).toEqual(['Công nghệ3 từ']);
+    expect(screen.getAllByRole('option', { name: /Du lịch/ })).toHaveLength(1);
   });
 });
