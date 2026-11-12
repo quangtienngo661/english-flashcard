@@ -70,7 +70,7 @@
 | 7 | `feat/giao-dien-moi-m7` | §9 M7 | `ChoiceCard`; settings, account, plans, orders, `HouseAd` |
 | 8 | `feat/giao-dien-moi-m8a`, `-m8b`, `-m8c` (Part 8) | §9 M8, §10.6, §10.7, §11 | admin-managed FAQ; `site/`; prices and FAQ read at build; new icons and OG images; `components/` deleted. `app-ui/` and the old tokens move to the owner's polish round (QM8-9) |
 | 9 | `feat/giao-dien-moi-m9` (Part 9: M9a then M9b, one PR) | §9 M9, §13 | `check-message-keys.mjs` and `compare-bundle-stats.mjs` (CI), `pnpm lighthouse`, shot set `gm-m9`, phone guide; Tùy chỉnh phiên and Giới thiệu Pro loaded on demand; `AppBackground`; dark values from the approved mockup; level colour tokens |
-| polish | its own plan part, after M9 | §9 "Đợt polish", QM9-9 | the mockup's remaining changes, `app-ui/` and old tokens deleted; then the PR `refactor/giao-dien-moi` → `dev` |
+| 10 | `feat/giao-dien-moi-polish` (Part 10: PL-a, PL-b, PL-c) | §9 "Đợt polish", QM9-9 | `ui/levels.ts`, `LevelBar`, `LevelChip`, `Tabs`, `PageTitle`, `SectionTitle`, `TargetWord`, radius C, Noto Sans labels, session copy in English, multi-group picker, arc carousel; `app-ui/` and old tokens deleted; then the PR `refactor/giao-dien-moi` → `dev` |
 | Q4 | — | QR4 | placeholder below |
 
 ---
@@ -4149,3 +4149,572 @@ The owner's decisions are QM9-1…QM9-9 in the decision record. Claude settled t
   port forwarding on Android has neither problem. The owner picks before M9.10 Step 5.
 - **iOS frame rate** needs a Mac (`ASSUMPTION`).
 - Not M9: chỗ 24 (real skeleton shot), "mỗi trang chỉ gửi phần chữ trang đó cần", `group_ids` for the multi-group picker (polish plan), QR4.
+
+---
+
+# Part 10 — Đợt polish (branch `feat/giao-dien-moi-polish`)
+
+**Goal:** make the learner app match the approved mockup bản chốt (QM9-9) everywhere, and remove the old UI layer. Three milestones on one branch:
+- **PL-a, hệ thống:** level colours and the names "Mới, Bậc 1 … Bậc 5"; Noto Sans for every label (JetBrains Mono out); radius scale C; the shared
+  pieces the audit found missing (page and section title, card, tabs, level chips, dialog frame, target-word mark, arrow); `app-ui/`, `theme.css`
+  import, `dark.css`, `island.css`, `dark-pastel.css` deleted.
+- **PL-b, các màn:** Hôm nay, Một nhóm, trang một từ, Tra từ, Luyện tập, Từ hay sai, Phiên luyện, Ôn, Học, the Thêm từ dialogs with the
+  multi-group picker, Đăng nhập / Đăng ký.
+- **PL-c, motion:** Nhóm "Vòng cung" carousel; Học "Chồng thẻ tan mờ" layout.
+- Then the check of the 25 audit picks, the full shot set and one PR into `refactor/giao-dien-moi` (P.18).
+
+**Inputs:**
+- Decisions QM9-1 … QM9-9 (decision record, end), and the answers file `docs/preparation/GIAO_DIEN_MOI_M9_TRA_LOI_2026-11-11.md`, sections "Đã chốt
+  cho mockup đầy đủ" and "Chỗ bổ sung" (cited "Chỗ bổ sung"). The 25 audit picks are read from the db `picks` of artifact `87DRK6yvkNo6vc9jm571FU`
+  (read 12/11; same as the answers file). Audit `docs/audit/2026-11-11-ui-audit/README.md` is in the **main checkout only** (local, not committed).
+- Mockup bản chốt `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html` (artifact `Ccnn3iPkr3srNv7diobFkL`), cited "mockup L<n>". It is the
+  source of every number and every piece of copy below. Where it ports an artifact, the port wins over the artifact: Nhóm L462–508 and L866–947
+  (artifact `6z635GjwYNpctydnMoNHJD`, local copy `vong-7-chong-the-tu-dien.html`, phone values L192–201 and L703–704 there); Học L219–311 and
+  L993–1206 (artifact `TrbJBKg6VFE3x6YkjD1XT7`, local copy `chong-the-mo.html`).
+- Code facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-12-polish-{kit,screens}.md` ("kit §n", "screens §n"), read on `2c885e75`.
+- Delivery record `docs/deliveries/giao-dien-moi.md`: "việc dọn chuyển sang đợt polish" (cited "dọn n") and "as-built M9", "Minor để lại".
+- Design §7.1–§7.5, §9 "Đợt polish", §13, §14.
+
+Paths are under `apps/web/` unless they start with `apps/api/`, `packages/`, `docs/` or `.github/`.
+
+**Order:**
+- `feat/giao-dien-moi-polish` from `origin/refactor/giao-dien-moi` (`cdcab4aa` or later: PR #268, M9, merged 12/11/2026 with CI green), then
+  `git merge docs/giao-dien-moi-plan-polish`.
+  If M8c merges first, merge `origin/refactor/giao-dien-moi` again before P.18.
+- PL-a (P.1 → P.6), then PL-b (P.7 → P.15), then PL-c (P.16, P.17), then P.18. One task after another: every PL-b task uses the PL-a pieces, and
+  P.11 changes the copy the later session tasks test against.
+- **One PR** into `refactor/giao-dien-moi` after P.18 (owner, O2). Each milestone still ends with the whole web suite green.
+- Rulings continue from R265 (R264 is the highest on 12/11/2026).
+
+## Part 10 constraints
+
+- **The mockup is the reference, not Figma.** Figma `JKnyUUtGjpGpfKK4PqBfdY` is not redrawn; where the two differ, the mockup wins (QM9-2).
+- **Keep what the owner chose to keep:** chỗ 8 (house icon on the Luyện tập tab), 12 (logo and dialog-title letter-spacing), 16 (session bar 760
+  at Phiên and Ôn, 1024 at Học), 19 (Luyện tập source rows with icon box and [Tùy chỉnh]), 22 ("Tạo nhóm nhanh" cards with an icon box), 25 (the
+  phone tab bar). No task changes these.
+- **Colours only in `packages/design-tokens`.** No new colour value in `globals.css` or `.tsx`. A `color-mix` the mockup uses becomes a token with
+  a precomputed hex in both files (as M9.8 did), with the mix in a comment.
+- **Level, not stage, in code and copy that the polish touches.** SRS `level` 0–5 stays the data name. The copy says "Mới", "Bậc 1" … "Bậc 5"
+  (vi) and "New", "Level 1" … "Level 5" (en); "ngăn" and "box"/"stage" leave the copy. Interval copy: "ôn lại sau N ngày" / "review in N days".
+  Colour is never the only signal: a level always has its name or number next to it (WCAG 1.4.1; Bậc 1–3 are light greens).
+- **Labels are cased in the message files**, never by CSS (`uppercase`, `lowercase`, `first-letter:*` leave `src`).
+- **Session copy is English** in Học, Phiên luyện and Ôn for every locale (QM9-9). Kept in Vietnamese: the Vietnamese meaning, the sentence
+  translation, the Ôn question by meaning, group names (data, not copy).
+- **Motion:** every new animation has a `prefers-reduced-motion: reduce` branch that ends in the final state at once; transform and opacity only,
+  plus `filter: blur` where the mockup uses it (Học depth, Nhóm side cards). No motion library is added (screens §0.6): CSS and the Web Animations
+  API, as `lib/stack-motion.ts` does.
+- **Admin:** `theme.css` is not edited and stays exported. Any change in `packages/design-tokens` runs admin `pnpm lint`, `pnpm typecheck`,
+  `pnpm test`, `pnpm build`.
+- **Ads (QR4 parked):** `AdsenseLoader`, `SHOWS_ON` and `house-ad-counter.ts` stay untouched.
+- **API (P.12 only):** additive within v1, the same zod `strictObject` style, `@Idempotent`, `user.write` rate limit; no backend e2e (D38).
+- **Tests** query by role and visible text. A test that pinned old copy or an old shape changes in the same commit as the behaviour, with the
+  reason in the commit body.
+
+## Part 10 Review Focus
+
+1. **A learner whose browser is in Vietnamese opens a session.** All chrome is English and plural-correct ("1 card left", "2 cards left"), while
+   the meaning, the translation and the group name stay Vietnamese, and "Back to home" goes to `/vi/app`, not `/en/app`. Pinned in P.11.
+2. **Saving one word into three groups when one group is full.** The learner is told which group did not take it, and is never left believing all
+   three saved: nothing is saved and the full group is named. Pinned in P.12.
+3. **Levels for a colour-blind learner, and in dark mode.** Every level chip, bar segment and table cell carries its name or number; level text on
+   its tint reaches 4.5:1 in light and dark. Pinned in P.1 (contrast test) and P.8.
+4. **Nothing reads an old token after the imports go.** A class or `var(--…)` from `theme.css`, `dark.css` or the old `@theme` block left in `src`
+   would silently resolve to nothing. Pinned in P.6 (the "no old token" test covers `.tsx`, `.ts` and `globals.css`).
+5. **Fast input in the motion screens.** Pressing → five times on Nhóm, or 1/2 faster than the dissolve on Học, never leaves a card stuck between
+   two positions or counts an answer twice. Pinned in P.16 and P.17.
+
+## Owner decisions on this part (12/11/2026)
+
+Asked after the plan was written; the owner answered first, then Claude gave its view. Recorded as QP1–QP4 in the decision record.
+- **O1, saving one word into several groups → (a) `group_ids` in `POST /v1/quick-add`.** One transaction: every group saves or none does; one write
+  of the 30-per-minute `user.write` limit. Claude agrees: no half-saved state to explain, and the service already runs one transaction
+  (`quick-add.service.ts:57-81`).
+- **O2 → one PR** after P.18. Claude agrees; the cost is one large review, eased by the milestone order of the commits.
+- **O3 → keep `e___`** for fill-in sentences (CS20, D9 Bước 7); the API does not change. Claude agrees: the mockup's `e_______` was drawn without
+  the Bước 7 decision in view. Non-AI typed questions keep their current hint.
+- **`warn` colour → add it** (owner: "vậy thì bổ sung"): a new token, darkened until it reaches 4.5:1 (P.1).
+- Not open (chụp rồi hỏi): **chỗ 24.** The owner asked to see the loading skeleton first. P.6 Step 1 shoots it on this branch and stops for the
+  owner's choice before the skeleton part of Step 4.
+
+## PL-a — Hệ thống
+
+### Task P.1: Level colours and the names "Mới, Bậc 1–5"
+
+**Files:**
+- Create: `src/ui/levels.ts`, `src/ui/levels.test.ts`.
+- Modify: the seven `STAGE_DOT` copies (kit §12: `add-word/GroupPicker.tsx:120`, `groups/GroupPage.tsx:53`, `practice/CustomizeDialog.tsx:58`,
+  `practice/WeakWordsPage.tsx:26`, `practice/session/AnswerFeedback.tsx:14`, `today/TodayPage.tsx:256`, `word/LearningBlock.tsx:16`);
+  `groups/stages.ts` (becomes a re-export, then deleted when its 10 importers move); `messages/{vi,en}.json` (the 34 "ngăn" keys, screens §2);
+  `packages/design-tokens/web.css`, `web-dark.css` (delete `--color-wm-stage-*`), `README.md`; `src/styles/web-tokens.test.ts`.
+
+**Interfaces (Produces):**
+- `type Level = 0 | 1 | 2 | 3 | 4 | 5`.
+- `LEVEL_FILL: Record<Level, string>` = `bg-wm-level-0` … `bg-wm-level-5`; `LEVEL_TEXT: Record<Level, string>` = `text-wm-level-*`;
+  `STATE_TEXT = { priority: 'text-wm-level-priority', due: 'text-wm-warn', new: 'text-wm-muted', ok: 'text-wm-pass' }` (mockup L375).
+- New colour `--color-wm-warn` (mockup L73, L87: light `#b07a12`, dark `#f0c04a`). Light `#b07a12` is 3.72:1 on white, under 4.5:1 for 13 px
+  text: darken it until the test passes and record the hex as a ruling (dark is 10:1).
+- `LEVEL_INTERVAL_DAYS: Record<Exclude<Level, 0>, 1 | 3 | 7 | 14 | 30>` = `{1:1, 2:3, 3:7, 4:14, 5:30}`.
+- `useLevelName(): (level: Level) => string` → vi "Mới", "Bậc 1"…; en "New", "Level 1"… (`App.levels.name`, ICU `select`).
+- `useLevelInterval(): (level: Level) => string | null` → `null` for 0, else "ôn lại sau 1 ngày" / "review in 1 day" (`App.levels.interval`,
+  ICU `plural`).
+- Copy: `App.stages.*` is replaced by `App.levels.{name,interval,new}`; every other key in screens §2's list is rewritten without "ngăn"
+  (vi) / "stage", "box" (en). Example: `App.group.filterStage` "Ngăn {stage}" → `App.group.filterLevel` "Bậc {level}".
+
+- [ ] **Step 1: Failing tests** (`levels.test.ts`): `useLevelName()(0)` is "Mới" (vi) and "New" (en); `(3)` is "Bậc 3" / "Level 3";
+  `useLevelInterval()(4)` is "ôn lại sau 14 ngày" / "review in 14 days", `(1)` is "review in 1 day", `(0)` is `null`; `LEVEL_FILL[5]` is
+  `bg-wm-level-5`. In `web-tokens.test.ts`: `warn` ≥ 4.5:1 on `surface` in light and dark; pin the eight light and eight dark level hexes of M9.8 (the M9 minor); level ink on its 18 % tint
+  (`color-mix` precomputed in the test with the existing `mix` helper, or the hex written beside it) ≥ 4.5:1 in light and dark; drop the
+  "declares the six stage colours" test. A test in `src/i18n/messages.test.ts`: no value in `vi.json` contains "ngăn" and no value in `en.json`
+  contains "stage" or "-day box".
+- [ ] **Step 2: Run** `pnpm vitest run src/ui/levels.test.ts src/styles/web-tokens.test.ts src/i18n/messages.test.ts` → FAIL (module missing;
+  "ngăn" found in 34 keys).
+- [ ] **Step 3: Implement** `levels.ts`; move the seven arrays and the 10 `STAGE_KEYS` importers onto it; rewrite the 34 keys (vi follows
+  `~/.claude/rules/vietnamese-writing.md`; en by meaning); delete the stage tokens and their README lines.
+- [ ] **Step 4: Run** web unit, lint, typecheck → PASS. Screen tests that matched "ngăn" text change with this commit. Admin's four checks.
+- [ ] **Step 5: Commit** `feat(web): name review levels and colour them by level`.
+
+### Task P.2: Noto Sans for labels, cased copy
+
+**Files:**
+- Modify: `src/app/[locale]/layout.tsx` (drop `JetBrains_Mono`), `src/app/globals.css:13-17` (drop `--font-wm-mono`), `packages/design-tokens/web.css:165-168`
+  (`--text-wm-mono` → `--text-wm-meta`, same 0.75rem / 1.4, weight 500), `src/lib/cn.ts:14`, `src/ui/Tag.tsx` (`mono` prop → gone), the 50 files of
+  kit §1, the 8 case-transform sites of kit §15 and their message keys, the 4 `raw-ok` comments naming JetBrains.
+- Test: `src/styles/web-tokens.test.ts`, a new `src/styles/no-mono.test.ts`.
+
+**Interfaces (Produces):** utility `text-wm-meta` (labels, counts, keycaps, IPA, per mockup L15–16, L128); `font-wm-sans` is the default body font
+already, so labels drop `font-wm-mono` without a replacement class. `tabular-nums` stays where counts sit in columns (mockup L169, L491).
+
+- [ ] **Step 1: Failing test** `no-mono.test.ts`: `git`-free scan of `src/**/*.{ts,tsx,css}` (except tests) finds no `font-wm-mono`, `text-wm-mono`,
+  `JetBrains`, and no `lowercase` / `uppercase` / `first-letter:` class; `layout.tsx` imports exactly `Noto_Sans` and `Bricolage_Grotesque` from
+  `next/font/google`.
+- [ ] **Step 2: Run** → FAIL (103 + 96 hits, 8 case sites).
+- [ ] **Step 3: Implement.** Labels and chips start with a capital in `vi.json` and `en.json` ("Fill in the blank", "AI sentence", "Studying", "Hôm
+  nay"; Chỗ bổ sung). Tests that matched lower-case text change with this commit.
+- [ ] **Step 4: Run** web unit, lint, typecheck; `pnpm cf:docker e2e/app/m2.spec.ts e2e/a11y.spec.ts` → PASS. Admin's four checks.
+- [ ] **Step 5: Commit** `feat(web): use noto sans for labels and case copy in the message files`.
+
+### Task P.3: Radius scale C
+
+**Files:**
+- Modify: `packages/design-tokens/web.css:48-58`, `README.md`; `src/styles/web-tokens.test.ts:52-70`; every `rounded-wm-*` site (≈350, kit §2),
+  the arbitrary radii of kit §2 and `rounded-lg`, `rounded-xs`, `rounded-sm`, `rounded-control`, `rounded-card`, `rounded-inner` outside `app-ui/`.
+- Create: `src/styles/radius-classes.test.ts`.
+
+**Interfaces (Produces):** radius tokens by role, mockup L81–82 (owner 12/11: inner always smaller than its container):
+
+| Token | Value | Use |
+|---|---|---|
+| `--radius-wm-key` | `0.25rem` (4) | keycaps, small labels, counts, word chips in piles |
+| `--radius-wm-control` | `0.5rem` (8) | buttons, inputs, selects, chips, icon buttons, × |
+| `--radius-wm-row` | `0.625rem` (10) | list rows, menus, popovers, toasts, the hint and translation blocks |
+| `--radius-wm-card` | `0.875rem` (14) | cards, panels, the "Chưa đúng" box |
+| `--radius-wm-dialog` | `1rem` (16) | dialogs, sheets, the Học card, Nhóm stack cards |
+| `--radius-wm-pill` | unchanged | progress bars, avatar, phone tab pill |
+
+`xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `button`, `modal` are deleted. A 6 px count box inside a 36 px chip (mockup L168) is `key`.
+
+- [ ] **Step 1: Failing tests:** `web-tokens.test.ts` pins the six values above and a count of 6 radius keys; `radius-classes.test.ts` scans `src`
+  (non-test) and finds no `rounded-wm-(xs|sm|md|lg|xl|2xl|button|modal)`, no `rounded-(xs|sm|lg|control|card|inner)\b`, no `rounded-[`.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement** the tokens, then the sweep by the role table (not by the old size). Each file's diff is reviewed against its element's
+  role; the three arbitrary radii of the calendar buttons and month dialog become `control` / `dialog`.
+- [ ] **Step 4: Run** web unit, lint, typecheck; `pnpm cf:docker e2e/app/m1.spec.ts e2e/app/m4.spec.ts` → PASS. Admin's four checks.
+- [ ] **Step 5: Commit** `feat(web): move radii to scale c by element role`.
+
+### Task P.4: Shared pieces: titles, card, tabs, level chips, dialog frame, target word, arrow
+
+**Files:**
+- Create: `src/ui/PageTitle.tsx` (moved from `app-chrome/PageTitle.tsx`), `src/ui/SectionTitle.tsx`, `src/ui/Tabs.tsx`, `src/ui/LevelChip.tsx`,
+  `src/ui/TargetWord.tsx` (replaces `groups/highlight.tsx`, `DictionaryPage.tsx:133-150` `marked`, `AiLookupResult.tsx:119-127`,
+  `AddWordSheet.tsx:386`, `AuthShowcase.tsx:81-83`), tests beside each in `src/ui/*.test.tsx`.
+- Modify: `src/ui/Card.tsx`, `src/ui/Dialog.tsx`, `src/ui/overlays.test.tsx`, `src/lib/cn.ts`, `src/lib/cn.test.ts`,
+  `packages/design-tokens/web.css` (section title sizes), `messages/{vi,en}.json` (15 "→" each, kit §8).
+
+**Interfaces (Produces):**
+- `PageTitle({ children, eyebrow? })`: h1, `text-wm-app-title-mobile md:text-wm-app-title` (44 / 30, mockup L124–125). Used by every app page h1
+  (chỗ 3), including Hôm nay and Nhóm.
+- `SectionTitle({ as = 'h2', children })`: Bricolage 700, 1.375rem desktop / 1.25rem phone, line-height 1.25,
+  letter-spacing −0.012em (mockup L126–127, L589), as new keys `--text-wm-block-title` and `--text-wm-block-title-mobile` (`--text-wm-section`
+  is the landing's 52 px, `web.css:88`).
+- `Card`: `rounded-wm-card bg-wm-surface shadow-wm-card p-5 md:p-6`, no border (mockup L140, L589). Every hand-built card of kit §4 (50 lines,
+  33 files) moves onto it in the screen task that owns the file (P.7–P.15), not here.
+- `Tabs({ items: { id, label, count? }[], selected, onSelect | hrefs })`: underline tabs, 24 px gap, 2 px accent underline on the selected tab,
+  count in `text-wm-meta` (mockup L174–177). `role="tablist"` with buttons, or a `nav` of links when `hrefs` is given (word page anchors).
+- `LevelChip({ tone: Level | 'all' | 'priority' | 'due', label, count, pressed, onPress })`: 36 px, `rounded-wm-control`, background 18 % of the
+  tone colour on surface, border 45 %, pressed 40 % and a 1 px inset ring of the tone; count in a 24 px `rounded-wm-key` box on surface
+  (mockup L161–173). Tints are tokens `--color-wm-level-*-tint`, `-tint-strong`, `-line` with precomputed hex in both files (light and dark),
+  plus `all` on `accent`. `aria-pressed`.
+- `TargetWord({ text, lemma, forms? })`: bold 700, underline 2 px, offset 3 px, accent decoration (mockup L136). One matcher: the lemma and its
+  `forms` as whole words, case-insensitive, else the old `\b(word)[a-z]*\b` fallback. Yellow `bg-wm-mark` stays only for the Tra từ filter
+  sentence (P.9).
+- `Dialog`: × always shown (`closeLabel` becomes required), 36 px box, `rounded-wm-control`, 1 px `border-wm-line`, surface background (mockup L383);
+  `wide` deleted (R62 ends); the cancel action of every dialog is a muted `TextButton` (mockup L725 note). The 9 outline "Hủy" buttons of kit §7
+  move in this task (dialog files only).
+- Arrow: the 15 "→" leave the message files; `ArrowRight` (lucide, `size-4`, stroke 1.75) is rendered after the link text where the copy had it
+  (chỗ 14). First check on a fresh build whether Noto Sans's `latin` subset lacks U+2192 (kit §8, `ASSUMPTION`); write the finding as a ruling.
+- `cn.ts`: the 13 missing size names (kit §4) in the `font-size` group. **Defect:** red test first, separate commit (dọn 8).
+
+- [ ] **Step 1: Red test for `cn`** (`cn.test.ts`): `cn('text-wm-card-heading-mobile text-wm-ink')` keeps both classes; same for
+  `text-wm-page-title`, `text-wm-app-title-mobile`, `text-wm-site-hero`. Run → FAIL. Commit `test(web): pin the missing font sizes in cn`.
+- [ ] **Step 2: Fix `cn.ts`**, run → PASS, commit `fix(web): keep wm title sizes when cn merges a text colour`.
+- [ ] **Step 3: Failing tests** for the pieces: `Tabs` (arrow keys move selection; the selected tab has `aria-selected`), `LevelChip` (name "Bậc 3
+  11" read as one button with `aria-pressed`; pressing calls `onPress`), `TargetWord` (`'They mitigated the risk'` with lemma `mitigate` wraps
+  "mitigated" in one `strong`; `'Mitigate it'` matches case-insensitively; no match leaves the text unchanged), `Dialog` (the × is a button named by
+  `closeLabel`; no `wide` prop in its props type: a `// @ts-expect-error` line in the test).
+- [ ] **Step 4: Run** → FAIL. **Step 5: Implement.** **Step 6: Run** web unit, lint, typecheck → PASS. Admin's four checks.
+- [ ] **Step 7: Commit** `feat(web): add shared titles, tabs, level chips and the target word mark`, then `feat(web): give every dialog the same
+  close button and cancel link`.
+
+### Task P.5: `app-ui/` out
+
+**Files:**
+- Create: `src/ui/OfflineScreen.tsx`, `src/ui/NotFoundState.tsx`, `src/ui/StreakToast.tsx` (+ `showStreak`), `src/test-utils/render-app.tsx`
+  (`renderApp`, `pickDate`); move `app-ui/toast.test.tsx` → `ui/toast.test.tsx`, `app-ui/streak-toast.test.tsx` → `ui/streak-toast.test.tsx`.
+- Modify: the 14 imports of kit §9; the 63 test files using `renderApp` and 6 using `pickDate` (import path only); `eslint.config.mjs` only if the
+  new folder needs a rule.
+- Delete: `src/app-ui/` entirely.
+
+**Interfaces (Produces):**
+- `FullScreenSpinner` users get the route's `SkeletonPage` / `SkeletonBlocks` (design: skeletons, not spinners; chỗ 9).
+- `StreakToast`: mockup L306–310: surface, 1 px line, `rounded-wm-row`, `shadow-wm-pop`, flame in a 22 px accent-soft square, "2-day streak"
+  style copy from `App.streak`. Position is a prop: `placement: 'bottom' | 'session-corner'` (the session corner is used by P.17). Behaviour of
+  `streak-toast.test.tsx` kept (3 s, no pointer, replace).
+- `renderApp(ui, opts)` and `pickDate` keep their signatures; only the path changes to `@/test-utils/render-app`.
+
+- [ ] **Step 1:** move the two tests to `ui/` and point them at the new files → FAIL (modules missing).
+- [ ] **Step 2: Implement** the four pieces; move the 14 imports; codemod the test imports.
+- [ ] **Step 3:** delete `src/app-ui/`; `pnpm typecheck` (not only `git grep`, dọn 4) → PASS; web unit, lint → PASS.
+- [ ] **Step 4: Commit** `refactor(web): move the last app-ui pieces into ui and delete app-ui`.
+
+### Task P.6: Old tokens out, skeleton, phone top bar
+
+**Files:**
+- Modify: `src/app/globals.css` (kit §10: body L514-516, focus L527-544, animations L128-224, L254-263, L384-389, `--ease-out-strong` L209,
+  `--spacing-header` L109/L510, `@utility pressed` L400, `tilt-card` L410), `src/app/[locale]/app/layout.app.tsx:20`, `app-shell/AppProviders.tsx:67-69`,
+  `ui/PronunciationLine.tsx:28,31`, `practice/session/SessionNotice.tsx:64`, `practice/session/ReportDialog.tsx:133`, the seven `bg-wm-ink` fills
+  (kit §6) and the two public ones, `ui/Skeleton.tsx`, `app-chrome/PhoneHeader.tsx:14`, `app-chrome/AppChrome.tsx:12`, `app-chrome/FloatingButtons.tsx:11`,
+  `features/learner/auth/AuthShowcase.tsx:17` (dead `dot-grid`), comments in `styles/app-background.test.ts`, `ui/actions.test.tsx`;
+  `src/styles/tokens.test.ts`, `src/styles/text-classes.test.ts`; `packages/design-tokens/package.json` (`exports`), `README.md`.
+- Delete: `packages/design-tokens/dark.css`, `island.css`, `dark-pastel.css`.
+- Create: `src/styles/no-old-tokens.test.ts`.
+
+**Interfaces (Produces):**
+- `--ease-wm-out-strong` (same curve as `--ease-out-strong`) in `web.css`; the 14 `ease-out-strong` uses move to `ease-wm-out-strong`.
+- The kept animations (`menu-in`, `toast-in`, `feedback-in`, `pop-in`, `card-rise`, `wiggle-soft`, `panel-drop`, `summary-in`, the toast close,
+  `theme-icon-in/out`) move into the `wm` part of `globals.css`, reading only `--*-wm-*` variables.
+- `bg-wm-ink` fills: Hôm nay "đến hạn" (`TodayPage.tsx:104,121`) → `level-due` tint; Day dialog filter and Một nhóm chips → `LevelChip` / `Tabs`
+  (P.4; Một nhóm itself in P.8); `HintPanel.tsx:47,57` → the hint grid of P.13; the calendar tooltip → `bg-wm-surface` with `shadow-wm-pop`.
+- Phone header 56 px (`h-14`), offsets in `AppChrome`, `FloatingButtons`, `Skeleton` follow (chỗ 25, header only).
+- `SkeletonPage`: mesh background (`AppBackground`), top bar 64 px desktop and 56 px phone, the same column widths as the page it stands for,
+  so content does not jump (chỗ 24, audit: 72 vs 64, flat vs mesh, 8 px jump).
+
+- [ ] **Step 1: Shoot chỗ 24 for the owner.** On this branch's stack (`pnpm bootstrap` from the worktree; tell the owner it replaces the main
+  checkout's containers), hard-load `/vi/app`, `/vi/app/groups`, `/vi/app/practice` at 390 and 1440 with the network throttled so the skeleton
+  shows; save the frames under `test-results/shots/polish-skeleton/` (not committed) and send them to the owner. **Stop until the owner says which
+  way the skeleton goes** (the token part of Steps 2–4 may go on meanwhile). The steps below assume "match the real page" (the audit's three points); a different answer is a ruling.
+- [ ] **Step 2: Failing test** `no-old-tokens.test.ts`: from the custom properties declared in `packages/design-tokens/theme.css` and the old
+  `@theme` block (read the names from those files, not a hand list), build the utility names (`bg-`, `text-`, `border-`, `shadow-`, `rounded-`,
+  `animate-`, `ease-`, `font-` + name) and `var(--name)`; scan `src/**/*.{ts,tsx,css}` (non-test) and expect none. Tailwind defaults that collide
+  (`rounded-sm`, `max-w-prose`, `shadow-sm`…) are matched only if `theme.css` redefines them (kit §2: `--radius-sm`). `tokens.test.ts`: the
+  `island.css`, `dark-pastel.css`, `dark.css` blocks are deleted; LP31 keeps only what still applies to `theme.css` (admin); the brace-balance
+  test stays. `text-classes.test.ts` allows only `wm-` names.
+- [ ] **Step 3: Run** → FAIL (72 colour hits, 14 `ease-out-strong`, body, focus…).
+- [ ] **Step 4: Implement**; drop `@import` of `theme.css`, `dark.css`, `island.css` from `globals.css`; delete the three files and their
+  `exports` lines; rewrite the package README to describe `web.css` / `web-dark.css` (and `theme.css` for admin only).
+- [ ] **Step 5: HouseAd count (M9 minor), a defect.** Red test in `house-ad/house-ad.test.tsx`: a navigation while `me` is still loading is
+  counted once `me` arrives. Commit `test(web): count a page change made before the account loads`; fix `HouseAd.tsx:39-44` (update `previous` only
+  after the guard); commit `fix(web): count page changes made while the account loads`.
+- [ ] **Step 6: Run** web unit, lint, typecheck; `pnpm cf:docker` full e2e and render mode → PASS. Admin's four checks.
+- [ ] **Step 7: Commit** `refactor(web): drop the old token files and move the last old classes to wm`, then `feat(web): match the loading
+  skeleton and the phone header to the real chrome`.
+
+## PL-b — Các màn
+
+Each screen task: move its hand-built cards onto `Card`, its h1 onto `PageTitle`, its section headings onto `SectionTitle`, its tabs and filters
+onto `Tabs` / `LevelChip`, and its example sentences onto `TargetWord` (chỗ 2, 3, 13, 15), besides the items listed.
+
+### Task P.7: Hôm nay
+
+**Files:** `today/TodayPage.tsx`, `groups/GroupStack.tsx:48`, `today/DeckRow.tsx`; tests `today/today.test.tsx`, `groups/group-pieces.test.tsx`.
+
+- Group cards (here and on Nhóm) show only the word count: `App.stack.words` "{count} từ" (drop `{mastered}`); hero line "nhóm có {total} từ".
+- "Lần luyện gần nhất": the `App.today.lastWrong` line goes (key deleted).
+- The words-by-level aside: title "{n} từ theo bậc", one row per level with a `LEVEL_FILL` square, `useLevelName`, due / total, and a tooltip
+  (`HelpTip`) with `useLevelInterval` (mockup L807–818, L819–865).
+
+- [ ] **Step 1: Failing tests:** stack meta is exactly "48 từ" (`group-pieces.test.tsx` pin changes from "48 từ · 12 đã thuộc"); no text
+  matching `/^Sai:/` with a non-empty wrong list; the aside lists "Mới", "Bậc 1" … "Bậc 5" with their counts.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit, `pnpm cf:docker e2e/app/m3.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): show word counts only and levels on hôm nay`.
+
+### Task P.8: Một nhóm
+
+**Files:** `groups/GroupPage.tsx`, `ui/StageBar.tsx` → `ui/LevelBar.tsx`, `groups/carousel.ts` (`rhythm`), tests `groups/group-page.test.tsx`.
+
+**Interfaces (Produces):** `LevelBar({ counts: number[6], size?: 'md' | 'lg' })`: one segment per non-empty level, width ∝ count, 3 px gap, 10 px
+high, `rounded-wm-key`, each segment `LEVEL_FILL[level]`, grow-in 700 ms from the left (mockup L185–189); legend below with the level name and
+count (L190–193), not truncated (fixes chỗ 5 for the word page too); hovering or focusing a segment shows the name, count and interval. Used by
+Một nhóm, Nhóm (P.16) and the word page (P.9).
+
+- Head: no group-colour square before the title (Chỗ bổ sung); meta "48 từ · tạo ngày 12/10/2026" (no "đã thuộc").
+- Filter chips: `LevelChip` row — Tất cả, Ưu tiên, Đến hạn, Mới, Bậc 1 … Bậc 5 (mockup L161–173, L948–992).
+- Word list → a table on desktop: columns Từ vựng, Loại từ, Nghĩa, Bậc, Trạng thái (`th scope="col"`, mockup L363–375): word in Bricolage 700
+  17 px with a link, pos in `text-wm-meta`, level as a 22×6 bar in `LEVEL_FILL` plus the level name, status coloured by `STATE_TEXT`; row action ×
+  kept. Phone: compact rows that keep the column header line (mockup note at L645).
+
+- [ ] **Step 1: Failing tests** (`group-page.test.tsx`): the heading has no colour square sibling (`getByRole('heading')` parent holds no
+  `img`/presentation span); a `table` with the five column headers; a row's "Bậc" cell reads "Bậc 3"; the chips are buttons "Bậc 3 11" etc. with
+  `aria-pressed`; pressing "Đến hạn" leaves only due rows; the level bar legend shows "Bậc 5 4" untruncated. The old pins (`:113`, `:152`, `:158`,
+  `:168`) change.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/app/m3.spec.ts e2e/app/cai-thien-a-group.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): show một nhóm as a table with level chips and a level bar`.
+
+### Task P.9: Trang một từ and Tra từ
+
+**Files:** `word/WordPage.tsx`, `word/LearningBlock.tsx`, `word/SenseBlock.tsx`, `word/SavedSentencesDialog.tsx`, `lookup/DictionaryPage.tsx`,
+`lookup/LiftedCard.tsx`, `lookup/LookupFilters.tsx`; tests `word/word-page.test.tsx`, `word/my-word.test.tsx`, `lookup/lookup.test.tsx`.
+
+- Pronunciation and forms sit between two 2 px hairlines of `--color-wm-rule` (ink 16 % on surface, precomputed hex, new token in both files;
+  mockup L322–325); UK and US close together (gap 16 px, not `md:gap-x-6` spread).
+- Part of speech: `unspecified` (API `PRIVATE_POS_UNSET`, `AI_POS_UNSET`) is never printed; the pos slot is empty there (chỗ 4, screens §8).
+- "Bạn đang học" block: `LevelBar` with full names and "ôn lại sau N ngày" (chỗ 5).
+- Tabs: `Tabs` with `hrefs` (chỗ 15). Every example sentence: `TargetWord` (chỗ 2).
+- Tra từ: paper stays (dark paper from M9); examples `TargetWord`; the filter sentence's clickable parts get the yellow mark (`bg-wm-mark
+  text-wm-mark-ink rounded-wm-key px-1`), replacing the accent underline (mockup L593–595).
+
+- [ ] **Step 1: Failing tests:** a private word with pos `unspecified` shows no "unspecified" text anywhere (`queryByText(/unspecified/)` null);
+  the learning block shows "Bậc 2" and "ôn lại sau 3 ngày"; the example's target is a `strong` element containing the word; the Tra từ filter
+  buttons keep their names ("trình độ tất cả" etc.) and open their menus.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/app/m4.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): polish the word page and lookup per the approved mockup`.
+
+### Task P.10: Luyện tập and Từ hay sai
+
+**Files:** `practice/PracticePage.tsx`, `practice/WeakWordsPage.tsx`, `practice/CustomizeDialog.tsx`, `app-chrome/PageColumns.tsx`; tests
+`practice/practice-home.test.tsx`, `practice/weak-history.test.tsx`; `scripts/message-keys-allow.json`.
+
+- The "Gần đây" box goes, with `useRecentHistory(3)` if nothing else uses it, and the `App.practice.recent.*` keys and their allow entry (chỗ 13).
+- One section-title kind (`SectionTitle`) and one card kind (`Card`) for "other sources", usage and shortcuts (chỗ 13).
+- Từ hay sai on a phone: the "Luyện từ hay sai" card right under the title (chỗ 10). `PageColumns` gains `asideFirstBelow?: boolean` (aside before
+  the content under 1280 px), set only here.
+- `CustomizeDialog`: drop the dead `if (!target) return null` (M9 minor); preload its chunk on pointer-enter and focus of the [Tùy chỉnh] button
+  (M9 minor).
+
+- [ ] **Step 1: Failing tests:** no region or heading "Gần đây"; at 390 px (`renderApp` with a phone viewport, as `weak-history.test.tsx:69`)
+  the "Luyện 10 từ" button comes before the first word row in document order.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit, `node scripts/check-message-keys.mjs`; `pnpm cf:docker e2e/app/m5a.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): drop the recent box and lift the weak-words card on phones`.
+
+### Task P.11: Session copy in English
+
+**Files:**
+- Modify: `src/app/[locale]/app/(member)/(focus)/layout.app.tsx` (wrap in `SessionIntl`), `messages/en.json` (session keys, mockup copy),
+  the 11 files of screens §6 that call `useLocale()`; the session tests (≈475 lines of Vietnamese copy, screens §6).
+- Create: `src/app-shell/SessionIntl.tsx`, `src/app-shell/route-locale.ts`, `src/app-shell/session-intl.test.tsx`.
+
+**Interfaces (Produces):**
+- `SessionIntl({ children })` (server): `NextIntlClientProvider locale="en" messages={{ App: (await getMessages({ locale: 'en' })).App }}`.
+  English locale gives English plural rules ("1 card left"). Wraps everything under `(focus)`: Học, Ôn, Phiên luyện, their loading and error
+  screens, and the calendar button there. `getMessages({ locale })` is an `ASSUMPTION` (screens §6): Step 1 proves it; if it fails, import
+  `messages/en.json` in the server file instead (the file is already bundled server-side).
+- `useRouteLocale(): 'vi' | 'en'` reads `useParams().locale`; it replaces `useLocale()` for links (`/${locale}/app…`), for the Vietnamese-only
+  blocks (`AnswerFeedback.tsx:120` translation: shown when the route locale is `vi`) and for date formatting the learner sees outside the session.
+- Copy (mockup L1170–1290, L1010–1026, L1153): "Still learning", "Flip card", "Know", "Next", "Review again", "Stop", "Not quite", "answer",
+  "you typed", "Hint 1 of 2", "Show hint 2", "First letter", "Definition", "AI translation", "AI sentence", "Fill in the blank", "Type the word ·
+  from meaning", "Level n · review in N days", "New word", "up to Level n", "Tap the card to flip", "Click the card or press Space to flip",
+  "Flip the card to see the meaning first.", "n cards done.", "2-day streak", "Back to home". Design §7.1 ("Hint" with no total in English) is
+  superseded by QM9-9: the design is updated in P.18.
+- `vi.json` keeps the session keys (parity, LP3) with their Vietnamese text; they are not rendered while `SessionIntl` wraps the sessions. A ruling
+  records this.
+
+- [ ] **Step 1: Failing tests** (`session-intl.test.tsx`, a rendered `(focus)` subtree with route locale `vi`): the Học close button is named
+  "Stop"… per the copy; "1 card left" and "2 cards left"; the Vietnamese meaning from the fixture stays Vietnamese; "Back to home" links to
+  `/vi/app`; the translation block shows for route `vi` and not for route `en`.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement**; rewrite the session tests' expected text to the English copy (one commit with the behaviour).
+- [ ] **Step 4: Run** web unit, lint, typecheck; `pnpm cf:docker e2e/app/{m5a,m5b,m6,cai-thien-a-speak}.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): show session copy in english for every locale`.
+
+### Task P.12: Thêm từ dialogs, the multi-group picker (QP1)
+
+**Files:**
+- Web: `add-word/GroupPicker.tsx` (`DeckList`), `add-word/AddWordSheet.tsx` (`deckField` :218-238, `deck` state :101, `save` :106-142,
+  `writeLastGroup`), `add-word/last-group.ts`, `add-word/AiLookupResult.tsx` (chỗ 23), tests `add-word/add-word.test.tsx`,
+  `add-word/locked-add-word.test.tsx`, `m4-overlays.test.tsx`, `ai-lookup.test.tsx`.
+- API: `apps/api/src/learning/quick-add/quick-add.controller.ts:18-36`, `quick-add.service.ts:54-84`, their specs; the smoke
+  `pnpm smoke:giao-dien-moi` gains one step.
+
+**Interfaces (Produces):**
+- `GroupPicker` (cách B, mockup L396–416, L1356–1391): a `listbox` with `aria-multiselectable="true"`; each row: a mini stack of two cards in the
+  group colour (lifts on select: 300 ms), name, word count, ✓ at the end; selected row tinted `--g-wash`, name in `--g-ink`; no radio. Footer:
+  "Đã chọn {n} nhóm" and the button "Lưu vào {n} nhóm". Rows toggle on click and Space; Enter confirms.
+- `AddWordSheet` "Lưu vào nhóm" field: the chosen groups as chips in their colours (`gchip`, mockup L413–414). `lockedGroupId` (opened from a
+  group page) preselects that group and still allows others. `last-group.ts` stores an array (old single-id values are read as `[id]`).
+- API: body `group_ids: z.array(z.uuid()).min(1).max(10)` replaces `group_id` in a new strict schema accepted beside the old one
+  (`group_id` still accepted, additive within v1); duplicates collapse; every id must be owned; `linkInTx` runs per group in the same transaction;
+  one full group → 409 `group-full` with the group's id in the Problem Details `detail`, nothing saved. Max 10 is a ruling (no design number).
+- Hộp 4 (Tra bằng AI) on desktop: two columns from the top of the dialog — left the inputs and the result, right the preview card level with the
+  "Từ" field (chỗ 23, mockup L1346–1355 frame "hộp 4").
+
+- [ ] **Step 1: Failing tests (web):** choosing "Đề 12" and "Đề 9" then pressing "Lưu vào 2 nhóm" sends one quick-add with `group_ids` holding both ids;
+  the field shows two chips; reopening the dialog preselects both (last groups); a stored old single id still preselects one group; a 409 naming
+  "Đề 9" shows "Đề 9 đã đầy. Chưa lưu từ." and no success toast. Copy follows the Vietnamese style rule.
+- [ ] **Step 2: Failing API specs:** `group_ids` with two owned groups links both in one transaction; a foreign id → 404 and no link;
+  a full second group → 409 and the first link rolled back; `group_id` alone still works; `group_ids` and `group_id` together → 400.
+- [ ] **Step 3: Run** → FAIL. **Step 4: Implement.** **Step 5: Run** web unit; API `pnpm lint`, `pnpm typecheck`, `pnpm test`; the smoke on a
+  fresh DB; `pnpm cf:docker e2e/app/m4.spec.ts` → PASS.
+- [ ] **Step 6: Commit** `feat(api): accept several groups in quick-add` first, then `feat(web): save a word into several groups`; then
+  `feat(web): lay out the ai lookup dialog in two columns from the top`.
+
+### Task P.13: Phiên luyện and Ôn
+
+**Files:** `practice/session/{QuestionCard,SentenceQuestions,TypeWordQuestion,AnswerFeedback,HintPanel,PracticeSession}.tsx`,
+`recall/CompareLine.tsx`, `recall/RecallSummary.tsx`; tests `practice-session.test.tsx`, `ai-questions.test.tsx`, `session-screen.test.tsx`,
+`recall/recall-session.test.tsx`. No API change (QP3).
+
+- The instruction line under the question chip goes (`App.practice.session.ask.*` deleted); the chip says the kind (QM9-9).
+- Fill-in sentence: the blank is the input — an `input` inside the sentence, `min-width: 5ch`, growing with the text, accent underline 3 px and
+  7 % tint (mockup L509–513); Enter grades; the result replaces the input in place (wrong word struck through in a dashed fail box, answer in a pass
+  box; mockup L320–321). The separate `TypeWordInput` stays for "type the word · from meaning".
+- "AI translation" after answering: its own block under the sentence inside the card — accent 7 % tint, 1 px accent 22 % line, `rounded-wm-row`,
+  translate icon, text 17 px, "AI translation" chip at the right (mockup L326–331). Shown only for route locale `vi` (P.11).
+- "Not quite" panel (`AnswerFeedback`, both Phiên and Ôn): the answer as a big line under the title in a pass-tinted block with the speak button;
+  every gap 16 px; actions at the right (mockup L332–349, L1213–1225); light fail 9 % / 62 %, dark coral (M9 tokens `wrong-*`).
+- Ôn: "you typed / answer" replaces the input inside the card (chỗ 18), not a card under the buttons.
+- Key legend: centred, right under the panel (chỗ 17), desktop only.
+- Hint box: a three-column grid 24 px / 112 px / 1fr (number, hint name, content); "Show hint 2" sits in the content column; progress dots at the
+  right of the title; first-letter text in Bricolage 22 px with 0.12em tracking (mockup L352–361). `bg-wm-ink` circles → ink border, filled when on.
+- First letter: unchanged (QP3): `e___` for fill-in sentences (CS20), the non-AI typed hint as today. Only its box and font change.
+- Ôn summary on a phone keeps its title size (the `cn` fix of P.4) and the "Sai, giữ bậc" / "Cần ôn lại" boxes use the right colours (chỗ 7).
+- Close X 32 px (`size-8`).
+
+- [ ] **Step 1: Failing tests:** the sentence has a `textbox` named by the blank; typing "estimate" and Enter shows "correct" in the sentence and
+  no separate textbox; a wrong answer shows the typed word struck and the answer; no "Gõ từ còn thiếu" / "Type the missing word" text; "AI
+  translation" region after answering in `vi`; Ôn's "you typed" sits inside the question card (`within(card)`); hint grid: "Show hint 2" button
+  inside the second row; CS20 (`c___` for `crucial`) still passes. The Ôn summary colours (chỗ 7) are pinned in the e2e step, since jsdom
+  computes no CSS.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit; `pnpm cf:docker e2e/app/{m5a,m5b,cai-thien-a-speak}.spec.ts` with a check that the Ôn summary boxes' colours match
+  the tokens → PASS.
+- [ ] **Step 5: Commit** `feat(web): type into the blank and reshape the answer and hint panels`.
+
+### Task P.14: Đăng nhập and Đăng ký panel
+
+**Files:** `features/learner/auth/AuthShowcase.tsx`, `auth/SplitFrame.tsx`, `app-chrome/CardFrame.tsx`, `ui/field-styles.ts`, `src/app/globals.css`
+(showcase keyframes), `packages/design-tokens/web.css`, `web-dark.css` (showcase ground and input line tokens); `e2e/auth-layout.spec.ts`;
+new `auth/auth-showcase.test.tsx`.
+
+- Panel ground stronger: accent 13 % on bg with four radial glows (mockup L432–443) as tokens.
+- The panel tells the learning loop (mockup L418–460, L1395–1480): a dashed memory path through nodes "Mới → Bậc 1 … Bậc 5" with "1, 3, 7, 14,
+  30 ngày"; a word chip travels the path (`offset-path`, 14 s linear, its colour stepping through the level colours); the word card cycles mitigate,
+  allocate, viable, deteriorate, coherent; the practice card types the word into the blank, presses Enter, turns green "Đúng · lên Bậc n"; the due
+  count falls one by one. Background chips (deadline, negotiate) are faint and under the card (chỗ 20). All `aria-hidden`.
+- Reduced motion: no travel, no typing; the final frame of each loop is shown.
+- Inputs on the mesh: border `ink 22 %` on surface as a token (mockup L180), the card glow visible at xl (chỗ 21).
+
+- [ ] **Step 1: Failing tests:** `auth-showcase.test.tsx` with fake timers: after one cycle the word card shows "allocate"; the practice card ends
+  with "Đúng · lên Bậc 2"; with reduced motion the first render already shows the final practice state and no element has a running animation
+  (`getAnimations()` empty where jsdom supports it, else the class flag). E2E `auth-layout.spec.ts` at 1440: the "negotiate" chip's box does not
+  intersect the word card's box.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/auth-layout.spec.ts e2e/a11y.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): tell the learning loop in the sign-up panel`.
+
+### Task P.15: Dialog sweep and leftovers of PL-b
+
+**Files:** the 15 dialog files of kit §7, `calendar/CalendarModal.tsx`, `calendar/DayDialog.tsx`, `calendar/MonthDialog.tsx`, `ui/Select.tsx`,
+`groups/GroupPicker.tsx:108`, `practice/CustomizeDialog.tsx:270,315`.
+
+- Every dialog: × box, cancel as text, options on white (chỗ 11; P.4 changed the frame, this task checks each dialog's own content).
+- Day dialog filter → `LevelChip`-style chips or `Tabs` as fits its role (chỗ 15).
+- Cards inside dialogs on `Card` where they are cards.
+
+- [ ] **Step 1: Failing test** in `ui/overlays.test.tsx`: render each of the 15 dialogs with its minimal props and expect one button named by its
+  close label and, where the dialog has a cancel action, that it is not styled as an outline button (role and name, plus the `TextButton` export
+  check). **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/app/{m4,m6,m7a}.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): give every dialog one frame and one cancel style`.
+
+## PL-c — Motion
+
+### Task P.16: Nhóm "Vòng cung"
+
+**Files:** `groups/GroupCarousel.tsx`, `groups/GroupStack.tsx`, `groups/GroupListPage.tsx` (`Below`), `groups/carousel.ts`, `src/app/globals.css:577-770`
+(`.gcar*`, `.gstack*`), `packages/design-tokens/web.css` (`--ease-wm-carousel`); tests `groups/carousel.test.ts`, `groups/group-list.test.tsx`.
+
+**Interfaces (Produces):** `arcSlot(k: number, phone: boolean): { x: number; y: number; rotate: number; scale: number; opacity: number; z: number }`
+in `carousel.ts`, pure: `step = phone ? 128 : 230`; `x = k·step·0.84`; `y = 16·k²`; `rotate = 8·k` deg; `scale = 1 − 0.1·|k|`;
+`opacity = |k| > 2 ? 0 : 1 − 0.25·|k|`; `z = 10 − |k|` (mockup L881–884, `vong-7` L703–704). CSS reads them as custom properties.
+
+- Card 290 px desktop / 210 px phone, `transform-origin: 50% 130%`; transition `transform 0.66s cubic-bezier(.34,1.56,.64,1), opacity .45s`
+  (`--ease-wm-carousel` changes to this curve; mockup L477–478); a jump of more than 3 positions sets no transition for that frame (L922–927).
+- Stack depth layers d1–d3 (translate, scale, blur 2.5 / 5 / 7 px, opacity .85 / .55 / .3; L483–485); the top card border 2 px in the group
+  colour; empty group dashed (L486–487); `rounded-wm-dialog`.
+- Card face: "{n} từ" meta only, name, "{due} thẻ chờ" in `--g-ink`, footer "tiếp theo · word" (L488–496, L885–890).
+- Glow behind the track in the current group colour, 0.7 s colour transition (L468–469), replacing `.gcar-halo`.
+- Below the track: eyebrow "nhịp ôn: Mới → Bậc 5", `LevelBar` 420 px, actions; the block staggers in (460 ms, 45 ms per child,
+  `cubic-bezier(.3,1.3,.5,1)`; L939–945). Phone: no arrows, track 340 px (vong-7 L192–201).
+- Keyboard, click on side cards, ↓ to open, reduced motion: behaviour of `group-list.test.tsx` kept.
+
+- [ ] **Step 1: Failing tests:** `arcSlot(0,false)` = `{x:0,y:0,rotate:0,scale:1,opacity:1,z:10}`; `arcSlot(2,false)` = `{x:386.4,y:64,rotate:16,
+  scale:0.8,opacity:0.5,z:8}`; `arcSlot(-1,true)` x = −107.52; `arcSlot(3,…)` opacity 0; five → presses in a row end on the fifth group with one
+  `on` card and no card left with an inline `transition: none`.
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/app/m3.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): move the group carousel onto the arc`.
+
+### Task P.17: Học "Chồng thẻ tan mờ" layout
+
+**Files:** `review/ReviewSession.tsx`, `review/CardStack.tsx`, `review/Pile.tsx`, `review/useCardDrag.ts`, `src/lib/stack-motion.ts`, `ui/StreakToast.tsx`
+(placement); tests `review/card-stack.test.tsx`, `review/learn-stack.test.tsx`, `review/review-session.test.tsx`.
+
+- Depth (mockup L235–238): d1 `translateY(16px) scale(.95) blur(5px) opacity .85`, d2 `30px .9 9px .5`, d3 `40px .86 12px 0`; reduced motion
+  drops the blur (L305). Check `stack-motion.ts` values against L1119–1140 (dissolve 1.22, blur 18 px, 300 − speed·80 ms drag / 240 ms button;
+  arrive from blur 10 px) and keep what already matches (screens §4).
+- Stack higher (≈20 px under the session bar); the streak toast sits at the top right under the X (`placement: 'session-corner'`).
+- Close: X only, 32 px, named "Stop" (no "Đóng phiên ôn Esc").
+- Buttons (L268–293): 40 px, 14 px text, weight 700: "← Still learning [1]" fail text on surface (dark: fail 6 % on surface), "↻ Flip card
+  [Space]" accent fill, "✓ Know [2] →" pass text on surface; disabled look at 50 % before the flip; key legend under them on desktop (Space, 1/←,
+  2/→, Esc).
+- Piles: number and label centred, no arrows in the labels; word chips drop into the piles on desktop only (L227–229).
+- Phone (L287–304): piles under the card; side buttons are 52 px icon-only squares with `aria-label` "Still learning" / "Know"; Flip card keeps its
+  own width (min 148 px); no key hints; card hint "Tap the card to flip".
+
+- [ ] **Step 1: Failing tests:** at 390 px the side buttons have no visible text but accessible names "Still learning" and "Know"; no `kbd`
+  elements; the piles come after the card in document order; on desktop the legend lists the four keys; pressing 2 twice within 100 ms after a flip
+  records one answer (`learn-stack.test.tsx`); the X is named "Stop".
+- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** web unit; `pnpm cf:docker e2e/app/m5b.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): lay out the learn stack per the approved mockup`.
+
+## P.18: Check, shots, docs, PR
+
+- [ ] **Step 1: The 25 picks.** For each audit item, write one line in the as-built: picked side, what changed, the commit, or "kept" for 8, 12,
+  16, 19, 22 and the tab bar of 25. An item the shots show still off is fixed here or listed as a ruling.
+- [ ] **Step 2: Allow file.** Replace `App.errors.*`, `App.transactions.*`, `Landing.*` with exact keys or narrower prefixes read by variable
+  (M9 minor; `App.practice.recent.*` went in P.10). `node scripts/check-message-keys.mjs` → 0 unused, 0 stale.
+- [ ] **Step 3: Whole suite.** Web unit, lint, typecheck, `pnpm cf:docker` (full e2e and render mode), `pnpm cf:docker --bundle-stats` and the
+  compare (limits 110 %, 118 % for the two plan pages) → PASS; admin's four checks; API lint, typecheck, unit and `pnpm smoke:giao-dien-moi` on a fresh DB.
+- [ ] **Step 4: Shots.** `SHOTS_MILESTONE=gm-polish` (a copy of the gm-m9 set, same 4 widths, light and dark) on this branch's `pnpm bootstrap`
+  stack; look at every frame beside the mockup frame of the same screen; differences become fixes or rulings. Frames the seed cannot reach are
+  "chưa chụp".
+- [ ] **Step 5: Docs.** Polish as-built in `docs/deliveries/giao-dien-moi.md` (rulings from R265); design §7.1 (session copy English, "Hint 1 of
+  2"), §7.2 (levels, radius C, fonts), §9 (polish done), §14 (polish condition met); `packages/design-tokens/README.md`; mark "việc dọn chuyển sang
+  đợt polish" done.
+- [ ] **Step 6: PR** through `ship-pr` into `refactor/giao-dien-moi`, one PR for the whole round (QP2).
+
+## Decisions this part makes
+
+The owner's decisions are QM9-1 … QM9-9. Claude settled these while writing the part; the owner approves them with the plan:
+- **Radius tokens by role** (`key`, `control`, `row`, `card`, `dialog`, `pill`) instead of re-valuing the size names; the sweep goes by role, and a
+  test forbids the old names.
+- **`text-wm-meta`** replaces `text-wm-mono` (same 12 px), so labels keep their size when the font changes.
+- **Level helpers in `ui/levels.ts`**, one map for fills and names, replacing the seven copied arrays; stage tokens deleted.
+- **`LevelChip` and level tints as tokens with precomputed hex**, because a contrast test must read them (M9.8 rule).
+- **`TargetWord` is one matcher** (lemma and forms, whole words); the yellow mark stays only on the Tra từ filter sentence.
+- **Dialogs always show ×**; `closeLabel` becomes required.
+- **The arrow is an icon**, not a glyph, after checking the subset on a fresh build.
+- **Session English via a nested provider with `locale="en"`**, and a route-locale hook for links and the Vietnamese-only blocks; `vi.json` keeps
+  the session keys.
+- **Test helpers move to `src/test-utils/`**, outside `ui/` (its lint rule forbids feature imports) and outside `app-ui/` (deleted).
+- **`--ease-wm-out-strong`** keeps the curve new code depends on before the old block goes.
+- **The skeleton task stops for the owner** after the shot (chỗ 24 note "chụp lại chỗ này mình xem").
+- **`group_ids` is capped at 10** (no design number).
+
+**Open:** none for the owner before execution (chỗ 24 is asked inside P.6). Not in this part: "mỗi trang chỉ gửi phần chữ trang đó cần" and splitting the message files (QM9-8), the OG image font
+(M8c), QR4 (ads), the phone frame-rate measurement (QM9-7, owner).

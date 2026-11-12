@@ -184,6 +184,40 @@ Các chỗ sửa khác của mockup thuộc đợt polish (plan riêng, sau M9).
 
 **Còn chờ chủ dự án:** chọn cách đo trên điện thoại (Wi-Fi như đã chốt, hay cắm USB trên Android) trước bước đo của M9.10. Đo khung hình trên điện thoại thật (QM9-7, hướng dẫn `docs/deliveries/giao-dien-moi-do-dien-thoai.md`) là điều kiện của design §14 trước PR cuối vào `dev`; chưa đo (xem as-built M9).
 
+# Giao diện mới — plan tóm tắt, phần 10: đợt polish (12/11/2026)
+
+Plan: "Part 10" trong file plan ở trên. Làm theo [mockup bản chốt](https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL) và QM9-9; nhánh
+`feat/giao-dien-moi-polish` từ nhánh dài sau khi PR #268 (M9) merge. Facts: `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-12-polish-{kit,screens}.md`.
+
+**PL-a — Hệ thống**
+- P.1: màu theo mức và tên "Mới, Bậc 1–5" ở mọi chỗ; bỏ chữ "ngăn" và màu ngăn.
+- P.2: nhãn, số đếm, phím tắt dùng Noto Sans (bỏ JetBrains Mono); viết hoa chữ đầu nhãn ngay trong file chữ.
+- P.3: góc bo mức C theo vai trò phần tử (phím 4, nút và ô 8, dòng 10, card 14, hộp thoại 16).
+- P.4: mảnh dùng chung: tiêu đề trang, tiêu đề mục, card, tab gạch dưới, chip lọc theo mức, khung hộp thoại một kiểu, tô từ đích, mũi tên; sửa lỗi mất cỡ tiêu đề.
+- P.5: chuyển các mảnh cuối của `app-ui/` sang `ui/` (màn mất mạng, không tìm thấy, toast chuỗi ngày kiểu mới) rồi xóa `app-ui/`.
+- P.6: bỏ token cũ và ba file `dark.css`, `island.css`, `dark-pastel.css`; khung xương lúc tải và thanh trên điện thoại 56 px; sửa đếm chuyển trang của quảng cáo nhà.
+
+**PL-b — Các màn**
+- P.7: Hôm nay: card nhóm chỉ ghi số từ, bỏ dòng "Sai: …", khối từ theo bậc.
+- P.8: Một nhóm: bỏ ô màu trước tiêu đề, thanh tiến độ và chip lọc theo màu mức, danh sách từ thành bảng có tên cột.
+- P.9: Trang một từ và Tra từ: cụm phát âm giữa hai đường kẻ, không in "unspecified", nhãn bậc đủ chữ, tô từ đích, nền vàng cho câu lọc.
+- P.10: Luyện tập và Từ hay sai: bỏ box "Gần đây", một kiểu tiêu đề mục và card, thẻ luyện từ hay sai lên đầu trên điện thoại.
+- P.11: chữ giao diện trong Học, Phiên luyện, Ôn bằng tiếng Anh cho mọi ngôn ngữ; nghĩa, câu dịch, tên nhóm giữ tiếng Việt.
+- P.12: hộp Thêm từ: chọn nhiều nhóm (chồng thẻ nhỏ, "Lưu vào n nhóm"); hộp 4 hai cột từ đầu hộp.
+- P.13: Phiên luyện và Ôn: gõ thẳng vào chỗ trống, khối "AI translation", panel "Not quite" mới, ô gợi ý theo lưới, bỏ dòng hướng dẫn.
+- P.14: panel Đăng ký và Đăng nhập kể vòng học có motion; ô nhập có viền rõ trên nền mesh.
+- P.15: rà mọi hộp thoại: nút ×, "Hủy" dạng chữ, lựa chọn nền trắng.
+
+**PL-c — Motion**
+- P.16: băng chuyền Nhóm kiểu Vòng cung.
+- P.17: bố cục Học theo "Chồng thẻ tan mờ": nút 40 px, X góc phải, nút chỉ icon trên điện thoại.
+
+**Cuối đợt**
+- P.18: kiểm lại 25 chỗ lệch, thu hẹp danh sách khóa chữ cho phép, chạy toàn bộ kiểm thử, chụp bộ ảnh 4 khổ sáng và tối, ghi as-built, mở PR.
+
+**Chủ dự án đã chốt (12/11, QP1–QP4):** lưu nhiều nhóm bằng trường `group_ids` của quick-add (một transaction); một PR cho cả đợt; giữ gợi ý
+`e___`; thêm màu `warn` đủ tương phản. **Còn chờ:** duyệt plan trước khi code; P.6 dừng cho chủ dự án xem ảnh khung xương (chỗ 24).
+
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
 Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
