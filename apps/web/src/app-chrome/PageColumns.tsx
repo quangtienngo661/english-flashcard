@@ -10,13 +10,15 @@ import { useWide } from '@/lib/use-wide';
 export function PageColumns({ children, aside, asideFirstBelow = false }: { children: ReactNode; aside?: ReactNode; asideFirstBelow?: boolean }) {
   const wide = useWide();
   if (!aside) return <>{children}</>;
-  const asideEl = <aside className="flex w-full flex-col gap-6 xl:w-90 xl:shrink-0">{aside}</aside>;
-  const content = <div className="flex min-w-0 flex-1 flex-col">{children}</div>;
-  const asideFirst = asideFirstBelow && !wide;
-  return (
-    <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
-      {asideFirst ? asideEl : content}
-      {asideFirst ? content : asideEl}
-    </div>
-  );
+  const columns = [
+    <aside key="aside" className="flex w-full flex-col gap-6 xl:w-90 xl:shrink-0">
+      {aside}
+    </aside>,
+    <div key="content" className="flex min-w-0 flex-1 flex-col">
+      {children}
+    </div>,
+  ];
+  // Keyed, so crossing 1280 px moves the two columns instead of remounting them (a click during the swap would be lost).
+  if (!(asideFirstBelow && !wide)) columns.reverse();
+  return <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">{columns}</div>;
 }
