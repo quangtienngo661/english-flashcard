@@ -108,7 +108,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
         <div
           role="group"
           aria-label={tRecall('compare.answer')}
-          className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5 rounded-wm-row border border-wm-pass/40 bg-wm-pass-soft px-4 py-3.5"
+          className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5 rounded-wm-row border border-wm-answer-line bg-wm-pass-soft px-4 py-3.5"
         >
           <span className="w-full font-wm-sans text-wm-meta text-wm-pass">{tRecall('compare.answer')}</span>
           <span className="min-w-0 break-words font-wm-display text-wm-card-heading font-extrabold text-wm-pass">{lemma}</span>

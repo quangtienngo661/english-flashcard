@@ -95,7 +95,7 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
         // The width follows the text in characters: `size` needs no style and no measuring.
         size={Math.max(5, field.shown.length + 1)}
         className={cn(
-          'mx-0.5 max-w-full rounded-t-wm-control border-0 border-b-3 bg-wm-accent/7 px-2 align-baseline outline-none focus-visible:bg-wm-accent/12',
+          'mx-0.5 max-w-full rounded-t-wm-control border-0 border-b-3 bg-wm-blank-soft px-2 align-baseline outline-none focus-visible:bg-wm-blank-soft-focus',
           field.retry ? 'border-wm-fail text-wm-fail caret-wm-fail' : 'border-wm-accent text-wm-accent caret-wm-accent',
         )}
       />

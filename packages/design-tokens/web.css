@@ -38,6 +38,17 @@
   --color-wm-wrong-soft: #fbedeb;
   --color-wm-wrong-line: rgb(184 53 42 / 0.62);
   --color-wm-wrong-ink: #b8352a;
+  /* P.13 (mockup L321-331, L338, L352, L509-511): session blocks. translation-soft = color-mix(in oklab, accent 7%, surface);
+     translation-line and hint-line = color-mix(accent 22%, transparent); translation-chip-line = color-mix(accent 30%, transparent);
+     answer-line = color-mix(pass 40%, transparent) ("Not quite" answer block); blank-soft = color-mix(accent 7%, transparent), blank-soft-focus
+     = 12 % (the fill-in input). Precomputed. */
+  --color-wm-translation-soft: #edf1f7;
+  --color-wm-translation-line: rgb(30 58 138 / 0.22);
+  --color-wm-translation-chip-line: rgb(30 58 138 / 0.3);
+  --color-wm-hint-line: rgb(30 58 138 / 0.22);
+  --color-wm-answer-line: rgb(27 122 70 / 0.4);
+  --color-wm-blank-soft: rgb(30 58 138 / 0.07);
+  --color-wm-blank-soft-focus: rgb(30 58 138 / 0.12);
   --color-wm-level-0: #a3abbd;
   --color-wm-level-1: #b9e4c7;
   --color-wm-level-2: #7ccd9b;

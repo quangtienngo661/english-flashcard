@@ -23,7 +23,7 @@ const GRID = 'grid grid-cols-[1.5rem_7rem_minmax(0,1fr)] items-center gap-x-3.5 
 const MASK = 'font-wm-display text-wm-block-title tracking-[0.12em] text-wm-ink';
 
 /**
- * K/63 "Gợi ý" box (copy doc §15 point 10; P.13, mockup L352-361): the title with progress dots at its right, then one row per level on
+ * K/63 "Gợi ý" box (copy doc §15 point 10; P.13, mockup L352-361), its own box 16 px under the question card: the title with progress dots at its right, then one row per level on
  * three columns (number, hint name, content); the next locked row has [Show hint N] (key H) in its content column. `POST …/hint` only
  * raises the item's level, so reading an opened level again (after a reload) is safe. First letter stays `e___` (QP3); only its font changes.
  */
@@ -44,7 +44,7 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   if (opened.length === 0) return null;
   const nextLevel = levels.find((n) => n > item.hint_level);
   return (
-    <section aria-labelledby={titleId} className={cn(GRID, 'rounded-wm-card border border-wm-accent/22 bg-wm-accent-soft px-5 py-4.5')}>
+    <section aria-labelledby={titleId} className={cn(GRID, 'mt-4 rounded-wm-card border border-wm-hint-line bg-wm-accent-soft px-5 py-4.5')}>
       <div className="col-span-full flex items-center gap-2">
         <Lightbulb aria-hidden className="size-4 shrink-0 text-wm-ink" />
         <h3 id={titleId} className="text-wm-small-strong text-wm-ink">

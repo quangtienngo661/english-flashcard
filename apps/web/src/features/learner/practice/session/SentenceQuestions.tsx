@@ -9,9 +9,8 @@ import { cn } from '@/lib/cn';
 export type BlankFill = {
   /** The right word, green. */
   right?: string;
-  /** The wrong word typed: red, struck through (dashed) when the answer is shown, with "lần N" while the learner may retry. */
+  /** The wrong word typed: struck through in a dashed red box, beside the right word. */
   wrong?: string;
-  attempt?: number;
 };
 
 const BLANK = /_{2,}/;
@@ -24,25 +23,23 @@ const SENTENCE = 'break-words font-wm-display text-wm-card-title text-wm-ink md:
  * stays one text with its blank, or holds `input` in the blank (a typed fill-in, P.13); after it, the blank holds the word chips.
  */
 export function SentenceText({ sentence, highlight, fill, input }: { sentence: string; highlight?: string; fill?: BlankFill | null; input?: ReactNode }) {
-  const t = useTranslations('App.practice.session');
   const blank = sentence.match(BLANK);
-  const filled = fill && (fill.right || fill.wrong);
+  const filled = fill?.right;
   if (blank?.index !== undefined && (filled || input)) {
-    const struck = Boolean(fill?.right && fill.wrong);
     return (
       <p className={SENTENCE}>
         {sentence.slice(0, blank.index)}
         {filled ? (
           <>
             {fill.wrong && (
-              <Chip tone="fail" struck={struck}>
-                {fill.wrong}
-                {fill.attempt !== undefined && <span className="ml-2 align-middle text-wm-meta">{t('attempt', { n: fill.attempt })}</span>}
-              </Chip>
+              <>
+                <Chip tone="fail" struck>
+                  {fill.wrong}
+                </Chip>
+                {/* A real space between the two words, so the sentence reads "deplay deploy", not "deplaydeploy". */}{' '}
+              </>
             )}
-            {/* A real space between the two words, so the sentence reads "deplay deploy", not "deplaydeploy". */}
-            {struck && ' '}
-            {fill.right && <Chip tone="pass">{fill.right}</Chip>}
+            <Chip tone="pass">{fill.right}</Chip>
           </>
         ) : (
           input
@@ -90,11 +87,11 @@ export function TranslationBlock({ text }: { text: string }) {
   return (
     <section
       aria-label={t('translationAi')}
-      className="flex items-center gap-3 rounded-wm-row border border-wm-accent/22 bg-wm-accent/7 px-4 py-3 motion-safe:animate-wm-feedback-in"
+      className="flex items-center gap-3 rounded-wm-row border border-wm-translation-line bg-wm-translation-soft px-4 py-3 motion-safe:animate-wm-feedback-in"
     >
       <Languages aria-hidden className="size-5 shrink-0 text-wm-accent" />
       <p className={TRANSLATION_TEXT}>{text}</p>
-      <span className="shrink-0 rounded-wm-key border border-wm-accent/30 px-2 py-0.5 font-wm-sans text-wm-meta text-wm-accent">{t('translationAi')}</span>
+      <span className="shrink-0 rounded-wm-key border border-wm-translation-chip-line px-2 py-0.5 font-wm-sans text-wm-meta text-wm-accent">{t('translationAi')}</span>
     </section>
   );
 }

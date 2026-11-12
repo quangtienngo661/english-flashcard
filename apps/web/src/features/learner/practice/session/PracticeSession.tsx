@@ -366,8 +366,9 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
         onReport={onReport}
       >
         {question}
-        <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       </QuestionCard>
+      {/* P.13 (ruling L-B-4, mockup L352-361): the hint box is its own box right under the card. */}
+      <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       {final?.result.alternative ? (
         <AlternativeFeedback
           result={final.result}
