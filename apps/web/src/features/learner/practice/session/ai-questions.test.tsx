@@ -72,15 +72,35 @@ type Call = { method: string; path: string; body: unknown };
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 describe('AI question types (K/78a–K/81)', () => {
-  it('K/78a cloze: "câu AI", the sentence with its blank, [Kiểm tra] sends the typed word', async () => {
+  it('K/78a cloze: "câu AI", the blank is the input; Enter sends the typed word and the word takes the blank (P.13)', async () => {
     const r = renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), { 'POST /v1/practice/items/it-c/answer': () => Response.json(result()) }) });
-    expect(await screen.findByText('We use Docker to ___ the app to the production server.')).toBeInTheDocument();
+    const blank = await screen.findByRole('textbox', { name: 'Missing word' });
+    // The input sits inside the sentence, where the blank was.
+    const sentence = screen.getByText('We use Docker to the app to the production server.');
+    expect(sentence).toContainElement(blank);
     expect(screen.getByText('AI sentence')).toBeInTheDocument();
     expect(screen.getByText('Fill in the blank')).toBeInTheDocument();
-    expect(screen.getByText('Type the missing word in the right form')).toBeInTheDocument();
-    await userEvent.type(screen.getByRole('textbox'), 'deploy');
-    await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+    // QM9-9: the chip names the kind; the instruction line under it is gone.
+    expect(screen.queryByText(/Type the missing word/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('textbox')).toHaveLength(1);
+    await userEvent.type(blank, 'deploy{Enter}');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/answer')[0]?.body).toEqual({ text: 'deploy' }));
+    await screen.findByText('Right');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByText('We use Docker to the app to the production server.')).toHaveTextContent('We use Docker to deploy the app to the production server.');
+  });
+
+  it('P.13: a wrong typed word is struck in the sentence, the answer beside it', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true })),
+    }) });
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'deplay{Enter}');
+    await screen.findAllByText('Not quite');
+    const sentence = screen.getByText('We use Docker to the app to the production server.');
+    expect(within(sentence).getByRole('deletion')).toHaveTextContent('deplay');
+    expect(sentence).toHaveTextContent('We use Docker to deplay deploy the app to the production server.');
+    expect(within(sentence).queryByRole('textbox')).not.toBeInTheDocument();
   });
 
   it('K/78a: [Xem đáp án] before any try skips the question', async () => {
@@ -109,16 +129,18 @@ describe('AI question types (K/78a–K/81)', () => {
   it('K/78b meaning in sentence: the asked word is bold; key 1 chooses the first meaning', async () => {
     const r = renderApp(<PracticeSession />, { session: true, routes: routes(meaning, { 'POST /v1/practice/items/it-m/answer': () => Response.json(result()) }) });
     expect(await screen.findByText('deployed', { selector: 'strong' })).toBeInTheDocument();
-    expect(screen.getByText('What does the bold word mean here?')).toBeInTheDocument();
+    expect(screen.getByText('Meaning in the sentence')).toBeInTheDocument();
+    expect(screen.queryByText('What does the bold word mean here?')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1triển khai (phần mềm)', '2giao hàng', '3bảo vệ', '4trì hoãn']);
     await userEvent.keyboard('1');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-m/answer')[0]?.body).toEqual({ choice: 0 }));
   });
 
-  it('K/78c sentence MCQ: "Chọn từ điền vào chỗ trống" and the four words', async () => {
+  it('K/78c sentence MCQ: the "Sentence multiple choice" chip and the four words', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(sentenceMcq) });
     expect(await screen.findByText('We ___ the app to the server yesterday.')).toBeInTheDocument();
-    expect(screen.getByText('Choose the word that fills the gap')).toBeInTheDocument();
+    expect(screen.getByText('Sentence multiple choice')).toBeInTheDocument();
+    expect(screen.queryByText('Choose the word that fills the gap')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^1deployed/ })).toBeInTheDocument();
   });
 
@@ -126,20 +148,24 @@ describe('AI question types (K/78a–K/81)', () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
     }) });
-    await screen.findByText('We use Docker to ___ the app to the production server.');
+    await screen.findByRole('textbox', { name: 'Missing word' });
     // The cloze field has the focus, so H types a letter there; the button opens the hint.
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
     expect(await screen.findByText('d___')).toBeInTheDocument();
-    expect(screen.getByText('Hint 1 of 3')).toBeInTheDocument();
-    expect(screen.getByText('First letter')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
+    // Mockup L352-361: one row per hint (number, name, content); "Show hint 2" sits in the second row's content.
+    const box = screen.getByRole('region', { name: 'Hint 1 of 3' });
+    const rows = within(box).getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(within(rows[0]).getByText('First letter')).toBeInTheDocument();
+    expect(within(rows[0]).getByText('d___')).toBeInTheDocument();
+    expect(within(rows[1]).getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
   });
 
   it('CS20: hint 1 of a cloze shows the first letter and three underscores, whatever the length of the word', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'c' } }),
     }) });
-    await screen.findByText('We use Docker to ___ the app to the production server.');
+    await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
     expect(await screen.findByText('c___')).toBeInTheDocument();
     expect(screen.queryByText('c')).not.toBeInTheDocument();
@@ -150,7 +176,7 @@ describe('AI question types (K/78a–K/81)', () => {
       'POST /v1/practice/items/it-c/hint': (call) => Response.json((call.body as { level: number }).level === 1
         ? { level: 1, hint: { kind: 'first_letter', text: 'c' } } : { level: 2, hint: { kind: 'definition', text: 'very important' } }),
     }) });
-    await screen.findByText('We use Docker to ___ the app to the production server.');
+    await screen.findByRole('textbox', { name: 'Missing word' });
     expect(await screen.findByText('very important')).toBeInTheDocument();
     expect(await screen.findByText('c___')).toBeInTheDocument();
   });
@@ -158,9 +184,7 @@ describe('AI question types (K/78a–K/81)', () => {
   describe('a try-again says why (session synonyms design §3.1)', () => {
     const typeAndCheck = async (reply: unknown) => {
       renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), { 'POST /v1/practice/items/it-c/answer': () => Response.json(reply) }) });
-      await screen.findByText('We use Docker to ___ the app to the production server.');
-      await userEvent.type(screen.getByRole('textbox'), 'habit');
-      await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+      await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'habit{Enter}');
     };
 
     it('CS3: a session-word try-again says only "Chưa đúng": no line under it, not the spelling text (owner, 07/11/2026)', async () => {
@@ -187,22 +211,22 @@ describe('AI question types (K/78a–K/81)', () => {
       renderApp(<PracticeSession />, { session: true, locale: 'en', routes: routes(cloze(), {
         'POST /v1/practice/items/it-c/answer': () => Response.json({ result: 'try_again', tries: 1, reason: 'session_word' }),
       }) });
-      await screen.findByText('We use Docker to ___ the app to the production server.');
-      await userEvent.type(screen.getByRole('textbox'), 'habit');
-      await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+      await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'habit{Enter}');
       expect(await screen.findAllByText('Not quite')).toHaveLength(2);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Check the spelling/)).not.toBeInTheDocument();
     });
   });
 
-  it('K/79a: a Vietnamese learner sees "Bản dịch · AI dịch" with the translated sentence', async () => {
+  it('K/79a, P.13: a Vietnamese route shows the "AI translation" block under the sentence, inside the question card', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(meaning, { 'POST /v1/practice/items/it-m/answer': () => Response.json(result()) }) });
-    await screen.findByText('deployed', { selector: 'strong' });
+    const card = (await screen.findByText('deployed', { selector: 'strong' })).closest('section')!;
+    expect(screen.queryByRole('region', { name: 'AI translation' })).not.toBeInTheDocument();
     await userEvent.keyboard('1');
-    const block = (await screen.findByText('Translation')).closest('div')!;
+    const block = await within(card).findByRole('region', { name: 'AI translation' });
     expect(within(block).getByText('AI translation')).toBeInTheDocument();
     expect(within(block).getByText('Chúng tôi dùng Docker để triển khai ứng dụng lên máy chủ chính thức.')).toBeInTheDocument();
+    expect(screen.getAllByText('Chúng tôi dùng Docker để triển khai ứng dụng lên máy chủ chính thức.')).toHaveLength(1);
   });
 
   it('E41: an English learner has no translation block', async () => {
@@ -215,7 +239,7 @@ describe('AI question types (K/78a–K/81)', () => {
     await userEvent.keyboard('1');
     await screen.findByText('Right');
     expect(screen.queryByText(/Chúng tôi dùng Docker/)).toBeNull();
-    expect(screen.queryByText('Translation')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'AI translation' })).toBeNull();
   });
 
   it('K/80: an AI question reports with the AI reasons and the credit line', async () => {
@@ -273,9 +297,7 @@ describe('Alternative answer card', () => {
       [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json(nextQuestion),
       ...over,
     }) });
-    await screen.findByText('Sleep is ___ for good health.');
-    await userEvent.type(screen.getByRole('textbox'), 'crucial');
-    await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'crucial{Enter}');
     await screen.findByText('Alternative answer');
     return r;
   };
@@ -370,9 +392,7 @@ describe('Alternative answer card', () => {
 
   it('a plain right answer keeps today\'s card', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(sleep, { 'POST /v1/practice/items/it-a/answer': () => Response.json(result({ alternative: null })) }) });
-    await screen.findByText('Sleep is ___ for good health.');
-    await userEvent.type(screen.getByRole('textbox'), 'vital');
-    await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'vital{Enter}');
     expect(await screen.findByText('Right')).toBeInTheDocument();
     expect(screen.queryByText('Alternative answer')).not.toBeInTheDocument();
     expect(screen.queryByText('The word you typed')).not.toBeInTheDocument();
@@ -380,9 +400,7 @@ describe('Alternative answer card', () => {
 
   it('the English copy', async () => {
     renderApp(<PracticeSession />, { session: true, locale: 'en', routes: routes(sleep, { 'POST /v1/practice/items/it-a/answer': () => Response.json(alternative()) }) });
-    await screen.findByText('Sleep is ___ for good health.');
-    await userEvent.type(screen.getByRole('textbox'), 'crucial');
-    await userEvent.click(screen.getByRole('button', { name: /Check/ }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'crucial{Enter}');
     expect(await screen.findByText('Alternative answer')).toBeInTheDocument();
     const items = within(altList()).getAllByRole('listitem');
     expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();

@@ -172,7 +172,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     const next = await screen.findByRole('button', { name: /Next/ });
     expect(next.querySelector('kbd')).toHaveTextContent('Enter');
     expect(screen.queryByRole('button', { name: /Review again|Know/ })).not.toBeInTheDocument();
-    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'answer' })).toHaveTextContent(/deploy\s*triển khai \(phần mềm\)/);
     expect(next.parentElement?.nextElementSibling).toBeNull();
     await userEvent.keyboard('12');
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
@@ -276,7 +276,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('question 4 / 10')).toBeInTheDocument();
     expect(screen.getByText('Practice · Công nghệ deck')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'question 4 / 10' })).toBeInTheDocument();
-    expect(screen.getByText('Choose the word with this meaning')).toBeInTheDocument();
+    // QM9-9: the chip names the kind; no instruction line under it (P.13).
+    expect(screen.getByText('Multiple choice')).toBeInTheDocument();
+    expect(screen.queryByText('Choose the word with this meaning')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1deploy', '2delay', '3deliver', '4defend']);
   });
 
@@ -315,8 +317,12 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
     expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Right answer');
     expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Your choice');
-    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
-    expect(screen.getByText('to start using a new system')).toBeInTheDocument();
+    // P.13 (mockup L332-349): the answer is its own big line under "Not quite", with its meaning and definition.
+    const panel = screen.getByText('Not quite').closest<HTMLElement>('[data-feedback]')!;
+    const answerBlock = within(panel).getByRole('group', { name: 'answer' });
+    expect(within(answerBlock).getByText('deploy')).toBeInTheDocument();
+    expect(within(answerBlock).getByText('triển khai (phần mềm)')).toBeInTheDocument();
+    expect(within(answerBlock).getByText('to start using a new system')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Review again/ }).querySelector('kbd')).toHaveTextContent('Enter');
     expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
@@ -369,7 +375,7 @@ describe('PracticeSession (K/60–K/67)', () => {
         [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ asked: 6 }), item: typed() }),
       }),
     });
-    expect(await screen.findByText('Do this word and meaning match?')).toBeInTheDocument();
+    expect(await screen.findByText('True or false')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^1True/ }));
     expect(await screen.findByText('Right')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^1True/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
@@ -398,7 +404,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Try 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Show answer/ }));
-    expect(await screen.findByText('cache · bộ nhớ đệm')).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'answer' })).toHaveTextContent(/cache\s*bộ nhớ đệm/);
     expect(posts(v.calls, '/v1/practice/items/item-6/skip')).toHaveLength(1);
   });
 
@@ -415,7 +421,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Hint 1 of 2')).toBeInTheDocument();
     expect(screen.getByText('Definition')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/hint')[0].body).toEqual({ level: 1 });
-    expect(screen.getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
+    // P.13: "Show hint 2" sits in the second row of the hint box, where its text will go.
+    const rows = within(screen.getByRole('region', { name: 'Hint 1 of 2' })).getAllByRole('listitem');
+    expect(within(rows[1]).getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
   });
 
   it('QM9-9 (supersedes design §7.1): an English route shows the total too, "Hint 1 of 2"', async () => {
@@ -566,7 +574,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/item-6/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
     // The typed question's card leaves the page (its key must not clash with the answer field's key; motion round 27/10/2026).
-    expect(await screen.findByText('Do this word and meaning match?')).toBeInTheDocument();
+    expect(await screen.findByText('True or false')).toBeInTheDocument();
     expect(v.container.querySelectorAll('section')).toHaveLength(1);
   });
 

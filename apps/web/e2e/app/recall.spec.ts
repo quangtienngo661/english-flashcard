@@ -93,6 +93,9 @@ for (const scheme of ['light', 'dark'] as const) {
     const compare = page.getByRole('group', { name: 'Letters: you typed deteriorated, the answer is deteriorate' });
     await expect(compare).toBeVisible();
     await expect(compare.locator('[data-mark="extra"]')).toHaveText('d');
+    // P.13 (chỗ 18): the compare line takes the answer field's place inside the question card.
+    await expect(page.locator('section', { has: page.getByText('xấu đi', { exact: true }) }).getByRole('group', { name: /^Letters:/ })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: en.practice.session.answerLabel })).toHaveCount(0);
     // Ôn never shows the AI label or Báo lỗi.
     await expect(page.getByRole('button', { name: en.practice.session.report.button })).toHaveCount(0);
     await noSideScroll(page, `${scheme} compare`);
@@ -101,6 +104,21 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: /Next/ }).click();
     await expect(page.getByRole('heading', { name: '2 words done.' })).toBeVisible();
     await expect(page.getByRole('img', { name: '1/2 right' })).toBeVisible();
+    // P.13 (chỗ 7, mockup L1285): the result boxes are surface cards; "Wrong, same level" counts in ink, "Review again" in fail.
+    for (const [label, token] of [[en.recall.leveledUp, 'pass'], [en.recall.wrongKept, 'ink'], [en.recall.needsReview, 'fail']] as const) {
+      const box = page.getByText(label, { exact: true }).locator('..');
+      const colours = await box.evaluate((el, name) => {
+        const probe = document.createElement('span');
+        probe.style.color = `var(--color-wm-${name})`;
+        probe.style.backgroundColor = 'var(--color-wm-surface)';
+        el.appendChild(probe);
+        const want = { color: getComputedStyle(probe).color, background: getComputedStyle(probe).backgroundColor };
+        probe.remove();
+        return { want, number: getComputedStyle(el.firstElementChild!).color, background: getComputedStyle(el).backgroundColor };
+      }, token);
+      expect(colours.number, `${scheme} ${label} number`).toBe(colours.want.color);
+      expect(colours.background, `${scheme} ${label} box`).toBe(colours.want.background);
+    }
     await noSideScroll(page, `${scheme} summary`);
     expect(await seriousViolations(page), `${scheme} summary`).toEqual([]);
   });

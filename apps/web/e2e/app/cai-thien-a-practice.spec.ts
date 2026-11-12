@@ -70,7 +70,9 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({
       types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze'], cloze_source: 'own', ai_count: 0,
     });
-    await expect(page.getByText(SENTENCE)).toBeVisible();
+    // P.13: the blank is the input, so the sentence's own text has no "___".
+    await expect(page.getByText(SENTENCE.replace('___ ', ''))).toBeVisible();
+    await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     await expect(page.getByText(en.session.kind.cloze, { exact: true })).toBeVisible();
     await expect(page.getByText(en.session.aiChip, { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: en.session.report.button })).toHaveCount(0);

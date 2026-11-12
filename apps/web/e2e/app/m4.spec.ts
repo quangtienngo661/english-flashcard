@@ -167,7 +167,8 @@ test.describe('M4 flows (mocked API)', () => {
     await page.keyboard.press('Enter');
 
     // True/false, right.
-    await expect(page.getByText(en.session.ask.true_false)).toBeVisible();
+    // P.13: no instruction line; the chip names the kind.
+    await expect(page.getByText(en.session.kind.true_false, { exact: true })).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
     await page.getByRole('button', { name: /^(1\s?)?True/ }).click();
     await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
@@ -333,7 +334,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await noSideScroll(page, where);
         expect(await seriousViolations(page), where).toEqual([]);
         await page.keyboard.press('Enter');
-        await expect(page.getByText(t.ask.true_false)).toBeVisible();
+        await expect(page.getByText(t.kind.true_false, { exact: true })).toBeVisible();
         expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: kind === 1 ? 'known' : 'needs_review' }]);
         expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
       }

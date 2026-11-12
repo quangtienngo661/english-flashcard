@@ -182,6 +182,11 @@ describe('Ôn, the rebuilt screens (M5.9)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Show answer' }));
     const line = await screen.findByRole('group', { name: 'Letters: you typed deteriorated, the answer is deteriorate' });
     expect(line.querySelector('[data-mark="extra"]')).toHaveTextContent('d');
+    // P.13 (chỗ 18): "you typed / answer" takes the answer field's place inside the question card.
+    const card = screen.getByText('xấu đi', { selector: 'p' }).closest('section')!;
+    expect(within(card).getByRole('group', { name: 'Letters: you typed deteriorated, the answer is deteriorate' })).toBe(line);
+    expect(within(card).getByText('you typed')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Your answer' })).not.toBeInTheDocument();
   });
 
   it('a reportable item in Ôn still shows no Báo lỗi and no AI label', async () => {

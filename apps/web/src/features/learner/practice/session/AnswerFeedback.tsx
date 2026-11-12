@@ -3,11 +3,9 @@
 import { ArrowRight, Check, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { useRouteLocale } from '@/app-shell/route-locale';
 import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
-import { Tag } from '@/ui/Tag';
 import { LEVEL_FILL, toLevel, useLevelName, type Level } from '@/ui/levels';
 import { ButtonKey } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
@@ -19,7 +17,9 @@ export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
 }
 
 /**
- * The result panel tucked under the question card (Figma 100:3164 "Đúng rồi", 178:5546 / 178:5755 "Chưa đúng").
+ * The result panel under the question card (Figma 100:3164 "Đúng rồi", 178:5546 / 178:5755 "Chưa đúng"; P.13, mockup L332-349,
+ * L1213-1225: its own block 16 px under the card, 16 px between its parts, actions at the right). "Not quite" shows the answer as a big
+ * line in a pass-tinted block with its meaning, speaker and definition. The sentence translation sits in the question card (P.13).
  * Design đợt cải thiện A §6.3: (1) correct + show_known → Know; (2) correct without Know or hints → Next;
  * (3) correct with hints, without Know → Next; (4) wrong/skipped + highlight_needs_review → Still learning.
  * Enter follows the bold button. Wrong outside learning offers only Next.
@@ -36,7 +36,6 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   const t = useTranslations('App.practice.session');
   const tRecall = useTranslations('App.recall');
   const levelName = useLevelName();
-  const locale = useRouteLocale();
   const right = result.result === 'correct';
   const kind = feedbackCase(result);
   const lemma = result.correct.lemma;
@@ -76,13 +75,15 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   );
   const buttons: ReactNode[] = kind === 4 ? [forward, review] : [review, forward];
 
+  const definition = result.definition_en && result.definition_en !== result.meaning ? result.definition_en : null;
+
   return (
     // Announced through the session's live region (audit 26/10/2026 #8), so this panel is not a second status.
-    // 3C (owner 27/10/2026): the result rises in. It tucks 26 px under the card (Figma overlap -26).
+    // 3C (owner 27/10/2026): the result rises in.
     <div
       data-feedback
       className={cn(
-        '-mt-6.5 flex flex-col gap-3 rounded-b-wm-card border-2 border-t-0 px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-wm-panel-drop md:mx-5.5 md:px-7',
+        'mt-4 flex flex-col gap-4 rounded-wm-card border-2 p-5 shadow-wm-card motion-safe:animate-wm-panel-drop md:p-6',
         right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
       )}
     >
@@ -91,13 +92,33 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
           {right ? <Check aria-hidden className="size-4.5" /> : <X aria-hidden className="size-4.5" />}
         </span>
         <p className={cn('font-wm-display text-wm-card-title', right ? 'text-wm-pass' : 'text-wm-wrong-ink')}>{right ? t('right') : t('wrong')}</p>
-        <span className="hidden flex-1 md:block" />
-        <span className="flex min-w-0 basis-full items-center gap-1 md:basis-auto">
-          <span className="min-w-0 break-words font-wm-sans text-wm-base-strong text-wm-ink">{t('revealLine', { lemma, meaning: result.meaning })}</span>
-          <SpeakWord text={lemma} />
-        </span>
+        {right && (
+          <>
+            <span className="hidden flex-1 md:block" />
+            <span className="flex min-w-0 basis-full items-center gap-1 md:basis-auto">
+              <span className="min-w-0 break-words font-wm-sans text-wm-base-strong text-wm-ink">{t('revealLine', { lemma, meaning: result.meaning })}</span>
+              <SpeakWord text={lemma} />
+            </span>
+          </>
+        )}
       </div>
-      {result.definition_en && result.definition_en !== result.meaning && <p className="break-words font-wm-sans text-wm-small text-wm-muted">{result.definition_en}</p>}
+      {right ? (
+        definition && <p className="break-words font-wm-sans text-wm-small text-wm-muted">{definition}</p>
+      ) : (
+        <div
+          role="group"
+          aria-label={tRecall('compare.answer')}
+          className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5 rounded-wm-row border border-wm-pass/40 bg-wm-pass-soft px-4 py-3.5"
+        >
+          <span className="w-full font-wm-sans text-wm-meta text-wm-pass">{tRecall('compare.answer')}</span>
+          <span className="min-w-0 break-words font-wm-display text-wm-card-heading font-extrabold text-wm-pass">{lemma}</span>
+          <span className="min-w-0 break-words font-wm-sans text-wm-word text-wm-ink">{result.meaning}</span>
+          <span className="ml-auto self-center">
+            <SpeakWord text={lemma} />
+          </span>
+          {definition && <span className="w-full break-words font-wm-sans text-wm-small text-wm-muted">{definition}</span>}
+        </div>
+      )}
       {move && (
         <div role="group" aria-label={t('levelMove', { from: levelName(move.from), to: levelName(move.to) })} className="flex flex-wrap items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
           <LevelName level={move.from}>{levelName(move.from)}</LevelName>
@@ -114,16 +135,6 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
           <p className={cn('font-wm-sans text-wm-small text-wm-muted', note[1] && 'hidden md:block')}>{t(note[0], { lemma })}</p>
           {note[1] && <p className="font-wm-sans text-wm-small text-wm-muted md:hidden">{t(note[1], { lemma })}</p>}
         </>
-      )}
-      {result.translation && locale === 'vi' && (
-        // K/79a: the AI's translation of the sentence, for Vietnamese learners only (E41).
-        <div className="flex flex-col gap-1">
-          <p className="flex items-center gap-2 font-wm-sans text-wm-label text-wm-ink">
-            {t('translation')}
-            <Tag tone="accent">{t('translationAi')}</Tag>
-          </p>
-          <p className="break-words font-wm-sans text-wm-small text-wm-ink">{result.translation}</p>
-        </div>
       )}
       <div className={cn('grid gap-3 md:flex md:justify-end', buttons.filter(Boolean).length === 2 && 'grid-cols-2')}>{buttons}</div>
     </div>

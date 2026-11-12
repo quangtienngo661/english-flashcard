@@ -95,12 +95,17 @@ test.describe('M5a flows (mocked API)', () => {
       types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'], ai_count: 3,
     });
     await expect(page.getByText(en.session.ai.preparingTitle)).toBeVisible();
-    await expect(page.getByText('We use Docker to ___ the app to the production server.')).toBeVisible();
+    // P.13: the blank is the input, inside the sentence.
+    await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
+    await expect(page.getByText('We use Docker to the app to the production server.')).toBeVisible();
     await expect(page.getByText(en.session.aiChip)).toBeVisible();
     await page.getByRole('button', { name: /^Hint/ }).click();
     await expect(page.getByText('d___')).toBeVisible();
-    await page.getByRole('textbox').fill('deploy');
-    await page.getByRole('button', { name: /Check/ }).click();
+    await page.getByRole('textbox', { name: en.session.blankLabel }).fill('deploy');
+    await page.getByRole('textbox', { name: en.session.blankLabel }).press('Enter');
+    // The answer takes the blank's place; the translation is its own block in the card (Vietnamese route).
+    await expect(page.getByRole('textbox')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: en.session.translationAi })).toBeVisible();
     await expect(page.getByText(en.session.translationAi)).toBeVisible();
     await expect(page.getByText('Chúng tôi dùng Docker để triển khai ứng dụng lên máy chủ chính thức.')).toBeVisible();
     expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/prepare`).length).toBeGreaterThan(0);
@@ -113,7 +118,7 @@ test.describe('M5a flows (mocked API)', () => {
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
     await expect(page.getByText(en.session.ai.errorTitle)).toBeVisible();
     await page.getByRole('button', { name: en.session.ai.retry }).click();
-    await expect(page.getByText('We use Docker to ___ the app to the production server.')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: en.session.blankLabel })).toBeVisible();
     const nexts = requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`);
     expect(nexts.at(-1)?.body).toEqual({ retry_ai: true });
   });
@@ -199,7 +204,8 @@ for (const scheme of ['light', 'dark'] as const) {
       await noSideScroll(page, `${locale} setup`);
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
-      await expect(page.getByText(LONG_SENTENCE)).toBeVisible();
+      // P.13: the blank is an input inside the sentence, so the sentence's own text has no "___".
+      await expect(page.getByText(LONG_SENTENCE.replace('___ ', ''))).toBeVisible();
       // Review I3: the band does not name the word, nor link to it, before the answer.
       await expect(page.getByText(en.session.ai.notRecognizedAny)).toBeVisible();
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toHaveCount(0);

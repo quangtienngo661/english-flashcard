@@ -34,8 +34,9 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const tiles: Array<{ label: string; value: number; tone: string }> = [
     { label: t('leveledUp'), value: recall.leveled_up, tone: 'text-wm-pass' },
     ...(recall.correct_kept > 0 ? [{ label: t('correctKept'), value: recall.correct_kept, tone: 'text-wm-accent' }] : []),
-    { label: t('wrongKept'), value: data.wrong, tone: 'text-wm-fail' },
-    { label: t('needsReview'), value: needsReview, tone: 'text-wm-ink' },
+    // P.13 (chỗ 7, mockup L1285): wrong and kept reads in ink, Review again in the fail colour.
+    { label: t('wrongKept'), value: data.wrong, tone: 'text-wm-ink' },
+    { label: t('needsReview'), value: needsReview, tone: 'text-wm-fail' },
   ];
   const newLeft = group?.today.new ?? 0;
   const dueLeft = group ? group.today.priority + group.today.due : 0;
@@ -51,7 +52,7 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
         </h1>
         <div className={cn('grid gap-3', tiles.length === 4 ? 'grid-cols-2' : 'grid-cols-3', STAGGER[2])}>
           {tiles.map((tile) => (
-            <div key={tile.label} className="flex flex-col gap-0.5 rounded-wm-row bg-wm-bg px-4 py-3">
+            <div key={tile.label} className="flex flex-col gap-0.5 rounded-wm-row border border-wm-line bg-wm-surface px-4 py-3 shadow-wm-row">
               <span className={cn('font-wm-display text-wm-card-title tabular-nums', tile.tone)}>{tile.value}</span>
               <span className="font-wm-sans text-wm-small text-wm-ink">{tile.label}</span>
             </div>

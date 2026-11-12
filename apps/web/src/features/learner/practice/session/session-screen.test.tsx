@@ -67,7 +67,7 @@ const routes = (item: unknown, over: Record<string, Route> = {}): Record<string,
 describe('PracticeSession, the rebuilt screen (M5.4)', () => {
   it('an AI item shows the "câu AI" chip and Báo lỗi, and reports with the AI reasons', async () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
-    await screen.findByText('Air quality tends to ___ in the dry season.');
+    await screen.findByRole('textbox', { name: 'Missing word' });
     expect(screen.getByText('AI sentence')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     await screen.findByRole('dialog');
@@ -76,7 +76,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
 
   it('ai: false shows no "câu AI" chip even on a cloze; Báo lỗi there opens the non-AI reasons', async () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes(cloze({ ai: false })) });
-    await screen.findByText('Air quality tends to ___ in the dry season.');
+    await screen.findByRole('textbox', { name: 'Missing word' });
     expect(screen.queryByText('AI sentence')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     await screen.findByRole('dialog');
@@ -178,7 +178,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes(typedItem, {
       'POST /v1/practice/items/item-8/answer': () => Response.json({ result: 'try_again', tries: 1 }),
     }) });
-    const field = await screen.findByRole('textbox', { name: 'Your answer' });
+    const field = await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.type(field, 'deteriorated{Enter}');
     await screen.findByText('Check the spelling and try again. The answer stays hidden.');
     await userEvent.type(field, '{Enter}');

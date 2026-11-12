@@ -1526,22 +1526,13 @@
           "meaning_in_sentence": "Meaning in the sentence",
           "mcq_sentence": "Sentence multiple choice"
         },
-        "ask": {
-          "mcq": "Choose the word with this meaning",
-          "true_false": "Do this word and meaning match?",
-          "type_meaning": "Type the English word with this meaning",
-          "type_sentence": "Type the missing word, in the right form",
-          "other": "Answer this question",
-          "cloze": "Type the missing word in the right form",
-          "meaning_in_sentence": "What does the bold word mean here?",
-          "mcq_sentence": "Choose the word that fills the gap"
-        },
         "true": "True",
         "false": "False",
         "rightOption": "Right answer",
         "chosen": "Your choice",
         "chosenRight": "Your choice · right",
         "answerLabel": "Your answer",
+        "blankLabel": "Missing word",
         "answerPlaceholder": "Type the English word",
         "check": "Check",
         "attempt": "Try {n, number}",
