@@ -150,6 +150,15 @@ function sessionApi(): Record<string, MockHandler> {
   };
 }
 
+// Polish P.6 (chỗ 25, Figma "Thanh trên app/Mobile" 54:503): the phone header is 56 px; the desktop top bar stays 64 px.
+test('the app header is 56 px high on phones and 64 px on desktop', async ({ page }, info) => {
+  await signedInAs(page, 'free', calendarApi());
+  await page.goto('/vi/app');
+  const header = page.getByRole('banner');
+  await expect(header).toBeVisible();
+  expect((await header.boundingBox())!.height).toBe(info.project.name === 'mobile' ? 56 : 64);
+});
+
 test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating one on desktop; L in the answer box types "l"', async ({ page }, info) => {
   const phone = info.project.name === 'mobile';
   await signedInAs(page, 'free', sessionApi());

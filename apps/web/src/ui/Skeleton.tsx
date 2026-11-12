@@ -31,7 +31,7 @@ export function SkeletonPage({ shape }: { shape: 'chrome' | 'bare' }) {
   return (
     <div role="status" className="min-h-dvh bg-wm-bg">
       <span className="sr-only">{t('loading')}</span>
-      {shape === 'chrome' && <Skeleton className="h-16 rounded-none md:h-18" />}
+      {shape === 'chrome' && <Skeleton className="h-14 rounded-none md:h-18" />}
       <div className="mx-auto flex w-full max-w-320 flex-col gap-4 px-4 pt-6 md:px-8">
         <Skeleton className="h-9 w-56" />
         <Skeleton className="h-36 w-full rounded-wm-card" />
