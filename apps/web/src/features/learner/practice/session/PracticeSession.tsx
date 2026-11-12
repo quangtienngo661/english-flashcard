@@ -255,16 +255,20 @@ function reportSubtitle(item: Item, kind: string): string {
 }
 
 /**
- * What fills a sentence's blank once answered: the right word, and a wrong typed one struck beside it. Before a final result (a try-again
- * too) a typed sentence keeps its input in the blank (P.13), and an alternative answer keeps the read-only input.
+ * What fills a sentence's blank once answered: the right word, and a wrong typed word or wrong sentence-MCQ pick struck before it (F.14).
+ * Before a final result (a try-again too) a typed sentence keeps its input in the blank (P.13), and an alternative answer keeps the
+ * read-only input.
  */
 function blankFill(item: Item, outcome: Outcome | null): BlankFill | null {
   if (outcome?.kind !== 'final' || outcome.result.alternative) return null;
   const { result, chosen } = outcome;
   const prompt = item.prompt;
   const right = prompt.kind === 'mcq_sentence' && result.correct.choice_index !== null ? prompt.options[result.correct.choice_index] : result.correct.text;
-  const typed = chosen && 'text' in chosen && result.result === 'wrong' ? chosen.text : undefined;
-  return { right, wrong: typed };
+  if (result.result !== 'wrong') return { right };
+  const picked = chosenChoice(outcome);
+  const wrong = chosen && 'text' in chosen ? chosen.text
+    : prompt.kind === 'mcq_sentence' && picked !== null ? prompt.options[picked] : undefined;
+  return { right, wrong };
 }
 
 /** The question on screen, its answer controls, hints and the result. */
