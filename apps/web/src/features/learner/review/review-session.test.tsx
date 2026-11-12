@@ -2,8 +2,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
-import { StreakToast } from '@/app-ui/StreakToast';
-import { renderApp } from '@/app-ui/test-utils';
+import { StreakToast } from '@/ui/StreakToast';
+import { renderApp } from '@/test-utils/render-app';
 import { STREAK_KEY } from '../calendar/calendar-api';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';

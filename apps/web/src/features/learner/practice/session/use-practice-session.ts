@@ -6,7 +6,7 @@ import { ApiError } from '@/app-shell/api/problem';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { showStreak } from '@/app-ui/StreakToast';
+import { showStreak } from '@/ui/StreakToast';
 import { writeStreak } from '../../calendar/calendar-api';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { CURRENT_KEY, type PracticeSessionView, type QuestionType } from '../practice-api';

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, screen } from '@testing-library/react';
-import { renderApp } from './test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { showStreak, StreakToast } from './StreakToast';
 
 describe('StreakToast (đợt C DC9)', () => {
@@ -41,5 +41,13 @@ describe('StreakToast (đợt C DC9)', () => {
     renderApp(<StreakToast />, { locale: 'en' });
     act(() => showStreak(13));
     expect(screen.getByRole('status')).toHaveTextContent('13-day streak');
+  });
+
+  it('placement: bottom centre by default, the top-right corner for a session screen', () => {
+    const { unmount } = renderApp(<StreakToast />);
+    expect(screen.getByRole('status')).toHaveClass('bottom-28');
+    unmount();
+    renderApp(<StreakToast placement="session-corner" />);
+    expect(screen.getByRole('status')).toHaveClass('top-4', 'right-4');
   });
 });

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { LookupPage } from './LookupPage';
 
 // Giao diện mới M4.5: Tra từ "Từ hóa thẻ" (Figma 85:3218 / 85:3667).

@@ -2,9 +2,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
+import { ToastRegion } from '@/ui/Toast';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { WordPage } from './WordPage';
 
 const nav = vi.hoisted(() => ({ params: new URLSearchParams({ w: 'left' }) }));

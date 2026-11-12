@@ -2,8 +2,8 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
-import { renderApp } from '@/app-ui/test-utils';
-import { ToastRegion } from '@/app-ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
+import { ToastRegion } from '@/ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
 import type { PracticeSessionView } from '../practice-api';
 import { STREAK_KEY } from '../../calendar/calendar-api';

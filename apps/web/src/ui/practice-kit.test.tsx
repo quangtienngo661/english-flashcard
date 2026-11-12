@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AnswerOption } from './AnswerOption';
 import { KeyLegend } from './KeyLegend';
 import { ProgressBar } from './ProgressBar';

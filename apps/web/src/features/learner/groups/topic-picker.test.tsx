@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderApp } from '@/app-ui/test-utils';
-import { ToastRegion } from '@/app-ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
+import { ToastRegion } from '@/ui/Toast';
 import { TopicPickerPage } from './TopicPickerPage';
 
 let search = new URLSearchParams({ code: 'business', level: 'B1' });

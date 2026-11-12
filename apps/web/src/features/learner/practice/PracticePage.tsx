@@ -8,7 +8,8 @@ import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements, type Plan, type Pool } from '@/app-shell/queries';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { ErrorState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { Kbd } from '@/ui/Kbd';
 import { ProgressBar } from '@/ui/ProgressBar';
@@ -60,7 +61,7 @@ export function PracticePage() {
   const empty = (text: string) => <span className="font-wm-sans text-wm-small text-wm-muted">{text}</span>;
 
   let body;
-  if (groups.isPending || config.isPending) body = <FullScreenSpinner />;
+  if (groups.isPending || config.isPending) body = <SkeletonBlocks />;
   else if (groups.isError) body = <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />;
   else
     body = (

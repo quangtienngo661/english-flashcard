@@ -2,8 +2,8 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Route } from '@/app-shell/session/test-support';
-import { StreakToast } from '@/app-ui/StreakToast';
-import { renderApp } from '@/app-ui/test-utils';
+import { StreakToast } from '@/ui/StreakToast';
+import { renderApp } from '@/test-utils/render-app';
 import { RecallSession } from './RecallSession';
 
 const G = '11111111-1111-4111-8111-111111111111';

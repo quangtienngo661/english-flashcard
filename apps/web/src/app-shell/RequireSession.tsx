@@ -3,7 +3,7 @@
 import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { OfflineScreen } from '@/app-ui/States';
+import { OfflineScreen } from '@/ui/OfflineScreen';
 import { SkeletonPage } from '@/ui/Skeleton';
 import type { AppLocale } from '@/i18n/routing';
 import { createApiClient } from './api/client';

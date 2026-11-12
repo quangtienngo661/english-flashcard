@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
 import { THEME_STORAGE_KEY } from '@/app-shell/theme/theme';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
-import { pickDate, renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/test-utils/render-app';
 import { AccountPage } from './AccountPage';
 import { SettingsPage } from './SettingsPage';
 

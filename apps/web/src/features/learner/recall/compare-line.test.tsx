@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { CompareLine, compareLetters } from './CompareLine';
 
 // M5.9 (Figma 209:5902): the typed word against the answer, letter by letter, once the answer is shown. GM19: no partial credit.

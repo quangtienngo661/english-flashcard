@@ -2,8 +2,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { WordPage } from '../word/WordPage';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { AddWordSheet } from './AddWordSheet';

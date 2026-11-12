@@ -369,7 +369,7 @@
 /* A popover opened above its trigger slides up instead of down (from apps/admin). */
 @custom-variant placement-top (&[data-placement='top']);
 
-/* A closing toast fades down (motion audit #5). React Aria removes a toast at once, so app-ui/Toast.tsx closes it inside a view
+/* A closing toast fades down (motion audit #5). React Aria removes a toast at once, so ui/Toast.tsx closes it inside a view
    transition and these rules animate only the toasts. The page is left out of the transition (no root snapshot) and clicks pass through
    the overlay, so it stays live and clickable meanwhile. The app has no other view transition; one added later must name its own parts. */
 :root {

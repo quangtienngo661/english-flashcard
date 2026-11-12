@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { NotFoundState } from '@/app-ui/States';
+import { NotFoundState } from '@/ui/NotFoundState';
 import { isId } from '../groups/groups-api';
 import { PracticeSession } from '../practice/session/PracticeSession';
 

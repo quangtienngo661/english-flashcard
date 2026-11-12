@@ -2,7 +2,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BASE, makeFetch, makeMe, problem, tokenResponse } from '@/app-shell/session/test-support';
-import { pickDate, renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/test-utils/render-app';
 import { GoogleComplete } from './GoogleComplete';
 
 const replace = vi.fn();

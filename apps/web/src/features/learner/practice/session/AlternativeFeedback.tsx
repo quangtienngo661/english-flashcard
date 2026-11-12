@@ -3,7 +3,7 @@
 import { Check, CircleCheck } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/ui/Button';
-import { SpeakWord } from '@/app-ui/SpeakButtons';
+import { SpeakWord } from '@/ui/SpeakButton';
 import type { AnswerResult } from './use-practice-session';
 
 const BLANK = '___';

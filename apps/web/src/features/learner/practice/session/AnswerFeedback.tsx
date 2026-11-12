@@ -3,7 +3,7 @@
 import { ArrowRight, Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { SpeakWord } from '@/app-ui/SpeakButtons';
+import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
 import { Tag } from '@/ui/Tag';

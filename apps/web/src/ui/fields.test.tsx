@@ -2,7 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { pickDate, renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/test-utils/render-app';
 import { Checkbox } from './Checkbox';
 import { DateOfBirthField } from './DateOfBirthField';
 import { GoogleButton } from './GoogleButton';

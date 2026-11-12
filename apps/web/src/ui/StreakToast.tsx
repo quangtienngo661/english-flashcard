@@ -28,12 +28,20 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+export type StreakPlacement = 'bottom' | 'session-corner';
+
+const PLACE: Record<StreakPlacement, string> = {
+  bottom: 'inset-x-0 bottom-28 justify-center px-4 md:bottom-8',
+  'session-corner': 'right-4 top-4 justify-end',
+};
+
 /**
- * Đợt C DC9, mockup `index.html`: a small navy pill, a flame that bounces once and "N ngày liên tiếp", bottom centre, above the answer
- * buttons on a phone. Not the shared toast queue: that one is text only, 5 s, with a close button. It never takes a tap
- * (`pointer-events-none`), and the status region is always there so a screen reader reads the text once when it appears.
+ * Mockup L306-310: a surface pill with a 1 px line, the pop shadow, a flame in a 22 px accent-soft square and "N-day streak". Not the
+ * shared toast queue: that one is text only, 5 s, with a close button. It never takes a tap (`pointer-events-none`), and the status
+ * region is always there so a screen reader reads the text once when it appears. `placement`: bottom centre (above the answer buttons
+ * on a phone), or the corner of a session screen.
  */
-export function StreakToast() {
+export function StreakToast({ placement = 'bottom' }: { placement?: StreakPlacement }) {
   const t = useTranslations('App.streak');
   const current = useSyncExternalStore(subscribe, () => notice, () => null);
   const [phase, setPhase] = useState<{ id: number; leaving: boolean; gone: boolean } | null>(null);
@@ -53,17 +61,19 @@ export function StreakToast() {
 
   const visible = current !== null && phase?.id === current.id && !phase.gone;
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-28 z-60 flex justify-center px-4 md:bottom-8">
+    <div role="status" aria-live="polite" className={cn('pointer-events-none fixed z-60 flex', PLACE[placement])}>
       {visible && (
         <p
           key={current.id}
           className={cn(
-            'flex items-center gap-2 rounded-full bg-navy py-2 pl-2.5 pr-4 text-body font-bold text-on-navy shadow-toast motion-safe:animate-toast-in',
+            'flex items-center gap-2.5 rounded-wm-md border border-wm-line bg-wm-surface px-3.5 py-2.5 font-wm-sans text-wm-small font-semibold text-wm-ink shadow-wm-pop motion-safe:animate-toast-in',
             'transition-opacity duration-fast ease-exit',
             phase.leaving && 'opacity-0',
           )}
         >
-          <Flame aria-hidden className="size-6 shrink-0 origin-bottom fill-accent text-accent-deep motion-safe:animate-streak-flame" />
+          <span aria-hidden className="grid size-5.5 shrink-0 place-content-center rounded-wm-sm bg-wm-accent-soft text-wm-accent">
+            <Flame className="size-3.5 origin-bottom motion-safe:animate-streak-flame" />
+          </span>
           {t('days', { days: current.days })}
         </p>
       )}

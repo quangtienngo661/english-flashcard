@@ -2,7 +2,7 @@
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { Dialog } from './Dialog';
 import { SkeletonPage } from './Skeleton';
 import { showToast, ToastRegion } from './Toast';

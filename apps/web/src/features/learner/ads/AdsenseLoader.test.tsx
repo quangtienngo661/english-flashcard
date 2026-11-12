@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen, waitFor } from '@testing-library/react';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AdsenseLoader } from './AdsenseLoader';
 
 const nav = vi.hoisted(() => ({ path: '/vi/app', listeners: new Set<() => void>() }));

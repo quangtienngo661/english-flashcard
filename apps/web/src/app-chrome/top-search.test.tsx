@@ -2,7 +2,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { Dialog } from '@/ui/Dialog';
 import { TopBar } from './TopBar';
 import { TopSearch } from './TopSearch';
