@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { renderApp } from '@/test-utils/render-app';
 import { AnswerOption } from './AnswerOption';
@@ -52,7 +53,8 @@ describe('ui practice kit', () => {
     renderApp(<Harness start={1} onChange={onChange} />, { chrome: false });
     const minus = screen.getByRole('button', { name: 'Số câu: bớt 1' });
     const plus = screen.getByRole('button', { name: 'Số câu: thêm 1' });
-    expect(screen.getByRole('group', { name: 'Số câu' })).toHaveTextContent('1');
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    expect(field).toHaveValue('1');
     expect(minus).toBeDisabled();
     expect(plus).toBeEnabled();
     fireEvent.click(plus);
@@ -64,13 +66,67 @@ describe('ui practice kit', () => {
     fireEvent.click(minus);
     expect(onChange).toHaveBeenLastCalledWith(2);
     expect(onChange).toHaveBeenCalledTimes(3);
-    expect(screen.getByRole('group', { name: 'Số câu' })).toHaveTextContent('2');
+    expect(field).toHaveValue('2');
   });
 
   it('Stepper with min equal to max disables both buttons', () => {
     renderApp(<Stepper label="Câu AI" value={0} min={0} max={0} onChange={() => {}} />, { chrome: false });
     expect(screen.getByRole('button', { name: 'Câu AI: bớt 1' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Câu AI: thêm 1' })).toBeDisabled();
+  });
+
+  it('Stepper: typing 2 and pressing Enter commits 2', async () => {
+    const onChange = vi.fn();
+    renderApp(<Harness start={1} onChange={onChange} />, { chrome: false });
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    await userEvent.clear(field);
+    await userEvent.type(field, '2{Enter}');
+    expect(onChange).toHaveBeenLastCalledWith(2);
+    expect(field).toHaveValue('2');
+  });
+
+  it('Stepper: typing 99 and leaving the field commits the max, 3', async () => {
+    const onChange = vi.fn();
+    renderApp(<Harness start={1} onChange={onChange} />, { chrome: false });
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    await userEvent.clear(field);
+    await userEvent.type(field, '99');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(3);
+    expect(field).toHaveValue('3');
+  });
+
+  it('Stepper: an emptied field restores the previous value on blur and never reports NaN', async () => {
+    const onChange = vi.fn();
+    renderApp(<Harness start={2} onChange={onChange} />, { chrome: false });
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    await userEvent.clear(field);
+    await userEvent.tab();
+    expect(field).toHaveValue('2');
+    expect(onChange.mock.calls.some(([v]) => Number.isNaN(v))).toBe(false);
+  });
+
+  it('Stepper: ArrowUp adds one and ArrowDown takes one off', async () => {
+    const onChange = vi.fn();
+    renderApp(<Harness start={2} onChange={onChange} />, { chrome: false });
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    field.focus();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(onChange).toHaveBeenLastCalledWith(3);
+    await userEvent.keyboard('{ArrowDown}');
+    expect(onChange).toHaveBeenLastCalledWith(2);
+  });
+
+  it('Stepper: a disabled field cannot be typed into and both buttons are off', async () => {
+    const onChange = vi.fn();
+    renderApp(<Stepper label="Số câu" value={2} min={1} max={3} onChange={onChange} isDisabled />, { chrome: false });
+    const field = screen.getByRole('textbox', { name: 'Số câu' });
+    expect(field).toBeDisabled();
+    await userEvent.type(field, '3{Enter}');
+    expect(field).toHaveValue('2');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Số câu: bớt 1' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Số câu: thêm 1' })).toBeDisabled();
   });
 
   it('KeyLegend lists each key cap with its label', () => {
