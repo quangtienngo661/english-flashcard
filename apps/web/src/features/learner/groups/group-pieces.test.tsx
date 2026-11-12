@@ -26,6 +26,14 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
     expect(behind(container)).toBe(3);
   });
 
+  it('en: one waiting card reads "card waiting", several read "cards waiting"', () => {
+    const one = renderApp(<GroupStack group={deck({ priority: 1, due: 0, new: 0 })} size="carousel" />, { locale: 'en' });
+    expect(screen.getByText('card waiting')).toBeInTheDocument();
+    one.unmount();
+    renderApp(<GroupStack group={deck({ priority: 0, due: 3, new: 2 })} size="carousel" />, { locale: 'en' });
+    expect(screen.getByText('cards waiting')).toBeInTheDocument();
+  });
+
   it('done face: "✓ Xong hôm nay" and the last reviewed word', () => {
     const g = deck({ priority: 0, due: 0, new: 0 }, [6, 9, 10, 11, 8, 4], { last_reviewed: { lemma: 'take for granted', at: '2026-11-08T08:00:00Z' } });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
