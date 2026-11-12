@@ -94,10 +94,10 @@ const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 
 
 describe('PracticeSession (K/60–K/67)', () => {
   const cases = [
-    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Đã biết', action: 'known', note: 'Nhấn Enter là Đã biết: deploy lên một ngăn. Chưa chắc thì bấm Cần ôn lại.' },
+    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Đã biết', action: 'known', note: 'Nhấn Enter là Đã biết: deploy lên một bậc. Chưa chắc thì bấm Cần ôn lại.' },
     { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'deploy chưa tới hạn ôn nên lịch ôn giữ nguyên.' },
     { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.' },
-    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Cần ôn lại', action: 'needs_review', note: 'Nhấn Enter để đưa deploy lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.' },
+    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Cần ôn lại', action: 'needs_review', note: 'Nhấn Enter để đưa deploy lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.' },
   ];
 
   it('M6.2: an answer carrying streak writes the streak cache; no GET /v1/me/streak follows', async () => {
@@ -132,10 +132,10 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it.each([
-    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a stage. Not sure? Choose Still learning.' },
+    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a level. Not sure? Choose Still learning.' },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn't due yet, so its schedule stays the same." },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
-    { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Enter moves deploy to the top of its deck, back to stage 1. Next question keeps its schedule.' },
+    { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Enter moves deploy to the top of its deck, back to Level 1. Next question keeps its schedule.' },
   ])('English result note: $note', async ({ answer, note }) => {
     renderApp(<PracticeSession />, { locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');

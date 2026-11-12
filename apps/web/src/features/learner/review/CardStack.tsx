@@ -6,9 +6,9 @@ import { cn } from '@/lib/cn';
 import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
+import { toLevel, useLevelName } from '@/ui/levels';
 import type { Card } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
-import { STAGE_KEYS } from '../groups/stages';
 import { useForms } from './use-forms';
 import { useCardDrag, type Rating } from './useCardDrag';
 
@@ -47,7 +47,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   ref,
 ) {
   const t = useTranslations('App.review');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const topRef = useRef<HTMLDivElement>(null);
   const [leaving, setLeaving] = useState<Leaving[]>([]);
   const [follow, setFollow] = useState(0);
@@ -90,7 +90,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   }, [top?.item_id]);
 
   const behind = cards.slice(current + 1, current + 1 + BEHIND);
-  const stage = top ? Math.min(top.level + 1, STAGE_KEYS.length - 1) : 1;
+  const next = toLevel(top ? top.level + 1 : 1);
   const strength = Math.min(1, Math.abs(dx) / 110);
 
   return (
@@ -120,7 +120,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
           {flipped && (
             <>
               <Stamp side="review" shown={stamp === 'review'} strength={stamp === 'review' ? strength : 0} label={t('stillLearning')} detail={stampDetails ? t('stampReview') : null} />
-              <Stamp side="known" shown={stamp === 'known'} strength={stamp === 'known' ? strength : 0} label={t('know')} detail={stampDetails ? t('stampKnow', { stage: tStage(STAGE_KEYS[stage]) }) : null} />
+              <Stamp side="known" shown={stamp === 'known'} strength={stamp === 'known' ? strength : 0} label={t('know')} detail={stampDetails ? t('stampKnow', { level: levelName(next) }) : null} />
             </>
           )}
         </div>

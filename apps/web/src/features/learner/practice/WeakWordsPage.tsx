@@ -17,13 +17,12 @@ import { Button } from '@/ui/Button';
 import { Select } from '@/ui/Select';
 import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
-import { STAGE_KEYS } from '../groups/stages';
+import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
 import { localDay } from './days';
 import { RULE_TYPES, useWeakGroups, type WeakWord } from './practice-api';
 import { usePracticeStarter } from './use-practice-starter';
 
 const PAGE = 50;
-const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
 /** K/56 `/app/practice/weak` (Figma 119:4317): the weak words, by deck (API (b)), with a start for them. */
 export function WeakWordsPage() {
@@ -137,10 +136,10 @@ export function WeakWordsPage() {
   );
 }
 
-/** Figma 119:4317: word, meaning, ✓/✗ of the last 5 questions (✓ = counted − wrong; the API has no order), stage, last wrong. Phones keep the word and the chips. */
+/** Figma 119:4317: word, meaning, ✓/✗ of the last 5 questions (✓ = counted − wrong; the API has no order), level, last wrong. Phones keep the word and the chips. */
 function WeakList({ words }: { words: WeakWord[] }) {
   const t = useTranslations('App.practice.weak');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const format = useFormat();
   const zone = useZone();
   const today = localDay(new Date(), zone);
@@ -151,7 +150,7 @@ function WeakList({ words }: { words: WeakWord[] }) {
         <span className="col-span-2">{t('cols.word')}</span>
         <span className="col-span-4">{t('cols.meaning')}</span>
         <span className="col-span-2">{t('cols.recent')}</span>
-        <span className="col-span-2">{t('cols.stage')}</span>
+        <span className="col-span-2">{t('cols.level')}</span>
         <span className="col-span-2">{t('cols.last')}</span>
       </div>
       <ul className="flex flex-col divide-y divide-wm-line">
@@ -174,8 +173,8 @@ function WeakList({ words }: { words: WeakWord[] }) {
               </span>
             </span>
             <span className="hidden items-center gap-1.5 font-wm-sans text-wm-small text-wm-ink md:col-span-2 md:flex">
-              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', STAGE_DOT[w.level] ?? STAGE_DOT[0])} />
-              {tStage(STAGE_KEYS[w.level] ?? 's0')}
+              <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', LEVEL_FILL[toLevel(w.level)])} />
+              {levelName(toLevel(w.level))}
             </span>
             <span className="hidden font-wm-mono text-wm-mono text-wm-muted md:col-span-2 md:block">
               {localDay(new Date(w.last_wrong_at), zone) === today ? t('today', { time: format.time(w.last_wrong_at) }) : format.date(w.last_wrong_at, 'dayMonth')}

@@ -19,8 +19,8 @@ import { Segmented } from '@/ui/Segmented';
 import { Select } from '@/ui/Select';
 import { Stepper } from '@/ui/Stepper';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
+import { LEVEL_FILL, LEVELS, toLevel, useLevelName } from '@/ui/levels';
 import type { GroupSummary } from '../groups/groups-api';
-import { STAGE_KEYS } from '../groups/stages';
 import { refillKind } from '../settings/refill';
 import { readOwnSentencesOn, writeOwnSentencesOn } from './own-sentences';
 import {
@@ -55,7 +55,6 @@ type Props = {
 
 type Filter = 'all' | 'due' | 'priority';
 type McPick = 'meaning' | 'word' | 'mixed';
-const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 const SOURCE_NAME: Record<Source, string> = { today: 'hero.title', group: 'sources.group.name', weak: 'sources.weak.name', priority: 'sources.priority.name', all: 'sources.all.name' };
 /** #249 defaults, for an API that does not send the new fields yet. */
 const SCOPE_MAX = 100;
@@ -90,7 +89,7 @@ function CustomizeForm({
 }: Omit<Props, 'onClose' | 'target'> & { target: CustomizeTarget }) {
   const t = useTranslations('App.practice');
   const tc = useTranslations('App.practice.customize');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const locale = useLocale();
   const config = useAppConfig().data?.practice;
   const entitlements = useEntitlements().data;
@@ -209,20 +208,20 @@ function CustomizeForm({
         {source === 'group' && group && (
           <div className="ml-auto">
             <Select
-              label={tc('stageMenu')}
+              label={tc('levelMenu')}
               hideLabel
               size="sm"
               className="group flex min-w-0 flex-col"
               items={[
-                { id: 'all', label: tc('stageAll') },
-                ...STAGE_KEYS.map((key, level) => ({
+                { id: 'all', label: tc('levelAll') },
+                ...LEVELS.map((level) => ({
                   id: String(level),
-                  label: tc('stageOption', { stage: tStage(key), count: group.cells.find((c) => c.level === level)?.total ?? 0 }),
-                  icon: <span aria-hidden className={cn('size-2.5 rounded-wm-xs', STAGE_DOT[level])} />,
+                  label: tc('levelOption', { level: levelName(level), count: group.cells.find((c) => c.level === level)?.total ?? 0 }),
+                  icon: <span aria-hidden className={cn('size-2.5 rounded-wm-xs', LEVEL_FILL[level])} />,
                 })),
               ]}
               value={stage === null ? 'all' : String(stage)}
-              display={(item) => (item.id === 'all' ? tc('stageMenu') : tc('stageName', { stage: tStage(STAGE_KEYS[Number(item.id)]) }))}
+              display={(item) => (item.id === 'all' ? tc('levelMenu') : levelName(toLevel(Number(item.id))))}
               onChange={(id) => {
                 setStage(id === 'all' ? null : Number(id));
                 if (id !== 'all') setFilter('all');

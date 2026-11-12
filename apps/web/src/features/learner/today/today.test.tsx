@@ -181,11 +181,11 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(within(box).getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/vi/app/group/backlog?id=g-ielts');
   });
 
-  it('words by stage: due / total per stage', async () => {
+  it('words by level: due / total per level', async () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
-    const box = await screen.findByRole('region', { name: '128 từ theo ngăn' });
+    const box = await screen.findByRole('region', { name: '128 từ theo bậc' });
     expect(within(box).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Mới8 / 20', '1 ngày8 / 36', '3 ngày8 / 48', '7 ngày8 / 24', '14 ngày0 / 0', '30 ngày0 / 0',
+      'Mới8 / 20', 'Bậc 18 / 36', 'Bậc 28 / 48', 'Bậc 38 / 24', 'Bậc 40 / 0', 'Bậc 50 / 0',
     ]);
   });
 

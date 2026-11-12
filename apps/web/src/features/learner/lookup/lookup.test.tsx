@@ -118,7 +118,7 @@ describe('Tra từ: the dictionary page', () => {
     renderApp(<LookupPage />, { routes: base() });
     const card = await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' });
     expect(within(card).getByRole('heading', { name: 'budget' })).toBeInTheDocument();
-    expect(await within(card).findByText('Công việc · B1 · ngăn 7 ngày')).toBeInTheDocument();
+    expect(await within(card).findByText('Công việc · B1 · Bậc 3')).toBeInTheDocument();
     screen.getByRole('button', { name: /^budget/ }).focus();
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByRole('button', { name: /^candidate/ })).toHaveFocus();

@@ -60,6 +60,13 @@ describe('messages', () => {
     expect(app.filter(([, v]) => /vui lòng|please|sorry|\.\.\./i.test(v)).map(([k]) => k)).toEqual([]);
   });
 
+  it('P.1 levels, not stages: no vi value says "ngăn", no en value says "stage" or "-day box"', () => {
+    // Control: the level names exist, so an empty result means the words are gone, not that nothing was read.
+    expect(flatVi.get('App.levels.name')).toContain('Bậc');
+    expect([...flatVi].filter(([, v]) => /ngăn/i.test(v)).map(([k]) => k)).toEqual([]);
+    expect([...flatEn].filter(([, v]) => /stage|-day box/i.test(v)).map(([k]) => k)).toEqual([]);
+  });
+
   it('M8.4 the public header and footer read Nav; Landing.nav and Landing.footer are gone', () => {
     expect(vi.Nav).toEqual({
       skipToContent: 'Chuyển đến nội dung chính',

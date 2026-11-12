@@ -11,6 +11,7 @@ import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
 import { StageBar } from '@/ui/StageBar';
 import { TextButton } from '@/ui/TextButton';
+import { toLevel, useLevelName } from '@/ui/levels';
 import { useAddWord } from '../add-word/add-word-context';
 import { carouselOrder, rhythm, stepTo } from './carousel';
 import { waiting } from './deck-actions';
@@ -20,7 +21,6 @@ import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
 import { GroupPicker } from './GroupPicker';
 import { useGroups, type GroupSummary } from './groups-api';
-import { STAGE_KEYS } from './stages';
 
 /** Picking a group further than this jumps with no animation (motion doc §3). */
 const JUMP_STEPS = 3;
@@ -196,7 +196,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
 /** "Dưới băng chuyền" (Figma 82:3348): the rhythm bar in the group colour, Học · Ôn, "Xem nhóm →", "Thêm từ" (desktop). */
 function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const t = useTranslations('App.groups');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const locale = useLocale();
   const { open } = useAddWord();
   const tone = groupTone(group.id, group.total);
@@ -210,7 +210,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
           size: c.total,
           fill: c.due,
           tone: tone.bg,
-          label: t('rhythmSegment', { stage: tStage(STAGE_KEYS[c.level]), due: c.due, total: c.total }),
+          label: t('rhythmSegment', { level: levelName(toLevel(c.level)), due: c.due, total: c.total }),
         }))}
       />
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

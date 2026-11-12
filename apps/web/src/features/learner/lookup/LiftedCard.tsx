@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { PronunciationLine } from '@/ui/PronunciationLine';
+import { toLevel, useLevelName } from '@/ui/levels';
 import type { GroupSummary } from '../groups/groups-api';
-import { STAGE_DAYS, wordHref, type ItemState, type PageSense } from '../word/word-api';
+import { wordHref, type ItemState, type PageSense } from '../word/word-api';
 import { marked } from './DictionaryPage';
 import type { WordRow } from './lookup-api';
 
@@ -18,6 +19,7 @@ import type { WordRow } from './lookup-api';
 export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense?: PageSense; item?: ItemState; groups: GroupSummary[] }) {
   const t = useTranslations('App.lookup');
   const tw = useTranslations('App.word');
+  const levelName = useLevelName();
   const locale = useLocale();
   const meta = [sense?.pos ?? word.pos_list.join(', '), sense?.level ?? word.level, sense?.topics[0]?.name].filter(Boolean).join(' · ');
   const example = sense ? sense.examples[0] : word.example;
@@ -37,7 +39,7 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
           {item && deck ? (
             <p className="flex min-w-0 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
               <span aria-hidden className={cn('size-2.5 shrink-0 rounded-xs', groupTone(deck.id, deck.total).bg)} />
-              {item.level === 0 ? tw('stageNew', { group: deck.name }) : tw('stage', { group: deck.name, days: STAGE_DAYS[item.level] ?? 30 })}
+              {item.level === 0 ? tw('levelNew', { group: deck.name }) : tw('level', { group: deck.name, level: levelName(toLevel(item.level)) })}
             </p>
           ) : (
             <span />

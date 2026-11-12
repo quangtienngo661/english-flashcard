@@ -100,13 +100,13 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     expect(await screen.findByRole('dialog', { name: 'Lưu vào nhóm' })).toBeInTheDocument();
   });
 
-  it('a learned meaning: its stage tag and "3 câu đã gặp"; "Bạn đang học" with its deck stage; its sentences in "Câu bạn đã gặp" (M4.6)', async () => {
+  it('a learned meaning: its level tag and "3 câu đã gặp"; "Bạn đang học" with its deck level; its sentences in "Câu bạn đã gặp" (M4.6)', async () => {
     renderApp(<WordPage />, { routes: routes() });
     const adverb = (await screen.findAllByRole('article'))[1];
-    expect(await within(adverb).findByText('Ngăn 3 ngày · IELTS')).toBeInTheDocument();
+    expect(await within(adverb).findByText('Bậc 2 · IELTS')).toBeInTheDocument();
     expect(within(adverb).getByRole('button', { name: '3 câu đã gặp' })).toBeInTheDocument();
     const block = screen.getByRole('region', { name: 'Bạn đang học' });
-    expect((await within(block).findByText('IELTS')).closest('div')).toHaveTextContent('IELTSNgăn 3 ngày');
+    expect((await within(block).findByText('IELTS')).closest('div')).toHaveTextContent('IELTSBậc 2');
     const seen = screen.getByRole('region', { name: 'Câu bạn đã gặp' });
     expect(await within(seen).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.')).toBeInTheDocument();
   });
@@ -131,7 +131,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         },
       }),
     });
-    await screen.findByText('Ngăn 3 ngày · IELTS');
+    await screen.findByText('Bậc 2 · IELTS');
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
     const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
     expect(within(dialog).getAllByRole('listitem')).toHaveLength(3);
@@ -299,10 +299,10 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(await screen.findByRole('region', { name: 'Câu bạn đã gặp' })).toHaveAttribute('id', 'cau-da-gap');
   });
 
-  it('a learned meaning shows its stage and group; one not learned has [Thêm vào nhóm] that opens "Lưu vào nhóm"', async () => {
+  it('a learned meaning shows its level and group; one not learned has [Thêm vào nhóm] that opens "Lưu vào nhóm"', async () => {
     renderApp(<WordPage />, { routes: recordRoutes() });
     const [first, second, verb] = await screen.findAllByRole('article');
-    expect(await within(first).findByText('Ngăn 3 ngày · Đề 12 · Writing')).toBeInTheDocument();
+    expect(await within(first).findByText('Bậc 2 · Đề 12 · Writing')).toBeInTheDocument();
     expect(within(verb).getByText('Mới · Đề 14 · Reading')).toBeInTheDocument();
     await userEvent.click(within(second).getByRole('button', { name: 'Thêm vào nhóm' }));
     expect(await screen.findByRole('dialog', { name: 'Lưu vào nhóm' })).toBeInTheDocument();
@@ -318,13 +318,13 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(within(rows[1]).getByText('nghĩa 1 · bản ghi, hồ sơ · ghi ngày 02/11/2026')).toBeInTheDocument();
   });
 
-  it('"Bạn đang học" shows the next review and each group with its stage', async () => {
+  it('"Bạn đang học" shows the next review and each group with its level', async () => {
     renderApp(<WordPage />, { routes: recordRoutes() });
     const block = await screen.findByRole('region', { name: 'Bạn đang học' });
     expect(within(block).getByText('bản ghi, hồ sơ')).toBeInTheDocument();
     expect(within(block).getByText('Thứ Năm, 12/11')).toBeInTheDocument();
     const row = (await within(block).findByText('Đề 12 · Writing')).closest('div')!;
-    expect(row).toHaveTextContent('Đề 12 · WritingNgăn 3 ngày');
+    expect(row).toHaveTextContent('Đề 12 · WritingBậc 2');
   });
 
   it('"Thêm câu đã gặp" with two learned meanings asks which one, and saves the sentence to it', async () => {

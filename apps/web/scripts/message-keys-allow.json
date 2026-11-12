@@ -22,7 +22,6 @@
   { "key": "App.practice.weak.rules.*", "why": "src/features/learner/practice/WeakWordsPage.tsx:98 t(`rules.${key}`)" },
   { "key": "App.settings.aiLookupRefillTime", "why": "src/features/learner/settings/UsageSection.tsx:54 t(`${refill}Time`)" },
   { "key": "App.settings.aiPracticeRefillTime", "why": "src/features/learner/settings/UsageSection.tsx:54 t(`${refill}Time`)" },
-  { "key": "App.stages.*", "why": "src/features/learner/groups/stages.ts STAGE_KEYS read by tStage(key) (GroupPicker.tsx:132, LearningBlock.tsx:57)" },
   { "key": "App.transactions.*", "why": "src/features/learner/transactions/TransactionRow.tsx:21,34,37,57, TransactionDetail.tsx:37 built from item.kind, status, interval, provider" },
   { "key": "App.ui.dob.*", "why": "src/ui/DateOfBirthField.tsx:41 t(shown)" }
 ]

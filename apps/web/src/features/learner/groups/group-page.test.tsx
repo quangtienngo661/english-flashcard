@@ -95,16 +95,16 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
   });
 
-  it('"nhịp ôn": one segment per stage, filled with its waiting cards', async () => {
+  it('"nhịp ôn": one segment per level, filled with its waiting cards', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const bar = await screen.findByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' });
     expect(within(bar).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual([
-      'Mới: 0 thẻ chờ trong 1 từ', '1 ngày: 2 thẻ chờ trong 2 từ', '3 ngày: 0 thẻ chờ trong 0 từ',
-      '7 ngày: 0 thẻ chờ trong 1 từ', '14 ngày: 0 thẻ chờ trong 0 từ', '30 ngày: 0 thẻ chờ trong 0 từ',
+      'Mới: 0 thẻ chờ trong 1 từ', 'Bậc 1: 2 thẻ chờ trong 2 từ', 'Bậc 2: 0 thẻ chờ trong 0 từ',
+      'Bậc 3: 0 thẻ chờ trong 1 từ', 'Bậc 4: 0 thẻ chờ trong 0 từ', 'Bậc 5: 0 thẻ chờ trong 0 từ',
     ]);
   });
 
-  it('English names the first stage "New"', async () => {
+  it('English names the first level "New"', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
     const bar = await screen.findByRole('figure', { name: 'review rhythm: new → 30 days' });
     expect(within(bar).getAllByRole('listitem')[0].getAttribute('aria-label')).toMatch(/^New: /);
@@ -155,26 +155,26 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(await screen.findByText(/^4 từ · tạo ngày .* · 2 đã thuộc$/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
-  it('rows show the part of speech, the stage, the status and a changed meaning', async () => {
+  it('rows show the part of speech, the level, the status and a changed meaning', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const list = await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
     const deploy = within(list).getByRole('listitem', { name: 'deploy' });
-    expect(within(deploy).getByText('Ngăn 1 ngày')).toBeInTheDocument();
+    expect(within(deploy).getByText('Bậc 1')).toBeInTheDocument();
     expect(within(deploy).getByText('ưu tiên')).toBeInTheDocument();
     expect(within(within(list).getByRole('listitem', { name: 'went' })).getByText('từ mới')).toBeInTheDocument();
     await waitFor(() => expect(within(within(list).getByRole('listitem', { name: 'release' })).getByText('nghĩa đã đổi')).toBeInTheDocument());
   });
 
-  it('filter chips show every stage with its count, press one at a time and filter the rows', async () => {
+  it('filter chips show every level with its count, press one at a time and filter the rows', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
     const chips = within(screen.getByRole('group', { name: 'Lọc từ trong nhóm' })).getAllByRole('button');
     expect(chips.map((c) => c.textContent)).toEqual([
-      'Tất cả4', 'Ưu tiên1', 'Đến hạn7', 'Mới1', 'Ngăn 1 ngày2', 'Ngăn 3 ngày0', 'Ngăn 7 ngày1', 'Ngăn 14 ngày0', 'Ngăn 30 ngày0',
+      'Tất cả4', 'Ưu tiên1', 'Đến hạn7', 'Mới1', 'Bậc 12', 'Bậc 20', 'Bậc 31', 'Bậc 40', 'Bậc 50',
     ]);
     expect(chips[0]).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(screen.getByRole('button', { name: 'Ngăn 1 ngày2' }));
-    expect(screen.getByRole('button', { name: 'Ngăn 1 ngày2' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Bậc 12' }));
+    expect(screen.getByRole('button', { name: 'Bậc 12' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Tất cả4' })).toHaveAttribute('aria-pressed', 'false');
     await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['deploy', 'release']));
   });

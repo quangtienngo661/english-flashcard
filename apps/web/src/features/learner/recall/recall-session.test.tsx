@@ -81,7 +81,7 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     renderApp(<RecallSession />, { routes: routes() });
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('luggage lên ngăn 14 ngày.')).toBeInTheDocument();
+    expect(await screen.findByText('luggage lên Bậc 4.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toBeInTheDocument();
   });
@@ -95,13 +95,13 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect(await screen.findByText('4 ngày liên tiếp')).toBeInTheDocument();
   });
 
-  it('a right answer that keeps the stage says so', async () => {
+  it('a right answer that keeps the level says so', async () => {
     renderApp(<RecallSession />, { routes: routes({
       'POST /v1/practice/items/r-1/answer': () => Response.json(answer({ schedule: { level: 2, due_date: '2026-11-08', outcome: 'kept' } })),
     }) });
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('luggage giữ ngăn 3 ngày.')).toBeInTheDocument();
+    expect(await screen.findByText('luggage giữ Bậc 2.')).toBeInTheDocument();
   });
 
   it('the summary: right and moved up, wrong, Cần ôn lại; new words left → [Học] and the way home', async () => {
@@ -110,23 +110,23 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     }) });
     expect(await screen.findByRole('heading', { name: 'Xong 8 từ.' })).toBeInTheDocument();
     const tile = (label: string) => screen.getByText(label).parentElement!;
-    expect(within(tile('Đúng, lên ngăn')).getByText('5')).toBeInTheDocument();
-    expect(within(tile('Sai, giữ ngăn')).getByText('3')).toBeInTheDocument();
+    expect(within(tile('Đúng, lên bậc')).getByText('5')).toBeInTheDocument();
+    expect(within(tile('Sai, giữ bậc')).getByText('3')).toBeInTheDocument();
     expect(within(tile('Cần ôn lại')).getByText('1')).toBeInTheDocument();
-    expect(screen.queryByText('Đúng, giữ ngăn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Đúng, giữ bậc')).not.toBeInTheDocument();
     expect(await screen.findByText('Còn 5 từ mới trong nhóm này')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Học' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
     expect(screen.getByRole('link', { name: 'Về trang chủ' })).toHaveAttribute('href', '/vi/app');
   });
 
-  it('the summary shows "Đúng, giữ ngăn" when a right answer kept its stage; due words left → [Ôn tiếp]', async () => {
+  it('the summary shows "Đúng, giữ bậc" when a right answer kept its level; due words left → [Ôn tiếp]', async () => {
     renderApp(<RecallSession />, { routes: routes({
       [`POST /v1/practice/sessions/${S}/next`]: () => Response.json({ state: 'finished', session: view({ status: 'finished', asked: 8 }) }),
       [`GET /v1/practice/sessions/${S}/summary`]: () => Response.json({ ...SUMMARY, recall: { leveled_up: 3, correct_kept: 2 } }),
       'GET /v1/groups': () => Response.json({ items: [deck({ priority: 0, due: 12, new: 0 })] }),
     }) });
-    expect(await screen.findByText('Đúng, giữ ngăn')).toBeInTheDocument();
-    expect(within(screen.getByText('Đúng, giữ ngăn').parentElement!).getByText('2')).toBeInTheDocument();
+    expect(await screen.findByText('Đúng, giữ bậc')).toBeInTheDocument();
+    expect(within(screen.getByText('Đúng, giữ bậc').parentElement!).getByText('2')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'Ôn tiếp' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
     expect(screen.queryByText(/từ mới trong nhóm này/)).not.toBeInTheDocument();
   });

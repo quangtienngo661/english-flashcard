@@ -7,11 +7,9 @@ import { SpeakWord } from '@/app-ui/SpeakButtons';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
 import { Tag } from '@/ui/Tag';
-import { STAGE_KEYS } from '../../groups/stages';
+import { LEVEL_FILL, toLevel, useLevelName, type Level } from '@/ui/levels';
 import { ButtonKey } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
-
-const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
 export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
   if (result.result === 'wrong') return result.highlight_needs_review ? 4 : null;
@@ -36,17 +34,16 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
 }) {
   const t = useTranslations('App.practice.session');
   const tRecall = useTranslations('App.recall');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const locale = useLocale();
   const right = result.result === 'correct';
   const kind = feedbackCase(result);
   const lemma = result.correct.lemma;
-  // Đợt C: in an Ôn session a right answer has already moved the word (or kept it); say which, with the stage it is in now.
+  // Đợt C: in an Ôn session a right answer has already moved the word (or kept it); say which, with the level it is at now.
   const schedule = right ? result.schedule ?? null : null;
-  const stageName = (level: number) => t('stage', { stage: tStage(STAGE_KEYS[level] ?? 's1') });
-  // M5.1: Đã biết moves the word one stage up; shown only when it can (Figma 100:3164).
+  // M5.1: Đã biết moves the word one level up; shown only when it can (Figma 100:3164).
   const level = kind === 1 && !schedule ? result.level ?? null : null;
-  const move = level !== null && level >= 0 && level < STAGE_KEYS.length - 1 ? { from: level, to: level + 1 } : null;
+  const move = level !== null && level >= 0 && level < 5 ? { from: toLevel(level), to: toLevel(level + 1) } : null;
   const note = kind === 1 ? ['noteKnowEnter', 'noteKnowTap'] as const
     : kind === 2 ? ['noteNotDue', null] as const
       : kind === 3 ? ['noteHint', null] as const
@@ -101,15 +98,15 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
       </div>
       {result.definition_en && result.definition_en !== result.meaning && <p className="break-words font-wm-sans text-wm-small text-wm-muted">{result.definition_en}</p>}
       {move && (
-        <div role="group" aria-label={t('stageMove', { from: stageName(move.from), to: stageName(move.to) })} className="flex flex-wrap items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
-          <StageName dot={STAGE_DOT[move.from]}>{stageName(move.from)}</StageName>
+        <div role="group" aria-label={t('levelMove', { from: levelName(move.from), to: levelName(move.to) })} className="flex flex-wrap items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
+          <LevelName level={move.from}>{levelName(move.from)}</LevelName>
           <ArrowRight aria-hidden className="size-4 text-wm-muted" />
-          <StageName dot={STAGE_DOT[move.to]}>{stageName(move.to)}</StageName>
+          <LevelName level={move.to}>{levelName(move.to)}</LevelName>
         </div>
       )}
       {schedule ? (
         <p className="font-wm-sans text-wm-small text-wm-muted">
-          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma, stage: tStage(STAGE_KEYS[schedule.level] ?? 's1') })}
+          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma, level: levelName(toLevel(schedule.level)) })}
         </p>
       ) : note && (
         <>
@@ -132,10 +129,10 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   );
 }
 
-function StageName({ dot, children }: { dot: string; children: ReactNode }) {
+function LevelName({ level, children }: { level: Level; children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span aria-hidden className={cn('size-2.5 rounded-wm-xs', dot)} />
+      <span aria-hidden className={cn('size-2.5 rounded-wm-xs', LEVEL_FILL[level])} />
       {children}
     </span>
   );

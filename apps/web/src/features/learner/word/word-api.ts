@@ -87,6 +87,3 @@ export function levelRange(senses: PageSense[]): string | null {
   const high = LEVELS[Math.max(...ranks)];
   return low === high ? low : `${low} – ${high}`;
 }
-
-/** Days between reviews at each stage (TV9): level 0 is "new", 1..5 → 1, 3, 7, 14, 30 days. */
-export const STAGE_DAYS = [0, 1, 3, 7, 14, 30] as const;

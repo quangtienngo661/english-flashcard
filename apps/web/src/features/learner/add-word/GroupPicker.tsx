@@ -5,11 +5,11 @@ import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
 import { cn } from '@/lib/cn';
+import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
 import { groupTone } from '@/lib/group-color';
 import { rhythm } from '../groups/carousel';
 import type { GroupSummary } from '../groups/groups-api';
 import { GROUP_NAME_MAX } from '../groups/group-name';
-import { STAGE_KEYS } from '../groups/stages';
 
 type Props = {
   groups: GroupSummary[];
@@ -108,7 +108,7 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
           <input type="radio" name={name} checked={value === g.id} onChange={() => onChange(g.id)} className="size-4.5 shrink-0 accent-wm-accent outline-none" />
           <span data-group-square aria-hidden className={cn('size-2.25 shrink-0 rounded-xs', groupTone(g.id, g.total).bg)} />
           <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-base-strong text-wm-ink">{g.name}</span>
-          {g.total > 0 && <MiniStages group={g} />}
+          {g.total > 0 && <MiniLevels group={g} />}
           <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('words', { count: g.total })}</span>
         </label>
       ))}
@@ -116,21 +116,18 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
   );
 }
 
-/** Stage 5's dot is a gradient, so the bar uses its flat colour; an empty stage stays grey. */
-const STAGE_FILL = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
-
-/** The six stages of a deck in small (Figma: 8×5 segments, gap 2): which stages hold words. */
-function MiniStages({ group }: { group: GroupSummary }) {
+/** The six levels of a deck in small (Figma: 8×5 segments, gap 2): which levels hold words; an empty level stays grey. */
+function MiniLevels({ group }: { group: GroupSummary }) {
   const t = useTranslations('App.groups');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const cells = rhythm(group.cells);
   return (
     <figure aria-label={t('rhythm')} className="m-0 flex shrink-0 gap-0.5">
       {cells.map((c) => (
         <span
           key={c.level}
-          aria-label={`${tStage(STAGE_KEYS[c.level])}: ${c.total}`}
-          className={cn('block h-1.25 w-2 rounded-xs', c.total > 0 ? STAGE_FILL[c.level] : 'bg-wm-ink/14')}
+          aria-label={`${levelName(toLevel(c.level))}: ${c.total}`}
+          className={cn('block h-1.25 w-2 rounded-xs', c.total > 0 ? LEVEL_FILL[toLevel(c.level)] : 'bg-wm-ink/14')}
         />
       ))}
     </figure>

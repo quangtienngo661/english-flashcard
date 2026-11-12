@@ -148,7 +148,7 @@ test.describe('M2 flows (mocked API)', () => {
     await signedInAs(page, 'free', handlers);
     await page.goto(`/vi/app/group/backlog?id=${G}`);
     await page.getByRole('button', { name: 'Học lại cả 3 từ' }).click();
-    await expect(page.getByText('Đã đưa 3 từ về ngăn Mới.')).toBeVisible();
+    await expect(page.getByText('Đã đưa 3 từ về Mới.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/items/relearn')[0].body).toEqual({ item_ids: [uuid(7), uuid(8), uuid(9)] });
   });
 

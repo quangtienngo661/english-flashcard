@@ -114,5 +114,9 @@ neither. Sizes are in rem. `web-dark.css` redefines every `--color-wm-*` under `
 Dark section (M9, mockup `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`): `web-dark.css` starts with `color-scheme: dark`, raises
 `accent-soft`, `pass-soft`, `fail-soft` and the group `-wash` (16 % of the colour on the surface) and `-soft` (34 %), gives every `--shadow-wm-*` a
 black version (buttons: `none`), and adds `scrim`, `paper`, `paper-line`, `halo-mark`, `wrong-soft/-line/-ink` and the `level-0` … `level-5`,
-`level-priority`, `level-due` colours (light values in `web.css` equal the literals they replace). Stage and practice colours keep their light
-values in dark until the polish round. A dark colour a contrast test reads is `#rrggbb`, with the mix in a comment.
+`level-priority`, `level-due` colours (light values in `web.css` equal the literals they replace). Practice colours keep their light
+values in dark. A dark colour a contrast test reads is `#rrggbb`, with the mix in a comment.
+
+Levels (polish round P.1): SRS levels 0–5 ("Mới", "Bậc 1–5") use `level-0` … `level-5` through `apps/web/src/ui/levels.ts`; the old
+stage colours are gone. `warn` is the "đến hạn" text: the mockup's `#b07a12` darkened to `#97680f` (same hue) to reach 4.5:1 on `surface`
+and `bg`; dark `#f0c04a`. The contrast test pins every level hex and checks ink on each level tint (18 % and 40 % in oklab).

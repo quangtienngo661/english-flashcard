@@ -102,11 +102,11 @@ describe('Tùy chỉnh phiên: words', () => {
     });
   });
 
-  it('"Chỉ một ngăn": Ngăn 3 ngày shows 10 từ and sends group_filter 2; the word filter goes back to Mọi từ', async () => {
+  it('"Chỉ một bậc": Bậc 2 shows 10 từ and sends group_filter 2; the word filter goes back to Mọi từ', async () => {
     const { view, dialog } = await open('Theo nhóm');
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /Chỉ một ngăn/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Ngăn 3 ngày · 10' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /Chỉ một bậc/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Bậc 2 · 10' }));
     expect(within(dialog).getByText('10 từ')).toBeInTheDocument();
     expect(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' })).not.toBeChecked();
     await userEvent.click(startButton(dialog));

@@ -231,10 +231,10 @@ test.describe('M4 flows (mocked API)', () => {
     await signedInAs(page, 'free', practiceApi());
     await page.goto('/vi/app/practice/weak');
     await expect(page.getByRole('heading', { name: '4 từ hay sai' })).toBeVisible();
-    // M4 review: from 768 px each weak word is one table row: word, meaning, the ✓/✗ chips (M5.5), stage, last wrong, left to right on one line.
+    // M4 review: from 768 px each weak word is one table row: word, meaning, the ✓/✗ chips (M5.5), level, last wrong, left to right on one line.
     const row = page.getByRole('listitem').filter({ has: page.getByRole('img', { name: '3 câu sai' }) });
     if ((page.viewportSize()?.width ?? 0) >= 768) {
-      const cells = [row.getByText('deploy', { exact: true }), row.getByText('triển khai', { exact: true }), row.getByRole('img', { name: '3 câu sai' }), row.getByText('1 ngày', { exact: true })];
+      const cells = [row.getByText('deploy', { exact: true }), row.getByText('triển khai', { exact: true }), row.getByRole('img', { name: '3 câu sai' }), row.getByText('Bậc 1', { exact: true })];
       const boxes = await Promise.all(cells.map(async (cell) => (await cell.boundingBox())!));
       // Cells of different type sizes are centred on the row, so compare their middles.
       const middle = (b: { y: number; height: number }) => b.y + b.height / 2;

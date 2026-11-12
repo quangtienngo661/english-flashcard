@@ -8,7 +8,7 @@ import { SpeakSentence } from '@/ui/SpeakButton';
 import { TextButton } from '@/ui/TextButton';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { marked } from '../lookup/DictionaryPage';
-import { StageTag } from './LearningBlock';
+import { LevelTag } from './LearningBlock';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
 import type { PronLine } from '@/lib/speech/pronunciation';
 import { wordHref, type ItemState, type PageSense } from './word-api';
@@ -79,7 +79,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
         </div>
         <div className="shrink-0">
           {item ? (
-            <StageTag level={item.level} group={groupName} />
+            <LevelTag level={item.level} group={groupName} />
           ) : (
             <TextButton tone="add" onPress={() => setDialog('add')}>
               {t('addToGroup')}

@@ -19,6 +19,7 @@ import { Dialog } from '@/ui/Dialog';
 import { Skeleton } from '@/ui/Skeleton';
 import { StageBar } from '@/ui/StageBar';
 import { TextButton } from '@/ui/TextButton';
+import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
 import { rhythm } from './carousel';
 import { mastered } from './deck-actions';
@@ -37,7 +38,6 @@ import {
   type GroupSummary,
   type WordFilter,
 } from './groups-api';
-import { STAGE_KEYS } from './stages';
 
 /** The number of words behind each filter, from the deck summary (counted on the server, owner 27/10/2026). */
 function filterCount(summary: GroupSummary | undefined, filter: WordFilter, total: number): number | null {
@@ -48,9 +48,6 @@ function filterCount(summary: GroupSummary | undefined, filter: WordFilter, tota
   if (filter === 'new') return summary.available.new;
   return summary.cells[Number(filter.slice(6))]?.total ?? 0;
 }
-
-/** Stage dots of the word rows (design §7.3); stage 5's dot is a gradient, so the row uses its flat colour. */
-const STAGE_DOT = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
 
 const ALERT = 'flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card';
 
@@ -124,7 +121,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   useAddWordScope(detail.id);
   const addWord = useAddWord();
   const t = useTranslations('App.group');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const tGroups = useTranslations('App.groups');
   const locale = useLocale() as AppLocale;
   const format = useFormat();
@@ -149,7 +146,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
     { id: 'priority', label: t('filterPriority') },
     { id: 'due', label: t('filterDue') },
     { id: 'new', label: t('filterNew') },
-    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: t('filterStage', { stage: tStage(STAGE_KEYS[level]) }) })),
+    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: t('filterLevel', { level }) })),
   ];
   const filterTotal = filterCount(summary, filter, detail.item_count);
   const left = filterTotal === null ? null : Math.max(0, filterTotal - shown.length);
@@ -199,11 +196,11 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                 size: c.total,
                 fill: c.due,
                 tone: tone.bg,
-                label: tGroups('rhythmSegment', { stage: tStage(STAGE_KEYS[c.level]), due: c.due, total: c.total }),
+                label: tGroups('rhythmSegment', { level: levelName(toLevel(c.level)), due: c.due, total: c.total }),
               }))}
               labels={rhythm(summary.cells).map((c) => (
                 <span key={c.level} className="hidden md:inline">
-                  <b className="font-bold text-wm-ink">{c.total}</b> {tStage(STAGE_KEYS[c.level])}
+                  <b className="font-bold text-wm-ink">{c.total}</b> {levelName(toLevel(c.level))}
                 </span>
               ))}
             />
@@ -352,14 +349,14 @@ function EmptyDeck() {
 
 function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   const t = useTranslations('App.group');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const locale = useLocale() as AppLocale;
   const errorText = useErrorMessage();
   const { removeItem } = useGroupMutations();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const word = card.content.lemma;
-  const stage = t('stageChip', { stage: tStage(STAGE_KEYS[card.level]) });
+  const level = toLevel(card.level);
   const status = card.priority
     ? t('priorityTag')
     : card.section === 'new'
@@ -398,8 +395,8 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
         </span>
       </div>
       <span className="hidden w-32.5 shrink-0 items-center gap-1.5 text-wm-caption text-wm-muted md:flex">
-        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_DOT[card.level])} />
-        {stage}
+        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', LEVEL_FILL[level])} />
+        {levelName(level)}
       </span>
       <span className={cn('shrink-0 text-right text-wm-label md:w-30', card.priority ? 'text-wm-fail' : statusTone(card))}>{status}</span>
       <TextButton

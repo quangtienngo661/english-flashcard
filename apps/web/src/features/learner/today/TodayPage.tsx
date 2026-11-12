@@ -15,6 +15,7 @@ import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
 import { StageBar } from '@/ui/StageBar';
+import { LEVEL_FILL, LEVELS, useLevelName } from '@/ui/levels';
 import { mastered, sortForToday, waiting } from '../groups/deck-actions';
 import { CalendarLink } from '../calendar/CalendarLink';
 import { DeckButtons } from '../groups/DeckButtons';
@@ -22,7 +23,6 @@ import { ms, rememberRect, token } from '../groups/flip';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { GroupStack } from '../groups/GroupStack';
 import { useGroups, type GroupSummary } from '../groups/groups-api';
-import { STAGE_KEYS } from '../groups/stages';
 import { TopicSuggestions } from '../groups/TopicSuggestions';
 import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
@@ -252,24 +252,20 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   );
 }
 
-/** Square colours of "Từ theo ngăn" (M3 Figma A §5): the stage dots, stage 5 flat. */
-const STAGE_SQUARE = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
-
-/** Side column: words waiting too long (the deck with most) and every word by stage. */
+/** Side column: words waiting too long (the deck with most) and every word by level. */
 function TodayAside({ groups }: { groups: GroupSummary[] }) {
   const t = useTranslations('App.today');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const locale = useLocale();
   const format = useFormat();
   const days = useAppConfig().data?.learning.backlog_after_days;
   const backlog = [...groups].sort((a, b) => b.backlog - a.backlog)[0];
-  const stages = STAGE_KEYS.map((key, level) => ({
-    key,
+  const levels = LEVELS.map((level) => ({
     level,
     total: groups.reduce((sum, g) => sum + (g.cells[level]?.total ?? 0), 0),
     due: groups.reduce((sum, g) => sum + (g.cells[level]?.due ?? 0), 0),
   }));
-  const words = stages.reduce((sum, s) => sum + s.total, 0);
+  const words = levels.reduce((sum, s) => sum + s.total, 0);
   return (
     <>
       {backlog && backlog.backlog > 0 && days !== undefined && (
@@ -284,24 +280,24 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
           </Link>
         </section>
       )}
-      <section aria-labelledby="by-stage" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+      <section aria-labelledby="by-level" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 id="by-stage" className="font-wm-display text-base font-bold text-wm-ink">
-            {t('stagesTitle', { count: words })}
+          <h2 id="by-level" className="font-wm-display text-base font-bold text-wm-ink">
+            {t('levelsTitle', { count: words })}
           </h2>
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('stagesHint')}</span>
+          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('levelsHint')}</span>
         </div>
         <ul className="flex flex-col gap-3">
-          {stages.map((s) => (
-            <li key={s.key} className="flex items-center gap-3 text-wm-caption text-wm-ink">
+          {levels.map((s) => (
+            <li key={s.level} className="flex items-center gap-3 text-wm-caption text-wm-ink">
               <span className="flex w-21 shrink-0 items-center gap-2">
-                <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_SQUARE[s.level])} />
-                {tStage(s.key)}
+                <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', LEVEL_FILL[s.level])} />
+                {levelName(s.level)}
               </span>
               <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-sm bg-wm-line">
                 <span
-                  className={cn('block h-full', STAGE_SQUARE[s.level])}
-                  // raw-ok: bar width is the share of due cards in the stage
+                  className={cn('block h-full', LEVEL_FILL[s.level])}
+                  // raw-ok: bar width is the share of due cards in the level
                   style={{ width: `${s.total ? Math.round((s.due / s.total) * 100) : 0}%` }}
                 />
               </span>

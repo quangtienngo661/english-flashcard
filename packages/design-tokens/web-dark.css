@@ -21,7 +21,8 @@
   --color-wm-fail: #ff8d80;
   /* #ff8d80 18 % on #171b2a, oklab */
   --color-wm-fail-soft: #3c2f3a;
-  /* Unchanged in M9; the polish round replaces stage colours with level colours. The amber reads on the dark surface; the number takes the lighter amber. */
+  --color-wm-warn: #f0c04a;
+  /* The amber reads on the dark surface; the number takes the lighter amber. */
   --color-wm-practice: #d99a17;
   --color-wm-practice-ink: #e0b450;
   /* Public pages: no dark frame drawn (M8 Figma A §4). The chip starts at the dark accent so its --on-accent text stays readable; the
@@ -30,28 +31,6 @@
   --color-wm-ai-to: #3d78ff;
   --color-wm-glow-accent: rgb(141 162 255 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
-
-  /* Unchanged in M9; the polish round replaces stage colours with level colours (same light values). Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
-     colour utility; stage-5-solid is the flat square of "Từ theo ngăn" (M3 Figma A §5). */
-  --color-wm-stage-0-bg: #eef0f4;
-  --color-wm-stage-0-dot: #9aa3b1;
-  --color-wm-stage-0-ink: #525a78;
-  --color-wm-stage-1-bg: #f7e8dc;
-  --color-wm-stage-1-dot: #c07a45;
-  --color-wm-stage-1-ink: #7c4a28;
-  --color-wm-stage-2-bg: #edf0f4;
-  --color-wm-stage-2-dot: #98a2b0;
-  --color-wm-stage-2-ink: #4d5664;
-  --color-wm-stage-3-bg: #fbf0c8;
-  --color-wm-stage-3-dot: #d4a72c;
-  --color-wm-stage-3-ink: #6f5208;
-  --color-wm-stage-4-bg: #dcf3ea;
-  --color-wm-stage-4-dot: #1f9d75;
-  --color-wm-stage-4-ink: #0c654c;
-  --color-wm-stage-5-bg: linear-gradient(90deg, #ffe0f2 0%, #fff2d1 35%, #dbffeb 70%, #d9f0ff 100%);
-  --color-wm-stage-5-dot: linear-gradient(135deg, #ff8ad9, #ffd46b, #8cffb5, #7ad6ff);
-  --color-wm-stage-5-ink: #3b2f6b;
-  --color-wm-stage-5-solid: #b28bff;
 
   /* Group colours by ID (design §7.4). Dark (mockup lines 102-108, 465): -wash is the colour 16 % on #171b2a (srgb), -soft 34 %;
      -ink is the lifted ink, >= 4.5:1 on its wash and on the surface. */
@@ -97,7 +76,7 @@
   --color-wm-wrong-soft: #352731;
   --color-wm-wrong-line: rgb(229 96 63 / 0.55);
   --color-wm-wrong-ink: #e87052;
-  /* Level colours for the polish round: 0 is none, 1-5 brighten with the level. */
+  /* Level colours (ui/levels.ts): 0 is none, 1-5 brighten with the level. */
   --color-wm-level-0: #56607a;
   --color-wm-level-1: #1f4d35;
   --color-wm-level-2: #27704a;

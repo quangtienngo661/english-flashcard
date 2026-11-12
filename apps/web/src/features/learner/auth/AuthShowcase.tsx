@@ -23,9 +23,9 @@ export function AuthShowcase({ variant }: { variant: ShowcaseVariant }) {
       <div className="absolute left-1/2 top-1/2 h-132 w-115 -translate-x-1/2 -translate-y-1/2">
         {variant === 'ngan' ? (
           <>
-            <WordCard className="left-25 top-0 rotate-7 opacity-80" stage={t('stage', { days: 7 })} word="allocate" pos="verb · /ˈæl.ə.keɪt/" gloss="to give something to someone for a purpose" meaning={t('allocate')} />
-            <WordCard className="left-12.5 top-3 rotate-3" stage={t('stage', { days: 3 })} word="viable" pos="adj · /ˈvaɪ.ə.bəl/" gloss="able to work as intended" meaning={t('viable')} />
-            <WordCard className="left-0 top-4.5 -rotate-2" stage={t('stage', { days: 1 })} word="mitigate" pos="verb · /ˈmɪt.ɪ.ɡeɪt/" gloss="to make something bad less serious" meaning={t('mitigate')} example />
+            <WordCard className="left-25 top-0 rotate-7 opacity-80" stage={t('interval', { days: 7 })} word="allocate" pos="verb · /ˈæl.ə.keɪt/" gloss="to give something to someone for a purpose" meaning={t('allocate')} />
+            <WordCard className="left-12.5 top-3 rotate-3" stage={t('interval', { days: 3 })} word="viable" pos="adj · /ˈvaɪ.ə.bəl/" gloss="able to work as intended" meaning={t('viable')} />
+            <WordCard className="left-0 top-4.5 -rotate-2" stage={t('interval', { days: 1 })} word="mitigate" pos="verb · /ˈmɪt.ɪ.ɡeɪt/" gloss="to make something bad less serious" meaning={t('mitigate')} example />
             <div className="absolute left-62 top-97.5 flex rotate-4 flex-col gap-2 rounded-wm-lg bg-wm-surface px-4.5 py-4 shadow-wm-lift backdrop-blur-wm-sm">
               <p className="font-wm-sans text-wm-label text-wm-muted">{t('today')}</p>
               <p className="flex items-baseline gap-2">

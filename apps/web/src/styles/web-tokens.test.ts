@@ -31,10 +31,35 @@ function contrast(map: Map<string, string>, fg: string, bg: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** color-mix(in oklab, a p%, b) as #rrggbb, the way the browser mixes a level tint (mockup L165, L173). */
+function mixOklab(a: string, b: string, p: number): string {
+  const toLin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const fromLin = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+  const oklab = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => toLin(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const [l, m, s] = [
+      0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl,
+      0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl,
+      0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl,
+    ].map(Math.cbrt);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  };
+  const [x, y] = [oklab(a), oklab(b)];
+  const [L, A, B] = x.map((v, i) => v * p + y[i] * (1 - p));
+  const [l, m, s] = [L + 0.3963377774 * A + 0.2158037573 * B, L - 0.1055613458 * A - 0.0638541728 * B, L - 0.0894841775 * A - 1.291485548 * B]
+    .map((v) => v ** 3);
+  const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  return `#${rgb.map((c) => Math.round(Math.min(1, Math.max(0, fromLin(c))) * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
 const TEXT_PAIRS: Array<[string, string]> = [
   ['ink', 'bg'], ['ink', 'surface'], ['muted', 'bg'], ['muted', 'surface'], ['on-accent', 'accent'], ['accent', 'surface'],
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
   ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
+  // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
+  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'],
 ];
 
 describe('wm design tokens (web.css, web-dark.css)', () => {
@@ -88,25 +113,8 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
 // M3 (design §7.3, §7.4; motion doc §1, §3). Group inks: Figma's darker inks, green and blue mixed with ink (ruling).
 const GROUP = ['#e5603f', '#149384', '#7a55d3', '#d99a17', '#4a9637', '#d2427a', '#2a86d1'];
 const GROUP_INK = ['#984941', '#17696c', '#56429d', '#916d28', '#376d45', '#8c3765', '#29629d'];
-const STAGE = [
-  ['#eef0f4', '#9aa3b1', '#525a78'],
-  ['#f7e8dc', '#c07a45', '#7c4a28'],
-  ['#edf0f4', '#98a2b0', '#4d5664'],
-  ['#fbf0c8', '#d4a72c', '#6f5208'],
-  ['#dcf3ea', '#1f9d75', '#0c654c'],
-];
 
-describe('wm stage, group and motion tokens (M3)', () => {
-  it('declares the six stage colours', () => {
-    STAGE.forEach(([bg, dot, ink], n) => {
-      expect([light.get(`stage-${n}-bg`), light.get(`stage-${n}-dot`), light.get(`stage-${n}-ink`)]).toEqual([bg, dot, ink]);
-    });
-    expect(light.get('stage-5-bg')).toBe('linear-gradient(90deg, #ffe0f2 0%, #fff2d1 35%, #dbffeb 70%, #d9f0ff 100%)');
-    expect(light.get('stage-5-dot')).toBe('linear-gradient(135deg, #ff8ad9, #ffd46b, #8cffb5, #7ad6ff)');
-    expect(light.get('stage-5-ink')).toBe('#3b2f6b');
-    expect(light.get('stage-5-solid')).toBe('#b28bff');
-  });
-
+describe('wm group and motion tokens (M3)', () => {
   it('declares seven group colours with soft, wash and ink, plus the empty tone', () => {
     GROUP.forEach((colour, n) => {
       expect(light.get(`group-${n}`)).toBe(colour);
@@ -248,6 +256,33 @@ describe('wm dark and level tokens (M9.8)', () => {
     const strictly = (xs: number[], cmp: (a: number, b: number) => boolean) => xs.every((x, i) => i === 0 || cmp(xs[i - 1], x));
     expect(strictly(lum(light), (a, b) => a > b)).toBe(true);
     expect(strictly(lum(dark), (a, b) => a < b)).toBe(true);
+  });
+
+  // The M9 minor: pin the exact level hexes once the polish uses them (mockup L80 light, L93 dark).
+  it('pins the eight level colours, light and dark', () => {
+    const names = ['level-0', 'level-1', 'level-2', 'level-3', 'level-4', 'level-5', 'level-priority', 'level-due'];
+    expect(names.map((k) => light.get(k))).toEqual(['#a3abbd', '#b9e4c7', '#7ccd9b', '#3fae6c', '#218c4f', '#106a39', '#c4372c', '#e0a21b']);
+    expect(names.map((k) => dark.get(k))).toEqual(['#56607a', '#1f4d35', '#27704a', '#319c60', '#4cc283', '#8ae4b0', '#ff8d80', '#f0c04a']);
+  });
+
+  it('pins the warn colour (QP4: the mockup amber #b07a12 darkened, same hue, to reach 4.5:1 on surface and bg; dark #f0c04a)', () => {
+    expect([light.get('warn'), dark.get('warn')]).toEqual(['#97680f', '#f0c04a']);
+  });
+
+  // A level chip is ink on the level mixed into the surface: 18 % at rest, 40 % when chosen (mockup L165, L173).
+  it.each([['light', light], ['dark', dark]] as const)('ink reads at 4.5:1 on every level tint in %s', (_mode, map) => {
+    const surface = map.get('surface') ?? '';
+    const below = ['0', '1', '2', '3', '4', '5', 'priority', 'due'].flatMap((n) => [18, 40].map((p) => {
+      const tint = mixOklab(map.get(`level-${n}`) ?? '', surface, p / 100);
+      const ratio = contrast(new Map([['ink', map.get('ink') ?? ''], ['tint', tint]]), 'ink', 'tint');
+      return ratio < 4.5 ? `level-${n} ${p}% (${tint})=${ratio.toFixed(2)}` : null;
+    })).filter(Boolean);
+    expect(below).toEqual([]);
+  });
+
+  it('mixes in oklab like the browser (checked against the dark pass-soft token, #62c98f 18 % on #171b2a)', () => {
+    expect(mixOklab('#62c98f', '#171b2a', 0.18)).toBe(dark.get('pass-soft'));
+    expect(mixOklab('#8da2ff', '#171b2a', 0.2)).toBe(dark.get('accent-soft'));
   });
 
   it('sets color-scheme: dark first in the dark block', () => {

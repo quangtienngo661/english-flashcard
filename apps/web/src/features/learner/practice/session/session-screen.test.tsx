@@ -91,22 +91,22 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     expect(screen.queryByRole('button', { name: 'Báo lỗi' })).not.toBeInTheDocument();
   });
 
-  it('a right answer at level 1 shows the move "Ngăn 1 ngày → Ngăn 3 ngày" under "Đúng rồi"', async () => {
+  it('a right answer at level 1 shows the move "Bậc 1 → Bậc 2" under "Đúng rồi"', async () => {
     renderApp(<PracticeSession />, { routes: routes(mcq()) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
     const panel = (await screen.findByText('Đúng rồi')).closest('[data-feedback]') as HTMLElement;
-    const move = within(panel).getByRole('group', { name: 'Ngăn 1 ngày → Ngăn 3 ngày' });
-    expect(move).toHaveTextContent('Ngăn 1 ngàyNgăn 3 ngày');
+    const move = within(panel).getByRole('group', { name: 'Bậc 1 → Bậc 2' });
+    expect(move).toHaveTextContent('Bậc 1Bậc 2');
   });
 
-  it('no move line when the word has no level (left the schedule) or is already in the last stage', async () => {
+  it('no move line when the word has no level (left the schedule) or is already at the last level', async () => {
     for (const level of [null, 5]) {
       const v = renderApp(<PracticeSession />, { routes: routes(mcq(), { 'POST /v1/practice/items/item-8/answer': () => Response.json(result({ level })) }) });
       await screen.findByText('xấu đi');
       await userEvent.keyboard('1');
       await screen.findByText('Đúng rồi');
-      expect(screen.queryByRole('group', { name: /^Ngăn .* → Ngăn / })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /^(Mới|Bậc \d) → Bậc \d$/ })).not.toBeInTheDocument();
       v.unmount();
     }
   });
