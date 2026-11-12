@@ -265,7 +265,7 @@ app/[locale]/app/
 - Đo trước và sau: Next 16 đã bỏ cột "First Load JS" khỏi output `next build` (tài liệu nâng cấp lên 16). Next 16.4.3 ghi
   `.next/diagnostics/route-bundle-stats.json` (trường `firstLoadUncompressedJsBytes`, chỉ khi build bằng Turbopack; file này là chi tiết nội bộ
   của Next, không có trong tài liệu). Một script `scripts/compare-bundle-stats.mjs` so file đó của bản cũ (build ở tag lưu trữ) với bản mới cho
-  mọi route `/vi/app/**`, fail khi route nào nặng hơn quá 10%; quá thì ghi lý do vào rulings. Nếu Next đổi định dạng file, dùng "Total JavaScript"
+  mọi route `/vi/app/**`, fail khi route nào nặng hơn quá 10%; quá thì ghi lý do vào rulings. Ngoại lệ (chủ dự án 12/11/2026, R258): ngưỡng 110% cho mọi route, 118% cho `/[locale]/app/plans` và `/[locale]/app/plans/order`, đặt ở `limits` của `apps/web/bundle-baseline.json`. Nếu Next đổi định dạng file, dùng "Total JavaScript"
   của Lighthouse trên Hôm nay, Nhóm, Phiên luyện.
 
 ### 5.8 Font và chữ dịch
@@ -671,7 +671,7 @@ Quyết định của chủ dự án khi viết plan (QM8, decision record, 11/1
 
 - **M9a — Kiểm thử thành script, tải sau, dọn nhỏ.**
   - Script giữ trong repo (QM9-4): khóa chữ không dùng và hình dạng JSON-LD (chạy trong bộ unit, nên CI chạy); so dung lượng JS với bản cũ, ngưỡng
-    10% (§5.7; bước riêng trong job `web` của CI); Lighthouse (lệnh tay); bộ ảnh `gm-m9`: mọi màn ở 390, 768, 1024, 1440, sáng và tối (lệnh tay,
+    10% (§5.7; bước riêng trong job `web` của CI; ngoại lệ R258: 110% cho mọi route, 118% cho hai trang Gói học, ở `limits` của `bundle-baseline.json`); Lighthouse (lệnh tay); bộ ảnh `gm-m9`: mọi màn ở 390, 768, 1024, 1440, sáng và tối (lệnh tay,
     stack thật; QM9-5); đo khung hình trên điện thoại thật qua chung Wi-Fi với máy tính (QM9-7).
   - Tải sau (§5.7): Tùy chỉnh phiên và Giới thiệu Pro qua `next/dynamic`, như Thêm từ, Lịch, Ngày.
   - Đổi tên `DotGridBackground` thành `AppBackground`; ghi việc đo lại `GET /v1/groups` trên máy chủ thật vào `deploy-checklist.md`.
@@ -930,8 +930,8 @@ xóa (còn trong tag).
 | Truy cập | `e2e/a11y.spec.ts` (trang công khai), `e2e/support/axe.ts` trong từng journey app | Mỗi journey mới gọi axe trên màn của nó |
 | Khóa chữ không dùng | `apps/web/scripts/check-message-keys.mjs`, chạy trong bộ unit (CI) qua `check-message-keys.test.ts` (M9a) | Khóa `messages/vi.json` không còn được gọi trong `src/`; khóa dùng động ghi vào danh sách cho phép; LP3 vẫn kiểm hai file cùng khóa |
 | Lighthouse, Schema Markup Validator | `pnpm lighthouse` (lệnh tay, M9a); JSON-LD kiểm hình dạng trong `site/seo/JsonLd.test.tsx`, Schema Markup Validator chạy tay một lần | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý; JSON-LD hợp lệ |
-| Dung lượng JS | `apps/web/scripts/compare-bundle-stats.mjs` so với `bundle-baseline.json` (§5.7; bước riêng trong job `web` của CI, M9a) | Không route `/vi/app/**` nào nặng hơn bản cũ quá 10% |
-| Khung hình | DevTools Performance, CPU chậm 4–6× (§8.1, §8.5); điện thoại thật mở web qua chung Wi-Fi (QM9-6) | Học, Nhóm trên Android tầm thấp và Safari iOS |
+| Dung lượng JS | `apps/web/scripts/compare-bundle-stats.mjs` so với `bundle-baseline.json` (§5.7; bước riêng trong job `web` của CI, M9a) | Không route `/vi/app/**` nào nặng hơn bản cũ quá 10%, trừ ngoại lệ R258: 110% mọi route, 118% cho `/[locale]/app/plans` và `/plans/order` (`limits` của `bundle-baseline.json`) |
+| Khung hình | DevTools Performance, CPU chậm 4–6× (§8.1, §8.5); điện thoại thật mở web qua chung Wi-Fi (QM9-7) | Học, Nhóm trên Android tầm thấp và Safari iOS |
 
 Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang lịch sử, ô nhập lại mật khẩu) viết test trước, chạy thấy đỏ rồi mới code.
 
