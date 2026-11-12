@@ -111,6 +111,10 @@ jobs:
           # (each response of /app carries its own CSP nonce, launch prep B design 5.4).
           NEXT_PUBLIC_LEARNER_APP: 'on'
 
+      - name: JS size against the old UI
+        # Compares first-load JS of every /[locale]/app route with bundle-baseline.json (old UI, archive tag); fails over 110 % (design §5.7); per-route overrides in bundle-baseline.json `limits`.
+        run: node scripts/compare-bundle-stats.mjs
+
   admin:
     name: admin (lint, typecheck, unit, build, e2e)
     runs-on: ubuntu-latest

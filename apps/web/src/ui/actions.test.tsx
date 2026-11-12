@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Button } from './Button';
 import { ButtonLink } from './ButtonLink';
-import { DotGridBackground } from './DotGridBackground';
+import { AppBackground } from './AppBackground';
 import { Kbd } from './Kbd';
 import { Tag } from './Tag';
 import { TextButton } from './TextButton';
@@ -73,13 +73,13 @@ describe('ui actions and surfaces', () => {
     expect(screen.getByText('noun · A2')).toBeInTheDocument();
   });
 
-  it('DotGridBackground is hidden from the accessibility tree', () => {
-    const { container } = render(<DotGridBackground />);
+  it('AppBackground is hidden from the accessibility tree', () => {
+    const { container } = render(<AppBackground />);
     expect(container.firstChild).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('DotGridBackground draws the mesh background, not the dot grid', () => {
-    const { container } = render(<DotGridBackground />);
+  it('AppBackground draws the mesh background, not the dot grid', () => {
+    const { container } = render(<AppBackground />);
     expect(container.firstChild).toHaveClass('app-mesh');
     expect(container.firstChild).not.toHaveClass('dot-grid');
   });

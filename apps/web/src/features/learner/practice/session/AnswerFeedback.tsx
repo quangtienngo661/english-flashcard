@@ -85,14 +85,14 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
       data-feedback
       className={cn(
         '-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7',
-        right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-fail bg-wm-fail-soft',
+        right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
       )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className={cn('flex size-7.5 shrink-0 items-center justify-center rounded-full text-wm-on-accent', right ? 'bg-wm-pass' : 'bg-wm-fail')}>
+        <span className={cn('flex size-7.5 shrink-0 items-center justify-center rounded-full text-wm-on-accent', right ? 'bg-wm-pass' : 'bg-wm-wrong-ink')}>
           {right ? <Check aria-hidden className="size-4.5" /> : <X aria-hidden className="size-4.5" />}
         </span>
-        <p className={cn('font-wm-display text-wm-card-title', right ? 'text-wm-pass' : 'text-wm-fail')}>{right ? t('right') : t('wrong')}</p>
+        <p className={cn('font-wm-display text-wm-card-title', right ? 'text-wm-pass' : 'text-wm-wrong-ink')}>{right ? t('right') : t('wrong')}</p>
         <span className="hidden flex-1 md:block" />
         <span className="flex min-w-0 basis-full items-center gap-1 md:basis-auto">
           <span className="min-w-0 break-words font-wm-sans text-wm-base-strong text-wm-ink">{t('revealLine', { lemma, meaning: result.meaning })}</span>

@@ -77,12 +77,12 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 border-wm-fail bg-wm-fail-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7">
+    <div data-feedback className="-mt-6.5 flex flex-col gap-3 rounded-b-wm-xl border-2 border-t-0 border-wm-wrong-line bg-wm-wrong-soft px-5 pb-6 pt-11 shadow-wm-card motion-safe:animate-panel-drop md:mx-5.5 md:px-7">
       <div className="flex items-center gap-3">
-        <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-fail text-wm-on-accent">
+        <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-wrong-ink text-wm-on-accent">
           <X aria-hidden className="size-4.5" />
         </span>
-        <p className="font-wm-display text-wm-card-title text-wm-fail">{t('wrong')}</p>
+        <p className="font-wm-display text-wm-card-title text-wm-wrong-ink">{t('wrong')}</p>
       </div>
       {!sessionWord && <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('tryAgainBody')}</p>}
       <p className="font-wm-sans text-wm-small text-wm-muted">{t('tryAgainNote')}</p>

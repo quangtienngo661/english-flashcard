@@ -4,6 +4,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Bricolage_Grotesque, JetBrains_Mono, Noto_Sans } from 'next/font/google';
 import { notFound } from 'next/navigation';
+import { THEME_COLOR } from '@/app-shell/theme/theme';
 import { routing } from '@/i18n/routing';
 import { buildMetadata } from '@/lib/metadata';
 import '../globals.css';
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 }
 
 // The page background (`--color-wm-bg`) of each theme: the new top bar is glass over the background, not a navy band (design §11).
-export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0f1220' }, { color: '#f6f7fa' }] };
+export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: dark)', color: THEME_COLOR.dark }, { color: THEME_COLOR.light }] };
 
 export default async function LocaleLayout({ children, params }: LocaleParams & { children: ReactNode }) {
   const { locale } = await params;

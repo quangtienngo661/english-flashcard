@@ -141,7 +141,7 @@ không sửa API. Mỗi lần tự chốt một chỗ lệch thì ghi vào `docs
 4. Mỗi đợt: nhánh con từ `refactor/giao-dien-moi` (`feat/giao-dien-moi-m1`…), PR vào `refactor/giao-dien-moi`. CI chạy trên mọi PR
    (`.github/workflows/ci.yml:5–6`, `on: pull_request` không lọc nhánh đích). Hook hỏi chủ dự án mỗi lần merge vì nhánh đích không phải `dev`.
 5. Merge `dev` vào `refactor/giao-dien-moi` mỗi tuần và trước PR cuối, để PR cuối không xung đột lớn.
-6. Xong M9: một PR `refactor/giao-dien-moi` → `dev`, mở qua skill `ship-pr`.
+6. Xong M9, đợt polish (QM9-1) và M8c: một PR `refactor/giao-dien-moi` → `dev`, mở qua skill `ship-pr`.
 
 | Khi | Thì |
 |---|---|
@@ -265,7 +265,7 @@ app/[locale]/app/
 - Đo trước và sau: Next 16 đã bỏ cột "First Load JS" khỏi output `next build` (tài liệu nâng cấp lên 16). Next 16.4.3 ghi
   `.next/diagnostics/route-bundle-stats.json` (trường `firstLoadUncompressedJsBytes`, chỉ khi build bằng Turbopack; file này là chi tiết nội bộ
   của Next, không có trong tài liệu). Một script `scripts/compare-bundle-stats.mjs` so file đó của bản cũ (build ở tag lưu trữ) với bản mới cho
-  mọi route `/vi/app/**`, fail khi route nào nặng hơn quá 10%; quá thì ghi lý do vào rulings. Nếu Next đổi định dạng file, dùng "Total JavaScript"
+  mọi route `/vi/app/**`, fail khi route nào nặng hơn quá 10%; quá thì ghi lý do vào rulings. Ngoại lệ (chủ dự án 12/11/2026, R258): ngưỡng 110% cho mọi route, 118% cho `/[locale]/app/plans` và `/[locale]/app/plans/order`, đặt ở `limits` của `apps/web/bundle-baseline.json`. Nếu Next đổi định dạng file, dùng "Total JavaScript"
   của Lighthouse trên Hôm nay, Nhóm, Phiên luyện.
 
 ### 5.8 Font và chữ dịch
@@ -315,7 +315,7 @@ Dời file trong đợt này:
 | `features/learner/word/pronunciation.ts`, `app-ui/speech.ts`, `app-ui/audio-player.ts` | `lib/speech/` | M1 (để `ui/SpeakButton` không import `features/`) |
 | `components/landing/*`, `components/sections/*`, `components/layout/*`, `components/seo/*`, `components/interactive/*` | `site/landing/`, `site/legal/`, `site/layout/`, `site/seo/`, `site/interactive/` | M8 |
 | `components/ui/*` | thay bằng `ui/*` và `site/layout/` | M8 |
-| `app-ui/*` còn lại | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M7; phần còn lại ở đợt polish trước M9 (QM8-9) |
+| `app-ui/*` còn lại | thay bằng `ui/*`; file không còn ai dùng thì xóa | M1–M7; phần còn lại ở đợt polish sau M9 (QM8-9, QM9-1) |
 
 Ngoại lệ (code facts web S10, S11): luật của `ui/` bỏ qua file test (`src/ui/**/*.test.{ts,tsx}`), vì `renderApp` (`app-ui/test-utils.tsx`)
 import `@/app-shell/*`; `TurnstileWidget` không vào `ui/` (import `@/app-shell/config`), chuyển sang `features/learner/auth/` ở M2;
@@ -323,7 +323,7 @@ import `@/app-shell/*`; `TurnstileWidget` không vào `ui/` (import `@/app-shell
 
 Một test lint dùng `ESLint.lintText` với đường dẫn ảo (ví dụ `src/ui/Probe.tsx` import `@/features/...`) và kiểm có lỗi, để luật có "răng";
 không ghi file mẫu lên đĩa (sẽ làm `pnpm lint` của CI fail); timeout riêng 30 giây (lần chạy đầu khoảng 3,2 giây). `components/` xóa ở M8;
-`app-ui/` xóa ở đợt polish chủ dự án làm trước M9 (QM8-9); bản cũ nằm trong tag.
+`app-ui/` xóa ở đợt polish sau M9 (QM8-9, QM9-1); bản cũ nằm trong tag.
 
 ## 7. Token, theme, font, màu nhóm
 
@@ -338,10 +338,11 @@ Chuyển tiếp trong lúc màn cũ còn chạy (review I4). Token cũ và mới
   `packages/design-tokens/package.json`; thiếu thì `@import` và `createRequire(...).resolve(...)` trong `tokens.test.ts` báo
   `ERR_PACKAGE_PATH_NOT_EXPORTED`.
 - M1–M7: `apps/web/src/app/globals.css` import cả bộ cũ (`theme.css`, `dark.css`, `island.css`) và bộ mới. Màn đã làm lại chỉ dùng token `wm-`.
-- Đợt polish trước M9 (QM8-9; danh sách việc ở delivery record, mục "Việc dọn chuyển sang đợt polish"): khi `grep` không còn class cũ trong
+- Đợt polish sau M9 (QM8-9, QM9-1; danh sách việc ở delivery record, mục "Việc dọn chuyển sang đợt polish"): khi `grep` không còn class cũ trong
   `apps/web/src`, bỏ import bộ cũ khỏi web. Một test kiểm không còn class của bộ cũ trong `apps/web/src`. M8 chỉ bỏ class cũ ở trang công khai.
 - Không sửa, không xóa gì trong `theme.css`: admin vẫn import (`apps/admin/src/styles/globals.css:2`) và có test riêng đọc nó
-  (`apps/admin/src/styles/tokens.test.ts:8`). `dark.css`, `island.css`, `dark-pastel.css` chỉ xóa ở M9 sau khi kiểm admin không import.
+  (`apps/admin/src/styles/tokens.test.ts:8`). `dark.css`, `island.css`, `dark-pastel.css` xóa ở đợt polish, sau khi web hết class cũ và kiểm admin không import
+  (QM9-1; M9b chỉ chuyển `color-scheme: dark` sang `web-dark.css`).
 - Màu chỉ khai báo trong package, như luật hiện nay (README của package; UBC1). Kích thước trong token `wm-` viết bằng `rem`, như LP31 bắt với
   `theme.css` (10 px = `0.625rem`).
 - Test mới cho `web.css`, `web-dark.css` (LP12 hiện chỉ đọc `theme.css`, nên tự nó không đỏ): cặp tương phản sáng và tối, hai file có cùng bộ
@@ -388,6 +389,27 @@ Card, Row, Pop lấy từ ba effect style cùng tên trong Figma (đã đọc ng
 nút chính và nút đỏ là bóng đặt tay trên từng nút sau lượt "trả bóng nút"; nút xanh lấy từ biến thể `Lựa chọn / Trạng thái=Đúng` (`3:35`); nút phụ
 dùng effect style `Shadow/Soft` của biến thể `Nút / Kiểu=Phụ` (`3:8`). Nút bị tắt không có bóng.
 
+**Giá trị tối của M9** (QM9-2, QM9-3). Nguồn: mockup bản chốt `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html` (mục Hệ thống); code ở
+`packages/design-tokens/web-dark.css`, giá trị sáng tương ứng ở `web.css`. Nền card tối là `#171b2a`; phần trộn tính bằng oklab, riêng màu nhóm bằng srgb.
+
+| Token | Sáng | Tối |
+|---|---|---|
+| `accent-soft` | `#e7ecf8` | `#2c334f` (`accent` 20 % trên card) |
+| `pass-soft` / `fail-soft` | `#e4f2ea` / `#f8e7e5` | `#24373c` / `#3c2f3a` (18 %) |
+| `scrim` (lớp mờ sau hộp thoại) | `rgb(27 36 68 / .3)` | `rgb(0 0 0 / .55)` |
+| `paper` / `paper-line` (giấy Tra từ) | `#fbfaf6` / `#e8e4d8` | `#1e2334` / `#2e3449` |
+| `halo-mark` (quầng vàng của nền mesh) | `rgb(255 216 74 / .34)` | `rgb(255 216 74 / .12)` |
+| `wrong-soft` / `wrong-line` / `wrong-ink` (box "Chưa đúng") | `#fbedeb` / `rgb(184 53 42 / .62)` / `#b8352a` | `#352731` / `rgb(229 96 63 / .55)` / `#e87052` |
+| `group-<n>-wash` / `-soft` | 12 % / 50 % màu nhóm trên trắng | 16 % / 34 % màu nhóm trên card (nhóm 0: `#38262d` / `#5d3231`) |
+| `group-<n>-ink` (nhóm 0-6) | `#984941`, `#17696c`, `#56429d`, `#916d28`, `#376d45`, `#8c3765`, `#29629d` | `#e87052`, `#37a396`, `#9d81de`, `#d99a17`, `#62a451`, `#dc6c97`, `#4c99d8`; từ 4,6:1 trên dòng đang chọn |
+| `level-0` ... `level-5` | `#a3abbd`, `#b9e4c7`, `#7ccd9b`, `#3fae6c`, `#218c4f`, `#106a39` | `#56607a`, `#1f4d35`, `#27704a`, `#319c60`, `#4cc283`, `#8ae4b0` |
+| `level-priority` / `level-due` | `#c4372c` / `#e0a21b` | `#ff8d80` / `#f0c04a` |
+
+Bóng tối: hình học của bóng sáng, màu đen thay navy. Lớp ngoài, lớp trong: `card` .4 và .6; `row` .35 và .6; `pop` .4 và .7; `soft` .4 và .7; `lift` .85 và .4;
+`stage` .6 và .7; `pro` .7; `paper` .7; `paper-card` .85; `contact` .4. Ba bóng nút (`btn`, `btn-pass`, `btn-fail`) là `none`: nút không bóng ở chế độ tối.
+`pro-glow` giữ quầng `rgb(141 162 255 / .18)`. Hạt của nền mesh tối là nhiễu thô `soft-light` 7 % (`globals.css`, theo landing bản 3). Màu mức dành cho đợt
+polish thay màu ngăn; màu ngăn tối chưa đổi.
+
 ### 7.3 Màu ngăn
 
 Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, đồng, bạc, vàng, lục bảo, ánh kim), lấy từ component "Chip ngăn" (`54:656`)
@@ -402,7 +424,7 @@ Sáu ngăn (Mới, 1, 3, 7, 14, 30 ngày) mỗi ngăn một màu hạng (xám, �
 | 14 ngày | `#dcf3ea` | `#1f9d75` | `#0c654c` |
 | 30 ngày | gradient `#ffe0f2` → `#fff2d1` (35%) → `#dbffeb` (70%) → `#d9f0ff` | gradient góc `#ff8ad9` → `#ffd46b` → `#8cffb5` → `#7ad6ff` | `#3b2f6b` |
 
-Chữ trên nền đều ≥ 5,9:1. Khai báo `--color-wm-stage-<n>-bg|dot|ink` trong `web.css`; bản tối chốt cùng mockup tối (GM4), trước đó dùng giá trị sáng. Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
+Chữ trên nền đều ≥ 5,9:1. Khai báo `--color-wm-stage-<n>-bg|dot|ink` trong `web.css`; màu ngăn ở chế độ tối vẫn là giá trị sáng (M9 không đổi); đợt polish thay bằng màu mức (§7.2). Màu ngăn chỉ để mã hóa ngăn, không thay màu nhấn
 (`app-redesign-plan.md`, "Ý tưởng chung").
 
 ### 7.4 Màu nhóm (GM5)
@@ -419,7 +441,7 @@ nhận ra nhóm ở băng chuyền, bảng chọn nhóm, Hôm nay; thứ tự nh
 - **Màu cho chữ** (số thẻ chờ "24"): tương phản trên trắng đo được `#d99a17` 2,45, `#e5603f` 3,46, `#149384` 3,79, `#4a9637` 3,68, `#2a86d1` 3,87,
   `#d2427a` 4,37, `#7a55d3` 5,16 (review M6). Chỉ hổ phách dưới 3:1, nên `--color-wm-group-3-ink` = `#bb8414` (3,27:1); sáu màu còn lại dùng
   chính nó làm `-ink`. Kiểm ≥ 3:1 (chữ ≥ 24 px) trong test token.
-- Bản Dark của bảy màu chốt cùng mockup tối (GM4); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
+- Bản Dark của bảy màu và các biến `-soft`, `-wash`, `-ink` chốt ở M9 (bảng §7.2); trên nền tối `#7a55d3` chỉ 3,32 và `#64708c` 3,46.
 - **Xác suất trùng màu** (review M6): với 7 màu, 3 nhóm có 39% khả năng có ít nhất một cặp trùng, 5 nhóm 85%. Chủ dự án giữ cách theo ID (QR5).
 
 | Khi | Thì |
@@ -456,7 +478,7 @@ Dựng trên `react-aria-components` 1.22.1 (đã có) cho phần cần truy c�
 | Chip từ `96:322` | `WordChip` | |
 | Nút loa `54:657` | `SpeakButton` | Dùng lại logic `app-ui/speech.ts`, `audio-player.ts` |
 | Ô ngày lịch `96:404` | phần của hộp Lịch | |
-| Nền app `95:315`, `95:321` (mesh + hạt từ 10/11/2026) | `DotGridBackground` (giữ tên tới M9) | CSS, hạt bằng SVG `feTurbulence` nhúng `data:` |
+| Nền app `95:315`, `95:321` (mesh + hạt từ 10/11/2026) | `AppBackground` (tên cũ `DotGridBackground`, đổi ở M9a) | CSS, hạt bằng SVG `feTurbulence` nhúng `data:` |
 | Nút lịch nổi `95:343`, Nút lịch trong thanh `95:344` | `CalendarButton` (`app-chrome/`) | Phím `L` |
 | Thanh trên app (Desktop theo tab, Mobile) `54:502`, `54:503` | `TopBar` (`app-chrome/`) | Kính mờ: `backdrop-filter: blur(24px) saturate(1.6)` |
 | Thanh tab dưới `54:637` | `MobileTabBar` (`app-chrome/`) | |
@@ -531,7 +553,7 @@ chỗ lệch ở §3.1. Bỏ `<AppShell>` ở 17 chỗ gọi (§5.4); `renderApp
 Thêm từ (`group-list.test.tsx:56–57`, `group-page.test.tsx:60,69,300,307,319`). Test đỏ vì đổi font và sửa trong cùng PR: `e2e/chrome.spec.ts:4–15`
 (ghim H1 là Lexend). Font ảnh OG đổi ở M8 cùng trang công khai.
 Làm 5 mockup tối (Hôm nay, Nhóm băng chuyền, Phiên luyện lúc trả lời sai, hộp Thêm từ, Đăng nhập) bằng HTML từ biến Dark của Figma, gửi chủ dự
-án duyệt (GM4); phần tối sửa ở M9.
+án duyệt (GM4). Bản tối được chốt sau đó, và M9 sửa theo, bằng trang so sánh và mockup bản chốt (QM9-2, QM9-3), thay cho 5 mockup này.
 
 **M2 — Đăng nhập và tài khoản** (trang `35:307`).
 
@@ -643,10 +665,33 @@ Quyết định của chủ dự án khi viết plan (QM8, decision record, 11/1
 - Nguồn dữ liệu: không có nhãn "Dùng cho"; dòng ghi công hiện cả trên điện thoại (QM8-5).
 - Hỏi đáp trên trang chủ do admin quản lý (§10.7), đọc lúc build cùng giá; Claude viết nháp câu trả lời (QM8-6).
 - Favicon và ảnh chia sẻ: vẽ khung trong Figma, chủ dự án duyệt, rồi mới code (QM8-7).
-- Không thuộc M8: xóa `app-ui/` và bỏ import token cũ (chuyển sang đợt polish trước M9, QM8-9); các chỗ sửa từ audit 11/11 (QM8-8).
+- Không thuộc M8: xóa `app-ui/` và bỏ import token cũ (chuyển sang đợt polish sau M9, QM8-9, QM9-1); các chỗ sửa từ audit 11/11 (QM8-8).
 
-**M9 — Chế độ tối và rà soát.** Sửa phần tối theo mockup đã duyệt; xóa token cũ không dùng (§7.1); chạy toàn bộ kiểm thử §13; chụp mọi màn so với
-Figma; mở PR cuối vào `dev`.
+**M9 — Kiểm thử và chế độ tối** (QM9-1: làm tuần tự M9a rồi M9b, một PR vào `refactor/giao-dien-moi` sau M9b).
+
+- **M9a — Kiểm thử thành script, tải sau, dọn nhỏ.**
+  - Script giữ trong repo (QM9-4): khóa chữ không dùng và hình dạng JSON-LD (chạy trong bộ unit, nên CI chạy); so dung lượng JS với bản cũ, ngưỡng
+    10% (§5.7; bước riêng trong job `web` của CI; ngoại lệ R258: 110% cho mọi route, 118% cho hai trang Gói học, ở `limits` của `bundle-baseline.json`); Lighthouse (lệnh tay); bộ ảnh `gm-m9`: mọi màn ở 390, 768, 1024, 1440, sáng và tối (lệnh tay,
+    stack thật; QM9-5); đo khung hình trên điện thoại thật qua chung Wi-Fi với máy tính (QM9-7).
+  - Tải sau (§5.7): Tùy chỉnh phiên và Giới thiệu Pro qua `next/dynamic`, như Thêm từ, Lịch, Ngày.
+  - Đổi tên `DotGridBackground` thành `AppBackground`; ghi việc đo lại `GET /v1/groups` trên máy chủ thật vào `deploy-checklist.md`.
+- **M9b — Chế độ tối theo bản chốt** (QM9-2, QM9-3; số đo ở `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`, mục Hệ thống):
+  - nút chính không bóng ở chế độ tối; mọi bóng tối dùng đen thay navy (§7.2 thêm giá trị tối cho mọi `--shadow-wm-*`, 11 khóa sau M8b);
+  - lớp mờ sau hộp thoại: đen 55% ở chế độ tối (thay R10 cho chế độ tối; chế độ sáng giữ navy 30%);
+  - giấy từ điển tối: nền `#1e2334`, viền `#2e3449`, chữ theo token tối (thay R71, R80);
+  - màu nhóm tối: số (`-ink`) là bản sáng hơn, đạt từ 4,6:1 trên dòng đang chọn; `-wash` 16% và `-soft` 34% màu nhóm trộn với nền card;
+  - nền mesh tối: quầng vàng 12%; hạt là nhiễu thô, `soft-light` 7% (theo landing bản 3);
+  - nền nhạt tối nâng lên để màu không chìm: `accent-soft` 20%, `pass-soft` 18%, `fail-soft` 18% màu trên nền card (lệch khỏi Figma Dark, QM9-3);
+  - box "Chưa đúng" ở chế độ tối dùng cam san hô `#e5603f` (nền 16%, viền 55%, tiêu đề `#e87052`); chế độ sáng giữ đỏ đậm của `fail`;
+  - token mới cho màu mức (Mới, Bậc 1–5, ưu tiên, đến hạn), có giá trị sáng và tối; đợt polish dùng chúng thay màu ngăn;
+  - `color-scheme: dark` chuyển từ `dark.css` sang `web-dark.css`.
+
+**Đợt polish — sau M9, plan riêng** (QM9-1). Mọi chỗ còn lại của mockup bản chốt, danh sách đầy đủ ở
+`docs/preparation/GIAO_DIEN_MOI_M9_TRA_LOI_2026-11-11.md`, mục "Đã chốt cho mockup đầy đủ": 25 chỗ lệch theo lựa chọn của chủ dự án; đổi "ngăn"
+thành "Mới, Bậc 1–5"; góc bo mức C; bỏ JetBrains Mono; chip lọc, bảng từ và thanh tiến độ của Một nhóm; Nhóm kiểu Vòng cung; Học theo "Chồng
+thẻ tan mờ"; chữ trong phiên bằng tiếng Anh; lưu một từ vào nhiều nhóm (API cần `group_ids`); xóa `app-ui/` và token cũ; chụp lại chỗ 24.
+
+**PR cuối** `refactor/giao-dien-moi` → `dev` sau M9, đợt polish và M8c.
 
 ## 10. API lịch học (M6)
 
@@ -881,12 +926,12 @@ xóa (còn trong tag).
 | Admin | `pnpm lint`, `typecheck`, `test`, `build` trong `apps/admin` | Đợt này sửa `packages/design-tokens`; admin không được đổi |
 | e2e web | `pnpm test:e2e` (Playwright, `apps/web/e2e`; chạy `cf:build` của OpenNext, trên Windows qua `pnpm cf:docker`) | Sửa journey trong cùng PR với màn; thêm journey mở lịch và xem một ngày ở M6 |
 | Smoke API mới | `pnpm smoke:giao-dien-moi` trong `apps/api` (mới; API và worker thật, DB và `JOB_QUEUE_PREFIX` riêng; giữ giới hạn 5 lần đăng ký mỗi IP mỗi giờ) | Tạo learner, học 2 từ, ôn 1 từ, luyện 1 phiên; kiểm số trong tháng và ngày, `next_lemma`, `last_reviewed`, `sessions/last`, `streak`, giá công khai khớp tuyệt đối (chỉ kiểm được ngày hôm nay, §10.3) |
-| Ảnh so với Figma | `pnpm shots` (cần tài khoản học thật, `SHOTS_EMAIL`/`SHOTS_PASSWORD`) | Bộ khóa mới `gm-m1` … `gm-m9` thay `m1`…`m5b` của đợt cũ; mọi khung §9 ở 390 và 1440 (đang chụp thêm 1024); ảnh ghi vào delivery record |
+| Ảnh so với Figma | `pnpm shots` (cần tài khoản học thật, `SHOTS_EMAIL`/`SHOTS_PASSWORD`) | Bộ khóa mới `gm-m1` … `gm-m9` thay `m1`…`m5b` của đợt cũ; `gm-m9` chụp mọi màn ở 390, 768, 1024, 1440, sáng và tối (QM9-5); ảnh ghi vào delivery record |
 | Truy cập | `e2e/a11y.spec.ts` (trang công khai), `e2e/support/axe.ts` trong từng journey app | Mỗi journey mới gọi axe trên màn của nó |
-| Khóa chữ không dùng | script tìm khóa `messages/vi.json` không còn được gọi trong `src/` (khóa dùng động ghi vào danh sách cho phép) | §12; LP3 hiện chỉ kiểm hai file cùng khóa |
-| Lighthouse, Schema Markup Validator | chạy tay ở M9 | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý; JSON-LD hợp lệ |
-| Dung lượng JS | `scripts/compare-bundle-stats.mjs` (§5.7) | Không route `/vi/app/**` nào nặng hơn bản cũ quá 10% |
-| Khung hình | DevTools Performance, CPU chậm 4–6× (§8.1, §8.5) | Học, Nhóm trên Android tầm thấp và Safari iOS |
+| Khóa chữ không dùng | `apps/web/scripts/check-message-keys.mjs`, chạy trong bộ unit (CI) qua `check-message-keys.test.ts` (M9a) | Khóa `messages/vi.json` không còn được gọi trong `src/`; khóa dùng động ghi vào danh sách cho phép; LP3 vẫn kiểm hai file cùng khóa |
+| Lighthouse, Schema Markup Validator | `pnpm lighthouse` (lệnh tay, M9a); JSON-LD kiểm hình dạng trong `site/seo/JsonLd.test.tsx`, Schema Markup Validator chạy tay một lần | Ghi điểm SEO, Performance (máy tính, điện thoại) của trang chủ và một trang pháp lý; JSON-LD hợp lệ |
+| Dung lượng JS | `apps/web/scripts/compare-bundle-stats.mjs` so với `bundle-baseline.json` (§5.7; bước riêng trong job `web` của CI, M9a) | Không route `/vi/app/**` nào nặng hơn bản cũ quá 10%, trừ ngoại lệ R258: 110% mọi route, 118% cho `/[locale]/app/plans` và `/plans/order` (`limits` của `bundle-baseline.json`) |
+| Khung hình | DevTools Performance, CPU chậm 4–6× (§8.1, §8.5); điện thoại thật mở web qua chung Wi-Fi (QM9-7) | Học, Nhóm trên Android tầm thấp và Safari iOS |
 
 Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang lịch sử, ô nhập lại mật khẩu) viết test trước, chạy thấy đỏ rồi mới code.
 
@@ -897,7 +942,7 @@ Hành vi mới (API lịch, màu nhóm, tham số URL, chuyển hướng trang l
 
 **Cả đợt:**
 - Mọi khung ở §9 có màn tương ứng; `/app/recall` có màn theo mockup đã duyệt.
-- 5 mockup tối đã duyệt và phần tối đã sửa theo.
+- Bản chốt M9 đã duyệt (QM9-2, QM9-3; 12/11/2026) và phần tối đã sửa theo; đợt polish đã làm xong các chỗ còn lại của bản chốt.
 - `app-ui/`, `components/`, `HistoryPage.tsx`, token cũ không dùng đã xóa; tag `archive/giao-dien-cu-2026-11` có trên GitHub; `giao-dien-cu-map.md` đủ màn.
 - `pnpm test`, lint, typecheck, build của web, API và admin xanh; `assert:render-mode` qua; e2e web qua; `smoke:giao-dien-moi` qua trên DB mới;
   so dung lượng JS qua; điểm Lighthouse, kết quả Schema Markup Validator và số khung hình trên điện thoại đã ghi.

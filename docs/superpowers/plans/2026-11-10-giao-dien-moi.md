@@ -69,7 +69,8 @@
 | 6 | `feat/giao-dien-moi-m6` | §9 M6, §10.4 | `CalendarButton`, `?lich=` / `?ngay=` parser, Lịch and Ngày dialogs, history redirect, `/app/settings/reports` |
 | 7 | `feat/giao-dien-moi-m7` | §9 M7 | `ChoiceCard`; settings, account, plans, orders, `HouseAd` |
 | 8 | `feat/giao-dien-moi-m8a`, `-m8b`, `-m8c` (Part 8) | §9 M8, §10.6, §10.7, §11 | admin-managed FAQ; `site/`; prices and FAQ read at build; new icons and OG images; `components/` deleted. `app-ui/` and the old tokens move to the owner's polish round (QM8-9) |
-| 9 | `feat/giao-dien-moi-m9` | §9 M9, §13 rows run by hand | dark fixes; `scripts/compare-bundle-stats.mjs`; Lighthouse, frame-rate numbers; PR `refactor/giao-dien-moi` → `dev` |
+| 9 | `feat/giao-dien-moi-m9` (Part 9: M9a then M9b, one PR) | §9 M9, §13 | `check-message-keys.mjs` and `compare-bundle-stats.mjs` (CI), `pnpm lighthouse`, shot set `gm-m9`, phone guide; Tùy chỉnh phiên and Giới thiệu Pro loaded on demand; `AppBackground`; dark values from the approved mockup; level colour tokens |
+| polish | its own plan part, after M9 | §9 "Đợt polish", QM9-9 | the mockup's remaining changes, `app-ui/` and old tokens deleted; then the PR `refactor/giao-dien-moi` → `dev` |
 | Q4 | — | QR4 | placeholder below |
 
 ---
@@ -3732,3 +3733,419 @@ The owner's decisions are QM8-1…QM8-9 in the decision record. Claude settled t
 - **No struck price on the home page.** QM8-2 (c) keeps rows simple; Gói học keeps its struck prices.
 
 **Open:** none. The drafted copy (FAQ answers, the five claim fixes, the refund note) is checked by the owner in the PRs, not before.
+
+---
+
+# Part 9 — M9 Kiểm thử và chế độ tối (branch `feat/giao-dien-moi-m9`)
+
+**Goal:**
+- M9a: turn the hand checks of design §13 into scripts kept in the repo. Unused message keys and JS size run in CI; Lighthouse and the shot set run by
+  hand. Lazy-load Tùy chỉnh phiên and Giới thiệu Pro (§5.7), rename `DotGridBackground`, write the phone measurement guide.
+- M9b: dark mode per the approved mockup (QM9-2, QM9-3): dark values for soft tints, group colours, shadows, scrim, paper, mesh and the "Chưa đúng"
+  box; level colour tokens for the polish round; `color-scheme` and the browser bar following the in-app choice.
+- One PR into `refactor/giao-dien-moi`, after M9b (QM9-1).
+
+**Inputs:**
+- Design §5.7, §7.1–§7.5, §8.1, §9 M9, §13, §14, §15.
+- Decisions QM9-1…QM9-9 in `docs/superpowers/decisions/2026-11-09-giao-dien-moi-decisions.md`.
+- Mockup bản chốt `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html` (artifact `Ccnn3iPkr3srNv7diobFkL`). Its `.wm` and
+  `.wm[data-mode="dark"]` blocks (lines 72–108), `--grain-raw` (line 19), `.mesh` (lines 109–115) and `.result` (lines 332–348) are the source of
+  every dark number below. Comparison page `m9-toi-so-sanh.html`, questions 6–11.
+- Facts `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-11-m9-{checks,dark}.md` ("M9 checks §n", "M9 dark §n"). Their line numbers predate
+  M8b; the line numbers in this part were read on `57b3f71c`.
+- Answers file `docs/preparation/GIAO_DIEN_MOI_M9_TRA_LOI_2026-11-11.md`.
+
+Paths are under `apps/web/` unless they start with `packages/`, `docs/` or `.github/`.
+
+**Order:**
+- `feat/giao-dien-moi-m9` from `origin/refactor/giao-dien-moi` (`57b3f71c` or later), then `git merge docs/giao-dien-moi-plan-9`.
+- M9a is M9.1 → M9.7, then M9b is M9.8 → M9.10, one task after another. M9.3 measures with the tool of M9.2; M9.10 runs on the finished tree.
+- M8c (favicon, share images) is not needed first: it edits `app/icon.svg`, the OG files and fonts, which M9 does not touch. If it merges first,
+  merge `origin/refactor/giao-dien-moi` before M9.10.
+- Rulings continue from R251 (the highest is R250 on 12/11/2026).
+- **Not in M9** (the polish round, QM9-9; plan part written after M9):
+  - Nhóm arc carousel, Học motion, the font swap, radius C;
+  - chips and tabs (11B), the Một nhóm table and level bars, the session copy in English, "Bậc" naming, the multi-group picker;
+  - deleting `app-ui/` and `dark.css`, `island.css`, `dark-pastel.css`;
+  - the seven `bg-wm-ink` fills (M9 dark §0.8);
+  - practice and stage colours (dark values unchanged);
+  - the dead `dot-grid` class of `AuthShowcase.tsx`.
+
+## Part 9 constraints
+
+- **Light mode looks the same after M9**, except the "Chưa đúng" panels (fail 9 % background, 62 % border; QM9-3). Every token M9 adds keeps the old
+  light literal where one existed: scrim `rgb(27 36 68 / 0.3)`, paper `#fbfaf6` and `#e8e4d8`, mark halo 34 %, the three paper and stack shadows.
+- **Dark values only under `[data-theme='dark']`**: `packages/design-tokens/web-dark.css`, plus the grain override already in `globals.css`. No
+  Tailwind `dark:` variant: it follows the OS, not the in-app choice (M9 dark §0.11).
+- **Colour values only in `packages/design-tokens`.** Two exceptions: the raw noise SVG of the grain (no colour), and `THEME_COLOR` for the browser
+  bar, which `layout.tsx` already writes as hex. A dark colour that a contrast test reads is written as hex, because `luminance` in
+  `web-tokens.test.ts` parses `#rrggbb`. The comment beside it gives the mix it came from.
+- **Admin:** changing `packages/design-tokens` means the four admin checks. Admin does not import `web*.css`, so they must pass unchanged.
+- **Scripts** are Node ESM `.mjs` in `scripts/`, each exporting a pure function tested in `scripts/*.test.ts` (vitest already includes
+  `scripts/**/*.test.ts`). No new dependency; Lighthouse runs as `pnpm dlx lighthouse@13.6.0`.
+- **Ads (QR4 parked):** `AdsenseLoader`, `SHOWS_ON` and `house-ad-counter.ts` stay untouched. M9.3 changes only how `HouseAd` is loaded.
+- **Copy:** no new visible copy in the app. The guide for the owner is in Vietnamese.
+- **Tests** query by role and visible text. A colour check reads the computed style of an element found by role.
+
+## Part 9 Review Focus
+
+1. **Light mode stays as it was.** A learner in light mode sees the same scrim, Tra từ paper, mesh and shadows as before M9. Pinned in M9.8 (light
+   values of the new tokens equal the old literals) and M9.10 (light shots beside the earlier sets).
+2. **The in-app choice against the OS.** "Tối" stored with the OS light, and "Sáng" with the OS dark: page, form controls (`color-scheme`), browser
+   bar and dialog scrim follow the stored choice. Pinned in M9.9 (`ThemeProvider.test.tsx`, `e2e/app/m9-dark.spec.ts`).
+3. **Group colours in dark.** The title on the Nhóm halo and the Một nhóm head, the name on the selected picker row, and the waiting numbers stay
+   readable for all seven colours and the empty group. Pinned in M9.8 (contrast tests on the dark washes and the dark surface).
+4. **A key used through a built key or from another file** (`t(\`noWords.${known}\`)`, a key named in one file and translated in another) is not
+   deleted as unused; an allow entry that matches no key fails. Pinned in M9.1.
+5. **The bundle gate reads the right file.** A missing file, an empty one, or one with no `/[locale]/app` row is an error, never a pass. A route only
+   the new UI has (`/[locale]/app/settings/reports`) is listed, not failed. Pinned in M9.2.
+
+### Task M9.1 (M9a): Unused message keys
+
+**Files:**
+- Create: `scripts/check-message-keys.mjs`, `scripts/check-message-keys.test.ts`, `scripts/message-keys-allow.json`.
+- Modify: `messages/vi.json`, `messages/en.json` (delete the keys found unused).
+
+**Interfaces:**
+- `findUnusedKeys({ messages, sources, allow }): { unused: string[]; staleAllow: string[] }`
+  - `messages`: the parsed `vi.json`; its leaf keys as dotted paths (1.519 on `57b3f71c`).
+  - `sources: Array<{ path: string; text: string }>`; `allow: Array<{ key: string; why: string }>`.
+  - A key is used when, for some split `P.R` of it, **one** source file holds both a namespace call for `P` and the string `R` in quotes (`'R'`,
+    `"R"` or `` `R` ``). Namespace calls: `useTranslations('P')`, `getTranslations('P')`, `getTranslations({ …, namespace: 'P' })` (the three forms
+    in `src/`). `P` may be empty: `useTranslations()` with the full key quoted.
+  - An allow `key` is a dotted path, or a prefix ending `.*` that matches the prefix and everything under it. A key an allow entry matches is used. An
+    allow entry that matches no key goes to `staleAllow`.
+  - Both lists sorted.
+- CLI `node scripts/check-message-keys.mjs`: reads `messages/vi.json`, every `src/**/*.{ts,tsx}` except `*.test.*`, and the allow file. It prints each
+  unused key and stale entry and exits 1 if there is any; otherwise it prints `message keys: <n> used, 0 unused`.
+- `en.json` parity stays with LP3 (`src/i18n/messages.test.ts`).
+
+- [ ] **Step 1: Write the failing tests** (`check-message-keys.test.ts`, fixtures inline):
+  - `{ A: { b: 'x', c: 'y' } }` with one file `useTranslations('A'); t('b')` → `{ unused: ['A.c'], staleAllow: [] }`;
+  - `useTranslations('A.b')` with `t('c.d')` marks `A.b.c.d`;
+  - `getTranslations({ locale, namespace: 'Legal' })` with `t('title')` marks `Legal.title`;
+  - the namespace in one file and `'b'` only in another → `A.b` unused;
+  - `` t(`noWords.${k}`) `` alone → the `A.noWords.*` keys unused; with allow `A.noWords.*` → used;
+  - allow `A.gone.*` with no such key → `staleAllow: ['A.gone.*']`;
+  - `{}` → `{ unused: [], staleAllow: [] }`;
+  - **the repo:** `messages/vi.json`, `src/` and the allow file give `{ unused: [], staleAllow: [] }`. This is the CI gate.
+- [ ] **Step 2: Run** `pnpm test scripts/check-message-keys` → FAIL (module missing).
+- [ ] **Step 3: Implement**, then run the CLI on the repo. For each key it reports, grep `src/` for the key's last segment:
+  - unused → delete it from `vi.json` and `en.json` in this commit;
+  - used through a built key or from another file → an allow entry whose `why` names the file and line.
+
+  Write both counts (deleted, allowed) in the as-built.
+- [ ] **Step 4: Run** `pnpm test` (the whole web unit suite, LP3 included), `pnpm lint`, `pnpm typecheck` → PASS. Control: add `App.zzUnused` to both
+  message files, run the repo test → FAIL naming it; remove it.
+- [ ] **Step 5: Commit** `feat(web): check for unused message keys`.
+
+### Task M9.2 (M9a): JS size against the old UI
+
+**Files:**
+- Create: `scripts/compare-bundle-stats.mjs`, `scripts/compare-bundle-stats.test.ts`, `bundle-baseline.json`.
+- Modify: `scripts/cf-docker.mjs` (mode `--bundle-stats`).
+
+**Interfaces:**
+- `compareBundles(baseline, stats, opts?): { rows, added, removed }`
+  - `baseline: Record<string, number>` (route → bytes); `stats: Array<{ route: string; firstLoadUncompressedJsBytes: number }>` (the rows of
+    `.next/diagnostics/route-bundle-stats.json`, M9 checks §1.3); `opts = { prefix: '/[locale]/app', limit: 1.1 }`.
+  - `rows: Array<{ route; before; after; ratio; over }>` for routes in both, sorted by route; `ratio = after / before`; `over` when
+    `after > before * limit`.
+  - `added`: app routes only in `stats`; `removed`: only in `baseline`. Neither fails.
+  - Throws `Error('no app routes in stats')` when `stats` has no route starting with `prefix`.
+- `bundle-baseline.json`: `{ "source": "archive/giao-dien-cu-2026-11", "commit": "50b632e7", "next": "16.4.3", "built": "<yyyy-mm-dd>", "routes": { … } }`,
+  app routes only.
+- CLI:
+  - `node scripts/compare-bundle-stats.mjs [stats]`, default `.next/diagnostics/route-bundle-stats.json`: prints route, before KB, after KB and
+    percent, then the added and removed routes. Exit 1 when a row is `over`, or the file is missing or unreadable.
+  - `node scripts/compare-bundle-stats.mjs --write-baseline <stats> --commit <sha>` writes `bundle-baseline.json`.
+- `pnpm cf:docker --bundle-stats`: in the container, `pnpm cf:build` with the env of the first web server in `playwright.config.ts` (`NEXT_PUBLIC_SITE_URL`
+  `http://localhost:3100`, `NEXT_PUBLIC_LEARNER_APP` `on`, `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_AUDIO_BASE_URL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+  `LANDING_DATA_SOURCE` `fallback`), then copies `.next/diagnostics/route-bundle-stats.json` to `.docker-out/route-bundle-stats.json`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - before 100 000, after 110 000 → `over: false`; after 110 001 → `over: true`;
+  - `/[locale]/app/settings/reports` only in stats → in `added`, no row;
+  - `/[locale]/app/practice/history` only in baseline → in `removed`;
+  - `/[locale]` and `/[locale]/privacy` give no row;
+  - `[]`, or stats with public routes only → throws `no app routes in stats`.
+- [ ] **Step 2: Run** `pnpm test scripts/compare-bundle-stats` → FAIL.
+- [ ] **Step 3: Implement** the script and the cf-docker mode.
+- [ ] **Step 4: Prove Next writes the file under OpenNext:** `pnpm cf:docker --bundle-stats` on this branch → `.docker-out/route-bundle-stats.json`
+  exists and has at least one `/[locale]/app` row. If it does not, stop: write a ruling, leave the CI step out of M9.3, and compare with Lighthouse
+  "Total JavaScript" on Hôm nay, Nhóm and Phiên luyện (design §5.7 fallback).
+- [ ] **Step 5: Baseline.**
+  1. `git worktree add --detach ../gm-baseline archive/giao-dien-cu-2026-11`.
+  2. Copy this branch's `scripts/cf-docker.mjs` into it (untracked there, never committed) and run `pnpm cf:docker --bundle-stats` in its `apps/web`.
+  3. From this branch: `node scripts/compare-bundle-stats.mjs --write-baseline ../gm-baseline/apps/web/.docker-out/route-bundle-stats.json --commit 50b632e7`.
+  4. `git worktree remove ../gm-baseline`.
+- [ ] **Step 6: Measure this branch before M9.3:** `node scripts/compare-bundle-stats.mjs .docker-out/route-bundle-stats.json`. Write the whole table in
+  the as-built, whatever it shows; the exit code is not a gate yet.
+- [ ] **Step 7: Commit** `feat(web): compare app route js size with the old ui` (script, test, cf-docker mode, baseline).
+
+### Task M9.3 (M9a): Load Tùy chỉnh phiên and Giới thiệu Pro on demand; JS size in CI
+
+**Files:**
+- Modify:
+  - `src/features/learner/practice/use-practice-starter.tsx` (`:15` import, `:110` render);
+  - `src/app/[locale]/app/(member)/layout.app.tsx` (`:6` import, `:24` render);
+  - `.github/workflows/ci.yml` (job `web`).
+- Create: `src/features/learner/house-ad/HouseAdLoader.tsx`.
+
+**Interfaces:**
+- `use-practice-starter.tsx`: `const CustomizeDialog = dynamic(() => import('./CustomizeDialog').then((m) => m.CustomizeDialog), { ssr: false })`, as
+  `add-word-context.tsx:8`. It renders only while `customize` is set (`{customize && <CustomizeDialog target={customize} … />}`), so the code loads on
+  the first open. `CustomizeTarget` becomes an `import type`.
+- `HouseAdLoader()` (`'use client'`): `dynamic(() => import('./HouseAd').then((m) => m.HouseAd), { ssr: false })`. The member layout is a server
+  component, where `ssr: false` is not allowed, so it renders `<HouseAdLoader />` in place of `<HouseAd />`.
+- CI job `web`: a step "JS size against the old UI", after "E2E tests" (whose `cf:build` leaves `.next/diagnostics/` in `apps/web`):
+  `run: node scripts/compare-bundle-stats.mjs`.
+
+- [ ] **Step 1: Run the guards before the change** (behaviour does not change, so the existing tests are the guard): `pnpm test
+  src/features/learner/practice src/features/learner/house-ad`, then `pnpm cf:docker e2e/app/m5a.spec.ts e2e/app/m7b.spec.ts` → PASS.
+- [ ] **Step 2: Change the two imports**, run the same tests → PASS. They pin: Tùy chỉnh phiên opens on the first press with focus inside;
+  "Học nhiều hơn với Pro" opens after Hôm nay → Nhóm; Esc closes both.
+- [ ] **Step 3: Measure:** `pnpm cf:docker --bundle-stats`, then the compare → every app route ≤ 110 %. Write the before and after bytes of
+  `/[locale]/app`, `/[locale]/app/practice` and `/[locale]/app/groups` in the as-built. If a route is still over: list the `firstLoadChunkPaths` it
+  has and its baseline route lacks, and stop for the owner. Do not raise the limit.
+- [ ] **Step 4: Commit** `refactor(web): load the customize and pro dialogs on demand`. Then add the CI step and commit
+  `ci(web): fail the web job when an app route grows over 10%`.
+
+### Task M9.4 (M9a): `AppBackground` and the deploy checklist
+
+**Files:**
+- Rename: `src/ui/DotGridBackground.tsx` → `src/ui/AppBackground.tsx`, export `AppBackground`.
+- Modify:
+  - importers `app-chrome/AppChrome.tsx:5,23`, `app-chrome/CardFrame.tsx:6,26`, `app/[locale]/app/(member)/(focus)/layout.app.tsx:3,10`,
+    `features/learner/auth/SplitFrame.tsx:9,20`, test `ui/actions.test.tsx:5,76-82`;
+  - "dot grid" wording in the comments of those files and the M9 comment of `app-mesh` in `globals.css`;
+  - `docs/deliveries/deploy-checklist.md`, section "Đo tải trước launch": re-measure `GET /v1/groups` with 100 groups × 2.000 words on the real server
+    (delivery record M3: 100 ms under its limit, measured on this machine).
+
+- [ ] **Step 1:** make `actions.test.tsx` import `AppBackground` (test names "AppBackground is hidden…", "AppBackground draws the mesh…") → run → FAIL
+  (module missing).
+- [ ] **Step 2:** rename, update the importers → `pnpm test`, `pnpm lint`, `pnpm typecheck` PASS. `git grep -n DotGridBackground apps/web` → no output
+  (control: run it before the rename and see the importers and the test listed).
+- [ ] **Step 3: Commit** `refactor(web): rename the app background component`, then the checklist line as `docs(web): add the groups timing to the
+  deploy checklist`.
+
+### Task M9.5 (M9a): `pnpm lighthouse`
+
+**Files:**
+- Create: `scripts/lighthouse.mjs`, `scripts/lighthouse.test.ts`.
+- Modify: `package.json` (`"lighthouse": "node scripts/lighthouse.mjs"`), `.gitignore` (`.lighthouse/`).
+
+**Interfaces:**
+- `summarise(report: { categories: Record<string, { score: number | null }> }): { performance: number | null; accessibility: number | null;
+  bestPractices: number | null; seo: number | null }`: each score × 100, rounded; a missing category or a `null` score gives `null`.
+- CLI `pnpm lighthouse [baseUrl]`, default `http://localhost:3001`:
+  - pages `/vi` and `/vi/privacy`; form factors mobile (Lighthouse default) and desktop (`--preset=desktop`);
+  - each run: `pnpm dlx lighthouse@13.6.0 <url> --output=json --output=html --output-path=.lighthouse/<page>-<form> --chrome-flags=--headless=new
+    --quiet`, with `CHROME_PATH` passed through when set;
+  - prints one row per page and form factor: the four scores.
+- The run itself is in M9.10. The JSON-LD shape is already pinned by `src/site/seo/JsonLd.test.tsx` (M8.8, 3 tests), so M9 adds no JSON-LD test.
+
+- [ ] **Step 1: Write the failing test:** scores `0.915` → `92`, `1` → `100`, `null` → `null`; a report with no `seo` category → `seo: null`.
+- [ ] **Step 2: Run** `pnpm test scripts/lighthouse` → FAIL (module missing).
+- [ ] **Step 3: Implement**, then run the test → PASS.
+- [ ] **Step 4: Commit** `feat(web): add a lighthouse command for the public pages`.
+
+### Task M9.6 (M9a): Shot set `gm-m9`
+
+**Files:** Modify `e2e-shots/shots.spec.ts`.
+
+**Interfaces:**
+- `type ShotOpts = { dir: string; widths: number[]; scheme: 'light' | 'dark' }`. `shoot(page, name, fullPage, opts)` writes
+  `test-results/shots/<dir>/<name>-<scheme>-<width>.png`.
+- Every `gmMn(page, opts?)` takes `ShotOpts`. Without `opts` it keeps today's widths and scheme, so `SHOTS_MILESTONE=gm-m1` … `gm-m8` shoot what they
+  shoot now (`gm-m1` still runs its light and dark loop).
+- New `gmM5(page, opts)`, the practice screens (§9 M5): Luyện tập; Tùy chỉnh phiên in its three Figma frames (`131:3890`, `140:4049`, `141:4147`); a
+  session with a typed-word question, the "Chưa đúng" panel, the hint panel open, the round prompt and the summary; Từ hay sai; Ôn (question,
+  answer, result, summary); Học (front, back, summary). Each frame waits for its heading or dialog by role.
+- `gmM9(page)`: for each scheme of `['light', 'dark']`, `page.emulateMedia({ colorScheme })`, then every set in the order the sets need (signed-out
+  pages first, one sign-in), each with `{ dir: 'gm-m9/<set>', widths: [390, 768, 1024, 1440], scheme }` (QM9-5).
+- `test('milestone screenshots')` dispatches `gm-m9`. The `gm-m8` branch stays first (no account needed).
+
+- [ ] **Step 1:** refactor, add `gmM5` and `gmM9` → `pnpm lint`, `pnpm typecheck` PASS. The run is in M9.10 (it needs the stack).
+- [ ] **Step 2: Commit** `test(web): add the gm-m9 shot set for every screen`.
+
+### Task M9.7 (M9a): Phone measurement guide
+
+**Files:** Create `docs/deliveries/giao-dien-moi-do-dien-thoai.md` (Vietnamese, for the owner; QM9-7).
+
+Content:
+- What to measure (design §8.1, §8.5): one Học session of 20 cards and 6 switches of the Nhóm carousel, on a low-end Android and on Safari iOS. Write
+  the median frame rate and the worst frame (ms).
+- **Way A, same Wi-Fi (QM9-7).** The API on the PC (`pnpm run:dev` in `apps/api`) with `http://<IP máy tính>:3001` added to `CORS_ORIGINS`; the web with
+  `NEXT_PUBLIC_API_BASE_URL=http://<IP máy tính>:3000 pnpm dev:app -H 0.0.0.0`; the phone opens `http://<IP máy tính>:3001/vi/app`. Limits, said
+  plainly:
+  - the web runs in dev mode, so frame rates come out lower than production;
+  - the Windows firewall must allow ports 3000 and 3001 inbound, which is the owner's own setting;
+  - `ASSUMPTION`: the sign-in cookie is `Secure` (`apps/api/src/identity/sessions/session-transport.ts:14`), so over `http://<IP>` it may not be
+    kept. Check first: sign in, reload; if signed out, use way B.
+- **Way B, Android over USB.** Chrome on the PC, `chrome://inspect` → Port forwarding `3000 → localhost:3000`, `3001 → localhost:3001`. The phone
+  opens `http://localhost:3001/vi/app`: the production build of `pnpm bootstrap`, no change to any setting, and the Performance panel in the same
+  DevTools window.
+- **iOS:** `ASSUMPTION`: Safari's Web Inspector needs a Mac. Without one, write "chưa đo" for iOS.
+- A table to fill: máy, trình duyệt, màn, khung hình trung vị, khung chậm nhất (ms), ghi chú.
+
+- [ ] **Step 1:** write the guide. **Step 2: Commit** `docs(web): add the phone frame rate guide`.
+
+### Task M9.8 (M9b): Dark values and level tokens
+
+**Files:**
+- Modify: `packages/design-tokens/web.css`, `packages/design-tokens/web-dark.css`, `packages/design-tokens/README.md` (dark section),
+  `src/styles/web-tokens.test.ts`.
+
+**Interfaces (Produces):**
+
+New colour keys, in both files:
+
+| Key | Light (`web.css`) | Dark (`web-dark.css`) | Used by |
+|---|---|---|---|
+| `scrim` | `rgb(27 36 68 / 0.3)` | `rgb(0 0 0 / 0.55)` | M9.9: `ui/Dialog.tsx`, `CalendarModal.tsx` |
+| `paper`, `paper-line` | `#fbfaf6`, `#e8e4d8` | `#1e2334`, `#2e3449` | M9.9: `.lk-paper`, `.lk-rule` |
+| `halo-mark` | `rgb(255 216 74 / 0.34)` | `rgb(255 216 74 / 0.12)` | M9.9: `app-mesh` |
+| `wrong-soft` | `#fbedeb` (fail 9 % on white, oklab) | `#352731` (`#e5603f` 16 % on `#171b2a`, oklab) | M9.9: "Chưa đúng" panels |
+| `wrong-line` | `rgb(184 53 42 / 0.62)` | `rgb(229 96 63 / 0.55)` | same |
+| `wrong-ink` | `#b8352a` | `#e87052` | same (title, badge) |
+| `level-0` … `level-5` | `#a3abbd`, `#b9e4c7`, `#7ccd9b`, `#3fae6c`, `#218c4f`, `#106a39` | `#56607a`, `#1f4d35`, `#27704a`, `#319c60`, `#4cc283`, `#8ae4b0` | the polish round |
+| `level-priority`, `level-due` | `#c4372c`, `#e0a21b` | `#ff8d80`, `#f0c04a` | the polish round |
+
+Dark values that change (`web-dark.css`):
+- `accent-soft` `#2c334f` (`#8da2ff` 20 % on `#171b2a`, oklab), `pass-soft` `#24373c` (`#62c98f` 18 %), `fail-soft` `#3c2f3a` (`#ff8d80` 18 %).
+- Group `-ink`: 0 `#e87052`, 1 `#37a396`, 2 `#9d81de`, 3 `#d99a17`, 4 `#62a451`, 5 `#dc6c97`, 6 `#4c99d8`, empty `#8992a8`.
+- Group `-wash` (16 % of the colour on `#171b2a`, srgb) / `-soft` (34 %): 0 `#38262d` / `#5d3231`, 1 `#172e38` / `#164449`, 2 `#272445` / `#392f63`,
+  3 `#362f27` / `#594624`, 4 `#1f2f2c` / `#28452e`, 5 `#352137` / `#572845`, 6 `#1a2c45` / `#1d3f63`, empty `#23293a` / `#31384b`. These are the
+  mockup's values (lines 102–108, 465).
+- `color-scheme: dark;` first in the `[data-theme='dark']` block. The header comment and the practice and stage comments say what M9 kept: "unchanged
+  in M9; the polish round replaces stage colours with level colours".
+
+New shadow keys in `web.css`, light values equal to the raw values they replace in `globals.css`:
+- `--shadow-wm-paper: 0 1.5rem 3rem -1.75rem rgb(27 36 68 / 0.45)` (`.lk-paper`);
+- `--shadow-wm-paper-card: 0 1.875rem 3.75rem -1.875rem rgb(27 36 68 / 0.55)` (`.lk-card`);
+- `--shadow-wm-contact: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06)` (first layer of `.gstack-face`).
+
+Dark value of every `--shadow-wm-*` key: same geometry as light, black. Mockup lines 88–91 where it draws one.
+- `card` `0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.625rem 1.75rem -0.875rem rgb(0 0 0 / 0.6)`
+- `row` `0 0.0625rem 0.125rem rgb(0 0 0 / 0.35), 0 0.25rem 0.75rem -0.5rem rgb(0 0 0 / 0.6)`
+- `pop` `0 0.125rem 0.375rem rgb(0 0 0 / 0.4), 0 1.5rem 3.5rem -1.5rem rgb(0 0 0 / 0.7)`
+- `soft` `0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.875rem 2.125rem -0.875rem rgb(0 0 0 / 0.7)`
+- `lift` `0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.85), 0 0.75rem 2rem -1rem rgb(0 0 0 / 0.4)`
+- `btn`, `btn-pass`, `btn-fail` `none` (QM9-3, question 6B)
+- `pro` `0 2.5rem 4.375rem -2.5rem rgb(0 0 0 / 0.7)`
+- `stage` `0 2.5rem 6.25rem -3.125rem rgb(0 0 0 / 0.6), 0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.7)`
+- `pro-glow` `0 0 3rem 0.125rem rgb(141 162 255 / 0.18), 0 2.5rem 6.25rem -3.125rem rgb(0 0 0 / 0.6), 0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.7)`
+- `paper` `0 1.5rem 3rem -1.75rem rgb(0 0 0 / 0.7)`, `paper-card` `0 1.875rem 3.75rem -1.875rem rgb(0 0 0 / 0.85)`, `contact`
+  `0 0.0625rem 0.125rem rgb(0 0 0 / 0.4)`
+
+- [ ] **Step 1: Write the failing tests** (`web-tokens.test.ts`):
+  - `TEXT_PAIRS` gains `['wrong-ink', 'wrong-soft']`, `['accent', 'accent-soft']`, `['ink', 'paper']`, `['muted', 'paper']`, `['accent', 'paper']`; the
+    existing test runs them in light and dark (dark: 4.62, 5.16, 13.47, 6.98, 6.50).
+  - Light values equal the old literals: `scrim`, `paper`, `paper-line`, `halo-mark`, and the three new shadows, exactly as in the tables above.
+  - Shadows: `tokens(web, 'shadow-wm').size` is 14 (was 11); `tokens(webDark, 'shadow-wm')` has the same keys; no dark shadow contains `27 36 68` or
+    `30 58 138`; dark `btn`, `btn-pass`, `btn-fail` are `none`.
+  - Groups in dark, for 0–6 and `empty`: `-wash` and `-soft` equal the hex list above; group `-ink` reaches 4.5:1 on its `-wash` and on `surface`;
+    dark `ink` reaches 4.5:1 on every `-wash` (the title on the halo).
+  - Levels: the eight keys are `#rrggbb` in both files; in light the luminance of `level-1` … `level-5` strictly falls, in dark it strictly rises.
+  - `web-dark.css` contains `color-scheme: dark`.
+- [ ] **Step 2: Run** `pnpm test src/styles/web-tokens` → FAIL (keys missing, shadow count 11, dark washes near white).
+- [ ] **Step 3: Implement** the tables in the two token files and the README dark section.
+- [ ] **Step 4: Run** web `pnpm test`, `pnpm lint`, `pnpm typecheck`, and the four admin checks → PASS.
+- [ ] **Step 5: Commit** `feat(web): add dark shadows, raised dark tints and level colour tokens`.
+
+### Task M9.9 (M9b): Dark on the background, paper, scrim, "Chưa đúng" and the browser bar
+
+**Files:**
+- Modify:
+  - `src/app/globals.css`:
+    - `app-mesh`: the mark halo reads `var(--color-wm-halo-mark)`;
+    - dark grain: `html[data-theme='dark'] &::before` gets `opacity: 0.07`, `mix-blend-mode: soft-light` and `background-image` = the same SVG without
+      its `feColorMatrix` (mockup `--grain-raw`, line 19); its "tuned in M9" comment becomes a statement of what it is (QM9-3, question 10B);
+    - `.lk-paper`: `background: var(--color-wm-paper)`, `border: 1px solid var(--color-wm-paper-line)`, `box-shadow: var(--shadow-wm-paper)`,
+      `color: var(--color-wm-ink)`; delete the four dark overrides and their comment (`:833-837`, R71, R80);
+    - `.lk-rule`: `border-color: var(--color-wm-paper-line)`;
+    - `.lk-entry[aria-current='true']`: outline `color-mix(in srgb, var(--color-wm-ink) 35%, transparent)`, background
+      `color-mix(in srgb, var(--color-wm-ink) 4%, transparent)` (same as today in light, where `ink` is `#1b2444`);
+    - `.lk-card`: `box-shadow: var(--shadow-wm-paper-card)`; `.gstack-face`: the first shadow layer becomes `var(--shadow-wm-contact)`.
+  - `src/ui/Dialog.tsx:43`, `src/features/learner/calendar/CalendarModal.tsx:31`: `bg-wm-mark-ink/30` → `bg-wm-scrim`.
+  - The two "Chưa đúng" panels: `practice/session/AnswerFeedback.tsx:88-95` (wrong branch) and `practice/session/TypeWordQuestion.tsx:80-84`.
+    Panel `border-wm-wrong-line bg-wm-wrong-soft`; badge `bg-wm-wrong-ink`; title `text-wm-wrong-ink`. `git grep -n "border-wm-fail bg-wm-fail-soft" src`
+    also lists `LoginForm.tsx:94` (sign-in error), `SentenceQuestions.tsx:61`, `ui/AnswerOption.tsx:13` and `site/landing/parts.tsx:78`: they keep
+    `fail`, as do the small chips of Ngày, `CompareLine` and tags.
+  - `src/app-shell/theme/theme.ts`: export `THEME_COLOR = { light: '#f6f7fa', dark: '#0f1220' } as const`; `src/app/[locale]/layout.tsx:37` reads it.
+  - `src/app-shell/theme/ThemeProvider.tsx`: in the effect that writes `data-theme`, also set `content` of every `meta[name="theme-color"]` to
+    `THEME_COLOR[resolved]`. The inline `THEME_SCRIPT` stays as it is, so its CSP hash does not change; the bar follows the OS until hydration.
+- Test:
+  - `src/styles/app-background.test.ts`;
+  - `src/app-shell/theme/ThemeProvider.test.tsx`;
+  - create `e2e/app/m9-dark.spec.ts`;
+  - `e2e/app/m6.spec.ts`, `e2e/app/m7a.spec.ts`, `e2e/app/m7b.spec.ts` (axe in dark).
+
+- [ ] **Step 1: Write the failing tests:**
+  - `app-background.test.ts`: the halos are `['accent 20', 'pass 18', 'accent 12']` plus `var(--color-wm-halo-mark)` in second place; the dark grain block
+    has `soft-light`, `opacity: 0.07`, and a data URI with `feTurbulence` and no `feColorMatrix`.
+  - `ThemeProvider.test.tsx`, with two `meta[name="theme-color"]` in the document (one with `media="(prefers-color-scheme: dark)"`, as Next renders them):
+    stored `dark` and OS light → both `#0f1220`; stored `light` and OS dark → both `#f6f7fa`; `system` follows the OS.
+  - `m9-dark.spec.ts` (mocked session as `e2e/app/m2.spec.ts`), at 390 and 1440:
+    - stored `dark` (`addInitScript` on `wordmet-web.theme`) with `colorScheme: 'light'`: `/vi/app/groups` → `html` has `data-theme="dark"`, computed
+      `color-scheme` `dark`, every theme-color meta `#0f1220`. Press `L`: the nearest `position: fixed` ancestor of the Lịch `dialog` has background
+      `rgba(0, 0, 0, 0.55)`. Axe has no serious violation.
+    - stored `light` with `colorScheme: 'dark'`: `light`, `#f6f7fa`, `rgba(27, 36, 68, 0.3)`.
+  - Axe in dark: in `m6.spec.ts` (test 1), `m7a.spec.ts` (tests 1, 3, 4) and `m7b.spec.ts` (tests 1–3), wrap the test in
+    `for (const colorScheme of ['light', 'dark'] as const) test.describe(colorScheme, () => { test.use({ colorScheme }); … })`. These add coverage; they
+    may pass before the change.
+- [ ] **Step 2: Run** the unit tests and `pnpm cf:docker e2e/app/m9-dark.spec.ts` → FAIL (halo literal 34 %, grain `screen`, bar unchanged, scrim navy
+  in dark).
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** web unit, lint, typecheck, then `pnpm cf:docker` with `e2e/app/{m9-dark,m6,m7a,m7b,m2,m4,m5a,cai-thien-a-group}.spec.ts` and
+  `e2e/a11y.spec.ts` → PASS.
+- [ ] **Step 5: Commit** `feat(web): apply the approved dark mode to background, paper and dialogs`, then the axe loops as `test(web): run axe in dark on
+  the calendar, settings and plans journeys`.
+
+### Task M9.10 (M9b): Full run, shots, Lighthouse, as-built, PR
+
+- [ ] **Step 1: Whole suite.** Web unit, lint, typecheck, `pnpm cf:docker` (full e2e and render mode); admin's four checks; `pnpm cf:docker
+  --bundle-stats` and the compare → PASS. Write the final JS size table in the as-built.
+- [ ] **Step 2: Stack of this branch.** Tell the owner first: `pnpm bootstrap` uses the fixed project name `english-learning`, so it replaces the
+  containers the main checkout runs (switch back by running it from the main checkout). Run `pnpm bootstrap`, then `pnpm bootstrap seed` from the
+  worktree root. The seeded learner's email and password go to `SHOTS_EMAIL` / `SHOTS_PASSWORD` in the shell only, never into a file or a reply.
+- [ ] **Step 3: Shots.** `SHOTS_MILESTONE=gm-m9 SHOTS_BASE_URL=http://localhost:3001 pnpm shots` → `test-results/shots/gm-m9/**` (not committed). Look at
+  every dark shot beside the mockup's dark frames, and every light shot beside the earlier sets. Each difference is a ruling: fixed in M9, or listed
+  for the polish round. Frames the seed data cannot reach are listed as "chưa chụp", never faked.
+- [ ] **Step 4: Lighthouse and Schema.**
+  - `pnpm lighthouse` against `http://localhost:3001` → the table into the as-built. The bootstrap web is built without `NEXT_PUBLIC_INDEXABLE`, so
+    the "is-crawlable" audit fails by design: write the SEO score with that audit named; do not change the build for it.
+  - Schema Markup Validator (validator.schema.org, code snippet mode) with the `ld+json` of `/vi`: errors and warnings into the as-built.
+- [ ] **Step 5: Phone.** The owner measures with the guide (M9.7) and fills its table. Not a gate for this PR; design §14 needs the numbers before
+  the final PR into `dev`.
+- [ ] **Step 6: Docs.**
+  - M9 as-built in `docs/deliveries/giao-dien-moi.md`; rulings from R251;
+  - design §7.2: the dark values M9 set (shadows, soft tints, scrim, paper, groups, levels);
+  - remove the "until M9" notes this part settled (M9 dark §8).
+- [ ] **Step 7: Commit and PR** `feat(web): add the approved dark mode and the m9 checks` into `refactor/giao-dien-moi`, through `ship-pr`.
+
+## Decisions this part makes
+
+The owner's decisions are QM9-1…QM9-9 in the decision record. Claude settled these while writing the part; the owner approves them with the plan:
+- **Dark is fixed in tokens.** Components change only where they write a colour themselves (two scrims, two "Chưa đúng" panels) or a raw shadow.
+- **Token names:** `scrim`, `paper`, `paper-line`, `halo-mark`, `wrong-soft`, `wrong-line`, `wrong-ink`, `level-0…5`, `level-priority`, `level-due`;
+  shadows `paper`, `paper-card`, `contact`. "wrong" because the box is the wrong-answer panel; `fail` stays for errors and small chips.
+- **Dark shadows the mockup does not draw** (`lift` second layer, `pro`, `stage`, `pro-glow`, the three new ones) keep their light geometry in black,
+  0.4 for contact layers and 0.6–0.85 for the long ones, as the mockup's drawn ones do. `pro-glow` keeps a faint dark-accent glow.
+- **Light changes only in the "Chưa đúng" panels.** Its approved light look (fail 9 %, 62 %) comes with the dark coral in one set of tokens.
+- **Precomputed hex** for every oklab or srgb mix that a contrast test reads.
+- **Message-key rule:** namespace call and quoted rest in the same file; everything else goes through the allow file with a reason.
+- **CI:** unused keys run in the unit suite; JS size is a step after e2e; Lighthouse, Schema and shots stay by hand (they need a stack or an outside
+  tool).
+- **Baseline from the tag with the same build command and env as CI's e2e build**, through a `--bundle-stats` mode of `cf-docker`.
+- **Tùy chỉnh phiên mounts only while open**; Giới thiệu Pro loads through a client wrapper, because the member layout is a server component.
+- **The browser bar follows the in-app choice after hydration** (ThemeProvider), not at first paint, so the CSP hash of `THEME_SCRIPT` stays.
+- **Shots run on `pnpm bootstrap` from the M9 worktree**, the only way so far to get this branch's web on :3001 with the real API (M3, M4 blockers).
+- **The phone guide offers way B (USB port forwarding)** beside the decided Wi-Fi way, because of the `Secure` cookie and the dev-mode build.
+
+**Open:**
+- **QM9-7, phone way:** Wi-Fi (decided) needs the web in dev mode and may not keep the sign-in over `http://<IP>` (`Secure` cookie, `ASSUMPTION`). USB
+  port forwarding on Android has neither problem. The owner picks before M9.10 Step 5.
+- **iOS frame rate** needs a Mac (`ASSUMPTION`).
+- Not M9: chỗ 24 (real skeleton shot), "mỗi trang chỉ gửi phần chữ trang đó cần", `group_ids` for the multi-group picker (polish plan), QR4.

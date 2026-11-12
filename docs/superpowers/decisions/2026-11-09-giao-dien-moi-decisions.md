@@ -332,3 +332,159 @@ Claude tự quyết khi làm (10/11/2026): component vẫn tên `DotGridBackgrou
 chế độ tối tạm dùng `screen` 12%, chỉnh cùng mockup tối ở M9; component Figma `95:315`, `95:321` đổi tên "Nền app/Mesh hạt", 46 instance
 đổi theo; panel giới thiệu ở trang đăng nhập (M2) vẽ riêng nên chưa đổi.
 
+## QM9. M9, bản tối và mockup bản chốt (chủ dự án chốt 11–12/11/2026)
+
+Nguồn: facts M9 (`docs/preparation/GIAO_DIEN_MOI_PLAN_{CODE,DESIGN}_FACTS_2026-11-11-m9-*.md`), bảng trả lời
+`docs/preparation/GIAO_DIEN_MOI_M9_TRA_LOI_2026-11-11.md`, trang so sánh tối [m9-toi-so-sanh](https://claude.ai/artifact/H3B2PmZ1sdjxo2P9ymSYtW)
+(`docs/mockups/2026-11-05-redesign-concepts/m9-toi-so-sanh.html`), trang chọn 25 chỗ lệch (artifact `87DRK6yvkNo6vc9jm571FU`, db `picks`) và
+mockup bản chốt [m9-ban-chot](https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL) (`docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`).
+Câu 1–6 hỏi theo luật (chủ dự án trả lời trước). Ở buổi brainstorm tối 11/11, chủ dự án nhờ Claude đề xuất trước cho mọi câu còn lại.
+
+### Tóm tắt
+
+| # | Quyết định | Chọn | Ai chốt |
+|---|---|---|---|
+| QM9-1 | Đợt polish so với M9 | Chia M9: kiểm thử và phần tối (M9a rồi M9b, một PR), rồi đợt polish, rồi PR cuối vào `dev` | Chủ dự án |
+| QM9-2 | Bản tham chiếu cho chế độ tối | Vẽ trong artifact HTML có motion, không vẽ trong Figma; bản chốt là mockup `Ccnn3iPkr3srNv7diobFkL` | Chủ dự án |
+| QM9-3 | Chi tiết chế độ tối | Cả 6 câu theo B; nền nhạt tối nâng lên; box "Chưa đúng" tối màu cam san hô, sáng giữ đỏ đậm | Chủ dự án (B theo nghiêng của Claude) |
+| QM9-4 | Chế độ tối phủ tới đâu | Mọi màn; chỉ vẽ mẫu dùng chung và màn có phần riêng, mọi màn kiểm bằng ảnh tối | Chủ dự án (phạm vi); Claude (cách vẽ), chủ dự án đồng ý |
+| QM9-5 | Bộ ảnh cuối | Mọi màn, 390 / 768 / 1024 / 1440, sáng và tối | Chủ dự án; Claude thêm 768, chủ dự án đồng ý |
+| QM9-6 | Các bước kiểm tra chạy tay | Script giữ trong repo; CI chạy khóa chữ không dùng, hình dạng JSON-LD, dung lượng JS | Chủ dự án (script); Claude (bước nào vào CI) |
+| QM9-7 | Đo khung hình trên điện thoại thật | Chủ dự án tự đo, điện thoại chung Wi-Fi với máy tính | Chủ dự án |
+| QM9-8 | Tách file chữ `messages/{vi,en}.json` | Chưa tách; tách khi chủ dự án chỉnh lại câu chữ | Chủ dự án |
+| QM9-9 | Các chỗ sửa cho đợt polish | Theo mockup bản chốt (bảng ở mục QM9-9) | Chủ dự án |
+
+### QM9-1. Đợt polish nằm ở đâu so với M9
+
+Bối cảnh: design ghi đợt polish (25 chỗ lệch của audit 11/11, xóa `app-ui/`, bỏ token cũ) làm "trước M9" (QM8-9). Ràng buộc: M9 chỉ xóa được
+`dark.css` sau khi nền trang, viền focus và nền `/app` chuyển sang token mới; §14 cần `app-ui/` đã xóa trước PR cuối; phần tối và polish sửa cùng
+các file `ui/` và các màn.
+
+Vòng 1 (11/11):
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Polish trước M9 | Phần tối làm trên giao diện đã polish, xem một lần | M9 chờ polish xong | |
+| b. Chia M9: phần tối và kiểm thử, rồi polish, rồi PR cuối | Kiểm thử và phần tối không chờ polish | Sau polish phải xem lại chế độ tối (ảnh cuối chụp sau polish) | ✅ |
+| c. Polish sau M9 | — | PR cuối vẫn còn `app-ui/` và token cũ, phải sửa §14 | |
+
+Vòng 2 (brainstorm tối 11/11, chủ dự án muốn làm M9 ngay):
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| Hai PR (M9a script và tải sau; M9b phần tối), Part 9 viết hai nửa (Claude đề xuất) | M9a không chờ bản tối được duyệt | Hai lượt CI, hai lần duyệt plan | |
+| Làm tuần tự M9a rồi M9b, mở một PR sau M9b (chủ dự án) | Một lượt CI, một lần duyệt plan | M9a chờ bản tối được duyệt mới viết plan | ✅ |
+
+Claude: phần tối sửa chủ yếu ở token (màu, bóng, nền dùng chung), vì đợt polish ít đụng tới đó; bộ ảnh cuối chụp sau polish kiểm lại cả chế độ tối.
+
+### QM9-2. Chế độ tối sửa theo bản nào
+
+Bối cảnh: 5 mockup tối (artifact `GKfEHX3Yeq4LqXKRF8kuDM`, GM4) chưa được duyệt, chỉ có khổ điện thoại, vẽ nền lưới chấm cũ, đề xuất 3 trong 9 kiểu
+bóng, màu nhóm vẫn là màu sáng. Figma không có khung tối. Mockup tối và vòng 9–15 mâu thuẫn ở bóng nút và lớp mờ sau hộp thoại. App đang có lỗi:
+quầng sau băng chuyền Nhóm gần như trắng, tên nhóm mất (~1:1).
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Duyệt 5 mockup như hiện có; phần thiếu Claude suy ra, ghi rulings | Nhanh | Phần thiếu (bóng, màu nhóm tối, mesh tối, khổ máy tính) không ai duyệt | |
+| b. Vẽ lại mockup tối có mesh, quầng, màu nhóm tối, đủ bóng, khổ máy tính; duyệt rồi mới code | Duyệt đủ trước khi code | Thêm một vòng vẽ | ✅ (vẽ bằng artifact HTML) |
+| c. Vẽ khung tối trong Figma, duyệt rồi code | Cùng chỗ với các khung khác | Figma từng lệch nhiều so với artifact đã chốt; không thấy motion | |
+
+Chủ dự án chọn vẽ trong artifact HTML để thấy cả motion. Vòng sau: trang so sánh 6 câu (QM9-3), rồi mockup bản chốt gom mọi quyết định, chủ dự
+án duyệt 12/11 ("nhìn sơ sơ thì mình thấy ok hết rồi", "ok rồi đó"). Bản chốt thay 5 mockup của GM4.
+
+### QM9-3. Chi tiết chế độ tối (trang so sánh, câu 6–11)
+
+Mỗi câu có hai bản đặt cạnh nhau; Claude ghi "nghiêng về" B ở cả sáu câu. Chủ dự án chọn B cả sáu ("nghiêng về Claude").
+
+| Câu | A | B | |
+|---|---|---|---|
+| 6. Bóng nút chính | Ánh xanh dưới nút (`toi-5-man.html`) | Không bóng (vòng 15); chiều sâu từ bậc màu nền | ✅ B |
+| 7. Lớp mờ sau hộp thoại | Navy 30% (code hiện tại, R10): làm trang sáng lên | Đen 55% (vòng 9–15) | ✅ B |
+| 8. Giấy từ điển ở Tra từ | Giữ giấy sáng (R71, R80) | Giấy tối `#1e2334`, viền `#2e3449`, giữ viền, gáy bo lệch, vạch kẻ | ✅ B |
+| 9. Số theo màu nhóm | Màu chính của nhóm (3,3–3,9:1 với tím, hồng, xám) | Bản sáng hơn cho nền tối, từ 4,6:1 trên dòng đang chọn | ✅ B |
+| 10. Nền mesh và hạt | Bản tạm: quầng vàng 34%, hạt `screen` 12% | Theo landing bản 3: quầng vàng 12%, hạt `soft-light` 7% | ✅ B |
+| 11. Bộ lọc và tab (chỗ 15) | Giữ 6 kiểu đang có | Hai kiểu: tab gạch dưới và chip | ✅ B (làm ở đợt polish) |
+
+Vòng sau, trên mockup bản chốt (11–12/11):
+- Chủ dự án: màu ở chế độ tối "bị chìm theo theme". Claude nâng `accent-soft` 20%, `pass-soft` 18%, `fail-soft` 18% màu trên nền card, thay giá trị
+  Figma Dark. Chủ dự án duyệt cùng bản chốt.
+- Box "Chưa đúng": chủ dự án gửi màu cam san hô của dòng nhóm đang chọn ("box sai thử màu này đi"): nền `#e5603f` 16%, viền 55%, tiêu đề `#e87052`.
+  Sau đó: "lên theme sáng thì nó mất cái màu đỏ đậm" → chế độ sáng giữ đỏ đậm `fail` (nền 9%, viền 62%).
+- Bóng tối và màu bậc tối là đề xuất của Claude trong bản chốt, chưa có bản nào được duyệt trước đó; chủ dự án duyệt cùng bản chốt.
+
+GM13 (bóng nút navy) giữ cho chế độ sáng; câu 6B chỉ đổi chế độ tối.
+
+### QM9-4. Chế độ tối phủ tới đâu
+
+Bối cảnh: chưa có bản tối cho 8 trang đăng nhập còn lại, pháp lý, Nguồn dữ liệu, 404, `/app/recall`, Báo lỗi của tôi và 11 hộp thoại chưa có khung
+Figma; trang chủ chỉ có bản tối trong `landing-mo.html`.
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Mọi màn | Không màn nào lệch tông | Nhiều màn phải kiểm | ✅ |
+| b. Chỉ app và đăng nhập; trang công khai để sau | Ít việc hơn | Trang công khai tối chưa ai xem | |
+
+Claude đề xuất sau câu trả lời, chủ dự án đồng ý: chỉ vẽ bản tối cho mẫu dùng chung (nền, card, hộp thoại, nút, màu nhóm, màu bậc) và các màn có
+phần riêng; mọi màn kiểm bằng ảnh tối (QM9-5).
+
+### QM9-5. Bộ ảnh cuối chụp tới đâu
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Mọi màn, 390, 1024, 1440, sáng và tối | Đủ bằng chứng | Nhiều ảnh nhất | ✅, cộng 768 |
+| b. Như a, chỉ 390 và 1440 | Ít ảnh | Không thấy khoảng 768–1279 | |
+| c. Mọi màn sáng; tối chỉ màn chính | Ít ảnh | Lỗi tối ở màn phụ lọt (axe không bắt quầng trắng) | |
+
+Claude đề xuất thêm 768: design §3, §15 ghi kiểm khoảng 768–1279 ở 768 và 1024, và M1 đã có lỗi chỉ hiện ở 768 (`768bccc2`). Chủ dự án: "Thêm 768".
+
+### QM9-6. Các bước kiểm tra chạy tay (design §13)
+
+Câu 5a: so dung lượng JS, tìm khóa chữ không dùng, Lighthouse, Schema Markup Validator nên viết thành script giữ trong repo, hay chạy tay một lần
+rồi ghi số. Chủ dự án: script giữ trong repo, chạy lại bằng một lệnh, có thể cho CI chạy trên mỗi PR.
+
+Vòng 2 (brainstorm tối 11/11): Claude đề xuất ba bước vào CI (khóa chữ không dùng, hình dạng JSON-LD, dung lượng JS so với file số gốc); Lighthouse
+và Schema Markup Validator chạy tay vì cần server giống production và công cụ ngoài. Chủ dự án không ghi chú; Claude coi là đồng ý, duyệt cùng Part 9.
+
+### QM9-7. Đo khung hình trên điện thoại thật
+
+Câu 5b: chủ dự án có máy và tự đo, qua bản deploy tạm hoặc chung Wi-Fi với máy tính. Claude đề xuất chung Wi-Fi (API chưa deploy; web chạy trên
+Cloudflare Workers), web và API nhận IP máy tính (`ASSUMPTION`). Chủ dự án đồng ý: "hình như là làm được, mình có thử rồi".
+
+### QM9-8. Tách file chữ
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Tách trong M9, cùng lúc viết script tìm câu không dùng | Script viết một lần cho cấu trúc mới | Người dùng chưa được lợi gì; thêm việc cho M9 | |
+| b. Tách ở đợt polish | — | Như a | |
+| c. Để sau launch, khi file thật sự lớn | Không tốn việc bây giờ | Hai phiên cùng sửa một file dễ xung đột | |
+
+Chủ dự án: chưa tách, tách khi chỉnh lại câu chữ. Câu phụ "mỗi trang chỉ gửi phần chữ trang đó cần" (`AppIntl.tsx` gửi cả nhóm `App`, khoảng 59 KB
+chưa nén): Claude đề xuất làm cùng lúc với việc tách; **chưa chốt**.
+
+### QM9-9. Các chỗ sửa cho đợt polish (mockup bản chốt, 11–12/11)
+
+Chủ dự án gửi từng tin trên mockup; Claude sửa mockup sau mỗi tin. Đợt polish (plan riêng, sau M9) làm theo bảng này và lựa chọn trong db `picks`.
+
+| Chỗ | Các vòng | Chốt |
+|---|---|---|
+| 25 chỗ lệch của audit | Trang chọn có ô "Giữ giao diện hiện tại" / "Sửa theo bản đã chốt" và ghi chú cho từng chỗ | Bản đã chốt: 3, 4, 5, 7, 9, 10, 11, 14, 17, 18, 20, 21, 23, thanh trên của 25. Giữ hiện tại: 8, 12, 16, 19, 22, thanh tab của 25. Chỗ 1, 2, 6, 13, 15, 24 theo ghi chú (file trả lời) |
+| Góc bo | Chủ dự án: giảm còn khoảng 3–5 px; rồi "theo kích cỡ card và button"; Claude vẽ thang theo kích cỡ (4 / 6 / 8 / 12 / 16); chủ dự án chỉnh card to, rồi tăng nhẹ | Mức C: phím, nhãn 4–5; nút, ô, chip 8; dòng, menu 10; card 14; hộp thoại, thẻ Học 16 |
+| Tên mức ôn | "Ngăn" (hiện tại); chủ dự án không muốn gọi "ngăn", nhờ phân tích (`SRS_LEVEL_NAMING_RESEARCH_2026-11-12.md`) | "Mới, Bậc 1 … Bậc 5", chú thích "ôn lại sau N ngày"; cơ chế giữ nguyên |
+| Màu mức | Claude đề xuất: ưu tiên đỏ, đến hạn vàng cam, mới xám, Bậc 1→5 xanh lá nhạt → đậm | Theo đề xuất; giá trị tối do Claude đề xuất trong bản chốt |
+| Chip lọc ở Một nhóm | Chip có ô màu nhỏ → chữ và số hai dòng, cả chip mang màu → ba cách (nền đặc, dải liền, viền đáy màu) → dropdown → quay lại một dòng | Một dòng, cao 36 px, cả chip mang màu (nền 18%, viền 45%), số trong ô nền card 24 px bo 6, chip chọn nền 40% viền đậm |
+| Danh sách chọn nhóm | A: bỏ radio, dòng chọn nhuộm màu nhóm; B: chồng thẻ nhỏ màu nhóm thay ô vuông, nhấc lên khi chọn, ✓ cuối dòng | B, và chọn được **nhiều nhóm** cho một từ ("Lưu vào n nhóm") |
+| Font nhãn | JetBrains Mono (hiện tại) | Noto Sans (người dùng không thích JetBrains Mono); Bricolage giữ cho tiêu đề, từ lớn, số lớn |
+| Chữ trong phiên (Học, Phiên luyện, Ôn) | Chỉ câu hỏi tiếng Anh → mọi chữ giao diện tiếng Anh | Tiếng Anh; giữ tiếng Việt cho nghĩa, câu dịch, câu hỏi theo nghĩa ở Ôn, tên nhóm (chủ dự án 12/11: "giữ nha") |
+| Từ đích trong câu ví dụ | Nền vàng (chỗ 2) → in đậm gạch chân | In đậm gạch chân ở mọi câu, kể cả giấy Tra từ; nền vàng chỉ cho câu lọc của Tra từ |
+| Nhóm, Học | Bản mockup tự ước lượng số đo → chủ dự án: không khớp source | Theo đúng source của artifact `6z635GjwYNpctydnMoNHJD` (Vòng cung) và `TrbJBKg6VFE3x6YkjD1XT7` (Chồng thẻ tan mờ) |
+| Các chỗ nhỏ khác | Từng tin của chủ dự án | Ghi đủ ở file trả lời, mục "Chỗ bổ sung": card nhóm chỉ ghi số từ; bỏ dòng "Sai: …"; gợi ý "e_______"; ô gợi ý theo lưới; câu điền từ gõ thẳng trong câu; nút Học 40 px, chỉ icon trên điện thoại; viết hoa chữ đầu nhãn; đường kẻ quanh phát âm và dạng chia; panel Đăng ký có motion |
+
+### Đề xuất kỹ thuật duyệt cùng design và Part 9
+
+- **Phần tối sửa ở token**, không ở từng component, trừ box "Chưa đúng" (màu riêng của chế độ tối) và hai lớp mờ đang viết màu thẳng.
+- **Không dùng Tailwind `dark:`**: biến thể đó theo cài đặt máy, không theo lựa chọn trong app (`data-theme`).
+- **Màu tối viết bằng hex đã tính sẵn**, ghi công thức trong chú thích, để test tính được tương phản (bỏ `color-mix` trong file tối).
+- **Dọn `dark.css`, `island.css`, `dark-pastel.css` ở đợt polish**, sau khi các màn bỏ token cũ; M9b chỉ chuyển `color-scheme: dark`.
+- **Màu mức có token ở M9b**, đợt polish mới dùng; màu ngăn cũ giữ tới lúc đó.
+- **Lưu nhiều nhóm**: thêm trường `group_ids` vào API hay web gọi thêm `POST /v1/groups/:id/items`, chốt ở plan đợt polish.
+

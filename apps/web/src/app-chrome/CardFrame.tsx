@@ -3,7 +3,7 @@
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { DotGridBackground } from '@/ui/DotGridBackground';
+import { AppBackground } from '@/ui/AppBackground';
 import { AppLogo } from '@/ui/Logo';
 
 /** Classes of the Figma centred card (36:385 and the other card pages): 480 px, padding 24 / 40, radius 28, line border, lift shadow. */
@@ -19,11 +19,11 @@ export function HomeLogoLink({ className }: { className?: string }) {
   );
 }
 
-/** The centred card on the dot grid with two glows behind it: the (card) sign-in pages and onboarding (design §5.4). */
+/** The centred card on the mesh background with two glows behind it: the (card) sign-in pages and onboarding (design §5.4). */
 export function CardFrame({ children }: { children: ReactNode }) {
   return (
     <main id="main" tabIndex={-1} className="relative isolate flex min-h-dvh flex-col items-center overflow-x-clip px-4 pb-8 pt-5 outline-none md:justify-center md:py-20">
-      <DotGridBackground />
+      <AppBackground />
       <HomeLogoLink className="mb-6 self-start md:absolute md:left-16 md:top-9 md:mb-0" />
       <div className="relative w-full max-w-120">
         <div aria-hidden className="auth-card-glow absolute -inset-x-24 -inset-y-20 -z-10" />

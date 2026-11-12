@@ -16,18 +16,57 @@ async function settle(page: Page, ready = page.getByRole('heading', { level: 1 }
   await page.waitForLoadState('networkidle');
 }
 
+/** M9.6: where a shot goes. `dir/<name>-<scheme>-<width>.png` for the gm-m9 set; the older sets pass their widths and keep `<milestone>/<name>-<width>.png`. */
+type ShotOpts = { dir: string; widths: number[]; scheme: 'light' | 'dark' };
+type Where = ShotOpts | number[];
+const widthsOf = (where: Where) => (Array.isArray(where) ? where : where.widths);
+const only = (where: Where, width: number): Where => (Array.isArray(where) ? [width] : { ...where, widths: [width] });
+const shotPath = (where: Where, name: string, width: number) =>
+  Array.isArray(where) ? `test-results/shots/${MILESTONE}/${name}-${width}.png` : `test-results/shots/${where.dir}/${name}-${where.scheme}-${width}.png`;
+
 /** A page is shot full length; a page with a dialog open only as the window shows it (a full-length shot redraws the dialog half see-through). */
-async function shoot(page: Page, name: string, fullPage = true, widths = WIDTHS) {
-  for (const width of widths) {
+async function shoot(page: Page, name: string, fullPage = true, where: Where = WIDTHS) {
+  for (const width of widthsOf(where)) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(300);
     // A dialog switches between sheet and centred box at 768 px and animates in again; shoot it once it has settled.
     await expect
       .poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length))
       .toBe(0);
-    await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage });
+    await page.screenshot({ path: shotPath(where, name, width), fullPage });
   }
 }
+
+/** A frame or set the run could not shoot: printed, and listed in the test's annotations so the report shows what is missing. */
+function missed(what: string, why: string) {
+  const line = `chưa chụp: ${what} — ${why.split('\n').slice(0, 5).join(' | ')}`;
+  console.log(line);
+  test.info().annotations.push({ type: 'chưa chụp', description: line });
+}
+
+const signedIn = new WeakSet<Page>();
+/** Signs the learner in once per page; true when it did so now. */
+async function signIn(page: Page) {
+  if (signedIn.has(page)) return false;
+  await page.goto('/vi/app/login');
+  await settle(page);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  signedIn.add(page);
+  // A learner made for the shots answers the welcome question first (Vietnamese).
+  const welcome = page.getByRole('heading', { name: 'Bạn đọc nghĩa của từ bằng ngôn ngữ nào?' });
+  if (await welcome.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+    // "Tiếng Việt" is already chosen.
+    await page.getByRole('button', { name: 'Tiếp tục' }).click();
+    await expect(welcome).toBeHidden({ timeout: 30_000 });
+  }
+  return true;
+}
+
+/** The set runs in two phases in gm-m9: the pages that need no account first, then (after one sign-in) the rest. Alone it runs both. */
+type Phase = 'all' | 'out' | 'in';
 
 async function setLanguage(page: Page, locale: 'vi' | 'en') {
   await page.goto(`/vi/app/settings`);
@@ -45,6 +84,11 @@ test('milestone screenshots', async ({ page }) => {
     await gmM8(page);
     return;
   }
+  if (MILESTONE === 'gm-m9') {
+    test.skip(!email || !password, 'SHOTS_EMAIL / SHOTS_PASSWORD not set');
+    await gmM9(page);
+    return;
+  }
   test.skip(!email || !password, 'SHOTS_EMAIL / SHOTS_PASSWORD not set');
   // Signed-out pages first (a signed-in visit to them redirects into the app), then sign in once.
   if (MILESTONE === 'gm-m1') {
@@ -57,6 +101,10 @@ test('milestone screenshots', async ({ page }) => {
   }
   if (MILESTONE === 'gm-m3') {
     await gmM3(page);
+    return;
+  }
+  if (MILESTONE === 'gm-m5') {
+    await gmM5(page);
     return;
   }
   if (MILESTONE === 'gm-m6') {
@@ -85,12 +133,7 @@ test('milestone screenshots', async ({ page }) => {
       }
     }
   }
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  await signIn(page);
   if (MILESTONE === 'm2') {
     await m2(page);
     return;
@@ -133,25 +176,25 @@ test('milestone screenshots', async ({ page }) => {
  * Giao diện mới M1 (plan 2026-11-10, Task M1.13): the new chrome on old screens. Login signed out, then Today, Groups, a group and
  * Settings signed in; vi, light and dark, 390 and 1440 px. A learner with no group gets one from the Kinh doanh · B1 suggestion.
  */
-async function gmM1(page: Page) {
-  const widths = [390, 1440];
-  for (const scheme of ['light', 'dark'] as const) {
-    await page.emulateMedia({ colorScheme: scheme });
-    await page.goto('/vi/app/login');
-    await settle(page);
-    await shoot(page, `vi-${scheme}-login`, true, widths);
+async function gmM1(page: Page, opts?: ShotOpts, phase: Phase = 'all') {
+  const out: Where = opts ?? [390, 1440];
+  const schemes = opts ? [opts.scheme] : (['light', 'dark'] as const);
+  const name = (scheme: string, n: string) => (opts ? n : `vi-${scheme}-${n}`);
+  if (phase !== 'in') {
+    for (const scheme of schemes) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto('/vi/app/login');
+      await settle(page);
+      await shoot(page, name(scheme, 'login'), true, out);
+    }
   }
-  await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  if (phase === 'out') return;
+  if (!opts) await page.emulateMedia({ colorScheme: 'light' });
+  await signIn(page);
   await setLanguage(page, 'vi');
   await page.goto('/vi/app/groups');
   await settle(page);
-  let link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+  let link = page.getByRole('link', { name: /Kinh doanh/ }).first();
   if (!(await link.count())) {
     await page.goto(`/vi/app/${TOPIC}`);
     await settle(page, page.getByRole('list').first());
@@ -159,39 +202,38 @@ async function gmM1(page: Page) {
     await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
     await page.goto('/vi/app/groups');
     await settle(page);
-    link = page.getByRole('link', { name: /Kinh doanh · B1/ }).first();
+    link = page.getByRole('link', { name: /Kinh doanh/ }).first();
   }
   const id = new URL((await link.getAttribute('href'))!, 'http://x').searchParams.get('id')!;
-  for (const scheme of ['light', 'dark'] as const) {
+  for (const scheme of schemes) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const [path, n] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], ['settings', 'settings']] as const) {
       await page.goto(`/vi/app${path ? `/${path}` : ''}`);
       await settle(page);
-      await shoot(page, `vi-${scheme}-${n}`, true, widths);
+      await shoot(page, name(scheme, n), true, out);
     }
   }
 }
 
 // Plan part 2, M2.10: the nine sign-in and account pages at 390 and 1440, light. Signed-out pages first (a signed-in visit redirects
 // into the app); google/complete without a Google ticket shows its "expired" state.
-async function gmM2(page: Page) {
-  const widths = [390, 1440];
-  await page.emulateMedia({ colorScheme: 'light' });
-  for (const path of ['login', 'register', 'verify-email', 'forgot-password', 'reset-password', 'google/complete', 'account-deleted']) {
-    await page.goto(`/vi/app/${path}`);
-    await settle(page);
-    await shoot(page, `vi-light-${path.replace('/', '-')}`, true, widths);
+async function gmM2(page: Page, opts?: ShotOpts, phase: Phase = 'all') {
+  const out: Where = opts ?? [390, 1440];
+  const name = (n: string) => (opts ? n : `vi-light-${n}`);
+  await page.emulateMedia({ colorScheme: opts?.scheme ?? 'light' });
+  if (phase !== 'in') {
+    for (const path of ['login', 'register', 'verify-email', 'forgot-password', 'reset-password', 'google/complete', 'account-deleted']) {
+      await page.goto(`/vi/app/${path}`);
+      await settle(page);
+      await shoot(page, name(path.replace('/', '-')), true, out);
+    }
   }
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  if (phase === 'out') return;
+  await signIn(page);
   for (const path of ['complete-profile', 'welcome']) {
     await page.goto(`/vi/app/${path}`);
     await settle(page);
-    await shoot(page, `vi-light-${path}`, true, widths);
+    await shoot(page, name(path), true, out);
   }
 }
 
@@ -200,22 +242,11 @@ async function gmM2(page: Page) {
  * dialogs, 390 and 1440 px, light. Needs a learner with at least one deck (made from the Kinh doanh · B1 topic when missing).
  * The remove-word dialog only opens for a word in one deck, and the forget dialog only when the deck has long-overdue words.
  */
-async function gmM3(page: Page) {
-  const widths = [390, 1440];
+async function gmM3(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
   // The shots learner signs up in Vietnamese; the old Settings language switch is rebuilt in M7.
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
-  // A learner made for the shots answers the welcome question first (Vietnamese).
-  const welcome = page.getByRole('heading', { name: 'Bạn đọc nghĩa của từ bằng ngôn ngữ nào?' });
-  if (await welcome.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
-    // "Tiếng Việt" is already chosen.
-    await page.getByRole('button', { name: 'Tiếp tục' }).click();
-    await expect(welcome).toBeHidden({ timeout: 30_000 });
-  }
+  await signIn(page);
   // The first topic Hôm nay suggests (the local content decides which), opened from its card.
   await page.goto('/vi/app');
   await settle(page);
@@ -236,7 +267,7 @@ async function gmM3(page: Page) {
   for (const [path, name] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], [`group/backlog?id=${id}`, 'backlog'], [topic, 'topic']] as const) {
     await page.goto(`/vi/app${path ? `/${path}` : ''}`);
     await settle(page);
-    await shoot(page, name, true, widths);
+    await shoot(page, name, true, out);
   }
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
@@ -244,11 +275,11 @@ async function gmM3(page: Page) {
     await settle(page);
     await page.keyboard.press('f');
     await expect(page.getByRole('listbox')).toBeVisible();
-    await shoot(page, 'groups-picker', false, [width]);
+    await shoot(page, 'groups-picker', false, only(out, width));
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Tạo nhóm', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await shoot(page, 'dialog-create', false, [width]);
+    await shoot(page, 'dialog-create', false, only(out, width));
     await page.keyboard.press('Escape');
     await page.goto(`/vi/app/group?id=${id}`);
     await settle(page);
@@ -256,7 +287,7 @@ async function gmM3(page: Page) {
       await page.getByRole('button', { name: 'Tùy chọn nhóm', exact: true }).click();
       await page.getByRole('menuitem', { name: item }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
-      await shoot(page, name, false, [width]);
+      await shoot(page, name, false, only(out, width));
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog')).toBeHidden();
     }
@@ -264,7 +295,7 @@ async function gmM3(page: Page) {
     if ((await remove.count()) && width === widths[0]) {
       await remove.click();
       if (await page.getByRole('dialog').isVisible()) {
-        await shoot(page, 'dialog-remove', false, widths);
+        await shoot(page, 'dialog-remove', false, out);
         await page.getByRole('button', { name: 'Giữ lại' }).click();
       }
     }
@@ -274,7 +305,7 @@ async function gmM3(page: Page) {
     if (await first.count()) {
       await first.check({ force: true });
       await page.getByRole('button', { name: 'Bỏ khỏi việc học' }).click();
-      await shoot(page, 'dialog-forget', false, [width]);
+      await shoot(page, 'dialog-forget', false, only(out, width));
       await page.keyboard.press('Escape');
     }
   }
@@ -290,40 +321,36 @@ async function gmM3(page: Page) {
  * calendar button, Lịch, Ngày of the newest studied day of this month, Ngày of an empty day, "Báo lỗi của tôi", Settings with its row.
  * The learner needs some study this month for a full Ngày (a wrong answer and two sessions show best).
  */
-async function gmM6(page: Page) {
-  const widths = [390, 1440];
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+async function gmM6(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
+  await signIn(page);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/vi/app');
     await settle(page, page.getByRole('button', { name: 'Lịch học' }));
-    await shoot(page, 'today-calendar-button', false, [width]);
+    await shoot(page, 'today-calendar-button', false, only(out, width));
     await page.getByRole('button', { name: 'Lịch học' }).click();
     const month = page.getByRole('dialog');
     await expect(month.getByRole('list')).toHaveCount(2, { timeout: 30_000 });
-    await shoot(page, 'month', false, [width]);
+    await shoot(page, 'month', false, only(out, width));
     const studied = month.getByRole('button', { name: /: (học|ôn|luyện)/ });
     if (await studied.count()) {
       await studied.last().click();
       await expect(page.getByRole('dialog').getByRole('group')).toBeVisible({ timeout: 30_000 });
-      await shoot(page, 'day', false, [width]);
+      await shoot(page, 'day', false, only(out, width));
     }
     await page.keyboard.press('Escape');
     const quiet = month.getByRole('button', { name: /: không học$/ });
     if (await quiet.count()) {
       await quiet.first().click();
-      await shoot(page, 'day-empty', false, [width]);
+      await shoot(page, 'day-empty', false, only(out, width));
     }
   }
   for (const [path, name] of [['settings/reports', 'reports'], ['settings', 'settings-row']] as const) {
     await page.goto(`/vi/app/${path}`);
     await settle(page);
-    await shoot(page, name, true, widths);
+    await shoot(page, name, true, out);
   }
 }
 
@@ -331,18 +358,14 @@ async function gmM6(page: Page) {
  * M7a (Figma 120:4295 / 120:4559 Cài đặt, 181:5456 / 181:5748 avatar menu, 121:4297 / 121:4404 Tài khoản, 121:4503 / 121:4634 Xóa tài khoản,
  * 122:4203 / 122:4354 Lịch sử giao dịch, 122:4484 / 182:5856 its detail) on a learner made with `learner:setup --plan pro --transactions`.
  */
-async function gmM7a(page: Page) {
-  const widths = [390, 1440];
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+async function gmM7a(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
+  await signIn(page);
   for (const [path, name] of [['settings', 'settings'], ['settings/account', 'account'], ['settings/delete-account', 'delete-account']] as const) {
     await page.goto(`/vi/app/${path}`);
     await settle(page);
-    await shoot(page, name, true, widths);
+    await shoot(page, name, true, out);
   }
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
@@ -350,18 +373,18 @@ async function gmM7a(page: Page) {
     await settle(page);
     await page.getByRole('button', { name: 'Tài khoản của bạn' }).click();
     await expect(page.getByRole('menu')).toBeVisible();
-    await shoot(page, 'settings-menu', false, [width]);
+    await shoot(page, 'settings-menu', false, only(out, width));
     await page.keyboard.press('Escape');
   }
   await page.goto('/vi/app/settings/transactions');
   const rows = page.getByRole('button', { name: /Xem chi tiết$/ });
   await settle(page, rows.first());
-  await shoot(page, 'transactions', true, widths);
+  await shoot(page, 'transactions', true, out);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await rows.first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await shoot(page, 'transaction-detail', false, [width]);
+    await shoot(page, 'transaction-detail', false, only(out, width));
     await page.keyboard.press('Escape');
   }
 }
@@ -372,8 +395,9 @@ async function gmM7a(page: Page) {
  * No seed makes a payOS order or turns ads on, so `/v1/me/orders/*` is answered here and `/v1/me/entitlements` is the API's own answer with
  * `plan`, `pro_until`, `sources` or `ads` changed (`page.route`).
  */
-async function gmM7b(page: Page) {
-  const widths = [390, 1440];
+async function gmM7b(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
   const api = process.env.SHOTS_API_URL ?? 'http://localhost:3000';
   const cors = { 'access-control-allow-origin': new URL(process.env.SHOTS_BASE_URL ?? 'http://localhost:3001').origin, 'access-control-allow-credentials': 'true' };
   let patch: Record<string, unknown> = {};
@@ -392,33 +416,28 @@ async function gmM7b(page: Page) {
       ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-methods': 'GET,POST', 'access-control-allow-headers': 'authorization,content-type,x-csrf-protection' } })
       : route.fulfill({ headers: cors, json: order() }));
 
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  await signIn(page);
 
   patch = { plan: 'free', sources: [], pro_until: null, upcoming_periods: [] };
   await page.goto('/vi/app/plans');
   await settle(page);
-  await shoot(page, 'plans-free', true, widths);
+  await shoot(page, 'plans-free', true, out);
   patch = {};
   await page.goto('/vi/app/plans');
   await settle(page);
-  await shoot(page, 'plans-pro', true, widths);
+  await shoot(page, 'plans-pro', true, out);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.getByRole('button', { name: 'Hủy gói' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await shoot(page, 'plans-cancel-dialog', false, [width]);
+    await shoot(page, 'plans-cancel-dialog', false, only(out, width));
     await page.keyboard.press('Escape');
   }
   for (const [state, title] of [['paid', 'Thanh toán thành công'], ['pending', 'Đang chờ xác nhận thanh toán']] as const) {
     status = state;
     await page.goto(`/vi/app/plans/order?order=${ORDER}`);
     await settle(page, page.getByRole('heading', { level: 1, name: title }));
-    await shoot(page, `order-${state}`, true, widths);
+    await shoot(page, `order-${state}`, true, out);
   }
   patch = { plan: 'free', sources: [], pro_until: null, ads: { show: true, interstitial_per_day: 100, min_interval_minutes: 0 } };
   for (const width of widths) {
@@ -427,19 +446,15 @@ async function gmM7b(page: Page) {
     await settle(page, page.getByRole('navigation', { name: 'Điều hướng chính' }));
     await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhóm' }).click();
     await expect(page.getByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeVisible();
-    await shoot(page, 'pro-dialog', false, [width]);
+    await shoot(page, 'pro-dialog', false, only(out, width));
   }
 }
 
-async function gmM4(page: Page) {
-  const widths = [390, 1440];
+async function gmM4(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
   const OWN = 'wmshotword';
-  await page.goto('/vi/app/login');
-  await settle(page);
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  await signIn(page);
   const dialog = page.getByRole('dialog');
   const closeDialog = async () => {
     await page.keyboard.press('Escape');
@@ -448,48 +463,54 @@ async function gmM4(page: Page) {
   // Tra từ with a level filter: the dictionary page, the lifted card and the stacks; the first entry is the catalog word page.
   await page.goto('/vi/app/lookup?level=B1');
   await settle(page, page.getByRole('region', { name: 'Thẻ của từ đang chọn' }));
-  await shoot(page, 'lookup', true, widths);
+  await shoot(page, 'lookup', true, out);
   const lemma = (await page.getByRole('region', { name: 'Thẻ của từ đang chọn' }).getByRole('heading').textContent())!.trim();
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/vi/app/lookup?level=B1');
     await settle(page, page.getByRole('region', { name: 'Thẻ của từ đang chọn' }));
     await page.getByRole('button', { name: 'Thêm cả loạt vào nhóm' }).click();
-    await shoot(page, 'overlay-3-bulk', false, [width]);
+    await shoot(page, 'overlay-3-bulk', false, only(out, width));
     await closeDialog();
     await page.getByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' }).click();
-    await shoot(page, 'overlay-5-group', false, [width]);
+    await shoot(page, 'overlay-5-group', false, only(out, width));
     await closeDialog();
     // Overlay 1: a form Wordmet knows ("went → go").
     await page.keyboard.press('n');
     await dialog.getByRole('textbox', { name: 'Từ' }).fill('went');
     await expect(dialog.getByText('quá khứ của go', { exact: false })).toBeVisible({ timeout: 30_000 });
-    await shoot(page, 'overlay-1-add-word', false, [width]);
+    await shoot(page, 'overlay-1-add-word', false, only(out, width));
     // Overlay 4: a word Wordmet lacks, looked up with AI.
     await dialog.getByRole('textbox', { name: 'Từ' }).fill('rizzed');
     const ai = dialog.getByRole('button', { name: 'Tra bằng AI' });
     if (await ai.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
       await ai.click();
       if (await dialog.getByRole('region', { name: 'thẻ sẽ lưu · xem trước' }).waitFor({ timeout: 30_000 }).then(() => true, () => false)) {
-        await shoot(page, 'overlay-4-ai', false, [width]);
+        await shoot(page, 'overlay-4-ai', false, only(out, width));
       }
     }
     await closeDialog();
   }
   // The learner's own word, made once by hand.
   await page.goto(`/vi/app/word?w=${OWN}`);
-  await settle(page);
+  // The "not found" state has its heading at level 2, so wait for any heading in the page.
+  await settle(page, page.getByRole('main').getByRole('heading').first());
   if (await page.getByText(`Không tìm thấy từ “${OWN}”`).isVisible()) {
     await page.getByRole('button', { name: 'Thêm từ này' }).click();
     await dialog.getByRole('button', { name: 'Tự nhập nghĩa' }).click();
     await dialog.getByRole('textbox', { name: 'Nghĩa' }).fill('từ thử cho bộ ảnh');
+    // The save needs a group: open the picker, take the first one and confirm it.
+    await dialog.getByRole('button', { name: /^Lưu vào nhóm: / }).click();
+    const picker = page.getByRole('dialog', { name: 'Lưu vào nhóm', exact: true });
+    await picker.getByRole('radio').first().check({ force: true });
+    await picker.getByRole('button', { name: /^Chọn / }).click();
     await dialog.getByRole('button', { name: 'Lưu từ' }).click();
     await expect(dialog).toBeHidden({ timeout: 30_000 });
   }
   for (const [word, name] of [[lemma, 'word'], [OWN, 'word-own']] as const) {
     await page.goto(`/vi/app/word?w=${encodeURIComponent(word)}`);
     await settle(page);
-    await shoot(page, name, true, widths);
+    await shoot(page, name, true, out);
   }
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
@@ -497,20 +518,20 @@ async function gmM4(page: Page) {
     await settle(page);
     for (const [button, name] of [['Sửa từ', 'dialog-edit-word'], ['Xóa từ', 'dialog-delete-word']] as const) {
       await page.getByRole('button', { name: button, exact: true }).first().click();
-      await shoot(page, name, false, [width]);
+      await shoot(page, name, false, only(out, width));
       await closeDialog();
     }
     const addSentence = page.getByRole('button', { name: 'Thêm câu đã gặp' }).first();
     if (await addSentence.count()) {
       await addSentence.click();
       await dialog.getByRole('textbox').first().fill(`I met ${OWN} in a book yesterday.`);
-      await shoot(page, 'overlay-2-sentence', false, [width]);
+      await shoot(page, 'overlay-2-sentence', false, only(out, width));
       await closeDialog();
     }
     const seen = page.getByRole('button', { name: /^\d+ câu đã gặp$/ }).first();
     if (await seen.count()) {
       await seen.click();
-      await shoot(page, 'dialog-sentences', false, [width]);
+      await shoot(page, 'dialog-sentences', false, only(out, width));
       await closeDialog();
     }
   }
@@ -804,12 +825,13 @@ async function m5b(page: Page) {
  * its width and scrolled through first, so every section that comes in on scroll has come in; the shot waits for the entrances to end
  * (the endless loops keep running). With the real API the legal pages show the published text and Nguồn dữ liệu its sources.
  */
-async function gmM8(page: Page) {
+async function gmM8(page: Page, opts?: ShotOpts) {
   const pages = [['/vi', 'home'], ['/vi/privacy', 'privacy'], ['/vi/terms', 'terms'], ['/vi/sources', 'sources'], ['/vi/khong-ton-tai', '404']] as const;
-  for (const scheme of ['light', 'dark'] as const) {
+  const out: Where = opts ?? WIDTHS;
+  for (const scheme of opts ? [opts.scheme] : (['light', 'dark'] as const)) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const [path, name] of pages) {
-      for (const width of WIDTHS) {
+      for (const width of widthsOf(out)) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         await settle(page);
@@ -824,8 +846,195 @@ async function gmM8(page: Page) {
           .toBe(0);
         // `animations: 'disabled'` stops the endless loops for the capture: with them running, a full-page capture drew the "Nghe và đọc
         // phiên âm" card blurred although the page had it in place (R247).
-        await page.screenshot({ path: `test-results/shots/${MILESTONE}/vi-${scheme}-${name}-${width}.png`, fullPage: true, animations: 'disabled' });
+        await page.screenshot({ path: shotPath(out, opts ? name : `vi-${scheme}-${name}`, width), fullPage: true, animations: 'disabled' });
       }
     }
   }
+}
+
+/**
+ * M9.6 (design §9 M5, Figma 131:3890 / 140:4049 / 141:4147 Tùy chỉnh phiên): the practice screens. The Figma ids only name the frames here; every
+ * wait is by role and text read from the screens. Needs a learner with a deck that has words (gm-m3 makes one) and practice sessions left for
+ * the day (a Free learner has 3; the run opens one Luyện session per scheme). A locked AI row is shot as it shows.
+ * Frames: Luyện tập; Tùy chỉnh phiên three times (default, AI questions added, one group with its stage menu open); a session of typed-word
+ * questions (question, hint panel, "Chưa đúng", the round prompt when the deck has fewer words than questions, summary); Từ hay sai; Ôn
+ * (question, answer, result, summary); Học (front, back, summary).
+ */
+async function gmM5(page: Page, opts?: ShotOpts) {
+  const out: Where = opts ?? [390, 1440];
+  const widths = widthsOf(out);
+  await signIn(page);
+  const dialog = page.getByRole('dialog', { name: /Tùy chỉnh phiên/ });
+  const customize = async (width: number, source: 'Luyện tất cả' | 'Theo nhóm') => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/vi/app/practice');
+    await settle(page);
+    await page.getByRole('button', { name: new RegExp(`^Tùy chỉnh: ${source}`) }).click();
+    await expect(dialog).toBeVisible();
+    await page.waitForLoadState('networkidle');
+  };
+
+  await page.goto('/vi/app/practice');
+  await settle(page);
+  // A session left open by an earlier pass (or a failed one) would keep "Bắt đầu" from opening a new one: end it first.
+  const resume = page.getByRole('region', { name: 'Phiên đang dở' }).getByRole('link');
+  if (await resume.count()) {
+    await resume.click();
+    await page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /^Xong \d+ câu\.$/ })).toBeVisible({ timeout: 30_000 });
+    await page.goto('/vi/app/practice');
+    await settle(page);
+  }
+  await shoot(page, 'practice', true, out);
+  for (const width of widths) {
+    // 131:3890: the setup as it opens.
+    await customize(width, 'Luyện tất cả');
+    await shoot(page, 'customize-default', false, only(out, width));
+    // 140:4049: AI-written questions added (the plus is locked when the plan has no AI questions left; the frame is shot as it is).
+    const plus = dialog.getByRole('button', { name: 'Câu AI viết: thêm 1' });
+    for (let i = 0; i < 3 && (await plus.isEnabled()); i++) await plus.click();
+    await shoot(page, 'customize-ai', false, only(out, width));
+    await page.keyboard.press('Escape');
+    // 141:4147: one group, with the stage menu open.
+    await customize(width, 'Theo nhóm');
+    await dialog.getByRole('button', { name: /Chỉ một ngăn/ }).click();
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await shoot(page, 'customize-group-stage', false, only(out, width));
+    await page.keyboard.press('Escape');
+  }
+
+  // A session of typed-word questions only (a field, hint and "Xem đáp án"), as many questions as the setup allows.
+  await customize(widths[widths.length - 1], 'Luyện tất cả');
+  for (const type of ['Trắc nghiệm', 'Đúng/sai']) await dialog.getByRole('checkbox', { name: type, exact: true }).setChecked(false, { force: true });
+  const more = dialog.getByRole('button', { name: 'Số câu: thêm 1' });
+  while (await more.isEnabled()) await more.click();
+  await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
+  await expect(page).toHaveURL(/practice\/session$/, { timeout: 60_000 });
+  const field = page.getByRole('textbox', { name: 'Câu trả lời' });
+  await expect(field).toBeVisible({ timeout: 60_000 });
+  await page.waitForLoadState('networkidle');
+  await shoot(page, 'session-question', false, out);
+  const hint = page.getByRole('button', { name: /^Gợi ý/ }).first();
+  if (await hint.count()) {
+    await hint.click();
+    await expect(page.getByRole('heading', { level: 3, name: /^Gợi ý \d+\/\d+/ })).toBeVisible();
+    await shoot(page, 'session-hint', false, out);
+  } else missed('gm-m5 session-hint', 'the question has no Gợi ý button');
+  const wrong = async () => {
+    await field.fill('zzzqx');
+    await field.press('Enter');
+    await page.getByRole('button', { name: 'Xem đáp án' }).click();
+    await expect(page.getByText('Chưa đúng').first()).toBeVisible();
+  };
+  await wrong();
+  await shoot(page, 'session-wrong', false, out);
+  const summary = page.getByRole('heading', { level: 1, name: /^Xong \d+ câu\.$/ });
+  // Stop the session here: stepping through every question clicked "Câu tiếp" while it re-rendered and hung the set, and a session
+  // left open stops the next pass from starting its own. The round prompt ("Bạn đã làm hết N từ") is shot only when it is already up.
+  const round = page.getByRole('heading', { level: 1, name: /^Bạn đã làm hết \d+ từ$/ });
+  if (await round.isVisible()) await shoot(page, 'session-round', false, out);
+  else missed('gm-m5 session-round', 'the session was stopped after the first wrong answer, before the round prompt');
+  await page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }).click();
+  await expect(summary).toBeVisible({ timeout: 30_000 });
+  await shoot(page, 'session-summary', true, out);
+
+  await page.goto('/vi/app/practice/weak');
+  await settle(page);
+  await shoot(page, 'weak', true, out);
+
+  // Ôn and Học of the first deck.
+  await page.goto('/vi/app/groups');
+  await settle(page);
+  const deck = new URL((await page.getByRole('region', { name: 'Các nhóm của bạn' }).getByRole('link').first().getAttribute('href'))!, 'http://x').searchParams.get('id')!;
+  await page.goto(`/vi/app/recall?group=${deck}`);
+  await expect(page.getByText(/^Ôn · /)).toBeVisible({ timeout: 60_000 });
+  const typed = page.getByRole('textbox', { name: 'Câu trả lời' });
+  await expect(typed.or(page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }))).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await shoot(page, 'recall-question', false, out);
+  if (await typed.isVisible()) {
+    await typed.fill('zzzqx');
+    await shoot(page, 'recall-answer', false, out);
+    await typed.press('Enter');
+    await page.getByRole('button', { name: 'Xem đáp án' }).click();
+  } else await page.keyboard.press('1');
+  await expect(page.getByRole('button', { name: /^(Câu tiếp|Cần ôn lại|Đã biết)/ }).first()).toBeVisible({ timeout: 30_000 });
+  await shoot(page, 'recall-result', false, out);
+  await page.getByRole('button', { name: 'Dừng phiên, xem tổng kết' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /^Xong \d+ từ\.$/ })).toBeVisible({ timeout: 30_000 });
+  await shoot(page, 'recall-summary', true, out);
+
+  await page.goto(`/vi/app/review?group=${deck}&mode=all`);
+  await expect(page.getByRole('group', { name: /^Thẻ 1 trên \d+$/ })).toBeVisible({ timeout: 60_000 });
+  await page.waitForLoadState('networkidle');
+  await shoot(page, 'learn-front', false, out);
+  await page.keyboard.press(' ');
+  await expect(page.getByRole('button', { name: /Đã biết/ })).toBeVisible();
+  await shoot(page, 'learn-back', false, out);
+  await page.keyboard.press('2');
+  await page.getByRole('button', { name: 'Đóng phiên ôn' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /^Xong \d+ thẻ\.$/ })).toBeVisible({ timeout: 30_000 });
+  await shoot(page, 'learn-summary', true, out);
+}
+
+/**
+ * M9.6 (QM9-5): every screen of the new UI, light and dark, at 390 / 768 / 1024 / 1440 px, to `test-results/shots/gm-m9/<set>/`. Per scheme: the
+ * pages that need no account (public pages, sign-in and account pages), then one sign-in and the signed-in sets. The session cookie is cleared
+ * between schemes so the second pass starts signed out too. gm-m7a wants a learner on Pro with transactions and gm-m7b a trial learner; one
+ * account cannot be both, so the other one is listed as `chưa chụp` in the annotations and the run goes on.
+ */
+async function gmM9(page: Page) {
+  const widths = [390, 768, 1024, 1440];
+  let shot = 0;
+  // Each set runs on its own: a set the learner cannot reach (gm-m7a and gm-m7b want different plans) is listed as missed and the run goes on.
+  // The test fails at the end only when no set was shot at all, so one run gives the most shots and the annotations show what is missing.
+  // `counts` is false for the sign-in: it shoots nothing, so it must not make "nothing was shot" pass.
+  const attempt = async (label: string, run: () => Promise<void>, counts = true) => {
+    // SHOTS_ONLY=gm-m5 re-runs just the sets whose label contains it (and always the sign-in).
+    if (process.env.SHOTS_ONLY && !label.includes(process.env.SHOTS_ONLY) && !label.includes('sign-in')) return;
+    try {
+      await run();
+      if (counts) shot++;
+    } catch (error) {
+      missed(label, error instanceof Error ? error.message : String(error));
+      // Leave nothing open for the next set: a dialog or a desktop-sized viewport would break its first step.
+      await page.keyboard.press('Escape').catch(() => undefined);
+      await page.setViewportSize({ width: 1440, height: 900 }).catch(() => undefined);
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' });
+    }
+  };
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    // Signed out for real: the session cookie and anything the app keeps in the browser, then the login page must show.
+    await page.context().clearCookies();
+    signedIn.delete(page);
+    await page.goto('/vi/app/login');
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+    await page.goto('/vi/app/login');
+    await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible({ timeout: 60_000 });
+    const of = (set: string): ShotOpts => ({ dir: `gm-m9/${set}`, widths, scheme });
+    await attempt(`${scheme} gm-m8`, () => gmM8(page, of('gm-m8')));
+    await attempt(`${scheme} gm-m1 signed out`, () => gmM1(page, of('gm-m1'), 'out'));
+    await attempt(`${scheme} gm-m2 signed out`, () => gmM2(page, of('gm-m2'), 'out'));
+    await attempt(
+      `${scheme} sign-in`,
+      async () => {
+        await signIn(page);
+      },
+      false,
+    );
+    await attempt(`${scheme} gm-m1`, () => gmM1(page, of('gm-m1'), 'in'));
+    await attempt(`${scheme} gm-m2`, () => gmM2(page, of('gm-m2'), 'in'));
+    await attempt(`${scheme} gm-m3`, () => gmM3(page, of('gm-m3')));
+    await attempt(`${scheme} gm-m4`, () => gmM4(page, of('gm-m4')));
+    await attempt(`${scheme} gm-m5`, () => gmM5(page, of('gm-m5')));
+    await attempt(`${scheme} gm-m6`, () => gmM6(page, of('gm-m6')));
+    await attempt(`${scheme} gm-m7a`, () => gmM7a(page, of('gm-m7a')));
+    await attempt(`${scheme} gm-m7b`, () => gmM7b(page, of('gm-m7b')));
+  }
+  expect(shot, 'no set could be shot').toBeGreaterThan(0);
 }

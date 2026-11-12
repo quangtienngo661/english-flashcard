@@ -110,3 +110,9 @@ file `JKnyUUtGjpGpfKK4PqBfdY`). Every name carries `wm-` (`--color-wm-accent`, `
 mean other colours. `apps/web` imports both sets until its old screens are gone (M8); rebuilt screens use only `wm-` tokens. Admin imports
 neither. Sizes are in rem. `web-dark.css` redefines every `--color-wm-*` under `[data-theme='dark']`.
 `apps/web/src/styles/web-tokens.test.ts` checks the light/dark key parity, text contrast in both modes and the rem rule.
+
+Dark section (M9, mockup `docs/mockups/2026-11-05-redesign-concepts/m9-ban-chot.html`): `web-dark.css` starts with `color-scheme: dark`, raises
+`accent-soft`, `pass-soft`, `fail-soft` and the group `-wash` (16 % of the colour on the surface) and `-soft` (34 %), gives every `--shadow-wm-*` a
+black version (buttons: `none`), and adds `scrim`, `paper`, `paper-line`, `halo-mark`, `wrong-soft/-line/-ink` and the `level-0` … `level-5`,
+`level-priority`, `level-due` colours (light values in `web.css` equal the literals they replace). Stage and practice colours keep their light
+values in dark until the polish round. A dark colour a contrast test reads is `#rrggbb`, with the mix in a comment.

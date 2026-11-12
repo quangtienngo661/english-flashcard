@@ -2,6 +2,7 @@
 // OpenNext cannot build on plain Windows (symlink errors), so Windows hosts use this instead (plan 2026-10-08-landing-deploy, Task 1).
 // Usage from apps/web: pnpm cf:docker [extra playwright args]
 //                      pnpm cf:docker --build   (production build only; output copied to .docker-out/.open-next)
+//                      pnpm cf:docker --bundle-stats (build with the e2e env, copy .next/diagnostics/route-bundle-stats.json to .docker-out/; M9.2)
 //                      pnpm cf:docker --deploy  (production build + wrangler deploy, using the host's wrangler login)
 //                      pnpm cf:docker --dev     (next dev on http://localhost:3000; Windows blocks the SWC binary next-intl loads)
 //                      pnpm cf:docker --dev-app (the learner app in next dev on http://localhost:3001; what `pnpm dev:app` runs on Windows)
@@ -16,7 +17,7 @@ const out = fileURLToPath(new URL('../.docker-out/', import.meta.url)).replace(/
 mkdirSync(out, { recursive: true });
 
 const flag = process.argv[2];
-const mode = flag === '--build' ? 'build' : flag === '--deploy' ? 'deploy' : 'test';
+const mode = flag === '--build' ? 'build' : flag === '--bundle-stats' ? 'bundle-stats' : flag === '--deploy' ? 'deploy' : 'test';
 const playwrightArgs = process.argv.slice(mode === 'test' ? 2 : 3).map((a) => `'${a.replaceAll("'", "'\\''")}'`).join(' ');
 // wrangler on Windows keeps its login under %APPDATA%\xdg.config\.wrangler.
 const wranglerConfig = join(process.env.APPDATA ?? '', 'xdg.config', '.wrangler');
@@ -69,6 +70,14 @@ corepack prepare pnpm@11.6.0 --activate >/dev/null
 pnpm config set store-dir /pnpm-store >/dev/null
 CI=1 pnpm install --frozen-lockfile
 cd apps/web
+if [ "$MODE" = bundle-stats ]; then
+  # Same env as the first web server in playwright.config.ts, so the route set matches the e2e build.
+  export NEXT_PUBLIC_SITE_URL=http://localhost:3100 NEXT_PUBLIC_LEARNER_APP=on NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 \
+    NEXT_PUBLIC_AUDIO_BASE_URL=http://localhost:3000/v1/dev/audio NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA LANDING_DATA_SOURCE=fallback
+  pnpm cf:build
+  cp .next/diagnostics/route-bundle-stats.json /out/route-bundle-stats.json
+  exit 0
+fi
 if [ "$MODE" != test ]; then
   pnpm cf:build
   pnpm assert:render-mode

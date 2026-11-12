@@ -23,12 +23,16 @@ describe('app background', () => {
     expect(globals).not.toMatch(/background-size:\s*1\.25rem 1\.25rem/);
   });
 
-  it('is four halos in accent, mark, pass and accent over the page colour', () => {
+  it('is four halos in accent, the mark token, pass and accent over the page colour', () => {
     const css = block('app-mesh');
     expect(css).not.toBeNull();
     expect(css).toContain('background-color: var(--color-wm-bg)');
     const halos = [...css!.matchAll(/radial-gradient\([^;]*?var\(--color-wm-([a-z-]+)\) (\d+)%/g)].map((m) => `${m[1]} ${m[2]}`);
-    expect(halos).toEqual(['accent 20', 'mark 34', 'pass 18', 'accent 12']);
+    expect(halos).toEqual(['accent 20', 'pass 18', 'accent 12']);
+    // The yellow halo is a token, so dark can dim it (M9.8); it sits second.
+    const lines = css!.split('\n').filter((l) => l.includes('radial-gradient'));
+    expect(lines).toHaveLength(4);
+    expect(lines[1]).toContain('var(--color-wm-halo-mark)');
   });
 
   it('has a grain layer drawn by an SVG turbulence filter at 40% multiply', () => {
@@ -36,5 +40,14 @@ describe('app background', () => {
     expect(css).toContain('feTurbulence');
     expect(css).toMatch(/opacity:\s*0?\.4;/);
     expect(css).toMatch(/mix-blend-mode:\s*multiply/);
+  });
+
+  it('has a dark grain of soft-light at 7% from the same turbulence without the colour matrix', () => {
+    const css = block('app-mesh')!;
+    const dark = css.slice(css.indexOf("html[data-theme='dark'] &::before"));
+    expect(dark).toContain('mix-blend-mode: soft-light');
+    expect(dark).toMatch(/opacity:\s*0\.07;/);
+    expect(dark).toContain('feTurbulence');
+    expect(dark).not.toContain('feColorMatrix');
   });
 });

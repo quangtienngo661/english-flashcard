@@ -1,6 +1,8 @@
 /* Dark values of the new web UI's colours (design giao diện mới §7.2, Figma collection "Wordmet", mode Dark, read with the
-   Plugin API 09/11/2026). Same keys as web.css. Dark shadows wait for the dark mockups (GM4, M9). */
+   Plugin API 09/11/2026). Same keys as web.css. M9 (mockup m9-ban-chot.html lines 72-115): raised soft tints and group washes, dark shadows, scrim, paper,
+   mesh, "Chưa đúng" box, level colours. */
 [data-theme='dark'] {
+  color-scheme: dark;
   --color-wm-bg: #0f1220;
   --color-wm-surface: #171b2a;
   --color-wm-ink: #eceef5;
@@ -8,15 +10,18 @@
   --color-wm-ghost: #353c53;
   --color-wm-line: #2a3044;
   --color-wm-accent: #8da2ff;
-  --color-wm-accent-soft: #1f2747;
+  /* #8da2ff 20 % on #171b2a, oklab */
+  --color-wm-accent-soft: #2c334f;
   --color-wm-on-accent: #0f1220;
   --color-wm-mark: #ffd84a;
   --color-wm-mark-ink: #1b2444;
   --color-wm-pass: #62c98f;
-  --color-wm-pass-soft: #142a1e;
+  /* #62c98f 18 % on #171b2a, oklab */
+  --color-wm-pass-soft: #24373c;
   --color-wm-fail: #ff8d80;
-  --color-wm-fail-soft: #311a18;
-  /* No dark mockup yet (GM4, M9): the amber reads on the dark surface; the number takes the lighter amber. */
+  /* #ff8d80 18 % on #171b2a, oklab */
+  --color-wm-fail-soft: #3c2f3a;
+  /* Unchanged in M9; the polish round replaces stage colours with level colours. The amber reads on the dark surface; the number takes the lighter amber. */
   --color-wm-practice: #d99a17;
   --color-wm-practice-ink: #e0b450;
   /* Public pages: no dark frame drawn (M8 Figma A §4). The chip starts at the dark accent so its --on-accent text stays readable; the
@@ -26,7 +31,7 @@
   --color-wm-glow-accent: rgb(141 162 255 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
 
-  /* Same light values until the dark mockups (GM4, M9). Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
+  /* Unchanged in M9; the polish round replaces stage colours with level colours (same light values). Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
      colour utility; stage-5-solid is the flat square of "Từ theo ngăn" (M3 Figma A §5). */
   --color-wm-stage-0-bg: #eef0f4;
   --color-wm-stage-0-dot: #9aa3b1;
@@ -48,38 +53,73 @@
   --color-wm-stage-5-ink: #3b2f6b;
   --color-wm-stage-5-solid: #b28bff;
 
-  /* Group colours by ID (design §7.4, groupColorIndex). -soft: cards behind a stack; -wash: selected picker row, halo;
-     -ink: numbers on white, Figma's darker inks (>= 4.5:1). Groups 4 and 6 have no drawn ink: color-mix(in oklab, colour 65%, #1b2444). */
+  /* Group colours by ID (design §7.4). Dark (mockup lines 102-108, 465): -wash is the colour 16 % on #171b2a (srgb), -soft 34 %;
+     -ink is the lifted ink, >= 4.5:1 on its wash and on the surface. */
   --color-wm-group-0: #e5603f;
-  --color-wm-group-0-soft: color-mix(in srgb, #e5603f 50%, #ffffff);
-  --color-wm-group-0-wash: color-mix(in srgb, #e5603f 12%, #ffffff);
-  --color-wm-group-0-ink: #984941;
+  --color-wm-group-0-soft: #5d3231;
+  --color-wm-group-0-wash: #38262d;
+  --color-wm-group-0-ink: #e87052;
   --color-wm-group-1: #149384;
-  --color-wm-group-1-soft: color-mix(in srgb, #149384 50%, #ffffff);
-  --color-wm-group-1-wash: color-mix(in srgb, #149384 12%, #ffffff);
-  --color-wm-group-1-ink: #17696c;
+  --color-wm-group-1-soft: #164449;
+  --color-wm-group-1-wash: #172e38;
+  --color-wm-group-1-ink: #37a396;
   --color-wm-group-2: #7a55d3;
-  --color-wm-group-2-soft: color-mix(in srgb, #7a55d3 50%, #ffffff);
-  --color-wm-group-2-wash: color-mix(in srgb, #7a55d3 12%, #ffffff);
-  --color-wm-group-2-ink: #56429d;
+  --color-wm-group-2-soft: #392f63;
+  --color-wm-group-2-wash: #272445;
+  --color-wm-group-2-ink: #9d81de;
   --color-wm-group-3: #d99a17;
-  --color-wm-group-3-soft: color-mix(in srgb, #d99a17 50%, #ffffff);
-  --color-wm-group-3-wash: color-mix(in srgb, #d99a17 12%, #ffffff);
-  --color-wm-group-3-ink: #916d28;
+  --color-wm-group-3-soft: #594624;
+  --color-wm-group-3-wash: #362f27;
+  --color-wm-group-3-ink: #d99a17;
   --color-wm-group-4: #4a9637;
-  --color-wm-group-4-soft: color-mix(in srgb, #4a9637 50%, #ffffff);
-  --color-wm-group-4-wash: color-mix(in srgb, #4a9637 12%, #ffffff);
-  --color-wm-group-4-ink: #376d45;
+  --color-wm-group-4-soft: #28452e;
+  --color-wm-group-4-wash: #1f2f2c;
+  --color-wm-group-4-ink: #62a451;
   --color-wm-group-5: #d2427a;
-  --color-wm-group-5-soft: color-mix(in srgb, #d2427a 50%, #ffffff);
-  --color-wm-group-5-wash: color-mix(in srgb, #d2427a 12%, #ffffff);
-  --color-wm-group-5-ink: #8c3765;
+  --color-wm-group-5-soft: #572845;
+  --color-wm-group-5-wash: #352137;
+  --color-wm-group-5-ink: #dc6c97;
   --color-wm-group-6: #2a86d1;
-  --color-wm-group-6-soft: color-mix(in srgb, #2a86d1 50%, #ffffff);
-  --color-wm-group-6-wash: color-mix(in srgb, #2a86d1 12%, #ffffff);
-  --color-wm-group-6-ink: #29629d;
+  --color-wm-group-6-soft: #1d3f63;
+  --color-wm-group-6-wash: #1a2c45;
+  --color-wm-group-6-ink: #4c99d8;
   --color-wm-group-empty: #64708c;
-  --color-wm-group-empty-soft: color-mix(in srgb, #64708c 50%, #ffffff);
-  --color-wm-group-empty-wash: color-mix(in srgb, #64708c 12%, #ffffff);
-  --color-wm-group-empty-ink: #525a78;
+  --color-wm-group-empty-soft: #31384b;
+  --color-wm-group-empty-wash: #23293a;
+  --color-wm-group-empty-ink: #8992a8;
+
+  /* M9 (mockup lines 72-115, 332-348). scrim: behind dialogs; paper: Tra từ sheet; halo-mark: the mesh's yellow; wrong-*: "Chưa đúng" box
+     (#e5603f 16 % on #171b2a, oklab). */
+  --color-wm-scrim: rgb(0 0 0 / 0.55);
+  --color-wm-paper: #1e2334;
+  --color-wm-paper-line: #2e3449;
+  --color-wm-halo-mark: rgb(255 216 74 / 0.12);
+  --color-wm-wrong-soft: #352731;
+  --color-wm-wrong-line: rgb(229 96 63 / 0.55);
+  --color-wm-wrong-ink: #e87052;
+  /* Level colours for the polish round: 0 is none, 1-5 brighten with the level. */
+  --color-wm-level-0: #56607a;
+  --color-wm-level-1: #1f4d35;
+  --color-wm-level-2: #27704a;
+  --color-wm-level-3: #319c60;
+  --color-wm-level-4: #4cc283;
+  --color-wm-level-5: #8ae4b0;
+  --color-wm-level-priority: #ff8d80;
+  --color-wm-level-due: #f0c04a;
+
+  /* Shadows: the light geometry in black (mockup lines 88-91); buttons carry none in dark (QM9-3, question 6B). */
+  --shadow-wm-card: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.625rem 1.75rem -0.875rem rgb(0 0 0 / 0.6);
+  --shadow-wm-row: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.35), 0 0.25rem 0.75rem -0.5rem rgb(0 0 0 / 0.6);
+  --shadow-wm-pop: 0 0.125rem 0.375rem rgb(0 0 0 / 0.4), 0 1.5rem 3.5rem -1.5rem rgb(0 0 0 / 0.7);
+  --shadow-wm-soft: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.4), 0 0.875rem 2.125rem -0.875rem rgb(0 0 0 / 0.7);
+  --shadow-wm-lift: 0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.85), 0 0.75rem 2rem -1rem rgb(0 0 0 / 0.4);
+  --shadow-wm-btn: none;
+  --shadow-wm-btn-pass: none;
+  --shadow-wm-btn-fail: none;
+  --shadow-wm-pro: 0 2.5rem 4.375rem -2.5rem rgb(0 0 0 / 0.7);
+  --shadow-wm-stage: 0 2.5rem 6.25rem -3.125rem rgb(0 0 0 / 0.6), 0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.7);
+  --shadow-wm-pro-glow: 0 0 3rem 0.125rem rgb(141 162 255 / 0.18), 0 2.5rem 6.25rem -3.125rem rgb(0 0 0 / 0.6), 0 3.125rem 6.875rem -2.5rem rgb(0 0 0 / 0.7);
+  --shadow-wm-paper: 0 1.5rem 3rem -1.75rem rgb(0 0 0 / 0.7);
+  --shadow-wm-paper-card: 0 1.875rem 3.75rem -1.875rem rgb(0 0 0 / 0.85);
+  --shadow-wm-contact: 0 0.0625rem 0.125rem rgb(0 0 0 / 0.4);
 }
