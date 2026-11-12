@@ -148,14 +148,14 @@ describe('WordPage (K/31–K/33, M/41)', () => {
         <WordPage />
         <ToastRegion />
       </>,
-      { routes: routes({ [`POST /v1/groups/${G}/items`]: () => Response.json({ item_id: uuid(91), level: 0, due_date: '2026-10-23', created: true }) }) },
+      { routes: routes({ 'POST /v1/quick-add': () => Response.json({ item_id: uuid(91), sense_id: uuid(1), created_item: true, created_word: false, sentence_id: null }, { status: 201 }) }) },
     );
     const adjective = (await screen.findAllByRole('article'))[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Thêm vào nhóm' }));
     const dialog = await screen.findByRole('dialog', { name: 'Lưu vào nhóm' });
-    await userEvent.click(within(dialog).getAllByRole('radio', { name: /IELTS/ })[0]);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào nhóm' }));
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === `/v1/groups/${G}/items`)?.body).toEqual({ sense_id: uuid(1) }));
+    await userEvent.click(within(dialog).getAllByRole('option', { name: /IELTS/ })[0]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào 1 nhóm' }));
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === '/v1/quick-add')?.body).toEqual({ group_ids: [G], sense_id: uuid(1) }));
     expect(await screen.findByText('Đã thêm “left” vào nhóm “IELTS”.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${G}`);
   });

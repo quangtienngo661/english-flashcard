@@ -115,10 +115,10 @@ describe('I-7: one write per press', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     let release!: () => void;
     const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={() => {}} />, {
-      routes: base({ [`POST /v1/groups/${TRAVEL}/items`]: () => new Promise<Response>((r) => (release = () => r(Response.json({ created: true })))) }),
+      routes: base({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json({ created_item: true })))) }),
     });
-    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào nhóm' }));
-    expect(posts(calls, `/v1/groups/${TRAVEL}/items`)).toHaveLength(1);
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào 1 nhóm' }));
+    expect(posts(calls, '/v1/quick-add')).toHaveLength(1);
     release();
   });
 });

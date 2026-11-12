@@ -59,7 +59,7 @@ describe('Overlay 1: Bạn vừa gặp từ nào?', () => {
     expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'went go · quá khứ của go')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(calls.filter((c) => c.path === '/v1/quick-add')).toHaveLength(1));
-    expect(calls.find((c) => c.path === '/v1/quick-add')?.body).toEqual({ group_id: WORK, sense_id: uuid(1) });
+    expect(calls.find((c) => c.path === '/v1/quick-add')?.body).toEqual({ group_ids: [WORK], sense_id: uuid(1) });
   });
 
   it('opening Thêm từ for the first time loads the dialog (next/dynamic)', async () => {
@@ -90,15 +90,12 @@ describe('Overlay 4: AI result', () => {
 });
 
 describe('Overlay 5: Lưu vào nhóm', () => {
-  it('each deck row has its colour square; a deck with words has the six-stage bar, an empty one has none', async () => {
+  it('each deck row is a tickable option with its name and size; the list says several decks can be chosen', async () => {
     renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'record', pos: 'noun', meaning: { text: 'bản ghi, hồ sơ' } }} onClose={() => {}} />, { routes });
-    const all = await screen.findByRole('radiogroup', { name: 'Tất cả nhóm (2), A–Z' });
-    const work = within(all).getByRole('radio', { name: /Công việc · B1/ }).closest('label')!;
-    const japan = within(all).getByRole('radio', { name: /Du lịch Nhật/ }).closest('label')!;
-    expect(work.querySelector('[data-group-square]')).not.toBeNull();
-    expect(japan.querySelector('[data-group-square]')).not.toBeNull();
-    expect(within(work).getByRole('figure')).toBeInTheDocument();
-    expect(within(japan).queryByRole('figure')).not.toBeInTheDocument();
-    expect(within(japan).getByText('0 từ')).toBeInTheDocument();
+    const all = await screen.findByRole('listbox', { name: 'Tất cả nhóm (2), A–Z' });
+    expect(screen.getByText('Chọn được nhiều nhóm.')).toBeInTheDocument();
+    expect(within(all).getByRole('option', { name: /Công việc · B1/ })).toHaveTextContent('24 từ');
+    expect(within(all).getByRole('option', { name: /Du lịch Nhật/ })).toHaveTextContent('0 từ');
+    expect(within(all).queryByRole('radio')).not.toBeInTheDocument();
   });
 });

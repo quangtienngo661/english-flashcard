@@ -81,7 +81,7 @@ describe('Edit before saving (K/87)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({
-      group_id: TRAVEL,
+      group_ids: [TRAVEL],
       new_word: {
         lemma: 'rizz', meaning: 'sức hút, khả năng tán tỉnh', pos: 'noun', level: 'B2', topics: ['daily-life'],
         examples: ["He's got serious rizz."], ai_suggestion: true,

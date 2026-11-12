@@ -11,6 +11,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { ErrorState } from '@/ui/States';
 import { cn } from '@/lib/cn';
+import { groupTone } from '@/lib/group-color';
 import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { FIELD_BOX, FIELD_ERROR, FIELD_LABEL } from '@/ui/field-styles';
@@ -23,13 +24,13 @@ import { TargetWord } from '@/ui/TargetWord';
 import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
 import { LEVELS, useTopics } from '../lookup/lookup-api';
 import { wordHref } from '../word/word-api';
-import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } from './add-word-api';
+import { fullGroupId, useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } from './add-word-api';
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
 import { AiLookupPanel } from './AiLookupPanel';
 import { AiLookupResult } from './AiLookupResult';
 import { bareIpa, cleanExamples, draftFromSuggestion, EditSuggestionForm, IPA_MAX, type WordDraft } from './EditSuggestionForm';
-import { GroupPicker } from './GroupPicker';
-import { readLastGroup, writeLastGroup } from './last-group';
+import { GroupPicker, SelectedCount } from './GroupPicker';
+import { readLastGroups, writeLastGroups } from './last-group';
 
 const SENTENCE_MAX = 300;
 const KINDS = ['third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative'] as const;
@@ -67,8 +68,8 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   const [meaning, setMeaning] = useState('');
   const [ipa, setIpa] = useState('');
   const [picked, setPicked] = useState<string | null>(null);
-  const [chosenDeck, setChosenDeck] = useState<string | null>(null);
-  const [lastGroup] = useState(readLastGroup);
+  const [chosenDecks, setChosenDecks] = useState<string[] | null>(null);
+  const [lastGroups] = useState(readLastGroups);
   const [unmatched, setUnmatched] = useState<string | null>(null);
   const [deckError, setDeckError] = useState<string | undefined>();
   const [fieldError, setFieldError] = useState<string | undefined>();
@@ -99,19 +100,23 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   const senseWord = fromAi && chosenSense?.sense.sense_id === fromAi.sense_id ? fromAi.lemma : lemma;
   // The form Wordmet recognised belongs to the typed text: an AI word with another spelling is not that form (review I2).
   const draftFormOf = via && draft !== null && draft.lemma.trim() === lemma ? via : undefined;
-  const deck = lockedGroupId ?? chosenDeck ?? (groups.some((g) => g.id === lastGroup) ? lastGroup : null);
-  const deckName = groups.find((g) => g.id === deck)?.name ?? '';
+  // QP1: the groups the word goes to, in the order chosen. Opened from a group page, that group comes first and the last-used
+  // groups are not offered; only what the learner adds there joins it.
+  const remembered = chosenDecks ?? (lockedGroupId ? [] : lastGroups.filter((id) => groups.some((g) => g.id === id)));
+  const decks = lockedGroupId ? [lockedGroupId, ...remembered.filter((id) => id !== lockedGroupId)] : remembered;
+  const nameOf = (id: string) => groups.find((g) => g.id === id)?.name ?? '';
   const noDecks = !lockedGroupId && groupsQuery.isSuccess && groups.length === 0;
 
   // The body is built from what the learner sees when they press; a deck typed in the picker is created first (K/42c).
   const save = useSubmitOnce(async (key) => {
-    let target = deck;
-    let targetName = deckName;
-    if (!lockedGroupId && newDeckName.current) {
+    let target = decks;
+    let targetNames = decks.map(nameOf);
+    if (newDeckName.current) {
+      // "Tạo nhóm và lưu" saves into the new deck (and the group page the sheet came from), not into what was ticked before.
       const created = await createGroup(newDeckName.current, `${key}:deck`);
-      target = created.id;
-      targetName = created.name;
-      setChosenDeck(created.id);
+      target = lockedGroupId ? [lockedGroupId, created.id] : [created.id];
+      targetNames = lockedGroupId ? [nameOf(lockedGroupId), created.name] : [created.name];
+      setChosenDecks(target);
       // The deck exists now: a retry after a failure of the add step saves into it instead of creating it again.
       setUnmatched(null);
     }
@@ -120,7 +125,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     let body: QuickAddBody;
     if (mode.current === 'ai' && draft) {
       body = {
-        group_id: target!,
+        group_ids: target,
         new_word: {
           lemma: draft.lemma.trim(),
           meaning: draft.meaning.trim(),
@@ -134,12 +139,12 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         },
       };
     } else if (mode.current === 'manual') {
-      body = { group_id: target!, new_word: { lemma, meaning: meaning.trim(), ...formOf, ...(bareIpa(ipa) ? { ipa: bareIpa(ipa) } : {}) } };
+      body = { group_ids: target, new_word: { lemma, meaning: meaning.trim(), ...formOf, ...(bareIpa(ipa) ? { ipa: bareIpa(ipa) } : {}) } };
     }
-    else body = { group_id: target!, sense_id: chosenSense!.sense.sense_id };
+    else body = { group_ids: target, sense_id: chosenSense!.sense.sense_id };
     if (sentence.trim()) body.sentence = sentence.trim();
     const result = await api.post<QuickAddResult>('/v1/quick-add', body, { idempotencyKey: `${key}:add` });
-    return { result, target: target!, targetName };
+    return { result, target, targetNames };
   });
 
   async function submit(createName: string | null = null) {
@@ -159,18 +164,18 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       setView('manual');
       return setFieldError(t('meaningRequired'));
     }
-    if (!createName && !deck) return setDeckError(t('deckRequired'));
+    if (!createName && decks.length === 0) return setDeckError(t('deckRequired'));
     newDeckName.current = createName;
     mode.current = editing ? 'ai' : manual ? 'manual' : 'sense';
     try {
       // What the learner sends decides the write: a changed form after a lost connection is a new press with a new key (review M6).
       const done = await save.submit(
-        JSON.stringify([mode.current, saved, meaning.trim(), draft, mode.current === 'sense' ? chosenSense?.sense.sense_id : null, deck, createName, sentence.trim()]),
+        JSON.stringify([mode.current, saved, meaning.trim(), draft, mode.current === 'sense' ? chosenSense?.sense.sense_id : null, decks, createName, sentence.trim()]),
       );
       if (!done) return;
-      writeLastGroup(done.target);
-      showToast(t('saved', { word: saved, group: done.targetName }), 'success', {
-        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.target}` },
+      writeLastGroups(done.target);
+      showToast(t('saved', { word: saved, group: done.targetNames.join(', ') }), 'success', {
+        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.target[0]}` },
       });
       for (const queryKey of [GROUPS_KEY, ['group'], ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
       onClose();
@@ -188,7 +193,11 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       }
       const slug = error instanceof ApiError ? error.problem.slug : '';
       if (slug === 'private-word-exists') setFailure({ text: t('exists', { word: saved }), existing: saved });
-      else if (slug === 'group-full') setFailure({ text: t('groupFull', { group: deckName }) });
+      else if (slug === 'group-full') {
+        // The API names the full group; an answer without a name is only unambiguous when there was one group.
+        const full = fullGroupId(error) ?? (decks.length === 1 ? decks[0] : null);
+        setFailure({ text: full !== null ? t('fullNotSaved', { group: nameOf(full) }) : errorText(error) });
+      }
       else if (slug === 'private-word-limit-reached') setFailure({ text: t('privateLimit') });
       else if (slug === 'sentence-limit-reached') setFailure({ text: t('sentenceLimit') });
       else setFailure({ text: errorText(error) });
@@ -202,7 +211,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     newDeckName.current = name;
     try {
       const created = await create.submit();
-      if (created) setChosenDeck(created.id);
+      if (created) setChosenDecks([...decks, created.id]);
     } catch (error) {
       setFailure({ text: errorText(error) });
     } finally {
@@ -216,8 +225,14 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     setView('picker');
   };
 
+  const chips = (ids: string[]) =>
+    ids.map((id) => <GroupChip key={id} name={nameOf(id)} tone={groupTone(id, groups.find((g) => g.id === id)?.total ?? 1)} />);
   const deckField = lockedGroupId ? (
-    <p className="font-wm-sans text-wm-small text-wm-ink">{t('lockedDeck', { name: deckName })}</p>
+    <div className="flex flex-col items-start gap-2">
+      <p className="font-wm-sans text-wm-small text-wm-ink">{t('lockedDeck', { name: nameOf(lockedGroupId) })}</p>
+      {decks.length > 1 && <div className="flex flex-wrap gap-1.5">{chips(decks.slice(1))}</div>}
+      {groups.some((g) => g.id !== lockedGroupId) && <TextButton onPress={openPicker}>{t('addAnother')}</TextButton>}
+    </div>
   ) : noDecks ? (
     <div className="flex flex-col items-start gap-2 rounded-wm-row bg-wm-bg p-3">
       <p className="font-wm-sans text-wm-small text-wm-ink">{t('noDecks')}</p>
@@ -232,7 +247,9 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
       </span>
       <button type="button" onClick={openPicker} className={cn(FIELD_BOX, 'flex items-center justify-between gap-2 text-left', deckError && 'border-wm-fail')}>
         <span className="sr-only">{t('deck')}: </span>
-        <span className={cn('truncate', !deck && 'text-wm-muted')}>{deck ? deckName : t('chooseDeck')}</span>
+        <span className={cn('flex min-w-0 flex-wrap items-center gap-1.5', decks.length === 0 && 'text-wm-muted')}>
+          {decks.length > 0 ? chips(decks) : t('chooseDeck')}
+        </span>
         <ChevronDown aria-hidden className="size-4.5 shrink-0 text-wm-muted" />
       </button>
       {deckError && <p className={FIELD_ERROR}>{deckError}</p>}
@@ -257,19 +274,21 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   let title = t('title');
   let body: ReactNode;
   let footer: ReactNode;
-  if (view === 'picker' && !lockedGroupId) {
+  if (view === 'picker') {
     title = t('pickerTitle');
     body = (
       <GroupPicker
         groups={groups}
-        value={deck}
-        onChange={(id) => {
-          setChosenDeck(id);
+        value={decks}
+        onChange={(ids) => {
+          setChosenDecks(ids);
           setDeckError(undefined);
         }}
         onCreate={(name) => void createAndPick(name)}
         onUnmatched={setUnmatched}
-        recentId={lastGroup}
+        recentIds={lastGroups}
+        pinnedId={lockedGroupId}
+        onConfirm={() => setView(back)}
       />
     );
     body = (
@@ -289,12 +308,13 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
             {t('createAndSave')}
           </Button>
         ) : (
-          deck && (
+          decks.length > 0 && (
             <Button onPress={() => setView(back)}>
-              {t('pickDeck', { group: deckName })}
+              {decks.length === 1 ? t('pickDeck', { group: nameOf(decks[0]) }) : t('pickDecks', { count: decks.length })}
             </Button>
           )
         )}
+        <SelectedCount count={decks.length} />
       </>
     );
   } else if (view === 'edit' && draft) {
@@ -537,5 +557,15 @@ function TopicFields({ groupId }: { groupId: string }) {
         </Link>
       )}
     </div>
+  );
+}
+
+/** A deck in its own colour (mockup `.gchip`): a dot and the name on the deck's wash. */
+function GroupChip({ name, tone }: { name: string; tone: ReturnType<typeof groupTone> }) {
+  return (
+    <span className={cn('inline-flex max-w-full items-center gap-1.5 rounded-wm-control px-2.25 py-0.75 font-wm-sans text-wm-small-strong', tone.wash, tone.ink)}>
+      <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', tone.bg)} />
+      <span className="min-w-0 truncate">{name}</span>
+    </span>
   );
 }

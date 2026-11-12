@@ -32,6 +32,7 @@ describe('groupTone', () => {
     expect(groupTone('g-tech', 18)).toEqual({
       border: 'border-wm-group-6',
       soft: 'border-wm-group-6-soft',
+      softBg: 'bg-wm-group-6-soft',
       wash: 'bg-wm-group-6-wash',
       ink: 'text-wm-group-6-ink',
       bg: 'bg-wm-group-6',
@@ -42,6 +43,7 @@ describe('groupTone', () => {
     expect(groupTone('g-tech', 0)).toEqual({
       border: 'border-wm-group-empty',
       soft: 'border-wm-group-empty-soft',
+      softBg: 'bg-wm-group-empty-soft',
       wash: 'bg-wm-group-empty-wash',
       ink: 'text-wm-group-empty-ink',
       bg: 'bg-wm-group-empty',
