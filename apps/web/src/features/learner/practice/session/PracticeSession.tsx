@@ -13,6 +13,7 @@ import { ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { StreakToast } from '@/ui/StreakToast';
 import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
 import { useGroups } from '../../groups/groups-api';
@@ -170,7 +171,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   return (
     <div className="flex flex-1 flex-col">
       {/* Figma "Thanh phiên" (100:3164): close, the source, one progress bar, "câu n / N", the ✓ and ✗ counts. */}
-      <header className={`mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
+      <header className={`relative mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
         {stoppable ? (
           <button type="button" aria-label={t('close')} onClick={() => void state.stop()} className={closeClass}>
             <X aria-hidden className="size-4" />
@@ -200,6 +201,9 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           </>
         )}
         <CalendarBarButton />
+        {/* L-B-5: the streak toast under the bar at its right end, as in Học; inside SessionIntl, so English (QM9-9). AppProviders' bottom
+            toast stays empty while this one is mounted. */}
+        <StreakToast placement="session-corner" />
       </header>
       <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
         {body}

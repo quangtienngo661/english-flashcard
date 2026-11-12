@@ -89,14 +89,16 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect(screen.getByRole('button', { name: /Review again/ })).toBeInTheDocument();
   });
 
-  it('đợt C DC9: an answer that is the first study of the day shows the streak toast', async () => {
-    // The streak toast lives in AppProviders, outside SessionIntl, so it keeps the route's language (placement moves in P.17).
+  it('đợt C DC9, L-B-5: an answer that is the first study of the day shows the streak toast once, in English, at the session corner', async () => {
+    // AppProviders' bottom toast is mounted too, outside SessionIntl, as in production; the session's corner toast replaces it.
     renderApp(<><SessionIntl><RecallSession /></SessionIntl><StreakToast /></>, { routes: routes({
       'POST /v1/practice/items/r-1/answer': () => Response.json(answer({ streak: { days: 4 } })),
     }) });
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('4 ngày liên tiếp')).toBeInTheDocument();
+    expect(await screen.findByText('4-day streak')).toBeInTheDocument();
+    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
   it('a right answer that keeps the level says so', async () => {

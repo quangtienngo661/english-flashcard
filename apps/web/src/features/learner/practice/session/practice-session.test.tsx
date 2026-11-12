@@ -5,6 +5,8 @@ import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { renderApp } from '@/test-utils/render-app';
 import { testRoute } from '@/test-utils/route-locale';
 import { ToastRegion } from '@/ui/Toast';
+import { StreakToast } from '@/ui/StreakToast';
+import { SessionIntl } from '@/app-shell/SessionIntl';
 import type { Route } from '@/app-shell/session/test-support';
 import type { PracticeSessionView } from '../practice-api';
 import { STREAK_KEY } from '../../calendar/calendar-api';
@@ -110,6 +112,18 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     await waitFor(() => expect(v.client.getQueryData(STREAK_KEY)).toEqual({ days: 6, studied_today: true }));
     expect(v.count('GET', '/v1/me/streak')).toBe(0);
+  });
+
+  it('L-B-5: on a /vi route an answer that earns a streak shows "6-day streak" once, in English, at the session corner', async () => {
+    // AppProviders' bottom toast is mounted too, outside SessionIntl, as in production; the session's corner toast replaces it.
+    renderApp(<><SessionIntl><PracticeSession /></SessionIntl><StreakToast /></>, { locale: 'vi', routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ streak: { days: 6 } })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText('6-day streak')).toBeInTheDocument();
+    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
   it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
