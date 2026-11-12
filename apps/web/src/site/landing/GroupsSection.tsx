@@ -12,8 +12,8 @@ const LIT = 'fluctuate';
 const FLY_ORDER = ['advocate', 'substantial', 'coherent', 'deteriorate', 'mitigate', 'fluctuate', 'viable', 'scrutiny', 'inevitable', 'allocate', 'reluctant', 'prevalent'];
 
 /**
- * "Nhóm từ của mỗi đề" `6:120` (phone `9:242`): the twelve words of one test as a group, 4 × 3 cards (2 × 6 on a phone), and the caption
- * pill. The cards fly in as the list scrolls in, the caption last (FlyIn).
+ * "Nhóm từ" `6:120` (phone `9:242`): twelve words as one group, 4 × 3 cards (2 × 6 on a phone). No caption pill (F.22).
+ * The cards fly in as the list scrolls in (FlyIn).
  */
 export function GroupsSection({ copy }: { copy: LandingCopy['groups'] }) {
   return (
@@ -41,10 +41,6 @@ export function GroupsSection({ copy }: { copy: LandingCopy['groups'] }) {
               </li>
             ))}
           </ul>
-          <p data-group-caption="" className="rounded-wm-pill bg-wm-surface px-3.5 py-1.75 text-center font-wm-sans text-wm-small text-wm-muted shadow-wm-soft">
-            <span className="md:hidden">{copy.captionPhone}</span>
-            <span className="hidden md:inline">{copy.caption}</span>
-          </p>
         </FlyIn>
       </Container>
     </section>
