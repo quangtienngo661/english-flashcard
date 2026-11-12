@@ -14,7 +14,7 @@ export const promptKind = (prompt: Prompt): PromptKind => prompt.kind;
 /** A key cap that shows from `md` up (phones have no keyboard): inside session buttons. */
 export function ButtonKey({ children }: { children: ReactNode }) {
   return (
-    <span className="hidden opacity-85 md:inline-flex">
+    <span className="hidden md:inline-flex">
       <Kbd>{children}</Kbd>
     </span>
   );
