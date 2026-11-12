@@ -20,9 +20,11 @@ type Sense = { sense_id: string; lemma: string; pos: string; meaning: { text: st
 
 /**
  * K/42, M/52, QP1: save one known meaning to one or more decks (`POST /quick-add` [I], all decks in one transaction); a typed name
- * that matches nothing is created first and is then the only deck.
+ * that matches nothing is created first and is then the only deck. `inGroups` is the decks the meaning is already in (empty when it
+ * is not being learned): quick add's `created_item` only says an item was created, so the toast names the decks not in that list as
+ * added, and says "already in" only when every chosen deck was (final review I3).
  */
-export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: () => void }) {
+export function DeckPickerDialog({ sense, inGroups, onClose }: { sense: Sense; inGroups: readonly string[]; onClose: () => void }) {
   const t = useTranslations('App.addWord');
   const tw = useTranslations('App.word');
   const tc = useTranslations('App.common');
@@ -49,8 +51,10 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       setUnmatched(null);
     }
     const body: QuickAddBody = { group_ids: target, sense_id: sense.sense_id };
-    const result = await api.post<QuickAddResult>('/v1/quick-add', body, { idempotencyKey: `${key}:add` });
-    return { result, target, names: newName.current ? [newName.current] : target.map(nameOf) };
+    await api.post<QuickAddResult>('/v1/quick-add', body, { idempotencyKey: `${key}:add` });
+    const named = target.map((id) => ({ id, name: newName.current ?? nameOf(id) }));
+    const added = named.filter(({ id }) => !inGroups.includes(id));
+    return { target, shown: added.length > 0 ? added : named, added: added.length > 0 };
   });
   const create = useSubmitOnce((key) => createGroup(newName.current!, key));
 
@@ -61,8 +65,8 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       const done = await save.submit(JSON.stringify([sense.sense_id, decks, createName]));
       if (!done) return;
       writeLastGroups(done.target);
-      showToast(tw(done.result.created_item ? 'added' : 'alreadyIn', { word: sense.lemma, group: done.names.join(', ') }), 'success', {
-        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.target[0]}` },
+      showToast(tw(done.added ? 'added' : 'alreadyIn', { word: sense.lemma, group: done.shown.map((g) => g.name).join(', ') }), 'success', {
+        link: { label: t('openGroup'), href: `/${locale}/app/group?id=${done.shown[0].id}` },
       });
       void client.invalidateQueries({ queryKey: ['items'] });
       void client.invalidateQueries({ queryKey: ['group'] });

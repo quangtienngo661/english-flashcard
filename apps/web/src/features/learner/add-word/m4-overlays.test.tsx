@@ -123,7 +123,7 @@ describe('Overlay 4: AI result', () => {
 
 describe('Overlay 5: Lưu vào nhóm', () => {
   it('each deck row is a tickable option with its name and size; the list says several decks can be chosen', async () => {
-    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'record', pos: 'noun', meaning: { text: 'bản ghi, hồ sơ' } }} onClose={() => {}} />, { routes });
+    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'record', pos: 'noun', meaning: { text: 'bản ghi, hồ sơ' } }} inGroups={[]} onClose={() => {}} />, { routes });
     const all = await screen.findByRole('listbox', { name: 'Tất cả nhóm (2), A–Z' });
     expect(screen.getByText('Chọn được nhiều nhóm.')).toBeInTheDocument();
     expect(within(all).getByRole('option', { name: /Công việc · B1/ })).toHaveTextContent('24 từ');

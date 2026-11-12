@@ -88,7 +88,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
         </div>
       </div>
       {dialog === 'sentences' && <SavedSentencesDialog lemma={sense.lemma} senseId={sense.sense_id} onClose={() => setDialog(null)} />}
-      {dialog === 'add' && <DeckPickerDialog sense={sense} onClose={() => setDialog(null)} />}
+      {dialog === 'add' && <DeckPickerDialog sense={sense} inGroups={item?.group_ids ?? []} onClose={() => setDialog(null)} />}
     </article>
   );
 }

@@ -239,7 +239,7 @@ describe('ui overlays', () => {
       { name: 'AddSentenceSheet', ui: () => <AddSentenceSheet sense={SENSE} onClose={noop} />, close: 'Đóng', cancel: 'Hủy' },
       { name: 'AddWordSheet', ui: () => <AddWordSheet onClose={noop} />, close: 'Đóng' },
       { name: 'BulkAddSheet', ui: () => <BulkAddSheet filter={{}} onClose={noop} />, close: 'Đóng', cancel: 'Hủy' },
-      { name: 'DeckPickerDialog', ui: () => <DeckPickerDialog sense={SENSE} onClose={noop} />, close: 'Đóng', cancel: 'Hủy' },
+      { name: 'DeckPickerDialog', ui: () => <DeckPickerDialog sense={SENSE} inGroups={[]} onClose={noop} />, close: 'Đóng', cancel: 'Hủy' },
       { name: 'CreateGroupDialog', ui: () => <CreateGroupDialog onClose={noop} />, close: 'Đóng', cancel: 'Hủy' },
       { name: 'ResumeDialog', ui: () => <ResumeDialog current={CURRENT} groups={[]} isOpen onClose={noop} onResume={noop} onStartNew={noop} busy={false} />, close: 'Đóng' },
       { name: 'ReportDialog', ui: () => <ReportDialog itemId="i1" kind="non_ai" subtitle="x" isOpen onClose={noop} onSent={noop} />, close: 'Đóng', cancel: 'Hủy' },

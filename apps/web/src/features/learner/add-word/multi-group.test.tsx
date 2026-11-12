@@ -49,7 +49,7 @@ const noSuccessToast = () => expect(screen.queryByText(/Đã lưu từ|Đã thê
 
 describe('GroupPicker: several groups (QP1)', () => {
   it('is a multiselectable listbox; rows toggle on click and Space, Enter confirms; the footer counts', async () => {
-    const { calls } = renderApp(<DeckPickerDialog sense={sense} onClose={() => {}} />, { routes: routes() });
+    const { calls } = renderApp(<DeckPickerDialog sense={sense} inGroups={[]} onClose={() => {}} />, { routes: routes() });
     const list = await all();
     expect(list).toHaveAttribute('aria-multiselectable', 'true');
     expect(screen.getByText('Chưa chọn nhóm nào')).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('GroupPicker: several groups (QP1)', () => {
   });
 
   it('"Lưu vào 2 nhóm" sends one quick-add with both ids', async () => {
-    const { calls } = renderApp(<><DeckPickerDialog sense={sense} onClose={() => {}} /><ToastRegion /></>, { routes: routes() });
+    const { calls } = renderApp(<><DeckPickerDialog sense={sense} inGroups={[]} onClose={() => {}} /><ToastRegion /></>, { routes: routes() });
     const list = await all();
     await userEvent.click(within(list).getByRole('option', { name: /Đề 12/ }));
     await userEvent.click(within(list).getByRole('option', { name: /Đề 9/ }));
@@ -82,7 +82,7 @@ describe('GroupPicker: several groups (QP1)', () => {
   it('a 409 naming Đề 9 in its group_id extension (not in detail, final review I2) says so and shows no success toast', async () => {
     const onClose = vi.fn();
     window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify([DE14]));
-    renderApp(<><DeckPickerDialog sense={sense} onClose={onClose} /><ToastRegion /></>, {
+    renderApp(<><DeckPickerDialog sense={sense} inGroups={[]} onClose={onClose} /><ToastRegion /></>, {
       routes: routes({ 'POST /v1/quick-add': () => problem(409, 'group-full', { group_id: DE9, detail: 'This group is full.' }) }),
     });
     const list = await all();

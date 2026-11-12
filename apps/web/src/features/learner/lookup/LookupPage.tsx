@@ -111,7 +111,7 @@ export function LookupPage() {
           </div>
         </div>
       )}
-      {picker && sense && <DeckPickerDialog sense={sense} onClose={() => setPicker(false)} />}
+      {picker && sense && <DeckPickerDialog sense={sense} inGroups={item?.group_ids ?? []} onClose={() => setPicker(false)} />}
     </div>
   );
 }

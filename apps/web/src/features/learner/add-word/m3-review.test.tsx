@@ -114,7 +114,7 @@ describe('I-7: one write per press', () => {
   it('the deck picker of the word page', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     let release!: () => void;
-    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={() => {}} />, {
+    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={() => {}} />, {
       routes: base({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json({ created_item: true })))) }),
     });
     await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào 1 nhóm' }));
@@ -161,7 +161,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
 
   it('the deck picker has [Hủy] that closes it', async () => {
     const onClose = vi.fn();
-    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={onClose} />, { routes: base() });
+    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={onClose} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: 'Hủy' }));
     expect(onClose).toHaveBeenCalled();
   });

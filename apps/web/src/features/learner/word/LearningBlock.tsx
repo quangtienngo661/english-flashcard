@@ -74,7 +74,7 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
         <TextButton tone="add" className="self-start" onPress={() => setOpen(true)}>
           {t('addCardTitle')}
         </TextButton>
-        {open && <DeckPickerDialog sense={sense} onClose={() => setOpen(false)} />}
+        {open && <DeckPickerDialog sense={sense} inGroups={item.group_ids} onClose={() => setOpen(false)} />}
       </Card>
     </section>
   );
