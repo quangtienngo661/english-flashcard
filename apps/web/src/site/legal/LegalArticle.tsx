@@ -27,9 +27,9 @@ const COMPONENTS: Components = {
   ),
   th: ({ children }) => <th className="border-b border-wm-line bg-wm-accent-soft px-3 py-2.5 text-left font-semibold">{children}</th>,
   td: ({ children }) => <td className="border-b border-wm-line px-3 py-2.5 align-top">{children}</td>,
-  code: ({ children }) => <code className="rounded-wm-xs bg-wm-accent-soft px-1 font-wm-mono">{children}</code>,
+  code: ({ children }) => <code className="rounded-wm-xs bg-wm-accent-soft px-1">{children}</code>,
   pre: ({ children }) => (
-    <pre className="overflow-x-auto rounded-wm-lg border border-wm-line bg-wm-surface p-4 font-wm-mono text-wm-small whitespace-pre-wrap text-wm-ink [&_code]:bg-transparent [&_code]:px-0">
+    <pre className="overflow-x-auto rounded-wm-lg border border-wm-line bg-wm-surface p-4 text-wm-small whitespace-pre-wrap text-wm-ink [&_code]:bg-transparent [&_code]:px-0">
       {children}
     </pre>
   ),

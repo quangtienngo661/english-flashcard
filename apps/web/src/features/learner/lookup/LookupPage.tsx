@@ -155,7 +155,7 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
           placeholder={t('searchLabel')}
           className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted"
         />
-        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 font-wm-mono text-wm-mono font-bold text-wm-ink">
+        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 text-wm-meta font-bold text-wm-ink">
           /
         </kbd>
       </label>

@@ -188,7 +188,7 @@ function Ring({ correct, wrong, label, caption }: { correct: number; wrong: numb
           <span className="text-wm-section">{correct}</span>
           <span className="text-wm-card-title text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

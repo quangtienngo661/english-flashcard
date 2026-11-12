@@ -146,7 +146,7 @@ function WordHead({ data }: { data: WordPageData }) {
   const aiSuggested = senses.some((s) => s.ai_suggested);
   const bases = [...new Set(senses.flatMap((s) => (s.form_of ? [s.form_of.lemma] : [])))];
   const onlyForms = senses.every((s) => s.form_of);
-  const chip = 'rounded-wm-xs bg-wm-accent-soft px-1.5 py-0.5 font-wm-mono text-wm-mono text-wm-accent';
+  const chip = 'rounded-wm-xs bg-wm-accent-soft px-1.5 py-0.5 text-wm-meta text-wm-accent';
 
   return (
     <header className="flex flex-col gap-3">
@@ -195,7 +195,7 @@ function PosReading({ pos, lemma, line }: { pos: string; lemma: string; line: Pr
       ];
   return (
     <div role="group" aria-label={pos} className="flex gap-3 md:items-center md:gap-4">
-      <span className="w-10 shrink-0 pt-1 font-wm-mono text-wm-mono text-wm-accent md:w-19 md:pt-0">{pos}</span>
+      <span className="w-10 shrink-0 pt-1 text-wm-meta text-wm-accent md:w-19 md:pt-0">{pos}</span>
       <div className="flex min-w-0 flex-col gap-1 md:flex-row md:flex-wrap md:items-center md:gap-x-6">
         {voices.map((v) => (
           <span key={v.voice} className="inline-flex items-center gap-2">
@@ -244,7 +244,7 @@ function Tabs({ count, sentences, forms, topic }: { count: number; sentences: nu
             {tab.count !== null && (
               <>
                 {' '}
-                <span className="ml-1.5 font-wm-mono text-wm-mono text-wm-muted">{tab.count}</span>
+                <span className="ml-1.5 text-wm-meta text-wm-muted">{tab.count}</span>
               </>
             )}
           </a>
@@ -263,7 +263,7 @@ function MeaningsOfPos({ pos, count, children }: { pos: string; count: number; c
         <h2 id={id} className="font-wm-display text-wm-logo font-bold text-wm-ink">
           {pos}
         </h2>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('senses', { count })}</span>
+        <span className="text-wm-meta text-wm-muted">{t('senses', { count })}</span>
       </div>
       <div className="flex flex-col divide-y divide-wm-line rounded-wm-xl border border-wm-line bg-wm-surface px-4 py-0.5 shadow-wm-card md:px-6">
         {children}
@@ -295,7 +295,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
         <h2 id="cau-da-gap-title" className="font-wm-display text-wm-logo font-bold text-wm-ink">
           {t('seenTitle')}
         </h2>
-        <p className="font-wm-mono text-wm-mono text-wm-muted md:flex-1">{t('seenCaption')}</p>
+        <p className="text-wm-meta text-wm-muted md:flex-1">{t('seenCaption')}</p>
         {learned.length > 0 && (
           <TextButton tone="add" className="self-start" onPress={() => setDialog({ kind: 'add' })}>
             {t('addSentence')}
@@ -313,7 +313,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
                     <SpeakSentence private text={sentence.text} />
                   </span>
                 </div>
-                <p className="font-wm-mono text-wm-mono text-wm-muted">
+                <p className="text-wm-meta text-wm-muted">
                   {t('seenMeta', { n, meaning: sense.meaning.text, date: format.date(sentence.created_at, 'numeric') })}
                 </p>
               </li>
@@ -361,10 +361,10 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
       className="flex scroll-mt-24 flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6"
     >
       <div className="flex flex-col gap-2">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{t('sameTopicLabel')}</p>
+        <p className="text-wm-meta text-wm-muted">{t('sameTopicLabel')}</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="rounded-wm-md bg-wm-accent-soft px-3 py-0.5 font-wm-display text-wm-word text-wm-accent">{topic.name}</span>
-          {range && <span className="font-wm-mono text-wm-mono text-wm-muted">{t('levelRange', { range })}</span>}
+          {range && <span className="text-wm-meta text-wm-muted">{t('levelRange', { range })}</span>}
         </div>
       </div>
       {others.length > 0 && (
@@ -379,7 +379,7 @@ function SameTopic({ topic, lemma, senses }: { topic: PageSense['topics'][number
                 {w.level && (
                   <>
                     {' '}
-                    <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{w.level}</span>
+                    <span className="shrink-0 text-wm-meta text-wm-muted">{w.level}</span>
                   </>
                 )}
               </Link>

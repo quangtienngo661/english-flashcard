@@ -166,7 +166,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     <div ref={pageRef} className="flex flex-col gap-4 md:gap-5">
       <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
         <Title>
-          <p className="font-wm-mono text-wm-mono text-wm-muted">
+          <p className="text-wm-meta text-wm-muted">
             <span className="md:hidden">{t('subtitlePhone', { due, groups: waitingGroups.length })}</span>
             <span className="hidden md:inline">{t('subtitle', { due, groups: waitingGroups.length })}</span>
           </p>
@@ -202,7 +202,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
   const tone = groupTone(group.id, group.total);
   return (
     <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
-      <p className="font-wm-mono text-wm-mono text-wm-muted">{t('rhythm')}</p>
+      <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
       <StageBar
         aria-label={t('rhythm')}
         className="max-w-105"

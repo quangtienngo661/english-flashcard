@@ -3,8 +3,8 @@ import { useId } from 'react';
 import type { AppConfig } from '@/app-shell/queries';
 import { Card } from '@/ui/Card';
 
-// raw-ok: Figma's table header is JetBrains Mono 11, under the 12 px mono token
-const HEAD = 'py-3 pr-3 font-wm-mono text-[0.6875rem]';
+// raw-ok: Figma's table header is Noto Sans 11, under the 12 px meta token
+const HEAD = 'py-3 pr-3 text-[0.6875rem]';
 // raw-ok: Figma's comparison heading is Bricolage Bold 22, a size no token has
 const TITLE = 'font-wm-display text-[1.375rem] font-bold leading-tight text-wm-ink';
 

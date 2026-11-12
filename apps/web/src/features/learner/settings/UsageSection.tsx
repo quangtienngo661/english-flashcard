@@ -8,7 +8,7 @@ import { Tag } from '@/ui/Tag';
 import { refillKind } from './refill';
 import { SettingsRow } from './SettingsRows';
 
-const COUNT = 'whitespace-nowrap font-wm-mono text-wm-mono font-medium text-wm-muted';
+const COUNT = 'whitespace-nowrap text-wm-meta font-medium text-wm-muted';
 
 /**
  * Cài đặt "Gói và mức sử dụng" rows below the plan (Figma 120:4385 rows 5–7; D15, E26): practice sessions today, then the two AI pools.

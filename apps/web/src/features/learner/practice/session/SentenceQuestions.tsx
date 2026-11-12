@@ -31,7 +31,7 @@ export function SentenceText({ sentence, highlight, fill }: { sentence: string; 
         {fill.wrong && (
           <Chip tone="fail" struck={struck}>
             {fill.wrong}
-            {fill.attempt !== undefined && <span className="ml-2 align-middle font-wm-mono text-wm-mono lowercase">{t('attempt', { n: fill.attempt })}</span>}
+            {fill.attempt !== undefined && <span className="ml-2 align-middle text-wm-meta">{t('attempt', { n: fill.attempt })}</span>}
           </Chip>
         )}
         {fill.right && <Chip tone="pass">{fill.right}</Chip>}

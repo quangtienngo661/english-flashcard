@@ -94,7 +94,7 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
   const name = useId();
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-col gap-0.5">
-      <p aria-hidden className="pb-1 font-wm-mono text-wm-mono text-wm-muted">
+      <p aria-hidden className="pb-1 text-wm-meta text-wm-muted">
         {label}
       </p>
       {groups.map((g) => (
@@ -109,7 +109,7 @@ function DeckList({ label, groups, value, onChange }: { label: string; groups: G
           <span data-group-square aria-hidden className={cn('size-2.25 shrink-0 rounded-xs', groupTone(g.id, g.total).bg)} />
           <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-base-strong text-wm-ink">{g.name}</span>
           {g.total > 0 && <MiniStages group={g} />}
-          <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('words', { count: g.total })}</span>
+          <span className="shrink-0 text-wm-meta text-wm-muted">{t('words', { count: g.total })}</span>
         </label>
       ))}
     </div>

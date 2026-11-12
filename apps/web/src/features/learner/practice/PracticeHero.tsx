@@ -58,7 +58,7 @@ export function HeroFrame({ label, chip, art, children }: { label: string; chip:
   return (
     <section aria-label={label} className="flex items-center gap-7 rounded-wm-xl border border-wm-line bg-wm-surface p-5 shadow-wm-card md:p-7">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <p className="font-wm-mono text-wm-mono text-wm-muted first-letter:lowercase">{chip}</p>
+        <p className="text-wm-meta text-wm-muted">{chip}</p>
         {children}
       </div>
       {art && (
@@ -76,7 +76,7 @@ function ExampleBox() {
   const options = ['deploy', 'delay', 'display'];
   return (
     <div className="flex flex-col gap-2 rounded-wm-lg bg-wm-bg p-4">
-      <span className="font-wm-mono text-wm-mono text-wm-muted first-letter:lowercase">{t('artPrompt')}</span>
+      <span className="text-wm-meta text-wm-muted">{t('artPrompt')}</span>
       <span className="font-wm-display text-wm-card-title text-wm-ink">{t('artMeaning')}</span>
       {options.map((option, i) => (
         <span

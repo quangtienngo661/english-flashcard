@@ -182,7 +182,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
         {session && total > 0 && (
           <>
             <ProgressBar value={position} max={total} label={progressText} className="min-w-12 flex-1" />
-            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{progressText}</span>
+            <span className="shrink-0 text-wm-meta text-wm-muted">{progressText}</span>
             <span role="img" aria-label={t('countRight', { count: state.counts.correct })}>
               <Tag tone="pass">
                 <Check aria-hidden className="size-3" />

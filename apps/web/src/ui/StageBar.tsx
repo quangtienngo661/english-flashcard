@@ -45,7 +45,7 @@ export function StageBar({
                 style={{ width: `${s.size > 0 ? Math.min(100, (s.fill / s.size) * 100) : 0}%` }}
               />
             </span>
-            {labels?.[i] !== undefined && <span className="truncate font-wm-mono text-wm-mono text-wm-muted">{labels[i]}</span>}
+            {labels?.[i] !== undefined && <span className="truncate text-wm-meta text-wm-muted">{labels[i]}</span>}
           </li>
         ))}
       </ul>

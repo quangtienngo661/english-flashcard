@@ -360,7 +360,7 @@ function CustomizeForm({
           <div className="flex items-center justify-between gap-3">
             <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('count')}</span>
             <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
-            {scopeMode && <span className="whitespace-nowrap font-wm-mono text-wm-mono text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
+            {scopeMode && <span className="whitespace-nowrap text-wm-meta text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
           </div>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
@@ -409,7 +409,7 @@ function GroupRow({ id, label, name, count, tone, isDisabled }: { id: string; la
     >
       {tone ? <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', tone.bg)} /> : <span aria-hidden className="size-2.5 shrink-0" />}
       <span className="min-w-0 flex-1 truncate">{name}</span>
-      {count !== undefined && <span className="font-wm-mono text-wm-mono text-wm-muted">{count}</span>}
+      {count !== undefined && <span className="text-wm-meta text-wm-muted">{count}</span>}
       <Check aria-hidden className="size-4 shrink-0 text-wm-accent opacity-0 group-data-selected:opacity-100" />
     </Radio>
   );

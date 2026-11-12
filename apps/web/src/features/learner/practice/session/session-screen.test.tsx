@@ -65,7 +65,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
   it('an AI item shows the "câu AI" chip and Báo lỗi, and reports with the AI reasons', async () => {
     const v = renderApp(<PracticeSession />, { routes: routes(cloze()) });
     await screen.findByText('Air quality tends to ___ in the dry season.');
-    expect(screen.getByText('câu AI')).toBeInTheDocument();
+    expect(screen.getByText('Câu AI')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Báo lỗi' }));
     await screen.findByRole('dialog');
     expect(v.calls.some((c) => c.path === '/v1/practice/report-reasons?kind=ai')).toBe(true);

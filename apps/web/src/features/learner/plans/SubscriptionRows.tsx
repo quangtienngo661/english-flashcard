@@ -29,7 +29,7 @@ export function SubscriptionRows({ sources }: { sources: Source[] }) {
   if (subscriptions.length === 0) return null;
   return (
     <section aria-label={t('title')} className="flex w-full flex-col gap-2">
-      <h2 className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('title')}</h2>
+      <h2 className="text-wm-meta font-medium text-wm-muted">{t('title')}</h2>
       <ul className="flex flex-col gap-3">
         {subscriptions.map((source) => (
           <SubscriptionRow key={source.id} source={source} />

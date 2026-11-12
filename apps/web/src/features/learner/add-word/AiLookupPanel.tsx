@@ -93,7 +93,7 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
             )}
           </Button>
           {allowed && pool && pool.limit > 0 && (
-            <p className="flex flex-wrap items-center justify-center gap-1.5 text-center font-wm-mono text-wm-mono text-wm-muted">
+            <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-wm-meta text-wm-muted">
               <span>{t('left', { count: pool.remaining })}</span>
             </p>
           )}

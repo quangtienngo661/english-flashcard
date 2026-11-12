@@ -110,7 +110,7 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
 
       <div key={date} aria-live="polite" className="flex flex-col gap-4 px-4 pb-6 pt-2 motion-safe:animate-wm-overlay-in md:px-7 md:pb-7">
         <div className="flex flex-col gap-1">
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{date === today ? t('todaySuffix', { weekday }) : weekday}</span>
+          <span className="text-wm-meta text-wm-muted">{date === today ? t('todaySuffix', { weekday }) : weekday}</span>
           <Heading slot="title" className={cn('font-wm-display font-extrabold text-wm-ink', RAW.date)}>{dayMonth}</Heading>
           {first && <p className="font-wm-sans text-wm-small text-wm-muted">{summary(first.counts)}</p>}
         </div>
@@ -252,7 +252,7 @@ function Section({ title, hint, dot, children }: { title: string; hint?: string;
       <div className="flex items-center gap-2">
         <span aria-hidden className={cn('size-2.25 shrink-0 rounded-full', dot)} />
         <h3 className={cn('min-w-0 flex-1 font-wm-display font-bold text-wm-ink', RAW.cardTitle)}>{title}</h3>
-        {hint && <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{hint}</span>}
+        {hint && <span className="shrink-0 text-wm-meta text-wm-muted">{hint}</span>}
       </div>
       {children}
     </section>
@@ -326,7 +326,7 @@ function SessionBlock({ session, answers, hint, answersLeft, loadAnswers, time }
   const passWidth = { width: `${passShare}%` };
   return (
     <div className="flex flex-col gap-2 border-wm-line not-first:border-t not-first:pt-3">
-      {hint && <span className="font-wm-mono text-wm-mono text-wm-muted">{hint}</span>}
+      {hint && <span className="text-wm-meta text-wm-muted">{hint}</span>}
       <div className="flex flex-wrap items-center gap-3">
         <span className="flex items-baseline gap-1.5">
           <span className={cn('font-wm-display font-extrabold text-wm-ink', RAW.score)}>{`${session.correct}/${session.questions}`}</span>
@@ -352,7 +352,7 @@ function SessionBlock({ session, answers, hint, answersLeft, loadAnswers, time }
       <ul className="flex flex-col">
         {rows.map((item) => (
           <li key={item.item_id} className="flex items-center gap-3 border-wm-line py-2 not-first:border-t">
-            <span className="w-11 shrink-0 font-wm-mono text-wm-mono text-wm-muted">{time(item.answered_at)}</span>
+            <span className="w-11 shrink-0 text-wm-meta text-wm-muted">{time(item.answered_at)}</span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className={cn('break-words font-wm-display font-bold text-wm-ink', RAW.lemma)}>{item.lemma}</span>
               <span className="break-words font-wm-sans text-wm-caption font-normal text-wm-muted">{answerLine(item, t)}</span>

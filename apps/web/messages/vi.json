@@ -1323,7 +1323,7 @@
         "artMeaning": "triển khai",
         "words": "<b>{words, number}</b> từ trong {groups, number} nhóm",
         "body": "{count, number} câu, trộn ba kiểu: {types}.",
-        "artRight": "đúng"
+        "artRight": "Đúng"
       },
       "sources": {
         "title": "Luyện theo nguồn khác",
@@ -1498,7 +1498,7 @@
       "session": {
         "close": "Dừng phiên, xem tổng kết",
         "header": "Luyện tập · {source}",
-        "aiChip": "câu AI",
+        "aiChip": "Câu AI",
         "translation": "Bản dịch",
         "translationAi": "AI dịch",
         "ai": {

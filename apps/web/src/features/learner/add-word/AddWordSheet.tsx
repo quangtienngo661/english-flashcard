@@ -415,7 +415,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
                     )}
                     <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-ink">
                       <span className="font-semibold">{o.sense.lemma}</span>{' '}
-                      <span className="font-wm-mono text-wm-mono text-wm-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
+                      <span className="text-wm-meta text-wm-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
                       {saved && <span className="ml-2 text-wm-small-strong text-wm-pass">{t('alreadyIn')}</span>}
                       <span className="block text-wm-small text-wm-muted">{o.sense.meaning.text}</span>
                     </span>

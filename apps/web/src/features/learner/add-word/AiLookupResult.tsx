@@ -27,7 +27,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h3 className="break-words font-wm-display text-wm-word text-wm-ink">{t('title', { word: text })}</h3>
-          {pool && <p className="font-wm-mono text-wm-mono text-wm-muted">{t('used', { remaining: pool.remaining })}</p>}
+          {pool && <p className="text-wm-meta text-wm-muted">{t('used', { remaining: pool.remaining })}</p>}
         </div>
         <div className="flex flex-col overflow-hidden rounded-wm-lg border border-wm-line bg-wm-surface shadow-wm-card">
           {result.catalog_senses.length > 0 && (
@@ -35,7 +35,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
               {result.catalog_senses.map((sense, i) => (
                 <div key={sense.sense_id} className={cn('flex items-center gap-4 p-4', i > 0 && 'border-t border-wm-line')}>
                   <div className="min-w-0 flex-1">
-                    <p className="font-wm-mono text-wm-mono text-wm-muted">{[sense.pos, sense.level].filter(Boolean).join(' · ')}</p>
+                    <p className="text-wm-meta text-wm-muted">{[sense.pos, sense.level].filter(Boolean).join(' · ')}</p>
                     <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
                   </div>
                   <Badge>{t('dictionary')}</Badge>
@@ -50,7 +50,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
           >
             <div className="flex items-start gap-4">
               <div className="min-w-0 flex-1">
-                <p className="font-wm-mono text-wm-mono text-wm-muted">
+                <p className="text-wm-meta text-wm-muted">
                   <span className="break-all font-semibold text-wm-ink">{s.lemma}</span> · {s.part_of_speech}
                 </p>
                 <p className="break-words font-wm-display text-wm-word text-wm-ink">{s.meaning.text}</p>
@@ -70,7 +70,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
       </div>
       <div className="flex min-w-0 flex-col gap-3">
         <section aria-label={t('preview')} className="flex flex-col gap-3">
-          <p aria-hidden className="font-wm-mono text-wm-mono text-wm-muted">
+          <p aria-hidden className="text-wm-meta text-wm-muted">
             {t('preview')}
           </p>
           <div
@@ -78,7 +78,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
             className="flex flex-col gap-3 rounded-wm-lg border border-wm-line bg-wm-surface p-5 shadow-wm-card md:rotate-[1.2deg] md:p-6"
           >
             <div className="flex items-center gap-2">
-              <span className="font-wm-mono text-wm-mono text-wm-muted">{s.part_of_speech}</span>
+              <span className="text-wm-meta text-wm-muted">{s.part_of_speech}</span>
               <span className="flex-1" />
               <Badge ai>{t('aiLabel')}</Badge>
             </div>
@@ -87,7 +87,7 @@ export function AiLookupResult({ text, sentence, result, onChoose }: { text: str
             {s.examples[0] && <p className="break-words font-wm-sans text-wm-base text-wm-ink">{marked(s.examples[0], s.lemma)}</p>}
             {sentence.trim() && (
               <div className="hidden flex-col gap-1 md:flex">
-                <p className="font-wm-mono text-wm-mono text-wm-muted">{t('yourSentence')}</p>
+                <p className="text-wm-meta text-wm-muted">{t('yourSentence')}</p>
                 <p className="break-words font-wm-sans text-wm-small text-wm-ink">{marked(sentence.trim(), text)}</p>
               </div>
             )}
@@ -106,7 +106,7 @@ function Badge({ ai = false, children }: { ai?: boolean; children: ReactNode }) 
   return (
     <span
       className={cn(
-        'shrink-0 rounded-wm-sm px-2 py-0.5 font-wm-mono text-wm-mono font-bold',
+        'shrink-0 rounded-wm-sm px-2 py-0.5 text-wm-meta font-bold',
         ai ? 'bg-wm-accent-soft text-wm-accent' : 'bg-wm-bg text-wm-muted',
       )}
     >

@@ -16,7 +16,7 @@ const SIZE = {
   sm: { box: 'h-14.5 w-13.5', strip: 'h-4.5 pl-2.25', badge: 'left-7.5' },
 } as const;
 const TEXT = {
-  // raw-ok: Figma 95:343 month strip JetBrains Mono Bold 10 / 9 px and day number Bricolage ExtraBold 26 / 22 px, sizes no text token has
+  // raw-ok: Figma 95:343 month strip Noto Sans Bold 10 / 9 px and day number Bricolage ExtraBold 26 / 22 px, sizes no text token has
   lg: { month: 'text-[0.625rem]', day: 'text-[1.625rem]' },
   // raw-ok: as above, the phone variant
   sm: { month: 'text-[0.5625rem]', day: 'text-[1.375rem]' },
@@ -64,7 +64,7 @@ export function CalendarButton({ size }: { size: 'lg' | 'sm' }) {
         isOpen && 'pointer-events-none opacity-0',
       )}
     >
-      <span aria-hidden className={cn('flex items-center rounded-t-wm-modal bg-wm-accent font-wm-mono font-bold text-wm-on-accent', SIZE[size].strip, TEXT[size].month)}>
+      <span aria-hidden className={cn('flex items-center rounded-t-wm-modal bg-wm-accent font-bold text-wm-on-accent', SIZE[size].strip, TEXT[size].month)}>
         {monthLabel(locale, month)}
       </span>
       <span aria-hidden className={cn('flex flex-1 items-center justify-center font-wm-display font-extrabold leading-none', TEXT[size].day)}>

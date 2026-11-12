@@ -59,14 +59,14 @@ function TopicCard({ item }: { item: TopicSuggestion }) {
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate font-wm-display text-base font-bold text-wm-ink">{item.topic.name}</span>
-          <Tag tone="accent" mono>
+          <Tag tone="accent">
             {item.level}
           </Tag>
         </span>
         {samples.length > 0 && <span className="truncate text-wm-caption text-wm-muted">{samples.join(', ')}…</span>}
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{count}</span>
+        <span className="text-wm-meta text-wm-muted">{count}</span>
         <span
           aria-hidden
           className="flex size-8 items-center justify-center rounded-wm-pill bg-wm-bg text-wm-muted transition duration-200 ease-out-strong group-hover:bg-wm-accent group-hover:text-wm-on-accent"

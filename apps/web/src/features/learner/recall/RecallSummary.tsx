@@ -106,7 +106,7 @@ function Ring({ correct, total, label, caption }: { correct: number; total: numb
           <span className="text-wm-lemma">{correct}</span>
           <span className="text-wm-word text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

@@ -168,13 +168,13 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
     <div className="flex flex-col gap-5 pb-48 md:pb-24">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-5">
         <div className="flex min-w-0 flex-col gap-2">
-          <p className="font-wm-mono text-wm-mono text-wm-muted">{t('eyebrow')}</p>
+          <p className="text-wm-meta text-wm-muted">{t('eyebrow')}</p>
           <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink wrap-anywhere md:text-5xl">{title}</h1>
           <p className="text-wm-base text-wm-muted">{t('intro', { count: senses.length })}</p>
         </div>
         <div className="flex shrink-0 flex-col md:items-end">
           <span className="font-wm-display text-5xl font-extrabold leading-none tracking-tight text-wm-ink md:text-6xl">{format.number(unlearned.length)}</span>
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('countCaption', { learning: senses.length - unlearned.length })}</span>
+          <span className="text-wm-meta text-wm-muted">{t('countCaption', { learning: senses.length - unlearned.length })}</span>
         </div>
       </div>
       {unlearned.length > 0 && (
@@ -190,7 +190,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
             <Checkbox isSelected={allTicked} onChange={(on) => setSelected(on ? new Set(unlearned.map((s) => s.sense_id)) : new Set())}>
               <span className="text-wm-button">{t('selectAll', { count: unlearned.length })}</span>
             </Checkbox>
-            {selected.size > 0 && <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('selected', { count: selected.size })}</span>}
+            {selected.size > 0 && <span className="shrink-0 text-wm-meta text-wm-muted">{t('selected', { count: selected.size })}</span>}
           </div>
           <ul className="flex flex-col">
             {rows.map((s) => {
@@ -214,7 +214,7 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
                   )}
                   <span className={cn('min-w-0 flex-1', decks && 'opacity-50')}>
                     <span className="mr-2 font-wm-display text-wm-word text-wm-ink wrap-anywhere">{s.lemma}</span>
-                    <span className="font-wm-mono text-wm-mono text-wm-muted">{s.pos}</span>
+                    <span className="text-wm-meta text-wm-muted">{s.pos}</span>
                     <span className="block text-wm-small text-wm-muted wrap-anywhere">{s.meaning.text}</span>
                   </span>
                   {decks && (

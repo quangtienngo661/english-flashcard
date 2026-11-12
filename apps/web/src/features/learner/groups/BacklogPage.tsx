@@ -163,7 +163,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
         </div>
         <p className="flex shrink-0 flex-col items-end">
           <span className="font-wm-display text-6xl font-extrabold leading-none tracking-tight text-wm-fail md:text-8xl">{format.number(items.length)}</span>
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('countCaption')}</span>
+          <span className="text-wm-meta text-wm-muted">{t('countCaption')}</span>
         </p>
       </div>
       {days !== undefined && (
@@ -189,7 +189,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
           <p className="text-wm-base text-wm-muted">{t('empty')}</p>
         ) : (
           <>
-            <div className="flex items-center gap-4 px-4 pb-1.5 font-wm-mono text-wm-mono text-wm-muted">
+            <div className="flex items-center gap-4 px-4 pb-1.5 text-wm-meta text-wm-muted">
               <Checkbox isSelected={allTicked} onChange={(on) => setSelected(on ? new Set(items.map((i) => i.item_id)) : new Set())}>
                 <span className="sr-only">{t('selectAll', { count: items.length })}</span>
               </Checkbox>
@@ -219,7 +219,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
                 </li>
               ))}
             </ul>
-            <div className="flex flex-wrap items-center gap-5 pt-4 font-wm-mono text-wm-mono text-wm-muted">
+            <div className="flex flex-wrap items-center gap-5 pt-4 text-wm-meta text-wm-muted">
               {t('showing', { shown: rows.length, total: items.length })}
               {!showAll && items.length > FIRST_ROWS && (
                 <TextButton onPress={() => setShowAll(true)}>{t('more', { count: items.length - FIRST_ROWS })}</TextButton>

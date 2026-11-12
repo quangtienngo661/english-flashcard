@@ -11,7 +11,7 @@ const twMerge = extendTailwindMerge({
         {
           text: [
             'wm-hero', 'wm-section', 'wm-lemma', 'wm-card-title', 'wm-logo', 'wm-word', 'wm-lead', 'wm-base', 'wm-base-strong',
-            'wm-button', 'wm-small', 'wm-small-strong', 'wm-label', 'wm-caption', 'wm-mono',
+            'wm-button', 'wm-small', 'wm-small-strong', 'wm-label', 'wm-caption', 'wm-meta',
           ],
         },
       ],

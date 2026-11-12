@@ -164,7 +164,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
         {/* Above the group info while it flies in from the carousel (motion doc §3). */}
         <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
         <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
-          <p className="font-wm-mono text-wm-mono text-wm-muted">
+          <p className="text-wm-meta text-wm-muted">
             {created === null
               ? t('metaNoDate', { count: detail.item_count, mastered: known })
               : known > 0
@@ -260,7 +260,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                   )}
                 >
                   <span>{f.label}</span>
-                  {count !== null && <span className="font-wm-mono text-wm-mono font-bold">{format.number(count)}</span>}
+                  {count !== null && <span className="text-wm-meta font-bold">{format.number(count)}</span>}
                 </button>
               );
             })}
@@ -391,7 +391,7 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
         >
           {word}
         </Link>
-        <span className="hidden w-24 shrink-0 font-wm-mono text-wm-mono text-wm-muted md:block">{card.content.pos}</span>
+        <span className="hidden w-24 shrink-0 text-wm-meta text-wm-muted md:block">{card.content.pos}</span>
         <span className="min-w-0 flex-1 text-wm-small text-wm-muted wrap-anywhere md:text-wm-base md:text-wm-ink">
           {card.content.meaning.text}
           {card.sense_changed && <span className="ml-2 rounded-wm-sm bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}

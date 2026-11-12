@@ -51,7 +51,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
 
   return (
     <article aria-labelledby={headingId} className="flex gap-3 py-4 md:gap-4">
-      <span aria-hidden className="w-4.5 shrink-0 pt-1 font-wm-mono text-wm-mono text-wm-muted md:w-6">
+      <span aria-hidden className="w-4.5 shrink-0 pt-1 text-wm-meta text-wm-muted md:w-6">
         {index}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">

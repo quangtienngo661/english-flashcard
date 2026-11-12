@@ -54,8 +54,8 @@ export function ChoiceCard({ value, title, note, trailing, isDisabled }: CardPro
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-baseline md:gap-2">
         <span className="font-wm-sans text-wm-button text-wm-ink">{title}</span>
         {note && (
-          // raw-ok: Figma's saving note is JetBrains Mono Bold 11, under the 12 px mono token
-          <span className="font-wm-mono text-[0.6875rem] font-bold leading-snug text-wm-pass">{note}</span>
+          // raw-ok: Figma's saving note is Noto Sans Bold 11, under the 12 px meta token
+          <span className="text-[0.6875rem] font-bold leading-snug text-wm-pass">{note}</span>
         )}
       </span>
       {trailing !== undefined && <span className="shrink-0 text-right">{trailing}</span>}

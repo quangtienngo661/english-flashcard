@@ -14,7 +14,7 @@ export function FormsLine({ label, base, forms, current }: { label: string; base
   const items = [{ form: base, has_page: true }, ...forms];
   return (
     <p className="flex flex-col gap-1 md:flex-row md:gap-4">
-      <span className="shrink-0 pt-1 font-wm-mono text-wm-mono text-wm-muted md:w-19">{label}</span>{' '}
+      <span className="shrink-0 pt-1 text-wm-meta text-wm-muted md:w-19">{label}</span>{' '}
       <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-ink">
         {items.map((item, i) => (
           <Fragment key={`${item.form}-${i}`}>

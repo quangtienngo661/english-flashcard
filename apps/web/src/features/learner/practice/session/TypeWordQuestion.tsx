@@ -51,7 +51,7 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
           placeholder={t('answerPlaceholder')}
           className={cn(FIELD_BOX, 'pr-16 font-semibold placeholder:font-normal', retry && 'border-wm-fail')}
         />
-        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 font-wm-mono text-wm-mono lowercase text-wm-fail">{t('attempt', { n: outcome.tries })}</span>}
+        {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-wm-meta text-wm-fail">{t('attempt', { n: outcome.tries })}</span>}
       </div>
       {!final && (
         <Button type="submit" variant={retry ? 'secondary' : 'primary'} className="px-8" isDisabled={!text.trim()} isPending={disabled}>

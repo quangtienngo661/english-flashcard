@@ -1323,7 +1323,7 @@
         "artMeaning": "to put into action",
         "words": "<b>{words, number}</b> to practise in {groups, plural, one {# deck} other {# decks}}",
         "body": "{count, plural, one {# question} other {# questions}}, mixing three types: {types}.",
-        "artRight": "right"
+        "artRight": "Right"
       },
       "sources": {
         "title": "Practice from another source",

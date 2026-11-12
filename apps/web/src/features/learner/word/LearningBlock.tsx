@@ -44,12 +44,12 @@ export function LearningBlock({ sense, item, groups }: { sense: PageSense; item:
 
   return (
     <section aria-labelledby="dang-hoc" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
-      <h2 id="dang-hoc" className="font-wm-mono text-wm-mono lowercase text-wm-muted">
+      <h2 id="dang-hoc" className="text-wm-meta text-wm-muted">
         {t('learningTitle')}
       </h2>
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{sense.pos}</span>
+        <span className="text-wm-meta text-wm-muted">{sense.pos}</span>
       </p>
       <StageBar
         aria-label={t('stageBar', { stage: stage(item.level) })}

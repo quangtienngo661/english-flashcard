@@ -53,7 +53,7 @@ export function MyReportsPage() {
       <>
         {months.map((month) => (
           <section key={month.key} aria-labelledby={`reports-${month.key}`} className="flex flex-col gap-3">
-            <h2 id={`reports-${month.key}`} className="font-wm-mono text-wm-mono font-medium text-wm-muted">{format.date(month.items[0].created_at, 'monthLabel')}</h2>
+            <h2 id={`reports-${month.key}`} className="text-wm-meta font-medium text-wm-muted">{format.date(month.items[0].created_at, 'monthLabel')}</h2>
             <ul className="rounded-wm-xl border border-wm-line bg-wm-surface px-4 py-1 shadow-wm-card md:px-3 md:py-1.5">
               {month.items.map((report) => (
                 <ReportRow key={report.id} report={report} />
@@ -66,7 +66,7 @@ export function MyReportsPage() {
             {t('more')}
           </Button>
         )}
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{t('foot')}</p>
+        <p className="text-wm-meta text-wm-muted">{t('foot')}</p>
       </>
     );
   }

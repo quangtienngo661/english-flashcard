@@ -136,7 +136,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
         {sections.length === 0 && <p className="px-2 py-3 text-wm-small text-wm-muted">{t('noMatch')}</p>}
         {sections.map((section) => (
           <div key={section.key} role="group" aria-label={caption[section.key]} className="flex flex-col gap-0.5">
-            <p aria-hidden className="px-2 pt-1.5 font-wm-mono text-wm-mono text-wm-muted">
+            <p aria-hidden className="px-2 pt-1.5 text-wm-meta text-wm-muted">
               {caption[section.key]}
             </p>
             {section.groups.map((g) => {
@@ -156,7 +156,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
           </div>
         ))}
       </div>
-      <p aria-hidden className="mt-1 hidden gap-3 border-t border-wm-line pl-2 pt-2 font-wm-mono text-wm-mono text-wm-muted md:flex">
+      <p aria-hidden className="mt-1 hidden gap-3 border-t border-wm-line pl-2 pt-2 text-wm-meta text-wm-muted md:flex">
         <span>{t('keysMove')}</span>
         <span>{t('keysPick')}</span>
         <span>{t('keysClose')}</span>

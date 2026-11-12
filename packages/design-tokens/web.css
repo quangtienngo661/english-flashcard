@@ -162,10 +162,10 @@
   --text-wm-caption--line-height: 1.4;
   --text-wm-caption--letter-spacing: 0;
   --text-wm-caption--font-weight: 400;
-  --text-wm-mono: 0.75rem;
-  --text-wm-mono--line-height: 1.4;
-  --text-wm-mono--letter-spacing: 0;
-  --text-wm-mono--font-weight: 400;
+  --text-wm-meta: 0.75rem;
+  --text-wm-meta--line-height: 1.4;
+  --text-wm-meta--letter-spacing: 0;
+  --text-wm-meta--font-weight: 500;
   /* Public display styles (Part 8 constraints: Bricolage Bold 700; letter-spacing = Figma percent written in em). */
   --text-wm-site-hero: 5rem;
   --text-wm-site-hero--line-height: 1.2;

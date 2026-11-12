@@ -64,7 +64,7 @@ export function TopBar() {
       >
         <Plus aria-hidden className="size-4" />
         {t('addWord')}
-        <kbd className="rounded-wm-sm border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-mono text-wm-on-accent">N</kbd>
+        <kbd className="rounded-wm-sm border border-wm-on-accent/45 bg-wm-on-accent/18 px-1.5 font-wm-sans text-wm-meta text-wm-on-accent">N</kbd>
       </button>
       <PlanChipLink />
       <AvatarMenu />

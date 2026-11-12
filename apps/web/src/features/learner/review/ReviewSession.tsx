@@ -198,7 +198,7 @@ export function ReviewSession() {
         {showProgress && (
           <>
             <ProgressBar value={session.index} max={total} label={t('review.left', { count: left })} className="min-w-12 flex-1" />
-            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('review.left', { count: left })}</span>
+            <span className="shrink-0 text-wm-meta text-wm-muted">{t('review.left', { count: left })}</span>
           </>
         )}
         <CalendarBarButton />

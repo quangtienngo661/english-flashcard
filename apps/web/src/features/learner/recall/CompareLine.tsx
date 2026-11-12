@@ -51,8 +51,8 @@ export function CompareLine({ typed, answer }: { typed: string; answer: string }
 function Row({ label, letters }: { label: string; letters: Letter[] }) {
   return (
     <p aria-hidden className="flex flex-wrap items-baseline gap-3">
-      <span className="w-16 shrink-0 font-wm-mono text-wm-mono text-wm-muted">{label}</span>
-      <span className="font-wm-mono text-wm-word tracking-wide text-wm-ink">
+      <span className="w-16 shrink-0 text-wm-meta text-wm-muted">{label}</span>
+      <span className="text-wm-word tracking-wide text-wm-ink">
         {letters.map((letter, i) => (
           <span
             key={i}

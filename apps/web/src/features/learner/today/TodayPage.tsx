@@ -43,7 +43,7 @@ export function TodayPage() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-1.5">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{format.date(new Date(), 'weekdayDayMonth')}</p>
+        <p className="text-wm-meta text-wm-muted">{format.date(new Date(), 'weekdayDayMonth')}</p>
         <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">{t('title')}</h1>
       </div>
       <PageColumns
@@ -110,7 +110,7 @@ function Hero({ group }: { group: GroupSummary }) {
       className={cn('flex flex-col gap-4 rounded-wm-2xl border-2 bg-wm-surface p-5 shadow-wm-lift md:flex-row md:items-center md:gap-6 md:p-7', tone.border)}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
+        <p className="text-wm-meta text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
         <h2 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight wrap-anywhere text-wm-ink md:text-4xl">{group.name}</h2>
         <p className="text-wm-small text-wm-muted">{t('heroLine', { total: group.total, mastered: mastered(group) })}</p>
         <StageBar
@@ -134,7 +134,7 @@ function Hero({ group }: { group: GroupSummary }) {
       </div>
       <p className="order-first flex flex-col md:order-none md:items-end">
         <span className={cn('font-wm-display text-6xl font-extrabold leading-none tracking-tight md:text-8xl', tone.ink)}>{format.number(waiting(group))}</span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('heroWaiting')}</span>
+        <span className="text-wm-meta text-wm-muted">{t('heroWaiting')}</span>
       </p>
     </section>
   );
@@ -161,13 +161,13 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
         <span className="font-wm-display text-3xl font-extrabold tracking-tight text-wm-ink">
           {last.correct}/{last.questions}
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('lastCorrect')}</span>
+        <span className="text-wm-meta text-wm-muted">{t('lastCorrect')}</span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h2 id="last-practice" className="text-wm-button text-wm-ink">
           {t('lastTitle')}
         </h2>
-        <p className="font-wm-mono text-wm-mono text-wm-muted wrap-anywhere">{line}</p>
+        <p className="text-wm-meta text-wm-muted wrap-anywhere">{line}</p>
         <div className="flex items-center gap-3">
           <span role="img" aria-label={t('lastBar', { correct: last.correct, wrong })} className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-sm bg-wm-line">
             <span
@@ -232,7 +232,7 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
         <h2 id="your-groups" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
           {t('yourGroups')}
         </h2>
-        {others.length > 0 && <p className="hidden min-w-0 flex-1 truncate font-wm-mono text-wm-mono text-wm-muted md:block">{t('yourGroupsHint', { count: others.length })}</p>}
+        {others.length > 0 && <p className="hidden min-w-0 flex-1 truncate text-wm-meta text-wm-muted md:block">{t('yourGroupsHint', { count: others.length })}</p>}
         <Link href={`/${locale}/app/groups`} aria-label={t('seeAll', { count: groups.length })} className={cn(LINK, 'ml-auto shrink-0')}>
           <span className="md:hidden">{t('seeAllShort')}</span>
           <span className="hidden md:inline">{t('seeAll', { count: groups.length })}</span>
@@ -289,7 +289,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
           <h2 id="by-stage" className="font-wm-display text-base font-bold text-wm-ink">
             {t('stagesTitle', { count: words })}
           </h2>
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('stagesHint')}</span>
+          <span className="text-wm-meta text-wm-muted">{t('stagesHint')}</span>
         </div>
         <ul className="flex flex-col gap-3">
           {stages.map((s) => (
@@ -305,7 +305,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
                   style={{ width: `${s.total ? Math.round((s.due / s.total) * 100) : 0}%` }}
                 />
               </span>
-              <span className="w-14 shrink-0 text-right font-wm-mono text-wm-mono text-wm-muted">
+              <span className="w-14 shrink-0 text-right text-wm-meta text-wm-muted">
                 {s.due} / {s.total}
               </span>
             </li>

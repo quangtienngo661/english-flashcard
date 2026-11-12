@@ -26,7 +26,7 @@ export function LiftedCard({ word, sense, item, groups }: { word: WordRow; sense
     <section aria-label={t('card')} className="relative">
       <div aria-hidden className="lk-card-behind absolute inset-0 rounded-wm-xl border border-wm-line bg-wm-surface" />
       <div key={word.lemma} className="lk-card relative flex min-h-80 flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{meta}</p>
+        <p className="text-wm-meta text-wm-muted">{meta}</p>
         <h2 className="break-all font-wm-display text-wm-lemma font-extrabold leading-tight text-wm-ink">{word.lemma}</h2>
         {sense?.pronunciation && <PronunciationLine text={word.lemma} line={{ scope: sense.scope, pronunciation: sense.pronunciation }} />}
         <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense?.meaning.text ?? word.meaning_preview}</p>

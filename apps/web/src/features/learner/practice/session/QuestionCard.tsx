@@ -38,10 +38,7 @@ export function QuestionCard({ prompt, ai = false, reportable, reported, onRepor
     // 2A (owner 27/10/2026): each question is a new card (keyed by item) and rises in.
     <section className="relative z-10 flex flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface px-5 pb-6 pt-5 shadow-wm-card motion-safe:animate-card-rise md:px-8 md:pt-7">
       <div className="flex flex-wrap items-center gap-2">
-        {/* Figma writes the chip and the instruction in lower case; the copy keeps its capital for other places. */}
-        <span className="lowercase">
-          <Tag mono>{t(`kind.${kind}`)}</Tag>
-        </span>
+        <Tag>{t(`kind.${kind}`)}</Tag>
         {ai && <Tag tone="accent">{t('aiChip')}</Tag>}
         <span className="flex-1" />
         {reportable && (
@@ -51,7 +48,7 @@ export function QuestionCard({ prompt, ai = false, reportable, reported, onRepor
           </TextButton>
         )}
       </div>
-      <p className="font-wm-mono text-wm-mono text-wm-muted first-letter:lowercase">{t(`ask.${kind}`)}</p>
+      <p className="text-wm-meta text-wm-muted">{t(`ask.${kind}`)}</p>
       {children}
     </section>
   );

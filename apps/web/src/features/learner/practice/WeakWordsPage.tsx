@@ -65,7 +65,7 @@ export function WeakWordsPage() {
             {count > 0 && (
               // Figma "Luyện từ hay sai": the count in red, the line, [Tùy chỉnh] and the start.
               <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
-                <span className="font-wm-mono text-wm-mono text-wm-muted">{t('cardChip')}</span>
+                <span className="text-wm-meta text-wm-muted">{t('cardChip')}</span>
                 <h2 id="weak-card" className="font-wm-display text-wm-section text-wm-fail">
                   {t('cardCount', { count })}
                 </h2>
@@ -147,7 +147,7 @@ function WeakList({ words }: { words: WeakWord[] }) {
   const cols = 'md:grid md:grid-cols-12 md:items-center md:gap-4';
   return (
     <div>
-      <div aria-hidden className={cn('hidden border-b border-wm-line pb-2 font-wm-mono text-wm-mono lowercase text-wm-muted', cols)}>
+      <div aria-hidden className={cn('hidden border-b border-wm-line pb-2 text-wm-meta text-wm-muted', cols)}>
         <span className="col-span-2">{t('cols.word')}</span>
         <span className="col-span-4">{t('cols.meaning')}</span>
         <span className="col-span-2">{t('cols.recent')}</span>
@@ -177,7 +177,7 @@ function WeakList({ words }: { words: WeakWord[] }) {
               <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', STAGE_DOT[w.level] ?? STAGE_DOT[0])} />
               {tStage(STAGE_KEYS[w.level] ?? 's0')}
             </span>
-            <span className="hidden font-wm-mono text-wm-mono text-wm-muted md:col-span-2 md:block">
+            <span className="hidden text-wm-meta text-wm-muted md:col-span-2 md:block">
               {localDay(new Date(w.last_wrong_at), zone) === today ? t('today', { time: format.time(w.last_wrong_at) }) : format.date(w.last_wrong_at, 'dayMonth')}
             </span>
           </li>

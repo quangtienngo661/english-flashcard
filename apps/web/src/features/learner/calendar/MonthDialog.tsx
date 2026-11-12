@@ -134,7 +134,7 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
         <div className="flex flex-wrap items-center gap-x-2 gap-y-3 max-md:pr-10">
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="font-wm-mono text-wm-mono text-wm-muted">{t('label')}</span>
+              <span className="text-wm-meta text-wm-muted">{t('label')}</span>
               <Heading slot="title" className={cn('font-wm-display font-extrabold leading-tight text-wm-ink', RAW.title)}>
                 {format.date(`${month}-15T12:00:00Z`, 'monthYear')}
               </Heading>
@@ -204,7 +204,7 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
             <div className="flex flex-col gap-1" onKeyDown={onGridKey}>
               <div aria-hidden className="grid grid-cols-7 px-0.75">
                 {WEEKDAYS.map((day) => (
-                  <span key={day} className="pl-1.5 font-wm-mono text-wm-mono text-wm-muted md:pl-3">
+                  <span key={day} className="pl-1.5 text-wm-meta text-wm-muted md:pl-3">
                     {t(`weekdays.${day}`)}
                   </span>
                 ))}
@@ -311,7 +311,7 @@ function Cell({ cell, label, todayMark, selected, register, onOpen }: {
           >
             {Number(cell.date.slice(8, 10))}
           </span>
-          {cell.isToday && <span aria-hidden className={cn('font-wm-mono font-bold text-wm-accent max-md:hidden', RAW.todayMark)}>{todayMark}</span>}
+          {cell.isToday && <span aria-hidden className={cn('font-bold text-wm-accent max-md:hidden', RAW.todayMark)}>{todayMark}</span>}
         </span>
         <span aria-hidden className="flex gap-0.5 md:gap-1">
           {dots.map((kind) => (
