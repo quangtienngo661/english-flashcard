@@ -182,7 +182,7 @@ Các chỗ sửa khác của mockup thuộc đợt polish (plan riêng, sau M9).
 - M9.9: áp vào nền mesh và hạt, giấy Tra từ, lớp mờ hộp thoại, box "Chưa đúng", thanh trình duyệt theo lựa chọn trong app; thêm kiểm truy cập ở chế độ tối.
 - M9.10: chạy toàn bộ kiểm thử, chụp bộ ảnh trên stack thật, chạy Lighthouse và Schema Markup Validator, ghi as-built, mở PR.
 
-**Còn chờ chủ dự án:** chọn cách đo trên điện thoại (Wi-Fi như đã chốt, hay cắm USB trên Android) trước bước đo của M9.10.
+**Còn chờ chủ dự án:** chọn cách đo trên điện thoại (Wi-Fi như đã chốt, hay cắm USB trên Android) trước bước đo của M9.10. Đo khung hình trên điện thoại thật (QM9-7, hướng dẫn `docs/deliveries/giao-dien-moi-do-dien-thoai.md`) là điều kiện của design §14 trước PR cuối vào `dev`; chưa đo (xem as-built M9).
 
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
@@ -712,3 +712,151 @@ Figma không có khung tablet và khung tối; ảnh 1024 và ảnh tối so v�
 - Màu và độ mờ của vệt quét thẻ Pro lấy từ ảnh chụp (R216).
 - Chưa build với `NEXT_PUBLIC_INDEXABLE=true` để xem sitemap thật; chưa thử nhánh fail của `LANDING_DATA_REQUIRED=1` qua `cf:docker`.
 - Chưa chạy bộ `gm-m8` với stack thật, chưa xem trên điện thoại thật, chưa chụp tiếng Anh.
+
+# Giao diện mới — as-built M9 Kiểm thử và chế độ tối (12/11/2026)
+
+Nhánh `claude/giao-dien-moi-m9-3adf51` (R263), một PR vào `refactor/giao-dien-moi`, M9.1–M9.10. Quyết định khi làm: R251–R264 trong `giao-dien-moi-rulings.md`. Số đo lấy từ cây cuối `76da588b`, trừ khi ghi khác. M9.4–M9.8 làm song song trong các worktree riêng rồi cherry-pick (R263), nên commit của chúng không xếp theo task trong `git log`.
+
+**Đã làm** (commit trong `git log --oneline 57b3f71c..HEAD`)
+- M9.1 `f14b3f93`: script `check-message-keys` chạy trong bộ unit (CI). Xóa 19 key không màn nào dùng (vi và en); 26 mục trong file allow cho các họ key dựng bằng biến hoặc đọc ở file khác, mỗi mục ghi `why` kèm file:dòng. Còn 1394 key, 0 key thừa.
+- M9.2 `6b46d7dd`, `40bbfeb8`: script `compare-bundle-stats` so dung lượng JS tải đầu của từng trang app với `bundle-baseline.json` (dựng từ tag giao diện cũ, 28 route); `cf:docker --bundle-stats` ghi file số. Từ chối hàng thiếu số byte và lần so không có hàng nào.
+- M9.3 `a72c3a5f`: hộp Tùy chỉnh phiên và Giới thiệu Pro tải khi cần (`next/dynamic`).
+- M9.3b `8a752db7` (chủ dự án: "thêm đi"): bước "JS size" trong job `web` của `ci.yml`, đỏ khi một route app vượt giới hạn.
+- M9.3c `3bd6e245`, `d4b65152`: giới hạn riêng từng route (`limits` trong baseline); bước CI chuyển ra sau "Render mode".
+- M9.4 `5823266b`, `5adf9f8e`: `DotGridBackground` đổi thành `AppBackground`; comment "dot grid" đổi thành "mesh background"; deploy-checklist thêm dòng đo lại danh sách nhóm trên máy chủ thật (median 399 ms, giới hạn 500 ms).
+- M9.5 `a436d3fd`: `pnpm lighthouse <url>` chạy Lighthouse 13.6.0 cho `/vi` và `/vi/privacy`, mobile và desktop, in bảng 4 điểm.
+- M9.6 `1637c2bf`, `b7db5a6f`: bộ ảnh `gm-m9` trong `e2e-shots/shots.spec.ts`: mọi màn, 4 khổ, sáng và tối. Mỗi bộ chạy trong `attempt()`: bộ lỗi ghi "chưa chụp" và lượt chạy đi tiếp (R257).
+- M9.7 `9fca9128`, `63224340`, `22ed60a1`, `2be449fe`: hướng dẫn đo khung hình trên điện thoại thật, `docs/deliveries/giao-dien-moi-do-dien-thoai.md` (hai cách: máy dev qua Wi-Fi, hoặc cắm USB trên Android). Nhãn quyết định là QM9-7 (design chép nhầm QM9-6, R255).
+- M9.8 `fb291b23`: token tối: bóng đen, nền nhạt nâng lên, màu nhóm tối, lớp mờ (`scrim`), giấy từ điển, quầng vàng, box "Chưa đúng", token màu mức (`level-*`). Mọi cặp chữ/nền kiểm độ tương phản trong `web-tokens.test.ts`.
+- M9.9 `f267073c`, `9cc8a3fe`, `9214f527`: áp token vào nền mesh và hạt, giấy Tra từ, lớp mờ hộp thoại, box "Chưa đúng", thanh trình duyệt (`theme-color`) theo lựa chọn trong app; axe chạy cả chế độ tối ở m6, m7a, m7b. R259: bỏ `opacity-85` ở `ButtonKey` vì chữ phím tắt trong phiên chỉ còn khoảng 3,8:1 trên nền `accent-soft` mới (4 case axe tối hỏng trước đó).
+- M9.10 `bec9ef5c`, `aadb78bc`: ghi R251–R263 và giá trị tối vào design (§7.2, ngoại lệ 118 % ở §5.7, §9, §13); chạy bộ ảnh, Lighthouse, Schema Markup Validator (kết quả bên dưới).
+- Sửa sau review cuối, 7 commit `aadb78bc..76da588b`: `0523c5bf` (Lighthouse chạy không qua shell trên Linux), `ab477c11` (test đỏ) và `b5d60908` (sửa thanh trình duyệt sau khi chuyển trang), `afa59b68` (comment và nhãn task trong rulings), `7b8bb2fa` và `76da588b` (công cụ chụp ảnh), `8af433ea` (kiểu node trong test theme).
+
+**Message key (M9.1) — giới hạn đã biết.** Script không phân biệt được thành viên chết bên trong một mục allow dạng tiền tố:
+- `Landing.*` (91 key; `copy.ts` đọc cả cây qua `getMessages()`).
+- `App.errors.*` (53 key), `App.transactions.*` (42), `App.practice.recent.*` (13).
+
+Thu hẹp bốn mục này ở đợt polish (đợt đó chạm các màn ấy). Bước RED "thiếu module" bị bỏ qua (test và code viết cùng lúc); test của repo đỏ đúng lý do ở lần chạy đầu, và thêm `App.zzUnused` vào hai file thì test đỏ như mong đợi.
+
+**Dung lượng JS (M9.2, M9.3)** — byte JS tải đầu chưa nén, `cf:docker --bundle-stats`, so với giao diện cũ.
+
+Trước M9.3 (đo ở M9.2) và sau M9.3 (đo ở `a72c3a5f`), tỉ lệ so với bản cũ:
+
+| Route (`/[locale]/app…`) | Trước M9.3 | Sau M9.3 |
+|---|---|---|
+| (gốc) | 104,7 % | 103,6 % |
+| `/group` | 104,2 % | 103,0 % |
+| `/groups` | 104,6 % | 103,5 % |
+| `/lookup` | 110,0 % | 108,9 % |
+| `/plans` | 113,7 % | 112,4 % |
+| `/plans/order` | 112,4 % | 114,2 % |
+| `/practice` | 105,6 % | 97,6 % |
+| `/practice/session` | 113,3 % | 109,5 % |
+| `/recall` | 113,3 % | 109,5 % |
+| `/word` | 110,4 % | 109,2 % |
+| `/settings` | 103,8 % | 103,7 % |
+| đăng nhập, đăng ký, quên mật khẩu… | 76–83 % | 76–83 % |
+
+Năm route vượt 110 % trước M9.3 (KB): `/plans` 860,6 → 978,4; `/plans/order` 826,2 → 928,5; `/practice/session` 911,2 → 1032,2; `/recall` 911,7 → 1032,9; `/word` 955,9 → 1055,2. `/settings/reports` chỉ có ở giao diện mới nên không có số so.
+
+Bảng cuối trên `76da588b` (`compare-bundle-stats` thoát 0, mọi hàng `ok`):
+
+| Route (`/[locale]/app…`) | Cũ (KB) | Mới (KB) | Tỉ lệ | Giới hạn |
+|---|---|---|---|---|
+| (gốc) | 956,1 | 991,4 | 103,7 % | 110 % |
+| `/account-deleted` | 907,1 | 695,5 | 76,7 % | 110 % |
+| `/complete-profile` | 942,4 | 873,4 | 92,7 % | 110 % |
+| `/forgot-password` | 901,7 | 726,8 | 80,6 % | 110 % |
+| `/google/complete` | 918,3 | 737,8 | 80,3 % | 110 % |
+| `/group` | 957,3 | 987,0 | 103,1 % | 110 % |
+| `/group/backlog` | 942,7 | 966,1 | 102,5 % | 110 % |
+| `/groups` | 952,2 | 986,1 | 103,6 % | 110 % |
+| `/login` | 911,5 | 738,2 | 81,0 % | 110 % |
+| `/lookup` | 945,7 | 1030,2 | 108,9 % | 110 % |
+| `/plans` | 860,6 | 968,4 | 112,5 % | **118 %** |
+| `/plans/order` | 826,2 | 944,1 | 114,3 % | **118 %** |
+| `/practice` | 979,4 | 956,6 | 97,7 % | 110 % |
+| `/practice/history` | 955,1 | 898,7 | 94,1 % | 110 % |
+| `/practice/session` | 911,2 | 998,0 | 109,5 % | 110 % |
+| `/practice/weak` | 968,9 | 982,0 | 101,3 % | 110 % |
+| `/recall` | 911,7 | 998,6 | 109,5 % | 110 % |
+| `/register` | 920,6 | 747,5 | 81,2 % | 110 % |
+| `/reset-password` | 900,4 | 728,7 | 80,9 % | 110 % |
+| `/review` | 951,2 | 942,0 | 99,0 % | 110 % |
+| `/settings` | 957,0 | 993,9 | 103,9 % | 110 % |
+| `/settings/account` | 944,8 | 960,1 | 101,6 % | 110 % |
+| `/settings/delete-account` | 944,2 | 950,4 | 100,7 % | 110 % |
+| `/settings/transactions` | 944,4 | 951,3 | 100,7 % | 110 % |
+| `/topic` | 941,8 | 988,5 | 105,0 % | 110 % |
+| `/verify-email` | 904,6 | 751,5 | 83,1 % | 110 % |
+| `/welcome` | 941,3 | 905,3 | 96,2 % | 110 % |
+| `/word` | 955,9 | 1045,0 | 109,3 % | 110 % |
+
+- **Hai trang gói ở 118 % (R258):** `/plans` 112,5 % và `/plans/order` 114,3 % vẫn trên 110 %. Chủ dự án đi ba bước: "liệt kê rồi mình quyết sau" (bỏ bước CI), rồi "thêm đi" (đưa bước CI vào dù hai trang đỏ), rồi chọn giới hạn riêng 118 % cho hai trang này (dư khoảng 30 KB cho chênh lệch giữa các lần build); giới hạn chung vẫn 110 %.
+- **Thử CalendarHost tải sau:** `CalendarHost` đã tải sau hai hộp thoại của nó; chỉ có `isTyping` kéo `react-aria` Modal vào mọi trang. Tách `isTyping` ra file riêng đưa `/plans/order` về 110,7 % nhưng làm `/practice/session` và `/recall` tăng 109,5 → 111,7 % (Turbopack gom lại chunk). Tải cả host sau chỉ bớt thêm 3–5 KB mỗi route và làm provider biến mất tới khi chunk về. Ước tính "bớt 30 KB mọi trang" sai; không giữ thay đổi nào.
+- **Dư địa mỏng:** gần giới hạn nhất là `/recall` 109,5 %, `/practice/session` 109,5 %, `/word` 109,3 % (còn khoảng 4–10 KB). Giữa hai lần build, route không liên quan đã lệch 15 KB (`/plans/order` ở M9.3), nên lần CI đầu có thể đỏ ở route PR này không đụng.
+
+**Lighthouse** (`pnpm lighthouse http://localhost:3001`, build `pnpm bootstrap`, đo trên cây `9214f527`, chưa chạy lại trên `76da588b`):
+
+| Trang | Máy | Performance | Accessibility | Best practices | SEO |
+|---|---|---|---|---|---|
+| `/vi` | mobile | 100 | 100 | 100 | 66 |
+| `/vi` | desktop | 100 | 100 | 100 | 66 |
+| `/vi/privacy` | mobile | 100 | 100 | 100 | 66 |
+| `/vi/privacy` | desktop | 100 | 100 | 100 | 66 |
+
+SEO 66 do một audit duy nhất: `is-crawlable` (kiểm trong từng report). Đúng thiết kế: stack bootstrap không đặt `NEXT_PUBLIC_INDEXABLE`, nên trang không cho lập chỉ mục. LCP `/vi`: 1,3 s mobile, 0,3 s desktop. Report ở `apps/web/.lighthouse/` (không commit).
+
+**Schema Markup Validator** (12/11/2026, validator.schema.org, chế độ code snippet, chỉ dán ld+json của `/vi` từ stack bootstrap): 3 mục (Organization, SoftwareApplication, WebSite), 0 lỗi, 0 cảnh báo. Các trường `url` là `http://localhost:3001/vi` vì bản build bootstrap.
+
+**Ảnh** (bộ `gm-m9`, lần chạy cuối trên stack `pnpm bootstrap` của worktree này; 544 PNG, không commit, ở `apps/web/test-results/shots/gm-m9/`): 390 / 768 / 1024 / 1440 px, sáng và tối, 68 khung mỗi chế độ (136 khung mỗi khổ). Khung mỗi bộ, mỗi chế độ (sáng bằng tối):
+
+| Bộ | Khung | Bộ | Khung |
+|---|---|---|---|
+| gm-m1 | 5 | gm-m6 | 6 |
+| gm-m2 | 9 | gm-m7a | 6 |
+| gm-m3 | 10 | gm-m7b | 2 |
+| gm-m4 | 10 | gm-m8 | 5 |
+| gm-m5 | 15 | | |
+
+**Chưa chụp:**
+- gm-m7b khung trial và renewing, cả hai chế độ: một học viên không thể vừa là Pro có giao dịch (7a) vừa là trial (7b); click quá 45 s (R257).
+- gm-m5 khung `session-round` (vòng nhắc): lượt chạy dừng sau câu sai đầu tiên theo thiết kế.
+- gm-m5 khung `recall-answer`: ô gõ không hiện.
+- gm-m5 chế độ sáng hỏng một lần trong lượt chạy đầy đủ (thông báo bị cắt còn một dòng, chưa chẩn đoán), lượt sau qua; coi là flaky. Chạy riêng `gm-m5` thì mất khung `session-round`.
+
+**Nhìn ảnh:** không thấy chữ tối khó đọc, không thấy mảng trắng hay quầng trắng trong ảnh tối; hộp thoại, lớp mờ, menu, lịch, gói, đăng nhập và trang công khai đều đọc được. Panel "Chưa đúng" tối là 16 % cam trên nền surface, viền 55 %, như mockup (ở 1440 panel che mép dưới thẻ: vị trí hoặc animation, không phải màu).
+- Chấm giai đoạn trong "86 từ theo ngăn" ở Hôm nay còn màu cũ, mockup dùng thang xanh `level-*`: token đã có, chưa áp → đợt polish.
+- Trang Chính sách và Điều khoản hiện `[[PHIÊN BẢN]]`, `[[NGÀY HIỆU LỰC]]`, `[[EMAIL HỖ TRỢ]]`: nội dung pháp lý trong DB, việc của chủ dự án.
+- Ảnh cả trang: nền dừng ở y = 900 (cao khung nhìn), thanh tab dưới và nút lịch hiện giữa trang ở 390 px. Có thể là lỗi chụp cả trang với phần tử `fixed`; chưa xem lại trong trình duyệt thật.
+- Quầng vàng trang công khai ở 1024/1440 tối đậm hơn mockup: chưa so với khung công khai của mockup → đợt polish. Hàng xen kẽ ở Nguồn dữ liệu (768, tối) nền xanh xám nhạt hơn: M9 không đổi phần này, chưa kiểm.
+- Ảnh sáng 768 và 1024 chưa xem; ảnh 1440 chỉ xem ở dạng thu nhỏ.
+
+**Kiểm trên cây cuối `76da588b`** (worktree sạch riêng, đã xóa)
+- E2e `pnpm cf:docker` cả bộ: 453 qua, 2 flaky (qua khi chạy lại), 17 skip, 0 hỏng. Flaky: `cai-thien-a-speak.spec.ts:125` (mobile, en, tối, 390 px) và `landing.spec.ts` LR50 (hết giờ trong `scrollThrough`, do tải máy). Chế độ render qua: landing tĩnh, không trang nào dưới `/app` prerender.
+- JS size: `cf:docker --bundle-stats` rồi so, thoát 0 (bảng trên).
+- Lượt e2e trước chạy khi cây đang bị sửa (R264): 4 hỏng (3 ở m1), không lặp lại trên cây sạch, nên coi là nhiễu do cây đổi giữa lượt.
+- Web unit, lint, typecheck: 1467 test qua, lint và typecheck sạch, ghi ở lần sửa cuối của đợt sửa (trước `76da588b`); `76da588b` chỉ đổi công cụ chụp ảnh. Admin lint, typecheck, test (1418), build (biến môi trường như CI) qua trên `aadb78bc`; đợt sửa sau đó không đụng `apps/admin`. Hai nhóm này không chạy lại riêng trên `76da588b`.
+- Sửa `ThemeProvider`: test đỏ trước (4 case e2e `m9-dark` hỏng ở bước sau-khi-chuyển-trang; unit 2 hỏng), xanh sau sửa; `m9-dark` + `m2` qua 25, skip 1.
+
+**Review cuối (`57b3f71c..aadb78bc`):** 0 Critical, 4 Important, đã xử lý cả bốn.
+- I1: thanh trình duyệt (`theme-color`) quay về màu hệ điều hành sau lần chuyển trang đầu (Next dựng lại thẻ meta, effect không chạy lại). Sửa trong `ThemeProvider` (`b5d60908`).
+- I2: công cụ chụp ảnh treo (regex `/Kinh doanh · B1/` không còn khớp carousel Nhóm, không có `actionTimeout`) và thiếu ảnh tối của phiên. Sửa ở `7b8bb2fa`, `76da588b`; chụp lại 544 ảnh.
+- I3: chưa có as-built: chính mục này.
+- I4: chưa đo cây cuối: đã đo ở mục trên.
+
+Kèm các minor sửa ngay: comment `Dialog.tsx:33`, nhãn task ở R251 và R256, `lighthouse.mjs` bỏ `shell: true` trên Linux.
+
+**Minor để lại** (đã triage trong review cuối)
+- Đợt polish: thu hẹp bốn mục allow tiền tố; xóa chữ "dot grid" trong comment `styles/app-background.test.ts`, `ui/actions.test.tsx` và class `dot-grid` chết ở `AuthShowcase.tsx:17`; dòng `if (!target) return null` thừa trong `CustomizeDialog`; hộp Tùy chỉnh trống tới khi chunk về (tải trước khi di chuột hoặc focus nút; chunk lỗi thì rơi vào error boundary của route); `HouseAd` có thể bỏ lỡ đếm một lần chuyển trang; ghim đúng hex `level-*` khi polish dùng lần đầu; nhận xét `wrong-*` chưa trích dòng mockup.
+- Công cụ chạy tay: `--write-baseline` chép số không kiểm hợp lệ và nuốt lỗi khi file baseline cũ hỏng (CI đỏ ở trang gói thay vì xanh nhầm); đường CLI của `compare-bundle-stats` chưa có test, chạy cục bộ nên truyền `.docker-out/route-bundle-stats.json`; `lighthouse.mjs` dừng cả lượt khi một report hỏng; vòng câu sai của gm-m5 giới hạn 60 lượt (khoảng 30 câu); bộ cũ m1–m5 chờ tới 15 s câu hỏi chào.
+- Giữ nguyên: `color-scheme: light` chưa ghim; thân test m6/m7a/m7b chưa thụt lề (R261, repo không có prettier); `color-scheme: dark` còn ở cả `dark.css` và `web-dark.css` tới khi polish xóa `dark.css`; lớp tiếp xúc `.gstack-face` dùng rem (R260, lệch tối đa 0,5 px ở bản sáng).
+
+**Chưa kiểm / việc của chủ dự án**
+- **Đo khung hình trên điện thoại thật (QM9-7):** theo `docs/deliveries/giao-dien-moi-do-dien-thoai.md`; design §14 cần số này trước PR cuối vào `dev`. Chưa đo, và cách đo (Wi-Fi hay cắm USB trên Android) chưa chọn. Các điều kiện trong hướng dẫn chưa chạy thử (cookie `Secure` qua `http://<IP>`, container tới API qua IP, số thẻ đến hạn sau `learner:setup`).
+- iOS (Safari Web Inspector cần máy Mac) chưa thử.
+- Ảnh gm-m7b (trial, renewing), gm-m5 `session-round` và `recall-answer` chưa có.
+- CI của PR này chưa chạy; chưa merge gì. CI cho biết cây cuối có vượt giới hạn JS ở route nào không.
+- Lighthouse và Schema chạy trên build bootstrap (localhost, không `INDEXABLE`), chưa chạy trên domain thật.
+- Quầng vàng trang công khai so mockup, và nền cả trang dừng ở 900 px: chưa xác nhận trong trình duyệt thật.
+- Chưa chụp tiếng Anh.
