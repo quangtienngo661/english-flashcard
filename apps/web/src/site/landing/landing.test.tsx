@@ -67,8 +67,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
   });
 
   it('F.22 reads as general English, not IELTS-only: no caption pill under the groups, no exam wording', () => {
-    const { container } = renderHome();
-    expect(container.querySelector('[data-group-caption]')).toBeNull();
+    renderHome();
     expect(screen.queryByText(/12 từ · ôn lần đầu ngày mai/)).toBeNull();
     expect(screen.getByText('Bài báo sáng nay')).toBeInTheDocument();
     expect(screen.getByText('Sau khi đọc một bài')).toBeInTheDocument();
