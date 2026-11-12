@@ -72,6 +72,7 @@
   --animate-wm-theme-icon-in: wm-theme-icon-in 250ms var(--ease-wm-enter) both;
   --animate-wm-theme-icon-out: wm-theme-icon-out 250ms var(--ease-wm-exit) both;
   /* Learner sessions (owner 27/10/2026, docs/audit/2026-10-26-motion-nguoi-hoc.md): next card, answer feedback, the wiggle (300ms). */
+  --animate-wm-bar-grow: wm-bar-grow 700ms var(--ease-wm-out) both;
   --animate-wm-card-rise: wm-card-rise 200ms var(--ease-wm-enter) both;
   --animate-wm-feedback-in: wm-feedback-in 160ms var(--ease-wm-enter) both;
   /* Owner 10/11/2026: the result panel slides down from under the question card, with a slight settle at the end. */
@@ -116,6 +117,11 @@
     to {
       transform: translateY(-100%);
       opacity: 0;
+    }
+  }
+  @keyframes wm-bar-grow {
+    from {
+      transform: scaleX(0);
     }
   }
   @keyframes wm-card-rise {
@@ -322,11 +328,11 @@
   width: 18.125em;
   flex: none;
   font-size: 1rem;
-  padding-bottom: calc(var(--gstack-layers, 0) * 0.62em);
 }
-.gstack[data-layers='1'] { --gstack-layers: 1; }
-.gstack[data-layers='2'] { --gstack-layers: 2; }
-.gstack[data-layers='3'] { --gstack-layers: 3; }
+/* Room for the cards behind: how far the lowest one reaches below the face (its translateY less half its scale loss of 23em). */
+.gstack[data-layers='1'] { padding-bottom: 0.635em; }
+.gstack[data-layers='2'] { padding-bottom: 1.129em; }
+.gstack[data-layers='3'] { padding-bottom: 1.416em; }
 /* Hôm nay row: 176 px desktop, 150 px phone. */
 .gstack[data-size='today'] { font-size: 0.5173rem; }
 /* Một nhóm head: 210 px desktop, 150 px phone. */
@@ -347,7 +353,6 @@
   overflow: hidden;
   border-width: 2px;
   border-style: solid;
-  border-radius: 1.952em;
   background: var(--color-wm-surface);
   padding: 1.603em 1.743em 1.394em;
   /* Tinted with the group colour like the prototype (vong 10 `.gc`), over a faint ink contact shadow. */
@@ -356,20 +361,24 @@
     0 2.23em 4.18em -2.65em color-mix(in srgb, var(--gstack-tone, var(--color-wm-ink)) 70%, transparent);
   color: var(--color-wm-ink);
 }
+/* An empty group (no word): dashed, on its wash (mockup L487). */
+.gstack-face[data-empty] {
+  border-style: dashed;
+  background: var(--color-wm-group-empty-wash);
+}
+/* The cards behind (mockup L483-485, d1-d3): the face's size, lower, smaller, blurred and fainter. The mockup's em is 290/13 px; here
+   1em is 16 px at 290 px, so .95/1.8/2.5em become 1.325/2.509/3.486em and the 2.5/5/7 px blur is .156/.3125/.4375em. */
 .gstack-behind {
   position: absolute;
+  inset: 0 0 auto;
   height: 23em;
   border-width: 1.5px;
   border-style: solid;
-  border-radius: 1.835em;
   background: var(--color-wm-surface);
 }
-.gstack-behind[data-behind='1'] { left: 0.544em; top: 1.973em; width: 17.038em; height: 21.62em; opacity: 0.85; }
-.gstack-behind[data-behind='2'] { left: 1.088em; top: 3.946em; width: 15.95em; height: 20.24em; opacity: 0.55; border-radius: 1.718em; }
-.gstack-behind[data-behind='3'] { left: 1.631em; top: 5.918em; width: 14.863em; height: 18.86em; opacity: 0.3; border-radius: 1.6em; }
-.gstack[data-size='carousel'] .gstack-behind[data-behind='1'] { filter: blur(0.078em); }
-.gstack[data-size='carousel'] .gstack-behind[data-behind='2'] { filter: blur(0.156em); }
-.gstack[data-size='carousel'] .gstack-behind[data-behind='3'] { filter: blur(0.234em); }
+.gstack-behind[data-behind='1'] { transform: translateY(1.325em) scale(0.94); filter: blur(0.156em); opacity: 0.85; }
+.gstack-behind[data-behind='2'] { transform: translateY(2.509em) scale(0.88); filter: blur(0.3125em); opacity: 0.55; }
+.gstack-behind[data-behind='3'] { transform: translateY(3.486em) scale(0.82); filter: blur(0.4375em); opacity: 0.3; }
 .gstack-meta {
   font-size: 1.0875em;
   font-weight: 500;
@@ -426,50 +435,43 @@
   color: var(--color-wm-ink);
 }
 
-/* The Nhóm carousel "Trượt mờ" (motion doc §3, Figma 82:3213 / 82:3368; GroupCarousel.tsx). Each slot gets --k (signed distance to
-   the centre) inline and data-abs (|k|). Phones: 128px step, one neighbour each side; from 48rem: 230px step, two each side. */
+/* The Nhóm carousel "Vòng cung" (mockup L466-499, vong-7 L192-201; GroupCarousel.tsx). Each slot carries its arcSlot numbers inline:
+   --x (desktop) and --xp (phone) and --y in px of the 290 px master (turned into rem here, as the page scales on wide screens), --r in
+   degrees, --s, --o and --z; data-abs is |k|. Phones: 340 px track, one neighbour each side in reach; from 48rem: 450 px, two.
+   --gcar-step is the arc's horizontal step (step × 0.84), read by a press on the track to find the stack under it. */
 .gcar-track {
   position: relative;
-  height: 21rem;
-  --gcar-step: 8rem;
-  --gcar-drop: 1.3125rem;
+  height: 21.25rem;
+  --gcar-step: 6.72rem;
 }
 @media (width >= 48rem) {
   .gcar-track {
-    height: 29.5rem;
-    --gcar-step: 14.375rem;
-    --gcar-drop: 1.75rem;
+    height: 28.125rem;
+    --gcar-step: 12.075rem;
   }
 }
 .gcar-slot {
   position: absolute;
-  top: 1.875rem;
+  top: 2rem;
   left: 50%;
   translate: -50% 0;
-  transform-origin: top center;
-  transform: translateX(calc(var(--k) * var(--gcar-step))) translateY(calc(var(--gcar-a) * var(--gcar-drop))) scale(var(--gcar-s));
-  opacity: var(--gcar-o);
-  z-index: calc(10 - var(--gcar-a));
+  transform-origin: 50% 130%;
+  transform: translateX(calc(var(--xp) * 0.0625rem)) translateY(calc(var(--y) * 0.0625rem)) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+  opacity: var(--o);
+  z-index: var(--z);
   transition:
     transform var(--transition-duration-wm-carousel) var(--ease-wm-carousel),
     opacity var(--transition-duration-wm-fade) var(--ease-wm-out);
 }
-.gcar-slot .gstack {
-  filter: blur(var(--gcar-b));
-  transition:
-    filter var(--transition-duration-wm-blur) var(--ease-wm-out),
-    translate 300ms var(--ease-wm-out);
-}
-.gcar-slot[data-abs='0'] { --gcar-a: 0; --gcar-s: 1; --gcar-o: 1; --gcar-b: 0px; }
-.gcar-slot[data-abs='1'] { --gcar-a: 1; --gcar-s: 0.83; --gcar-o: 0.7; --gcar-b: 3.6px; }
-.gcar-slot[data-abs='2'] { --gcar-a: 2; --gcar-s: 0.66; --gcar-o: 0; --gcar-b: 7.2px; }
-.gcar-slot[data-abs='3'] { --gcar-a: 3; --gcar-s: 0.5; --gcar-o: 0; --gcar-b: 7.2px; }
 @media (width >= 48rem) {
-  .gcar-slot[data-abs='2'] { --gcar-o: 0.4; }
+  .gcar-slot {
+    top: 2.125rem;
+    transform: translateX(calc(var(--x) * 0.0625rem)) translateY(calc(var(--y) * 0.0625rem)) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+  }
 }
-.gcar-track[data-instant] .gcar-slot,
-.gcar-track[data-instant] .gcar-slot .gstack {
-  transition: none;
+.gcar-slot[data-abs='3'] { pointer-events: none; }
+.gcar-slot .gstack {
+  transition: translate 300ms var(--ease-wm-out);
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .gcar-slot[data-abs='0']:hover .gstack {
@@ -483,7 +485,37 @@
   right: 0;
   text-align: center;
 }
-/* "Quầng màu nhóm": a soft glow in the centre group's wash; its colour changes in 700ms. */
+/* The glow behind the arc in the centre group's colour (mockup L468-469), its colour changing in 700ms. The mockup mixes the colour
+   to 26% and 7%; here each gradient runs from the full colour at that opacity, which draws the same (no mixed colour value). */
+.gcar-glow {
+  position: absolute;
+  inset: -2rem 0 0;
+  pointer-events: none;
+  transition: color var(--transition-duration-wm-halo) var(--ease-wm-out);
+}
+.gcar-glow::before,
+.gcar-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.gcar-glow::before {
+  background: radial-gradient(46% 50% at 50% 40%, currentColor, transparent 72%);
+  opacity: 0.26;
+}
+.gcar-glow::after {
+  background: linear-gradient(180deg, currentColor, transparent 80%);
+  opacity: 0.07;
+}
+.gcar-glow.border-wm-group-0 { color: var(--color-wm-group-0); }
+.gcar-glow.border-wm-group-1 { color: var(--color-wm-group-1); }
+.gcar-glow.border-wm-group-2 { color: var(--color-wm-group-2); }
+.gcar-glow.border-wm-group-3 { color: var(--color-wm-group-3); }
+.gcar-glow.border-wm-group-4 { color: var(--color-wm-group-4); }
+.gcar-glow.border-wm-group-5 { color: var(--color-wm-group-5); }
+.gcar-glow.border-wm-group-6 { color: var(--color-wm-group-6); }
+.gcar-glow.border-wm-group-empty { color: var(--color-wm-group-empty); }
+/* "Quầng màu nhóm" behind the Một nhóm head (GroupPage.tsx): a soft glow in the group's wash; its colour changes in 700ms. */
 .gcar-halo {
   position: absolute;
   inset: 0 8% 10%;
@@ -492,16 +524,11 @@
   opacity: 0.9;
   transition: background-color var(--transition-duration-wm-halo) var(--ease-wm-out);
 }
-/* The block under the carousel rises in again for each group: rows 14px up, 45ms apart; bar segments grow from the left. */
+/* The block under the arc rises in again for each group (mockup L939-945): rows 14px up, 460ms, 45ms apart. */
 @keyframes wm-rise {
   from {
     opacity: 0;
     transform: translateY(14px);
-  }
-}
-@keyframes wm-grow {
-  from {
-    transform: scaleX(0);
   }
 }
 .gcar-rise > * {
@@ -509,24 +536,14 @@
 }
 .gcar-rise > :nth-child(2) { animation-delay: 45ms; }
 .gcar-rise > :nth-child(3) { animation-delay: 90ms; }
-.gcar-rise figure li > span:first-child {
-  transform-origin: left;
-  animation: wm-grow var(--transition-duration-wm-count) var(--ease-wm-out) both;
-}
-.gcar-rise figure li:nth-child(1) > span:first-child { animation-delay: 120ms; }
-.gcar-rise figure li:nth-child(2) > span:first-child { animation-delay: 160ms; }
-.gcar-rise figure li:nth-child(3) > span:first-child { animation-delay: 200ms; }
-.gcar-rise figure li:nth-child(4) > span:first-child { animation-delay: 240ms; }
-.gcar-rise figure li:nth-child(5) > span:first-child { animation-delay: 280ms; }
-.gcar-rise figure li:nth-child(6) > span:first-child { animation-delay: 320ms; }
 @media (prefers-reduced-motion: reduce) {
   .gcar-slot,
   .gcar-slot .gstack,
+  .gcar-glow,
   .gcar-halo {
     transition: none;
   }
-  .gcar-rise > *,
-  .gcar-rise figure li > span:first-child {
+  .gcar-rise > * {
     animation: none;
   }
 }

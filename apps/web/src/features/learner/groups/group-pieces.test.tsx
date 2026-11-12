@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react';
 import { renderApp } from '@/test-utils/render-app';
-import { StageBar } from '@/ui/StageBar';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { DeckButtons } from './DeckButtons';
 import { GroupStack } from './GroupStack';
 import type { GroupSummary } from './groups-api';
@@ -18,7 +18,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   it('normal face: words, name, waiting count and the next card', () => {
     const g = deck({ priority: 4, due: 14, new: 6 }, [6, 9, 10, 11, 8, 4], { next_lemma: 'mitigate' });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
-    expect(screen.getByText('48 từ · 12 đã thuộc')).toBeInTheDocument();
+    expect(screen.getByText('48 từ')).toBeInTheDocument();
     expect(screen.getByText('Đề 12 · Writing')).toBeInTheDocument();
     expect(screen.getByText('24')).toBeInTheDocument();
     expect(screen.getByText('thẻ chờ')).toBeInTheDocument();
@@ -65,10 +65,10 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   });
 });
 
-describe('StageBar', () => {
+describe('SegmentBar', () => {
   it('is a figure with one item per segment', () => {
     renderApp(
-      <StageBar
+      <SegmentBar
         aria-label="nhịp ôn"
         segments={[
           { size: 6, fill: 6, tone: 'bg-wm-accent', label: 'Mới: 6/6' },

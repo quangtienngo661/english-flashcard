@@ -69,6 +69,19 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     expect(screen.getByText('Đề 9 · Listening, 18 thẻ chờ')).toBeInTheDocument();
   });
 
+  it('five → presses in a row (Review Focus 5): five steps on is the centre, one link, no stack left without its transition', async () => {
+    const SEVEN = [...FIVE.slice(0, 4), deck('g-10', 'Đề 10 · Writing', 3), deck('g-b1', 'Công việc · B1', 0), FIVE[4]];
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(SEVEN) });
+    await centre();
+    for (let i = 0; i < 5; i += 1) key('ArrowRight');
+    // Order: 12, 9, 14, 10 (waiting), Công việc, Đề 11 (done, by name), Du lịch Nhật (empty); five steps on from the first.
+    expect(await centre()).toHaveTextContent('Đề 11 · Speaking');
+    const r = await region();
+    expect(within(r).getAllByRole('link')).toHaveLength(1);
+    // A stack that wraps from one end of the arc to the other jumps without a transition for one frame, then gets it back.
+    r.querySelectorAll<HTMLElement>('[data-k]').forEach((slot) => expect(slot.style.transition).toBe(''));
+  });
+
   it('← from the first group wraps to the last', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
@@ -116,10 +129,12 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     }
   });
 
-  it('below the carousel: the rhythm bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
+  it('below the carousel: the "nhịp ôn" eyebrow, the level bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
-    expect(screen.getByRole('figure', { name: 'Nhịp ôn: mới đến 30 ngày' })).toBeInTheDocument();
+    expect(screen.getByText('nhịp ôn: Mới → Bậc 5')).toBeInTheDocument();
+    const bar = screen.getByRole('figure', { name: 'Số từ theo bậc' });
+    expect(within(bar).getByRole('img', { name: 'Bậc 2 · 3 từ · ôn lại sau 3 ngày' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-12');
     expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
   });

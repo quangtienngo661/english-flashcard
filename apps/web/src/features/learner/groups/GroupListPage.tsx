@@ -7,14 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { cn } from '@/lib/cn';
-import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
+import { LevelBar } from '@/ui/LevelBar';
 import { TextButton } from '@/ui/TextButton';
-import { toLevel, useLevelName } from '@/ui/levels';
 import { useAddWord } from '../add-word/add-word-context';
-import { carouselOrder, rhythm, stepTo } from './carousel';
+import { carouselOrder, rhythm } from './carousel';
 import { waiting } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
 import { ms, rememberRect, token, useFlipFrom } from './flip';
@@ -22,9 +20,6 @@ import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
 import { GroupPicker } from './GroupPicker';
 import { useGroups, type GroupSummary } from './groups-api';
-
-/** Picking a group further than this jumps with no animation (motion doc §3). */
-const JUMP_STEPS = 3;
 
 /** One-letter and arrow keys are ignored while typing or inside a dialog (design §8.5; same filter as `add-word-context.tsx`). */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -89,7 +84,6 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   const locale = useLocale();
   const router = useRouter();
   const [centreId, setCentreId] = useState(order[0].id);
-  const [instant, setInstant] = useState(false);
   const [announce, setAnnounce] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const centreRef = useRef<HTMLDivElement>(null);
@@ -106,7 +100,6 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   function goTo(index: number) {
     const target = order[index];
     if (!target || index === centre) return;
-    setInstant(Math.abs(stepTo(centre, index, order.length)) > JUMP_STEPS);
     setCentreId(target.id);
     setAnnounce(t('live', { name: target.name, count: waiting(target) }));
   }
@@ -133,13 +126,6 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     event.preventDefault();
     openGroup();
   }
-
-  // The jump without animation lasts one frame, then transitions come back for the next step.
-  useEffect(() => {
-    if (!instant) return;
-    const frame = requestAnimationFrame(() => setInstant(false));
-    return () => cancelAnimationFrame(frame);
-  }, [instant]);
 
   const keys = useRef({ step, openGroup });
   useEffect(() => {
@@ -185,7 +171,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
           </TextButton>
         </div>
       </div>
-      <GroupCarousel groups={order} centre={centre} instant={instant} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
+      <GroupCarousel groups={order} centre={centre} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
       <p aria-live="polite" className="sr-only">
         {announce}
       </p>
@@ -194,26 +180,20 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   );
 }
 
-/** "Dưới băng chuyền" (Figma 82:3348): the rhythm bar in the group colour, Học · Ôn, "Xem nhóm →", "Thêm từ" (desktop). */
+/**
+ * Under the arc (mockup L505-506, L885-890): the "nhịp ôn: Mới → Bậc 5" eyebrow, the words per level (420 px), Học · Ôn, "Xem nhóm →",
+ * "Thêm từ" (desktop). Keyed by the group, so the three rows rise in again for each one (`.gcar-rise`, 460 ms, 45 ms apart).
+ */
 function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const t = useTranslations('App.groups');
-  const levelName = useLevelName();
   const locale = useLocale();
   const { open } = useAddWord();
-  const tone = groupTone(group.id, group.total);
   return (
-    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
+    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
       <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
-      <StageBar
-        aria-label={t('rhythm')}
-        className="max-w-105"
-        segments={rhythm(group.cells).map((c) => ({
-          size: c.total,
-          fill: c.due,
-          tone: tone.bg,
-          label: t('rhythmSegment', { level: levelName(toLevel(c.level)), due: c.due, total: c.total }),
-        }))}
-      />
+      <div className="w-full max-w-105">
+        <LevelBar counts={rhythm(group.cells).map((c) => c.total)} />
+      </div>
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
         <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
         <Link

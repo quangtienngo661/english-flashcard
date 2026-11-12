@@ -59,7 +59,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
   ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
   // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
-  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'],
+  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'], ['pass', 'surface'],
 ];
 
 describe('wm design tokens (web.css, web-dark.css)', () => {
@@ -148,13 +148,13 @@ describe('wm group and motion tokens (M3)', () => {
   it('declares the carousel motion curves and durations', () => {
     const ease = tokens(web, 'ease-wm');
     expect(ease.get('out')).toBe('cubic-bezier(0.23, 1, 0.32, 1)');
-    expect(ease.get('carousel')).toBe('cubic-bezier(0.3, 1.25, 0.5, 1)');
+    expect(ease.get('carousel')).toBe('cubic-bezier(0.34, 1.56, 0.64, 1)');
     expect(ease.get('flip')).toBe('cubic-bezier(0.3, 1.15, 0.5, 1)');
     expect(ease.get('rise')).toBe('cubic-bezier(0.3, 1.3, 0.5, 1)');
     expect(ease.get('count')).toBe('cubic-bezier(0.3, 1.4, 0.5, 1)');
     const ms = tokens(web, 'transition-duration-wm');
     expect(Object.fromEntries(['carousel', 'fade', 'blur', 'halo', 'rise', 'count', 'flip', 'page-in', 'lift'].map((k) => [k, ms.get(k)])))
-      .toEqual({ carousel: '620ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
+      .toEqual({ carousel: '660ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
   });
 
   it('P.6: the strong ease-out and the kit curves keep the values they had in globals.css and theme.css', () => {

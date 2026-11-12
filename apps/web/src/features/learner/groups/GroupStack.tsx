@@ -6,13 +6,14 @@ import type { MouseEvent, Ref } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
 import { stackDepth } from './carousel';
-import { mastered, waiting } from './deck-actions';
+import { waiting } from './deck-actions';
 import type { GroupSummary } from './groups-api';
 
 /**
  * One group as a stack of cards (M3 Figma A §2.3, §4): the face plus up to three cards behind it. One design scaled with
  * `font-size` (the `.gstack` rules in globals.css are in `em`); `size` picks the base size: `today` (Hôm nay row), `carousel`
- * (Nhóm), `page` (Một nhóm head). The face shows the normal, done (nothing waiting) or empty (no word) state.
+ * (Nhóm), `page` (Một nhóm head). The face shows the normal, done (nothing waiting) or empty (no word, dashed) state; the cards behind
+ * sit lower, smaller and blurred (mockup L483-487).
  */
 export function GroupStack({
   group,
@@ -49,10 +50,10 @@ export function GroupStack({
   return (
     <div ref={ref} className={cn('gstack', className)} data-size={size} data-layers={layers}>
       {[3, 2, 1].filter((n) => n <= layers).map((n) => (
-        <div key={n} aria-hidden data-behind={n} className={cn('gstack-behind', tone.soft)} />
+        <div key={n} aria-hidden data-behind={n} className={cn('gstack-behind rounded-wm-dialog', tone.soft)} />
       ))}
-      <div className={cn('gstack-face', tone.border)}>
-        <p className="gstack-meta">{empty ? t('empty') : t('words', { count: group.total, mastered: mastered(group) })}</p>
+      <div className={cn('gstack-face rounded-wm-dialog', tone.border)} data-empty={empty || undefined}>
+        <p className="gstack-meta">{empty ? t('empty') : t('words', { count: group.total })}</p>
         <p className="gstack-name">{name}</p>
         <div className="gstack-grow" />
         {empty ? (

@@ -109,7 +109,7 @@ for (const scheme of ['light', 'dark'] as const) {
       const t = copy[locale].App;
       await page.goto(`/${locale}/app/group?id=${DECK}`);
       await expect(page.getByRole('heading', { name: NAME, exact: true })).toBeVisible();
-      await expect(page.getByRole('listitem', { name: 'deploy', exact: true })).toBeVisible();
+      await expect(page.getByRole('row', { name: 'deploy', exact: true })).toBeVisible();
       const add = page.getByRole('main').getByRole('button', { name: t.group.addWord, exact: true });
       await expect(add).toBeVisible();
       expect(await add.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);

@@ -17,12 +17,15 @@ import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
+import { Card } from '@/ui/Card';
+import { LevelBar } from '@/ui/LevelBar';
+import { LevelChip, type LevelChipTone } from '@/ui/LevelChip';
+import { PageTitle } from '@/ui/PageTitle';
+import { SectionTitle } from '@/ui/SectionTitle';
 import { TextButton } from '@/ui/TextButton';
-import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
+import { LEVEL_FILL, STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
 import { rhythm } from './carousel';
-import { mastered } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
 import { useCloseFlip, useFlipFrom } from './flip';
 import { useGroupDialogs } from './GroupDialogs';
@@ -122,7 +125,6 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const addWord = useAddWord();
   const t = useTranslations('App.group');
   const levelName = useLevelName();
-  const tGroups = useTranslations('App.groups');
   const locale = useLocale() as AppLocale;
   const format = useFormat();
   const summary = useGroups().data?.items.find((g) => g.id === detail.id);
@@ -134,19 +136,18 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const total = summary?.total ?? detail.item_count;
   // Owner 06/11/2026: a deck with no words leads with [Thêm từ]; no study button for 0 words and no counts that are all 0.
   const empty = total === 0;
-  const known = summary ? mastered(summary) : 0;
   const created = detail.created_at ? format.date(detail.created_at, 'full') : null;
   const tone = groupTone(detail.id, total);
   const pageRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
   useFlipFrom('group-stack', stackRef, pageRef);
   const close = useCloseFlip('group-stack-back', stackRef, pageRef);
-  const filters: Array<{ id: WordFilter; label: string }> = [
-    { id: 'all', label: t('filterAll') },
-    { id: 'priority', label: t('filterPriority') },
-    { id: 'due', label: t('filterDue') },
-    { id: 'new', label: t('filterNew') },
-    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: t('filterLevel', { level }) })),
+  const filters: Array<{ id: WordFilter; label: string; tone: LevelChipTone }> = [
+    { id: 'all', label: t('filterAll'), tone: 'all' },
+    { id: 'priority', label: t('filterPriority'), tone: 'priority' },
+    { id: 'due', label: t('filterDue'), tone: 'due' },
+    { id: 'new', label: t('filterNew'), tone: 0 },
+    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: levelName(level), tone: level })),
   ];
   const filterTotal = filterCount(summary, filter, detail.item_count);
   const left = filterTotal === null ? null : Math.max(0, filterTotal - shown.length);
@@ -156,22 +157,16 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       <div data-in="0">
         <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} />
       </div>
-      <section aria-labelledby="group-title" className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
+      <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
         {/* Above the group info while it flies in from the carousel (motion doc §3). */}
         <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
         <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
-          <p className="text-wm-meta text-wm-muted">
-            {created === null
-              ? t('metaNoDate', { count: detail.item_count, mastered: known })
-              : known > 0
-                ? t('metaMastered', { count: detail.item_count, mastered: known, date: created })
-                : t('meta', { count: detail.item_count, date: created })}
-          </p>
-          <h1 id="group-title" className="flex items-center gap-3 font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">
-            <span aria-hidden className={cn('size-3.25 shrink-0 rounded-wm-key md:size-4', tone.bg)} />
-            <span className="min-w-0 wrap-anywhere">{detail.name}</span>
-          </h1>
+          <div className="min-w-0 wrap-anywhere">
+            <PageTitle eyebrow={created === null ? t('metaNoDate', { count: detail.item_count }) : t('meta', { count: detail.item_count, date: created })}>
+              {detail.name}
+            </PageTitle>
+          </div>
           {summary && !empty && (
             <ul aria-label={t('todayChips')} className="flex flex-wrap gap-2">
               {(
@@ -190,20 +185,9 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             </ul>
           )}
           {summary && !empty && (
-            <StageBar
-              aria-label={tGroups('rhythm')}
-              segments={rhythm(summary.cells).map((c) => ({
-                size: c.total,
-                fill: c.due,
-                tone: tone.bg,
-                label: tGroups('rhythmSegment', { level: levelName(toLevel(c.level)), due: c.due, total: c.total }),
-              }))}
-              labels={rhythm(summary.cells).map((c) => (
-                <span key={c.level} className="hidden md:inline">
-                  <b className="font-bold text-wm-ink">{c.total}</b> {levelName(toLevel(c.level))}
-                </span>
-              ))}
-            />
+            <div className="max-w-180">
+              <LevelBar size="lg" counts={rhythm(summary.cells).map((c) => c.total)} />
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-3">
             {empty ? (
@@ -238,27 +222,13 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
         <EmptyDeck />
       ) : (
         <section data-in="2" aria-labelledby="all-words" className="flex flex-col gap-3">
-          <h2 id="all-words" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
-            {t('allWords', { count: total })}
-          </h2>
-          <div role="group" aria-label={t('filterLabel')} className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+          <SectionTitle id="all-words">{t('allWords', { count: total })}</SectionTitle>
+          <div role="group" aria-label={t('filterLabel')} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
             {filters.map((f) => {
               const count = filterCount(summary, f.id, detail.item_count);
-              const pressed = f.id === filter;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  aria-pressed={pressed}
-                  onClick={() => setFilter(f.id)}
-                  className={cn(
-                    'flex min-h-9 shrink-0 items-baseline gap-1 rounded-wm-control border px-3 py-1.5 text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
-                    pressed ? 'border-wm-accent bg-wm-level-all-tint-strong text-wm-ink ring-1 ring-inset ring-wm-accent' : 'border-wm-line bg-wm-surface text-wm-muted hover:text-wm-ink',
-                  )}
-                >
-                  <span>{f.label}</span>
-                  {count !== null && <span className="text-wm-meta font-bold">{format.number(count)}</span>}
-                </button>
+              // Until the deck summary arrives only [Tất cả] has a count to show.
+              return count === null ? null : (
+                <LevelChip key={f.id} tone={f.tone} label={f.label} count={count} pressed={f.id === filter} onPress={() => setFilter(f.id)} />
               );
             })}
           </div>
@@ -275,11 +245,24 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             <p className="text-wm-base text-wm-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
           ) : (
             <>
-              <ul aria-label={t('allWords', { count: total })} className="flex flex-col gap-2">
-                {shown.map((word) => (
-                  <WordRow key={word.item_id} card={word} groupId={detail.id} />
-                ))}
-              </ul>
+              <Card className="p-2 pb-1 md:p-2 md:pb-1">
+                <table aria-label={t('allWords', { count: total })} className="w-full border-separate border-spacing-0 text-left">
+                  <thead>
+                    <tr className={ROW}>
+                      <Th>{t('colWord')}</Th>
+                      <Th className="hidden md:table-cell">{t('colPos')}</Th>
+                      <Th className="hidden md:table-cell">{t('colMeaning')}</Th>
+                      <Th className="text-right md:text-left">{t('colLevel')}</Th>
+                      <Th className="hidden md:table-cell">{t('colState')}</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((word, i) => (
+                      <WordRow key={word.item_id} card={word} groupId={detail.id} last={i === shown.length - 1} />
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
               {words.hasNextPage && (
                 <TextButton onPress={() => void words.fetchNextPage()} isDisabled={words.isFetchingNextPage} className="w-fit">
                   {left !== null && left > 0 ? t('loadMore', { count: left }) : t('loadMoreUnknown')}
@@ -347,10 +330,30 @@ function EmptyDeck() {
   );
 }
 
-function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
+// raw-ok: on phones a row is two columns, the word and meaning on the left, the level and status on the right
+const ROW = 'grid grid-cols-[1fr_auto] md:table-row';
+
+function Th({ className, children }: { className?: string; children: string }) {
+  return (
+    <th scope="col" className={cn('whitespace-nowrap border-b border-wm-line px-4 py-2.5 text-left text-wm-meta font-normal text-wm-muted', className)}>
+      {children}
+    </th>
+  );
+}
+
+/** The status of a row, cased as a label and coloured by what it asks of the learner (mockup L375). */
+function rowState(card: DeckWord): { key: 'priorityTag' | 'newWord' | 'dueOn' | 'dueToday'; tone: string } {
+  if (card.priority) return { key: 'priorityTag', tone: STATE_TEXT.priority };
+  if (card.section === 'new') return { key: 'newWord', tone: STATE_TEXT.new };
+  if (card.section === 'early') return { key: 'dueOn', tone: STATE_TEXT.ok };
+  return { key: 'dueToday', tone: STATE_TEXT.due };
+}
+
+function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; last: boolean }) {
   const t = useTranslations('App.group');
   const tCommon = useTranslations('App.common');
   const levelName = useLevelName();
+  const levelInterval = useLevelInterval();
   const locale = useLocale() as AppLocale;
   const errorText = useErrorMessage();
   const { removeItem } = useGroupMutations();
@@ -358,13 +361,11 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   const [busy, setBusy] = useState(false);
   const word = card.content.lemma;
   const level = toLevel(card.level);
-  const status = card.priority
-    ? t('priorityTag')
-    : card.section === 'new'
-      ? t('newWord')
-      : card.section === 'early'
-        ? t('dueOn', { date: createFormat(locale, 'UTC').date(`${card.due_date}T00:00:00Z`, 'dayMonth') })
-        : t('dueToday');
+  const state = rowState(card);
+  const status = state.key === 'dueOn' ? t('dueOn', { date: createFormat(locale, 'UTC').date(`${card.due_date}T00:00:00Z`, 'dayMonth') }) : t(state.key);
+  // One divider per word: under the whole row on desktop, under the second grid row (meaning and status) on phones.
+  const cell = cn('px-4 py-3 align-middle', !last && 'md:border-b md:border-wm-line');
+  const phoneDivider = !last && 'border-b border-wm-line';
 
   async function remove() {
     if (busy) return;
@@ -381,60 +382,61 @@ function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   }
 
   return (
-    <li aria-label={word} className="flex items-center gap-4 rounded-wm-row bg-wm-surface px-4 py-3 shadow-wm-row">
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-baseline md:gap-4">
+    <tr aria-label={word} className={ROW}>
+      <td className={cn(cell, 'col-start-1 row-start-1 min-w-0 pb-0 md:pb-3')}>
         <Link
           href={`/${locale}/app/word?w=${encodeURIComponent(word)}`}
-          className="font-wm-display text-wm-word text-wm-ink outline-none wrap-anywhere hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent md:w-47.5 md:shrink-0 md:text-xl"
+          className="font-wm-display text-wm-word text-wm-ink outline-none wrap-anywhere hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
           {word}
         </Link>
-        <span className="hidden w-24 shrink-0 text-wm-meta text-wm-muted md:block">{card.content.pos}</span>
-        <span className="min-w-0 flex-1 text-wm-small text-wm-muted wrap-anywhere md:text-wm-base md:text-wm-ink">
-          {card.content.meaning.text}
-          {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
+      </td>
+      <td className={cn(cell, 'hidden text-wm-meta text-wm-muted md:table-cell')}>{card.content.pos}</td>
+      <td className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
+        {card.content.meaning.text}
+        {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
+      </td>
+      <td className={cn(cell, 'col-start-2 row-start-1 pb-0 text-right md:pb-3 md:text-left')}>
+        <span title={levelInterval(level) ?? undefined} className="inline-flex items-center gap-1.5 whitespace-nowrap text-wm-label text-wm-ink">
+          <span aria-hidden className={cn('h-1.5 w-5.5 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
+          {levelName(level)}
         </span>
-      </div>
-      <span className="hidden w-32.5 shrink-0 items-center gap-1.5 text-wm-caption text-wm-muted md:flex">
-        <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
-        {levelName(level)}
-      </span>
-      <span className={cn('shrink-0 text-right text-wm-label md:w-30', card.priority ? 'text-wm-fail' : statusTone(card))}>{status}</span>
-      <TextButton
-        tone="muted"
-        aria-label={t('removeLabel', { word })}
-        isDisabled={busy}
-        onPress={() => (card.group_count === 1 ? setConfirm(true) : void remove())}
-        className="min-h-11 shrink-0 px-1"
-      >
-        <X aria-hidden className="size-4" />
-      </TextButton>
-      <Dialog
-        isOpen={confirm}
-        onOpenChange={(isOpen) => !isOpen && setConfirm(false)}
-        title={t('removeLastTitle', { word })}
-        closeLabel={tCommon('close')}
-        isDismissable={!busy}
-        footer={
-          <>
-            <TextButton tone="muted" onPress={() => setConfirm(false)} className="justify-center">
-              {t('keep')}
-            </TextButton>
-            <Button variant="danger" onPress={() => void remove()} isPending={busy}>
-              {t('removeLastConfirm')}
-            </Button>
-          </>
-        }
-      >
-        <p role="note" className="rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
-          {t('removeLastBody')}
-        </p>
-      </Dialog>
-    </li>
+      </td>
+      <td className={cn(cell, phoneDivider, 'col-start-2 row-start-2 pt-0 md:pt-3')}>
+        <div className="flex items-center justify-end gap-2 md:justify-between">
+          <span className={cn('text-wm-label', state.tone)}>{status}</span>
+          <TextButton
+            tone="muted"
+            aria-label={t('removeLabel', { word })}
+            isDisabled={busy}
+            onPress={() => (card.group_count === 1 ? setConfirm(true) : void remove())}
+            className="min-h-11 shrink-0 px-1"
+          >
+            <X aria-hidden className="size-4" />
+          </TextButton>
+        </div>
+        <Dialog
+          isOpen={confirm}
+          onOpenChange={(isOpen) => !isOpen && setConfirm(false)}
+          title={t('removeLastTitle', { word })}
+          closeLabel={tCommon('close')}
+          isDismissable={!busy}
+          footer={
+            <>
+              <TextButton tone="muted" onPress={() => setConfirm(false)} className="justify-center">
+                {t('keep')}
+              </TextButton>
+              <Button variant="danger" onPress={() => void remove()} isPending={busy}>
+                {t('removeLastConfirm')}
+              </Button>
+            </>
+          }
+        >
+          <p role="note" className="rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+            {t('removeLastBody')}
+          </p>
+        </Dialog>
+      </td>
+    </tr>
   );
-}
-
-/** Status colour of a row (Figma 84:3552): the deck's dark ink, as the drawn "từ mới" / "cần ôn hôm nay". */
-function statusTone(card: DeckWord): string {
-  return card.section === 'early' ? 'text-wm-muted' : 'text-wm-ink';
 }

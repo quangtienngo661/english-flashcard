@@ -22,9 +22,6 @@ export function deckPlan(group: GroupSummary): DeckPlan {
   return learned ? { learn: null, recall: 'extra', primary: null, doneToday: true } : { learn: 'all', recall: null, primary: null, doneToday: true };
 }
 
-/** Words at level 4 or 5: answered right at the 7-day review (DC11). */
-export const mastered = (group: GroupSummary) => (group.cells[4]?.total ?? 0) + (group.cells[5]?.total ?? 0);
-
 /** Cards waiting today in a deck (priority + due + new, already capped by the API). */
 export const waiting = (g: GroupSummary) => g.today.priority + g.today.due + g.today.new;
 
