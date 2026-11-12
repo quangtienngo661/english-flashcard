@@ -2,12 +2,14 @@
 
 import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
+import { useWordCycle } from '@/lib/word-cycle';
 import { Card } from '@/ui/Card';
 import { LEVEL_FILL, LEVEL_INTERVAL_DAYS, useLevelInterval, useLevelName, type Level } from '@/ui/levels';
 import { TargetWord } from '@/ui/TargetWord';
+import { TypingBlank } from '@/ui/TypingBlank';
 
 // The panel beside the sign-in and sign-up forms, from 1280 px only (P.14, mockup L418-460, L1395-1480). It tells the learning loop: words
 // travel a dashed memory path from "Mới" to "Bậc 5", the word card cycles five words, the practice card types the word into the blank and
@@ -47,40 +49,14 @@ const WORDS: DemoWord[] = [
   { word: 'coherent', pos: 'adjective · /kəʊˈhɪə.rənt/', gloss: 'logical and well organised', example: 'She gave a clear and coherent answer.', question: ['Write a ', ' argument in your essay.'], level: 4 },
 ];
 
-const DUE_START = 12;
-
-type Step = { k: number; typed: number; phase: 'typing' | 'enter' | 'done'; due: number };
-
-const FIRST: Step = { k: 0, typed: 0, phase: 'typing', due: DUE_START };
-/** The last frame of the first word's loop: typed, answered, one fewer due. */
-const FINAL: Step = { k: 0, typed: WORDS[0].word.length, phase: 'done', due: DUE_START - 1 };
-
-/** The next frame of the loop and how long the current one stays (mockup L1453-1474, typing at a steady 100 ms a letter). */
-function next(step: Step): [ms: number, Step] {
-  const length = WORDS[step.k % WORDS.length].word.length;
-  if (step.phase === 'typing' && step.typed === 0) return [900, { ...step, typed: 1 }];
-  if (step.phase === 'typing' && step.typed < length) return [100, { ...step, typed: step.typed + 1 }];
-  if (step.phase === 'typing') return [320, { ...step, phase: 'enter' }];
-  if (step.phase === 'enter') return [260, { ...step, phase: 'done', due: Math.max(0, step.due - 1) }];
-  const k = step.k + 1;
-  return [1700, { k, typed: 0, phase: 'typing', due: k % WORDS.length === 0 ? DUE_START : step.due }];
-}
+const LENGTHS = WORDS.map((w) => w.word.length);
 
 export function AuthShowcase() {
   const t = useTranslations('App.auth.showcase');
   const levelName = useLevelName();
   const levelInterval = useLevelInterval();
   const motion = !useReducedMotion();
-  const [running, setRunning] = useState<Step>(FIRST);
-
-  useEffect(() => {
-    if (!motion) return;
-    const [ms, after] = next(running);
-    const timer = setTimeout(() => setRunning(after), ms);
-    return () => clearTimeout(timer);
-  }, [motion, running]);
-
-  const step = motion ? running : FINAL;
+  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'first' });
   const word = WORDS[step.k % WORDS.length];
 
   return (
@@ -169,17 +145,7 @@ export function AuthShowcase() {
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
           <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', motion && 'animate-wm-showcase-swap')}>
             {word.question[0]}
-            <span
-              className={cn(
-                'inline-block min-w-21 px-1',
-                step.phase === 'done'
-                  ? 'rounded-wm-control border border-wm-pass bg-wm-pass-soft text-wm-pass'
-                  : 'rounded-t-wm-control border-b-2 border-wm-accent bg-wm-showcase-blank text-wm-accent',
-              )}
-            >
-              {word.word.slice(0, step.typed)}
-              {motion && step.phase !== 'done' && <span className="ml-px inline-block h-4 w-0.5 bg-wm-accent align-middle animate-wm-showcase-caret" />}
-            </span>
+            <TypingBlank word={word.word} typed={step.typed} done={step.phase === 'done'} motion={motion} />
             {word.question[1]}
           </p>
           <p className="flex min-h-6 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
