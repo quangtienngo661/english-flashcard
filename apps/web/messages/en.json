@@ -903,7 +903,6 @@
       "hintPhone": "Tap to open",
       "live": "{name}, {count, plural, one {# card} other {# cards}} waiting",
       "rhythm": "Review rhythm: New → Level 5",
-      "rhythmSegment": "{level}: {due, number} waiting of {total, number} words",
       "open": "Open deck",
       "pickerTitle": "Choose a deck (F)",
       "capWaiting": "Cards waiting",

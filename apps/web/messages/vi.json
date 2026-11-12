@@ -903,7 +903,6 @@
       "hintPhone": "Chạm để mở nhóm",
       "live": "{name}, {count, number} thẻ chờ",
       "rhythm": "nhịp ôn: Mới → Bậc 5",
-      "rhythmSegment": "{level}: {due, number} thẻ chờ trong {total, number} từ",
       "open": "Xem nhóm",
       "pickerTitle": "Chọn nhóm (F)",
       "capWaiting": "Còn thẻ chờ",
