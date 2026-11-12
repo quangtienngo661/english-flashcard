@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
+import { TextButton } from '@/ui/TextButton';
 import { LEVEL_FILL, toLevel, useLevelName, type Level } from '@/ui/levels';
 import type { AnswerResult } from './use-practice-session';
 
@@ -16,12 +17,46 @@ export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
 }
 
 /**
- * The result panel under the question card (Figma 100:3164 "Đúng rồi", 178:5546 / 178:5755 "Chưa đúng"; P.13, mockup L332-349,
- * L1213-1225: its own block 16 px under the card, 16 px between its parts, actions at the right). "Not quite" shows the answer as a big
- * line in a pass-tinted block with its meaning, speaker and definition. The sentence translation sits in the question card (P.13).
+ * F.14 (drawing panelC; owner D2, D3): the result ticket. It tucks 22 px under the question card, or under the open hint box (both are
+ * `relative z-10`), 18 px in from their sides, with no top border, and slides down from under them (420 ms ease-out, motion-safe only).
+ * The stub holds the 24 px badge, the title and the note that applies to the case (on phones it wraps under the title); a dashed
+ * perforation with two notches follows; then the body, and the actions at the right: the secondary one as a muted text button, then the
+ * primary one. Wrong in fail tones, right in pass tones. Also the shell of the try-again panel (`TryAgainPanel`).
+ */
+export function ResultTicket({ right, note, children, actions }: { right: boolean; note?: ReactNode; children?: ReactNode; actions: ReactNode }) {
+  const t = useTranslations('App.practice.session');
+  return (
+    // Announced through the session's live region (audit 26/10/2026 #8), so this panel is not a second status.
+    <div
+      data-feedback
+      className={cn(
+        'relative mx-4.5 -mt-5.5 flex flex-col gap-4 rounded-b-wm-card border-2 border-t-0 px-6 pb-4 pt-9.5 motion-safe:animate-wm-panel-drop',
+        right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <p className={cn('flex items-center gap-2.5 font-wm-display text-wm-ticket-title', right ? 'text-wm-pass' : 'text-wm-wrong-ink')}>
+          <span aria-hidden className={cn('flex size-6 shrink-0 items-center justify-center rounded-full text-wm-on-accent', right ? 'bg-wm-pass' : 'bg-wm-wrong-ink')}>
+            {right ? <Check className="size-4" /> : <X className="size-4" />}
+          </span>
+          {right ? t('right') : t('wrong')}
+        </p>
+        {note && <div className="min-w-0 basis-full break-words font-wm-sans text-wm-meta font-semibold text-wm-muted md:flex-1 md:text-right">{note}</div>}
+      </div>
+      <div aria-hidden className={cn('ticket-perf', right ? 'text-wm-pass' : 'text-wm-fail')} />
+      {children}
+      <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>
+    </div>
+  );
+}
+
+/**
+ * The result under the question card (F.14 ticket, above). Body: the meaning as the lead line, with the English definition beside it in
+ * muted text when it differs, then the answer word with its speaker. The answer also fills the sentence in the card (P.13).
  * Design đợt cải thiện A §6.3: (1) correct + show_known → Know; (2) correct without Know or hints → Next;
  * (3) correct with hints, without Know → Next; (4) wrong/skipped + highlight_needs_review → Still learning.
- * Enter follows the bold button. Wrong outside learning offers only Next.
+ * Enter follows the bold button. Wrong outside learning offers only Next. The stub's note is the case note; on a right answer with a
+ * level move ("Bậc 1 → Bậc 2") the move takes the stub and the case note follows the answer word.
  * D16 Bước 3: only buttons labelled Đã biết / Cần ôn lại change the schedule.
  */
 export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = false }: {
@@ -48,92 +83,62 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
       : kind === 3 ? ['noteHint', null] as const
         : kind === 4 ? ['noteWrong', 'noteWrongTap'] as const : null;
 
-  const review = kind !== null && (
-    <Button
-      key="review"
-      variant={kind === 4 ? 'primary' : 'secondary'}
-      autoFocus={focusPrimary && kind === 4}
-      isDisabled={busy}
-      onPress={() => onReview('needs_review')}
-    >
+  // F.14: the secondary action is a muted text button; the primary one keeps its button and takes the focus.
+  const review = kind !== null && (kind === 4 ? (
+    <Button key="review" variant="primary" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('needs_review')}>
       {t('stillLearning')}
     </Button>
-  );
+  ) : (
+    <TextButton key="review" tone="muted" className="px-3" isDisabled={busy} onPress={() => onReview('needs_review')}>
+      {t('stillLearning')}
+    </TextButton>
+  ));
   const forward = kind === 1 ? (
     <Button key="know" variant="pass" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('known')}>
       <Check aria-hidden className="size-4.5" />
       {t('know')}
     </Button>
+  ) : kind === 4 ? (
+    <TextButton key="next" tone="muted" className="px-3" isDisabled={busy} onPress={onNext}>
+      {t('next')}
+    </TextButton>
   ) : (
-    <Button key="next" variant={kind === 4 ? 'secondary' : 'primary'} autoFocus={focusPrimary && kind !== 4} isPending={busy} onPress={onNext}>
+    <Button key="next" variant="primary" autoFocus={focusPrimary} isPending={busy} onPress={onNext}>
       {t('next')}
     </Button>
   );
   const buttons: ReactNode[] = kind === 4 ? [forward, review] : [review, forward];
 
   const definition = result.definition_en && result.definition_en !== result.meaning ? result.definition_en : null;
+  const caseNote = schedule ? (
+    <p>{tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma, level: levelName(toLevel(schedule.level)) })}</p>
+  ) : note && (
+    <>
+      <p className={cn(note[1] && 'hidden md:block')}>{t(note[0], { lemma })}</p>
+      {note[1] && <p className="md:hidden">{t(note[1], { lemma })}</p>}
+    </>
+  );
+  const moveNote = move && (
+    <div role="group" aria-label={t('levelMove', { from: levelName(move.from), to: levelName(move.to) })} className="flex flex-wrap items-center gap-2 md:justify-end">
+      <LevelName level={move.from}>{levelName(move.from)}</LevelName>
+      <ArrowRight aria-hidden className="size-3.5" />
+      <LevelName level={move.to}>{levelName(move.to)}</LevelName>
+    </div>
+  );
 
   return (
-    // Announced through the session's live region (audit 26/10/2026 #8), so this panel is not a second status.
-    // 3C (owner 27/10/2026): the result rises in.
-    <div
-      data-feedback
-      className={cn(
-        'mt-4 flex flex-col gap-4 rounded-wm-card border-2 p-5 shadow-wm-card motion-safe:animate-wm-panel-drop md:p-6',
-        right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className={cn('flex size-7.5 shrink-0 items-center justify-center rounded-full text-wm-on-accent', right ? 'bg-wm-pass' : 'bg-wm-wrong-ink')}>
-          {right ? <Check aria-hidden className="size-4.5" /> : <X aria-hidden className="size-4.5" />}
-        </span>
-        <p className={cn('font-wm-display text-wm-card-title', right ? 'text-wm-pass' : 'text-wm-wrong-ink')}>{right ? t('right') : t('wrong')}</p>
-        {right && (
-          <>
-            <span className="hidden flex-1 md:block" />
-            <span className="flex min-w-0 basis-full items-center gap-1 md:basis-auto">
-              <span className="min-w-0 break-words font-wm-sans text-wm-base-strong text-wm-ink">{t('revealLine', { lemma, meaning: result.meaning })}</span>
-              <SpeakWord text={lemma} />
-            </span>
-          </>
-        )}
+    <ResultTicket right={right} note={moveNote || caseNote} actions={buttons}>
+      <p className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1">
+        <span className="min-w-0 break-words font-wm-display text-wm-ticket-lead text-wm-ink">{result.meaning}</span>
+        {definition && <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-muted">{definition}</span>}
+      </p>
+      <div className="flex items-center gap-2">
+        {/* Large text (19 px bold): pass on the light wrong wash is 4.495:1, which only large text may use (F.14 tokens test). */}
+        <span className="min-w-0 break-words font-wm-sans text-wm-word text-wm-pass">{lemma}</span>
+        <SpeakWord text={lemma} />
       </div>
-      {right ? (
-        definition && <p className="break-words font-wm-sans text-wm-small text-wm-muted">{definition}</p>
-      ) : (
-        <div
-          role="group"
-          aria-label={tRecall('compare.answer')}
-          className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5 rounded-wm-row border border-wm-answer-line bg-wm-pass-soft px-4 py-3.5"
-        >
-          <span className="w-full font-wm-sans text-wm-meta text-wm-pass">{tRecall('compare.answer')}</span>
-          <span className="min-w-0 break-words font-wm-display text-wm-card-heading font-extrabold text-wm-pass">{lemma}</span>
-          <span className="min-w-0 break-words font-wm-sans text-wm-word text-wm-ink">{result.meaning}</span>
-          <span className="ml-auto self-center">
-            <SpeakWord text={lemma} />
-          </span>
-          {definition && <span className="w-full break-words font-wm-sans text-wm-small text-wm-muted">{definition}</span>}
-        </div>
-      )}
-      {move && (
-        <div role="group" aria-label={t('levelMove', { from: levelName(move.from), to: levelName(move.to) })} className="flex flex-wrap items-center gap-2 font-wm-sans text-wm-small-strong text-wm-ink">
-          <LevelName level={move.from}>{levelName(move.from)}</LevelName>
-          <ArrowRight aria-hidden className="size-4 text-wm-muted" />
-          <LevelName level={move.to}>{levelName(move.to)}</LevelName>
-        </div>
-      )}
-      {schedule ? (
-        <p className="font-wm-sans text-wm-small text-wm-muted">
-          {tRecall(schedule.outcome === 'leveled_up' ? 'noteLeveled' : 'noteKept', { lemma, level: levelName(toLevel(schedule.level)) })}
-        </p>
-      ) : note && (
-        <>
-          <p className={cn('font-wm-sans text-wm-small text-wm-muted', note[1] && 'hidden md:block')}>{t(note[0], { lemma })}</p>
-          {note[1] && <p className="font-wm-sans text-wm-small text-wm-muted md:hidden">{t(note[1], { lemma })}</p>}
-        </>
-      )}
-      <div className={cn('grid gap-3 md:flex md:justify-end', buttons.filter(Boolean).length === 2 && 'grid-cols-2')}>{buttons}</div>
-    </div>
+      {moveNote && caseNote && <div className="font-wm-sans text-wm-small text-wm-muted">{caseNote}</div>}
+    </ResultTicket>
   );
 }
 

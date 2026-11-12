@@ -59,7 +59,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
   ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'],
   // F.14: the result ticket's text on its wash (the muted note, the answer word, the meaning).
-  ['muted', 'wrong-soft'], ['pass', 'wrong-soft'], ['ink', 'wrong-soft'], ['muted', 'pass-soft'], ['ink', 'pass-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
+  ['muted', 'wrong-soft'], ['ink', 'wrong-soft'], ['muted', 'pass-soft'], ['ink', 'pass-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
   // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
   ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'], ['pass', 'surface'],
 ];
@@ -114,6 +114,14 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
     expect(style('block-title')).toEqual(['1.375rem', '1.25', '-0.012em', '700']);
     expect(style('block-title-mobile')).toEqual(['1.25rem', '1.25', '-0.012em', '700']);
+  });
+
+  it('F.14: the answer word on the wrong ticket is large text: pass on the light wash reaches 3:1, not 4.5:1', () => {
+    // #1b7a46 on #fae7e4 is 4.495:1, so pass text on the light wash must stay large (text-wm-word: 19 px, 700); dark reaches 4.5.
+    const text = tokens(web, 'text-wm');
+    expect([text.get('word'), text.get('word--font-weight')]).toEqual(['1.1875rem', '700']);
+    expect(contrast(light, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(3);
+    expect(contrast(dark, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(4.5);
   });
 
   it('pins the result ticket type (F.14: Bricolage 800, 1.25rem title, 1.7rem lead)', () => {

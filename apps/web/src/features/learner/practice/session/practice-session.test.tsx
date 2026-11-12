@@ -440,7 +440,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Try 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Show answer/ }));
-    expect(await screen.findByRole('group', { name: 'answer' })).toHaveTextContent(/cache\s*bộ nhớ đệm/);
+    // F.14: the wrong ticket now shows the meaning as its lead, then the answer word.
+    await waitFor(() => expect(document.querySelector('[data-feedback]')).toHaveTextContent(/bộ nhớ đệm\s*to start using a new system\s*cache/));
     expect(posts(v.calls, '/v1/practice/items/item-6/skip')).toHaveLength(1);
   });
 

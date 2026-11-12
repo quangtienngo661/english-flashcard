@@ -75,8 +75,8 @@
   --animate-wm-bar-grow: wm-bar-grow 700ms var(--ease-wm-out) both;
   --animate-wm-card-rise: wm-card-rise 200ms var(--ease-wm-enter) both;
   --animate-wm-feedback-in: wm-feedback-in 160ms var(--ease-wm-enter) both;
-  /* Owner 10/11/2026: the result panel slides down from under the question card, with a slight settle at the end. */
-  --animate-wm-panel-drop: wm-panel-drop 420ms cubic-bezier(0.22, 1.15, 0.36, 1) both;
+  /* F.14: the result ticket slides down from under the question card (or the hint box), ease-out with no overshoot. */
+  --animate-wm-panel-drop: wm-panel-drop 420ms var(--ease-wm-out) both;
   --animate-wm-wiggle-soft: wm-wiggle-soft 300ms var(--ease-wm-standard);
   --animate-wm-pop-in: wm-pop-in 180ms var(--ease-wm-spring) both;
   /* End-of-session summary: its blocks rise one after another, 90ms apart, 400ms each (design §8.3, GM20). */
@@ -139,10 +139,7 @@
   @keyframes wm-panel-drop {
     from {
       opacity: 0;
-      transform: translateY(-3.5rem);
-    }
-    40% {
-      opacity: 1;
+      transform: translateY(-2.25rem);
     }
   }
   @keyframes wm-wiggle-soft {
@@ -245,6 +242,31 @@
     mix-blend-mode: soft-light;
     opacity: 0.07;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+
+/* F.14: the result ticket's perforation (drawing panelC): a 1.5 px dashed line across the panel at 40 % of the text colour (set fail or
+   pass on the element), with two 16 px notches in the page colour cut into the panel's sides. The negative margin is the panel's px-6. */
+@utility ticket-perf {
+  position: relative;
+  height: 0;
+  margin-inline: -1.5rem;
+  border-top: 1.5px dashed color-mix(in oklab, currentColor 40%, transparent);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -0.5625rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background-color: var(--color-wm-bg);
+  }
+  &::before {
+    left: -0.5625rem;
+  }
+  &::after {
+    right: -0.5625rem;
   }
 }
 

@@ -46,7 +46,7 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   if (opened.length === 0) return null;
   const nextLevel = levels.find((n) => n > item.hint_level);
   return (
-    <section aria-labelledby={titleId} className={cn(GRID, 'mt-4 rounded-wm-card border border-wm-hint-line bg-wm-accent-soft px-5 py-4.5')}>
+    <section aria-labelledby={titleId} className={cn(GRID, 'relative z-10 mt-4 rounded-wm-card border border-wm-hint-line bg-wm-accent-soft px-5 py-4.5')}>
       <div className="col-span-full flex items-center gap-2">
         <Lightbulb aria-hidden className="size-4 shrink-0 text-wm-ink" />
         <h3 id={titleId} className="text-wm-small-strong text-wm-ink">

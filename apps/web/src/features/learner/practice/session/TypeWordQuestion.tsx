@@ -1,12 +1,13 @@
 'use client';
 
-import { Lightbulb, X } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
 import { FIELD_BOX } from '@/ui/field-styles';
 import { TextButton } from '@/ui/TextButton';
+import { ResultTicket } from './AnswerFeedback';
 import type { Outcome } from './use-practice-session';
 
 /** What a typed answer field holds and does: the text, read-only after a final result, and Enter's two meanings (send, or retype). */
@@ -104,9 +105,9 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
 }
 
 /**
- * K/64 "Chưa đúng" for a wrong typed answer that can still be retried, under the card like the result (Figma 178:5326; P.13):
- * [Xem đáp án] (text), [Gợi ý H], [Làm lại Enter]. A session word is spelt right: the spelling text would mislead, and the owner
- * wants no line instead (07/11/2026).
+ * K/64 "Chưa đúng" for a wrong typed answer that can still be retried, in the wrong result ticket (F.14, D2) with no answer:
+ * [Xem đáp án] (muted text), [Gợi ý], [Làm lại]; the keys are unchanged. A session word is spelt right: the spelling text would
+ * mislead, and the owner wants no line instead (07/11/2026).
  */
 export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onReveal, busy }: {
   sessionWord: boolean;
@@ -118,30 +119,28 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
 }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div data-feedback className="mt-4 flex flex-col gap-4 rounded-wm-card border-2 border-wm-wrong-line bg-wm-wrong-soft p-5 shadow-wm-card motion-safe:animate-wm-panel-drop md:p-6">
-      <div className="flex items-center gap-3">
-        <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-wm-wrong-ink text-wm-on-accent">
-          <X aria-hidden className="size-4.5" />
-        </span>
-        <p className="font-wm-display text-wm-card-title text-wm-wrong-ink">{t('wrong')}</p>
-      </div>
+    <ResultTicket
+      right={false}
+      actions={
+        <>
+          <TextButton tone="muted" className="px-3" isDisabled={busy} onPress={onReveal}>
+            {t('reveal')}
+          </TextButton>
+          {hintAvailable && (
+            <Button variant="secondary" onPress={onHint}>
+              <Lightbulb aria-hidden className="size-4" />
+              {t('hint.button')}
+            </Button>
+          )}
+          <Button variant="primary" onPress={onRetry}>
+            {t('retry')}
+          </Button>
+        </>
+      }
+    >
       {!sessionWord && <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('tryAgainBody')}</p>}
       <p className="font-wm-sans text-wm-small text-wm-muted">{t('tryAgainNote')}</p>
-      <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:justify-end">
-        <TextButton tone="muted" className="col-span-2 row-start-2 justify-center md:col-auto md:row-auto md:mr-auto" isDisabled={busy} onPress={onReveal}>
-          {t('reveal')}
-        </TextButton>
-        {hintAvailable && (
-          <Button variant="secondary" onPress={onHint}>
-            <Lightbulb aria-hidden className="size-4" />
-            {t('hint.button')}
-          </Button>
-        )}
-        <Button variant="primary" className={hintAvailable ? undefined : 'col-span-2'} onPress={onRetry}>
-          {t('retry')}
-        </Button>
-      </div>
-    </div>
+    </ResultTicket>
   );
 }
 
