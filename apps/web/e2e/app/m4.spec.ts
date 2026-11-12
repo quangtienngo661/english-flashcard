@@ -181,7 +181,9 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByText(en.session.tryAgainBody)).toBeVisible();
     await answer.fill('cache');
     await answer.press('Enter');
-    await expect(page.getByText('cache · bộ nhớ đệm', { exact: true })).toBeVisible();
+    // F.14: the ticket shows the meaning and the word on their own lines; the live region still reads them as one line.
+    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+    await expect(page.getByText(`${en.session.right}. cache · bộ nhớ đệm`, { exact: true })).toBeAttached();
     await page.keyboard.press('Enter');
 
     // Round prompt, one more question, then the summary.
@@ -328,7 +330,9 @@ for (const scheme of ['light', 'dark'] as const) {
         const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
         await expect(primary).toBeVisible();
         await expect(primary.locator('kbd')).toHaveCount(0);
-        await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(1);
+        // F.12: Enter is named in the key legend, which phones (below md) do not show.
+        const wide = (page.viewportSize()?.width ?? 0) >= 768;
+        await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(wide ? 1 : 0);
         if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
         const where = `${locale} case ${kind} feedback (${scheme})`;
         await noSideScroll(page, where);

@@ -234,7 +234,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page.getByRole('button', { name: /Next/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveCount(0);
       await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveCount(0);
-      await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(1);
+      // F.12: Enter is named in the key legend, which phones (below md) do not show.
+      const wide = (page.viewportSize()?.width ?? 0) >= 768;
+      await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(wide ? 1 : 0);
       await expect(page.getByRole('link', { name: en.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);
