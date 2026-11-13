@@ -70,21 +70,44 @@ earlier code runs on the newer database.
 
 `backup.sh` runs before every deploy and daily from cron: `pg_dump -Fc` → `backups/` → R2 bucket `wordmet-backups`.
 
-Restore (the database is lost or wrong):
+Restore into an **empty** database, then migrate it to the running code. `pg_restore --clean` on the live database would keep tables
+created after the dump and rewind `_prisma_migrations`, and the next deploy would fail on "relation already exists".
 
 ```bash
 cd /srv/wordmet/app && alias compose=deploy/scripts/compose.sh
-compose exec api node dist/cli/accounts-deletions.js export --out /tmp/deletions.txt   # if the database still answers
+U=<POSTGRES_USER>; D=<POSTGRES_DB>; F=/srv/wordmet/backups/<file>.dump
+# 1. Accounts deleted after the dump must be deleted again: list them while the database still answers (skip if it does not).
+compose exec api node dist/cli/accounts-deletions.js export --out /tmp/deletions.txt
 docker cp "$(compose ps -q api)":/tmp/deletions.txt /srv/wordmet/backups/deletions.txt
+# 2. Stop the app, replace the database with an empty one, load the dump.
 compose stop api worker
-compose exec -T postgres pg_restore -U <POSTGRES_USER> -d <POSTGRES_DB> --clean --if-exists < /srv/wordmet/backups/<file>.dump
+compose exec -T postgres dropdb -U "$U" --force "$D"
+compose exec -T postgres createdb -U "$U" "$D"
+compose exec -T postgres pg_restore -U "$U" -d "$D" < "$F"
+# 3. Bring the schema up to the running code (backup.sh runs before migrate, so the dump may be one migration behind; add-only).
+compose --profile migrate run --rm migrate
 compose up -d api worker
+# 4. Delete again the accounts deleted after the dump.
 docker cp /srv/wordmet/backups/deletions.txt "$(compose ps -q api)":/tmp/deletions.txt
 compose exec api node dist/cli/accounts-deletions.js replay --from /tmp/deletions.txt
 ```
 
-The replay deletes again the accounts deleted after the dump was taken. A dump older than `backups/` is on R2: download it with the same
-`amazon/aws-cli` command `backup.sh` uses (`s3 cp s3://wordmet-backups/<file> …`).
+Check a backup without touching production (G1): load it into a scratch database and compare counts.
+
+```bash
+compose exec -T postgres createdb -U "$U" wordmet_restore_check
+compose exec -T postgres pg_restore -U "$U" -d wordmet_restore_check < "$F"
+for db in "$D" wordmet_restore_check; do compose exec -T postgres psql -U "$U" -d "$db" -tAc "select count(*) from users"; done
+compose exec -T postgres dropdb -U "$U" wordmet_restore_check
+```
+
+A dump older than the 3 kept in `backups/` is on R2. List and download it (the keys stay inside the container):
+
+```bash
+r2() { docker run --rm --env-file /srv/wordmet/ops.env -e AWS_DEFAULT_REGION=auto   -e AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED -e AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED   -v /srv/wordmet/backups:/backups --entrypoint sh amazon/aws-cli:2.40.2 -c   'AWS_ACCESS_KEY_ID=$R2_BACKUP_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$R2_BACKUP_SECRET_ACCESS_KEY aws --endpoint-url "$R2_BACKUP_ENDPOINT" '"$*"; }
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'
+r2 's3 cp "s3://$R2_BACKUP_BUCKET/<file>.dump" /backups/'
+```
 
 ## Admin web (by hand)
 
@@ -107,18 +130,20 @@ cat /srv/wordmet/state/current # the SHA in production
 - `watch.sh` (every 5 minutes): log events `request_failed` (5 or more), `maintenance_job_failed`, `account_deletion_failed`,
   `turnstile_bypassed`; disk above 80 %; less than 300 MB of memory; a service not running or unhealthy; an api or worker restart. One email
   per kind of problem per hour, through the Resend HTTP API (`send-alert.sh`), so it still works when the app's own mail is broken.
-- `daily-report.sh` (08:00): yesterday's accounts, learners, practice sessions, AI calls and cost, paid orders, mails sent; 5xx count and
-  p95 latency from the Caddy access log; disk and memory.
+- `daily-report.sh` (08:00 Vietnam time): yesterday's accounts, learners, practice sessions, AI calls and cost, paid orders, mails sent; 5xx count and
+  p95 latency from the Caddy access log; the newest backup; disk and memory.
+- `backup.sh` (03:00 Vietnam time, and before every deploy): a failure emails the owner (alert type `backup`).
 - A missing `ops.env` key stops the script and names the key (it lands in `logs/cron.log`).
 
-`crontab -e` as root:
+`crontab -e` as root. The times are UTC: Ubuntu's cron runs on the server clock, and whether it honours `CRON_TZ` is not verified, so
+check `timedatectl` shows `Time zone: Etc/UTC` first (or `timedatectl set-timezone Etc/UTC`). 01:00 UTC is 08:00 in Vietnam, 20:00 UTC
+is 03:00.
 
 ```
-CRON_TZ=Asia/Ho_Chi_Minh
 WORDMET_HOME=/srv/wordmet
 */5 * * * * /srv/wordmet/app/deploy/scripts/watch.sh >> /srv/wordmet/logs/cron.log 2>&1
-0 8 * * *   /srv/wordmet/app/deploy/scripts/daily-report.sh >> /srv/wordmet/logs/cron.log 2>&1
-0 3 * * *   /srv/wordmet/app/deploy/scripts/backup.sh >> /srv/wordmet/logs/cron.log 2>&1
+0 1 * * *   /srv/wordmet/app/deploy/scripts/daily-report.sh >> /srv/wordmet/logs/cron.log 2>&1
+0 20 * * *  /srv/wordmet/app/deploy/scripts/backup.sh >> /srv/wordmet/logs/cron.log 2>&1
 15 * * * *  /srv/wordmet/app/deploy/scripts/compose.sh exec -T worker node dist/cli/run-maintenance.js >> /srv/wordmet/logs/cron.log 2>&1
 ```
 
