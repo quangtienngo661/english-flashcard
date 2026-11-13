@@ -4,7 +4,9 @@ set -euo pipefail
 
 export WORDMET_HOME="${WORDMET_HOME:-/srv/wordmet}"
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$(cd "$SCRIPTS/../.." && pwd)"
+# `pwd -W` exists only in Git Bash: there it gives the Windows path the Windows docker CLI understands (local rehearsal). On Linux it
+# fails and plain `pwd` is used.
+REPO="$(cd "$SCRIPTS/../.." && { pwd -W 2>/dev/null || pwd; })"
 STATE_DIR="$WORDMET_HOME/state"
 
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
