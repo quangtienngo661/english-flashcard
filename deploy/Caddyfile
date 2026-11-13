@@ -6,9 +6,12 @@
 
 {$CADDY_SITES:api.wordmet.com, admin-api.wordmet.com} {
 	reverse_proxy api:3000
-	# JSON access log for daily-report.sh (5xx count, p95 latency). It holds client IPs, kept 7 days (privacy policy, M7).
+	# JSON access log for daily-report.sh (5xx count, p95 latency). It holds client IPs, kept 7 days (privacy policy, M7):
+	# rolled every day, and rolled files older than 7 days are deleted (roll_keep_for alone only deletes files already rolled by size).
 	log {
 		output file /var/log/caddy/access.log {
+			roll_interval 24h
+			roll_keep 7
 			roll_keep_for 168h
 		}
 		format json
