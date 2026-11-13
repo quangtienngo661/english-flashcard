@@ -1,0 +1,169 @@
+old sentences, no-think vs think: single_answer same on 11/20, level_fit same on 16/20
+
+#0 brush (A1, verb)
+  OLD (16 w): Every night, you should ___ your long hair with soft bristles to get rid of tangles. [brush]
+      single_answer: opus-v2 pass | sonnet no-think minor | sonnet think pass: The clue 'soft bristles' makes brush the only natural fit; 'comb' does not really have bristles.
+      think other: grammar_natural=minor level_fit=major (level: 'bristles' and 'tangles' are about C1 words in an A1 sentence, and 'get rid of' is also above A1.)
+  NEW (14 w, 14.4 s): Right now, Anna is ___ her long hair with soft bristles until it shines. [brushing]
+      single_answer think pass: The clue 'soft bristles' makes brushing the only natural fit, since 'combing' does not go with bristles.
+      think other: level_fit=major (level: 'bristles' is a very advanced word (around C1/C2) in an A1 sentence, and 'shines' and the sentence length are also high for A1.)
+      (old) grammar_natural: The sentence is grammatical with 'brush', but 'brush your hair with soft bristles' is a bit odd; 'with a soft brush' would be more natural.
+
+#3 game (A1, noun)
+  OLD (12 w): After dinner, our family sat down to play a board ___ together. [game]
+      single_answer: opus-v2 pass | sonnet no-think pass | sonnet think pass: No other common word fits "play a board ___"; "game" is the fixed collocation.
+      think other: all pass
+  NEW (13 w, 9.8 s): After dinner, we played a board ___ together, and Dad won every round. [game]
+      single_answer think pass: After "board", "game" is the only common word that fits, as in the fixed phrase "board game".
+      think other: level_fit=major (level: "Round" (a stage of a game) is well above A1, and "board" is also above A1, and the sentence is fairly long for the level.)
+
+#9 banana (A1, noun)
+  OLD (15 w): Cartoon characters often slip on a yellow ___ peel and fall flat on their backs. [banana]
+      single_answer: opus-v2 pass | sonnet no-think pass | sonnet think pass: The cartoon-slip cliché with a yellow peel points to banana, and no other common word fits as naturally.
+      think other: level_fit=major (level: 'peel' (B2) and 'slip' (B1-B2) are well above A1, and the 15-word sentence is long for an A1 learner.)
+  NEW (11 w, 7.2 s): The monkey grabbed a long, curved, yellow ___ from the tree. [banana]
+      single_answer think pass: Long, curved, yellow fruit that a monkey grabs from a tree points only to banana; the only alternative, plantain, is rare.
+      think other: level_fit=major (level: The word 'curved' is about B2, far above A1, and 'grabbed' is about B1, also too high for A1.)
+
+#12 install (B1, verb)
+  OLD (12 w): You need administrator rights to ___ new programs on this shared computer. [install]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think pass: No other common word has the same meaning here; 'download' or 'run' would change the meaning, so 'install' is the natural answer.
+      think other: level_fit=minor (level: 'administrator' is about B2, one level above B1, though the rest of the vocabulary is fine.)
+  NEW (23 w, 11.8 s): The program is already on the CD, so you don't need to download it; you just need to ___ it on your laptop. [install]
+      single_answer think minor: The close variant "load" could also fit, though "install" is clearly the best word.
+      think other: all pass
+
+#19 bake (A2, verb)
+  OLD (15 w): Every morning, the café staff arrive before dawn to ___ fresh bread in the oven. [bake]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think major: Common A1 words like "cook" or "make" fit "___ fresh bread in the oven" naturally, so a learner could be marked wrong.
+      think other: level_fit=major (level: "Dawn" is about B2 or higher, two levels above A2, and "staff" is also above A2.)
+  NEW (13 w, 16.3 s): Let the bread dough rise, then ___ it in the oven until golden. [bake]
+      single_answer think minor: The general verb "cook" also fits naturally, though the dough, oven and golden clues make "bake" the best fit.
+      think other: level_fit=major (level: "Dough" is around B2 and "rise" and "golden" are around B1, which is too high for an A2 sentence.)
+
+#21 souvenir (B1, noun)
+  OLD (20 w): Tourists usually buy a cheap ___ at the airport, like a keyring or a mug printed with the city name. [souvenir]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think minor: The common word "gift" could also fit the blank, though the keyring, mug and city name clues point more strongly to "souvenir".
+      think other: level_fit=minor (level: "keyring" is probably above B1 and "mug" is borderline, so the sentence is slightly hard for the level.)
+  NEW (19 w, 6.6 s): Whenever we travel, we buy a cheap ___ for ourselves, such as a fridge magnet from the local market. [souvenir]
+      single_answer think minor: The common word "gift" could loosely fit, though "for ourselves" and the travel context point to souvenir, and other options like "memento" are rare.
+      think other: level_fit=minor (level: "magnet" is likely above B1, and the sentence is fairly long for the level.)
+
+#26 recycle (A2, verb)
+  OLD (10 w): Our school teaches students to reduce, reuse and ___ waste. [recycle]
+      single_answer: opus-v2 pass | sonnet no-think pass | sonnet think pass: The fixed phrase 'reduce, reuse and ___' points to recycle, and no other common word fits.
+      think other: level_fit=minor (level: 'Reduce' and 'waste' are about B1 and the sentence is fairly long for A2, so it is slightly above level.)
+  NEW (14 w, 17.2 s): Old glass is melted down and made into new bottles, so please ___ it. [recycle]
+      single_answer think pass: Melting glass into new bottles points to recycle; 'reuse' has a different meaning, so no other common word fits equally well.
+      think other: level_fit=minor (level: The word 'melted' is above A2 (about B1-B2) and the sentence is fairly long for the level.)
+
+#29 sugar (A1, noun)
+  OLD (17 w): Melt the butter in a pan, then stir in a cup of brown ___ until it dissolves. [sugar]
+      single_answer: opus-v2 pass | sonnet no-think minor | sonnet think pass: Brown plus a substance that dissolves in melted butter points to sugar, and other common words like rice or salt do not fit.
+      think other: level_fit=major (level: The word dissolves is about B2 and melt and stir are about B1, which is two or more levels above A1.)
+  NEW (9 w, 7.5 s): Mix one cup of brown ___ with two eggs. [sugar]
+      single_answer think pass: No common synonym of sugar fits the blank; the other words that fit, such as rice, mean something different.
+      think other: enough_clue=minor level_fit=minor (level: 'Mix' is probably A2, one level above A1, while the other words are basic.)
+      enough_clue: 'Brown', 'cup' and 'eggs' point to a cooking ingredient, but 'brown rice' would also fit, so the clue is weak.
+
+#35 slice (A2, noun)
+  OLD (12 w): Add a thin ___ of lemon to your tea for extra flavour. [slice]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think minor: The common word "piece" also fits ("a thin piece of lemon") though it sounds less natural than "slice".
+      think other: level_fit=minor (level: "Flavour" is around B1, one level above A2, while the other words are A1-A2 and the sentence is short.)
+  NEW (10 w, 17.4 s): Put a thin, round ___ of lemon on each glass. [slice]
+      single_answer think minor: The general word "piece" could also fill the blank, though "slice" is the more precise and natural choice for a thin, round bit of lemon.
+      think other: all pass
+
+#38 hire (B1, verb)
+  OLD (13 w): The shop plans to ___ three extra staff for the busy Christmas season. [hire]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think minor: Synonyms such as "employ" or "recruit" could also fit, but they are less common or higher level, and "hire" is the most natural choice for seasonal staff.
+      think other: all pass
+  NEW (18 w, 14.0 s): The company had too much work, so it decided to ___ three new designers on a six-month contract. [hire]
+      single_answer think major: "employ" and "recruit" both fit the blank naturally with the same meaning, so a learner who types one could be marked wrong.
+      think other: level_fit=minor (level: "contract" is about B2, one level above B1, though the rest of the vocabulary is fine.)
+
+#43 fry (A2, verb)
+  OLD (15 w): Crispy chips are made by ___ thin potato slices in hot oil until golden brown. [frying]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think minor: The broader word "cooking" also fits the blank, though "hot oil" and "golden brown" point strongly to frying.
+      think other: level_fit=minor (level: "Crispy" and "slices" are around B1, one level above A2.)
+  NEW (13 w, 23.2 s): Don't boil the potatoes this time; ___ them in hot oil until golden. [fry]
+      single_answer think minor: The common word "cook" also fits "___ them in hot oil until golden", though it is broader than "fry".
+      think other: level_fit=minor (level: "golden" is probably around B1, one level above A2, and the semicolon sentence is a little long for A2.)
+
+#50 stakeholder (B2, noun)
+  OLD (26 w): Unlike shareholders, who mainly care about profit, every ___ with an interest in the company, from workers to local residents, deserves a voice in major decisions. [stakeholder]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think pass: No other common word has the same meaning as stakeholder here; generic words like person or party lack the specific sense.
+      think other: all pass
+  NEW (25 w, 19.0 s): Before a company makes a big decision, it should consult its ___, not just its owners but also its employees, suppliers and the local community. [stakeholders]
+      single_answer think pass: The list of owners, employees, suppliers and community points to stakeholders; no other common word has that meaning.
+      think other: all pass
+
+#58 suitcase (A2, noun)
+  OLD (16 w): Before the trip, I spent an hour packing my clothes into a large ___ with wheels. [suitcase]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think major: The common A1 word "bag" fits "a large ___ with wheels" naturally, so a learner could be marked wrong.
+      think other: level_fit=minor (level: "wheels" is around B1 and the 17-word sentence is a bit long for A2.)
+  NEW (14 w, 12.7 s): Unlike a bag, a ___ for holiday clothes has a hard shell and wheels. [suitcase]
+      single_answer think minor: Another common word, 'case', could fit, though 'suitcase' is the best match with holiday clothes, a hard shell and wheels.
+      think other: level_fit=minor (level: 'Unlike' and 'shell' are above A2 (about B1), and the comparative structure is slightly complex for the level.)
+
+#74 upgrade (B2, verb)
+  OLD (22 w): My old laptop is too slow for video editing, so I plan to ___ its processor to a faster model this summer. [upgrade]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think pass: "Upgrade ... to a faster model" is the natural collocation, and "replace" would need "with", so no other common word fits equally well.
+      think other: all pass
+  NEW (15 w, 31.6 s): The airline offered to ___ our seats to business class for a small extra fee. [upgrade]
+      single_answer think pass: Words like 'move' are vaguer and lack the 'to a better class' meaning, so 'upgrade' is the natural fit.
+      think other: all pass
+
+#75 encrypt (B2, verb)
+  OLD (20 w): Before sending the file, ___ it so that only a recipient with the matching decryption key can read its contents. [encrypt/encrypting]
+      single_answer: opus-v2 minor | sonnet no-think pass | sonnet think pass: The clue 'decryption key' points to encrypt, and words like 'scramble' or 'lock' do not carry the same meaning.
+      think other: grammar_natural=minor level_fit=minor (level: 'recipient' and 'decryption' are above B2, and the sentence is fairly long for the level.)
+  NEW (22 w, 20.0 s): Before any message is sent, the app must ___ it, turning the text into unreadable gibberish that means nothing without the key. [encrypt]
+      single_answer think minor: Close variants such as "encode" or "scramble" could fit the blank, though "key" points most strongly to "encrypt".
+      think other: level_fit=major translation_ok=minor (level: "gibberish" is about C2, two levels above B2, and the sentence is also long for the level.)
+      (old) grammar_natural: The imperative 'encrypt' is natural, but 'encrypting' leaves 'Before sending the file, encrypting it so that...' without a main verb, so that accepted form is wrong.
+      translation_ok: The meaning matches, but "khó đọc" is weaker than "unreadable" (không thể đọc được), and "đống ký tự" is a loose rendering of "gibberish".
+
+#77 wash (A1, verb)
+  OLD (11 w): Mum put the dirty socks in the machine to ___ them. [wash]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think minor: "clean" could also fit after dirty socks in a machine, though "wash" is the far more natural verb.
+      think other: level_fit=minor (level: "machine" is roughly A2, one level above A1, while the other words are A1.)
+  NEW (11 w, 14.1 s): Every Sunday, Mum ___ our clothes in the sink with soap. [washes]
+      single_answer think pass: Clothes in a sink with soap points to washes; cleans is far less natural, so no other common word fits well.
+      think other: level_fit=minor (level: The word sink is probably A2 or B1, slightly above A1, though the sentence is otherwise simple and short.)
+
+#78 borrow (A1, verb)
+  OLD (14 w): Can I ___ your pen for a minute? I'll give it back after class. [borrow]
+      single_answer: opus-v2 major | sonnet no-think pass | sonnet think minor: "use" also fits the blank naturally ("Can I use your pen for a minute?") but it is a different word with a slightly different meaning, so this is only a minor weakness.
+      think other: all pass
+  NEW (13 w, 18.0 s): Yesterday I ___ ten dollars from my sister and paid her back today. [borrowed]
+      single_answer think pass: With 'from my sister' and 'paid her back', no other common word with the same meaning fits; 'took' or 'got' lack the meaning of 'mượn'.
+      think other: level_fit=minor (level: The sentence is long with two clauses for A1, and the phrasal verb 'paid her back' is a bit above A1.)
+
+#80 interface (B2, noun)
+  OLD (15 w): The new software has a clean graphical user ___ that even first-time users can understand. [interface/interfaces]
+      single_answer: opus-v2 pass | sonnet no-think pass | sonnet think pass: No other common word completes the fixed phrase 'graphical user ___'.
+      think other: grammar_natural=minor
+  NEW (18 w, 17.8 s): Early computers used typed commands, but the Macintosh offered users a graphical user ___ with windows and icons. [interface]
+      single_answer think pass: The fixed phrase 'graphical user ___' admits no other common word besides interface.
+      think other: all pass
+      (old) grammar_natural: 'interface' fits, but the accepted form 'interfaces' is ungrammatical after 'a ... user', so it should not be accepted.
+
+#90 tidy (A2, adjective)
+  OLD (17 w): Mum asked us to keep our bedrooms ___ and put all the toys back in the box. [tidy]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think minor: "neat" is a close synonym and "clean" also fits "keep our bedrooms ___", though "clean" means something different, so a learner could be marked wrong.
+      think other: all pass
+  NEW (15 w, 31.3 s): Her writing is neat, but her room is never ___ with clothes on the floor. [tidy]
+      single_answer think minor: The synonym "neat" would also fit the blank, though it repeats the earlier word and sounds awkward.
+      think other: grammar_natural=minor level_fit=minor (level: "neat" is around B1, one level above A2, and the sentence is fairly long for the level.)
+      grammar_natural: "tidy" is grammatical, but "never tidy with clothes on the floor" is a slightly clumsy construction without a comma or clearer link.
+
+#93 garnish (B2, verb)
+  OLD (17 w): Before serving the soup, the chef will ___ it with a sprig of parsley, mainly for colour. [garnish]
+      single_answer: opus-v2 major | sonnet no-think minor | sonnet think major: The common word "decorate" fits the blank naturally with the same meaning (decorate it with parsley), so a learner could be marked wrong.
+      think other: level_fit=major (level: "sprig" is about C2 and "parsley" is high for B2, so the sentence has a word at least two levels above B2.)
+  NEW (22 w, 24.3 s): The chef didn't just decorate the plate; she ___ the fish with a sprig of parsley that diners were meant to eat. [garnished]
+      single_answer think minor: Another common word such as 'topped' could fit before 'the fish with a sprig of parsley', though 'garnished' is the most precise.
+      think other: level_fit=minor (level: 'Sprig' is a very advanced word, and 'parsley' and 'diners' are also high for B2, so the sentence is a bit hard.)
+
+avg words: old 15.8, new 15.6; A1/A2 new: 14,13,11,13,14,9,10,13,14,11,13,15

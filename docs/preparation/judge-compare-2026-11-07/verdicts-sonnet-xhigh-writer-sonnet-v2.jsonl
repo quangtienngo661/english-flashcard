@@ -1,0 +1,102 @@
+{"id": 0, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"clean\" fits (\"clean your teeth\") and is an A1 word."}
+{"id": 1, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"notice\" does not fit \"pay close ___\"; only \"attention\" forms the phrase."}
+{"id": 2, "verdict": "fail_major", "other_words": ["beautiful", "lovely"], "reason": "\"beautiful\" fits (\"the beautiful route\") and is a common A1 word."}
+{"id": 3, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"sport\" does not form \"board ___\"; only \"game\" does."}
+{"id": 4, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"job\" repeats the later \"new job\" and does not mean a contract, so only \"contract\" fits."}
+{"id": 5, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"heat\" does not make river water safe to drink, so only \"boil\" fits."}
+{"id": 6, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"fight\" does not take \"with ... on price\" naturally, so only \"compete\" fits."}
+{"id": 7, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"personnel\" is unnatural after \"member of\", so only \"staff\" fits."}
+{"id": 8, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"bill\" is wrong after paying and would not allow a return, so only \"receipt\" fits."}
+{"id": 9, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"fruit\" is too vague for \"long yellow ___\" and does not name a banana, so \"banana\" is the one that fits."}
+{"id": 10, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"associate\" is unnatural after \"business\", so only \"partner\" fits."}
+{"id": 11, "verdict": "fail_minor", "other_words": ["application"], "reason": "\"application\" is the full form of \"app\" and fits, but it is a close variant."}
+{"id": 12, "verdict": "fail_minor", "other_words": ["set up"], "reason": "\"set up\" fits the blank and means roughly the same as \"install\", but it is a phrasal variant."}
+{"id": 13, "verdict": "fail_minor", "other_words": ["demanding", "high-pressure"], "reason": "\"demanding\" fits but is a slightly higher-level near-synonym."}
+{"id": 14, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"bill\" does not fit since they have not yet ordered, so only \"menu\" fits."}
+{"id": 15, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"money\" is unnatural after \"official\", so only \"currency\" fits."}
+{"id": 16, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"utility\" is a different kind of room and not the meaning \"do giat\", so \"laundry\" is the fit."}
+{"id": 17, "verdict": "fail_major", "other_words": ["calculate", "guess"], "reason": "\"calculate\" or \"guess\" fit the sentence and are common words."}
+{"id": 18, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"conference\" is unnatural for a boss calling people at nine, so only \"meeting\" fits."}
+{"id": 19, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"cook\" fits (\"cook the loaves in a hot oven\") and is an A1 word."}
+{"id": 20, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"bring\" lacks the trade meaning of \"nhap khau\", so only \"import\" fits."}
+{"id": 21, "verdict": "fail_major", "other_words": ["gifts", "presents"], "reason": "\"gifts\" fits (\"cheap gifts for tourists to take home\") and is a common word."}
+{"id": 22, "verdict": "fail_major", "other_words": ["raise"], "reason": "\"raise\" fits (\"raise production by twenty percent\") and is a common word."}
+{"id": 23, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"faculty\" is a university term and \"team\" is unnatural, so \"department\" is the fit."}
+{"id": 24, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"trouble\" does not fit \"heavily in ___ to two banks\", so only \"debt\" fits."}
+{"id": 25, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"donor\" does not fit \"angel ___\" for a business start-up deal, so only \"investor\" fits."}
+{"id": 26, "verdict": "fail_minor", "other_words": ["reuse", "melt"], "reason": "\"reuse\" or \"melt\" fit the sentence, but they are less exact than \"recycle\"."}
+{"id": 27, "verdict": "fail_minor", "other_words": ["recall", "think"], "reason": "\"recall\" fits but is formal, and British \"think\" is regional."}
+{"id": 28, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"servers\" does not fit since Chrome, Safari and Firefox are not servers, so only \"browsers\" fits."}
+{"id": 29, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"chocolate\" is unnatural to mix with flour and salt, so only \"sugar\" fits."}
+{"id": 30, "verdict": "fail_minor", "other_words": ["uncooked", "undercooked"], "reason": "\"uncooked\" fits but is a rarer near-synonym."}
+{"id": 31, "verdict": "fail_major", "other_words": ["payment", "order"], "reason": "\"payment\" fits (\"any payment you make here\") and is a common word."}
+{"id": 32, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"lunch\" does not fit toast and tea before leaving at seven, so only \"breakfast\" fits."}
+{"id": 33, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"excursion\" is unnatural after \"day\", so only \"trip\" fits."}
+{"id": 34, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"press\" is not natural with \"on the blue button\" and a mouse, so only \"click\" fits."}
+{"id": 35, "verdict": "fail_major", "other_words": ["piece"], "reason": "\"piece\" fits (\"a thin piece of lemon\") and is an A1 word."}
+{"id": 36, "verdict": "fail_minor", "other_words": ["label"], "reason": "\"own-label\" is a real British variant but rare for learners."}
+{"id": 37, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"wake-up\" does not form the phrase before \"clock\", so only \"alarm\" fits."}
+{"id": 38, "verdict": "fail_major", "other_words": ["employ"], "reason": "\"employ\" fits (\"employ two extra waiters\") and is a common word."}
+{"id": 39, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"host\" means the company, not the machine that sends pages, so only \"server\" fits."}
+{"id": 40, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"components\" is unnatural for a cake recipe, so only \"ingredients\" fits."}
+{"id": 41, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"manage\" does not fit \"can't ___ to buy one until I get paid\", so only \"afford\" fits."}
+{"id": 42, "verdict": "fail_minor", "other_words": ["bargain"], "reason": "\"strike a bargain\" fits but is a rare variant."}
+{"id": 43, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"cook\" does not form the fixed word \"stir-___\", so only \"fry\" fits."}
+{"id": 44, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"merry\" belongs to a different song title, so only \"happy\" fits \"___ Birthday to You\"."}
+{"id": 45, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"gain\" is unnatural against \"loss\", so only \"profit\" fits."}
+{"id": 46, "verdict": "fail_major", "other_words": ["glass", "display"], "reason": "\"glass\" fits (\"a crack ran across the glass\") and is a common word."}
+{"id": 47, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"check in\" is a different action and has two words, so only \"arrive\" fits."}
+{"id": 48, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"delivery\" does not form \"room ___\", so only \"service\" fits."}
+{"id": 49, "verdict": "fail_major", "other_words": ["check", "service"], "reason": "\"check\" or \"service\" fit (\"check its planes regularly\") and are common words."}
+{"id": 50, "verdict": "fail_minor", "other_words": ["party", "participant"], "reason": "\"party\" fits (\"every party informed\") but is a more formal near-synonym."}
+{"id": 51, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"holidays\" does not fit \"at the ___\" meaning days without work or school, so only \"weekend\" fits."}
+{"id": 52, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"trade\" does not fit the meaning of putting savings into shares, so only \"invest\" fits."}
+{"id": 53, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"save\" fits less naturally after \"To save mobile data\", so only \"download\" fits."}
+{"id": 54, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"debugging\" is not what F12 opens in \"browser's ___ tools\", so only \"developer\" fits."}
+{"id": 55, "verdict": "fail_major", "other_words": ["plan", "tactics"], "reason": "\"plan\" fits (\"changed their plan\") and is an A1 word."}
+{"id": 56, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"chart\" is unnatural with \"treasure\", so only \"map\" fits."}
+{"id": 57, "verdict": "fail_major", "other_words": ["get"], "reason": "\"get\" fits (\"get on the ship\") and is an A1 word."}
+{"id": 58, "verdict": "fail_major", "other_words": ["bag", "case"], "reason": "\"bag\" fits (\"a bag with a hard shell and four wheels\") and is an A1 word."}
+{"id": 59, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"couture\" belongs to fashion, so only \"cuisine\" fits \"haute ___\" for a restaurant."}
+{"id": 60, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"settle\" is rare and unnatural with \"by credit card\", so only \"pay\" fits."}
+{"id": 61, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"internet\" is not natural after \"backed up in the\", so only \"cloud\" fits."}
+{"id": 62, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"starving\" cannot follow \"very\", so only \"hungry\" fits."}
+{"id": 63, "verdict": "fail_minor", "other_words": ["mate", "pal", "buddy"], "reason": "\"mate\" fits (\"best mate\") but is informal and regional."}
+{"id": 64, "verdict": "fail_major", "other_words": ["bags", "baggage", "suitcase"], "reason": "\"bags\" fits (\"weigh your bags\") and is an A1 word."}
+{"id": 65, "verdict": "fail_minor", "other_words": ["merging", "union"], "reason": "\"merging\" or \"union\" fit but are a close variant and a rare word."}
+{"id": 66, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"ID\" is far less natural after \"create an\", so only \"account\" fits."}
+{"id": 67, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"gave\" does not fit \"for fifty dollars\", so only \"sold\" fits."}
+{"id": 68, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"coffee\" does not fit leaves and hot water, so only \"tea\" fits."}
+{"id": 69, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"Wi-Fi\" is redundant before \"internet\", so only \"wireless\" fits."}
+{"id": 70, "verdict": "fail_major", "other_words": ["immediate"], "reason": "\"immediate\" fits (\"an immediate need for clean water\") and is a common word."}
+{"id": 71, "verdict": "fail_minor", "other_words": ["occupied", "swamped"], "reason": "\"occupied\" or \"swamped\" fit but are formal or informal near-synonyms."}
+{"id": 72, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"systems\" leaves \"relational systems\" incomplete, so only \"databases\" fits."}
+{"id": 73, "verdict": "fail_major", "other_words": ["building", "attraction"], "reason": "\"building\" fits (\"best-known building\") and is an A1 word."}
+{"id": 74, "verdict": "fail_major", "other_words": ["move"], "reason": "\"move\" fits (\"move us to business class\") and is an A1 word."}
+{"id": 75, "verdict": "fail_minor", "other_words": ["encode", "scramble"], "reason": "\"encode\" or \"scramble\" fit but are rarer near-synonyms."}
+{"id": 76, "verdict": "fail_major", "other_words": ["handle", "control"], "reason": "\"handle\" or \"control\" fit (\"handle a monthly budget\") and are common words."}
+{"id": 77, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"clean\" is unnatural for hair, so only \"wash\" fits."}
+{"id": 78, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"take\" is unnatural with \"from you until Friday\", so only \"borrow\" fits."}
+{"id": 79, "verdict": "fail_major", "other_words": ["arrange", "plan", "run"], "reason": "\"plan\" or \"arrange\" fit (\"arrange a fun run\") and are common words."}
+{"id": 80, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"display\" does not form \"graphical user ___\", so only \"interface\" fits."}
+{"id": 81, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"alcoholic\" fits less exactly than the process word, so only \"ferment\" fits \"make it ___\"."}
+{"id": 82, "verdict": "fail_minor", "other_words": ["mechanize"], "reason": "\"mechanize\" fits but is a rare near-synonym."}
+{"id": 83, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"drives\" changes the meaning to a different job, so only \"works\" means \"lam viec\"."}
+{"id": 84, "verdict": "fail_minor", "other_words": ["virtual", "remote"], "reason": "\"virtual\" or \"remote\" fit (\"completely virtual\") but are near-synonyms."}
+{"id": 85, "verdict": "fail_minor", "other_words": ["yearly", "vacation"], "reason": "\"yearly\" or \"vacation\" fit but are a variant and a regional word."}
+{"id": 86, "verdict": "fail_major", "other_words": ["junk", "mess", "stuff"], "reason": "\"junk\" or \"mess\" fit (\"free of junk\") and are common words."}
+{"id": 87, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"back\" does not fit the look right-left-right rule, so only \"left\" fits."}
+{"id": 88, "verdict": "fail_major", "other_words": ["push", "install", "upload"], "reason": "\"push\" or \"install\" fit (\"push the new version to the server\") and are common words."}
+{"id": 89, "verdict": "fail_major", "other_words": ["revenue", "income"], "reason": "\"income\" or \"revenue\" fit (\"an income of twenty million pounds\") and are common words."}
+{"id": 90, "verdict": "fail_major", "other_words": ["neat"], "reason": "\"neat\" fits (\"always very neat\") and is an A2 word."}
+{"id": 91, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"responsibility\" does not form \"limited ___\" for a company, so only \"liability\" fits."}
+{"id": 92, "verdict": "fail_major", "other_words": ["overseas"], "reason": "\"overseas\" fits (\"study overseas\") and is a common word."}
+{"id": 93, "verdict": "fail_major", "other_words": ["top", "decorate"], "reason": "\"top\" or \"decorate\" fit (\"top the soup with herbs\") and are common words."}
+{"id": 94, "verdict": "fail_major", "other_words": ["stop", "stopover"], "reason": "\"stop\" or \"stopover\" fit (\"a short stop in Tokyo\") and are common words."}
+{"id": 95, "verdict": "fail_minor", "other_words": ["isolated", "faraway"], "reason": "\"isolated\" fits (\"an isolated village\") but is a higher-level near-synonym."}
+{"id": 96, "verdict": "fail_major", "other_words": ["income"], "reason": "\"income\" fits (\"tax income fell sharply\") and is a common word."}
+{"id": 97, "verdict": "fail_major", "other_words": ["wonderful", "fantastic", "amazing"], "reason": "\"fantastic\" or \"wonderful\" fit after \"absolutely\" and are common words."}
+{"id": 98, "verdict": "fail_minor", "other_words": ["delays", "stalls"], "reason": "\"delays\" or \"stalls\" fit but are loose near-synonyms."}
+{"id": 99, "verdict": "fail_major", "other_words": ["well-paid", "profitable"], "reason": "\"well-paid\" fits (\"a well-paid career\") and is a common word."}
+{"id": 100, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"suitable\" needs \"for\", not \"with\", so only \"compatible\" fits."}
+{"id": 101, "verdict": "pass", "other_words": [], "reason": "The closest candidate \"right\" is the wrong side of the body, so only \"left\" fits."}

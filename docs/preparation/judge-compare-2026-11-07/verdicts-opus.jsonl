@@ -1,0 +1,102 @@
+{"id": 0, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"Clean my teeth\" is a natural, very common alternative to \"brush my teeth\" (esp. British English)."}
+{"id": 1, "verdict": "pass", "other_words": [], "reason": "\"Pay attention\" is a fixed phrase; no other word fits."}
+{"id": 2, "verdict": "pass", "other_words": [], "reason": "Only \"scenic\" fits a route chosen for its beautiful views."}
+{"id": 3, "verdict": "pass", "other_words": [], "reason": "\"A game of chess\" is the natural fixed phrase."}
+{"id": 4, "verdict": "fail_major", "other_words": ["deal"], "reason": "\"Signed a three-year deal with the club\" is just as natural and \"deal\" is very common."}
+{"id": 5, "verdict": "pass", "other_words": [], "reason": "Only \"boil\" fits water at 100°C with bubbles rising."}
+{"id": 6, "verdict": "fail_minor", "other_words": ["play"], "reason": "\"Play against one another\" fits loosely, but \"compete\" is clearly the expected word."}
+{"id": 7, "verdict": "fail_major", "other_words": ["team"], "reason": "\"The hotel has a team of 20 people\" fits naturally with the same meaning."}
+{"id": 8, "verdict": "pass", "other_words": [], "reason": "Only \"receipt\" fits a document needed to return goods."}
+{"id": 9, "verdict": "pass", "other_words": [], "reason": "The definition points only to \"banana\"."}
+{"id": 10, "verdict": "pass", "other_words": [], "reason": "\"Business partner\" is the only natural fit."}
+{"id": 11, "verdict": "fail_minor", "other_words": ["application"], "reason": "Only the full form \"application\" also fits, a close variant of \"app\"."}
+{"id": 12, "verdict": "pass", "other_words": [], "reason": "Only \"install\" fits putting a downloaded app on the phone."}
+{"id": 13, "verdict": "fail_major", "other_words": ["hard", "difficult"], "reason": "\"Make your job very hard/difficult\" fits naturally and these are very common words."}
+{"id": 14, "verdict": "pass", "other_words": [], "reason": "Only \"menu\" fits what a waiter gives to choose food."}
+{"id": 15, "verdict": "pass", "other_words": [], "reason": "Only \"currency\" fits the euro being official money."}
+{"id": 16, "verdict": "fail_major", "other_words": ["washing"], "reason": "\"I do the washing every Sunday\" fits naturally with the same meaning."}
+{"id": 17, "verdict": "fail_minor", "other_words": ["put", "calculated"], "reason": "\"Put the cost at\" or \"calculated the cost at\" could fit, but few learners would write them."}
+{"id": 18, "verdict": "pass", "other_words": [], "reason": "\"Team meeting\" is the only natural fit."}
+{"id": 19, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"Cook the cake in the oven for 30 minutes\" fits naturally and \"cook\" is very common."}
+{"id": 20, "verdict": "fail_major", "other_words": ["buy"], "reason": "\"Japan has to buy much of its oil from other countries\" fits naturally."}
+{"id": 21, "verdict": "fail_minor", "other_words": ["reminder", "memento"], "reason": "\"Reminder\" or \"memento\" could fit, but \"souvenir\" is the expected word."}
+{"id": 22, "verdict": "fail_major", "other_words": ["raise"], "reason": "\"Raise the number of students from 20 to 30\" fits naturally with the same meaning."}
+{"id": 23, "verdict": "fail_minor", "other_words": ["division", "office"], "reason": "Only less common near-synonyms like \"division\" or \"office\" also fit."}
+{"id": 24, "verdict": "pass", "other_words": [], "reason": "\"Get out of debt\" is the only natural fit with owing money."}
+{"id": 25, "verdict": "pass", "other_words": [], "reason": "The article \"an\" and the definition point only to \"investor\"."}
+{"id": 26, "verdict": "fail_minor", "other_words": ["reuse"], "reason": "\"Reuse\" might be written, but turning paper into new paper is recycling."}
+{"id": 27, "verdict": "fail_minor", "other_words": ["recall"], "reason": "Only the less common synonym \"recall\" also fits."}
+{"id": 28, "verdict": "pass", "other_words": [], "reason": "\"Web browser\" with Chrome and Firefox fits only \"browser\"."}
+{"id": 29, "verdict": "pass", "other_words": [], "reason": "Only \"sugar\" makes tea sweet."}
+{"id": 30, "verdict": "fail_minor", "other_words": ["uncooked"], "reason": "Only the close variant \"uncooked\" also fits."}
+{"id": 31, "verdict": "fail_major", "other_words": ["payment"], "reason": "\"Proof of payment\" is natural and common with the same meaning."}
+{"id": 32, "verdict": "pass", "other_words": [], "reason": "Only \"breakfast\" is the first meal of the day."}
+{"id": 33, "verdict": "fail_minor", "other_words": ["out", "excursion"], "reason": "\"Day out\" or \"day excursion\" could fit, but \"day trip\" is the expected phrase."}
+{"id": 34, "verdict": "pass", "other_words": [], "reason": "Only \"click\" fits using a mouse on a button."}
+{"id": 35, "verdict": "fail_major", "other_words": ["piece"], "reason": "\"A thin piece of bread\" fits naturally and \"piece\" is very common."}
+{"id": 36, "verdict": "fail_minor", "other_words": ["maker", "make"], "reason": "\"Maker\" or \"make\" could fit, but \"brand\" is the expected word."}
+{"id": 37, "verdict": "pass", "other_words": [], "reason": "Only \"alarm\" fits a phone sound that wakes you."}
+{"id": 38, "verdict": "fail_major", "other_words": ["employ", "choose"], "reason": "\"Decided to employ/choose Maria as the new cook\" fits naturally."}
+{"id": 39, "verdict": "pass", "other_words": [], "reason": "The definition points only to \"server\"."}
+{"id": 40, "verdict": "fail_minor", "other_words": ["item"], "reason": "\"Every item you need\" could fit, but \"ingredient\" is the expected word."}
+{"id": 41, "verdict": "pass", "other_words": [], "reason": "\"Can't afford to buy\" is the only natural fit."}
+{"id": 42, "verdict": "pass", "other_words": [], "reason": "\"It's a deal!\" is a fixed expression."}
+{"id": 43, "verdict": "fail_major", "other_words": ["cook"], "reason": "\"Cook the eggs in a pan with a little hot oil\" fits naturally."}
+{"id": 44, "verdict": "fail_major", "other_words": ["good", "glad"], "reason": "\"I feel good, not sad\" fits naturally and \"good\" is very common at A1."}
+{"id": 45, "verdict": "pass", "other_words": [], "reason": "\"Made a profit after paying all its costs\" is the only natural fit with the same meaning."}
+{"id": 46, "verdict": "fail_minor", "other_words": ["display"], "reason": "Only the close synonym \"display\" also fits."}
+{"id": 47, "verdict": "fail_minor", "other_words": ["land"], "reason": "\"As soon as you land at the airport\" fits, but \"land\" is less basic at A1."}
+{"id": 48, "verdict": "pass", "other_words": [], "reason": "\"Service charge\" is a fixed phrase."}
+{"id": 49, "verdict": "fail_minor", "other_words": ["service", "check"], "reason": "\"Service\" or \"check\" could fit, but few learners would write them here."}
+{"id": 50, "verdict": "pass", "other_words": [], "reason": "Only \"stakeholders\" fits employees, customers and residents asked for views."}
+{"id": 51, "verdict": "pass", "other_words": [], "reason": "Only \"weekend\" fits Saturday and Sunday."}
+{"id": 52, "verdict": "pass", "other_words": [], "reason": "\"Invest in the stock market\" is the only natural fit."}
+{"id": 53, "verdict": "fail_major", "other_words": ["save"], "reason": "\"Save the file from the website to your computer\" fits naturally."}
+{"id": 54, "verdict": "fail_major", "other_words": ["engineer", "programmer"], "reason": "\"The software engineer wrote the code\" fits naturally and \"engineer\" is common."}
+{"id": 55, "verdict": "fail_major", "other_words": ["plan"], "reason": "\"His plan was to control the middle of the board\" fits naturally."}
+{"id": 56, "verdict": "pass", "other_words": [], "reason": "Only \"map\" shows roads and towns."}
+{"id": 57, "verdict": "fail_major", "other_words": ["board"], "reason": "\"Passengers will board at Dover\" fits naturally and \"board\" is common at B2."}
+{"id": 58, "verdict": "fail_minor", "other_words": ["case", "bag"], "reason": "Only \"case\" or a wheeled \"bag\" could also fit."}
+{"id": 59, "verdict": "fail_major", "other_words": ["food"], "reason": "\"Specializes in French food\" fits naturally and \"food\" is very common."}
+{"id": 60, "verdict": "pass", "other_words": [], "reason": "\"Pay for the food with cash or a card\" is the only natural fit."}
+{"id": 61, "verdict": "pass", "other_words": [], "reason": "\"Keep my photos in the cloud\" is the only natural fit."}
+{"id": 62, "verdict": "pass", "other_words": [], "reason": "Only \"hungry\" fits not having eaten breakfast."}
+{"id": 63, "verdict": "pass", "other_words": [], "reason": "\"Best friend\" is the only natural fit."}
+{"id": 64, "verdict": "fail_minor", "other_words": ["baggage"], "reason": "Only the close synonym \"baggage\" also fits."}
+{"id": 65, "verdict": "fail_minor", "other_words": ["deal"], "reason": "\"Agreed to a deal\" fits loosely, but \"merger\" is the expected word."}
+{"id": 66, "verdict": "pass", "other_words": [], "reason": "\"Bank account\" is the only natural fit."}
+{"id": 67, "verdict": "pass", "other_words": [], "reason": "Only \"sell\" fits buying a bike from someone."}
+{"id": 68, "verdict": "pass", "other_words": [], "reason": "Only \"tea\" fits leaves in hot water."}
+{"id": 69, "verdict": "fail_minor", "other_words": ["cordless", "Bluetooth"], "reason": "Only \"cordless\" or \"Bluetooth\" could also fit."}
+{"id": 70, "verdict": "fail_major", "other_words": ["important"], "reason": "\"The email was marked important\" fits naturally and is very common."}
+{"id": 71, "verdict": "pass", "other_words": [], "reason": "Only \"busy\" fits having a lot of work."}
+{"id": 72, "verdict": "pass", "other_words": [], "reason": "Only \"database\" fits SQL and tables."}
+{"id": 73, "verdict": "fail_major", "other_words": ["monument", "attraction"], "reason": "\"A famous Paris monument/attraction\" fits naturally at B2."}
+{"id": 74, "verdict": "fail_major", "other_words": ["change"], "reason": "\"Change your economy ticket to business class\" fits naturally."}
+{"id": 75, "verdict": "fail_minor", "other_words": ["encode", "protect"], "reason": "\"Encode\" or \"protect\" could fit, but \"encrypt\" is the expected word."}
+{"id": 76, "verdict": "fail_major", "other_words": ["run"], "reason": "\"She will run the shop and its staff\" fits naturally and \"run\" is very common."}
+{"id": 77, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"Clean your hands with soap and water\" fits naturally and \"clean\" is very common."}
+{"id": 78, "verdict": "fail_major", "other_words": ["get", "take"], "reason": "\"Get/take a book from the library\" fits naturally at A1."}
+{"id": 79, "verdict": "fail_major", "other_words": ["plan", "arrange"], "reason": "\"Plan the school trip\" fits naturally and \"plan\" is very common."}
+{"id": 80, "verdict": "pass", "other_words": [], "reason": "\"User interface\" is a fixed term."}
+{"id": 81, "verdict": "pass", "other_words": [], "reason": "Only \"ferment\" fits turning sugar into alcohol."}
+{"id": 82, "verdict": "fail_major", "other_words": ["schedule"], "reason": "\"Schedule invoice payments so the system sends them on the due date\" fits naturally."}
+{"id": 83, "verdict": "pass", "other_words": [], "reason": "Only \"work\" fits a job at a bank from nine to five."}
+{"id": 84, "verdict": "pass", "other_words": [], "reason": "The article \"an\" and the internet context point only to \"online\"."}
+{"id": 85, "verdict": "fail_minor", "other_words": ["yearly"], "reason": "Only the close synonym \"yearly\" also fits."}
+{"id": 86, "verdict": "fail_major", "other_words": ["mess"], "reason": "\"She cleared the mess off her desk\" fits naturally and \"mess\" is very common."}
+{"id": 87, "verdict": "pass", "other_words": [], "reason": "Only \"left\" contrasts with \"right\"."}
+{"id": 88, "verdict": "fail_major", "other_words": ["upload", "release"], "reason": "\"Upload the app to the production server\" fits naturally."}
+{"id": 89, "verdict": "fail_major", "other_words": ["revenue", "income"], "reason": "\"The shop's annual revenue, or total value of its sales\" fits naturally."}
+{"id": 90, "verdict": "fail_major", "other_words": ["clean"], "reason": "\"Neat and clean\" is a very common collocation with the same meaning."}
+{"id": 91, "verdict": "fail_major", "other_words": ["responsibility"], "reason": "\"Legal responsibility for damage\" fits naturally and is common."}
+{"id": 92, "verdict": "fail_minor", "other_words": ["overseas"], "reason": "Only the close synonym \"overseas\" also fits."}
+{"id": 93, "verdict": "fail_major", "other_words": ["decorate", "top"], "reason": "\"Decorate/top it with a few fresh parsley leaves\" fits naturally."}
+{"id": 94, "verdict": "fail_major", "other_words": ["wait", "stopover"], "reason": "\"A two-hour wait at Seoul airport\" fits naturally and \"wait\" is very common."}
+{"id": 95, "verdict": "fail_minor", "other_words": ["isolated"], "reason": "Only the less common synonym \"isolated\" fits with the same meaning."}
+{"id": 96, "verdict": "fail_major", "other_words": ["total", "turnover"], "reason": "\"The company's sales total was $1 million\" fits naturally."}
+{"id": 97, "verdict": "pass", "other_words": [], "reason": "The 9-letter \"d\" hint and the meaning point only to \"delicious\"."}
+{"id": 98, "verdict": "pass", "other_words": [], "reason": "No single common word fits \"tend to ___ by cleaning my room\"."}
+{"id": 99, "verdict": "fail_major", "other_words": ["profitable", "big"], "reason": "\"A profitable/big contract\" fits naturally and these are common."}
+{"id": 100, "verdict": "pass", "other_words": [], "reason": "\"Compatible with your operating system\" is the only natural fit."}
+{"id": 101, "verdict": "pass", "other_words": [], "reason": "Only \"left\" contrasts with \"right hand\"."}

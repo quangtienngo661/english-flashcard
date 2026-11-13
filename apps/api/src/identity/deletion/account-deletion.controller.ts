@@ -34,7 +34,7 @@ export class AccountDeletionController {
   ): Promise<{ status: 'pending' } | undefined> {
     const cookie: unknown = req.cookies?.[REAUTH_COOKIE];
     const googleReauthUserId = this.google.reauthUserOf(typeof cookie === 'string' ? cookie : undefined);
-    const outcome = await this.requests.deleteOwn(req.user!, body, { res, googleReauthUserId });
+    const outcome = await this.requests.deleteOwn(req.user!, body, { res, googleReauthUserId, clientIp: req.ip });
     if (outcome === 'done') res.clearCookie(REAUTH_COOKIE, REAUTH_COOKIE_OPTIONS);
     return answerDeletion(res, outcome);
   }

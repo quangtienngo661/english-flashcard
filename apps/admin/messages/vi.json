@@ -13,6 +13,7 @@
     "draft-exists": "Thao tác này đã có một nháp. Trang đã được tải lại.",
     "draft-version-conflict": "Nháp vừa được người khác sửa.",
     "email-already-verified": "Email này đã được xác minh",
+    "email-not-verified": "Email chưa được xác nhận. Dùng Quên mật khẩu để xác nhận.",
     "email-taken": "Email đã được dùng",
     "entry-in-use": "Từ này đang được dùng nên chưa xóa được.",
     "eval-required": "Nháp chưa có lần chạy trọn trên phiên bản bộ ví dụ mới nhất.",
@@ -1704,7 +1705,7 @@
     "create": "Tạo người dùng",
     "edit": {
       "title": "Sửa {email}",
-      "emailHint": "Email mới được tính là đã xác minh; email cũ nhận thư báo.",
+      "emailHint": "Email mới phải được xác nhận lại; người dùng bị đăng xuất, email cũ nhận thư báo.",
       "emailInvalid": "Nhập email hợp lệ",
       "emailTaken": "Email này đã có tài khoản khác.",
       "nameInvalid": "Từ 1 đến 50 ký tự.",

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
@@ -8,31 +8,31 @@ import type { PasswordHasher } from '../auth/password-hasher.service.js';
 import { AccountDeletionRegistry } from './account-eraser.js';
 import type { AccountDeletionService } from './account-deletion.service.js';
 import { AccountDeletionRequests } from './account-deletion-requests.service.js';
+import { fakeLoginFailures } from '../../../test/support/fake-login-failures.js';
+import { testConfig } from '../../../test/support/test-config.js';
 
 const clock = new FakeClock(new Date('2026-10-29T12:00:00Z'));
 const USER = randomUUID();
 const ADMIN = randomUUID();
 const res = {} as Response;
 const body = { confirm_email: 'lan@example.com', acknowledged: true as const, password: 'right-password' };
+const config = testConfig();
+// F4: the login lock is keyed on the account and the HMAC of the client ip, as the rate limiter keys an ip.
+const IP = '203.0.113.7';
+const keyOf = (value: string) => createHmac('sha256', config.rateLimitHmacKey).update(value).digest('hex').slice(0, 32);
 
 function setup(account: Record<string, unknown> | null = {}, opts: { passwordMatches?: boolean; failedLoginCount?: number } = {}) {
   const logs: LogEntry[] = [];
-  let failed = opts.failedLoginCount ?? 0;
+  const failures = fakeLoginFailures();
+  if (opts.failedLoginCount !== undefined) failures.seed({ userId: USER, ipKey: keyOf(IP), failedCount: opts.failedLoginCount });
   const user: Record<string, unknown> | null = account && {
-    id: USER, email: 'lan@example.com', staffRole: null, status: 'active', loginLockedUntil: null as Date | null,
+    id: USER, email: 'lan@example.com', staffRole: null, status: 'active',
     passwordCredential: { hash: 'hash-1' }, ...account,
   };
   const tx = {
     $executeRaw: vi.fn(async () => 1),
-    user: {
-      findUnique: vi.fn(async () => (user ? { ...user, failedLoginCount: failed } : null)),
-      update: vi.fn(async ({ data }: { data: { failedLoginCount?: number | { increment: number }; loginLockedUntil?: Date } }) => {
-        if (typeof data.failedLoginCount === 'object') failed += data.failedLoginCount.increment;
-        else if (data.failedLoginCount !== undefined) failed = data.failedLoginCount;
-        if (data.loginLockedUntil) user!.loginLockedUntil = data.loginLockedUntil;
-        return { failedLoginCount: failed };
-      }),
-    },
+    user: { findUnique: vi.fn(async () => (user ? { ...user } : null)), update: vi.fn() },
+    loginFailure: failures.table,
   };
   const prisma = {
     user: { findUnique: vi.fn(async () => (user ? { ...user } : null)) },
@@ -48,13 +48,13 @@ function setup(account: Record<string, unknown> | null = {}, opts: { passwordMat
   const deletion = { delete: vi.fn(async () => 'done' as const) };
   const service = new AccountDeletionRequests(
     prisma as unknown as PrismaClient, clock, new AppLogger({ write: (e) => logs.push(e) }), hasher as unknown as PasswordHasher,
-    registry, deletion as unknown as AccountDeletionService,
+    registry, deletion as unknown as AccountDeletionService, config,
   );
-  return { service, deletion, hasher, precondition, tx, prisma, logs, failed: () => failed };
+  return { service, deletion, hasher, precondition, tx, prisma, logs, failures, failed: () => failures.get(USER, keyOf(IP))?.failedCount ?? 0 };
 }
 
-const own = (s: ReturnType<typeof setup>, over: Partial<typeof body> = {}, googleReauthUserId: string | null = null) =>
-  s.service.deleteOwn({ userId: USER, sessionChainId: randomUUID() }, { ...body, ...over }, { res, googleReauthUserId });
+const own = (s: ReturnType<typeof setup>, over: Partial<typeof body> = {}, googleReauthUserId: string | null = null, clientIp: string | undefined = IP) =>
+  s.service.deleteOwn({ userId: USER, sessionChainId: randomUUID() }, { ...body, ...over }, { res, googleReauthUserId, clientIp });
 
 describe('AccountDeletionRequests.deleteOwn (design §7.2 step 1)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
@@ -87,7 +87,23 @@ describe('AccountDeletionRequests.deleteOwn (design §7.2 step 1)', () => {
     const s = setup({}, { passwordMatches: false, failedLoginCount: 9 });
     await expect(own(s)).rejects.toMatchObject({ status: 400, problemType: 'invalid-current-password' });
     await expect(own(s)).rejects.toMatchObject({ status: 429, problemType: 'rate-limited', retryAfterSeconds: 900 });
+    expect(s.logs.filter((entry) => entry.event === 'login_locked')).toHaveLength(1);
     expect(s.deletion.delete).not.toHaveBeenCalled();
+  });
+
+  it('F4: a login lock from another ip does not stop the right password here, and the other ip stays locked', async () => {
+    const s = setup();
+    const lockedUntil = new Date(clock.now().getTime() + 900_000);
+    s.failures.seed({ userId: USER, ipKey: keyOf('198.51.100.1'), lockedUntil });
+    expect(await own(s)).toBe('done');
+    expect(s.failures.get(USER, keyOf('198.51.100.1'))).toMatchObject({ lockedUntil });
+    expect(s.tx.user.update).not.toHaveBeenCalled();
+  });
+
+  it('F4: without a client ip the failure counts on the hashed "unknown" key', async () => {
+    const s = setup({}, { passwordMatches: false });
+    await expect(s.service.deleteOwn({ userId: USER, sessionChainId: randomUUID() }, body, { res, googleReauthUserId: null })).rejects.toMatchObject({ status: 400, problemType: 'invalid-current-password' });
+    expect(s.failures.get(USER, keyOf('unknown'))).toMatchObject({ failedCount: 1 }); expect(s.failures.size()).toBe(1);
   });
 
   it('a staff account is refused with staff-account before any password work', async () => {

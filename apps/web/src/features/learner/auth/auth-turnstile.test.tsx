@@ -11,6 +11,7 @@ import { pickDate, renderApp } from '@/test-utils/render-app';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
+import { ResetPasswordForm } from './ResetPasswordForm';
 import { VerifyEmailForm } from './VerifyEmailForm';
 
 const widget = vi.hoisted(() => ({ issued: 0, resets: 0, emit: (() => {}) as (token: string | null) => void }));
@@ -188,13 +189,55 @@ describe('VerifyEmailForm and the bot check', () => {
     expect(tokensOf(calls, '/v1/auth/otp')).toEqual(['tok-1']);
   });
 
-  it('LA1E14: submitting the code sends no token', async () => {
-    const { calls } = renderApp(<VerifyEmailForm />, { routes: { ...signedOut, 'POST /v1/auth/verify-email': () => tokenResponse('t') } });
+  // Review 07/11 F7 (replaces LA1E14): verify-email runs argon2, so the bot check guards it too.
+  it('F7: submitting the code carries a token; a wrong code resets the widget and the next press carries a new one', async () => {
+    let answer = () => problem(400, 'invalid-otp');
+    const { calls } = renderApp(<VerifyEmailForm />, { routes: { ...signedOut, 'POST /v1/auth/verify-email': () => answer() } });
     await userEvent.click(await screen.findByRole('textbox', { name: 'Chữ số 1' }));
     await userEvent.keyboard('481205');
     await press('Xác minh');
+    await waitFor(() => expect(widget.resets).toBe(1));
+    answer = () => tokenResponse('t');
+    await press('Xác minh');
     await waitFor(() => expect(hardReplace).toHaveBeenCalled());
-    const body = calls.find((c) => c.path === '/v1/auth/verify-email')!.body as Record<string, unknown>;
-    expect(body).not.toHaveProperty('turnstile_token');
+    expect(tokensOf(calls, '/v1/auth/verify-email')).toEqual(['tok-1', 'tok-2']);
+  });
+
+  it('F7: no token yet keeps the Xác minh button off', async () => {
+    renderApp(<VerifyEmailForm />, { routes: signedOut });
+    await userEvent.click(await screen.findByRole('textbox', { name: 'Chữ số 1' }));
+    await userEvent.keyboard('481205');
+    act(() => widget.emit(null));
+    expect(screen.getByRole('button', { name: 'Xác minh' })).toBeDisabled();
+  });
+});
+
+describe('ResetPasswordForm and the bot check (review 07/11 F7)', () => {
+  beforeEach(() => writePendingEmail('lan@example.com'));
+  const fillReset = async () => {
+    // The new form: six digit boxes (typing moves to the next box) and the new password typed twice.
+    await userEvent.click(await screen.findByRole('textbox', { name: 'Chữ số 1' }));
+    await userEvent.keyboard('481205');
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Aa1!aaaa');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Aa1!aaaa');
+  };
+
+  it('sends the token with the new password; a wrong code resets the widget and the next press carries a new one', async () => {
+    let answer = () => problem(400, 'invalid-otp');
+    const { calls } = renderApp(<ResetPasswordForm />, { routes: { ...signedOut, 'POST /v1/auth/password/reset': () => answer() } });
+    await fillReset();
+    await press('Đổi mật khẩu');
+    await waitFor(() => expect(widget.resets).toBe(1));
+    answer = () => new Response(null, { status: 204 });
+    await press('Đổi mật khẩu');
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
+    expect(tokensOf(calls, '/v1/auth/password/reset')).toEqual(['tok-1', 'tok-2']);
+  });
+
+  it('no token yet keeps the button off', async () => {
+    renderApp(<ResetPasswordForm />, { routes: signedOut });
+    await fillReset();
+    act(() => widget.emit(null));
+    expect(screen.getByRole('button', { name: 'Đổi mật khẩu' })).toBeDisabled();
   });
 });

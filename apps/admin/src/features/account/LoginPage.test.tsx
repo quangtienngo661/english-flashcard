@@ -76,6 +76,15 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(vi.account.login.email)).toBeInTheDocument();
   });
 
+  it('F12: an unconfirmed email (an admin changed it) says to confirm it with Quên mật khẩu', async () => {
+    renderAccount(<LoginPage />, {
+      path: '/login',
+      routes: { ...editorRoutes, 'POST /v1/auth/login': () => problem(403, 'email-not-verified') },
+    });
+    await fillAndSubmit();
+    expect(await screen.findByText('Email chưa được xác nhận. Dùng Quên mật khẩu để xác nhận.')).toBeInTheDocument();
+  });
+
   it('a network failure shows the generic message, not a crash', async () => {
     renderAccount(<LoginPage />, {
       path: '/login',

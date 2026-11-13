@@ -19,7 +19,7 @@ type FieldErrors = Partial<Record<keyof Form, string>>;
 
 const clean = (text: string) => text.normalize('NFC').trim();
 
-/** AD18: the admin edits email, names, birth date and timezone. Only changed fields are sent; a new email counts as verified. */
+/** AD18: the admin edits email, names, birth date and timezone. Only changed fields are sent; a new email must be confirmed again (F12). */
 export function EditUserDialog({ user, onClose, onSaved }: {
   user: AdminUserDetail; onClose: () => void; onSaved: (result: AdminUserDetail) => void;
 }) {

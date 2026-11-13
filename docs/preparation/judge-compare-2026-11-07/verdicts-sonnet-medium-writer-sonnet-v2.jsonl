@@ -1,0 +1,102 @@
+{"id":0,"verdict":"fail_major","other_words":["clean"],"reason":"\"Clean your teeth\" is natural and \"clean\" is a common A1 word."}
+{"id":1,"verdict":"fail_minor","other_words":["heed"],"reason":"\"Pay heed\" fits but is formal and rare, so few learners would write it."}
+{"id":2,"verdict":"fail_major","other_words":["beautiful","pretty"],"reason":"\"The beautiful route along the lake\" is natural and \"beautiful\" is a common A1 word."}
+{"id":3,"verdict":"pass","other_words":[],"reason":"The closest candidate \"set\" does not make a natural phrase after \"board\" with \"play\"."}
+{"id":4,"verdict":"pass","other_words":[],"reason":"\"Agreement\" is the closest candidate but \"Her agreement says she must give notice\" is not natural without a qualifier."}
+{"id":5,"verdict":"pass","other_words":[],"reason":"\"Bubble\" is the closest candidate but means sủi bọt, not đun sôi."}
+{"id":6,"verdict":"pass","other_words":[],"reason":"\"Compare\" is the closest candidate but means so sánh, not cạnh tranh."}
+{"id":7,"verdict":"fail_major","other_words":["workers","team"],"reason":"\"The hotel workers were so friendly\" fits and \"workers\" is a common A2 word."}
+{"id":8,"verdict":"pass","other_words":[],"reason":"\"Box\" is the closest candidate but is not a biên lai, and \"bill\" is a restaurant check."}
+{"id":9,"verdict":"pass","other_words":[],"reason":"\"Orange\" or another fruit is the closest candidate but would change the meaning from quả chuối."}
+{"id":10,"verdict":"fail_minor","other_words":["associate"],"reason":"\"Business associate\" fits but is formal and vaguer than a co-owner."}
+{"id":11,"verdict":"fail_minor","other_words":["application"],"reason":"\"Application\" is just the long form of \"app\", a close variant."}
+{"id":12,"verdict":"pass","other_words":[],"reason":"\"Download\" is the closest candidate but means tải xuống, not cài đặt."}
+{"id":13,"verdict":"pass","other_words":[],"reason":"\"Difficult\" is the closest candidate but means khó, not căng thẳng."}
+{"id":14,"verdict":"pass","other_words":[],"reason":"\"List\" is the closest candidate but \"dessert list\" is not what a restaurant calls it."}
+{"id":15,"verdict":"pass","other_words":[],"reason":"\"Money\" is the closest candidate but \"the official money\" is not natural for tiền tệ."}
+{"id":16,"verdict":"fail_major","other_words":["washing"],"reason":"\"Do the washing\" is natural and \"washing\" is a common A2 word."}
+{"id":17,"verdict":"fail_major","other_words":["calculate"],"reason":"\"Calculate the cost and send us a number\" is natural and keeps the meaning."}
+{"id":18,"verdict":"pass","other_words":[],"reason":"\"Discussion\" is the closest candidate but \"called a short discussion\" is not natural."}
+{"id":19,"verdict":"fail_major","other_words":["cook"],"reason":"\"Cook the bread for forty minutes\" is natural and \"cook\" is a common A1 word."}
+{"id":20,"verdict":"pass","other_words":[],"reason":"\"Buy\" is the closest candidate but loses the foreign-trade meaning of nhập khẩu."}
+{"id":21,"verdict":"fail_major","other_words":["gifts","presents"],"reason":"\"Popular gifts for tourists\" is natural and \"gifts\" is a common A2 word."}
+{"id":22,"verdict":"fail_major","other_words":["raise"],"reason":"\"Raise the salary\" is natural and \"raise\" is a common word."}
+{"id":23,"verdict":"fail_major","other_words":["office"],"reason":"\"The accounting office, on the second floor\" is natural and \"office\" is A1."}
+{"id":24,"verdict":"pass","other_words":[],"reason":"\"Trouble\" is the closest candidate but does not mean khoản nợ."}
+{"id":25,"verdict":"fail_minor","other_words":["backer","sponsor"],"reason":"\"A wealthy backer\" fits but is a rarer, less exact word than \"investor\"."}
+{"id":26,"verdict":"fail_minor","other_words":["reuse"],"reason":"\"Reuse these bottles\" fits and is close in meaning but is a different word from tái chế."}
+{"id":27,"verdict":"fail_minor","other_words":["recall"],"reason":"\"Recall\" fits but is formal and rarely chosen by a learner."}
+{"id":28,"verdict":"pass","other_words":[],"reason":"\"Apps\" is the closest candidate but Chrome and Firefox are not called \"web apps\"."}
+{"id":29,"verdict":"pass","other_words":[],"reason":"\"Cream\" is the closest candidate but is a different thing from đường."}
+{"id":30,"verdict":"fail_minor","other_words":["uncooked"],"reason":"\"Uncooked\" fits and is a close variant of \"raw\"."}
+{"id":31,"verdict":"fail_major","other_words":["buy","investment"],"reason":"\"Her first big buy, a small flat\" is natural and \"buy\" is a common A1 word."}
+{"id":32,"verdict":"pass","other_words":[],"reason":"\"Lunch\" is the closest candidate but is a different meal from bữa sáng."}
+{"id":33,"verdict":"fail_minor","other_words":["excursion","outing"],"reason":"\"Day excursion\" or \"outing\" fit but are rarer words."}
+{"id":34,"verdict":"pass","other_words":[],"reason":"\"Tap\" is the closest candidate but is for touchscreens, not \"with your mouse\"."}
+{"id":35,"verdict":"fail_major","other_words":["piece"],"reason":"\"A thin piece of lemon\" is natural and \"piece\" is a very common A1 word."}
+{"id":36,"verdict":"fail_major","other_words":["names","labels"],"reason":"\"Well-known names such as Nike and Adidas\" is natural and \"names\" is a common word."}
+{"id":37,"verdict":"pass","other_words":[],"reason":"\"Digital\" is the closest candidate but gives no reason for waking up late."}
+{"id":38,"verdict":"fail_major","other_words":["employ","recruit"],"reason":"\"Employ two new cooks\" is natural and keeps the meaning of thuê."}
+{"id":39,"verdict":"fail_major","other_words":["computer","system"],"reason":"\"The main computer in the data centre crashed\" is natural with a common word."}
+{"id":40,"verdict":"pass","other_words":[],"reason":"\"Components\" is the closest candidate but is not used for what goes into pancakes."}
+{"id":41,"verdict":"pass","other_words":[],"reason":"\"Manage\" is the closest candidate but \"can't manage to go\" does not carry the money meaning."}
+{"id":42,"verdict":"pass","other_words":[],"reason":"\"Agreement\" is the closest candidate but one does not \"close the agreement\"."}
+{"id":43,"verdict":"fail_major","other_words":["cook"],"reason":"\"Cook the chicken until it is crispy and golden\" is natural and \"cook\" is A1."}
+{"id":44,"verdict":"fail_major","other_words":["glad","good","excited"],"reason":"\"Never felt so glad\" or \"so good\" are natural with common words."}
+{"id":45,"verdict":"pass","other_words":[],"reason":"\"Gain\" is the closest candidate but is not used for a shop's profit on each item."}
+{"id":46,"verdict":"fail_minor","other_words":["display"],"reason":"\"Phone display cracked\" fits and is a close synonym but a less common word."}
+{"id":47,"verdict":"pass","other_words":[],"reason":"\"Be\" is the closest candidate but does not express arriving."}
+{"id":48,"verdict":"pass","other_words":[],"reason":"\"Staff\" is the closest candidate but means the people, not the dịch vụ that was slow."}
+{"id":49,"verdict":"fail_major","other_words":["keep","run"],"reason":"\"Keep an old car\" or \"run an old car\" are natural with common words."}
+{"id":50,"verdict":"fail_minor","other_words":["party"],"reason":"\"Every party\" (interested party) fits but is a formal, rarer word."}
+{"id":51,"verdict":"pass","other_words":[],"reason":"\"Holiday\" is the closest candidate but \"on the holiday\" does not mean cuối tuần."}
+{"id":52,"verdict":"fail_major","other_words":["put"],"reason":"\"Put her savings in a small company\" is natural and \"put\" is A1."}
+{"id":53,"verdict":"pass","other_words":[],"reason":"\"Upload\" is the closest candidate but is the opposite of tải xuống."}
+{"id":54,"verdict":"fail_major","other_words":["engineer","programmer"],"reason":"\"Software engineer\" is very common and \"programmer\" is a direct synonym."}
+{"id":55,"verdict":"fail_major","other_words":["plan"],"reason":"\"The general's plan was to attack at night\" is natural and \"plan\" is A1."}
+{"id":56,"verdict":"fail_minor","other_words":["plan"],"reason":"\"Street plan\" is a close British synonym but less common than \"street map\"."}
+{"id":57,"verdict":"fail_major","other_words":["board"],"reason":"\"Begin to board at gate 12\" is the usual phrase and \"board\" is a common word."}
+{"id":58,"verdict":"fail_major","other_words":["bag"],"reason":"\"A big blue bag with four wheels\" is natural and \"bag\" is A1."}
+{"id":59,"verdict":"fail_major","other_words":["food"],"reason":"\"Vietnamese food is loved around the world\" is natural and \"food\" is A1."}
+{"id":60,"verdict":"pass","other_words":[],"reason":"\"Buy\" is the closest candidate but \"buy by card\" is not natural."}
+{"id":61,"verdict":"pass","other_words":[],"reason":"\"App\" is the closest candidate but is not the điện toán đám mây storage."}
+{"id":62,"verdict":"fail_minor","other_words":["starving","famished"],"reason":"\"Starving\" fits as an informal stronger word above A1 level."}
+{"id":63,"verdict":"fail_minor","other_words":["mates","pals"],"reason":"\"Mates\" or \"pals\" fit but are informal."}
+{"id":64,"verdict":"fail_major","other_words":["baggage"],"reason":"\"Kilos of baggage\" is equally natural on a flight and a common airport word."}
+{"id":65,"verdict":"fail_minor","other_words":["combination","union"],"reason":"\"Combination\" or \"union\" fit loosely but are less exact than \"merger\"."}
+{"id":66,"verdict":"pass","other_words":[],"reason":"\"Card\" is the closest candidate but one does not \"open a bank card\"."}
+{"id":67,"verdict":"pass","other_words":[],"reason":"\"Trade\" is the closest candidate but implies exchange, not bán."}
+{"id":68,"verdict":"pass","other_words":[],"reason":"\"Juice\" is the closest candidate but \"hot green juice\" does not fit."}
+{"id":69,"verdict":"fail_minor","other_words":["cordless","Bluetooth"],"reason":"\"Cordless\" is a close variant and \"Bluetooth\" fits less exactly."}
+{"id":70,"verdict":"fail_major","other_words":["important"],"reason":"\"This email is important: please answer within one hour\" is natural with an A1 word."}
+{"id":71,"verdict":"pass","other_words":[],"reason":"\"Occupied\" is the closest candidate but \"too occupied\" is not natural."}
+{"id":72,"verdict":"fail_major","other_words":["system","archive"],"reason":"\"A secure system that staff search by name\" is natural with a common word."}
+{"id":73,"verdict":"fail_major","other_words":["building","monument"],"reason":"\"Best-known building\" or \"monument\" are natural with common words."}
+{"id":74,"verdict":"fail_major","other_words":["move","switch","change"],"reason":"\"Move\" or \"switch to a business-class seat\" are natural with common words."}
+{"id":75,"verdict":"fail_minor","other_words":["encode","scramble"],"reason":"\"Encode\" or \"scramble\" fit but are rarer and less exact."}
+{"id":76,"verdict":"fail_major","other_words":["run"],"reason":"\"Run the new hotel and its fifty workers\" is natural and \"run\" is common."}
+{"id":77,"verdict":"fail_major","other_words":["clean","soak"],"reason":"\"Don't clean this silk shirt in hot water\" is natural with a common word."}
+{"id":78,"verdict":"pass","other_words":[],"reason":"\"Get\" is the closest candidate but does not mean mượn."}
+{"id":79,"verdict":"fail_major","other_words":["hold","arrange","have"],"reason":"\"Hold a football match\" is natural with a common A2 word."}
+{"id":80,"verdict":"fail_major","other_words":["design","layout"],"reason":"\"A simple design with big buttons\" is natural and \"design\" is common."}
+{"id":81,"verdict":"pass","other_words":[],"reason":"\"Pickle\" is the closest candidate but is a different process from lên men."}
+{"id":82,"verdict":"fail_minor","other_words":["mechanize","computerize"],"reason":"\"Mechanize\" or \"computerize\" fit but are rare."}
+{"id":83,"verdict":"pass","other_words":[],"reason":"\"Volunteers\" is the closest candidate but means tình nguyện, not làm việc."}
+{"id":84,"verdict":"pass","other_words":[],"reason":"\"Internet\" is the closest candidate but \"an internet course\" is not natural."}
+{"id":85,"verdict":"fail_major","other_words":["yearly"],"reason":"\"The company's yearly general meeting\" is natural and \"yearly\" is an A2 word."}
+{"id":86,"verdict":"fail_major","other_words":["mess","stuff"],"reason":"\"Clear the mess from your desk\" is natural and \"mess\" is common."}
+{"id":87,"verdict":"pass","other_words":[],"reason":"\"Right\" is the closest candidate but means phải, not trái, even though nothing in the sentence says which side."}
+{"id":88,"verdict":"fail_major","other_words":["upload","release","publish"],"reason":"\"Upload the new version to the live server\" is natural with a common word."}
+{"id":89,"verdict":"fail_major","other_words":["sales"],"reason":"\"The shop's sales of two million dollars\" is natural and \"sales\" is A1."}
+{"id":90,"verdict":"fail_major","other_words":["neat","clean","organized"],"reason":"\"Very neat\" or \"very clean\" fit this room with common words."}
+{"id":91,"verdict":"pass","other_words":[],"reason":"\"Responsibility\" is the closest candidate but \"limited responsibility company\" is not the standard term."}
+{"id":92,"verdict":"fail_major","other_words":["overseas"],"reason":"\"Works overseas\" is equally natural and \"overseas\" is a common synonym."}
+{"id":93,"verdict":"fail_major","other_words":["decorate","top","sprinkle"],"reason":"\"Decorate\" or \"top the soup with parsley\" are natural with common words."}
+{"id":94,"verdict":"fail_major","other_words":["stop"],"reason":"\"A four-hour stop in Singapore\" is natural and \"stop\" is a common word."}
+{"id":95,"verdict":"fail_minor","other_words":["isolated"],"reason":"\"Isolated\" fits as a close synonym but is a higher-level word."}
+{"id":96,"verdict":"fail_major","other_words":["income","money"],"reason":"\"Main source of income is tax\" is natural and \"income\" is common."}
+{"id":97,"verdict":"fail_major","other_words":["wonderful","amazing"],"reason":"\"Absolutely wonderful\" or \"amazing\" are natural with common words."}
+{"id":98,"verdict":"fail_major","other_words":["delay"],"reason":"\"Stop trying to delay and start your homework\" fits with a common B1 word."}
+{"id":99,"verdict":"fail_major","other_words":["profitable","successful"],"reason":"\"A very profitable business\" is natural and \"profitable\" is common."}
+{"id":100,"verdict":"fail_minor","other_words":["working"],"reason":"\"Not working with my phone\" fits loosely with a common word."}
+{"id":101,"verdict":"pass","other_words":[],"reason":"\"Weak\" is the closest candidate but does not follow from \"not right-handed\"."}

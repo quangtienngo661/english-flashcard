@@ -1,0 +1,298 @@
+
+######## haiku: judge output tokens median 347, max 489
+single_answer cross-table, rows v2 Opus medium, columns 7-criteria Sonnet high (pass/minor/major):
+  pass          29   9   1
+  fail_minor    10  19   0
+  fail_major     6  21   5
+
+-- single_answer: v2 major -> now not major
+  12 install: pass | You need administrator rights to ___ new programs on this shared computer. | Only 'install' fits naturally with 'administrator rights' and 'new programs'; 'download' or 'run' change the meaning.
+  13 stressful: minor | Unlike my relaxing weekends by the lake, the last weeks before the merger were very ___ for everyone in the office. | Other adjectives like "tiring" or "difficult" could fit "very ___ for everyone", but the contrast with relaxing weekends points most strongly to "stressful".
+  17 estimate: minor | The builder ___ the cost of the new kitchen at about 8,000 dollars, based on the plans. | Close synonyms such as "put" or "valued" could fit, but they are weaker, so "estimated" remains the best fit.
+  19 bake: pass | Every morning, the café staff arrive before dawn to ___ fresh bread in the oven. | Only 'bake' fits naturally with 'fresh bread in the oven'; 'make' or 'cook' are less specific and 'toast' does not fit a whole loaf.
+  21 souvenir: pass | Tourists usually buy a cheap ___ at the airport, like a keyring or a mug printed with the city name. | Only 'souvenir' fits naturally here; 'gift' or 'present' would not suit the keyring and mug example with the city name as well.
+  31 purchase: minor | Please keep your receipt as proof of ___ if you want to return the shoes. | "Proof of ___" also fits "payment" naturally, which is a close alternative, though "purchase" is the most idiomatic.
+  35 slice: minor | Add a thin ___ of lemon to your tea for extra flavour. | Another word, 'wedge', also fits after 'thin ___ of lemon', but it is less common than 'slice', so it is only a minor issue.
+  38 hire: minor | The shop plans to ___ three extra staff for the busy Christmas season. | Close synonyms such as "employ" or "take on" could fit, but "hire" is by far the most common choice for this sentence.
+  43 fry: minor | Crispy chips are made by ___ thin potato slices in hot oil until golden brown. | Besides frying, 'deep-frying' would also fit, though it is a close variant that is much less common.
+  50 stakeholder: pass | Unlike shareholders, who mainly care about profit, every ___ with an interest in the company, from workers to local residents, deserves a voice in major decisions. | No other common word fits as well: the contrast with shareholders, plus 'workers to local residents', points to stakeholder.
+  54 developer: minor | She works as a freelance web ___ and builds online shops for small businesses. | Close alternatives such as "designer" or "programmer" could fit "freelance web ___", though "developer" is the most natural collocation with "builds online shops".
+  57 embark: minor | The soldiers ___ for France at dawn, their boots still wet from the quay. | Besides 'embarked', 'sailed' fits the blank naturally with 'for France at dawn', though it is a different word with a close meaning.
+  58 suitcase: minor | Before the trip, I spent an hour packing my clothes into a large ___ with wheels. | Words like "bag" or "case" could also fit, though "suitcase" is the best match given packing clothes and wheels, and "suitcase" is the expected answer.
+  65 merger: minor | Regulators approved the ___ of the two banks, creating the largest lender in the country. | Close variants such as "merging" or the rarer "amalgamation" could fit, but "merger" is clearly the natural answer; "consolidation" is a possible rare alternative.
+  69 wireless: minor | Staff can connect their laptops from any room because the office has a ___ network. | Wi-Fi as an adjective-like modifier or 'secure' could fit, but 'wireless' is clearly the best fit, and only rare or loosely related variants (e.g. 'Wi-Fi') compete.
+  70 urgent: minor | The letter was stamped ___, so the courier delivered it to the office within the hour. | Other words such as "priority" or "rush" could fit after "stamped" ("stamped rush" is a real phrase), so there is a close variant, though "urgent" is by far the most natural.
+  73 landmark: minor | The old clock tower is a well-known city ___ that tourists photograph from every angle. | Words like "attraction" or "sight" could fit, though "city attraction" is less natural, so only close alternatives compete and the problem is minor.
+  74 upgrade: minor | My old laptop is too slow for video editing, so I plan to ___ its processor to a faster model this summer. | Close words such as 'update' could also fit, though 'upgrade ... to a faster model' fits best, so only a minor ambiguity.
+  77 wash: pass | Mum put the dirty socks in the machine to ___ them. | Dirty socks in the machine strongly point to wash; 'clean' does not fit after 'to' in this way and other common verbs do not fit.
+  78 borrow: pass | Can I ___ your pen for a minute? I'll give it back after class. | Only 'borrow' fits here; 'lend' would not work with 'Can I ___ your pen' and 'use' does not mean the same as mượn.
+  88 deploy: minor | If the new build crashes, the engineers can ___ the previous version to the servers within minutes. | Close synonyms such as "release" or "roll out" (e.g. "roll out the previous version") could also fit, though "deploy" is the most natural fit for servers.
+  89 turnover: minor | Last year the company had a ___ of £50 million, up 10% on the year before. | Another word, 'revenue' (or 'sales'), could fit the blank with a close meaning, though 'a revenue of' is less natural than 'a turnover of'.
+  90 tidy: minor | Mum asked us to keep our bedrooms ___ and put all the toys back in the box. | "neat" also fits the blank naturally as a close synonym, though it is less common than "tidy" here.
+  93 garnish: minor | Before serving the soup, the chef will ___ it with a sprig of parsley, mainly for colour. | "decorate" could also fit the blank, though "garnish" is the more precise word for food, so it is a close alternative.
+  94 layover: minor | The airline offered us a free hotel room during our ___ in Istanbul, because our connecting flight was cancelled. | Common words like "stopover" also fit the blank with the same meaning, though they are close variants rather than unrelated words.
+  96 revenue: minor | Falling tax ___ forced the city council to cut spending on parks and libraries. | Other words like "income" or "revenues" could fit "Falling tax ___", but "revenue" is by far the most natural collocation, so this is only a weak ambiguity.
+  99 lucrative: minor | After ten years of teaching, she quit to pursue a ___ career in investment banking that could make her a millionaire. | Other words like "high-paying" or "profitable" could fit, but they are hyphenated or less precise and not single common adjectives, so only a minor weakness.
+
+-- single_answer: major now
+  22 increase (v2 major): Common words like "raised" or "boosted" are not as natural, but "picked up" aside, "upped" is rare; however "raised" is not idiomatic, and the real competitor "gained" does not fit, so the main issue is that "increased" and "quickened" are not alternatives... actually "accelerated" is a clear common-enough synonym that fits "his speed" naturally.
+  64 luggage (v2 major): "Baggage" is a common word that fits the blank naturally with the same meaning, since "left baggage office" is also used and "all our baggage" works.
+  76 manage (v2 major): Common words like "control", "handle" or "run" fit the blank naturally with the same meaning of managing a budget, so the answer is not unique.
+  79 organize (v2 major): Common words like "hold", "have" and "run" fit the blank naturally with the same meaning of putting on a bake sale, so more than one answer works.
+  87 left (v2 pass): The sentence only says turn right first, then turn ___, so "right" would fit again and nothing rules out "around" or "back", and nothing forces "left" as the only common answer.
+  97 delicious (v2 major): Common words like "wonderful", "amazing" and "fantastic" fit "smells absolutely ___" equally well, and "great" and "lovely" also work, so several answers are natural.
+
+-- single_answer: v2 pass -> now fail
+  0 brush: minor | The common word 'comb' also fits the blank naturally (comb your long hair), though 'bristles' points to brush.
+  29 sugar: minor | Other words like 'salt' or 'flour' could grammatically fit, but 'brown ___' that dissolves points strongly to sugar, so only a weak alternative remains.
+  33 trip: minor | Another word, 'journey', could fit 'business ___' in a loose sense, but 'business trip' is the standard collocation, so only a rare variant competes.
+  34 click: minor | Close synonyms like "pressed" or "tapped" could fit "___ on the link", but "clicked" is by far the most natural, and "clicked on" is clearly the intended answer.
+  37 alarm: minor | Another word, 'timer', could fit 'My phone's ___ went off at six', but it is less common here and 'alarm' is clearly the best fit.
+  40 ingredient: minor | "Ingredient list" is the standard collocation, but "allergy list" or "nutrition list" are rare alternatives, and "nutrition" might loosely fit, so a slight variant risk remains.
+  47 arrive: minor | Close variants like "get" (get to the station) or "be" do not fit directly, but "get" could fit loosely, so only a weak alternative exists; "arrive" is the clear fit.
+  53 download: minor | Close variants such as "save" or "get" could fit the blank, but "download" is by far the best fit given the Wi-Fi and mobile data clues.
+  67 sell: minor | Close variants such as "trade" or "give away" are weak fits, but "sell" is clearly the best answer, so only a minor issue remains.
+  87 left: major | The sentence only says turn right first, then turn ___, so "right" would fit again and nothing rules out "around" or "back", and nothing forces "left" as the only common answer.
+
+-- sense_match: non-pass
+  5 boil: minor | Add the pasta only after the water has come to a ___. | The sentence uses 'boil' as a noun (come to a boil), while meaning_vi 'luộc, đun sôi' is the verb sense, though the idea of heating water is close.
+  44 happy: minor | At the party, everyone sang '___ Birthday' to Mia while she blew out the candles. | Happy in the song title 'Happy Birthday' is a greeting wish, which is close to but not exactly 'vui vẻ, hạnh phúc'.
+  96 revenue: minor | Falling tax ___ forced the city council to cut spending on parks and libraries. | "Tax revenue" means government income from taxes rather than a company's "doanh thu" (sales), which is close but a slightly different shade.
+  97 delicious: minor | The bakery on our street smells absolutely ___ every morning, like warm bread and cinnamon. | "Delicious" describing a smell is a slight shift from "ngon", which usually refers to taste, though dictionaries do allow it for smells.
+
+-- enough_clue: non-pass
+  22 increase: minor | As soon as the road was clear, the driver ___ his speed and overtook the truck. | The context of overtaking a truck points to speeding up, but the learner must guess among speed-related verbs such as increase or raise, so the clue is only moderate.
+  64 luggage: minor | We left all our ___ at the station's left luggage office while we visited the museum. | The clue is "left ___ office" and the station context, but the answer is partly given away by "luggage office" and the learner could still guess "bags" or "baggage".
+  76 manage: minor | The new director will ___ a budget of two million dollars for the whole department. | The budget and director context points toward managing, but it is a weak clue and the learner must guess among similar verbs.
+  79 organize: minor | Parents at our school ___ a bake sale every spring to raise money for the library. | The bake sale and fundraising context points to an event verb but not specifically to "organize", so the learner must guess among similar verbs.
+
+-- grammar_natural: non-pass
+  64 luggage: minor | We left all our ___ at the station's left luggage office while we visited the museum. | The sentence is correct with "luggage", but having "luggage" in the blank and again in "left luggage office" is repetitive and sounds slightly awkward.
+  75 encrypt: minor | Before sending the file, ___ it so that only a recipient with the matching decryption key can read its contents. | The imperative 'encrypt it' fits, but 'encrypting' does not work in the blank because 'Before sending the file, encrypting it so...' is ungrammatical, and the accepted list wrongly includes it.
+  80 interface: minor | The new software has a clean graphical user ___ that even first-time users can understand. | The singular 'interface' fits well, but 'interfaces' is listed and does not fit, since 'a ... ___' requires a singular noun.
+  97 delicious: minor | The bakery on our street smells absolutely ___ every morning, like warm bread and cinnamon. | "Smells absolutely delicious" is grammatical, but "absolutely delicious" for a smell is slightly less natural than "smells delicious" or "smells wonderful".
+
+-- translation_ok: non-pass
+  7 staff: minor | If you need help finding a product, please ask a member of ___ at the front desk. | The translation is right but says 'một nhân viên' and 'quầy lễ tân', dropping the idea of 'member of staff' and rendering 'front desk' as reception, which is slightly awkward for a shop.
+  96 revenue: minor | Falling tax ___ forced the city council to cut spending on parks and libraries. | The translation renders "revenue" as "nguồn thu thuế" (tax income) instead of "doanh thu", though the sense is right and the Vietnamese is natural.
+  97 delicious: minor | The bakery on our street smells absolutely ___ every morning, like warm bread and cinnamon. | The translation says "thơm ngon" (fragrant and tasty), which is close to but not exactly "ngon" and slightly awkward; it also adds "lúc nào cũng" for "every morning" and is generally accurate.
+
+-- level_fit: major, then every minor (word level, reason)
+  major 0 brush (A1): 'bristles' and 'tangles' are about B2 words in an A1 sentence, and the sentence is long for A1.
+  major 9 banana (A1): The words 'cartoon', 'characters', 'slip', 'peel' and 'flat' are above A1 and 'often' is A2, so the sentence is well above A1.
+  major 10 partner (A1): 'company', 'signed', 'deal', 'profits' and 'equally' are B1-B2 words in an A1 sentence, and the sentence is long for the level.
+  major 20 import (B1): 'Customs' is about B2 and 'zone' is about B2, and the sentence is long and complex for B1, so it is two levels too hard.
+  major 29 sugar (A1): 'Melt', 'stir', 'dissolves' and 'pan' are above A1 level (A2-B1), so the sentence is too hard for A1.
+  major 30 raw (A2): "Bacteria" (B2) and "harmful" (B1) are two or more levels above A2, and the sentence is long and complex for A2, so the sentence is too hard.
+  major 33 trip (A1): 'Manager' and 'business' are about B1 and 'meeting' is A2, so the sentence is two levels above A1 and is also long for the level.
+  major 63 friend (A1): The sentence is long for A1 and uses "moved" (A2), "city" (A1/A2) and the structure "it took my son a long time to" (B1), which is two levels above A1.
+  major 76 manage (A2): "director", "budget" and "department" are B1-B2 words, which is too hard for an A2 sentence, and the sentence is fairly long.
+  major 85 annual (B1): 'Shareholders' (C1) and 'vote'/'budget' (B2-level) are two or more levels above B1, and the sentence is fairly long for the level.
+  major 97 delicious (A1): "absolutely", "cinnamon" and "bakery" are above A1 (A2-B1 or higher), and the sentence is long for A1.
+  minor 1 attention (A2): 'Grammar' and 'explains' are around B1 and one level above A2, so the sentence is slightly hard.
+  minor 2 scenic (B1): "Rather than" and "admire" are around B2 level, and the sentence is fairly long for B1, so it is slightly above level.
+  minor 3 game (A1): 'Board' (A2) and 'together' (A2) are slightly above A1, and the sentence is somewhat long for A1.
+  minor 4 contract (B1): "Striker" is likely B2 and the sentence is fairly long for B1, so it is slightly above level.
+  minor 5 boil (A2): 'Add ... only after' and the present perfect 'has come to a boil' are slightly above A2, though the vocabulary is simple.
+  minor 7 staff (A2): 'product' is around B1 and the sentence is fairly long for A2, but nothing is two levels above.
+  minor 8 receipt (A2): "proof" and "purchase" are above A2 (around B1), and the sentence is somewhat long for A2.
+  minor 11 app (A2): 'balance' (B1) is one level above A2 and the sentence is fairly long, though 'bills' is only slightly above A2.
+  minor 12 install (B1): 'administrator' is likely B2, one level above B1, and the sentence is somewhat long.
+  minor 13 stressful (B1): "Merger" is about B2/C1 and the sentence is fairly long for B1, so it is slightly above level.
+  minor 14 menu (A2): 'Starters' and 'main course' are around B1 vocabulary, slightly above A2, and the sentence is fairly long.
+  minor 16 laundry (A2): 'ironed' and 'overnight' are likely slightly above A2, so the sentence is a bit hard for the level.
+  minor 18 meeting (A1): "Weekly" and "lasts" are slightly above A1, and the sentence is fairly long for that level.
+  minor 19 bake (A2): 'Dawn' is above A2 (about B2), and the sentence is fairly long for A2, so it is somewhat hard.
+  minor 21 souvenir (B1): 'keyring' and 'printed' are probably slightly above B1, and the sentence is fairly long for the level.
+  minor 22 increase (A2): "overtook" and "clear" (as in a clear road) are about B1, one level above A2, and the sentence is fairly long.
+  minor 23 department (B1): "Professor" and "chemistry" are around B2, which is one level above B1.
+  minor 24 debt (B1): 'Government' and 'billions' are around B1-B2, and the sentence is somewhat long for B1, so it is slightly above level.
+  minor 25 investor (B1): 'start-up' and 'shares' are around B2 and the sentence is fairly long for B1, so it is slightly above level.
+  minor 26 recycle (A2): 'Reduce' and 'waste' are about B1 words in an A2 sentence, so it is slightly above level, though only one level.
+  minor 27 remember (A1): The sentence is long for A1 and has "bright" (A2) and a relative clause with "when", so it is slightly above the level.
+  minor 34 click (A1): "window" and "link" are slightly above A1 in the computer sense, and the sentence is somewhat long for A1, so this is a minor issue.
+  minor 35 slice (A2): 'Flavour' is about B1, one level above A2, so it is a minor issue; the other words are A1-A2.
+  minor 36 brand (A2): "Medicine" and "expensive" are around A2 to B1, and the sentence is somewhat long with a contrast clause, so it is slightly above A2.
+  minor 39 server (B1): 'Handle' and 'visitors' are around B1, but 'went down' as a phrasal verb and the sentence length make it slightly demanding; mostly fine, minor stretch.
+  minor 40 ingredient (B1): "Peanuts" and "label" are around B1 to B2 and the sentence is fairly long for B1, so it is slightly above level.
+  minor 42 deal (A2): "Percent/20% off" and the idiom "you've got a deal" are slightly above A2, and the two-sentence length is a bit long for the level.
+  minor 43 fry (A2): 'Crispy' and 'golden' are around B1, one level above A2, and the sentence is fairly long for A2.
+  minor 44 happy (A1): The words 'blew out' and 'candles' are above A1 and the sentence is fairly long for the level.
+  minor 45 profit (B1): "Wages" is about B2 and the sentence is fairly long for B1, so it is one level above and slightly long.
+  minor 46 screen (A1): 'cracked' and 'barely' are above A1 (around B1/B2), and the sentence is fairly long for A1.
+  minor 47 arrive (A1): "until" and "midnight" are around A2 and the sentence is somewhat long for A1, so it is slightly above level.
+  minor 48 service (B1): "Downstairs" is around A2-B1, and the sentence is somewhat long with "too tired to", so it is slightly demanding but acceptable; "ordered" and "dinner" are fine.
+  minor 49 maintain (B1): "Aircraft" and "required" are around B2 and "strict" is B2, one level above B1, and the sentence is fairly long.
+  minor 50 stakeholder (B2): 'shareholders' and 'deserves a voice' are around B2 or C1, and the long sentence with its relative clause is slightly heavy for B2.
+  minor 51 weekend (A1): 'make up' (phrasal verb) and the relative clause 'when most people do not have to work' are above A1 and long for the level.
+  minor 52 invest (B1): 'Bonds' and 'retirement' are around B2 and 'government' is B1, so the sentence is slightly above B1 and fairly long.
+  minor 53 download (A2): "avoid" is a B1 word in an A2 sentence, and the sentence is fairly long for the level.
+  minor 55 strategy (A2): "Ahead" and "several" are around A2 to B1, and the sentence is fairly long for A2, so it is slightly above level.
+  minor 56 map (A1): 'Route' is B1 and 'spread out' is above A1, and the sentence is fairly long for A1, so it is slightly too hard.
+  minor 57 embark (B2): 'Quay' and 'dawn' are above B2 level (C1), and the sentence is fairly long and literary, so it is slightly hard.
+  minor 58 suitcase (A2): "Packing" is around B1 and the sentence is fairly long for A2, but the rest of the vocabulary is basic.
+  minor 59 cuisine (B2): 'Specialises' and 'trained' are around B2 and 'haute' is a rare borrowed word, so the sentence is slightly above B2 in places.
+  minor 60 pay (A1): 'Forgot' and 'wallet' are slightly above A1 (A2), and the sentence is fairly long for A1, so it is a bit hard.
+  minor 61 cloud (A1): 'copies' and 'photos' are around A1-A2 and 'safe' and 'breaks' are A2, so the sentence is slightly above A1 and fairly long.
+  minor 64 luggage (A2): "Station" and "museum" are around A2, but "left luggage office" is a rarer compound and the sentence is fairly long for A2, so it is slightly above level.
+  minor 65 merger (B2): "Regulators" and "lender" are around B2/C1, slightly above or at level, and the sentence is somewhat long, so it is a minor stretch.
+  minor 66 account (A2): 'Aside' in 'put money aside' is around B1, one level above A2, and the sentence is fairly long for A2.
+  minor 68 tea (A1): The sentence is long for A1 and contains "mint" and "leaves" and "fresh", which are above A1 level.
+  minor 70 urgent (B1): "Courier" is a B2-level word in a B1 sentence, and the sentence is somewhat long, so it is one level above.
+  minor 71 busy (A1): 'Tonight' and 'homework' are about A1-A2 and the sentence is somewhat long for A1, so it is slightly above level.
+  minor 72 database (B2): 'Relational' and 'spreadsheets' are around B2 to C1 and the sentence is fairly long, so it is slightly above B2.
+  minor 75 encrypt (B2): The sentence is long for B2, and 'recipient' and 'decryption' are around C1 or above, which is one level too high.
+  minor 77 wash (A1): The word 'socks' and 'machine' are about A1-A2 level; 'dirty' and 'socks' are slightly above A1, so it is a minor stretch.
+  minor 79 organize (A2): "Raise money" and "bake sale" are slightly above A2, and the sentence is fairly long for the level.
+  minor 81 ferment (B2): 'carbon dioxide' and 'yeast' are above B2 in places, and the sentence is fairly long, though they are technical words tied to the topic; 'mixture' is around B1-B2.
+  minor 84 online (A2): 'laptop' and 'sign up for' are around A2-B1, and the sentence is somewhat long for A2, so it is slightly above level.
+  minor 86 clutter (B2): "minimalist" is a B2 or higher word and "spacious" is B2, which is at or slightly above the level, so the sentence is a bit demanding.
+  minor 87 left (A1): "church" and "corner" are slightly above A1, and "bank" is fine, so the sentence is slightly hard for A1.
+  minor 88 deploy (B2): "Engineers" and "previous" are around B1, and "crashes" and "build" are technical words at or above B2; the sentence is also fairly long, so it is slightly demanding.
+  minor 91 liability (B2): 'faulty' and 'insurance' are around B2 or B1+, slightly above or at the level, and the sentence is fairly long, so it is only a minor stretch.
+  minor 93 garnish (B2): "sprig" and "parsley" are likely B2 or above, and "mainly" and the clause structure make the sentence somewhat long for a B2 learner, so it is slightly high.
+  minor 94 layover (B2): "connecting" and "cancelled" are around B2 or slightly below, and the sentence is fairly long for B2, so it is a minor stretch.
+  minor 95 remote (A2): The sentence is long for A2 and has words like "electricity" and "nearest" that are around B1, which is one level up.
+  minor 96 revenue (B2): "Council" and "forced" are around B2 or slightly above for some learners, and the sentence is fairly long, so it is slightly high for B2.
+  minor 99 lucrative (B2): "Pursue" and "investment" are around B2 or higher, and the sentence is fairly long, so it is slightly above B2 in places.
+
+######## terra: judge output tokens median 347, max 424
+single_answer cross-table, rows v2 Opus medium, columns 7-criteria Sonnet high (pass/minor/major):
+  pass          33  11   1
+  fail_minor    14  20   2
+  fail_major     1  16   2
+
+-- single_answer: v2 major -> now not major
+  2 scenic: minor | We followed the signs for the ___ route and drove past lakes and mountains instead of taking the motorway. | Other words like "beautiful" or "pretty" could fit, but "scenic route" is the strong collocation and the lakes-and-mountains clue plus "instead of the motorway" points to it.
+  5 boil: minor | I'll ___ the kettle; it's full of water, and we need hot water for tea. | Close variants like "heat" or "warm" could fit, though "boil" is the most natural; "heat up" would need a particle.
+  17 estimate: minor | From photos taken from above, the team ___ the number of people in the crowd to be somewhere between 1,000 and 2,000. | Close synonyms such as "calculated" or "judged" could fit, but the pattern "estimated X to be" and the approximate range point strongly to "estimated".
+  35 slice: minor | At this shop, you can buy pizza by the ___ instead of ordering a whole one. | "piece" also fits naturally (pizza by the piece), though "slice" is the more common collocation, so it is a close variant.
+  38 hire: minor | As manager, she can ___ and fire staff, so she decides who joins the team and who has to leave. | Close synonyms such as "employ" or "recruit" could also fit "___ and fire staff", but "hire and fire" is the set phrase and the alternatives are less common.
+  49 maintain: minor | The school pays workers to ___ its buildings: they clean them, paint them, and fix anything that breaks. | Another word such as "repair" or "look after" could fit, but "repair" does not cover cleaning and painting, so only close variants compete with "maintain".
+  53 download: minor | There isn't enough space on my phone to ___ the video over Wi-Fi. | Other words like "save" or "stream" could loosely fit, but "download" is by far the best fit, so the question is only slightly weaker.
+  58 suitcase: minor | Dad spends so much time on business trips that he lives out of a ___. | The idiom is "live out of a suitcase"; "bag" or "backpack" could also fit loosely, but they are less idiomatic variants.
+  59 cuisine: minor | Italian and Japanese are two of my favourite ___; each has a wide range of traditional dishes. | Other words such as "foods" or "kitchens" are less natural, but "cooking" or "foods" could loosely fit; "cuisines" is the clear best, so only a weak alternative exists.
+  73 landmark: minor | The old stone bridge isn't a tourist attraction, but it's a well-known local ___ that people use when giving directions. | Words like "marker" or "reference point" could fit, but they are less common, so this is only a minor concern.
+  76 manage: minor | At our family shop, my aunt has to ___ both the workers and the money. | Close synonyms such as "run" or "handle" could also fit "the workers and the money", though "manage" is the most natural choice.
+  83 work: pass | My mother ___ for a bank from nine to five, Monday to Friday. | Only 'works' fits naturally; other verbs like 'is employed' or 'walks' do not fit with 'for a bank' and the working hours.
+  86 clutter: minor | A few baskets can keep toys and books out of sight and reduce visual ___ in the room. | "mess" could also fit after "visual" but is less natural, and "disorder" is a rarer variant, so only weak alternatives exist.
+  88 deploy: minor | We will use Helm to ___ the app to Kubernetes after pushing its image to a registry. | Close synonyms like "release" or "push" could fit, though "deploy ... to Kubernetes" is the standard collocation, so only a minor weakness.
+  90 tidy: minor | I always put my toys away to keep my room clean and ___. | Another word like "neat" also fits the blank naturally, but it is a close variant of "tidy" and less common here, so the question is only slightly weaker.
+  96 revenue: minor | Last year, the shop's gross sales ___ was $2 million, but it made no profit after paying its costs. | The phrase "gross sales ___" could also take "income" or "turnover" (the latter mostly British), but these are weaker fits than "revenue".
+  99 lucrative: minor | She accepted a highly ___ job offer that would pay her $500,000 a year. | Other words like "well-paid" or "high-paying" fit, but "highly" collocates best with "lucrative" and "paid", so only close variants compete.
+
+-- single_answer: major now
+  22 increase (v2 major): Common words like "extend" or "add to" are less direct, but "raise" does not fit; however "lengthen" or "extend" fit, and especially "extend" is a fairly common word, so the blank is not unique.
+  31 purchase (v2 minor): The common word "buying" fits the blank naturally with the same meaning ("the buying of a new car"), so the answer is not unique.
+  79 organize (v2 major): Common words like "arrange" and "plan" fit the blank with the same meaning; "not just plan it" excludes only "plan", and "arrange" or "run" still fit naturally.
+  94 layover (v2 pass): Common words like "stopover" or "wait" fit the blank naturally with the same meaning, since the sentence gives only a weak constraint beyond the first letter L.
+  97 delicious (v2 minor): Common words like "good", "tasty" or "great" fit the blank naturally with the same meaning, and the "starts with D" clue only partly narrows it, so the answer is not unique.
+
+-- single_answer: v2 pass -> now fail
+  0 brush: minor | Another common verb, 'comb', fits with hair but not teeth, so only a rare partial alternative exists; 'clean' fits teeth but not hair naturally, so the ambiguity is minor.
+  8 receipt: minor | The close synonym "bill" or "ticket" could loosely fit, though "receipt" is clearly the best answer for proof of payment.
+  12 install: minor | Other button labels such as 'Setup', 'Next' or 'Run' could also fit the blank, though 'Install' is the best match to 'add it to my computer'.
+  25 investor: minor | Close alternatives like "backer" or "funder" could fit after "angel", though "angel investor" is the set phrase and these are rarer.
+  29 sugar: minor | Honey could also fit after 'puts' and 'to make it sweet', but 'brown' and 'white' point strongly to sugar, so only a rare alternative remains.
+  47 arrive: minor | The close synonym "get" doesn't fit (needs "get there"), but "be" doesn't fit either; only "arrive" or the rare "turn up"-type variants fit, so a minor risk remains.
+  57 embark: minor | The 'BARK' clue strongly points to embark, but 'board' could also fit the meaning, though the letter clue rules it out; a learner might still hesitate, so only a minor weakness.
+  68 tea: minor | Other words like "coffee" or "soup" could loosely fit, but "bag of dried leaves" points to tea; "herbal tea" variants are the same word.
+  74 upgrade: minor | Other words like "move" or "bump" could fit loosely, but they are less common, so "upgrade" is nearly the only natural fit (minor).
+  81 ferment: minor | Close variants such as "ferment" synonyms like "brew" do not fit with sugar as subject, but "turn" is unlikely, so only rare alternatives remain, e.g. "convert" is odd; a weak variant risk remains.
+  93 garnish: minor | 'Decorate' also has seven letters and could fit the clue loosely, though 'garnish' is the natural collocation with soup and parsley.
+  94 layover: major | Common words like "stopover" or "wait" fit the blank naturally with the same meaning, since the sentence gives only a weak constraint beyond the first letter L.
+
+-- sense_match: non-pass
+  44 happy: minor | It was my birthday, and everyone sang '___ birthday to you.' | 'Happy' in 'Happy birthday' is a greeting meaning 'chúc mừng', which is close to but not quite the 'vui vẻ, hạnh phúc' feeling.
+  73 landmark: minor | The old stone bridge isn't a tourist attraction, but it's a well-known local ___ that people use when giving directions. | The sentence stresses a navigation reference point rather than a famous sight, which is close to "địa danh nổi tiếng" but not the same shade.
+  74 upgrade: minor | Your ticket is for economy, but the airline may ___ you at no extra cost if there are empty seats in first class. | The sentence means to move someone to a higher class ("nâng hạng"), which is close to but a slightly narrower shade than the general "nâng cấp".
+
+-- enough_clue: non-pass
+  22 increase: minor | The teacher wants to ___ the amount of time we spend reading by 10 minutes a day so we can read more books. | The clue "by 10 minutes a day" and "read more books" points to increasing, but "extend", "raise" or "add to" could also be guessed, so the clue is only moderate.
+  31 purchase: minor | We put off the ___ of a new car until we had saved enough money. | "Put off ... a new car until we had saved enough money" points to buying, but the learner must guess between "purchase" and "buying".
+  79 organize: minor | Can you ___ the school trip, not just plan it, but also book the bus and buy the tickets? | The clue about booking the bus and buying tickets points to organizing, but it also fits "arrange" or "manage", so the learner must guess somewhat.
+
+-- grammar_natural: non-pass
+  4 contract: minor | I signed a three-year ___ of employment with the company. | The phrase 'a three-year contract of employment' is correct but slightly stilted, because 'employment contract' or 'a three-year contract' is more natural.
+  23 department: minor | The company has a ___ of Human Resources, which is divided into three teams. | The sentence is grammatical, but "a department of Human Resources" is slightly unnatural; "a Human Resources department" is more usual, and accepting capitalised "Department" is odd mid-sentence.
+  64 luggage: minor | At the station, we paid to leave our bags at the left-___ office. | The sentence is correct, but the hyphenated blank 'left-___' is an awkward format and the compound is mainly British, so it is slightly unnatural.
+  77 wash: major | Before lunch, please ___ with soap and water, then dry your hands. | The sentence needs 'wash your hands' (or 'wash up'); 'please wash with soap and water' lacks the object and is not natural, so the blank is ungrammatical or unnatural with 'wash'.
+  92 abroad: minor | The company sells its shoes both at home in Vietnam and ___ in Laos and Cambodia. | "abroad in Laos and Cambodia" is slightly redundant and a little unnatural, since "abroad" usually is not followed by a specific place, although it is grammatical.
+  94 layover: minor | We had a two-hour ___ between flights in Seoul; how do you spell that word that starts with L? | The sentence is grammatical with "layover", but the tacked-on spelling question is an unnatural, awkward addition to a fill-in sentence.
+  97 delicious: minor | This cake is ___—that's my favorite word that starts with D! | The sentence is grammatical with "delicious", but calling it a favorite word starting with D is a slightly odd, unnatural framing.
+
+-- translation_ok: non-pass
+  13 stressful: minor | The work was easy, but the short deadline made it ___; I felt under pressure until I finished. | The Vietnamese says "khiến tôi căng thẳng", which adds "tôi" and turns the adjective into a feeling, so it is slightly off from "made it stressful" but the meaning is right.
+  44 happy: minor | It was my birthday, and everyone sang '___ birthday to you.' | The translation is accurate but renders the blank as 'Chúc mừng' instead of 'vui vẻ, hạnh phúc', so the target word's meaning is not shown.
+  54 developer: minor | I joined Apple's ___ program so I could publish the app I wrote. | The translation says 'nhà phát triển' rather than the given meaning 'lập trình viên', though the sense is close and natural.
+  94 layover: minor | We had a two-hour ___ between flights in Seoul; how do you spell that word that starts with L? | The translation says "dừng nối chuyến" loosely and omits the noun sense of 'a layover of two hours', so it is a little awkward but the meaning is right.
+  97 delicious: minor | This cake is ___—that's my favorite word that starts with D! | The translation matches the meaning, but "từ tiếng Anh" adds "English" and the phrasing is slightly awkward.
+
+-- level_fit: major, then every minor (word level, reason)
+  major 10 partner (A1): The words "business", "started", "together" and "own" are A2-B1, and the sentence is long with a semicolon for A1, so it is well above level.
+  major 18 meeting (A1): The words 'parents' and 'school trip' are A1-A2, but 'called a meeting' as a collocation and 'talk about' are fine; however 'trip' is A2 and the long sentence with a purpose clause is above A1, so this is at least one level above, with no word two levels above, but the sentence length is demanding.
+  major 58 suitcase (A2): "Business" is about B1 and the idiom "lives out of a" plus the long sentence is well above A2; the idiom is a C1-level concept, so it is two or more levels too hard.
+  major 62 hungry (A1): The idiom 'eat a horse' with 'could' (a hypothetical structure) and 'horse' is above A1 for the idiomatic usage, though the individual words are mostly A1-A2; 'so...I could' structure is about A2-B1.
+  minor 0 brush (A1): The sentence is fairly long for A1 and 'not with the same thing' is a slightly complex structure; 'every morning' and 'teeth' are fine.
+  minor 2 scenic (B1): "Motorway" is around B2 for a B1 learner, and the sentence is fairly long, so it is slightly above level.
+  minor 3 game (A1): 'Board' and 'chess' are slightly above A1, though 'favorite' is fine, so it is a minor stretch.
+  minor 7 staff (A2): 'Cleaners' and 'including' are likely B1, one level above A2, so the sentence is slightly hard.
+  minor 9 banana (A1): The word 'skin' is probably A2, one level above A1, and the sentence is somewhat long for A1.
+  minor 12 install (B1): 'Program' and 'setup' are about A2-B1, but 'downloading' is slightly above B1 and the sentence is fairly long.
+  minor 13 stressful (B1): "deadline" is around B2, one level above B1, and the sentence is fairly long with a semicolon.
+  minor 16 laundry (A2): "apartment", "shared" and "dryers" are around A2-B1, and the sentence is somewhat long for A2.
+  minor 17 estimate (B1): The sentence is long for B1 and "crowd" is around B1-B2, so it is slightly above the level.
+  minor 19 bake (A2): 'Terrible' is B1 and the sentence is fairly long with a semicolon, slightly above A2.
+  minor 20 import (B1): 'illegal' is about B2 and 'export' is around B1-B2, so the sentence is slightly above B1 and fairly long.
+  minor 22 increase (A2): The sentence is long for A2 and has "amount" (B1) so it is slightly above level.
+  minor 23 department (B1): "divided" and "Human Resources" are around B2 or one level above B1, and the sentence is fairly long for the level.
+  minor 25 investor (B1): "angel" (as in angel investor) and "in return for" and "share of the business" are around B2, one level above B1.
+  minor 26 recycle (A2): 'Reduce' and 'reuse' are around B1 and slightly above A2, so the sentence is a little hard for the level.
+  minor 27 remember (A1): "Yesterday" and "name" are A1, but "met" (past of meet) and the two-clause sentence are slightly above strict A1, so it is a little long for the level.
+  minor 29 sugar (A1): The word 'sweet' is A2 and the sentence is somewhat long for A1, so it is slightly above level.
+  minor 31 purchase (B1): "Put off" is a B1-B2 phrasal verb and the sentence is fairly long for B1, so it is slightly above level.
+  minor 33 trip (A1): The sentence is fairly long for A1 and 'evening' and 'came home' are slightly above A1, though mostly simple.
+  minor 34 click (A1): "Picture" is A1 but "mouse" is around A2, so it is slightly above A1; the sentence is short.
+  minor 39 server (B1): 'crashed' and 'connection' are around B1-B2 and the sentence is fairly long, so it is slightly above B1 but not far off.
+  minor 43 fry (A2): 'Boil' and 'potatoes' are around A2, but 'chips' and 'deep-fry' as a compound are slightly above A2, so it is a mild stretch.
+  minor 44 happy (A1): 'birthday' and 'sang' are fine, but 'everyone sang' (past tense of 'sing') is slightly above A1.
+  minor 46 screen (A1): 'anything' is slightly above A1 and the sentence is somewhat long with a contrast clause for A1.
+  minor 47 arrive (A1): "missed" and "station" are around A2 and the sentence is fairly long for A1, and "because" is also above A1.
+  minor 50 stakeholder (B2): The sentence is long with an inserted dash clause, and 'shareholders' and 'residents' are around B2, so it is slightly demanding, though acceptable for B2.
+  minor 51 weekend (A1): 'Closed' is slightly above A1 (around A2) and the sentence is fairly long for A1, but it is not misleading.
+  minor 52 invest (B1): 'shares' (in the financial sense) is about B2, one level above B1, so it is slightly high.
+  minor 53 download (A2): "space" is around A2/B1 and the sentence is fairly long for A2, so it is slightly above level.
+  minor 54 developer (B2): 'publish' is about B2 or higher, which is at level, but the possessive and the purpose clause make the sentence slightly long; 'publish' may be one level above for some learners.
+  minor 55 strategy (A2): "several" and "ahead" are slightly above A2, and the sentence is somewhat long for the level.
+  minor 56 map (A1): The sentence is fairly long for A1 and contains 'station' and 'find our way', which are slightly above A1.
+  minor 57 embark (B2): The sentence is long for B2 and contains 'passengers' and 'leaving only', which are around B1-B2, so it is slightly above level; no word is two levels above.
+  minor 60 pay (A1): 'Cash' and 'ticket' are around A1-A2 and the sentence is somewhat long for A1, so it is slightly above level.
+  minor 61 cloud (A1): 'computer' and 'photos' are A1-A2 and the sentence is fairly long with a 'so I can' clause, which is slightly above A1; 'any' is also borderline.
+  minor 64 luggage (A2): 'Left-luggage' and 'station' are fine, but the sentence is somewhat long and the compound is a bit above A2 level, so it is slightly high for the level.
+  minor 65 merger (B2): "Agreed" and "forming" are fine, but "equals" as a noun and "control" are around B2 and the sentence is fairly long, so it is slightly high for B2 learners.
+  minor 66 account (A2): 'Boss' and 'pay' are around A2, but 'opened a bank account' and the 'so ... could' clause are slightly above A2; the sentence is acceptable but a bit demanding.
+  minor 67 sell (A1): 'Bought' is irregular past and the sentence is fairly long with two prices for A1, though the words are simple; 'bike' and 'friend' are fine.
+  minor 68 tea (A1): "dried" and "leaves" are slightly above A1, and the sentence is fairly long for A1.
+  minor 71 busy (A1): The word 'bee' and the idiom 'as busy as a bee' are above A1, and the sentence is somewhat long for A1.
+  minor 73 landmark (B2): "Attraction" is around B2 and the sentence is fairly long, which is slightly high for B2 but not misleading.
+  minor 75 encrypt (B2): 'decrypt' is a C1-level word, which is above the B2 level, but it is a close partner of the target word and only one level up.
+  minor 78 borrow (A1): 'Weekend' and 'Monday' are around A1-A2 and the sentence is two clauses long, so it is slightly long for A1.
+  minor 79 organize (A2): The sentence is long and has a complex structure ("not just ... but also"), and "book" and "tickets" are around A2-B1, so it is slightly above A2.
+  minor 81 ferment (B2): "yeast" is likely above B2 (C1), one level up, though the rest of the sentence is fine.
+  minor 83 work (A1): 'bank' is A1-A2 and the sentence is somewhat long for A1, but 'Monday to Friday' and 'from nine to five' are only slightly above level.
+  minor 84 online (A2): The sentence is fairly long for A2 and "joined" is slightly above A2, though the other words are simple.
+  minor 85 annual (B1): "Vote" and "general" are around B1 or slightly higher, and the sentence is fairly long for B1, so it is slightly above level.
+  minor 88 deploy (B2): "Registry" and "image" in this technical sense are above B2 in general English, and the sentence is somewhat long, so only a minor mismatch.
+  minor 91 liability (B2): "Personally" and "debts" are around B1 and "limited" in this business sense is B2, so the sentence is slightly above or at level, and it is fairly long for B2.
+  minor 92 abroad (A2): "company" and "sells" are around A2 and the sentence is fairly long with "both ... and", so it is slightly demanding for A2.
+  minor 93 garnish (B2): 'Crossword' and 'parsley' are around B1-B2, and the nested quoted clue makes the sentence long for the level, but nothing is two levels above.
+  minor 94 layover (B2): The sentence is long for B2 and the meta spelling question is odd, though individual words like "spell" are easy.
+  minor 95 remote (A2): "Village" is fine, but the two-sentence length and the superlative "one of the most ___" structure are slightly above A2.
+  minor 96 revenue (B2): "Gross" is a B2/C1 word and "profit" is B1/B2, and the sentence is fairly long for B2, so it is slightly above level.
+  minor 97 delicious (A1): "favorite" and "starts with" are slightly above A1, and the dash clause makes the sentence longer than ideal for A1.
+
+-- spelling-clue sentences, all criteria
+  57 embark: single_answer=minor session_single_answer=pass sense_match=pass enough_clue=pass grammar_natural=pass level_fit=minor translation_ok=pass | enough_clue: The port setting, passengers, and the leftover letters 'BARK' clearly point to embark.
+  93 garnish: single_answer=minor session_single_answer=pass sense_match=pass enough_clue=pass grammar_natural=pass level_fit=minor translation_ok=pass | enough_clue: The clue about decorating soup with parsley and the seven-letter hint point clearly to 'garnish'.
+  94 layover: single_answer=major session_single_answer=pass sense_match=pass enough_clue=pass grammar_natural=minor level_fit=minor translation_ok=minor | enough_clue: "Two-hour ___ between flights" clearly points to a connecting stop, so the meaning is clear enough.
+  97 delicious: single_answer=major session_single_answer=pass sense_match=pass enough_clue=pass grammar_natural=minor level_fit=minor translation_ok=minor | enough_clue: The "starts with D" hint plus the cake context points to "delicious", though the letter hint is somewhat meta.

@@ -1,0 +1,102 @@
+{"id":0,"verdict":"fail_major","other_words":["combs"],"reason":"\"Combs\" fits and is a common word."}
+{"id":1,"verdict":"fail_minor","other_words":["heed"],"reason":"\"Pay heed to the instructions\" is natural but dated and rare."}
+{"id":2,"verdict":"fail_major","other_words":["beautiful","pretty"],"reason":"\"Beautiful\" fits and is an A1 word."}
+{"id":3,"verdict":"pass","other_words":[],"reason":"Closest candidate \"match\" does not go with cards, so only \"game\" fits."}
+{"id":4,"verdict":"fail_major","other_words":["agreement"],"reason":"\"Breach of agreement\" is natural and \"agreement\" is a common word."}
+{"id":5,"verdict":"fail_minor","other_words":["simmer"],"reason":"\"Bring the water to a simmer\" fits, but it is a rarer cooking word."}
+{"id":6,"verdict":"pass","other_words":[],"reason":"Closest candidate \"contend\" is rare and means something different with \"with ... on price\"."}
+{"id":7,"verdict":"fail_major","other_words":["break","common"],"reason":"\"Break room\" and \"common room\" both fit the sentence."}
+{"id":8,"verdict":"pass","other_words":[],"reason":"Closest candidate \"bill\" is used for restaurant payments, not as proof for returning a shirt."}
+{"id":9,"verdict":"pass","other_words":[],"reason":"Closest candidate \"sundae\" does not make \"___ split\", so only \"banana\" fits."}
+{"id":10,"verdict":"fail_minor","other_words":["buddy"],"reason":"\"Buddy\" fits in a pairing context but is informal."}
+{"id":11,"verdict":"fail_major","other_words":["website","program"],"reason":"\"Website\" fits and is a common word."}
+{"id":12,"verdict":"fail_major","other_words":["fit"],"reason":"\"Fit a new air conditioner\" is natural and \"fit\" is a common word."}
+{"id":13,"verdict":"fail_major","other_words":["difficult","hard","tiring"],"reason":"\"Difficult\" and \"tiring\" fit and are common words."}
+{"id":14,"verdict":"pass","other_words":[],"reason":"Closest candidate \"list\" does not go with \"with pictures of every dish\" as naturally, and \"menu\" is the only fit."}
+{"id":15,"verdict":"fail_major","other_words":["money"],"reason":"\"Money converter\" is natural and \"money\" is an A1 word."}
+{"id":16,"verdict":"fail_major","other_words":["storage","boiler","washing"],"reason":"\"Storage room\" and \"washing room\" fit; many room types can be in a basement."}
+{"id":17,"verdict":"fail_major","other_words":["guess"],"reason":"\"Guess the cost\" fits and is a common word."}
+{"id":18,"verdict":"fail_minor","other_words":["briefing","session"],"reason":"\"Briefing\" or \"session\" fit, but they are less common than \"meeting\"."}
+{"id":19,"verdict":"fail_major","other_words":["cook"],"reason":"\"Cook the bread\" fits and is an A1 word."}
+{"id":20,"verdict":"fail_major","other_words":["bring"],"reason":"\"Bring ... into the country\" is natural and \"bring\" is an A1 word."}
+{"id":21,"verdict":"fail_major","other_words":["gift","present"],"reason":"\"Gift\" and \"present\" fit and are common words."}
+{"id":22,"verdict":"fail_major","other_words":["raise","reduce"],"reason":"\"Raise\" fits, and the sentence gives no clue about direction so \"reduce\" also fits."}
+{"id":23,"verdict":"fail_major","other_words":["general","big"],"reason":"\"General store\" fits and \"general\" is a common word."}
+{"id":24,"verdict":"pass","other_words":[],"reason":"Closest candidate \"trouble\" does not take \"to the bank for five million dong\", so only \"debt\" fits."}
+{"id":25,"verdict":"pass","other_words":[],"reason":"Closest candidate \"backer\" is not the usual partner of \"angel\", so only \"investor\" fits."}
+{"id":26,"verdict":"fail_major","other_words":["put","throw"],"reason":"\"Put empty cans in the yellow bin\" is natural and \"put\" is an A1 word."}
+{"id":27,"verdict":"fail_minor","other_words":["recall"],"reason":"\"Recall\" fits but is formal and less common."}
+{"id":28,"verdict":"pass","other_words":[],"reason":"Closest candidate \"app\" does not fit \"to open websites\" with \"web\" in front, so only \"browser\" fits."}
+{"id":29,"verdict":"pass","other_words":[],"reason":"Closest candidate \"salt\" is also white but is not added to tea, so only \"sugar\" fits."}
+{"id":30,"verdict":"fail_minor","other_words":["uncooked","undercooked"],"reason":"\"Uncooked\" and \"undercooked\" fit but are above A2 level."}
+{"id":31,"verdict":"fail_major","other_words":["payment"],"reason":"\"Proof of payment\" is natural and \"payment\" is a common word."}
+{"id":32,"verdict":"pass","other_words":[],"reason":"Closest candidate \"lunch\" is unlikely before going to school, so only \"breakfast\" fits."}
+{"id":33,"verdict":"pass","other_words":[],"reason":"Closest candidate \"journey\" does not form \"road journey\" in normal English, so only \"trip\" fits."}
+{"id":34,"verdict":"pass","other_words":[],"reason":"Closest candidate \"tap\" is for touch screens, not a desktop icon, so only \"click\" fits."}
+{"id":35,"verdict":"fail_major","other_words":["piece"],"reason":"\"A thin piece of cheese\" is natural and \"piece\" is an A1 word."}
+{"id":36,"verdict":"fail_major","other_words":["product","company"],"reason":"\"Product name\" fits and is a common phrase."}
+{"id":37,"verdict":"pass","other_words":[],"reason":"Closest candidate \"clock\" would mean adjusting the clock time, not setting a wake-up alarm, so only \"alarm\" fits."}
+{"id":38,"verdict":"fail_major","other_words":["employ","recruit"],"reason":"\"Employ\" and \"recruit\" fit and are common words."}
+{"id":39,"verdict":"fail_minor","other_words":["service","host"],"reason":"\"Web service\" or \"web host\" could fit, but they are technical and less usual."}
+{"id":40,"verdict":"fail_major","other_words":["instructions","contents"],"reason":"\"List of instructions\" fits and \"instructions\" is a common word."}
+{"id":41,"verdict":"pass","other_words":[],"reason":"Closest candidate \"manage\" changes the meaning to succeeding, so only \"afford\" fits."}
+{"id":42,"verdict":"pass","other_words":[],"reason":"Closest candidate \"promise\" is not what you say to accept an offer, so only \"deal\" fits."}
+{"id":43,"verdict":"pass","other_words":[],"reason":"Closest candidate \"boil\" is not done in \"hot oil\", so only \"fry\" fits after \"deep-\"."}
+{"id":44,"verdict":"fail_major","other_words":["lovely","great","wonderful"],"reason":"\"Lovely\" and \"great\" fit and are common words."}
+{"id":45,"verdict":"pass","other_words":[],"reason":"Closest candidate \"gain\" is used for investments, and \"after paying all its costs\" points only to \"profit\"."}
+{"id":46,"verdict":"fail_major","other_words":["button"],"reason":"\"Tap the button with your finger\" is natural and \"button\" is a common word."}
+{"id":47,"verdict":"fail_major","other_words":["be"],"reason":"\"The train will be at the station in ten minutes\" is natural and keeps the meaning, and \"be\" is an A1 word."}
+{"id":48,"verdict":"pass","other_words":[],"reason":"Closest candidate \"delivery\" is not a standard phrase after \"room\", so only \"service\" fits."}
+{"id":49,"verdict":"fail_major","other_words":["repair","fix","check"],"reason":"\"Repair\" and \"fix\" fit and are common words."}
+{"id":50,"verdict":"fail_major","other_words":["people","participants"],"reason":"\"Key people such as investors\" is natural and \"people\" is an A1 word."}
+{"id":51,"verdict":"pass","other_words":[],"reason":"Closest candidate \"days\" is odd after \"spend the\", so only \"weekend\" fits."}
+{"id":52,"verdict":"fail_major","other_words":["put"],"reason":"\"Put her savings in a small company\" is natural and \"put\" is an A1 word."}
+{"id":53,"verdict":"fail_major","other_words":["get","save"],"reason":"\"Get the PDF from our website\" is natural and \"get\" is an A1 word."}
+{"id":54,"verdict":"fail_major","other_words":["programmer","engineer"],"reason":"\"Programmer\" and \"engineer\" fit and are common words."}
+{"id":55,"verdict":"fail_major","other_words":["plan","tactics"],"reason":"\"Plan\" fits and is an A1 word."}
+{"id":56,"verdict":"fail_major","other_words":["sign","plan","diagram"],"reason":"\"Check the sign on the wall\" fits and \"sign\" is a common word."}
+{"id":57,"verdict":"fail_major","other_words":["start","begin"],"reason":"\"Start on a career in medicine\" fits and \"start\" is an A1 word."}
+{"id":58,"verdict":"fail_major","other_words":["bag"],"reason":"\"Bag\" fits and is an A1 word."}
+{"id":59,"verdict":"pass","other_words":[],"reason":"Closest candidate \"couture\" fits \"haute ___\" but not a restaurant with seven-course menus, so only \"cuisine\" fits."}
+{"id":60,"verdict":"pass","other_words":[],"reason":"Closest candidate \"buy\" needs an object here, so only \"pay\" fits."}
+{"id":61,"verdict":"fail_minor","other_words":["server","drive"],"reason":"\"Server\" or \"drive\" could fit, but \"cloud\" is the standard phrase."}
+{"id":62,"verdict":"fail_minor","other_words":["starving"],"reason":"\"Starving\" fits and is a close, stronger synonym above A1."}
+{"id":63,"verdict":"fail_minor","other_words":["mate","buddy"],"reason":"\"Mate\" and \"buddy\" fit but are regional or informal."}
+{"id":64,"verdict":"fail_major","other_words":["bags","suitcases"],"reason":"\"Bags\" fits and is an A1 word."}
+{"id":65,"verdict":"fail_major","other_words":["deal","plan"],"reason":"\"Deal\" and \"plan\" fit and are common words."}
+{"id":66,"verdict":"pass","other_words":[],"reason":"Closest candidate \"card\" does not make \"open a bank card ... save my salary\" as natural, so only \"account\" fits."}
+{"id":67,"verdict":"fail_minor","other_words":["offers"],"reason":"\"Offers his rice ... for ten thousand dong\" fits but is a looser variant."}
+{"id":68,"verdict":"fail_major","other_words":["coffee"],"reason":"\"A pot of coffee\" fits and is an A1 word."}
+{"id":69,"verdict":"fail_minor","other_words":["Bluetooth","cordless"],"reason":"\"Bluetooth\" and \"cordless\" fit but are repetitive or rare for a mouse."}
+{"id":70,"verdict":"fail_major","other_words":["emergency","immediate"],"reason":"\"Emergency treatment\" fits and is a common phrase."}
+{"id":71,"verdict":"fail_minor","other_words":["occupied","working"],"reason":"\"Occupied\" fits but is formal, and \"working\" fits as a specific activity."}
+{"id":72,"verdict":"pass","other_words":[],"reason":"Closest candidate \"system\" is not the standard term after \"relational\", so only \"database\" fits."}
+{"id":73,"verdict":"fail_major","other_words":["building","attraction","sight"],"reason":"\"Building\" and \"attraction\" fit and are common words."}
+{"id":74,"verdict":"pass","other_words":[],"reason":"Closest candidate \"transfer\" is odd with \"free\" here, so only \"upgrade\" fits."}
+{"id":75,"verdict":"fail_major","other_words":["protect","secure","lock"],"reason":"\"Protect every message\" fits and \"protect\" is a common word."}
+{"id":76,"verdict":"fail_major","other_words":["seem"],"reason":"\"I can't seem to finish\" is natural and \"seem\" is an A2 word."}
+{"id":77,"verdict":"fail_major","other_words":["clean","soak"],"reason":"\"Clean these shirts in cold water\" fits and \"clean\" is an A1 word."}
+{"id":78,"verdict":"pass","other_words":[],"reason":"Closest candidate \"take\" is odd with \"from you until Friday\", so only \"borrow\" fits."}
+{"id":79,"verdict":"fail_major","other_words":["tidy","neat"],"reason":"\"Tidy\" and \"neat\" fit and are common words."}
+{"id":80,"verdict":"pass","other_words":[],"reason":"Closest candidate \"experience\" is natural English but means \"trải nghiệm\", not \"giao diện\"."}
+{"id":81,"verdict":"pass","other_words":[],"reason":"Closest candidate \"bubble\" fits but does not mean \"lên men\", so only \"ferment\" fits."}
+{"id":82,"verdict":"fail_minor","other_words":["upgrade","mechanize"],"reason":"\"Upgrade\" or \"mechanize\" fit but do not mean exactly \"automate\"."}
+{"id":83,"verdict":"pass","other_words":[],"reason":"Closest candidate \"trains\" changes the meaning from working to studying, so only \"works\" fits."}
+{"id":84,"verdict":"fail_major","other_words":["internet","web"],"reason":"\"Internet shopping\" is natural and \"internet\" is a common word."}
+{"id":85,"verdict":"fail_minor","other_words":["yearly"],"reason":"\"Yearly\" fits but is a close variant of \"annual\"."}
+{"id":86,"verdict":"fail_major","other_words":["mess","stuff","junk"],"reason":"\"Mess\" and \"stuff\" fit and are common words."}
+{"id":87,"verdict":"fail_major","other_words":["right"],"reason":"\"Right\" fits and the sentence gives no clue about direction."}
+{"id":88,"verdict":"fail_major","other_words":["upload","push","release"],"reason":"\"Upload\" and \"push\" fit and are common words."}
+{"id":89,"verdict":"fail_major","other_words":["sales","income","revenue"],"reason":"\"Sales\" fits and is a common A2 word."}
+{"id":90,"verdict":"fail_major","other_words":["neat","clean","organized"],"reason":"\"Neat\" and \"organized\" fit and are common words."}
+{"id":91,"verdict":"pass","other_words":[],"reason":"Closest candidate \"responsibility\" is understandable but is not the legal term, so only \"liability\" fits."}
+{"id":92,"verdict":"fail_minor","other_words":["overseas"],"reason":"\"Overseas\" fits but is a close synonym above A2."}
+{"id":93,"verdict":"fail_major","other_words":["top","decorate","sprinkle"],"reason":"\"Top it with fresh coriander\" is natural and \"top\" is a common word."}
+{"id":94,"verdict":"fail_major","other_words":["stop","stopover","wait"],"reason":"\"A three-hour stop in Doha\" fits and \"stop\" is an A1 word."}
+{"id":95,"verdict":"fail_minor","other_words":["isolated","distant"],"reason":"\"Isolated\" and \"distant\" fit but are above A2 level."}
+{"id":96,"verdict":"fail_major","other_words":["income","money"],"reason":"\"Tax income\" and \"tax money\" fit and are common words."}
+{"id":97,"verdict":"fail_major","other_words":["good","tasty","delicious"],"reason":"\"Good\" and \"tasty\" fit and are common words."}
+{"id":98,"verdict":"fail_major","other_words":["delaying","waiting"],"reason":"\"Delaying\" and \"waiting\" fit and are common words."}
+{"id":99,"verdict":"fail_major","other_words":["valuable","profitable","big"],"reason":"\"Valuable\" and \"profitable\" fit and are common words."}
+{"id":100,"verdict":"pass","other_words":[],"reason":"Closest candidate \"suitable\" needs \"for\", not \"with\", so only \"compatible\" fits."}
+{"id":101,"verdict":"fail_major","other_words":["right"],"reason":"\"Right\" fits and the sentence gives no clue about the side."}

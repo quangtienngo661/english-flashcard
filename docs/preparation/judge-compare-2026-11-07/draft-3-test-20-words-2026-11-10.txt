@@ -1,0 +1,141 @@
+Fill-in writer draft 3 vs draft 1 on the 20 test words, and the three other judges with the think line, 10/11/2026.
+Writers: Haiku 5.5 xhigh and GPT-6.1 Terra xhigh (API, the app's request shape). Judge: Sonnet 5.5 high, judge-instructions-6-criteria-split.md, Batch API.
+Note: draft 1 was judged with the split text's earlier wording ('clean' for wash as its example); draft 3 with the current one ('say' for whisper).
+Other judges: mcq/meaning/lookup-judge-instructions.md with the think line, on the saved 07/11 answers (mcq-items-haiku-max, meaning-items-haiku-max, lookup-items-haiku-medium).
+Run by the owner; summarised by a script in the session scratchpad.
+
+
+===== haiku xhigh, the 20 words =====
+draft 1: 20 calls, avg 10.5 s, median 10.8 s, over 10 s 11, max 24.4 s; writer thinking median 1907; cost US$0.0240; words per sentence avg 15.8
+   no major on any criterion 16/20, every criterion pass 12/20
+   single_answer          pass 13 minor 3 major 4
+   grammar_natural        pass 18 minor 2 major 0
+draft 3: 20 calls, avg 10.7 s, median 9.1 s, over 10 s 7, max 25.6 s; writer thinking median 1556; cost US$0.0250; words per sentence avg 15.1
+   no major on any criterion 16/20, every criterion pass 12/20
+   single_answer          pass 13 minor 4 major 3
+   grammar_natural        pass 18 minor 0 major 2
+   translation_ok         pass 19 minor 1 major 0
+
+per word (draft 1 -> draft 3), non-pass verdicts and the draft 3 sentence:
+#0 brush: d1 all pass | d3 all pass
+   d3: Please ___ your teeth before you go to bed. [brush]
+#3 game: d1 all pass | d3 all pass
+   d3: My little sister loves playing video ___ on her phone every evening. [games]
+#9 banana: d1 all pass | d3 all pass
+   d3: The monkey peeled a ___ and ate it in three bites. [banana]
+#12 install: d1 all pass | d3 all pass
+   d3: Before you can use the new program, you have to ___ it on your computer. [install]
+#19 bake: d1 all pass | d3 grammar_natural=major
+   d3: On Sunday mornings, my grandparents ___ fresh bread in their old oven. [bake]
+   d3 grammar_natural: "baked" also fits naturally, because "On Sunday mornings" can describe a past habit, but accepted_answers lists only "bake".
+#21 souvenir: d1 single_answer=minor | d3 single_answer=minor
+   d3: I bought a small wooden bowl in Hoi An as a ___ of my trip, and I still use it every day. [souvenir]
+   d3 single_answer: "memento" (and "keepsake") also fits and means quà lưu niệm, but both are rare or formal; "reminder" fits but is wider than quà lưu niệm.
+#26 recycle: d1 all pass | d3 all pass
+   d3: Many cities now ask residents to ___ glass, paper and plastic instead of throwing them away. [recycle]
+#29 sugar: d1 all pass | d3 all pass
+   d3: Please put two ___ cubes in my tea before you add the milk. [sugar]
+#35 slice: d1 single_answer=major | d3 single_answer=major
+   d3: Could you cut me a thin ___ of ham for my sandwich? [slice]
+   d3 single_answer: "piece" fits naturally ("a thin piece of ham"), is a very common word, and means miếng, which is within meaning_vi, so a learner could be marked wrong.
+#38 hire: d1 single_answer=major | d3 single_answer=minor
+   d3: The water pipe in our kitchen burst, so we had to ___ a plumber to fix it. [hire]
+   d3 single_answer: "employ" fits and also means thuê, tuyển dụng, but it is formal and a little odd for a one-off plumber; "call" and "get" fit only as more general words.
+#43 fry: d1 all pass | d3 all pass
+   d3: Yesterday my mother ___ fish in hot oil for dinner. [fried]
+#50 stakeholder: d1 all pass | d3 all pass
+   d3: Before launching the new product, the company asked all the ___ for feedback, including investors, staff and customers. [stakeholders]
+#58 suitcase: d1 single_answer=minor | d3 single_answer=minor
+   d3: Before our trip, I packed my clothes and shoes into a ___ and locked it. [suitcase]
+   d3 single_answer: "case" (a short, mainly British variant) also fits and means va li, while "bag" fits only as the wider túi and "trunk" is a different item.
+#74 upgrade: d1 all pass | d3 all pass
+   d3: Adding extra memory is a cheap way to ___ an old laptop so that it runs faster. [upgrade]
+#75 encrypt: d1 single_answer=minor grammar_natural=minor | d3 single_answer=minor
+   d3: To keep online banking safe, the bank uses special software to ___ all data sent between your phone and its servers. [encrypt]
+   d3 single_answer: "encode" also fits and can be translated mã hóa, but it is a less common, close variant; "protect" and "secure" fit only as more general words (bảo vệ, bảo mật).
+#77 wash: d1 all pass | d3 all pass
+   d3: Every Sunday, my mum ___ the family's clothes and hangs them outside to dry. [washes]
+#78 borrow: d1 all pass | d3 all pass
+   d3: I need to ___ some money from my sister until I get paid on Friday. [borrow]
+#80 interface: d1 grammar_natural=minor | d3 all pass
+   d3: The software team redesigned the user ___ so that buttons and menus are easier to find. [interface/interfaces]
+#90 tidy: d1 single_answer=major | d3 single_answer=major
+   d3: My sister is very ___ , so her books are always on the shelf and her clothes are folded in the wardrobe. [tidy]
+   d3 single_answer: "neat" fits naturally and also means gọn gàng, and it is a common word at this level ("organised" also fits).
+#93 garnish: d1 single_answer=major | d3 single_answer=major grammar_natural=major translation_ok=minor
+   d3: Before serving the soup, the chef ___ it with a few sprigs of fresh parsley. [garnished]
+   d3 single_answer: "decorated" fits naturally and also means trang trí, and it is a common word a B2 learner knows; "topped" fits too but is wider.
+   d3 grammar_natural: The present form "garnishes" also fits naturally as a habitual action after "Before serving", but accepted_answers lists only "garnished".
+   d3 translation_ok: The meaning is right, but "trang trí lên trên" is awkward and the object "it" (món súp) is left out.
+
+===== terra xhigh, the 20 words =====
+draft 1: 20 calls, avg 23.3 s, median 23.8 s, over 10 s 19, max 40.9 s; writer thinking median 1498; cost US$0.1542; words per sentence avg 15.7
+   no major on any criterion 15/20, every criterion pass 13/20
+   single_answer          pass 15 minor 2 major 3
+   enough_clue            pass 19 minor 0 major 1
+   grammar_natural        pass 19 minor 0 major 1
+draft 3: 20 calls, avg 12.9 s, median 13.2 s, over 10 s 10, max 24.9 s; writer thinking median 506; cost US$0.0740; words per sentence avg 12.7
+   no major on any criterion 19/20, every criterion pass 12/20
+   single_answer          pass 15 minor 4 major 1
+   enough_clue            pass 18 minor 2 major 0
+   translation_ok         pass 19 minor 1 major 0
+
+per word (draft 1 -> draft 3), non-pass verdicts and the draft 3 sentence:
+#0 brush: d1 grammar_natural=major | d3 all pass
+   d3: I need to ___ my teeth before I go to bed. [brush]
+#3 game: d1 all pass | d3 translation_ok=minor
+   d3: I got a new board ___ for my birthday, and we played it after dinner. [game]
+   d3 translation_ok: The meaning is right, but 'trò chơi trên bàn mới' is awkward and could be read as 'bàn mới', and 'board game' is better rendered as 'trò chơi bàn cờ' or 'board game'.
+#9 banana: d1 all pass | d3 enough_clue=minor
+   d3: I ate a ___ for breakfast and put its yellow skin in the bin. [banana]
+   d3 enough_clue: Eating it for breakfast and binning its yellow skin suggests banana, but mango, pear or a yellow apple could also fit, so the learner must guess a little.
+#12 install: d1 all pass | d3 all pass
+   d3: To use the program, first download it, then ___ it on your computer. [install]
+#19 bake: d1 all pass | d3 all pass
+   d3: My mum will ___ a chocolate cake in the oven for my birthday. [bake]
+#21 souvenir: d1 single_answer=minor | d3 single_answer=minor
+   d3: I bought a small ___ at the museum shop to remember my visit. [souvenir]
+   d3 single_answer: 'memento' (and 'keepsake') fits with the same meaning but is rare, while 'gift' and 'present' are only more general words (quà), so the problem is minor.
+#26 recycle: d1 all pass | d3 all pass
+   d3: We can ___ old glass bottles to make new ones. [recycle]
+#29 sugar: d1 all pass | d3 all pass
+   d3: I put some ___ in my tea to make it sweet. [sugar]
+#35 slice: d1 single_answer=major | d3 all pass
+   d3: I ate a ___ of bread with butter for breakfast. [slice]
+#38 hire: d1 single_answer=major | d3 single_answer=major
+   d3: We decided to ___ a clown to make the children laugh at the party. [hire]
+   d3 single_answer: "book" fits naturally (book a clown for a party) and a B1 learner knows it, and here it also means thuê; "employ" fits less well.
+#43 fry: d1 all pass | d3 all pass
+   d3: Please ___ an egg in a pan with a little oil for me. [fry]
+#50 stakeholder: d1 all pass | d3 all pass
+   d3: The company invited ___, including workers, customers and investors, to share their views on its new plan. [stakeholders]
+#58 suitcase: d1 all pass | d3 single_answer=minor
+   d3: I packed my clothes in a ___ and pulled it through the airport. [suitcase]
+   d3 single_answer: "case" fits and is a close shortened variant of suitcase, while "bag" fits only as the wider word túi.
+#74 upgrade: d1 all pass | d3 all pass
+   d3: For $50, you can ___ your ticket from economy to business class. [upgrade]
+#75 encrypt: d1 single_answer=minor | d3 single_answer=minor
+   d3: Use my public key to ___ the message so that only I can read it. [encrypt]
+   d3 single_answer: "encode" also means mã hóa and could be typed here, but it is a close variant and less precise for public-key cryptography, while "lock" and "secure" are wider or different.
+#77 wash: d1 all pass | d3 all pass
+   d3: Please ___ your hands with soap before you eat. [wash]
+#78 borrow: d1 all pass | d3 all pass
+   d3: Can I ___ your pen for the test and give it back to you after? [borrow]
+#80 interface: d1 all pass | d3 single_answer=minor
+   d3: The app has a simple ___, so it's easy to find the buttons you need. [interface]
+   d3 single_answer: The abbreviation "UI" also means giao diện and fits, but it is a close variant, while "layout" (bố cục) and "design" (thiết kế) mean something different.
+#90 tidy: d1 single_answer=major | d3 enough_clue=minor
+   d3: She brushed her hair until it was neat and ___. [tidy]
+   d3 enough_clue: The word neat hints at a synonym, but smooth, shiny or straight would also fit, so the learner has to guess.
+#93 garnish: d1 enough_clue=major | d3 all pass
+   d3: Before serving, ___ the soup with a pinch of chopped parsley. [garnish]
+
+===== the three other judges (Sonnet 5.5 high, think line, Batch API) =====
+
+verdicts-mcq-items-haiku-max-sonnet-high-mcq-judge-instructions.jsonl: 20 answers, US$0.0367; thinking median 0, 12 with none; pass 20 minor 0 major 0
+
+verdicts-meaning-items-haiku-max-sonnet-high-meaning-judge-instructions.jsonl: 20 answers, US$0.0349; thinking median 0, 16 with none; pass 20 minor 0 major 0
+
+verdicts-lookup-items-haiku-medium-sonnet-high-lookup-judge-instructions.jsonl: 20 answers, US$0.0348; thinking median 0, 17 with none; pass 19 minor 1 major 0
+  #3 mice minor: Lemma, part of speech, meaning_vi and example are right for the common animal sense, but definition_en is written in the plural and ends with "the plural of mouse", which is odd for the lemma "mouse".
+     output: {"part_of_speech":"noun","lemma":"mouse","meaning_vi":"chuột nhắt","definition_en":"small animals with short fur, a long tail and small ears; the plural of mouse","examples":["The mice ran under the kitchen floor."]}

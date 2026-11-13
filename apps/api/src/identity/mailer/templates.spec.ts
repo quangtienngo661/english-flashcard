@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeMailer } from '../../common/mail/fake-mailer.js';
-import { accountDeletedMail, googleLinkedMail, otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
+import { accountDeletedMail, accountExistsMail, googleLinkedMail, otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
 
 describe('Bước 8 mail templates', () => {
   it('account deleted: vi and en lines, the retention years, sent to the address', () => {
@@ -10,6 +10,15 @@ describe('Bước 8 mail templates', () => {
     expect(message.text).toContain('has been deleted');
     expect(message.text).toContain('10 năm');
     expect(message.text).toContain('10 years');
+  });
+  it('F2: account exists: vi and en lines, the sign-in link, Forgot password, no code', () => {
+    const message = accountExistsMail('a@example.com', 'http://localhost:3001');
+    expect(message.to).toBe('a@example.com');
+    for (const part of ['đã có tài khoản Wordmet', 'Quên mật khẩu', 'already have a Wordmet account', 'Forgot password']) {
+      expect(message.text).toContain(part);
+    }
+    expect(message.text.match(/http:\/\/localhost:3001/g)).toHaveLength(2);
+    expect(message.text).not.toMatch(/\b\d{6}\b/);
   });
   it('google linked: vi and en lines and the change-password hint (IR22)', () => {
     const message = googleLinkedMail('a@example.com');

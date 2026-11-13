@@ -230,7 +230,7 @@ async function main() {
     const before = (await mailsTo(email)).length;
     await want(reg(email, {}), 201, 'register Lan');
     const code = await otpCodeFor(email, before + 1);
-    const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify Lan');
+    const verified = await want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, 'verify Lan');
     const me = await want(api('GET', '/v1/me', { token: verified.access_token }), 200, 'GET /v1/me');
     check(me.given_name === 'Lan' && me.family_name === 'Nguyen' && me.birth_date === '2000-05-17' && me.email_verified === true,
       `GET /v1/me: ${JSON.stringify({ given_name: me.given_name, family_name: me.family_name, birth_date: me.birth_date, email_verified: me.email_verified })}`);
