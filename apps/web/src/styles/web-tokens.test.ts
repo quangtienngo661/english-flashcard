@@ -302,7 +302,10 @@ describe('wm dark and level tokens (M9.8)', () => {
   it('pins the eight level colours, light and dark', () => {
     const names = ['level-0', 'level-1', 'level-2', 'level-3', 'level-4', 'level-5', 'level-priority', 'level-due'];
     expect(names.map((k) => light.get(k))).toEqual(['#a3abbd', '#b9e4c7', '#7ccd9b', '#3fae6c', '#218c4f', '#106a39', '#c4372c', '#e0a21b']);
-    expect(names.map((k) => dark.get(k))).toEqual(['#56607a', '#1f4d35', '#27704a', '#319c60', '#4cc283', '#8ae4b0', '#ff8d80', '#f0c04a']);
+    // Owner 13/11/2026: the dark ramp was too close to the page; every level now reaches 3:1 on bg and surface.
+    expect(names.map((k) => dark.get(k))).toEqual(['#6b7590', '#2f7d55', '#3e9c69', '#52b97e', '#74d49c', '#a6ecc3', '#ff8d80', '#f0c04a']);
+    for (const k of names) expect(contrast(dark, k, 'bg'), k).toBeGreaterThanOrEqual(3);
+    for (const k of names) expect(contrast(dark, k, 'surface'), k).toBeGreaterThanOrEqual(3);
   });
 
   it('pins the warn colour (QP4: the mockup amber #b07a12 darkened, same hue, to reach 4.5:1 on surface and bg; dark #f0c04a)', () => {
