@@ -7,6 +7,7 @@ Plan đầy đủ: `docs/superpowers/plans/2026-11-13-prod-deploy.md`. Nguồn: 
 - Q9: bỏ TypedSQL, image nhiều tầng.
 - Q10: deploy bằng script chạy tay, build image trên VPS.
 - Q14: công tắc `WEB_DEPLOY_PAUSED`.
+- Q4 (một phần, tối 13/11): bật giọng Google ngay khi launch, file trên R2 `audio.wordmet.com`; tắt AdSense.
 
 Nhánh `feat/prod-deploy` từ `origin/dev`, một PR vào `dev`.
 
@@ -16,7 +17,8 @@ Nhánh `feat/prod-deploy` từ `origin/dev`, một PR vào `dev`.
 4. Thêm `deploy/compose.prod.yml` (Caddy, api, worker, migrate, Postgres, Redis), `Caddyfile` và hai file mẫu biến môi trường.
 5. Thêm `deploy.sh` (backup, migrate, đổi image, chờ ready, lỗi thì tự quay về), `rollback.sh` (không migrate), `backup.sh` (R2, giữ 14 bản)
    và trang hướng dẫn vận hành.
-6. Sửa `deploy-web.yml`: bật `/app`, trỏ `api.wordmet.com`, thêm site key Turnstile, `LANDING_DATA_REQUIRED=1`, công tắc `WEB_DEPLOY_PAUSED`.
+6. Sửa `deploy-web.yml`: bật `/app`, trỏ `api.wordmet.com`, thêm site key Turnstile, `LANDING_DATA_REQUIRED=1`, địa chỉ file giọng đọc
+   `audio.wordmet.com`, công tắc `WEB_DEPLOY_PAUSED`.
 7. Thêm `watch.sh` (5 phút, gửi email cảnh báo, mỗi loại tối đa một thư mỗi giờ), `daily-report.sh` (8:00) và lịch cron.
 8. Bỏ mọi chữ nhắc quảng cáo ở bảng giá trang chủ, trang Gói (thẻ Miễn phí, thẻ Pro, bảng so sánh) và hộp thoại giới thiệu Pro, trong lúc
    quảng cáo đang tắt. Giữ nguyên phần nạp AdSense và công tắc trong admin.
@@ -24,3 +26,5 @@ Nhánh `feat/prod-deploy` từ `origin/dev`, một PR vào `dev`.
 
 Sửa 13/11/2026 sau khi sync `dev` (`2d858021`): thêm việc 8 theo yêu cầu chủ dự án; số dòng `app.module.ts` và ghi chú `LANDING_DATA_REQUIRED`
 cập nhật theo giao diện mới đã vào `dev`. Các việc 1–7 không đổi.
+Sửa tối 13/11: bật giọng Google ngay khi launch. File mẫu môi trường (việc 4) thêm khóa Google TTS và R2 giọng đọc; trang vận hành (việc 5)
+thêm bước `tts:backfill` và kiểm một file trên `audio.wordmet.com`; việc 6 thêm `NEXT_PUBLIC_AUDIO_BASE_URL`.

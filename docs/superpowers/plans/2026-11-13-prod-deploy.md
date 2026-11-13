@@ -29,8 +29,12 @@ for now (Task 8).
 - Secrets live only in `/srv/wordmet/.env` (API and worker) and `/srv/wordmet/ops.env` (scripts) on the VPS. Never in the repo, never in
   chat. The repo holds `deploy/env.production.example` and `deploy/ops.env.example` with names and placeholders only.
 - `rollback.sh` never runs a migration. Migrations stay add-only (expand/contract).
-- Production API env: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, `TRUST_PROXY=uniquelocal`, no `*_FAKE_ENABLED`, Google sign-in,
-  TTS and audio storage unset (Q4 proposal), `MAINTENANCE_ENABLED=false` on `api`, `true` on `worker`.
+- Production API env: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, `TRUST_PROXY=uniquelocal`, no `*_FAKE_ENABLED`, Google sign-in
+  unset (Q4 proposal), `MAINTENANCE_ENABLED=false` on `api`, `true` on `worker`.
+- Google voices on from launch (owner 13/11/2026): `GOOGLE_TTS_CREDENTIALS`, `TTS_VOICE_UK`, `TTS_VOICE_US` and the four `AUDIO_STORAGE_*`
+  keys of an R2 bucket that is not the backup bucket, `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`; the web build gets the same
+  address as `NEXT_PUBLIC_AUDIO_BASE_URL` (CSP `media-src`, `apps/web/src/lib/app-csp.ts:34`). Publishing a sense queues its two
+  recordings (`content.service.ts:141-166`), so the catalog upload records itself; `tts:backfill` is the safety net.
 - Commits: Conventional Commits, scopes `api`, `deploy`, `ci`, `web`, `docs`.
 
 ## Review Focus
@@ -200,7 +204,11 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
     `TURNSTILE_ALLOWED_HOSTNAMES=wordmet.com,www.wordmet.com,admin.wordmet.com`, `JWT_ISSUER=https://api.wordmet.com`,
     `PROBLEM_TYPE_BASE=https://api.wordmet.com/problems/`, `CORS_ORIGINS=https://wordmet.com,https://www.wordmet.com,https://admin.wordmet.com`,
     `ADMIN_APP_URL=https://admin.wordmet.com`, `LEARNER_APP_URL=https://wordmet.com`, SMTP for Resend (`smtp.resend.com`, user `resend`),
-    `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`, and `ACME_EMAIL` (read by Caddy through compose).
+    `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`, `ACME_EMAIL` (read by Caddy through compose), and the voice keys:
+    `GOOGLE_TTS_CREDENTIALS=<base64 of the service account JSON, one line>`, `TTS_VOICE_UK`, `TTS_VOICE_US` (the voices the owner chose),
+    `AUDIO_STORAGE_ENDPOINT=https://<account>.r2.cloudflarestorage.com`, `AUDIO_STORAGE_BUCKET`, `AUDIO_STORAGE_ACCESS_KEY_ID`,
+    `AUDIO_STORAGE_SECRET_ACCESS_KEY`, `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`, `TTS_FAKE_ENABLED=false`,
+    `AUDIO_STORAGE_FAKE_ENABLED=false`.
   - `ops.env.example`: `R2_BACKUP_ENDPOINT`, `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY`,
     `ALERT_RESEND_API_KEY`, `ALERT_FROM`, `ALERT_TO`. The scripts read `MAIL_DAILY_BUDGET`, `MAIL_BUDGET_KEY` and `POSTGRES_*` from `.env`.
 - [ ] **Step 4: Validate.**
@@ -253,6 +261,9 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
   - prepare the server: Docker, `jq`, `ufw` allowing 22, 80, 443; key-only SSH; `/srv/wordmet` with `app/` (a clone of the repo), `.env`,
     `ops.env`, `state/`, `backups/`;
   - first deploy;
+  - voices after the first deploy: `compose exec worker node dist/cli/tts-backfill.js` (prints how many rows it queued; 0 is fine when
+    every sense was published after TTS was on), then check that one published sense has two `ready` rows in `speech_audio` and that
+    `curl -sI https://audio.wordmet.com/tts/v1/<key>.mp3` (the path the local storage used, `.tmp/audio/tts/v1/`) returns `200` with `audio/mpeg`;
   - deploy, roll back and restore a backup (`pg_restore --clean --if-exists` into a stopped stack, then `accounts:replay-deletions`);
   - the admin deploy, run by hand in `apps/admin`:
     `VITE_API_BASE_URL=https://admin-api.wordmet.com VITE_TURNSTILE_SITE_KEY=<key> pnpm build && pnpm exec wrangler deploy`;
@@ -272,7 +283,9 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
     - `NEXT_PUBLIC_API_BASE_URL: https://api.wordmet.com`;
     - `NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}`;
     - `LANDING_DATA_REQUIRED: '1'` (`next.config.ts` then fails the build when the landing's prices and FAQ cannot be read from the API, so the API is
-      deployed first).
+      deployed first);
+    - `NEXT_PUBLIC_AUDIO_BASE_URL: https://audio.wordmet.com` (without it the CSP blocks the files and the speaker falls back to the
+      device voice).
   - Header comment: one line on the switch and on deploying the API first.
 - [ ] **Step 2: Lint.** `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:<tag>` Expected: no finding in `deploy-web.yml`.
 - [ ] **Step 3: Commit** `ci(web): build the learner app on deploy and add a pause switch`
@@ -372,7 +385,8 @@ Not in code: one of the two `legal_versions` rows in the local DB mentions ads o
 
 - [ ] **Step 1: Run the whole path on this machine (Git Bash and Docker Desktop).**
   - Setup: `WORDMET_HOME` is a scratch folder holding a clone of this branch; `.env` from `env.production.example` with `TURNSTILE_MODE=fake`,
-    `BILLING_PRODUCTION=false` and SMTP pointed at Mailpit; `CADDY_SITES=:80`, `HTTP_PORT=8088`, `HTTPS_PORT=8448`.
+    `BILLING_PRODUCTION=false` and SMTP pointed at Mailpit; `CADDY_SITES=:80`, `HTTP_PORT=8088`, `HTTPS_PORT=8448`; the voice keys left
+    empty (no R2 here), so the API starts with speech audio off.
   - First deploy that fails: `POSTGRES_PASSWORD` wrong only for `api`, run `deploy.sh <HEAD>`. Expected: prints
     `no previous version to return to`, exits 1. Fix the password.
   - Deploy: run `deploy.sh <HEAD>`. Expected: `curl -s localhost:8088/v1/health/ready` returns `"status":"ok"`.
@@ -384,6 +398,7 @@ Not in code: one of the two `legal_versions` rows in the local DB mentions ads o
 - [ ] **Step 2: Remove the scratch stack** (`compose down -v` with `-p wordmet` and the scratch home).
 - [ ] **Step 3: Push and open the PR into `dev` with the `ship-pr` skill.** The body lists:
   - what the local rehearsal showed;
-  - what only G1 on the VPS can show: real certificates, R2 upload and restore, Resend from the VPS, `TRUST_PROXY` (G3-14).
+  - what only G1 on the VPS can show: real certificates, R2 upload and restore, Resend from the VPS, Google voices stored on R2 and played
+    from `audio.wordmet.com`, `TRUST_PROXY` (G3-14).
 
 Backup upload to R2 needs real credentials, so it is first checked at G1 (runbook §5). Everything else in G1 repeats Task 9 on the VPS.
