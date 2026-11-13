@@ -505,6 +505,7 @@
       },
       "captchaPending": "Đang xác minh…",
       "captchaReload": "Tải lại bước xác minh",
+      "captchaLoadFailed": "Không tải được bước xác minh.",
       "showcase": {
         "today": "Hôm nay",
         "due": "từ đến hạn",

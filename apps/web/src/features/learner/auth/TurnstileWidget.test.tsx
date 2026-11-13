@@ -117,7 +117,7 @@ describe('TurnstileWidget with a site key', () => {
     act(() => scripts()[0]!.dispatchEvent(new Event('error')));
     expect(onToken).toHaveBeenLastCalledWith(null);
     expect(onUnavailable).toHaveBeenLastCalledWith(true);
-    expect(screen.getByRole('alert')).toHaveTextContent('Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Không tải được bước xác minh.Tải lại bước xác minh');
     expect(scripts()).toHaveLength(0);
     await userEvent.click(screen.getByRole('button', { name: 'Tải lại bước xác minh' }));
     expect(scripts()).toHaveLength(1);

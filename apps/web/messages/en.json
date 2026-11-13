@@ -505,6 +505,7 @@
       },
       "captchaPending": "Verifying…",
       "captchaReload": "Reload the check",
+      "captchaLoadFailed": "The check didn't load.",
       "showcase": {
         "today": "Today",
         "due": "words due",

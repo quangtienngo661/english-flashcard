@@ -35,7 +35,6 @@ export function TurnstileWidget({
   onUnavailable?: (unavailable: boolean) => void;
   ref?: Ref<TurnstileHandle>;
 }) {
-  const t = useTranslations('App.errors');
   const tAuth = useTranslations('App.auth');
   const siteKey = turnstileSiteKey();
   const container = useRef<HTMLDivElement>(null);
@@ -121,7 +120,7 @@ export function TurnstileWidget({
       <div ref={container} />
       {unavailable && (
         <div role="alert" className="flex flex-col items-start gap-1 font-wm-sans text-wm-small text-wm-fail">
-          <p>{t('captcha-unavailable')}</p>
+          <p>{tAuth('captchaLoadFailed')}</p>
           <TextButton
             onPress={() => {
               setUnavailable(false);
