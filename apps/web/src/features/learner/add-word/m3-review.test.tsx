@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
-import { SearchStrip } from '@/app-chrome/SearchStrip';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { WordPage } from '../word/WordPage';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { AddWordSheet } from './AddWordSheet';
@@ -21,6 +19,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => nav.params,
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
+const inflection = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 vi.setConfig({ testTimeout: 20_000 });
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -39,18 +38,6 @@ const base = (extra = {}, decks = [deck(TRAVEL, 'Du lịch')]) => ({
   'GET /v1/lookup?q=rizz': () => Response.json({ senses: [], via_inflection: [] }),
   ...extra,
 });
-/** Renders the strip again on demand, as a URL change on the lookup page does. */
-function Rerender() {
-  const [, setTick] = useState(0);
-  return (
-    <>
-      <button type="button" onClick={() => setTick((n) => n + 1)}>
-        tick
-      </button>
-      <SearchStrip />
-    </>
-  );
-}
 const posts = (calls: Array<{ method: string; path: string }>, path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 const toasts = (ui: React.ReactElement) => (
   <>
@@ -81,7 +68,7 @@ describe('I-1: "Tạo nhóm và lưu" with no meaning to save', () => {
   it('an error while creating from the deck list is shown there', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base({ 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
-    await screen.findByText('went là quá khứ của go');
+    await screen.findByText(inflection('went go · quá khứ của go'));
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'phỏng vấn');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));
@@ -127,11 +114,11 @@ describe('I-7: one write per press', () => {
   it('the deck picker of the word page', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     let release!: () => void;
-    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={() => {}} />, {
-      routes: base({ [`POST /v1/groups/${TRAVEL}/items`]: () => new Promise<Response>((r) => (release = () => r(Response.json({ created: true })))) }),
+    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={() => {}} />, {
+      routes: base({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json({ created_item: true })))) }),
     });
-    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào nhóm' }));
-    expect(posts(calls, `/v1/groups/${TRAVEL}/items`)).toHaveLength(1);
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào 1 nhóm' }));
+    expect(posts(calls, '/v1/quick-add')).toHaveLength(1);
     release();
   });
 });
@@ -159,29 +146,8 @@ describe('I-4: saving a word refreshes the deck it went to', () => {
       routes: base({ 'POST /v1/quick-add': () => Response.json({ item_id: uuid(90), sense_id: uuid(1), created_item: true, created_word: false, sentence_id: null }, { status: 201 }) }),
     });
     client.setQueryData(['group', TRAVEL], { id: TRAVEL });
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu went' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(client.getQueryState(['group', TRAVEL])?.isInvalidated).toBe(true));
-  });
-});
-
-describe('I-5: the search strip follows the URL of the lookup page', () => {
-  it('a level cleared by "Xóa lọc" is cleared in the strip too', async () => {
-    nav.params = new URLSearchParams({ q: 'go', level: 'B1' });
-    renderApp(<Rerender />, { routes: base() });
-    expect(screen.getByRole('button', { name: /B1/ })).toBeInTheDocument();
-    nav.params = new URLSearchParams({ q: 'go' });
-    await userEvent.click(screen.getByRole('button', { name: 'tick' }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: /B1/ })).not.toBeInTheDocument());
-  });
-
-  it('a search from the lookup page keeps its topic, part of speech and "mine" filters', async () => {
-    nav.params = new URLSearchParams({ q: 'go', topic: 'food', pos: 'verb', mine: 'true' });
-    renderApp(<SearchStrip />, { routes: base() });
-    const box = screen.getByRole('searchbox');
-    await userEvent.clear(box);
-    await userEvent.type(box, 'eat{Enter}');
-    const url = new URL(String(nav.push.mock.calls.at(-1)?.[0]), 'http://x');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'eat', topic: 'food', pos: 'verb', mine: 'true' });
   });
 });
 
@@ -195,7 +161,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
 
   it('the deck picker has [Hủy] that closes it', async () => {
     const onClose = vi.fn();
-    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={onClose} />, { routes: base() });
+    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={onClose} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: 'Hủy' }));
     expect(onClose).toHaveBeenCalled();
   });
@@ -204,7 +170,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
-    expect(await screen.findByRole('button', { name: 'Chọn Du lịch' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Xong' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lưu vào nhóm' })).not.toBeInTheDocument();
   });
 });

@@ -1,9 +1,10 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useFormat } from '@/app-shell/format';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { useSession } from '@/app-shell/session/session-context';
 import { refillKind } from '../../settings/refill';
 import { wordHref } from '../../word/word-api';
@@ -26,9 +27,9 @@ export function useAiRefillLine() {
 /** The link to the learner's word (K/74a, K/76): "Xem lại từ trong Từ của tôi" (copy doc §17.1). */
 export function SeeWordLink({ lemma }: { lemma: string }) {
   const t = useTranslations('App.practice.session.ai');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   return (
-    <Link href={wordHref(locale, lemma)} className="font-semibold text-primary underline underline-offset-2">
+    <Link href={wordHref(locale, lemma)} className="font-semibold text-wm-accent underline underline-offset-2">
       {t('seeWord')}
     </Link>
   );
@@ -47,8 +48,8 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
   else if (notice.reason === 'quota-exhausted') text = [t('fallbackQuota'), refill(notice.resetsAt)].filter(Boolean).join(' ');
   else text = t('fallback');
   return (
-    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-inner border-2 border-accent bg-accent-soft px-4 py-3">
-      <p className="text-ui text-ink">
+    <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-wm-row border border-wm-accent bg-wm-accent-soft px-4 py-3">
+      <p className="text-wm-small text-wm-ink">
         {text}
         {lemma && (
           <>
@@ -61,7 +62,7 @@ export function SessionNotice({ notice, answered, onDismiss }: { notice: Notice;
         type="button"
         aria-label={t('dismiss')}
         onClick={onDismiss}
-        className="shrink-0 rounded-sm p-0.5 text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="shrink-0 rounded-wm-control p-0.5 text-wm-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <X aria-hidden className="size-4" />
       </button>

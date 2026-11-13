@@ -1,14 +1,15 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { Select } from '@/app-ui/Select';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { Select } from '@/ui/Select';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY, useGroupMutations, useGroups } from '../groups/groups-api';
 import { GROUP_NAME_MAX } from '../groups/group-name';
 import { useTopics, type LookupParams } from '../lookup/lookup-api';
@@ -24,6 +25,7 @@ export type BulkFilter = Pick<LookupParams, 'level' | 'topic' | 'pos'>;
 export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose: () => void }) {
   const t = useTranslations('App.addWord');
   const tc = useTranslations('App.common');
+  const locale = useLocale();
   const client = useQueryClient();
   const errorText = useErrorMessage();
   const groups = useGroups().data?.items ?? [];
@@ -58,6 +60,7 @@ export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose:
       showToast(
         `${t('bulkResult', { added: result.added, name })} ${t('bulkSkipped', { already: result.already_in_group, function: result.skipped_function_words, full: result.skipped_group_full })}`,
         'success',
+        { link: { label: t('openGroup'), href: `/${locale}/app/group?id=${id}` } },
       );
       void client.invalidateQueries({ queryKey: GROUPS_KEY });
       void client.invalidateQueries({ queryKey: ['items'] });
@@ -72,28 +75,29 @@ export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose:
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('bulkTitle')}
+      closeLabel={tc('close')}
       isDismissable={!save.busy}
       footer={
         <>
-          <Button variant="quiet" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose}>
             {tc('cancel')}
-          </Button>
-          <Button variant="sticker" isPending={save.busy} onPress={() => void onSubmit()}>
+          </TextButton>
+          <Button isPending={save.busy} onPress={() => void onSubmit()}>
             {t('bulkSubmit')}
           </Button>
         </>
       }
     >
-      <p className="-mt-2 text-caption text-muted">{t('bulkBody', { filters: summary })}</p>
+      <p className="font-wm-sans text-wm-small text-wm-ink">{t('bulkBody', { filters: summary })}</p>
       <Select
         label={t('bulkInto')}
         value={target}
         onChange={setTarget}
         items={[{ id: NEW, label: t('bulkNewDeck', { name: newName }) }, ...groups.map((g) => ({ id: g.id, label: g.name }))]}
       />
-      <p className="text-caption text-muted">{t('bulkNote')}</p>
+      <p className="font-wm-sans text-wm-small text-wm-muted">{t('bulkNote')}</p>
       {error && (
-        <p role="alert" className="text-ui text-danger">
+        <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
           {error}
         </p>
       )}

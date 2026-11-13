@@ -2,14 +2,15 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
-import { AppFooter } from './AppFooter';
+import { renderApp } from '@/test-utils/render-app';
+import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
 import { AvatarMenu } from './AvatarMenu';
+import { BackLink } from './BackLink';
 import { MobileTabBar } from './MobileTabBar';
 import { PlanChip } from './PlanChip';
 import { TopBar } from './TopBar';
 
-// A marker on router links, so a test can tell them from plain anchors (the footer links that leave the app must be plain anchors, LB3E5).
+// A marker on router links, so a test can tell them from plain anchors.
 vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
     <a href={href} data-router-link="" {...rest}>
@@ -19,35 +20,42 @@ vi.mock('next/link', () => ({
 }));
 
 let pathname = '/vi/app';
-vi.mock('next/navigation', () => ({ usePathname: () => pathname, useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+let search = new URLSearchParams();
+const push = vi.fn();
+vi.mock('next/navigation', () => ({
+  usePathname: () => pathname,
+  useSearchParams: () => search,
+  useRouter: () => ({ replace: vi.fn(), push }),
+}));
 
 const entitlements = (plan: string) => ({ 'GET /v1/me/entitlements': () => Response.json({ plan, pools: {}, sources: [] }) });
 
 beforeEach(() => {
   pathname = '/vi/app';
+  search = new URLSearchParams();
 });
 
-describe('app chrome', () => {
-  it('TopBar marks the current tab with aria-current="page"', () => {
-    pathname = '/vi/app/groups';
-    renderApp(<TopBar features={{ addWord: false }} />, { routes: entitlements('free') });
-    const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
-    expect(within(nav).getByRole('link', { name: /Nhóm/ })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: /Hôm nay/ })).not.toHaveAttribute('aria-current');
+function currentLinks(nav: HTMLElement) {
+  return within(nav).getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page').map((l) => l.textContent);
+}
+
+describe('app chrome (giao diện mới M1.9)', () => {
+  it.each([
+    ['/vi/app/groups', ['Nhóm']],
+    ['/vi/app/word', ['Tra từ']],
+    ['/vi/app/settings', []],
+  ])('on %s the current tab is %j in the top bar and the tab bar', (path, expected) => {
+    pathname = path;
+    renderApp(<><TopBar /><MobileTabBar /></>, { routes: entitlements('free') });
+    const [top, bottom] = screen.getAllByRole('navigation', { name: 'Điều hướng chính' });
+    expect(currentLinks(top!)).toEqual(expected);
+    expect(currentLinks(bottom!)).toEqual(expected);
   });
 
-  it('TopBar: the theme button switches light/dark at once instead of opening Cài đặt (owner 27/10/2026)', async () => {
-    renderApp(<TopBar features={{ addWord: false }} />, { routes: entitlements('free') });
-    await userEvent.click(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' }));
-    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'));
-    await userEvent.click(screen.getByRole('button', { name: 'Chuyển sang giao diện sáng' }));
-    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('light'));
-    expect(screen.queryByRole('link', { name: 'Cài đặt' })).not.toBeInTheDocument();
-  });
-
-  it('TopBar hides the Thêm từ button before M3', () => {
-    renderApp(<TopBar features={{ addWord: false }} />, { routes: entitlements('free') });
-    expect(screen.queryByRole('button', { name: /Thêm từ/ })).not.toBeInTheDocument();
+  it('"Thêm từ" opens the add-word dialog inside AddWordProvider', async () => {
+    renderApp(<AddWordProvider><TopBar /></AddWordProvider>, { routes: entitlements('free') });
+    await userEvent.click(screen.getByRole('button', { name: /Thêm từ/ }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
   it('PlanChip names the plan from GET /v1/me/entitlements', async () => {
@@ -55,13 +63,25 @@ describe('app chrome', () => {
     expect(await screen.findByText('Dùng thử')).toBeInTheDocument();
   });
 
-  it('AvatarMenu (K/90): name, email, then Cài đặt · Gói học · Đăng xuất', async () => {
+  it('AvatarMenu (Figma 181:316): name, email, then the items in order', async () => {
     renderApp(<AvatarMenu />, { me: makeMe({ given_name: 'Lan', family_name: 'Nguyễn' }), routes: entitlements('free') });
     await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản của bạn' }));
     const menu = await screen.findByRole('menu');
-    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Cài đặt', 'Gói họcMiễn phí', 'Đăng xuất']);
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'Tài khoản', 'Cài đặt', 'Lịch sử giao dịch', 'Báo lỗi của tôi', 'Chuyển sang giao diện tối', 'Đăng xuất',
+    ]);
+    expect(within(menu).getByRole('menuitem', { name: 'Báo lỗi của tôi' })).toHaveAttribute('href', '/vi/app/settings/reports');
     expect(screen.getByText('Nguyễn Lan')).toBeInTheDocument();
     expect(screen.getByText('lan@example.com')).toBeInTheDocument();
+  });
+
+  it('AvatarMenu on /vi/app/settings marks "Cài đặt" as the open page (Figma 181:316)', async () => {
+    pathname = '/vi/app/settings';
+    renderApp(<AvatarMenu />, { routes: entitlements('free') });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản của bạn' }));
+    const menu = await screen.findByRole('menu');
+    const current = within(menu).getAllByRole('menuitem').filter((i) => i.getAttribute('aria-current') === 'page').map((i) => i.textContent);
+    expect(current).toEqual(['Cài đặt']);
   });
 
   it('AvatarMenu → Đăng xuất signs out', async () => {
@@ -73,36 +93,15 @@ describe('app chrome', () => {
     await waitFor(() => expect(count('POST', '/v1/auth/logout')).toBe(1));
   });
 
-  it('LB3E5: the footer links that leave the app (the landing, the Terms, the Privacy Policy) are plain anchors, so leaving the app is a full page load; Gói học stays a router link', () => {
-    renderApp(<AppFooter />);
-    const byHref = (href: string) => screen.getAllByRole('link').filter((link) => link.getAttribute('href') === href);
-    for (const href of ['/vi', '/vi/terms', '/vi/privacy', '/vi/sources']) {
-      expect(byHref(href), href).toHaveLength(1);
-      expect(byHref(href)[0], href).not.toHaveAttribute('data-router-link');
-    }
-    expect(byHref('/vi/app/plans')[0]).toHaveAttribute('data-router-link');
+  it('AvatarMenu → the theme item switches light/dark at once', async () => {
+    renderApp(<AvatarMenu />, { routes: entitlements('free') });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản của bạn' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Chuyển sang giao diện tối' }));
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'));
   });
 
-  it('AppFooter (D7): Liên hệ is mailto; the three pages that do not exist yet are muted text, not links', () => {
-    renderApp(<AppFooter />);
-    expect(screen.getByRole('link', { name: 'Liên hệ' }).getAttribute('href')).toMatch(/^mailto:/);
-    for (const name of ['Trợ giúp', 'Câu hỏi thường gặp', 'Gửi góp ý']) {
-      const item = screen.getByText(name);
-      expect(item.closest('a')).toBeNull();
-      expect(item).toHaveAttribute('aria-disabled', 'true');
-      expect(item).not.toHaveAttribute('tabindex');
-    }
-    expect(screen.getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
-    expect(screen.getByRole('link', { name: 'Chính sách bảo mật' })).toHaveAttribute('href', '/vi/privacy');
-    expect(screen.getByRole('link', { name: 'Nguồn dữ liệu' })).toHaveAttribute('href', '/vi/sources');
-    expect(screen.queryByText('English')).not.toBeInTheDocument();
-  });
-
-  it('MobileTabBar shows only below 768px and marks the current tab', () => {
-    pathname = '/vi/app/practice';
-    renderApp(<MobileTabBar />);
-    const nav = screen.getByRole('navigation');
-    expect(nav.className).toMatch(/md:hidden/);
-    expect(within(nav).getByRole('link', { name: 'Luyện tập' })).toHaveAttribute('aria-current', 'page');
+  it('BackLink is a link with its label', () => {
+    renderApp(<BackLink href="/vi/app/groups" label="Nhóm" />);
+    expect(screen.getByRole('link', { name: /Nhóm/ })).toHaveAttribute('href', '/vi/app/groups');
   });
 });

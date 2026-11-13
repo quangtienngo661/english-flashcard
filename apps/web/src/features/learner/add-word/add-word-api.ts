@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { ApiError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
 import type { PageSense } from '../word/word-api';
 
@@ -11,7 +12,8 @@ export type LookupResult = {
   via_inflection: Array<{ kind: string; base: { entry_id: string; lemma: string; pos: string }; senses: LookupSense[] }>;
 };
 export type QuickAddBody = {
-  group_id: string;
+  /** QP1: every group the word joins, in one transaction (1 to 10). */
+  group_ids: string[];
   sense_id?: string;
   new_word?: {
     lemma: string;
@@ -39,4 +41,14 @@ export function useLookup(q: string) {
     enabled: word.length > 0 && word.length <= 100,
     staleTime: 60_000,
   });
+}
+
+/** The most groups one quick add can name (the API refuses more). */
+export const QUICK_ADD_GROUPS_MAX = 10;
+
+/** A 409 `group-full` from quick add names the full group in its `group_id` extension; null when the error is something else. */
+export function fullGroupId(error: unknown): string | null {
+  if (!(error instanceof ApiError) || error.problem.slug !== 'group-full') return null;
+  const id = error.problem.extensions?.group_id;
+  return typeof id === 'string' ? id : null;
 }

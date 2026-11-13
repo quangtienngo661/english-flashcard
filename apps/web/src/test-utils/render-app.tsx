@@ -1,0 +1,67 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
+import en from '../../messages/en.json';
+import vi from '../../messages/vi.json';
+import { SessionIntl } from '@/app-shell/SessionIntl';
+import { SessionProvider } from '@/app-shell/session/session-context';
+import { SessionStore, type Me } from '@/app-shell/session/session-store';
+import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
+import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '@/app-shell/session/test-support';
+import { AppChrome } from '@/app-chrome/AppChrome';
+import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
+import { testRoute } from './route-locale';
+
+/** Renders app UI with the App copy, a QueryClient and a signed-in session whose API answers `routes`. */
+export function renderApp(
+  ui: ReactElement,
+  {
+    locale = 'vi',
+    me = makeMe(),
+    routes = {},
+    instantWaits = false,
+    chrome = false,
+    session = false,
+  }: {
+    locale?: 'vi' | 'en';
+    me?: Me;
+    routes?: Record<string, Route>;
+    /** 429 retries do not wait (E4 tests). */
+    instantWaits?: boolean;
+    /** Wraps the UI in the (chrome) layout: AddWordProvider and AppChrome (giao diện mới M1.10). */
+    chrome?: boolean;
+    /** Wraps the UI in SessionIntl, as the (focus) layout does: session copy in English whatever `locale` (the route's) is (QM9-9). */
+    session?: boolean;
+  } = {},
+) {
+  const f = makeFetch({
+    'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+    'GET /v1/me': () => Response.json(me),
+    // No practice session yet unless a test says otherwise (Hôm nay reads it, giao diện mới M3).
+    'GET /v1/practice/sessions/last': () => new Response(null, { status: 204 }),
+    // No streak unless a test says otherwise (the calendar button reads it, giao diện mới M6).
+    'GET /v1/me/streak': () => Response.json({ days: 0, studied_today: false }),
+    ...routes,
+  });
+  const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, ...(instantWaits ? { wait: async () => {} } : {}) });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const messages = { App: (locale === 'vi' ? vi : en).App };
+  testRoute.locale = locale;
+  const content = session ? <SessionIntl>{ui}</SessionIntl> : ui;
+  const view = render(
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
+      <QueryClientProvider client={client}>
+        <SessionProvider store={store}>
+          <ThemeProvider>{chrome ? <AddWordProvider><AppChrome>{content}</AppChrome></AddWordProvider> : content}</ThemeProvider>
+        </SessionProvider>
+      </QueryClientProvider>
+    </NextIntlClientProvider>,
+  );
+  return { ...view, store, client, ...f };
+}
+
+/** Picks a date in a `type="date"` field (DateOfBirthField): jsdom has no picker, so the value is set as the browser would. */
+export function pickDate(label: string, iso: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value: iso } });
+}

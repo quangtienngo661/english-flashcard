@@ -1,6 +1,8 @@
 'use client';
 
+import { shownPos } from '@/lib/pos';
 import { useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
@@ -8,16 +10,17 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { showToast } from '@/app-ui/Toast';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY } from '../groups/groups-api';
 import { bareIpa, cleanExamples, EditSuggestionForm, type WordDraft } from '../add-word/EditSuggestionForm';
 import { wordHref, type PageSense } from './word-api';
 
 const draftOf = (sense: PageSense): WordDraft => ({
   lemma: sense.lemma,
-  pos: sense.pos ?? '',
+  pos: shownPos(sense.pos),
   meaning: sense.meaning.text,
   level: sense.level ?? '',
   topic: sense.topics[0]?.code ?? '',
@@ -54,7 +57,7 @@ function patchOf(sense: PageSense, before: WordDraft, after: WordDraft): Patch {
   return patch;
 }
 
-/** [Sửa] on K/88: the fields of K/87 for a word the learner already has. */
+/** [Sửa từ] in the head of K/88: the fields of K/87 for a word the learner already has. */
 export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose: () => void }) {
   const t = useTranslations('App.word.mine');
   const tAdd = useTranslations('App.addWord');
@@ -94,13 +97,14 @@ export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('editTitle')}
+      closeLabel={tc('close')}
       isDismissable={!save.busy}
       footer={
         <>
-          <Button variant="quiet" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
-          <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
+          </TextButton>
+          <Button isPending={save.busy} onPress={() => void submit()}>
             {t('saveChanges')}
           </Button>
         </>
@@ -108,9 +112,9 @@ export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose
     >
       <div className="flex flex-col gap-4">
         <EditSuggestionForm value={draft} onChange={setDraft} meaningError={meaningError} />
-        {sense.ai_suggested && <p className="text-caption text-muted">{tAdd('edit.note')}</p>}
+        {sense.ai_suggested && <p className="font-wm-sans text-wm-small text-wm-muted">{tAdd('edit.note')}</p>}
         {failure && (
-          <p role="alert" className="text-ui text-danger">
+          <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
             {failure}
           </p>
         )}
@@ -119,7 +123,7 @@ export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose
   );
 }
 
-/** [Xóa từ] on K/88: asks first; the word, its saved sentences and its place in every deck go (`DELETE /v1/my-words/{id}`). */
+/** [Xóa từ] in the head of K/88: asks first; the word, its saved sentences and its place in every deck go (`DELETE /v1/my-words/{id}`). */
 export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClose: () => void }) {
   const t = useTranslations('App.word.mine');
   const tc = useTranslations('App.common');
@@ -148,21 +152,26 @@ export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClo
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('deleteTitle', { word: sense.lemma })}
+      closeLabel={tc('close')}
       isDismissable={!remove.busy}
       footer={
         <>
-          <Button variant="quiet" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button variant="danger" isPending={remove.busy} onPress={() => void confirm()}>
             {t('delete')}
           </Button>
         </>
       }
     >
-      <p className="text-ui text-ink">{t('deleteBody')}</p>
+      {/* M3's confirm look (Figma "Xác nhận xóa" 121:4597): what is lost in a fail-soft block. */}
+      <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+        <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
+        <span>{t('deleteBody')}</span>
+      </p>
       {failure && (
-        <p role="alert" className="mt-3 text-ui text-danger">
+        <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
           {failure}
         </p>
       )}

@@ -20,7 +20,8 @@ vi.mock('next/navigation', () => ({
   // The router's path; null = same as the address bar.
   usePathname: () => routerPath ?? window.location.pathname,
 }));
-vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => false }));
+let leaving = false;
+vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => leaving }));
 
 function at(path: string) {
   window.history.replaceState(null, '', path);
@@ -49,6 +50,7 @@ const signedIn = (me = makeMe()): Record<string, Route> => ({
 
 beforeEach(() => {
   routerPath = null;
+  leaving = false;
   replace.mockReset();
 });
 afterEach(() => vi.restoreAllMocks());
@@ -57,7 +59,7 @@ describe('RequireSession', () => {
   it('shows a spinner while the session loads, then the page', async () => {
     at('/vi/app');
     setup(signedIn());
-    expect(screen.getByRole('status')).toHaveTextContent('Đang tải…');
+    expect(screen.getByRole('status', { name: 'Đang tải…' })).toBeInTheDocument();
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
     expect(await screen.findByText('secret')).toBeInTheDocument();
   });
@@ -68,6 +70,29 @@ describe('RequireSession', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fgroup%3Fid%3Dg1'));
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
     expect(store.state.status).toBe('signed-out');
+  });
+
+  it('M7.7 / R154: the session ended by deleting the account does not send the page to sign-in (its own full load goes on)', async () => {
+    at('/vi/app/settings/delete-account');
+    const { store } = setup(signedIn());
+    await screen.findByText('secret');
+    // Whatever the order DeleteForm uses, and even before hardReplace has marked the page as leaving.
+    act(() => store.endAfterDeletion());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(store.state.status).toBe('signed-out');
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.queryByText('secret')).not.toBeInTheDocument();
+  });
+
+  it('R154: a full load that did not happen (Esc, a hash-only address) does not stop a later sign-out from going to sign-in', async () => {
+    at('/vi/app/settings');
+    const { store } = setup(signedIn());
+    await screen.findByText('secret');
+    leaving = true;
+    await act(() => store.logout());
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fsettings'));
   });
 
   it('E3/E4: a session that ended mid-use carries its reason to the sign-in page', async () => {

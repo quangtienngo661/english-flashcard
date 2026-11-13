@@ -86,6 +86,7 @@ Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi
 - [ ] **Đo search/browse của người học khi bảng có từ riêng (B2-5) và đo mở phiên có 50 từ dạng AI, mỗi từ một query (B7-5).** Nguồn:
   [B2-5](../superpowers/reviews/buoc-1-8/buoc-2-and-2-5.md#b2-5) (`apps/api/test/content/lookup.scale.e2e-spec.ts`, `pnpm test:scale`),
   [B7-5](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b7-5) (`question-builder.service.ts:94-103`). Vì sao: hai chỗ này là `ASSUMPTION` chưa đo.
+- [ ] **Đo lại `GET /v1/groups` với 100 nhóm × 2.000 từ trên máy chủ thật.** Nguồn: [`giao-dien-moi.md`](giao-dien-moi.md) (as-built M3; `pnpm test:scale`). Vì sao: trên máy dev, median 399 ms khi chạy một mình, ngưỡng 500 ms; chạy song song với `pnpm test` đo 582 ms, vượt ngưỡng.
 
 ## Admin web
 
@@ -188,6 +189,20 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
 - [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
 
+## Giao diện mới M8: trang công khai (design giao diện mới §10.6, §10.7, QM8, 11/11/2026)
+
+- [ ] **Đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API trong `deploy-web.yml` khi `api.wordmet.com` đã chạy.** Nguồn: design §10.6, Part 8
+  của plan (M8.3). Vì sao: trang chủ đọc giá và hỏi đáp lúc build. Workflow hiện chưa có địa chỉ API, nên mọi bản deploy đang dùng giá và hỏi đáp dự phòng
+  trong code. Đặt biến này khi chưa có API thì deploy `main` sẽ fail.
+- [ ] **Đổi giá hoặc đăng hỏi đáp trong admin xong thì deploy lại web.** Nguồn: design §10.6, §10.7. Vì sao: trang chủ dựng sẵn lúc build, nên giữ số và
+  câu cũ tới lần deploy sau. Trang Gói học và lúc thanh toán vẫn đọc giá thật.
+- [ ] **Chủ dự án sửa văn bản Chính sách bảo mật và Điều khoản sử dụng trong admin `/legal`:** bỏ tiêu đề, dòng "Phiên bản · Có hiệu lực",
+  đoạn mở và "Mục lục" viết tay ở đầu văn bản, rồi đăng bản mới. Nguồn: QM8-4. Vì sao: trang mới tự vẽ các phần đó, giữ lại thì trang có hai tiêu đề và
+  hai mục lục.
+- [ ] **Chủ dự án kiểm câu chữ nháp** trước launch: 6 câu trả lời hỏi đáp (admin "Hỏi đáp trang chủ"), các câu sửa trên trang chủ và câu "Không hoàn tiền
+  tự động." Nguồn: QM8-6.
+- [ ] **Ghi cỡ Worker sau khi đổi font ảnh chia sẻ** (M8.11), theo lệnh ở mục Worker.
+
 ## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
 
 - [ ] **`deploy-web.yml` phải build với `NEXT_PUBLIC_LEARNER_APP=on` và `NEXT_PUBLIC_API_BASE_URL` (host bắt đầu bằng `api.`) trước khi lên `main`.**
@@ -196,9 +211,13 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   ở host `api.` thì đăng ký mới hoàn tất.
 - [ ] **Xóa database D1 `wordmet-waitlist` trong Cloudflare dashboard.** Nguồn: design L2. Vì sao: binding `DB`, migration và form đã bị bỏ khỏi code,
   database còn lại chỉ tốn chỗ. Chủ dự án (lúc brainstorm landing, 11/2026) nói chưa có ai đăng ký thật nên không cần xuất dữ liệu.
-- [ ] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** Nguồn: design L2; nghiên cứu
+- [x] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** *(11/11/2026, M8 giao diện mới: link có ở chân trang công khai từ 04/11; nội dung đăng trong admin, việc còn lại ở mục "Chính sách bảo mật và Điều khoản" cuối file.)* Nguồn: design L2; nghiên cứu
   `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`. Vì sao: hai trang hiện là bản nháp (`LegalDraft`), link đang ẩn từ 09/10/2026; khi link
   trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file. *(03/11/2026: nội dung nay soạn và đăng trong admin, xem mục "Chính sách bảo mật và Điều khoản" ở cuối file.)*
+- [ ] **Khi Deploy: đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API (`NEXT_PUBLIC_API_BASE_URL`) trong `deploy-web.yml`.** Nguồn: plan giao diện mới M8.9, as-built M8b
+  (`giao-dien-moi.md`). Vì sao: từ M8, `next.config.ts` đọc giá và FAQ lúc build từ `GET /v1/public/prices`. Không có cờ này thì build không đọc được vẫn qua, in một
+  dòng cảnh báo và đưa giá, FAQ dự phòng lên trang chủ; có cờ thì build fail. Chỉ bật khi `api.` đã chạy, nếu không mọi lần deploy `main` đều fail.
+  Đổi giá hay FAQ trong admin chỉ hiện trên trang chủ sau lần build kế tiếp.
 - [ ] **Sau deploy: mở `/vi`, mở `/en` (phải 307 về `/vi`), bấm Đăng ký (phải tới `/vi/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
   Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
 - [ ] **Bản tiếng Anh của landing.** Nguồn: design L3, L4. Khi có: thêm `'en'` vào `LANDING_LOCALES` (`src/lib/landing-locale.ts`), dịch `Landing` trong

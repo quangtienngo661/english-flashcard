@@ -37,9 +37,14 @@ export type StartBody = {
   group_filter?: GroupFilter;
   sort?: Sort;
   types: QuestionType[];
-  cloze_source?: 'own';
+  /** `own_then_ai`: saved sentences first, AI for the other words (cloze-own-then-ai). */
+  cloze_source?: 'own' | 'own_then_ai';
   prompt_style?: PromptStyle;
   count?: number;
+  /** Practice AI count (#249): how many AI questions; 0 drops the AI types. */
+  ai_count?: number;
+  /** Sent only when the admin lets the learner choose (`ai_placement: 'learner'`) and there is an AI question. */
+  ai_placement?: 'even' | 'random';
 };
 
 /** The session as the API shows it (`SessionView`). */
@@ -60,7 +65,12 @@ export type PracticeSessionView = {
   asked: number;
   words: number;
   ai_planned: number;
-  cloze_source: 'ai' | 'own' | null;
+  cloze_source: 'ai' | 'own' | 'own_then_ai' | null;
+  /** #249: 'even' | 'random' for a session opened with `ai_count`; null (or absent from an older API) otherwise. */
+  ai_placement?: 'even' | 'random' | null;
+  /** M5.1: final results so far, every round (`void` not counted); absent from an older API. */
+  correct?: number;
+  wrong?: number;
 };
 
 export type CurrentItem = { item_id: string; state: 'unanswered' | 'try_again' };
@@ -132,14 +142,6 @@ export function useWeakPreview(size: number) {
   });
 }
 
-export function useRecentHistory(size: number) {
-  const api = useApi();
-  return useQuery({
-    queryKey: ['practice', 'recent', size],
-    queryFn: () => api.get<{ items: HistoryItem[]; next_page_token: string | null }>(`/v1/practice/history?page_size=${size}`),
-  });
-}
-
 /** `POST /v1/practice/sessions` `[I]`; the API closes any open session first. */
 export function useStartSession() {
   const api = useApi();
@@ -162,15 +164,3 @@ export function useStartSession() {
 export function doneCount(current: CurrentSession): number {
   return Math.max(0, current.session.asked - (current.item ? 1 : 0));
 }
-
-/** `GET /v1/practice/reports` row (D27 Bước 7): `refunded` says what became of the AI credit. */
-export type MyReport = {
-  id: string;
-  item_id: string;
-  sense_id: string;
-  reason_label: string;
-  status: 'open' | 'no_error' | 'fixed' | 'confirmed';
-  refunded: boolean | null;
-  created_at: string;
-  resolved_at: string | null;
-};

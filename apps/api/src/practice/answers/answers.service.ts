@@ -30,6 +30,8 @@ export type AnswerResult = {
   schedule: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
   /** Round C (H6): set only when this answer was the learner's first study of the day; null on a read of an answer. */
   streak: { days: number } | null;
+  /** The word's current stage, 0–5, read through Learning (giao diện mới M5.1, QR2); null when the word is not in learning. */
+  level: number | null;
 };
 /** What `writeFinal` leaves behind: the stored item, the schedule change of a recall session and whether the session was one. */
 export type FinalOutcome = { item: ItemWithQuestion; schedule: AnswerResult['schedule']; recall: boolean; streak: AnswerResult['streak'] };
@@ -219,7 +221,7 @@ export class AnswersService {
       // A recall session already moved the word (round C): "Đã biết" is never offered there.
       show_known: !recall.recall && alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
       highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
-      schedule: recall.schedule, streak: recall.streak ?? null,
+      schedule: recall.schedule, streak: recall.streak ?? null, level: learningItem?.level ?? null,
     };
   }
 

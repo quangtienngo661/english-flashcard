@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { problem } from '@/app-shell/session/test-support';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { OrderReturnPage } from './OrderReturnPage';
 
 let search = '';
@@ -34,7 +34,7 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
   it('LB1A3: asks payOS through check once, reads the order, and says it was paid with the last day of the period (vi, the learner\'s zone)', async () => {
     const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('paid') } });
     expect(await screen.findByRole('heading', { level: 1, name: 'Thanh toán thành công' })).toBeInTheDocument();
-    expect(screen.getByText(/^Gói Pro có hiệu lực đến hết/)).toHaveTextContent('Gói Pro có hiệu lực đến hết 5/12/2026.');
+    expect(screen.getByText(/^Gói Pro có hiệu lực đến hết/)).toHaveTextContent('Gói Pro có hiệu lực đến hết 05/12/2026.');
     // The receipt: plan and length, the amount and the order's transfer note, all from the order itself.
     expect(screen.getByText('Pro, 3 tháng')).toBeInTheDocument();
     expect(screen.getByText(/^199\.000\s₫$/)).toBeInTheDocument();
@@ -63,6 +63,8 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
     const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('pending') } });
     expect(await screen.findByText('Gói Pro sẽ tự kích hoạt khi nhận được tiền. Bạn có thể đóng trang này.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
+    // The waiting card sits inside the page's one status element.
+    expect(within(screen.getByRole('status')).getByRole('heading', { level: 1, name: 'Đang chờ xác nhận thanh toán' })).toBeInTheDocument();
     await act(() => vi.advanceTimersByTimeAsync(9_500));
     const early = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
     expect(early).toBeGreaterThanOrEqual(3);
@@ -84,8 +86,13 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
       routes: { [CHECK]: answer('pending'), [READ]: () => { reads += 1; return Response.json(view(reads >= 3 ? 'paid' : 'pending')); } },
     });
     await screen.findByText(/^Đang chờ xác nhận thanh toán$/);
+    // One status element holds the card in every state, so the change to paid is announced (M7 Review Focus 4).
+    const status = screen.getByRole('status');
+    expect(within(status).getByRole('heading', { level: 1 })).toHaveTextContent('Đang chờ xác nhận thanh toán');
     await act(() => vi.advanceTimersByTimeAsync(10_000));
     expect(await screen.findByText(/^Thanh toán thành công$/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBe(status);
+    expect(within(status).getByRole('heading', { level: 1 })).toHaveTextContent('Thanh toán thành công');
     expect(screen.queryByText(/^Đang chờ xác nhận thanh toán$/)).not.toBeInTheDocument();
     const after = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
     await act(() => vi.advanceTimersByTimeAsync(20_000));
@@ -106,6 +113,18 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
     expect(screen.queryByText(/^Đang chờ xác nhận thanh toán$/)).not.toBeInTheDocument();
   });
 
+  it('the waiting dot blinks while the order is pending; a cancelled or expired order has a still dot', async () => {
+    // The dot is decoration (aria-hidden) inside the page's status element: its blink is the animation class.
+    const blinking = () => screen.getByRole('status').querySelectorAll('.animate-wm-pulse').length;
+    const pending = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('pending') } });
+    await screen.findByRole('heading', { level: 1, name: 'Đang chờ xác nhận thanh toán' });
+    expect(blinking()).toBe(1);
+    pending.unmount();
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('expired'), [READ]: answer('expired') } });
+    await screen.findByRole('heading', { level: 1, name: 'Đơn hàng đã hủy hoặc hết hạn' });
+    expect(blinking()).toBe(0);
+  });
+
   it('a check that fails (429, 404) does not stop the page from reading the order', async () => {
     renderApp(<OrderReturnPage />, { routes: { [CHECK]: () => problem(429, 'rate-limited'), [READ]: answer('paid') } });
     expect(await screen.findByText(/^Thanh toán thành công$/)).toBeInTheDocument();
@@ -115,7 +134,8 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
     for (const query of ['', 'order=not-an-id']) {
       search = query;
       const view$ = renderApp(<OrderReturnPage />, { routes: {} });
-      expect(await screen.findByText('Không tìm thấy đơn hàng')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Không tìm thấy đơn hàng' })).toBeInTheDocument();
+      expect(screen.getByText('Bạn có thể tạo đơn mới tại trang Gói học.')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Đến trang Gói học' })).toHaveAttribute('href', '/vi/app/plans');
       expect(view$.calls.filter((c) => c.path.startsWith('/v1/me/orders'))).toEqual([]);
       view$.unmount();

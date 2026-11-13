@@ -1,0 +1,943 @@
+<title>Polish chín trang</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Vòng 15: 9 trang × 5 mẫu × 2 khung. Token như vòng 10–13 (navy #1e3a8a). Mọi card có bóng --shadow-card. */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#dde1ea; --ghost:#c9cedc;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --frame:#e9ebf1;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif; --f-body:'Noto Sans',system-ui,sans-serif; --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --shadow-card:0 1px 2px rgb(27 36 68 / .06),0 10px 28px -14px rgb(27 36 68 / .20);
+  --shadow-row:0 1px 2px rgb(27 36 68 / .06),0 4px 12px -8px rgb(27 36 68 / .16);
+  --shadow-pop:0 2px 6px rgb(27 36 68 / .08),0 24px 56px -24px rgb(27 36 68 / .34);
+  --shadow-btn:0 6px 14px -8px rgb(30 58 138 / .55);
+  --scrim:rgb(27 36 68 / .30);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 18px 36px -20px rgb(0 0 0 / .85); --shadow-row:0 8px 18px -12px rgb(0 0 0 / .8); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --shadow-btn:none; --scrim:rgb(0 0 0 / .55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 18px 36px -20px rgb(0 0 0 / .85); --shadow-row:0 8px 18px -12px rgb(0 0 0 / .8); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --shadow-btn:none; --scrim:rgb(0 0 0 / .55); color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--frame);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding:28px max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+kbd{font-family:var(--f-mono);font-size:11px;font-weight:700;min-width:20px;height:20px;display:inline-grid;place-items:center;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--bg);color:var(--ink);line-height:1}
+.mono{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:500}
+
+/* ===== bộ chọn ===== */
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:16px}
+.intro{display:grid;gap:8px;max-width:78ch}
+.intro h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.intro p{color:var(--muted)}
+.vrow{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:4px}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pk{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;text-align:left;transition:border-color .2s,box-shadow .2s}
+.pk small{display:block;font-weight:400;font-size:12px;color:var(--muted);line-height:1.4}
+.pk[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.pk.v{max-width:230px}
+.ctl{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line);flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:8px 16px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.stage{position:relative;overflow:hidden;border-radius:20px;justify-self:center}
+.scaler{transform-origin:top left;width:max-content}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.th{display:grid;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:16px;padding:12px;text-align:left}
+.th:hover{border-color:var(--accent)}
+.th b{font-size:14px} .th small{color:var(--muted);font-size:12px}
+.thv{position:relative;overflow:hidden;border-radius:10px;pointer-events:none}
+.thv .scaler{position:absolute;top:0;left:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.notes section{background:var(--surface);border-radius:16px;padding:16px 20px;display:grid;gap:6px;align-content:start;box-shadow:var(--shadow-card)}
+.notes h3{font-size:16px;font-weight:700}
+.notes ul{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px;color:var(--muted);line-height:1.5}
+.notes b{color:var(--ink);font-weight:600}
+@media (max-width:900px){.notes{grid-template-columns:1fr}}
+
+/* ===== khung máy và thanh trên ===== */
+.dev{background:var(--bg);color:var(--ink);overflow:hidden;position:relative}
+.dev.desk{width:1200px} .dev.phone{width:390px}
+.ab{position:relative;z-index:50;height:64px;display:flex;align-items:center;gap:24px;padding:0 28px;background:color-mix(in srgb,var(--surface) 66%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.logo{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.03em}
+.logo i{font-style:normal;color:var(--accent)}
+.tabs{display:flex;gap:4px;font-size:14px;font-weight:600;color:var(--muted)}
+.tabs span{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px}
+.tabs span.on{background:var(--accent-soft);color:var(--accent)}
+.tabs .ic{width:16px;height:16px}
+.cmd{margin-left:auto;display:flex;align-items:center;gap:8px;width:250px;height:38px;padding:0 8px 0 12px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);font-size:14px}
+.cmd span{flex:1} .cmd .ic{width:16px;height:16px}
+.addw{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 16px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:14px;box-shadow:var(--shadow-btn)}
+.addw kbd{background:transparent;color:inherit;border-color:rgb(255 255 255 / .45)}
+.addw .ic{width:16px;height:16px}
+.pro{display:inline-flex;align-items:center;height:24px;padding:0;color:var(--muted);font-size:13px;font-weight:600}
+.ava{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.phone .ab{height:56px;padding:0 16px;gap:12px} .sp{flex:1}
+.tbar{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:6px 0 12px}
+.tbar span{display:grid;justify-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding-top:4px}
+.tbar span.on{color:var(--accent)}
+.scr{position:relative;isolation:isolate;min-height:836px;padding:96px 60px 124px;margin-top:-64px;display:grid;gap:20px;align-content:start}
+.phone .scr{padding:76px 16px 100px;margin-top:-56px;min-height:732px;gap:16px}
+.scr.ses{margin-top:0;padding-top:24px}
+.phone .scr.ses{padding-top:12px;min-height:844px}
+.scr > *{position:relative;z-index:1}
+.scr::before,.scr::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
+.scr::before{background-image:radial-gradient(color-mix(in srgb,var(--ink) 11%,transparent) 1.1px,transparent 1.4px);background-size:20px 20px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 35%,transparent 90%);mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 35%,transparent 90%)}
+.scr::after{background:radial-gradient(50% 45% at 8% 0%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 70%),radial-gradient(40% 40% at 100% 100%,color-mix(in srgb,var(--mark) 26%,transparent),transparent 70%)}
+.fab{position:absolute;right:28px;bottom:28px;z-index:40;width:62px;height:66px;border:0;padding:0;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-pop);display:grid;grid-template-rows:20px 1fr}
+.fab .fh{background:var(--accent);color:var(--on-accent);border-radius:16px 16px 0 0;font-family:var(--f-mono);font-size:10px;font-weight:700;display:flex;align-items:center;padding-left:8px}
+.fab .fd{font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1;display:grid;place-items:center}
+.fab .fs{position:absolute;top:-9px;right:-11px;display:inline-flex;align-items:center;gap:2px;height:22px;padding:0 8px 0 5px;border-radius:11px;background:var(--mark);color:var(--mark-ink);font-family:var(--f-display);font-weight:800;font-size:12px;box-shadow:0 0 0 2px var(--bg)}
+.fab .fs .ic{width:13px;height:13px}
+.phone .fab{right:16px;bottom:84px;width:54px;height:58px;grid-template-rows:18px 1fr} .phone .fab .fd{font-size:22px}
+.calmini{width:32px;height:34px;border:0;padding:0;border-radius:9px;background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--shadow-card);display:grid;grid-template-rows:11px 1fr;overflow:hidden;flex:none}
+.calmini .fh{background:var(--accent);color:var(--on-accent);font-family:var(--f-mono);font-size:7.5px;font-weight:700;display:grid;place-items:center}
+.calmini .fd{font-family:var(--f-display);font-weight:800;font-size:15px;line-height:1;display:grid;place-items:center}
+
+/* ===== phần dùng chung trong app ===== */
+.cd{background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);border-radius:20px;padding:24px;box-shadow:var(--shadow-card);min-width:0}
+.cd.sm{border-radius:16px;padding:16px 20px}
+.cd.flat{padding:6px 24px}
+.phone .cd{padding:16px;border-radius:18px} .phone .cd.flat{padding:4px 16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:15px;white-space:nowrap;box-shadow:var(--shadow-btn);transition:transform .15s var(--ease),filter .2s}
+.btn:hover{filter:brightness(1.1)} .btn:active{transform:scale(.97)}
+.btn.sec{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line),0 4px 10px -8px rgb(30 58 138 / .45)}
+.btn.ok{background:var(--pass);box-shadow:0 6px 14px -8px rgb(27 122 70 / .6)}
+.btn.bad{background:var(--fail);box-shadow:0 6px 14px -8px rgb(184 53 42 / .6)}
+.btn.sm{height:36px;padding:0 16px;font-size:14px}
+.btn.wide{width:100%} .btn.dis{opacity:.45;box-shadow:none}
+.btn kbd{background:transparent;color:inherit;border-color:currentColor;opacity:.7}
+.btn .ic{width:16px;height:16px}
+.tb{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:6px 12px;margin:-6px -12px;border-radius:8px;font-weight:600;font-size:14px;color:var(--accent);white-space:nowrap;transition:background .15s}
+.tb:hover{background:var(--accent-soft)}
+.tb.mut{color:var(--muted)} .tb.bad{color:var(--fail)} .tb.bad:hover{background:var(--fail-soft)}
+.tb .ic{width:16px;height:16px}
+.back{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:14px;color:var(--accent);justify-self:start}
+.back .ic{width:16px;height:16px}
+.h1{font-family:var(--f-display);font-size:42px;font-weight:800;letter-spacing:-.025em;line-height:1.08}
+.phone .h1{font-size:30px}
+.h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--muted);max-width:62ch}
+.sm{font-size:14px} .mu{color:var(--muted)}
+.phd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end}
+.phl{display:grid;gap:8px} .phr{display:grid;justify-items:end;gap:2px;text-align:right}
+.big{font-family:var(--f-display);font-weight:800;letter-spacing:-.035em;line-height:.85;font-variant-numeric:tabular-nums}
+.phr .big{font-size:88px} .phone .phr .big{font-size:52px}
+.chk{width:18px;height:18px;border-radius:5px;border:1.5px solid color-mix(in srgb,var(--muted) 70%,var(--surface));background:var(--surface);display:inline-grid;place-items:center;flex:none}
+.chk.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chk .ic{width:12px;height:12px;stroke-width:3.4}
+.chk.dis{opacity:.35}
+.rd{width:18px;height:18px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--muted) 70%,var(--surface));flex:none;background:var(--surface)}
+.rd.on{border:5.5px solid var(--accent)}
+.fld{display:grid;gap:6px;min-width:0} .fl{font-weight:600;font-size:14px} .fld > small{color:var(--muted);font-size:13px}
+.inp{min-height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:15px;min-width:0}
+.inp.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.inp.ta{align-items:flex-start;padding:12px 16px;min-height:68px;line-height:1.5}
+.inp.sel{justify-content:space-between;font-weight:600} .inp .ic{width:18px;height:18px;color:var(--muted)}
+.inp.short{max-width:220px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form{display:grid;gap:16px}
+.row{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap}
+.vchip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px 0 8px;border-radius:6px;background:var(--pass-soft);color:var(--pass);font-size:12px;font-weight:700;white-space:nowrap}
+.vchip .ic{width:13px;height:13px;stroke-width:3}
+.stt{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;white-space:nowrap} .stt i{width:8px;height:8px;border-radius:50%;flex:none}
+.stt.ok{color:var(--pass)} .stt.ok i{background:var(--pass)} .stt.ref{color:var(--muted)} .stt.ref i{background:var(--ghost)} .stt.gift{color:var(--accent)} .stt.gift i{background:var(--accent)}
+.amt{font-variant-numeric:tabular-nums;white-space:nowrap} .amt.neg{color:var(--pass)}
+.dot{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none}
+.ticks{display:flex;gap:3px} .ticks i{width:14px;height:6px;border-radius:2px;background:var(--line)}
+.ticks i.ok{background:var(--pass)} .ticks i.no{background:var(--fail)} .ticks i.now{background:var(--ink)}
+.narrow{display:grid;gap:16px;max-width:720px;width:100%}
+.x{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);flex:none;color:var(--muted)} .x .ic{width:18px;height:18px}
+.kv{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr) auto;gap:4px 20px;align-items:center;padding:16px 0}
+.kv + .kv{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.kv b{font-weight:600} .kv small{display:block;color:var(--muted);font-size:13px;font-weight:400} .kv .a{justify-self:end}
+.phone .kv{grid-template-columns:minmax(0,1fr) auto} .phone .kv .v:not(:empty){grid-column:1 / -1;grid-row:2}
+.okst{display:inline-flex;align-items:center;gap:5px;color:var(--pass);font-weight:600;font-size:14px} .okst .ic{width:14px;height:14px;stroke-width:3}
+.sw{width:42px;height:24px;border-radius:12px;background:var(--line);position:relative;display:inline-block} .sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2)} .sw.on{background:var(--accent)} .sw.on i{left:21px}
+
+/* overlay */
+.dev.ovopen.desk{height:900px} .dev.ovopen.phone{height:844px}
+.dev.fixh.desk{height:900px} .dev.fixh.phone{height:844px}
+.ovs{position:absolute;inset:0;z-index:60;background:var(--scrim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dlg{position:absolute;z-index:61;left:50%;top:72px;transform:translateX(-50%);width:600px;max-width:calc(100% - 48px);max-height:calc(100% - 100px);overflow:auto;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-pop);padding:24px 28px;display:grid;gap:16px;align-content:start}
+.dlg.w7{width:720px} .dlg.w8{width:860px} .dlg.w5{width:520px}
+.dh{display:flex;align-items:center;gap:12px} .dh h2{font-size:24px;font-weight:800;letter-spacing:-.02em;flex:1}
+.da{display:flex;justify-content:flex-end;align-items:center;gap:20px;padding-top:4px;flex-wrap:wrap}
+.da .note{margin-right:auto;font-size:13px;color:var(--muted)}
+.grab{display:none}
+.phone .dlg{left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;transform:none;border-radius:16px 16px 0 0;max-height:calc(100% - 48px);padding:12px 16px 24px}
+.phone .grab{display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+.phone .dh h2{font-size:22px}
+.phone .da{justify-content:stretch} .phone .da .btn{flex:1} .phone .da .note{flex-basis:100%}
+.skel .cd{min-height:120px}
+.sk4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px} .phone .sk4{grid-template-columns:1fr 1fr}
+.sk-g{display:grid;gap:4px;align-content:start} .sk-g b{font-family:var(--f-display);font-size:20px;line-height:1.15} .sk-g span{font-size:13px;color:var(--muted)}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:0s!important;animation:none!important}}
+</style>
+<style>
+/* ===== Thêm từ · tra AI ===== */
+.fw{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px} .phone .fw{grid-template-columns:1fr}
+.rh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap} .rh h3{font-size:16px;font-weight:700;flex:1}
+.src,.aitag{display:inline-flex;align-items:center;font-family:var(--f-mono);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.aitag{background:var(--accent-soft);color:var(--accent)}
+.mean{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.25}
+.def{font-size:14px;color:var(--muted)} .def .mono{margin-right:6px}
+.exs{font-size:15px}
+.rc{display:grid;gap:6px;min-width:0} .rm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.res{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 16px;align-items:start;padding:16px 20px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-card)}
+.res.ai{border-color:color-mix(in srgb,var(--accent) 32%,var(--line))}
+.aiw{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center} .aiw .ic{width:16px;height:16px}
+.phone .res{grid-template-columns:1fr} .phone .res .btn{justify-self:start}
+.rl{display:grid;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-card);background:var(--surface);overflow:hidden}
+.ro{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:6px 16px;padding:16px 16px;align-items:start}
+.ro + .ro{border-top:1px solid var(--line)}
+.ro.on{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.ro .rd{margin-top:4px}
+.c2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.prevc{display:grid;gap:12px;padding:24px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-card);transform:rotate(-1.2deg)}
+.prevc .w{font-family:var(--f-display);font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.prevc .gap{height:4px}
+.phone .c2{grid-template-columns:1fr} .phone .prevc{transform:none}
+.dlg.pal{top:96px;padding:0;gap:0;width:640px}
+.pal-l{padding:16px 24px 0}
+.pal-in{display:flex;align-items:center;gap:12px;padding:12px 24px 16px;border-bottom:1px solid var(--line)} .pal-in > .ic{color:var(--muted)} .pal-in b{font-family:var(--f-display);font-size:28px;font-weight:700;flex:1;display:flex;align-items:center}
+.caret{display:inline-block;width:2px;height:26px;background:var(--accent);margin-left:3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.pal-s{display:flex;gap:12px;align-items:baseline;padding:12px 24px;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.pal-g{padding:12px 12px 4px} .pal-g > .mono{display:block;padding:4px 12px 6px}
+.pal-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:12px;border-radius:12px}
+.pal-r.on{background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 40%,transparent)}
+.pal-f{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 24px;margin-top:8px;border-top:1px solid var(--line);background:var(--bg);font-size:13px;color:var(--muted)}
+.pal-f span{display:inline-flex;gap:6px;align-items:center}
+.phone .dlg.pal{padding:12px 0 0}
+.phone .pal-l{padding:8px 16px 0} .phone .pal-in{padding:8px 16px 16px} .phone .pal-s,.phone .pal-f{padding-inline:16px} .phone .pal-g{padding-inline:6px} .phone .pal-r{grid-template-columns:1fr} .phone .pal-r .btn{justify-self:start}
+.steps{display:flex;gap:8px;list-style:none;margin:0;padding:0;font-size:13px;font-weight:600;color:var(--muted);flex-wrap:wrap}
+.steps li{display:inline-flex;align-items:center;gap:6px} .steps li i{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;background:var(--line);color:var(--muted)}
+.steps li.done i{background:var(--pass-soft);color:var(--pass)} .steps li.on{color:var(--ink)} .steps li.on i{background:var(--accent);color:var(--on-accent)}
+.steps li + li::before{content:"";width:24px;height:1.5px;background:var(--line);margin-right:2px}
+.sumc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:center;padding:16px 20px;border-radius:12px;background:var(--bg)}
+.sumc b{font-family:var(--f-display);font-size:22px;line-height:1.2}
+.cmp2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .phone .cmp2{grid-template-columns:1fr}
+.tile{display:grid;gap:8px;align-content:start;padding:16px 20px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);box-shadow:var(--shadow-card);position:relative}
+.tile.on{border-color:var(--accent);box-shadow:var(--shadow-card)}
+.tile .rd{position:absolute;top:16px;right:16px}
+
+/* ===== Tài khoản ===== */
+.sect{display:grid;gap:16px} .sect + .sect{margin-top:20px}
+.emrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:16px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.planr{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.pi{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.pi .ic{width:20px;height:20px}
+.planr .t{display:grid;gap:0;flex:1;min-width:160px} .planr .t b{font-weight:700}
+.lr{display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 24px;align-items:start;padding:20px 0}
+.lr + .lr{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.lr > div:first-child b{font-weight:600;display:block;padding-top:12px} .lr small{display:block;color:var(--muted);font-size:13px}
+.lr .lv{display:grid;gap:12px;min-width:0}
+.phone .lr{grid-template-columns:1fr} .phone .lr > div:first-child b{padding-top:0}
+.prof{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 20px;align-items:center}
+.ava.xl{width:64px;height:64px;font-size:26px;font-family:var(--f-display);font-weight:800;grid-row:span 2}
+.prof h2{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.prof .act{grid-row:span 2}
+.phone .prof{grid-template-columns:auto minmax(0,1fr)} .phone .prof .act{grid-column:1 / -1;grid-row:auto;justify-self:start} .phone .ava.xl{width:52px;height:52px;font-size:22px}
+.er{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) auto;gap:8px 20px;align-items:center;padding:16px 0}
+.er + .er{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.er b{font-weight:600} .er .v{font-size:16px;min-width:0;overflow-wrap:anywhere} .er small{display:block;color:var(--muted);font-size:13px}
+.er.ed{background:color-mix(in srgb,var(--accent) 4%,var(--surface));margin-inline:-24px;padding-inline:24px;align-items:start}
+.er.ed > b{padding-top:12px}
+.er .edf{display:grid;gap:12px}
+.phone .er{grid-template-columns:minmax(0,1fr) auto} .phone .er .v,.phone .er .edf{grid-column:1 / -1;grid-row:2} .phone .er.ed{margin-inline:-16px;padding-inline:16px}
+.tk2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start} .phone .tk2{grid-template-columns:1fr}
+.asd{display:grid;gap:16px;align-content:start}
+.asd .cd{display:grid;gap:8px}
+
+/* ===== Cài đặt · đăng xuất ===== */
+.cdg{display:grid;grid-template-columns:200px minmax(0,1fr);gap:32px;align-items:start} .phone .cdg{grid-template-columns:1fr}
+.toc{display:grid;gap:2px} .toc a{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--muted);font-weight:500} .toc a.on{color:var(--accent);font-weight:700;background:var(--accent-soft)}
+.col{display:grid;gap:20px;min-width:0}
+.pt{font-size:20px;font-weight:700;margin-bottom:4px}
+.rowl{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:0 16px;align-items:center;padding:16px 12px;margin-inline:-12px;border-radius:14px;transition:background .15s}
+.rowl:hover,.rowl.hv{background:var(--bg)} .rowl > .ic{color:var(--muted)} .rowl small{grid-column:2;color:var(--muted);font-size:13px} .rowl b{font-weight:600}
+.rowl .chev{grid-row:span 2;color:var(--muted)}
+.rowl.bad b,.rowl.bad > .ic{color:var(--fail)}
+.endz{display:flex;align-items:center;gap:16px 20px;flex-wrap:wrap;padding:4px 4px 0}
+.endz .t{display:grid;flex:1;min-width:180px} .endz .t b{font-weight:600}
+.menu{position:absolute;z-index:70;top:58px;right:22px;width:270px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-pop);border:1px solid var(--line);padding:8px;display:grid}
+.menu .mh{padding:12px 12px 12px;display:grid;border-bottom:1px solid var(--line);margin-bottom:6px} .menu .mh b{font-weight:700}
+.menu .mi{display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;font-size:14px;font-weight:600}
+.menu .mi.on{background:var(--bg)} .menu .mi .ic{width:17px;height:17px;color:var(--muted)}
+.menu .mi.out{margin-top:6px;border-top:1px solid var(--line);border-radius:0 0 10px 10px;padding-top:12px}
+.phone .menu{top:50px;right:10px}
+
+/* ===== Phiên luyện ===== */
+.sbar{display:flex;align-items:center;gap:16px;width:100%;max-width:880px;justify-self:center}
+.sbar .ticks{flex:1;display:grid;grid-template-columns:repeat(20,1fr)} .sbar .ticks i{width:auto}
+.sbar > b{font-size:14px;font-weight:600;white-space:nowrap}
+.phone .sbar{gap:12px}
+.qcol{width:100%;max-width:880px;justify-self:center;display:grid;gap:16px}
+.qh{display:flex;align-items:center;gap:8px}
+.qtag{display:inline-flex;font-family:var(--f-mono);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);color:var(--muted)} .qtag.ai{background:var(--accent-soft);color:var(--accent)}
+.qbody{display:grid;gap:16px}
+.sent{font-family:var(--f-display);font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
+.ans{display:inline-flex;align-items:baseline;gap:6px;padding:0 12px;border-radius:10px;border:2px solid var(--line);line-height:1.2}
+.ans.ok{border-color:var(--pass);background:var(--pass-soft);color:var(--pass)}
+.ans.bad{border-color:var(--fail);background:var(--fail-soft);color:var(--fail)}
+.ans.strike{text-decoration:line-through;text-decoration-thickness:3px;margin-right:6px;border-style:dashed}
+.ans em{font-style:normal;font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:0}
+.blank{display:inline-block;width:150px;height:.9em;border-bottom:3px solid var(--ink);margin:0 4px}
+.trn{font-size:15px;color:var(--muted)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.op{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);font-size:17px;box-shadow:var(--shadow-row)}
+.op b{font-family:var(--f-display);font-weight:700} .op.right{border-color:var(--pass);background:var(--pass-soft)} .op.chosen{border-color:var(--fail);background:var(--fail-soft)} .op.dim{opacity:.55;box-shadow:none}
+.ol{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;white-space:nowrap} .ol.ok{color:var(--pass)} .ol.no{color:var(--fail)} .ol .ic{width:14px;height:14px;stroke-width:3}
+.hintr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--muted)} .hintr > .ic{width:16px;height:16px}
+.fbt{display:flex;align-items:center;gap:12px;flex-wrap:wrap} .fbt > b{font-family:var(--f-display);font-size:22px;font-weight:800}
+.fbt.ok > b{color:var(--pass)} .fbt.no > b{color:var(--fail)}
+.fi{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none} .fbt.ok .fi{background:var(--pass)} .fbt.no .fi{background:var(--fail)} .fi .ic{width:16px;height:16px;stroke-width:3}
+.fbw{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:16px} .fbw .ic{width:16px;height:16px;color:var(--accent)}
+.fbt .fbw{margin-left:auto}
+.fbm{font-size:15px;font-weight:600}
+.fbd{font-size:14px;color:var(--muted)}
+.mv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:600} .mv > .ic{width:16px;height:16px;color:var(--muted)}
+.stg{display:inline-flex;align-items:center;gap:6px} .stg i{width:9px;height:9px;border-radius:3px}
+.acts{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap}
+.fnote{font-size:13px;color:var(--muted)}
+.keys{display:flex;gap:16px;justify-content:center;font-size:13px;color:var(--muted)} .keys span{display:inline-flex;gap:6px;align-items:center}
+.fbA{margin:4px -24px -24px;padding:20px 24px 20px;border-top:1px solid var(--line);border-radius:0 0 20px 20px;display:grid;gap:12px}
+.fbA.ok{background:var(--pass-soft)} .fbA.no{background:var(--fail-soft)}
+.fbA .bot{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap} .fbA .bot .mv,.fbA .bot .fnote{flex:1;min-width:220px}
+.phone .fbA{margin:4px -16px -16px;padding:16px 16px 16px;border-radius:0 0 18px 18px}
+.fbB{position:absolute;left:0;right:0;bottom:0;z-index:30;padding:20px 60px 24px;background:var(--surface);box-shadow:0 -18px 40px -24px rgb(30 58 138 / .45);border-top:3px solid}
+.fbB.ok{border-color:var(--pass)} .fbB.no{border-color:var(--fail)}
+.fbB .in{max-width:880px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 28px;align-items:center}
+.fbB .l{display:grid;gap:8px}
+.phone .fbB{padding:16px 16px 20px;border-radius:16px 16px 0 0} .phone .fbB .in{grid-template-columns:1fr}
+.qg{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;width:100%;max-width:1080px;justify-self:center}
+.rescard{display:grid;gap:16px}
+.rch{margin:-24px -24px 0;padding:16px 24px;border-radius:20px 20px 0 0}
+.rch.ok{background:var(--pass-soft)} .rch.no{background:var(--fail-soft)}
+.rescard .w{font-family:var(--f-display);font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.stack{display:grid;gap:12px} .stack .btn{width:100%;justify-content:space-between}
+.phone .qg{grid-template-columns:1fr} .phone .rch{margin:-16px -16px 0;padding:16px 16px;border-radius:18px 18px 0 0}
+.qD{width:100%;max-width:820px;justify-self:center;display:grid;gap:24px;padding-top:28px}
+.qD .sent{font-size:48px;line-height:1.3}
+.qD .fbcard{display:grid;gap:12px}
+.qE{width:100%;max-width:880px;justify-self:center;display:grid}
+.qE > .cd:first-child{position:relative;z-index:2}
+.fbE{position:relative;z-index:1;margin:-28px 24px 0;padding:44px 24px 20px;border-radius:0 0 22px 22px;border:1.5px solid;border-top:0;display:grid;gap:12px;box-shadow:var(--shadow-card)}
+.fbE.ok{background:var(--pass-soft);border-color:color-mix(in srgb,var(--pass) 45%,transparent)} .fbE.no{background:var(--fail-soft);border-color:color-mix(in srgb,var(--fail) 45%,transparent)}
+.phone .fbE{margin:-24px 12px 0;padding:36px 16px 16px}
+.phone .sent,.phone .qD .sent{font-size:26px} .phone .opts{grid-template-columns:1fr} .phone .acts{justify-content:stretch} .phone .acts .btn{flex:1} .phone .acts .tb{margin-inline:auto}
+.phone .fbt .fbw{margin-left:0;flex-basis:100%}
+
+/* ===== Giao dịch ===== */
+.tx{display:grid;grid-template-columns:100px 92px 118px minmax(0,1fr) 108px 140px 20px;gap:12px;align-items:center;padding:16px 12px;margin-inline:-12px;font-size:15px;border-radius:12px}
+.tx + .tx{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.tx:not(.h):hover,.tx.hv{background:var(--bg)}
+.tx.hv{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.tx.h{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-block:12px}
+.tx .r{text-align:right} .tx .chev,.txm .chev{color:var(--muted);width:18px;height:18px}
+.tx.c5{grid-template-columns:100px minmax(0,1fr) 108px 130px 20px}
+.txm{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;gap:2px 12px;align-items:center;padding:12px 12px;margin-inline:-12px;border-radius:12px}
+.txm + .txm{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.txm b{font-weight:600} .txm .ra{display:grid;justify-items:end;gap:0} .txm .chev{grid-row:span 2}
+.mgrp{display:grid;gap:12px} .mgrp > .mono{padding-left:6px}
+.tl{position:relative;display:grid;padding-left:32px}
+.tl::before{content:"";position:absolute;left:9px;top:14px;bottom:14px;width:2px;background:var(--line)}
+.tli{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:12px 0}
+.tli::before{content:"";position:absolute;left:-27px;top:18px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--accent)}
+.tli.ref::before{border-color:var(--pass)} .tli.gift::before{border-color:var(--ghost)} .tli.old::before{border-color:var(--ghost)}
+.tli b{font-weight:600} .tli .ra{display:grid;justify-items:end}
+.tli .link{grid-column:1 / -1;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center} .tli .link .ic{width:14px;height:14px}
+.yr{font-family:var(--f-display);font-weight:800;font-size:15px;color:var(--muted);padding:8px 0 2px;margin-left:-32px}
+.fchips{display:flex;gap:6px;flex-wrap:wrap} .fchip{height:34px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;box-shadow:var(--shadow-row)} .fchip.on{background:var(--ink);color:var(--surface);border-color:var(--ink)} .fchip small{font-family:var(--f-mono);font-size:11px;opacity:.75}
+.leg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 24px;font-size:14px} .leg b{display:block;font-weight:600} .leg span{color:var(--muted)}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.phone .g2,.phone .leg{grid-template-columns:1fr}
+.th-q{display:inline-flex;align-items:center;gap:4px} .th-q .ic{width:13px;height:13px}
+.tip{position:absolute;z-index:5;top:34px;left:120px;width:300px;padding:12px 16px;border-radius:14px;background:var(--ink);color:var(--surface);font-family:var(--f-body);font-size:13px;line-height:1.5;box-shadow:var(--shadow-pop);display:grid;gap:6px}
+.tip b{font-weight:700}
+.amtbig{font-family:var(--f-display);font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.rcpt{display:grid;justify-items:center;text-align:center;gap:12px;padding-top:4px}
+.perf{height:0;border-top:2px dashed var(--line);margin:4px -28px}
+.kvl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 16px;font-size:15px;margin:0} .kvl dt{color:var(--muted)} .kvl dd{margin:0;text-align:right;font-weight:600;display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px} .tl2{display:grid;gap:2px;padding:12px 16px;border-radius:14px;background:var(--bg);min-width:0} .tl2 b{font-weight:600;font-size:15px} .tl2.span{grid-column:1 / -1;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.phone .tiles{grid-template-columns:1fr}
+.code{font-family:var(--f-mono);font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.okbadge{width:44px;height:44px;border-radius:50%;background:var(--pass-soft);color:var(--pass);display:grid;place-items:center;flex:none} .okbadge .ic{width:22px;height:22px;stroke-width:3}
+.soft{display:grid;gap:12px;padding:16px 20px;border-radius:12px;background:var(--bg)}
+.ovs.lite{background:rgb(27 36 68 / .14);-webkit-backdrop-filter:none;backdrop-filter:none}
+.side{position:absolute;z-index:61;top:0;right:0;bottom:0;width:420px;background:var(--surface);box-shadow:var(--shadow-pop);padding:24px 28px;display:grid;gap:20px;align-content:start;border-radius:16px 0 0 16px}
+.phone .side{top:auto;left:0;width:auto;height:auto;max-height:calc(100% - 48px);border-radius:16px 16px 0 0;padding:12px 16px 24px}
+.tlv{display:grid;gap:0;padding-left:28px;position:relative}
+.tlv::before{content:"";position:absolute;left:8px;top:10px;bottom:10px;width:2px;background:var(--line)}
+.tlv > div{position:relative;display:grid;gap:0;padding:8px 0}
+.tlv > div::before{content:"";position:absolute;left:-24px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--accent)}
+.tlv > div.ok::before{border-color:var(--pass)} .tlv > div.fut::before{border-color:var(--ghost)}
+.tlv b{font-weight:600} .tlv span{font-size:13px;color:var(--muted)}
+
+/* ===== Xóa tài khoản ===== */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px} .two h3{font-size:16px;font-weight:700;margin-bottom:12px}
+.phone .two{grid-template-columns:1fr;gap:20px}
+.ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:15px} .ul li{display:grid;grid-template-columns:20px 1fr;gap:6px} .ul li::before{content:"✓";color:var(--pass);font-weight:700} .ul.no li::before{content:"×";color:var(--fail);font-weight:700}
+.stepn{display:flex;align-items:center;gap:12px} .stepn i{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-style:normal;font-family:var(--f-display);font-weight:800;font-size:14px;flex:none} .stepn h2{font-size:20px;font-weight:700}
+.alert{display:flex;gap:12px;align-items:flex-start;padding:16px 16px;border-radius:14px;background:var(--fail-soft);color:var(--fail);font-weight:600;font-size:15px} .alert .ic{margin-top:1px;width:18px;height:18px}
+.ct{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:12px;padding:12px 0;align-items:center;font-size:15px}
+.ct + .ct{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.ct.h{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-block:6px}
+.ct .k{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14px} .ct .k.no{color:var(--fail)} .ct .k.ok{color:var(--pass)} .ct .k .ic{width:15px;height:15px;stroke-width:3}
+.phone .ct{grid-template-columns:minmax(0,1fr) auto} .phone .ct .k small{display:none}
+.cb{display:flex;gap:12px;align-items:center;font-weight:500}
+.x2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start} .phone .x2{grid-template-columns:1fr}
+.more{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-radius:14px;background:var(--bg);font-weight:600;font-size:14px}
+.more .ic{width:18px;height:18px;color:var(--muted)}
+
+/* ===== Từ lâu chưa ôn ===== */
+.why{font-size:15px;color:var(--muted);max-width:78ch;line-height:1.65} .why b{color:var(--ink);font-weight:600}
+.selbar{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding:12px 12px 12px 16px;border-radius:14px;background:var(--accent-soft)}
+.selbar b{font-weight:600}
+.wr{display:grid;grid-template-columns:24px minmax(0,170px) minmax(0,1fr) 220px;gap:16px;align-items:center;padding:12px 16px;border-radius:12px}
+.wr + .wr{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.wr.sel{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.wr.h{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-block:8px}
+.wr .w{font-family:var(--f-display);font-weight:700;font-size:17px} .wr .m{color:var(--muted);font-size:15px}
+.od{display:flex;align-items:center;gap:12px;justify-content:flex-end} .od span{flex:1;max-width:110px;height:6px;border-radius:3px;background:var(--line);overflow:hidden} .od span b{display:block;height:100%;background:color-mix(in srgb,var(--muted) 55%,var(--surface));border-radius:3px} .od em{font-style:normal;font-weight:600;color:var(--muted);font-size:14px;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.phone .wr{grid-template-columns:24px minmax(0,1fr) auto} .phone .wr .m{grid-column:2;grid-row:2;font-size:14px} .phone .wr .od{grid-column:3;grid-row:1 / span 2} .phone .wr .od span{display:none} .phone .wr.h{display:none}
+.dock{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:35;display:flex;align-items:center;gap:16px;padding:8px 8px 8px 20px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow-pop);border:1px solid var(--line);white-space:nowrap}
+.dock b{font-weight:600}
+.phone .dock{left:12px;right:12px;transform:none;bottom:84px;border-radius:16px;padding:12px 12px;flex-wrap:wrap;white-space:normal;gap:12px}
+.phone .dock .btn{flex:1}
+.dl3 > div{display:grid;grid-template-columns:190px minmax(0,1fr);gap:4px 20px;padding:12px 0}
+.dl3 > div + div{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.dl3 b{font-weight:700} .dl3 span{color:var(--muted);font-size:15px}
+.phone .dl3 > div{grid-template-columns:1fr}
+.wchips{display:flex;flex-wrap:wrap;gap:8px}
+.wchip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px 8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);box-shadow:var(--shadow-row);font-family:var(--f-display);font-weight:700;font-size:16px}
+.wchip small{font-family:var(--f-mono);font-size:11px;color:var(--fail);font-weight:700}
+.wchip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.wchip .chk{width:16px;height:16px}
+.lft{display:grid;gap:16px;align-content:start}
+.lft .big{font-size:120px;color:var(--fail)}
+.sech{display:flex;align-items:center;gap:12px;padding:16px 16px 6px} .sech h3{font-size:15px;font-weight:700}
+
+/* ===== Chủ đề ===== */
+.li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:12px 16px;border-radius:12px}
+.li + .li{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.li.sel{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.li .w{font-family:var(--f-display);font-weight:700;font-size:17px;line-height:1.3} .li .w small{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500;margin-left:6px}
+.li .m{font-size:14px;color:var(--muted);grid-column:2}
+.li .chk{grid-row:span 2}
+.li > .lr2{grid-row:span 2}
+.li.dis .w,.li.dis .m{opacity:.5}
+.lr2{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.phone .li > .lr2{grid-column:2;grid-row:auto;font-size:12px}
+.wt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px} .phone .wt{grid-template-columns:1fr 1fr}
+.wtile{position:relative;display:grid;gap:2px;align-content:start;padding:16px 16px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line);box-shadow:var(--shadow-card);min-height:96px}
+.wtile.on{border-color:var(--accent);box-shadow:var(--shadow-card)}
+.wtile .chk{position:absolute;top:14px;right:14px}
+.wtile .w{font-family:var(--f-display);font-weight:700;font-size:18px;padding-right:24px} .wtile .pos{font-family:var(--f-mono);font-size:11px;color:var(--muted)} .wtile .m{font-size:14px;color:var(--muted);margin-top:4px}
+.wtile.dis{background:var(--bg);box-shadow:none;border-style:dashed} .wtile.dis .w,.wtile.dis .m{opacity:.55}
+.wtile .lr2{margin-top:6px;font-size:12px}
+.cl2{display:grid;grid-template-columns:1fr 1fr;column-gap:28px} .cl2 .li:nth-child(2){border-top:0} .phone .cl2{grid-template-columns:1fr} .phone .cl2 .li:nth-child(2){border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.pbar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line);gap:2px} .pbar i{display:block;height:100%}
+.pleg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)} .pleg span{display:inline-flex;align-items:center;gap:6px} .pleg i{width:10px;height:10px;border-radius:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px} .chips span{display:inline-flex;align-items:center;padding:3px 12px;border-radius:999px;background:var(--bg);font-family:var(--f-display);font-weight:700;font-size:14px}
+.sticky{position:sticky;top:84px}
+.dockc{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+</style>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Polish chín trang</h1>
+    <p>Vòng 15. Năm mẫu cho mỗi trang bạn gửi, mọi card có bóng. Phiên luyện có thêm ba trạng thái trả lời sai. Chữ giữ đúng câu chữ của app; chỗ có chữ mới thì ghi chú là đề xuất.</p>
+  </header>
+  <section style="display:grid;gap:12px">
+    <p class="vrow">Trang</p><div class="pick" id="pages"></div>
+    <p class="vrow">Mẫu</p><div class="pick" id="vars"></div>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="Khung"><button type="button" data-dev="desk">Máy tính</button><button type="button" data-dev="phone">Điện thoại</button></div>
+      <div class="seg" role="group" aria-label="Cách xem"><button type="button" data-view="one">Một mẫu</button><button type="button" data-view="grid">Cả 5 mẫu</button></div>
+      <div class="seg" role="group" aria-label="Trạng thái câu trả lời" id="stseg" hidden></div>
+      <span class="mono">phím ← → đổi mẫu · ↑ ↓ đổi trang</span>
+    </div>
+  </section>
+  <div class="stage" id="stage"><div class="scaler" id="scaler"><div class="dev desk" id="screen"></div></div></div>
+  <div class="thumbs" id="thumbs" hidden></div>
+  <section class="notes" id="notes"></section>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var IC = {
+    today:'<path d="M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4"/>',
+    group:'<rect x="4" y="6" width="13" height="15" rx="2.5"/><path d="M8 3h10a2.5 2.5 0 0 1 2.5 2.5V17"/>',
+    prac:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+    look:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="M15 5l-7 7 7 7"/>',
+    check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', arr:'<path d="M5 12h14M13 6l6 6-6 6"/>', down:'<path d="m6 9 6 6 6-6"/>',
+    say:'<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/>', flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
+    bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+    copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>', alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+    flame:'<path d="M12 3c.8 3.2 5 5.4 5 10a5 5 0 0 1-10 0c0-2.3 1-3.8 2.3-5 .3 1.8 1.2 2.8 2.2 2.9-.7-2.5-.3-5.4.5-7.9z"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4M12 17h.01"/>',
+    star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z"/>',
+    logout:'<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>', chev:'<path d="M9 6l6 6-6 6"/>',
+    receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>', user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+    eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', key:'<circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M17 6l2 2M14.5 8.5l2 2"/>',
+    undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/>', link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    gift:'<rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8C10 4 6.5 4.5 7 7c.3 1 2.5 1 5 1zM12 8c2-4 5.5-3.5 5-1-.3 1-2.5 1-5 1z"/>'
+  };
+  function ic(k){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + IC[k] + '</svg>'; }
+  var TIER = ['#9aa3b1','#c07a45','#98a2b0','#d4a72c','#1f9d75','#b28bff'];
+  var GCOL = { 'Đề 12 · Writing':'#e5603f', 'Đề 14 · Reading':'#7a55d3', 'Đề 9 · Listening':'#149384', 'Công việc · B1':'#2a86d1' };
+  var st = { p:'themtu', v:0, dev: innerWidth < 700 ? 'phone' : 'desk', s:'ok', view:'one' };
+  var ph = function(){ return st.dev === 'phone'; };
+
+  /* ---------- phần nhỏ dùng chung ---------- */
+  var chk = function(on, dis){ return '<span class="chk' + (on ? ' on' : '') + (dis ? ' dis' : '') + '">' + (on ? ic('check') : '') + '</span>'; };
+  var rd = function(on){ return '<span class="rd' + (on ? ' on' : '') + '"></span>'; };
+  var cd = function(inner, cls){ return '<section class="cd ' + (cls || '') + '">' + inner + '</section>'; };
+  var kb = function(k){ return k && !ph() ? ' <kbd>' + k + '</kbd>' : ''; };
+  var btn = function(t, cls, k, icn){ return '<button type="button" class="btn ' + (cls || '') + '">' + (icn ? ic(icn) : '') + t + kb(k) + '</button>'; };
+  var tb = function(t, cls, icn, after){ return '<button type="button" class="tb ' + (cls || '') + '">' + (icn ? ic(icn) : '') + t + (after ? ic(after) : '') + '</button>'; };
+  var fld = function(l, inner, help){ return '<div class="fld"><span class="fl">' + l + '</span>' + inner + (help ? '<small>' + help + '</small>' : '') + '</div>'; };
+  var inp = function(v, cls){ return '<div class="inp ' + (cls || '') + '">' + v + '</div>'; };
+  var back = function(t){ return '<a class="back">' + ic('back') + t + '</a>'; };
+  var vchip = function(){ return '<span class="vchip">' + ic('check') + 'Đã xác minh</span>'; };
+  var li = function(x){ return '<li>' + x + '</li>'; };
+  function head(o){ return (o.back ? back(o.back) : '') + '<div class="phd"><div class="phl">' + (o.kicker ? '<span class="mono">' + o.kicker + '</span>' : '') + '<h1 class="h1">' + o.title + '</h1>' + (o.sub ? '<p class="sub">' + o.sub + '</p>' : '') + '</div>' + (o.right || '') + '</div>'; }
+  function dlg(title, body, foot, cls){ return '<div class="ovs"></div><div class="dlg ' + (cls || '') + '" role="dialog" aria-label="' + title + '">' + (ph() ? '<span class="grab"></span>' : '') + '<div class="dh"><h2>' + title + '</h2><button type="button" class="x" aria-label="Đóng">' + ic('x') + '</button></div>' + body + (foot ? '<div class="da">' + foot + '</div>' : '') + '</div>'; }
+
+  /* ---------- khung app ---------- */
+  var TABS = [['today','Hôm nay'],['group','Nhóm'],['prac','Luyện tập'],['look','Tra từ']];
+  function topbar(tab){
+    if (ph()) return '<header class="ab"><span class="logo">wordmet<i>.</i></span><span class="sp"></span><span class="pro">Pro</span><span class="ava">L</span></header>';
+    return '<header class="ab"><span class="logo">wordmet<i>.</i></span><nav class="tabs">' + TABS.map(function(t){ return '<span class="' + (t[1] === tab ? 'on' : '') + '">' + ic(t[0]) + t[1] + '</span>'; }).join('') + '</nav><span class="cmd">' + ic('look') + '<span>Tìm từ</span><kbd>/</kbd></span><span class="addw">' + ic('plus') + 'Thêm từ<kbd>N</kbd></span><span class="pro">Pro</span><span class="ava">L</span></header>';
+  }
+  function tabbar(tab){ return '<nav class="tbar">' + TABS.map(function(t){ return '<span class="' + (t[1] === tab ? 'on' : '') + '">' + ic(t[0]) + t[1] + '</span>'; }).join('') + '</nav>'; }
+  var fab = function(){ return '<button type="button" class="fab" aria-label="Lịch học"><span class="fh">T11</span><span class="fd">8</span><span class="fs">' + ic('flame') + '6</span></button>'; };
+  var calmini = function(){ return '<button type="button" class="calmini" aria-label="Lịch học"><span class="fh">T11</span><span class="fd">8</span></button>'; };
+  function frame(o){
+    var h = (o.ses ? '' : topbar(o.tab)) + '<div class="scr' + (o.ses ? ' ses' : '') + '">' + o.b + '</div>';
+    if (!o.ses && ph()) h += tabbar(o.tab);
+    if (!o.ov && !o.nofab && !(o.ses && ph())) h += fab();
+    return h + (o.extra || '') + (o.ov || '');
+  }
+
+  /* ================= 1 · Thêm từ · tra AI ================= */
+  var TITLE_ADD = 'Bạn vừa gặp từ nào?';
+  var USE = '<span class="mono">đã dùng 1 lượt tra AI · còn 4</span>';
+  var DICT = '<span class="mono">noun · A2</span><b class="mean">mũ lưỡi trai</b>';
+  var AIH = '<span class="mono">verb</span><b class="mean">nói dối, nói phét</b>';
+  var AIX = '<p class="def"><span class="mono">tiếng Anh · chỉ tham khảo, không lưu</span>to lie or exaggerate</p><p class="exs">Stop <mark>capping</mark>, you never met him.</p>';
+  var AIW = '<p class="aiw">' + ic('info') + 'AI gợi ý có thể sai. Kiểm lại trước khi lưu.</p>';
+  var fWord = function(){ return fld('Từ', inp('cap', 'on')); };
+  var fSent = function(ta){ return fld('Câu bạn gặp (không bắt buộc)', inp('No cap, this is the best phở in town.', ta ? 'ta' : '')); };
+  function bgToday(){
+    var gs = [['Đề 12 · Writing','18 thẻ chờ'],['Đề 14 · Reading','9 thẻ chờ'],['Đề 9 · Listening','6 thẻ chờ'],['Công việc · B1','4 thẻ chờ']];
+    return head({ title:'Hôm nay' }) + cd('<div class="sk-g"><span class="mono">ôn tiếp</span><b style="font-size:34px">Đề 12 · Writing</b><span>18 thẻ chờ hôm nay · nhóm có 48 từ</span></div>', '') +
+      '<div class="sk4">' + gs.slice(0, ph() ? 2 : 4).map(function(g){ return '<section class="cd sm" style="border:2px solid ' + GCOL[g[0]] + '"><div class="sk-g"><b>' + g[0] + '</b><span>' + g[1] + '</span></div></section>'; }).join('') + '</div>';
+  }
+  function themtu(v){
+    var ov;
+    if (v === 0) ov = dlg(TITLE_ADD, '<div class="fw">' + fWord() + fSent() + '</div><div class="rh"><h3>Kết quả cho “cap”</h3>' + USE + '</div>' +
+      '<div class="res"><div class="rc"><div class="rm"><span class="src">từ điển</span></div>' + DICT + '</div>' + btn('Chọn', 'sec sm') + '</div>' +
+      '<div class="res ai"><div class="rc"><div class="rm"><span class="aitag">AI gợi ý</span></div>' + AIH + AIX + AIW + '</div>' + btn('Sửa rồi lưu', 'sm') + '</div>', tb('Hủy', 'mut'));
+    if (v === 1) ov = dlg(TITLE_ADD, '<div class="fw">' + fWord() + fSent() + '</div><div class="rh"><h3>Chọn nghĩa của “cap” trong câu</h3>' + USE + '</div>' +
+      '<div class="rl"><div class="ro">' + rd(false) + '<div class="rc">' + DICT + '</div><span class="src">từ điển</span></div><div class="ro on">' + rd(true) + '<div class="rc">' + AIH + AIX + '</div><span class="aitag">AI gợi ý</span></div></div>',
+      '<span class="note">AI gợi ý có thể sai. Kiểm lại trước khi lưu.</span>' + tb('Hủy', 'mut') + btn('Sửa rồi lưu'));
+    if (v === 2) ov = dlg(TITLE_ADD, '<div class="c2"><div class="form">' + fWord() + fSent(true) + '<div class="rh"><h3>Kết quả cho “cap”</h3>' + USE + '</div>' +
+      '<div class="rl"><div class="ro">' + rd(false) + '<div class="rc">' + DICT + '</div><span class="src">từ điển</span></div><div class="ro on">' + rd(true) + '<div class="rc">' + AIH + '</div><span class="aitag">AI gợi ý</span></div></div></div>' +
+      '<div style="display:grid;gap:12px"><span class="mono">thẻ sẽ lưu · xem trước</span><div class="prevc"><div class="rm"><span class="mono">verb</span><span class="sp"></span><span class="aitag">AI gợi ý</span></div><span class="w">cap</span><b class="mean">nói dối, nói phét</b><p class="exs">Stop <mark>capping</mark>, you never met him.</p><div class="gap"></div><span class="mono">câu bạn gặp</span><p class="sm">No <mark>cap</mark>, this is the best phở in town.</p></div>' + AIW + '</div></div>',
+      tb('Hủy', 'mut') + btn('Sửa rồi lưu'), 'w8');
+    if (v === 3) ov = '<div class="ovs"></div><div class="dlg pal" role="dialog" aria-label="' + TITLE_ADD + '">' + (ph() ? '<span class="grab"></span>' : '') +
+      '<div class="pal-l"><span class="fl">' + TITLE_ADD + '</span></div><div class="pal-in">' + ic('look') + '<b>cap<span class="caret"></span></b>' + (ph() ? '' : '<kbd>Esc</kbd>') + '</div>' +
+      '<div class="pal-s"><span class="mono">câu bạn gặp</span><span>No cap, this is the best phở in town.</span></div>' +
+      '<div class="pal-g"><span class="mono">từ điển</span><div class="pal-r"><div class="rc">' + DICT + '</div>' + tb('Chọn') + '</div></div>' +
+      '<div class="pal-g"><span class="mono">AI gợi ý · đã dùng 1 lượt, còn 4</span><div class="pal-r on"><div class="rc">' + AIH + AIX + '</div>' + btn('Sửa rồi lưu', 'sm', 'Enter') + '</div></div>' +
+      '<div class="pal-f">' + (ph() ? '<span>AI gợi ý có thể sai. Kiểm lại trước khi lưu.</span>' : '<span><kbd>↑</kbd><kbd>↓</kbd> chọn dòng</span><span><kbd>Enter</kbd> làm việc của dòng</span><span><kbd>Esc</kbd> đóng</span><span class="sp"></span><span>AI gợi ý có thể sai.</span>') + '</div></div>';
+    if (v === 4) ov = dlg(TITLE_ADD, '<ol class="steps"><li class="done"><i>' + ic('check') + '</i>Từ và câu</li><li class="on"><i>2</i>Chọn nghĩa</li></ol>' +
+      '<div class="sumc"><div style="display:grid;gap:2px"><b>cap</b><p class="sm mu">No <mark>cap</mark>, this is the best phở in town.</p></div>' + tb('Sửa') + '</div>' +
+      '<div class="rh"><h3>Chọn nghĩa</h3>' + USE + '</div>' +
+      '<div class="cmp2"><div class="tile">' + rd(false) + '<span class="src" style="justify-self:start">từ điển</span>' + DICT + '</div><div class="tile on">' + rd(true) + '<span class="aitag" style="justify-self:start">AI gợi ý</span>' + AIH + AIX + '</div></div>',
+      '<span class="note">AI gợi ý có thể sai. Kiểm lại trước khi lưu.</span>' + tb('Quay lại', 'mut') + btn('Sửa rồi lưu'), 'w7');
+    return { b: bgToday(), ov: ov, tab: 'Hôm nay' };
+  }
+
+  /* ================= 2 · Tài khoản ================= */
+  function taikhoan(v){
+    var H = head({ back:'Cài đặt', title:'Tài khoản' });
+    var name = '<div class="f2">' + fld('Tên', inp('Lan')) + fld('Họ (không bắt buộc)', inp('Nguyễn')) + '</div>';
+    var dob = fld('Ngày sinh', inp('14/03/2004', 'short'), 'Wordmet dành cho người từ 13 tuổi.');
+    var email = '<div class="emrow">lan.nguyen@gmail.com ' + vchip() + '</div>';
+    var plan = '<div class="planr"><span class="pi">' + ic('star') + '</span><div class="t"><b>Gói Pro</b><span class="sm mu">30 phiên luyện mỗi ngày</span></div>' + tb('Xem gói', '', '', 'arr') + '</div>';
+    var b;
+    if (v === 0) b = H + '<div class="narrow">' + cd('<div class="sect"><h2 class="h2">Hồ sơ</h2>' + name + dob + '<div>' + btn('Lưu thay đổi') + '</div></div><div class="sect"><h2 class="h2">Email đăng nhập</h2>' + email + '</div>') + cd(plan, 'sm') + '</div>';
+    if (v === 1) b = H + '<div class="narrow" style="max-width:820px">' + cd(
+      '<div class="lr"><div><b>Họ và tên</b></div><div class="lv">' + name + '</div></div>' +
+      '<div class="lr"><div><b>Ngày sinh</b><small>Wordmet dành cho người từ 13 tuổi.</small></div><div class="lv">' + inp('14/03/2004', 'short') + '</div></div>' +
+      '<div class="lr"><div><b style="padding-top:0">Email</b></div><div class="lv">' + email + '</div></div>' +
+      '<div class="lr"><div><b style="padding-top:0">Gói học</b></div><div class="lv"><div class="row"><span>Pro · 30 phiên luyện mỗi ngày</span>' + tb('Xem gói', '', '', 'arr') + '</div></div></div>' +
+      '<div class="row" style="justify-content:flex-end;padding:8px 0 20px">' + btn('Lưu thay đổi') + '</div>', 'flat') + '</div>';
+    if (v === 2) b = H + '<div class="narrow">' + cd('<div class="prof"><span class="ava xl">L</span><h2>Nguyễn Lan</h2><div class="act row" style="gap:12px"><span class="pro">Pro · 30 phiên mỗi ngày</span>' + tb('Xem gói', '', '', 'arr') + '</div><div class="emrow" style="font-weight:500;font-size:15px">lan.nguyen@gmail.com ' + vchip() + '</div></div>') +
+      cd('<div class="form"><h2 class="h2">Sửa hồ sơ</h2>' + name + dob + '<div>' + btn('Lưu thay đổi') + '</div></div>') + '</div>';
+    if (v === 3) b = H + '<div class="narrow">' + cd(
+      '<div class="er ed"><b>Tên và họ</b><div class="edf">' + name + '<div class="row">' + btn('Lưu', 'sm') + tb('Hủy', 'mut') + '</div></div><span></span></div>' +
+      '<div class="er"><b>Ngày sinh</b><div class="v">14/03/2004<small>Wordmet dành cho người từ 13 tuổi.</small></div>' + tb('Sửa') + '</div>' +
+      '<div class="er"><b>Email</b><div class="v emrow">lan.nguyen@gmail.com ' + vchip() + '</div><span></span></div>' +
+      '<div class="er"><b>Gói học</b><div class="v">Pro · 30 phiên luyện mỗi ngày</div>' + tb('Xem gói', '', '', 'arr') + '</div>', 'flat') + '</div>';
+    if (v === 4) b = H + '<div class="tk2">' + cd('<div class="form"><h2 class="h2">Hồ sơ</h2>' + name + dob + '<div>' + btn('Lưu thay đổi') + '</div></div>') +
+      '<aside class="asd">' + cd('<span class="mono">email đăng nhập</span><div class="emrow">lan.nguyen@gmail.com</div><div>' + vchip() + '</div>', 'sm') +
+      cd('<span class="mono">gói học</span><b style="font-family:var(--f-display);font-size:30px;line-height:1.1">Pro</b><span class="sm mu">30 phiên luyện mỗi ngày</span><div>' + tb('Xem gói', '', '', 'arr') + '</div>', 'sm') + '</aside></div>';
+    return { b: b, tab: '' };
+  }
+
+  /* ================= 3 · Cài đặt · Đăng xuất ================= */
+  function kvr(l, hint, act, val){ return '<div class="kv"><div><b>' + l + '</b>' + (hint ? '<small>' + hint + '</small>' : '') + '</div><div class="v">' + (val || '') + '</div><div class="a">' + (act || '') + '</div></div>'; }
+  function dangxuat(v){
+    var toc = ['Thông tin cá nhân','Gói và mức sử dụng','Học tập','Thông báo','Phím tắt','Tài khoản'];
+    var notif = cd('<h2 class="pt">Thông báo</h2>' + kvr('Nhắc học qua email', 'Lúc 20:00 giờ của bạn, chỉ khi có từ đến hạn', '<span class="sw on"><i></i></span>'));
+    var login = kvr('Đăng nhập bằng', '', '', '<span class="okst">' + ic('check') + 'Mật khẩu</span> &nbsp; <span class="okst">' + ic('check') + 'Google</span>');
+    var acc, after = '', extra = '';
+    if (v === 0) acc = cd('<h2 class="pt">Tài khoản</h2>' + login + kvr('Lịch sử giao dịch', '', tb('Xem', '', '', 'arr')) + kvr('Phiên đăng nhập', 'Thoát khỏi thiết bị này', tb('Đăng xuất', '', 'logout')) + kvr('Xóa tài khoản', 'Xóa dữ liệu học, không khôi phục được', tb('Xóa tài khoản', 'bad')));
+    if (v === 1) acc = cd('<h2 class="pt">Tài khoản</h2>' + login + kvr('Lịch sử giao dịch', '', tb('Xem', '', '', 'arr')) + '<div class="row" style="padding:16px 0 12px;gap:20px">' + btn('Đăng xuất', 'sec sm', '', 'logout') + tb('Xóa tài khoản', 'bad') + '</div>');
+    if (v === 2) acc = cd('<h2 class="pt">Tài khoản</h2>' + login +
+      '<div class="rowl">' + ic('receipt') + '<b>Lịch sử giao dịch</b>' + ic('chev').replace('class="ic"', 'class="ic chev"') + '<small>Mua, hoàn tiền, cấp gói</small></div>' +
+      '<div class="rowl hv">' + ic('logout') + '<b>Đăng xuất</b>' + ic('chev').replace('class="ic"', 'class="ic chev"') + '<small>Thoát khỏi thiết bị này</small></div>' +
+      '<div class="rowl bad">' + ic('alert') + '<b>Xóa tài khoản</b>' + ic('chev').replace('class="ic"', 'class="ic chev"') + '<small>Xóa dữ liệu học, không khôi phục được</small></div>');
+    if (v === 3) { acc = cd('<h2 class="pt">Tài khoản</h2>' + login + kvr('Lịch sử giao dịch', '', tb('Xem', '', '', 'arr')));
+      after = '<div class="endz"><div class="t"><b>Đăng xuất</b><span class="sm mu">Thoát khỏi thiết bị này</span></div>' + btn('Đăng xuất', 'sec', '', 'logout') + '</div><div class="endz" style="padding-top:0">' + tb('Xóa tài khoản', 'bad') + '</div>'; }
+    if (v === 4) { acc = cd('<h2 class="pt">Tài khoản</h2>' + login + kvr('Lịch sử giao dịch', '', tb('Xem', '', '', 'arr')) + kvr('Đăng xuất', 'Thoát khỏi thiết bị này', tb('Đăng xuất', '', 'logout')) + '<div class="kv"><div>' + tb('Xóa tài khoản', 'bad') + '</div></div>');
+      extra = '<div class="menu"><div class="mh"><b>Nguyễn Lan</b><span class="sm mu">lan.nguyen@gmail.com</span></div><span class="mi">' + ic('user') + 'Tài khoản</span><span class="mi on">' + ic('gear') + 'Cài đặt</span><span class="mi">' + ic('receipt') + 'Lịch sử giao dịch</span><span class="mi out">' + ic('logout') + 'Đăng xuất</span></div>'; }
+    var b = '<h1 class="h1">Cài đặt</h1><div class="cdg">' + (ph() ? '' : '<nav class="toc">' + toc.map(function(t){ return '<a class="' + (t === 'Tài khoản' ? 'on' : '') + '">' + t + '</a>'; }).join('') + '</nav>') + '<div class="col">' + notif + acc + after + '</div></div>';
+    return { b: b, tab: '', extra: extra };
+  }
+
+  /* ================= 4 · Phiên luyện ================= */
+  var STATES = [['ok','Trả lời đúng'],['retry','Gõ sai, còn làm lại'],['wrong','Sai, đã xem đáp án'],['mcq','Trắc nghiệm chọn sai']];
+  var tone = function(s){ return s === 'ok' ? 'ok' : 'no'; };
+  function sbar(s, wide){
+    var cnt = s === 'ok' ? [5, 2] : s === 'retry' ? [4, 2] : [4, 3];
+    var pbar = '<div class="pbar2" role="progressbar" aria-label="Tiến độ phiên" aria-valuemin="0" aria-valuemax="20" aria-valuenow="7"><b style="width:35%"></b></div>';
+    var chips = '<span class="cnt" aria-label="' + cnt[0] + ' câu đúng, ' + cnt[1] + ' câu sai"><span class="cy">' + ic('check') + cnt[0] + '</span><span class="cn">' + ic('x') + cnt[1] + '</span></span>';
+    var sty = wide ? ' style="max-width:1080px"' : '';
+    if (ph()) return '<div class="sbar"' + sty + '><button type="button" class="x" aria-label="Dừng phiên">' + ic('x') + '</button>' + pbar + '<span class="mono">7/20</span>' + chips + calmini() + '</div>';
+    return '<div class="sbar"' + sty + '><button type="button" class="x" aria-label="Dừng phiên">' + ic('x') + '</button><b>Luyện tập · từ cần ôn hôm nay</b>' + pbar + '<span class="mono">câu 7 / 20</span>' + chips + '</div>';
+  }
+  function qhead(s){ return '<div class="qh"><span class="qtag">' + (s === 'mcq' ? 'trắc nghiệm theo câu' : 'điền từ vào câu') + '</span><span class="qtag ai">câu AI</span><span class="sp"></span>' + tb('Báo lỗi', 'mut', 'flag') + '</div>'; }
+  function instr(s){ return '<p class="mono">' + (s === 'mcq' ? 'chọn từ điền vào chỗ trống' : 'gõ từ còn thiếu, đúng dạng trong câu') + '</p>'; }
+  function sentence(s){
+    var box = s === 'ok' || s === 'mcq' ? '<span class="ans ok">deteriorate</span>' : s === 'retry' ? '<span class="ans bad">deteriorated <em>lần 2</em></span>' : '<span class="ans bad strike">deteriorated</span><span class="ans ok">deteriorate</span>';
+    return '<p class="sent">Air quality tends to ' + box + ' in the dry season.</p>';
+  }
+  var OPT = [['deteriorate','right'],['accumulate',''],['dominate','chosen'],['evaporate','']];
+  function opts(){ return '<div class="opts">' + OPT.map(function(o, i){ return '<div class="op ' + (o[1] || 'dim') + '">' + (ph() ? '' : '<kbd>' + (i + 1) + '</kbd>') + '<b>' + o[0] + '</b>' + (o[1] === 'right' ? '<span class="ol ok">' + ic('check') + 'Đáp án đúng</span>' : o[1] === 'chosen' ? '<span class="ol no">' + ic('x') + 'Bạn chọn</span>' : '') + '</div>'; }).join('') + '</div>'; }
+  var TRN = '<p class="trn">AI dịch: Chất lượng không khí thường xấu đi vào mùa khô.</p>';
+  function qparts(s){ return instr(s) + sentence(s) + (s === 'mcq' ? opts() : '') + (s !== 'retry' ? TRN : ''); }
+  function qblock(s){ return qhead(s) + '<div class="qbody">' + qparts(s) + '</div>'; }
+  function fbTitle(s){
+    if (s === 'retry') return '<div class="fbt no"><span class="fi">' + ic('x') + '</span><b>Chưa đúng</b></div><p class="fbm">Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.</p>';
+    var ok = s === 'ok';
+    return '<div class="fbt ' + tone(s) + '"><span class="fi">' + ic(ok ? 'check' : 'x') + '</span><b>' + (ok ? 'Đúng rồi' : 'Chưa đúng') + '</b><span class="fbw">deteriorate · xấu đi ' + ic('say') + '</span></div>' + (ok ? '' : '<p class="fbd">to become worse in quality</p>');
+  }
+  function fbMove(s){ return s === 'ok' ? '<div class="mv"><span class="stg"><i style="background:' + TIER[1] + '"></i>Ngăn 1 ngày</span>' + ic('arr') + '<span class="stg"><i style="background:' + TIER[2] + '"></i>Ngăn 3 ngày</span></div>' : ''; }
+  function fbActs(s, stack){
+    var a = s === 'ok' ? [btn('Cần ôn lại', 'sec', '1'), btn('Đã biết', 'ok', 'Enter', 'check')]
+      : s === 'retry' ? [tb('Xem đáp án', 'mut'), btn('Gợi ý', 'sec', 'H', 'bulb'), btn('Làm lại', '', 'Enter')]
+      : [btn('Câu tiếp', 'sec'), btn('Cần ôn lại', '', 'Enter')];
+    if (stack) a.reverse();
+    return a.join('');
+  }
+  function fbNote(s){
+    if (s === 'ok') return ph() ? 'Đã biết: deteriorate lên một ngăn. Chưa chắc thì bấm Cần ôn lại.' : 'Nhấn Enter là Đã biết: deteriorate lên một ngăn. Chưa chắc thì bấm Cần ôn lại.';
+    if (s === 'retry') return 'Làm lại mà đúng vẫn tính là đúng. Xem đáp án thì tính là sai.';
+    return ph() ? 'Cần ôn lại: deteriorate lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.' : 'Nhấn Enter để đưa deteriorate lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.';
+  }
+  function fbBot(s){ var mv = fbMove(s); return '<div class="bot">' + (mv || '<p class="fnote">' + fbNote(s) + '</p>') + '<div class="acts">' + fbActs(s) + '</div></div>' + (mv ? '<p class="fnote">' + fbNote(s) + '</p>' : ''); }
+  function keys(s){
+    if (ph()) return '';
+    var k = s === 'ok' ? [['Enter','Đã biết'],['1','Cần ôn lại']] : s === 'retry' ? [['Enter','Làm lại'],['H','Gợi ý']] : [['Enter','Cần ôn lại']];
+    k.push(['Esc','Dừng phiên']);
+    return '<div class="keys">' + k.map(function(x){ return '<span><kbd>' + x[0] + '</kbd>' + x[1] + '</span>'; }).join('') + '</div>';
+  }
+  function phien(v, s){
+    var o = { ses: true };
+    if (v === 0) o.b = sbar(s) + '<div class="qcol">' + cd(qblock(s) + '<div class="fbA ' + tone(s) + '">' + fbTitle(s) + fbBot(s) + '</div>') + keys(s) + '</div>';
+    if (v === 1) { o.b = sbar(s) + '<div class="qcol">' + cd(qblock(s)) + '</div>'; o.fix = true; o.nofab = true;
+      o.extra = '<div class="fbB ' + tone(s) + '"><div class="in"><div class="l">' + fbTitle(s) + fbMove(s) + '<p class="fnote">' + fbNote(s) + '</p></div><div class="acts">' + fbActs(s) + '</div></div></div>'; }
+    if (v === 2) {
+      var right = s === 'retry'
+        ? '<div class="rch no"><div class="fbt no"><span class="fi">' + ic('x') + '</span><b>Chưa đúng</b></div></div><p class="fbm">Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.</p>'
+        : '<div class="rch ' + tone(s) + '"><div class="fbt ' + tone(s) + '"><span class="fi">' + ic(s === 'ok' ? 'check' : 'x') + '</span><b>' + (s === 'ok' ? 'Đúng rồi' : 'Chưa đúng') + '</b></div></div><div style="display:grid;gap:6px"><span class="w">deteriorate</span><span class="fbw">xấu đi ' + ic('say') + '</span>' + (s === 'ok' ? '' : '<p class="fbd">to become worse in quality</p>') + '</div>' + fbMove(s);
+      o.b = sbar(s, true) + '<div class="qg">' + cd(qblock(s)) + cd('<div class="rescard">' + right + '<div class="stack">' + fbActs(s, true) + '</div><p class="fnote">' + fbNote(s) + '</p></div>') + '</div>' + keys(s); }
+    if (v === 3) o.b = sbar(s) + '<div class="qD">' + qhead(s) + '<div class="qbody">' + qparts(s) + '</div>' + cd('<div class="fbcard">' + fbTitle(s) + fbBot(s) + '</div>', 'fbD ' + tone(s)) + keys(s) + '</div>';
+    if (v === 4) o.b = sbar(s) + '<div class="qE">' + cd(qblock(s)) + '<div class="fbE ' + tone(s) + '">' + fbTitle(s) + fbBot(s) + '</div>' + keys(s) + '</div>';
+    return o;
+  }
+
+  /* ================= 5–6 · Giao dịch ================= */
+  var TX = [['01/11/2026','Mua','Pro · 3 tháng','199.000 ₫','08/11/2026 – 07/02/2027','ok'],['08/08/2026','Mua','Pro · 3 tháng','199.000 ₫','08/08 – 07/11/2026','ok'],['22/07/2026','Hoàn tiền','Pro · 1 tháng','−79.000 ₫','—','ok'],['20/07/2026','Mua','Pro · 1 tháng','79.000 ₫','20/07 – 19/08/2026','ref'],['15/06/2026','Cấp gói','Pro','0 ₫','15/06 – 14/07/2026','ok']];
+  var sttOf = function(k){ return k === 'ok' ? '<span class="stt ok"><i></i>Thành công</span>' : '<span class="stt ref"><i></i>Đã hoàn tiền</span>'; };
+  var chev = function(){ return ic('chev').replace('class="ic"', 'class="ic chev"'); };
+  var amtOf = function(t, cls){ return '<b class="amt' + (t[3][0] === '−' ? ' neg' : '') + (cls ? ' ' + cls : '') + '">' + t[3] + '</b>'; };
+  var period = function(t){ return t[4] === '—' ? '' : 'dùng ' + t[4]; };
+  var LEG = [['Mua, Gia hạn, Đổi kỳ','lần trả tiền cho gói Pro'],['Hoàn tiền','tiền trả lại cho bạn; dòng gốc ghi "Đã hoàn tiền"'],['Dùng thử, Cấp gói','không thu tiền']];
+  var legend = function(){ return '<div class="leg">' + LEG.map(function(l){ return '<div><b>' + l[0] + '</b><span>' + l[1] + '</span></div>'; }).join('') + '</div>'; };
+  var NOTE_TZ = '<p class="mono">ngày theo múi giờ của bạn · bấm một dòng để xem cổng thanh toán và mã giao dịch</p>';
+  function txTable(hv){ return '<div class="tx h"><span>ngày</span><span>loại</span><span>gói và kỳ</span><span>kỳ được dùng</span><span class="r">số tiền</span><span>trạng thái</span><span></span></div>' +
+    TX.map(function(t, i){ return '<div class="tx' + (hv && i === 0 ? ' hv' : '') + '"><span class="mono">' + t[0] + '</span><b>' + t[1] + '</b><span>' + t[2] + '</span><span class="mu">' + t[4] + '</span>' + amtOf(t, 'r') + sttOf(t[5]) + chev() + '</div>'; }).join(''); }
+  function txRow5(t, hv){ return '<div class="tx c5' + (hv ? ' hv' : '') + '"><span class="mono">' + t[0] + '</span><div style="display:grid"><b>' + t[1] + ' · ' + t[2] + '</b><span class="sm mu">' + (period(t) || 'không có kỳ') + '</span></div>' + amtOf(t, 'r') + sttOf(t[5]) + chev() + '</div>'; }
+  function txMob(t, hv){ return '<div class="txm' + (hv ? ' hv' : '') + '"><div style="display:grid;min-width:0"><b>' + t[1] + ' · ' + t[2] + '</b><span class="mono">' + t[0] + (period(t) ? ' · ' + period(t) : '') + '</span></div><div class="ra">' + amtOf(t) + sttOf(t[5]) + '</div>' + chev() + '</div>'; }
+  var planCard = function(){ return cd('<div class="planr"><span class="pi">' + ic('star') + '</span><div class="t"><b>Pro tới hết 07/02/2027</b><span class="sm mu">Gói học hiện tại</span></div>' + tb('Xem gói học', '', '', 'arr') + '</div>', 'sm'); };
+  var HDTX = function(right){ return head({ back:'Cài đặt', title:'Lịch sử giao dịch', right: right }); };
+  function giaodichBody(v, hv){
+    if (v === 0) return HDTX() + planCard() + cd(ph() ? TX.map(function(t, i){ return txMob(t, hv && !i); }).join('') : txTable(hv), 'flat') + NOTE_TZ + cd('<h3 style="font-size:16px;margin-bottom:12px">Về giao dịch</h3>' + legend(), 'sm');
+    if (v === 1) { var M = [['tháng 11, 2026',[0]],['tháng 8, 2026',[1]],['tháng 7, 2026',[2,3]],['tháng 6, 2026',[4]]];
+      return HDTX() + M.map(function(m){ return '<div class="mgrp"><span class="mono">' + m[0] + '</span>' + cd(m[1].map(function(i){ return ph() ? txMob(TX[i]) : txRow5(TX[i]); }).join(''), 'flat') + '</div>'; }).join('') + NOTE_TZ + planCard(); }
+    if (v === 2) return HDTX() + '<div class="g2"><div style="display:grid;gap:12px;min-width:0">' + cd(ph() ? TX.map(function(t){ return txMob(t); }).join('') : '<div class="tx c5 h"><span>ngày</span><span>loại · gói và kỳ</span><span class="r">số tiền</span><span>trạng thái</span><span></span></div>' + TX.map(function(t){ return txRow5(t); }).join(''), 'flat') + NOTE_TZ + '</div>' +
+      '<aside class="asd">' + cd('<span class="mono">gói học</span><b style="font-family:var(--f-display);font-size:30px;line-height:1.1">Pro</b><span class="sm mu">tới hết 07/02/2027</span><div>' + tb('Xem gói học', '', '', 'arr') + '</div>', 'sm') +
+      cd('<span class="mono">về giao dịch</span>' + LEG.map(function(l){ return '<div style="display:grid"><b class="sm">' + l[0] + '</b><span class="sm mu">' + l[1] + '</span></div>'; }).join(''), 'sm') + '</aside></div>';
+    if (v === 3) { var tli = function(t, cls, link){ return '<div class="tli ' + cls + '"><div style="display:grid;min-width:0"><b>' + t[1] + ' · ' + t[2] + '</b><span class="sm mu">' + t[0] + (period(t) ? ' · ' + period(t) : '') + '</span></div><div class="ra">' + amtOf(t) + sttOf(t[5]) + '</div>' + (link ? '<span class="link">' + ic('undo') + link + '</span>' : '') + '</div>'; };
+      return HDTX() + cd('<div class="tl"><span class="yr">2026</span>' + tli(TX[0], '') + tli(TX[1], '') + tli(TX[2], 'ref', 'hoàn tiền cho lần mua ngày 20/07/2026') + tli(TX[3], 'old') + tli(TX[4], 'gift') + '</div>') + NOTE_TZ + planCard() + cd(legend(), 'sm'); }
+    var tip = '<div class="tip"><b>Các loại giao dịch</b>' + LEG.map(function(l){ return '<span><b>' + l[0] + ':</b> ' + l[1] + '</span>'; }).join('') + '</div>';
+    return HDTX(ph() ? '' : '<div class="phr"><span class="mono">gói học</span><b style="font-family:var(--f-display);font-size:22px">Pro tới hết 07/02/2027</b>' + tb('Xem gói học', '', '', 'arr') + '</div>') +
+      '<div class="fchips"><span class="fchip on">Tất cả <small>5</small></span><span class="fchip">Mua <small>3</small></span><span class="fchip">Hoàn tiền <small>1</small></span><span class="fchip">Cấp gói <small>1</small></span></div>' +
+      (ph() ? cd(TX.map(function(t){ return txMob(t); }).join(''), 'flat') + cd(legend(), 'sm')
+        : '<section class="cd flat" style="position:relative">' + txTable(false).replace('<span>loại</span>', '<span class="th-q">loại ' + ic('help') + '</span>') + tip + '</section>') + NOTE_TZ;
+  }
+  function giaodich(v){ return { b: giaodichBody(v), tab: '' }; }
+  var CODE = 'WM-261101-6F3K2Q';
+  var HELP = '<p class="sm mu">Có câu hỏi về giao dịch này? Gửi mã giao dịch cho đội Wordmet qua mục Liên hệ.</p>';
+  var icb = function(icn, label){ return '<button type="button" class="tb" aria-label="' + label + '">' + ic(icn) + '</button>'; };
+  function gdct(v){
+    var T = 'Chi tiết giao dịch', ov, b = giaodichBody(0, v === 4);
+    var amtRow = '<div class="row" style="align-items:baseline;gap:16px"><span class="amtbig">199.000 ₫</span><span class="stt ok"><i></i>Thành công</span></div>';
+    var codeBox = '<div class="soft" style="grid-template-columns:minmax(0,1fr) auto;align-items:center"><div style="display:grid"><span class="mono">mã giao dịch</span><span class="code">' + CODE + '</span></div>' + tb('Sao chép', '', 'copy') + '</div>';
+    if (v === 0) ov = dlg(T, '<div class="rcpt"><span class="mono">mua · pro · 3 tháng</span><span class="amtbig">199.000 ₫</span><span class="stt ok"><i></i>Thành công</span></div><div class="perf"></div>' +
+      '<dl class="kvl"><dt>Thời điểm</dt><dd>01/11/2026, 20:14</dd><dt>Kỳ được dùng</dt><dd>08/11/2026 – 07/02/2027</dd><dt>Cổng thanh toán</dt><dd>payOS</dd><dt>Mã giao dịch</dt><dd><span class="code">' + CODE + '</span>' + icb('copy', 'Sao chép mã') + '</dd></dl>' + HELP, btn('Đóng', 'sec'), 'w5');
+    if (v === 1) ov = dlg(T, amtRow + '<p class="mu" style="margin-top:-8px">Mua · Pro · 3 tháng</p><div class="tiles"><div class="tl2"><span class="mono">thời điểm</span><b>01/11/2026, 20:14</b></div><div class="tl2"><span class="mono">cổng thanh toán</span><b>payOS</b></div>' +
+      '<div class="tl2 span"><div style="display:grid"><span class="mono">kỳ được dùng</span><b>08/11/2026 – 07/02/2027</b></div></div><div class="tl2 span"><div style="display:grid"><span class="mono">mã giao dịch</span><span class="code">' + CODE + '</span></div>' + tb('Sao chép', '', 'copy') + '</div></div>' + HELP, btn('Đóng', 'sec'), 'w5');
+    if (v === 2) ov = dlg(T, amtRow + '<p class="mu" style="margin-top:-8px">Mua · Pro · 3 tháng · qua payOS</p>' +
+      '<div class="tlv"><div class="ok"><b>Thanh toán</b><span>01/11/2026, 20:14</span></div><div><b>Bắt đầu kỳ Pro</b><span>08/11/2026 · nối tiếp kỳ đang dùng, hết 07/11/2026</span></div><div class="fut"><b>Hết kỳ</b><span>07/02/2027</span></div></div>' + codeBox + HELP, btn('Đóng', 'sec'), 'w5');
+    if (v === 3) ov = dlg(T, '<div class="row" style="gap:16px;flex-wrap:nowrap"><span class="okbadge">' + ic('check') + '</span><div style="display:grid;flex:1;min-width:0"><b style="font-family:var(--f-display);font-size:20px;line-height:1.25">Mua Pro · 3 tháng</b><span class="sm mu">Thành công · 01/11/2026, 20:14</span></div><span class="amtbig" style="font-size:26px">199.000 ₫</span></div>' +
+      '<div class="soft"><dl class="kvl"><dt>Kỳ được dùng</dt><dd>08/11/2026 – 07/02/2027</dd><dt>Cổng thanh toán</dt><dd>payOS</dd><dt>Mã giao dịch</dt><dd><span class="code">' + CODE + '</span>' + icb('copy', 'Sao chép mã') + '</dd></dl></div>' + HELP, btn('Đóng', 'sec'), 'w5');
+    if (v === 4) ov = '<div class="ovs lite"></div><aside class="side" role="dialog" aria-label="' + T + '">' + (ph() ? '<span class="grab"></span>' : '') + '<div class="dh"><h2>' + T + '</h2><button type="button" class="x" aria-label="Đóng">' + ic('x') + '</button></div>' +
+      '<div style="display:grid;gap:8px"><span class="amtbig">199.000 ₫</span><div class="row" style="gap:12px"><span class="stt ok"><i></i>Thành công</span><span class="mu sm">Mua · Pro · 3 tháng</span></div></div>' +
+      '<dl class="kvl"><dt>Thời điểm</dt><dd>01/11/2026, 20:14</dd><dt>Kỳ được dùng</dt><dd>08/11/2026 – 07/02/2027</dd><dt>Cổng thanh toán</dt><dd>payOS</dd></dl>' + codeBox + HELP + '</aside>';
+    return { b: b, ov: ov, tab: '' };
+  }
+
+  /* ================= 7 · Xóa tài khoản ================= */
+  var DEL = ['Dữ liệu học: nhóm, lịch ôn, lịch sử trả lời','Từ riêng và câu bạn tự viết','Gói của bạn','Mọi phiên đăng nhập'];
+  var KEEP = ['Hồ sơ thanh toán 10 năm, không kèm tên bạn','Báo lỗi bạn đã gửi, không kèm tên','Số lượt đã dùng, không kèm tên bạn','Số liệu tổng hợp, không nhận ra bạn'];
+  var WARN = function(){ return '<p class="alert">' + ic('alert') + 'Thời gian Pro còn lại sẽ mất, không hoàn tiền.</p>'; };
+  function xform(){ return '<label class="cb">' + chk(true) + 'Tôi hiểu dữ liệu sẽ mất và không khôi phục được</label>' + fld('Gõ lại email của bạn', inp('lan.nguyen@gmail.com')) +
+    fld('Mật khẩu', inp('<span style="flex:1;letter-spacing:.18em">••••••••••</span>' + ic('eye'), 'on')) + '<div>' + btn('Xóa vĩnh viễn', 'bad') + '</div>'; }
+  function lists(one){ return '<div class="two"' + (one ? ' style="grid-template-columns:1fr;gap:24px"' : '') + '><div><h3>Những gì bị xóa</h3><ul class="ul no">' + DEL.map(li).join('') + '</ul></div><div><h3>Những gì còn được giữ</h3><ul class="ul">' + KEEP.map(li).join('') + '</ul></div></div>'; }
+  function xoatk(v){
+    var H = head({ back:'Cài đặt', title:'Xóa tài khoản' }), b;
+    if (v === 0) b = H + '<div class="narrow">' + cd('<div class="form"><div class="stepn"><i>1</i><h2>Đọc kỹ trước khi xóa</h2></div>' + lists() + '</div>') + cd('<div class="form"><div class="stepn"><i>2</i><h2>Xác nhận</h2></div>' + WARN() + xform() + '</div>') + '</div>';
+    if (v === 1) b = H + '<div class="x2 r">' + cd('<div class="form"><h2 class="h2">Xác nhận xóa</h2>' + WARN() + xform() + '</div>') + cd(lists(true), 'lst') + '</div>';
+    if (v === 2) b = H + '<div class="narrow">' + cd('<div class="form">' + WARN() + lists() + '<div style="height:6px"></div>' + xform() + '</div>') + '</div>';
+    if (v === 3) { var R2 = [['Nhóm, lịch ôn, lịch sử trả lời','no','Xóa'],['Từ riêng và câu bạn tự viết','no','Xóa'],['Gói của bạn','no','Xóa'],['Mọi phiên đăng nhập','no','Xóa'],['Hồ sơ thanh toán','ok','Giữ 10 năm, không kèm tên'],['Báo lỗi bạn đã gửi','ok','Giữ, không kèm tên'],['Số lượt đã dùng','ok','Giữ, không kèm tên'],['Số liệu tổng hợp','ok','Giữ, không nhận ra bạn']];
+      b = H + '<div class="narrow">' + cd('<div class="ct h"><span>dữ liệu</span><span>sau khi xóa</span></div>' + R2.map(function(r){ return '<div class="ct"><span>' + r[0] + '</span><span class="k ' + r[1] + '">' + ic(r[1] === 'no' ? 'x' : 'check') + r[2] + '</span></div>'; }).join(''), 'flat') + cd('<div class="form">' + WARN() + xform() + '</div>') + '</div>'; }
+    if (v === 4) b = head({ back:'Cài đặt', title:'Xóa tài khoản', sub:'Xóa dữ liệu học, từ riêng, gói và mọi phiên đăng nhập. Không khôi phục được.' }) + '<div class="narrow">' +
+      cd('<div class="row" style="justify-content:space-between"><b class="sm">Những gì còn được giữ</b>' + tb('Xem', '', '', 'down') + '</div>', 'sm') + cd('<div class="form">' + WARN() + xform() + '</div>') + '</div>';
+    return { b: b, tab: '' };
+  }
+
+  /* ================= 8 · Từ lâu chưa ôn ================= */
+  var ROWS = [['allocate','phân bổ',74,true],['mitigate','giảm nhẹ',68,true],['scrutiny','sự xem xét kỹ',66,false],['prevalent','phổ biến',63,true],['viable','khả thi',61,false],['coherent','mạch lạc',61,false]];
+  var MORE = [['comply',67],['reluctant',65],['substantial',64],['feasible',63],['adjacent',63],['inevitable',62],['fluctuate',62],['deploy',62],['implement',61],['ambiguous',61],['consensus',61],['tentative',61]];
+  var odBar = function(d){ return '<div class="od"><span><b style="width:' + Math.round((d - 55) / 25 * 100) + '%"></b></span><em>' + d + ' ngày</em></div>'; };
+  var wrRow = function(r){ return '<div class="wr' + (r[3] ? ' sel' : '') + '">' + chk(r[3]) + '<span class="w">' + r[0] + '</span><span class="m">' + r[1] + '</span>' + odBar(r[2]) + '</div>'; };
+  var wrHead = function(){ return '<div class="wr h">' + chk(false) + '<span>từ</span><span>nghĩa</span><span style="text-align:right">quá hạn</span></div>'; };
+  var WHY = '<p class="why">Từ ở ngăn 1 trở lên mà quá hạn hơn 60 ngày sẽ rời phần cần ôn, để việc ôn mỗi ngày không dồn quá dài. <b>Học lại</b>: về ngăn Mới, tính như từ mới hôm nay. <b>Bỏ khỏi việc học</b>: rời mọi nhóm, không còn hẹn ôn. <b>Để đó</b>: không làm gì; Wordmet không bao giờ tự xóa từ.</p>';
+  var moreRow = function(){ return '<div class="row" style="padding:12px 16px 6px"><span class="mono">đang có 6 / 18 từ</span>' + tb('Xem thêm 12 từ') + '</div>'; };
+  var selbar = function(){ return '<div class="selbar">' + chk(true) + '<b>Đã chọn 3 từ</b><span class="sp"></span>' + tb('Bỏ khỏi việc học', 'bad') + btn('Học lại 3 từ', 'sm') + '</div>'; };
+  var big18 = '<div class="phr"><span class="big" style="color:var(--fail)">18</span><span class="mono">từ quá hạn</span></div>';
+  var HD8 = function(right){ return head({ back:'Nhóm Đề 9 · Listening', title:'Từ lâu chưa ôn', sub:'18 từ trong Đề 9 · Listening đã quá hạn hơn 60 ngày.', right: right === undefined ? big18 : right }); };
+  function tondong(v){
+    var o = { tab: 'Nhóm' };
+    if (v === 0) { o.b = HD8() + WHY + cd(wrHead() + ROWS.map(wrRow).join('') + moreRow(), 'flat'); o.fix = true; o.nofab = ph();
+      o.extra = '<div class="dock"><b>Đã chọn 3 từ</b>' + tb('Bỏ khỏi việc học', 'bad') + btn('Học lại 3 từ', 'sm') + '</div>'; }
+    if (v === 1) o.b = HD8() + '<p class="why">Từ ở ngăn 1 trở lên mà quá hạn hơn 60 ngày sẽ rời phần cần ôn, để việc ôn mỗi ngày không dồn quá dài. Với mỗi từ, bạn chọn một trong ba cách:</p>' +
+      cd('<div class="dl3"><div><b>Học lại</b><span>Về ngăn Mới, tính như từ mới hôm nay.</span></div><div><b>Bỏ khỏi việc học</b><span>Rời mọi nhóm, không còn hẹn ôn.</span></div><div><b>Để đó</b><span>Không làm gì. Wordmet không bao giờ tự xóa từ.</span></div></div>', 'flat') +
+      cd(selbar() + wrHead() + ROWS.map(wrRow).join('') + moreRow(), 'flat');
+    if (v === 2) { var sec = function(t, n, rows){ return '<div class="sech">' + chk(false) + '<h3>' + t + '</h3><span class="mono">' + n + '</span></div>' + rows.map(wrRow).join(''); };
+      o.b = HD8() + WHY + cd(selbar() + sec('Quá hạn hơn 70 ngày', '1 từ', ROWS.slice(0, 1)) + sec('Quá hạn 61–70 ngày', '17 từ', ROWS.slice(1)) + moreRow(), 'flat'); }
+    if (v === 3) { var all = ROWS.map(function(r){ return [r[0], r[2], r[3]]; }).concat(MORE.map(function(m){ return [m[0], m[1], false]; })).sort(function(a, b){ return b[1] - a[1]; });
+      o.b = HD8() + WHY + cd('<div style="display:grid;gap:16px">' + selbar() + '<div class="wchips">' + all.map(function(w){ return '<span class="wchip' + (w[2] ? ' on' : '') + '">' + chk(w[2]) + w[0] + '<small>' + w[1] + ' ngày</small></span>'; }).join('') + '</div></div>'); }
+    if (v === 4) o.b = back('Nhóm Đề 9 · Listening') + '<div class="g2 l"><div class="lft"><h1 class="h1">Từ lâu chưa ôn</h1><div><span class="big">18</span><p class="sub" style="margin-top:8px">từ trong Đề 9 · Listening đã quá hạn hơn 60 ngày.</p></div>' + WHY.replace('class="why"', 'class="why sm"') +
+      '<div class="stack">' + btn('Học lại 3 từ') + tb('Bỏ khỏi việc học 3 từ', 'bad') + '</div></div>' + cd(wrHead() + ROWS.map(wrRow).join('') + moreRow(), 'flat') + '</div>';
+    return o;
+  }
+
+  /* ================= 9 · Chủ đề ================= */
+  var CW = [['schedule','noun, verb','lịch trình; lên lịch',1],['deadline','noun','hạn chót',2,'Đề 12 · Writing'],['budget','noun','ngân sách',0],['contract','noun','hợp đồng',1],['candidate','noun','ứng viên',2,'Đề 14 · Reading'],['profit','noun','lợi nhuận',0],['negotiate','verb','đàm phán',1],['colleague','noun','đồng nghiệp',1]];
+  var CW2 = [['invoice','noun','hóa đơn',1],['agenda','noun','chương trình họp',1],['revenue','noun','doanh thu',1],['employee','noun','nhân viên',1],['salary','noun','tiền lương',1],['promote','verb','thăng chức',0],['resign','verb','từ chức',0],['interview','noun','buổi phỏng vấn',1],['meeting','noun','cuộc họp',1],['client','noun','khách hàng',1],['manager','noun','người quản lý',0],['department','noun','phòng ban',1],['hire','verb','thuê người',0],['deliver','verb','giao hàng',0],['report','noun','báo cáo',1],['overtime','noun','giờ làm thêm',0]];
+  var liRow = function(w){ var dis = w[3] === 2; return '<div class="li' + (w[3] === 1 ? ' sel' : '') + (dis ? ' dis' : '') + '">' + chk(w[3] === 1, dis) + '<span class="w">' + w[0] + '<small>' + w[1] + '</small></span>' + (dis ? '<span class="lr2"><i class="dot" style="background:' + GCOL[w[4]] + '"></i>đang học · ' + w[4] + '</span>' : '<span></span>') + '<span class="m">' + w[2] + '</span></div>'; };
+  var selAll = function(){ return '<div class="row" style="padding:12px 16px">' + chk(false) + '<b style="font-weight:600">Chọn tất cả 22 từ chưa học</b><span class="sp"></span><span class="mono">đã chọn 14</span></div>'; };
+  var big22 = '<div class="phr"><span class="big">22</span><span class="mono">từ chưa học · 2 đang học</span></div>';
+  var HD9 = function(right){ return head({ back:'Quay lại', kicker:'chủ đề · trình độ', title:'Công việc · B1', sub:'24 từ gợi ý. Chọn từ bạn muốn học, hoặc thêm cả chủ đề.', right: right === undefined ? big22 : right }); };
+  var dest = function(){ return '<span class="inp sel" style="min-height:40px;border-radius:10px;gap:8px">Nhóm mới “Công việc · B1” ' + ic('down') + '</span>'; };
+  var addBtn = function(cls){ return '<button type="button" class="btn ' + (cls || '') + '">Thêm 14 từ đã chọn' + ic('arr') + '</button>'; };
+  var dockInline = function(){ return cd('<div class="dockc"><span class="mono">thêm vào</span>' + dest() + '<span class="sp"></span>' + addBtn() + '</div>', 'sm'); };
+  function chude(v){
+    var o = { tab: 'Nhóm' };
+    if (v === 0) { o.b = HD9() + cd(selAll() + CW.map(liRow).join('') + '<div class="row" style="padding:12px 16px 6px">' + tb('Xem thêm 16 từ') + '</div>', 'flat'); o.fix = true; o.nofab = ph();
+      o.extra = '<div class="dock"><span class="mono">thêm vào</span>' + dest() + addBtn('sm') + '</div>'; }
+    if (v === 1) { var tiles = CW.concat(CW2.slice(0, 4)).map(function(w){ var dis = w[3] === 2; return '<div class="wtile' + (w[3] === 1 ? ' on' : '') + (dis ? ' dis' : '') + '">' + chk(w[3] === 1, dis) + '<span class="w">' + w[0] + '</span><span class="pos">' + w[1] + '</span><span class="m">' + w[2] + '</span>' + (dis ? '<span class="lr2"><i class="dot" style="background:' + GCOL[w[4]] + '"></i>đang học · ' + w[4] + '</span>' : '') + '</div>'; }).join('');
+      o.b = HD9() + '<div class="row">' + chk(false) + '<b style="font-weight:600">Chọn tất cả 22 từ chưa học</b><span class="sp"></span><span class="mono">đã chọn 14</span></div><div class="wt">' + tiles + '</div><div>' + tb('Xem thêm 12 từ') + '</div>' + dockInline(); }
+    if (v === 2) { var chosen = CW.concat(CW2).filter(function(w){ return w[3] === 1; }).map(function(w){ return '<span>' + w[0] + '</span>'; }).join('');
+      o.b = HD9('') + '<div class="g2 wide">' + cd(selAll() + CW.map(liRow).join('') + '<div class="row" style="padding:12px 16px 6px">' + tb('Xem thêm 16 từ') + '</div>', 'flat') +
+        '<aside class="asd sticky">' + cd('<span class="mono">đã chọn</span><div class="row" style="align-items:baseline;gap:8px"><span class="big" style="font-size:56px">14</span><span class="mu">/ 22 từ chưa học</span></div><div class="chips">' + chosen + '</div><span class="mono" style="margin-top:6px">thêm vào</span>' + dest() + addBtn('wide')) + '</aside></div>'; }
+    if (v === 3) o.b = HD9() + '<div class="fchips"><span class="fchip on">Tất cả <small>24</small></span><span class="fchip">noun <small>19</small></span><span class="fchip">verb <small>6</small></span><span class="sp"></span></div>' +
+      cd(selAll() + CW.map(liRow).join('') + '<div class="row" style="padding:12px 16px 6px">' + tb('Xem thêm 16 từ') + '</div>', 'flat') + dockInline();
+    if (v === 4) o.b = HD9('') + cd('<div style="display:grid;gap:8px"><div class="pbar"><i style="flex:2;background:#7a55d3"></i><i style="flex:14;background:var(--accent)"></i><i style="flex:8;background:transparent"></i></div><div class="pleg"><span><i style="background:#7a55d3"></i>2 đang học</span><span><i style="background:var(--accent)"></i>14 đã chọn</span><span><i style="background:var(--line)"></i>8 chưa chọn</span></div></div>', 'sm') +
+      cd(selAll() + '<div class="cl2">' + CW.concat(CW2).map(liRow).join('') + '</div>', 'flat') + dockInline();
+    return o;
+  }
+
+  /* ================= danh sách trang, mẫu và ghi chú ================= */
+  var P = [{ k:'themtu', t:'Thêm từ · tra AI', s:'hộp thoại' }, { k:'taikhoan', t:'Tài khoản' }, { k:'dangxuat', t:'Cài đặt · Đăng xuất' }, { k:'phien', t:'Phiên luyện', s:'có trạng thái sai' }, { k:'gdct', t:'Chi tiết giao dịch', s:'hộp thoại' }, { k:'giaodich', t:'Lịch sử giao dịch' }, { k:'xoatk', t:'Xóa tài khoản' }, { k:'tondong', t:'Từ lâu chưa ôn' }, { k:'chude', t:'Chủ đề' }];
+  var R = { themtu:themtu, taikhoan:taikhoan, dangxuat:dangxuat, phien:phien, gdct:gdct, giaodich:giaodich, xoatk:xoatk, tondong:tondong, chude:chude };
+  var V = {
+    themtu:[['Hai nguồn ngang hàng','Mỗi kết quả một card, nút ngay trên card'],['Chọn một nghĩa','Danh sách có nút chọn, một nút lưu ở cuối'],['Có thẻ xem trước','Bên phải là thẻ sẽ lưu'],['Bảng lệnh','Ô nhập lớn, kết quả xổ ngay dưới, chọn bằng phím'],['Hai bước','Bước 1 gập lại, bước 2 so hai nghĩa cạnh nhau']],
+    taikhoan:[['Hai nhóm một card','Hồ sơ sửa được, email chỉ đọc, gói học riêng một dòng'],['Nhãn trái, ô phải','Kiểu trang cài đặt'],['Thẻ hồ sơ','Ảnh, tên, email, gói ở đầu; form sửa bên dưới'],['Sửa từng dòng','Đọc là chính; bấm Sửa thì dòng đó mở ra'],['Hai cột','Form bên trái, email và gói học bên phải']],
+    dangxuat:[['Nút chữ','Mọi việc trong card là nút chữ'],['Nút cuối card','Đăng xuất và Xóa tài khoản chung hàng cuối'],['Hàng bấm cả dòng','Mỗi việc một hàng có icon và mũi tên'],['Vùng riêng cuối trang','Đăng xuất ra ngoài card'],['Trong menu ảnh đại diện','Bấm ảnh L mở menu có Đăng xuất']],
+    phien:[['Một khối','Kết quả gắn liền dưới câu'],['Thanh dưới đáy','Kết quả trượt lên từ đáy màn'],['Hai cột','Câu bên trái, kết quả và nút bên phải'],['Câu là tâm điểm','Câu nằm thẳng trên nền, kết quả là card riêng'],['Thẻ kéo ra','Kết quả là tấm thẻ kéo ra từ dưới câu']],
+    gdct:[['Biên lai','Số tiền ở giữa, đường cắt, các dòng không kẻ'],['Ô số liệu','Bốn ô nền nhạt'],['Dòng thời gian','Thanh toán, bắt đầu kỳ, hết kỳ trên một trục'],['Gọn như thanh toán','Dấu tick, tiêu đề, chi tiết trong ô nhạt'],['Tấm bên phải','Bảng vẫn thấy, chi tiết trượt vào từ phải']],
+    giaodich:[['Bảng gọn','Bấm cả dòng; gói học lên đầu'],['Theo tháng','Giao dịch xếp theo tháng'],['Bảng và cột phụ','Gói học và chú thích ở cột phải'],['Dòng thời gian','Hoàn tiền nối với lần mua gốc'],['Lọc theo loại','Chip lọc, chú thích thành ô gợi ý']],
+    xoatk:[['Hai bước có số','1 Đọc kỹ, 2 Xác nhận'],['Hai cột','Xác nhận trái, danh sách phải (đã chốt)'],['Một card','Cảnh báo đỏ ở đầu, rồi danh sách và form'],['Bảng so sánh','Một bảng: xóa gì, giữ gì'],['Gọn','Một câu tóm tắt, phần còn giữ gập lại']],
+    tondong:[['Thanh chọn nổi','Chọn từ thì thanh việc nổi ở đáy'],['Ba cách rõ ràng','Học lại / Bỏ / Để đó thành ba dòng'],['Theo mức quá hạn','Từ chia nhóm theo số ngày'],['Chip từ','Đủ 18 từ thành chip, không phân trang'],['Hai cột','Số 18 và việc cần làm ở cột trái']],
+    chude:[['Thanh thêm nổi','Danh sách liền, thanh Thêm nổi ở đáy'],['Lưới ô từ','Mỗi từ một ô, bấm cả ô để chọn'],['Hai cột','Cột phải tóm tắt từ đã chọn'],['Lọc theo từ loại','Chip noun / verb'],['Đủ 24 từ','Hai cột, thấy hết, có thanh tiến độ']]
+  };
+  var PN = {
+    themtu:['Ô "Câu bạn gặp" trước chia đôi với ô Từ nên câu bị cắt hai dòng trong ô một dòng. Nay ô Từ 200 px, ô Câu lấy phần còn lại (hoặc nhiều dòng ở mẫu C).','Trước đây kết quả từ điển có nút Chọn, kết quả AI không có nút (nút ở chân hộp). Mỗi mẫu nay cho hai kết quả cùng một cách chọn.','Dòng "AI gợi ý có thể sai" nằm sát kết quả AI. "Định nghĩa tiếng Anh (chỉ để tham khảo, không lưu):" rút thành nhãn mono.'],
+    taikhoan:['Email trong code chỉ đọc (<code>AccountPage.tsx</code>, <code>isReadOnly</code>) nhưng Figma vẽ như ô sửa được. Nay email là chữ thường kèm chip "Đã xác minh" (email đã nhập đúng mã gửi về hộp thư).','Dòng "Gói Pro · 30 phiên luyện mỗi ngày" nằm lơ lửng ngoài card. Nay vào card hoặc cột riêng.'],
+    dangxuat:['Nút "Đăng xuất" cũ viền đậm 1,5 px, chữ đậm, nặng hơn mọi việc khác trong card dù không phải việc chính.','"Xóa tài khoản" gạch chân đỏ thành nút chữ đỏ.'],
+    phien:['Figma vẽ gợi ý đã mở ("gợi ý 1/3", "Nghĩa tiếng Việt: xấu đi") cùng nút "Đã biết". App không có nút Đã biết khi đúng nhờ gợi ý (<code>noteHint</code>). Trạng thái đúng ở mọi mẫu nay không mở gợi ý.','Ba trạng thái sai lấy từ code (<code>AnswerFeedback.tsx</code>, <code>TypeWordQuestion.tsx</code>): gõ sai còn làm lại có Làm lại / Gợi ý / Xem đáp án; sai hẳn thì Cần ôn lại là nút chính, Câu tiếp giữ lịch; trắc nghiệm chọn sai tô đỏ ô "Bạn chọn", tô xanh ô "Đáp án đúng".','Trắc nghiệm: chỗ trống điền đáp án đúng sau khi chấm (đề xuất, app hiện để trống).','Đầu phiên (chủ dự án, 09/11/2026): thanh tiến độ liền thay 20 vạch, kèm chip ✓ số câu đúng và ✗ số câu sai.'],
+    gdct:['Bỏ đường kẻ giữa các dòng. Mã giao dịch có nút sao chép rõ hơn icon nhỏ.'],
+    giaodich:['Cột "Chi tiết" gạch chân bỏ: bấm cả dòng, mũi tên › cuối dòng. Ghi chú đổi thành "bấm một dòng…".','Khối "Gói học" và "Về giao dịch" dưới bảng trước không có nền; nay là card.'],
+    xoatk:['Dòng cảnh báo đỏ nằm trơ giữa hai card. Nay là khối nền đỏ nhạt có icon, nằm sát form xác nhận.','Ô mật khẩu có nút hiện mật khẩu như bản Figma.'],
+    tondong:['"Bỏ khỏi việc học" gạch chân thành nút chữ đỏ; "Xem thêm 12 từ" thành nút chữ.','Bảng là card có bóng, dòng đã chọn tô nhạt.'],
+    chude:['"Xem thêm 16 từ" thành nút chữ. Thanh "thêm vào" là card có bóng (hoặc thanh nổi ở mẫu A).']
+  };
+  var VN = {
+    themtu:[['Bấm một lần là xong. Nút chính là "Sửa rồi lưu" vì AI phải sửa trước khi lưu.','Hai nút trên hai card, mắt phải so.'],['Một nút ở cuối, chữ đổi theo dòng đang chọn (Chọn / Sửa rồi lưu).','Thêm một lần bấm.'],['Thấy trước thẻ sẽ lưu, kèm câu bạn gặp.','Hộp rộng 860 px; điện thoại đẩy thẻ xuống cuối.'],['Hợp phím N và kiểu dùng bàn phím: Enter làm việc của dòng đang sáng.','Khác hẳn các hộp thoại khác của app.'],['Bước 1 gập lại sau khi tra; hai nghĩa đặt cạnh nhau để so.','"Bước" là khái niệm mới cho một hộp nhỏ.']],
+    taikhoan:[['Ít đổi nhất so với code.'],['Dễ quét như trang Cài đặt.','Trên điện thoại nhãn lên trên ô.'],['Trang có điểm nhìn.','Tên lặp ở thẻ và ở form.'],['Ít sửa nhầm; "Hủy" trong dòng là chữ mới (đề xuất).','Code đổi nhiều hơn các mẫu khác.'],['Tách việc sửa và việc xem.','Trên điện thoại cột phải xuống dưới.']],
+    dangxuat:[['Cùng kiểu với "Xem →" và "Xóa tài khoản". Nhãn hàng đổi thành "Phiên đăng nhập" để không lặp chữ; chữ phụ dưới Xóa tài khoản là chữ mới (đề xuất).'],['Hai việc rời tài khoản đứng chung hàng cuối card. Đăng xuất là nút viền mảnh có icon.'],['Kiểu danh sách của app điện thoại, vùng bấm lớn.','Chữ phụ "Mua, hoàn tiền, cấp gói" là chữ mới.'],['Đăng xuất tách khỏi các cài đặt.','Phải cuộn xuống cuối mới thấy.'],['Đúng chỗ người dùng hay tìm Đăng xuất; hàng trong Cài đặt vẫn giữ.','Menu ảnh đại diện là phần code mới.']],
+    phien:[['Gần Figma nhất.','Khối cao lên khi có kết quả nên nút đổi chỗ theo độ dài câu.'],['Nút luôn ở một chỗ, ngón cái chạm dễ trên điện thoại.','Thanh che phần dưới màn.'],['Câu không bị đẩy xuống khi có kết quả.','Cột phải cần thêm trạng thái lúc chưa trả lời.'],['Câu to nhất, ít khung nhất.'],['Hợp hướng "thẻ bài"; chuyển động kéo thẻ ra dễ hiểu.','Thẻ kéo ra hẹp hơn câu một chút mỗi bên.']],
+    gdct:[['Đọc như biên lai thật.'],['Gọn, mỗi ô một thông tin.'],['Giải thích vì sao kỳ bắt đầu 08/11 chứ không phải 01/11. Dòng "nối tiếp kỳ đang dùng" là chữ mới, lấy từ giao dịch 08/08.'],['Cùng kiểu với trang thanh toán thành công đã polish.'],['Không che bảng, bấm dòng khác là đổi chi tiết.','Cần thêm cách đóng (Esc, bấm ra ngoài).']],
+    giaodich:[['Ít đổi nhất.'],['Dễ đọc khi có nhiều giao dịch.','Mất cột để so nhanh.'],['Bảng hẹp lại, chú thích luôn thấy.'],['Hoàn tiền nối với lần mua gốc (chữ mới).','Cần kiểm API có trả liên kết này không.'],['Lọc là tính năng mới (đề xuất).']],
+    xoatk:[['Rõ thứ tự: đọc rồi mới xác nhận. Tiêu đề bước là chữ mới.'],['Chủ dự án chốt 09/11/2026: cột nhập bên trái, danh sách bên phải.','Trên điện thoại danh sách lên trước form, để đọc xong mới xác nhận.'],['Cảnh báo ở đầu, khó bỏ qua.'],['Một bảng thay hai danh sách; chữ cột phải rút gọn (đề xuất).'],['Ít chữ nhất.','Người cẩn thận phải bấm mở phần còn giữ.']],
+    tondong:[['Thanh việc luôn trong tầm mắt khi cuộn.','Thanh che một phần dòng cuối.'],['Ba cách xử lý đọc nhanh hơn một đoạn văn.'],['Thấy ngay từ nào lâu nhất.'],['Thấy đủ 18 từ, không cần "Xem thêm".','Mất cột nghĩa.'],['Số 18 và nút luôn ở cột trái.','Cột trái chiếm chỗ.']],
+    chude:[['Nút Thêm luôn trong tầm mắt.'],['Bấm cả ô dễ trên điện thoại.','Tốn chỗ hơn danh sách.'],['Thấy ngay những từ đã chọn.','Điện thoại đẩy cột phải xuống cuối.'],['Lọc là tính năng mới. Số noun và verb tính cả từ có hai từ loại.'],['Thấy hết 24 từ; thanh tiến độ: 2 đang học, 14 đã chọn, 8 chưa chọn.']]
+  };
+  var GEN = ['Mọi card có bóng navy hai lớp (<code>--shadow-card</code>); ô chọn và chip có bóng nhẹ (<code>--shadow-row</code>); hộp thoại và thanh nổi dùng <code>--shadow-pop</code>.','Không còn chữ gạch chân: việc phụ là nút chữ mẫu C, Hủy xám, Xóa đỏ.','Nút tròn hẳn, mỗi màn một nút chính.','Nhãn nhỏ dùng JetBrains Mono 12 px chữ thường.'];
+
+  /* ================= vẽ và điều khiển ================= */
+  var screen = $('screen'), scaler = $('scaler'), stage = $('stage'), thumbs = $('thumbs');
+  function cur(){ return P.filter(function(x){ return x.k === st.p; })[0]; }
+  function build(v){ var o = R[st.p](v, st.s); if (o.tab === undefined) o.tab = ''; return o; }
+  function devCls(o){ return 'dev ' + st.dev + (o.ov ? ' ovopen' : '') + (o.fix ? ' fixh' : ''); }
+  function W(){ return ph() ? 390 : 1200; }
+  function fit(){ var s = Math.min(1, stage.parentElement.clientWidth / W()); scaler.style.transform = 'scale(' + s + ')'; stage.style.width = W() * s + 'px'; stage.style.height = screen.offsetHeight * s + 'px'; }
+  function fitThumbs(){ thumbs.querySelectorAll('.thv').forEach(function(t){ var d = t.querySelector('.dev'), s = t.clientWidth / W(); t.firstChild.style.transform = 'scale(' + s + ')'; t.style.height = Math.min(d.offsetHeight, ph() ? 844 : 900) * s + 'px'; }); }
+  function setHash(){ var h = st.p + '-' + st.v + '-' + st.dev + '-' + st.s + '-' + st.view; if (location.hash !== '#' + h) history.replaceState(null, '', '#' + h); }
+  function readHash(){ var m = /^#([a-z]+)-([0-4])-(desk|phone)-(ok|retry|wrong|mcq)-(one|grid)$/.exec(location.hash); if (m && R[m[1]]) { st.p = m[1]; st.v = +m[2]; st.dev = m[3]; st.s = m[4]; st.view = m[5]; } }
+  function render(){
+    var p = cur();
+    $('pages').innerHTML = P.map(function(x){ return '<button type="button" class="pk" data-p="' + x.k + '" aria-pressed="' + (x.k === st.p) + '">' + x.t + (x.s ? '<small>' + x.s + '</small>' : '') + '</button>'; }).join('');
+    $('vars').innerHTML = V[st.p].map(function(x, i){ return '<button type="button" class="pk v" data-v="' + i + '" aria-pressed="' + (i === st.v) + '">' + 'ABCDE'[i] + ' · ' + x[0] + '<small>' + x[1] + '</small></button>'; }).join('');
+    var ss = $('stseg'); ss.hidden = st.p !== 'phien';
+    ss.innerHTML = STATES.map(function(x){ return '<button type="button" data-s="' + x[0] + '" aria-pressed="' + (x[0] === st.s) + '">' + x[1] + '</button>'; }).join('');
+    document.querySelectorAll('[data-dev]').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.dev === st.dev); });
+    document.querySelectorAll('[data-view]').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.view === st.view); });
+    if (st.view === 'one') {
+      stage.hidden = false; thumbs.hidden = true;
+      var o = build(st.v); screen.className = devCls(o); screen.innerHTML = frame(o); fit();
+    } else {
+      stage.hidden = true; thumbs.hidden = false;
+      thumbs.innerHTML = V[st.p].map(function(x, i){ var o = build(i); return '<div role="button" tabindex="0" class="th" data-v="' + i + '" data-open="1"><span><b>' + 'ABCDE'[i] + ' · ' + x[0] + '</b><br><small>' + x[1] + '</small></span><div class="thv"><div class="scaler"><div class="' + devCls(o) + '">' + frame(o) + '</div></div></div></div>'; }).join('');
+      fitThumbs();
+    }
+    var vn = VN[st.p][st.v] || [];
+    $('notes').innerHTML = '<section><h3>' + 'ABCDE'[st.v] + ' · ' + V[st.p][st.v][0] + '</h3><ul>' + vn.map(li).join('') + '</ul></section><section><h3>' + p.t + ': sửa so với Figma</h3><ul>' + PN[st.p].map(li).join('') + '</ul></section><section><h3>Chung cho vòng 15</h3><ul>' + GEN.map(li).join('') + '</ul></section>';
+    setHash();
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-p],[data-v],[data-dev],[data-view],[data-s]'); if (!b || b.closest('#screen')) return;
+    if (b.dataset.p) { st.p = b.dataset.p; st.v = 0; }
+    if (b.dataset.v !== undefined) { st.v = +b.dataset.v; if (b.dataset.open) st.view = 'one'; }
+    if (b.dataset.dev) st.dev = b.dataset.dev;
+    if (b.dataset.view) st.view = b.dataset.view;
+    if (b.dataset.s) st.s = b.dataset.s;
+    render();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('th')) { st.v = +e.target.dataset.v; st.view = 'one'; render(); return; }
+    var i = P.indexOf(cur());
+    if (e.key === 'ArrowRight') { st.v = (st.v + 1) % 5; }
+    else if (e.key === 'ArrowLeft') { st.v = (st.v + 4) % 5; }
+    else if (e.key === 'ArrowDown') { st.p = P[(i + 1) % P.length].k; st.v = 0; }
+    else if (e.key === 'ArrowUp') { st.p = P[(i + P.length - 1) % P.length].k; st.v = 0; }
+    else return;
+    e.preventDefault(); render();
+  });
+  addEventListener('resize', function(){ st.view === 'one' ? fit() : fitThumbs(); });
+  readHash(); render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ st.view === 'one' ? fit() : fitThumbs(); });
+})();
+</script>
+<style>
+/* bổ sung sau cùng */
+.steps li i .ic{width:12px;height:12px;stroke-width:3.2}
+.bot{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap} .bot .mv,.bot .fnote{flex:1;min-width:220px}
+.cd.fbD.ok{box-shadow:0 0 0 2px color-mix(in srgb,var(--pass) 55%,transparent),var(--shadow-card)} .cd.fbD.no{box-shadow:0 0 0 2px color-mix(in srgb,var(--fail) 55%,transparent),var(--shadow-card)}
+.qE .keys,.qD .keys{margin-top:16px}
+.stack .tb{justify-self:center;margin:0}
+.g2.l{grid-template-columns:340px minmax(0,1fr)} .phone .g2.l{grid-template-columns:1fr}
+.phone .lft .big{font-size:80px}
+.asd .vchip{justify-self:start}
+.phone .tbar{position:absolute;left:0;right:0;bottom:0}
+.notes code{font-family:var(--f-mono);font-size:12.5px;color:var(--ink)}
+.phone .dockc .btn{flex:1} .phone .dockc .inp{flex:1 1 100%}
+.phone .x{width:44px;height:44px}
+.phone .tb{padding:12px;margin:-12px;min-height:44px}
+.phone .btn.sm{height:44px}
+.phone .fchip{height:44px}
+.phone .dlg.pal{width:auto;left:0;right:0}
+.phone .perf{margin:4px -16px}
+.kvl dd .tb{margin:-6px 0}
+.phone .bot .acts{flex:1 1 100%}
+.stack .btn .ic{display:none}
+.lft .stack .btn{justify-content:center}
+.wt{grid-template-columns:repeat(4,minmax(0,1fr))} .phone .wt{grid-template-columns:repeat(2,minmax(0,1fr))} .wtile .lr2{white-space:normal;align-items:baseline}
+.phone .phd{grid-template-columns:1fr} .phone .phr{grid-auto-flow:column;justify-content:start;justify-items:start;align-items:baseline;gap:12px;text-align:left}
+.ct{grid-template-columns:minmax(0,1fr) 240px}
+.x2.r{grid-template-columns:400px minmax(0,1fr)} .phone .x2.r{grid-template-columns:1fr} .phone .x2.r .lst{order:-1}
+.g2.wide{grid-template-columns:minmax(0,1fr) 340px} .phone .g2.wide{grid-template-columns:1fr}
+.phone .kvl dd .tb{margin:-12px 0}
+.phone .wchip{min-height:44px}
+.dev.phone .scr{padding-bottom:160px} .dev.phone .scr.ses{padding-bottom:40px}
+.phone .dockc .sp{display:none}
+.phone .wr{row-gap:0}
+.pbar2{flex:1;min-width:60px;height:6px;border-radius:3px;background:var(--line);overflow:hidden} .pbar2 b{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.cnt{display:inline-flex;gap:6px;flex:none} .cnt span{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px 0 6px;border-radius:6px;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums} .cnt .ic{width:12px;height:12px;stroke-width:3.2} .cnt .cy{background:var(--pass-soft);color:var(--pass)} .cnt .cn{background:var(--fail-soft);color:var(--fail)}
+.wtile.dis{box-shadow:var(--shadow-row)}
+</style>

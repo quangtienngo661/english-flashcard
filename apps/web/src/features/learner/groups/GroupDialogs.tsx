@@ -7,15 +7,17 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { useAppConfig } from '@/app-shell/queries';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
-import { TextField } from '@/app-ui/TextField';
-import { showToast } from '@/app-ui/Toast';
+import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
+import { TextField } from '@/ui/TextField';
+import { showToast } from '@/ui/Toast';
 import { GROUP_NAME_MAX } from './group-name';
 import { groupError, groupKey, useGroup, useGroupMutations, type GroupDetail } from './groups-api';
 
 type Target = { id: string; name: string; version: number };
-type Open = { kind: 'create' } | { kind: 'rename'; group: Target } | { kind: 'delete'; group: Target; leaveTo?: string };
+type Open = { kind: 'create'; onCreated?: (id: string) => void } | { kind: 'rename'; group: Target } | { kind: 'delete'; group: Target; leaveTo?: string };
 
 /** One place that opens the deck dialogs (K/17, K/17b, K/14); a screen renders `dialogs` once and calls `open`. */
 export function useGroupDialogs(): { open: (what: Open) => void; dialogs: ReactNode } {
@@ -23,7 +25,7 @@ export function useGroupDialogs(): { open: (what: Open) => void; dialogs: ReactN
   const close = () => setCurrent(null);
   const dialogs =
     current === null ? null : current.kind === 'create' ? (
-      <CreateGroupDialog onClose={close} />
+      <CreateGroupDialog onClose={close} onCreated={current.onCreated} />
     ) : current.kind === 'rename' ? (
       <RenameGroupDialog group={current.group} onClose={close} />
     ) : (
@@ -69,7 +71,7 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
   }
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.createTitle')} isDismissable={!press.busy}>
+    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.createTitle')} closeLabel={t('common.close')} isDismissable={!press.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField
           label={t('groups.nameLabel')}
@@ -80,11 +82,11 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
           error={error}
           autoFocus
         />
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button variant="quiet" onPress={onClose}>
+        <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-end md:gap-5">
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('common.cancel')}
-          </Button>
-          <Button type="submit" variant="sticker" isPending={press.busy} isDisabled={!name.trim()}>
+          </TextButton>
+          <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim()}>
             {t('groups.createSubmit')}
           </Button>
         </div>
@@ -124,14 +126,14 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
   }
 
   return (
-    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.renameTitle')} isDismissable={!press.busy}>
+    <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.renameTitle')} closeLabel={t('common.close')} isDismissable={!press.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('groups.nameLabel')} value={name} onChange={setName} maxLength={GROUP_NAME_MAX} showCount error={error} autoFocus />
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button variant="quiet" onPress={onClose}>
+        <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-end md:gap-5">
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('common.cancel')}
-          </Button>
-          <Button type="submit" variant="sticker" isPending={press.busy} isDisabled={!name.trim() || name.trim() === group.name}>
+          </TextButton>
+          <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim() || name.trim() === group.name}>
             {t('groups.renameSubmit')}
           </Button>
         </div>
@@ -143,6 +145,7 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
 /** K/14: says how many words leave learning (`removable_items`) before deleting. */
 function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo?: string; onClose: () => void }) {
   const t = useTranslations('App.groups');
+  const tc = useTranslations('App.common');
   const locale = useLocale();
   const errorText = useErrorMessage();
   const { deleteGroup } = useGroupMutations();
@@ -168,24 +171,31 @@ function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('deleteTitle', { name: group.name })}
+      closeLabel={tc('close')}
       isDismissable={!press.busy}
       footer={
         <>
-          <Button variant="quiet" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {t('keep')}
-          </Button>
+          </TextButton>
           <Button variant="danger" onPress={() => void onDelete()} isPending={press.busy} isDisabled={!detail}>
             {removable > 0 ? t('deleteSubmit', { count: removable }) : t('deleteSubmitNone')}
           </Button>
         </>
       }
     >
-      <p className="text-body text-ink">
-        {removable > 0 ? t.rich('deleteBody', { count: removable, b: (chunks) => <strong>{chunks}</strong> }) : t('deleteBodyNone')}
-      </p>
-      <p className="text-caption text-muted">{t('deleteNote')}</p>
+      {/* Figma "Xác nhận xóa" (121:4597): what is lost in a fail-soft block, the danger button, keep as secondary. */}
+      {removable > 0 ? (
+        <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 text-wm-small-strong text-wm-fail">
+          <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
+          <span>{t.rich('deleteBody', { count: removable, b: (chunks) => <strong>{chunks}</strong> })}</span>
+        </p>
+      ) : (
+        <p className="text-wm-base text-wm-ink">{t('deleteBodyNone')}</p>
+      )}
+      <p className="text-wm-caption text-wm-muted">{t('deleteNote')}</p>
       {error && (
-        <p role="alert" className="text-ui text-danger">
+        <p role="alert" className="text-wm-small text-wm-fail">
           {error}
         </p>
       )}

@@ -1,0 +1,1310 @@
+<title>Nhóm và Tra từ, vòng 6</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a chooser on top (5 directions × 2 pages × 2 devices), one device frame scaled to fit, notes under it. Tokens follow the reference stack artifact (landing bản 3). */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#dde1ea; --ghost:#c9cedc;
+  --accent:#2445d6; --accent-soft:#e8ecfc; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5;
+  --frame:#e9ebf1; --paper:#f7f5f0;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --f-body:'Noto Sans',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --shadow:0 24px 48px -28px rgb(27 36 68 / .45);
+  --shadow-s:0 10px 24px -16px rgb(27 36 68 / .35);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14; --paper:#232838;
+  --shadow:0 24px 48px -28px rgb(0 0 0 / .8); --shadow-s:0 10px 24px -16px rgb(0 0 0 / .7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14; --paper:#232838;
+  --shadow:0 24px 48px -28px rgb(0 0 0 / .8); --shadow-s:0 10px 24px -16px rgb(0 0 0 / .7); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--frame);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+kbd{font-family:var(--f-mono);font-size:11px;font-weight:700;min-width:20px;height:20px;display:inline-grid;place-items:center;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--bg);color:var(--ink);line-height:1}
+.mono{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* chooser */
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:20px}
+.intro{display:grid;gap:8px;max-width:72ch}
+.intro h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.intro p{color:var(--muted)}
+.pick{display:grid;gap:12px}
+.vgroups{display:grid;gap:8px}
+.vrow{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:4px}
+.vlist{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.vbtn{display:grid;gap:2px;text-align:left;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);transition:border-color .2s var(--ease),transform .15s var(--ease)}
+.vbtn:hover{border-color:var(--ghost)}
+.vbtn:active{transform:scale(.98)}
+.vbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.vbtn .n{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.vbtn .t{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.3}
+.vbtn .s{font-size:13px;color:var(--muted);line-height:1.4}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted);transition:background .2s var(--ease),color .2s var(--ease)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.stage{position:relative;overflow:hidden;border-radius:20px}
+.scaler{transform-origin:top left;width:max-content}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.notes section{background:var(--surface);border-radius:16px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.notes h3{font-size:16px;font-weight:700}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--muted);line-height:1.5}
+.notes b{color:var(--ink);font-weight:600}
+.audit{background:var(--surface);border-radius:16px;padding:16px 18px}
+.audit summary{cursor:pointer;font-weight:600}
+.audit ul{margin:10px 0 0;padding-left:18px;display:grid;gap:4px;color:var(--muted);font-size:14px}
+@media (max-width:900px){.vlist{grid-template-columns:repeat(2,minmax(0,1fr))}.notes{grid-template-columns:1fr}}
+
+/* ===== device + shared app chrome ===== */
+.dev{background:var(--bg);color:var(--ink);overflow:hidden;position:relative}
+.dev.desk{width:1200px;min-height:760px}
+.dev.phone{width:390px;min-height:844px;border-radius:0}
+.ab{height:64px;display:flex;align-items:center;gap:28px;padding:0 32px;background:var(--surface);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.03em;display:inline-flex;align-items:baseline;gap:2px}
+.logo i{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block}
+.tabs{display:flex;gap:22px;font-size:15px;font-weight:500;color:var(--muted)}
+.tabs span{position:relative;padding:20px 0}
+.tabs span.on{color:var(--ink);font-weight:600}
+.tabs span.on::after{content:"";position:absolute;left:0;right:0;bottom:12px;height:2px;border-radius:2px;background:var(--ink)}
+.cmd{margin-left:auto;display:flex;align-items:center;gap:8px;width:320px;height:40px;padding:0 10px 0 12px;border-radius:12px;background:var(--bg);color:var(--muted);font-size:14px}
+.cmd span{flex:1}
+.addw{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 14px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:14px}
+.addw kbd{background:transparent;color:inherit;border-color:rgb(255 255 255 / .45)}
+.ava{width:34px;height:34px;border-radius:10px;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:14px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.phone .ab{height:56px;padding:0 16px;gap:12px}
+.phone .ab .sp{flex:1}
+.tb{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 0 10px}
+.tb span{display:grid;justify-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted);padding-top:4px}
+.tb span.on{color:var(--ink);font-weight:700}
+.tb span.on .ic{stroke:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 18px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:15px;white-space:nowrap;transition:transform .15s var(--ease),filter .2s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn kbd{background:transparent;color:inherit;border-color:rgb(255 255 255 / .45)}
+.lnk{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14px;color:var(--accent);background:none;border:0;padding:0}
+.lnk.mut{color:var(--muted)}
+.say{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:inline-grid;place-items:center;color:var(--ink)}
+.say .ic{width:15px;height:15px}
+.ipa{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:15px;color:var(--muted)}
+.ipa b{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--muted)}
+.ipa span{display:inline-flex;align-items:center;gap:6px}
+
+/* stage tiers (K) */
+.t0{--tier:linear-gradient(135deg,#dcd8ce,#fbfaf6 45%,#cfcabf);--tc:#9aa3b1}
+.t1{--tier:linear-gradient(135deg,#a8683c,#edbb92 45%,#8a5430);--tc:#c07a45}
+.t2{--tier:linear-gradient(135deg,#8f97a5,#f6f8fb 45%,#848c99);--tc:#98a2b0}
+.t3{--tier:linear-gradient(135deg,#b88a1c,#f9e491 45%,#98700f);--tc:#d4a72c}
+.t4{--tier:linear-gradient(135deg,#0f7a5c,#86e8c8 45%,#0c654c);--tc:#1f9d75}
+.t5{--tier:conic-gradient(from 210deg,#ff8ad8,#ffd36b,#8dffb5,#7ad7ff,#b28bff,#ff8ad8);--tc:#b28bff}
+.tn{--tier:var(--line);--tc:var(--ghost)}
+.dot{width:10px;height:10px;border-radius:3px;background:var(--tier);display:inline-block;flex:none;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08)}
+
+/* rhythm bar (six boxes) */
+.rh{display:flex;gap:3px;height:10px;width:100%}
+.rh span{position:relative;border-radius:3px;background:color-mix(in srgb,var(--ink) 14%,transparent);overflow:hidden;min-width:4px}
+.rh span b{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
+.rh.empty span{background:var(--line)}
+
+/* ===== V1 · Mục lục (Tiêu điểm) ===== */
+.v1{padding:44px 64px 72px;display:grid;gap:36px}
+.v1 .hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:32px;align-items:end}
+.v1 .big{font-family:var(--f-display);font-weight:800;font-size:150px;line-height:.78;letter-spacing:-.065em;font-variant-numeric:tabular-nums}
+.v1 .hero h1{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.v1 .hero .mono{display:block;margin-top:6px}
+.v1 .filt{display:flex;gap:18px;margin-top:14px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v1 .filt .on{color:var(--ink);text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:2px}
+.v1 .side{display:grid;gap:10px;justify-items:end}
+.v1 .list{display:grid}
+.v1 .lh,.v1 .gr{display:grid;grid-template-columns:72px minmax(0,1.2fr) minmax(0,1fr) 190px;gap:28px;align-items:center;padding:0 14px}
+.v1 .lh{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-bottom:8px}
+.v1 .gr{padding-block:16px;border-radius:14px;cursor:pointer;transition:background .2s var(--ease)}
+.v1 .gr:hover,.v1 .gr.sel{background:var(--surface)}
+.v1 .due{font-family:var(--f-display);font-weight:700;font-size:40px;line-height:1;letter-spacing:-.04em;color:var(--accent);font-variant-numeric:tabular-nums}
+.v1 .due.z{color:var(--ghost)}
+.v1 .nm{font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:-.02em;line-height:1.25}
+.v1 .meta{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v1 .meta .warn{color:var(--fail)}
+.v1 .act{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-weight:600;font-size:15px;color:var(--accent)}
+.v1 .act.mut{color:var(--muted)}
+.v1 .gr.done .nm,.v1 .gr.done .rh{opacity:.55}
+.v1 .topics{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline}
+.v1 .topics h2{font-size:20px;font-weight:700;margin-right:6px}
+.v1 .topics a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--ghost);text-underline-offset:4px;font-weight:500}
+.v1 .topics a small{font-family:var(--f-mono);color:var(--muted);margin-left:4px}
+/* V1 lookup */
+.v1 .q{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-bottom:16px;border-bottom:2px solid var(--ink)}
+.v1 .q .slash{font-family:var(--f-mono);font-size:22px;color:var(--muted)}
+.v1 .q .tok{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:15px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent)}
+.v1 .q .typed{font-family:var(--f-display);font-weight:700;font-size:52px;letter-spacing:-.04em;line-height:1;color:var(--ghost)}
+.v1 .q .caret{width:3px;height:48px;background:var(--accent);animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.v1 .qbar{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;justify-content:space-between}
+.v1 .wl{display:grid}
+.v1 .wr{display:grid;grid-template-columns:minmax(0,240px) 110px minmax(0,1fr) 170px;gap:24px;align-items:baseline;padding:14px;border-radius:14px;cursor:pointer;transition:background .2s var(--ease)}
+.v1 .wr:hover{background:var(--surface)}
+.v1 .wr .w{font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:-.025em;line-height:1.2}
+.v1 .wr .m{font-size:17px}
+.v1 .wr .st{display:flex;gap:8px;align-items:center;justify-content:flex-end;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v1 .wr .mine{font-family:var(--f-mono);font-size:11px;color:var(--accent);margin-left:8px}
+.v1 .open{background:var(--surface);border-radius:18px;padding:22px 24px;display:grid;gap:14px;box-shadow:var(--shadow-s);margin:2px 0 10px}
+.v1 .open .top{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:baseline;justify-content:space-between}
+.v1 .open .w{font-family:var(--f-display);font-weight:800;font-size:44px;letter-spacing:-.04em;line-height:1.1}
+.v1 .open .ex{font-size:17px;max-width:62ch}
+.v1 .open .acts{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.v1 .keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v1 .keys span{display:inline-flex;gap:6px;align-items:center}
+.phone .v1{padding:24px 16px 32px;gap:24px}
+.phone .v1 .hero{grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:end}
+.phone .v1 .big{font-size:96px}
+.phone .v1 .hero h1{font-size:24px}
+.phone .v1 .side{grid-column:1 / -1;justify-items:stretch}
+.phone .v1 .side .btn{width:100%}
+.phone .v1 .lh{display:none}
+.phone .v1 .gr{grid-template-columns:52px minmax(0,1fr);gap:6px 14px;padding:14px 8px}
+.phone .v1 .gr .due{font-size:32px;grid-row:span 2;align-self:start}
+.phone .v1 .gr .nm{font-size:20px}
+.phone .v1 .gr .act{justify-content:flex-start;grid-column:2}
+.phone .v1 .gr .rh{grid-column:2}
+.phone .v1 .filt{flex-wrap:wrap;gap:8px 14px}
+.phone .v1 .q .typed{font-size:34px}
+.phone .v1 .q .caret{height:32px}
+.phone .v1 .wr{grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 8px}
+.phone .v1 .wr .w{font-size:22px}
+.phone .v1 .wr .p{display:none}
+.phone .v1 .wr .m{grid-column:1;font-size:15px}
+.phone .v1 .wr .st{grid-row:1;grid-column:2}
+.phone .v1 .open{padding:18px}
+.phone .v1 .open .w{font-size:34px}
+.phone .v1 .keys{display:none}
+
+/* ===== V2 · Bìa sưu tập (Thẻ bài) ===== */
+.v2{padding:40px 56px 72px;display:grid;gap:30px;min-height:780px;
+  background-image:radial-gradient(color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1.3px);background-size:18px 18px}
+.v2 .head{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:end;justify-content:space-between}
+.v2 .head h1{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.v2 .tally{display:flex;gap:14px;flex-wrap:wrap}
+.v2 .tally span{display:grid;justify-items:center;gap:4px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.v2 .tally i{width:22px;height:30px;border-radius:4px;background:var(--tier);box-shadow:inset 0 0 0 3px rgb(255 255 255 / .55)}
+.v2 .tally b{font-family:var(--f-display);font-size:18px;color:var(--ink)}
+.v2 .shelf{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:34px 22px}
+.v2 .deck{display:grid;gap:12px;justify-items:center;text-align:center;cursor:pointer}
+.v2 .fan{position:relative;width:150px;aspect-ratio:63/88;max-width:100%}
+.v2 .fan .kc{position:absolute;inset:0;transition:transform .35s var(--ease)}
+.v2 .fan .kc:nth-child(1){transform:rotate(-8deg) translate(-14px,4px)}
+.v2 .fan .kc:nth-child(2){transform:rotate(6deg) translate(12px,2px)}
+.v2 .deck:hover .fan .kc:nth-child(1){transform:rotate(-14deg) translate(-26px,0)}
+.v2 .deck:hover .fan .kc:nth-child(2){transform:rotate(12deg) translate(24px,-2px)}
+.v2 .deck:hover .fan .kc:nth-child(3){transform:translateY(-6px)}
+.kc{border-radius:11px;padding:6px;background:var(--tier);box-shadow:0 14px 26px -18px rgb(27 36 68 / .7)}
+.kc .in{height:100%;border-radius:7px;background:var(--paper);color:#1b2444;display:flex;flex-direction:column;gap:5px;padding:9px;text-align:left;overflow:hidden}
+.kc .art{flex:1;border-radius:5px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:30px;color:rgb(27 36 68 / .28);letter-spacing:-.03em;min-height:0}
+.kc .nm{font-family:var(--f-display);font-weight:700;font-size:13px;line-height:1.25}
+.kc .ft{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:9px;color:#525a78}
+.kc .pips{display:flex;gap:3px}
+.kc .pips i{flex:1;height:5px;border-radius:2px;background:var(--tier)}
+.pat-ruled{background:repeating-linear-gradient(0deg,#dfe4f3 0 1px,transparent 1px 9px),#eef1fa}
+.pat-wave{background:repeating-radial-gradient(circle at 30% 120%,#d8e8f2 0 2px,#eef6fa 2px 9px)}
+.pat-dots{background:radial-gradient(#d9d3ea 1.6px,transparent 2px) 0 0/10px 10px,#f3f0f8}
+.pat-grid{background:linear-gradient(#f0d9e3 1px,transparent 1px) 0 0/10px 10px,linear-gradient(90deg,#f0d9e3 1px,transparent 1px) 0 0/10px 10px,#faf1f5}
+.pat-stripe{background:repeating-linear-gradient(135deg,#e2dcf3 0 6px,#f3f0fa 6px 12px)}
+.pat-chev{background:repeating-linear-gradient(45deg,#d6efe9 0 5px,transparent 5px 10px),repeating-linear-gradient(-45deg,#d6efe9 0 5px,#f0faf7 5px 10px)}
+.v2 .badge{position:absolute;top:-10px;right:-14px;z-index:3;font-family:var(--f-display);font-weight:800;font-size:15px;padding:4px 8px;border-radius:7px;background:var(--accent);color:var(--on-accent);box-shadow:var(--shadow-s)}
+.v2 .stamp{position:absolute;z-index:3;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-8deg);padding:4px 10px;border:2px solid var(--pass);border-radius:8px;background:var(--surface);color:var(--pass);font-weight:700;font-size:13px;white-space:nowrap}
+.v2 .deck.done .fan{filter:saturate(.55)}
+.v2 .dn{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.25}
+.v2 .dm{font-size:13px;color:var(--muted)}
+.v2 .dm .go{color:var(--accent);font-weight:600}
+.v2 .dm .warn{color:var(--fail)}
+.v2 .pocket{width:150px;aspect-ratio:63/88;border-radius:11px;background:color-mix(in srgb,var(--ink) 5%,var(--bg));box-shadow:inset 0 3px 10px rgb(27 36 68 / .14);display:grid;place-items:center;align-content:center;gap:6px;color:var(--muted);font-size:13px;padding:10px}
+.v2 .pocket .plus{font-family:var(--f-display);font-size:34px;line-height:1;color:var(--accent)}
+.v2 .sugg{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.v2 .sugg h2{font-size:20px;font-weight:700}
+.v2 .pack{display:inline-flex;align-items:center;gap:8px;padding:8px 12px 8px 8px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow-s);font-weight:600;font-size:14px}
+.v2 .pack i{width:20px;height:28px;border-radius:4px}
+/* V2 lookup */
+.v2 .lk{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:start}
+.v2 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.v2 .fchip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;background:var(--surface);font-size:14px;box-shadow:var(--shadow-s)}
+.v2 .fchip b{color:var(--accent)}
+.v2 .search{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow-s);font-size:17px;color:var(--muted)}
+.v2 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.v2 .mini{aspect-ratio:63/88;cursor:pointer;transition:transform .2s var(--ease)}
+.v2 .mini:hover{transform:translateY(-4px)}
+.v2 .mini.sel{outline:3px solid var(--accent);outline-offset:3px}
+.v2 .mini .in{gap:3px;padding:8px}
+.v2 .mini .w{font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1.15;letter-spacing:-.01em}
+.v2 .mini .p{font-family:var(--f-mono);font-size:9px;color:#525a78}
+.v2 .mini .m{font-size:11.5px;line-height:1.35;color:#1b2444}
+.v2 .mini .art{font-size:15px;min-height:26px;max-height:40px}
+.v2 .mini.tn{background:transparent;box-shadow:none;padding:0}
+.v2 .mini.tn .in{background:color-mix(in srgb,var(--ink) 4%,var(--bg));color:var(--ink);box-shadow:inset 0 2px 8px rgb(27 36 68 / .12)}
+.v2 .mini.tn .m,.v2 .mini.tn .p{color:var(--muted)}
+.v2 .mini.tn .add{margin-top:auto;font-size:11px;font-weight:700;color:var(--accent)}
+.v2 .big{width:300px;aspect-ratio:63/88;padding:10px;border-radius:18px;transform-style:preserve-3d;transition:transform .25s var(--ease);position:relative}
+.v2 .big .in{border-radius:11px;padding:16px;gap:8px}
+.v2 .big .w{font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1.05;letter-spacing:-.03em}
+.v2 .big .art{font-size:44px;min-height:64px;max-height:80px}
+.v2 .big .m{font-family:var(--f-display);font-weight:700;font-size:19px}
+.v2 .big .ex{font-size:13px;font-style:italic;line-height:1.45}
+.v2 .big .ipa{font-size:12px;color:#525a78;gap:4px 12px}
+.v2 .big .ft{font-size:10px}
+.v2 .big .shine{position:absolute;inset:0;border-radius:18px;pointer-events:none;mix-blend-mode:soft-light;background:radial-gradient(circle at var(--mx,30%) var(--my,20%),rgb(255 255 255 / .7),transparent 45%)}
+.v2 .side{display:grid;gap:14px;justify-items:center;position:sticky;top:20px}
+.v2 .side .btn{width:300px}
+.phone .v2{padding:22px 16px 32px;gap:22px}
+.phone .v2 .head h1{font-size:28px}
+.phone .v2 .shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 12px}
+.phone .v2 .fan,.phone .v2 .pocket{width:124px}
+.phone .v2 .lk{grid-template-columns:1fr}
+.phone .v2 .side{order:-1;position:static}
+.phone .v2 .big{width:250px}
+.phone .v2 .big .art{font-size:30px;min-height:40px;max-height:52px}
+.phone .v2 .side .btn{width:100%}
+.phone .v2 .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.phone .v2 .mini .m,.phone .v2 .mini .art{display:none}
+.phone .v2 .mini .w{font-size:14px}
+
+/* ===== V3 · Chồng thẻ (tan mờ) ===== */
+.v3{padding:40px 56px 72px;display:grid;gap:32px}
+.v3 .focus{display:grid;grid-template-columns:360px minmax(0,1fr);gap:48px;align-items:center}
+.stk{position:relative;width:340px;height:430px}
+.st-card{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.st-card.d1{transform:translateY(22px) scale(.94);filter:blur(4px);opacity:.85;z-index:2}
+.st-card.d2{transform:translateY(42px) scale(.88);filter:blur(8px);opacity:.55;z-index:1}
+.st-card.top{z-index:3}
+.st-ghost{z-index:5;pointer-events:none}
+.st-card .tp{display:flex;justify-content:space-between;align-items:center}
+.st-card .pos{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.st-card .wd{flex:1;display:grid;place-content:center;text-align:center;gap:6px}
+.st-card .lemma{font-family:var(--f-display);font-weight:700;font-size:46px;line-height:1.2;letter-spacing:-.02em}
+.st-card .ipa{justify-content:center}
+.st-card .hint{text-align:center;font-size:13px;color:var(--muted)}
+.st-card .mean{font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1.25}
+.st-card .ex{border-top:1px solid var(--line);padding-top:12px;font-size:15px;line-height:1.55}
+.st-card .stg{margin-top:auto;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.v3 .info{display:grid;gap:18px;align-content:center}
+.v3 .info .lbl{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v3 .info h1{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.v3 .info .n{display:flex;align-items:baseline;gap:12px}
+.v3 .info .n b{font-family:var(--f-display);font-weight:800;font-size:84px;line-height:.9;letter-spacing:-.05em;color:var(--accent)}
+.v3 .info .acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+.v3 .others h2{font-size:20px;font-weight:700;margin-bottom:14px}
+.v3 .og{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px}
+.v3 .ms{position:relative;height:136px;cursor:pointer}
+.v3 .ms .c{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;align-content:space-between;transition:transform .3s var(--ease),filter .3s var(--ease)}
+.v3 .ms .c.b1{transform:translateY(12px) scale(.93);filter:blur(2px);opacity:.9}
+.v3 .ms .c.b2{transform:translateY(23px) scale(.85);filter:blur(4px);opacity:.6}
+.v3 .ms .nx{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.v3 .ms:hover .c.top{transform:translateY(-4px)}
+.v3 .ms .c.top{box-shadow:var(--shadow-s)}
+.v3 .ms .gn{font-family:var(--f-display);font-weight:700;font-size:17px;line-height:1.25}
+.v3 .ms .gd{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.v3 .ms .gd b{font-family:var(--f-display);font-size:28px;color:var(--accent);letter-spacing:-.03em}
+.v3 .ms.done .gd b{color:var(--pass);font-size:14px;font-family:var(--f-body)}
+.v3 .ms.sel .c.top{outline:2px solid var(--accent);outline-offset:2px}
+/* V3 lookup */
+.v3 .lk{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:48px;align-items:start}
+.v3 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.v3 .bar .s{flex:1 1 100%;display:flex;align-items:center;gap:10px;height:50px;padding:0 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:17px;margin-bottom:6px}
+.v3 .bar .f{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:14px}
+.v3 .bar .f b{color:var(--accent)}
+.v3 .wl{display:grid;margin-top:8px}
+.v3 .wr{display:grid;grid-template-columns:20px minmax(0,190px) minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:11px 12px;border-radius:12px;cursor:pointer;transition:background .2s var(--ease)}
+.v3 .wr:hover{background:var(--surface)}
+.v3 .wr.sel{background:var(--accent-soft)}
+.v3 .wr .w{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.2}
+.v3 .wr .p{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-left:8px}
+.v3 .wr .add{font-size:13px;font-weight:600;color:var(--accent)}
+.v3 .wr .dot{align-self:center}
+.v3 .rside{display:grid;gap:44px;position:sticky;top:20px}
+.v3 .rside .acts{display:grid;gap:10px;justify-items:center}
+.phone .v3{padding:22px 16px 32px;gap:24px}
+.phone .v3 .focus{grid-template-columns:1fr;gap:28px;justify-items:center}
+.phone .stk{width:310px;height:400px}
+.phone .v3 .info{justify-items:start;width:100%}
+.phone .v3 .info h1{font-size:30px}
+.phone .v3 .info .n b{font-size:60px}
+.phone .v3 .og{grid-template-columns:repeat(2,minmax(0,1fr))}
+.phone .v3 .lk{grid-template-columns:1fr;gap:20px}
+.phone .v3 .rside{order:-1;position:static;justify-items:center;gap:40px}
+.phone .v3 .wr{grid-template-columns:16px minmax(0,1fr) auto;gap:2px 10px}
+.phone .v3 .wr .m{grid-column:2;font-size:14px;color:var(--muted)}
+.phone .v3 .wr .add{grid-row:1;grid-column:3}
+
+/* ===== V4 · Bảng ngăn + Trang từ điển ===== */
+.v4{padding:40px 56px 72px;display:grid;gap:26px}
+.v4 .head{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:end}
+.v4 .head h1{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.v4 .head .mono{display:block;margin-top:4px}
+.v4 table{width:100%;border-collapse:separate;border-spacing:0 6px;font-variant-numeric:tabular-nums}
+.v4 th{font-weight:500;font-size:13px;color:var(--muted);text-align:center;padding:0 4px 6px;vertical-align:bottom}
+.v4 th.l{text-align:left}
+.v4 th .sw{display:block;width:20px;height:28px;margin:0 auto 6px;border-radius:4px;background:var(--tier);box-shadow:inset 0 0 0 3px rgb(255 255 255 / .55)}
+.v4 tbody tr{cursor:pointer}
+.v4 td{background:var(--surface);padding:12px 6px;text-align:center;vertical-align:middle;transition:background .2s var(--ease)}
+.v4 td:first-child{border-radius:14px 0 0 14px;padding-left:18px;text-align:left}
+.v4 td:last-child{border-radius:0 14px 14px 0;padding-right:16px}
+.v4 tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.v4 .gname{font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.25}
+.v4 .gmeta{font-size:13px;color:var(--muted)}
+.v4 .gmeta .warn{color:var(--fail)}
+.v4 .cell{position:relative;width:68px;height:52px;margin:0 auto;border-radius:10px;display:grid;place-items:center;align-content:center;gap:0;font-family:var(--f-display);font-weight:700;font-size:18px;background:color-mix(in srgb,var(--tc) calc(var(--a) * 1%),transparent)}
+.v4 .cell.z{color:var(--ghost);font-weight:500}
+.v4 .cell small{font-family:var(--f-mono);font-size:10px;font-weight:700;color:var(--accent);line-height:1.1}
+.v4 .cell.due{box-shadow:inset 0 0 0 2px var(--accent)}
+.v4 .dueN{font-family:var(--f-display);font-weight:800;font-size:30px;color:var(--accent);letter-spacing:-.03em}
+.v4 .dueN.z{color:var(--ghost)}
+.v4 tfoot td{background:transparent;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:4px}
+.v4 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--muted);align-items:center}
+.v4 .legend .cell{width:34px;height:22px;font-size:11px}
+/* V4 dictionary page */
+.v4 .dict{display:grid;grid-template-columns:34px minmax(0,1fr);gap:22px}
+.v4 .az{display:grid;gap:2px;align-content:start;font-family:var(--f-mono);font-size:12px;color:var(--ghost);position:sticky;top:12px}
+.v4 .az b{color:var(--ink)}
+.v4 .az b.on{color:var(--on-accent);background:var(--accent);border-radius:5px;text-align:center}
+.v4 .sent{font-size:22px;line-height:1.5;font-family:var(--f-display);font-weight:500;letter-spacing:-.01em;max-width:46ch}
+.v4 .sent u{text-decoration:none;border-bottom:2px dotted var(--accent);color:var(--accent);font-weight:700;cursor:pointer}
+.v4 .tools{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin-top:10px}
+.v4 .guide{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px;margin-top:22px}
+.v4 .cols{columns:2;column-gap:44px;margin-top:14px}
+.v4 .letter{font-family:var(--f-display);font-weight:800;font-size:30px;color:var(--ghost);line-height:1;margin:6px 0 6px;break-after:avoid}
+.v4 .ent{break-inside:avoid;padding:10px 12px;margin:0 -12px 6px;border-radius:12px;cursor:pointer;line-height:1.55;transition:background .2s var(--ease)}
+.v4 .ent:hover{background:var(--surface)}
+.v4 .ent.sel{background:var(--surface);box-shadow:var(--shadow-s)}
+.v4 .ent .hw{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.02em}
+.v4 .ent .pr{font-size:14px;color:var(--muted);margin-left:6px}
+.v4 .ent .ps{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-left:6px}
+.v4 .ent .lv{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--accent);margin-left:6px}
+.v4 .ent .me{font-size:16px}
+.v4 .ent .eg{display:block;font-size:14.5px;font-style:italic;color:var(--muted)}
+.v4 .ent .eg mark{font-style:normal}
+.v4 .ent .stt{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:13px;color:var(--muted)}
+.v4 .ent .stt .lnk{font-size:13px}
+.v4 .ent .acts{display:flex;gap:16px;margin-top:10px}
+.phone .v4{padding:22px 16px 32px;gap:18px}
+.phone .v4 .head h1{font-size:28px}
+.phone .v4 .head .btn{width:100%}
+.phone .v4 table,.phone .v4 thead,.phone .v4 tbody,.phone .v4 tr{display:block}
+.phone .v4 thead,.phone .v4 tfoot{display:none}
+.phone .v4 tbody tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:4px;background:var(--surface);border-radius:14px;padding:12px;margin-bottom:10px}
+.phone .v4 td{display:block;background:transparent!important;padding:0;border-radius:0!important}
+.phone .v4 td:first-child{grid-column:1 / 7;padding:0}
+.phone .v4 td.dc{grid-column:7;grid-row:1;align-self:center}
+.phone .v4 td.ac{display:none}
+.phone .v4 .cell{width:100%;height:38px;font-size:14px}
+.phone .v4 .cell small{font-size:8px}
+.phone .v4 .dict{grid-template-columns:1fr}
+.phone .v4 .az{display:none}
+.phone .v4 .sent{font-size:18px}
+.phone .v4 .cols{columns:1}
+
+/* ===== V5 · Bàn làm việc ===== */
+.v5{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:780px}
+.v5 .rail{background:var(--surface);border-right:1px solid var(--line);padding:24px 14px;display:grid;gap:14px;align-content:start}
+.v5 .rail .rt{display:flex;justify-content:space-between;align-items:center;padding:0 8px}
+.v5 .rail h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.v5 .rail .find{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:14px}
+.v5 .rail .ri{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px;border-radius:10px;cursor:pointer;transition:background .2s var(--ease)}
+.v5 .rail .ri:hover{background:var(--bg)}
+.v5 .rail .ri.sel{background:var(--accent-soft)}
+.v5 .rail .ri .a{font-weight:600;font-size:15px;line-height:1.3}
+.v5 .rail .ri .b{font-size:12px;color:var(--muted)}
+.v5 .rail .ri .c{grid-row:span 2;align-self:center;font-family:var(--f-display);font-weight:800;font-size:20px;color:var(--accent)}
+.v5 .rail .ri .c.z{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--pass)}
+.v5 .rail .ri .c.e{color:var(--ghost);font-family:var(--f-mono);font-size:11px;font-weight:500}
+.v5 .rail .k{display:flex;gap:10px;font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:6px 8px}
+.v5 .det{padding:36px 48px 64px;display:grid;gap:28px;align-content:start}
+.v5 .det .top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 36px;align-items:end}
+.v5 .det .top .mono{grid-column:1 / -1}
+.v5 .det .big{font-family:var(--f-display);font-weight:800;font-size:160px;line-height:.78;letter-spacing:-.065em;color:var(--ink);font-variant-numeric:tabular-nums}
+.v5 .det .big.z{color:var(--ghost)}
+.v5 .det h2{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.v5 .det .acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-top:14px}
+.v5 .rhl{display:grid;gap:8px}
+.v5 .rhl .rh{height:16px;gap:4px}
+.v5 .rhl .rh span{border-radius:5px}
+.v5 .rhl .lab{display:flex;gap:4px}
+.v5 .rhl .lab span{font-family:var(--f-mono);font-size:11px;color:var(--muted);min-width:4px;overflow:hidden;white-space:nowrap}
+.v5 .rhl .lab span b{color:var(--ink);font-weight:700;margin-right:4px}
+.v5 .hand h3{font-size:18px;font-weight:700;margin-bottom:14px}
+.v5 .hand .cards{display:flex;gap:14px;flex-wrap:wrap}
+.v5 .hand .kc{width:132px;aspect-ratio:63/88;transition:transform .25s var(--ease)}
+.v5 .hand .kc:hover{transform:translateY(-6px) rotate(-1.5deg)}
+.v5 .hand .kc .w{font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1.15}
+.v5 .hand .kc .m{font-size:11.5px;line-height:1.35}
+.v5 .hand .kc .art{font-size:16px;min-height:24px}
+.v5 .warnbox{display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:12px;background:var(--fail-soft);color:var(--fail);font-weight:600;font-size:14px}
+/* V5 palette */
+.v5p{padding:40px 56px 72px;display:grid;gap:22px;justify-items:center}
+.pal{width:100%;max-width:1000px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+.pal .in{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--line)}
+.pal .in .tok{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono);font-size:13px;font-weight:700}
+.pal .in .ph{flex:1;font-size:20px;color:var(--ghost);min-width:120px}
+.pal .bd{display:grid;grid-template-columns:400px minmax(0,1fr);min-height:470px}
+.pal .ls{border-right:1px solid var(--line);padding:10px;display:grid;align-content:start;gap:2px}
+.pal .sec{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:12px 10px 4px}
+.pal .it{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 10px;border-radius:10px;cursor:pointer}
+.pal .it:hover{background:var(--bg)}
+.pal .it.sel{background:var(--accent-soft)}
+.pal .it .w{font-weight:600;font-size:15px}
+.pal .it .w small{font-family:var(--f-mono);font-size:10.5px;font-weight:500;color:var(--muted);margin-left:6px}
+.pal .it .m{font-size:13.5px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.pal .it.act .w{color:var(--accent)}
+.pal .pv{padding:26px 30px;display:grid;gap:14px;align-content:start}
+.pal .pv .w{font-family:var(--f-display);font-weight:800;font-size:48px;letter-spacing:-.04em;line-height:1.05}
+.pal .pv .m{font-family:var(--f-display);font-weight:700;font-size:24px}
+.pal .pv .ex{font-size:16px;padding:12px 14px;border-radius:12px;background:var(--bg)}
+.pal .pv .grp{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
+.pal .pv .acts{display:flex;gap:12px 20px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.pal .ft{display:flex;flex-wrap:wrap;gap:6px 18px;padding:10px 18px;border-top:1px solid var(--line);font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.pal .ft span{display:inline-flex;gap:6px;align-items:center}
+.recent{width:100%;max-width:1000px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:14px;color:var(--muted)}
+.recent a{color:var(--ink);font-weight:500;padding:5px 10px;border-radius:8px;background:var(--surface);text-decoration:none}
+.phone .v5{grid-template-columns:1fr}
+.phone .v5 .rail{border-right:0;padding:16px;order:2}
+.phone .v5 .det{padding:22px 16px 8px;gap:20px}
+.phone .v5 .det .big{font-size:96px}
+.phone .v5 .det h2{font-size:24px}
+.phone .v5 .hand .kc{width:104px}
+.phone .v5 .hand .kc .m,.phone .v5 .hand .kc .art{display:none}
+.phone .v5p{padding:16px 12px 24px}
+.phone .pal .bd{grid-template-columns:1fr}
+.phone .pal .pv{display:none}
+.phone .pal .ls{border-right:0}
+.phone .pal .it .m{max-width:120px}
+.phone .pal .ft{display:none}
+.phone .pal .it.sel + .xp{display:grid}
+.xp{display:none;gap:8px;padding:6px 10px 14px 34px;font-size:14px}
+.xp .ex{color:var(--muted)}
+
+/* ===== Lượt 2: theo nguyên tắc thiết kế ===== */
+.tok{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono);font-size:12px;font-weight:700}
+.tok .ic{width:13px;height:13px}
+.sbox{display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);color:var(--muted);font-size:17px}
+.sbox span{flex:1}
+
+/* V6 · Một việc trước (Hick, progressive disclosure, F) */
+.v6{position:relative;padding:48px 64px 72px;display:grid;gap:36px;align-content:start;min-height:780px}
+.v6 .lead{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15;max-width:20ch}
+.v6 .lead em{font-style:normal;color:var(--accent)}
+.v6 .first{max-width:760px;background:var(--surface);border-radius:24px;padding:28px 30px;display:grid;gap:18px;box-shadow:var(--shadow)}
+.v6 .first h2{font-size:32px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+.v6 .stats{display:flex;gap:40px}
+.v6 .stats div{display:grid;gap:2px}
+.v6 .stats b{font-family:var(--f-display);font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.v6 .stats span{font-size:14px;color:var(--muted)}
+.v6 .stats .hl b{color:var(--accent)}
+.v6 .acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+.v6 .next{max-width:760px;display:grid;gap:4px}
+.v6 .next h3,.v6 .rest h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.v6 .nr{display:grid;grid-template-columns:minmax(0,1fr) auto 150px;gap:16px;align-items:center;padding:12px 14px;border-radius:14px;cursor:pointer;transition:background .2s var(--ease)}
+.v6 .nr:hover,.v6 .nr:focus-within{background:var(--surface)}
+.v6 .nr .nm{font-weight:600;font-size:17px}
+.v6 .nr .meta{font-size:13px;color:var(--muted)}
+.v6 .nr .meta .warn{color:var(--fail)}
+.v6 .nr .dn{font-family:var(--f-display);font-weight:800;font-size:26px;color:var(--accent);font-variant-numeric:tabular-nums}
+.v6 .nr .ra{text-align:right;font-weight:600;font-size:14px;color:var(--accent);opacity:0;transform:translateX(-6px);transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.v6 .nr:hover .ra,.v6 .nr:focus-within .ra{opacity:1;transform:none}
+.v6 .rest{max-width:760px;display:grid;gap:8px}
+.v6 .quiet{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;font-size:15px;padding:0 14px}
+.v6 .quiet .mono{min-width:110px}
+.v6 .foot{display:flex;gap:22px;padding:0 14px}
+.v6.t{grid-template-columns:minmax(0,640px);gap:20px}
+.v6 .sh{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.v6 .sh h1{grid-column:1 / -1;font-size:40px;font-weight:800;letter-spacing:-.03em}
+.v6 .fbtn{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:15px}
+.v6 .fbtn b{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--on-accent);font-size:12px}
+.v6 .applied{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.v6 .r6{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:13px 14px;border-radius:12px;cursor:pointer;transition:background .2s var(--ease)}
+.v6 .r6:hover{background:var(--surface)}
+.v6 .r6.sel{background:var(--accent-soft)}
+.v6 .r6 .w{font-family:var(--f-display);font-weight:700;font-size:21px}
+.v6 .r6 .m{color:var(--muted)}
+.v6 .r6 .ra{display:flex;gap:14px;opacity:0;transition:opacity .2s var(--ease)}
+.v6 .r6:hover .ra,.v6 .r6.sel .ra{opacity:1}
+.v6 .panel{position:absolute;top:0;right:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--line);box-shadow:-28px 0 48px -36px rgb(27 36 68 / .5);padding:28px;display:grid;gap:14px;align-content:start}
+.v6 .panel .cl{position:absolute;top:18px;right:18px;width:36px;height:36px;border-radius:10px;border:0;background:var(--bg);display:grid;place-items:center}
+.v6 .panel .w{font-family:var(--f-display);font-weight:800;font-size:46px;letter-spacing:-.04em;line-height:1.05}
+.v6 .panel .m{font-family:var(--f-display);font-weight:700;font-size:24px}
+.v6 .panel .ex{font-size:16px;padding:12px 14px;border-radius:12px;background:var(--bg)}
+.v6 .panel .stt{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
+.v6 .panel .btn{width:100%}
+.phone .v6{padding:24px 16px 32px;gap:24px}
+.phone .v6 .lead{font-size:28px}
+.phone .v6 .first{padding:20px}
+.phone .v6 .first h2{font-size:24px}
+.phone .v6 .stats{gap:24px}
+.phone .v6 .stats b{font-size:30px}
+.phone .v6 .first .btn{width:100%}
+.phone .v6 .nr{grid-template-columns:minmax(0,1fr) auto;padding:12px 8px}
+.phone .v6 .nr .ra{display:none}
+.phone .v6 .quiet{padding:0 8px}
+.phone .v6.t{grid-template-columns:minmax(0,1fr);min-height:900px;padding-bottom:420px}
+.phone .v6 .sh h1{font-size:28px}
+.phone .v6 .r6{grid-template-columns:minmax(0,1fr) auto;padding:12px 8px}
+.phone .v6 .r6 .ra{display:none}
+.phone .v6 .r6 .m{grid-column:1}
+.phone .v6 .panel{top:auto;left:0;width:auto;border-left:0;border-radius:24px 24px 0 0;box-shadow:0 -24px 48px -24px rgb(27 36 68 / .45);padding:22px 18px}
+.phone .v6 .panel .w{font-size:34px}
+
+/* V7 · Theo trạng thái (Gestalt) */
+.v7{padding:40px 56px 72px;display:grid;gap:24px}
+.v7 .head{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:end}
+.v7 .head h1{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.v7 .regions{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) minmax(0,.85fr);gap:18px;align-items:start}
+.v7 .reg{border-radius:24px;padding:18px;display:grid;gap:10px}
+.v7 .reg.acc{background:var(--accent-soft)}
+.v7 .reg.pas{background:var(--pass-soft)}
+.v7 .reg.neu{background:color-mix(in srgb,var(--ink) 5%,var(--bg))}
+.v7 .rh7{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px 6px}
+.v7 .rh7 h2{font-size:18px;font-weight:700}
+.v7 .rh7 b{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:-.03em}
+.v7 .reg.acc .rh7 b{color:var(--accent)} .v7 .reg.pas .rh7 b{color:var(--pass)}
+.v7 .rd{font-size:13px;color:var(--muted);padding:0 4px 4px}
+.v7 .it7{background:var(--surface);border-radius:14px;padding:14px 16px;display:grid;gap:8px;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.v7 .it7:hover{transform:translateY(-2px);box-shadow:var(--shadow-s)}
+.v7 .it7 .l1{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.v7 .it7 .nm{font-weight:600;font-size:16px}
+.v7 .it7 .dn{font-family:var(--f-display);font-weight:800;font-size:24px;color:var(--accent);font-variant-numeric:tabular-nums}
+.v7 .it7 .meta{font-size:13px;color:var(--muted)}
+.v7 .it7 .meta .warn{color:var(--fail)}
+.v7 .it7 .go{font-weight:600;font-size:14px;color:var(--accent)}
+.v7 .reg.pas .it7 .go{color:var(--pass)}
+.v7 .it7.new{background:transparent;border:1.5px solid color-mix(in srgb,var(--ink) 14%,transparent);color:var(--muted)}
+.v7 .w7{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:11px 12px;border-radius:12px;background:var(--surface);cursor:pointer}
+.v7 .w7 .dot{align-self:center}
+.v7 .w7 .w{font-family:var(--f-display);font-weight:700;font-size:18px}
+.v7 .w7 .m{display:block;font-size:14px;color:var(--muted)}
+.v7 .w7 .s{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.v7 .w7.sel{box-shadow:0 0 0 2px var(--accent)}
+.v7 .xp7{grid-column:1 / -1;display:grid;gap:10px;padding-top:8px;border-top:1px solid var(--line);margin-top:4px}
+.v7 .xp7 .ex{font-size:15px}
+.v7 .xp7 .acts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.v7 .xp7 .btn{height:40px}
+.v7 .search7{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.phone .v7{padding:22px 16px 32px;gap:18px}
+.phone .v7 .head h1{font-size:28px}
+.phone .v7 .regions{grid-template-columns:1fr}
+.phone .v7 .search7{grid-template-columns:1fr}
+
+/* V8 · Một tay (Fitts) */
+.v8{display:grid;grid-template-rows:1fr auto;min-height:780px}
+.v8 .col{width:100%;max-width:720px;margin:0 auto;padding:40px 24px 32px;display:grid;gap:18px;align-content:start}
+.v8 h1{font-size:40px;font-weight:800;letter-spacing:-.03em}
+.v8 .seg8{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--ink) 6%,var(--bg))}
+.v8 .seg8 span{display:grid;place-items:center;height:48px;border-radius:12px;font-weight:600;font-size:15px;color:var(--muted)}
+.v8 .seg8 span.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-s)}
+.v8 .r8{display:grid;grid-template-columns:minmax(0,1fr) 52px;gap:14px;align-items:center;min-height:72px;padding:10px 10px 10px 18px;border-radius:18px;background:var(--surface);cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s var(--ease)}
+.v8 .r8:active{transform:scale(.985)}
+.v8 .r8.sel{box-shadow:0 0 0 2.5px var(--accent)}
+.v8 .r8 .nm{font-weight:600;font-size:18px;line-height:1.3}
+.v8 .r8 .meta{font-size:13.5px;color:var(--muted)}
+.v8 .r8 .meta .warn{color:var(--fail)}
+.v8 .r8 .tg{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:22px;background:var(--accent-soft);color:var(--accent);border:0}
+.v8 .r8 .tg.ok{background:var(--pass-soft);color:var(--pass)}
+.v8 .r8 .tg.add{background:var(--bg);color:var(--accent)}
+.v8 .dock{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -18px 36px -28px rgb(27 36 68 / .5)}
+.v8 .dock .in{max-width:720px;margin:0 auto;padding:14px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center}
+.v8 .dock b{display:block;font-size:17px}
+.v8 .dock .btn{height:56px;padding:0 26px;font-size:17px;border-radius:16px}
+.v8 .w8{display:grid;grid-template-columns:minmax(0,1fr) 52px;gap:14px;align-items:center;min-height:68px;padding:8px 8px 8px 18px;border-radius:18px;background:var(--surface);cursor:pointer}
+.v8 .w8 .w{font-family:var(--f-display);font-weight:700;font-size:20px}
+.v8 .w8 .m{display:block;font-size:14.5px;color:var(--muted)}
+.v8 .w8 .tg{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;border:0;background:var(--accent-soft);color:var(--accent)}
+.v8 .w8 .tg.ok{background:transparent;color:var(--muted);font-family:var(--f-mono);font-size:11px;font-weight:500}
+.v8 .w8.sel{box-shadow:0 0 0 2.5px var(--accent)}
+.v8 .xp8{grid-column:1 / -1;display:grid;gap:12px;padding:6px 10px 10px 0}
+.v8 .xp8 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.v8 .xp8 .btn{height:52px;border-radius:14px}
+.v8 .xp8 .btn.sec{background:var(--bg);color:var(--ink)}
+.v8 .sb8{height:56px;border-radius:16px}
+.phone .v8 .col{padding:20px 16px 20px}
+.phone .v8 h1{font-size:28px}
+.phone .v8 .dock .in{padding:10px 16px;grid-template-columns:1fr}
+.phone .v8 .dock .btn{width:100%}
+.phone .v8 .dock .lbl8{display:none}
+
+/* V9 · Bản tin (thứ bậc bằng kích thước) */
+.v9{padding:40px 56px 72px;display:grid;gap:30px}
+.v9 .head{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:end}
+.v9 .head h1{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.v9 .front{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.v9 .front > *{min-width:0}
+.phone .v9 .ld .lab{display:none!important}
+.v9 .ld{grid-column:span 8;grid-row:span 2;background:var(--surface);border-radius:28px;padding:32px 34px;display:grid;gap:20px;align-content:start;box-shadow:var(--shadow)}
+.v9 .ld h2{font-size:46px;font-weight:800;letter-spacing:-.035em;line-height:1.05}
+.v9 .ld .n{display:flex;align-items:baseline;gap:14px}
+.v9 .ld .n b{font-family:var(--f-display);font-weight:800;font-size:110px;line-height:.85;letter-spacing:-.06em;color:var(--accent);font-variant-numeric:tabular-nums}
+.v9 .ld .n b.z{color:var(--pass);font-size:40px;letter-spacing:-.02em}
+.v9 .ld .chips{display:flex;flex-wrap:wrap;gap:8px}
+.v9 .ld .chips span{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:8px;background:var(--bg);font-weight:500;font-size:14px}
+.v9 .sc{grid-column:span 4;border-radius:22px;padding:22px 24px;display:grid;gap:12px;align-content:start;background:var(--surface);cursor:pointer;transition:transform .2s var(--ease)}
+.v9 .sc:hover{transform:translateY(-3px)}
+.v9 .sc h3{font-size:22px;font-weight:700;line-height:1.2}
+.v9 .sc .n{font-family:var(--f-display);font-weight:800;font-size:52px;line-height:.9;letter-spacing:-.04em;color:var(--accent)}
+.v9 .sc .n small{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:8px}
+.v9 .briefs h2{font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--muted);margin-bottom:10px}
+.v9 .bl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 28px}
+.v9 .bi{display:grid;gap:2px;padding:10px 0;cursor:pointer}
+.v9 .bi b{font-weight:600;font-size:16px}
+.v9 .bi span{font-size:13px;color:var(--muted)}
+.v9 .bi .ac{color:var(--accent);font-weight:600}
+.v9 .bi:hover b{text-decoration:underline;text-underline-offset:4px}
+.v9 .ld .w{font-family:var(--f-display);font-weight:800;font-size:72px;letter-spacing:-.05em;line-height:1}
+.v9 .ld .m{font-family:var(--f-display);font-weight:700;font-size:28px}
+.v9 .ld .ex{font-size:17px;padding:14px 16px;border-radius:14px;background:var(--bg);max-width:58ch}
+.v9 .sc .w{font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.v9 .sc .m{color:var(--muted)}
+.v9 .acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+.phone .v9{padding:22px 16px 32px;gap:22px}
+.phone .v9 .head h1{font-size:28px}
+.phone .v9 .front{grid-template-columns:1fr 1fr;gap:12px}
+.phone .v9 .ld{grid-column:1 / -1;grid-row:auto;padding:22px;border-radius:22px}
+.phone .v9 .ld h2{font-size:30px}
+.phone .v9 .ld .n b{font-size:76px}
+.phone .v9 .ld .w{font-size:46px}
+.phone .v9 .ld .btn{width:100%}
+.phone .v9 .sc{grid-column:span 1;padding:16px}
+.phone .v9 .sc h3{font-size:16px}
+.phone .v9 .sc .n{font-size:36px}
+.phone .v9 .sc .n small{display:block;margin:4px 0 0}
+.phone .v9 .sc .w{font-size:20px}
+.phone .v9 .bl{grid-template-columns:1fr 1fr}
+
+/* V10 · Ngữ cảnh trước (lịch tuần, câu trước nghĩa) */
+.v10{padding:40px 56px 72px;display:grid;gap:22px}
+.v10 .head h1{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.v10 .head p{font-size:20px;margin-top:6px}
+.v10 .head p em{font-style:normal;color:var(--accent);font-weight:700}
+.v10 .api{font-family:var(--f-mono);font-size:12px;color:var(--fail);background:var(--fail-soft);padding:6px 10px;border-radius:8px;justify-self:start}
+.v10 .wk{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(7,minmax(0,1fr)) 128px;align-items:stretch;position:relative}
+.v10 .wk > *{padding:10px 8px;display:grid;align-content:center}
+.v10 .wk .hd{font-size:13px;color:var(--muted);text-align:center;padding-bottom:6px}
+.v10 .wk .hd.l{text-align:left}
+.v10 .wk .td{background:var(--accent-soft)}
+.v10 .wk .hd.td{border-radius:14px 14px 0 0;color:var(--accent);font-weight:700}
+.v10 .wk .ft.td{border-radius:0 0 14px 14px}
+.v10 .wk .gn{font-weight:600;font-size:16px;line-height:1.3;border-top:1px solid var(--line)}
+.v10 .wk .gn small{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+.v10 .wk .gn small .warn{color:var(--fail)}
+.v10 .wk .c{border-top:1px solid var(--line);justify-items:center;gap:4px}
+.v10 .wk .c i{display:block;width:16px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+.v10 .wk .c.td i{background:var(--accent)}
+.v10 .wk .c span{font-family:var(--f-display);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.v10 .wk .c.td span{color:var(--accent);font-size:20px}
+.v10 .wk .c.z span{color:var(--ghost);font-weight:500}
+.v10 .wk .ac{border-top:1px solid var(--line);justify-items:end}
+.v10 .wk .ft{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:center;justify-items:center;gap:4px}
+.v10 .wk .ft i{display:block;width:22px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--ink) 30%,transparent)}
+.v10 .wk .ft.td i{background:var(--accent)}
+.v10 .wk .ft b{font-family:var(--f-display);font-size:16px;color:var(--ink)}
+.v10 .wk .ft.td b{color:var(--accent)}
+.v10 .tg10{display:inline-flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:600}
+.v10 .tg10 span{padding:5px 10px;border-radius:7px;color:var(--muted)}
+.v10 .tg10 span.on{background:var(--ink);color:var(--surface)}
+.v10 .bar10{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.v10 .r10{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:6px 24px;padding:16px 16px;border-radius:16px;cursor:pointer;transition:background .2s var(--ease)}
+.v10 .r10:hover{background:var(--surface)}
+.v10 .r10.sel{background:var(--surface);box-shadow:var(--shadow-s)}
+.v10 .r10 .s{font-size:19px;line-height:1.5;font-family:var(--f-display);font-weight:500;letter-spacing:-.005em}
+.v10 .r10 .d{grid-column:1;font-size:14.5px;color:var(--muted)}
+.v10 .r10 .d b{color:var(--ink);font-weight:600}
+.v10 .r10 .st{grid-column:2;grid-row:1 / span 2;align-self:center;justify-self:end;display:flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.v10 .r10 .xp10{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding-top:10px;border-top:1px solid var(--line);margin-top:6px}
+.phone .v10{padding:22px 16px 32px;gap:18px}
+.phone .v10 .head h1{font-size:28px}
+.phone .v10 .head p{font-size:17px}
+.phone .v10 .wk{grid-template-columns:minmax(0,1.5fr) repeat(4,minmax(0,1fr))}
+.phone .v10 .wk .gn{font-size:14px}
+.phone .v10 .wk .x3,.phone .v10 .wk .ac{display:none}
+.phone .v10 .r10{grid-template-columns:minmax(0,1fr) auto;padding:14px 8px}
+.phone .v10 .r10 .s{font-size:17px}
+.phone .v10 .r10 .st .lb{display:none}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:0s!important;animation:none!important}
+  .st-card.d1,.st-card.d2,.v3 .ms .c.b1,.v3 .ms .c.b2{filter:none}
+}
+</style>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Nhóm và Tra từ: mười hướng bố cục</h1>
+    <p>Lượt 1 ghép từ Tiêu điểm, Thẻ bài sưu tầm và chồng thẻ tan mờ. Lượt 2 dựng từ các nguyên tắc thiết kế trong <code>ui-best-practices.md</code> (Hick, Fitts, Gestalt, hé lộ dần, thứ bậc bằng kích thước, nhận ra thay vì nhớ). Màu, chữ và nút giữ theo landing bản 3. Bấm vào nhóm hoặc từ trong khung để xem trạng thái khác; phím ↑ ↓ cũng đổi được.</p>
+  </header>
+
+  <details class="audit">
+    <summary>Bản Figma hiện tại còn "AI slop" ở đâu (soi theo skill redesign)</summary>
+    <ul>
+      <li><b>Nhóm:</b> 8 card trắng giống hệt nhau xếp lưới 3 cột, mỗi card một cặp nút Ôn (nền đặc) và Học (viền). Có 14 nút cùng lúc nên không biết nên bắt đầu từ đâu.</li>
+      <li><b>Nhóm:</b> biểu đồ cột nhỏ trong mỗi card không có nhãn, chỉ để trang trí.</li>
+      <li><b>Nhóm:</b> ô "Tạo nhóm mới" viền đứt nền xanh nhạt, và 4 card chủ đề có vạch màu trên đầu, đều là mẫu quen của AI.</li>
+      <li><b>Tra từ:</b> mỗi dòng kết quả là một card nổi có bóng, nút + tròn lặp 8 lần; chip "B1" lặp ở mọi dòng dù đã lọc B1.</li>
+      <li><b>Tra từ:</b> quầng sáng xanh và vàng sau tiêu đề không mang thông tin gì; có hai ô tìm trên cùng một màn.</li>
+      <li><b>Cả hai:</b> chip bo tròn ở khắp nơi, icon Lucide mặc định trên thanh tab, mọi khối cùng bo góc và cùng bóng.</li>
+    </ul>
+  </details>
+
+  <section class="pick" aria-label="Chọn mẫu">
+    <div class="vgroups" id="vlist"></div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Trang"><button type="button" data-page="nhom">Nhóm</button><button type="button" data-page="tra">Tra từ</button></div>
+      <div class="seg" role="group" aria-label="Khung"><button type="button" data-dev="desk">Máy tính</button><button type="button" data-dev="phone">Điện thoại</button></div>
+    </div>
+  </section>
+
+  <div class="stage" id="stage"><div class="scaler" id="scaler"><div class="dev desk" id="screen" tabindex="-1"></div></div></div>
+
+  <section class="notes" id="notes" aria-live="polite"></section>
+</main>
+
+<script>
+(function(){
+  var EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
+  var STAGES = ['Mới','1 ngày','3 ngày','7 ngày','14 ngày','30 ngày'];
+  var TIER = ['Thường','Đồng','Bạc','Vàng','Lục bảo','Ánh kim'];
+  var G = [
+    { name:'Đề 12 · Writing', code:'W12', pat:'ruled', total:48, cells:[6,9,10,11,8,4], dueBy:[6,9,9,0,0,0], next:{w:'mitigate',p:'verb',ipa:'/ˈmɪt.ɪ.ɡeɪt/',m:'giảm nhẹ'}, hand:[['mitigate','giảm nhẹ',0],['allocate','phân bổ',1],['substantial','đáng kể',1],['inevitable','không tránh được',2],['viable','khả thi',2]] },
+    { name:'Đề 9 · Listening', code:'L9', pat:'wave', total:40, cells:[4,12,9,7,5,3], dueBy:[4,12,2,0,0,0], backlog:18, next:{w:'commute',p:'verb',ipa:'/kəˈmjuːt/',m:'đi lại hằng ngày'}, hand:[['commute','đi lại hằng ngày',0],['itinerary','lịch trình chuyến đi',1],['refund','hoàn tiền',1],['venue','địa điểm',1],['brochure','tờ quảng cáo',2]] },
+    { name:'Đề 14 · Reading', code:'R14', pat:'dots', total:36, cells:[5,8,9,6,5,3], dueBy:[5,6,0,0,0,0], next:{w:'prevalent',p:'adjective',ipa:'/ˈprev.əl.ənt/',m:'phổ biến'}, hand:[['prevalent','phổ biến',0],['scarce','khan hiếm',0],['hypothesis','giả thuyết',1],['erode','xói mòn',1],['notion','khái niệm',1]] },
+    { name:'Từ gặp ngoài đời', code:'NĐ', pat:'grid', total:22, cells:[3,5,6,4,3,1], dueBy:[3,3,0,0,0,0], next:{w:'overwhelmed',p:'adjective',ipa:'/ˌəʊ.vəˈwelmd/',m:'choáng ngợp'}, hand:[['overwhelmed','choáng ngợp',0],['errand','việc vặt',0],['receipt','hóa đơn',1],['detour','đường vòng',1],['leftover','đồ ăn thừa',1]] },
+    { name:'Đề 10 · Writing', code:'W10', pat:'ruled', total:28, cells:[2,4,6,7,6,3], dueBy:[0,0,3,0,0,0], next:{w:'allocate',p:'verb',ipa:'/ˈæl.ə.keɪt/',m:'phân bổ'}, hand:[['allocate','phân bổ',2],['deteriorate','xấu đi',2],['reluctant','miễn cưỡng',2]] },
+    { name:'Công việc · B1', code:'CV', pat:'stripe', total:24, cells:[2,3,5,6,5,3], dueBy:[0,0,0,0,0,0], next:{w:'colleague',p:'noun',ipa:'/ˈkɒl.iːɡ/',m:'đồng nghiệp'}, hand:[] },
+    { name:'Đề 11 · Speaking', code:'S11', pat:'wave', total:30, cells:[1,3,6,8,7,5], dueBy:[0,0,0,0,0,0], next:{w:'reluctant',p:'adjective',ipa:'/rɪˈlʌk.tənt/',m:'miễn cưỡng'}, hand:[] },
+    { name:'Du lịch Nhật', code:'NB', pat:'chev', total:0, cells:[0,0,0,0,0,0], dueBy:[0,0,0,0,0,0], next:null, hand:[] }
+  ];
+  G.forEach(function(g){ g.due = g.dueBy.reduce(function(a,b){return a+b;},0); g.known = g.cells[4] + g.cells[5]; });
+  var DUE = G.reduce(function(a,g){return a+g.due;},0), WORDS = G.reduce(function(a,g){return a+g.total;},0), KNOWN = G.reduce(function(a,g){return a+g.known;},0);
+  var WAITING = G.filter(function(g){return g.due>0;}).length, DONE = G.filter(function(g){return g.total>0 && g.due===0;}).length;
+  var W = [
+    { w:'deadline', p:'noun', m:'hạn chót', uk:'/ˈded.laɪn/', us:'/ˈded.laɪn/', ex:'The deadline for applications is 30 June.', f:['deadlines'], st:3, grp:'Công việc · B1' },
+    { w:'budget', p:'noun', m:'ngân sách', uk:'/ˈbʌdʒ.ɪt/', us:'/ˈbʌdʒ.ɪt/', ex:'We have to stay within the budget this year.', f:['budgets'], st:1, grp:'Công việc · B1' },
+    { w:'contract', p:'noun', m:'hợp đồng', uk:'/ˈkɒn.trækt/', us:'/ˈkɑːn.trækt/', ex:'She signed a two-year contract with the firm.', f:['contracts'], st:null },
+    { w:'candidate', p:'noun', m:'ứng viên', uk:'/ˈkæn.dɪ.dət/', us:'/ˈkæn.dɪ.deɪt/', ex:'There are three candidates for the job.', f:['candidates'], st:0, grp:'Công việc · B1' },
+    { w:'profit', p:'noun', m:'lợi nhuận', uk:'/ˈprɒf.ɪt/', us:'/ˈprɑː.fɪt/', ex:'The company made a small profit last year.', f:['profits'], st:4, grp:'Công việc · B1' },
+    { w:'schedule', p:'noun, verb', m:'lịch trình; lên lịch', uk:'/ˈʃedʒ.uːl/', us:'/ˈskedʒ.uːl/', ex:'The meeting is scheduled for Monday morning.', f:['scheduled','schedules'], st:2, grp:'Công việc · B1' },
+    { w:'negotiate', p:'verb', m:'đàm phán', uk:'/nəˈɡəʊ.ʃi.eɪt/', us:'/nəˈɡoʊ.ʃi.eɪt/', ex:'They negotiated a lower price with the supplier.', f:['negotiated','negotiates'], st:null },
+    { w:'stakeholder', p:'noun', m:'bên liên quan', uk:'/ˈsteɪkˌhəʊl.dər/', us:'/ˈsteɪkˌhoʊl.dɚ/', ex:'Every stakeholder gets a copy of the report.', f:['stakeholders'], st:5, grp:'Công việc · B1', mine:true },
+    { w:'colleague', p:'noun', m:'đồng nghiệp', uk:'/ˈkɒl.iːɡ/', us:'/ˈkɑː.liːɡ/', ex:'I had lunch with a colleague from sales.', f:['colleagues'], st:3, grp:'Công việc · B1' },
+    { w:'invoice', p:'noun', m:'hóa đơn', uk:'/ˈɪn.vɔɪs/', us:'/ˈɪn.vɔɪs/', ex:'Please send the invoice by Friday.', f:['invoices'], st:null }
+  ];
+  var TOTAL_RES = 24;
+  var V = [
+    { t:'Mục lục', s:'Tiêu điểm thuần: chữ lớn, không khung, đi bằng phím' },
+    { t:'Bìa sưu tập', s:'Thẻ bài thuần: mỗi nhóm là một xấp bài, hạng theo ngăn' },
+    { t:'Chồng thẻ', s:'Chồng thẻ tan mờ × Tiêu điểm: nhóm gấp nhất ở giữa' },
+    { t:'Bảng ngăn', s:'Tiêu điểm × màu hạng: bảng nhóm × ngăn, Tra từ như trang từ điển' },
+    { t:'Bàn làm việc', s:'Tiêu điểm × Thẻ bài: danh sách và chi tiết, Tra từ là ô lệnh' },
+    { t:'Một việc trước', s:'Hick, hé lộ dần, mẫu F: một nút chính, phần còn lại thu gọn' },
+    { t:'Theo trạng thái', s:'Gestalt: mỗi trạng thái một vùng nền, cùng hình là cùng loại' },
+    { t:'Một tay', s:'Fitts: vùng chạm lớn, nút chính sát cạnh dưới, ô tìm gần ngón cái' },
+    { t:'Bản tin', s:'Thứ bậc bằng kích thước: tin chính, tin phụ, tin vắn' },
+    { t:'Ngữ cảnh trước', s:'Nhận ra thay vì nhớ: lịch ôn theo ngày, câu có từ đứng trước nghĩa' }
+  ];
+  var NOTES = {
+    1:{ from:['<b>Tiêu điểm:</b> số thẻ chờ cỡ 150 px là thứ đầu tiên mắt chạm, nhãn chữ mono thường, phím tắt đi kèm mọi việc.','<b>Chồng thẻ:</b> token màu, chữ Bricolage + Noto, JetBrains Mono cho nhãn.'],
+        fix:['Bỏ card: mỗi nhóm là một dòng, chỉ có <b>một</b> nút chính trên màn (ôn nhóm gấp nhất).','Biểu đồ cột thành thanh nhịp 6 ngăn có nghĩa: phần xanh là thẻ đến hạn của ngăn đó.','Tra từ: ô tìm là tiêu đề trang, kết quả là mục lục chữ, dòng đang chọn mở ngay tại chỗ thay vì card bên phải.'],
+        cost:['Ít "đồ chơi" nhất trong 5 mẫu; ai thích nhìn thẻ sẽ thấy khô.','Cần dạy phím tắt (đã có dòng gợi ý dưới danh sách).','Rất dễ dựng: chủ yếu là chữ và khoảng trắng.'] },
+    2:{ from:['<b>Thẻ bài sưu tầm:</b> lá bài tỷ lệ 63 : 88, khung theo hạng (Thường, Đồng, Bạc, Vàng, Lục bảo, Ánh kim) đúng 6 ngăn, nền "bìa đựng bài" chấm 18 px.','<b>Landing:</b> giữ màu nhấn xanh và chữ của landing thay cho tím và Big Shoulders của K gốc.'],
+        fix:['Mỗi nhóm thành một xấp bài: nhìn khung là biết nhóm đang ở hạng nào, không cần biểu đồ.','Ô "Tạo nhóm mới" viền đứt thành túi đựng bài trống.','Tra từ: kết quả là lưới lá bài; từ chưa có trong nhóm nào là ô trống chờ sưu tầm.'],
+        cost:['Vui và có cá tính nhất, nhưng chiếm chỗ: một màn chỉ thấy 8 nhóm hoặc 10 từ.','Gradient khung bài là ngoại lệ có chủ ý so với luật "không gradient".','Tốn công dựng nhất (khung, hoa văn chủ đề, nghiêng theo chuột).'] },
+    3:{ from:['<b>Chồng thẻ tan mờ</b> (artifact bạn gửi): thẻ phía sau mờ dần theo độ sâu, đổi thẻ thì thẻ cũ phóng to rồi tan, thẻ mới hiện từ mờ.','<b>Tiêu điểm:</b> một nhóm ở giữa, số thẻ chờ lớn.'],
+        fix:['Trang Nhóm có một tiêu điểm rõ: nhóm gấp nhất, kèm từ sắp ôn đầu tiên. Các nhóm khác là chồng nhỏ, chồng càng dày là càng nhiều thẻ chờ.','Tra từ: bên trái là danh sách chữ gọn, bên phải là chồng thẻ của từ đang chọn; đổi từ là thấy hiệu ứng tan mờ.'],
+        cost:['Nối liền với màn Ôn: người học thấy cùng một hình thẻ ở mọi nơi.','<code>filter: blur</code> tốn GPU; cần thử trên laptop yếu như ghi chú của artifact gốc.','Chồng nhỏ của nhóm "Xong hôm nay" chỉ còn một lá phẳng.'] },
+    4:{ from:['<b>Tiêu điểm:</b> chữ là chính, không card.','<b>Thẻ bài:</b> màu hạng của 6 ngăn làm màu nền ô.','<b>Từ điển giấy</b> (ý từ Dictionary.com, không chép): chữ đầu mục, phiên âm, loại từ, câu ví dụ nghiêng, chữ cái A–Z bên lề.'],
+        fix:['Nhóm thành bảng: hàng là nhóm, cột là ngăn. Ô có viền xanh là ngăn đang có thẻ đến hạn. Thấy cả tiến độ lẫn việc hôm nay trong một lần nhìn.','Bộ lọc của Tra từ thành một câu: "24 từ B1, chủ đề Công việc…", bấm vào chữ gạch chấm để đổi.'],
+        cost:['Dày thông tin nhất; hợp người học kỹ như persona IELTS, có thể nặng với người mới.','Trên điện thoại bảng thành từng hàng 6 ô nhỏ.','Trang từ điển hai cột cần dữ liệu IPA (đợt C, chưa có trên dev).'] },
+    5:{ from:['<b>Tiêu điểm:</b> số thẻ chờ khổng lồ, ô lệnh <kbd>/</kbd>.','<b>Thẻ bài:</b> "thẻ đến lượt" là 5 lá có khung hạng.','<b>Ứng dụng làm việc</b> (Linear, Raycast): danh sách bên trái, chi tiết bên phải, ô lệnh có nhóm kết quả.'],
+        fix:['Nhóm: không còn lưới card; chọn một nhóm bên trái, bên phải là mọi thứ của nhóm đó và một nút chính.','Tra từ: một ô lệnh duy nhất, gộp Từ điển, Từ của tôi, Thêm từ mới, Tra bằng AI vào một danh sách; không còn hai ô tìm.'],
+        cost:['Quen với người dùng máy tính; trên điện thoại phải đổi thành danh sách mở rộng tại chỗ.','Cột trái chiếm 300 px nên chi tiết hẹp hơn.','Phải nhớ nhóm đang chọn khi quay lại trang.'] },
+    6:{ h:['Nguyên tắc áp dụng','Sửa gì so với bản hiện tại','Được và mất'],
+        from:['<b>Định luật Hick:</b> càng nhiều lựa chọn càng lâu quyết. Màn đầu chỉ có một nút chính và một câu tóm tắt.','<b>Hé lộ dần:</b> nút "Ôn" của từng nhóm chỉ hiện khi rê chuột hoặc chọn; bộ lọc Tra từ gập vào nút "Bộ lọc 2".','<b>Mẫu đọc F:</b> câu tóm tắt, nhóm đầu, danh sách, đều trên một trục trái, rộng tối đa 760 px.','<b>Skill redesign:</b> panel trượt bên phải thay cho hộp thoại; không card cho phần phụ.'],
+        fix:['14 nút còn 1 nút chính. Nhóm đã xong và nhóm trống gom thành 2 dòng chữ.','Ô "Tạo nhóm" viền đứt thành một liên kết chữ cuối trang.','Tra từ: một ô tìm; chi tiết từ mở ở panel bên phải, không che danh sách.'],
+        cost:['Nhóm đã xong khó thấy hơn, có chủ ý.','Muốn so sánh các nhóm phải đọc từng dòng.','Panel chiếm 420 px; trên điện thoại thành sheet dưới.'] },
+    7:{ h:['Nguyên tắc áp dụng','Sửa gì so với bản hiện tại','Được và mất'],
+        from:['<b>Vùng chung (Gestalt common region):</b> mỗi trạng thái một nền màu: Cần ôn xanh, Xong hôm nay lục, Chưa có từ xám.','<b>Giống nhau (similarity):</b> mọi nhóm cùng một hình; khác vùng là khác trạng thái, không cần chip.','<b>Gần nhau (proximity):</b> việc nằm cạnh thứ nó tác động: "Thêm cả loạt" nằm trong vùng "Chưa trong nhóm nào".','Màu ngữ nghĩa (lục, đỏ) tách khỏi màu nhấn, như best practice §4.'],
+        fix:['Bỏ chip "24 thẻ chờ", "Xong hôm nay": vùng nền đã nói trạng thái.','Tra từ chia kết quả theo việc người học làm được: thêm mới, đang học, đã thuộc.'],
+        cost:['Ba cột không cân: vùng Cần ôn dài, vùng Chưa có từ ngắn.','Nhóm đổi cột mỗi ngày nên vị trí không cố định.','Tra từ theo vùng mất thứ tự chữ cái.'] },
+    8:{ h:['Nguyên tắc áp dụng','Sửa gì so với bản hiện tại','Được và mất'],
+        from:['<b>Định luật Fitts:</b> đích càng to, càng gần thì bấm càng nhanh. Nút chính 56 px nằm trong thanh dưới cùng, sát ngón cái.','<b>Vùng chạm ≥ 44 px</b> (best practice §4): dòng cao 72 px, nút + 52 px.','<b>Điện thoại trước:</b> ô tìm của Tra từ nằm dưới, trong vùng ngón cái; máy tính giữ ô tìm ở trên.','Bấm dòng là chọn; thanh dưới đổi theo nhóm đang chọn.'],
+        fix:['Bỏ cặp nút Ôn/Học trong từng card: một thanh hành động duy nhất.','Ô số thẻ chờ to bên phải mỗi dòng thay cho chip nhỏ.'],
+        cost:['Trên máy tính trông thưa: cột 720 px, ít thông tin mỗi màn.','Ô tìm ở dưới lạ với người quen ô tìm ở trên.','Cần thêm bước chọn nhóm rồi mới bấm Ôn.'] },
+    9:{ h:['Nguyên tắc áp dụng','Sửa gì so với bản hiện tại','Được và mất'],
+        from:['<b>Thứ bậc bằng kích thước</b> (best practice §1): nhóm gấp nhất to nhất, hai nhóm sau vừa, còn lại là chữ nhỏ.','<b>Bố cục bất đối xứng 8 : 4</b> thay lưới card đều (skill redesign).','<b>Card theo vai trò:</b> tin chính có bóng, tin phụ không bóng, tin vắn không khung.','<b>Mẫu đọc Z</b> cho trang có ít chữ: tiêu đề, tin chính, tin phụ, tin vắn.'],
+        fix:['Thấy ngay nên làm gì trước mà không cần đọc số.','Tra từ: từ đang chọn là tin chính; hai từ kế là tin phụ; còn lại là danh sách gọn.'],
+        cost:['Bố cục đổi theo dữ liệu: nhóm đổi chỗ mỗi ngày.','Hai tin phụ vẫn chiếm chỗ khi chỉ có một nhóm chờ.','Tra từ: kết quả không còn một danh sách liền mạch.'] },
+    10:{ h:['Nguyên tắc áp dụng','Sửa gì so với bản hiện tại','Được và mất'],
+        from:['<b>Nhận ra thay vì nhớ lại:</b> Tra từ đưa câu có từ lên trước, nghĩa sau; có nút đổi "Câu trước / Từ trước".','<b>Ánh xạ tự nhiên:</b> trục ngang là 7 ngày, như lịch; cột hôm nay có nền riêng.','<b>Vẽ đúng tỷ lệ:</b> chiều cao cột theo số thẻ, dùng chung một thang.','<b>Persona:</b> người học IELTS bỏ flashcard vì giống học thuộc; phỏng vấn xếp lịch ôn vào các ưu tiên của trang Hôm nay.'],
+        fix:['Biểu đồ cột không nhãn thành lịch tuần có số.','Tra từ: mỗi kết quả là một câu thật; từ đích tô vàng như mọi nơi khác.'],
+        cost:['<b>Cần API mới</b> trả số thẻ đến hạn theo ngày; hiện API chỉ có số của hôm nay.','Câu ví dụ làm danh sách Tra từ dài gần gấp đôi.','Trên điện thoại chỉ đủ chỗ cho hôm nay và 3 ngày tới.'] }
+  };
+
+  var st = { v:1, page:'nhom', dev: innerWidth < 700 ? 'phone' : 'desk', sel:0, gsel:0 };
+  var $ = function(id){ return document.getElementById(id); };
+  var screen = $('screen'), scaler = $('scaler'), stage = $('stage');
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ---------- helpers ---------- */
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function mark(sentence, word){
+    var forms = [word.w].concat(word.f || []).sort(function(a,b){ return b.length - a.length; });
+    return esc(sentence).replace(new RegExp('\\b(' + forms.join('|') + ')\\b', 'i'), '<mark>$1</mark>');
+  }
+  var IC = {
+    today:'<path d="M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4"/>',
+    group:'<rect x="4" y="6" width="13" height="15" rx="2.5"/><path d="M8 3h10a2.5 2.5 0 0 1 2.5 2.5V17"/>',
+    prac:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
+    look:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    say:'<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>', arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>', down:'<path d="m6 9 6 6 6-6"/>',
+    more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>'
+  };
+  function ic(k, cls){ return '<svg class="ic ' + (cls||'') + '" viewBox="0 0 24 24" aria-hidden="true">' + IC[k] + '</svg>'; }
+  function say(w){ return '<button type="button" class="say" aria-label="Nghe ' + esc(w) + '">' + ic('say') + '</button>'; }
+  function ipa(w){ return '<div class="ipa"><span><b>UK</b>' + w.uk + say(w.w) + '</span><span><b>US</b>' + w.us + say(w.w) + '</span></div>'; }
+  function rhythm(g){
+    if (!g.total) return '<div class="rh empty"><span style="flex:1"></span></div>';
+    return '<div class="rh" aria-label="Nhịp ôn">' + g.cells.map(function(c,i){
+      if (!c) return '';
+      return '<span style="flex:' + c + ' 1 0" title="' + STAGES[i] + ': ' + c + ' từ' + (g.dueBy[i] ? ', ' + g.dueBy[i] + ' thẻ chờ' : '') + '"><b style="width:' + Math.round(g.dueBy[i] / c * 100) + '%"></b></span>';
+    }).join('') + '</div>';
+  }
+  function tcls(s){ return s === null || s === undefined ? 'tn' : 't' + s; }
+  function stLabel(w){ return w.st === null || w.st === undefined ? 'chưa trong nhóm nào' : 'ngăn ' + STAGES[w.st]; }
+  function gmeta(g){
+    if (!g.total) return 'chưa có từ';
+    return g.total + ' từ · ' + g.known + ' đã thuộc' + (g.backlog ? ' · <span class="warn">' + g.backlog + ' từ lâu chưa ôn</span>' : '');
+  }
+  function action(g){
+    if (!g.total) return { t:'Thêm từ', mut:false };
+    if (!g.due) return { t:'Học lại cả nhóm', mut:true };
+    return { t:'Ôn ' + g.due + ' thẻ', mut:false };
+  }
+  var urgent = G.slice().filter(function(g){return g.due>0;}).sort(function(a,b){return b.due-a.due;})[0];
+
+  /* ---------- chrome ---------- */
+  function chrome(inner){
+    var tabs = [['Hôm nay','today'],['Nhóm','group'],['Luyện tập','prac'],['Tra từ','look']];
+    var on = st.page === 'nhom' ? 'Nhóm' : 'Tra từ';
+    if (st.dev === 'phone') {
+      return '<header class="ab"><span class="logo">wordmet<i></i></span><span class="sp"></span>' + ic('look') + '<span class="ava">L</span></header>' + inner +
+        '<nav class="tb">' + tabs.map(function(t){ return '<span class="' + (t[0]===on?'on':'') + '">' + ic(t[1]) + t[0] + '</span>'; }).join('') + '</nav>';
+    }
+    return '<header class="ab"><span class="logo">wordmet<i></i></span><nav class="tabs">' + tabs.map(function(t){ return '<span class="' + (t[0]===on?'on':'') + '">' + t[0] + '</span>'; }).join('') +
+      '</nav><div class="cmd">' + ic('look') + '<span>Tìm từ hoặc gõ lệnh</span><kbd>/</kbd></div><button type="button" class="addw">' + ic('plus') + 'Thêm từ <kbd>N</kbd></button><span class="ava">L</span></header>' + inner;
+  }
+
+  /* ---------- V1 ---------- */
+  function v1nhom(){
+    var rows = G.map(function(g,i){
+      var a = action(g);
+      return '<div class="gr' + (g.total && !g.due ? ' done' : '') + (st.gsel===i?' sel':'') + '" data-g="' + i + '">' +
+        '<span class="due' + (g.due ? '' : ' z') + '">' + (g.due || '0') + '</span>' +
+        '<div><div class="nm">' + esc(g.name) + '</div><div class="meta">' + gmeta(g) + '</div></div>' + rhythm(g) +
+        '<span class="act' + (a.mut ? ' mut' : '') + '">' + a.t + (a.mut ? '' : ' →') + ' <kbd>' + (i+1) + '</kbd></span></div>';
+    }).join('');
+    return '<div class="v1"><section class="hero"><span class="big">' + DUE + '</span><div><h1>Nhóm của bạn</h1><span class="mono">thẻ chờ hôm nay, trong ' + WAITING + ' nhóm · ' + G.length + ' nhóm · ' + WORDS + ' từ · ' + KNOWN + ' đã thuộc</span>' +
+      '<div class="filt"><span class="on">tất cả ' + G.length + '</span><span>còn thẻ chờ ' + WAITING + '</span><span>xong hôm nay ' + DONE + '</span><span>tìm nhóm <kbd>F</kbd></span></div></div>' +
+      '<div class="side"><button type="button" class="btn">Ôn ' + esc(urgent.name) + ' <kbd>↵</kbd></button><button type="button" class="lnk mut">Tạo nhóm <kbd>C</kbd></button></div></section>' +
+      '<section class="list"><div class="lh"><span>chờ</span><span>nhóm</span><span>nhịp ôn: mới → 30 ngày, phần xanh là thẻ chờ</span><span></span></div>' + rows + '</section>' +
+      '<section class="topics"><h2>Tạo nhóm nhanh theo chủ đề</h2><a>Công việc · B1<small>24 từ</small></a><a>Du lịch · A2<small>18 từ</small></a><a>Công nghệ · B2<small>30 từ</small></a><a>Đời sống · A2<small>40 từ</small></a><a class="lnk">Xem mọi chủ đề →</a></section></div>';
+  }
+  function v1tra(){
+    var rows = W.map(function(w,i){
+      var row = '<div class="wr" data-w="' + i + '"><span class="w">' + esc(w.w) + (w.mine ? '<span class="mine">của tôi</span>' : '') + '</span><span class="p mono">' + w.p + '</span><span class="m">' + esc(w.m) + '</span>' +
+        '<span class="st">' + (w.st === null || w.st === undefined ? '<span class="lnk">+ thêm</span>' : '<i class="dot ' + tcls(w.st) + '"></i>' + stLabel(w)) + '</span></div>';
+      if (i !== st.sel) return row;
+      return '<div class="open" data-anim><div class="top"><span class="w">' + esc(w.w) + '</span>' + ipa(w) + '</div><p class="m" style="font-size:20px;font-weight:600">' + esc(w.m) + ' <span class="mono">' + w.p + ' · B1 · Công việc</span></p>' +
+        '<p class="ex">' + mark(w.ex, w) + '</p><div class="acts"><button type="button" class="btn">Thêm vào nhóm <kbd>A</kbd></button><button type="button" class="lnk">Mở trang từ <kbd>↵</kbd></button>' +
+        '<span class="mono"><i class="dot ' + tcls(w.st) + '"></i> ' + (w.grp ? esc(w.grp) + ' · ' : '') + stLabel(w) + '</span></div></div>';
+    }).join('');
+    return '<div class="v1"><section style="display:grid;gap:14px"><div class="q"><span class="slash">/</span><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="caret"></span><span class="typed">gõ từ cần tra</span></div>' +
+      '<div class="qbar"><span class="mono">' + TOTAL_RES + ' từ · loại từ: tất cả · <u>chỉ từ của tôi</u></span><button type="button" class="lnk">Thêm cả loạt vào nhóm</button></div></section>' +
+      '<section class="wl">' + rows + '<button type="button" class="lnk" style="padding:14px">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</button></section>' +
+      '<div class="keys"><span><kbd>↑</kbd><kbd>↓</kbd> chọn</span><span><kbd>↵</kbd> mở trang từ</span><span><kbd>A</kbd> thêm vào nhóm</span><span><kbd>/</kbd> tìm lại</span><span><kbd>Esc</kbd> xóa lọc</span></div></div>';
+  }
+
+  /* ---------- V2 ---------- */
+  function kcGroup(g){
+    var dom = g.cells.indexOf(Math.max.apply(null, g.cells));
+    var pips = g.cells.map(function(c,i){ return c ? '<i class="t' + i + '" style="flex:' + c + '"></i>' : ''; }).join('');
+    return '<div class="kc t' + dom + '"><div class="in"><div class="nm">' + esc(g.name) + '</div><div class="art pat-' + g.pat + '">' + g.code + '</div><div class="pips">' + pips + '</div><div class="ft"><span>' + g.total + ' thẻ</span><span>' + TIER[dom] + '</span></div></div></div>';
+  }
+  function v2nhom(){
+    var tally = [0,0,0,0,0,0]; G.forEach(function(g){ g.cells.forEach(function(c,i){ tally[i]+=c; }); });
+    var decks = G.map(function(g,i){
+      if (!g.total) return '<div class="deck" data-g="' + i + '"><div class="pocket"><span class="plus">+</span>Chưa có thẻ</div><div><div class="dn">' + esc(g.name) + '</div><div class="dm"><span class="go">Thêm từ</span></div></div></div>';
+      var hi = g.cells.map(function(c,k){return [c,k];}).sort(function(a,b){return b[0]-a[0];});
+      var back = '<div class="kc t' + hi[2][1] + '"><div class="in"></div></div><div class="kc t' + hi[1][1] + '"><div class="in"></div></div>';
+      var badge = g.due ? '<span class="badge">' + g.due + '</span>' : '<span class="stamp">Xong hôm nay</span>';
+      return '<div class="deck' + (g.due ? '' : ' done') + '" data-g="' + i + '"><div class="fan">' + back + kcGroup(g) + badge + '</div><div><div class="dn">' + esc(g.name) + '</div><div class="dm">' +
+        (g.due ? g.due + ' thẻ chờ · <span class="go">Ôn ngay</span>' : '<span class="go">Học lại cả nhóm</span>') + (g.backlog ? '<br><span class="warn">' + g.backlog + ' từ lâu chưa ôn</span>' : '') + '</div></div></div>';
+    }).join('');
+    return '<div class="v2"><div class="head"><div><h1>Nhóm của bạn</h1><p class="mono">' + G.length + ' nhóm · ' + WORDS + ' thẻ · ' + DUE + ' thẻ chờ hôm nay</p></div>' +
+      '<div class="tally" aria-label="Số thẻ theo hạng">' + tally.map(function(n,i){ return '<span class="t' + i + '"><i></i><b>' + n + '</b>' + TIER[i] + '</span>'; }).join('') + '</div>' +
+      '<button type="button" class="btn">Ôn ' + esc(urgent.name) + '</button></div>' +
+      '<div class="shelf">' + decks + '<div class="deck"><div class="pocket"><span class="plus">+</span>Tạo nhóm</div><div><div class="dn">Nhóm mới</div><div class="dm">Đặt tên rồi thêm từ</div></div></div></div>' +
+      '<div class="sugg"><h2>Gói chủ đề</h2>' + [['Công việc · B1','stripe',24],['Du lịch · A2','chev',18],['Công nghệ · B2','dots',30],['Đời sống · A2','grid',40]].map(function(p){ return '<span class="pack"><i class="pat-' + p[1] + '"></i>' + p[0] + ' <span class="mono">' + p[2] + ' thẻ</span></span>'; }).join('') + '</div></div>';
+  }
+  function v2tra(){
+    var cards = W.map(function(w,i){
+      var t = tcls(w.st);
+      if (t === 'tn') return '<div class="kc mini tn' + (i===st.sel?' sel':'') + '" data-w="' + i + '"><div class="in"><div class="w">' + esc(w.w) + '</div><div class="p">' + w.p + ' · B1</div><div class="m">' + esc(w.m) + '</div><span class="add">+ Thêm vào nhóm</span></div></div>';
+      return '<div class="kc mini ' + t + (i===st.sel?' sel':'') + '" data-w="' + i + '"><div class="in"><div class="w">' + esc(w.w) + '</div><div class="p">' + w.p + ' · B1</div><div class="art pat-stripe">CV</div><div class="m">' + esc(w.m) + '</div><div class="ft"><span>' + (w.mine ? 'của tôi' : 'CV') + '</span><span>' + TIER[w.st] + '</span></div></div></div>';
+    }).join('');
+    var w = W[st.sel], t = tcls(w.st);
+    var big = '<div class="kc big ' + (t==='tn' ? 't0' : t) + '" id="tilt" data-anim><div class="in"><div style="display:flex;justify-content:space-between;align-items:start"><div class="w">' + esc(w.w) + '</div><span class="mono" style="color:#1b2444;font-weight:700">B1</span></div>' +
+      '<div class="art pat-stripe">CV</div><div class="ipa"><span><b>UK</b>' + w.uk + '</span><span><b>US</b>' + w.us + '</span></div><div class="m">' + esc(w.m) + ' <span class="mono" style="font-weight:500">' + w.p + '</span></div><p class="ex">' + mark(w.ex, w) + '</p>' +
+      '<div class="ft" style="margin-top:auto"><span>CV · ' + String(st.sel + 1).padStart(3,'0') + '/' + String(TOTAL_RES).padStart(3,'0') + '</span><span>' + (t==='tn' ? 'chưa sưu tầm' : TIER[w.st] + ' · ngăn ' + STAGES[w.st]) + '</span></div></div><span class="shine"></span></div>';
+    return '<div class="v2"><h1 style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin-bottom:-12px">Tra từ</h1><div class="lk"><div style="display:grid;gap:16px"><div class="search">' + ic('look') + 'Tìm từ, ví dụ: mitigate<span style="margin-left:auto"><kbd>/</kbd></span></div>' +
+      '<div class="filters"><span class="fchip">Trình độ <b>B1</b>' + ic('down') + '</span><span class="fchip">Chủ đề <b>Công việc</b>' + ic('down') + '</span><span class="fchip">Loại từ <b>tất cả</b>' + ic('down') + '</span><span class="fchip">Chỉ từ của tôi</span><button type="button" class="lnk" style="margin-left:auto">Thêm cả loạt vào nhóm</button></div>' +
+      '<p class="mono">' + TOTAL_RES + ' thẻ · khung bài là ngăn ôn của từ; ô trống là từ chưa có trong nhóm nào</p><div class="grid">' + cards + '</div><button type="button" class="lnk">Xem thêm ' + (TOTAL_RES - W.length) + ' thẻ</button></div>' +
+      '<div class="side">' + big + '<button type="button" class="btn">' + (t==='tn' ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + '</button><button type="button" class="lnk">Mở trang từ →</button></div></div></div>';
+  }
+
+  /* ---------- V3 ---------- */
+  function stackFront(w){
+    return '<div class="tp"><span class="pos">' + w.p + '</span>' + say(w.w) + '</div><div class="wd"><p class="lemma">' + esc(w.w) + '</p><p class="ipa" style="justify-content:center">' + (w.uk || w.ipa) + '</p></div>';
+  }
+  function v3nhom(){
+    var g = G[st.gsel] && G[st.gsel].next ? G[st.gsel] : urgent;
+    var gi = G.indexOf(g);
+    var top = '<div class="st-card top" data-top>' + stackFront({w:g.next.w,p:g.next.p,uk:g.next.ipa}) + '<p class="hint">' + (g.due ? 'và ' + (g.due - 1) + ' thẻ nữa đang chờ' : 'Nhóm đã xong hôm nay') + '</p></div>';
+    var behind = (g.due > 1 ? '<div class="st-card d1"></div>' : '') + (g.due > 6 ? '<div class="st-card d2"></div>' : '');
+    var info = '<div class="info"><span class="lbl">' + (g === urgent ? 'gấp nhất hôm nay' : 'nhóm đang chọn') + '</span><h1>' + esc(g.name) + '</h1>' +
+      '<div class="n"><b>' + (g.due || '0') + '</b><span>thẻ chờ<br><span class="mono">' + gmeta(g) + '</span></span></div>' + rhythm(g) +
+      '<div class="acts">' + (g.due ? '<button type="button" class="btn">Ôn ' + g.due + ' thẻ <kbd>↵</kbd></button>' : '<button type="button" class="btn">Học lại cả nhóm</button>') + '<button type="button" class="lnk">Học cả ' + g.total + ' từ</button><button type="button" class="lnk mut">Thêm từ <kbd>N</kbd></button><button type="button" class="lnk mut" aria-label="Tùy chọn nhóm">' + ic('more') + '</button></div></div>';
+    var others = G.map(function(o,i){
+      if (i === gi) return '';
+      var layers = o.due > 10 ? 2 : o.due > 0 ? 1 : 0;
+      var c = '<div class="c top"><span><span class="gn">' + esc(o.name) + '</span>' + (o.due && o.next ? '<br><span class="nx">tiếp theo: ' + esc(o.next.w) + '</span>' : '') + '</span><span class="gd">' + (o.total ? (o.due ? '<span>thẻ chờ</span><b>' + o.due + '</b>' : '<span>' + o.total + ' từ</span><b>Xong hôm nay</b>') : '<span>Chưa có từ</span><span class="lnk">Thêm từ</span>') + '</span></div>';
+      return '<div class="ms' + (o.total && !o.due ? ' done' : '') + '" data-g="' + i + '">' + (layers > 1 ? '<div class="c b2"></div>' : '') + (layers > 0 ? '<div class="c b1"></div>' : '') + c + '</div>';
+    }).join('');
+    return '<div class="v3"><section class="focus"><div class="stk" data-stack>' + behind + top + '</div>' + info + '</section>' +
+      '<section class="others"><h2>Nhóm khác <span class="mono">· chồng càng dày càng nhiều thẻ chờ</span></h2><div class="og">' + others + '<div class="ms"><div class="c top" style="background:transparent;border-style:dashed"><span class="gn">Tạo nhóm</span><span class="gd"><span>Đặt tên rồi thêm từ</span><b>+</b></span></div></div></div></section></div>';
+  }
+  function v3tra(){
+    var rows = W.map(function(w,i){
+      return '<div class="wr' + (i===st.sel?' sel':'') + '" data-w="' + i + '"><i class="dot ' + tcls(w.st) + '" title="' + stLabel(w) + '"></i><span><span class="w">' + esc(w.w) + '</span><span class="p">' + w.p + '</span></span><span class="m">' + esc(w.m) + (w.mine ? ' <span class="mono">· của tôi</span>' : '') + '</span>' +
+        (w.st === null || w.st === undefined ? '<span class="add">+ Thêm</span>' : '<span class="mono">' + STAGES[w.st] + '</span>') + '</div>';
+    }).join('');
+    var w = W[st.sel], n1 = W[(st.sel+1) % W.length], n2 = W[(st.sel+2) % W.length];
+    var back = '<div class="tp"><span class="pos">' + w.p + ' · B1 · Công việc</span>' + say(w.w) + '</div><p class="lemma" style="font-size:38px;text-align:left">' + esc(w.w) + '</p>' + ipa(w) +
+      '<p class="mean">' + esc(w.m) + '</p><p class="ex">' + mark(w.ex, w) + '</p><p class="stg"><i class="dot ' + tcls(w.st) + '"></i>' + (w.grp ? esc(w.grp) + ' · ' : '') + stLabel(w) + '</p>';
+    return '<div class="v3"><h1 style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin-bottom:-14px">Tra từ</h1><section class="lk"><div><div class="bar"><div class="s">' + ic('look') + 'Tìm từ, ví dụ: mitigate<span style="margin-left:auto"><kbd>/</kbd></span></div>' +
+      '<span class="f">Trình độ <b>B1</b>' + ic('down') + '</span><span class="f">Chủ đề <b>Công việc</b>' + ic('down') + '</span><span class="f">Loại từ <b>tất cả</b>' + ic('down') + '</span><span class="f">Chỉ từ của tôi</span><button type="button" class="lnk" style="margin-left:auto">Thêm cả loạt</button></div>' +
+      '<p class="mono" style="margin-top:14px;padding-left:12px">' + TOTAL_RES + ' từ · chấm màu là ngăn ôn</p><div class="wl">' + rows + '</div><button type="button" class="lnk" style="padding:12px">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</button></div>' +
+      '<aside class="rside"><div class="stk" data-stack style="height:440px"><div class="st-card d2">' + stackFront({w:n2.w,p:n2.p,uk:n2.uk}) + '</div><div class="st-card d1">' + stackFront({w:n1.w,p:n1.p,uk:n1.uk}) + '</div><div class="st-card top" data-top>' + back + '</div></div>' +
+      '<div class="acts"><button type="button" class="btn" style="width:100%">' + (w.st === null || w.st === undefined ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + ' <kbd>A</kbd></button><button type="button" class="lnk">Mở trang từ <kbd>↵</kbd></button></div></aside></section></div>';
+  }
+
+  /* ---------- V4 ---------- */
+  function v4nhom(){
+    var max = Math.max.apply(null, G.map(function(g){ return Math.max.apply(null, g.cells); }));
+    var head = '<tr><th class="l">Nhóm</th>' + STAGES.map(function(s,i){ return '<th class="t' + i + '"><span class="sw"></span>' + s + '</th>'; }).join('') + '<th>Chờ</th><th></th></tr>';
+    var body = G.map(function(g,i){
+      var a = action(g);
+      return '<tr data-g="' + i + '"><td><div class="gname">' + esc(g.name) + '</div><div class="gmeta">' + gmeta(g) + '</div></td>' +
+        g.cells.map(function(c,k){
+          var due = g.dueBy[k];
+          return '<td><div class="cell t' + k + (c ? '' : ' z') + (due ? ' due' : '') + '" style="--a:' + (c ? Math.round(14 + 46 * c / max) : 0) + '">' + (c || '·') + (due ? '<small>' + due + ' chờ</small>' : '') + '</div></td>';
+        }).join('') +
+        '<td class="dc"><span class="dueN' + (g.due ? '' : ' z') + '">' + (g.due || '0') + '</span></td><td class="ac"><button type="button" class="lnk' + (a.mut ? ' mut' : '') + '">' + a.t + '</button></td></tr>';
+    }).join('');
+    var tot = [0,0,0,0,0,0]; G.forEach(function(g){ g.cells.forEach(function(c,i){ tot[i]+=c; }); });
+    return '<div class="v4"><div class="head"><div><h1>Nhóm của bạn</h1><span class="mono">' + G.length + ' nhóm · ' + WORDS + ' từ · ' + KNOWN + ' đã thuộc · ' + DUE + ' thẻ chờ hôm nay</span></div>' +
+      '<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><button type="button" class="lnk mut">Tạo nhóm</button><button type="button" class="btn">Ôn ' + esc(urgent.name) + ' · ' + urgent.due + ' thẻ</button></div></div>' +
+      '<div class="legend"><span>Mỗi ô là số từ đang nằm ở ngăn đó; màu đậm hơn là nhiều từ hơn.</span><span style="display:inline-flex;gap:6px;align-items:center"><span class="cell t1 due" style="--a:30">4</span> viền xanh: ngăn có thẻ đến hạn</span></div>' +
+      '<table><thead>' + head + '</thead><tbody>' + body + '</tbody><tfoot><tr><td>Tổng</td>' + tot.map(function(n){ return '<td>' + n + '</td>'; }).join('') + '<td>' + DUE + '</td><td></td></tr></tfoot></table></div>';
+  }
+  function v4tra(){
+    var sorted = W.map(function(w,i){ return [w,i]; }).sort(function(a,b){ return a[0].w.localeCompare(b[0].w); });
+    var letters = {}; sorted.forEach(function(p){ letters[p[0].w[0].toUpperCase()] = 1; });
+    var cur = '', html = '';
+    sorted.forEach(function(p){
+      var w = p[0], i = p[1], L = w.w[0].toUpperCase();
+      if (L !== cur) { html += '<div class="letter">' + L + '</div>'; cur = L; }
+      var sel = i === st.sel;
+      html += '<div class="ent' + (sel ? ' sel' : '') + '" data-w="' + i + '"' + (sel ? ' data-anim' : '') + '><span class="hw">' + esc(w.w) + '</span><span class="pr">' + w.uk + '</span><span class="ps">' + w.p + '</span><span class="lv">B1</span>' +
+        (w.mine ? '<span class="ps" style="color:var(--accent)">của tôi</span>' : '') + '<br><span class="me">' + esc(w.m) + '.</span> <span class="eg">' + mark(w.ex, w) + '</span>' +
+        '<span class="stt"><i class="dot ' + tcls(w.st) + '"></i>' + (w.st === null || w.st === undefined ? '<button type="button" class="lnk">+ Thêm vào nhóm</button>' : stLabel(w)) + '</span>' +
+        (sel ? '<div class="acts"><button type="button" class="btn" style="height:40px">Thêm vào nhóm</button><button type="button" class="lnk">Mở trang từ →</button>' + say(w.w) + '</div>' : '') + '</div>';
+    });
+    var az = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function(l){ return letters[l] ? '<b' + (W[st.sel].w[0].toUpperCase()===l?' class="on"':'') + '>' + l + '</b>' : '<span>' + l + '</span>'; }).join('');
+    return '<div class="v4"><div class="dict"><nav class="az" aria-label="Chữ cái">' + az + '</nav><div><h1 style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin-bottom:10px">Tra từ</h1>' +
+      '<p class="sent">' + TOTAL_RES + ' từ trình độ <u>B1</u>, chủ đề <u>Công việc</u>, loại từ <u>tất cả</u>.</p>' +
+      '<div class="tools"><span class="mono" style="display:inline-flex;gap:8px;align-items:center">' + ic('look') + ' gõ để tìm trong ' + TOTAL_RES + ' từ <kbd>/</kbd></span><label class="mono"><input type="checkbox" id="v4mine"> chỉ từ của tôi</label><button type="button" class="lnk">Thêm cả loạt vào nhóm</button><button type="button" class="lnk mut">Xóa lọc</button></div>' +
+      '<div class="guide"><span>budget — stakeholder</span><span>trang 1 / 3</span></div><div class="cols">' + html + '</div></div></div></div>';
+  }
+
+  /* ---------- V5 ---------- */
+  function v5nhom(){
+    var g = G[st.gsel];
+    var rail = G.map(function(o,i){
+      var c = o.due ? '<span class="c">' + o.due + '</span>' : o.total ? '<span class="c z">xong</span>' : '<span class="c e">trống</span>';
+      return '<div class="ri' + (i===st.gsel?' sel':'') + '" data-g="' + i + '"><span class="a">' + esc(o.name) + '</span>' + c + '<span class="b">' + (o.total ? o.total + ' từ' : 'chưa có từ') + (o.backlog ? ' · ' + o.backlog + ' lâu chưa ôn' : '') + '</span></div>';
+    }).join('');
+    var lab = g.total ? '<div class="lab">' + g.cells.map(function(c,i){ return c ? '<span style="flex:' + c + ' 1 0"><b>' + c + '</b>' + STAGES[i] + '</span>' : ''; }).join('') + '</div>' : '<p class="mono">Chưa có từ nào trong nhóm.</p>';
+    var hand = g.hand.length ? '<section class="hand"><h3>Thẻ đến lượt</h3><div class="cards">' + g.hand.map(function(h){ return '<div class="kc t' + h[2] + '"><div class="in"><div class="w">' + esc(h[0]) + '</div><div class="art pat-' + g.pat + '">' + g.code + '</div><div class="m">' + esc(h[1]) + '</div><div class="ft"><span>' + g.code + '</span><span>' + STAGES[h[2]] + '</span></div></div></div>'; }).join('') + (g.due > g.hand.length ? '<span class="mono" style="align-self:center">và ' + (g.due - g.hand.length) + ' thẻ nữa</span>' : '') + '</div></section>' : '';
+    var acts = !g.total ? '<button type="button" class="btn">Thêm từ <kbd>N</kbd></button><button type="button" class="lnk">Thêm cả loạt từ Tra từ</button>'
+      : g.due ? '<button type="button" class="btn">Ôn ' + g.due + ' thẻ <kbd>↵</kbd></button><button type="button" class="lnk">Học cả ' + g.total + ' từ</button><button type="button" class="lnk mut">Thêm từ <kbd>N</kbd></button><button type="button" class="lnk mut">Đổi tên, xóa nhóm</button>'
+      : '<button type="button" class="btn">Học lại cả nhóm</button><button type="button" class="lnk mut">Thêm từ <kbd>N</kbd></button><button type="button" class="lnk mut">Đổi tên, xóa nhóm</button>';
+    return '<div class="v5"><aside class="rail"><div class="rt"><h1>Nhóm</h1><button type="button" class="lnk">' + ic('plus') + 'Tạo</button></div><div class="find">' + ic('look') + 'Tìm trong ' + G.length + ' nhóm</div>' + rail +
+      '<div class="k"><span><kbd>J</kbd><kbd>K</kbd> chọn</span><span><kbd>↵</kbd> ôn</span></div></aside>' +
+      '<section class="det" data-anim><div class="top"><span class="mono">' + esc(g.name) + ' · ' + gmeta(g) + '</span><span class="big' + (g.due ? '' : ' z') + '">' + g.due + '</span><div><h2>' + (g.due ? 'thẻ chờ hôm nay' : g.total ? 'Xong hôm nay. Mai ôn tiếp.' : 'Nhóm trống') + '</h2><div class="acts">' + acts + '</div></div></div>' +
+      (g.backlog ? '<div class="warnbox">' + g.backlog + ' từ lâu chưa ôn trong nhóm này<button type="button" class="lnk" style="margin-left:auto;color:inherit">Xem</button></div>' : '') +
+      '<div class="rhl">' + rhythm(g) + lab + '</div>' + hand + '</section></div>';
+  }
+  function v5tra(){
+    var w = W[st.sel];
+    function item(x,i){ return '<div class="it' + (i===st.sel?' sel':'') + '" data-w="' + i + '"><i class="dot ' + tcls(x.st) + '"></i><span class="w">' + esc(x.w) + '<small>' + x.p + '</small></span><span class="m">' + esc(x.m) + '</span></div>' +
+      '<div class="xp"><span>' + esc(x.m) + ' · ' + stLabel(x) + '</span><span class="ex">' + mark(x.ex, x) + '</span><span><button type="button" class="lnk">Thêm vào nhóm</button> · <button type="button" class="lnk">Mở trang từ</button></span></div>'; }
+    var dict = W.map(function(x,i){ return x.mine ? '' : item(x,i); }).join(''), mine = W.map(function(x,i){ return x.mine ? item(x,i) : ''; }).join('');
+    return '<div class="v5p"><h1 style="justify-self:start;width:100%;max-width:1000px;margin:0 auto;font-size:40px;font-weight:800;letter-spacing:-.03em">Tra từ</h1><div class="pal"><div class="in">' + ic('look') + '<span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="ph">gõ từ cần tra</span><kbd>Tab</kbd><span class="mono">bộ lọc</span></div>' +
+      '<div class="bd"><div class="ls"><div class="sec">từ điển · ' + (TOTAL_RES - 1) + '</div>' + dict + '<div class="sec">từ của tôi · 1</div>' + mine +
+      '<div class="sec">không thấy từ cần tra?</div><div class="it act"><span>' + ic('plus') + '</span><span class="w">Thêm từ mới với nghĩa của bạn</span><kbd>N</kbd></div><div class="it act"><span></span><span class="w">Tra bằng AI</span><span class="m">còn 4 lượt</span></div></div>' +
+      '<div class="pv" data-anim><span class="mono">' + w.p + ' · B1 · Công việc' + (w.mine ? ' · của tôi' : '') + '</span><span class="w">' + esc(w.w) + '</span>' + ipa(w) + '<span class="m">' + esc(w.m) + '</span><p class="ex">' + mark(w.ex, w) + '</p>' +
+      '<span class="grp"><i class="dot ' + tcls(w.st) + '"></i>' + (w.grp ? esc(w.grp) + ' · ' : '') + stLabel(w) + '</span><div class="acts"><button type="button" class="btn">Thêm vào nhóm <kbd>⌘↵</kbd></button><button type="button" class="lnk">Mở trang từ <kbd>↵</kbd></button><button type="button" class="lnk mut">Thêm cả loạt ' + TOTAL_RES + ' từ</button></div></div></div>' +
+      '<div class="ft"><span><kbd>↑</kbd><kbd>↓</kbd> chọn</span><span><kbd>↵</kbd> mở trang từ</span><span><kbd>⌘</kbd><kbd>↵</kbd> thêm vào nhóm</span><span><kbd>Tab</kbd> đổi bộ lọc</span><span><kbd>Esc</kbd> xóa</span></div></div>' +
+      '<div class="recent"><span class="mono">tra gần đây</span><a>mitigate</a><a>prevalent</a><a>commute</a><a>overwhelmed</a><span class="mono" style="margin-left:12px">chủ đề</span><a>IELTS Writing</a><a>Du lịch</a><a>Công nghệ</a></div></div>';
+  }
+
+  /* ---------- Lượt 2 data ---------- */
+  // today {priority, due, new} as the API gives it (GET /v1/groups → today); the week view needs a forecast the API does not have yet.
+  var TD = [[4,14,6],[9,5,4],[2,4,5],[0,3,3],[1,2,0],[0,0,0],[0,0,0],[0,0,0]];
+  var FC = [[24,5,8,3,12,4,6],[18,7,2,9,0,5,3],[11,4,6,0,7,2,5],[6,2,0,3,1,0,4],[3,6,2,5,0,8,1],[0,4,3,0,6,2,0],[0,2,7,1,0,3,5],[0,0,0,0,0,0,0]];
+  var DAYS = [['Hôm nay','CN 8/11'],['T2','9/11'],['T3','10/11'],['T4','11/11'],['T5','12/11'],['T6','13/11'],['T7','14/11']];
+  function waitingIdx(){ return G.map(function(g,i){return i;}).filter(function(i){return G[i].due>0;}).sort(function(a,b){return G[b].due-G[a].due;}); }
+  function dueBtn(g, cls){ return g.total ? (g.due ? '<button type="button" class="btn ' + (cls||'') + '">Ôn ' + g.due + ' thẻ <kbd>↵</kbd></button>' : '<button type="button" class="btn ' + (cls||'') + '">Học lại cả nhóm</button>') : '<button type="button" class="btn ' + (cls||'') + '">Thêm từ <kbd>N</kbd></button>'; }
+  function wDetail(w){ return '<span class="mono">' + w.p + ' · B1 · Công việc' + (w.mine ? ' · của tôi' : '') + '</span>'; }
+  function wStatus(w){ return '<span class="stt"><i class="dot ' + tcls(w.st) + '"></i>' + (w.grp ? esc(w.grp) + ' · ' : '') + stLabel(w) + '</span>'; }
+
+  /* ---------- V6 · Một việc trước ---------- */
+  function v6nhom(){
+    var wi = waitingIdx(), sel = G[st.gsel] && G[st.gsel].due ? st.gsel : wi[0], g = G[sel], t = TD[sel];
+    var next = wi.filter(function(i){ return i !== sel; }).map(function(i){ var o = G[i];
+      return '<div class="nr" data-g="' + i + '" tabindex="0"><span><span class="nm">' + esc(o.name) + '</span><br><span class="meta">' + gmeta(o) + '</span></span><span class="dn">' + o.due + '</span><span class="ra">Ôn ' + o.due + ' thẻ →</span></div>'; }).join('');
+    var done = G.filter(function(o){ return o.total && !o.due; }).map(function(o){ return esc(o.name); }).join(', ');
+    var empty = G.filter(function(o){ return !o.total; }).map(function(o){ return esc(o.name); }).join(', ');
+    return '<div class="v6"><h1 class="lead">Còn <em>' + DUE + ' thẻ</em> chờ trong ' + WAITING + ' nhóm.</h1>' +
+      '<section class="first" data-anim><span class="mono">' + (sel === wi[0] ? 'bắt đầu với nhóm nhiều thẻ chờ nhất' : 'nhóm bạn vừa chọn') + '</span><h2>' + esc(g.name) + '</h2>' +
+      '<div class="stats"><div class="hl"><b>' + g.due + '</b><span>thẻ chờ</span></div><div><b>' + t[0] + '</b><span>ưu tiên</span></div><div><b>' + t[1] + '</b><span>đến hạn</span></div><div><b>' + t[2] + '</b><span>mới</span></div></div>' +
+      rhythm(g) + '<div class="acts">' + dueBtn(g) + '<button type="button" class="lnk">Học cả ' + g.total + ' từ</button><button type="button" class="lnk mut">Thêm từ</button></div></section>' +
+      '<section class="next"><h3>Tiếp theo</h3>' + next + '</section>' +
+      '<section class="rest"><h3>Không cần ôn hôm nay</h3><p class="quiet"><span class="mono">xong hôm nay</span><span>' + done + '</span><button type="button" class="lnk">Học lại</button></p><p class="quiet"><span class="mono">chưa có từ</span><span>' + empty + '</span><button type="button" class="lnk">Thêm từ</button></p></section>' +
+      '<div class="foot"><button type="button" class="lnk">' + ic('plus') + 'Tạo nhóm</button><button type="button" class="lnk mut">Tạo nhóm nhanh theo chủ đề</button></div></div>';
+  }
+  function v6tra(){
+    var w = W[st.sel];
+    var rows = W.map(function(x,i){ return '<div class="r6' + (i===st.sel?' sel':'') + '" data-w="' + i + '"><span class="w">' + esc(x.w) + '</span><span class="m">' + esc(x.m) + '</span><span class="ra"><span class="lnk">' + (x.st === null || x.st === undefined ? '+ Thêm' : 'Thêm vào nhóm khác') + '</span><span class="lnk mut">Mở</span></span></div>'; }).join('');
+    return '<div class="v6 t"><div class="sh"><h1>Tra từ</h1><div class="sbox">' + ic('look') + '<span>Tìm từ, ví dụ: mitigate</span><kbd>/</kbd></div><button type="button" class="fbtn">Bộ lọc <b>2</b></button></div>' +
+      '<div class="applied"><span class="mono">đang lọc</span><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="mono">· ' + TOTAL_RES + ' từ</span><button type="button" class="lnk" style="margin-left:auto">Thêm cả loạt vào nhóm</button></div>' +
+      '<div>' + rows + '<button type="button" class="lnk" style="padding:12px 14px">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</button></div>' +
+      '<aside class="panel" aria-label="Chi tiết từ" data-anim><button type="button" class="cl" aria-label="Đóng">' + ic('x') + '</button>' + wDetail(w) + '<span class="w">' + esc(w.w) + '</span>' + ipa(w) +
+      '<span class="m">' + esc(w.m) + '</span><p class="ex">' + mark(w.ex, w) + '</p>' + wStatus(w) + '<button type="button" class="btn">' + (w.st === null || w.st === undefined ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + '</button><button type="button" class="lnk" style="justify-self:center">Mở trang từ →</button></aside></div>';
+  }
+
+  /* ---------- V7 · Theo trạng thái ---------- */
+  function v7nhom(){
+    function item(i){ var g = G[i];
+      if (!g.total) return '<div class="it7" data-g="' + i + '"><div class="l1"><span class="nm">' + esc(g.name) + '</span></div><span class="meta">Nhóm chưa có từ nào.</span><span class="go">Thêm từ</span></div>';
+      return '<div class="it7" data-g="' + i + '"><div class="l1"><span class="nm">' + esc(g.name) + '</span>' + (g.due ? '<span class="dn">' + g.due + '</span>' : '') + '</div><span class="meta">' + gmeta(g) + '</span>' + rhythm(g) +
+        '<span class="go">' + (g.due ? 'Ôn ' + g.due + ' thẻ →' : 'Học lại cả nhóm') + '</span></div>'; }
+    var wi = waitingIdx(), di = [], ei = [];
+    G.forEach(function(g,i){ if (g.total && !g.due) di.push(i); if (!g.total) ei.push(i); });
+    return '<div class="v7"><div class="head"><div><h1>Nhóm của bạn</h1><span class="mono">' + G.length + ' nhóm · ' + WORDS + ' từ · ' + KNOWN + ' đã thuộc</span></div><button type="button" class="btn">Ôn ' + esc(urgent.name) + '</button></div>' +
+      '<div class="regions"><section class="reg acc"><div class="rh7"><h2>Cần ôn hôm nay</h2><b>' + DUE + '</b></div><p class="rd">' + WAITING + ' nhóm, nhiều thẻ chờ nhất ở trên.</p>' + wi.map(item).join('') + '</section>' +
+      '<section class="reg pas"><div class="rh7"><h2>Xong hôm nay</h2><b>' + di.length + '</b></div><p class="rd">Mai ôn tiếp.</p>' + di.map(item).join('') + '</section>' +
+      '<section class="reg neu"><div class="rh7"><h2>Chưa có từ</h2><b>' + ei.length + '</b></div><p class="rd">Thêm từ để bắt đầu ôn.</p>' + ei.map(item).join('') +
+      '<div class="it7 new"><span class="nm">' + ic('plus') + ' Tạo nhóm</span><span class="meta">Đặt tên, rồi thêm từ hoặc thêm cả loạt từ Tra từ.</span></div></section></div></div>';
+  }
+  function v7tra(){
+    function row(i){ var w = W[i], sel = i === st.sel;
+      return '<div class="w7' + (sel?' sel':'') + '" data-w="' + i + '"><i class="dot ' + tcls(w.st) + '"></i><span><span class="w">' + esc(w.w) + '</span><span class="m">' + esc(w.m) + '</span></span><span class="s">' + (w.st === null || w.st === undefined ? '' : STAGES[w.st]) + '</span>' +
+        (sel ? '<div class="xp7" data-anim>' + ipa(w) + '<p class="ex">' + mark(w.ex, w) + '</p><div class="acts"><button type="button" class="btn">' + (w.st === null || w.st === undefined ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + '</button><button type="button" class="lnk">Mở trang từ →</button></div></div>' : '') + '</div>'; }
+    var a = [], b = [], c = [];
+    W.forEach(function(w,i){ if (w.st === null || w.st === undefined) a.push(i); else if (w.st >= 4) c.push(i); else b.push(i); });
+    return '<div class="v7"><div class="head"><h1>Tra từ</h1></div><div class="search7"><div class="sbox">' + ic('look') + '<span>Tìm từ, ví dụ: mitigate</span><kbd>/</kbd></div><div class="applied" style="display:flex;gap:8px;align-items:center"><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="mono">' + TOTAL_RES + ' từ</span></div></div>' +
+      '<div class="regions"><section class="reg neu"><div class="rh7"><h2>Chưa trong nhóm nào</h2><b>' + a.length + '</b></div><p class="rd">Từ bạn chưa học. <button type="button" class="lnk">Thêm cả loạt vào nhóm</button> bỏ qua từ đã có.</p>' + a.map(row).join('') + '</section>' +
+      '<section class="reg acc"><div class="rh7"><h2>Đang học</h2><b>' + b.length + '</b></div><p class="rd">Từ ngăn Mới tới 7 ngày.</p>' + b.map(row).join('') + '</section>' +
+      '<section class="reg pas"><div class="rh7"><h2>Đã thuộc</h2><b>' + c.length + '</b></div><p class="rd">Từ ngăn 14 ngày trở lên.</p>' + c.map(row).join('') + '</section></div>' +
+      '<button type="button" class="lnk">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</button></div>';
+  }
+
+  /* ---------- V8 · Một tay ---------- */
+  function v8nhom(){
+    var g = G[st.gsel];
+    var rows = G.map(function(o,i){
+      var tg = o.due ? '<span class="tg">' + o.due + '</span>' : o.total ? '<span class="tg ok">' + ic('check') + '</span>' : '<span class="tg add">' + ic('plus') + '</span>';
+      return '<div class="r8' + (i===st.gsel?' sel':'') + '" data-g="' + i + '"><span><span class="nm">' + esc(o.name) + '</span><br><span class="meta">' + gmeta(o) + '</span></span>' + tg + '</div>'; }).join('');
+    var label = g.due ? 'Ôn ' + g.due + ' thẻ' : g.total ? 'Học lại cả nhóm' : 'Thêm từ';
+    return '<div class="v8"><div class="col"><h1>Nhóm của bạn</h1><div class="seg8"><span class="on">Tất cả ' + G.length + '</span><span>Còn thẻ chờ ' + WAITING + '</span><span>Xong hôm nay ' + DONE + '</span></div>' + rows +
+      '<button type="button" class="lnk" style="padding:10px 0">' + ic('plus') + 'Tạo nhóm</button></div>' +
+      '<div class="dock"><div class="in"><div class="lbl8"><span class="mono">đã chọn</span><b>' + esc(g.name) + '</b></div><button type="button" class="btn">' + label + ' · ' + esc(g.name) + '</button></div></div></div>';
+  }
+  function v8tra(){
+    var rows = W.map(function(w,i){ var sel = i === st.sel, none = w.st === null || w.st === undefined;
+      return '<div class="w8' + (sel?' sel':'') + '" data-w="' + i + '"><span><span class="w">' + esc(w.w) + '</span><span class="m">' + esc(w.m) + ' · ' + w.p + '</span></span>' +
+        (none ? '<button type="button" class="tg" aria-label="Thêm ' + esc(w.w) + '">' + ic('plus') + '</button>' : '<span class="tg ok">' + STAGES[w.st] + '</span>') +
+        (sel ? '<div class="xp8" data-anim>' + ipa(w) + '<p>' + mark(w.ex, w) + '</p><div class="two"><button type="button" class="btn">' + (none ? 'Thêm vào nhóm' : 'Thêm nhóm khác') + '</button><button type="button" class="btn sec">Mở trang từ</button></div></div>' : '') + '</div>'; }).join('');
+    var search = '<div class="sbox sb8">' + ic('look') + '<span>Tìm từ, ví dụ: mitigate</span></div>';
+    var phone = st.dev === 'phone';
+    return '<div class="v8"><div class="col"><h1>Tra từ</h1>' + (phone ? '' : search) + '<div class="applied" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="mono">' + TOTAL_RES + ' từ</span><button type="button" class="lnk" style="margin-left:auto">Thêm cả loạt</button></div>' + rows + '</div>' +
+      (phone ? '<div class="dock"><div class="in">' + search + '</div></div>' : '') + '</div>';
+  }
+
+  /* ---------- V9 · Bản tin ---------- */
+  function v9nhom(){
+    var g = G[st.gsel], wi = waitingIdx().filter(function(i){ return i !== st.gsel; }), secs = wi.slice(0,2);
+    var briefs = G.map(function(o,i){ return i; }).filter(function(i){ return i !== st.gsel && secs.indexOf(i) < 0; });
+    var lab = g.total ? '<div class="rhl" style="display:grid;gap:8px">' + rhythm(g) + '<div class="lab" style="display:flex;gap:4px">' + g.cells.map(function(c,i){ return c ? '<span class="mono" style="flex:' + c + ' 1 0;overflow:hidden;white-space:nowrap"><b style="color:var(--ink)">' + c + '</b> ' + STAGES[i] + '</span>' : ''; }).join('') + '</div></div>' : '';
+    var lead = '<article class="ld" data-anim><span class="mono">' + (g.due ? 'nhiều thẻ chờ nhất' : 'nhóm bạn chọn') + '</span><h2>' + esc(g.name) + '</h2>' +
+      '<div class="n">' + (g.due ? '<b>' + g.due + '</b><span>thẻ chờ<br><span class="mono">' + gmeta(g) + '</span></span>' : '<b class="z">' + (g.total ? 'Xong hôm nay' : 'Chưa có từ') + '</b>') + '</div>' +
+      (g.hand.length ? '<div><p class="mono" style="margin-bottom:8px">sắp ôn</p><div class="chips">' + g.hand.map(function(h){ return '<span><i class="dot t' + h[2] + '"></i>' + esc(h[0]) + '</span>'; }).join('') + '</div></div>' : '') + lab +
+      '<div class="acts">' + dueBtn(g) + (g.total ? '<button type="button" class="lnk">Học cả ' + g.total + ' từ</button>' : '') + '<button type="button" class="lnk mut">Thêm từ</button></div></article>';
+    var sec = secs.map(function(i){ var o = G[i]; return '<article class="sc" data-g="' + i + '"><h3>' + esc(o.name) + '</h3><span class="n">' + o.due + '<small>thẻ chờ</small></span>' + rhythm(o) + '<span class="lnk">Ôn ' + o.due + ' thẻ →</span></article>'; }).join('');
+    var bl = briefs.map(function(i){ var o = G[i]; return '<div class="bi" data-g="' + i + '"><b>' + esc(o.name) + '</b><span>' + (o.due ? '<span class="ac">' + o.due + ' thẻ chờ</span> · ' + o.total + ' từ' : o.total ? 'Xong hôm nay · ' + o.total + ' từ' : 'Chưa có từ') + '</span></div>'; }).join('');
+    return '<div class="v9"><div class="head"><div><h1>Nhóm của bạn</h1><span class="mono">' + DUE + ' thẻ chờ trong ' + WAITING + ' nhóm · ' + WORDS + ' từ · ' + KNOWN + ' đã thuộc</span></div><button type="button" class="lnk">' + ic('plus') + 'Tạo nhóm</button></div>' +
+      '<div class="front">' + lead + sec + '</div><section class="briefs"><h2>các nhóm khác</h2><div class="bl">' + bl + '<div class="bi"><b class="lnk">Tạo nhóm nhanh theo chủ đề</b><span>Công việc, Du lịch, Công nghệ…</span></div></div></section></div>';
+  }
+  function v9tra(){
+    var w = W[st.sel], none = w.st === null || w.st === undefined;
+    var others = [1,2,3,4].map(function(k){ return (st.sel + k) % W.length; });
+    var rest = W.map(function(x,i){ return i; }).filter(function(i){ return i !== st.sel && others.indexOf(i) < 0; });
+    var lead = '<article class="ld" data-anim>' + wDetail(w) + '<span class="w">' + esc(w.w) + '</span>' + ipa(w) + '<span class="m">' + esc(w.m) + '</span><p class="ex">' + mark(w.ex, w) + '</p>' + wStatus(w) +
+      '<div class="acts"><button type="button" class="btn">' + (none ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + ' <kbd>A</kbd></button><button type="button" class="lnk">Mở trang từ →</button></div></article>';
+    var sec = others.slice(0,2).map(function(i){ var x = W[i]; return '<article class="sc" data-w="' + i + '"><span class="w">' + esc(x.w) + '</span><span class="m">' + esc(x.m) + '</span><span class="mono"><i class="dot ' + tcls(x.st) + '"></i> ' + stLabel(x) + '</span></article>'; }).join('');
+    var bl = others.slice(2).concat(rest).map(function(i){ var x = W[i]; return '<div class="bi" data-w="' + i + '"><b>' + esc(x.w) + '</b><span>' + esc(x.m) + '</span></div>'; }).join('');
+    return '<div class="v9"><div class="head"><div><h1>Tra từ</h1><span class="mono">' + TOTAL_RES + ' từ · B1 · Công việc</span></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="sbox" style="width:340px">' + ic('look') + '<span>Tìm từ</span><kbd>/</kbd></div><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span></div></div>' +
+      '<div class="front">' + lead + sec + '</div><section class="briefs"><h2>kết quả khác</h2><div class="bl">' + bl + '<div class="bi"><b class="lnk">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</b><span>Thêm cả loạt vào nhóm</span></div></div></section></div>';
+  }
+
+  /* ---------- V10 · Ngữ cảnh trước ---------- */
+  function v10nhom(){
+    var max = Math.max.apply(null, FC.map(function(r){ return Math.max.apply(null, r); }));
+    var tot = [0,0,0,0,0,0,0]; FC.forEach(function(r){ r.forEach(function(n,d){ tot[d]+=n; }); });
+    var tmax = Math.max.apply(null, tot), week = tot.slice(1).reduce(function(a,b){return a+b;},0);
+    var cls = function(d){ return (d===0?' td':'') + (d>3?' x3':''); };
+    var html = '<div class="hd l">Nhóm</div>' + DAYS.map(function(d,i){ return '<div class="hd' + cls(i) + '">' + d[0] + '<br><span class="mono">' + d[1] + '</span></div>'; }).join('') + '<div class="hd ac"></div>';
+    G.forEach(function(g,i){
+      html += '<div class="gn" data-g="' + i + '">' + esc(g.name) + '<small>' + gmeta(g) + '</small></div>';
+      FC[i].forEach(function(n,d){ html += '<div class="c' + cls(d) + (n?'':' z') + '">' + (n ? '<i style="height:' + Math.max(3, Math.round(40 * n / max)) + 'px"></i>' : '') + '<span>' + (n || '·') + '</span></div>'; });
+      var a = action(g);
+      html += '<div class="ac"><button type="button" class="lnk' + (a.mut ? ' mut' : '') + '">' + a.t + '</button></div>';
+    });
+    html += '<div class="ft" style="text-align:left;justify-items:start">Tổng mỗi ngày</div>' + tot.map(function(n,d){ return '<div class="ft' + cls(d) + '"><i style="height:' + Math.max(3, Math.round(48 * n / tmax)) + 'px"></i><b>' + n + '</b></div>'; }).join('') + '<div class="ft ac"></div>';
+    return '<div class="v10"><div class="head"><h1>Nhóm của bạn</h1><p>Hôm nay <em>' + DUE + ' thẻ</em> chờ. Sáu ngày tới thêm ' + week + ' thẻ.</p></div><span class="api">đề xuất: cần API mới trả số thẻ đến hạn theo ngày; hiện chỉ có số của hôm nay</span>' +
+      '<div class="wk">' + html + '</div><div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center"><button type="button" class="btn">Ôn ' + esc(urgent.name) + ' · ' + urgent.due + ' thẻ</button><button type="button" class="lnk">' + ic('plus') + 'Tạo nhóm</button></div></div>';
+  }
+  function v10tra(){
+    var rows = W.map(function(w,i){ var sel = i === st.sel, none = w.st === null || w.st === undefined;
+      return '<div class="r10' + (sel?' sel':'') + '" data-w="' + i + '"><p class="s">' + mark(w.ex, w) + '</p><p class="d"><b>' + esc(w.w) + '</b> <span class="mono">' + w.p + '</span> · ' + esc(w.m) + (w.mine ? ' · <span class="mono">của tôi</span>' : '') + '</p>' +
+        '<span class="st">' + (none ? '<span class="lnk">+ Thêm</span>' : '<i class="dot ' + tcls(w.st) + '"></i><span class="lb">' + STAGES[w.st] + '</span>') + '</span>' +
+        (sel ? '<div class="xp10" data-anim>' + ipa(w) + '<button type="button" class="btn" style="height:40px">' + (none ? 'Thêm vào nhóm' : 'Thêm vào nhóm khác') + '</button><button type="button" class="lnk">Mở trang từ →</button></div>' : '') + '</div>'; }).join('');
+    return '<div class="v10"><div class="head"><h1>Tra từ</h1></div><div class="sbox">' + ic('look') + '<span>Tìm từ, ví dụ: mitigate</span><kbd>/</kbd></div>' +
+      '<div class="bar10"><span class="tok">B1 ' + ic('x') + '</span><span class="tok">Công việc ' + ic('x') + '</span><span class="mono">' + TOTAL_RES + ' từ</span><span class="tg10" style="margin-left:auto"><span class="on">Câu trước</span><span>Từ trước</span></span><button type="button" class="lnk">Thêm cả loạt</button></div>' +
+      '<div>' + rows + '</div><button type="button" class="lnk">Xem thêm ' + (TOTAL_RES - W.length) + ' từ</button></div>';
+  }
+
+  var R = { 1:[v1nhom,v1tra], 2:[v2nhom,v2tra], 3:[v3nhom,v3tra], 4:[v4nhom,v4tra], 5:[v5nhom,v5tra], 6:[v6nhom,v6tra], 7:[v7nhom,v7tra], 8:[v8nhom,v8tra], 9:[v9nhom,v9tra], 10:[v10nhom,v10tra] };
+
+  /* ---------- render ---------- */
+  function render(){
+    screen.className = 'dev ' + st.dev;
+    screen.innerHTML = chrome(R[st.v][st.page === 'nhom' ? 0 : 1]());
+    document.querySelectorAll('.vbtn').forEach(function(b){ b.setAttribute('aria-pressed', String(Number(b.dataset.v) === st.v)); });
+    document.querySelectorAll('[data-page]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.page === st.page)); });
+    document.querySelectorAll('[data-dev]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.dev === st.dev)); });
+    var n = NOTES[st.v], h = n.h || ['Lấy từ đâu','Sửa gì so với bản hiện tại','Được và mất'];
+    $('notes').innerHTML = '<section><h3>' + h[0] + '</h3><ul>' + n.from.map(li).join('') + '</ul></section><section><h3>' + h[1] + '</h3><ul>' + n.fix.map(li).join('') + '</ul></section><section><h3>' + h[2] + '</h3><ul>' + n.cost.map(li).join('') + '</ul></section>';
+    bindTilt();
+    fit();
+  }
+  function li(s){ return '<li>' + s + '</li>'; }
+  function fit(){
+    var Wd = st.dev === 'phone' ? 390 : 1200;
+    var s = Math.min(1, stage.parentElement.clientWidth / Wd);
+    scaler.style.transform = 'scale(' + s + ')';
+    stage.style.height = Math.ceil(screen.offsetHeight * s) + 'px';
+    stage.style.width = Math.floor(Wd * s) + 'px';
+    stage.style.justifySelf = 'center';
+  }
+  function setHash(){ var h = 'v' + st.v + '-' + st.page; if (location.hash !== '#' + h) history.replaceState(null, '', '#' + h); }
+  function readHash(){ var m = /^#v(10|[1-9])-(nhom|tra)$/.exec(location.hash); if (m) { st.v = Number(m[1]); st.page = m[2]; } }
+
+  /* selection with motion: dissolve for stacks (V3), blur-fade for the rest */
+  function select(kind, i){
+    if (kind === 'w' && i === st.sel) return;
+    if (kind === 'g' && i === st.gsel) return;
+    var oldTop = screen.querySelector('[data-top]'), oldHTML = oldTop ? oldTop.innerHTML : null;
+    if (kind === 'w') st.sel = i; else st.gsel = i;
+    render();
+    if (reduced.matches) return;
+    var top = screen.querySelector('[data-top]'), stack = screen.querySelector('[data-stack]');
+    if (top && stack && oldHTML !== null) {
+      var ghost = document.createElement('div'); ghost.className = 'st-card st-ghost'; ghost.innerHTML = oldHTML; stack.appendChild(ghost);
+      ghost.animate([{ opacity:1, filter:'blur(0px)', transform:'none' }, { opacity:0, filter:'blur(18px)', transform:'translateX(30px) rotate(3deg) scale(1.18)' }], { duration:300, easing:EASE, fill:'forwards' }).onfinish = function(){ ghost.remove(); };
+      top.animate([{ opacity:.5, filter:'blur(10px)', transform:'translateY(16px) scale(.92)' }, { opacity:1, filter:'blur(0px)', transform:'none' }], { duration:300, easing:EASE });
+      return;
+    }
+    var a = screen.querySelector('[data-anim]');
+    if (a) a.animate([{ opacity:.3, filter:'blur(6px)' }, { opacity:1, filter:'blur(0px)' }], { duration:220, easing:EASE });
+  }
+
+  function bindTilt(){
+    var card = $('tilt'); if (!card || !matchMedia('(hover: hover)').matches || reduced.matches) return;
+    card.addEventListener('pointermove', function(e){
+      var r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      card.style.transform = 'perspective(900px) rotateX(' + ((.5 - y) * 16).toFixed(1) + 'deg) rotateY(' + ((x - .5) * 20).toFixed(1) + 'deg)';
+      card.style.setProperty('--mx', (x * 100).toFixed(0) + '%'); card.style.setProperty('--my', (y * 100).toFixed(0) + '%');
+    });
+    card.addEventListener('pointerleave', function(){ card.style.transform = ''; });
+  }
+
+  /* ---------- events ---------- */
+  function vb(v,i){ return '<button type="button" class="vbtn" data-v="' + (i+1) + '"><span class="n">' + (i+1) + ' / 10</span><span class="t">' + v.t + '</span><span class="s">' + v.s + '</span></button>'; }
+  $('vlist').innerHTML = '<p class="vrow">Lượt 1 · ghép style đã chọn</p><div class="vlist">' + V.slice(0,5).map(vb).join('') + '</div><p class="vrow">Lượt 2 · theo nguyên tắc thiết kế (best practice §1–§7)</p><div class="vlist">' + V.slice(5).map(function(v,i){ return vb(v,i+5); }).join('') + '</div>';
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-v],[data-page],[data-dev]');
+    if (b && !screen.contains(b)) {
+      if (b.dataset.v) st.v = Number(b.dataset.v);
+      if (b.dataset.page) st.page = b.dataset.page;
+      if (b.dataset.dev) st.dev = b.dataset.dev;
+      setHash(); render(); return;
+    }
+    var w = e.target.closest('[data-w]'); if (w && screen.contains(w)) { select('w', Number(w.dataset.w)); return; }
+    var g = e.target.closest('[data-g]'); if (g && screen.contains(g)) { select('g', Number(g.dataset.g)); }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    var d = e.key === 'ArrowDown' || e.key === 'j' ? 1 : e.key === 'ArrowUp' || e.key === 'k' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    if (st.page === 'tra') select('w', (st.sel + d + W.length) % W.length);
+    else select('g', (st.gsel + d + G.length) % G.length);
+  });
+  addEventListener('hashchange', function(){ readHash(); render(); });
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage.parentElement); else addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+  readHash();
+  render();
+})();
+</script>

@@ -1,8 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useApi } from '@/app-shell/session/session-context';
-import type { Pronunciation } from './pronunciation';
+import type { Pronunciation } from '@/lib/speech/pronunciation';
 
 export type FormOf = { entry_id: string; lemma: string; pos: string; kind: string };
 /** `GET /v1/words/{lemma}` sense (API `WordPageSense`). */
@@ -66,6 +66,17 @@ export function useSentences(senseId: string | null) {
   });
 }
 
+/** M4.6 "Câu bạn đã gặp": one `GET /v1/senses/{id}/sentences` per sense, under the same keys as `useSentences`. */
+export function useSentenceLists(senseIds: string[]) {
+  const api = useApi();
+  return useQueries({
+    queries: senseIds.map((id) => ({
+      queryKey: sentencesKey(id),
+      queryFn: () => api.get<{ items: Sentence[] }>(`/v1/senses/${id}/sentences`),
+    })),
+  });
+}
+
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 /** "A1 – A2" from the senses' levels; one level alone, or null when none has a level. */
@@ -76,6 +87,3 @@ export function levelRange(senses: PageSense[]): string | null {
   const high = LEVELS[Math.max(...ranks)];
   return low === high ? low : `${low} – ${high}`;
 }
-
-/** Days between reviews at each stage (TV9): level 0 is "new", 1..5 → 1, 3, 7, 14, 30 days. */
-export const STAGE_DAYS = [0, 1, 3, 7, 14, 30] as const;

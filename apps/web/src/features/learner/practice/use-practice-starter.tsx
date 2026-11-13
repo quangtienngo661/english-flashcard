@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useRef, useState } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -9,11 +10,18 @@ import { useFormat } from '@/app-shell/format';
 import { hardReplace } from '@/app-shell/navigate';
 import { ENTITLEMENTS_KEY, useEntitlements } from '@/app-shell/queries';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { sortForToday } from '../groups/GroupCard';
+import { sortForToday } from '../groups/deck-actions';
 import { useGroups } from '../groups/groups-api';
 import { ResumeDialog } from './CurrentSessionCard';
-import { CustomizeDialog, type CustomizeTarget } from './CustomizeDialog';
+import type { CustomizeTarget } from './CustomizeDialog';
 import { useCurrentSession, useStartSession, type AiStartProblem, type StartBody } from './practice-api';
+
+// Design §5.7: the dialog's code loads on the first open, not with every page.
+const CustomizeDialog = dynamic(() => import('./CustomizeDialog').then((m) => m.CustomizeDialog), { ssr: false });
+const loadCustomizeDialog = () => import('./CustomizeDialog');
+
+/** Starts loading the dialog's chunk when the pointer or focus reaches a [Tùy chỉnh] button, so the first open is not a wait. */
+export const PRELOAD_CUSTOMIZE = { onHoverStart: () => void loadCustomizeDialog(), onFocus: () => void loadCustomizeDialog() };
 
 const NO_WORDS_REASONS = ['group-empty', 'source-empty', 'no-word-fits-types'] as const;
 
@@ -88,7 +96,8 @@ export function usePracticeStarter<Origin extends string>() {
       const ai = aiRefusal(error);
       if (ai) {
         // AI types come only from the customise dialog: the refusal is told there (K/71, K/72, E24).
-        if (ai.kind === 'locked') void client.invalidateQueries({ queryKey: ENTITLEMENTS_KEY });
+        // A refusal means the cached plan or units are stale (another device spent them): read them again (review I1).
+        if (ai.kind === 'locked' || ai.kind === 'quota') void client.invalidateQueries({ queryKey: ENTITLEMENTS_KEY });
         setAiProblem(ai);
         return;
       }
@@ -106,20 +115,22 @@ export function usePracticeStarter<Origin extends string>() {
 
   const dialogs = (
     <>
-      <CustomizeDialog
-        target={customize}
-        onClose={() => {
-          setCustomize(null);
-          setAiProblem(null);
-        }}
-        groups={decks}
-        onStart={(body) => request('dialog', body)}
-        busy={busy && origin === 'dialog'}
-        error={errors.dialog ?? null}
-        outLine={reopensAt ? t('usage.outShort', { time: reopensAt }) : null}
-        aiProblem={aiProblem}
-        onClearAiProblem={() => setAiProblem(null)}
-      />
+      {customize && (
+        <CustomizeDialog
+          target={customize}
+          onClose={() => {
+            setCustomize(null);
+            setAiProblem(null);
+          }}
+          groups={decks}
+          onStart={(body) => request('dialog', body)}
+          busy={busy && origin === 'dialog'}
+          error={errors.dialog ?? null}
+          outLine={reopensAt ? t('usage.outShort', { time: reopensAt }) : null}
+          aiProblem={aiProblem}
+          onClearAiProblem={() => setAiProblem(null)}
+        />
+      )}
       <ResumeDialog
         current={current.data ?? null}
         groups={decks}

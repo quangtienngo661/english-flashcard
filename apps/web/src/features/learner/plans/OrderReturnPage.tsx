@@ -1,20 +1,22 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Check, Clock, LoaderCircle, X, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Logo } from '@/app-chrome/Logo';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { useApi } from '@/app-shell/session/session-context';
-import { ErrorState } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
 import { site } from '@/lib/site';
+import { ButtonLink } from '@/ui/ButtonLink';
+import { Card } from '@/ui/Card';
+import { ErrorState } from '@/ui/States';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
 
 /** `GET /v1/me/orders/:id` (launch prep B design §3.1). */
 type OrderView = {
@@ -32,13 +34,17 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const POLL_MS = 3_000;
 const GIVE_UP_MS = 2 * 60_000;
 
-/** "tới hết 5/12/2026": an end at the first instant of the next day is the last day before it. */
+/** "tới hết 05/12/2026": an end at the first instant of the next day is the last day before it. */
 const lastDay = (endsAt: string) => new Date(Date.parse(endsAt) - 1);
 
 /**
  * `/app/plans/order?order=<id>`, where payOS sends the payer back (DB32, design §3.8). It trusts the order's own state, never what payOS
  * added to the address (`code`, `id`, `cancel`, `status`, `orderCode`): asks payOS once through `check`, then reads the order every 3 s for
  * up to 2 minutes. Money that has not arrived by then is not an error: the plan opens by itself when it does.
+ *
+ * Giao diện mới M7.10 (Figma 123:4598 / 123:4690, 123:4774; M7 Figma B §2–§3): one card, 560 px from 768 px, inside one `role="status"`
+ * element that stays mounted, so the change from waiting to paid is announced. Waiting states blink a navy dot (motion doc §6); ended and
+ * not-found ones have a still red dot.
  */
 export function OrderReturnPage() {
   const t = useTranslations('App.plans.order');
@@ -85,11 +91,11 @@ export function OrderReturnPage() {
 
   const tPlans = useTranslations('App.plans');
   const contact = (
-    <p className="text-caption text-muted">
+    <p className="font-wm-sans text-wm-small text-wm-muted">
       {t.rich('contact', {
         email: site.supportEmail,
         mail: (chunks) => (
-          <a href={`mailto:${site.supportEmail}`} className="font-semibold text-primary underline underline-offset-2">
+          <a href={`mailto:${site.supportEmail}`} className={LINK}>
             {chunks}
           </a>
         ),
@@ -97,98 +103,96 @@ export function OrderReturnPage() {
     </p>
   );
   const toPlans = (
-    <Link href={`/${locale}/app/plans`} className={STICKER}>
+    <ButtonLink href={`/${locale}/app/plans`}>
       {t('toPlans')}
-    </Link>
+      <ArrowRight aria-hidden className="size-4" />
+    </ButtonLink>
   );
 
-  let body: ReactNode;
+  let card: ReactNode = null;
+  let error: ReactNode = null;
   if (orderId === null || (order.error instanceof ApiError && order.error.problem.status === 404)) {
-    body = <Message tone="neutral" title={t('notFound')} text={t('newOrder')}>{toPlans}</Message>;
+    card = <StateCard dot="stopped" title={t('notFound')} text={t('newOrder')}>{toPlans}</StateCard>;
   } else if (order.isError) {
-    body = <ErrorState message={errorText(order.error)} onRetry={() => void order.refetch()} />;
+    error = <ErrorState message={errorText(order.error)} onRetry={() => void order.refetch()} />;
   } else if (order.data === undefined) {
-    body = <Message tone="waiting" title={t('checking')} />;
+    card = <StateCard dot="waiting" title={t('checking')} />;
   } else if (order.data.status === 'paid') {
     const paid = order.data;
-    const until = paid.period ? format.date(lastDay(paid.period.ends_at), 'full') : null;
-    body = (
-      <Message
-        tone="success"
-        title={t('paidTitle')}
-        text={until ? t.rich('paid', { date: until, b: (chunks) => <strong className="font-semibold text-ink">{chunks}</strong> }) : t('paidNoDate')}
-      >
-        <dl className="flex flex-col border-y border-border text-ui">
+    const until = paid.period ? format.date(lastDay(paid.period.ends_at), 'numeric') : null;
+    card = (
+      <Card className="flex flex-col gap-4 border border-wm-line p-4 md:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-wm-pass-soft text-wm-pass">
+            <Check aria-hidden className="size-5" />
+          </span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h1 className="font-wm-display text-wm-card-title text-wm-ink">{t('paidTitle')}</h1>
+            <p className="font-wm-sans text-wm-small text-wm-muted">
+              {until
+                ? t.rich('paid', { date: until, b: (chunks) => <strong className="font-semibold text-wm-ink">{chunks}</strong> })
+                : t('paidNoDate')}
+            </p>
+          </div>
+        </div>
+        <dl className="flex flex-col rounded-wm-row bg-wm-bg px-4 py-1">
           <Row label={t('rowPlan')} value={t('planValue', { period: tPlans(`periods.${String(paid.period_months) as '1' | '3' | '12'}`) })} />
-          <Row label={t('rowAmount')} value={format.money(paid.amount, 'VND')} numeric />
-          <Row label={t('rowCode')} value={paid.description} numeric />
+          <Row label={t('rowAmount')} value={format.money(paid.amount, 'VND')} />
+          <Row label={t('rowCode')} value={paid.description} />
         </dl>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-2">
-          <Link href={`/${locale}/app`} className={STICKER}>
+        <div className="flex flex-wrap items-center gap-4">
+          <ButtonLink href={`/${locale}/app`}>
             {t('start')}
             <ArrowRight aria-hidden className="size-4" />
-          </Link>
-          <Link href={`/${locale}/app/plans`} className="text-ui font-semibold text-primary underline underline-offset-2">
+          </ButtonLink>
+          <Link href={`/${locale}/app/plans`} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal)}>
             {t('seePlan')}
           </Link>
         </div>
-      </Message>
+      </Card>
     );
   } else if (order.data.status === 'needs_review' || order.data.status === 'closed') {
-    body = <Message tone="review" title={t('needsReviewTitle')} text={t('needsReview')}>{contact}</Message>;
+    card = <StateCard dot="waiting" title={t('needsReviewTitle')} text={t('needsReview')}>{contact}</StateCard>;
   } else if (order.data.status === 'pending') {
-    body = <Message tone="waiting" title={t('pendingTitle')} text={t('pending')}>{contact}</Message>;
+    // The dot keeps blinking after the 2-minute stop: the order is still pending, and the motion doc ends the blink at a status change.
+    card = <StateCard dot="waiting" title={t('pendingTitle')} text={t('pending')}>{contact}</StateCard>;
   } else {
-    body = <Message tone="neutral" title={t('ended')} text={t('newOrder')}>{toPlans}</Message>;
+    card = <StateCard dot="stopped" title={t('ended')} text={t('newOrder')}>{toPlans}</StateCard>;
   }
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="mx-auto flex max-w-6xl items-center px-4 py-4 md:px-8">
-        <Link href={`/${locale}/app`} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <Logo tone="surface" />
-        </Link>
-      </header>
-      <main id="main" className="mx-auto flex max-w-xl flex-col px-4 pb-12 md:px-8">
-        {body}
-      </main>
+    // The (chrome) layout draws the frame and the main landmark (giao diện mới M1.10). No page title besides the card's h1, no back link.
+    <div className="mx-auto flex w-full flex-col md:w-140 md:pt-2">
+      <div role="status">{card}</div>
+      {error}
     </div>
   );
 }
 
-const STICKER =
-  'inline-flex min-h-control-touch w-fit items-center gap-2 rounded-inner bg-accent px-6 text-body font-semibold text-on-accent shadow-ledge-accent outline-none transition duration-instant ease-standard hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-safe:active:translate-y-px';
+const LINK = 'font-semibold text-wm-accent underline underline-offset-2 outline-none focus-visible:outline-3 focus-visible:outline-wm-accent';
+// raw-ok: Figma 123:4774 state titles are Bricolage Bold 22, a size no token has (as the comparison heading of Gói học)
+const STATE_TITLE = 'font-wm-display text-[1.375rem] font-bold leading-tight text-wm-ink';
 
-type Tone = 'success' | 'waiting' | 'review' | 'neutral';
-const TONE: Record<Tone, { box: string; icon: LucideIcon; spin?: boolean }> = {
-  success: { box: 'bg-success-soft text-success', icon: Check },
-  waiting: { box: 'bg-primary-soft text-primary', icon: LoaderCircle, spin: true },
-  review: { box: 'bg-accent-soft text-warning', icon: Clock },
-  neutral: { box: 'bg-neutral-soft text-muted', icon: X },
-};
-
-/** One state of the page (owner 05/11/2026): an icon, a short title, one sentence, then what to do next. */
-function Message({ tone, title, text, children }: { tone: Tone; title: string; text?: ReactNode; children?: ReactNode }) {
-  const { box, icon: Icon, spin } = TONE[tone];
+/**
+ * A state other than paid (M7 Figma B §3): a 10 px dot, the title, one sentence, then what to do next. Waiting: a navy dot that blinks
+ * (opacity 1 → .3 → 1 in 1.4 s, `animate-wm-pulse`); the reduced-motion rule of globals.css stops it. Stopped: a still red dot.
+ */
+function StateCard({ dot, title, text, children }: { dot: 'waiting' | 'stopped'; title: string; text?: string; children?: ReactNode }) {
   return (
-    <section className="mt-10 flex flex-col gap-4 rounded-feature border border-border bg-surface p-6 shadow-soft-card md:mt-16 md:p-8">
-      <span className={cn('flex size-12 items-center justify-center rounded-inner', box)}>
-        <Icon aria-hidden className={cn('size-6', spin && 'motion-safe:animate-spin')} />
-      </span>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-h2 font-extrabold text-balance text-ink">{title}</h1>
-        {text && <p className="text-body text-muted">{text}</p>}
-      </div>
+    <Card className="flex flex-col items-start gap-3 border border-wm-line p-4 md:p-6">
+      <span aria-hidden className={cn('size-2.5 rounded-full', dot === 'waiting' ? 'animate-wm-pulse bg-wm-accent' : 'bg-wm-fail')} />
+      <h1 className={STATE_TITLE}>{title}</h1>
+      {text && <p className="font-wm-sans text-wm-small text-wm-muted">{text}</p>}
       {children}
-    </section>
+    </Card>
   );
 }
 
-function Row({ label, value, numeric }: { label: string; value: string; numeric?: boolean }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-t border-border py-2.5 first:border-t-0">
-      <dt className="text-muted">{label}</dt>
-      <dd className={cn('font-semibold text-ink', numeric && 'tabular-nums')}>{value}</dd>
+    <div className="flex items-center justify-between gap-3 py-3">
+      <dt className="shrink-0 font-wm-sans text-wm-small text-wm-muted">{label}</dt>
+      <dd className="min-w-0 break-words text-right font-wm-sans text-wm-small-strong tabular-nums text-wm-ink">{value}</dd>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { localDate } from '../../common/time/local-date.js';
 import { ContentRuleError, ContentService, type InflectionKind, type Level } from '../../content/index.js';
-import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { ItemsService } from '../items/items.service.js';
@@ -18,7 +18,8 @@ export type NewWord = {
   lemma: string; pos?: string | null; meaning: string; level?: Level | null; topics?: string[];
   form_of?: { entry_id: string; kind: InflectionKind }; examples?: string[]; ai_suggestion?: boolean; ipa?: string | null;
 };
-export type QuickAddInput = { groupId: string; senseId?: string; newWord?: NewWord; sentence?: string };
+/** `groupIds` holds at least one id, without duplicates; the first group's link is the one reported in the result. */
+export type QuickAddInput = { groupIds: string[]; senseId?: string; newWord?: NewWord; sentence?: string };
 export type QuickAddResult = {
   item_id: string; sense_id: string; created_item: boolean; created_word: boolean; sentence_id: string | null;
 };
@@ -57,7 +58,7 @@ export class QuickAddService {
     const result = await contentProblems(() => this.prisma.$transaction(async (tx) => {
       // Learning's lock first, then Content's owner lock inside createPrivateSense: the same order as deleteMyWord.
       await withLearnerLock(tx, userId);
-      await this.groups.assertOwned(tx, userId, input.groupId);
+      for (const groupId of input.groupIds) await this.groups.assertOwned(tx, userId, groupId);
       // B3-5: the visibility read happens under the lock and on this transaction, not before it.
       if (input.senseId !== undefined && !(await this.content.visibleSenseIds(userId, [input.senseId], tx)).has(input.senseId)) throw notFound();
       let senseId = input.senseId!;
@@ -71,7 +72,9 @@ export class QuickAddService {
         })).senseId;
       }
       const today = localDate(profile.timezone, this.clock.now());
-      const item = await this.items.linkInTx(tx, userId, input.groupId, senseId, today);
+      const links = [];
+      for (const groupId of input.groupIds) links.push(await this.linkOrNameFullGroup(tx, userId, groupId, senseId, today));
+      const item = links[0];
       const sentence = input.sentence === undefined ? null
         : await this.content.addSentence(tx, { userId, senseId, text: input.sentence });
       return {
@@ -82,6 +85,21 @@ export class QuickAddService {
     // After the commit (round C): the recordings of a new private word; a failure here never undoes the add.
     if (result.created_word) await this.content.ensureAudio([result.sense_id]);
     return result;
+  }
+
+  /** QP1: a full group refuses the whole add; the problem names that group in the `group_id` extension (machine-readable, final review I2). */
+  private async linkOrNameFullGroup(tx: Prisma.TransactionClient, userId: string, groupId: string, senseId: string, today: string) {
+    try {
+      return await this.items.linkInTx(tx, userId, groupId, senseId, today);
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.problemType === 'group-full') {
+        throw new ProblemDetailsException({
+          status: 409, title: 'Group full', type: 'group-full',
+          detail: 'One of the chosen groups is full.', extensions: { group_id: groupId },
+        });
+      }
+      throw error;
+    }
   }
 
   /** B3E17 / CR23: the private entry with its senses and sentences, plus their items, group links and log rows. */

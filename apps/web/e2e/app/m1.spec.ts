@@ -29,14 +29,15 @@ test.describe('M1 flows (mocked API)', () => {
     await page.getByRole('textbox', { name: vi.auth.register.givenName }).fill('Lan');
     await page.getByLabel(vi.auth.register.birthDate).fill('2008-05-14');
     await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
-    await page.getByLabel(vi.auth.password).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.password, { exact: true }).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.register.confirmPassword, { exact: true }).fill('Aa1!aaaa');
     await page.getByRole('checkbox').check({ force: true });
     await page.getByRole('button', { name: vi.auth.register.submit }).click();
 
     await expect(page).toHaveURL(/\/vi\/app\/verify-email$/);
     await expect(page.getByText('lan@example.com')).toBeVisible();
     // The password typed on the form is kept in memory (client-side move), so the page does not ask for it.
-    await expect(page.getByLabel(vi.auth.password)).toHaveCount(0);
+    await expect(page.getByLabel(vi.auth.password, { exact: true })).toHaveCount(0);
     await page.getByRole('textbox', { name: 'Chữ số 1' }).click();
     await page.keyboard.type('481205');
     await page.getByRole('button', { name: vi.auth.verify.submit }).click();
@@ -65,7 +66,7 @@ test.describe('M1 flows (mocked API)', () => {
     });
     await page.goto('/vi/app/login');
     await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
-    await page.getByLabel(vi.auth.password).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.password, { exact: true }).fill('Aa1!aaaa');
     await page.getByRole('button', { name: vi.auth.login.submit }).click();
 
     await expect(page).toHaveURL(/\/vi\/app\/verify-email\?reason=login$/);
@@ -88,8 +89,15 @@ test.describe('M1 flows (mocked API)', () => {
     });
     await page.goto('/vi/app/settings');
     await expect(page).toHaveURL(/\/vi\/app\/login\?next=%2Fvi%2Fapp%2Fsettings$/);
-    await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
-    await page.getByLabel(vi.auth.password).fill('pw');
+    // Text typed before hydration is wiped when React takes the field over; the form now checks empty fields, so retype until it holds.
+    const email = page.getByRole('textbox', { name: vi.auth.email });
+    const password = page.getByLabel(vi.auth.password, { exact: true });
+    await expect(async () => {
+      await email.fill('lan@example.com');
+      await password.fill('pw');
+      await expect(email).toHaveValue('lan@example.com', { timeout: 500 });
+      await expect(password).toHaveValue('pw', { timeout: 500 });
+    }).toPass();
     await page.getByRole('button', { name: vi.auth.login.submit }).click();
     await expect(page).toHaveURL(/\/vi\/app\/settings$/);
     await expect(page.getByRole('heading', { name: vi.settings.title, level: 1 })).toBeVisible();
@@ -105,7 +113,7 @@ test.describe('M1 flows (mocked API)', () => {
     await mockApi(page, { ...signedOut, 'POST /v1/auth/login': () => problem(403, 'account-locked') });
     await page.goto('/vi/app/login');
     await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
-    await page.getByLabel(vi.auth.password).fill('pw');
+    await page.getByLabel(vi.auth.password, { exact: true }).fill('pw');
     await page.getByRole('button', { name: vi.auth.login.submit }).click();
     await expect(page.getByText(vi.auth.login.lockedTitle)).toBeVisible();
   });
@@ -115,14 +123,14 @@ test.describe('M1 flows (mocked API)', () => {
     await page.goto('/vi/app/settings');
     await expect(page.getByText('đã dùng 1/30')).toBeVisible();
     await expect(page.getByText('còn 287/300')).toBeVisible();
-    await expect(page.getByText(/Còn 29 phiên, mở lại lúc 0:00\./)).toBeVisible();
+    await expect(page.getByText('Còn 29 phiên, mở lại lúc 0:00', { exact: true })).toBeVisible();
   });
 });
 
 // Every M1 page × vi/en × light/dark; the desktop (1440) and mobile (390) projects run each once.
 // verify-email opened directly (no pending email, no password in memory) shows its email and password fields too.
-const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com', 'verify-email', 'verify-email?reason=login'];
-const MEMBER_PAGES = ['', 'settings', 'settings/account', 'welcome'];
+const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com', 'verify-email', 'verify-email?reason=login', 'account-deleted'];
+const MEMBER_PAGES = ['', 'settings', 'settings/account', 'welcome', 'complete-profile'];
 
 async function open(page: Page, locale: 'vi' | 'en', path: string, signedIn: boolean) {
   if (signedIn) await signedInAs(page, 'free', {}, { native_language: locale });

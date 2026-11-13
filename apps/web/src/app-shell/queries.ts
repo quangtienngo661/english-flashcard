@@ -37,7 +37,17 @@ export type Entitlements = {
 
 /** `GET /v1/me/app-config` (design §8.7, Task 7): the admin-editable numbers the screens show. */
 export type AppConfig = {
-  practice: { max_questions_per_session: number; default_questions_per_session: number };
+  practice: {
+    max_questions_per_session: number;
+    default_questions_per_session: number;
+    /** #249 (practice AI count): absent from an older API, read as the defaults (fixed, percent 50%, even, 100). */
+    session_max_mode?: 'fixed' | 'scope_words';
+    ai_max_mode?: 'fixed' | 'percent';
+    ai_max_fixed?: number;
+    ai_max_percent?: number;
+    ai_placement?: 'even' | 'random' | 'learner';
+    scope_questions_max?: number;
+  };
   reminders: { send_time: string };
   learning: { backlog_after_days: number; groups_per_user: number };
   /** Bước 8: how long payment records are kept after an account is deleted. */

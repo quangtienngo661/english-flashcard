@@ -1,9 +1,10 @@
 'use client';
 
 import { Check, CircleCheck } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
-import { Button } from '@/app-ui/Button';
-import { SpeakWord } from '@/app-ui/SpeakButtons';
+import { useTranslations } from 'next-intl';
+import { useRouteLocale } from '@/app-shell/route-locale';
+import { Button } from '@/ui/Button';
+import { SpeakWord } from '@/ui/SpeakButton';
 import type { AnswerResult } from './use-practice-session';
 
 const BLANK = '___';
@@ -22,71 +23,71 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
   busy: boolean;
 }) {
   const t = useTranslations('App.practice.session');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const rows = result.alternative?.rows ?? [];
   const at = sentence.indexOf(BLANK);
   const [before, after] = at < 0 ? [sentence, ''] : [sentence.slice(0, at), sentence.slice(at + BLANK.length)];
   return (
     <div className="flex flex-col gap-3">
-      <div data-feedback className="flex gap-3 rounded-inner bg-primary-soft p-4 motion-safe:animate-feedback-in">
-        <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
+      <div data-feedback className="flex gap-3 rounded-wm-row bg-wm-accent-soft p-4 motion-safe:animate-wm-feedback-in">
+        <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-accent" />
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-title font-bold text-primary">{t('alternativeLabel')}</p>
-          <p className="break-words text-pretty text-ui text-ink">
+          <p className="font-wm-display text-wm-word text-wm-accent">{t('alternativeLabel')}</p>
+          <p className="break-words text-pretty text-wm-small text-wm-ink">
             {before}
             <strong className="font-extrabold">{result.correct.text}</strong>
             {after}
           </p>
           <div className="flex flex-wrap items-center gap-x-2">
-            <p className="min-w-0 break-words text-ui font-semibold text-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
+            <p className="min-w-0 break-words text-wm-small-strong text-wm-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
             <span className="flex gap-1">
               <SpeakWord text={result.correct.lemma} />
             </span>
           </div>
-          {result.definition_en && result.definition_en !== result.meaning && <p className="break-words text-caption text-muted">{result.definition_en}</p>}
+          {result.definition_en && result.definition_en !== result.meaning && <p className="break-words text-wm-caption text-wm-muted">{result.definition_en}</p>}
         </div>
       </div>
       {result.translation && locale === 'vi' && (
-        <div className="flex flex-col gap-1 rounded-inner bg-surface p-4">
-          <p className="flex items-center gap-2 text-caption font-semibold text-ink">
+        <div className="flex flex-col gap-1 rounded-wm-row bg-wm-surface p-4">
+          <p className="flex items-center gap-2 text-wm-label text-wm-ink">
             {t('translation')}
-            <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">{t('translationAi')}</span>
+            <span className="rounded-full bg-wm-accent-soft px-2 py-0.5 text-wm-label text-wm-accent">{t('translationAi')}</span>
           </p>
-          <p className="break-words text-ui text-ink">{result.translation}</p>
+          <p className="break-words text-wm-small text-wm-ink">{result.translation}</p>
         </div>
       )}
       {/* Same flat surface as the translation above: no border, so the card reads as one piece (UI polish, 07/11/2026). */}
-      <ul className="flex flex-col divide-y divide-border rounded-inner bg-surface px-4">
+      <ul className="flex flex-col divide-y divide-wm-line rounded-wm-row bg-wm-surface px-4">
         {rows.map((row) => (
           <li key={row.sense_id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <p className="text-caption font-semibold text-muted">{row.role === 'typed' ? t('alternativeTyped') : t('alternativeAsked')}</p>
+              <p className="text-wm-label text-wm-muted">{row.role === 'typed' ? t('alternativeTyped') : t('alternativeAsked')}</p>
               <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                <span className="break-words text-title font-bold text-ink">{row.lemma}</span>
-                <span className="break-words text-caption text-muted">{row.meaning}</span>
+                <span className="break-words font-wm-display text-wm-word text-wm-ink">{row.lemma}</span>
+                <span className="break-words text-wm-caption text-wm-muted">{row.meaning}</span>
               </p>
             </div>
             {row.action === null ? (
               <div className="flex shrink-0 flex-wrap gap-2">
-                <Button variant="quiet" aria-label={t('reviewWord', { lemma: row.lemma })} isDisabled={busy} onPress={() => onReviewWord(row.sense_id, 'needs_review')}>
+                <Button variant="secondary" aria-label={t('reviewWord', { lemma: row.lemma })} isDisabled={busy} onPress={() => onReviewWord(row.sense_id, 'needs_review')}>
                   {t('stillLearning')}
                 </Button>
                 {row.show_known && (
-                  <Button variant="quiet" aria-label={t('knowWord', { lemma: row.lemma })} isDisabled={busy} onPress={() => onReviewWord(row.sense_id, 'known')}>
+                  <Button variant="secondary" aria-label={t('knowWord', { lemma: row.lemma })} isDisabled={busy} onPress={() => onReviewWord(row.sense_id, 'known')}>
                     {t('know')}
                   </Button>
                 )}
               </div>
             ) : (
-              <p className="flex shrink-0 items-center gap-1 text-caption font-semibold text-ink">
-                <Check aria-hidden className="size-4 text-success" />
+              <p className="flex shrink-0 items-center gap-1 text-wm-label text-wm-ink">
+                <Check aria-hidden className="size-4 text-wm-pass" />
                 {row.action === 'known' ? t('know') : t('summary.added')}
               </p>
             )}
           </li>
         ))}
       </ul>
-      <Button variant="sticker" size="lg" className="font-bold" isPending={busy} onPress={onNext}>
+      <Button variant="primary" size="lg" isPending={busy} onPress={onNext}>
         {t('next')}
       </Button>
     </div>

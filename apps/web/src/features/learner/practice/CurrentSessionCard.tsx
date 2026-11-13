@@ -2,8 +2,10 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Button } from '@/app-ui/Button';
-import { Dialog } from '@/app-ui/Dialog';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
 import type { GroupSummary } from '../groups/groups-api';
 import { doneCount, type CurrentSession } from './practice-api';
 
@@ -23,24 +25,31 @@ export function useSourceLabel(): (current: CurrentSession, groups: GroupSummary
   };
 }
 
-/** K/51 "Phiên đang dở" side card (D9, E34); in K/55 it says the session still goes on. */
+/** K/51 "Phiên đang dở" (Figma 99:3169, D9, E34): how far, where from, and [Làm tiếp câu n →]; in K/55 it says the session still goes on. */
 export function CurrentSessionCard({ current, groups, out }: { current: CurrentSession; groups: GroupSummary[]; out: boolean }) {
   const t = useTranslations('App.practice.current');
   const locale = useLocale();
   const label = useSourceLabel();
   const done = doneCount(current);
-  const values = { source: label(current, groups), done, total: current.session.target_count };
+  const total = current.session.target_count;
+  const values = { source: label(current, groups), done, total };
   return (
-    <section aria-labelledby="current-session" className="flex flex-col gap-3 rounded-card border-b-4 border-accent-deep bg-accent-soft p-5">
-      <h2 id="current-session" className="text-title font-semibold text-ink">
-        {t('title')}
-      </h2>
-      <p className="wrap-anywhere text-caption text-ink">{out ? t('bodyOut', values) : t('body', values)}</p>
-      <Link
-        href={`/${locale}/app/practice/session`}
-        className="flex min-h-control items-center justify-center rounded-inner bg-navy px-4 text-ui font-semibold text-on-navy shadow-ledge outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      >
+    <section
+      aria-labelledby="current-session"
+      className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface px-5 py-4 shadow-wm-card md:flex-row md:items-center md:gap-5"
+    >
+      <span aria-hidden className="font-wm-display text-wm-card-title text-wm-accent">
+        {done}/{total}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h2 id="current-session" className="font-wm-sans text-wm-base-strong text-wm-ink">
+          {t('title')}
+        </h2>
+        <p className="wrap-anywhere font-wm-sans text-wm-small text-wm-muted">{out ? t('bodyOut', values) : t('body', values)}</p>
+      </div>
+      <Link href={`/${locale}/app/practice/session`} className={`${TEXT_BUTTON_BASE} ${TEXT_BUTTON_TONE.normal} shrink-0`}>
         {current.session.status === 'waiting_continue' ? t('resumeWaiting') : t('resume', { n: done + 1 })}
+        <ArrowRight aria-hidden className="size-4" />
       </Link>
     </section>
   );
@@ -59,6 +68,7 @@ type ResumeProps = {
 /** K/77 (E35): asked before `POST /practice/sessions` while a session is open; a new one closes the old. */
 export function ResumeDialog({ current, groups, isOpen, onClose, onResume, onStartNew, busy }: ResumeProps) {
   const t = useTranslations('App.practice.resumeDialog');
+  const tc = useTranslations('App.common');
   const label = useSourceLabel();
   if (!current) return null;
   const done = doneCount(current);
@@ -69,18 +79,19 @@ export function ResumeDialog({ current, groups, isOpen, onClose, onResume, onSta
       onOpenChange={(open) => !open && onClose()}
       isDismissable={!busy}
       title={t('title', { done, total })}
+      closeLabel={tc('close')}
       footer={
         <>
-          <Button variant="quiet" size="lg" isPending={busy} onPress={onStartNew}>
+          <Button variant="secondary" isPending={busy} onPress={onStartNew}>
             {t('startNew')}
           </Button>
-          <Button variant="sticker" size="lg" isDisabled={busy} onPress={onResume}>
+          <Button variant="primary" isDisabled={busy} onPress={onResume}>
             {t('resume')}
           </Button>
         </>
       }
     >
-      <p className="text-body text-ink">{t('body', { source: label(current, groups), done, total })}</p>
+      <p className="font-wm-sans text-wm-base text-wm-ink">{t('body', { source: label(current, groups), done, total })}</p>
     </Dialog>
   );
 }

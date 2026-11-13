@@ -2,9 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
+import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { FIELD_BOX } from '@/ui/field-styles';
 import { useAddWord } from '../add-word/add-word-context';
 
-/** K/10 "Thêm từ vừa gặp": type the word, [Thêm] opens the add-word sheet with it. */
+/** "Thêm từ vừa gặp" (Figma 117:4480): type the word, [Thêm] opens the add-word sheet with it. */
 export function QuickAddBox() {
   const t = useTranslations('App.addWord');
   const { open } = useAddWord();
@@ -17,23 +20,25 @@ export function QuickAddBox() {
   }
 
   return (
-    <section aria-labelledby="quick-add" className="pastel-island flex flex-col gap-3 rounded-card bg-accent-soft p-5 shadow-ledge-accent">
-      <h2 id="quick-add" className="text-title font-semibold text-ink">
+    <section aria-labelledby="quick-add" className="flex flex-col gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+      <h2 id="quick-add" className="font-wm-display text-xl font-bold text-wm-ink">
         {t('quickTitle')}
       </h2>
-      <p className="text-caption text-ink">{t('quickBody')}</p>
-      <form onSubmit={onSubmit} className="flex gap-2">
+      <p className="text-wm-small text-wm-muted">{t('quickBody')}</p>
+      <form onSubmit={onSubmit} className="flex gap-3">
         <input
           aria-label={t('word')}
+          name="word"
+          placeholder={t('quickPlaceholder')}
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
           value={word}
           onChange={(e) => setWord(e.target.value)}
           maxLength={100}
-          placeholder={t('wordPlaceholder')}
-          className="min-h-control min-w-0 flex-1 rounded-control border-2 border-border-strong bg-surface px-3 text-ui text-ink outline-none placeholder:text-placeholder focus:border-primary"
+          className={cn(FIELD_BOX, 'min-h-11 flex-1')}
         />
-        <button type="submit" className="min-h-control shrink-0 rounded-control bg-navy px-5 text-ui font-semibold text-on-navy shadow-ledge outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          {t('quickSubmit')}
-        </button>
+        <Button type="submit">{t('quickSubmit')}</Button>
       </form>
     </section>
   );

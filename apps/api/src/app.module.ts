@@ -7,6 +7,7 @@ import { ContentModule } from './content/content.module.js';
 import { ContentPipelineModule } from './content-pipeline/content-pipeline.module.js';
 import { BatchScopeModule } from './content-pipeline/import/batch-scope.provider.js';
 import { EntitlementsModule } from './entitlements/entitlements.module.js';
+import { FaqModule } from './faq/faq.module.js';
 import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { LearningModule } from './learning/learning.module.js';
@@ -19,7 +20,7 @@ import { SettingsModule } from './settings/settings.module.js';
 @Module({
   imports: [
     IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
-    LearningModule, LegalModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
+    LearningModule, LegalModule, FaqModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
   ],
   controllers: [HealthController],
   providers: [],

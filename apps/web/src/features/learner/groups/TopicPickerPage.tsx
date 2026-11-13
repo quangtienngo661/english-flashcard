@@ -1,19 +1,25 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { BackLink } from '@/app-chrome/BackLink';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { Select } from '@/app-ui/Select';
-import { FullScreenSpinner, NotFoundState } from '@/app-ui/States';
-import { showToast } from '@/app-ui/Toast';
+import { useFormat } from '@/app-shell/format';
+import { cn } from '@/lib/cn';
+import { groupTone } from '@/lib/group-color';
+import { shownPos } from '@/lib/pos';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { Select } from '@/ui/Select';
+import { Skeleton } from '@/ui/Skeleton';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
+import { FloatingBar } from './FloatingBar';
 import { isId, useGroupMutations, useGroups, type BulkResult } from './groups-api';
 
 type Sense = {
@@ -29,6 +35,7 @@ type ItemState = { sense_id: string; group_ids: string[] };
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const PAGE = 100;
 const NEW_DECK = 'new';
+const FIRST_ROWS = 8;
 
 /** K/18 `/app/topic?code=&level=`: every word of a topic at a level; add the ticked ones or the whole set (design §8.3). */
 export function TopicPickerPage() {
@@ -41,9 +48,14 @@ export function TopicPickerPage() {
   const groupId = isId(rawGroup) ? rawGroup.toLowerCase() : undefined;
   const valid = /^[a-z0-9-]+$/.test(code) && LEVELS.includes(level);
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }}>
-      {valid ? <Picker code={code} level={level} groupId={groupId} /> : <NotFoundState title={t('notFound')} />}
-    </AppShell>
+    <>
+      <BackLink href={`/${locale}/app/groups`} label={t('back')} />
+      {valid ? (
+        <Picker code={code} level={level} groupId={groupId} />
+      ) : (
+        <h1 className="rounded-wm-card bg-wm-surface p-6 font-wm-display text-wm-card-title text-wm-ink shadow-wm-card">{t('notFound')}</h1>
+      )}
+    </>
   );
 }
 
@@ -58,6 +70,9 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
   // Which button the press came from, read when the press runs (state set in the same handler is not visible yet).
   const addAll = useRef(false);
   const [pressedAll, setPressedAll] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const tCommon = useTranslations('App.common');
+  const format = useFormat();
 
   // Every page of the topic (the API returns no total), then which of them the learner already learns, 100 ids a call.
   const data = useQuery({
@@ -137,56 +152,93 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
       return next;
     });
   const allTicked = unlearned.length > 0 && unlearned.every((s) => selected.has(s.sense_id));
+  const rows = showAll ? senses : senses.slice(0, FIRST_ROWS);
 
-  if (data.isPending) return <FullScreenSpinner />;
+  if (data.isPending) {
+    return (
+      <div role="status" className="flex flex-col gap-3">
+        <span className="sr-only">{tCommon('loading')}</span>
+        <Skeleton className="h-11 w-64" />
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-wm-row" />
+        ))}
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col gap-4 pb-28">
-      <PageTitle>{title}</PageTitle>
-      <p className="-mt-3 text-body text-muted">{t('intro', { count: senses.length })}</p>
+    <div className="flex flex-col gap-5 pb-48 md:pb-24">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-5">
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="text-wm-meta text-wm-muted">{t('eyebrow')}</p>
+          <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink wrap-anywhere md:text-5xl">{title}</h1>
+          <p className="text-wm-base text-wm-muted">{t('intro', { count: senses.length })}</p>
+        </div>
+        <div className="flex shrink-0 flex-col md:items-end">
+          <span className="font-wm-display text-5xl font-extrabold leading-none tracking-tight text-wm-ink md:text-6xl">{format.number(unlearned.length)}</span>
+          <span className="text-wm-meta text-wm-muted">{t('countCaption', { learning: senses.length - unlearned.length })}</span>
+        </div>
+      </div>
+      {unlearned.length > 0 && (
+        <TextButton tone="normal" className="w-fit text-wm-button" isDisabled={add.busy} onPress={() => void onAdd(true)}>
+          {t('addAll', { count: unlearned.length })}
+        </TextButton>
+      )}
       {senses.length === 0 ? (
-        <p className="text-body text-muted">{t('none')}</p>
+        <p className="text-wm-base text-wm-muted">{t('none')}</p>
       ) : (
-        <section className="flex flex-col gap-2 rounded-card border border-border bg-surface p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+        <section className="rounded-wm-card border border-wm-line bg-wm-surface p-2 shadow-wm-card">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Checkbox isSelected={allTicked} onChange={(on) => setSelected(on ? new Set(unlearned.map((s) => s.sense_id)) : new Set())}>
-              {t('selectAll', { count: unlearned.length })}
+              <span className="text-wm-button">{t('selectAll', { count: unlearned.length })}</span>
             </Checkbox>
-            {selected.size > 0 && <span className="text-ui font-semibold text-primary">{t('selected', { count: selected.size })}</span>}
+            {selected.size > 0 && <span className="shrink-0 text-wm-meta text-wm-muted">{t('selected', { count: selected.size })}</span>}
           </div>
-          <ul className="divide-y divide-border">
-            {senses.map((s) => {
+          <ul className="flex flex-col">
+            {rows.map((s) => {
               const decks = learning.get(s.sense_id);
+              const first = decks?.map((gid) => groups.find((g) => g.id === gid)).find(Boolean);
               return (
-                <li key={s.sense_id} aria-label={s.lemma} className="flex items-center gap-3 py-2.5">
+                <li
+                  key={s.sense_id}
+                  aria-label={s.lemma}
+                  className={cn(
+                    'flex flex-wrap items-center gap-x-4 gap-y-1 rounded-wm-row border-t border-wm-line px-4 py-3',
+                    selected.has(s.sense_id) && 'bg-wm-accent/5',
+                  )}
+                >
                   {decks ? (
-                    <span className="w-5 shrink-0" />
+                    <span aria-hidden className="size-5 shrink-0 rounded-wm-key border-2 border-wm-ghost opacity-40" />
                   ) : (
                     <Checkbox isSelected={selected.has(s.sense_id)} onChange={(on) => toggle(s.sense_id, on)}>
                       <span className="sr-only">{t('select', { word: s.lemma })}</span>
                     </Checkbox>
                   )}
-                  <span className="min-w-0 flex-1">
-                    <span className="mr-2 break-all text-ui font-semibold text-ink">{s.lemma}</span>
-                    <span className="text-caption text-muted">{s.pos}</span>
-                    <span className="block break-words text-caption text-ink">{s.meaning.text}</span>
+                  <span className={cn('min-w-0 flex-1', decks && 'opacity-50')}>
+                    <span className="mr-2 font-wm-display text-wm-word text-wm-ink wrap-anywhere">{s.lemma}</span>
+                    <span className="text-wm-meta text-wm-muted">{shownPos(s.pos)}</span>
+                    <span className="block text-wm-small text-wm-muted wrap-anywhere">{s.meaning.text}</span>
                   </span>
-                  {decks ? (
-                    <span className="min-w-0 max-w-1/2 break-words rounded-inner bg-neutral-soft px-2 py-0.5 text-right text-caption text-muted">
-                      {deckName(decks) ? t('learning', { groups: deckName(decks) }) : t('learningNoGroup')}
+                  {decks && (
+                    <span className="flex w-full min-w-0 items-center gap-2 pl-9 text-wm-caption text-wm-muted md:w-auto md:max-w-1/2 md:pl-0">
+                      {first && <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', groupTone(first.id, first.total).bg)} />}
+                      <span className="min-w-0 wrap-anywhere">{deckName(decks) ? t('learning', { groups: deckName(decks) }) : t('learningNoGroup')}</span>
                     </span>
-                  ) : (
-                    <span className="shrink-0 text-caption text-muted">{s.level}</span>
                   )}
                 </li>
               );
             })}
           </ul>
+          {!showAll && senses.length > FIRST_ROWS && (
+            <TextButton className="mx-4 mb-1 mt-3" onPress={() => setShowAll(true)}>
+              {t('more', { count: senses.length - FIRST_ROWS })}
+            </TextButton>
+          )}
         </section>
       )}
-      {unlearned.length > 0 && (
-        <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-surface md:bottom-0">
-          <div className="mx-auto flex max-w-360 flex-wrap items-end gap-3 px-4 py-3 lg:px-8">
-            <div className="w-full min-w-0 sm:w-72">
+      {selected.size > 0 && (
+        <FloatingBar label={t('selected', { count: selected.size })}>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="w-full min-w-0 md:w-72">
               <Select
                 label={t('addTo')}
                 value={target}
@@ -194,14 +246,12 @@ function Picker({ code, level, groupId }: { code: string; level: string; groupId
                 items={[{ id: NEW_DECK, label: t('newGroup', { name: title }) }, ...groups.map((g) => ({ id: g.id, label: g.name }))]}
               />
             </div>
-            <Button variant="quiet" size="lg" isPending={add.busy && pressedAll} onPress={() => void onAdd(true)}>
-              {t('addAll', { count: unlearned.length })}
-            </Button>
-            <Button variant="sticker" size="lg" isPending={add.busy && !pressedAll} isDisabled={selected.size === 0} onPress={() => void onAdd(false)}>
-              {t('addSelected', { count: selected.size })}
-            </Button>
           </div>
-        </div>
+          <Button isPending={add.busy && !pressedAll} onPress={() => void onAdd(false)}>
+            {t('addSelected', { count: selected.size })}
+            <ArrowRight aria-hidden className="size-4" />
+          </Button>
+        </FloatingBar>
       )}
     </div>
   );

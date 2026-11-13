@@ -1,8 +1,9 @@
 import { headers } from 'next/headers';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { RequireSession } from '@/app-shell/RequireSession';
 import { AdsenseLoader } from '@/features/learner/ads/AdsenseLoader';
-import { HouseAd } from '@/features/learner/house-ad/HouseAd';
+import { CalendarHost } from '@/features/learner/calendar/CalendarHost';
+import { HouseAdLoader } from '@/features/learner/house-ad/HouseAdLoader';
 import { nonceFromPolicy } from '@/lib/app-csp';
 
 // Every screen that needs a signed-in learner (design §4.2, E1–E11). The Pro introduction dialog and the AdSense loader live here, inside the
@@ -13,8 +14,11 @@ export default async function MemberLayout({ children }: { children: ReactNode }
   const nonce = nonceFromPolicy((await headers()).get('content-security-policy'));
   return (
     <RequireSession>
-      {children}
-      <HouseAd />
+      {/* Lịch and Ngày for every member screen, driven by ?lich= / ?ngay= (design §5.6); useSearchParams sits in Suspense. */}
+      <Suspense fallback={children}>
+        <CalendarHost>{children}</CalendarHost>
+      </Suspense>
+      <HouseAdLoader />
       <AdsenseLoader nonce={nonce} />
     </RequireSession>
   );

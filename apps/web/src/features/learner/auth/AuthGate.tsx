@@ -3,7 +3,6 @@
 import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
 import { safeNext } from '@/app-shell/locale-prefix';
 import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
@@ -32,5 +31,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     hardReplace(safeNext(new URLSearchParams(window.location.search).get('next'), locale));
   }, [state.status, locale, pathname]);
 
-  return <AppShell variant="bare">{children}</AppShell>;
+  // The frame belongs to the (split) and (card) layouts below this one.
+  return children;
 }

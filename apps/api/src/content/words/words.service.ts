@@ -33,7 +33,17 @@ export type WordPageSense = WordSense & { sentence_count: number };
 export type WordListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string; mine?: boolean;
 };
-export type WordRow = { lemma: string; pos_list: string[]; level: Level | null; meaning_preview: string; has_private: boolean };
+/**
+ * One word of the list. Giao diện mới M4.1: `ipa` and `example` come from the sense the preview meaning comes from (UK IPA, else US,
+ * else the learner's own note on a private word; its first example).
+ */
+export type WordRow = {
+  lemma: string; pos_list: string[]; level: Level | null; meaning_preview: string; has_private: boolean;
+  ipa: string | null; example: string | null;
+};
+type WordListRow = Omit<WordRow, 'ipa'> & {
+  rank: number; total: number; ipa_uk: string | null; ipa_us: string | null; ipa_custom: string | null;
+};
 type SenseRow = Omit<WordSense, 'meaning' | 'form_of' | 'pronunciation'> & {
   ipa_uk: string | null; ipa_us: string | null; ipa_custom: string | null;
   gloss_vi: string | null; form_of_entry_id: string | null; form_kind: InflectionKind | null;
@@ -206,14 +216,16 @@ export class WordsService {
       ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
     ];
     const after = cursor ? Prisma.sql`WHERE (rank, lemma COLLATE "C") > (${cursor.rank}, ${cursor.lemma} COLLATE "C")` : Prisma.empty;
-    const rows = await this.prisma.$queryRaw<Array<WordRow & { rank: number }>>`
+    // The preview sense of a word: catalog before private, then part of speech, label, age (meaning, IPA and example all come from it).
+    const previewOrder = Prisma.sql`(scope = 'private'), pos_rank, context_label NULLS FIRST, created_at, id`;
+    const rows = await this.prisma.$queryRaw<WordListRow[]>`
       WITH candidates AS MATERIALIZED (
         SELECT * FROM (SELECT e.id, e.lemma, e.pos, e.scope, ${rank} AS rank FROM entries e WHERE ${Prisma.join(entryFilters, ' AND ')}) c
         WHERE c.rank IS NOT NULL
       ), matched AS (
-        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank,
-          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning,
-          array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id
+        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank, r.id AS revision_id,
+          array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id,
+          r.ipa_uk, r.ipa_us, r.ipa_custom, r.examples[1] AS example
         FROM candidates e
         -- One probe of senses(entry_id) per candidate (OFFSET 0 keeps the planner from flattening it back into a scan of every sense).
         CROSS JOIN LATERAL (
@@ -221,25 +233,41 @@ export class WordsService {
         ) s
         JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
         LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
-        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
-        LEFT JOIN sense_revision_texts definition ON definition.revision_id = r.id AND definition.language = 'en' AND definition.kind = 'definition'
         ${filters.length === 0 ? Prisma.empty : Prisma.sql`WHERE ${Prisma.join(filters, ' AND ')}`}
       ), words AS (
         SELECT lemma, MIN(rank)::int AS rank, array_agg(DISTINCT pos) AS pos_list, bool_or(scope = 'private') AS has_private,
           (array_agg(level ORDER BY array_position(${LEVELS as unknown as string[]}::text[], level)) FILTER (WHERE level IS NOT NULL))[1] AS level,
-          (array_agg(meaning ORDER BY (scope = 'private'), pos_rank, context_label NULLS FIRST, created_at, id))[1] AS meaning_preview
+          (array_agg(revision_id ORDER BY ${previewOrder}))[1] AS preview_revision,
+          (array_agg(ipa_uk ORDER BY ${previewOrder}))[1] AS ipa_uk,
+          (array_agg(ipa_us ORDER BY ${previewOrder}))[1] AS ipa_us,
+          (array_agg(ipa_custom ORDER BY ${previewOrder}))[1] AS ipa_custom,
+          (array_agg(example ORDER BY ${previewOrder}))[1] AS example
         FROM matched WHERE rank IS NOT NULL GROUP BY lemma
       )
-      SELECT * FROM words ${after}
-      ORDER BY rank, lemma COLLATE "C"
-      LIMIT ${query.page_size + 1}`;
-    const page = rows.slice(0, query.page_size);
+      -- The count row always comes back, so a page past the last word (or no match) still reports the total, with a null word.
+      SELECT counted.total, page.* FROM (SELECT COUNT(*)::int AS total FROM words) counted
+      -- The meaning texts are joined for the page only: joined per matched sense, the planner (expecting one row) scanned the whole
+      -- text table once per sense, 7 s for 9.8k words.
+      LEFT JOIN LATERAL (
+        SELECT w.lemma, w.rank, w.pos_list, w.has_private, w.level, w.ipa_uk, w.ipa_us, w.ipa_custom, w.example,
+          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning_preview
+        FROM (SELECT * FROM words ${after} ORDER BY rank, lemma COLLATE "C" LIMIT ${query.page_size + 1}) w
+        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = w.preview_revision AND gloss.language = 'vi' AND gloss.kind = 'gloss'
+        LEFT JOIN sense_revision_texts definition
+          ON definition.revision_id = w.preview_revision AND definition.language = 'en' AND definition.kind = 'definition'
+      ) page ON true
+      ORDER BY page.rank, page.lemma COLLATE "C"`;
+    const total = rows[0]?.total ?? 0;
+    const found = rows.filter((row) => row.lemma !== null);
+    const page = found.slice(0, query.page_size);
     const last = page.at(-1);
     return {
-      items: page.map(({ lemma, pos_list, level, meaning_preview, has_private }) => ({
+      items: page.map(({ lemma, pos_list, level, meaning_preview, has_private, ipa_uk, ipa_us, ipa_custom, example }): WordRow => ({
         lemma, pos_list: [...pos_list].sort((a, b) => posRank(a) - posRank(b)), level: level ?? null, meaning_preview, has_private,
+        ipa: ipa_uk ?? ipa_us ?? ipa_custom ?? null, example: example ?? null,
       })),
-      next_page_token: rows.length > query.page_size && last ? encodeBoundToken({ rank: last.rank, lemma: last.lemma }, binding) : null,
+      next_page_token: found.length > query.page_size && last ? encodeBoundToken({ rank: last.rank, lemma: last.lemma }, binding) : null,
+      total,
     };
   }
 }

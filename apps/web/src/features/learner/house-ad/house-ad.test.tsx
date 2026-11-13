@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { makeMe } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { HouseAd } from './HouseAd';
 import { houseAdKey } from './house-ad-counter';
 
@@ -36,8 +36,8 @@ const routes = (entitlements: unknown = ent(), config: unknown = CONFIG()) => ({
   'GET /v1/me/app-config': () => Response.json(config),
 });
 
-async function mount(opts: Parameters<typeof renderApp>[1] = {}) {
-  const view = renderApp(<HouseAd />, { routes: routes(), ...opts });
+async function mount(opts: Parameters<typeof renderApp>[1] = {}, ui = <HouseAd />) {
+  const view = renderApp(ui, { routes: routes(), ...opts });
   // The two reads the dialog needs have landed before the first navigation of a test.
   await waitFor(() => {
     expect(view.calls.filter((c) => c.method === 'GET' && c.path === '/v1/me/entitlements')).toHaveLength(1);
@@ -47,6 +47,8 @@ async function mount(opts: Parameters<typeof renderApp>[1] = {}) {
   return view;
 }
 const dialog = () => screen.queryByRole('dialog', { name: 'Học nhiều hơn với Pro' });
+/** The texts of the dialog's paragraphs, spaces made plain (money has a no-break space). */
+const paragraphs = () => within(screen.getByRole('dialog')).getAllByRole('paragraph').map((p) => (p.textContent ?? '').replace(/\s/g, ' '));
 const stored = (userId = 'u1') => JSON.parse(localStorage.getItem(houseAdKey(userId)) ?? 'null');
 
 beforeEach(() => {
@@ -67,10 +69,23 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await go('/vi/app/groups');
     expect(await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem gói Pro' })).toHaveAttribute('href', '/vi/app/plans');
-    expect(screen.getByText(/^Từ 79\.000\s₫/)).toBeInTheDocument();
+    // One paragraph: the price sits inside it in large type (M7 Figma B §5.3).
+    expect(paragraphs()).toContain('Từ 79.000 ₫ cho 1 tháng');
     expect(stored()).toMatchObject({ count: 1 });
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     await waitFor(() => expect(dialog()).toBeNull());
+  });
+
+  it('"Để sau" closes the dialog and hands focus back to what had it before the dialog opened', async () => {
+    await mount({}, <><button type="button">Nhóm</button><HouseAd /></>);
+    const opener = screen.getByRole('button', { name: 'Nhóm' });
+    act(() => opener.focus());
+    await go('/vi/app/groups');
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' })).getByRole('button', { name: 'Để sau' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    // Settled: focus stays where it was given back.
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
+    expect(opener).toHaveFocus();
   });
 
   it('Tra từ shows it too, in English as well', async () => {
@@ -79,6 +94,18 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await go('/en/app/lookup');
     expect(await screen.findByRole('dialog', { name: 'Get more with Pro' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'See Pro' })).toHaveAttribute('href', '/en/app/plans');
+  });
+
+  // M9 minor: the effect used to note the new page before checking the account, so a change made while `me` loaded was never counted.
+  it('a soft navigation to Nhóm made while the account is still loading is counted once it arrives', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    renderApp(<HouseAd />, { routes: { ...routes(), 'GET /v1/me': async () => { await gate; return Response.json(makeMe()); } } });
+    await go('/vi/app/groups');
+    expect(dialog()).toBeNull();
+    await act(async () => { release(); });
+    expect(await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeInTheDocument();
+    expect(stored()).toMatchObject({ count: 1 });
   });
 
   it('LB2E12: a full page load at /app/groups does not count (only a soft navigation does)', async () => {
@@ -181,7 +208,21 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
   it('LB2E16: the price is read from plans.pro.prices (89.000 ₫ when the admin set it)', async () => {
     await mount({ routes: routes(ent(), CONFIG({ '1': 89000, '3': 199000, '12': 599000 })) });
     await go('/vi/app/groups');
-    expect(await screen.findByText(/^Từ 89\.000\s₫/)).toBeInTheDocument();
+    await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' });
+    expect(paragraphs()).toContain('Từ 89.000 ₫ cho 1 tháng');
+  });
+
+  it('giao diện mới M7.11: the tags "Pro" and "có AI"; "Để sau" closes it and the count written when it opened stays', async () => {
+    await mount();
+    await go('/vi/app/groups');
+    const box = await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' });
+    expect(within(box).getByText('Pro')).toBeInTheDocument();
+    expect(within(box).getByText('Có AI')).toBeInTheDocument();
+    const opened = stored();
+    expect(opened).toMatchObject({ count: 1 });
+    await userEvent.click(within(box).getByRole('button', { name: 'Để sau' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    expect(stored()).toEqual(opened);
   });
 
   it('LB2A2: ads.show false (Pro, staff, under 16, the switch off, or an older API with no ads field) → no dialog, no count', async () => {

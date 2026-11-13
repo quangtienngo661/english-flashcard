@@ -6,12 +6,13 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { userRef } from '../../common/user-ref.js';
-import type { Learner } from '../../content/index.js';
+import { ContentService, type Learner } from '../../content/index.js';
 import { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { withPracticeLock } from '../practice-lock.js';
+import { voidUnanswered } from '../sessions/void-item.js';
 import type { AnswerKey, Hints, Prompt, QuestionSource, QuestionType } from '../practice.types.js';
 import { allowedStatus, refundDecision, type ResolveStatus } from './refunds.js';
 import { ReportReasonsService } from './report-reasons.service.js';
@@ -38,11 +39,22 @@ const learnerView = (row: ReportRow) => ({
   status: row.status, created_at: row.createdAt.toISOString(),
 });
 
-type MyReportRow = Pick<ReportRow, 'id' | 'itemId' | 'senseId' | 'reasonLabel' | 'status' | 'refunded' | 'createdAt' | 'resolvedAt'>;
-/** A row of the learner's own list (D27): `refunded` true / false / null tells the app what to say about the unit. */
-const myReportView = (row: MyReportRow) => ({
+type MyReportRow = Pick<ReportRow,
+  'id' | 'itemId' | 'senseId' | 'reasonLabel' | 'status' | 'refunded' | 'createdAt' | 'resolvedAt' | 'questionSnapshot' | 'questionSource'>;
+const QUESTION_TYPES: readonly QuestionType[] = ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'];
+/** The question type kept in the snapshot (`buildSnapshot`); null when the snapshot has none. */
+const snapshotType = (snapshot: unknown): QuestionType | null => {
+  const type = snapshot !== null && typeof snapshot === 'object' ? (snapshot as { type?: unknown }).type : undefined;
+  return QUESTION_TYPES.includes(type as QuestionType) ? type as QuestionType : null;
+};
+/**
+ * A row of the learner's own list (D27): `refunded` true / false / null tells the app what to say about the unit. Giao diện mới
+ * M6.1 (QR2): the word (null when the sense is no longer visible), the question type and whether AI wrote the question.
+ */
+const myReportView = (row: MyReportRow, lemma: string | null) => ({
   id: row.id, item_id: row.itemId, sense_id: row.senseId, reason_label: row.reasonLabel, status: row.status, refunded: row.refunded,
   created_at: row.createdAt.toISOString(), resolved_at: row.resolvedAt?.toISOString() ?? null,
+  lemma, question_type: snapshotType(row.questionSnapshot), ai: row.questionSource === 'ai',
 });
 
 /** What staff see: the masked snapshot, never the reporter (design §10). */
@@ -83,6 +95,7 @@ export class ReportsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(EntitlementsService) private readonly entitlements: EntitlementsService,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(ContentService) private readonly content: ContentService,
   ) {}
 
   /**
@@ -127,12 +140,16 @@ export class ReportsService {
           hints: item.question.hints as Hints,
         }, { answer_raw: item.answerRaw, answers_tried: item.answersTried, result: item.result, hint_level: item.hintLevel });
         // The label as the learner saw it; a later rename does not change the report (B7E78).
-        return tx.practiceReport.create({ data: {
+        const report = await tx.practiceReport.create({ data: {
           userId, itemId, senseId: item.senseId, questionSnapshot: snapshot as Prisma.InputJsonValue, reason: reason.code,
           reasonLabel: learner.nativeLanguage === 'vi' ? reason.labelVi : reason.labelEn, note: input.note, createdAt: now,
           questionSource: source, aiOperationId: item.question.aiRequestId, aiCharged: item.question.aiCharged,
           ...(item.question.aiMeta === null ? {} : { aiMeta: item.question.aiMeta as Prisma.InputJsonValue }),
         } });
+        // Owner 14/11/2026 (Cách A): a question reported before it is answered is voided, so `next` moves on and it never counts;
+        // an answered one keeps its result.
+        if (item.result === null) await voidUnanswered(tx, item.id);
+        return report;
       }, transactionOptions));
     } catch (error) {
       // The lock serialises one learner's reports; this only covers a row that appeared outside it.
@@ -144,7 +161,8 @@ export class ReportsService {
   }
 
   /** The learner's own reports, newest first (design §9.2); the page token is bound to this learner. */
-  async listMine(userId: string, query: { pageSize: number; pageToken?: string }) {
+  async listMine(learner: Learner, query: { pageSize: number; pageToken?: string }) {
+    const { userId } = learner;
     const binding = createHash('sha256').update(JSON.stringify({ route: 'practice-my-reports', userId })).digest('hex');
     let cursor: { createdAt: Date; id: string } | undefined;
     if (query.pageToken !== undefined) {
@@ -163,8 +181,11 @@ export class ReportsService {
     });
     const items = rows.slice(0, query.pageSize);
     const last = items.at(-1);
+    // One Content read for the page (D3: Practice asks Content, never joins its tables).
+    const words = items.length === 0 ? new Map<string, { lemma: string }>()
+      : await this.content.cardContent(userId, items.map((row) => row.senseId), learner.nativeLanguage);
     return {
-      items: items.map(myReportView),
+      items: items.map((row) => myReportView(row, words.get(row.senseId)?.lemma ?? null)),
       next_page_token: rows.length > query.pageSize && last
         ? encodeBoundToken({ created_at: last.createdAt.toISOString(), id: last.id }, binding) : null,
     };

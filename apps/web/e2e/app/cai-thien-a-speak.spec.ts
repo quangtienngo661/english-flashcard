@@ -87,8 +87,8 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
   test('review card: the front button reads without flipping; the back reads the word and its sentences', async ({ page }) => {
     await setup(page);
     await page.goto(`/vi/app/review?group=${G}`);
-    const front = page.getByRole('group', { name: /Thẻ 1/ });
-    await front.getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).click();
+    const front = page.getByRole('group', { name: /Card 1/ });
+    await front.getByRole('button', { name: 'Play the US pronunciation' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
     // Both faces stay mounted for the 3D flip (owner 27/10/2026, 1C): "not flipped" is the card's own state.
     await expect(front).toHaveAttribute('data-flipped', 'false');
@@ -96,21 +96,21 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await page.keyboard.press('Space');
     expect(await spoken(page)).toHaveLength(2);
     await expect(front).toHaveAttribute('data-flipped', 'false');
-    await page.getByRole('button', { name: copy.vi.App.review.flip }).click();
+    await page.getByRole('button', { name: copy.en.App.review.flip }).click();
     await expect(front).toHaveAttribute('data-flipped', 'true');
-    await expect(page.getByText('triển khai')).toBeVisible();
-    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).click();
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+    await page.getByRole('group', { name: /Card 1/ }).getByRole('button', { name: 'Play the US pronunciation' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
-    await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Listen to the sentence' })).toHaveCount(2);
   });
 
   test('practice: no button on the question; after grading the speaker reads the word', async ({ page }) => {
     await setup(page);
     await page.goto('/vi/app/practice/session');
     await expect(page.getByText('triển khai')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Nghe phát âm' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
     await page.keyboard.press('1');
-    await page.getByRole('button', { name: 'Nghe phát âm' }).click();
+    await page.getByRole('button', { name: 'Listen', exact: true }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
   });
 });
@@ -128,6 +128,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.emulateMedia({ colorScheme: scheme });
         await setup(page, locale);
         const t = copy[locale].App.speak;
+        // Học and the practice result are sessions: English on every route (QM9-9).
+        const s = copy.en.App.speak;
         const where = `${locale} ${scheme} ${width}px`;
 
         await page.goto(`/${locale}/app/word?w=deploy`);
@@ -137,18 +139,18 @@ for (const scheme of ['light', 'dark'] as const) {
         expect(await seriousViolations(page), `${where} word`).toEqual([]);
 
         await page.goto(`/${locale}/app/review?group=${G}`);
-        await expect(page.getByRole('group').first().getByRole('button', { name: t.us, exact: true })).toBeVisible();
+        await expect(page.getByRole('group').first().getByRole('button', { name: s.us, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');
-        await expect(page.getByRole('button', { name: t.sentence }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: s.sentence }).first()).toBeVisible();
         await noSideScroll(page, `${where} card back`);
         expect(await seriousViolations(page), `${where} card back`).toEqual([]);
 
         await page.goto(`/${locale}/app/practice/session`);
         await expect(page.getByText('triển khai')).toBeVisible();
         await page.keyboard.press('1');
-        await expect(page.getByRole('button', { name: t.word, exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: s.word, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} practice result`);
         expect(await seriousViolations(page), `${where} practice result`).toEqual([]);
       });

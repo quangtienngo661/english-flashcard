@@ -24,6 +24,7 @@
     "example-not-held-out": "Ví dụ này không còn là held-out. Danh sách đã được tải lại.",
     "expected-invalid": "Ô mong đợi chưa hợp lệ.",
     "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
+    "faq-version-conflict": "Câu hỏi vừa được người khác sửa. Tải lại rồi thử lại.",
     "few-shot-invalid": "Có ví dụ mẫu không qua luật.",
     "file-invalid": "File không hợp lệ",
     "file-too-large": "File quá lớn (tối đa 10 MB)",
@@ -167,6 +168,7 @@
     "aiCalls": "Các lần gọi",
     "settings": "Cài đặt hệ thống",
     "legal": "Chính sách & điều khoản",
+    "faq": "Hỏi đáp trang chủ",
     "staff": "Vai trò & staff"
   },
   "session": {
@@ -2825,6 +2827,43 @@
       "created": "Đã tạo bản nháp {number}.",
       "published": "Đã đăng bản {number}.",
       "deleted": "Đã xóa bản nháp {number}."
+    }
+  },
+  "faq": {
+    "banner": "Trang chủ chỉ hiện câu đã đăng, và cập nhật sau lần deploy web tiếp theo.",
+    "add": "Thêm câu hỏi",
+    "edit": "Sửa",
+    "editFor": "Sửa câu hỏi: {question}",
+    "delete": "Xóa",
+    "deleteFor": "Xóa câu hỏi: {question}",
+    "cols": {
+      "position": "Thứ tự",
+      "question": "Câu hỏi",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "published": "Đã đăng",
+      "draft": "Nháp"
+    },
+    "empty": "Chưa có câu hỏi nào.",
+    "emptyHint": "Câu hỏi đã đăng hiện ở trang chủ.",
+    "newTitle": "Thêm câu hỏi",
+    "editTitle": "Sửa câu hỏi",
+    "form": {
+      "question": "Câu hỏi",
+      "answer": "Câu trả lời",
+      "position": "Thứ tự",
+      "positionHint": "Số nhỏ đứng trước.",
+      "published": "Đăng lên trang chủ",
+      "save": "Lưu",
+      "questionInvalid": "Nhập câu hỏi, tối đa 300 ký tự.",
+      "answerInvalid": "Nhập câu trả lời, tối đa 2.000 ký tự.",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000."
+    },
+    "deleteDialog": {
+      "title": "Xóa câu hỏi này?",
+      "confirm": "Xóa"
     }
   }
 }

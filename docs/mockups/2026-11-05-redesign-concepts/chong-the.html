@@ -1,0 +1,592 @@
+<title>Ôn thẻ chồng thẻ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap">
+<style>
+/* Layout: a short intro with two view toggles, then one framed review session. The shell follows the viewer's theme;
+   the session (.ws) commits to one look on purpose: white sheet, black ink, one biro-blue stage, two answer colours. */
+:root {
+  --sh-bg: #f2f2f0; --sh-fg: #141414; --sh-muted: #595959; --sh-card: #ffffff; --sh-chip: #e4e4e1;
+  --f: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-io: cubic-bezier(.65, 0, .35, 1); --spring: cubic-bezier(.34, 1.36, .64, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sh-bg: #121212; --sh-fg: #ededeb; --sh-muted: #a3a3a0; --sh-card: #1c1c1c; --sh-chip: #2a2a29; color-scheme: dark } }
+:root[data-theme="dark"] { --sh-bg: #121212; --sh-fg: #ededeb; --sh-muted: #a3a3a0; --sh-card: #1c1c1c; --sh-chip: #2a2a29; color-scheme: dark }
+*, *::before, *::after { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--sh-bg); color: var(--sh-fg); font-family: var(--f); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--sh-bg) }
+button { font: inherit; color: inherit }
+
+.sh { padding-block: 28px 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.sh-in { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 32px; align-items: end }
+@media (max-width: 760px) { .sh-in { grid-template-columns: 1fr } }
+.sh h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1; font-weight: 600; letter-spacing: -.04em; text-wrap: balance }
+.sh p { margin: 10px 0 0; max-width: 58ch; color: var(--sh-muted) }
+.sh-ctl { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center }
+.seg { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--sh-chip) }
+.seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 9px; font-size: 15px; font-weight: 500; color: var(--sh-muted); cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 120ms var(--ease-out) }
+.seg button[aria-pressed="true"] { background: var(--sh-card); color: var(--sh-fg) }
+.seg button:active { transform: scale(.97) }
+.seg button:focus-visible, .chk input:focus-visible { outline: 2px solid var(--sh-fg); outline-offset: 2px }
+.chk { display: flex; gap: 8px; align-items: center; font-size: 15px; cursor: pointer; min-height: 44px }
+.chk input { width: 18px; height: 18px; accent-color: #1a4be0 }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 0 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px }
+.vp { container-type: inline-size; width: 100%; margin: 0 auto; border-radius: 20px; overflow: hidden; transition: max-width 320ms var(--ease-io) }
+.vp.phone { max-width: 390px }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px }
+.note { background: var(--sh-card); border-radius: 16px; padding: 16px 18px; min-width: 0 }
+.note h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -.01em }
+.note p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--sh-muted) }
+.note p + p { margin-top: 8px }
+
+/* ============ Session ============ */
+.ws { --bg: #ffffff; --surface: #f4f4f4; --ink: #111111; --muted: #5e5e5e; --stage: #1a4be0; --stage-deep: #143aae; --on-stage: #ffffff; --on-stage-2: #d6e0fb;
+  --know: #14713a; --know-soft: #def2e4; --again: #a6450a; --again-soft: #fbe8da; --card-1: #ececec; --card-2: #dcdcdc;
+  position: relative; display: flex; flex-direction: column; min-height: 760px; background: var(--bg); color: var(--ink); font-family: var(--f); overflow: hidden; user-select: none; -webkit-user-select: none }
+.ws kbd { font: 500 13px/1 var(--f); padding: 4px 6px; border-radius: 6px; background: var(--surface); color: var(--ink) }
+.ws-bar { display: flex; align-items: center; gap: 12px; padding: 16px 24px 18px }
+.ws-x { width: 44px; height: 44px; margin-left: -10px; border: 0; border-radius: 12px; background: transparent; font-size: 26px; line-height: 1; cursor: pointer; transition: background-color 150ms ease, transform 120ms var(--ease-out) }
+@media (hover: hover) and (pointer: fine) { .ws-x:hover { background: var(--surface) } }
+.ws-x:active { transform: scale(.95) }
+.ws-x:focus-visible, .ws-b:focus-visible, .ws-say:focus-visible, .ws-sum-b:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px }
+.ws-ticks { display: flex; gap: 4px; margin: 0 0 0 auto; padding: 0; list-style: none }
+.ws-ticks li { width: 11px; height: 15px; border-radius: 3px; background: var(--surface); transition: background-color 200ms ease, transform 200ms var(--spring) }
+.ws-ticks li.now { background: var(--ink) }
+.ws-ticks li.known { background: var(--know) }
+.ws-ticks li.again { background: var(--again) }
+.ws-left { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 92px; text-align: right }
+@container (max-width: 560px) { .ws-ticks li { width: 7px; height: 11px } .ws-left { min-width: 0 } .ws-bar kbd { display: none } }
+
+.ws-stage { position: relative; flex: 1; display: flex; flex-direction: column; margin-top: 30px; background: var(--stage); color: var(--on-stage); border-radius: 0 22px 0 0 }
+.ws-tab { position: absolute; left: 0; top: -38px; height: 40px; padding: 0 22px; display: flex; align-items: center; background: var(--stage); color: var(--on-stage); border-radius: 14px 14px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em }
+.ws-run { flex: 1; display: grid; grid-template-columns: 210px minmax(0, 1fr) 210px; grid-template-areas: "again stack know" "ctrl ctrl ctrl"; grid-template-rows: 1fr auto; gap: 18px 24px; padding: 40px 28px 30px; align-items: center }
+@container (max-width: 860px) { .ws-run { grid-template-columns: 1fr 1fr; grid-template-areas: "again know" "stack stack" "ctrl ctrl"; grid-template-rows: auto 1fr auto; padding: 20px 16px 22px; gap: 16px 12px } }
+
+.ws-stackcol { grid-area: stack; display: grid; justify-items: center; gap: 42px; min-width: 0 }
+.ws-stack { position: relative; width: min(380px, 100%); aspect-ratio: 380 / 480; touch-action: pan-y }
+@container (max-width: 860px) { .ws-stack { width: min(340px, 100%); aspect-ratio: 340 / 430 } }
+.ws-nudge { margin: 0; min-height: 26px; font-size: 17px; font-weight: 500; color: var(--on-stage); text-align: center; animation: ws-fade 180ms ease }
+@keyframes ws-fade { from { opacity: 0 } }
+
+.ws-card { position: absolute; inset: 0; transform-origin: 50% 100%; transition: transform 460ms var(--spring), opacity 260ms ease; will-change: transform }
+.ws-card[data-depth="0"] { z-index: 4; cursor: grab }
+.ws-card[data-depth="1"] { z-index: 3; transform: translateY(15px) scale(.955) rotate(-1.4deg) }
+.ws-card[data-depth="2"] { z-index: 2; transform: translateY(29px) scale(.91) rotate(1.6deg) }
+.ws-card[data-depth="3"] { z-index: 1; transform: translateY(42px) scale(.865); opacity: 0 }
+.ws-card.dragging { cursor: grabbing; transition: none }
+.ws-card.following { transition: none }
+.ws-card.flying { z-index: 9; transition: none; pointer-events: none }
+.ws-card.settle { transition: transform 420ms var(--spring) }
+.ws-flip { position: absolute; inset: 0; transform-style: preserve-3d; transform: perspective(1600px) rotateY(0deg); transition: transform 400ms var(--ease-io) }
+.ws-card.is-flipped .ws-flip { transform: perspective(1600px) rotateY(180deg) }
+.ws-face { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px 24px 20px; border-radius: 24px; background: var(--bg); color: var(--ink); backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; transition: background-color 300ms ease, box-shadow 200ms ease }
+.ws-back { transform: rotateY(180deg) }
+.ws-card[data-depth="1"] .ws-face { background: var(--card-1) }
+.ws-card[data-depth="2"] .ws-face, .ws-card[data-depth="3"] .ws-face { background: var(--card-2) }
+.ws-card[data-depth="1"] .ws-face > * { opacity: var(--reveal, 0); transition: opacity 200ms ease }
+.ws-card.following .ws-face > * { transition: none }
+.ws-card[data-depth="2"] .ws-face > *, .ws-card[data-depth="3"] .ws-face > * { opacity: 0; transition: opacity 200ms ease }
+.ws-face > * { transition: opacity 240ms ease 80ms }
+.ws-card.dragging .ws-face, .ws-card.flying .ws-face { box-shadow: 0 26px 50px -20px rgb(8 24 80 / .55) } /* taste-skill-ignore: only while the card is held or flying, never at rest */
+@container (max-width: 860px) { .ws-face { padding: 18px 18px 16px; border-radius: 22px } }
+
+.ws-top { display: flex; align-items: center; gap: 8px; min-height: 44px }
+.ws-badge { font-size: 14px; font-weight: 600; padding: 5px 11px; border-radius: 999px }
+.ws-badge.pri { background: var(--stage); color: #fff }
+.ws-badge.old { background: var(--again-soft); color: var(--again) }
+.ws-lv { font-size: 14px; font-weight: 600; color: var(--muted) }
+.ws-say { margin-left: auto; width: 44px; height: 44px; border: 0; border-radius: 14px; background: var(--surface); display: grid; place-items: center; cursor: pointer; transition: transform 120ms var(--ease-out), background-color 150ms ease }
+.ws-say svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.ws-say:active { transform: scale(.94) }
+@media (hover: hover) and (pointer: fine) { .ws-say:hover { background: #e8e8e8 } }
+.ws-word { flex: 1; display: grid; place-content: center; text-align: center; gap: 6px; min-width: 0 }
+.ws-lemma { margin: 0; font-size: clamp(44px, 9cqi, 62px); font-weight: 600; letter-spacing: -.045em; line-height: 1; overflow-wrap: anywhere }
+.ws-pos { margin: 0; font-size: 17px; color: var(--muted) }
+.ws-hint { margin: 0; text-align: center; font-size: 14px; color: var(--muted) }
+.ws-bl { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; overflow-wrap: anywhere }
+.ws-bl span { font-size: 15px; font-weight: 400; color: var(--muted); letter-spacing: 0 }
+.ws-mean { margin: 10px 0 12px; font-size: 32px; font-weight: 600; letter-spacing: -.03em; line-height: 1.08; text-wrap: balance }
+@container (max-width: 860px) { .ws-mean { font-size: 27px } }
+.ws-forms { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 0; list-style: none }
+.ws-forms li { font-size: 14px; padding: 4px 10px; border-radius: 8px; background: var(--surface) }
+.ws-ex, .ws-seen { margin: 0 -24px; padding: 12px 24px }
+.ws-ex { background: var(--surface) }
+.ws-seen { background: #e9eefc }
+@container (max-width: 860px) { .ws-ex, .ws-seen { margin: 0 -18px; padding: 10px 18px } }
+.ws-lab { margin: 0 0 2px; font-size: 14px; font-weight: 600; color: var(--muted) }
+.ws-ex p:last-child, .ws-seen p:last-child { margin: 0; font-size: 17px; line-height: 1.4 }
+.ws-ex mark, .ws-seen mark { background: none; color: var(--stage); font-weight: 600 }
+.ws-st { margin: auto 0 0; padding-top: 10px; font-size: 14px; color: var(--muted) }
+
+.ws-stamp { position: absolute; bottom: 58px; z-index: 2; display: grid; gap: 2px; padding: 10px 16px 11px; border-radius: 16px; font-size: 14px; line-height: 1.2; opacity: 0; pointer-events: none; transition: opacity 160ms ease }
+.ws-stamp b { font-size: 24px; font-weight: 700; letter-spacing: -.02em }
+.ws-stamp.again { right: 18px; background: var(--again); color: #fff; transform: rotate(7deg) }
+.ws-stamp.know { left: 18px; background: var(--know); color: #fff; transform: rotate(-7deg) }
+.ws-card.dragging .ws-stamp, .ws-card.flying .ws-stamp { transition: none }
+
+.ws-pile { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; transition: transform 240ms var(--spring) }
+.ws-pile.again { grid-area: again } .ws-pile.know { grid-area: know }
+.ws-minis { position: relative; width: 132px; height: 164px; margin-bottom: 14px; border-radius: 16px; background: var(--stage-deep); transition: background-color 200ms ease, transform 240ms var(--spring) }
+.ws-minis::after { content: attr(data-empty); position: absolute; inset: 0; display: grid; place-items: center; padding: 14px; font-size: 15px; line-height: 1.3; color: var(--on-stage-2) }
+.ws-minis.has::after { content: none }
+.ws-mini { position: absolute; inset: 0; display: grid; place-items: center; padding: 10px; border-radius: 16px; background: #fff; color: var(--ink); font-size: 17px; font-weight: 600; letter-spacing: -.02em; overflow-wrap: anywhere; transform: translate(var(--x), var(--y)) rotate(var(--r)) }
+.ws-mini::before { content: ""; position: absolute; left: 12px; right: 12px; top: 12px; height: 5px; border-radius: 3px; background: var(--c) }
+.ws-pile.again .ws-mini { --c: var(--again) } .ws-pile.know .ws-mini { --c: var(--know) }
+.ws-mini.in { animation: ws-land 300ms var(--spring) }
+@keyframes ws-land { from { transform: translate(var(--x), calc(var(--y) - 10px)) rotate(calc(var(--r) * 2.5)) scale(1.12) } }
+.ws-pn { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums }
+.ws-pn.bump { animation: ws-bump 300ms var(--spring) }
+@keyframes ws-bump { 40% { transform: scale(1.22) } }
+.ws-pl { margin: 0; font-size: 17px; font-weight: 600 }
+.ws-ps { margin: 0; font-size: 14px; color: var(--on-stage-2) }
+.ws-pile.hot .ws-minis { background: #2a5cf0; transform: scale(1.04) }
+.ws-pile.armed.again .ws-minis { background: var(--again) }
+.ws-pile.armed.know .ws-minis { background: var(--know) }
+@container (max-width: 860px) {
+  .ws-pile { grid-template-columns: auto 1fr; grid-template-rows: auto auto; justify-items: start; text-align: left; gap: 0 10px; align-items: center; padding: 8px 12px; border-radius: 14px; background: var(--stage-deep); transition: background-color 200ms ease, transform 240ms var(--spring) }
+  .ws-pile .ws-minis { display: none }
+  .ws-pn { grid-row: 1 / 3; font-size: 30px }
+  .ws-pl { font-size: 15px } .ws-ps { font-size: 13px }
+  .ws-pile.know { grid-template-columns: 1fr auto; justify-items: end; text-align: right } .ws-pile.know .ws-pn { grid-column: 2; grid-row: 1 / 3 } .ws-pile.know .ws-pl, .ws-pile.know .ws-ps { grid-column: 1 }
+  .ws-pile.hot { background: #2a5cf0; transform: scale(1.03) } .ws-pile.armed.again { background: var(--again) } .ws-pile.armed.know { background: var(--know) }
+}
+
+.ws-ctrl { grid-area: ctrl; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; width: min(640px, 100%); justify-self: center }
+.ws-b { min-height: 56px; border: 0; border-radius: 16px; padding: 0 18px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; font-weight: 600; cursor: pointer; transition: transform 130ms var(--ease-out), background-color 160ms ease, color 160ms ease, opacity 160ms ease }
+.ws-b:active { transform: scale(.97) }
+.ws-b kbd { background: rgb(17 17 17 / .08) }
+.ws-b.flip { background: var(--ink); color: #fff; padding: 0 22px }
+.ws-b.flip kbd { background: rgb(255 255 255 / .16); color: #fff }
+.ws-b.again, .ws-b.know { background: #fff; color: var(--ink) }
+.ws-b.again .dot, .ws-b.know .dot { width: 12px; height: 12px; border-radius: 50% }
+.ws-b.again .dot { background: var(--again) } .ws-b.know .dot { background: var(--know) }
+.ws-b[aria-disabled="true"] { background: var(--stage-deep); color: var(--on-stage-2) }
+.ws-b[aria-disabled="true"] kbd { background: rgb(255 255 255 / .1); color: var(--on-stage-2) }
+@media (hover: hover) and (pointer: fine) { .ws-b.again:not([aria-disabled="true"]):hover { background: var(--again-soft) } .ws-b.know:not([aria-disabled="true"]):hover { background: var(--know-soft) } .ws-b.flip:hover { background: #2a2a2a } }
+@container (max-width: 560px) { .ws-ctrl { grid-template-columns: 1fr 1fr; } .ws-b.flip { grid-column: 1 / -1; grid-row: 1 } .ws-b kbd { display: none } }
+
+.ws-sum { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto; align-items: start; gap: 22px 28px; padding: 54px 40px 40px; align-content: start }
+@container (max-width: 860px) { .ws-sum { grid-template-columns: 1fr; padding: 30px 16px 24px } }
+.ws-sum > * { animation: ws-rise 320ms var(--ease-out) both; animation-delay: calc(var(--k, 0) * 60ms) }
+@keyframes ws-rise { from { opacity: 0; transform: translateY(14px) } }
+.ws-sum-h { grid-column: 1 / -1; margin: 0 }
+.ws-sum-h h2 { margin: 0; font-size: clamp(44px, 8cqi, 84px); font-weight: 600; letter-spacing: -.05em; line-height: .95 }
+.ws-sum-h p { margin: 14px 0 0; font-size: 20px; color: var(--on-stage-2); max-width: 44ch }
+.ws-res { border-radius: 22px; padding: 22px 24px; background: #fff; color: var(--ink); min-width: 0 }
+.ws-res .n { margin: 0; font-size: 60px; font-weight: 600; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums }
+.ws-res.known .n { color: var(--know) } .ws-res.again .n { color: var(--again) }
+.ws-res .l { margin: 4px 0 14px; font-size: 20px; font-weight: 600 }
+.ws-res ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none }
+.ws-res li { font-size: 17px; padding: 6px 12px; border-radius: 10px; background: var(--surface) }
+.ws-res.known li { background: var(--know-soft) } .ws-res.again li { background: var(--again-soft) }
+.ws-res .none { margin: 0; color: var(--muted); font-size: 17px }
+.ws-sum-a { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center }
+.ws-sum-b { min-height: 56px; border: 0; border-radius: 16px; padding: 0 22px; display: inline-flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 600; cursor: pointer; background: #fff; color: var(--ink); transition: transform 130ms var(--ease-out) }
+.ws-sum-b:active { transform: scale(.97) }
+.ws-sum-b.text { background: transparent; color: var(--on-stage); text-decoration: underline; text-underline-offset: 4px; padding: 0 6px }
+.ws-sum-note { margin: 0; font-size: 15px; color: var(--on-stage-2) }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
+
+.ws.rm .ws-card, .ws.rm .ws-card.settle { transition: opacity 160ms ease }
+.ws.rm .ws-card[data-depth="1"], .ws.rm .ws-card[data-depth="2"] { transform: translateY(var(--rmy, 0)) }
+.ws.rm .ws-card[data-depth="1"] { --rmy: 15px } .ws.rm .ws-card[data-depth="2"] { --rmy: 29px }
+.ws.rm .ws-flip { transition: none; transform: none !important }
+.ws.rm .ws-back { transform: none; opacity: 0; transition: opacity 160ms ease }
+.ws.rm .ws-front { transition: opacity 160ms ease }
+.ws.rm .ws-card.is-flipped .ws-back { opacity: 1 } .ws.rm .ws-card.is-flipped .ws-front { opacity: 0 }
+.ws.rm .ws-mini.in, .ws.rm .ws-pn.bump, .ws.rm .ws-sum > * { animation: ws-fade 160ms ease both }
+.ws.rm .ws-b:active, .ws.rm .ws-sum-b:active { transform: none }
+</style>
+
+<header class="sh">
+  <div class="sh-in">
+    <div>
+      <h1>Lật thẻ, vuốt trái hay phải</h1>
+      <p>Bấm vào thẻ để lật. Kéo sang trái là Cần ôn lại, sang phải là Đã biết; thẻ sau trồi lên cho tới hết 12 thẻ. Phím: Space lật, ← hoặc 1 Cần ôn lại, → hoặc 2 Đã biết, Esc dừng.</p>
+    </div>
+    <div class="sh-ctl">
+      <div class="seg" role="group" aria-label="Khung xem">
+        <button type="button" data-view="desk" aria-pressed="true">Máy tính</button>
+        <button type="button" data-view="phone" aria-pressed="false">Điện thoại</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="rmToggle"> Xem khi giảm chuyển động</label>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="vp" id="vp">
+    <div class="ws" id="ws" data-ui>
+      <header class="ws-bar">
+        <button type="button" class="ws-x" id="close" aria-label="Đóng phiên ôn">×</button>
+        <kbd>Esc</kbd>
+        <ol class="ws-ticks" id="ticks" aria-hidden="true"></ol>
+        <span class="ws-left" id="left">còn 12 thẻ</span>
+      </header>
+      <section class="ws-stage">
+        <span class="ws-tab">Kinh doanh · A2</span>
+        <div class="ws-run" id="run">
+          <div class="ws-pile again" id="pileAgain">
+            <div class="ws-minis" data-empty="Kéo thẻ sang trái"></div>
+            <p class="ws-pn">0</p><p class="ws-pl">Cần ôn lại</p><p class="ws-ps">về ngăn 1 ngày</p>
+          </div>
+          <div class="ws-stackcol">
+            <div class="ws-stack" id="stack"></div>
+            <p class="ws-nudge" id="nudge"></p>
+          </div>
+          <div class="ws-pile know" id="pileKnow">
+            <div class="ws-minis" data-empty="Kéo thẻ sang phải"></div>
+            <p class="ws-pn">0</p><p class="ws-pl">Đã biết</p><p class="ws-ps">lên một ngăn</p>
+          </div>
+          <div class="ws-ctrl">
+            <button type="button" class="ws-b again" id="bAgain" aria-disabled="true"><span class="dot"></span>Cần ôn lại <kbd>1</kbd></button>
+            <button type="button" class="ws-b flip" id="bFlip">Lật thẻ <kbd>Space</kbd></button>
+            <button type="button" class="ws-b know" id="bKnow" aria-disabled="true"><span class="dot"></span>Đã biết <kbd>2</kbd></button>
+          </div>
+        </div>
+        <div class="ws-sum" id="sum" hidden></div>
+      </section>
+      <p class="sr" id="live" aria-live="polite" aria-atomic="true"></p>
+    </div>
+  </div>
+
+  <section class="notes" aria-label="Ghi chú">
+    <div class="note"><h2>Ý tưởng</h2><p>Một hình chạy khắp màn: tấm thẻ. Thẻ học chồng lên nhau, hai chồng thẻ hai bên nhận thẻ đã chọn, sân ôn là một thẻ phân nhóm lớn có tab mang tên nhóm. Màu duy nhất là xanh bút bi.</p></div>
+    <div class="note"><h2>Giữ đúng app hiện tại</h2><p>Phải lật thẻ mới chọn được, như app đang chặn trả lời khi thẻ chưa lật. Cần ôn lại về ngăn 1 ngày, Đã biết lên một ngăn. Phím Space, 1, 2, Esc giữ nguyên. Chữ lấy từ bản dịch đang dùng.</p></div>
+    <div class="note"><h2>Khác app hiện tại</h2><p>Vuốt và phím mũi tên; hai chồng thẻ; lật lại mặt trước được (app hiện chỉ lật một chiều); thẻ đầu tiên tự lắc nhẹ một lần để gợi ý vuốt sau khi lật.</p><p>Chưa có Hoàn tác cho lần vuốt nhầm. API ghi mỗi câu trả lời ngay, nên thêm Hoàn tác cần thêm phía API.</p></div>
+    <div class="note"><h2>Motion</h2><p>Thẻ theo tay, nghiêng theo hướng kéo, nhãn hiện dần. Qua 110 px hoặc vuốt nhanh thì thẻ bay vào chồng; chưa đủ thì bật về. Thẻ sau trồi lên và sáng dần. Khi giảm chuyển động: thẻ mờ đi thay vì bay, lật thành đổi mặt.</p></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const CARDS = [
+    { lemma: 'brand', pos: 'noun', meaning: 'thương hiệu', example: 'This brand of shoes is popular with students.', forms: ['brands'], stage: 0 },
+    { lemma: 'bonus', pos: 'noun', meaning: 'tiền thưởng', example: 'Everyone received a bonus at the end of the year.', forms: ['bonuses'], stage: 0 },
+    { lemma: 'complaint', pos: 'noun', meaning: 'lời phàn nàn, khiếu nại', example: 'We take every complaint seriously.', forms: ['complaints'], seen: ['I wrote a complaint about the late delivery.'], stage: 1, badge: 'pri' },
+    { lemma: 'retire', pos: 'verb', meaning: 'nghỉ hưu', example: 'My father retired last year.', forms: ['retires', 'retired', 'retiring'], stage: 0 },
+    { lemma: 'staff', pos: 'noun', meaning: 'đội ngũ nhân viên', example: 'The staff are very friendly.', forms: [], stage: 1 },
+    { lemma: 'receipt', pos: 'noun', meaning: 'biên lai', example: 'Keep the receipt in case you want to return it.', forms: ['receipts'], stage: 2 },
+    { lemma: 'professional', pos: 'adjective', meaning: 'chuyên nghiệp', example: 'The staff were very professional.', forms: [], stage: 1, badge: 'old' },
+    { lemma: 'market', pos: 'noun', meaning: 'thị trường', example: 'The Asian market is growing fast.', forms: ['markets'], stage: 0 },
+    { lemma: 'manage', pos: 'verb', meaning: 'quản lý', example: 'She manages a team of ten people.', forms: ['manages', 'managed', 'managing'], stage: 2 },
+    { lemma: 'budget', pos: 'noun', meaning: 'ngân sách', example: 'We must stay within our budget this year.', forms: ['budgets'], seen: ['The movie had a huge budget.'], stage: 1 },
+    { lemma: 'apply', pos: 'verb', meaning: 'nộp đơn, ứng tuyển', example: 'I applied for a job at a bank.', forms: ['applies', 'applied', 'applying'], stage: 0 },
+    { lemma: 'deal', pos: 'noun', meaning: 'thương vụ, giao dịch', example: 'We closed the deal on Friday.', forms: ['deals'], stage: 0 },
+  ];
+  const STAGES = ['Mới', '1 ngày', '3 ngày', '7 ngày', '14 ngày', '30 ngày'];
+  const THRESHOLD = 110;
+  const $ = (id) => document.getElementById(id);
+  const ws = $('ws'), stack = $('stack'), ticks = $('ticks'), leftEl = $('left'), nudgeEl = $('nudge'), live = $('live');
+  const pileAgain = $('pileAgain'), pileKnow = $('pileKnow'), bAgain = $('bAgain'), bFlip = $('bFlip'), bKnow = $('bKnow'), run = $('run'), sum = $('sum');
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = () => mq.matches || ws.classList.contains('rm');
+  let i = 0, flipped = false, results = [], ended = false, hinted = false, hintTimer = 0, nudgeTimer = 0;
+
+  const esc = (s) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  function highlight(sentence, c) {
+    const words = [c.lemma, ...(c.forms || [])].sort((a, b) => b.length - a.length).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const re = new RegExp(`\\b(${words.join('|')})\\b`, 'i');
+    return esc(sentence).replace(re, '<mark>$1</mark>');
+  }
+  const SAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+  const badge = (c) => (c.badge === 'pri' ? '<span class="ws-badge pri">Ưu tiên</span>' : c.badge === 'old' ? '<span class="ws-badge old">Lâu chưa ôn</span>' : '');
+
+  function makeCard(k) {
+    const c = CARDS[k];
+    const el = document.createElement('article');
+    el.className = 'ws-card';
+    el.dataset.idx = String(k);
+    el.dataset.depth = '3';
+    el.setAttribute('aria-label', `Thẻ ${k + 1} trên ${CARDS.length}`);
+    const forms = c.forms && c.forms.length ? `<ul class="ws-forms" aria-label="Dạng chia">${c.forms.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : '';
+    const seen = c.seen ? `<div class="ws-seen"><p class="ws-lab">Câu bạn đã gặp</p><p>${highlight(c.seen[0], c)}</p></div>` : '';
+    el.innerHTML = `<div class="ws-flip">
+      <section class="ws-face ws-front"><div class="ws-top">${badge(c)}<span class="ws-lv">A2</span><button type="button" class="ws-say" data-say="${esc(c.lemma)}" aria-label="Nghe ${esc(c.lemma)}">${SAY}</button></div>
+        <div class="ws-word"><p class="ws-lemma">${esc(c.lemma)}</p><p class="ws-pos">${c.pos}</p></div><p class="ws-hint">Bấm vào thẻ hoặc Space để lật</p></section>
+      <section class="ws-face ws-back"><div class="ws-top">${badge(c)}<span class="ws-bl">${esc(c.lemma)} <span>${c.pos}</span></span><button type="button" class="ws-say" data-say="${esc(c.lemma)}" aria-label="Nghe ${esc(c.lemma)}">${SAY}</button></div>
+        <p class="ws-mean">${esc(c.meaning)}</p>${forms}<div class="ws-ex"><p class="ws-lab">Câu mẫu</p><p>${highlight(c.example, c)}</p></div>${seen}<p class="ws-st">Đang ở ngăn ${STAGES[c.stage]}</p></section>
+    </div>
+    <span class="ws-stamp again"><b>Cần ôn lại</b>về ngăn 1 ngày</span>
+    <span class="ws-stamp know"><b>Đã biết</b>lên ngăn ${STAGES[Math.min(c.stage + 1, 5)]}</span>`;
+    el.querySelector('.ws-back').inert = true;
+    bindDrag(el);
+    return el;
+  }
+
+  const topCard = () => stack.querySelector('.ws-card[data-depth="0"]:not(.flying)');
+
+  function fill() {
+    const want = [i, i + 1, i + 2, i + 3].filter((k) => k < CARDS.length);
+    [...stack.children].forEach((n) => { if (!n.classList.contains('flying') && !want.includes(Number(n.dataset.idx))) n.remove(); });
+    want.forEach((k, d) => {
+      let n = stack.querySelector(`.ws-card[data-idx="${k}"]:not(.flying)`);
+      if (!n) { n = makeCard(k); stack.appendChild(n); void n.offsetWidth; }
+      n.classList.remove('following');
+      n.style.transform = '';
+      n.style.removeProperty('--reveal');
+      n.dataset.depth = String(d);
+      const front = n.querySelector('.ws-front'), back = n.querySelector('.ws-back');
+      front.inert = d !== 0; back.inert = true;
+      n.setAttribute('aria-hidden', d === 0 ? 'false' : 'true');
+    });
+    flipped = false;
+    setButtons();
+    progress();
+    scheduleHint();
+  }
+
+  function progress() {
+    const left = CARDS.length - i;
+    leftEl.textContent = `còn ${left} thẻ`;
+    ticks.innerHTML = CARDS.map((_, k) => {
+      const r = results[k];
+      return `<li class="${r ? r.ans : k === i && !ended ? 'now' : ''}"></li>`;
+    }).join('');
+  }
+
+  function setButtons() {
+    const off = String(!flipped);
+    bAgain.setAttribute('aria-disabled', off);
+    bKnow.setAttribute('aria-disabled', off);
+    bFlip.firstChild.textContent = flipped ? 'Xem mặt trước ' : 'Lật thẻ ';
+  }
+
+  function flip() {
+    const top = topCard();
+    if (!top || ended) return;
+    flipped = !flipped;
+    top.classList.toggle('is-flipped', flipped);
+    top.querySelector('.ws-front').inert = flipped;
+    top.querySelector('.ws-back').inert = !flipped;
+    setButtons();
+    say('');
+    scheduleHint();
+  }
+
+  function say(text, ms = 2200) {
+    clearTimeout(nudgeTimer);
+    nudgeEl.textContent = text;
+    if (text) nudgeTimer = setTimeout(() => { nudgeEl.textContent = ''; }, ms);
+  }
+
+  function nudge() {
+    const top = topCard();
+    if (!top) return;
+    say('Lật thẻ để xem nghĩa trước đã.');
+    if (reduced()) return;
+    top.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-10px) rotate(-1.5deg)' }, { transform: 'translateX(9px) rotate(1.2deg)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }], { duration: 340, easing: 'ease-out' });
+  }
+
+  /* ---------- drag ---------- */
+  function setDragVisual(top, dx, dy, armedDir) {
+    const p = Math.min(1, Math.abs(dx) / THRESHOLD);
+    top.style.transform = reduced() ? `translate(${dx}px, 0)` : `translate(${dx}px, ${dy * 0.35}px) rotate(${Math.max(-16, Math.min(16, dx * 0.06))}deg)`;
+    top.querySelector('.ws-stamp.again').style.opacity = dx < 0 && flipped ? String(p) : '0';
+    top.querySelector('.ws-stamp.know').style.opacity = dx > 0 && flipped ? String(p) : '0';
+    pileAgain.classList.toggle('hot', dx < -24 && flipped);
+    pileKnow.classList.toggle('hot', dx > 24 && flipped);
+    pileAgain.classList.toggle('armed', armedDir === 'again');
+    pileKnow.classList.toggle('armed', armedDir === 'known');
+    const next = stack.querySelector('.ws-card[data-depth="1"]');
+    if (next && flipped) {
+      next.classList.add('following');
+      next.style.setProperty('--reveal', String(p));
+      if (!reduced()) next.style.transform = `translateY(${15 - 9 * p}px) scale(${0.955 + 0.03 * p}) rotate(${-1.4 + 1 * p}deg)`;
+    }
+  }
+
+  function clearDragVisual(top) {
+    top.querySelectorAll('.ws-stamp').forEach((s) => { s.style.opacity = '0'; });
+    pileAgain.classList.remove('hot', 'armed');
+    pileKnow.classList.remove('hot', 'armed');
+    const next = stack.querySelector('.ws-card[data-depth="1"]');
+    if (next) { next.classList.remove('following'); next.style.transform = ''; next.style.removeProperty('--reveal'); }
+  }
+
+  function bindDrag(el) {
+    let d = null;
+    el.addEventListener('pointerdown', (e) => {
+      if (d || ended || el.dataset.depth !== '0' || el.classList.contains('flying') || e.button > 0) return;
+      if (e.target.closest('button')) return;
+      d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), lx: e.clientX, lt: performance.now(), v: 0, dx: 0, dy: 0, moved: 0 };
+      el.setPointerCapture(e.pointerId);
+      clearTimeout(hintTimer);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      const rx = e.clientX - d.x0, ry = e.clientY - d.y0;
+      d.moved = Math.max(d.moved, Math.hypot(rx, ry));
+      if (d.moved < 4) return;
+      el.classList.add('dragging');
+      const now = performance.now();
+      const dt = now - d.lt;
+      if (dt > 0) d.v = 0.7 * d.v + 0.3 * ((e.clientX - d.lx) / dt);
+      d.lx = e.clientX; d.lt = now;
+      // Before the card is turned, it resists: the answer is given only after seeing the back (as the app does now).
+      d.dx = flipped ? rx : Math.sign(rx) * Math.min(56, Math.abs(rx) * 0.3);
+      d.dy = flipped ? ry : ry * 0.3;
+      if (!flipped && Math.abs(rx) > 40) say('Lật thẻ để xem nghĩa trước đã.');
+      const armed = flipped && Math.abs(d.dx) > THRESHOLD ? (d.dx < 0 ? 'again' : 'known') : null;
+      setDragVisual(el, d.dx, d.dy, armed);
+    });
+    const end = (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      const g = d; d = null;
+      try { el.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
+      const elapsed = performance.now() - g.t0;
+      if (g.moved < 6 && elapsed < 400 && e.type === 'pointerup') { el.classList.remove('dragging'); flip(); return; }
+      const fast = Math.abs(g.v) > 0.55 && Math.abs(g.dx) > 30 && Math.sign(g.v) === Math.sign(g.dx);
+      if (flipped && (Math.abs(g.dx) > THRESHOLD || fast)) { commit(g.dx < 0 ? 'again' : 'known', 'drag', g.v); return; }
+      el.classList.remove('dragging');
+      el.classList.add('settle');
+      el.style.transform = '';
+      clearDragVisual(el);
+      setTimeout(() => el.classList.remove('settle'), 440);
+      scheduleHint();
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('.ws-say');
+      if (!b) return;
+      try { const u = new SpeechSynthesisUtterance(b.dataset.say); u.lang = 'en-US'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (err) { /* no speech in this browser */ }
+    });
+  }
+
+  /* ---------- answer ---------- */
+  function pileTarget(pile) {
+    const m = pile.querySelector('.ws-minis');
+    return m && m.offsetWidth > 0 ? m : pile;
+  }
+
+  function commit(ans, how, v = 0) {
+    const top = topCard();
+    if (!top || ended) return;
+    if (!flipped) { nudge(); return; }
+    clearTimeout(hintTimer);
+    const k = Number(top.dataset.idx);
+    const c = CARDS[k];
+    results[k] = { lemma: c.lemma, ans };
+    const pile = ans === 'known' ? pileKnow : pileAgain;
+    const cur = getComputedStyle(top).transform;
+    top.classList.remove('dragging', 'settle');
+    top.classList.add('flying');
+    top.style.transform = cur === 'none' ? '' : cur;
+    clearDragVisual(top);
+    const stamp = top.querySelector(ans === 'known' ? '.ws-stamp.know' : '.ws-stamp.again');
+    stamp.style.opacity = '1';
+    live.textContent = `${ans === 'known' ? 'Đã biết' : 'Cần ôn lại'}: ${c.lemma}.`;
+    const land = () => { top.remove(); addMini(pile, c.lemma); if (i >= CARDS.length) setTimeout(finish, 260); };
+    if (reduced()) {
+      top.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: 'forwards' }).onfinish = land;
+    } else {
+      const s = stack.getBoundingClientRect(), t = pileTarget(pile).getBoundingClientRect();
+      const tx = t.left + t.width / 2 - (s.left + s.width / 2);
+      // The card scales around its bottom edge, so at scale .3 its centre sits .35 of its height lower; lift by that much.
+      const ty = t.top + t.height / 2 - (s.top + s.height / 2) - s.height * 0.35;
+      const rot = ans === 'known' ? 14 : -14;
+      const speed = Math.min(1, Math.abs(v) / 2);
+      top.animate(
+        [{ transform: cur === 'none' ? 'none' : cur }, { transform: `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(.3)`, opacity: 0.9 }],
+        { duration: how === 'drag' ? 380 - speed * 120 : 300, easing: 'cubic-bezier(.22, .9, .3, 1)', fill: 'forwards' },
+      ).onfinish = land;
+    }
+    i += 1;
+    fill();
+  }
+
+  function addMini(pile, word) {
+    const box = pile.querySelector('.ws-minis');
+    const n = box.children.length;
+    const m = document.createElement('span');
+    m.className = 'ws-mini in';
+    m.textContent = word;
+    m.style.setProperty('--r', `${((n * 37) % 13) - 6}deg`);
+    m.style.setProperty('--x', `${((n * 23) % 9) - 4}px`);
+    m.style.setProperty('--y', `${-Math.min(n, 6) * 3}px`);
+    box.appendChild(m);
+    box.classList.add('has');
+    while (box.children.length > 6) box.firstElementChild.remove();
+    const count = pile.querySelector('.ws-pn');
+    count.textContent = String(results.filter((r) => r && r.ans === (pile === pileKnow ? 'known' : 'again')).length);
+    count.classList.remove('bump'); void count.offsetWidth; count.classList.add('bump');
+  }
+
+  /* ---------- first-card hint: once per session, after the first turn, if the learner waits ---------- */
+  function scheduleHint() {
+    clearTimeout(hintTimer);
+    if (hinted || i !== 0 || ended) return;
+    hintTimer = setTimeout(() => {
+      const top = topCard();
+      if (!top || !flipped || reduced()) return;
+      hinted = true;
+      const a = top.querySelector('.ws-stamp.again'), k = top.querySelector('.ws-stamp.know');
+      top.animate([{ transform: 'none' }, { transform: 'translateX(-34px) rotate(-2.5deg)', offset: .28 }, { transform: 'translateX(34px) rotate(2.5deg)', offset: .68 }, { transform: 'none' }], { duration: 1300, easing: 'cubic-bezier(.65, 0, .35, 1)' });
+      a.animate([{ opacity: 0 }, { opacity: .45, offset: .28 }, { opacity: 0, offset: .45 }, { opacity: 0 }], { duration: 1300 });
+      k.animate([{ opacity: 0 }, { opacity: 0, offset: .5 }, { opacity: .45, offset: .68 }, { opacity: 0 }], { duration: 1300 });
+      say('Kéo thẻ sang trái hoặc phải để chọn.', 2600);
+    }, 2400);
+  }
+
+  /* ---------- end ---------- */
+  function finish() {
+    if (ended && !sum.hidden) return;
+    ended = true;
+    clearTimeout(hintTimer);
+    progress();
+    const done = results.filter(Boolean);
+    const known = done.filter((r) => r.ans === 'known'), again = done.filter((r) => r.ans === 'again');
+    const list = (arr) => (arr.length ? `<ul>${arr.map((r) => `<li>${esc(r.lemma)}</li>`).join('')}</ul>` : '<p class="none">Không có thẻ nào.</p>');
+    sum.innerHTML = `
+      <div class="ws-sum-h" style="--k:0"><h2>Xong ${done.length} thẻ.</h2>${again.length ? '<p>Thẻ cần ôn lại quay về ngăn 1 ngày và nằm đầu nhóm.</p>' : ''}</div>
+      <section class="ws-res known" style="--k:1"><p class="n">${known.length}</p><p class="l">Đã biết</p>${list(known)}</section>
+      <section class="ws-res again" style="--k:2"><p class="n">${again.length}</p><p class="l">Cần ôn lại</p>${list(again)}</section>
+      <div class="ws-sum-a" style="--k:3"><button type="button" class="ws-sum-b" id="home">Về trang chủ <kbd>Enter</kbd></button><button type="button" class="ws-sum-b text" id="again">Ôn lại từ đầu</button><p class="ws-sum-note" id="homeNote"></p></div>`;
+    run.hidden = true;
+    sum.hidden = false;
+    $('home').addEventListener('click', () => { $('homeNote').textContent = 'Trong app, nút này về trang Hôm nay.'; });
+    $('again').addEventListener('click', restart);
+    $('home').focus({ preventScroll: true });
+  }
+
+  function restart() {
+    i = 0; results = []; ended = false; hinted = false;
+    stack.innerHTML = '';
+    [pileAgain, pileKnow].forEach((p) => { const b = p.querySelector('.ws-minis'); b.innerHTML = ''; b.classList.remove('has'); p.querySelector('.ws-pn').textContent = '0'; });
+    sum.hidden = true; sum.innerHTML = '';
+    run.hidden = false;
+    say('');
+    fill();
+  }
+
+  /* ---------- controls ---------- */
+  bFlip.addEventListener('click', flip);
+  bAgain.addEventListener('click', () => commit('again', 'key'));
+  bKnow.addEventListener('click', () => commit('known', 'key'));
+  $('close').addEventListener('click', finish);
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target;
+    if (t.closest && t.closest('input, textarea, .sh')) return;
+    if (ended) { if (e.key === 'Enter' && !(t.closest && t.closest('button'))) $('home') && $('home').click(); return; }
+    if ((e.key === ' ' || e.key === 'Enter') && t.closest && t.closest('button')) return;
+    if (e.key === ' ') { e.preventDefault(); flip(); }
+    else if (e.key === 'ArrowLeft' || e.key === '1') { e.preventDefault(); commit('again', 'key'); }
+    else if (e.key === 'ArrowRight' || e.key === '2') { e.preventDefault(); commit('known', 'key'); }
+    else if (e.key === 'Escape') finish();
+  });
+
+  document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-view]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $('vp').classList.toggle('phone', b.dataset.view === 'phone');
+  }));
+  $('rmToggle').addEventListener('change', (e) => ws.classList.toggle('rm', e.target.checked));
+  if (mq.matches) { $('rmToggle').checked = true; ws.classList.add('rm'); }
+
+  fill();
+})();
+</script>

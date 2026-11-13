@@ -2,11 +2,9 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-// Shared tokens come from the workspace package (spec UB3); resolving it here also proves apps/web can import it.
+// theme.css is admin's since P.6 (apps/web no longer imports it); the checks that still apply to it stay here, read from the package.
 const themePath = createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css');
 const theme = readFileSync(themePath, 'utf8');
-// Dark values for the learner app (design §4.4, D3): a separate file so admin and the landing never see them.
-const dark = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/dark.css'), 'utf8');
 const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
 
 function tokens(css: string, prefix: string): Map<string, string> {
@@ -15,23 +13,7 @@ function tokens(css: string, prefix: string): Map<string, string> {
   return out;
 }
 
-const lightColors = tokens(theme, 'color');
-const darkColors = tokens(dark, 'color');
-let colors = lightColors;
-
-// The learner app's colours (Figma variables, collection "Wordmet B"): text pairs and control pairs it relies on.
-const APP_TEXT: Array<[string, string]> = [
-  ['ink', 'surface'], ['ink', 'canvas'], ['muted', 'surface'], ['muted', 'canvas'], ['placeholder', 'surface'],
-  ['on-navy', 'navy'], ['on-navy', 'navy-raised'], ['on-navy-muted', 'navy'], ['ink', 'highlight'], ['ink', 'session-card'],
-  ['on-accent', 'accent'], ['on-primary', 'primary'], ['primary', 'surface'], ['primary', 'primary-soft'],
-  ['success', 'surface'], ['success', 'success-soft'], ['danger', 'surface'], ['danger', 'danger-soft'], ['warning', 'surface'],
-];
-const APP_CONTROLS: Array<[string, string]> = [
-  ['border-strong', 'surface'], ['border-strong', 'canvas'], ['primary', 'surface'], ['primary', 'canvas'], ['accent', 'navy'],
-];
-
-const below = (pairs: Array<[string, string]>, min: number) =>
-  pairs.filter(([f, b]) => contrast(f, b) < min).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < ${min}`);
+const colors = tokens(theme, 'color');
 
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -39,7 +21,7 @@ function luminance(hex: string): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-// session-card aliases canvas in light mode (as in Figma).
+// session-card aliases canvas (as in Figma).
 function hexOf(name: string): string | undefined {
   const value = colors.get(name);
   const alias = value?.match(/^var\(--color-([a-z0-9-]+)\)$/);
@@ -76,39 +58,10 @@ describe('design tokens', () => {
     expect(failures).toEqual([]);
   });
 
-  it('D3: every light colour has a dark value', () => {
-    expect([...lightColors.keys()].filter((k) => !darkColors.has(k))).toEqual([]);
-    expect([...darkColors.keys()].filter((k) => !lightColors.has(k))).toEqual([]);
-  });
-
-  it('the learner app colours meet WCAG contrast in light and dark', () => {
-    for (const [mode, map] of [['light', lightColors], ['dark', darkColors]] as const) {
-      colors = map;
-      expect([...below(APP_TEXT, 4.5), ...below(APP_CONTROLS, 3)].map((f) => `${mode}: ${f}`)).toEqual([]);
-    }
-    colors = lightColors;
-  });
-
-  it('LP31 size tokens use rem and the clamp tokens hit the Figma sizes', () => {
-    const sized = [
-      ...['text', 'container'].flatMap((p) => [...tokens(globals, p)].map(([k, v]) => [`${p}-${k}`, v])),
-      ...['radius', 'shadow'].flatMap((p) => [...tokens(theme, p)].map(([k, v]) => [`${p}-${k}`, v])),
-    ];
-    expect(sized.length).toBeGreaterThan(20);
+  it('LP31 theme.css radius and shadow tokens use rem', () => {
+    const sized = ['radius', 'shadow'].flatMap((p) => [...tokens(theme, p)].map(([k, v]) => [`${p}-${k}`, v]));
+    expect(sized).toHaveLength(11);
     expect(sized.filter(([, v]) => /\dpx/.test(v)).map(([k]) => k)).toEqual([]);
-
-    const evalClamp = (value: string, width: number) => {
-      const m = value.match(/clamp\(([\d.]+)rem,\s*([\d.]+)rem\s*\+\s*([\d.]+)vw,\s*([\d.]+)rem\)/);
-      if (!m) throw new Error(`not a clamp: ${value}`);
-      const [min, base, vw, max] = m.slice(1).map(Number);
-      return Math.min(Math.max(base * 16 + (vw / 100) * width, min * 16), max * 16);
-    };
-    const text = tokens(globals, 'text');
-    const expected: Record<string, [number, number]> = { display: [36, 60], cta: [28, 44], h2: [28, 40] };
-    for (const [name, [at390, at1440]] of Object.entries(expected)) {
-      expect(evalClamp(text.get(name) ?? '', 390)).toBeCloseTo(at390, 0);
-      expect(evalClamp(text.get(name) ?? '', 1440)).toBeCloseTo(at1440, 0);
-    }
   });
 
   it('UBC1 apps/web declares no color tokens', () => {
@@ -117,46 +70,16 @@ describe('design tokens', () => {
   });
 });
 
-// dark-pastel.css: a variant kept for later, not imported (owner 27/10/2026). Its light islands must stay readable.
-describe('pastel dark variant (not on)', () => {
-  const pastel = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/dark-pastel.css'), 'utf8');
-  const island = pastel.slice(pastel.indexOf(':is(.bg-primary-soft'));
-
-  it('is not imported by the app', () => {
-    expect(globals).not.toContain('dark-pastel.css');
-  });
-
-  it('text on its pastel surfaces meets 4.5:1', () => {
-    colors = new Map([...darkColors, ...tokens(island.slice(0, island.indexOf('}') + 1), 'color')]);
-    const pairs: Array<[string, string]> = ['ink', 'muted', 'primary', 'success', 'danger', 'warning'].flatMap((fg) =>
-      ['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'neutral-soft'].map((bg) => [fg, bg] as [string, string]));
-    expect(below(pairs, 4.5)).toEqual([]);
-    colors = lightColors;
-  });
-});
-
-// island.css: the light islands the app uses in the dark theme (owner 27/10/2026), and the darker navy card.
-describe('light islands and the navy card', () => {
-  const islandCss = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/island.css'), 'utf8');
-
-  it('the app imports island.css', () => {
-    expect(globals).toContain("@import '@wordmet/design-tokens/island.css'");
-  });
-
-  it('text on an island surface meets 4.5:1 in the dark theme', () => {
-    colors = new Map([...darkColors, ...tokens(islandCss.slice(0, islandCss.indexOf('}') + 1), 'color')]);
-    const pairs: Array<[string, string]> = ['ink', 'muted', 'primary', 'success', 'danger', 'warning'].flatMap((fg) =>
-      ['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'surface'].map((bg) => [fg, bg] as [string, string]));
-    expect(below(pairs, 4.5)).toEqual([]);
-    colors = lightColors;
-  });
-
-  it('on-navy and on-navy-muted read on navy-card in both themes', () => {
-    for (const map of [lightColors, darkColors]) {
-      colors = map;
-      expect(below([['on-navy', 'navy-card'], ['on-navy-muted', 'navy-card'], ['on-navy', 'navy-raised'],
-        ['on-hero', 'hero'], ['on-hero-muted', 'hero'], ['on-hero', 'hero-raised'], ['on-hero-muted', 'hero-raised']], 4.5)).toEqual([]);
+// A merge once dropped a closing brace in globals.css; jsdom tests never parse it, only the production build failed.
+describe('globals.css syntax', () => {
+  it('every block that opens also closes', () => {
+    const code = globals.replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^'\n]*'|"[^"\n]*"/g, '');
+    let depth = 0;
+    for (const ch of code) {
+      if (ch === '{') depth += 1;
+      if (ch === '}') depth -= 1;
+      expect(depth).toBeGreaterThanOrEqual(0);
     }
-    colors = lightColors;
+    expect(depth).toBe(0);
   });
 });

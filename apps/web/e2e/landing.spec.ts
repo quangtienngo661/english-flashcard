@@ -1,72 +1,66 @@
-import { expect, test, type Page } from '@playwright/test';
-import { EXERCISES } from '../src/components/landing/exercises/exercise-set';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { FALLBACK_LANDING_DATA } from '../src/site/landing/landing-data.fallback';
 import { copy } from './copy';
 import { seriousViolations } from './support/axe';
+import { PUBLISHED } from './support/published';
 
-// Criteria LR20-LR30 of docs/superpowers/specs/2026-11-03-landing-redesign-design.md. Every string comes from the message files.
+// The public pages rebuilt from Figma in M8b (plan 2026-11-10 Part 8, Task M8.9): criteria LR20–LR30, LR50 and the M8 checks. Every string
+// comes from the message files or the fallback FAQ (the e2e build reads no API for the landing, LANDING_DATA_SOURCE=fallback).
 const L = copy.vi.Landing;
-const TAB_NAMES = [L.showcase.tabs.review, L.showcase.tabs.groups, L.showcase.tabs.practice, L.showcase.tabs.lookup, L.showcase.tabs.addWord];
+const N = copy.vi.Nav;
+const BRAND = copy.vi.App.chrome.brand;
+const HERO_TITLE = `${L.hero.line1} ${L.hero.line2}`;
+const SECTION_TITLES = [L.groups.title, L.learn.title, L.plans.title, L.faq.title, L.final.title];
+const PAGES = ['/vi', '/vi/privacy', '/vi/terms', '/vi/sources', '/vi/khong-ton-tai'];
+// The same pages with a published legal text and data sources behind the server reads (support/public-api.mjs).
+const PUBLISHED_PAGES = ['/vi/privacy', '/vi/terms', '/vi/sources'].map((path) => `${PUBLISHED}${path}`);
+// The Intl call of the home page and Gói học (R202): "79.000 ₫" with a no-break space.
+const vnd = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
 declare global {
   interface Window {
     __cspViolations: string[];
     __themes: string[];
-    __heroMotion: string[];
   }
 }
 
-/** React has attached its handlers to the page: a click before this is lost. */
+const desktopOnly = (testInfo: TestInfo) => test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
+
+/** React has attached its handlers to the theme controls: a click before this is lost. */
 const hydrated = (page: Page) =>
   page.waitForFunction(() => {
-    const tab = document.querySelector('[role="tab"]');
-    return Boolean(tab) && Object.keys(tab as Element).some((key) => key.startsWith('__reactProps'));
+    const group = document.querySelector('footer [role="radiogroup"]');
+    return Boolean(group) && Object.keys(group as Element).some((key) => key.startsWith('__reactProps'));
   });
-
-/** No finite animation or transition is still running (a card caught mid-flip would measure narrower than it ends up). */
-const settle = (page: Page) =>
-  page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
 
 const open = async (page: Page, path = '/vi') => {
   await page.goto(path);
   await hydrated(page);
 };
 
-const exerciseButtons = (page: Page) => page.getByRole('list', { name: L.exercises.list }).getByRole('button');
-
-/** Opens exercise `index` the way the screen offers it: the drop-down below lg (LR46), the list from lg. */
-const pickExercise = async (page: Page, index: number) => {
-  const select = page.getByRole('combobox', { name: L.exercises.list });
-  if (await select.isVisible()) await select.selectOption({ index });
-  else await exerciseButtons(page).nth(index).click();
+/** Scrolls to the end and back, so every section that comes in on scroll has come in, then waits for the finite animations to end. */
+const scrollThrough = async (page: Page) => {
+  for (let y = 0; y < 14000; y += 500) await page.mouse.wheel(0, 500);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
 };
 
-/** Answers the open exercise wrongly and returns, so the hint, reveal and field states are on screen. */
-const answerWrong = async (page: Page, index: number) => {
-  const ex = EXERCISES[index];
-  if (ex.mode === 'choice') {
-    await page.locator('button[data-option]').nth(ex.right === 0 ? 1 : 0).click();
-  } else {
-    await page.getByRole('textbox', { name: L.exercises.answerLabel }).fill('zzz');
-    await page.keyboard.press('Enter');
-  }
-};
-
-const answerRight = async (page: Page, index: number) => {
-  const ex = EXERCISES[index];
-  if (ex.mode === 'choice') {
-    await page.locator('button[data-option]').nth(ex.right).click();
-  } else {
-    await page.getByRole('textbox', { name: L.exercises.answerLabel }).fill(ex.answer);
-    await page.keyboard.press('Enter');
-  }
+/** Picks dark the way the screen offers it: the header button from md, the footer's "Giao diện" control below. */
+const chooseDark = async (page: Page) => {
+  const button = page.getByRole('banner').getByRole('button', { name: N.themeToDark });
+  if (await button.isVisible()) await button.click();
+  else await page.getByRole('contentinfo').getByRole('radiogroup', { name: N.theme }).getByText(N.dark, { exact: true }).click();
 };
 
 test.describe('LR20 sign-up', () => {
-  test('the Đăng ký button on the first screen goes to the registration page', async ({ page }) => {
-    await open(page);
-    const signup = page.getByRole('main').getByRole('link', { name: L.hero.signup, exact: true }).first();
-    await expect(signup).toHaveAttribute('href', '/vi/app/register');
-    await signup.click();
+  test('Đăng ký in the header and every sign-up button of the home page go to the registration page', async ({ page }) => {
+    await page.goto('/vi');
+    await expect(page.getByRole('banner').getByRole('link', { name: N.signup, exact: true })).toHaveAttribute('href', '/vi/app/register');
+    const main = page.getByRole('main');
+    for (const name of [L.hero.signup, L.plans.freeSignup, L.plans.proSignup, L.final.signup]) {
+      await expect(main.getByRole('link', { name, exact: true }).first(), name).toHaveAttribute('href', '/vi/app/register');
+    }
+    await main.getByRole('region', { name: HERO_TITLE }).getByRole('link', { name: L.hero.signup }).click();
     await expect(page).toHaveURL(/\/vi\/app\/register$/);
   });
 });
@@ -86,85 +80,35 @@ test.describe('LR21 the English landing', () => {
   });
 });
 
-test.describe('LR22 nothing sticks out of its box', () => {
-  const scan = (page: Page) =>
-    page.evaluate(() => {
-      const boxes = document.querySelectorAll<HTMLElement>('[data-ui], [role="tabpanel"]:not([hidden]), details[open], #bai-tap section[aria-label]');
-      const spill: string[] = [];
-      // Whatever sits inside a scroller or a clipping box below the card may be wider than it on purpose.
-      const clipped = (el: Element, box: Element) => {
-        for (let parent = el.parentElement; parent && parent !== box; parent = parent.parentElement) {
-          if (getComputedStyle(parent).overflowX !== 'visible') return true;
-        }
-        return false;
-      };
-      for (const box of boxes) {
-        const frame = box.getBoundingClientRect();
-        if (frame.width === 0) continue;
-        for (const el of box.querySelectorAll<HTMLElement>('*')) {
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0 || clipped(el, box)) continue;
-          if (r.left < frame.left - 1.5 || r.right > frame.right + 1.5) {
-            const name = box.getAttribute('aria-label') ?? box.getAttribute('role') ?? box.tagName;
-            spill.push(`${name} > ${el.tagName.toLowerCase()}.${String(el.className).slice(0, 40)} ${Math.round(r.left)}..${Math.round(r.right)} outside ${Math.round(frame.left)}..${Math.round(frame.right)}`);
-          }
-        }
-      }
-      return { spill, scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth };
-    });
-
-  const expectInside = async (page: Page, where: string) => {
-    await settle(page);
-    const { spill, scrollWidth, innerWidth } = await scan(page);
-    expect(spill, where).toEqual([]);
-    expect(scrollWidth, `${where}: page width`).toBeLessThanOrEqual(innerWidth);
-  };
-
+test.describe('LR22 no sideways scroll', () => {
   for (const width of [320, 390, 768, 1440]) {
-    test(`at ${width}px every tab, the turned card and every exercise stay inside`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
+    test(`at ${width} px no public page is wider than the window`, async ({ page }, testInfo) => {
+      desktopOnly(testInfo);
       test.setTimeout(120_000);
       await page.setViewportSize({ width, height: 900 });
-      await open(page);
-      await expectInside(page, 'first screen');
-
-      for (const name of TAB_NAMES) {
-        await page.getByRole('tab', { name }).click();
-        await expect(page.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
-        await expectInside(page, `tab ${name}`);
+      for (const path of [...PAGES, ...PUBLISHED_PAGES]) {
+        await page.goto(path);
+        await scrollThrough(page);
+        const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+        expect(scrollWidth, `${path}: page width`).toBeLessThanOrEqual(innerWidth);
       }
-
-      await page.getByRole('tab', { name: L.showcase.tabs.review }).click();
-      const flip = page.getByRole('group', { name: L.showcase.review.deck }).getByRole('button', { pressed: false });
-      await flip.click();
-      await expectInside(page, 'review card turned');
-      // Turned: the front face (whose button is pressed) goes inert and out of the accessibility tree, so the back face is the one that reads.
-      const deck = page.getByRole('group', { name: L.showcase.review.deck });
-      await expect(deck.locator('[inert] button[aria-pressed="true"]')).toHaveCount(1);
-      await expect(deck.getByText(L.showcase.review.meaning, { exact: true })).toBeVisible();
-
-      for (let index = 0; index < EXERCISES.length; index++) {
-        await pickExercise(page, index);
-        await expectInside(page, `exercise ${EXERCISES[index].id}`);
-        await answerWrong(page, index);
-        await expectInside(page, `exercise ${EXERCISES[index].id} answered wrongly`);
-      }
-      await expectInside(page, 'end of page');
     });
   }
 });
 
 test.describe('LR23 the theme follows the visitor into the app', () => {
-  test('dark chosen on the landing is still dark after a reload and on the login page', async ({ page }) => {
+  test('dark chosen on the home page is still dark after a reload and on the login page', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
     await open(page);
-    await page.getByRole('button', { name: L.nav.themeToDark }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await chooseDark(page);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     expect(await page.evaluate(() => localStorage.getItem('wordmet-web.theme'))).toBe('dark');
 
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
-    await page.getByRole('main').getByRole('link', { name: L.hero.login, exact: true }).first().click();
+    await page.getByRole('banner').getByRole('link', { name: N.login, exact: true }).click();
     await expect(page).toHaveURL(/\/vi\/app\/login$/);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
@@ -188,94 +132,174 @@ test.describe('LR24 a dark system gets a dark first paint', () => {
   });
 });
 
+/** Text of `main` that is drawn see-through, or whose box sits under a see-through ancestor (an entrance that never ended). */
+const faded = (page: Page) =>
+  page.evaluate(() => {
+    const out: string[] = [];
+    let checked = 0;
+    let hero = 0;
+    for (const el of document.querySelectorAll<HTMLElement>('main h1, main h2, main h3, main p, main a, main details')) {
+      const box = el.getBoundingClientRect();
+      const inHero = !!el.closest('[data-hero-stage]');
+      // The hero stage is aria-hidden (its cycling frames) but drawn: it is checked, minus the frames kept `invisible` to hold its height.
+      if (box.width <= 1 || box.height <= 1 || getComputedStyle(el).visibility === 'hidden') continue;
+      if (el.closest('[aria-hidden="true"]') && !inHero) continue;
+      checked++;
+      if (inHero) hero++;
+      for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        // An entrance that ended may leave `blur(0px)` behind: that draws nothing.
+        if (style.opacity !== '1' || !['none', 'blur(0px)'].includes(style.filter)) {
+          out.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 30)}": opacity ${style.opacity}, filter ${style.filter} on ${node.tagName.toLowerCase()}`);
+          break;
+        }
+      }
+    }
+    return { checked, hero, out };
+  });
+
 test.describe('LR25 reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('after scrolling the whole page every revealed section is in place and visible', async ({ page }) => {
-    await open(page);
-    for (let y = 0; y < 12000; y += 500) await page.mouse.wheel(0, 500);
-    await page.waitForTimeout(400);
-    const { revealed, moved } = await page.evaluate(() => {
-      const wrappers = [...document.querySelectorAll('main > div')];
-      return {
-        revealed: wrappers.length,
-        moved: wrappers.flatMap((el) => {
-          const style = getComputedStyle(el);
-          const placed = style.transform === 'none' && ['none', '0px', '0px 0px'].includes(style.translate);
-          return placed && style.opacity === '1' ? [] : [`${el.querySelector('h2')?.textContent ?? el.className}: transform ${style.transform}, translate ${style.translate}, opacity ${style.opacity}`];
-        }),
-      };
+  for (const path of PAGES) {
+    test(`${path}: nothing animates after load, and every text is in place at full opacity`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      for (let y = 0; y < 14000; y += 500) await page.mouse.wheel(0, 500);
+      await page.waitForTimeout(300);
+      expect(await page.evaluate(() => document.getAnimations().map((a) => (a as CSSAnimation).animationName ?? a.id ?? 'animation'))).toEqual([]);
+      const { checked, out } = await faded(page);
+      // The control: the page had text to look at, so an empty list means "all in place", not "nothing found".
+      expect(checked).toBeGreaterThanOrEqual(3);
+      expect(out).toEqual([]);
     });
-    // The control: the seven Reveal wrappers were found, so an empty `moved` means "in place", not "never looked".
-    expect(revealed).toBe(7);
-    expect(moved).toEqual([]);
-    for (const title of [L.why.title, L.exercises.title, L.review.title, L.metOutside.title, L.plans.title, L.faq.title, L.final.title]) {
-      await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
-    }
+  }
+
+  test('the home page shows every section heading', async ({ page }) => {
+    await page.goto('/vi');
+    await expect(page.getByRole('heading', { level: 1, name: HERO_TITLE })).toBeVisible();
+    for (const title of SECTION_TITLES) await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
   });
+});
+
+test.describe('LR35 the page moves when motion is allowed', () => {
+  // The control of LR25: the same instrument finds animations here, so its empty list there means "none ran".
+  test('the home page starts animations on load, and the entrances end with the hero in place', async ({ page }) => {
+    await page.goto('/vi');
+    expect(await page.evaluate(() => document.getAnimations().length)).toBeGreaterThan(0);
+    await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
+    const hero = await faded(page);
+    expect(hero.out.filter((line) => line.startsWith('h1') || line.includes(L.hero.lead.slice(0, 20)))).toEqual([]);
+  });
+
+  // M4 of the M8b review: every block that waits for the scroll has come in and ended at full opacity once the page was scrolled through.
+  test('after scrolling through the home page, no text is left see-through', async ({ page }) => {
+    await open(page);
+    await scrollThrough(page);
+    const { checked, hero, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    // The control: the hero's word card and practice card were looked at (the cycling frames are aria-hidden, so an `aria-hidden` skip lost them).
+    expect(hero).toBeGreaterThanOrEqual(4);
+    expect(out).toEqual([]);
+  });
+  // The 404's entrance is not checked: a directly loaded 404 is drawn on the client, without the head script's `js` class (R239).
 });
 
 test.describe('LR26 without JavaScript', () => {
-  // Reduced motion too: with scripting off and the FAQ transition running, Playwright's stability check never passes for the second click on
-  // a summary, though the page itself settles in about 400 ms (isolated repro: click 1 ok, click 2 times out; with reduced motion both pass).
-  // The motion is covered by LR29.
-  test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
+  test.use({ javaScriptEnabled: false });
 
-  test('the first screen, the first tab, every section title and the FAQ all work', async ({ page }) => {
+  test('the home page shows every section heading, the three prices and a FAQ that opens natively', async ({ page }) => {
     await page.goto('/vi');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(L.hero.line1);
-    await expect(page.getByRole('tabpanel')).toHaveCount(1);
-    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2, name: L.showcase.review.title })).toBeVisible();
-    for (const title of [L.why.title, L.exercises.title, L.review.title, L.metOutside.title, L.plans.title, L.faq.title, L.final.title]) {
-      await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
-    }
+    await expect(page.getByRole('heading', { level: 1, name: HERO_TITLE })).toBeVisible();
+    for (const title of SECTION_TITLES) await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
+    // M4 of the M8b review: toBeVisible() does not look at opacity, so check nothing is drawn see-through either.
+    const { checked, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(out).toEqual([]);
 
-    const item = (question: string) => page.locator('details', { hasText: question });
-    await expect(item(L.faq.q1)).toHaveJSProperty('open', true);
-    await item(L.faq.q2).getByText(L.faq.q2).click();
-    await expect(item(L.faq.q2)).toHaveJSProperty('open', true);
-    await expect(item(L.faq.q1)).toHaveJSProperty('open', false);
-    await item(L.faq.q2).getByText(L.faq.q2).click();
-    await expect(item(L.faq.q2)).toHaveJSProperty('open', false);
+    const plans = page.getByRole('region', { name: L.plans.title });
+    for (const amount of Object.values(FALLBACK_LANDING_DATA.prices)) await expect(plans.getByText(vnd(amount), { exact: true })).toBeVisible();
+
+    const item = (question: string) => page.getByRole('region', { name: L.faq.title }).locator('details', { hasText: question });
+    const [first, second] = FALLBACK_LANDING_DATA.faq;
+    await expect(item(first!.question)).toHaveJSProperty('open', true);
+    await expect(item(first!.question).getByText(first!.answer)).toBeVisible();
+    await item(second!.question).getByText(second!.question).click();
+    await expect(item(second!.question)).toHaveJSProperty('open', true);
+    await expect(item(first!.question)).toHaveJSProperty('open', false);
+    await expect(item(second!.question).getByText(second!.answer)).toBeVisible();
+  });
+
+  test('a published legal page lists its contents as plain links that work', async ({ page }) => {
+    await page.goto(`${PUBLISHED}/vi/privacy`);
+    const contents = page.getByRole('navigation', { name: copy.vi.Legal.contents });
+    await expect(contents.getByRole('link')).toHaveText([
+      '1. Dữ liệu Wordmet thu thập',
+      '2. Wordmet dùng dữ liệu vào việc gì',
+      '3. Chia sẻ dữ liệu với ai',
+      '4. Quyền của bạn',
+      '5. Liên hệ',
+    ]);
+    await expect(contents.getByRole('button', { name: copy.vi.Legal.contentsOpen })).toBeHidden();
+    await contents.getByRole('link', { name: '4. Quyền của bạn' }).click();
+    await expect(page).toHaveURL(/#4-quyen-cua-ban$/);
+    await expect(page.getByRole('heading', { level: 2, name: '4. Quyền của bạn' })).toBeInViewport();
+  });
+
+  // The 404 is left out: without JavaScript its body is empty (Next renders notFound() of the catch-all on the client; R239).
+  test('the draft legal page shows its notice', async ({ page }) => {
+    await page.goto('/vi/terms');
+    await expect(page.getByRole('heading', { level: 1, name: copy.vi.Legal.termsTitle })).toBeVisible();
+    await expect(page.getByRole('main')).toContainText(copy.vi.Legal.draftNotice);
   });
 });
 
-test.describe('LR27 axe in both themes', () => {
+test.describe('M8 review I2: the page shows when React never runs', () => {
+  // R249: the head script adds `js` (the blocks below the hero wait hidden for React), then takes it back after 3000 ms if React has not
+  // marked the page `wm-live`. Blocking every chunk stands in for a slow network or a chunk refused by SRI.
+  test('with every JavaScript chunk blocked, no text of the home page is see-through after 3 s', async ({ page }) => {
+    const blocked: string[] = [];
+    // Scripts only: the stylesheets sit in the same folder, and without them nothing is hidden in the first place.
+    await page.route(/\/_next\/static\/chunks\/.+\.js(\?|$)/, (route) => {
+      blocked.push(route.request().url());
+      return route.abort();
+    });
+    await page.goto('/vi');
+    // Controls: the inline head script ran, the stylesheet with the hiding rules applies, and the scripts were refused, so React never
+    // marks the page live.
+    expect(await page.evaluate(() => document.documentElement.classList.contains('js'))).toBe(true);
+    const hidingRule = await page.evaluate(() =>
+      [...document.styleSheets].some((sheet) => [...sheet.cssRules].some((rule) => rule.cssText.includes('[data-wm-reveal="block"]:not([data-wm-in])'))),
+    );
+    expect(hidingRule).toBe(true);
+    expect(blocked.length).toBeGreaterThan(0);
+    await page.waitForTimeout(3500);
+    expect(await page.evaluate(() => document.documentElement.classList.contains('wm-live'))).toBe(false);
+    const { checked, out } = await faded(page);
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(out).toEqual([]);
+  });
+});
+
+test.describe('LR27 axe on the states a visitor opens', () => {
+  // LP25 in a11y.spec.ts scans every public page as it loads; these are the states behind a click.
   for (const scheme of ['light', 'dark'] as const) {
-    test(`no serious or critical violation in ${scheme}: every tab and every exercise state`, async ({ page }) => {
-      // About thirty axe scans of the whole page, each after the animations have settled.
-      test.setTimeout(240_000);
+    test(`no serious or critical violation in ${scheme}: the second FAQ answer open, and the phone contents list open`, async ({ page }) => {
+      // Two whole-page axe scans after the home page is scrolled through.
+      test.setTimeout(90_000);
       await page.emulateMedia({ colorScheme: scheme });
       await open(page);
-      await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
-      for (let y = 0; y < 12000; y += 500) await page.mouse.wheel(0, 500);
-      await page.waitForTimeout(500);
+      await scrollThrough(page);
+      const faq = page.getByRole('region', { name: L.faq.title });
+      await faq.getByText(FALLBACK_LANDING_DATA.faq[1]!.question).click();
+      await expect(faq.locator('details[open]')).toHaveCount(1);
+      expect(await seriousViolations(page)).toEqual([]);
 
-      const found: string[] = [];
-      for (const name of TAB_NAMES) {
-        await page.getByRole('tab', { name }).click();
-        found.push(...(await seriousViolations(page)).map((v) => `[tab ${name}] ${v}`));
-      }
-      await page.getByRole('tab', { name: L.showcase.tabs.review }).click();
-      await page.getByRole('group', { name: L.showcase.review.deck }).getByRole('button', { pressed: false }).click();
-      found.push(...(await seriousViolations(page)).map((v) => `[review card turned] ${v}`));
-
-      for (let index = 0; index < EXERCISES.length; index++) {
-        const id = EXERCISES[index].id;
-        await pickExercise(page, index);
-        found.push(...(await seriousViolations(page)).map((v) => `[${id} fresh] ${v}`));
-        await answerWrong(page, index);
-        found.push(...(await seriousViolations(page)).map((v) => `[${id} wrong] ${v}`));
-        await page.getByRole('button', { name: L.exercises.again }).or(page.getByRole('button', { name: L.exercises.reveal })).first().click();
-        if (EXERCISES[index].mode === 'typed') {
-          // Revealed answer, then a fresh try answered rightly.
-          found.push(...(await seriousViolations(page)).map((v) => `[${id} revealed] ${v}`));
-          await page.getByRole('button', { name: L.exercises.again }).click();
-        }
-        await answerRight(page, index);
-        found.push(...(await seriousViolations(page)).map((v) => `[${id} right] ${v}`));
-      }
-      expect(found).toEqual([]);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${PUBLISHED}/vi/terms`);
+      await page.getByRole('button', { name: copy.vi.Legal.contentsOpen }).click();
+      await expect(page.getByRole('button', { name: copy.vi.Legal.contentsOpen })).toHaveAttribute('aria-expanded', 'true');
+      expect(await seriousViolations(page)).toEqual([]);
     });
   }
 });
@@ -290,574 +314,150 @@ test.describe('LR28 content security policy', () => {
     });
   });
 
-  test('the whole landing, used in both themes, raises no violation', async ({ page }) => {
+  test('the home page, used in both themes, and a published legal page raise no violation', async ({ page }) => {
+    test.setTimeout(60_000);
     await open(page);
-    for (let y = 0; y < 12000; y += 500) await page.mouse.wheel(0, 500);
-    for (const name of TAB_NAMES) await page.getByRole('tab', { name }).click();
-    await pickExercise(page, 2);
-    await answerWrong(page, 2);
-    await page.getByRole('button', { name: L.nav.themeToDark }).click();
-    await page.getByRole('button', { name: L.nav.themeToLight }).click();
+    await scrollThrough(page);
+    await page.getByRole('region', { name: L.faq.title }).getByText(FALLBACK_LANDING_DATA.faq[2]!.question).click();
+    await chooseDark(page);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.waitForLoadState('networkidle');
+    expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
+
+    await page.goto(`${PUBLISHED}/vi/privacy`);
+    // Below lg the contents open from the pill first.
+    const pill = page.getByRole('button', { name: copy.vi.Legal.contentsOpen });
+    if (await pill.isVisible()) await pill.click();
+    await page.getByRole('navigation', { name: copy.vi.Legal.contents }).getByRole('link', { name: '3. Chia sẻ dữ liệu với ai' }).click();
+    await expect(page).toHaveURL(/#3-chia-se-du-lieu-voi-ai$/);
+    await page.mouse.wheel(0, 1500);
     await page.waitForLoadState('networkidle');
     expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
   });
 });
 
-test.describe('LR29 the FAQ opens with motion', () => {
-  test('opening question 2 closes question 1 and grows question 2 gradually', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'timing of one animation, once is enough');
-    await open(page);
-    const second = page.locator('details', { hasText: L.faq.q2 });
-    const first = page.locator('details', { hasText: L.faq.q1 });
-    await second.scrollIntoViewIfNeeded();
-    const heights = await second.evaluate(async (el) => {
-      const details = el as HTMLDetailsElement;
-      const closed = details.getBoundingClientRect().height;
-      const samples: number[] = [];
-      details.querySelector('summary')!.click();
-      const started = performance.now();
-      while (performance.now() - started < 700) {
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-        samples.push(details.getBoundingClientRect().height);
-      }
-      return { closed, samples };
-    });
-    await expect(first).toHaveJSProperty('open', false);
-    await expect(second).toHaveJSProperty('open', true);
-    const final = heights.samples[heights.samples.length - 1];
-    expect(final).toBeGreaterThan(heights.closed);
-    // At least one frame was drawn part-way: a jump from closed to final would leave none.
-    expect(heights.samples.filter((h) => h > heights.closed + 1 && h < final - 1).length).toBeGreaterThan(2);
-  });
-});
-
-// Owner 03/11/2026: the white sections run into each other, so a grey band alternates with them. What the visitor sees is that no two
-// neighbouring bands, from "why" down to the footer, are painted the same, whichever theme they use.
-test.describe('LR31 the sections are told apart', () => {
-  for (const scheme of ['light', 'dark'] as const) {
-    test(`no two neighbouring bands share a background in ${scheme}`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme: scheme });
-      await open(page);
-      const bands = await page.evaluate(() => {
-        const paint = (el: Element) => {
-          for (let node: Element | null = el; node; node = node.parentElement) {
-            const colour = getComputedStyle(node).backgroundColor;
-            if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
-          }
-          return 'none';
-        };
-        const found: Array<[string, Element | null]> = [
-          ['hero', document.querySelector('section[aria-labelledby="hero-title"]')],
-          ...['vi-sao', 'bai-tap', 'on-lai', 'gap-tu', 'goi', 'hoi-dap'].map((id): [string, Element | null] => [id, document.getElementById(id)]),
-          ['final', document.querySelector('section[aria-labelledby="final-title"]')],
-          ['footer', document.querySelector('footer')],
-        ];
-        return found.map(([id, el]) => ({ id, paint: el ? paint(el) : 'missing' }));
-      });
-      // The control: every band was found, so "different from the neighbour" is about colours and not about absent elements.
-      expect(bands.filter((band) => band.paint === 'missing')).toEqual([]);
-      for (let index = 1; index < bands.length; index++) {
-        expect(bands[index].paint, `${bands[index - 1].id} and ${bands[index].id} share a background`).not.toBe(bands[index - 1].paint);
-      }
-    });
-  }
-});
-
-// Found in the visual pass of 03/11/2026: at 768 px the window bar cut "Thêm từ mới" off, and at 320 px the header's Đăng ký broke into two lines.
-test.describe('LR32 the controls stay whole on small screens', () => {
-  test('from tablet width up all five tabs fit in the window bar without scrolling it', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
-    await open(page);
-    await expect(page.getByRole('tab')).toHaveCount(5);
-    for (const width of [768, 820, 1024, 1440]) {
-      await page.setViewportSize({ width, height: 900 });
-      const overflow = await page.getByRole('tablist').evaluate((tablist) => tablist.parentElement!.scrollWidth - tablist.parentElement!.clientWidth);
-      expect(overflow, `${width}px: pixels of the tab bar past its edge`).toBeLessThanOrEqual(0);
-    }
-  });
-
-  test('at 320 px the Đăng ký button in the header stays on one line', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
-    await page.setViewportSize({ width: 320, height: 700 });
-    await open(page);
-    const box = await page.getByRole('banner').getByRole('link', { name: L.nav.signup, exact: true }).boundingBox();
-    expect(box, 'the header button was found').not.toBeNull();
-    // min-h-control is 44 px; a second line of text makes it about 65.
-    expect(box!.height).toBeLessThan(50);
-  });
-});
-
-// Owner 03/11/2026: words and sign-up on the left, the app window on the right, small enough to sit in the first screen, a little motion on
-// opening, and the Pro plan made to stand out.
-test.describe('LR34 the first screen: words on the left, the app window on the right', () => {
-  const windowOf = (page: Page) => page.getByRole('region', { name: L.showcase.label });
-  // What shows of the window is the box that holds it: the next section covers the rest (LR37).
-  const shownOf = (page: Page) => page.locator('#tinh-nang').locator('xpath=..');
-
-  for (const [width, height] of [
-    [1440, 900],
-    [1366, 768],
-  ]) {
-    test(`at ${width} x ${height} the heading and the sign-up button sit left of the window, and every tab of it fits in the screen`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height });
-      await open(page);
-      const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
-      const signup = await page.getByRole('main').getByRole('link', { name: L.hero.signup, exact: true }).first().boundingBox();
-      const frame = await windowOf(page).boundingBox();
-      expect(heading && signup && frame, 'heading, button and window were found').toBeTruthy();
-      expect(heading!.x + heading!.width, 'the heading ends before the window').toBeLessThanOrEqual(frame!.x);
-      expect(signup!.x + signup!.width, 'the button ends before the window').toBeLessThanOrEqual(frame!.x);
-      for (const name of TAB_NAMES) {
-        await page.getByRole('tab', { name }).click();
-        const shown = await shownOf(page).boundingBox();
-        expect(shown!.y + shown!.height, `tab ${name}: bottom edge of what shows of the window`).toBeLessThanOrEqual(height);
-      }
-    });
-  }
-
-  for (const width of [768, 390]) {
-    test(`at ${width} px the window comes under the heading`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height: 900 });
-      await open(page);
-      const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
-      const frame = await windowOf(page).boundingBox();
-      expect(frame!.y).toBeGreaterThanOrEqual(heading!.y + heading!.height);
-    });
-  }
-});
-
-// Owner 03/11/2026: only about three quarters of the window show, as if it sat lower and the next section lay over it.
-test.describe('LR37 the window peeks out from under the next section', () => {
-  test('at 1440 x 900 about three quarters of the window show and the next section lies over the rest', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    await settle(page);
-    const { whole, shown, coveredBySection } = await page.evaluate(() => {
-      const frame = document.getElementById('tinh-nang')!;
-      const box = frame.parentElement!.getBoundingClientRect();
-      const full = frame.getBoundingClientRect();
-      // A point just under what shows, in the middle of the window: the section below must be the thing found there.
-      const hit = document.elementFromPoint(full.left + full.width / 2, box.bottom + 24);
-      return { whole: full.height, shown: box.height, coveredBySection: Boolean(hit?.closest('#vi-sao')) };
-    });
-    expect(shown / whole, `shows ${Math.round(shown)} of ${Math.round(whole)} px`).toBeGreaterThan(0.65);
-    expect(shown / whole).toBeLessThan(0.85);
-    expect(coveredBySection, 'the next section is what lies under the window').toBe(true);
-  });
-});
-
-// Owner 03/11/2026, third round: the window grows to the left (the words give up width), its items shrink, and only the main visuals stay: buttons and
-// other side items are left out, so that nothing inside is lain over by the next section.
-test.describe('LR38 the window is wide and the heading still takes two lines', () => {
-  test('at 1440 x 900 the window is at least 600 px wide and the heading takes two lines', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    await settle(page);
-    const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
-    const frame = await page.getByRole('region', { name: L.showcase.label }).boundingBox();
-    expect(frame!.width).toBeGreaterThanOrEqual(600);
-    expect(heading!.height, 'two lines of the heading are about 85 px, three about 130').toBeLessThan(110);
-  });
-});
-
-test.describe('LR39 nothing inside the window is under the next section', () => {
-  test('at 1440 x 900 every element of every tab ends above the cut', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    await settle(page);
-    for (const name of TAB_NAMES) {
-      await page.getByRole('tab', { name }).click();
-      await settle(page);
-      const { checked, below } = await page.evaluate(() => {
-        const frame = document.getElementById('tinh-nang')!;
-        const cut = frame.parentElement!.getBoundingClientRect().bottom;
-        const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
-        const below: string[] = [];
-        let checked = 0;
-        for (const el of panel.querySelectorAll('*')) {
-          const box = el.getBoundingClientRect();
-          if (box.width === 0 || box.height === 0) continue;
-          checked++;
-          if (box.bottom > cut + 0.5) below.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 24)}" ends ${Math.round(box.bottom - cut)} px below the cut`);
-        }
-        return { checked, below };
-      });
-      // The control: the open panel had elements to look at, so an empty list means "all above the cut", not "nothing found".
-      expect(checked, `tab ${name}`).toBeGreaterThan(5);
-      expect(below, `tab ${name}`).toEqual([]);
-    }
-  });
-});
-
-// Owner 03/11/2026, fourth round: the review tab spaced evenly and without its progress bar, the card higher in the window and the window lower on the
-// page (the card still not lain over), a tab bar with less padding, and a narrower plans table on the right.
-test.describe('LR40 the review tab is spaced evenly, the card sits high and the window lower', () => {
-  test('at 1440 x 900 title, line and card are evenly spaced and share a left edge, there is no progress bar, the bar is slim, the window is lower', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    await settle(page);
-    const g = await page.evaluate(() => {
-      const frame = document.getElementById('tinh-nang')!;
-      const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
-      const title = panel.querySelector('h2')!.getBoundingClientRect();
-      const body = panel.querySelector('h2 + p')!.getBoundingClientRect();
-      const card = panel.querySelector('[role="group"]')!.getBoundingClientRect();
-      const top = frame.getBoundingClientRect().top;
-      return {
-        gapUnderTitle: body.top - title.bottom,
-        gapUnderLine: card.top - body.bottom,
-        leftDelta: card.left - title.left,
-        cardFromTop: card.top - top,
-        barHeight: frame.querySelector('[role="tablist"]')!.parentElement!.getBoundingClientRect().height,
-        windowTop: top,
-      };
-    });
-    expect(Math.abs(g.gapUnderTitle - g.gapUnderLine), `gaps ${g.gapUnderTitle.toFixed(1)} and ${g.gapUnderLine.toFixed(1)} px`).toBeLessThanOrEqual(1.5);
-    expect(Math.abs(g.leftDelta), 'the card starts where the title starts').toBeLessThanOrEqual(1);
-    expect(g.cardFromTop, 'the card sits high in the window').toBeLessThanOrEqual(150);
-    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(40);
-    expect(g.windowTop, 'the window starts lower on the page').toBeGreaterThanOrEqual(140);
-    await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
-  });
-});
-
-test.describe('LR42 the plans table is narrow and on the right', () => {
-  test('at 1440 x 900 it is 540 to 580 px wide, sits in the right half, and "Miễn phí" fits its column on one line', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    const table = await page.getByRole('table', { name: L.plans.title }).boundingBox();
-    const free = await page.getByRole('columnheader', { name: L.plans.free, exact: true }).boundingBox();
-    expect(table!.width).toBeGreaterThanOrEqual(540);
-    expect(table!.width).toBeLessThanOrEqual(580);
-    const fits = await page.getByRole('columnheader', { name: L.plans.free, exact: true }).evaluate((th) => th.scrollWidth <= th.clientWidth);
-    expect(fits, '"Miễn phí" stays inside its column and clear of the Pro card').toBe(true);
-    expect(table!.x, 'the table starts in the right half of the page').toBeGreaterThanOrEqual(715);
-    // The way in sits right under the heading, not halfway down beside the table.
-    const heading = await page.getByRole('heading', { level: 2, name: L.plans.title }).boundingBox();
-    const signup = await page.locator('#goi').getByRole('link', { name: L.plans.signup, exact: true }).boundingBox();
-    expect(signup!.y - (heading!.y + heading!.height), 'space between the heading and Đăng ký').toBeLessThanOrEqual(48);
-    expect(free!.height, 'one line of the plan name with a slim padding').toBeLessThan(50);
-  });
-});
-
-// Owner 03/11/2026: the sign-in and sign-up pages drop the navy panel on the left; the form sits in the middle of the screen.
-test.describe('LR43 the sign-in pages have the form in the middle', () => {
-  for (const path of ['/vi/app/login', '/vi/app/register']) {
-    test(`at 1440 x 900 ${path} has no side panel and its card is centred`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto(path);
-      const card = page.getByRole('heading', { level: 1 }).locator('xpath=ancestor::section[1]');
-      await expect(card).toBeVisible();
-      await expect(page.locator('aside')).toHaveCount(0);
-      const box = await card.boundingBox();
-      expect(Math.abs(box!.x + box!.width / 2 - 720), 'distance of the card centre from the page centre').toBeLessThanOrEqual(2);
-    });
-  }
-});
-
-test.describe('LR35 the first screen moves in when the page opens', () => {
-  const watch = (page: Page) =>
-    page.addInitScript(() => {
-      window.__heroMotion = [];
-      document.addEventListener('animationstart', (event) => window.__heroMotion.push(`${event.animationName}:${(event.target as Element).tagName.toLowerCase()}`), true);
-    });
-  const started = (page: Page) => page.evaluate(() => window.__heroMotion.filter((entry) => entry.startsWith('hero-')));
-
-  test('the heading, the words under it and the window each start an entrance, and all end in place and visible', async ({ page }) => {
-    await watch(page);
-    await open(page);
-    await page.waitForTimeout(1500);
-    const entrances = await started(page);
-    expect(entrances.length, entrances.join(', ')).toBeGreaterThanOrEqual(5);
-    expect(entrances.some((entry) => entry.startsWith('hero-window-in'))).toBe(true);
-    for (const target of [page.getByRole('heading', { level: 1 }), page.getByRole('region', { name: L.showcase.label })]) {
-      expect(await target.evaluate((el) => [getComputedStyle(el).opacity, getComputedStyle(el).transform])).toEqual(['1', 'none']);
-    }
-  });
-
-  test.describe('with reduced motion', () => {
-    test.use({ reducedMotion: 'reduce' });
-
-    test('nothing starts, and the first screen is all there at once', async ({ page }) => {
-      await watch(page);
-      await open(page);
-      // The control: the recorder ran (it holds an array) and the page was drawn, so an empty list means "nothing moved".
-      expect(await page.evaluate(() => Array.isArray(window.__heroMotion))).toBe(true);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      expect(await started(page)).toEqual([]);
-    });
-  });
-});
-
-test.describe('LR36 the plans are a comparison table and the Pro column stands out', () => {
-  test('each of the seven lines has a Có or a Không (or a monthly limit under Free for the two AI lines) and the two columns are painted differently', async ({ page }) => {
-    await open(page);
-    const table = page.getByRole('table', { name: L.plans.title });
-    // Free has a monthly AI allowance (launch prep A): its two AI cells hold the limit in words instead of a Có or a Không.
-    const lines: Array<[string, string, string]> = [
-      [L.plans.freeP1, L.plans.yes, L.plans.yes],
-      [L.plans.freeP2, L.plans.yes, L.plans.yes],
-      [L.plans.freeP3, L.plans.yes, L.plans.yes],
-      [L.plans.proP1, L.plans.no, L.plans.yes],
-      [L.plans.proP2, L.plans.freeAiPractice, L.plans.yes],
-      [L.plans.proP3, L.plans.freeAiLookup, L.plans.yes],
-      [L.plans.proP4, L.plans.no, L.plans.yes],
-    ];
-    for (const [label, free, pro] of lines) {
-      await expect(table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: label }) }).getByRole('cell'), label).toHaveText([free, pro]);
-    }
-    const paint = (name: string) =>
-      table.getByRole('columnheader', { name, exact: true }).evaluate((header) => {
-        for (let node: Element | null = header; node; node = node.parentElement) {
-          const colour = getComputedStyle(node).backgroundColor;
-          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
-        }
-        return 'none';
-      });
-    const [free, pro] = [await paint(L.plans.free), await paint(L.plans.pro)];
-    expect(free, 'the Free column was found').not.toBe('none');
-    expect(pro, 'the Pro column was found').not.toBe('none');
-    expect(pro).not.toBe(free);
-  });
-});
-
-// Final review 03/11/2026: the anchors were bare (`#goi`), so on the legal pages, which share this header and footer, they led nowhere.
 test.describe('LR33 the page anchors work from the legal pages', () => {
-  for (const path of ['/vi/privacy', '/vi/terms']) {
-    test(`the footer link Hỏi đáp on ${path} leads to the questions on the home page`, async ({ page }) => {
-      await page.goto(path);
-      await page.getByRole('contentinfo').getByRole('link', { name: L.footer.faq }).click();
-      await expect(page).toHaveURL(/\/vi#hoi-dap$/);
-      await expect(page.locator('#hoi-dap')).toBeVisible();
-    });
-  }
-
-  test('the header link Gói học on a legal page leads to the plans on the home page', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'the page anchors are in the header from lg up');
+  test('the header link Giá on a legal page leads to the prices on the home page', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the page anchors are in the header from md up');
     await page.goto('/vi/terms');
-    await page.getByRole('banner').getByRole('link', { name: L.nav.plans }).click();
-    await expect(page).toHaveURL(/\/vi#goi$/);
-    await expect(page.locator('#goi')).toBeVisible();
-  });
-});
-
-// Owner 03/11/2026, the mobile pass (docs/deliveries/landing-redesign/mobile-survey.md, Q1–Q4): the phone and tablet layouts follow the desktop one.
-const PHONES = [320, 390, 768] as const;
-
-test.describe('LR44 on phones and tablets the window is compact, one height for every tab, and peeks from under the next section', () => {
-  for (const width of PHONES) {
-    test(`at ${width} px`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height: 844 });
-      await open(page);
-      await settle(page);
-      const heights: number[] = [];
-      for (const name of TAB_NAMES) {
-        await page.getByRole('tab', { name }).click();
-        await settle(page);
-        const g = await page.evaluate(() => {
-          const frame = document.getElementById('tinh-nang')!;
-          // On a phone the cut is below the first screen: bring it into view, or the point under it is outside the viewport and hits nothing.
-          frame.parentElement!.scrollIntoView({ block: 'center', behavior: 'instant' });
-          const box = frame.parentElement!.getBoundingClientRect();
-          const full = frame.getBoundingClientRect();
-          const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
-          const below: string[] = [];
-          let checked = 0;
-          for (const el of panel.querySelectorAll('*')) {
-            const r = el.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) continue;
-            checked++;
-            if (r.bottom > box.bottom + 0.5) below.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 24)}" ends ${Math.round(r.bottom - box.bottom)} px below the cut`);
-          }
-          const hit = document.elementFromPoint(full.left + full.width / 2, box.bottom + 24);
-          return { shown: box.height, whole: full.height, checked, below, covered: Boolean(hit?.closest('#vi-sao')) };
-        });
-        heights.push(Math.round(g.shown));
-        expect(g.checked, `tab ${name}`).toBeGreaterThan(5);
-        expect(g.below, `tab ${name}: nothing under the next section`).toEqual([]);
-        expect(g.shown / g.whole, `tab ${name}: shows ${Math.round(g.shown)} of ${Math.round(g.whole)} px`).toBeGreaterThan(0.65);
-        expect(g.shown / g.whole).toBeLessThan(0.85);
-        expect(g.covered, `tab ${name}: the next section lies under the window`).toBe(true);
-      }
-      expect(new Set(heights).size, `heights per tab: ${heights.join(', ')}`).toBe(1);
-      // Compact as on desktop: no point list, no deck line.
-      await page.getByRole('tab', { name: L.showcase.tabs.review }).click();
-      await expect(page.getByText(L.showcase.review.p1, { exact: true })).toBeHidden();
-      await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
-    });
-  }
-});
-
-test.describe('LR45 on phones the window bar shows all five tabs as icons, the open one with its name', () => {
-  for (const width of [320, 390]) {
-    test(`at ${width} px`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height: 844 });
-      await open(page);
-      const overflow = await page.getByRole('tablist').evaluate((tablist) => tablist.parentElement!.scrollWidth - tablist.parentElement!.clientWidth);
-      expect(overflow, 'pixels of the tab bar past its edge').toBeLessThanOrEqual(0);
-      for (const name of TAB_NAMES) {
-        const tab = page.getByRole('tab', { name });
-        await tab.click();
-        for (const each of TAB_NAMES) {
-          const box = await page.getByRole('tab', { name: each }).boundingBox();
-          expect(box!.height, `${name} open, ${each}: touch height`).toBeGreaterThanOrEqual(44);
-          // At 320 px the open tab's name leaves the four icons about 37 px each (above the 24 px of WCAG 2.5.8); from 360 px they reach 44.
-          expect(box!.width, `${name} open, ${each}: touch width`).toBeGreaterThanOrEqual(width < 360 ? 36 : 44);
-        }
-        // The open tab shows its name; the others only their icon. Their names stay as accessible names, visually hidden in a 1 px box (which
-        // Playwright still counts as visible), so the width of the words is what is measured.
-        for (const each of TAB_NAMES) {
-          const words = await page.getByRole('tab', { name: each }).getByText(each, { exact: true }).boundingBox();
-          if (each === name) expect(words!.width, `${name} open: its name shows`).toBeGreaterThan(20);
-          else expect(words!.width, `${name} open: ${each} shows no name`).toBeLessThanOrEqual(1);
-        }
-      }
-      // The bar holds the tabs alone: the app logo made way for them.
-      await expect(page.getByRole('tablist').locator('xpath=..').getByText('Wordmet')).toHaveCount(0);
-    });
-  }
-});
-
-test.describe('LR46 below lg the exercise kinds are one drop-down', () => {
-  test('at 390 px a select chooses the exercise and the list is gone; at 1440 px the list is back', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 390, height: 844 });
-    await open(page);
-    const select = page.getByRole('combobox', { name: L.exercises.list });
-    await expect(select).toBeVisible();
-    await expect(page.getByRole('list', { name: L.exercises.list })).toBeHidden();
-    await expect(select.locator('option')).toHaveCount(EXERCISES.length);
-    const label = await select.locator('option').nth(2).textContent();
-    await select.selectOption({ index: 2 });
-    await expect(page.locator('#bai-tap').getByRole('textbox', { name: L.exercises.answerLabel })).toBeVisible();
-    expect(label, 'each option names its plan').toMatch(new RegExp(`${L.exercises.free}|${L.exercises.pro}`));
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByRole('list', { name: L.exercises.list })).toBeVisible();
-    await expect(select).toBeHidden();
-  });
-});
-
-test.describe('LR47 on phones the plans table comes before Đăng ký', () => {
-  for (const width of [320, 390]) {
-    test(`at ${width} px the table, then the button; "Miễn phí" clear of the Pro card`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height: 844 });
-      await open(page);
-      const table = await page.getByRole('table', { name: L.plans.title }).boundingBox();
-      const signup = await page.locator('#goi').getByRole('link', { name: L.plans.signup, exact: true }).boundingBox();
-      expect(signup!.y, 'the button starts under the table').toBeGreaterThanOrEqual(table!.y + table!.height);
-      const free = page.getByRole('columnheader', { name: L.plans.free, exact: true });
-      expect(await free.evaluate((th) => th.scrollWidth <= th.clientWidth), '"Miễn phí" stays in its column').toBe(true);
-      const gap = await free.evaluate((th) => {
-        const range = document.createRange();
-        range.selectNodeContents(th);
-        const words = range.getBoundingClientRect();
-        const pro = th.nextElementSibling!.getBoundingClientRect();
-        return pro.left - words.right;
-      });
-      expect(gap, 'space between "Miễn phí" and the Pro card').toBeGreaterThanOrEqual(6);
-    });
-  }
-});
-
-test.describe('LR48 no section heading leaves a short last line', () => {
-  for (const width of [320, 390]) {
-    test(`at ${width} px every heading of the page is balanced`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-      await page.setViewportSize({ width, height: 844 });
-      await open(page);
-      const short = await page.evaluate(() => {
-        const out: string[] = [];
-        let multi = 0;
-        for (const h of document.querySelectorAll<HTMLElement>('main h2')) {
-          if (h.getBoundingClientRect().height === 0) continue;
-          const range = document.createRange();
-          range.selectNodeContents(h);
-          // One rect per line fragment; merge fragments of the same line.
-          const lines = new Map<number, number>();
-          for (const r of range.getClientRects()) lines.set(Math.round(r.top), (lines.get(Math.round(r.top)) ?? 0) + r.width);
-          const widths = [...lines.values()];
-          if (widths.length < 2) continue;
-          multi++;
-          const last = widths[widths.length - 1];
-          if (last < 0.5 * Math.max(...widths)) out.push(`"${h.textContent!.trim()}" last line ${Math.round(last)} of ${Math.round(Math.max(...widths))} px`);
-        }
-        return { out, multi };
-      });
-      expect(short.multi, 'headings on more than one line were found').toBeGreaterThan(0);
-      expect(short.out).toEqual([]);
-    });
-  }
-});
-
-test.describe('LR49 small details on phones', () => {
-  test('at 320 px the forgetting chart labels are readable, and at 390 px the two weak-word chips do not touch', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 320, height: 844 });
-    await open(page);
-    // Only the chart drawn at this width (the other size is display: none, so its labels measure 0).
-    const labels = await page.locator('#vi-sao svg text').evaluateAll((texts) => texts.map((t) => t.getBoundingClientRect().height).filter((h) => h > 0));
-    expect(labels.length).toBeGreaterThan(3);
-    expect(Math.min(...labels), 'height of the smallest chart label').toBeGreaterThanOrEqual(12);
-    await page.setViewportSize({ width: 390, height: 844 });
-    const chips = page.locator('#on-lai').getByText(new RegExp(`^(${L.review.w1}|${L.review.w2})$`));
-    await expect(chips).toHaveCount(2);
-    const [a, b] = [await chips.nth(0).boundingBox(), await chips.nth(1).boundingBox()];
-    // The chips draw a 2 px ring outside their box.
-    expect(b!.x - (a!.x + a!.width) - 4, 'visible space between the chips').toBeGreaterThanOrEqual(6);
+    await page.getByRole('banner').getByRole('link', { name: N.pricing }).click();
+    await expect(page).toHaveURL(/\/vi#gia$/);
+    await expect(page.getByRole('region', { name: L.plans.title })).toBeInViewport();
   });
 });
 
 test.describe('LR50 touch targets on phones', () => {
-  test('at 390 px the theme button, the first screen sign-in link and Quên mật khẩu are at least 44 px high', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 390, height: 844 });
-    await open(page);
-    const theme = await page.getByRole('banner').getByRole('button', { name: L.nav.themeToDark }).boundingBox();
-    expect(theme!.height).toBeGreaterThanOrEqual(44);
-    expect(theme!.width).toBeGreaterThanOrEqual(44);
-    const login = await page.getByRole('main').getByRole('link', { name: L.hero.login, exact: true }).boundingBox();
-    expect(login!.height, 'Đăng nhập under the first button').toBeGreaterThanOrEqual(44);
+  /**
+   * Visible controls lower than 44 px. Left out: links inside running text (WCAG 2.5.8's inline exception) and anything clipped out of
+   * sight (the skip link until it is focused: `sr-only` with its own padding, so a 32 × 24 box drawn as nothing).
+   */
+  const small = (page: Page) =>
+    page.evaluate(() => {
+      const out: string[] = [];
+      let checked = 0;
+      for (const el of document.querySelectorAll<HTMLElement>('a[href], button, summary, label:has(input[type="radio"])')) {
+        const box = el.getBoundingClientRect();
+        if (box.width <= 1 || box.height <= 1 || el.closest('[aria-hidden="true"]')) continue;
+        const style = getComputedStyle(el);
+        if ((el.tagName === 'A' && style.display === 'inline') || style.clipPath === 'inset(50%)') continue;
+        checked++;
+        if (box.height < 44) out.push(`${el.tagName.toLowerCase()} "${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 30)}" ${Math.round(box.height)} px high`);
+      }
+      return { checked, out };
+    });
+
+  test('on a 390 px phone every control of every public page is at least 44 px high', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'the phone project (390 px, touch)');
+    for (const path of [...PAGES, ...PUBLISHED_PAGES]) {
+      await page.goto(path);
+      // Measured once the entrances have ended (a button caught mid-entrance is scaled down).
+      await scrollThrough(page);
+      const { checked, out } = await small(page);
+      expect(checked, `${path}: controls found`).toBeGreaterThan(5);
+      expect(out, path).toEqual([]);
+    }
+    // The phone contents list, opened.
+    await page.goto(`${PUBLISHED}/vi/privacy`);
+    await page.getByRole('button', { name: copy.vi.Legal.contentsOpen }).click();
+    expect((await small(page)).out, 'contents open').toEqual([]);
     await page.goto('/vi/app/login');
     const forgot = await page.getByRole('link', { name: copy.vi.App.auth.login.forgot }).boundingBox();
     expect(forgot!.height, 'Quên mật khẩu?').toBeGreaterThanOrEqual(44);
   });
 });
 
-test.describe('LR51 a press answers the finger', () => {
-  test('tabs, exercise kinds, answers and FAQ questions shrink a little while pressed, and a tap draws no grey flash', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await open(page);
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('DOM.enable');
-    await cdp.send('CSS.enable');
-    const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
-    const pressed = async (selector: string) => {
-      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
-      await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['active'] });
-      // Wait out the transition, then read where it ends. Tailwind 4 shrinks with the `scale` property, not `transform`.
-      await page.waitForTimeout(300);
-      const scale = await page.locator(selector).first().evaluate((el) => getComputedStyle(el).scale);
-      await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
-      return Number(scale);
-    };
-    for (const selector of ['[role="tab"][aria-selected="false"]', '#bai-tap ul button', 'button[data-option]', '#hoi-dap summary']) {
-      const scale = await pressed(selector);
-      expect(scale, `${selector} while pressed`).toBeGreaterThanOrEqual(0.95);
-      expect(scale, `${selector} while pressed`).toBeLessThanOrEqual(0.98);
+test.describe('M8 the header on a phone', () => {
+  // The phone project at its own 390 px; the desktop project narrows to 320.
+  test('the bar holds the logo, Đăng nhập and Đăng ký, each 44 px high, and nothing spills', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'desktop') await page.setViewportSize({ width: 320, height: 844 });
+    const width = page.viewportSize()!.width;
+    await page.goto('/vi');
+    const banner = page.getByRole('banner');
+    const bar = (await banner.boundingBox())!;
+    for (const link of [banner.getByRole('link', { name: BRAND }), banner.getByRole('link', { name: N.login, exact: true }), banner.getByRole('link', { name: N.signup, exact: true })]) {
+      const box = (await link.boundingBox())!;
+      expect(box.height, `${await link.textContent()}: height`).toBeGreaterThanOrEqual(44);
+      expect(box.x, 'left edge').toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, 'right edge').toBeLessThanOrEqual(width);
+      expect(box.y + box.height, 'inside the bar').toBeLessThanOrEqual(bar.y + bar.height);
     }
-    expect(await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('-webkit-tap-highlight-color'))).toBe('rgba(0, 0, 0, 0)');
+    for (const name of [N.groups, N.howTo, N.pricing]) await expect(banner.getByRole('link', { name })).toBeHidden();
+    await expect(banner.getByRole('button', { name: N.themeToDark })).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+});
+
+test.describe('M8 the theme switch moves to the footer below 768 px', () => {
+  // The phone project checks its own 390 px; the desktop project sweeps across the 768 px edge.
+  test('the footer "Giao diện" control shows only below 768 px, the header button from 768 px', async ({ page }, testInfo) => {
+    await page.goto('/vi');
+    const footerSwitch = page.getByRole('contentinfo').getByRole('radiogroup', { name: N.theme });
+    const headerButton = page.getByRole('banner').getByRole('button', { name: N.themeToDark });
+    const widths = testInfo.project.name === 'mobile' ? ([[390, true]] as const) : ([[767, true], [768, false], [1440, false]] as const);
+    for (const [width, below] of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      if (below) {
+        await expect(footerSwitch, `${width} px`).toBeVisible();
+        await expect(headerButton, `${width} px`).toBeHidden();
+      } else {
+        await expect(footerSwitch, `${width} px`).toBeHidden();
+        await expect(headerButton, `${width} px`).toBeVisible();
+      }
+    }
+  });
+});
+
+test.describe('M8 pricing and FAQ on the fallback build', () => {
+  test('the 3 and 12 month rows show −16% and −37%, the 1 month row no saving, and 12 months is the best', async ({ page }) => {
+    await page.goto('/vi');
+    const periods = page.getByRole('region', { name: L.plans.title }).getByRole('listitem').filter({ hasText: /tháng/ }).filter({ hasText: '₫' });
+    await expect(periods).toHaveCount(3);
+    await expect(periods.nth(0)).not.toContainText('−');
+    await expect(periods.nth(1).getByText('−16%', { exact: true })).toBeVisible();
+    await expect(periods.nth(2).getByText('−37%', { exact: true })).toBeVisible();
+    await expect(periods.nth(2).getByText(L.plans.best, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.plans.best, { exact: true })).toHaveCount(1);
+  });
+
+  test('the FAQ has the six fallback questions in order, the first open', async ({ page }) => {
+    await page.goto('/vi');
+    const items = page.getByRole('region', { name: L.faq.title }).locator('details');
+    await expect(items).toHaveCount(6);
+    await expect(items.locator('summary')).toHaveText(FALLBACK_LANDING_DATA.faq.map((item) => item.question));
+    await expect(items.first()).toHaveJSProperty('open', true);
+  });
+});
+
+test.describe('M8 the 404 has no header', () => {
+  test('/vi/khong-ton-tai has a main and a footer but no banner landmark', async ({ page }) => {
+    await page.goto('/vi/khong-ton-tai');
+    await expect(page.getByRole('heading', { level: 1, name: copy.vi.NotFound.title })).toBeVisible();
+    // The control: the other landmarks are found, so the missing banner is absent and not unreadable.
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('contentinfo')).toHaveCount(1);
+    await expect(page.getByRole('banner')).toHaveCount(0);
+    await page.goto('/vi/terms');
+    await expect(page.getByRole('banner')).toHaveCount(1);
   });
 });
 
@@ -868,11 +468,97 @@ test.describe('LR30 no waitlist', () => {
       if (/waitlist/i.test(request.url()) || /waitlist/i.test(request.postData() ?? '')) sent.push(`${request.method()} ${request.url()}`);
     });
     await open(page);
-    for (let y = 0; y < 12000; y += 500) await page.mouse.wheel(0, 500);
-    for (const name of TAB_NAMES) await page.getByRole('tab', { name }).click();
+    await scrollThrough(page);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('input[type="email"]')).toHaveCount(0);
-    expect(await page.locator('form').filter({ has: page.locator('input[type="email"]') }).count()).toBe(0);
     expect(sent).toEqual([]);
+  });
+});
+
+// Found in M8.9: a server component that imports BUTTON_BASE from the 'use client' Button module gets a client reference, not the string,
+// so every ButtonLink of the public pages (all server-rendered) lost its button classes and showed as plain text (R240).
+test.describe('M8 the public pages draw their button links as buttons', () => {
+  const expectButton = async (link: import('@playwright/test').Locator, variant: 'primary' | 'secondary') => {
+    // inline-flex, or flex where a flex container blockifies it (the header row).
+    await expect(link).toHaveCSS('display', /^(inline-)?flex$/);
+    await expect(link).toHaveCSS('min-height', '44px');
+    // Primary is filled with the accent; secondary with the surface: neither is transparent.
+    await expect(link).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(link).toHaveAttribute('data-variant', variant);
+  };
+
+  test('the header, hero, plans, final card, 404 and legal help box', async ({ page }) => {
+    await page.goto('/vi');
+    await expectButton(page.getByRole('banner').getByRole('link', { name: N.login, exact: true }), 'secondary');
+    await expectButton(page.getByRole('banner').getByRole('link', { name: N.signup, exact: true }), 'primary');
+    const main = page.getByRole('main');
+    await expectButton(main.getByRole('region', { name: HERO_TITLE }).getByRole('link', { name: L.hero.signup }), 'primary');
+    await expectButton(main.getByRole('link', { name: L.hero.howTo }), 'secondary');
+    await expectButton(main.getByRole('link', { name: L.plans.proSignup, exact: true }), 'primary');
+    await expectButton(main.getByRole('region', { name: L.final.title }).getByRole('link', { name: L.final.signup }), 'primary');
+    await page.goto('/vi/khong-ton-tai');
+    await expectButton(page.getByRole('link', { name: copy.vi.NotFound.home }), 'primary');
+    await page.goto(`${PUBLISHED}/vi/privacy`);
+    await expectButton(page.getByRole('region', { name: copy.vi.Legal.privacyHelpTitle }).getByRole('link'), 'primary');
+  });
+});
+
+// Found in the M8.9 shots: the public pages showed the body's old `--color-surface` (white; #242b3d in dark) instead of Figma's `--bg` ground
+// (R244). Read from an empty corner of each page, so the colour is the ground and not a card.
+test.describe('M8 the public pages stand on --bg', () => {
+  const ground = { light: 'rgb(246, 247, 250)', dark: 'rgb(15, 18, 32)' } as const;
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`every public page is painted ${ground[scheme]} in ${scheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const path of [...PAGES, `${PUBLISHED}/vi/privacy`]) {
+        await page.goto(path);
+        await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+        const paint = await page.evaluate(() => {
+          // The first painted background under the bottom-left corner of the window, through the stack of boxes there.
+          for (const el of document.elementsFromPoint(4, window.innerHeight - 4)) {
+            const colour = getComputedStyle(el).backgroundColor;
+            if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
+          }
+          return 'none';
+        });
+        expect(paint, path).toBe(ground[scheme]);
+      }
+    });
+  }
+});
+
+// Found in the M8.9 shots: at 390 px the review boxes sat in three columns, so "14 ngày" and "30 ngày" broke onto two lines; Figma's phone
+// frame (`9:291`) wraps them as pills, 3 + 2 (R245).
+test.describe('M8 the review boxes on a phone', () => {
+  test('no review box value breaks onto a second line', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'the phone project (390 px)');
+    await page.goto('/vi');
+    const learn = page.getByRole('region', { name: L.learn.title });
+    for (const { value } of L.learn.review.bins) {
+      const lines = await learn.getByText(value, { exact: true }).evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+      });
+      expect(lines, value).toBe(1);
+    }
+  });
+});
+
+// Found in the M8.9 shots: at 1024 px the Free (360) and Pro (620) cards side by side are 1004 px wide in 944 px of content, so the row
+// stuck out 30 px on each side into the gutters (the section clips it, so the page did not scroll; R248).
+test.describe('M8 the plan cards stay inside the page', () => {
+  test('from 768 to 1440 px both plan cards keep the page gutters', async ({ page }, testInfo) => {
+    desktopOnly(testInfo);
+    for (const width of [768, 1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/vi');
+      const cards = page.getByRole('region', { name: L.plans.title }).getByRole('article');
+      await expect(cards).toHaveCount(2);
+      for (const box of [(await cards.nth(0).boundingBox())!, (await cards.nth(1).boundingBox())!]) {
+        expect(box.x, `${width} px: left edge`).toBeGreaterThanOrEqual(40);
+        expect(box.x + box.width, `${width} px: right edge`).toBeLessThanOrEqual(width - 40);
+      }
+    }
   });
 });

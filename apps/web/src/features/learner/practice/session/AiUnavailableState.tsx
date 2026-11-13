@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Button } from '@/app-ui/Button';
+import { Button } from '@/ui/Button';
 import { SeeWordLink, useAiRefillLine } from './SessionNotice';
 import type { AiReason } from './use-practice-session';
 
@@ -39,30 +39,33 @@ export function AiUnavailableState({ reason, resetsAt, lemma, error, busy, onRet
     title = t('errorTitle');
   }
   return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-6">
-      <h1 className="text-title font-bold text-ink">{title}</h1>
-      {body && <p className="text-body text-ink">{body}</p>}
+    <section className="flex flex-col gap-3 rounded-wm-card bg-wm-surface p-6">
+      {/* Audit T21: this state replaces "preparing" without moving focus; the alert reads why AI stopped. */}
+      <div role="alert" className="flex flex-col gap-3">
+        <h1 className="font-wm-display text-wm-word text-wm-ink">{title}</h1>
+        {body && <p className="text-wm-base text-wm-ink">{body}</p>}
+      </div>
       {lemma && retryable && (
-        <p className="text-body">
+        <p className="text-wm-base">
           <SeeWordLink lemma={lemma} />
         </p>
       )}
       {error && (
-        <p role="alert" className="text-ui text-danger">
+        <p role="alert" className="text-wm-small text-wm-fail">
           {error}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
         {retryable && (
-          <Button variant="sticker" isPending={busy} onPress={onRetry}>
+          <Button variant="primary" isPending={busy} onPress={onRetry}>
             {t('retry')}
           </Button>
         )}
-        <Button variant={retryable ? 'quiet' : 'sticker'} onPress={onLater}>
+        <Button variant={retryable ? 'secondary' : 'primary'} onPress={onLater}>
           {t('later')}
         </Button>
       </div>
-      <p className="text-caption text-muted">{t('stayOpen')}</p>
+      <p className="text-wm-caption text-wm-muted">{t('stayOpen')}</p>
     </section>
   );
 }

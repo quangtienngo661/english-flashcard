@@ -23,6 +23,7 @@ import { PracticeStats } from '../weak/practice-stats.js';
 import { defaultSort, nextRoundOrder, sortWords, type SortKey, type SortableWord, type Source } from './order.js';
 import { aiCapOf, placementOf, ruleTypesFor, sessionMaxOf, withoutAi } from './session-limits.js';
 import { itemView, sessionView, type ItemView, type ItemWithQuestion, type SessionView } from './session-views.js';
+import { voidUnanswered } from './void-item.js';
 
 const transactionOptions = { timeout: 15_000, maxWait: 10_000 };
 const AVAILABILITY_BATCH = 50;
@@ -764,8 +765,7 @@ export class SessionsService {
   }
 
   private async voidItem(tx: Prisma.TransactionClient, item: ItemWithQuestion): Promise<void> {
-    // An item becomes void only while it has no final result.
-    await tx.practiceSessionItem.updateMany({ where: { id: item.id, result: null }, data: { result: 'void' } });
+    await voidUnanswered(tx, item.id);
   }
 
   private async finishRow(tx: Prisma.TransactionClient, sessionId: string): Promise<void> {

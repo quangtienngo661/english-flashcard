@@ -29,12 +29,18 @@ test('LA2#12: a Google-only learner sets a password from Settings, through the f
   await expect(page).toHaveURL(/\/vi\/app\/reset-password$/);
   expect(requests(page, 'POST', '/v1/auth/otp')[0]?.body).toMatchObject({ purpose: 'reset_password', email: 'lan@example.com' });
 
-  // The page was loaded by a full navigation: text typed before React has hydrated is thrown away, so type again until the button wakes up.
+  // The page was loaded by a full navigation: text typed before React has hydrated is thrown away, so type again until the fields
+  // hold it (QA5: the button is on from the start, so it no longer tells).
   const submit = page.getByRole('button', { name: vi.auth.reset.submit });
   await expect(async () => {
-    await page.getByRole('textbox', { name: vi.auth.reset.code }).fill('482913');
-    await page.getByLabel(vi.auth.reset.newPassword).fill('Aa1!aaaa');
+    // The code is six boxes (Figma 36:447): each digit moves focus to the next box.
+    await page.getByRole('textbox', { name: 'Chữ số 1' }).click();
+    await page.keyboard.type('482913');
+    await page.getByLabel(vi.auth.reset.newPassword, { exact: true }).fill('Aa1!aaaa');
+    await page.getByLabel(vi.auth.reset.confirmPassword, { exact: true }).fill('Aa1!aaaa');
     await expect(submit).toBeEnabled({ timeout: 1_000 });
+    await expect(page.getByRole('textbox', { name: 'Chữ số 6' })).toHaveValue('3', { timeout: 1_000 });
+    await expect(page.getByLabel(vi.auth.reset.confirmPassword, { exact: true })).toHaveValue('Aa1!aaaa', { timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
   await submit.click();
 

@@ -3,10 +3,12 @@
 import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { FullScreenSpinner, OfflineScreen } from '@/app-ui/States';
+import { OfflineScreen } from '@/ui/OfflineScreen';
+import { SkeletonPage } from '@/ui/Skeleton';
 import type { AppLocale } from '@/i18n/routing';
 import { createApiClient } from './api/client';
 import { prefixFix } from './locale-prefix';
+import { chromeShape } from './skeleton-shape';
 import { hardReplace } from './navigate';
 import { useSession } from './session/session-context';
 import type { SessionState } from './session/session-store';
@@ -52,7 +54,8 @@ export function RequireSession({ children }: { children: ReactNode }) {
   }, [state, store]);
 
   if (state.status === 'unavailable') return <OfflineScreen onRetry={() => void store?.bootstrap()} />;
-  if (state.status !== 'signed-in' || target) return <FullScreenSpinner />;
+  // A skeleton in the shape of the page being opened, not a spinner (design giao diện mới §5.5).
+  if (state.status !== 'signed-in' || target) return <SkeletonPage shape={chromeShape(pathname)} />;
   return <>{children}</>;
 }
 
@@ -63,6 +66,8 @@ function redirectFor(
   pathname: string,
 ): string | null {
   if (state.status === 'signed-out') {
+    // Account deleted in this tab: it is already loading the account-deleted page, which sign-in would replace (M7.7, R154).
+    if (state.deleted) return null;
     // The full page load drops the in-memory notice: the reason travels in the address (E3, E4).
     const reason = state.notice === 'expired' || state.notice === 'rate-limited' ? `&reason=${state.notice}` : '';
     return `/${locale}/app/login?next=${encodeURIComponent(here)}${reason}`;

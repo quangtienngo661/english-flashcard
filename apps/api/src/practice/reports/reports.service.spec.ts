@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Clock } from '../../common/clock/clock.js';
 import type { AppLogger } from '../../common/logging/app-logger.js';
+import type { ContentService } from '../../content/index.js';
 import type { EntitlementsService } from '../../entitlements/index.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { IdentityService } from '../../identity/profile/identity.service.js';
@@ -14,6 +15,7 @@ const NOW = new Date('2026-10-22T08:00:00Z');
 const USER = '11111111-1111-4111-8111-111111111111';
 const ITEM = '22222222-2222-4222-8222-222222222222';
 const SENSE = '33333333-3333-4333-8333-333333333333';
+const HIDDEN = '44444444-4444-4444-8444-444444444444';
 const reveal = { lemma: 'deploy', meaning: 'triển khai', definition_en: 'to put software into use' };
 const reason = (code: string, extra: Partial<ReportReasonRow> = {}): ReportReasonRow => ({
   code, labelVi: `vi ${code}`, labelEn: `en ${code}`, detailHintVi: null, detailHintEn: null, appliesTo: 'all', noteRequired: false,
@@ -47,13 +49,17 @@ const ruleQuestion = (askedPrivate = false, source = 'rule'): Question => ({
   hints: { level1: null, level2: null }, source, aiRequestId: null, aiMeta: null, aiCharged: false,
 });
 
-const make = (question: Question, options: { recent?: number; existing?: boolean } = {}) => {
+const make = (question: Question, options: { recent?: number; existing?: boolean; result?: string | null } = {}) => {
   const created: Record<string, unknown>[] = [];
   const tx = {
     $executeRaw: vi.fn(async () => 1),
-    practiceSessionItem: { findFirst: vi.fn(async () => ({
-      id: ITEM, userId: USER, senseId: SENSE, answerRaw: '0', answersTried: [], result: 'wrong', hintLevel: 0, question,
-    })) },
+    practiceSessionItem: {
+      findFirst: vi.fn(async () => ({
+        id: ITEM, userId: USER, senseId: SENSE, answerRaw: '0', answersTried: [],
+        result: options.result === undefined ? 'wrong' : options.result, hintLevel: 0, question,
+      })),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
     practiceReportReason: { findUnique: vi.fn(async ({ where }: { where: { code: string } }) => REASONS[where.code] ?? null) },
     practiceReport: {
       findUnique: vi.fn(async () => options.existing ? { id: 'r-0', itemId: ITEM, senseId: SENSE, reason: 'other', reasonLabel: 'Khác',
@@ -71,9 +77,11 @@ const make = (question: Question, options: { recent?: number; existing?: boolean
   };
   const settings = { get: async () => ({ practice: { reportsPerHour: 5 } }) } as unknown as SettingsService;
   const clock = { now: () => NOW } as Clock;
+  const content = { cardContent: vi.fn(async (_viewer: string, ids: string[], _language: string) =>
+    new Map(ids.filter((id) => id !== HIDDEN).map((id) => [id, { sense_id: id, lemma: `lemma-${id.slice(0, 4)}` }]))) };
   const service = new ReportsService(prisma as unknown as PrismaClient, clock, settings, new ReportReasonsService(prisma as never, clock, {} as IdentityService),
-    {} as IdentityService, {} as EntitlementsService, {} as AppLogger);
-  return { service, tx, prisma, created };
+    {} as IdentityService, {} as EntitlementsService, {} as AppLogger, content as unknown as ContentService);
+  return { service, tx, prisma, created, content };
 };
 const vi_ = { userId: USER, nativeLanguage: 'vi' as const };
 const en = { userId: USER, nativeLanguage: 'en' as const };
@@ -165,19 +173,47 @@ describe('ReportsService.create (design §9.2)', () => {
     const { service } = make(aiQuestion(), { recent: 5 });
     await expect(service.create(vi_, ITEM, input('ai_more_than_one_answer'))).rejects.toMatchObject({ problemType: 'rate-limited', status: 429 });
   });
+
+  it('owner 14/11/2026 (Cách A): an unanswered item is voided with the report, so next moves on and it never counts', async () => {
+    const { service, tx, created } = make(ruleQuestion(), { result: null });
+    await service.create(vi_, ITEM, input('meaning_wrong'));
+    expect(created).toHaveLength(1);
+    expect(tx.practiceSessionItem.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.practiceSessionItem.updateMany).toHaveBeenCalledWith({ where: { id: ITEM, result: null }, data: { result: 'void' } });
+  });
+
+  it('an answered item keeps its result: nothing is voided', async () => {
+    const { service, tx, created } = make(aiQuestion(), { result: 'correct' });
+    await service.create(vi_, ITEM, input('ai_more_than_one_answer'));
+    expect(created).toHaveLength(1);
+    expect(tx.practiceSessionItem.updateMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['report-exists', { existing: true }, 'meaning_wrong'],
+    ['rate-limited', { recent: 5 }, 'meaning_wrong'],
+    ['validation-failed', {}, 'nope'],
+  ])('a refused report (%s) voids nothing', async (type, options, code) => {
+    const { service, tx } = make(ruleQuestion(), { ...options, result: null });
+    await expect(service.create(vi_, ITEM, input(code))).rejects.toMatchObject({ problemType: type });
+    expect(tx.practiceSessionItem.updateMany).not.toHaveBeenCalled();
+  });
 });
 
 describe('ReportsService.listMine (design §9.2, D27)', () => {
-  it('lists only the learner\'s reports, newest first, with refunded and resolved_at', async () => {
+  const stored = (extra: Record<string, unknown> = {}) => ({
+    id: 'r-1', itemId: ITEM, senseId: SENSE, reasonLabel: 'Có hơn một đáp án đúng', status: 'confirmed', refunded: true,
+    createdAt: NOW, resolvedAt: new Date('2026-10-23T08:00:00Z'), questionSnapshot: { type: 'cloze', prompt: {} }, questionSource: 'ai',
+    ...extra,
+  });
+
+  it("lists only the learner's reports, newest first, with refunded, resolved_at, lemma, question_type and ai", async () => {
     const { service, prisma } = make(aiQuestion());
-    prisma.practiceReport.findMany.mockResolvedValue([{
-      id: 'r-1', itemId: ITEM, senseId: SENSE, reasonLabel: 'Có hơn một đáp án đúng', status: 'confirmed', refunded: true,
-      createdAt: NOW, resolvedAt: new Date('2026-10-23T08:00:00Z'),
-    }]);
-    expect(await service.listMine(USER, { pageSize: 20 })).toEqual({
+    prisma.practiceReport.findMany.mockResolvedValue([stored()]);
+    expect(await service.listMine(vi_, { pageSize: 20 })).toEqual({
       items: [{
         id: 'r-1', item_id: ITEM, sense_id: SENSE, reason_label: 'Có hơn một đáp án đúng', status: 'confirmed', refunded: true,
-        created_at: NOW.toISOString(), resolved_at: '2026-10-23T08:00:00.000Z',
+        created_at: NOW.toISOString(), resolved_at: '2026-10-23T08:00:00.000Z', lemma: 'lemma-3333', question_type: 'cloze', ai: true,
       }],
       next_page_token: null,
     });
@@ -186,14 +222,38 @@ describe('ReportsService.listMine (design §9.2, D27)', () => {
     }));
   });
 
+  it('M6.1: a page of three reports reads the words with one cardContent call; a hidden sense gives lemma null; rule → ai false', async () => {
+    const { service, prisma, content } = make(aiQuestion());
+    const other = '55555555-5555-4555-8555-555555555555';
+    prisma.practiceReport.findMany.mockResolvedValue([
+      stored({ id: 'r-1' }),
+      stored({ id: 'r-2', senseId: HIDDEN, questionSnapshot: { type: 'type_word' }, questionSource: 'rule' }),
+      stored({ id: 'r-3', senseId: other, questionSnapshot: {}, questionSource: 'rule' }),
+    ]);
+    const { items } = await service.listMine(en, { pageSize: 20 });
+    expect(content.cardContent).toHaveBeenCalledTimes(1);
+    expect(content.cardContent).toHaveBeenCalledWith(USER, [SENSE, HIDDEN, other], 'en');
+    expect(items.map(({ lemma, question_type, ai }) => ({ lemma, question_type, ai }))).toEqual([
+      { lemma: 'lemma-3333', question_type: 'cloze', ai: true },
+      { lemma: null, question_type: 'type_word', ai: false },
+      { lemma: 'lemma-5555', question_type: null, ai: false },
+    ]);
+  });
+
+  it('an empty page makes no cardContent call', async () => {
+    const { service, content } = make(aiQuestion());
+    expect(await service.listMine(vi_, { pageSize: 20 })).toEqual({ items: [], next_page_token: null });
+    expect(content.cardContent).not.toHaveBeenCalled();
+  });
+
   it('a page token from another learner or another list is refused', async () => {
     const { service, prisma } = make(aiQuestion());
-    prisma.practiceReport.findMany.mockResolvedValue(Array.from({ length: 2 }, (_, index) => ({
-      id: `r-${index}`, itemId: null, senseId: SENSE, reasonLabel: 'x', status: 'open', refunded: null, createdAt: NOW, resolvedAt: null,
+    prisma.practiceReport.findMany.mockResolvedValue(Array.from({ length: 2 }, (_, index) => stored({
+      id: `r-${index}`, itemId: null, reasonLabel: 'x', status: 'open', refunded: null, resolvedAt: null,
     })));
-    const { next_page_token: token } = await service.listMine(USER, { pageSize: 1 });
+    const { next_page_token: token } = await service.listMine(vi_, { pageSize: 1 });
     expect(token).not.toBeNull();
-    await expect(service.listMine('someone-else', { pageSize: 1, pageToken: token! }))
+    await expect(service.listMine({ userId: 'someone-else', nativeLanguage: 'vi' }, { pageSize: 1, pageToken: token! }))
       .rejects.toMatchObject({ problemType: 'validation-failed' });
     await expect(service.list({ pageSize: 1, pageToken: token! })).rejects.toMatchObject({ problemType: 'validation-failed' });
   });
@@ -231,7 +291,7 @@ describe('ReportsService.resolve (design §9.3)', () => {
     const logger = { warn: vi.fn() };
     const service = new ReportsService(prisma as unknown as PrismaClient, { now: () => NOW } as Clock, {} as SettingsService,
       {} as ReportReasonsService, identity as unknown as IdentityService, ledger as unknown as EntitlementsService,
-      logger as unknown as AppLogger);
+      logger as unknown as AppLogger, {} as ContentService);
     return { service, prisma, ledger, logger, identity, current: () => row };
   };
 
@@ -338,7 +398,8 @@ describe('ReportsService.listRefunds (design §9.3, D33)', () => {
       findUserIdByEmail: vi.fn(async (_email: string) => found),
     };
     const service = new ReportsService({ practiceReport: { findMany } } as unknown as PrismaClient, { now: () => NOW } as Clock,
-      {} as SettingsService, {} as ReportReasonsService, identity as unknown as IdentityService, {} as EntitlementsService, {} as AppLogger);
+      {} as SettingsService, {} as ReportReasonsService, identity as unknown as IdentityService, {} as EntitlementsService, {} as AppLogger,
+      {} as ContentService);
     return { service, findMany, identity };
   };
 
@@ -412,7 +473,7 @@ describe('ReportsService.list / get (admin, authors and refundable)', () => {
     const identity = { emailsOf: vi.fn(async () => new Map([[STAFF, 'staff@example.com']])) };
     const service = new ReportsService({ practiceReport: { findMany, findUnique } } as unknown as PrismaClient, { now: () => NOW } as Clock,
       {} as SettingsService, {} as ReportReasonsService, identity as unknown as IdentityService, {} as EntitlementsService,
-      {} as AppLogger);
+      {} as AppLogger, {} as ContentService);
     return { service, findMany, findUnique, identity };
   };
 

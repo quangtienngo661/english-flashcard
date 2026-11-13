@@ -199,7 +199,18 @@ Object.assign(mocks, {
   }),
 });
 
-const pages = ['/legal', `/legal/${LEGAL_ID}`, '/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', `/ai/costs?batch=${COST_BATCH_ID}`, '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/configs/drafts/C4', '/ai/configs/history', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
+Object.assign(mocks, {
+  'GET /v1/admin/faq': () => ({
+    json: {
+      items: [
+        { id: '00000000-0000-4000-8000-0000000000f1', position: 10, question: 'Wordmet có miễn phí không?', answer: 'Có.', published: true, row_version: 1, updated_at: '2026-11-11T03:00:00.000Z', updated_by: null },
+        { id: '00000000-0000-4000-8000-0000000000f2', position: 20, question: 'Học trên điện thoại được không?', answer: 'Được.', published: false, row_version: 1, updated_at: '2026-11-11T03:00:00.000Z', updated_by: null },
+      ],
+    },
+  }),
+});
+
+const pages = ['/legal', `/legal/${LEGAL_ID}`, '/faq', '/faq/new', '/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', `/ai/costs?batch=${COST_BATCH_ID}`, '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/configs/drafts/C4', '/ai/configs/history', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {

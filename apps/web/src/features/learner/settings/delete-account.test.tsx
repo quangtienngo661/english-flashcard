@@ -2,9 +2,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AccountDeleted } from '../auth/AccountDeleted';
 import { DeleteAccountPage } from './DeleteAccountPage';
+import vi_ from '../../../../messages/vi.json';
 
 const replace = vi.fn();
 let search = '';
@@ -60,12 +61,41 @@ describe('DeleteAccountPage (design §9.4)', () => {
     const withPro = renderApp(<DeleteAccountPage />, {
       routes: { 'GET /v1/me/entitlements': () => Response.json({ ...ent(), plan: 'pro', pro_until: '2026-12-31T17:00:00.000Z' }), 'GET /v1/me/app-config': () => Response.json(CONFIG) },
     });
-    expect(await screen.findByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).toBeInTheDocument();
+    expect(await screen.findByRole('note')).toHaveTextContent('Thời gian Pro còn lại sẽ mất, không hoàn tiền.');
     expect(screen.getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
     withPro.unmount();
     renderApp(<DeleteAccountPage />, { routes: routes() });
     expect(await screen.findByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
     expect(screen.queryByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).not.toBeInTheDocument();
+  });
+
+  it('M7.5: the info card comes first in the DOM ("Những gì bị xóa" before "Xác nhận xóa"), the same reading order on every size', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    const confirm = await screen.findByRole('heading', { level: 2, name: 'Xác nhận xóa' });
+    const deleted = screen.getByRole('heading', { level: 3, name: 'Những gì bị xóa' });
+    expect(screen.getByRole('heading', { level: 3, name: 'Những gì còn được giữ' })).toBeInTheDocument();
+    expect(deleted.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Xác nhận xóa' })).getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+  });
+
+  it('M7.5: "Xóa vĩnh viễn" is the danger button', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    expect(await screen.findByRole('button', { name: 'Xóa vĩnh viễn' })).toHaveAttribute('data-variant', 'danger');
+  });
+
+  it('M7.5: the renewing-plan block sits in the "Xác nhận xóa" card instead of the form', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([SUB]) });
+    const card = await screen.findByRole('region', { name: 'Xác nhận xóa' });
+    expect(within(card).getByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();
+    expect(within(card).getByRole('link', { name: 'Đến trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(within(card).queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('M7.5: while the plan loads, the page shows the loading blocks', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([], { 'GET /v1/me/entitlements': () => new Promise<Response>(() => {}) as never }) });
+    expect(await screen.findByRole('status')).toHaveTextContent('Đang tải…');
+    expect(screen.queryByRole('button', { name: 'Xóa vĩnh viễn' })).not.toBeInTheDocument();
   });
 
   it.each(['active', 'grace', 'on_hold', 'trialing'])('a %s auto-renewing plan blocks the form and links to the plans page', async (status) => {
@@ -121,6 +151,20 @@ describe('DeleteAccountPage (design §9.4)', () => {
     expect(await screen.findByText('Email bạn gõ chưa khớp với email của tài khoản.')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
     expect(view.store.state.status).toBe('signed-in');
+  });
+
+  it('M7.2 defect 1: entitlements failing to load shows the generic error text with Thử lại, not a bare button', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes([], { 'GET /v1/me/entitlements': () => new Response(null, { status: 500 }) }) });
+    expect(await screen.findByText(vi_.App.errors.generic)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+  });
+
+  it('M7.2 defect 2: a 409 renewal-not-cancelled says the plan still renews and where to cancel it', async () => {
+    const view = renderApp(<DeleteAccountPage />, { routes: routes([], { 'POST /v1/me/account/delete': () => problem(409, 'renewal-not-cancelled') }) });
+    await fill(view, { password: 'pw' });
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
+    expect(await screen.findByText('Gói của bạn đang tự gia hạn. Hủy gói ở trang Gói học rồi thử lại.')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('P3: a wrong password is a 400 invalid-current-password: its text, and the transport neither refreshes nor sends the request again', async () => {

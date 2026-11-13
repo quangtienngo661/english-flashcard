@@ -1,87 +1,133 @@
 'use client';
 
+import { Check, CircleAlert } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { BackLink } from '@/app-chrome/BackLink';
+import { PageTitle } from '@/ui/PageTitle';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { useAppConfig, useEntitlements } from '@/app-shell/queries';
 import { useApi, useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { Button } from '@/app-ui/Button';
-import { Checkbox } from '@/app-ui/Checkbox';
-import { TextField } from '@/app-ui/TextField';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { FormError } from '../auth/AuthCard';
+import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { Checkbox } from '@/ui/Checkbox';
+import { PasswordField } from '@/ui/PasswordField';
+import { SkeletonBlocks } from '@/ui/Skeleton';
+import { ErrorState } from '@/ui/States';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
+import { TextField } from '@/ui/TextField';
+import { FormError } from '../auth/AuthHeading';
 import { isAutoRenewing, subscriptionsOf } from '../plans/auto-renewing';
 
-/** Design §9.4: what goes, what stays, the block for a renewing plan, then the three confirmations and the red button. */
+const CARD = 'rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6';
+
+/**
+ * Design §9.4, Figma 121:4503 / 121:4634: what goes and what stays, then "Xác nhận xóa" (the Pro-time note, then the block for a renewing
+ * plan or the three confirmations and the red button). The info card is first in the DOM, so every size reads it first; from 768 px CSS
+ * `order` moves the confirm card to the left (400 px), as the desktop frame draws it.
+ */
 export function DeleteAccountPage() {
   const t = useTranslations('App.deleteAccount');
   const locale = useLocale();
   const { state } = useSession();
   const entitlements = useEntitlements();
   const config = useAppConfig();
+  const errorText = useErrorMessage();
   if (state.status !== 'signed-in') return null;
 
   let body;
-  if (entitlements.isPending || config.isPending) body = <FullScreenSpinner />;
-  else if (entitlements.isError) body = <ErrorState message="" onRetry={() => void entitlements.refetch()} />;
+  if (entitlements.isPending || config.isPending) body = <SkeletonBlocks />;
+  else if (entitlements.isError) body = <ErrorState message={errorText(entitlements.error)} onRetry={() => void entitlements.refetch()} />;
   else {
     const renewing = subscriptionsOf(entitlements.data.sources).some(isAutoRenewing);
-    const years = config.data?.account?.transaction_retention_years;
     body = (
-      <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <Lists years={years} />
-        {entitlements.data.pro_until && <p className="text-ui text-ink">{t('proLost')}</p>}
-        {renewing ? (
-          <div role="alert" className="flex flex-col gap-3 rounded-card border border-danger bg-danger-soft p-5">
-            <p className="text-body font-semibold text-ink">{t('blocked')}</p>
-            <Link href={`/${locale}/app/plans`} className="w-fit text-ui font-semibold text-primary underline underline-offset-2">
-              {t('blockedLink')}
-            </Link>
-          </div>
-        ) : (
-          <DeleteForm hasPassword={(state.me.sign_in_methods ?? ['password']).includes('password')} />
-        )}
+      <div className="flex flex-col gap-4 md:max-w-240 md:flex-row md:items-start md:gap-5">
+        <Lists years={config.data?.account?.transaction_retention_years} />
+        <ConfirmCard proLost={Boolean(entitlements.data.pro_until)}>
+          {renewing ? (
+            <div role="alert" className="flex flex-col items-start gap-2">
+              <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('blocked')}</p>
+              <Link href={`/${locale}/app/plans`} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal)}>
+                {t('blockedLink')}
+              </Link>
+            </div>
+          ) : (
+            <DeleteForm hasPassword={(state.me.sign_in_methods ?? ['password']).includes('password')} />
+          )}
+        </ConfirmCard>
       </div>
     );
   }
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/settings`, label: t('back') }}>
+    <>
+      <BackLink href={`/${locale}/app/settings`} label={t('back')} />
       <PageTitle>{t('title')}</PageTitle>
       {body}
-    </AppShell>
+    </>
+  );
+}
+
+function ConfirmCard({ proLost, children }: { proLost: boolean; children: ReactNode }) {
+  const t = useTranslations('App.deleteAccount');
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className={cn(CARD, 'flex flex-col gap-4 md:order-1 md:w-100 md:shrink-0')}>
+      <h2 id={headingId} className="font-wm-display text-xl font-bold text-wm-ink">
+        {t('confirmTitle')}
+      </h2>
+      {proLost && (
+        <div role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 text-wm-fail">
+          <CircleAlert aria-hidden className="mt-0.5 size-4.5 shrink-0" />
+          <p className="font-wm-sans text-wm-small-strong">{t('proLost')}</p>
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function ListItems({ marker, items }: { marker: 'deleted' | 'kept'; items: string[] }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {items.map((text) => (
+        <li key={text} className="flex gap-1.5 font-wm-sans text-wm-small text-wm-ink">
+          <span aria-hidden className={cn('w-3.5 shrink-0 font-bold', marker === 'deleted' ? 'text-wm-fail' : 'text-wm-muted')}>
+            {marker === 'deleted' ? '×' : '·'}
+          </span>
+          <span className="min-w-0">{text}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 function Lists({ years }: { years: number | undefined }) {
   const t = useTranslations('App.deleteAccount');
-  const deleted = ['learning', 'privateWords', 'plans', 'sessions'] as const;
+  const heading = 'font-wm-display text-wm-base font-bold text-wm-ink';
+  const deleted = (['learning', 'privateWords', 'plans', 'sessions'] as const).map((key) => t(`deleted.${key}`));
+  const kept = [
+    years === undefined ? t('kept.paymentsNoYears') : t('kept.payments', { years }),
+    t('kept.reports'),
+    t('kept.usage'),
+    t('kept.totals'),
+  ];
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <section className="flex flex-col gap-2 rounded-card border border-border bg-surface p-5">
-        <h2 className="text-body font-semibold text-ink">{t('deletedTitle')}</h2>
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-ui text-ink">
-          {deleted.map((key) => (
-            <li key={key}>{t(`deleted.${key}`)}</li>
-          ))}
-        </ul>
-      </section>
-      <section className="flex flex-col gap-2 rounded-card border border-border bg-surface p-5">
-        <h2 className="text-body font-semibold text-ink">{t('keptTitle')}</h2>
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-ui text-ink">
-          <li>{years === undefined ? t('kept.paymentsNoYears') : t('kept.payments', { years })}</li>
-          <li>{t('kept.reports')}</li>
-          <li>{t('kept.usage')}</li>
-          <li>{t('kept.totals')}</li>
-        </ul>
-      </section>
+    <div className={cn(CARD, 'flex flex-col gap-4 md:order-2 md:min-w-0 md:flex-1 md:gap-6')}>
+      <div className="flex flex-col gap-2">
+        <h3 className={heading}>{t('deletedTitle')}</h3>
+        <ListItems marker="deleted" items={deleted} />
+      </div>
+      {/* Phone: a hairline above the second list (Figma 121:4654); desktop: only the gap. */}
+      <div className="flex flex-col gap-2 border-t border-wm-line pt-4 md:border-t-0 md:pt-0">
+        <h3 className={heading}>{t('keptTitle')}</h3>
+        <ListItems marker="kept" items={kept} />
+      </div>
     </div>
   );
 }
@@ -138,24 +184,31 @@ function DeleteForm({ hasPassword }: { hasPassword: boolean }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 md:p-6">
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <Checkbox isSelected={understood} onChange={setUnderstood}>
         {t('understand')}
       </Checkbox>
       <TextField label={t('typeEmail')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="off" spellCheck={false} />
       {hasPassword ? (
-        <TextField label={t('password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" />
+        <PasswordField label={t('password')} value={password} onChange={setPassword} autoComplete="current-password" />
       ) : (
-        <div className="flex flex-col gap-2">
-          <Button type="button" variant="quiet" className="w-fit" onPress={() => void confirmWithGoogle()} isPending={googleBusy} isDisabled={proven}>
-            {proven ? t('googleConfirmed') : t('confirmWithGoogle')}
-          </Button>
-          {reauth === 'wrong-account' && <p role="alert" className="text-caption text-danger">{t('wrongAccount')}</p>}
-          {reauth === 'failed' && <p role="alert" className="text-caption text-danger">{t('googleFailed')}</p>}
+        <div className="flex flex-col items-start gap-2">
+          {proven ? (
+            <p className="flex items-center gap-1.5 font-wm-sans text-wm-small-strong text-wm-pass">
+              <Check aria-hidden className="size-4 shrink-0" />
+              {t('googleConfirmed')}
+            </p>
+          ) : (
+            <Button type="button" variant="secondary" onPress={() => void confirmWithGoogle()} isPending={googleBusy}>
+              {t('confirmWithGoogle')}
+            </Button>
+          )}
+          {reauth === 'wrong-account' && <p role="alert" className="font-wm-sans text-wm-caption text-wm-fail">{t('wrongAccount')}</p>}
+          {reauth === 'failed' && <p role="alert" className="font-wm-sans text-wm-caption text-wm-fail">{t('googleFailed')}</p>}
         </div>
       )}
       <FormError message={error} />
-      <Button type="submit" variant="danger" size="lg" className="w-fit" isPending={busy} isDisabled={!ready}>
+      <Button type="submit" variant="danger" className="self-start" isPending={busy} isDisabled={!ready}>
         {t('submit')}
       </Button>
     </form>

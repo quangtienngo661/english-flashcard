@@ -1,121 +1,249 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import { AppShell } from '@/app-chrome/AppShell';
-import { PageTitle } from '@/app-chrome/PageTitle';
-import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { Button } from '@/app-ui/Button';
-import { Select } from '@/app-ui/Select';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
-import { GroupCard, sortForToday, waiting } from './GroupCard';
+import { ArrowRight } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
+import { cn } from '@/lib/cn';
+import { Button } from '@/ui/Button';
+import { Skeleton } from '@/ui/Skeleton';
+import { LevelBar } from '@/ui/LevelBar';
+import { TextButton } from '@/ui/TextButton';
+import { useAddWord } from '../add-word/add-word-context';
+import { carouselOrder, rhythm } from './carousel';
+import { readCentre, rememberCentre } from './centre-memory';
+import { waiting } from './deck-actions';
+import { DeckButtons } from './DeckButtons';
+import { ms, rememberRect, token, useFlipFrom } from './flip';
+import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
+import { GroupPicker } from './GroupPicker';
 import { useGroups, type GroupSummary } from './groups-api';
-import { TopicSuggestions } from './TopicSuggestions';
 
-type Filter = 'all' | 'waiting' | 'done';
-/** K/16b: the search box appears once the list is long enough to need it. */
-const SEARCH_FROM = 10;
+/** One-letter and arrow keys are ignored while typing or inside a dialog (design §8.5; same filter as `add-word-context.tsx`). */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') !== null;
+}
 
-/** K/16, K/16b, K/17: every deck, a filter, a search from 10 decks, the new-deck tile and topic suggestions. */
+/** Nhóm (Figma 82:3213 / 82:3368, design §8.2, §8.5): the "Trượt mờ" carousel, the group picker (F) and the centre group's actions. */
 export function GroupListPage() {
   const t = useTranslations('App.groups');
-  const errorText = useErrorMessage();
+  const tToday = useTranslations('App.today');
+  const tCommon = useTranslations('App.common');
   const groups = useGroups();
   const { open, dialogs } = useGroupDialogs();
-  const [filter, setFilter] = useState<Filter>('all');
-  const [query, setQuery] = useState('');
-  const all = sortForToday(groups.data?.items ?? []);
-  const words = all.reduce((sum, g) => sum + g.total, 0);
-  const needle = query.trim().toLocaleLowerCase();
-  const shown = all.filter(
-    (g) =>
-      // A deck with no words is not "done today" (owner 06/11/2026): only "Tất cả" lists it.
-      (filter === 'all' || (filter === 'waiting' ? waiting(g) > 0 : waiting(g) === 0 && g.total > 0)) &&
-      (!needle || g.name.toLocaleLowerCase().includes(needle)),
-  );
-  const actions = {
-    onRename: (g: GroupSummary) => open({ kind: 'rename', group: g }),
-    onDelete: (g: GroupSummary) => open({ kind: 'delete', group: g }),
-  };
+  const order = carouselOrder(groups.data?.items ?? []);
+  // A group just made becomes the centre once the reloaded list has it (owner 14/11/2026); remembered for an empty page too.
+  const [made, setMade] = useState<string | null>(null);
+  const create = () =>
+    open({
+      kind: 'create',
+      onCreated: (id) => {
+        rememberCentre(id);
+        setMade(id);
+      },
+    });
 
   return (
-    <AppShell variant="main" fab>
-      <PageTitle
-        aside={
-          <Button variant="sticker" onPress={() => open({ kind: 'create' })}>
-            <Plus aria-hidden className="size-4" />
-            {t('create')}
-          </Button>
-        }
-        meta={
-          all.length > 0 && (
-            <span className="rounded-full bg-surface px-2.5 py-0.5 text-caption font-medium text-muted">{t('summary', { groups: all.length, words })}</span>
-          )
-        }
-      >
-        {t('title')}
-      </PageTitle>
+    <>
       {groups.isPending ? (
-        <FullScreenSpinner />
-      ) : groups.isError ? (
-        <ErrorState message={errorText(groups.error)} onRetry={() => void groups.refetch()} />
-      ) : (
-        <div className="flex flex-col gap-8">
-          {all.length > 0 && (
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="w-full sm:w-64">
-                <Select
-                  label={t('filterLabel')}
-                  hideLabel
-                  value={filter}
-                  onChange={(id) => setFilter(id as Filter)}
-                  items={[
-                    { id: 'all', label: t('filterAll', { count: all.length }) },
-                    { id: 'waiting', label: t('filterWaiting') },
-                    { id: 'done', label: t('filterDone') },
-                  ]}
-                />
-              </div>
-              {all.length >= SEARCH_FROM && (
-                <label className="flex min-h-control w-full items-center gap-2 rounded-control border-2 border-border-strong bg-surface px-3 sm:w-72">
-                  <Search aria-hidden className="size-4 text-muted" />
-                  <input
-                    type="search"
-                    aria-label={t('search', { count: all.length })}
-                    placeholder={t('search', { count: all.length })}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="min-w-0 flex-1 bg-transparent text-ui text-ink outline-none placeholder:text-placeholder"
-                  />
-                </label>
-              )}
-            </div>
-          )}
-          <ul aria-label={t('title')} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-            {shown.map((group, i) => (
-              <GroupCard key={group.id} group={group} index={i} actions={actions} />
-            ))}
-            <li className="flex">
-              <button
-                type="button"
-                onClick={() => open({ kind: 'create' })}
-                className="flex min-h-48 w-full flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border-strong p-4 text-center outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <span className="flex size-10 items-center justify-center rounded-full border-2 border-ink">
-                  <Plus aria-hidden className="size-5" />
-                </span>
-                <span className="text-ui font-semibold text-ink">{t('createNew')}</span>
-                <span className="text-caption text-muted">{t('createNewHint')}</span>
-              </button>
-            </li>
-          </ul>
-          {all.length > 0 && shown.length === 0 && <p className="text-body text-muted">{t('noMatch')}</p>}
-          <TopicSuggestions />
+        <div role="status" className="flex flex-col items-center gap-5">
+          <span className="sr-only">{tCommon('loading')}</span>
+          <Skeleton className="h-11 w-56 self-start" />
+          <Skeleton className="h-92 w-72 rounded-wm-dialog" />
         </div>
+      ) : groups.isError ? (
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
+          <p className="text-wm-base text-wm-ink">{tCommon('errorPageTitle')}</p>
+          <Button variant="secondary" onPress={() => void groups.refetch()}>
+            {tCommon('retry')}
+          </Button>
+        </div>
+      ) : order.length === 0 ? (
+        <>
+          <Title />
+          <section className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card md:p-8">
+            <h2 className="font-wm-display text-wm-card-title text-wm-ink">{tToday('emptyTitle')}</h2>
+            <p className="text-wm-base text-wm-muted">{tToday('emptyBody')}</p>
+            <Button size="lg" onPress={create}>
+              {tToday('createFirst')}
+            </Button>
+          </section>
+        </>
+      ) : (
+        <Carousel order={order} onCreate={create} createLabel={t('create')} made={made} onMadeShown={() => setMade(null)} />
       )}
       {dialogs}
-    </AppShell>
+    </>
+  );
+}
+
+function Title({ children }: { children?: ReactNode }) {
+  const t = useTranslations('App.groups');
+  return (
+    <div className="mb-5 flex flex-col gap-1">
+      <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-4xl">{t('title')}</h1>
+      {children}
+    </div>
+  );
+}
+
+function Carousel({
+  order,
+  onCreate,
+  createLabel,
+  made,
+  onMadeShown,
+}: {
+  order: GroupSummary[];
+  onCreate: () => void;
+  createLabel: string;
+  made: string | null;
+  onMadeShown: () => void;
+}) {
+  const t = useTranslations('App.groups');
+  const locale = useLocale();
+  const router = useRouter();
+  // The group shown last opens again (back from Một nhóm); one that is gone falls back to the first.
+  const [centreId, setCentreId] = useState(() => {
+    const remembered = readCentre();
+    return remembered && order.some((g) => g.id === remembered) ? remembered : order[0].id;
+  });
+  const [announce, setAnnounce] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const centreRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  // Back from Một nhóm: the stack flies back to the centre and the other parts sharpen in.
+  useFlipFrom('group-stack-back', centreRef, pageRef, 'wm-carousel-in');
+  const found = order.findIndex((g) => g.id === centreId);
+  const centre = found === -1 ? 0 : found;
+  const group = order[centre];
+  const waitingGroups = order.filter((g) => waiting(g) > 0);
+  const due = waitingGroups.reduce((sum, g) => sum + waiting(g), 0);
+
+  function goTo(index: number) {
+    const target = order[index];
+    if (!target || index === centre) return;
+    setCentreId(target.id);
+    rememberCentre(target.id);
+    setAnnounce(t('live', { name: target.name, count: waiting(target) }));
+  }
+  function step(d: number) {
+    if (order.length < 2) return;
+    goTo((centre + d + order.length) % order.length);
+  }
+  // Opening (motion doc §3): the centre stack lifts and every other part blurs out in 170 ms, then the page changes and the
+  // stack flies to the group head. Reduced motion: the page changes at once.
+  const opening = useRef(false);
+  function openGroup() {
+    const go = () => {
+      if (centreRef.current) rememberRect('group-stack', centreRef.current);
+      router.push(`/${locale}/app/group?id=${group.id}`);
+    };
+    if (reduced) return go();
+    if (opening.current) return;
+    opening.current = true;
+    pageRef.current?.classList.add('wm-carousel-out');
+    window.setTimeout(go, ms(token('--transition-duration-wm-lift', '170ms')));
+  }
+  function onOpenLink(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    openGroup();
+  }
+
+  const keys = useRef({ step, openGroup, goTo });
+  useEffect(() => {
+    keys.current = { step, openGroup, goTo };
+  });
+  // The new group moves in with the carousel's own step motion, then `made` clears so a later reload does not pull it back.
+  const madeIndex = made === null ? -1 : order.findIndex((g) => g.id === made);
+  useEffect(() => {
+    if (madeIndex === -1) return;
+    keys.current.goTo(madeIndex);
+    onMadeShown();
+  }, [madeIndex, onMadeShown]);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        keys.current.step(event.key === 'ArrowRight' ? 1 : -1);
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        keys.current.openGroup();
+      } else if (event.key === 'f' || event.key === 'F') {
+        event.preventDefault();
+        setPickerOpen(true);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  return (
+    <div ref={pageRef} className="gpage flex flex-col gap-4 md:gap-5">
+      <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
+        <Title>
+          <p className="text-wm-meta text-wm-muted">
+            <span className="md:hidden">{t('subtitlePhone', { due, groups: waitingGroups.length })}</span>
+            <span className="hidden md:inline">{t('subtitle', { due, groups: waitingGroups.length })}</span>
+          </p>
+        </Title>
+        <div className="mb-5 flex items-center justify-between gap-4 md:justify-end">
+          <GroupPicker
+            groups={order}
+            centreId={group.id}
+            isOpen={pickerOpen}
+            onOpenChange={setPickerOpen}
+            onPick={(id) => goTo(order.findIndex((g) => g.id === id))}
+          />
+          <TextButton tone="add" onPress={onCreate} className="shrink-0 text-wm-button">
+            {createLabel}
+          </TextButton>
+        </div>
+      </div>
+      <GroupCarousel groups={order} centre={centre} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
+      <p aria-live="polite" className="sr-only">
+        {announce}
+      </p>
+      <Below key={group.id} group={group} onOpen={onOpenLink} />
+    </div>
+  );
+}
+
+/**
+ * Under the arc (mockup L505-506, L885-890): the "nhịp ôn: Mới → Bậc 5" eyebrow, the words per level (420 px), Học · Ôn, "Xem nhóm →",
+ * "Thêm từ" (desktop). Keyed by the group, so the three rows rise in again for each one (`.gcar-rise`, 460 ms, 45 ms apart).
+ */
+function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEvent<HTMLAnchorElement>) => void }) {
+  const t = useTranslations('App.groups');
+  const locale = useLocale();
+  const { open } = useAddWord();
+  return (
+    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
+      <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
+      <div className="w-full max-w-105">
+        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
+      </div>
+      <DeckButtons group={group} className="gdeck justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="gdeck-btn w-37.5 max-md:w-32" />
+      <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
+        <Link
+          href={`/${locale}/app/group?id=${group.id}`}
+          prefetch
+          onClick={onOpen}
+          className="flex min-h-11 items-center gap-1 text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+        >
+          {t('open')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
+        </Link>
+        <TextButton tone="muted" onPress={() => open(undefined, { groupId: group.id })} className={cn('hidden text-wm-button md:inline-flex')}>
+          {t('addWord')}
+        </TextButton>
+      </div>
+    </div>
   );
 }

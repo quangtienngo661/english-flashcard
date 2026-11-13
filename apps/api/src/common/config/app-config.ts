@@ -22,7 +22,9 @@ export type RateLimitRuleName =
   | 'entitlements.lookup'
   | 'auth.google.ip'
   | 'auth.delete.user'
-  | 'auth.captcha.ip';
+  | 'auth.captcha.ip'
+  | 'public.prices.ip'
+  | 'public.faq.ip';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -183,6 +185,10 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
   // Calls to Cloudflare siteverify per IP, counted only in `real` mode before the call (launch prep A, design 4.2).
   'auth.captcha.ip': { by: 'ip', max: 60, windowSeconds: 60 },
+  // Giao diện mới §10.6: the landing page reads the Pro prices at build time; 60 a minute per IP.
+  'public.prices.ip': { by: 'ip', max: 60, windowSeconds: 60 },
+  // Giao diện mới §10.7: the landing page reads the FAQ at build time; its own counter, so it does not share the prices one.
+  'public.faq.ip': { by: 'ip', max: 60, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);

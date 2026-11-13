@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useMemo } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
-import type { Pronunciation } from '../word/pronunciation';
+import type { Pronunciation } from '@/lib/speech/pronunciation';
 
 export type Cell = 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -19,6 +19,10 @@ export type GroupSummary = {
   backlog: number;
   /** Due and new cards before the daily caps (the deck page filter counts). */
   available: { due: number; new: number };
+  /** Lemma of the next visible card in today's queue; `null` with nothing waiting. Optional so older fixtures still type. */
+  next_lemma?: string | null;
+  /** The newest review in this group; `lemma` is `null` once the sense is hidden. `at` is an ISO time. */
+  last_reviewed?: { lemma: string | null; at: string } | null;
 };
 
 /** `GET /v1/groups/{id}`. */

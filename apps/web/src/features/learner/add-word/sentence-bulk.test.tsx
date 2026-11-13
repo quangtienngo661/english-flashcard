@@ -2,8 +2,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { BulkAddSheet } from './BulkAddSheet';
 
@@ -84,6 +84,7 @@ describe('BulkAddSheet (K/43, M/44)', () => {
     await waitFor(() => expect(calls.some((c) => c.path === `/v1/groups/${NEW}/items/bulk`)).toBe(true));
     expect(calls.find((c) => c.path === `/v1/groups/${NEW}/items/bulk`)!.body).toEqual({ level: 'A2', topic: 'food' });
     expect(await screen.findByText('Đã thêm 38 từ vào nhóm “Ẩm thực · A2”. 2 từ đã có trong nhóm, 3 từ chức năng bỏ qua, 0 từ không vừa vì nhóm đã đầy.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', `/vi/app/group?id=${NEW}`);
   });
 
   it('can add to an existing deck instead', async () => {

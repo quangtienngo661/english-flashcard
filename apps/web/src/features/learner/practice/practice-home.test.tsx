@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import type { Route } from '@/app-shell/session/test-support';
 import { PracticePage } from './PracticePage';
 
@@ -73,7 +73,9 @@ describe('PracticePage (K/51)', () => {
   it('the big card starts today\'s words: "Bắt đầu N câu" with N = default_questions_per_session', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText('34 từ trong 3 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    // Figma 99:3169: the count is big, then the questions and their types.
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '34 từ trong 3 nhóm')).toBeInTheDocument();
+    expect(within(hero).getByText('12 câu, trộn ba kiểu: Trắc nghiệm, Đúng/sai, Gõ từ.')).toBeInTheDocument();
     await userEvent.click(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/practice/session'));
     const [start] = starts(view.calls);
@@ -118,13 +120,14 @@ describe('PracticePage (K/51)', () => {
     expect(starts(view.calls)).toHaveLength(0);
   });
 
-  it('each other card shows an icon-only [Tùy chỉnh] next to its start (owner 27/10/2026)', async () => {
+  it('each other row shows a boxed [Tùy chỉnh] with its word next to its start (owner 10/11/2026, was icon-only)', async () => {
     renderApp(<PracticePage />, { routes: routes() });
     const card = await screen.findByRole('listitem', { name: 'Từ hay sai' });
     const start = await within(card).findByRole('button', { name: 'Luyện 6 từ' });
     const customize = within(card).getByRole('button', { name: 'Tùy chỉnh: Từ hay sai' });
     expect(start.parentElement).toContainElement(customize);
-    expect(customize).toHaveTextContent('');
+    expect(customize).toHaveTextContent('Tùy chỉnh');
+    expect(customize).toHaveAttribute('data-variant', 'secondary');
   });
 
   it('Từ hay sai: the two newest weak words, "+N từ", and the start sends source weak', async () => {
@@ -251,97 +254,7 @@ describe('A session left open (D9, E34, E35)', () => {
   });
 });
 
-describe('Customise dialog (K/54, D10, without the AI section)', () => {
-  async function openFor(source: string, over: Record<string, Route> = {}) {
-    const view = renderApp(<PracticePage />, { routes: routes(over) });
-    const list = await screen.findByRole('list', { name: 'Luyện theo nguồn khác' });
-    await userEvent.click(within(list).getByRole('button', { name: `Tùy chỉnh: ${source}` }));
-    return { view, dialog: await screen.findByRole('dialog', { name: /Tùy chỉnh phiên/ }) };
-  }
-
-  it('three type boxes with no descriptions, no notes; the count stops at max_questions_per_session', async () => {
-    const { dialog } = await openFor('Theo nhóm');
-    const boxes = within(dialog).getAllByRole('checkbox');
-    expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual(['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']);
-    expect(boxes.every((b) => (b as HTMLInputElement).checked)).toBe(true);
-    expect(within(dialog).queryByText('4 lựa chọn, chọn từ đúng')).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/Theo câu: một câu ví dụ/)).not.toBeInTheDocument();
-    expect(within(dialog).getByText('tối đa 20')).toBeInTheDocument();
-    const more = within(dialog).getByRole('button', { name: 'Thêm 1 câu' });
-    for (let i = 0; i < 10; i++) await userEvent.click(more);
-    expect(within(dialog).getByRole('spinbutton', { name: 'Số câu' })).toHaveValue('20');
-    expect(more).toBeDisabled();
-  });
-
-  it('Kiểu đề shows only while Gõ từ is chosen', async () => {
-    const { dialog } = await openFor('Luyện tất cả');
-    expect(within(dialog).getByRole('button', { name: /Kiểu đề/ })).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Gõ từ' }));
-    expect(within(dialog).queryByRole('button', { name: /Kiểu đề/ })).not.toBeInTheDocument();
-  });
-
-  it('with no type chosen the start is off and the dialog says why', async () => {
-    const { dialog } = await openFor('Luyện tất cả');
-    for (const name of ['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']) await userEvent.click(within(dialog).getByRole('checkbox', { name }));
-    expect(within(dialog).getByText('Chọn ít nhất một kiểu câu.')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: /^Bắt đầu/ })).toBeDisabled();
-  });
-
-  it('Theo nhóm: deck, filter, types, count and order go into the start body', async () => {
-    const { view, dialog } = await openFor('Theo nhóm');
-    expect(within(dialog).getByText('Theo nhóm')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: /Nhóm/ }));
-    await userEvent.click(await screen.findByRole('option', { name: /IELTS/ }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /Lọc từ/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Cần ôn hôm nay' }));
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Đúng/sai' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bớt 1 câu' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /Thêm tùy chọn/ }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /^Ngẫu nhiên|Thứ tự$|^Ưu tiên, đến hạn, rồi từ mới Thứ tự/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Ngẫu nhiên' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 11 câu' }));
-    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toEqual({
-      source: 'group', group_id: IELTS, group_filter: 'due', types: ['mcq_definition', 'type_word'], prompt_style: 'mixed', count: 11, sort: 'random',
-    });
-  });
-
-  it('a stage and the word filter exclude each other (one group_filter in the API)', async () => {
-    const { view, dialog } = await openFor('Theo nhóm');
-    await userEvent.click(within(dialog).getByRole('button', { name: /Lọc từ/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Đang ưu tiên' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /Ngăn/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Ngăn 2' }));
-    expect(within(dialog).getByRole('button', { name: /Lọc từ/ })).toHaveTextContent('Mọi từ');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
-    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toMatchObject({ group_filter: '2' });
-  });
-
-  it('Từ hay sai: the deck list counts weak words; a deck goes along as group_id', async () => {
-    const { view, dialog } = await openFor('Từ hay sai');
-    await userEvent.click(within(dialog).getByRole('button', { name: /Nhóm/ }));
-    expect(await screen.findByRole('option', { name: /Tất cả nhóm/ })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('option', { name: /Công nghệ/ }));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
-    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toMatchObject({ source: 'weak', group_id: TECH });
-  });
-
-  it('the line under the start tells how many sessions are left today', async () => {
-    const { dialog } = await openFor('Đang ưu tiên');
-    expect(within(dialog).getByText('Dùng 1 trong 2 phiên còn lại hôm nay.')).toBeInTheDocument();
-  });
-
-  it('409 practice-no-words with no-word-fits-types is told inside the dialog', async () => {
-    const { dialog } = await openFor('Luyện tất cả', {
-      'POST /v1/practice/sessions': () =>
-        Response.json({ type: 'http://x/problems/practice-no-words', status: 409, title: 'n', reason: 'no-word-fits-types' }, { status: 409 }),
-    });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Không từ nào làm được kiểu câu đã chọn. Chọn thêm kiểu câu khác.');
-  });
-});
+// The customise dialog's tests live in customize-dialog.test.tsx (M5.3, round 14).
 
 describe('English (design §7.1–§7.2)', () => {
   it('practice home in English', async () => {
@@ -357,25 +270,17 @@ describe('English (design §7.1–§7.2)', () => {
     const fresh = [deck(TECH, 'Công nghệ', 18, { priority: 0, due: 0, new: 5 })];
     renderApp(<PracticePage />, { routes: routes({ 'GET /v1/groups': () => Response.json({ items: fresh }) }) });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText('5 từ trong 1 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '5 từ trong 1 nhóm')).toBeInTheDocument();
     expect(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' })).toBeInTheDocument();
   });
 });
 
-describe('PracticePage — Recent (K/51)', () => {
-  const recent = (over: Record<string, unknown>) => ({
-    item_id: 'r1', session_id: 'x', sense_id: 's1', lemma: 'vital', type: 'cloze', prompt_style: 'sentence', prompt: { kind: 'cloze', sentence: 'Sleep is ___ for good health.' },
-    answer: 'crucial', correct: { lemma: 'vital', text: 'vital', choice_index: null, is_true: null }, result: 'correct', skipped: false, tries: 1, hint_level: 0,
-    review_action: null, answered_at: '2026-11-07T03:00:00Z', local_date: '2026-11-07', translation: null, alternative: true, ...over,
-  });
-
-  it('Recent: an alternative answer says what was typed and the asked word', async () => {
-    renderApp(<PracticePage />, { routes: routes({
-      'GET /v1/practice/history?page_size=3': () => Response.json({ items: [recent({}), recent({ item_id: 'r2', lemma: 'habit', answer: 'habit', correct: { lemma: 'habit', text: 'habit', choice_index: null, is_true: null }, alternative: false })], next_page_token: null }),
-    }) });
-    const section = await screen.findByRole('region', { name: 'Gần đây' });
-    expect(await within(section).findByText('bạn gõ crucial, đáp án thay thế cho vital')).toBeInTheDocument();
-    // A plain right answer keeps today's line.
-    expect(within(section).getByText('đúng')).toBeInTheDocument();
+describe('PracticePage — no recent box', () => {
+  it('has no "Gần đây" region or heading, and does not read the history', async () => {
+    const view = renderApp(<PracticePage />, { routes: routes() });
+    await screen.findByRole('region', { name: 'Hôm nay' });
+    expect(screen.queryByRole('region', { name: 'Gần đây' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Gần đây' })).not.toBeInTheDocument();
+    expect(view.calls.some((c) => c.path.startsWith('/v1/practice/history'))).toBe(false);
   });
 });

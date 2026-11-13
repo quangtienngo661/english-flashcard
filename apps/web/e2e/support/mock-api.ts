@@ -120,7 +120,9 @@ export function meBody(over: Record<string, unknown> = {}) {
   };
 }
 
-/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks for a learner; `extra` handlers on top. */
+/** Refresh accepted + `/me`, `/me/entitlements`, `/me/app-config`, `/me/reminders`, no decks, no practice session and an account delete
+ *  that succeeds for a learner;
+ *  `extra` handlers on top. */
 export async function signedInAs(
   page: Page,
   plan: Plan = 'free',
@@ -138,6 +140,10 @@ export async function signedInAs(
     'GET /v1/groups': () => ({ json: { items: [] } }),
     'GET /v1/topics/suggestions': () => ({ json: { items: [] } }),
     'GET /v1/topics': () => ({ json: { items: [] } }),
+    'GET /v1/practice/sessions/last': () => ({ status: 204 }),
+    'GET /v1/me/streak': () => ({ json: { days: 0, studied_today: false } }),
+    // M7.7: the delete-account journey; the API answers 204 when the deletion finished at once.
+    'POST /v1/me/account/delete': () => ({ status: 204 }),
     ...extra,
   });
 }
@@ -149,3 +155,40 @@ export function requestCount(page: Page, method: string, path: string): number {
 export function requests(page: Page, method: string, path: string): MockRequest[] {
   return (seen.get(page) ?? []).filter((r) => r.method === method && r.path === path);
 }
+
+export const ORDER_ID = '7b3c9e1a-4d2f-4c8b-9a6e-2f1d0c5b8a73';
+
+/** `GET /v1/me/orders/:id` of a 3-month order (launch prep B design §3.1); `paid` carries the period it opened. */
+export function orderBody(status: string, over: Record<string, unknown> = {}) {
+  return {
+    id: ORDER_ID, status, period_months: 3, amount: 199000, description: 'WM 3T 8F2C41D9', expires_at: '2026-11-11T03:15:00.000Z',
+    period: status === 'paid' ? { starts_at: '2026-11-11T03:00:00.000Z', ends_at: '2027-02-11T17:00:00.000Z' } : null,
+    ...over,
+  };
+}
+
+/**
+ * M7.13, a payOS purchase without payOS: `POST /v1/me/orders` sends the browser to the order page, `check` answers, and every
+ * `GET /v1/me/orders/:id` reads `status()` at that moment, so a test moves the order from pending to paid when it wants.
+ */
+export function orderApi(status: () => string = () => 'paid'): Record<string, MockHandler> {
+  return {
+    'POST /v1/me/orders': (req) => {
+      const locale = (req.body as { locale?: string } | null)?.locale ?? 'vi';
+      return { status: 201, json: { order_id: ORDER_ID, checkout_url: `/${locale}/app/plans/order?order=${ORDER_ID}` } };
+    },
+    [`POST /v1/me/orders/${ORDER_ID}/check`]: () => ({ json: orderBody(status()) }),
+    [`GET /v1/me/orders/${ORDER_ID}`]: () => ({ json: orderBody(status()) }),
+  };
+}
+
+/** A fake-provider subscription that renews (Bước 5), for Gói học's subscription row and its Hủy gói dialog. */
+export const SUBSCRIPTION = {
+  kind: 'subscription', id: 'sub-e2e-1', status: 'active', starts_at: '2026-10-08T03:00:00.000Z', ends_at: '2026-12-08T03:00:00.000Z',
+  renews_at: '2026-12-08T03:00:00.000Z', cancel_at_period_end: false, pending_interval: null,
+};
+
+/** M7.13: `POST /v1/me/subscriptions/:id/cancel` accepted, as the API answers it. */
+export const cancelSubscriptionApi = (id = SUBSCRIPTION.id): Record<string, MockHandler> => ({
+  [`POST /v1/me/subscriptions/${id}/cancel`]: () => ({ json: { status: 'requested' } }),
+});

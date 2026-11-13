@@ -1,16 +1,21 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
-import { renderApp } from '@/app-ui/test-utils';
-import { ToastRegion } from '@/app-ui/Toast';
+import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
+import { renderApp } from '@/test-utils/render-app';
+import { testRoute } from '@/test-utils/route-locale';
+import { ToastRegion } from '@/ui/Toast';
+import { StreakToast } from '@/ui/StreakToast';
+import { SessionIntl } from '@/app-shell/SessionIntl';
 import type { Route } from '@/app-shell/session/test-support';
 import type { PracticeSessionView } from '../practice-api';
+import { STREAK_KEY } from '../../calendar/calendar-api';
 import { PracticeSession } from './PracticeSession';
 import { againBody } from './SessionSummary';
 
 const hardReplace = vi.fn();
 vi.mock('next/navigation', () => ({
+  useParams: () => ({ locale: testRoute.locale }),
   usePathname: () => '/vi/app/practice/session',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -93,25 +98,44 @@ const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 
 
 describe('PracticeSession (K/60–K/67)', () => {
   const cases = [
-    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Đã biết', action: 'known', note: 'Nhấn Enter là Đã biết: deploy lên một ngăn. Chưa chắc thì bấm Cần ôn lại.' },
-    { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'deploy chưa tới hạn ôn nên lịch ôn giữ nguyên.' },
-    { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.' },
-    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Cần ôn lại', action: 'needs_review', note: 'Nhấn Enter để đưa deploy lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.' },
+    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Know', action: 'known', note: 'Enter means Know: deploy moves up a level. Not sure? Choose Review again.' },
+    { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Next', action: null, note: "deploy isn't due yet, so its schedule stays the same." },
+    { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Next', action: null, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
+    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Review again', action: 'needs_review', note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
   ];
 
-  it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
-    const v = renderApp(<PracticeSession />, { routes: routes({
+  it('M6.2: an answer carrying streak writes the streak cache; no GET /v1/me/streak follows', async () => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ streak: { days: 6 } })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await waitFor(() => expect(v.client.getQueryData(STREAK_KEY)).toEqual({ days: 6, studied_today: true }));
+    expect(v.count('GET', '/v1/me/streak')).toBe(0);
+  });
+
+  it('L-B-5: on a /vi route an answer that earns a streak shows "6-day streak" once, in English, at the session corner', async () => {
+    // AppProviders' bottom toast is mounted too, outside SessionIntl, as in production; the session's corner toast replaces it.
+    renderApp(<><SessionIntl><PracticeSession /></SessionIntl><StreakToast /></>, { locale: 'vi', routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ streak: { days: 6 } })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText('6-day streak')).toBeInTheDocument();
+    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
+  });
+
+  it.each(cases)('$title', async ({ id, answer, action, note }) => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)),
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
-    const buttons = screen.getAllByRole('button').filter((b) => /^(Cần ôn lại|Đã biết|Câu tiếp)/.test(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Cần ôn lại1', 'Đã biếtEnter'] : id === 4 ? ['Cần ôn lạiEnter', 'Câu tiếp'] : ['Cần ôn lại1', 'Câu tiếpEnter']);
-    const bold = screen.getByRole('button', { name: new RegExp(primary) });
-    expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
-    expect(bold).toHaveAttribute('data-variant', 'sticker');
-    expect(buttons.find((b) => b !== bold)).toHaveAttribute('data-variant', 'quiet');
+    const buttons = screen.getAllByRole('button').filter((b) => /^(Review again|Know|Next)/.test(b.textContent ?? ''));
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again', 'Know'] : id === 4 ? ['Next', 'Review again'] : ['Review again', 'Next']);
+    buttons.forEach((b) => expect(b.querySelector('kbd')).toBeNull());
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
     const reviewPath = '/v1/practice/items/item-4/review';
@@ -122,23 +146,23 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it.each([
-    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a stage. Not sure? Choose Still learning.' },
+    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a level. Not sure? Choose Review again.' },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn't due yet, so its schedule stays the same." },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
-    { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Enter moves deploy to the top of its deck, back to stage 1. Next question keeps its schedule.' },
+    { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
   ])('English result note: $note', async ({ answer, note }) => {
-    renderApp(<PracticeSession />, { locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    renderApp(<PracticeSession />, { session: true, locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
   });
 
   it.each([
-    { name: 'A16-3: case 4, [Next question] → next only', answer: {}, secondary: 'Câu tiếp', action: null, keyboard: false },
-    { name: 'A16-7: case 4, focus secondary + Enter → next only', answer: {}, secondary: 'Câu tiếp', action: null, keyboard: true },
-    { name: 'A16-7: case 1, focus secondary + Enter → needs_review', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, secondary: 'Cần ôn lại', action: 'needs_review', keyboard: true },
+    { name: 'A16-3: case 4, [Next] → next only', answer: {}, secondary: 'Next', action: null, keyboard: false },
+    { name: 'A16-7: case 4, focus secondary + Enter → next only', answer: {}, secondary: 'Next', action: null, keyboard: true },
+    { name: 'A16-7: case 1, focus secondary + Enter → needs_review', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, secondary: 'Review again', action: 'needs_review', keyboard: true },
   ])('$name', async ({ answer, secondary, action, keyboard }) => {
-    const v = renderApp(<PracticeSession />, { routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     const button = await screen.findByRole('button', { name: new RegExp(secondary) });
@@ -151,17 +175,20 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
   });
 
-  it('wrong while not in learning → only Next question; Enter → next only', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes({
+  it('wrong while not in learning → only Next; Enter → next only', async () => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result({ highlight_needs_review: false })),
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    const next = await screen.findByRole('button', { name: /Câu tiếp/ });
-    expect(next).toHaveAttribute('data-variant', 'sticker');
-    expect(screen.queryByRole('button', { name: /Cần ôn lại|Đã biết/ })).not.toBeInTheDocument();
-    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
-    expect(next.parentElement?.nextElementSibling).toBeNull();
+    const next = await screen.findByRole('button', { name: /Next/ });
+    expect(next).toHaveTextContent(/^Next$/);
+    expect(next.querySelector('kbd')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Review again|Know/ })).not.toBeInTheDocument();
+    // F.14: no case note on the stub; the meaning leads, the answer word follows it.
+    const panel = next.closest<HTMLElement>('[data-feedback]')!;
+    expect(panel).toHaveTextContent(/^Not quite\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next$/);
+    expect(next.nextElementSibling).toBeNull();
     await userEvent.keyboard('12');
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
@@ -172,10 +199,10 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it.each(cases.flatMap((c) => ['1', '2'].map((key) => ({ ...c, key }))))('case $id: key $key follows its available review action', async ({ id, answer, key }) => {
-    const v = renderApp(<PracticeSession />, { routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByRole('button', { name: /Cần ôn lại/ });
+    await screen.findByRole('button', { name: /Review again/ });
     // Repeats of either shortcut must be inert too.
     fireEvent.keyDown(document.body, { key: '1', repeat: true });
     fireEvent.keyDown(document.body, { key: '2', repeat: true });
@@ -194,7 +221,7 @@ describe('PracticeSession (K/60–K/67)', () => {
   it('held Enter (repeat) → one review and one next per question', async () => {
     let release!: () => void;
     let nextCount = 0;
-    const v = renderApp(<PracticeSession />, { routes: routes({
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/review': () => new Promise((resolve) => { release = () => resolve(Response.json({ action: 'needs_review' })); }),
       'POST /v1/practice/items/item-5/answer': () => Response.json(result()),
       'POST /v1/practice/items/item-5/review': () => Response.json({ action: 'needs_review' }),
@@ -202,7 +229,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('Not quite');
     fireEvent.keyDown(document.body, { key: 'Enter' });
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1));
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
@@ -211,7 +238,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('server');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('Not quite');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1);
     expect(posts(v.calls, '/v1/practice/items/item-5/review')).toHaveLength(0);
@@ -224,7 +251,7 @@ describe('PracticeSession (K/60–K/67)', () => {
 
   it('A16-5: network error on review keeps the result, shows failed, and permits a safe retry', async () => {
     let attempts = 0;
-    const v = renderApp(<PracticeSession />, { routes: routes({
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/review': () => {
         if (++attempts === 1) throw new TypeError('network');
         return Response.json({ action: 'needs_review' });
@@ -232,10 +259,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('Not quite');
     await userEvent.keyboard('{Enter}');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.');
-    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent("Your answer wasn't saved. Check your connection and try again.");
+    expect(screen.getByText('Not quite')).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
@@ -244,108 +271,138 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it('A16-6: 409 known-not-allowed stays on the result and shows the existing error', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes({
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: true, highlight_needs_review: false })),
       'POST /v1/practice/items/item-4/review': () => problem(409, 'known-not-allowed'),
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Đúng rồi');
+    await screen.findByText('Right');
     await userEvent.keyboard('{Enter}');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Có lỗi xảy ra. Thử lại sau.');
-    expect(screen.getByRole('button', { name: /Đã biết/ })).toBeEnabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Try again later.');
+    expect(screen.getByRole('button', { name: /Know/ })).toBeEnabled();
     expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
   });
 
   it('Review Focus 4: a reload resumes through GET current — position, progress and the open question', async () => {
-    renderApp(<PracticeSession />, { routes: routes() });
+    renderApp(<PracticeSession />, { session: true, routes: routes() });
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
-    expect(screen.getByText('Câu 4/10')).toBeInTheDocument();
-    expect(screen.getByText('Luyện tập · Nhóm Công nghệ')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Câu 4/10' })).toBeInTheDocument();
-    expect(screen.getByText('Chọn từ có nghĩa này')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^[1-4] / }).map((b) => b.textContent)).toEqual(['1 deploy', '2 delay', '3 deliver', '4 defend']);
+    expect(screen.getByText('question 4 / 10')).toBeInTheDocument();
+    expect(screen.getByText('Practice · Công nghệ deck')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'question 4 / 10' })).toBeInTheDocument();
+    // QM9-9: the chip names the kind; no instruction line under it (P.13).
+    expect(screen.getByText('Multiple choice')).toBeInTheDocument();
+    expect(screen.queryByText('Choose the word with this meaning')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1deploy', '2delay', '3deliver', '4defend']);
   });
 
   it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {
-    const { container } = renderApp(<PracticeSession />, { routes: routes() });
+    const { container } = renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
     const live = container.querySelector('[data-live="result"]')!;
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
-    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
-    await waitFor(() => expect(live).toHaveTextContent('Chưa đúng. deploy · triển khai (phần mềm)'));
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Cần ôn lại/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
+    await waitFor(() => expect(live).toHaveTextContent('Not quite. deploy · triển khai (phần mềm)'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Review again/ }));
+  });
+
+  it.each(cases)('F.14: focus still lands on the primary action ($primary) of case $id', async ({ answer, primary, note }) => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
+    await screen.findByText(note);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: new RegExp(`^${primary}$`) }));
+  });
+
+  it('F.14: a right answer without a level move keeps the case note on the stub, then the meaning and the answer word', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    const panel = (await screen.findByText('Right')).closest<HTMLElement>('[data-feedback]')!;
+    expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
+    expect(panel).toHaveTextContent(/^Right\s*deploy isn't due yet, so its schedule stays the same\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Review again\s*Next$/);
   });
 
   it('try_again keeps focus in the word box (Review Focus 5)', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
         'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
       }),
     });
-    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'cash{Enter}');
-    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
-    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Câu trả lời' }));
+    expect(await screen.findByText('Check the spelling and try again. The answer stays hidden.')).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Your answer' }));
   });
 
   it('K/61: key 2 answers option 2 with an Idempotency-Key; the result marks the right and the chosen option', async () => {
-    const view_ = renderApp(<PracticeSession />, { routes: routes() });
+    const view_ = renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('Chưa đúng')).toBeInTheDocument();
+    expect(await screen.findByText('Not quite')).toBeInTheDocument();
     const [answer] = posts(view_.calls, '/v1/practice/items/item-4/answer');
     expect(answer.body).toEqual({ choice: 1 });
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
-    expect(screen.getByRole('button', { name: /1 deploy/ })).toHaveTextContent('Đáp án đúng');
-    expect(screen.getByRole('button', { name: /2 delay/ })).toHaveTextContent('Bạn chọn');
-    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
-    expect(screen.getByText('to start using a new system')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toHaveAttribute('data-variant', 'sticker');
-    expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Right answer');
+    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Your choice');
+    // F.14 (the result ticket): "Not quite" and the case note on the stub, the meaning as the lead with its definition, then the answer
+    // word with its speaker; the nested answer box is gone.
+    const panel = screen.getByText('Not quite').closest<HTMLElement>('[data-feedback]')!;
+    expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
+    expect(within(panel).getByText('triển khai (phần mềm)')).toBeInTheDocument();
+    expect(within(panel).getByText('to start using a new system')).toBeInTheDocument();
+    expect(within(panel).getByText('deploy')).toBeInTheDocument();
+    expect(panel).toHaveTextContent(/^Not quite\s*Press Enter to put deploy.*schedule\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next\s*Review again$/);
+    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
+    expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
-    expect(screen.getByText('Câu 5/10')).toBeInTheDocument();
+    expect(screen.getByText('question 5 / 10')).toBeInTheDocument();
   });
 
   it('Review Focus 1: a second press while the answer is pending sends nothing more', async () => {
     let release!: () => void;
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'POST /v1/practice/items/item-4/answer': () => new Promise((resolve) => (release = () => resolve(Response.json(result())))),
       }),
     });
     await screen.findByText('triển khai');
-    await userEvent.click(screen.getByRole('button', { name: /1 deploy/ }));
-    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
     release();
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('Not quite');
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
   });
 
   it('motion (owner 27/10/2026, 3C/2A): the chosen wrong option wiggles, the right check pops, the result rises; the next question rises in', async () => {
-    renderApp(<PracticeSession />, { routes: routes() });
+    renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
     const card = screen.getByText('triển khai').closest('section')!;
-    expect(card).toHaveClass('motion-safe:animate-card-rise');
+    expect(card).toHaveClass('motion-safe:animate-wm-card-rise');
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
-    expect(screen.getByRole('button', { name: /2 delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
-    expect(screen.getByRole('button', { name: /1 deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
+    await screen.findByText('Not quite');
+    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wm-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wm-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
-    expect(screen.getByRole('button', { name: /1 deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
-    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
+    expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-wm-pop-in');
+    expect(screen.getByText('Not quite').closest('[data-feedback]')).toHaveClass('motion-safe:animate-wm-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
     expect(screen.getByText('server').closest('section')).not.toBe(card);
   });
 
-  it('K/62: true/false right → [Đã biết] (show_known); pressing it reviews the word and goes on', async () => {
+  it('K/62: true/false right → [Know] (show_known); pressing it reviews the word and goes on', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 5 }), item: trueFalse(), preparing: false }),
         'POST /v1/practice/items/item-5/answer': () =>
@@ -354,18 +411,19 @@ describe('PracticeSession (K/60–K/67)', () => {
         [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ asked: 6 }), item: typed() }),
       }),
     });
-    expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /1 Đúng/ }));
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /1 Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
+    expect(await screen.findByText('True or false')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^1True/ }));
+    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^1True/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
-    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-5/review')[0].body).toEqual({ action: 'known' });
   });
 
   it('TV12, K/64: [Kiểm tra] sends the typed word; try_again keeps the question with [Làm lại]; [Xem đáp án] skips', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
         'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
@@ -373,21 +431,23 @@ describe('PracticeSession (K/60–K/67)', () => {
           Response.json(result({ skipped: true, correct: { lemma: 'cache', text: 'cache', choice_index: null, is_true: null }, meaning: 'bộ nhớ đệm' })),
       }),
     });
-    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
-    expect(screen.getByRole('button', { name: 'Kiểm tra' })).toBeDisabled();
+    const input = await screen.findByRole('textbox', { name: 'Your answer' });
+    expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled();
     await userEvent.type(input, 'cash');
-    await userEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }));
-    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(await screen.findByText('Check the spelling and try again. The answer stays hidden.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-6/answer')[0].body).toEqual({ text: 'cash' });
-    expect(screen.getByText('Lần 1')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Làm lại/ })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Xem đáp án/ }));
-    expect(await screen.findByText('cache · bộ nhớ đệm')).toBeInTheDocument();
+    expect(screen.getByText('Try 1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Show answer/ }));
+    // F.14: the wrong ticket now shows the meaning as its lead, then the answer word.
+    await waitFor(() => expect(document.querySelector('[data-feedback]')).toHaveTextContent(/bộ nhớ đệm\s*to start using a new system\s*cache/));
     expect(posts(v.calls, '/v1/practice/items/item-6/skip')).toHaveLength(1);
   });
 
-  it('K/63: H opens the next hint; vi says "Gợi ý 1/2"', async () => {
+  it('K/63: H opens the next hint; a Vietnamese route says "Hint 1 of 2" (QM9-9)', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'definition', text: 'to start using a new system' } }),
       }),
@@ -395,14 +455,38 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('h');
     expect(await screen.findByText('to start using a new system')).toBeInTheDocument();
-    expect(screen.getByText('Gợi ý 1/2')).toBeInTheDocument();
-    expect(screen.getByText('Định nghĩa')).toBeInTheDocument();
+    expect(screen.getByText('Hint 1 of 2')).toBeInTheDocument();
+    expect(screen.getByText('Definition')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/hint')[0].body).toEqual({ level: 1 });
-    expect(screen.getByRole('button', { name: /Mở gợi ý 2/ })).toBeInTheDocument();
+    // P.13: "Show hint 2" sits in the second row of the hint box, where its text will go.
+    const rows = within(screen.getByRole('region', { name: 'Hint 1 of 2' })).getAllByRole('listitem');
+    expect(within(rows[1]).getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
   });
 
-  it('design §7.1: in English the hint shows no total', async () => {
+  it('T15: [Hint] moves focus to the opened row and its text sits in a polite live region; [Show hint 2] does the same for row 2', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
+      routes: routes({
+        'POST /v1/practice/items/item-4/hint': (call) => {
+          const { level } = call.body as { level: number };
+          return Response.json({ level, hint: level === 1 ? { kind: 'definition', text: 'to start using a new system' } : { kind: 'first_letter', text: 'd' } });
+        },
+      }),
+    });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Hint' }));
+    const text = await screen.findByText('to start using a new system');
+    const rows = () => within(screen.getByRole('region', { name: /^Hint \d of 2$/ })).getAllByRole('listitem');
+    await waitFor(() => expect(rows()[0]).toHaveFocus());
+    expect(text.closest('[aria-live="polite"]')).not.toBeNull();
+    await userEvent.click(within(rows()[1]).getByRole('button', { name: /Show hint 2/ }));
+    await screen.findByText('D___');
+    await waitFor(() => expect(rows()[1]).toHaveFocus());
+  });
+
+  it('QM9-9 (supersedes design §7.1): an English route shows the total too, "Hint 1 of 2"', async () => {
+    renderApp(<PracticeSession />, {
+      session: true,
       locale: 'en',
       routes: routes({
         'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'definition', text: 'to start using a new system' } }),
@@ -411,28 +495,29 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('h');
     await screen.findByText('to start using a new system');
-    expect(screen.getByText('Hint')).toBeInTheDocument();
-    expect(screen.queryByText(/Hint 1\/2/)).not.toBeInTheDocument();
+    expect(screen.getByText('Hint 1 of 2')).toBeInTheDocument();
   });
 
   it('K/65: the round prompt continues the session', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ status: 'waiting_continue', asked: 5, words: 5 }), item: null, preparing: false }),
         [`GET /v1/practice/sessions/${SESSION}/summary`]: () => Response.json({ ...SUMMARY, asked: 5, correct: 3, wrong: 2 }),
         [`POST /v1/practice/sessions/${SESSION}/continue`]: () => Response.json({ session: view({ status: 'active', asked: 5, round: 2 }) }),
       }),
     });
-    expect(await screen.findByText('Bạn đã làm hết 5 từ')).toBeInTheDocument();
-    expect(await screen.findByText('3 đúng')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Luyện lại thêm 5 câu/ }));
+    expect(await screen.findByText("You've done all 5 words")).toBeInTheDocument();
+    expect(await screen.findByText('3 right')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Practice 5 more/ }));
     expect(await screen.findByText('server')).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/continue`)[0].body).toEqual({ continue: true });
   });
 
-  it('K/67: Esc ends the session into the summary; [Cần ôn lại] per word and for the rest', async () => {
+  it('K/67: Esc ends the session into the summary; [Review again] per word and for the rest', async () => {
     let reviewed = false;
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         [`GET /v1/practice/sessions/${SESSION}/summary`]: () =>
           Response.json({ ...SUMMARY, words: SUMMARY.words.map((w) => (reviewed && w.item_id === 'item-8' ? { ...w, action: 'needs_review' } : w)) }),
@@ -445,69 +530,136 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: 'Xong 10 câu.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '10 questions done.' })).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(1);
-    expect(screen.getByText('Nhóm Công nghệ, trộn 3 kiểu câu. Hôm nay còn 1/3 phiên luyện.')).toBeInTheDocument();
-    const list = screen.getByRole('list', { name: 'Cần ôn lại · 3 từ' });
-    expect(within(list).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();
-    await userEvent.click(within(list).getAllByRole('button', { name: 'Cần ôn lại' })[0]);
+    // Figma 119:4608: the ring reads 7/10 right; blocks rise 90 ms apart (design §8.3).
+    expect(screen.getByRole('img', { name: '7/10 right' })).toHaveTextContent('7/10');
+    expect(screen.getByRole('heading', { name: '10 questions done.' }).closest('[class*="animate-wm-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
+    expect(screen.getByText('Công nghệ deck, 3 question types. 1 of 3 sessions left today.')).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: 'Review again · 3 words' });
+    expect(within(list).getByText('Added to priority')).toBeInTheDocument();
+    await userEvent.click(within(list).getByRole('button', { name: 'Review again: release' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-8/review')).toHaveLength(1));
-    await userEvent.click(await screen.findByRole('button', { name: 'Đưa 1 từ còn lại vào ưu tiên' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Add the other 1 word to priority' }));
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/review-all`)).toHaveLength(1));
-    expect(screen.getByRole('link', { name: /Về Luyện tập/ })).toHaveAttribute('href', '/vi/app/practice');
+    expect(screen.getByRole('link', { name: /Back to Practice/ })).toHaveAttribute('href', '/vi/app/practice');
   });
 
   it('E36: already answered elsewhere → the result the API sends is shown, no error', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({ 'POST /v1/practice/items/item-4/answer': () => problem(409, 'already-answered', { result: result({ result: 'correct', highlight_needs_review: false }) }) }),
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('Right')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('E37: session-closed → "Phiên này đã kết thúc." and a way back to Practice', async () => {
-    renderApp(<PracticeSession />, { routes: routes({ 'POST /v1/practice/items/item-4/answer': () => problem(409, 'session-closed') }) });
+    renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => problem(409, 'session-closed') }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Phiên này đã kết thúc.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Về Luyện tập' })).toHaveAttribute('href', '/vi/app/practice');
+    expect(await screen.findByText('This session has ended.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to Practice' })).toHaveAttribute('href', '/vi/app/practice');
   });
 
   it('no open session (404) → says so, with a way back', async () => {
-    renderApp(<PracticeSession />, { routes: routes({ 'GET /v1/practice/sessions/current': () => problem(404, 'not-found') }) });
-    expect(await screen.findByText('Không có phiên luyện nào đang mở.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Về Luyện tập' })).toBeInTheDocument();
+    renderApp(<PracticeSession />, { session: true, routes: routes({ 'GET /v1/practice/sessions/current': () => problem(404, 'not-found') }) });
+    expect(await screen.findByText('No practice session is open.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to Practice' })).toBeInTheDocument();
   });
 
-  it('K/66: reasons in API order (Khác last), a required note, one report; then the button says it was sent', async () => {
+  it('K/66: reasons in API order (Khác last), a required note, one report; then the session moves on (owner 14/11/2026)', async () => {
     const v = renderApp(
       <>
         <PracticeSession />
         <ToastRegion />
       </>,
-      { routes: routes({ 'POST /v1/practice/items/item-4/report': () => Response.json({ id: 'r1' }, { status: 201 }) }) },
+      { session: true, routes: routes({ 'POST /v1/practice/items/item-4/report': () => Response.json({ id: 'r1' }, { status: 201 }) }) },
     );
     await screen.findByText('triển khai');
-    await userEvent.click(screen.getByRole('button', { name: 'Báo lỗi' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Báo lỗi câu này' });
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
     const radios = await within(dialog).findAllByRole('radio');
     expect(radios.map((r) => r.closest('label')?.textContent)).toEqual(['Nghĩa sai', 'Đáp án đúng mà bị chấm sai', 'Gợi ý sai', 'Khác']);
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Khác' }));
-    expect(within(dialog).getByText('bắt buộc · 0/300')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi báo lỗi' }));
-    expect(within(dialog).getByText('Ghi rõ lỗi để gửi báo lỗi này.')).toBeInTheDocument();
+    expect(within(dialog).getByText('required · 0/300')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(within(dialog).getByText('Describe the problem to send this report.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/report')).toHaveLength(0);
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /Ghi chú/ }), 'deliver cũng đúng');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi báo lỗi' }));
-    expect(await screen.findByText('Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.')).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByRole('textbox', { name: /Note/ }), 'deliver cũng đúng');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('Report sent. See the outcome in Settings, under My reports.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/report')[0].body).toEqual({ reason: 'other', note: 'deliver cũng đúng' });
-    expect(screen.getByRole('button', { name: 'Đã báo lỗi' })).toBeDisabled();
+    // The API voided the unanswered question, so the next one comes without an answer or a skip.
+    expect(await screen.findByText('server')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+    expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(0);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Report' })).toBeEnabled();
+  });
+
+  it('a report sent after the answer moves on as Next does: no review is written', async () => {
+    const v = renderApp(
+      <>
+        <PracticeSession />
+        <ToastRegion />
+      </>,
+      { session: true, routes: routes({ 'POST /v1/practice/items/item-4/report': () => Response.json({ id: 'r1' }, { status: 201 }) }) },
+    );
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByRole('button', { name: /Review again/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: 'Nghĩa sai' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('server')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+  });
+
+  it('a report that fails stays on the question with the error', async () => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/report': () => problem(500, 'internal') }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: 'Nghĩa sai' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+    expect(screen.getByText('triển khai')).toBeInTheDocument();
+  });
+
+  it('T23: while the reasons load the dialog says "Loading…"; a failed read shows an error with [Try again] that reads them again', async () => {
+    let fail = true;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'GET /v1/practice/report-reasons?kind=non_ai': async () => {
+        await gate;
+        if (fail) {
+          fail = false;
+          return problem(500, 'internal');
+        }
+        return Response.json(REASONS);
+      },
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    expect(within(dialog).getByText('Loading…')).toBeInTheDocument();
+    release();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(within(dialog).queryAllByRole('radio')).toHaveLength(0);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    expect(await within(dialog).findAllByRole('radio')).toHaveLength(4);
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('E34: leaving the page (no Esc, no ×) sends nothing; the session stays open on the server', async () => {
-    const v = renderApp(<PracticeSession />, { routes: routes() });
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
     v.unmount();
     expect(v.calls.filter((c) => c.method === 'POST' && c.path !== '/v1/auth/refresh')).toHaveLength(0);
@@ -515,17 +667,19 @@ describe('PracticeSession (K/60–K/67)', () => {
 
   it('Review Focus 4: a reload with a hint already opened shows its text again', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view(), item: mcq('item-4', { hint_level: 1 }), preparing: false }),
         'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
       }),
     });
-    expect(await screen.findByText('d___')).toBeInTheDocument();
-    expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
+    expect(await screen.findByText('D___')).toBeInTheDocument();
+    expect(screen.getByText('First letter')).toBeInTheDocument();
   });
 
   it('after a typed answer is graded, Enter (focus still in the field) reviews known and goes to the next question', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
         'POST /v1/practice/items/item-6/answer': () =>
@@ -533,55 +687,59 @@ describe('PracticeSession (K/60–K/67)', () => {
         'POST /v1/practice/items/item-6/review': () => Response.json({ action: 'known', item_id: 'item-6', level: 3 }),
       }),
     });
-    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'cache{Enter}');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(await screen.findByText('Right')).toBeInTheDocument();
     expect(input).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/item-6/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
     // The typed question's card leaves the page (its key must not clash with the answer field's key; motion round 27/10/2026).
-    expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
-    expect(v.container.querySelectorAll('main section')).toHaveLength(1);
+    expect(await screen.findByText('True or false')).toBeInTheDocument();
+    expect(v.container.querySelectorAll('section')).toHaveLength(1);
   });
 
   it('M4 review: Esc in the answer field leaves the field first; it does not end the session', async () => {
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({ 'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }) }),
     });
-    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'cac');
     await userEvent.keyboard('{Escape}');
     expect(input).not.toHaveFocus();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(0);
   });
 
-  it('M4 review: a right answer without a hint and without [Đã biết] does not blame hints', async () => {
+  it('M4 review: a right answer without a hint and without [Know] does not blame hints', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 })) }),
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
-    expect(screen.queryByText(/nhờ gợi ý/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(screen.queryByText(/after a hint/)).not.toBeInTheDocument();
   });
 
-  it('M4 review: on a retry screen only [Làm lại] is yellow', async () => {
+  it('M4 review: on a retry screen only [Làm lại] takes Enter', async () => {
     renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
         'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
       }),
     });
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Câu trả lời' }), 'cash{Enter}');
-    await screen.findByRole('button', { name: /Làm lại/ });
-    const yellow = screen.getAllByRole('button').filter((b) => b.getAttribute('data-variant') === 'sticker');
-    expect(yellow.map((b) => b.textContent)).toEqual(['Làm lạiEnter']);
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Your answer' }), 'cash{Enter}');
+    await screen.findByRole('button', { name: /Try again/ });
+    expect(screen.getByRole('button', { name: /Try again/ })).toHaveTextContent(/^Try again$/);
+    expect(document.querySelector('button kbd')).toBeNull();
   });
 
   it('M4 review: changing the choice after a lost answer sends a new Idempotency-Key', async () => {
     let first = true;
     const v = renderApp(<PracticeSession />, {
+      session: true,
       routes: routes({
         'POST /v1/practice/items/item-4/answer': () => {
           if (first) {
@@ -596,10 +754,36 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
+    await screen.findByText('Not quite');
     const keys = posts(v.calls, '/v1/practice/items/item-4/answer').map((c) => c.headers['Idempotency-Key']);
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
+  });
+});
+
+describe('Typed answer focus (T17, QA10)', () => {
+  /** QA10: autofocus only with a mouse or trackpad. jsdom's default matchMedia answers false (a touch screen). */
+  const media = window.matchMedia;
+  const finePointer = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('pointer: fine'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = media;
+  });
+
+  const typedRoutes = () => routes({ 'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }) });
+
+  it('on a touch screen the word box does not take focus, so the keyboard stays down', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: typedRoutes() });
+    expect(await screen.findByRole('textbox', { name: 'Your answer' })).not.toHaveFocus();
+  });
+
+  it('with a mouse or trackpad the word box takes focus as before', async () => {
+    finePointer();
+    renderApp(<PracticeSession />, { session: true, routes: typedRoutes() });
+    expect(await screen.findByRole('textbox', { name: 'Your answer' })).toHaveFocus();
   });
 });
 
@@ -608,18 +792,18 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
 
   it('no speak button on the question; the speaker icon by the word (US voice) after grading; 1 on a focused speak button does not review', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
-    const view_ = renderApp(<PracticeSession />, { routes: routes() });
+    const view_ = renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
-    expect(screen.queryByRole('button', { name: 'Nghe phát âm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Listen' })).not.toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa đúng');
-    const uk = screen.getByRole('button', { name: 'Nghe phát âm' });
+    await screen.findByText('Not quite');
+    const uk = screen.getByRole('button', { name: 'Listen' });
     await userEvent.click(uk);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
-    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+    expect(screen.getByText('Not quite')).toBeInTheDocument();
   });
 });
 
@@ -637,6 +821,16 @@ describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
     expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
     expect(againBody(view(null))).not.toHaveProperty('cloze_source');
   });
+
+  it('M5.3: a session opened with an AI count asks for it again, with its placement and own_then_ai', () => {
+    const body = againBody({ ...view('own_then_ai'), types: ['mcq_definition', 'cloze'], ai_planned: 3, ai_placement: 'random' });
+    expect(body).toMatchObject({ types: ['mcq_definition', 'cloze'], cloze_source: 'own_then_ai', ai_count: 3, ai_placement: 'random' });
+  });
+
+  it('M5.3: a session opened the old way (no ai_placement) sends no ai_count', () => {
+    expect(againBody({ ...view(null), ai_placement: null })).not.toHaveProperty('ai_count');
+    expect(againBody(view(null))).not.toHaveProperty('ai_count');
+  });
 });
 
 // The summary with alternative answers (session synonyms design §3.3). `vital` was asked and `crucial` typed on the same item (a1),
@@ -651,10 +845,10 @@ describe('Summary of alternative answers', () => {
     ...over,
   });
   const openSummary = async (summary: Record<string, unknown>, over: Record<string, Route> = {}) => {
-    const v = renderApp(<PracticeSession />, { routes: summaryRoutes(summary, over) });
+    const v = renderApp(<PracticeSession />, { session: true, routes: summaryRoutes(summary, over) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('{Escape}');
-    await screen.findByRole('heading', { name: 'Xong 10 câu.' });
+    await screen.findByRole('heading', { name: '10 questions done.' });
     return v;
   };
 
@@ -667,12 +861,12 @@ describe('Summary of alternative answers', () => {
         return Response.json({ action: 'needs_review', item_id: 'a1', sense_id: 'sense-crucial', level: 1, due_date: '2026-11-08', priority: true });
       },
     });
-    const list = screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' });
+    const list = screen.getByRole('list', { name: 'Review again · 2 words' });
     const [, crucial] = within(list).getAllByRole('listitem');
-    await userEvent.click(within(crucial).getByRole('button', { name: 'Cần ôn lại' }));
+    await userEvent.click(within(crucial).getByRole('button', { name: 'Review again: crucial' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/a1/review')).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/a1/review')[0].body).toEqual({ action: 'needs_review', sense_id: 'sense-crucial' });
-    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' })).getAllByRole('listitem')[index]).getByRole('button', { name: 'Cần ôn lại' });
+    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem')[index]).getByRole('button', { name: /^Review again: / });
     // A pending Button shows a spinner icon (React Aria drops aria-busy), so that is what tells a pending row.
     const pending = (index: number) => rowButton(index).querySelector('svg') !== null;
     await waitFor(() => expect(pending(1)).toBe(true));
@@ -683,28 +877,34 @@ describe('Summary of alternative answers', () => {
 
   it('a pressed row shows "Đã đưa vào ưu tiên" and the other keeps its button', async () => {
     await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }] });
-    const [vital, crucial] = within(screen.getByRole('list', { name: 'Cần ôn lại · 2 từ' })).getAllByRole('listitem');
-    expect(within(crucial).getByText('Đã đưa vào ưu tiên')).toBeInTheDocument();
+    const [vital, crucial] = within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem');
+    expect(within(crucial).getByText('Added to priority')).toBeInTheDocument();
     expect(within(crucial).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(vital).getByRole('button', { name: 'Cần ôn lại' })).toBeInTheDocument();
+    expect(within(vital).getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
+  });
+
+  it('T20: the button of each row names its word; "Added to priority" is a status', async () => {
+    await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }, { sense_id: 's3', lemma: 'update', meaning: 'cập nhật', item_id: 'item-9', action: null }] });
+    const list = screen.getByRole('list', { name: 'Review again · 3 words' });
+    expect(within(list).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Review again: vital', 'Review again: update']);
+    expect(within(list).getByRole('status')).toHaveTextContent('Added to priority');
   });
 
   it('CS9: the summary says how many right answers were alternative answers', async () => {
     await openSummary({ alternatives: 2 });
-    const line = await screen.findByText('Trong đó 2 đáp án thay thế');
-    // The line belongs to the right-answer count: it sits in the "Đúng" tile, not loose under both tiles (UI polish, 07/11/2026).
-    const right = screen.getAllByRole('term').find((term) => term.textContent === 'Đúng')!;
-    expect(right.parentElement).toContainElement(line);
+    const line = await screen.findByText('Including 2 alternative answers');
+    // M5.5: no Đúng/Sai tiles any more (Figma 119:4608 has the ring); the line sits with the title, next to the ring of right answers.
+    expect(screen.getByRole('heading', { name: /done\.$/ }).parentElement).toContainElement(line);
   });
 
   it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {
     await openSummary({ alternatives: 0 });
-    expect(screen.queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/alternative answer/)).not.toBeInTheDocument();
   });
 
   it('an older API sends no count: the same', async () => {
     await openSummary({});
     expect(screen.getByText('7')).toBeInTheDocument();
-    expect(screen.queryByText(/đáp án thay thế/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/alternative answer/)).not.toBeInTheDocument();
   });
 });

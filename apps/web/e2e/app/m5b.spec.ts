@@ -49,6 +49,8 @@ async function openSheet(page: Page, locale: 'vi' | 'en' = 'vi') {
   await page.evaluate((id) => window.localStorage.setItem('wordmet-web.last-group', id), DECK);
   await page.getByRole('button', { name: copy[locale].App.lookup.addThis }).click();
   const sheet = page.getByRole('dialog', { name: copy[locale].App.addWord.title });
+  // Thêm từ loads with next/dynamic on its first open (M4.4); the dev server compiles that chunk on first use.
+  await expect(sheet).toBeVisible({ timeout: 30_000 });
   await expect(sheet.getByRole('button', { name: copy[locale].App.addWord.ai.manual })).toBeInViewport();
   return sheet;
 }
@@ -68,10 +70,10 @@ test.describe('M5b flows (mocked API)', () => {
     await expect(edit.getByRole('textbox', { name: vi.addWord.edit.meaning })).toHaveValue('sức hút, khả năng tán tỉnh');
     await edit.getByRole('button', { name: new RegExp(vi.addWord.edit.level) }).click();
     await page.getByRole('option', { name: 'B2' }).click();
-    await edit.getByRole('button', { name: vi.addWord.saveManual }).click();
+    await edit.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({
-      group_id: DECK,
+      group_ids: [DECK],
       new_word: { lemma: 'rizz', meaning: 'sức hút, khả năng tán tỉnh', pos: 'noun', level: 'B2', examples: ["He's got serious rizz."], ai_suggestion: true },
       sentence: 'That guy has so much rizz.',
     });
@@ -171,7 +173,8 @@ for (const scheme of ['light', 'dark'] as const) {
       await noSideScroll(page, `${locale} panel`);
       expect(await seriousViolations(page), `${locale} panel`).toEqual([]);
       await sheet.getByRole('button', { name: t.addWord.ai.button }).click();
-      await expect(sheet.getByText(LONG_MEANING)).toBeVisible();
+      // The meaning shows in the list and on the preview card (M4.4).
+      await expect(sheet.getByText(LONG_MEANING).first()).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);
       await page.getByRole('button', { name: t.addWord.result.edit }).click();

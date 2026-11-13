@@ -2,8 +2,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Call } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordSheet } from './AddWordSheet';
 import { LAST_GROUP_KEY } from './last-group';
 
@@ -78,10 +78,10 @@ describe('Edit before saving (K/87)', () => {
     await userEvent.click(await screen.findByRole('option', { name: 'B2' }));
     await userEvent.click(screen.getByRole('button', { name: /Chủ đề/ }));
     await userEvent.click(await screen.findByRole('option', { name: 'Đời sống' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect(quickAdds(calls)[0].body).toEqual({
-      group_id: TRAVEL,
+      group_ids: [TRAVEL],
       new_word: {
         lemma: 'rizz', meaning: 'sức hút, khả năng tán tỉnh', pos: 'noun', level: 'B2', topics: ['daily-life'],
         examples: ["He's got serious rizz."], ai_suggestion: true,
@@ -94,11 +94,11 @@ describe('Edit before saving (K/87)', () => {
     const { calls } = await openEdit();
     await userEvent.clear(screen.getByRole('textbox', { name: 'Câu ví dụ 1' }));
     await userEvent.clear(screen.getByRole('textbox', { name: 'Nghĩa' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     expect(await screen.findByText('Nhập nghĩa của từ.')).toBeInTheDocument();
     expect(quickAdds(calls)).toHaveLength(0);
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect((quickAdds(calls)[0].body as { new_word: { examples: string[] } }).new_word.examples).toEqual([]);
   });
@@ -120,7 +120,7 @@ describe('Edit before saving (K/87)', () => {
         return Response.json({ item_id: 'i1', sense_id: 's1', created_item: true, created_word: true, sentence_id: null }, { status: 201 });
       },
     });
-    const save = screen.getByRole('button', { name: 'Lưu từ' });
+    const save = screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ });
     await userEvent.click(save);
     await userEvent.click(save);
     release();

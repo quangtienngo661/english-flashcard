@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -12,12 +12,17 @@ import { clearPendingEmail, clearPendingPassword, readPendingEmail, readPendingP
 import { useSession } from '@/app-shell/session/session-context';
 import type { Me } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from '@/app-shell/use-turnstile';
-import { Button } from '@/app-ui/Button';
-import { showToast } from '@/app-ui/Toast';
-import { TextField } from '@/app-ui/TextField';
+import { useTurnstile } from './use-turnstile';
+import { Button } from '@/ui/Button';
+import { OtpField } from '@/ui/OtpField';
+import { PasswordField } from '@/ui/PasswordField';
+import { TextField } from '@/ui/TextField';
+import { TextButton } from '@/ui/TextButton';
+import { showToast } from '@/ui/Toast';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError } from './AuthCard';
+import { AuthHeading, FormError } from './AuthHeading';
+import { CaptchaPending } from './CaptchaPending';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 
 const DIGITS = 6;
 /** The API refuses a new code within this many seconds (auth.otp.email.cooldown). */
@@ -46,12 +51,14 @@ export function VerifyEmailForm() {
   const [memoryPassword] = useState(readPendingPassword);
   const [typedEmail, setTypedEmail] = useState('');
   const [typedPassword, setTypedPassword] = useState('');
-  const [digits, setDigits] = useState<string[]>(() => Array(DIGITS).fill(''));
+  const [code, setCode] = useState('');
   // When resending is allowed again, and the clock that counts down to it.
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_AFTER_S * 1000);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
-  const boxes = useRef<Array<HTMLInputElement | null>>([]);
+  const [missing, setMissing] = useState<{ email?: string; password?: string; code?: string }>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
   const firstStatus = useRef<string | null>(null);
   const submitting = useRef(false);
 
@@ -87,7 +94,7 @@ export function VerifyEmailForm() {
   const { submit, busy } = useSubmitOnce(async () => {
     submitting.current = true;
     try {
-      await store!.verifyEmail(email, digits.join(''), password, bot.token ?? undefined);
+      await store!.verifyEmail(email, code, password, bot.token ?? undefined);
     } catch (failure) {
       submitting.current = false;
       // The form stays on the page after a failure, so the spent token is replaced; a success leaves the page.
@@ -102,6 +109,16 @@ export function VerifyEmailForm() {
     event.preventDefault();
     if (bot.token === null) return;
     setError(null);
+    const empty = {
+      ...(email ? {} : { email: t('required.email') }),
+      ...(password ? {} : { password: t('required.password') }),
+      ...(complete ? {} : { code: t('required.code') }),
+    };
+    setMissing(empty);
+    if (Object.keys(empty).length > 0) {
+      focusFirstInvalid();
+      return;
+    }
     try {
       await submit();
     } catch (failure) {
@@ -134,75 +151,43 @@ export function VerifyEmailForm() {
     }
   }
 
-  function put(index: number, value: string) {
-    const digit = value.replace(/\D/g, '').slice(-1);
-    setDigits((current) => current.map((d, i) => (i === index ? digit : d)));
-    if (digit && index < DIGITS - 1) boxes.current[index + 1]?.focus();
-  }
-
-  function onKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Backspace' && !digits[index] && index > 0) boxes.current[index - 1]?.focus();
-  }
-
-  function onPaste(event: ClipboardEvent<HTMLInputElement>) {
-    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, DIGITS);
-    if (!pasted) return;
-    event.preventDefault();
-    setDigits(Array.from({ length: DIGITS }, (_, i) => pasted[i] ?? ''));
-    boxes.current[Math.min(pasted.length, DIGITS - 1)]?.focus();
-  }
-
-  const complete = digits.every((d) => d !== '');
+  const complete = new RegExp(`^\\d{${DIGITS}}$`).test(code);
   const intro = pendingEmail === null
     ? t('verify.bodyNoEmail')
     : params.get('reason') === 'login' ? t('verify.loginBody', { email: pendingEmail }) : t('verify.body', { email: pendingEmail });
 
   return (
-    <AuthCard title={t('verify.title')} intro={intro} onBack={() => router.back()}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <AuthHeading title={t('verify.title')} intro={intro} onBack={() => router.back()}>
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {pendingEmail === null && (
-          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
+          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} error={missing.email} />
         )}
         {memoryPassword === null && (
-          <TextField label={t('password')} type="password" value={typedPassword} onChange={setTypedPassword} autoComplete="current-password" />
+          <PasswordField label={t('password')} value={typedPassword} onChange={setTypedPassword} autoComplete="current-password" error={missing.password} />
         )}
-        <div className="flex gap-2">
-          {digits.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => {
-                boxes.current[i] = el;
-              }}
-              aria-label={t('verify.digit', { n: i + 1 })}
-              value={digit}
-              inputMode="numeric"
-              autoComplete={i === 0 ? 'one-time-code' : 'off'}
-              maxLength={2}
-              onChange={(e) => put(i, e.target.value)}
-              onKeyDown={(e) => onKeyDown(i, e)}
-              onPaste={onPaste}
-              className="size-12 min-w-0 flex-1 rounded-control border-2 border-border-strong bg-surface text-center text-title font-semibold text-ink outline-none focus-visible:border-primary"
-            />
-          ))}
-        </div>
-        {wait > 0 ? (
-          <p className="text-caption text-muted">{t('verify.resendIn', { seconds: wait })}</p>
-        ) : (
-          <button
-            type="button"
-            disabled={resendPress.busy || !email || bot.token === null}
-            onClick={() => void resend()}
-            className="w-fit text-caption font-semibold text-primary underline underline-offset-2 disabled:text-muted disabled:no-underline"
-          >
-            {t('verify.resend')}
-          </button>
-        )}
+        <OtpField
+          label={t('verify.title')}
+          hideLabel
+          digitLabel={(n) => t('verify.digit', { n })}
+          value={code}
+          onChange={setCode}
+          length={DIGITS}
+          error={missing.code}
+        />
         {bot.widget}
         <FormError message={error} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password || bot.token === null}>
+        <CaptchaPending show={bot.pending} />
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('verify.submit')}
         </Button>
+        {wait > 0 ? (
+          <p className="text-center font-wm-sans text-wm-small text-wm-muted">{t('verify.resendIn', { seconds: wait })}</p>
+        ) : (
+          <TextButton className="self-center" isDisabled={resendPress.busy || !email || bot.token === null} onPress={() => void resend()}>
+            {t('verify.resend')}
+          </TextButton>
+        )}
       </form>
-    </AuthCard>
+    </AuthHeading>
   );
 }

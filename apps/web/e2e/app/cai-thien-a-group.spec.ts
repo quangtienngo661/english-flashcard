@@ -53,9 +53,9 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await signedInAs(page, 'free', groupApi());
     const sheet = await openSheet(page);
     await sheet.getByRole('textbox', { name: vi.addWord.word, exact: true }).fill('deploy');
-    await sheet.getByRole('button', { name: fill(vi.addWord.save, { word: 'deploy' }), exact: true }).click();
+    await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(page.getByText(fill(vi.addWord.saved, { word: 'deploy', group: NAME }))).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: FIRST.sense_id });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: FIRST.sense_id });
     await expect(sheet).toBeHidden();
   });
 
@@ -69,9 +69,9 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await expect(senses.getByRole('radio', { name: /bố trí/ })).toBeChecked();
     await senses.getByText(FIRST.meaning.text, { exact: true }).click();
     await expect(senses.getByRole('radio', { name: /bố trí/ })).toBeChecked();
-    await sheet.getByRole('button', { name: fill(vi.addWord.save, { word: 'deploy' }), exact: true }).click();
+    await sheet.getByRole('button', { name: vi.addWord.saveShort, exact: true }).click();
     await expect(sheet).toBeHidden();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: SECOND.sense_id });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: SECOND.sense_id });
   });
 
   test('A14-7: topic navigation preselects the deck and Add all posts to it without creating a deck', async ({ page }) => {
@@ -89,6 +89,8 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await sheet.getByRole('link', { name: vi.addWord.seeWords }).click();
     await expect(page).toHaveURL(`/vi/app/topic?code=${TOPIC.code}&level=B1&group=${DECK}`);
     await expect(sheet).toBeHidden();
+    // The target select lives in the floating bar, shown once a word is ticked (giao diện mới M3, Figma 98:3127).
+    await page.getByRole('checkbox', { name: 'Chọn deploy' }).first().check({ force: true });
     await expect(page.getByRole('button', { name: new RegExp(vi.topic.addTo) })).toHaveText(NAME);
     await page.getByRole('button', { name: fill(vi.topic.addAll, { count: 2 }), exact: true }).click();
     await expect(page.getByText(fill(vi.topic.result, { added: 2, name: NAME }))).toBeVisible();
@@ -107,7 +109,7 @@ for (const scheme of ['light', 'dark'] as const) {
       const t = copy[locale].App;
       await page.goto(`/${locale}/app/group?id=${DECK}`);
       await expect(page.getByRole('heading', { name: NAME, exact: true })).toBeVisible();
-      await expect(page.getByRole('listitem', { name: 'deploy', exact: true })).toBeVisible();
+      await expect(page.getByRole('row', { name: 'deploy', exact: true })).toBeVisible();
       const add = page.getByRole('main').getByRole('button', { name: t.group.addWord, exact: true });
       await expect(add).toBeVisible();
       expect(await add.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
