@@ -239,6 +239,21 @@ describe('LoginForm (K/02, K/93)', () => {
     expect(await screen.findByText('Email hoặc mật khẩu chưa đúng.')).toBeInTheDocument();
   });
 
+  // Audit T27 (13/11/2026): an empty form used to reach the API and come back "Email hoặc mật khẩu chưa đúng.".
+  it('T27: sign-in with empty fields sends no request and shows both errors, focus on Email', async () => {
+    const { count } = renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') } });
+    await userEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    await waitFor(() => expect(email).toHaveFocus());
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(email).toHaveAccessibleDescription('Nhập email.');
+    const password = screen.getByLabelText('Mật khẩu');
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+    expect(password).toHaveAccessibleDescription('Nhập mật khẩu.');
+    expect(count('POST', '/v1/auth/login')).toBe(0);
+    expect(screen.queryByText('Email hoặc mật khẩu chưa đúng.')).toBeNull();
+  });
+
   it('E8: 403 account-locked shows the K/93 box and keeps what was typed', async () => {
     renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(403, 'account-locked') } });
     await login();
