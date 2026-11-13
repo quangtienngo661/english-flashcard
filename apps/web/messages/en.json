@@ -492,6 +492,11 @@
     },
     "auth": {
       "passwordMismatch": "The passwords don’t match.",
+      "required": {
+        "email": "Enter your email.",
+        "password": "Enter your password."
+      },
+      "captchaPending": "Verifying…",
       "showcase": {
         "today": "Today",
         "due": "words due",

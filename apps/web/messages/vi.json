@@ -492,6 +492,11 @@
     },
     "auth": {
       "passwordMismatch": "Mật khẩu nhập lại chưa khớp.",
+      "required": {
+        "email": "Nhập email.",
+        "password": "Nhập mật khẩu."
+      },
+      "captchaPending": "Đang xác minh…",
       "showcase": {
         "today": "Hôm nay",
         "due": "từ đến hạn",

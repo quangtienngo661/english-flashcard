@@ -24,15 +24,26 @@ export type TurnstileHandle = { reset(): void };
  * failed): the form keeps its submit button off then. A token works once, so the form calls `reset()` after every response
  * unless it leaves the page. With no site key nothing loads and nothing shows: the fake token is handed over at once.
  */
-export function TurnstileWidget({ onToken, ref }: { onToken: (token: string | null) => void; ref?: Ref<TurnstileHandle> }) {
+export function TurnstileWidget({
+  onToken,
+  onUnavailable,
+  ref,
+}: {
+  onToken: (token: string | null) => void;
+  /** Called with true when the script failed to load. */
+  onUnavailable?: (unavailable: boolean) => void;
+  ref?: Ref<TurnstileHandle>;
+}) {
   const t = useTranslations('App.errors');
   const siteKey = turnstileSiteKey();
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const latest = useRef(onToken);
+  const latestUnavailable = useRef(onUnavailable);
   const [unavailable, setUnavailable] = useState(false);
   useEffect(() => {
     latest.current = onToken;
+    latestUnavailable.current = onUnavailable;
   });
 
   useImperativeHandle(
@@ -73,6 +84,7 @@ export function TurnstileWidget({ onToken, ref }: { onToken: (token: string | nu
       (event.target as HTMLScriptElement | null)?.remove();
       latest.current(null);
       setUnavailable(true);
+      latestUnavailable.current?.(true);
     };
     let script: HTMLScriptElement | null = null;
     if (turnstileApi()) {

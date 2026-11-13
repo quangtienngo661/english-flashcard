@@ -3,7 +3,7 @@
 import { Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { safeNext } from '@/app-shell/locale-prefix';
@@ -18,6 +18,8 @@ import { Button } from '@/ui/Button';
 import { PasswordField } from '@/ui/PasswordField';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, FormError, LabelLink, OrDivider, SwitchAuthLink } from './AuthHeading';
+import { CaptchaPending } from './CaptchaPending';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 import { GoogleSignIn } from './GoogleSignIn';
 
 /** `?error=` slugs the Google trip comes back with (design §9.1); `account-locked` has its own box. */
@@ -43,6 +45,9 @@ export function LoginForm() {
   const returned = params.get('error');
   const [locked, setLocked] = useState(returned === 'account-locked');
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<{ email?: string; password?: string }>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
 
   const bot = useTurnstile();
 
@@ -62,6 +67,16 @@ export function LoginForm() {
     if (bot.token === null) return;
     setError(null);
     setLocked(false);
+    // Audit T27: an empty field is said here, before any request (an empty request also counts against the sign-in limit).
+    const empty = {
+      ...(email.trim() ? {} : { email: t('required.email') }),
+      ...(password ? {} : { password: t('required.password') }),
+    };
+    setMissing(empty);
+    if (empty.email || empty.password) {
+      focusFirstInvalid();
+      return;
+    }
     try {
       await submit();
     } catch (failure) {
@@ -112,17 +127,19 @@ export function LoginForm() {
         </>
       }
     >
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} error={missing.email} />
         <PasswordField
           label={t('password')}
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
+          error={missing.password}
           labelAside={<LabelLink href={`/${locale}/app/forgot-password`}>{t('login.forgot')}</LabelLink>}
         />
         {bot.widget}
         <FormError message={error ?? (GOOGLE_ERRORS.find((slug) => slug === returned) ? tErrors(returned as (typeof GOOGLE_ERRORS)[number]) : null)} />
+        <CaptchaPending show={bot.pending} />
         <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('login.submit')}
         </Button>
