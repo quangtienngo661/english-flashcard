@@ -5,7 +5,8 @@ import { expect, type Page } from '@playwright/test';
 /**
  * Serious and critical axe violations of the settled page, as `id: targets` lines. It first waits until no finite
  * animation is running: a dialog or panel caught mid-entrance is still partly transparent and reads as low contrast.
- * Endless animations (loading spinners) are ignored, or the wait would never end.
+ * Endless animations (loading spinners) are ignored, or the wait would never end, and so are animations inside an
+ * aria-hidden scene, which axe does not scan.
  * It also waits until every open dialog is fully opaque: on a touch screen (the mobile project) React Aria keeps a new
  * dialog at opacity 0 for two frames before its entrance animation starts, so "no animation running" is briefly true
  * before the dialog has appeared, and the fade-in then overlaps the scan.
@@ -14,7 +15,11 @@ export async function seriousViolations(page: Page): Promise<string[]> {
   await expect
     .poll(() =>
       page.evaluate(() => ({
-        running: document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length,
+        running: document
+          .getAnimations()
+          .filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity)
+          // A decorative scene hidden from assistive tech (the sign-up showcase, one 14-16 s round) is not scanned by axe either.
+          .filter((a) => !((a.effect as KeyframeEffect | null)?.target?.closest('[aria-hidden="true"]'))).length,
         notOpaqueDialogs: [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].filter((dialog) => {
           for (let el: Element | null = dialog; el; el = el.parentElement) if (getComputedStyle(el).opacity !== '1') return true;
           return false;

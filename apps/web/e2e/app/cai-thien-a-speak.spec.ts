@@ -98,7 +98,7 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await expect(front).toHaveAttribute('data-flipped', 'false');
     await page.getByRole('button', { name: copy.en.App.review.flip }).click();
     await expect(front).toHaveAttribute('data-flipped', 'true');
-    await expect(page.getByText('triển khai')).toBeVisible();
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
     await page.getByRole('group', { name: /Card 1/ }).getByRole('button', { name: 'Play the US pronunciation' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
     await expect(page.getByRole('button', { name: 'Listen to the sentence' })).toHaveCount(2);
