@@ -82,8 +82,8 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
           error={error}
           autoFocus
         />
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <TextButton tone="muted" onPress={onClose} className="justify-center">
+        <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
+          <TextButton tone="muted" onPress={onClose} className="justify-center px-2">
             {t('common.cancel')}
           </TextButton>
           <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim()}>
@@ -129,8 +129,8 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
     <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={t('groups.renameTitle')} closeLabel={t('common.close')} isDismissable={!press.busy}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('groups.nameLabel')} value={name} onChange={setName} maxLength={GROUP_NAME_MAX} showCount error={error} autoFocus />
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <TextButton tone="muted" onPress={onClose} className="justify-center">
+        <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
+          <TextButton tone="muted" onPress={onClose} className="justify-center px-2">
             {t('common.cancel')}
           </TextButton>
           <Button type="submit" variant="primary" isPending={press.busy} isDisabled={!name.trim() || name.trim() === group.name}>
@@ -175,7 +175,7 @@ function DeleteGroupDialog({ group, leaveTo, onClose }: { group: Target; leaveTo
       isDismissable={!press.busy}
       footer={
         <>
-          <TextButton tone="muted" onPress={onClose} className="justify-center">
+          <TextButton tone="muted" onPress={onClose} className="justify-center px-2">
             {t('keep')}
           </TextButton>
           <Button variant="danger" onPress={() => void onDelete()} isPending={press.busy} isDisabled={!detail}>
