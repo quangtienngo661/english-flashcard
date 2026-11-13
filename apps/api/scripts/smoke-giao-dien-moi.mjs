@@ -164,11 +164,11 @@ const registerBody = (email) => ({
 async function registerVerified(email) {
   const before = (await mailsTo(email)).length;
   await want(api('POST', '/v1/auth/register', { body: registerBody(email) }), 201, `register ${email}`);
-  let verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
+  let verified = await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
   if (verified.status !== 200) {
     const beforeResend = (await mailsTo(email)).length;
     await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email, turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 202, 'request OTP');
-    verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
+    verified = await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
   }
   check(verified.status === 200, `verify ${email}: ${verified.status} ${verified.text}`);
   return { email, token: verified.json.access_token };
