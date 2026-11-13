@@ -378,6 +378,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/cloze-own-then-ai.md` (plan tóm tắt và as-built 09/11/2026; **chỉ API**, PR vào `dev`; smoke ở `docs/deliveries/cloze-own-then-ai-smoke-output.txt`). Nguồn `cloze_source: 'own_then_ai'`: từ có câu đã lưu thì hỏi từ câu đó (không tốn lượt AI), từ chưa có thì AI viết, trong cùng một phiên; item trả về có `ai: boolean`. Thay phần "Pro bật cả hai thì câu điền từ AI tự tắt" của A11. Hộp Tùy chỉnh phiên trong code **chưa** gửi nguồn mới: giao diện làm cùng đợt dựng hộp mới (vòng 13, "hai cột gọn"); danh sách việc và câu chưa chốt (con số lượt AI trong hộp) ở cuối delivery record. Design, decisions: `docs/superpowers/{specs,decisions}/2026-11-09-cloze-own-then-ai*`.
 
+## Đường deploy production (API trên VPS) — plan & as-built
+
+`docs/deliveries/prod-deploy.md` (plan tóm tắt 13/11/2026, as-built 14/11/2026; plan `docs/superpowers/plans/2026-11-13-prod-deploy.md`; runbook ở nhánh local `docs/deploy-checklist-pre-launch`). API và worker chạy trên một VPS bằng `deploy/compose.prod.yml` sau Caddy; deploy, rollback, backup và cảnh báo bằng script trong `deploy/scripts/` (cách dùng: `deploy/README.md`). Không còn TypedSQL: `prisma generate` không cần DB. Việc chỉ kiểm được trên VPS: mục "Chưa kiểm" của delivery record.
+
 ## Sửa bảo mật trước launch — as-built
 
 `docs/deliveries/pre-launch-fixes.md` (12/11/2026; F2, F3, F4, F5, F7, F10, F12 của review bảo mật 07/11 và M4 của launch B; không design doc, chủ dự án duyệt đề xuất trong chat). Đáng nhớ: khóa 10 lần sai giờ theo tài khoản + IP (bảng `login_failures`, bỏ hai cột lock trên `users`); đăng ký luôn 201; `verify-email` và `password/reset` cần `turnstile_token`; admin đổi email thì email mới chưa xác minh. Việc nhánh `refactor/giao-dien-moi` phải làm trước khi merge ở cuối file đó.
@@ -424,8 +428,8 @@ from `apps/api`:
 pnpm db:setup
 ```
 
-`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
-emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The backend
+`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate`, which needs no database
+(TypedSQL was replaced by `$queryRaw` on 14/11/2026, so the API image builds without one). The backend
 e2e suite is gone (D38, Bước 4); the only Testcontainers run left is `pnpm test:scale`, the two load measurements kept as a
 hand-run script, not in CI (D42), whose global setup runs the same sequence against a fresh Postgres container.
 

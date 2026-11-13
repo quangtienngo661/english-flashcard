@@ -18,7 +18,7 @@ jobs:
       run:
         working-directory: apps/api
     services:
-      # Live database for `prisma generate --sql` (TypedSQL needs a migrated DB to infer types) and for the schema drift check.
+      # Live database for the migrations and the schema drift check.
       postgres:
         image: postgres:17
         env:
@@ -47,7 +47,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Migrate and generate Prisma client + TypedSQL
+      - name: Migrate and generate the Prisma client
         run: pnpm db:setup
 
       # The database was just migrated from prisma/migrations, so an empty diff to prisma/models means no model change lacks a

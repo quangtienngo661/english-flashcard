@@ -29,8 +29,8 @@ từng secret. File có sẵn thì **không bao giờ bị ghi đè**; nếu cò
 
 - `Dockerfile` (root) có 3 target dùng chung một lockfile: `api`, `admin`, `web`. `.dockerignore` loại `node_modules`, `.env`, `docs`, `.claude`.
 - **api:** container chạy `pnpm db:setup && pnpm build && node scripts/run-dev.mjs` (API và worker cùng một container, giống `pnpm run:dev`).
-  Build lúc container khởi động chứ không lúc build image, vì `prisma generate --sql` (TypedSQL) phải đọc DB thật. Hệ quả: mỗi lần `up`
-  mất khoảng 1–2 phút trước khi API nghe cổng.
+  Migrate và build lúc container khởi động, nên mỗi lần `up` mất khoảng 1–2 phút trước khi API nghe cổng. Từ 14/11/2026 `prisma generate` không
+  cần DB nữa (bỏ TypedSQL); image production là target `api-prod` (build sẵn, không cần DB), dùng ở `deploy/compose.prod.yml`.
 - **admin:** `vite build --mode docker` rồi nginx. `--mode docker` (không phải production) để `VITE_API_BASE_URL` được là `http://localhost:…`;
   build production bắt buộc host `admin-api.` (`apps/admin/src/resolve-api-base-url.ts`).
 - **web:** `next build` với `NEXT_PUBLIC_LEARNER_APP=on` rồi `next start`. Form waitlist của trang landing cần Cloudflare D1, `next start`

@@ -1,0 +1,125 @@
+# Production stack on the VPS (deploy runbook M3). Run it only through deploy/scripts/*.sh, which pass
+#   -p wordmet -f deploy/compose.prod.yml --env-file $WORDMET_HOME/.env
+# so every ${VAR} below comes from that file or the shell. Nothing secret is written here.
+#   API_TAG        the commit the api/worker/migrate images were built from (set by deploy.sh / rollback.sh)
+#   HTTP_PORT, HTTPS_PORT, CADDY_SITES, CADDY_LOG_DIR   only changed for the local rehearsal
+name: wordmet
+
+x-api-env: &api-env
+  PORT: '3000'
+  DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+  REDIS_URL: redis://redis:6379
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+services:
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+      - '${HTTPS_PORT:-443}:443/udp'
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      CADDY_SITES: ${CADDY_SITES:-api.wordmet.com, admin-api.wordmet.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ${CADDY_LOG_DIR:-/var/log/caddy}:/var/log/caddy
+    depends_on:
+      - api
+    logging: *logging
+
+  api:
+    image: wordmet-api:${API_TAG:?}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    env_file: ${WORDMET_HOME:-/srv/wordmet}/.env
+    environment:
+      <<: *api-env
+      MAINTENANCE_ENABLED: 'false'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/v1/health/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: *logging
+
+  worker:
+    image: wordmet-api:${API_TAG:?}
+    command: ['node', 'dist/worker.js']
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    env_file: ${WORDMET_HOME:-/srv/wordmet}/.env
+    environment:
+      <<: *api-env
+      MAINTENANCE_ENABLED: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: *logging
+
+  # One-off, once per deploy: `compose --profile migrate run --rm migrate` (deploy.sh). Never run by rollback.sh.
+  migrate:
+    image: wordmet-api-migrate:${API_TAG:?}
+    profiles: ['migrate']
+    command: ['pnpm', 'exec', 'prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    # A runaway query or a forgotten open transaction cannot hold locks for longer than 5 minutes.
+    command: ['postgres', '-c', 'statement_timeout=300s', '-c', 'idle_in_transaction_session_timeout=300s']
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    # Queues (BullMQ) must never lose a key to eviction; the append-only file survives a restart.
+    command: redis-server --maxmemory-policy noeviction --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

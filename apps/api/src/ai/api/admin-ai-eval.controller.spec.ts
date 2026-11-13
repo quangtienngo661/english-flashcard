@@ -24,7 +24,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   const idemRows: Array<Record<string, unknown>> = [];
   const prisma = {
     sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {},
-    $queryRawTyped: async () => [{ locked: true }],
+    $queryRaw: async () => [{ locked: true }],
     $transaction: async (work: (tx: unknown) => Promise<unknown>) => work(prisma),
     idempotencyKey: {
       findFirst: async ({ where }: { where: Record<string, unknown> }) => idemRows.find((row) => Object.entries(where).every(([k, v]) => row[k] === v)) ?? null,

@@ -89,7 +89,6 @@ export function HouseAd() {
       <ul className="flex flex-col gap-2 font-wm-sans text-wm-small text-wm-ink">
         {perDay !== undefined && <Perk>{t('sessions', { count: perDay })}</Perk>}
         <Perk>{t('ai')}</Perk>
-        <Perk>{t('noAds')}</Perk>
       </ul>
       {price !== undefined && (
         <p className="font-wm-sans text-wm-base text-wm-muted">

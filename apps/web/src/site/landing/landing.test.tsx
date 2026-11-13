@@ -91,7 +91,8 @@ describe('PricingSection (QM8-2: three prices, the saving, no struck price, no s
     renderHome();
     expect(pricing().getByText(`0${NBSP}₫`, keepSpaces)).toBeInTheDocument();
     expect(pricing().getByText('không cần thẻ thanh toán')).toBeInTheDocument();
-    expect(pricing().getByText('Có thể có quảng cáo.')).toBeInTheDocument();
+    // Ads are off at launch: no card mentions them (owner 13/11/2026).
+    expect(pricing().queryByText(/quảng cáo/i)).not.toBeInTheDocument();
     expect(pricing().getByText('Có AI')).toBeInTheDocument();
   });
 

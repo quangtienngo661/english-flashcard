@@ -343,7 +343,6 @@
         "3 phiên luyện mỗi ngày",
         "Dùng thử câu luyện và tra từ bằng AI"
       ],
-      "freeAds": "Có thể có quảng cáo.",
       "freeSignup": "Tạo tài khoản miễn phí",
       "pro": "Pro",
       "proBadge": "Có AI",
@@ -365,7 +364,6 @@
       ],
       "proList": [
         "30 phiên luyện mỗi ngày",
-        "Không quảng cáo",
         "Mọi thứ của gói Miễn phí"
       ],
       "proSignup": "Tạo tài khoản"
@@ -711,10 +709,9 @@
     "houseAd": {
       "title": "Học nhiều hơn với Pro",
       "close": "Đóng",
-      "lead": "Gói Pro có nhiều phiên luyện và nhiều lượt AI hơn mỗi tháng, và không có quảng cáo.",
+      "lead": "Gói Pro có nhiều phiên luyện và nhiều lượt AI hơn mỗi tháng.",
       "sessions": "{count, number} phiên luyện mỗi ngày",
       "ai": "Nhiều câu luyện tập và lượt tra từ bằng AI hơn",
-      "noAds": "Không quảng cáo",
       "from": "Từ <b>{price}</b> cho 1 tháng",
       "cta": "Xem gói Pro",
       "later": "Để sau",
@@ -1774,7 +1771,6 @@
       "pro": "Pro",
       "usingThis": "Bạn đang dùng gói này",
       "freePriceNote": "không thu tiền",
-      "freeAds": "Có thể có quảng cáo.",
       "proBadge": "Có AI",
       "perMonth": "mỗi tháng",
       "perMonthApprox": "≈ {price} mỗi tháng",
@@ -1805,7 +1801,6 @@
         "aiLookup": "Tra từ bằng AI khi từ điển chưa có",
         "ai": "{practice, number} câu AI và {lookup, number} lượt tra AI mỗi tháng",
         "sessions": "{count, number} phiên luyện mỗi ngày",
-        "ads": "Không quảng cáo",
         "allFree": "Mọi thứ của gói Miễn phí"
       },
       "compare": "So sánh chi tiết các gói",
@@ -1817,9 +1812,7 @@
         "sessions": "Phiên luyện mỗi ngày",
         "ai": "Câu AI mới mỗi tháng",
         "lookup": "Lượt tra AI mỗi tháng",
-        "noAds": "Không quảng cáo",
-        "yes": "Có",
-        "no": "Không"
+        "yes": "Có"
       }
     },
     "deck": {
