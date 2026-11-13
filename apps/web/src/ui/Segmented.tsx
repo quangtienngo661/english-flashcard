@@ -27,7 +27,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
   // the count box are a step tighter there (room left for a three-digit count).
   // Owner 13/11/2026: with counts (the scope switch) the options are rounded squares, like the count boxes in them; the rest stay pills.
   const shape = counted ? 'rounded-wm-control' : 'rounded-wm-pill';
-  const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? (counted ? 'px-1.25 py-1.5 text-xs font-semibold' : 'px-2 py-1.5 text-xs font-semibold') : 'px-3.5 py-1.5 text-wm-small-strong';
+  const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? (counted ? 'px-1.25 py-0.5 text-xs font-semibold' : 'px-2 py-1.5 text-xs font-semibold') : 'px-3.5 py-1.5 text-wm-small-strong';
   return (
     <RadioGroup
       value={value}
