@@ -43,7 +43,6 @@ function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: st
         <span className="font-wm-sans text-wm-small text-wm-muted">{copy.freeNote}</span>
       </p>
       <CheckList items={copy.freeList} />
-      <p className="font-wm-sans text-wm-small text-wm-muted">{copy.freeAds}</p>
       <ButtonLink reload variant="secondary" href={register} className="w-full xl:mt-auto">
         {copy.freeSignup}
       </ButtonLink>

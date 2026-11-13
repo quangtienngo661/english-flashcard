@@ -71,6 +71,8 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     expect(screen.getByRole('link', { name: 'Xem gói Pro' })).toHaveAttribute('href', '/vi/app/plans');
     // One paragraph: the price sits inside it in large type (M7 Figma B §5.3).
     expect(paragraphs()).toContain('Từ 79.000 ₫ cho 1 tháng');
+    // Ads are off at launch: the dialog does not promise "no ads" (owner 13/11/2026).
+    expect(within(screen.getByRole('dialog')).queryByText(/quảng cáo/i)).not.toBeInTheDocument();
     expect(stored()).toMatchObject({ count: 1 });
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     await waitFor(() => expect(dialog()).toBeNull());

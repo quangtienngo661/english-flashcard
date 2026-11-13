@@ -58,7 +58,7 @@ beforeEach(() => {
 });
 
 describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M7.9)', () => {
-  it('Free: the lead, its card is "gói hiện tại" at 0 ₫ with the numbers of plans, ads, "bạn đang dùng gói này"; no eyebrow, no "Không cần thẻ ngân hàng"', async () => {
+  it('Free: the lead, its card is "gói hiện tại" at 0 ₫ with the numbers of plans, no ad line, "bạn đang dùng gói này"; no eyebrow, no "Không cần thẻ ngân hàng"', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Học đều mỗi ngày, lên Pro khi cần' })).toBeInTheDocument();
     expect(screen.getByText('Trả một lần cho mỗi kỳ, không tự gia hạn. Hết kỳ, bạn về gói Miễn phí.')).toBeInTheDocument();
@@ -73,14 +73,15 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     // LA3#1: the Free card names the monthly AI allowance, with the numbers of the config, and no longer says AI needs Pro.
     expect(within(free).getByText('12 câu AI và 4 lượt tra AI mỗi tháng')).toBeInTheDocument();
     expect(within(free).queryByText('Câu AI và tra bằng AI: cần gói Pro')).not.toBeInTheDocument();
-    expect(within(free).getByText('Có thể có quảng cáo.')).toBeInTheDocument();
+    // Ads are off at launch: no card mentions them (owner 13/11/2026).
+    expect(within(free).queryByText(/quảng cáo/i)).not.toBeInTheDocument();
     expect(within(free).getByText('Bạn đang dùng gói này')).toBeInTheDocument();
     expect(screen.queryByText(/Không cần thẻ ngân hàng/)).not.toBeInTheDocument();
     expect(screen.queryByText(/XX\.000/)).not.toBeInTheDocument();
     expect(screen.queryByText('Phiên luyện hôm nay')).not.toBeInTheDocument();
   });
 
-  it('Free: the Pro card has "có AI", its line, the period cards with 12 tháng checked, the six perks and "Mua gói Pro 12 tháng"', async () => {
+  it('Free: the Pro card has "có AI", its line, the period cards with 12 tháng checked, the five perks and "Mua gói Pro 12 tháng"', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     const pro = await screen.findByRole('region', { name: 'Pro' });
     expect(within(pro).getByText('Có AI')).toBeInTheDocument();
@@ -91,8 +92,9 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(within(pro).getByRole('radio', { name: /^12 tháng/ })).toBeChecked();
     for (const perk of [
       'AI viết câu luyện cho từng từ bạn học', 'Tra từ bằng AI khi từ điển chưa có', '250 câu AI và 80 lượt tra AI mỗi tháng',
-      '25 phiên luyện mỗi ngày', 'Không quảng cáo', 'Mọi thứ của gói Miễn phí',
+      '25 phiên luyện mỗi ngày', 'Mọi thứ của gói Miễn phí',
     ]) expect(within(pro).getByText(perk)).toBeInTheDocument();
+    expect(within(pro).queryByText(/quảng cáo/i)).not.toBeInTheDocument();
     expect(within(pro).getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeEnabled();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
     // The footnote about AI being switched on and the daily cap is gone (owner 05/11/2026).
@@ -314,7 +316,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(within(pro).getByText('Sau đó: 06/12/2027 – 05/03/2028')).toBeInTheDocument();
   });
 
-  it('"So sánh chi tiết các gói" is a heading that names the table, always shown with the same numbers; yes and no are words', async () => {
+  it('"So sánh chi tiết các gói" is a heading that names the table, always shown with the same numbers; yes is a word', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     expect(await screen.findByRole('heading', { level: 2, name: 'So sánh chi tiết các gói' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'So sánh chi tiết các gói' })).not.toBeInTheDocument();
@@ -327,7 +329,10 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(cells(/Câu AI mới mỗi tháng/)).toEqual(['12', '250']);
     expect(cells(/Lượt tra AI mỗi tháng/)).toEqual(['4', '80']);
     expect(cells(/Ôn thẻ và lịch ôn/)).toEqual(['Có', 'Có']);
-    expect(cells(/Không quảng cáo/)).toEqual(['Không', 'Có']);
+    expect(within(table).queryByRole('row', { name: /quảng cáo/i })).not.toBeInTheDocument();
+    expect(within(table).getAllByRole('rowheader').map((h) => h.textContent)).toEqual([
+      'Ôn thẻ và lịch ôn', 'Nhắc học qua email', 'Số nhóm', 'Phiên luyện mỗi ngày', 'Câu AI mới mỗi tháng', 'Lượt tra AI mỗi tháng',
+    ]);
   });
 
   it('LA3#11: when the config gives Free no AI (both numbers 0) the card and the table say so, as before', async () => {

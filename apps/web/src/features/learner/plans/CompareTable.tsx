@@ -26,7 +26,6 @@ export function CompareTable({ plans, groups }: { plans: AppConfig['plans']; gro
     [c('sessions'), String(plans.free.practice_sessions_per_day), String(plans.pro.practice_sessions_per_day)],
     [c('ai'), allowance(plans.free.ai_practice_per_cycle), String(plans.pro.ai_practice_per_cycle)],
     [c('lookup'), allowance(plans.free.ai_lookup_per_cycle), String(plans.pro.ai_lookup_per_cycle)],
-    [c('noAds'), c('no'), c('yes')],
   ];
   return (
     <div className="flex w-full flex-col gap-3">
