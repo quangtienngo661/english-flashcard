@@ -178,7 +178,7 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
   );
 }
 
-const FACE = 'cstack-face flex min-h-80 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-96';
+const FACE = 'cstack-face flex min-h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-117.5 [@media(max-height:46rem)]:min-h-80';
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
 function LightFront({ card }: { card: Card }) {

@@ -124,8 +124,8 @@ export function ReviewSession() {
           {session.index > 0 && session.card ? t('review.card', { n: session.index + 1, total }) : ''}
         </p>
         <div
-          // raw-ok: the pile, stack, pile grid of mockup L221 (the card column capped at 26rem); no token for a three-track grid
-          className="grid grid-cols-2 items-start gap-x-3 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)_minmax(0,1fr)] md:items-center md:gap-x-7"
+          // raw-ok: the pile, stack, pile grid of mockup L221 (the card column capped at 22.5rem, 360 px as in the owner's artifact 13/11/2026); no token for a three-track grid
+          className="grid grid-cols-2 items-start gap-x-3 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,22.5rem)_minmax(0,1fr)] md:items-center md:gap-x-7"
         >
           {/* The card first in reading order; on desktop the piles move to its sides (mockup L297: on a phone they sit under it). */}
           <div className="col-span-2 md:col-span-1 md:col-start-2 md:row-start-1">

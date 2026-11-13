@@ -41,7 +41,7 @@ export function LevelBar({ counts, size = 'md', centered = false }: { counts: re
               </Focusable>
               <Tooltip
                 offset={8}
-                className="group rounded-wm-row bg-wm-mark-ink px-3 py-2 font-wm-sans text-wm-small text-wm-on-accent shadow-wm-pop motion-safe:data-entering:animate-wm-feedback-in"
+                className="group rounded-wm-row bg-wm-ink px-3 py-2 font-wm-sans text-wm-small text-wm-surface shadow-wm-pop motion-safe:data-entering:animate-wm-feedback-in"
               >
                 <OverlayArrow>
                   <svg aria-hidden width={10} height={6} viewBox="0 0 10 6" className="fill-wm-mark-ink group-placement-bottom:rotate-180">

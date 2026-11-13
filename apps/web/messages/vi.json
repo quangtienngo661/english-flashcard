@@ -505,10 +505,7 @@
         "practice": "Điền từ vào câu",
         "result": "Đúng · lên {level}",
         "priority": "{count, number} ưu tiên",
-        "dueCount": "{count, number} đến hạn",
-        "pathTitle": "Đường nhớ của mỗi từ.",
-        "pathBody": "Trả lời đúng thì lên bậc và lâu hơn mới gặp lại; sai thì về Bậc 1.",
-        "onPath": "{count, number} từ đang đi trên đường này"
+        "dueCount": "{count, number} đến hạn"
       },
       "footer": {
         "copyright": "© {year} Wordmet",

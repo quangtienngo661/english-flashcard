@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { SpeakWord } from '@/ui/SpeakButton';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
@@ -25,12 +25,29 @@ export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
  */
 export function ResultTicket({ right, note, children, actions }: { right: boolean; note?: ReactNode; children?: ReactNode; actions: ReactNode }) {
   const t = useTranslations('App.practice.session');
+  const panel = useRef<HTMLDivElement>(null);
+  const perf = useRef<HTMLDivElement>(null);
+  // The notches are cut out of the panel with a mask at the perforation's height, so the real page shows through them in both themes
+  // (owner 13/11/2026: discs filled with the page colour showed as dark dots over the dark page's glow). The stub wraps on phones, so
+  // the height is measured, and again when the panel resizes.
+  useLayoutEffect(() => {
+    const box = panel.current;
+    const line = perf.current;
+    if (!box || !line) return;
+    const place = () => box.style.setProperty('--ticket-perf-y', `${line.offsetTop + 0.75}px`);
+    place();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(place);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
   return (
     // Announced through the session's live region (audit 26/10/2026 #8), so this panel is not a second status.
     <div
+      ref={panel}
       data-feedback
       className={cn(
-        'relative mx-4.5 -mt-5.5 flex flex-col gap-4 rounded-b-wm-card border-2 border-t-0 px-6 pb-4 pt-9.5 motion-safe:animate-wm-panel-drop',
+        'ticket-cut relative mx-4.5 -mt-5.5 flex flex-col gap-4 rounded-b-wm-card border-2 border-t-0 px-6 pb-4 pt-9.5 motion-safe:animate-wm-panel-drop',
         right ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-wrong-line bg-wm-wrong-soft',
       )}
     >
@@ -43,9 +60,10 @@ export function ResultTicket({ right, note, children, actions }: { right: boolea
         </p>
         {note && <div className="min-w-0 basis-full break-words font-wm-sans text-wm-meta font-semibold text-wm-muted md:flex-1 md:text-right">{note}</div>}
       </div>
-      <div aria-hidden className={cn('ticket-perf', right ? 'text-wm-pass' : 'text-wm-fail')} />
+      <div ref={perf} aria-hidden className={cn('ticket-perf', right ? 'text-wm-pass' : 'text-wm-fail')} />
       {children}
-      <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>
+      {/* Below 640 px the actions stack, full width (owner 13/11/2026: three buttons wrapped to the right at 320-390 px). */}
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">{actions}</div>
     </div>
   );
 }
@@ -133,7 +151,6 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
         {definition && <span className="min-w-0 break-words font-wm-sans text-wm-base text-wm-muted">{definition}</span>}
       </p>
       <div className="flex items-center gap-2">
-        {/* Large text (19 px bold): pass on the light wrong wash is 4.495:1, which only large text may use (F.14 tokens test). */}
         <span className="min-w-0 break-words font-wm-sans text-wm-word text-wm-pass">{lemma}</span>
         <SpeakWord text={lemma} />
       </div>

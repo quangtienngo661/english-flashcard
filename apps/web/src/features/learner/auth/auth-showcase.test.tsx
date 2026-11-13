@@ -49,17 +49,17 @@ describe('AuthShowcase', () => {
     expect(screen.queryByText('to make something bad less serious')).not.toBeInTheDocument();
   });
 
-  it('types the word, then the practice card ends with "Đúng · lên Bậc 2" and the due count falls from 12 to 11', () => {
+  it('opens on the final frame the server renders (no jump back to an empty box), then types the next word and the due count falls', () => {
     mockReducedMotion(false);
     renderShowcase();
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.queryByText('Đúng · lên Bậc 2')).not.toBeInTheDocument();
-    advance(1250);
-    expect(screen.getByText('miti')).toBeInTheDocument();
-    advance(1150);
     expect(screen.getByText('Đúng · lên Bậc 2')).toBeInTheDocument();
     expect(screen.getByText('11')).toBeInTheDocument();
-    expect(screen.queryByText('12')).not.toBeInTheDocument();
+    advance(1700 + 900 + 300);
+    expect(screen.getByText('allo')).toBeInTheDocument();
+    expect(screen.queryByText('Đúng · lên Bậc 2')).not.toBeInTheDocument();
+    advance(400 + 320 + 260 + 50);
+    expect(screen.getByText('Đúng · lên Bậc 3')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
   });
 
   it('names the six levels on the memory path with their intervals', () => {

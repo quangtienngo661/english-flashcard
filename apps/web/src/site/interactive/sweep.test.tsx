@@ -40,7 +40,6 @@ class FakeObserver {
 }
 
 const realMatchMedia = window.matchMedia;
-const realAnimate = HTMLElement.prototype.animate;
 
 beforeEach(() => {
   FakeObserver.all = [];
@@ -50,7 +49,6 @@ beforeEach(() => {
 afterEach(() => {
   document.documentElement.classList.remove('js');
   window.matchMedia = realMatchMedia;
-  HTMLElement.prototype.animate = realAnimate;
   vi.unstubAllGlobals();
 });
 
@@ -81,22 +79,22 @@ describe('one element watched twice on the shared observer (I1 of the M8b review
   });
 });
 
-describe('Sweep on the Pro card', () => {
-  it('is marked `data-wm-on` once the card is reported in view', () => {
+describe('the light on the Pro card border', () => {
+  // Owner 13/11/2026: the blurred light that ran around the card bulged out past it; it now runs on the border only, like the closing card.
+  it('lights the border ring once the card is reported in view, and no blurred light sits outside the card', () => {
     window.matchMedia = ((query: string) =>
       ({ matches: false, media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList) as typeof window.matchMedia;
-    HTMLElement.prototype.animate = vi.fn(
-      () => ({ cancel: () => {}, pause: () => {}, play: () => {}, currentTime: 0 }) as unknown as Animation,
-    );
     document.documentElement.classList.add('js');
     render(<PricingSection copy={vi_.Landing.plans} prices={FALLBACK_LANDING_DATA.prices} locale="vi" />);
-    const sweep = document.querySelector('[data-wm-sweep]');
-    expect(sweep).not.toBeNull();
+    const ring = document.querySelector('[data-pro-ring]');
+    expect(ring).not.toBeNull();
+    expect(ring?.querySelector('[data-pro-card]')).not.toBeNull();
+    expect(document.querySelector('[data-wm-sweep]')).toBeNull();
     // Control: the Pro card's heading is there and nothing is on before the observer reports.
     expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument();
-    expect(sweep?.hasAttribute('data-wm-on')).toBe(false);
+    expect(ring?.hasAttribute('data-wm-on')).toBe(false);
 
     act(() => FakeObserver.all.forEach((io) => io.report(true)));
-    expect(sweep?.hasAttribute('data-wm-on')).toBe(true);
+    expect(ring?.hasAttribute('data-wm-on')).toBe(true);
   });
 });

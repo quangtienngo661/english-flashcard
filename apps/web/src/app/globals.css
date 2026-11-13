@@ -246,28 +246,19 @@
 }
 
 /* F.14: the result ticket's perforation (drawing panelC): a 1.5 px dashed line across the panel at 40 % of the text colour (set fail or
-   pass on the element), with two 16 px notches in the page colour cut into the panel's sides. The negative margin is the panel's px-6. */
+   pass on the element). The negative margin is the panel's px-6. */
 @utility ticket-perf {
   position: relative;
   height: 0;
   margin-inline: -1.5rem;
   border-top: 1.5px dashed color-mix(in oklab, currentColor 40%, transparent);
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -0.5625rem;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 9999px;
-    background-color: var(--color-wm-bg);
-  }
-  &::before {
-    left: -0.5625rem;
-  }
-  &::after {
-    right: -0.5625rem;
-  }
+}
+/* Its two 16 px notches, cut out of the panel's sides at --ticket-perf-y (set by ResultTicket), so whatever is behind the panel shows
+   through. Until it is measured the circles sit above the panel and cut nothing. */
+@utility ticket-cut {
+  mask:
+    radial-gradient(circle 0.5rem at 0 var(--ticket-perf-y, -2rem), transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 0.5rem at 100% var(--ticket-perf-y, -2rem), transparent 98%, #000) right / 51% 100% no-repeat;
 }
 
 /* The two soft glows behind the centred sign-in card (Figma 36:385 "Quầng sáng": navy above left, yellow below right; P.14 strength from
@@ -583,16 +574,16 @@
 /* The glow behind the arc in the centre group's colour, its colour changing in 700ms. One radial that fades out inside its own box
    (the mask), so no edge shows on any side (owner f01, 13/11/2026; drawing `.car .glowA`). */
 .gcar-glow {
-  position: absolute;
-  inset: -2.5rem -10%;
+  /* Owner 13/11/2026 (artifact "Chồng thẻ và trang từ điển", N2 .glow): the glow lights the top of the page, centred, in the colour of
+     the centre group, and fades out downwards. Fixed to the viewport so no box edge can cut it (the carousel row clips sideways). */
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 40rem;
   pointer-events: none;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, currentColor 30%, transparent),
-    color-mix(in srgb, currentColor 10%, transparent) 55%,
-    transparent
-  );
-  mask-image: radial-gradient(60% 60% at 50% 45%, #000 40%, transparent 80%);
+  background:
+    radial-gradient(46% 50% at 50% 40%, color-mix(in srgb, currentColor 26%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, currentColor 7%, transparent), transparent 80%);
   transition: color var(--transition-duration-wm-halo) var(--ease-wm-out);
 }
 .gcar-glow.border-wm-group-0 { color: var(--color-wm-group-0); }
@@ -979,7 +970,6 @@
   /* Closing card glow: one turn in 6 s, blur 40 px. Pro card: the light's blur, the badges' 3000 ms round. */
   --wm-site-glow-turn: 6s;
   --wm-site-glow-blur: 40px;
-  --wm-site-sweep-blur: 24px;
   --wm-site-badge: 3000ms;
   /* 404 (Figma scene 5, 24:427): card opacity 700 ms, rise 28 px and scale .96 in 1000 ms; "404" from −22 px at 250 ms; the text and the
      button from 14 px at 450 / 550 / 680 ms; each 800 ms (opacity 600). */
@@ -1297,10 +1287,21 @@
     animation: wm-site-ping var(--wm-site-ping) ease-out infinite;
   }
 
-  /* Pro card (S/interactive/Sweep.tsx and the badges): drawn and pulsing only while the card is on screen (`data-wm-on`). */
-  html.js [data-wm-sweep][data-wm-on] {
-    display: block;
-    filter: blur(min(var(--wm-site-sweep-blur), var(--wm-blur-cap)));
+  /* Pro card: a short light runs round its 2 px border only while the card is on screen (`data-wm-on`), like the closing card's ring;
+     nothing is drawn outside the card (owner 13/11/2026). The badges pulse on the same switch. */
+  html.js [data-pro-ring][data-wm-on]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 2px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-accent) 74%, var(--color-wm-mark) 82%, transparent 94%);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    animation: wm-site-turn var(--wm-site-glow-turn) linear infinite;
   }
   html.js [data-wm-on] [data-ai-block] > li [data-ai-badge] {
     animation: wm-site-badge var(--wm-site-badge) infinite both;

@@ -14,7 +14,7 @@ import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import type { GroupSummary } from '../groups/groups-api';
 import type { ItemState, PageSense } from './word-api';
 
-/** Level tag: a 9 px level square and "Bậc 3 · Đề 12 · Writing" ("Mới · …" for a word not reviewed yet). */
+/** Level tag: a 9 px level square and "Bậc 3 · Bài báo sáng nay" ("Mới · …" for a word not reviewed yet). */
 export function LevelTag({ level, group }: { level: number; group?: string }) {
   const levelName = useLevelName();
   const name = levelName(toLevel(level));

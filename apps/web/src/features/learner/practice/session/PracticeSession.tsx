@@ -205,7 +205,8 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
             toast stays empty while this one is mounted. */}
         <StreakToast placement="session-corner" />
       </header>
-      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
+      {/* Owner 13/11/2026: the question sits a little lower on desktop, still above the middle (less on a short screen). */}
+      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10 ${done ? '' : 'md:pt-16 [@media(max-height:51.25rem)]:md:pt-9'}`}>
         {body}
         {/* P.13 (chỗ 17): the keys sit centred right under the panel, desktop only. */}
         {legend.length > 0 && (

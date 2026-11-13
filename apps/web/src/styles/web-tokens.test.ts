@@ -116,11 +116,9 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect(style('block-title-mobile')).toEqual(['1.25rem', '1.25', '-0.012em', '700']);
   });
 
-  it('F.14: the answer word on the wrong ticket is large text: pass on the light wash reaches 3:1, not 4.5:1', () => {
-    // #1b7a46 on #fae7e4 is 4.495:1, so pass text on the light wash must stay large (text-wm-word: 19 px, 700); dark reaches 4.5.
-    const text = tokens(web, 'text-wm');
-    expect([text.get('word'), text.get('word--font-weight')]).toEqual(['1.1875rem', '700']);
-    expect(contrast(light, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(3);
+  it('F.14: the answer word on the wrong ticket reaches 4.5:1 in both themes', () => {
+    // Owner 13/11/2026: fail at 12 % gave #fae7e4, 4.495:1 for pass; 11.5 % gives #fae8e6, 4.53:1.
+    expect(contrast(light, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(dark, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -260,9 +258,9 @@ describe('wm dark and level tokens (M9.8)', () => {
     expect([dark.get('scrim'), dark.get('paper'), dark.get('paper-line'), dark.get('halo-mark')])
       .toEqual(['rgb(0 0 0 / 0.55)', '#1e2334', '#2e3449', 'rgb(255 216 74 / 0.12)']);
     expect([dark.get('wrong-soft'), dark.get('wrong-line'), dark.get('wrong-ink')]).toEqual(['#352731', 'rgb(229 96 63 / 0.55)', '#e87052']);
-    // F.14: the result ticket's wash is fail 12 % on surface (oklab); its line fail at 55 %.
-    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fae7e4', 'rgb(184 53 42 / 0.55)', '#b8352a']);
-    expect(mixOklab(light.get('fail')!, light.get('surface')!, 0.12)).toBe(light.get('wrong-soft'));
+    // F.14: the result ticket's wash is fail 11.5 % on surface (oklab; 12 % left pass at 4.495:1); its line fail at 55 %.
+    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fae8e6', 'rgb(184 53 42 / 0.55)', '#b8352a']);
+    expect(mixOklab(light.get('fail')!, light.get('surface')!, 0.115)).toBe(light.get('wrong-soft'));
     expect([dark.get('accent-soft'), dark.get('pass-soft'), dark.get('fail-soft')]).toEqual(['#2c334f', '#24373c', '#3c2f3a']);
   });
 

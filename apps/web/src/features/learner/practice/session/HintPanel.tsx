@@ -19,10 +19,10 @@ export const hintLevels = (item: Item) => ([1, 2, 3] as const).filter((n) => ite
 // raw-ok: mockup L352 lays the hint rows on three columns: 24 px number, 112 px hint name, the content.
 const GRID = 'grid grid-cols-[1.5rem_7rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-3';
 // raw-ok: mockup L361 sets the first-letter hint in Bricolage 22 px with 0.12em tracking.
-const MASK = 'font-wm-display text-wm-block-title tracking-[0.12em] text-wm-ink';
+const MASK = 'font-wm-display text-wm-word tracking-[0.12em] text-wm-ink';
 
 // raw-ok: f04 sets the legacy first-letter hint (l___) with a tighter 0.02em tracking so the underscores read as one run.
-const LEGACY_MASK = 'font-wm-display text-wm-block-title tracking-[0.02em] text-wm-ink';
+const LEGACY_MASK = 'font-wm-display text-wm-word tracking-[0.02em] text-wm-ink';
 
 /**
  * K/63 "Gợi ý" box (copy doc §15 point 10; P.13, mockup L352-361), its own box 16 px under the question card: the title with progress dots at its right, then one row per level on
@@ -79,11 +79,11 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
               <span className="min-w-0 break-words text-wm-small text-wm-ink">
                 {value ? (
                   'kind' in value ? (
-                    value.kind === 'first_letter' ? <span className={MASK}>{`${value.text}___`}</span> : value.text
+                    value.kind === 'first_letter' ? <span className={MASK}>{`${upperFirst(value.text)}___`}</span> : value.text
                   ) : (
                     <>
                       <span aria-hidden className={LEGACY_MASK}>
-                        {value.first_letter + '_'.repeat(Math.max(0, value.length - 1))}
+                        {upperFirst(value.first_letter) + '_'.repeat(Math.max(0, value.length - 1))}
                       </span>
                       <span className="sr-only">{t('letters', { first: value.first_letter, length: value.length })}</span>
                     </>
@@ -103,4 +103,9 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
       </ol>
     </section>
   );
+}
+
+/** Owner 13/11/2026: the first letter in capitals reads at once ("l" looked like a bar); the screen reader text keeps it as sent. */
+function upperFirst(text: string) {
+  return text.charAt(0).toLocaleUpperCase('en') + text.slice(1);
 }

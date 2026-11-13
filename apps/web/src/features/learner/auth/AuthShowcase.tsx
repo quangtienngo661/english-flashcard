@@ -2,7 +2,7 @@
 
 import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { cn } from '@/lib/cn';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { useWordCycle } from '@/lib/word-cycle';
@@ -59,12 +59,20 @@ export function AuthShowcase() {
   const levelName = useLevelName();
   const levelInterval = useLevelInterval();
   const motion = !useReducedMotion();
-  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'first' });
+  // Starts on mitigate's final frame, the frame the server renders: starting on the empty blank made the panel jump back from the
+  // green answer to an empty box as soon as the page loaded (owner 13/11/2026).
+  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'final' });
   const word = WORDS[step.k % WORDS.length];
+  const panel = useRef<HTMLDivElement>(null);
+  const scale = useSceneScale(panel);
 
   return (
-    <div aria-hidden className="auth-showcase-ground relative isolate h-full overflow-hidden rounded-wm-dialog">
-      <div className="absolute left-1/2 top-1/2 h-217 w-160 -translate-x-1/2 -translate-y-1/2">
+    <div ref={panel} aria-hidden className="auth-showcase-ground relative isolate h-full overflow-hidden rounded-wm-dialog">
+      <div
+        className="absolute left-1/2 top-1/2 h-217 w-160"
+        // raw-ok: the scene keeps its 640 x 868 drawing and scales with the panel (owner 13/11/2026), so the transform is computed
+        style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
+      >
         <svg viewBox="0 0 640 868" className="absolute inset-0 size-full overflow-visible">
           <path d={PATH} fill="none" strokeWidth="2" strokeDasharray="3 7" className="stroke-wm-showcase-path" />
           {NODES.map(([x, y, level]) => (
@@ -105,7 +113,7 @@ export function AuthShowcase() {
 
         <Card
           // raw-ok: the tilt of the word card from the F.17 brief, -2.5deg, which has no Tailwind step
-          className="absolute left-6 top-15 z-3 min-h-73 w-70 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
+          className="absolute left-9 top-21 z-3 min-h-73 w-67 -rotate-[2.5deg] p-5 shadow-wm-pop md:p-5"
         >
           <div key={step.k} className={cn('flex flex-col gap-2', step.k > 0 && 'animate-wm-showcase-swap')}>
             <p className="font-wm-display text-wm-lemma text-wm-ink">{word.word}</p>
@@ -149,7 +157,7 @@ export function AuthShowcase() {
 
         <Card
           // raw-ok: the tilt of the practice card from the F.17 brief, -1.5deg, which has no Tailwind step
-          className="absolute left-66 top-150 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
+          className="absolute left-56 top-158 z-2 flex w-88 -rotate-[1.5deg] flex-col gap-2.5 p-4.5 shadow-wm-pop md:p-4.5"
         >
           <span className="self-start rounded-wm-control bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('practice')}</span>
           <p key={step.k} className={cn('min-h-15 font-wm-display text-wm-word text-wm-ink', step.k > 0 && 'animate-wm-showcase-swap')}>
@@ -172,13 +180,6 @@ export function AuthShowcase() {
           </p>
         </Card>
 
-        {/* Bottom right, clear of the path's start ("Mới" sits bottom left). */}
-        <div className="absolute bottom-5.5 right-6 z-3 flex max-w-75 flex-col gap-1.5">
-          <p className="font-wm-sans text-wm-small">
-            <b className="font-semibold text-wm-ink">{t('pathTitle')}</b> <span className="text-wm-muted">{t('pathBody')}</span>
-          </p>
-          <p className="font-wm-sans text-wm-label text-wm-muted">{t('onPath', { count: 69 })}</p>
-        </div>
       </div>
     </div>
   );
@@ -209,4 +210,26 @@ function GhostChip({ className, word }: { className: string; word: string }) {
       {word}
     </span>
   );
+}
+
+/**
+ * The scene's scale: it fills the panel's width or height, whichever runs out first (owner 13/11/2026: on a wide or zoomed-out screen the
+ * fixed 640 px scene sat small against the right edge), up to 1.3 times its drawn size.
+ */
+function useSceneScale(ref: RefObject<HTMLDivElement | null>) {
+  const [value, setValue] = useState(1);
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const fit = () => {
+      const { width, height } = box.getBoundingClientRect();
+      if (width > 0 && height > 0) setValue(Math.min(width / 640, height / 868, 1.3));
+    };
+    fit();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [ref]);
+  return value;
 }

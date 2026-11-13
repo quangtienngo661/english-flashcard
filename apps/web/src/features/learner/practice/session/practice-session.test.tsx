@@ -589,7 +589,7 @@ describe('PracticeSession (K/60–K/67)', () => {
         'POST /v1/practice/items/item-4/hint': () => Response.json({ level: 1, hint: { kind: 'first_letter', text: 'd' } }),
       }),
     });
-    expect(await screen.findByText('d___')).toBeInTheDocument();
+    expect(await screen.findByText('D___')).toBeInTheDocument();
     expect(screen.getByText('First letter')).toBeInTheDocument();
   });
 

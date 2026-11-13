@@ -30,8 +30,8 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
     });
 
     // F.17: nothing on the panel covers the memory path. Points every 8 px along the path, each grown to a travelling chip (46 x 16),
-    // and every node dot and label are keep-out areas for the three cards, the three ghost chips and the caption.
-    test(`at 1440 x 900 ${path} no card, ghost chip or caption covers the path, a node dot or a node label`, async ({ page }, testInfo) => {
+    // and every node dot and label are keep-out areas for the three cards, the three ghost chips (the caption went, owner 13/11/2026).
+    test(`at 1440 x 900 ${path} no card or ghost chip covers the path, a node dot or a node label`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -72,7 +72,6 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
             'ghost chip deadline': byText('deadline', 0),
             'ghost chip negotiate': byText('negotiate', 0),
             'ghost chip commute': byText('commute', 0),
-            caption: byText('Đường nhớ của mỗi từ.', 2),
           } as Record<string, Box | null>,
         };
       });
@@ -87,8 +86,8 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
       }
     });
 
-    // F.17 fix round 1: the three cards keep at least 4 px from each other and from the bottom-right caption (real boxes, rotation included).
-    test(`at 1440 x 900 ${path} each card keeps 4 px from the other cards and from the caption`, async ({ page }, testInfo) => {
+    // F.17 fix round 1: the three cards keep at least 4 px from each other (real boxes, rotation included).
+    test(`at 1440 x 900 ${path} each card keeps 4 px from the other cards`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -107,15 +106,13 @@ test.describe('M2.5 the sign-in pages: brand panel from 1280 px, centred card be
           'word card': byText('to make something bad less serious', 2),
           'Hôm nay card': byText('Hôm nay', 1),
           'practice card': byText('Điền từ vào câu', 1),
-          caption: byText('Đường nhớ của mỗi từ.', 2),
         } as Record<string, Box | null>;
       });
       // Distance between two boxes along the axis where they are apart; negative when they overlap.
       const gap = (a: Box, b: Box) => Math.max(a.x - (b.x + b.width), b.x - (a.x + a.width), a.y - (b.y + b.height), b.y - (a.y + a.height));
       for (const [name, box] of Object.entries(boxes)) expect(box, `${name} is drawn`).not.toBeNull();
       const pairs: Array<[string, string]> = [
-        ['word card', 'Hôm nay card'], ['word card', 'practice card'], ['Hôm nay card', 'practice card'],
-        ['word card', 'caption'], ['Hôm nay card', 'caption'], ['practice card', 'caption'],
+        ['word card', 'Hôm nay card'], ['word card', 'practice card'], ['Hôm nay card', 'practice card']
       ];
       const gaps = pairs.map(([a, b]) => `${a} / ${b}: ${gap(boxes[a]!, boxes[b]!).toFixed(1)} px`);
       console.log(`F17 gaps (${path}): ${gaps.join('; ')}`);

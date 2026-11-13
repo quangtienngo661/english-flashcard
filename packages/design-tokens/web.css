@@ -41,7 +41,7 @@
   --color-wm-paper: #fbfaf6;
   --color-wm-paper-line: #e8e4d8;
   --color-wm-halo-mark: rgb(255 216 74 / 0.34);
-  --color-wm-wrong-soft: #fae7e4;
+  --color-wm-wrong-soft: #fae8e6;
   --color-wm-wrong-line: rgb(184 53 42 / 0.55);
   --color-wm-wrong-ink: #b8352a;
   /* P.13 (mockup L321-331, L338, L352, L509-511): session blocks. translation-soft = color-mix(in oklab, accent 7%, surface);

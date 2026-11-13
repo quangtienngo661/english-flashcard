@@ -10,7 +10,7 @@ import { AuthShowcase } from './AuthShowcase';
 
 /**
  * Sign-in and sign-up (Figma 35:308, 35:405; design §5.4). From 1280 px: the form column (logo, a 400 px form, the footer) beside the
- * 640 px panel that tells the learning loop (P.14), with the card's glow behind the form. Narrower: the same centred card as the other
+ * 640–896 px panel that tells the learning loop (P.14), with the card's glow behind the form. Narrower: the same centred card as the other
  * sign-in pages, with no panel and no footer (Figma 37:485, 37:533).
  */
 export function SplitFrame({ children }: { children: ReactNode }) {
@@ -25,7 +25,8 @@ export function SplitFrame({ children }: { children: ReactNode }) {
         </div>
         <AuthFooter />
       </div>
-      <div className="hidden w-160 shrink-0 xl:block">
+      {/* At least 640 px, growing with the screen up to 896 px (owner 13/11/2026: a fixed 640 px looked pushed to the right when wide). */}
+      <div className="hidden w-[clamp(40rem,46vw,56rem)] shrink-0 xl:block">
         <AuthShowcase />
       </div>
     </main>

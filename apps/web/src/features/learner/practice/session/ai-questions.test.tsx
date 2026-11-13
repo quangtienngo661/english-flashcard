@@ -189,13 +189,13 @@ describe('AI question types (K/78a–K/81)', () => {
     await screen.findByRole('textbox', { name: 'Missing word' });
     // The cloze field has the focus, so H types a letter there; the button opens the hint.
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
-    expect(await screen.findByText('d___')).toBeInTheDocument();
+    expect(await screen.findByText('D___')).toBeInTheDocument();
     // Mockup L352-361: one row per hint (number, name, content); "Show hint 2" sits in the second row's content.
     const box = screen.getByRole('region', { name: 'Hint 1 of 3' });
     const rows = within(box).getAllByRole('listitem');
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText('First letter')).toBeInTheDocument();
-    expect(within(rows[0]).getByText('d___')).toBeInTheDocument();
+    expect(within(rows[0]).getByText('D___')).toBeInTheDocument();
     expect(within(rows[1]).getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
   });
 
@@ -205,17 +205,17 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
-    expect(await screen.findByText('c___')).toBeInTheDocument();
+    expect(await screen.findByText('C___')).toBeInTheDocument();
     expect(screen.queryByText('c')).not.toBeInTheDocument();
   });
 
-  it('F.13: a legacy hint {first_letter, length} shows l___ to the eye and l… · 4 letters to a screen reader', async () => {
+  it('F.13: a legacy hint {first_letter, length} shows L___ to the eye (first letter in capitals, owner 13/11/2026) and l… · 4 letters to a screen reader', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/hint': () => Response.json({ level: 1, hint: { first_letter: 'l', length: 4 } }),
     }) });
     await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
-    expect(await screen.findByText('l___')).toHaveAttribute('aria-hidden', 'true');
+    expect(await screen.findByText('L___')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('l… · 4 letters')).not.toHaveAttribute('aria-hidden');
   });
 
@@ -225,8 +225,8 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.click(screen.getByRole('button', { name: /^Hint/ }));
-    expect(await screen.findByText('a', { selector: '[aria-hidden="true"]' })).toBeInTheDocument();
-    expect(screen.queryByText('a_')).not.toBeInTheDocument();
+    expect(await screen.findByText('A', { selector: '[aria-hidden="true"]' })).toBeInTheDocument();
+    expect(screen.queryByText('A_')).not.toBeInTheDocument();
   });
 
   it('a hint that is not a first letter is shown as the API sends it', async () => {
@@ -236,7 +236,7 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByRole('textbox', { name: 'Missing word' });
     expect(await screen.findByText('very important')).toBeInTheDocument();
-    expect(await screen.findByText('c___')).toBeInTheDocument();
+    expect(await screen.findByText('C___')).toBeInTheDocument();
   });
 
   describe('a try-again says why (session synonyms design §3.1)', () => {
