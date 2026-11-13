@@ -69,7 +69,7 @@ function fakePrisma(options: { locked?: boolean } = {}) {
       transactions += 1;
       const prefix = `tx${transactions}:`;
       const snapshot = rows.map((row) => ({ ...row }));
-      const tx = { $queryRawTyped: async () => [{ locked: options.locked ?? true }], idempotencyKey: table(prefix) };
+      const tx = { $queryRaw: async () => [{ locked: options.locked ?? true }], idempotencyKey: table(prefix) };
       try {
         const result = await fn(tx);
         events.push(`${prefix}commit`);

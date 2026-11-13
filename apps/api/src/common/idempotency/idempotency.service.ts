@@ -1,5 +1,4 @@
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
-import { tryAdvisoryLock } from '../../generated/prisma/sql.js';
 import { decideClaim, type ClaimDecision } from './claim-decision.js';
 
 export type RunIdempotentResult<T> =
@@ -33,7 +32,9 @@ export async function runIdempotent<T>(
   let decision: ClaimDecision;
   try {
     decision = await prisma.$transaction(async (tx): Promise<ClaimDecision> => {
-      const [{ locked }] = await tx.$queryRawTyped(tryAdvisoryLock(key, userId, endpoint));
+      // Every parameter is cast so Postgres never has to guess the type of `$1 || ':'`.
+      const [{ locked }] = await tx.$queryRaw<Array<{ locked: boolean }>>(Prisma.sql`
+        SELECT pg_try_advisory_xact_lock(hashtext(${key}::text || ':' || ${userId}::text || ':' || ${endpoint}::text)::bigint) AS locked`);
       if (!locked) {
         return { kind: 'conflict', retryAfterSeconds: 2 };
       }

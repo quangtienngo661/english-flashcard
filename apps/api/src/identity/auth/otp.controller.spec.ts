@@ -13,7 +13,6 @@ import { createTestApp, type TestApp } from '../../../test/support/create-test-a
 
 // Persistence is unavailable in this sandbox. Keep routing, guards, validation,
 // the OTP service and response-close dispatch real; DB behavior has e2e coverage.
-vi.mock('../../generated/prisma/sql.js', () => ({ recordOtpFailure: vi.fn() }));
 
 describe('OTP HTTP contract (unit, isolated persistence)', () => {
   let ctx: TestApp;

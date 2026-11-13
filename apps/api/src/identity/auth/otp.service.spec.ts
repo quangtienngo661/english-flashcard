@@ -14,11 +14,7 @@ import { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { OtpService } from './otp.service.js';
 
-// Only the DB boundary is replaced; live-DB regeneration and SQL semantics are
-// verified by the e2e suite. No generated files are fabricated in the workspace.
-vi.mock('../../generated/prisma/sql.js', () => ({
-  recordOtpFailure: (...args: unknown[]) => ({ args }),
-}));
+// Only the DB boundary is replaced; SQL semantics are checked against a real Postgres by the smokes.
 
 describe('OTP decisions (unit, isolated persistence)', () => {
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
@@ -40,7 +36,7 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     createdAt: clock.now(),
   };
   const tx = {
-    $executeRaw: vi.fn(), $queryRawTyped: vi.fn(),
+    $executeRaw: vi.fn(), $queryRaw: vi.fn(),
     user: { findUnique: vi.fn(), update: vi.fn() },
     otpCode: { findFirst: vi.fn(), updateMany: vi.fn(), create: vi.fn() },
     otpFailureWindow: { findUnique: vi.fn(), update: vi.fn() },
@@ -56,7 +52,7 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     clock.set(new Date('2026-10-07T12:00:00Z'));
     res = Object.assign(new EventEmitter(), { closed: false }) as unknown as Response;
     tx.$executeRaw.mockResolvedValue(1);
-    tx.$queryRawTyped.mockResolvedValue([{ failures: 1, locked_until: null }]);
+    tx.$queryRaw.mockResolvedValue([{ failures: 1, locked_until: null }]);
     tx.user.findUnique.mockResolvedValue(dbUser);
     tx.otpFailureWindow.findUnique.mockResolvedValue(null);
     tx.otpCode.findFirst.mockResolvedValue(live);
@@ -203,41 +199,46 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     expect(tx.otpCode.updateMany).toHaveBeenCalledWith({
       where: { ...predicates(), id: live.id }, data: { consumedAt: clock.now() },
     });
-    expect(tx.$queryRawTyped).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
   it.each(['12345', 'abcdef', '１２３４５６'])('B1#10: malformed code %s never increments attempts', async (code) => {
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', code)).toEqual({ kind: 'no_live_code' });
     expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
-    expect(tx.$queryRawTyped).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('B1#10: missing live code is not counted', async () => {
     tx.otpCode.findFirst.mockResolvedValue(null);
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '123456')).toEqual({ kind: 'no_live_code' });
-    expect(tx.$queryRawTyped).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('B1#8: a failed conditional consume never succeeds', async () => {
     tx.otpCode.updateMany.mockResolvedValue({ count: 0 });
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '012345')).toEqual({ kind: 'no_live_code' });
-    expect(tx.$queryRawTyped).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('B1#8: failed conditional increment does not affect the cumulative window', async () => {
     tx.otpCode.updateMany.mockResolvedValue({ count: 0 });
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({ kind: 'no_live_code' });
-    expect(tx.$queryRawTyped).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('B1#8: wrong code counts both attempt counters', async () => {
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({ kind: 'wrong' });
     expect(tx.otpCode.updateMany).toHaveBeenCalledWith({ where: { ...predicates(), id: live.id }, data: { attempts: { increment: 1 } } });
-    expect(tx.$queryRawTyped).toHaveBeenCalledExactlyOnceWith({ args: [userId, 'verify_email', clock.now()] });
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    const sql = tx.$queryRaw.mock.calls[0][0] as Prisma.Sql;
+    expect(sql.values[0]).toBe(userId);
+    expect(sql.values[1]).toBe('verify_email');
+    // clock.now() returns a new Date on each call, so compare the instants.
+    expect(sql.values.slice(2).map((v) => (v as Date).getTime())).toEqual([0, 0, 0, 0, 0].map(() => clock.now().getTime()));
   });
 
   it('B1#10: 21st failure prepares the lock and notice', async () => {
-    tx.$queryRawTyped.mockResolvedValue([{ failures: 21, locked_until: null }]);
+    tx.$queryRaw.mockResolvedValue([{ failures: 21, locked_until: null }]);
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({
       kind: 'locked', lockedUntil: new Date('2026-10-08T12:00:00Z'),
       notice: expect.objectContaining({ to: dbUser.email, subject: expect.stringContaining('temporarily locked') }),

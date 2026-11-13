@@ -424,8 +424,8 @@ from `apps/api`:
 pnpm db:setup
 ```
 
-`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
-emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The backend
+`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate`, which needs no database
+(TypedSQL was replaced by `$queryRaw` on 14/11/2026, so the API image builds without one). The backend
 e2e suite is gone (D38, Bước 4); the only Testcontainers run left is `pnpm test:scale`, the two load measurements kept as a
 hand-run script, not in CI (D42), whose global setup runs the same sequence against a fresh Postgres container.
 

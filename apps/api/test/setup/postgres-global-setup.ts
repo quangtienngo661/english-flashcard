@@ -18,8 +18,8 @@ export async function setup(project: TestProject) {
     stdio: 'inherit',
   });
 
-  // TypedSQL needs the live, migrated database; generate before test files import it.
-  execSync('pnpm exec prisma generate --sql', {
+  // Generate the client before test files import it.
+  execSync('pnpm exec prisma generate', {
     env: { ...process.env, DATABASE_URL: connectionString },
     stdio: 'inherit',
   });
