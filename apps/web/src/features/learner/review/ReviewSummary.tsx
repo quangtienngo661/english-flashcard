@@ -1,8 +1,9 @@
 'use client';
 
 import { ListChecks } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { cn } from '@/lib/cn';
 import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { Kbd } from '@/ui/Kbd';
@@ -11,11 +12,11 @@ import type { GroupSummary } from '../groups/groups-api';
 
 // Design §8.3, GM20: summary blocks rise for 400 ms, 90 ms apart (Phiên luyện, Học, Ôn).
 export const STAGGER = [
-  'motion-safe:animate-summary-in',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:90ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:180ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:270ms]',
-  'motion-safe:animate-summary-in motion-safe:[animation-delay:360ms]',
+  'motion-safe:animate-wm-summary-in',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:90ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:180ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:270ms]',
+  'motion-safe:animate-wm-summary-in motion-safe:[animation-delay:360ms]',
 ] as const;
 
 /**
@@ -30,10 +31,10 @@ export function ReviewSummary({ counts, piles, group }: {
   const t = useTranslations('App.review');
   const tDeck = useTranslations('App.deck');
   const due = group ? group.today.priority + group.today.due : 0;
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const total = counts.known + counts.review;
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+    <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
       <div className={STAGGER[0]}>
         <Ring known={counts.known} total={total} label={t('ring', { known: counts.known, total })} caption={t('ringCaption')} />
       </div>
@@ -103,7 +104,7 @@ function Ring({ known, total, label, caption }: { known: number; total: number; 
           <span className="text-wm-lemma">{known}</span>
           <span className="text-wm-word text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

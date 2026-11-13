@@ -11,8 +11,8 @@ export function PhoneHeader() {
   const t = useTranslations('App.chrome');
   const locale = useLocale();
   return (
-    <div className="flex h-16 items-center justify-between gap-3 border-b border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:hidden">
-      <Link href={`/${locale}/app`} className="rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
+    <div className="flex h-14 items-center justify-between gap-3 border-b border-wm-line/80 bg-wm-surface/80 px-4 backdrop-blur-wm-glass backdrop-saturate-160 md:hidden">
+      <Link href={`/${locale}/app`} className="rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-wm-accent">
         <AppLogo />
       </Link>
       <div className="flex items-center gap-2">

@@ -15,12 +15,12 @@ export function WordChip({ word, tone = 'normal', groupId, className }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex max-w-full items-center gap-1.5 rounded-wm-sm border px-2 py-0.5 font-wm-sans text-wm-label',
+        'inline-flex max-w-full items-center gap-1.5 rounded-wm-key border px-2 py-0.5 font-wm-sans text-wm-label',
         tone === 'review' ? 'border-wm-fail/30 bg-wm-fail-soft text-wm-fail' : 'border-wm-line bg-wm-surface text-wm-ink',
         className,
       )}
     >
-      {groupId && <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-xs', groupTone(groupId, 1).bg)} />}
+      {groupId && <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', groupTone(groupId, 1).bg)} />}
       <span className="truncate">{word}</span>
     </span>
   );

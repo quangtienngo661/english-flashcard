@@ -35,13 +35,16 @@ export function HouseAd() {
   const previous = useRef(pathname);
   const me = state.status === 'signed-in' ? state.me : null;
   const ads = entitlements.data?.ads;
+  const entitlementsLoaded = entitlements.data !== undefined;
 
   useEffect(() => {
     if (previous.current === pathname) return;
+    // The account or the plan still loading: the navigation is noted, and counted, once both have arrived (this effect runs again then).
+    if (me === null || !entitlementsLoaded) return;
     previous.current = pathname;
     // Read at call time: the build inlines the variable, and a test may set it.
     if (process.env.NEXT_PUBLIC_ADSENSE_CLIENT) return;
-    if (me === null || ads?.show !== true || !SHOWS_ON.test(pathname)) return;
+    if (ads?.show !== true || !SHOWS_ON.test(pathname)) return;
     const counter = readCounter(me.id);
     if (counter === 'unreadable') return;
     const now = new Date();
@@ -52,7 +55,7 @@ export function HouseAd() {
     if (!writeCounter(me.id, { date: day, count, last_at: now.getTime() })) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- opens in reaction to a navigation (the browser's location), and the decision reads localStorage and the clock
     setShownAt(pathname);
-  }, [pathname, me, ads]);
+  }, [pathname, me, ads, entitlementsLoaded]);
 
   const price = config.data?.plans.pro.prices?.['1'];
   const perDay = config.data?.plans.pro.practice_sessions_per_day;
@@ -79,8 +82,8 @@ export function HouseAd() {
     >
       {/* Drawn above the title: first in the column by CSS order, read after the title. */}
       <div className="-order-1 flex gap-1.5">
-        <Tag tone="accent" mono>{t('badgePro')}</Tag>
-        <Tag tone="accent" mono>{t('badgeAi')}</Tag>
+        <Tag tone="accent">{t('badgePro')}</Tag>
+        <Tag tone="accent">{t('badgeAi')}</Tag>
       </div>
       <p className="font-wm-sans text-wm-small text-wm-muted">{t('lead')}</p>
       <ul className="flex flex-col gap-2 font-wm-sans text-wm-small text-wm-ink">

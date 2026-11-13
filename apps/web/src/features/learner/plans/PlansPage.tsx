@@ -87,7 +87,7 @@ export function PlansPage() {
           <PlanCard
             className="lg:w-117.5 lg:shrink-0"
             name={t('free')}
-            tags={plan === 'free' && <Tag mono>{t('yours')}</Tag>}
+            tags={plan === 'free' && <Tag>{t('yours')}</Tag>}
             intro={
               <p className="flex flex-wrap items-baseline gap-2">
                 <span className={FREE_PRICE}>{format.money(0, 'VND')}</span>
@@ -106,7 +106,7 @@ export function PlansPage() {
             footer={
               <>
                 <p className="font-wm-sans text-wm-small text-wm-muted">{t('freeAds')}</p>
-                {plan === 'free' && <p className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('usingThis')}</p>}
+                {plan === 'free' && <p className="text-wm-meta font-medium text-wm-muted">{t('usingThis')}</p>}
               </>
             }
           />
@@ -116,8 +116,8 @@ export function PlansPage() {
             name={t('pro')}
             tags={
               <>
-                <Tag tone="accent" mono>{t('proBadge')}</Tag>
-                {onPro && <Tag mono>{t('yours')}</Tag>}
+                <Tag tone="accent">{t('proBadge')}</Tag>
+                {onPro && <Tag>{t('yours')}</Tag>}
               </>
             }
             intro={
@@ -194,10 +194,10 @@ function PeriodChoice({ prices, months, onChange }: { prices: Prices; months: Mo
             trailing={
               <span className="flex flex-col items-end">
                 {offer.struck !== null && (
-                  <span aria-hidden className="font-wm-sans text-wm-mono text-wm-muted line-through">{format.money(offer.struck, 'VND')}</span>
+                  <span aria-hidden className="font-wm-sans text-wm-meta text-wm-muted line-through">{format.money(offer.struck, 'VND')}</span>
                 )}
                 <span className={PERIOD_PRICE}>{format.money(offer.price, 'VND')}</span>
-                <span className="font-wm-sans text-wm-mono text-wm-muted">
+                <span className="font-wm-sans text-wm-meta text-wm-muted">
                   {id === '1' ? t('perMonth') : t('perMonthApprox', { price: format.money(offer.perMonth, 'VND') })}
                 </span>
               </span>

@@ -2,10 +2,10 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type WheelEvent } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties, type MouseEvent, type PointerEvent, type Ref, type WheelEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
-import { stepTo } from './carousel';
+import { arcSlot, stepTo } from './carousel';
 import { GroupStack } from './GroupStack';
 import type { GroupSummary } from './groups-api';
 
@@ -13,24 +13,24 @@ import type { GroupSummary } from './groups-api';
 const SWIPE_PX = 40;
 const WHEEL_PX = 12;
 const WHEEL_GAP_MS = 380;
+/** A stack that moves further than this along the arc (it wrapped to the other end) jumps there with no transition (mockup L922-927). */
+const JUMP_STEPS = 3;
 
 /**
- * "Trượt mờ" (Figma 82:3213 / 82:3368, motion doc §3, design §8.5): the centre stack sharp, two neighbours each side smaller and
- * blurred (one each side on phones), the rest hidden. The centre opens its group; a side stack is pressed to bring it to the centre (owner 10/11/2026). Positions,
- * curves and blur live in globals.css (`.gcar-*`), driven by `--k` (distance to the centre) and `data-abs` (its size).
+ * "Vòng cung" (mockup L466-499, L881-945; design §8.5): the centre stack on top, two neighbours each side down an arc, turned and
+ * smaller (one each side reachable on phones), the rest hidden. The centre opens its group; a side stack is pressed to bring it to the
+ * centre (owner 10/11/2026). Each slot carries its `arcSlot` numbers as custom properties; the transform, curve and glow live in
+ * globals.css (`.gcar-*`), and `data-abs` (|k|) names its distance.
  */
 export function GroupCarousel({
   groups,
   centre,
-  instant,
   onStep,
   centreRef,
   onOpen,
 }: {
   groups: GroupSummary[];
   centre: number;
-  /** A jump of more than 3 groups: no animation. */
-  instant: boolean;
   onStep: (step: number) => void;
   centreRef?: Ref<HTMLDivElement>;
   onOpen?: (event: MouseEvent<HTMLAnchorElement>) => void;
@@ -40,8 +40,28 @@ export function GroupCarousel({
   const pointerX = useRef<number | null>(null);
   const lastWheel = useRef(0);
   const swiped = useRef(false);
+  const trackRef = useRef<HTMLElement>(null);
+  const lastK = useRef(new Map<string, number>());
   const centreGroup = groups[centre];
-  const halo = centreGroup ? groupTone(centreGroup.id, centreGroup.total) : null;
+  const glow = centreGroup ? groupTone(centreGroup.id, centreGroup.total) : null;
+
+  // Mockup n2apply (L922-927): a stack whose place changes by more than three (it wrapped from one end of the arc to the other) gets
+  // its new place with no transition, then its transition back, before the browser paints. Runs on every render, so a burst of
+  // presses never leaves a stack between two places or without its transition.
+  useLayoutEffect(() => {
+    const seen = new Map<string, number>();
+    trackRef.current?.querySelectorAll<HTMLElement>('[data-group]').forEach((slot) => {
+      const id = slot.dataset.group ?? '';
+      const k = Number(slot.dataset.k);
+      const before = lastK.current.get(id);
+      seen.set(id, k);
+      if (before === undefined || Math.abs(k - before) <= JUMP_STEPS) return;
+      slot.style.transition = 'none';
+      void slot.offsetWidth;
+      slot.style.transition = '';
+    });
+    lastK.current = seen;
+  });
 
   function onPointerDown(event: PointerEvent) {
     pointerX.current = event.clientX;
@@ -92,11 +112,11 @@ export function GroupCarousel({
 
   return (
     <div className="relative -mx-4 overflow-x-clip md:mx-0">
-      {halo && <div aria-hidden className={cn('gcar-halo', halo.wash)} />}
+      {glow && <div aria-hidden className={cn('gcar-glow', glow.border)} />}
       <section
+        ref={trackRef}
         aria-label={t('carousel')}
         className="gcar-track touch-pan-y select-none"
-        data-instant={instant || undefined}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (pointerX.current = null)}
@@ -108,16 +128,19 @@ export function GroupCarousel({
           const abs = Math.abs(k);
           if (abs > 3) return null;
           const isCentre = k === 0;
+          const desk = arcSlot(k, false);
+          const phone = arcSlot(k, true);
           return (
             <div
               key={g.id}
               className="gcar-slot"
               data-abs={abs}
               data-k={k}
+              data-group={g.id}
               inert={!isCentre || undefined}
               aria-hidden={!isCentre || undefined}
-              // raw-ok: the slot's distance to the centre drives its transform in globals.css
-              style={{ '--k': k } as CSSProperties}
+              // raw-ok: the slot's place on the arc (arcSlot) drives its transform in globals.css
+              style={{ '--x': desk.x, '--xp': phone.x, '--y': desk.y, '--r': desk.rotate, '--s': desk.scale, '--o': desk.opacity, '--z': desk.z } as CSSProperties}
             >
               <GroupStack
                 group={g}
@@ -135,7 +158,7 @@ export function GroupCarousel({
             <ArrowButton side="next" label={t('next')} onPress={() => onStep(1)} />
           </>
         )}
-        <p aria-hidden data-part="2" className="gcar-hint font-wm-mono text-wm-mono text-wm-muted">
+        <p aria-hidden data-part="2" className="gcar-hint text-wm-meta text-wm-muted">
           <span className="md:hidden">{t('hintPhone')}</span>
           <span className="hidden md:inline">{t('hint')}</span>
         </p>
@@ -154,7 +177,7 @@ function ArrowButton({ side, label, onPress }: { side: 'prev' | 'next'; label: s
       onClick={onPress}
       onPointerDown={(e) => e.stopPropagation()}
       className={cn(
-        'absolute top-46.5 z-20 hidden size-12 items-center justify-center rounded-wm-pill border border-wm-line bg-wm-surface text-wm-ink shadow-wm-soft outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:flex',
+        'absolute top-45 z-20 hidden size-12 items-center justify-center rounded-wm-pill border border-wm-line bg-wm-surface text-wm-ink shadow-wm-soft outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:flex',
         side === 'prev' ? 'left-0' : 'right-0',
       )}
     >

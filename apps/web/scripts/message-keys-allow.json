@@ -11,9 +11,7 @@
   { "key": "App.practice.current.source.*", "why": "src/features/learner/practice/CurrentSessionCard.tsx:23 t(session.source)" },
   { "key": "App.practice.customize.sorts.*", "why": "src/features/learner/practice/CustomizeDialog.tsx:371 tc(`sorts.${id}`)" },
   { "key": "App.practice.noWords.*", "why": "src/features/learner/practice/use-practice-starter.tsx:98 t(`noWords.${known}`)" },
-  { "key": "App.practice.recent.*", "why": "src/features/learner/practice/history-format.ts:15-16 t('chose'|'choseTf'), t(item.answer); other keys read by variable in the same file" },
   { "key": "App.practice.reports.status.*", "why": "src/features/learner/settings/reports/ReportRow.tsx:44 t(`status.${report.status}`)" },
-  { "key": "App.practice.session.ask.*", "why": "src/features/learner/practice/session/QuestionCard.tsx:54 t(`ask.${kind}`)" },
   { "key": "App.practice.session.kind.*", "why": "src/features/learner/practice/session/QuestionCard.tsx:43, PracticeSession.tsx:215 t(`kind.${kind}`)" },
   { "key": "App.practice.session.legend.*", "why": "src/features/learner/practice/session/PracticeSession.tsx:205 t(`legend.${key}`)" },
   { "key": "App.practice.session.hint.kinds.*", "why": "src/features/learner/practice/session/HintPanel.tsx:58 t(`kinds.${value.kind}`)" },
@@ -22,7 +20,6 @@
   { "key": "App.practice.weak.rules.*", "why": "src/features/learner/practice/WeakWordsPage.tsx:98 t(`rules.${key}`)" },
   { "key": "App.settings.aiLookupRefillTime", "why": "src/features/learner/settings/UsageSection.tsx:54 t(`${refill}Time`)" },
   { "key": "App.settings.aiPracticeRefillTime", "why": "src/features/learner/settings/UsageSection.tsx:54 t(`${refill}Time`)" },
-  { "key": "App.stages.*", "why": "src/features/learner/groups/stages.ts STAGE_KEYS read by tStage(key) (GroupPicker.tsx:132, LearningBlock.tsx:57)" },
   { "key": "App.transactions.*", "why": "src/features/learner/transactions/TransactionRow.tsx:21,34,37,57, TransactionDetail.tsx:37 built from item.kind, status, interval, provider" },
   { "key": "App.ui.dob.*", "why": "src/ui/DateOfBirthField.tsx:41 t(shown)" }
 ]

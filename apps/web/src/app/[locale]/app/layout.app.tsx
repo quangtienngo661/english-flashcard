@@ -17,7 +17,7 @@ export default async function LearnerAppLayout({ children }: { children: ReactNo
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       <AppIntl>
         <AppProviders>
-          <div className="min-h-dvh bg-canvas text-ink">{children}</div>
+          <div className="min-h-dvh bg-wm-bg text-wm-ink">{children}</div>
         </AppProviders>
       </AppIntl>
     </>

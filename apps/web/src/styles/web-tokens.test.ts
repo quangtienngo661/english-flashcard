@@ -31,10 +31,37 @@ function contrast(map: Map<string, string>, fg: string, bg: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** color-mix(in oklab, a p%, b) as #rrggbb, the way the browser mixes a level tint (mockup L165, L173). */
+function mixOklab(a: string, b: string, p: number): string {
+  const toLin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const fromLin = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+  const oklab = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => toLin(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const [l, m, s] = [
+      0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl,
+      0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl,
+      0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl,
+    ].map(Math.cbrt);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  };
+  const [x, y] = [oklab(a), oklab(b)];
+  const [L, A, B] = x.map((v, i) => v * p + y[i] * (1 - p));
+  const [l, m, s] = [L + 0.3963377774 * A + 0.2158037573 * B, L - 0.1055613458 * A - 0.0638541728 * B, L - 0.0894841775 * A - 1.291485548 * B]
+    .map((v) => v ** 3);
+  const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  return `#${rgb.map((c) => Math.round(Math.min(1, Math.max(0, fromLin(c))) * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
 const TEXT_PAIRS: Array<[string, string]> = [
   ['ink', 'bg'], ['ink', 'surface'], ['muted', 'bg'], ['muted', 'surface'], ['on-accent', 'accent'], ['accent', 'surface'],
   ['pass', 'pass-soft'], ['fail', 'fail-soft'], ['mark-ink', 'mark'],
-  ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
+  ['wrong-ink', 'wrong-soft'], ['accent', 'accent-soft'],
+  // F.14: the result ticket's text on its wash (the muted note, the answer word, the meaning).
+  ['muted', 'wrong-soft'], ['ink', 'wrong-soft'], ['muted', 'pass-soft'], ['ink', 'pass-soft'], ['ink', 'paper'], ['muted', 'paper'], ['accent', 'paper'],
+  // P.1: the row states "đến hạn" (warn) and "ưu tiên" (level-priority) are text (mockup L375), on cards and on the page.
+  ['warn', 'surface'], ['warn', 'bg'], ['level-priority', 'surface'], ['pass', 'surface'],
 ];
 
 describe('wm design tokens (web.css, web-dark.css)', () => {
@@ -54,16 +81,21 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
       .flatMap((prefix) => [...tokens(web, prefix)].map(([name, value]) => [`${prefix}-${name}`, value]))
       .filter(([, value]) => /\dpx/.test(value));
     expect(withPx).toEqual([]);
-    expect(tokens(web, 'radius-wm').size).toBe(9);
+    expect(tokens(web, 'radius-wm').size).toBe(6);
     expect(tokens(web, 'shadow-wm').size).toBe(14);
   });
 
   it('pins the values the design names', () => {
     expect(light.get('accent')).toBe('#1e3a8a');
     expect(dark.get('accent')).toBe('#8da2ff');
-    expect(tokens(web, 'radius-wm').get('button')).toBe('0.625rem');
-    expect(tokens(web, 'radius-wm').get('xs')).toBe('0.1875rem');
+    // Radius scale C by element role (P.3; mockup L81-82): inner is always smaller than its container.
+    expect(Object.fromEntries(tokens(web, 'radius-wm')))
+      .toEqual({ key: '0.25rem', control: '0.5rem', row: '0.625rem', card: '0.875rem', dialog: '1rem', pill: '62.4375rem' });
     expect(tokens(web, 'text-wm').get('base')).toBe('1rem');
+    // Labels, counts, keycaps and IPA (P.2): Noto Sans 12 / 1.4, weight 500; the mono token is gone.
+    const text = tokens(web, 'text-wm');
+    expect([text.get('meta'), text.get('meta--line-height'), text.get('meta--font-weight')]).toEqual(['0.75rem', '1.4', '500']);
+    expect(text.has('mono')).toBe(false);
     expect(tokens(web, 'shadow-wm').get('btn')).toBe('0 0.625rem 1.75rem -0.625rem rgb(30 58 138 / 0.34)');
     // The Pro card of Gói học (M7 Figma B §1.1: 0 40 70 -40 rgba(27,36,68,.42)).
     expect(tokens(web, 'shadow-wm').get('pro')).toBe('0 2.5rem 4.375rem -2.5rem rgb(27 36 68 / 0.42)');
@@ -77,6 +109,26 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
     expect([text.get('card-heading-mobile'), text.get('card-heading-mobile--line-height')]).toEqual(['1.625rem', '1.3']);
   });
 
+  it('pins the section title sizes (P.4, mockup L126-127: Bricolage 700, 22 / 20, line-height 1.25, -0.012em)', () => {
+    const text = tokens(web, 'text-wm');
+    const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
+    expect(style('block-title')).toEqual(['1.375rem', '1.25', '-0.012em', '700']);
+    expect(style('block-title-mobile')).toEqual(['1.25rem', '1.25', '-0.012em', '700']);
+  });
+
+  it('F.14: the answer word on the wrong ticket reaches 4.5:1 in both themes', () => {
+    // Owner 13/11/2026: fail at 12 % gave #fae7e4, 4.495:1 for pass; 11.5 % gives #fae8e6, 4.53:1.
+    expect(contrast(light, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(dark, 'pass', 'wrong-soft')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('pins the result ticket type (F.14: Bricolage 800, 1.25rem title, 1.7rem lead)', () => {
+    const text = tokens(web, 'text-wm');
+    const style = (name: string) => ['', '--line-height', '--letter-spacing', '--font-weight'].map((k) => text.get(`${name}${k}`));
+    expect(style('ticket-title')).toEqual(['1.25rem', '1.2', '-0.01em', '800']);
+    expect(style('ticket-lead')).toEqual(['1.7rem', '1.1', '-0.02em', '800']);
+  });
+
   it('pins the app page title sizes (M7 Figma A §1.1, §1.5: 44 / 30, line-height 1.1)', () => {
     const text = tokens(web, 'text-wm');
     expect([text.get('app-title'), text.get('app-title--line-height'), text.get('app-title--letter-spacing')]).toEqual(['2.75rem', '1.1', '-0.0255em']);
@@ -87,26 +139,9 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
 
 // M3 (design §7.3, §7.4; motion doc §1, §3). Group inks: Figma's darker inks, green and blue mixed with ink (ruling).
 const GROUP = ['#e5603f', '#149384', '#7a55d3', '#d99a17', '#4a9637', '#d2427a', '#2a86d1'];
-const GROUP_INK = ['#984941', '#17696c', '#56429d', '#916d28', '#376d45', '#8c3765', '#29629d'];
-const STAGE = [
-  ['#eef0f4', '#9aa3b1', '#525a78'],
-  ['#f7e8dc', '#c07a45', '#7c4a28'],
-  ['#edf0f4', '#98a2b0', '#4d5664'],
-  ['#fbf0c8', '#d4a72c', '#6f5208'],
-  ['#dcf3ea', '#1f9d75', '#0c654c'],
-];
+const GROUP_INK = ['#984941', '#17696c', '#56429d', '#86641f', '#376d45', '#8c3765', '#29629d'];
 
-describe('wm stage, group and motion tokens (M3)', () => {
-  it('declares the six stage colours', () => {
-    STAGE.forEach(([bg, dot, ink], n) => {
-      expect([light.get(`stage-${n}-bg`), light.get(`stage-${n}-dot`), light.get(`stage-${n}-ink`)]).toEqual([bg, dot, ink]);
-    });
-    expect(light.get('stage-5-bg')).toBe('linear-gradient(90deg, #ffe0f2 0%, #fff2d1 35%, #dbffeb 70%, #d9f0ff 100%)');
-    expect(light.get('stage-5-dot')).toBe('linear-gradient(135deg, #ff8ad9, #ffd46b, #8cffb5, #7ad6ff)');
-    expect(light.get('stage-5-ink')).toBe('#3b2f6b');
-    expect(light.get('stage-5-solid')).toBe('#b28bff');
-  });
-
+describe('wm group and motion tokens (M3)', () => {
   it('declares seven group colours with soft, wash and ink, plus the empty tone', () => {
     GROUP.forEach((colour, n) => {
       expect(light.get(`group-${n}`)).toBe(colour);
@@ -128,13 +163,24 @@ describe('wm stage, group and motion tokens (M3)', () => {
   it('declares the carousel motion curves and durations', () => {
     const ease = tokens(web, 'ease-wm');
     expect(ease.get('out')).toBe('cubic-bezier(0.23, 1, 0.32, 1)');
-    expect(ease.get('carousel')).toBe('cubic-bezier(0.3, 1.25, 0.5, 1)');
+    expect(ease.get('carousel')).toBe('cubic-bezier(0.34, 1.56, 0.64, 1)');
     expect(ease.get('flip')).toBe('cubic-bezier(0.3, 1.15, 0.5, 1)');
     expect(ease.get('rise')).toBe('cubic-bezier(0.3, 1.3, 0.5, 1)');
     expect(ease.get('count')).toBe('cubic-bezier(0.3, 1.4, 0.5, 1)');
     const ms = tokens(web, 'transition-duration-wm');
     expect(Object.fromEntries(['carousel', 'fade', 'blur', 'halo', 'rise', 'count', 'flip', 'page-in', 'lift'].map((k) => [k, ms.get(k)])))
-      .toEqual({ carousel: '620ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
+      .toEqual({ carousel: '660ms', fade: '450ms', blur: '500ms', halo: '700ms', rise: '460ms', count: '520ms', flip: '380ms', 'page-in': '340ms', lift: '170ms' });
+  });
+
+  it('P.6: the strong ease-out and the kit curves keep the values they had in globals.css and theme.css', () => {
+    const ease = tokens(web, 'ease-wm');
+    expect(Object.fromEntries(['out-strong', 'standard', 'enter', 'exit', 'spring'].map((k) => [k, ease.get(k)]))).toEqual({
+      'out-strong': 'cubic-bezier(0.23, 1, 0.32, 1)',
+      standard: 'cubic-bezier(0.2, 0, 0, 1)',
+      enter: 'cubic-bezier(0.05, 0.7, 0.1, 1)',
+      exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)',
+      spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    });
   });
 });
 
@@ -212,7 +258,9 @@ describe('wm dark and level tokens (M9.8)', () => {
     expect([dark.get('scrim'), dark.get('paper'), dark.get('paper-line'), dark.get('halo-mark')])
       .toEqual(['rgb(0 0 0 / 0.55)', '#1e2334', '#2e3449', 'rgb(255 216 74 / 0.12)']);
     expect([dark.get('wrong-soft'), dark.get('wrong-line'), dark.get('wrong-ink')]).toEqual(['#352731', 'rgb(229 96 63 / 0.55)', '#e87052']);
-    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fbedeb', 'rgb(184 53 42 / 0.62)', '#b8352a']);
+    // F.14: the result ticket's wash is fail 11.5 % on surface (oklab; 12 % left pass at 4.495:1); its line fail at 55 %.
+    expect([light.get('wrong-soft'), light.get('wrong-line'), light.get('wrong-ink')]).toEqual(['#fae8e6', 'rgb(184 53 42 / 0.55)', '#b8352a']);
+    expect(mixOklab(light.get('fail')!, light.get('surface')!, 0.115)).toBe(light.get('wrong-soft'));
     expect([dark.get('accent-soft'), dark.get('pass-soft'), dark.get('fail-soft')]).toEqual(['#2c334f', '#24373c', '#3c2f3a']);
   });
 
@@ -250,7 +298,82 @@ describe('wm dark and level tokens (M9.8)', () => {
     expect(strictly(lum(dark), (a, b) => a < b)).toBe(true);
   });
 
+  // The M9 minor: pin the exact level hexes once the polish uses them (mockup L80 light, L93 dark).
+  it('pins the eight level colours, light and dark', () => {
+    const names = ['level-0', 'level-1', 'level-2', 'level-3', 'level-4', 'level-5', 'level-priority', 'level-due'];
+    expect(names.map((k) => light.get(k))).toEqual(['#a3abbd', '#b9e4c7', '#7ccd9b', '#3fae6c', '#218c4f', '#106a39', '#c4372c', '#e0a21b']);
+    // Owner 13/11/2026: the dark ramp was too close to the page; every level now reaches 3:1 on bg and surface.
+    expect(names.map((k) => dark.get(k))).toEqual(['#6b7590', '#2f7d55', '#3e9c69', '#52b97e', '#74d49c', '#a6ecc3', '#ff8d80', '#f0c04a']);
+    for (const k of names) expect(contrast(dark, k, 'bg'), k).toBeGreaterThanOrEqual(3);
+    for (const k of names) expect(contrast(dark, k, 'surface'), k).toBeGreaterThanOrEqual(3);
+  });
+
+  it('pins the warn colour (QP4: the mockup amber #b07a12 darkened, same hue, to reach 4.5:1 on surface and bg; dark #f0c04a)', () => {
+    expect([light.get('warn'), dark.get('warn')]).toEqual(['#97680f', '#f0c04a']);
+  });
+
+  // A level chip is ink on the level mixed into the surface: 18 % at rest, 40 % when chosen (mockup L165, L173).
+  it.each([['light', light], ['dark', dark]] as const)('ink reads at 4.5:1 on every level tint in %s', (_mode, map) => {
+    const surface = map.get('surface') ?? '';
+    const below = ['0', '1', '2', '3', '4', '5', 'priority', 'due'].flatMap((n) => [18, 40].map((p) => {
+      const tint = mixOklab(map.get(`level-${n}`) ?? '', surface, p / 100);
+      const ratio = contrast(new Map([['ink', map.get('ink') ?? ''], ['tint', tint]]), 'ink', 'tint');
+      return ratio < 4.5 ? `level-${n} ${p}% (${tint})=${ratio.toFixed(2)}` : null;
+    })).filter(Boolean);
+    expect(below).toEqual([]);
+  });
+
+  // P.4: LevelChip reads its tints from tokens (precomputed oklab mixes, mockup L165, L173). `all` mixes the accent.
+  const TONES = ['0', '1', '2', '3', '4', '5', 'priority', 'due', 'all'];
+  it.each([['light', light], ['dark', dark]] as const)('the level tint tokens are the oklab mixes, and ink reads at 4.5:1 on them in %s', (_mode, map) => {
+    const surface = map.get('surface') ?? '';
+    const base = (tone: string) => map.get(tone === 'all' ? 'accent' : `level-${tone}`) ?? '';
+    expect(TONES.map((tone) => map.get(`level-${tone}-tint`))).toEqual(TONES.map((tone) => mixOklab(base(tone), surface, 0.18)));
+    expect(TONES.map((tone) => map.get(`level-${tone}-tint-strong`))).toEqual(TONES.map((tone) => mixOklab(base(tone), surface, 0.4)));
+    const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(' ');
+    expect(TONES.map((tone) => map.get(`level-${tone}-line`))).toEqual(TONES.map((tone) => `rgb(${hex(base(tone))} / 0.45)`));
+    const below = TONES.flatMap((tone) => ['tint', 'tint-strong'].map((k) => [tone, k, contrast(map, 'ink', `level-${tone}-${k}`)] as const))
+      .filter(([, , ratio]) => ratio < 4.5)
+      .map(([tone, k, ratio]) => `level-${tone}-${k}=${ratio.toFixed(2)}`);
+    expect(below).toEqual([]);
+  });
+
+  it('mixes in oklab like the browser (checked against the dark pass-soft token, #62c98f 18 % on #171b2a)', () => {
+    expect(mixOklab('#62c98f', '#171b2a', 0.18)).toBe(dark.get('pass-soft'));
+    expect(mixOklab('#8da2ff', '#171b2a', 0.2)).toBe(dark.get('accent-soft'));
+  });
+
   it('sets color-scheme: dark first in the dark block', () => {
     expect(webDark).toMatch(/\[data-theme='dark'\] \{\s*color-scheme: dark;/);
+  });
+});
+
+// Part 12 (G.8, QA8, QA9): non-text control borders reach 3:1; group ink reads on its light wash.
+describe('wm control line and light group inks (G.8)', () => {
+  /** color-mix(in srgb, #fg p%, #bg) as #rrggbb (per channel on the encoded values, as the browser mixes in srgb). */
+  function mixSrgb(value: string): string {
+    const m = value.match(/^color-mix\(in srgb, (#[0-9a-f]{6}) (\d+)%, (#[0-9a-f]{6})\)$/);
+    if (!m) throw new Error(`not an srgb mix: ${value}`);
+    const p = Number(m[2]) / 100;
+    return `#${[1, 3, 5].map((i) => Math.round(parseInt(m[1].slice(i, i + 2), 16) * p + parseInt(m[3].slice(i, i + 2), 16) * (1 - p))
+      .toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  it('pins the control line, light and dark', () => {
+    expect([light.get('control-line'), dark.get('control-line')]).toEqual(['#878ea5', '#6b7392']);
+  });
+
+  it.each([['light', light], ['dark', dark]] as const)('the control line reaches 3:1 on surface and bg in %s', (_mode, map) => {
+    expect(contrast(map, 'control-line', 'surface')).toBeGreaterThanOrEqual(3);
+    expect(contrast(map, 'control-line', 'bg')).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 'empty'] as const)('light group %s: ink reads at 4.5:1 on its wash', (n) => {
+    const map = new Map([['ink', light.get(`group-${n}-ink`) ?? ''], ['wash', mixSrgb(light.get(`group-${n}-wash`) ?? '')]]);
+    expect(contrast(map, 'ink', 'wash')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('pins the group 3 ink (QA9), light and dark', () => {
+    expect([light.get('group-3-ink'), dark.get('group-3-ink')]).toEqual(['#86641f', '#d99a17']);
   });
 });

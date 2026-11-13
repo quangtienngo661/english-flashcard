@@ -29,19 +29,19 @@ export function LearnSection({ copy }: { copy: LandingCopy['learn'] }) {
             <PracticeDemo copy={practice} />
           </Card>
           <Card eyebrow={note.eyebrow} title={note.title} body={note.body} delay={120}>
-            <div className="flex flex-col gap-2.5 rounded-wm-lg bg-wm-bg p-4">
-              <p className={cn(TEXT_17, BORDER_15, 'flex h-11.5 items-center rounded-wm-md border-wm-line bg-wm-surface px-3 text-wm-ink')}>
+            <div className="flex flex-col gap-2.5 rounded-wm-row bg-wm-bg p-4">
+              <p className={cn(TEXT_17, BORDER_15, 'flex h-11.5 items-center rounded-wm-control border-wm-line bg-wm-surface px-3 text-wm-ink')}>
                 <span data-typed="">{note.typed}</span>
                 <span aria-hidden data-caret="" className="ml-px h-4.75 w-0.5 bg-wm-accent" />
               </p>
-              <p data-result="" className="flex items-baseline justify-between gap-3 rounded-wm-md bg-wm-surface px-3 py-2 shadow-wm-soft">
+              <p data-result="" className="flex items-baseline justify-between gap-3 rounded-wm-control bg-wm-surface px-3 py-2 shadow-wm-soft">
                 <span className="font-wm-display text-wm-word text-wm-ink">{note.lemma}</span>
                 <span className="font-wm-sans text-wm-caption text-wm-muted">{note.meaning}</span>
               </p>
             </div>
           </Card>
           <Card eyebrow={listen.eyebrow} title={listen.title} delay={220} className="hidden md:flex">
-            <div className="flex items-center gap-4 rounded-wm-lg bg-wm-bg p-4">
+            <div className="flex items-center gap-4 rounded-wm-row bg-wm-bg p-4">
               <span aria-hidden data-listen="" className="inline-flex size-13 shrink-0 items-center justify-center rounded-full bg-wm-accent ring-10 ring-wm-accent/25">
                 <Volume2 className="size-5.5 text-wm-on-accent" />
               </span>
@@ -63,7 +63,7 @@ export function LearnSection({ copy }: { copy: LandingCopy['learn'] }) {
                   key={bin.value}
                   data-bin=""
                   data-on={i === ACTIVE_BIN ? '' : undefined}
-                  className="group relative isolate flex flex-col gap-1 rounded-wm-md bg-wm-bg px-3 py-2 text-wm-ink before:absolute before:inset-0 before:-z-10 before:rounded-wm-md before:bg-wm-accent before:opacity-0 before:shadow-wm-btn data-on:text-wm-on-accent data-on:before:opacity-100 motion-safe:transition-colors motion-safe:duration-300 motion-safe:before:transition-opacity motion-safe:before:duration-300 md:flex-1 md:p-3.5"
+                  className="group relative isolate flex flex-col gap-1 rounded-wm-control bg-wm-bg px-3 py-2 text-wm-ink before:absolute before:inset-0 before:-z-10 before:rounded-wm-control before:bg-wm-accent before:opacity-0 before:shadow-wm-btn data-on:text-wm-on-accent data-on:before:opacity-100 motion-safe:transition-colors motion-safe:duration-300 motion-safe:before:transition-opacity motion-safe:before:duration-300 md:flex-1 md:p-3.5"
                 >
                   <span className={BIN_VALUE}>{bin.value}</span>
                   <span className="hidden font-wm-sans text-wm-caption text-wm-muted group-data-on:text-wm-on-accent group-data-on:opacity-80 md:block">{bin.label}</span>
@@ -93,12 +93,12 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <Reveal as="article" delay={delay} className={cn(CARD, 'flex flex-col gap-3.5 rounded-wm-xl p-5 text-left md:p-6', className)}>
+    <Reveal as="article" delay={delay} className={cn(CARD, 'flex flex-col gap-3.5 rounded-wm-card p-5 text-left md:p-6', className)}>
       <Eyebrow>{eyebrow}</Eyebrow>
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{title}</h3>
       {body && <p className="font-wm-sans text-wm-base text-wm-muted">{body}</p>}
-      {/* Figma pins the demo to the card's foot (a spacer in `7:67`), so the two columns end level. */}
-      <div className="mt-auto pt-2">{children}</div>
+      {/* The demo follows the description at the normal gap; a card taller than its content (the tall practice card) keeps the spare height below. */}
+      <div className="pt-2">{children}</div>
     </Reveal>
   );
 }
@@ -106,7 +106,7 @@ function Card({
 function PracticeDemo({ copy }: { copy: LandingCopy['learn']['practice'] }) {
   const shown = [0, 3];
   return (
-    <div className="flex flex-col gap-3 rounded-wm-lg bg-wm-bg p-4">
+    <div className="flex flex-col gap-3 rounded-wm-row bg-wm-bg p-4">
       <div className="hidden flex-col gap-3 md:flex">
         <p className="flex justify-between gap-3 font-wm-sans text-wm-caption text-wm-muted">
           <span>{copy.demoTitle}</span>

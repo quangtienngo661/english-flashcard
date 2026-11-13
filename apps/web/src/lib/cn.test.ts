@@ -14,3 +14,30 @@ describe('cn with wm tokens', () => {
     expect(cn('shadow-wm-card shadow-wm-pop')).toBe('shadow-wm-pop');
   });
 });
+
+// Kit §4: the title and site sizes were missing from the font-size group, so a text colour after them dropped the size.
+describe('cn keeps every wm title size next to a colour', () => {
+  it.each([
+    'text-wm-card-heading-mobile',
+    'text-wm-card-heading',
+    'text-wm-page-title',
+    'text-wm-page-title-mobile',
+    'text-wm-app-title',
+    'text-wm-app-title-mobile',
+    'text-wm-site-hero',
+    'text-wm-site-hero-mobile',
+    'text-wm-site-section',
+    'text-wm-site-section-mobile',
+    'text-wm-site-page',
+    'text-wm-site-page-mobile',
+    'text-wm-site-doc-heading',
+  ])('%s survives text-wm-ink', (size) => {
+    expect(cn(`${size} text-wm-ink`)).toBe(`${size} text-wm-ink`);
+  });
+});
+
+describe('cn keeps the section title sizes (P.4)', () => {
+  it.each(['text-wm-block-title', 'text-wm-block-title-mobile'])('%s survives text-wm-ink', (size) => {
+    expect(cn(`${size} text-wm-ink`)).toBe(`${size} text-wm-ink`);
+  });
+});

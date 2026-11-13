@@ -70,10 +70,10 @@ test.describe('M5b flows (mocked API)', () => {
     await expect(edit.getByRole('textbox', { name: vi.addWord.edit.meaning })).toHaveValue('sức hút, khả năng tán tỉnh');
     await edit.getByRole('button', { name: new RegExp(vi.addWord.edit.level) }).click();
     await page.getByRole('option', { name: 'B2' }).click();
-    await edit.getByRole('button', { name: vi.addWord.saveManual }).click();
+    await edit.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({
-      group_id: DECK,
+      group_ids: [DECK],
       new_word: { lemma: 'rizz', meaning: 'sức hút, khả năng tán tỉnh', pos: 'noun', level: 'B2', examples: ["He's got serious rizz."], ai_suggestion: true },
       sentence: 'That guy has so much rizz.',
     });

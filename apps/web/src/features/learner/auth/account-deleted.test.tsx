@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
 import { problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AccountDeleted } from './AccountDeleted';
 
 let search = new URLSearchParams();

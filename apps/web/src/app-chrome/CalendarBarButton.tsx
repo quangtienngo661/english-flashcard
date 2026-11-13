@@ -9,14 +9,14 @@ import { usePrefetchCalendarMonth } from '@/features/learner/calendar/calendar-a
 import { useCalendar } from '@/features/learner/calendar/calendar-context';
 import { monthLabel } from './CalendarButton';
 
-// raw-ok: Figma 95:344 is 32 × 34 with a 9 px radius; the 11 px strip carries JetBrains Mono Bold 7.5 and the day Bricolage ExtraBold 15, sizes no token has
-const BOX = 'h-8.5 w-8 rounded-[0.5625rem]';
+// raw-ok: Figma 95:344 is 32 × 34 with a 9 px radius; the 11 px strip carries Noto Sans Bold 7.5 and the day Bricolage ExtraBold 15, sizes no token has
+const BOX = 'h-8.5 w-8 rounded-wm-control';
 // raw-ok: as above, the strip's month label
 const MONTH = 'text-[0.46875rem]';
 // raw-ok: as above, today's day number
 const DAY = 'text-[0.9375rem]';
 // raw-ok: as above, the strip keeps the button's 9 px top corners
-const STRIP = 'rounded-t-[0.5625rem]';
+const STRIP = 'rounded-t-wm-control';
 
 /**
  * The calendar button in a session's top bar on phones (Figma 95:344, design §5.4): month strip and today, no streak badge, so it never
@@ -45,7 +45,7 @@ export function CalendarBarButton() {
         BOX,
       )}
     >
-      <span aria-hidden className={cn('-mx-px -mt-px flex h-2.75 items-center bg-wm-accent pl-2 font-wm-mono font-bold leading-none text-wm-on-accent', STRIP, MONTH)}>
+      <span aria-hidden className={cn('-mx-px -mt-px flex h-2.75 items-center bg-wm-accent pl-2 font-bold leading-none text-wm-on-accent', STRIP, MONTH)}>
         {monthLabel(locale, month)}
       </span>
       <span aria-hidden className={cn('flex flex-1 items-center justify-center font-wm-display font-extrabold leading-none', DAY)}>

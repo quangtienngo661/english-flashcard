@@ -1,9 +1,20 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-type Props = { as?: 'div' | 'section' | 'article' | 'li'; className?: string; children: ReactNode };
+type Props = {
+  as?: 'div' | 'section' | 'article' | 'li';
+  labelledBy?: string;
+  'aria-labelledby'?: string;
+  'aria-label'?: string;
+  className?: string;
+  children: ReactNode;
+};
 
-/** A surface card of the new UI (design §3.3: card shadow, radius 14–28; the Hôm nay cards use 20). */
-export function Card({ as: Tag = 'div', className, children }: Props) {
-  return <Tag className={cn('rounded-wm-xl bg-wm-surface p-5 shadow-wm-card', className)}>{children}</Tag>;
+/** A surface card (mockup L140, L589): radius 14, padding 24 (20 on phones), card shadow, no border. */
+export function Card({ as: Tag = 'div', labelledBy, 'aria-labelledby': ariaLabelledBy, 'aria-label': label, className, children }: Props) {
+  return (
+    <Tag aria-labelledby={labelledBy ?? ariaLabelledBy} aria-label={label} className={cn('rounded-wm-card bg-wm-surface p-5 shadow-wm-card md:p-6', className)}>
+      {children}
+    </Tag>
+  );
 }

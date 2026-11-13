@@ -39,7 +39,7 @@ export default async function NotFound() {
           />
           <div
             data-wm-404="card"
-            className="flex w-full max-w-89.5 flex-col items-center gap-3.5 rounded-wm-2xl border border-wm-line bg-wm-surface px-6 py-10 text-center shadow-wm-stage md:max-w-150 md:gap-4 md:px-12 md:py-14"
+            className="flex w-full max-w-89.5 flex-col items-center gap-3.5 rounded-wm-card border border-wm-line bg-wm-surface px-6 py-10 text-center shadow-wm-stage md:max-w-150 md:gap-4 md:px-12 md:py-14"
           >
             <p
               aria-hidden

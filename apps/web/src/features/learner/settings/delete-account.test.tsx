@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AccountDeleted } from '../auth/AccountDeleted';
 import { DeleteAccountPage } from './DeleteAccountPage';
 import vi_ from '../../../../messages/vi.json';

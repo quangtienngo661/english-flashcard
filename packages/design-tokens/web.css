@@ -8,7 +8,11 @@
   --color-wm-ink: #1b2444;
   --color-wm-muted: #525a78;
   --color-wm-ghost: #c9cedc;
+  /* Checkbox box and switch track when off (Part 12, QA8): a non-text control line at 3:1 (3,26:1 on surface, 3,04:1 on bg). */
+  --color-wm-control-line: #878ea5;
   --color-wm-line: #e1e5ee;
+  /* Word page hairlines (mockup L322): ink #1b2444 16 % on surface #ffffff, oklab */
+  --color-wm-rule: #d6d8df;
   --color-wm-accent: #1e3a8a;
   --color-wm-accent-soft: #e7ecf8;
   --color-wm-on-accent: #ffffff;
@@ -18,6 +22,8 @@
   --color-wm-pass-soft: #e4f2ea;
   --color-wm-fail: #b8352a;
   --color-wm-fail-soft: #f8e7e5;
+  /* "Đến hạn" text (mockup L73 #b07a12, 3.72:1 on white): same hue darkened to #97680f, 4.88:1 on surface, 4.56:1 on bg (QP4). */
+  --color-wm-warn: #97680f;
   /* Practice in the study calendar (M6 Figma A §1): the amber dot and the darker number of "phiên luyện". */
   --color-wm-practice: #d99a17;
   --color-wm-practice-ink: #a07725;
@@ -26,16 +32,35 @@
   --color-wm-ai-to: #3d78ff;
   --color-wm-glow-accent: rgb(30 58 138 / 0.28);
   --color-wm-glow-mark: rgb(255 216 74 / 0.42);
+  /* Drift layer behind the prices (F.19): accent, mark and pass at 22 / 26 / 16 %, alpha baked in. */
+  --color-wm-drift-accent: rgb(30 58 138 / 0.22);
+  --color-wm-drift-mark: rgb(255 216 74 / 0.26);
+  --color-wm-drift-pass: rgb(27 122 70 / 0.16);
 
-  /* M9: backdrop of dialogs, the Tra từ paper sheet, the mesh's yellow halo, the "Chưa đúng" box (fail 9 % on white, oklab), level colours
-     (0 none, 1-5 darken with the level; priority and due mark rows). Dark values in web-dark.css. */
+  /* M9: backdrop of dialogs, the Tra từ paper sheet, the mesh's yellow halo, the "Chưa đúng" ticket (F.14: fail 12 % on surface, oklab;
+     its line fail at 55 %), level colours (0 none, 1-5 darken with the level; priority and due mark rows). Dark values in web-dark.css. */
   --color-wm-scrim: rgb(27 36 68 / 0.3);
   --color-wm-paper: #fbfaf6;
   --color-wm-paper-line: #e8e4d8;
   --color-wm-halo-mark: rgb(255 216 74 / 0.34);
-  --color-wm-wrong-soft: #fbedeb;
-  --color-wm-wrong-line: rgb(184 53 42 / 0.62);
+  --color-wm-wrong-soft: #fae8e6;
+  --color-wm-wrong-line: rgb(184 53 42 / 0.55);
   --color-wm-wrong-ink: #b8352a;
+  /* P.13 (mockup L321-331, L338, L352, L509-511): session blocks. translation-soft = color-mix(in oklab, accent 7%, surface);
+     translation-line and hint-line = color-mix(accent 22%, transparent); translation-chip-line = color-mix(accent 30%, transparent);
+     answer-line = color-mix(pass 40%, transparent) ("Not quite" answer block); blank-soft = color-mix(accent 7%, transparent), blank-soft-focus
+     = 12 % (the fill-in input). Precomputed. */
+  --color-wm-translation-soft: #edf1f7;
+  --color-wm-translation-line: rgb(30 58 138 / 0.22);
+  --color-wm-translation-chip-line: rgb(30 58 138 / 0.3);
+  --color-wm-hint-line: rgb(30 58 138 / 0.22);
+  --color-wm-answer-line: rgb(27 122 70 / 0.4);
+  --color-wm-blank-soft: rgb(30 58 138 / 0.07);
+  --color-wm-blank-soft-focus: rgb(30 58 138 / 0.12);
+  /* P.17 (mockup L273-277): the Học side buttons. Light: the surface. Dark: fail-wash = color-mix(in oklab, fail 6%, surface),
+     pass-wash = color-mix(in oklab, pass 6%, surface). Precomputed. */
+  --color-wm-fail-wash: #ffffff;
+  --color-wm-pass-wash: #ffffff;
   --color-wm-level-0: #a3abbd;
   --color-wm-level-1: #b9e4c7;
   --color-wm-level-2: #7ccd9b;
@@ -44,18 +69,67 @@
   --color-wm-level-5: #106a39;
   --color-wm-level-priority: #c4372c;
   --color-wm-level-due: #e0a21b;
+  /* P.4: level chip tints (mockup L165, L173): tint = color-mix(in oklab, <tone> 18%, surface), tint-strong = 40 % (the chosen chip),
+     line = color-mix(<tone> 45%, transparent). Tones 0-5, priority, due, and all (on accent). Precomputed so the contrast test reads them. */
+  --color-wm-level-0-tint: #eeeff3;
+  --color-wm-level-0-tint-strong: #d9dde4;
+  --color-wm-level-0-line: rgb(163 171 189 / 0.45);
+  --color-wm-level-1-tint: #f3faf5;
+  --color-wm-level-1-tint-strong: #e3f4e8;
+  --color-wm-level-1-line: rgb(185 228 199 / 0.45);
+  --color-wm-level-2-tint: #e8f6ed;
+  --color-wm-level-2-tint-strong: #ccebd6;
+  --color-wm-level-2-line: rgb(124 205 155 / 0.45);
+  --color-wm-level-3-tint: #dff1e4;
+  --color-wm-level-3-tint-strong: #b8dfc3;
+  --color-wm-level-3-line: rgb(63 174 108 / 0.45);
+  --color-wm-level-4-tint: #daeade;
+  --color-wm-level-4-tint-strong: #add1b6;
+  --color-wm-level-4-line: rgb(33 140 79 / 0.45);
+  --color-wm-level-5-tint: #d6e3d9;
+  --color-wm-level-5-tint-strong: #a4c2ac;
+  --color-wm-level-5-line: rgb(16 106 57 / 0.45);
+  --color-wm-level-priority-tint: #f9ddd8;
+  --color-wm-level-priority-tint-strong: #efb3aa;
+  --color-wm-level-priority-line: rgb(196 55 44 / 0.45);
+  --color-wm-level-due-tint: #faefdc;
+  --color-wm-level-due-tint-strong: #f4dbb2;
+  --color-wm-level-due-line: rgb(224 162 27 / 0.45);
+  --color-wm-level-all-tint: #d2daeb;
+  --color-wm-level-all-tint-strong: #9eaed2;
+  --color-wm-level-all-line: rgb(30 58 138 / 0.45);
 
-  /* Radius (Wordmet số đo) */
-  /* 3px: the 9px colour squares of legends and stage rows (Figma, M3). */
-  --radius-wm-xs: 0.1875rem;
-  --radius-wm-sm: 0.375rem;
-  --radius-wm-md: 0.625rem;
-  --radius-wm-lg: 0.875rem;
-  --radius-wm-xl: 1.25rem;
-  --radius-wm-2xl: 1.75rem;
+  /* P.14 sign-in and sign-up panel (mockup L180, L418-443). ground: accent 13 % on bg (oklab); glow-1..4: the four radial glows (accent 34 %,
+     mark 48 %, pass 30 %, accent 26 % on transparent); path: the memory path, ink 35 % on transparent; ghost-chip / ghost-ink: the faint
+     background chips, surface 55 % and ink 55 % on transparent; node-label: bg 80 % on transparent; blank: the typed blank, accent 8 % on
+     transparent. field-line: input border on the mesh, ink 22 % on surface (oklab). card-glow-accent: the glow behind the form card, accent
+     22 % on transparent (its yellow is --color-wm-halo-mark). */
+  --color-wm-showcase-ground: #d7deec;
+  --color-wm-showcase-glow-1: rgb(30 58 138 / 0.34);
+  --color-wm-showcase-glow-2: rgb(255 216 74 / 0.48);
+  --color-wm-showcase-glow-3: rgb(27 122 70 / 0.3);
+  --color-wm-showcase-glow-4: rgb(30 58 138 / 0.26);
+  --color-wm-showcase-path: rgb(27 36 68 / 0.35);
+  --color-wm-showcase-ghost-chip: rgb(255 255 255 / 0.55);
+  --color-wm-showcase-ghost-ink: rgb(27 36 68 / 0.55);
+  --color-wm-showcase-node-label: rgb(246 247 250 / 0.8);
+  --color-wm-showcase-blank: rgb(30 58 138 / 0.08);
+  --color-wm-field-line: #c7cad3;
+  --color-wm-card-glow-accent: rgb(30 58 138 / 0.22);
+
+  /* Radius scale C, by element role (P.3; mockup L81-82). An inner element is always smaller than its container. */
+  /* key: keycaps, small labels, counts, word chips in piles. */
+  --radius-wm-key: 0.25rem;
+  /* control: buttons, inputs, selects, chips, icon buttons. */
+  --radius-wm-control: 0.5rem;
+  /* row: list rows, menus, popovers, toasts, hint and translation blocks. */
+  --radius-wm-row: 0.625rem;
+  /* card: cards, panels, the "Chưa đúng" box. */
+  --radius-wm-card: 0.875rem;
+  /* dialog: dialogs, sheets, the Học card, Nhóm stack cards. */
+  --radius-wm-dialog: 1rem;
+  /* pill: progress bars, avatar, phone tab pill. */
   --radius-wm-pill: 62.4375rem;
-  --radius-wm-button: 0.625rem;
-  --radius-wm-modal: 1rem;
 
   /* Shadows (effect styles Card, Row, Pop, Shadow/Soft, Lift; button shadows set on the buttons) */
   --shadow-wm-card: 0 0.0625rem 0.125rem rgb(27 36 68 / 0.06), 0 0.625rem 1.75rem -0.875rem rgb(27 36 68 / 0.2);
@@ -122,6 +196,24 @@
   --text-wm-card-title--line-height: 1.3;
   --text-wm-card-title--letter-spacing: -0.0417em;
   --text-wm-card-title--font-weight: 700;
+  /* F.14: the result ticket's title ("Not quite", "Right") and its lead line (the meaning), Bricolage 800. */
+  --text-wm-ticket-title: 1.25rem;
+  --text-wm-ticket-title--line-height: 1.2;
+  --text-wm-ticket-title--letter-spacing: -0.01em;
+  --text-wm-ticket-title--font-weight: 800;
+  --text-wm-ticket-lead: 1.7rem;
+  --text-wm-ticket-lead--line-height: 1.1;
+  --text-wm-ticket-lead--letter-spacing: -0.02em;
+  --text-wm-ticket-lead--font-weight: 800;
+  /* Section titles inside a page (P.4, mockup L126-127, L589): Bricolage 700, 22 desktop / 20 phone. */
+  --text-wm-block-title: 1.375rem;
+  --text-wm-block-title--line-height: 1.25;
+  --text-wm-block-title--letter-spacing: -0.012em;
+  --text-wm-block-title--font-weight: 700;
+  --text-wm-block-title-mobile: 1.25rem;
+  --text-wm-block-title-mobile--line-height: 1.25;
+  --text-wm-block-title-mobile--letter-spacing: -0.012em;
+  --text-wm-block-title-mobile--font-weight: 700;
   --text-wm-logo: 1.375rem;
   --text-wm-logo--line-height: 1.2;
   --text-wm-logo--letter-spacing: -0.0455em;
@@ -162,10 +254,10 @@
   --text-wm-caption--line-height: 1.4;
   --text-wm-caption--letter-spacing: 0;
   --text-wm-caption--font-weight: 400;
-  --text-wm-mono: 0.75rem;
-  --text-wm-mono--line-height: 1.4;
-  --text-wm-mono--letter-spacing: 0;
-  --text-wm-mono--font-weight: 400;
+  --text-wm-meta: 0.75rem;
+  --text-wm-meta--line-height: 1.4;
+  --text-wm-meta--letter-spacing: 0;
+  --text-wm-meta--font-weight: 500;
   /* Public display styles (Part 8 constraints: Bricolage Bold 700; letter-spacing = Figma percent written in em). */
   --text-wm-site-hero: 5rem;
   --text-wm-site-hero--line-height: 1.2;
@@ -208,28 +300,13 @@
   --transition-duration-wm-close: 150ms;
   /* Dialogs and sheets close on an accelerating curve (GM15), the "fade out" curve of motion §3. */
   --ease-wm-close: cubic-bezier(0.4, 0, 1, 1);
-
-  /* Stage colours (design §7.3, "Chip ngăn" 54:656). Stage 5 bg and dot are gradients: use them as background-image, not as a
-     colour utility; stage-5-solid is the flat square of "Từ theo ngăn" (M3 Figma A §5). */
-  --color-wm-stage-0-bg: #eef0f4;
-  --color-wm-stage-0-dot: #9aa3b1;
-  --color-wm-stage-0-ink: #525a78;
-  --color-wm-stage-1-bg: #f7e8dc;
-  --color-wm-stage-1-dot: #c07a45;
-  --color-wm-stage-1-ink: #7c4a28;
-  --color-wm-stage-2-bg: #edf0f4;
-  --color-wm-stage-2-dot: #98a2b0;
-  --color-wm-stage-2-ink: #4d5664;
-  --color-wm-stage-3-bg: #fbf0c8;
-  --color-wm-stage-3-dot: #d4a72c;
-  --color-wm-stage-3-ink: #6f5208;
-  --color-wm-stage-4-bg: #dcf3ea;
-  --color-wm-stage-4-dot: #1f9d75;
-  --color-wm-stage-4-ink: #0c654c;
-  --color-wm-stage-5-bg: linear-gradient(90deg, #ffe0f2 0%, #fff2d1 35%, #dbffeb 70%, #d9f0ff 100%);
-  --color-wm-stage-5-dot: linear-gradient(135deg, #ff8ad9, #ffd46b, #8cffb5, #7ad6ff);
-  --color-wm-stage-5-ink: #3b2f6b;
-  --color-wm-stage-5-solid: #b28bff;
+  /* The landing's and the kit's strong ease-out (Emil Kowalski), the same curve as --ease-wm-out; was --ease-out-strong in globals.css. */
+  --ease-wm-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  /* The curves of the menus, toasts, answer feedback and theme button, moved from theme.css in the polish round (P.6), values unchanged. */
+  --ease-wm-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-wm-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-wm-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-wm-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Group colours by ID (design §7.4, groupColorIndex). -soft: cards behind a stack; -wash: selected picker row, halo;
      -ink: numbers on white, Figma's darker inks (>= 4.5:1). Groups 4 and 6 have no drawn ink: color-mix(in oklab, colour 65%, #1b2444). */
@@ -248,7 +325,8 @@
   --color-wm-group-3: #d99a17;
   --color-wm-group-3-soft: color-mix(in srgb, #d99a17 50%, #ffffff);
   --color-wm-group-3-wash: color-mix(in srgb, #d99a17 12%, #ffffff);
-  --color-wm-group-3-ink: #916d28;
+  /* QA9: darkened from #916d28 (4,30:1) to read at 4,93:1 on its wash. */
+  --color-wm-group-3-ink: #86641f;
   --color-wm-group-4: #4a9637;
   --color-wm-group-4-soft: color-mix(in srgb, #4a9637 50%, #ffffff);
   --color-wm-group-4-wash: color-mix(in srgb, #4a9637 12%, #ffffff);
@@ -268,11 +346,11 @@
 
   /* Motion of the Nhóm carousel and the group open/close (motion doc §1, §3). */
   --ease-wm-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-wm-carousel: cubic-bezier(0.3, 1.25, 0.5, 1);
+  --ease-wm-carousel: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-wm-flip: cubic-bezier(0.3, 1.15, 0.5, 1);
   --ease-wm-rise: cubic-bezier(0.3, 1.3, 0.5, 1);
   --ease-wm-count: cubic-bezier(0.3, 1.4, 0.5, 1);
-  --transition-duration-wm-carousel: 620ms;
+  --transition-duration-wm-carousel: 660ms;
   --transition-duration-wm-fade: 450ms;
   --transition-duration-wm-blur: 500ms;
   --transition-duration-wm-halo: 700ms;

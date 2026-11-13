@@ -1,10 +1,12 @@
 'use client';
 
 import { Layers2, ListChecks } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { useRouteLocale } from '@/app-shell/route-locale';
+import { ErrorState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
 import { useGroups } from '../groups/groups-api';
@@ -20,11 +22,11 @@ import { STAGGER } from '../review/ReviewSummary';
 export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const t = useTranslations('App.recall');
   const tDeck = useTranslations('App.deck');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const errorText = useErrorMessage();
   const summary = useSummary(session.id);
   const group = useGroups().data?.items.find((g) => g.id === session.group_id);
-  if (summary.isPending) return <FullScreenSpinner />;
+  if (summary.isPending) return <SkeletonBlocks />;
   if (summary.isError) return <ErrorState message={errorText(summary.error)} onRetry={() => void summary.refetch()} />;
   const data = summary.data;
   const recall = data.recall ?? { leveled_up: 0, correct_kept: 0 };
@@ -32,14 +34,15 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
   const tiles: Array<{ label: string; value: number; tone: string }> = [
     { label: t('leveledUp'), value: recall.leveled_up, tone: 'text-wm-pass' },
     ...(recall.correct_kept > 0 ? [{ label: t('correctKept'), value: recall.correct_kept, tone: 'text-wm-accent' }] : []),
-    { label: t('wrongKept'), value: data.wrong, tone: 'text-wm-fail' },
-    { label: t('needsReview'), value: needsReview, tone: 'text-wm-ink' },
+    // P.13 (chỗ 7, mockup L1285): wrong and kept reads in ink, Review again in the fail colour.
+    { label: t('wrongKept'), value: data.wrong, tone: 'text-wm-ink' },
+    { label: t('needsReview'), value: needsReview, tone: 'text-wm-fail' },
   ];
   const newLeft = group?.today.new ?? 0;
   const dueLeft = group ? group.today.priority + group.today.due : 0;
   const home = `/${locale}/app`;
   return (
-    <section className="flex w-full flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+    <section className="flex w-full flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
       <div className={STAGGER[0]}>
         <Ring correct={data.correct} total={data.asked} label={t('ring', { correct: data.correct, total: data.asked })} caption={t('ringCaption')} />
       </div>
@@ -49,14 +52,14 @@ export function RecallSummary({ session }: { session: PracticeSessionView }) {
         </h1>
         <div className={cn('grid gap-3', tiles.length === 4 ? 'grid-cols-2' : 'grid-cols-3', STAGGER[2])}>
           {tiles.map((tile) => (
-            <div key={tile.label} className="flex flex-col gap-0.5 rounded-wm-lg bg-wm-bg px-4 py-3">
+            <div key={tile.label} className="flex flex-col gap-0.5 rounded-wm-row border border-wm-line bg-wm-surface px-4 py-3 shadow-wm-row">
               <span className={cn('font-wm-display text-wm-card-title tabular-nums', tile.tone)}>{tile.value}</span>
               <span className="font-wm-sans text-wm-small text-wm-ink">{tile.label}</span>
             </div>
           ))}
         </div>
         {newLeft > 0 && group ? (
-          <div className={cn('flex flex-col gap-3 rounded-wm-lg border border-wm-line p-4', STAGGER[3])}>
+          <div className={cn('flex flex-col gap-3 rounded-wm-row border border-wm-line p-4', STAGGER[3])}>
             <div>
               <h2 className="font-wm-sans text-wm-base-strong text-wm-ink">{t('newLeftTitle', { count: newLeft })}</h2>
               <p className="font-wm-sans text-wm-small text-wm-muted">{t('newLeftBody')}</p>
@@ -106,7 +109,7 @@ function Ring({ correct, total, label, caption }: { correct: number; total: numb
           <span className="text-wm-lemma">{correct}</span>
           <span className="text-wm-word text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

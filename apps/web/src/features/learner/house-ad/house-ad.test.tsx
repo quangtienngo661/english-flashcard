@@ -3,7 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
 import { makeMe } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { HouseAd } from './HouseAd';
 import { houseAdKey } from './house-ad-counter';
 
@@ -94,6 +94,18 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await go('/en/app/lookup');
     expect(await screen.findByRole('dialog', { name: 'Get more with Pro' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'See Pro' })).toHaveAttribute('href', '/en/app/plans');
+  });
+
+  // M9 minor: the effect used to note the new page before checking the account, so a change made while `me` loaded was never counted.
+  it('a soft navigation to Nhóm made while the account is still loading is counted once it arrives', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    renderApp(<HouseAd />, { routes: { ...routes(), 'GET /v1/me': async () => { await gate; return Response.json(makeMe()); } } });
+    await go('/vi/app/groups');
+    expect(dialog()).toBeNull();
+    await act(async () => { release(); });
+    expect(await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' })).toBeInTheDocument();
+    expect(stored()).toMatchObject({ count: 1 });
   });
 
   it('LB2E12: a full page load at /app/groups does not count (only a soft navigation does)', async () => {
@@ -205,7 +217,7 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await go('/vi/app/groups');
     const box = await screen.findByRole('dialog', { name: 'Học nhiều hơn với Pro' });
     expect(within(box).getByText('Pro')).toBeInTheDocument();
-    expect(within(box).getByText('có AI')).toBeInTheDocument();
+    expect(within(box).getByText('Có AI')).toBeInTheDocument();
     const opened = stored();
     expect(opened).toMatchObject({ count: 1 });
     await userEvent.click(within(box).getByRole('button', { name: 'Để sau' }));

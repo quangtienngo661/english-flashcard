@@ -46,7 +46,7 @@ export function LookupFilters({ value, total, onChange }: { value: LookupParams;
   );
 }
 
-/** A filter value in the sentence: underlined accent text that opens its menu. */
+/** A filter value in the sentence: yellow-marked text that opens its menu (mockup L593-595). */
 function FilterMenu({ label, children, items, onAction }: {
   label: string;
   children: ReactNode;
@@ -57,17 +57,17 @@ function FilterMenu({ label, children, items, onAction }: {
     <MenuTrigger>
       <Button
         aria-label={label}
-        className="rounded-wm-xs font-semibold text-wm-accent underline decoration-2 underline-offset-4 outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+        className="rounded-wm-key bg-wm-mark px-1 font-semibold text-wm-mark-ink outline-none hover:brightness-95 focus-visible:outline-3 focus-visible:outline-wm-accent"
       >
         {children}
       </Button>
-      <Popover placement="bottom start" className="max-h-80 min-w-44 overflow-y-auto rounded-wm-md border border-wm-line bg-wm-surface p-1 shadow-wm-pop outline-none">
+      <Popover placement="bottom start" className="max-h-80 min-w-44 overflow-y-auto rounded-wm-row border border-wm-line bg-wm-surface p-1 shadow-wm-pop outline-none">
         <Menu className="outline-none" onAction={(key) => onAction(String(key))}>
           {items.map((item) => (
             <MenuItem
               key={item.id}
               id={item.id}
-              className="cursor-pointer rounded-wm-sm px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft data-focused:text-wm-accent"
+              className="cursor-pointer rounded-wm-control px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft data-focused:text-wm-accent"
             >
               {item.label}
             </MenuItem>

@@ -80,6 +80,9 @@ ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
     NEXT_PUBLIC_LEARNER_APP=${NEXT_PUBLIC_LEARNER_APP} \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
     NEXT_TELEMETRY_DISABLED=1
-RUN pnpm exec next build
+# The landing's prices and FAQ are read from the API once, at build time (M8.3). The build reaches the API through the host
+# (bootstrap starts the API before it builds the web); unset or unreachable, the landing uses its fallback and the build says so.
+ARG LANDING_API_BASE_URL=
+RUN API_INTERNAL_BASE_URL=${LANDING_API_BASE_URL} pnpm exec next build
 ENV NODE_ENV=production
 CMD ["pnpm", "exec", "next", "start", "-H", "0.0.0.0", "-p", "3001"]

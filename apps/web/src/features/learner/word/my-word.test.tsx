@@ -3,8 +3,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { hardReplace } from '@/app-shell/navigate';
 import type { Call } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { WordPage } from './WordPage';
 
 vi.mock('next/navigation', () => ({
@@ -69,6 +69,38 @@ describe('My word page (K/88)', () => {
     expect(screen.queryByText('charm')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sửa từ' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Xóa từ' })).toBeInTheDocument();
+  });
+
+  it('a part of speech that was never set ("unspecified") is printed nowhere on the page', async () => {
+    const unset = page({ pos: 'unspecified' });
+    unset.sections[0].pos = 'unspecified';
+    open([unset]);
+    await screen.findByRole('heading', { level: 1, name: 'rizz' });
+    await screen.findByRole('region', { name: 'Bạn đang học' });
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /unspecified/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'sức hút, khả năng tán tỉnh' })).toBeInTheDocument();
+  });
+
+  it('"unspecified" is not printed in the group picker, the sentence picker or the edit dialog', async () => {
+    const unset = page({ pos: 'unspecified' });
+    unset.sections[0].pos = 'unspecified';
+    open([unset]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Thêm vào nhóm khác' }));
+    const picker = await screen.findByRole('dialog', { name: 'Lưu vào nhóm' });
+    expect(within(picker).getByText(/sức hút, khả năng tán tỉnh/)).toBeInTheDocument();
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+    await userEvent.click(within(picker).getByRole('button', { name: 'Hủy' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await userEvent.click(await screen.findByRole('button', { name: 'Thêm câu đã gặp' }));
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText(/^rizz: sức hút/)).toBeInTheDocument();
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Sửa từ' }));
+    const edit = await screen.findByRole('dialog', { name: 'Sửa từ' });
+    expect(within(edit).queryByText(/unspecified/)).not.toBeInTheDocument();
   });
 
   it('a private word the learner typed has no "AI gợi ý" label or source line', async () => {

@@ -3,12 +3,14 @@
 import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { shownPos } from '@/lib/pos';
 import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
+import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
+import { toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import type { Card } from '../groups/groups-api';
-import { highlightWord } from '../groups/highlight';
-import { STAGE_KEYS } from '../groups/stages';
+import { TargetWord } from '@/ui/TargetWord';
 import { useForms } from './use-forms';
 import { useCardDrag, type Rating } from './useCardDrag';
 
@@ -47,11 +49,13 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   ref,
 ) {
   const t = useTranslations('App.review');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
   const topRef = useRef<HTMLDivElement>(null);
   const [leaving, setLeaving] = useState<Leaving[]>([]);
   const [follow, setFollow] = useState(0);
   const top = cards[current] as Card | undefined;
+  /** The card already rated (Review Focus 5): a second press before React renders again still sees it on top, turned over. */
+  const rated = useRef<string | null>(null);
 
   function rateNow(rating: Rating, how: 'drag' | 'key', speed = 0) {
     if (!top) return;
@@ -60,6 +64,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       onNudge?.();
       return;
     }
+    if (rated.current === top.item_id) return;
+    rated.current = top.item_id;
     const from = topRef.current?.style.transform ?? '';
     setLeaving((list) => [...list, { card: top, direction: rating === 'known' ? 1 : -1, how, speed, from }]);
     setFollow(0);
@@ -82,6 +88,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const shownTop = useRef<string | null>(null);
   useLayoutEffect(() => {
     const id = top?.item_id ?? null;
+    // A new top card (or the same card back after a lost save) can be rated again.
+    rated.current = null;
     if (id && shownTop.current && shownTop.current !== id && topRef.current) {
       topRef.current.style.transform = '';
       void arrive(topRef.current);
@@ -90,7 +98,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   }, [top?.item_id]);
 
   const behind = cards.slice(current + 1, current + 1 + BEHIND);
-  const stage = top ? Math.min(top.level + 1, STAGE_KEYS.length - 1) : 1;
+  const next = toLevel(top ? top.level + 1 : 1);
   const strength = Math.min(1, Math.abs(dx) / 110);
 
   return (
@@ -120,7 +128,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
           {flipped && (
             <>
               <Stamp side="review" shown={stamp === 'review'} strength={stamp === 'review' ? strength : 0} label={t('stillLearning')} detail={stampDetails ? t('stampReview') : null} />
-              <Stamp side="known" shown={stamp === 'known'} strength={stamp === 'known' ? strength : 0} label={t('know')} detail={stampDetails ? t('stampKnow', { stage: tStage(STAGE_KEYS[stage]) }) : null} />
+              <Stamp side="known" shown={stamp === 'known'} strength={stamp === 'known' ? strength : 0} label={t('know')} detail={stampDetails ? t('stampKnow', { level: levelName(next) }) : null} />
             </>
           )}
         </div>
@@ -157,7 +165,7 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute top-6 z-10 flex flex-col rounded-wm-md border-2 bg-wm-surface px-3 py-1.5 font-wm-display text-wm-word',
+        'pointer-events-none absolute top-6 z-10 flex flex-col rounded-wm-control border-2 bg-wm-surface px-3 py-1.5 font-wm-display text-wm-word',
         side === 'review' ? 'right-6 rotate-7 border-wm-fail text-wm-fail' : 'left-6 -rotate-7 border-wm-pass text-wm-pass',
         !shown && 'invisible',
       )}
@@ -170,14 +178,14 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
   );
 }
 
-const FACE = 'cstack-face flex min-h-80 flex-col overflow-hidden rounded-wm-2xl border border-wm-line bg-wm-surface shadow-wm-card md:min-h-96';
+const FACE = 'cstack-face flex min-h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-117.5 [@media(max-height:46rem)]:min-h-80';
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
 function LightFront({ card }: { card: Card }) {
   return (
     <div className={cn(FACE, 'items-center justify-center gap-1 p-6 text-center')}>
       <span className="break-all font-wm-display text-wm-lemma text-wm-ink">{card.content.lemma}</span>
-      <span className="font-wm-sans text-wm-small text-wm-muted">{card.content.pos}</span>
+      <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(card.content.pos)}</span>
     </div>
   );
 }
@@ -189,6 +197,10 @@ function LightFront({ card }: { card: Card }) {
  */
 function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flipped: boolean; onFlip: () => void; still?: boolean }) {
   const t = useTranslations('App.review');
+  const desktop = useDesktop();
+  const levelName = useLevelName();
+  const levelInterval = useLevelInterval();
+  const level = toLevel(card.level);
   const { content } = card;
   const forms = useForms(still ? undefined : content.lemma);
   const pron = content.pronunciation ? { scope: content.scope, pronunciation: content.pronunciation } : null;
@@ -203,14 +215,13 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Badges card={card} />
           <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
             <span className="break-all font-wm-display text-wm-section text-wm-ink">{content.lemma}</span>
-            <span className="font-wm-sans text-wm-base text-wm-muted">{content.pos}</span>
+            <span className="font-wm-sans text-wm-base text-wm-muted">{shownPos(content.pos)}</span>
           </span>
         </button>
         {/* Outside the turn button (review plan I3): a press reads the word and never turns the card. */}
         <PronunciationLine text={content.lemma} line={pron} align="center" className="px-6" />
         <span className="self-center px-6 pb-6 pt-3 font-wm-sans text-wm-caption text-wm-muted">
-          <span className="hidden md:inline">{t('hintWeb')}</span>
-          <span className="md:hidden">{t('hintPhone')}</span>
+          {desktop ? t('hintWeb') : t('hintPhone')}
         </span>
       </div>
       <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'cstack-back')}>
@@ -218,14 +229,14 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Badges card={card} />
           <p className="flex flex-wrap items-baseline gap-x-2">
             <span className="break-all font-wm-display text-wm-card-title text-wm-ink">{content.lemma}</span>
-            <span className="font-wm-sans text-wm-small text-wm-muted">{content.pos}</span>
+            <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(content.pos)}</span>
           </p>
           <PronunciationLine text={content.lemma} line={pron} />
           <p className="break-words font-wm-display text-wm-card-heading-mobile text-wm-ink">{content.meaning.text}</p>
           {forms.length > 0 && (
             <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">
               {forms.map((form) => (
-                <li key={form} className="rounded-wm-sm border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
+                <li key={form} className="rounded-wm-key border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
                   {form}
                 </li>
               ))}
@@ -235,7 +246,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         {content.examples[0] && (
           <Block title={t('example')}>
             <p className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-              <span className="min-w-0 flex-1 break-words">{highlightWord(content.examples[0], content.lemma, forms)}</span>
+              <span className="min-w-0 flex-1 break-words"><TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} /></span>
               <span className="shrink-0">
                 <SpeakSentence text={content.examples[0]} />
               </span>
@@ -246,7 +257,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
           <Block title={t('seen')} soft>
             {content.sentences.map((sentence) => (
               <p key={sentence} className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-                <span className="min-w-0 flex-1 break-words">{highlightWord(sentence, content.lemma, forms)}</span>
+                <span className="min-w-0 flex-1 break-words"><TargetWord text={sentence} lemma={content.lemma} forms={forms} /></span>
                 <span className="shrink-0">
                   <SpeakSentence private text={sentence} />
                 </span>
@@ -254,6 +265,10 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
             ))}
           </Block>
         )}
+        {/* Mockup L1020, L1024: the level line at the foot of the back face. */}
+        <p className="mt-auto px-6 pb-5 pt-3 font-wm-sans text-wm-caption text-wm-muted">
+          {level === 0 ? t('newWord') : `${levelName(level)} · ${levelInterval(level)}`}
+        </p>
       </div>
     </div>
   );
@@ -270,7 +285,7 @@ function Block({ title, soft = false, children }: { title: string; soft?: boolea
 
 function Badges({ card }: { card: Card }) {
   const t = useTranslations('App.review');
-  if (card.section === 'backlog') return <span className="w-fit rounded-wm-sm bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail">{t('backlog')}</span>;
-  if (card.priority) return <span className="w-fit rounded-wm-sm bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('priority')}</span>;
+  if (card.section === 'backlog') return <span className="w-fit rounded-wm-key bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail">{t('backlog')}</span>;
+  if (card.priority) return <span className="w-fit rounded-wm-key bg-wm-accent-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-accent">{t('priority')}</span>;
   return null;
 }

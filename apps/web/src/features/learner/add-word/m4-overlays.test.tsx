@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordProvider, useAddWord } from './add-word-context';
 import { AddWordSheet } from './AddWordSheet';
 import { DeckPickerDialog } from './DeckPickerDialog';
@@ -54,12 +54,12 @@ beforeEach(() => {
 });
 
 describe('Overlay 1: Bạn vừa gặp từ nào?', () => {
-  it('the inflection row reads "went → go · quá khứ của go" and the save button is "Lưu"', async () => {
+  it('the inflection row reads "went go · quá khứ của go" (the arrow is an icon) and the save button is "Lưu"', async () => {
     const { calls } = renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes });
-    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'went → go · quá khứ của go')).toBeInTheDocument();
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'went go · quá khứ của go')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(calls.filter((c) => c.path === '/v1/quick-add')).toHaveLength(1));
-    expect(calls.find((c) => c.path === '/v1/quick-add')?.body).toEqual({ group_id: WORK, sense_id: uuid(1) });
+    expect(calls.find((c) => c.path === '/v1/quick-add')?.body).toEqual({ group_ids: [WORK], sense_id: uuid(1) });
   });
 
   it('opening Thêm từ for the first time loads the dialog (next/dynamic)', async () => {
@@ -82,23 +82,52 @@ describe('Overlay 4: AI result', () => {
   it('shows the preview card "thẻ sẽ lưu · xem trước" with the AI meaning', async () => {
     renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    const preview = await screen.findByRole('region', { name: 'thẻ sẽ lưu · xem trước' });
+    const preview = await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
     expect(within(preview).getByText('nói dối, nói phét')).toBeInTheDocument();
     expect(within(preview).getByText('cap')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sửa rồi lưu' })).toBeInTheDocument();
   });
+
+  it('a part of speech nobody set ("unspecified") is never printed in the result or the preview', async () => {
+    const ai = () =>
+      Response.json({
+        suggestion: { part_of_speech: 'unspecified', lemma: 'cap', meaning: { text: 'nói dối, nói phét', language: 'vi' }, definition_en: null, examples: [] },
+        catalog_senses: [{ ...goSense, sense_id: uuid(5), lemma: 'cap', pos: 'unspecified' }],
+      });
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes: { ...routes, 'POST /v1/lookup/ai': ai } });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
+  });
+
+  it('typing in "Từ" while the AI result shows keeps the focus and every character', async () => {
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    const field = screen.getByRole('textbox', { name: 'Từ' });
+    await userEvent.type(field, 'ab');
+    expect(screen.getByRole('textbox', { name: 'Từ' })).toBe(field);
+    expect(field).toHaveValue('capab');
+    expect(field).toHaveFocus();
+  });
+
+  it('chỗ 23: the "Từ" field and the preview card share the grid, so the preview starts level with the field', async () => {
+    renderApp(<AddWordSheet initialWord="cap" onClose={() => {}} />, { routes });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
+    const preview = await screen.findByRole('region', { name: 'Thẻ sẽ lưu · xem trước' });
+    const grid = preview.parentElement!.parentElement!;
+    expect(grid.contains(screen.getByRole('textbox', { name: 'Từ' }))).toBe(true);
+    expect(grid.contains(screen.getByRole('textbox', { name: 'Câu bạn gặp (không bắt buộc)' }))).toBe(true);
+  });
 });
 
 describe('Overlay 5: Lưu vào nhóm', () => {
-  it('each deck row has its colour square; a deck with words has the six-stage bar, an empty one has none', async () => {
-    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'record', pos: 'noun', meaning: { text: 'bản ghi, hồ sơ' } }} onClose={() => {}} />, { routes });
-    const all = await screen.findByRole('radiogroup', { name: 'Tất cả nhóm (2), A–Z' });
-    const work = within(all).getByRole('radio', { name: /Công việc · B1/ }).closest('label')!;
-    const japan = within(all).getByRole('radio', { name: /Du lịch Nhật/ }).closest('label')!;
-    expect(work.querySelector('[data-group-square]')).not.toBeNull();
-    expect(japan.querySelector('[data-group-square]')).not.toBeNull();
-    expect(within(work).getByRole('figure')).toBeInTheDocument();
-    expect(within(japan).queryByRole('figure')).not.toBeInTheDocument();
-    expect(within(japan).getByText('0 từ')).toBeInTheDocument();
+  it('each deck row is a tickable option with its name and size; the list says several decks can be chosen', async () => {
+    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'record', pos: 'noun', meaning: { text: 'bản ghi, hồ sơ' } }} inGroups={[]} onClose={() => {}} />, { routes });
+    await screen.findAllByRole('listbox');
+    expect(screen.getByText('Chọn được nhiều nhóm.')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Công việc · B1/ })).toHaveTextContent('24 từ');
+    expect(screen.getByRole('option', { name: /Du lịch Nhật/ })).toHaveTextContent('0 từ');
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
   });
 });

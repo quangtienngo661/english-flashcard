@@ -15,8 +15,8 @@ type Props = {
 };
 
 // Figma "Công tắc" (138:324): a fully round track, accent when on.
-const TRACK = 'relative inline-flex h-6 w-11 shrink-0 items-center rounded-wm-pill transition duration-150 ease-out-strong';
-const THUMB = 'size-5 rounded-wm-pill bg-wm-surface shadow-wm-row transition duration-150 ease-out-strong';
+const TRACK = 'relative inline-flex h-6 w-11 shrink-0 items-center rounded-wm-pill transition duration-150 ease-wm-out-strong';
+const THUMB = 'size-5 rounded-wm-pill bg-wm-surface shadow-wm-row transition duration-150 ease-wm-out-strong';
 const TEXT = 'flex min-w-0 flex-col';
 
 /** A controlled on/off switch with a label and an optional description; `locked` is a Pro-only switch on this plan. */
@@ -32,7 +32,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
           aria-checked={false}
           aria-disabled
           onClick={() => setShowLocked(true)}
-          className="flex w-full items-center justify-between gap-4 rounded-wm-sm text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+          className="flex w-full items-center justify-between gap-4 rounded-wm-control text-left outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
         >
           <span className={TEXT}>
             <span className="flex items-center gap-2 font-wm-sans text-wm-base-strong text-wm-ink">
@@ -41,7 +41,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
             </span>
             {description && <span className="font-wm-sans text-wm-caption text-wm-muted">{description}</span>}
           </span>
-          <span aria-hidden className={`${TRACK} bg-wm-ghost opacity-60`}>
+          <span aria-hidden className={`${TRACK} bg-wm-control-line opacity-60`}>
             <span className={`${THUMB} ml-0.5`} />
           </span>
         </button>
@@ -62,7 +62,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
       </span>
       <span
         aria-hidden
-        className={`${TRACK} bg-wm-ghost group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-selected:bg-wm-accent`}
+        className={`${TRACK} bg-wm-control-line group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-selected:bg-wm-accent`}
       >
         <span className={`${THUMB} ml-0.5 group-data-selected:translate-x-5`} />
       </span>

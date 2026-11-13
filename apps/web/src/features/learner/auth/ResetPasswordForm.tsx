@@ -14,6 +14,17 @@ import { OtpField } from '@/ui/OtpField';
 import { PasswordField } from '@/ui/PasswordField';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
+import { useFocusFirstInvalid } from './focus-first-invalid';
+
+type Errors = {
+  email?: string;
+  code?: string;
+  /** "Nhập mật khẩu." for an empty field; `password` is the rules the API named. */
+  passwordMissing?: string;
+  password?: PasswordRule[];
+  confirm?: string;
+  form?: string;
+};
 
 /**
  * K/05 (Figma 36:447 / 37:687): the code from the email in six boxes and a new password typed twice; other devices are signed out,
@@ -27,8 +38,13 @@ export function ResetPasswordForm() {
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const confirmBox = useRef<HTMLDivElement>(null);
-  const [errors, setErrors] = useState<{ code?: string; password?: PasswordRule[]; confirm?: string; form?: string }>({});
+  const [errors, setErrors] = useState<Errors>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
+  const showErrors = (next: Errors) => {
+    setErrors(next);
+    focusFirstInvalid();
+  };
   // Written by the forgot-password page; absent when this page is opened on its own, then the learner types it (UW-1).
   const [pendingEmail] = useState(readPendingEmail);
   const [typedEmail, setTypedEmail] = useState('');
@@ -46,52 +62,53 @@ export function ResetPasswordForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (confirm !== password) {
-      setErrors({ confirm: t('passwordMismatch') });
-      confirmBox.current?.querySelector('input')?.focus();
-      return;
-    }
+    const local: Errors = {
+      ...(email ? {} : { email: t('required.email') }),
+      ...(/^\d{6}$/.test(code) ? {} : { code: t('required.code') }),
+      ...(password ? {} : { passwordMissing: t('required.password') }),
+      ...(password && confirm !== password ? { confirm: t('passwordMismatch') } : {}),
+    };
+    if (Object.keys(local).length > 0) return showErrors(local);
     setErrors({});
     try {
       await submit();
     } catch (failure) {
       const rules = passwordViolations(failure);
-      if (failure instanceof ApiError && failure.problem.slug === 'invalid-otp') setErrors({ code: errorText(failure) });
-      else if (rules.length) setErrors({ password: rules });
+      if (failure instanceof ApiError && failure.problem.slug === 'invalid-otp') showErrors({ code: errorText(failure) });
+      else if (rules.length) showErrors({ password: rules });
       else setErrors({ form: errorText(failure) });
     }
   }
 
   return (
     <AuthHeading title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {pendingEmail === null && (
-          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
+          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} error={errors.email} />
         )}
-        <OtpField label={t('reset.code')} digitLabel={(n) => t('verify.digit', { n })} value={code} onChange={setCode} />
-        <FormError message={errors.code ?? null} />
+        <OtpField label={t('reset.code')} digitLabel={(n) => t('verify.digit', { n })} value={code} onChange={setCode} error={errors.code} />
         <PasswordField
           label={t('reset.newPassword')}
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
-          description={errors.password?.length ? undefined : t('reset.hint')}
+          error={errors.passwordMissing}
+          isInvalid={Boolean(errors.password?.length)}
+          description={errors.password?.length || errors.passwordMissing ? undefined : t('reset.hint')}
         />
         <PasswordRules rules={errors.password ?? []} />
-        <div ref={confirmBox}>
-          <PasswordField
-            label={t('reset.confirmPassword')}
-            value={confirm}
-            onChange={(value) => {
-              setConfirm(value);
-              if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
-            }}
-            autoComplete="new-password"
-            error={errors.confirm}
-          />
-        </div>
+        <PasswordField
+          label={t('reset.confirmPassword')}
+          value={confirm}
+          onChange={(value) => {
+            setConfirm(value);
+            if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
+          }}
+          autoComplete="new-password"
+          error={errors.confirm}
+        />
         <FormError message={errors.form ?? null} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || !email || !/^\d{6}$/.test(code) || !password}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store}>
           {t('reset.submit')}
         </Button>
       </form>

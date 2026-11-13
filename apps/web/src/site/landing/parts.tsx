@@ -46,7 +46,7 @@ export function Marked({ sentence, target }: { sentence: string; target: string 
   return (
     <>
       {sentence.slice(0, at)}
-      <mark className="rounded-wm-xs bg-wm-mark px-0.75 text-wm-mark-ink">{target}</mark>
+      <mark className="rounded-wm-key bg-wm-mark px-0.75 text-wm-mark-ink">{target}</mark>
       {sentence.slice(at + target.length)}
     </>
   );
@@ -59,7 +59,7 @@ export function WaveBars({ count = 5 }: { count?: 4 | 5 }) {
   return (
     <span aria-hidden data-wave="" className="inline-flex h-4.5 items-center gap-0.5">
       {WAVE.slice(0, count).map((height) => (
-        <span key={height} className={cn('w-0.75 rounded-wm-xs bg-wm-accent', height)} />
+        <span key={height} className={cn('w-0.75 rounded-wm-key bg-wm-accent', height)} />
       ))}
     </span>
   );
@@ -73,13 +73,13 @@ export function ChoiceRow({ n, word, state, note, className }: { n: number; word
   return (
     <div
       className={cn(
-        'flex min-h-11 items-center gap-2.5 rounded-wm-md px-3 py-2 font-wm-sans text-wm-base text-wm-ink',
+        'flex min-h-11 items-center gap-2.5 rounded-wm-row px-3 py-2 font-wm-sans text-wm-base text-wm-ink',
         BORDER_15,
         state === 'right' ? 'border-wm-pass bg-wm-pass-soft' : state === 'wrong' ? 'border-wm-fail bg-wm-fail-soft' : 'border-wm-line bg-wm-surface',
         className,
       )}
     >
-      <span className="inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-sm bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent">{n}</span>
+      <span className="inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-key bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent">{n}</span>
       <span className="min-w-0 flex-1 truncate">{word}</span>
       {state && note && (
         <span className={cn('inline-flex items-center gap-1 font-wm-sans text-wm-label', state === 'right' ? 'text-wm-pass' : 'text-wm-fail')}>
@@ -110,7 +110,7 @@ export function Progress({ done, total }: { done: number; total: number }) {
   return (
     <span aria-hidden className="flex gap-0.75">
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={cn('h-1.25 flex-1 rounded-wm-xs', i < done ? 'bg-wm-accent' : i === done ? 'bg-wm-ink' : 'bg-wm-line')} />
+        <span key={i} className={cn('h-1.25 flex-1 rounded-wm-key', i < done ? 'bg-wm-accent' : i === done ? 'bg-wm-ink' : 'bg-wm-line')} />
       ))}
     </span>
   );

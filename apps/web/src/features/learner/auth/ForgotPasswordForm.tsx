@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
@@ -13,6 +13,8 @@ import { useTurnstile } from './use-turnstile';
 import { Button } from '@/ui/Button';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, FormError } from './AuthHeading';
+import { CaptchaPending } from './CaptchaPending';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 
 /** K/04 (Figma 36:417 / 37:656): ask for a reset code; the API answers the same whether the email has an account or not. */
 export function ForgotPasswordForm() {
@@ -23,6 +25,9 @@ export function ForgotPasswordForm() {
   const { store } = useSession();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<string | undefined>(undefined);
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
   const bot = useTurnstile();
 
   const { submit, busy } = useSubmitOnce(async () => {
@@ -41,6 +46,11 @@ export function ForgotPasswordForm() {
     event.preventDefault();
     if (bot.token === null) return;
     setError(null);
+    setMissing(email.trim() ? undefined : t('required.email'));
+    if (!email.trim()) {
+      focusFirstInvalid();
+      return;
+    }
     try {
       await submit();
     } catch (failure) {
@@ -53,11 +63,12 @@ export function ForgotPasswordForm() {
 
   return (
     <AuthHeading title={t('forgot.title')} intro={intro} onBack={() => hardReplace(`/${locale}/app/login`)}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} error={missing} />
         {bot.widget}
         <FormError message={error} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || !email.trim() || bot.token === null}>
+        <CaptchaPending show={bot.pending} />
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('forgot.submit')}
         </Button>
       </form>

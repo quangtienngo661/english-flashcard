@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { LookupPage } from './LookupPage';
 
 // Giao diện mới M4.5: Tra từ "Từ hóa thẻ" (Figma 85:3218 / 85:3667).
@@ -52,13 +52,36 @@ const base = (extra = {}) => ({
 const lastUrl = (spy: ReturnType<typeof vi.fn>) => new URL(String(spy.mock.calls.at(-1)?.[0]), 'http://x');
 const sentence = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 
+/** A viewport `width` px wide: `(min-width: N px)` queries match when N ≤ width; others do not. */
+function viewport(width: number) {
+  window.matchMedia = ((query: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(query);
+    return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+  }) as unknown as typeof window.matchMedia;
+}
+const jsdomMedia = window.matchMedia;
+
 beforeEach(() => {
   nav.params = new URLSearchParams({ level: 'B1', topic: 'work' });
   nav.replace.mockClear();
   nav.push.mockClear();
+  // The card and the stacks are the laptop layout (from 1024 px); the phone layout has its own block at the end.
+  viewport(1440);
+});
+afterEach(() => {
+  window.matchMedia = jsdomMedia;
 });
 
 describe('Tra từ: search and filters', () => {
+  it('audit T4: the search box is named "q" and has no autofill, spellcheck or auto capital', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    const box = await screen.findByRole('searchbox', { name: 'Tìm từ, ví dụ: mitigate' });
+    expect(box).toHaveAttribute('name', 'q');
+    expect(box).toHaveAttribute('autocomplete', 'off');
+    expect(box).toHaveAttribute('spellcheck', 'false');
+    expect(box).toHaveAttribute('autocapitalize', 'none');
+  });
+
   it('sends the URL filters and reads "24 từ trình độ B1, chủ đề Công việc, loại từ tất cả."', async () => {
     const { calls } = renderApp(<LookupPage />, { routes: base() });
     expect(await screen.findByText(sentence('24 từ trình độ B1, chủ đề Công việc, loại từ tất cả.'))).toBeInTheDocument();
@@ -73,6 +96,15 @@ describe('Tra từ: search and filters', () => {
     expect(nav.replace).toHaveBeenCalledTimes(1);
     expect(lastUrl(nav.replace).pathname).toBe('/vi/app/lookup');
     expect(Object.fromEntries(lastUrl(nav.replace).searchParams)).toEqual({ level: 'A2', topic: 'work' });
+  });
+
+  it('the three filter values are buttons that keep their names and open their menus', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Chủ đề: Công việc' }));
+    expect(await screen.findByRole('menuitem', { name: 'Du lịch' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Loại từ: tất cả' }));
+    expect(await screen.findByRole('menuitem', { name: 'noun' })).toBeInTheDocument();
   });
 
   it('the search box sends its text with the filters on Enter', async () => {
@@ -104,21 +136,28 @@ describe('Tra từ: the dictionary page', () => {
     expect(entry.textContent).toBe('colleaguen.B11nghĩa colleague.');
     const budget = screen.getByRole('button', { name: /^budget/ });
     expect(within(budget).getByText('/ipa-budget/')).toBeInTheDocument();
-    expect(within(budget).getByText('budget', { selector: 'mark' })).toBeInTheDocument();
+    expect(within(budget).getByRole('strong')).toHaveTextContent(/^budget$/);
+  });
+
+  it('a part of speech that was never set ("unspecified") is not printed in an entry', async () => {
+    renderApp(<LookupPage />, { routes: base({ 'GET /v1/words?page_size=20&level=B1&topic=work': () => Response.json({ items: [row('budget', { pos_list: ['unspecified'] })], next_page_token: null, total: 1 }) }) });
+    const entry = await screen.findByRole('button', { name: /^budget/ });
+    expect(entry).toHaveTextContent('budget');
+    expect(screen.queryByText(/unspecified/)).not.toBeInTheDocument();
   });
 
   it('the own word carries "của tôi"', async () => {
     renderApp(<LookupPage />, {
       routes: base({ 'GET /v1/words?page_size=20&level=B1&topic=work': () => Response.json({ items: [row('rizz', { has_private: true })], next_page_token: null, total: 1 }) }),
     });
-    expect(within(await screen.findByRole('button', { name: /^rizz/ })).getByText('của tôi')).toBeInTheDocument();
+    expect(within(await screen.findByRole('button', { name: /^rizz/ })).getByText('Của tôi')).toBeInTheDocument();
   });
 
   it('the first entry is lifted by default; ↓ moves the selection and the card follows', async () => {
     renderApp(<LookupPage />, { routes: base() });
     const card = await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' });
     expect(within(card).getByRole('heading', { name: 'budget' })).toBeInTheDocument();
-    expect(await within(card).findByText('Công việc · B1 · ngăn 7 ngày')).toBeInTheDocument();
+    expect(await within(card).findByText('Công việc · B1 · Bậc 3')).toBeInTheDocument();
     screen.getByRole('button', { name: /^budget/ }).focus();
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByRole('button', { name: /^candidate/ })).toHaveFocus();
@@ -127,7 +166,7 @@ describe('Tra từ: the dictionary page', () => {
 
   it('"Trang sau →" asks for page_token=p2; "← Trang trước" goes back without a request', async () => {
     const { calls } = renderApp(<LookupPage />, { routes: base() });
-    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau →' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
     expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
     expect(calls.some((c) => c.path === '/v1/words?page_size=20&level=B1&topic=work&page_token=p2')).toBe(true);
     expect(screen.getByText('— 2 —')).toBeInTheDocument();
@@ -135,6 +174,32 @@ describe('Tra từ: the dictionary page', () => {
     await userEvent.click(screen.getByRole('button', { name: '← Trang trước' }));
     expect(await screen.findByRole('button', { name: /^budget/ })).toBeInTheDocument();
     expect(calls.filter((c) => c.path.startsWith('/v1/words?')).length).toBe(before);
+  });
+
+  it('the next page is fetched before "Trang sau" is pressed', async () => {
+    const { calls } = renderApp(<LookupPage />, { routes: base() });
+    expect(await screen.findByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    await waitFor(() => expect(calls.some((c) => c.path === '/v1/words?page_size=20&level=B1&topic=work&page_token=p2')).toBe(true));
+  });
+
+  it('while the next page loads, the current words stay on screen and the page buttons wait', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    renderApp(<LookupPage />, {
+      routes: base({
+        'GET /v1/words?page_size=20&level=B1&topic=work&page_token=p2': async () => {
+          await gate;
+          return Response.json({ items: [row('deadline')], next_page_token: null, total: 24 });
+        },
+      }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
+    expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '← Trang trước' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Trang sau' })).toBeNull();
+    release();
+    expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Trang trước' })).toBeInTheDocument();
   });
 });
 
@@ -179,7 +244,7 @@ describe('Tra từ: group stacks', () => {
 
   it('"Mở trang từ →" links to the selected word', async () => {
     renderApp(<LookupPage />, { routes: base() });
-    expect(await screen.findByRole('link', { name: 'Mở trang từ →' })).toHaveAttribute('href', '/vi/app/word?w=budget');
+    expect(await screen.findByRole('link', { name: 'Mở trang từ' })).toHaveAttribute('href', '/vi/app/word?w=budget');
   });
 });
 
@@ -237,5 +302,73 @@ describe('Tra từ: stacks stay put', () => {
     await userEvent.click(stack);
     await waitFor(() => expect(within(screen.getByRole('button', { name: 'Thêm vào Công việc · B1' }).parentElement!).getByText('50')).toBeInTheDocument());
     expect(names()).toEqual(before);
+  });
+});
+
+describe('Tra từ: "Nhóm khác" waits for the items', () => {
+  it('is disabled while the word\'s items load', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    renderApp(<LookupPage />, {
+      routes: base({
+        [`GET /v1/items?sense_ids=${uuid(1)}`]: async () => {
+          await gate;
+          return Response.json({ items: [{ sense_id: uuid(1), item_id: uuid(90), level: 3, due_date: '2026-11-12', priority: false, group_ids: [WORK] }] });
+        },
+      }),
+    });
+    const other = await screen.findByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' });
+    expect(other).toBeDisabled();
+    release();
+    await waitFor(() => expect(other).toBeEnabled());
+  });
+});
+
+describe('Tra từ on phones and tablets (below 1024 px): the list opens the word page', () => {
+  beforeEach(() => viewport(390));
+
+  it('shows no word card, no group stacks and no "Nhóm khác"', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    await screen.findByRole('link', { name: /^budget/ });
+    expect(screen.queryByRole('region', { name: 'Thẻ của từ đang chọn' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Bấm vào chồng để thêm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Thêm vào / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' })).not.toBeInTheDocument();
+  });
+
+  it('every entry is a link to its word page, with the same content', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    const colleague = await screen.findByRole('link', { name: /^colleague/ });
+    expect(colleague).toHaveAttribute('href', '/vi/app/word?w=colleague');
+    expect(colleague.textContent).toBe('colleaguen.B11nghĩa colleague.');
+    for (const lemma of ['budget', 'candidate', 'contract']) {
+      expect(screen.getByRole('link', { name: new RegExp(`^${lemma}`) })).toHaveAttribute('href', `/vi/app/word?w=${lemma}`);
+    }
+    expect(screen.queryByRole('button', { name: /^budget/ })).not.toBeInTheDocument();
+  });
+
+  it("does not load the selected word's page or items, which only the card uses", async () => {
+    const { calls } = renderApp(<LookupPage />, { routes: base() });
+    await screen.findByRole('link', { name: /^budget/ });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls.filter((c) => c.path.startsWith('/v1/words/') || c.path.startsWith('/v1/items'))).toEqual([]);
+  });
+
+  it('↓ moves focus from one entry link to the next', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    (await screen.findByRole('link', { name: /^budget/ })).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('link', { name: /^candidate/ })).toHaveFocus();
+  });
+});
+
+describe('Tra từ on a laptop (from 1024 px): unchanged', () => {
+  it('at exactly 1024 px the card and the stacks show and entries are buttons', async () => {
+    viewport(1024);
+    renderApp(<LookupPage />, { routes: base() });
+    expect(await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Bấm vào chồng để thêm' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^budget/ })).not.toBeInTheDocument();
   });
 });

@@ -38,7 +38,7 @@ const observers = new Map<string, { io: IntersectionObserver; watches: Map<Eleme
 
 /**
  * One IntersectionObserver per option set for the whole page; each element registers callbacks on it. One element can have several (the
- * Pro card: its Reveal loop and its Sweep), so it is unobserved only when its last callback is cleaned up.
+ * Pro card: its Reveal loop and its badges), so it is unobserved only when its last callback is cleaned up.
  */
 function observe(el: Element, init: IntersectionObserverInit, watch: Watch): () => void {
   if (typeof IntersectionObserver === 'undefined') {

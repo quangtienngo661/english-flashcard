@@ -2,8 +2,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { WordPage } from '../word/WordPage';
 import { AddSentenceSheet } from './AddSentenceSheet';
 import { AddWordSheet } from './AddWordSheet';
@@ -68,7 +68,7 @@ describe('I-1: "Tạo nhóm và lưu" with no meaning to save', () => {
   it('an error while creating from the deck list is shown there', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base({ 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
-    await screen.findByText(inflection('went → go · quá khứ của go'));
+    await screen.findByText(inflection('went go · quá khứ của go'));
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     await userEvent.type(await screen.findByRole('searchbox', { name: 'Tìm hoặc tạo nhóm…' }), 'phỏng vấn');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm và lưu' }));
@@ -114,11 +114,11 @@ describe('I-7: one write per press', () => {
   it('the deck picker of the word page', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     let release!: () => void;
-    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={() => {}} />, {
-      routes: base({ [`POST /v1/groups/${TRAVEL}/items`]: () => new Promise<Response>((r) => (release = () => r(Response.json({ created: true })))) }),
+    const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={() => {}} />, {
+      routes: base({ 'POST /v1/quick-add': () => new Promise<Response>((r) => (release = () => r(Response.json({ created_item: true })))) }),
     });
-    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào nhóm' }));
-    expect(posts(calls, `/v1/groups/${TRAVEL}/items`)).toHaveLength(1);
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào 1 nhóm' }));
+    expect(posts(calls, '/v1/quick-add')).toHaveLength(1);
     release();
   });
 });
@@ -161,7 +161,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
 
   it('the deck picker has [Hủy] that closes it', async () => {
     const onClose = vi.fn();
-    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={onClose} />, { routes: base() });
+    renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} inGroups={[]} onClose={onClose} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: 'Hủy' }));
     expect(onClose).toHaveBeenCalled();
   });
@@ -170,7 +170,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
-    expect(await screen.findByRole('button', { name: 'Chọn Du lịch' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Xong' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lưu vào nhóm' })).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,22 +13,26 @@ import { cn } from '@/lib/cn';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
+import { HelpTip } from '@/ui/HelpTip';
+import { PageTitle } from '@/ui/PageTitle';
+import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
-import { mastered, sortForToday, waiting } from '../groups/deck-actions';
+import { SegmentBar } from '@/ui/SegmentBar';
+import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName } from '@/ui/levels';
+import { sortForToday, waiting } from '../groups/deck-actions';
 import { CalendarLink } from '../calendar/CalendarLink';
 import { DeckButtons } from '../groups/DeckButtons';
 import { ms, rememberRect, token } from '../groups/flip';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { GroupStack } from '../groups/GroupStack';
 import { useGroups, type GroupSummary } from '../groups/groups-api';
-import { STAGE_KEYS } from '../groups/stages';
 import { TopicSuggestions } from '../groups/TopicSuggestions';
 import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
 import { QuickAddBox } from './QuickAddBox';
 
-const LINK = 'text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent';
+const LINK = 'inline-flex items-center gap-1 text-wm-small-strong text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent';
 
 /** Hôm nay (Figma 117:4425 / 117:4712, design §9 M3): the deck to review next, the last practice, the other decks, topics, the side column. */
 export function TodayPage() {
@@ -42,10 +46,7 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-1.5">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{format.date(new Date(), 'weekdayDayMonth')}</p>
-        <h1 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight text-wm-ink md:text-5xl">{t('title')}</h1>
-      </div>
+      <PageTitle eyebrow={format.date(new Date(), 'weekdayDayMonth')}>{t('title')}</PageTitle>
       <PageColumns
         aside={
           <>
@@ -57,11 +58,11 @@ export function TodayPage() {
         {groups.isPending ? (
           <div role="status" className="flex flex-col gap-5">
             <span className="sr-only">{tCommon('loading')}</span>
-            <Skeleton className="h-64 w-full rounded-wm-2xl" />
-            <Skeleton className="h-36 w-full rounded-wm-xl" />
+            <Skeleton className="h-64 w-full rounded-wm-card" />
+            <Skeleton className="h-36 w-full rounded-wm-card" />
           </div>
         ) : groups.isError ? (
-          <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+          <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
             <p className="text-wm-base text-wm-ink">{tCommon('errorPageTitle')}</p>
             <Button variant="secondary" onPress={() => void groups.refetch()}>
               {tCommon('retry')}
@@ -70,16 +71,16 @@ export function TodayPage() {
         ) : (
           <div className="flex flex-col gap-5">
             {sorted.length === 0 ? (
-              <section className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
-                <h2 className="font-wm-display text-wm-card-title text-wm-ink">{t('emptyTitle')}</h2>
+              <Card as="section" className="flex flex-col items-start gap-3 md:p-8">
+                <SectionTitle>{t('emptyTitle')}</SectionTitle>
                 <p className="text-wm-base text-wm-muted">{t('emptyBody')}</p>
                 <Button size="lg" onPress={() => open({ kind: 'create' })}>
                   {t('createFirst')}
                 </Button>
-              </section>
+              </Card>
             ) : (
               <>
-                {hero ? <Hero group={hero} /> : <p className="rounded-wm-xl bg-wm-pass-soft p-5 text-wm-base text-wm-ink">{t('allDone')}</p>}
+                {hero ? <Hero group={hero} /> : <p className="rounded-wm-card bg-wm-pass-soft p-5 text-wm-base text-wm-ink">{t('allDone')}</p>}
                 <LastPractice groups={sorted} />
                 <OtherGroups groups={sorted} hero={hero} />
               </>
@@ -101,31 +102,31 @@ function Hero({ group }: { group: GroupSummary }) {
   const { priority, due, new: fresh } = group.today;
   const legend = [
     ['bg-wm-accent', t('legendPriority', { count: priority })],
-    ['bg-wm-ink', t('legendDue', { count: due })],
+    ['bg-wm-level-due', t('legendDue', { count: due })],
     ['bg-wm-ghost', t('legendNew', { count: fresh })],
   ] as const;
   return (
     <section
       aria-label={group.name}
-      className={cn('flex flex-col gap-4 rounded-wm-2xl border-2 bg-wm-surface p-5 shadow-wm-lift md:flex-row md:items-center md:gap-6 md:p-7', tone.border)}
+      className={cn('flex flex-col gap-4 rounded-wm-card border-2 bg-wm-surface p-5 shadow-wm-lift md:flex-row md:items-center md:gap-6 md:p-7', tone.border)}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
+        <p className="text-wm-meta text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
         <h2 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight wrap-anywhere text-wm-ink md:text-4xl">{group.name}</h2>
-        <p className="text-wm-small text-wm-muted">{t('heroLine', { total: group.total, mastered: mastered(group) })}</p>
-        <StageBar
+        <p className="text-wm-small text-wm-muted">{t('heroLine', { total: group.total })}</p>
+        <SegmentBar
           aria-label={t('heroBar')}
           className="max-w-110"
           segments={[
             { size: priority, fill: priority, tone: 'bg-wm-accent', label: legend[0][1] },
-            { size: due, fill: due, tone: 'bg-wm-ink', label: legend[1][1] },
+            { size: due, fill: due, tone: 'bg-wm-level-due', label: legend[1][1] },
             { size: fresh, fill: fresh, tone: 'bg-wm-ghost', label: legend[2][1] },
           ].filter((s) => s.size > 0)}
         />
         <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
           {legend.map(([dot, text]) => (
             <li key={text} className="flex items-center gap-1.5 text-wm-caption text-wm-muted">
-              <span aria-hidden className={cn('size-2.25 rounded-wm-xs', dot)} />
+              <span aria-hidden className={cn('size-2.25 rounded-wm-key', dot)} />
               {text}
             </li>
           ))}
@@ -134,7 +135,7 @@ function Hero({ group }: { group: GroupSummary }) {
       </div>
       <p className="order-first flex flex-col md:order-none md:items-end">
         <span className={cn('font-wm-display text-6xl font-extrabold leading-none tracking-tight md:text-8xl', tone.ink)}>{format.number(waiting(group))}</span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('heroWaiting')}</span>
+        <span className="text-wm-meta text-wm-muted">{t('heroWaiting')}</span>
       </p>
     </section>
   );
@@ -156,20 +157,18 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
   const line = [t('lastLine', { date, count: last.questions }), name].filter(Boolean).join(' · ');
   const wrong = last.questions - last.correct;
   return (
-    <section aria-labelledby="last-practice" className="flex flex-col gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:flex-row md:items-center md:gap-6 md:px-6 md:py-5">
+    <Card as="section" aria-labelledby="last-practice" className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 md:py-5">
       <div className="flex shrink-0 items-baseline gap-2 md:flex-col md:items-center md:gap-0">
         <span className="font-wm-display text-3xl font-extrabold tracking-tight text-wm-ink">
           {last.correct}/{last.questions}
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{t('lastCorrect')}</span>
+        <span className="text-wm-meta text-wm-muted">{t('lastCorrect')}</span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h2 id="last-practice" className="text-wm-button text-wm-ink">
-          {t('lastTitle')}
-        </h2>
-        <p className="font-wm-mono text-wm-mono text-wm-muted wrap-anywhere">{line}</p>
+        <SectionTitle id="last-practice">{t('lastTitle')}</SectionTitle>
+        <p className="text-wm-meta text-wm-muted wrap-anywhere">{line}</p>
         <div className="flex items-center gap-3">
-          <span role="img" aria-label={t('lastBar', { correct: last.correct, wrong })} className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-sm bg-wm-line">
+          <span role="img" aria-label={t('lastBar', { correct: last.correct, wrong })} className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-pill bg-wm-line">
             <span
               className="h-full bg-wm-pass"
               // raw-ok: the bar is the share of right answers
@@ -177,22 +176,22 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
             />
             <span className="h-full flex-1 bg-wm-fail" />
           </span>
-          <span aria-hidden className="flex shrink-0 items-center gap-1 rounded-wm-sm bg-wm-pass-soft px-2 py-0.5 text-wm-label text-wm-pass">
+          <span aria-hidden className="flex shrink-0 items-center gap-1 rounded-wm-key bg-wm-pass-soft px-2 py-0.5 text-wm-label text-wm-pass">
             <Check className="size-3" /> {last.correct}
           </span>
-          <span aria-hidden className="flex shrink-0 items-center gap-1 rounded-wm-sm bg-wm-fail-soft px-2 py-0.5 text-wm-label text-wm-fail">
+          <span aria-hidden className="flex shrink-0 items-center gap-1 rounded-wm-key bg-wm-fail-soft px-2 py-0.5 text-wm-label text-wm-fail">
             <X className="size-3" /> {wrong}
           </span>
         </div>
-        {last.wrong_lemmas.length > 0 && <p className="text-wm-small text-wm-muted wrap-anywhere">{t('lastWrong', { lemmas: last.wrong_lemmas.join(', ') })}</p>}
       </div>
       <div className="flex shrink-0 gap-5 md:flex-col md:items-end md:gap-2">
         <Link href={`/${locale}/app/practice/weak`} className={LINK}>
           {t('lastRetry')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
         <CalendarLink className={LINK}>{t('lastCalendar')}</CalendarLink>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -229,13 +228,12 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   return (
     <section aria-labelledby="your-groups" className="flex flex-col gap-4">
       <div className="flex items-baseline gap-3">
-        <h2 id="your-groups" className="font-wm-display text-xl font-bold text-wm-ink md:text-2xl">
-          {t('yourGroups')}
-        </h2>
-        {others.length > 0 && <p className="hidden min-w-0 flex-1 truncate font-wm-mono text-wm-mono text-wm-muted md:block">{t('yourGroupsHint', { count: others.length })}</p>}
+        <SectionTitle id="your-groups">{t('yourGroups')}</SectionTitle>
+        {others.length > 0 && <p className="hidden min-w-0 flex-1 truncate text-wm-meta text-wm-muted md:block">{t('yourGroupsHint', { count: others.length })}</p>}
         <Link href={`/${locale}/app/groups`} aria-label={t('seeAll', { count: groups.length })} className={cn(LINK, 'ml-auto shrink-0')}>
           <span className="md:hidden">{t('seeAllShort')}</span>
           <span className="hidden md:inline">{t('seeAll', { count: groups.length })}</span>
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       </div>
       {cards.length > 0 && (
@@ -252,28 +250,25 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   );
 }
 
-/** Square colours of "Từ theo ngăn" (M3 Figma A §5): the stage dots, stage 5 flat. */
-const STAGE_SQUARE = ['bg-wm-stage-0-dot', 'bg-wm-stage-1-dot', 'bg-wm-stage-2-dot', 'bg-wm-stage-3-dot', 'bg-wm-stage-4-dot', 'bg-wm-stage-5-solid'] as const;
-
-/** Side column: words waiting too long (the deck with most) and every word by stage. */
+/** Side column: words waiting too long (the deck with most) and every word by level. */
 function TodayAside({ groups }: { groups: GroupSummary[] }) {
   const t = useTranslations('App.today');
-  const tStage = useTranslations('App.stages');
+  const levelName = useLevelName();
+  const levelInterval = useLevelInterval();
   const locale = useLocale();
   const format = useFormat();
   const days = useAppConfig().data?.learning.backlog_after_days;
   const backlog = [...groups].sort((a, b) => b.backlog - a.backlog)[0];
-  const stages = STAGE_KEYS.map((key, level) => ({
-    key,
+  const levels = LEVELS.map((level) => ({
     level,
     total: groups.reduce((sum, g) => sum + (g.cells[level]?.total ?? 0), 0),
     due: groups.reduce((sum, g) => sum + (g.cells[level]?.due ?? 0), 0),
   }));
-  const words = stages.reduce((sum, s) => sum + s.total, 0);
+  const words = levels.reduce((sum, s) => sum + s.total, 0);
   return (
     <>
       {backlog && backlog.backlog > 0 && days !== undefined && (
-        <section aria-label={t('backlogTitle', { count: backlog.backlog })} className="flex items-center gap-4 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+        <Card as="section" aria-label={t('backlogTitle', { count: backlog.backlog })} className="flex items-center gap-4">
           <span className="font-wm-display text-5xl font-extrabold leading-none tracking-tight text-wm-fail">{format.number(backlog.backlog)}</span>
           <div className="min-w-0 flex-1">
             <p className="text-wm-button text-wm-ink">{t('backlogLabel')}</p>
@@ -282,36 +277,35 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
           <Link href={`/${locale}/app/group/backlog?id=${backlog.id}`} className={cn(LINK, 'shrink-0')}>
             {t('see')}
           </Link>
-        </section>
+        </Card>
       )}
-      <section aria-labelledby="by-stage" className="flex flex-col gap-2 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+      <Card as="section" aria-labelledby="by-level" className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 id="by-stage" className="font-wm-display text-base font-bold text-wm-ink">
-            {t('stagesTitle', { count: words })}
-          </h2>
-          <span className="font-wm-mono text-wm-mono text-wm-muted">{t('stagesHint')}</span>
+          <SectionTitle id="by-level">{t('levelsTitle', { count: words })}</SectionTitle>
+          <span className="text-wm-meta text-wm-muted">{t('levelsHint')}</span>
         </div>
         <ul className="flex flex-col gap-3">
-          {stages.map((s) => (
-            <li key={s.key} className="flex items-center gap-3 text-wm-caption text-wm-ink">
-              <span className="flex w-21 shrink-0 items-center gap-2">
-                <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-xs', STAGE_SQUARE[s.level])} />
-                {tStage(s.key)}
+          {levels.map((s) => (
+            <li key={s.level} className="flex items-center gap-3 text-wm-caption text-wm-ink">
+              <span className="flex w-28 shrink-0 items-center gap-2">
+                <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', LEVEL_FILL[s.level])} />
+                {levelName(s.level)}
+                {levelInterval(s.level) && <HelpTip label={t('levelHelp', { level: levelName(s.level) })}>{levelInterval(s.level) ?? ''}</HelpTip>}
               </span>
-              <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-sm bg-wm-line">
+              <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-pill bg-wm-line">
                 <span
-                  className={cn('block h-full', STAGE_SQUARE[s.level])}
-                  // raw-ok: bar width is the share of due cards in the stage
+                  className={cn('block h-full', LEVEL_FILL[s.level])}
+                  // raw-ok: bar width is the share of due cards in the level
                   style={{ width: `${s.total ? Math.round((s.due / s.total) * 100) : 0}%` }}
                 />
               </span>
-              <span className="w-14 shrink-0 text-right font-wm-mono text-wm-mono text-wm-muted">
+              <span className="w-14 shrink-0 text-right text-wm-meta text-wm-muted">
                 {s.due} / {s.total}
               </span>
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
     </>
   );
 }

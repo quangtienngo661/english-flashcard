@@ -8,6 +8,7 @@ import { Button } from '@/ui/Button';
 import { Kbd } from '@/ui/Kbd';
 import { TextButton } from '@/ui/TextButton';
 import { RULE_TYPES } from './practice-api';
+import { PRELOAD_CUSTOMIZE } from './use-practice-starter';
 
 /** K/51 "Luyện nhanh" (Figma 99:3169): today's words across decks, the three types, and the default number of questions. */
 export function TodayHero({ words, groups, count, onStart, onCustomize, busy, error }: {
@@ -45,7 +46,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
               {t('hero.start', { count })}
               <ArrowRight aria-hidden className="size-4" />
             </Button>
-            <TextButton onPress={onCustomize}>{t('hero.customize')}</TextButton>
+            <TextButton onPress={onCustomize} {...PRELOAD_CUSTOMIZE}>{t('hero.customize')}</TextButton>
           </div>
         </>
       )}
@@ -56,9 +57,9 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
 /** The white card of "Luyện nhanh" and of K/55: mono label, then its content; the example question on the right from 768 px. */
 export function HeroFrame({ label, chip, art, children }: { label: string; chip: ReactNode; art?: ReactNode; children: ReactNode }) {
   return (
-    <section aria-label={label} className="flex items-center gap-7 rounded-wm-xl border border-wm-line bg-wm-surface p-5 shadow-wm-card md:p-7">
+    <section aria-label={label} className="flex items-center gap-7 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:p-7">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <p className="font-wm-mono text-wm-mono text-wm-muted first-letter:lowercase">{chip}</p>
+        <p className="text-wm-meta text-wm-muted">{chip}</p>
         {children}
       </div>
       {art && (
@@ -75,14 +76,14 @@ function ExampleBox() {
   const t = useTranslations('App.practice.hero');
   const options = ['deploy', 'delay', 'display'];
   return (
-    <div className="flex flex-col gap-2 rounded-wm-lg bg-wm-bg p-4">
-      <span className="font-wm-mono text-wm-mono text-wm-muted first-letter:lowercase">{t('artPrompt')}</span>
+    <div className="flex flex-col gap-2 rounded-wm-row bg-wm-bg p-4">
+      <span className="text-wm-meta text-wm-muted">{t('artPrompt')}</span>
       <span className="font-wm-display text-wm-card-title text-wm-ink">{t('artMeaning')}</span>
       {options.map((option, i) => (
         <span
           key={option}
           className={cn(
-            'flex items-center gap-2 rounded-wm-md border-2 bg-wm-surface px-3 py-2 font-wm-sans text-wm-small-strong text-wm-ink',
+            'flex items-center gap-2 rounded-wm-control border-2 bg-wm-surface px-3 py-2 font-wm-sans text-wm-small-strong text-wm-ink',
             i === 0 ? 'border-wm-pass bg-wm-pass-soft' : 'border-wm-line',
           )}
         >

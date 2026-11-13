@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState, type FormEvent } from 'react';
 import { BackLink } from '@/app-chrome/BackLink';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useEntitlements, useAppConfig } from '@/app-shell/queries';
@@ -37,7 +37,7 @@ export function AccountPage() {
       <BackLink href={`/${locale}/app/settings`} label={t('back')} />
       <PageTitle>{t('title')}</PageTitle>
       <div className="flex max-w-180 flex-col gap-4">
-        <div className="flex flex-col gap-7 rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
+        <div className="flex flex-col gap-7 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6">
           {/* Keyed by profile so a save that reloads /me starts the form from the stored values. */}
           <ProfileForm key={`${me.given_name}|${me.family_name}|${me.birth_date}`} me={me} />
           <LoginEmail me={me} />

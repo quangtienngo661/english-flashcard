@@ -89,8 +89,15 @@ test.describe('M1 flows (mocked API)', () => {
     });
     await page.goto('/vi/app/settings');
     await expect(page).toHaveURL(/\/vi\/app\/login\?next=%2Fvi%2Fapp%2Fsettings$/);
-    await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
-    await page.getByLabel(vi.auth.password, { exact: true }).fill('pw');
+    // Text typed before hydration is wiped when React takes the field over; the form now checks empty fields, so retype until it holds.
+    const email = page.getByRole('textbox', { name: vi.auth.email });
+    const password = page.getByLabel(vi.auth.password, { exact: true });
+    await expect(async () => {
+      await email.fill('lan@example.com');
+      await password.fill('pw');
+      await expect(email).toHaveValue('lan@example.com', { timeout: 500 });
+      await expect(password).toHaveValue('pw', { timeout: 500 });
+    }).toPass();
     await page.getByRole('button', { name: vi.auth.login.submit }).click();
     await expect(page).toHaveURL(/\/vi\/app\/settings$/);
     await expect(page.getByRole('heading', { name: vi.settings.title, level: 1 })).toBeVisible();

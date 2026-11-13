@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 
 const WIDTH = { month: 'md:max-w-180', day: 'md:max-w-160' } as const;
 // raw-ok: the centred modal keeps 16 px above and below on a short window; its content scrolls inside (Ngày is taller than 780 px)
-const MODAL = 'relative max-h-dvh w-full overflow-y-auto rounded-t-wm-modal bg-wm-surface text-wm-ink shadow-wm-pop outline-none md:max-h-[calc(100dvh-2rem)] md:rounded-wm-modal';
+const MODAL = 'relative max-h-dvh w-full overflow-y-auto rounded-t-wm-dialog bg-wm-surface text-wm-ink shadow-wm-pop outline-none md:max-h-[calc(100dvh-2rem)] md:rounded-wm-dialog';
 
 const keepKeys = (event: KeyboardEvent) => {
   if (!['Escape', 'Tab', 'l', 'L'].includes(event.key)) event.stopPropagation();

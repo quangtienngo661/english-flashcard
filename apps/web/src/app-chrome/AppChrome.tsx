@@ -23,7 +23,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
       <AppBackground />
       <a
         href="#main"
-        className="sr-only z-50 rounded-wm-md bg-wm-accent px-4 py-2 font-wm-sans text-wm-button text-wm-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-50 rounded-wm-control bg-wm-accent px-4 py-2 font-wm-sans text-wm-button text-wm-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         {t('skipToContent')}
       </a>

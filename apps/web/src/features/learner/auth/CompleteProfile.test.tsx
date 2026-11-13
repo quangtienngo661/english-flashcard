@@ -44,11 +44,26 @@ describe('CompleteProfile', () => {
     const f = await setup(makeMe({ terms_accepted_at: null }), () => Response.json({}));
     expect(screen.queryByText(t.register.birthDate)).not.toBeInTheDocument();
     const submit = screen.getByRole('button', { name: t.complete.submit });
-    expect(submit).toBeDisabled();
-    await userEvent.click(screen.getByRole('checkbox'));
+    // QA5: the button stays on; a press without the tick says why under the box and focuses it.
+    await userEvent.click(submit);
+    const box = screen.getByRole('checkbox');
+    await waitFor(() => expect(box).toHaveFocus());
+    expect(box).toHaveAccessibleDescription(t.required.consent);
+    expect(f.calls.filter((c) => c.method === 'PATCH')).toHaveLength(0);
+    await userEvent.click(box);
     await userEvent.click(submit);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/settings'));
     expect(f.calls.find((c) => c.method === 'PATCH')!.body).toEqual({ accept_terms: true });
+  });
+
+  it('QA5: with neither birth date nor consent, an empty press names both and focuses the date', async () => {
+    const f = await setup(makeMe({ birth_date: null, terms_accepted_at: null }), () => Response.json({}));
+    await userEvent.click(screen.getByRole('button', { name: t.complete.submit }));
+    const date = screen.getByLabelText(t.register.birthDate);
+    await waitFor(() => expect(date).toHaveFocus());
+    expect(date).toHaveAccessibleDescription(t.required.birthDate);
+    expect(screen.getByRole('checkbox')).toHaveAccessibleDescription(t.required.consent);
+    expect(f.calls.filter((c) => c.method === 'PATCH')).toHaveLength(0);
   });
 
   it('legal documents: an outdated consent says the terms were updated, asks only for consent and sends accept_terms', async () => {
@@ -57,7 +72,7 @@ describe('CompleteProfile', () => {
     expect(screen.getByText(t.complete.updatedBody)).toBeInTheDocument();
     expect(screen.queryByText(t.register.birthDate)).not.toBeInTheDocument();
     const submit = screen.getByRole('button', { name: t.complete.submit });
-    expect(submit).toBeDisabled();
+    expect(submit).toBeEnabled();
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(submit);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/settings'));

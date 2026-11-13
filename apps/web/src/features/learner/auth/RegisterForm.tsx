@@ -16,12 +16,28 @@ import { DateOfBirthField } from '@/ui/DateOfBirthField';
 import { PasswordField } from '@/ui/PasswordField';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, ConsentLink, FormError, OrDivider, passwordViolations, PasswordRules, SwitchAuthLink, type PasswordRule } from './AuthHeading';
+import { CaptchaPending } from './CaptchaPending';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 import { GoogleSignIn } from './GoogleSignIn';
 
 /**
- * K/01, K/01b: sign-up (Figma 35:405 / 37:533). The button stays off until the consent box is ticked and the birth date is 13+.
- * "Nhập lại mật khẩu" is checked here only: a mismatch sends nothing, and the request body is the same as without the field.
+ * K/01, K/01b: sign-up (Figma 35:405 / 37:533). The button stays on (QA5): a press checks every field first, shows what is wrong
+ * under each one and focuses the first; only a pending bot check keeps it off. "Nhập lại mật khẩu" is checked here only: a mismatch
+ * sends nothing, and the request body is the same as without the field.
  */
+type Errors = {
+  givenName?: string;
+  birthDate?: string;
+  email?: string;
+  age?: boolean;
+  /** "Nhập mật khẩu." for an empty field; `password` is the rules the API named. */
+  passwordMissing?: string;
+  password?: PasswordRule[];
+  confirm?: string;
+  consent?: string;
+  form?: string;
+};
+
 export function RegisterForm({ today }: { today?: string }) {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
@@ -34,9 +50,14 @@ export function RegisterForm({ today }: { today?: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const confirmBox = useRef<HTMLDivElement>(null);
   const [consent, setConsent] = useState(false);
-  const [errors, setErrors] = useState<{ givenName?: string; email?: string; age?: boolean; password?: PasswordRule[]; confirm?: string; form?: string }>({});
+  const [errors, setErrors] = useState<Errors>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
+  const showErrors = (next: Errors) => {
+    setErrors(next);
+    focusFirstInvalid();
+  };
 
   const bot = useTurnstile();
 
@@ -66,15 +87,16 @@ export function RegisterForm({ today }: { today?: string }) {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (bot.token === null) return;
-    if (!givenName.trim()) {
-      setErrors({ givenName: t('register.givenNameRequired') });
-      return;
-    }
-    if (confirm !== password) {
-      setErrors({ confirm: t('passwordMismatch') });
-      confirmBox.current?.querySelector('input')?.focus();
-      return;
-    }
+    // Field order. An under-13 date is already marked by the field itself (birthDate null); only an empty one gets "Chọn ngày sinh.".
+    const local: Errors = {
+      ...(givenName.trim() ? {} : { givenName: t('register.givenNameRequired') }),
+      ...(birthDate === null ? { birthDate: t('required.birthDate') } : {}),
+      ...(email.trim() ? {} : { email: t('required.email') }),
+      ...(password ? {} : { passwordMissing: t('required.password') }),
+      ...(password && confirm !== password ? { confirm: t('passwordMismatch') } : {}),
+      ...(consent ? {} : { consent: t('required.consent') }),
+    };
+    if (Object.keys(local).length > 0) return showErrors(local);
     setErrors({});
     try {
       await submit();
@@ -82,17 +104,17 @@ export function RegisterForm({ today }: { today?: string }) {
       const slug = error instanceof ApiError ? error.problem.slug : '';
       const rules = passwordViolations(error);
       // A deleting account still holds the address (design §6.2): say so instead of the "already registered" hint.
-      if (slug === 'email-taken' && error instanceof ApiError && error.problem.extensions?.reason === 'account-deleting') setErrors({ email: t('register.accountDeleting') });
-      else if (slug === 'email-taken') setErrors({ email: errorText(error) });
-      else if (slug === 'age-below-minimum') setErrors({ age: true });
-      else if (rules.length) setErrors({ password: rules });
+      if (slug === 'email-taken' && error instanceof ApiError && error.problem.extensions?.reason === 'account-deleting') showErrors({ email: t('register.accountDeleting') });
+      else if (slug === 'email-taken') showErrors({ email: errorText(error) });
+      else if (slug === 'age-below-minimum') showErrors({ age: true });
+      else if (rules.length) showErrors({ password: rules });
       else setErrors({ form: errorText(error) });
     }
   }
 
   return (
     <AuthHeading title={t('register.title')} size="page">
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
           <TextField
             label={t('register.givenName')}
@@ -115,6 +137,7 @@ export function RegisterForm({ today }: { today?: string }) {
           description={t('register.birthDateHint')}
           onChange={setBirthDate}
           serverError={errors.age ? 'tooYoung' : null}
+          requiredError={errors.birthDate}
           today={today}
         />
         <div className="flex flex-col gap-1.5">
@@ -134,22 +157,22 @@ export function RegisterForm({ today }: { today?: string }) {
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
-          description={errors.password?.length ? undefined : t('register.passwordHint')}
+          error={errors.passwordMissing}
+          isInvalid={Boolean(errors.password?.length)}
+          description={errors.password?.length || errors.passwordMissing ? undefined : t('register.passwordHint')}
         />
         <PasswordRules rules={errors.password ?? []} />
-        <div ref={confirmBox}>
-          <PasswordField
-            label={t('register.confirmPassword')}
-            value={confirm}
-            onChange={(value) => {
-              setConfirm(value);
-              if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
-            }}
-            autoComplete="new-password"
-            error={errors.confirm}
-          />
-        </div>
-        <Checkbox isSelected={consent} onChange={setConsent}>
+        <PasswordField
+          label={t('register.confirmPassword')}
+          value={confirm}
+          onChange={(value) => {
+            setConfirm(value);
+            if (errors.confirm) setErrors((current) => ({ ...current, confirm: undefined }));
+          }}
+          autoComplete="new-password"
+          error={errors.confirm}
+        />
+        <Checkbox isSelected={consent} onChange={setConsent} error={errors.consent}>
           {t.rich('register.consent', {
             terms: (chunks) => <ConsentLink href={`/${locale}/terms`} newTab>{chunks}</ConsentLink>,
             privacy: (chunks) => <ConsentLink href={`/${locale}/privacy`} newTab>{chunks}</ConsentLink>,
@@ -157,7 +180,8 @@ export function RegisterForm({ today }: { today?: string }) {
         </Checkbox>
         {bot.widget}
         <FormError message={errors.form ?? null} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!consent || birthDate === null || !store || bot.token === null}>
+        <CaptchaPending show={bot.pending} />
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('register.submit')}
         </Button>
         <OrDivider />

@@ -1,18 +1,19 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { cn } from '@/lib/cn';
-import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
-import { StageBar } from '@/ui/StageBar';
+import { LevelBar } from '@/ui/LevelBar';
 import { TextButton } from '@/ui/TextButton';
 import { useAddWord } from '../add-word/add-word-context';
-import { carouselOrder, rhythm, stepTo } from './carousel';
+import { carouselOrder, rhythm } from './carousel';
+import { readCentre, rememberCentre } from './centre-memory';
 import { waiting } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
 import { ms, rememberRect, token, useFlipFrom } from './flip';
@@ -20,10 +21,6 @@ import { GroupCarousel } from './GroupCarousel';
 import { useGroupDialogs } from './GroupDialogs';
 import { GroupPicker } from './GroupPicker';
 import { useGroups, type GroupSummary } from './groups-api';
-import { STAGE_KEYS } from './stages';
-
-/** Picking a group further than this jumps with no animation (motion doc §3). */
-const JUMP_STEPS = 3;
 
 /** One-letter and arrow keys are ignored while typing or inside a dialog (design §8.5; same filter as `add-word-context.tsx`). */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -38,6 +35,16 @@ export function GroupListPage() {
   const groups = useGroups();
   const { open, dialogs } = useGroupDialogs();
   const order = carouselOrder(groups.data?.items ?? []);
+  // A group just made becomes the centre once the reloaded list has it (owner 14/11/2026); remembered for an empty page too.
+  const [made, setMade] = useState<string | null>(null);
+  const create = () =>
+    open({
+      kind: 'create',
+      onCreated: (id) => {
+        rememberCentre(id);
+        setMade(id);
+      },
+    });
 
   return (
     <>
@@ -45,10 +52,10 @@ export function GroupListPage() {
         <div role="status" className="flex flex-col items-center gap-5">
           <span className="sr-only">{tCommon('loading')}</span>
           <Skeleton className="h-11 w-56 self-start" />
-          <Skeleton className="h-92 w-72 rounded-wm-2xl" />
+          <Skeleton className="h-92 w-72 rounded-wm-dialog" />
         </div>
       ) : groups.isError ? (
-        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card">
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card">
           <p className="text-wm-base text-wm-ink">{tCommon('errorPageTitle')}</p>
           <Button variant="secondary" onPress={() => void groups.refetch()}>
             {tCommon('retry')}
@@ -57,16 +64,16 @@ export function GroupListPage() {
       ) : order.length === 0 ? (
         <>
           <Title />
-          <section className="flex flex-col items-start gap-3 rounded-wm-xl bg-wm-surface p-6 shadow-wm-card md:p-8">
+          <section className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card md:p-8">
             <h2 className="font-wm-display text-wm-card-title text-wm-ink">{tToday('emptyTitle')}</h2>
             <p className="text-wm-base text-wm-muted">{tToday('emptyBody')}</p>
-            <Button size="lg" onPress={() => open({ kind: 'create' })}>
+            <Button size="lg" onPress={create}>
               {tToday('createFirst')}
             </Button>
           </section>
         </>
       ) : (
-        <Carousel order={order} onCreate={() => open({ kind: 'create' })} createLabel={t('create')} />
+        <Carousel order={order} onCreate={create} createLabel={t('create')} made={made} onMadeShown={() => setMade(null)} />
       )}
       {dialogs}
     </>
@@ -83,12 +90,27 @@ function Title({ children }: { children?: ReactNode }) {
   );
 }
 
-function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onCreate: () => void; createLabel: string }) {
+function Carousel({
+  order,
+  onCreate,
+  createLabel,
+  made,
+  onMadeShown,
+}: {
+  order: GroupSummary[];
+  onCreate: () => void;
+  createLabel: string;
+  made: string | null;
+  onMadeShown: () => void;
+}) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
   const router = useRouter();
-  const [centreId, setCentreId] = useState(order[0].id);
-  const [instant, setInstant] = useState(false);
+  // The group shown last opens again (back from Một nhóm); one that is gone falls back to the first.
+  const [centreId, setCentreId] = useState(() => {
+    const remembered = readCentre();
+    return remembered && order.some((g) => g.id === remembered) ? remembered : order[0].id;
+  });
   const [announce, setAnnounce] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const centreRef = useRef<HTMLDivElement>(null);
@@ -105,8 +127,8 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   function goTo(index: number) {
     const target = order[index];
     if (!target || index === centre) return;
-    setInstant(Math.abs(stepTo(centre, index, order.length)) > JUMP_STEPS);
     setCentreId(target.id);
+    rememberCentre(target.id);
     setAnnounce(t('live', { name: target.name, count: waiting(target) }));
   }
   function step(d: number) {
@@ -133,17 +155,17 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     openGroup();
   }
 
-  // The jump without animation lasts one frame, then transitions come back for the next step.
+  const keys = useRef({ step, openGroup, goTo });
   useEffect(() => {
-    if (!instant) return;
-    const frame = requestAnimationFrame(() => setInstant(false));
-    return () => cancelAnimationFrame(frame);
-  }, [instant]);
-
-  const keys = useRef({ step, openGroup });
-  useEffect(() => {
-    keys.current = { step, openGroup };
+    keys.current = { step, openGroup, goTo };
   });
+  // The new group moves in with the carousel's own step motion, then `made` clears so a later reload does not pull it back.
+  const madeIndex = made === null ? -1 : order.findIndex((g) => g.id === made);
+  useEffect(() => {
+    if (madeIndex === -1) return;
+    keys.current.goTo(madeIndex);
+    onMadeShown();
+  }, [madeIndex, onMadeShown]);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
@@ -163,10 +185,10 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   }, []);
 
   return (
-    <div ref={pageRef} className="flex flex-col gap-4 md:gap-5">
+    <div ref={pageRef} className="gpage flex flex-col gap-4 md:gap-5">
       <div data-part="0" className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
         <Title>
-          <p className="font-wm-mono text-wm-mono text-wm-muted">
+          <p className="text-wm-meta text-wm-muted">
             <span className="md:hidden">{t('subtitlePhone', { due, groups: waitingGroups.length })}</span>
             <span className="hidden md:inline">{t('subtitle', { due, groups: waitingGroups.length })}</span>
           </p>
@@ -184,7 +206,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
           </TextButton>
         </div>
       </div>
-      <GroupCarousel groups={order} centre={centre} instant={instant} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
+      <GroupCarousel groups={order} centre={centre} onStep={step} centreRef={centreRef} onOpen={onOpenLink} />
       <p aria-live="polite" className="sr-only">
         {announce}
       </p>
@@ -193,35 +215,30 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   );
 }
 
-/** "Dưới băng chuyền" (Figma 82:3348): the rhythm bar in the group colour, Học · Ôn, "Xem nhóm →", "Thêm từ" (desktop). */
+/**
+ * Under the arc (mockup L505-506, L885-890): the "nhịp ôn: Mới → Bậc 5" eyebrow, the words per level (420 px), Học · Ôn, "Xem nhóm →",
+ * "Thêm từ" (desktop). Keyed by the group, so the three rows rise in again for each one (`.gcar-rise`, 460 ms, 45 ms apart).
+ */
 function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const t = useTranslations('App.groups');
-  const tStage = useTranslations('App.stages');
   const locale = useLocale();
   const { open } = useAddWord();
-  const tone = groupTone(group.id, group.total);
   return (
-    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-3">
-      <p className="font-wm-mono text-wm-mono text-wm-muted">{t('rhythm')}</p>
-      <StageBar
-        aria-label={t('rhythm')}
-        className="max-w-105"
-        segments={rhythm(group.cells).map((c) => ({
-          size: c.total,
-          fill: c.due,
-          tone: tone.bg,
-          label: t('rhythmSegment', { stage: tStage(STAGE_KEYS[c.level]), due: c.due, total: c.total }),
-        }))}
-      />
-      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-        <DeckButtons group={group} buttonClassName="w-27.5 md:w-37" />
+    <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
+      <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
+      <div className="w-full max-w-105">
+        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
+      </div>
+      <DeckButtons group={group} className="gdeck justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="gdeck-btn w-37.5 max-md:w-32" />
+      <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
         <Link
           href={`/${locale}/app/group?id=${group.id}`}
           prefetch
           onClick={onOpen}
-          className="flex min-h-11 items-center text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
+          className="flex min-h-11 items-center gap-1 text-wm-button text-wm-accent outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
           {t('open')}
+          <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
         <TextButton tone="muted" onPress={() => open(undefined, { groupId: group.id })} className={cn('hidden text-wm-button md:inline-flex')}>
           {t('addWord')}

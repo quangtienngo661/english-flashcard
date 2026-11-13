@@ -2,12 +2,13 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
 import { useEntitlements } from '@/app-shell/queries';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button, BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
@@ -15,7 +16,6 @@ import { TextButton } from '@/ui/TextButton';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
 import { STAGGER } from '../../review/ReviewSummary';
-import { ButtonKey } from './QuestionCard';
 import type { Summary, SummaryWord } from './use-practice-session';
 
 export function useSummary(sessionId: string) {
@@ -45,7 +45,7 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
 export function SessionSummary({ session, sourceLabel }: { session: PracticeSessionView; sourceLabel: string }) {
   const t = useTranslations('App.practice');
   const ts = useTranslations('App.practice.session.summary');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
@@ -99,7 +99,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   const asked = data?.asked ?? session.asked;
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col items-center gap-8 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
+      <section className="flex flex-col items-center gap-8 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card md:flex-row md:items-start md:p-8">
         {data && (
           <div className={STAGGER[0]}>
             <Ring correct={data.correct} wrong={data.wrong} label={ts('ring', { correct: data.correct, total: data.asked })} caption={ts('ringCaption')} />
@@ -127,12 +127,13 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
                     <span className="min-w-0 break-words font-wm-display text-wm-word text-wm-ink">{word.lemma}</span>
                     <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-small text-wm-muted">{word.meaning}</span>
                     {word.action !== null ? (
-                      <span className="flex items-center gap-1 font-wm-sans text-wm-small-strong text-wm-pass">
+                      <span role="status" className="flex items-center gap-1 font-wm-sans text-wm-small-strong text-wm-pass">
                         <Check aria-hidden className="size-4" />
                         {ts('added')}
                       </span>
                     ) : (
-                      <TextButton isDisabled={pressing !== null} onPress={() => void reviewOne(word)}>
+                      // Audit T20: every row has the same words on its button; the name says which word it adds.
+                      <TextButton aria-label={t('session.reviewWord', { lemma: word.lemma })} isDisabled={pressing !== null} onPress={() => void reviewOne(word)}>
                         {pressing === `${word.item_id}:${word.sense_id}` && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
                         {ts('review')}
                       </TextButton>
@@ -160,7 +161,6 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
             {/* Owner 10/11/2026: a boxed button, so the way back reads as an action (was a grey text link). */}
             <Link href={`/${locale}/app/practice`} className={`${BUTTON_BASE} ${BUTTON_VARIANT.secondary} md:ml-auto`}>
               {ts('home')}
-              <ButtonKey>Enter</ButtonKey>
             </Link>
           </div>
         </div>
@@ -188,7 +188,7 @@ function Ring({ correct, wrong, label, caption }: { correct: number; wrong: numb
           <span className="text-wm-section">{correct}</span>
           <span className="text-wm-card-title text-wm-muted">/{total}</span>
         </span>
-        <span className="font-wm-mono text-wm-mono text-wm-muted">{caption}</span>
+        <span className="text-wm-meta text-wm-muted">{caption}</span>
       </span>
     </div>
   );

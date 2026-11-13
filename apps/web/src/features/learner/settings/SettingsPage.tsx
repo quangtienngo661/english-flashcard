@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo, type ReactNode } from 'react';
 import { displayName } from '@/app-chrome/AvatarMenu';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { createFormat, useFormat } from '@/app-shell/format';
 import { hardReplace } from '@/app-shell/navigate';

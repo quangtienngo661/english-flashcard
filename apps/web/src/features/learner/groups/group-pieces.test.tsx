@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react';
-import { renderApp } from '@/app-ui/test-utils';
-import { StageBar } from '@/ui/StageBar';
+import { renderApp } from '@/test-utils/render-app';
+import { SegmentBar } from '@/ui/SegmentBar';
 import { DeckButtons } from './DeckButtons';
 import { GroupStack } from './GroupStack';
 import type { GroupSummary } from './groups-api';
@@ -18,19 +18,27 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   it('normal face: words, name, waiting count and the next card', () => {
     const g = deck({ priority: 4, due: 14, new: 6 }, [6, 9, 10, 11, 8, 4], { next_lemma: 'mitigate' });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
-    expect(screen.getByText('48 từ · 12 đã thuộc')).toBeInTheDocument();
+    expect(screen.getByText('48 từ')).toBeInTheDocument();
     expect(screen.getByText('Đề 12 · Writing')).toBeInTheDocument();
     expect(screen.getByText('24')).toBeInTheDocument();
     expect(screen.getByText('thẻ chờ')).toBeInTheDocument();
-    expect(screen.getByText('tiếp theo').parentElement).toHaveTextContent('tiếp theo mitigate');
+    expect(screen.getByText('Tiếp theo').parentElement).toHaveTextContent('Tiếp theo mitigate');
     expect(behind(container)).toBe(3);
+  });
+
+  it('en: one waiting card reads "card waiting", several read "cards waiting"', () => {
+    const one = renderApp(<GroupStack group={deck({ priority: 1, due: 0, new: 0 })} size="carousel" />, { locale: 'en' });
+    expect(screen.getByText('card waiting')).toBeInTheDocument();
+    one.unmount();
+    renderApp(<GroupStack group={deck({ priority: 0, due: 3, new: 2 })} size="carousel" />, { locale: 'en' });
+    expect(screen.getByText('cards waiting')).toBeInTheDocument();
   });
 
   it('done face: "✓ Xong hôm nay" and the last reviewed word', () => {
     const g = deck({ priority: 0, due: 0, new: 0 }, [6, 9, 10, 11, 8, 4], { last_reviewed: { lemma: 'take for granted', at: '2026-11-08T08:00:00Z' } });
     const { container } = renderApp(<GroupStack group={g} size="carousel" />);
     expect(screen.getByText('✓ Xong hôm nay')).toBeInTheDocument();
-    expect(screen.getByText('ôn gần nhất').parentElement).toHaveTextContent('ôn gần nhất take for granted');
+    expect(screen.getByText('Ôn gần nhất').parentElement).toHaveTextContent('Ôn gần nhất take for granted');
     expect(screen.queryByText('thẻ chờ')).toBeNull();
     expect(behind(container)).toBe(0);
   });
@@ -46,7 +54,7 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
 
   it('leaves the footer out when the API sends no next card', () => {
     renderApp(<GroupStack group={deck({ priority: 0, due: 3, new: 0 })} size="today" />);
-    expect(screen.queryByText('tiếp theo')).toBeNull();
+    expect(screen.queryByText('Tiếp theo')).toBeNull();
   });
 
   it.each([[1, 1], [6, 1], [7, 2], [16, 2], [17, 3]])('%i waiting → %i cards behind', (due, depth) => {
@@ -65,10 +73,10 @@ describe('GroupStack (M3 Figma A §2.3, §4)', () => {
   });
 });
 
-describe('StageBar', () => {
+describe('SegmentBar', () => {
   it('is a figure with one item per segment', () => {
     renderApp(
-      <StageBar
+      <SegmentBar
         aria-label="nhịp ôn"
         segments={[
           { size: 6, fill: 6, tone: 'bg-wm-accent', label: 'Mới: 6/6' },

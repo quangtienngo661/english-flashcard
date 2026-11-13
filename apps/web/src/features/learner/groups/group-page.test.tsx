@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { hardReplace } from '@/app-shell/navigate';
 import { GroupPage } from './GroupPage';
 
@@ -47,6 +47,9 @@ const routes = (extra = {}) => ({
   'GET /v1/me/entitlements': () => Response.json({ plan: 'free', pools: {}, sources: [] }),
   ...extra,
 });
+
+// The word rows of the table, by name (the header row has no name).
+const rowNames = () => screen.getAllByRole('row', { name: /^\w+$/ }).map((r) => r.getAttribute('aria-label'));
 
 beforeEach(() => {
   search = new URLSearchParams({ id: G });
@@ -95,32 +98,32 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
   });
 
-  it('"nhịp ôn": one segment per stage, filled with its waiting cards', async () => {
+  it('the page head shows no today bar and no level bar (owner 14/11/2026)', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const bar = await screen.findByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' });
-    expect(within(bar).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual([
-      'Mới: 0 thẻ chờ trong 1 từ', '1 ngày: 2 thẻ chờ trong 2 từ', '3 ngày: 0 thẻ chờ trong 0 từ',
-      '7 ngày: 0 thẻ chờ trong 1 từ', '14 ngày: 0 thẻ chờ trong 0 từ', '30 ngày: 0 thẻ chờ trong 0 từ',
-    ]);
+    const main = screen.getByRole('main');
+    expect(await within(main).findByRole('heading', { level: 1, name: 'Công nghệ' }, { timeout: 5000 })).toBeInTheDocument();
+    // Control: the word table rendered, so an empty figure list means the bars are gone, not that the page is still loading.
+    expect(await within(main).findByRole('table')).toBeInTheDocument();
+    expect(within(main).queryByRole('figure')).not.toBeInTheDocument();
+    expect(within(main).queryByText(/ưu tiên$/)).not.toBeInTheDocument();
   });
 
-  it('English names the first stage "New"', async () => {
-    renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
-    const bar = await screen.findByRole('figure', { name: 'review rhythm: new → 30 days' });
-    expect(within(bar).getAllByRole('listitem')[0].getAttribute('aria-label')).toMatch(/^New: /);
+  it('the head has no colour square before the title (Chỗ bổ sung)', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    const title = await screen.findByRole('heading', { level: 1, name: 'Công nghệ' });
+    expect(title.children.length).toBe(0);
+    expect(title.textContent).toBe('Công nghệ');
   });
 
-  it('the page head: the stack, the colour title and the three chips with their numbers', async () => {
+  it('the page head: the stack and the title; the back link goes to the groups (mockup m9, owner 13/11/2026)', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
-    const chips = await screen.findByRole('list', { name: 'Hôm nay' });
-    expect(within(chips).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['1 ưu tiên', '1 đến hạn', '1 mới']);
     expect(screen.getByRole('link', { name: 'Nhóm của bạn' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
   it('the card preview is gone (owner QM3-1, "Bỏ như Figma")', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
+    await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
     expect(screen.queryByTestId('preview-slide')).toBeNull();
     expect(screen.queryByRole('button', { name: /Thẻ sau/ })).toBeNull();
   });
@@ -135,55 +138,107 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(await screen.findByText(/tạo ngày .*23\/10/)).toBeInTheDocument();
   });
 
+  it('remembers this group as the centre of the Nhóm carousel, so the way back lands on it (owner 13/11/2026)', async () => {
+    sessionStorage.clear();
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe(G);
+  });
+
   it('M3: each word links to its word page', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const row = await screen.findByRole('listitem', { name: 'deploy' });
+    const row = await screen.findByRole('row', { name: 'deploy' });
     expect(within(row).getByRole('link', { name: 'deploy' })).toHaveAttribute('href', '/vi/app/word?w=deploy');
   });
 
-  it('Học · Ôn (đợt C §4.1) and the long-overdue link', async () => {
+  it('the actions of mockup m9 (owner 13/11/2026, no Enter key): [Ôn N thẻ], then Học N từ mới, Học tất cả N từ, Thêm từ as text', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    expect(await screen.findByRole('link', { name: 'Học' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
-    expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
-    expect(screen.queryByRole('link', { name: /Ôn 3 thẻ/ })).not.toBeInTheDocument();
+    const recall = await screen.findByRole('link', { name: 'Ôn 2 thẻ' }, { timeout: 5000 });
+    expect(recall).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    expect(recall).not.toHaveTextContent('Enter');
+    expect(screen.getByRole('link', { name: 'Học 1 từ mới' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
+    expect(screen.getByRole('link', { name: 'Học tất cả 4 từ' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=all`);
+    expect(screen.getByRole('button', { name: 'Thêm từ' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Học' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /3 từ lâu chưa ôn/ })).toHaveAttribute('href', `/vi/app/group/backlog?id=${G}`);
   });
 
-  it('the meta line counts the words mastered (stage 4 and 5) once there are some (DC11)', async () => {
+  it('the meta line is the word count and the creation date, with no "đã thuộc"', async () => {
     const summary = { ...SUMMARY, cells: [0, 0, 1, 1, 1, 1].map((total, level) => ({ level, total, due: 0 })) };
     renderApp(<GroupPage />, { chrome: true, routes: routes({ 'GET /v1/groups': () => Response.json({ items: [summary] }) }) });
-    expect(await screen.findByText(/^4 từ · tạo ngày .* · 2 đã thuộc$/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(/^4 từ · tạo ngày [^·]*$/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByText(/đã thuộc/)).not.toBeInTheDocument();
   });
 
-  it('rows show the part of speech, the stage, the status and a changed meaning', async () => {
+  it('the words are a table: four column headers (the part of speech sits under the word, bản A 13/11/2026), one row per word', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const list = await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
-    const deploy = within(list).getByRole('listitem', { name: 'deploy' });
-    expect(within(deploy).getByText('Ngăn 1 ngày')).toBeInTheDocument();
-    expect(within(deploy).getByText('ưu tiên')).toBeInTheDocument();
-    expect(within(within(list).getByRole('listitem', { name: 'went' })).getByText('từ mới')).toBeInTheDocument();
-    await waitFor(() => expect(within(within(list).getByRole('listitem', { name: 'release' })).getByText('nghĩa đã đổi')).toBeInTheDocument());
-  });
-
-  it('filter chips show every stage with its count, press one at a time and filter the rows', async () => {
-    renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
-    const chips = within(screen.getByRole('group', { name: 'Lọc từ trong nhóm' })).getAllByRole('button');
-    expect(chips.map((c) => c.textContent)).toEqual([
-      'Tất cả4', 'Ưu tiên1', 'Đến hạn7', 'Mới1', 'Ngăn 1 ngày2', 'Ngăn 3 ngày0', 'Ngăn 7 ngày1', 'Ngăn 14 ngày0', 'Ngăn 30 ngày0',
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    expect(within(table).getAllByRole('columnheader').map((th) => [th.textContent, th.getAttribute('scope')])).toEqual([
+      ['Từ vựng', 'col'], ['Nghĩa', 'col'], ['Bậc', 'col'], ['Trạng thái', 'col'],
     ]);
-    expect(chips[0]).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(screen.getByRole('button', { name: 'Ngăn 1 ngày2' }));
-    expect(screen.getByRole('button', { name: 'Ngăn 1 ngày2' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Tất cả4' })).toHaveAttribute('aria-pressed', 'false');
-    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['deploy', 'release']));
+    expect(within(table).getAllByRole('row', { name: /^(deploy|release|went|ship)$/ })).toHaveLength(4);
+  });
+
+  // T26: below md a row is display:grid, which drops the implicit table roles in Chrome and Safari; explicit roles keep them.
+  // jsdom already gives the implicit roles, so this checks the written roles.
+  it('every row, header and cell states its table role, and each word row has four cells', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    for (const row of within(table).getAllByRole('row')) expect(row).toHaveAttribute('role', 'row');
+    for (const th of within(table).getAllByRole('columnheader')) expect(th).toHaveAttribute('role', 'columnheader');
+    for (const row of within(table).getAllByRole('row', { name: /^(deploy|release|went|ship)$/ })) {
+      const cells = within(row).getAllByRole('cell');
+      expect(cells).toHaveLength(4);
+      for (const cell of cells) expect(cell).toHaveAttribute('role', 'cell');
+    }
+  });
+
+  it('a row shows the part of speech, the level name, a cased status and a changed meaning', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    const cells = (name: string) => within(within(table).getByRole('row', { name })).getAllByRole('cell');
+    expect(within(cells('deploy')[0]).getByRole('link', { name: 'deploy' })).toBeInTheDocument();
+    expect(within(cells('deploy')[0]).getByText('verb')).toBeInTheDocument();
+    expect(cells('deploy').slice(1, 3).map((c) => c.textContent)).toEqual(['nghĩa deploy', 'Bậc 1']);
+    expect(cells('deploy')[3]).toHaveTextContent('Ưu tiên');
+    expect(cells('went')[2]).toHaveTextContent('Mới');
+    expect(cells('went')[3]).toHaveTextContent('Từ mới');
+    expect(cells('release')[3]).toHaveTextContent('Đến hạn hôm nay');
+    expect(cells('ship')[2]).toHaveTextContent('Bậc 3');
+    expect(cells('ship')[3]).toHaveTextContent(/^Ôn lại 18\/10/);
+    await waitFor(() => expect(within(cells('release')[1]).getByText('Nghĩa đã đổi')).toBeInTheDocument());
+  });
+
+  it('an unset part of speech ("unspecified") leaves the cell empty (final review I1)', async () => {
+    const unset = { ...WORDS[0], content: { ...WORDS[0].content, pos: 'unspecified' } };
+    renderApp(<GroupPage />, { chrome: true, routes: routes({ [`GET ${WORDS_URL}`]: () => Response.json({ items: [unset, ...WORDS.slice(1)], next_page_token: null }) }) });
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    const cells = within(within(table).getByRole('row', { name: 'deploy' })).getAllByRole('cell');
+    expect(cells[0].textContent).toBe('deploy');
+    expect(within(table).queryByText(/unspecified/)).toBeNull();
+  });
+
+  it('the filter is one dropdown (bản A, owner 13/11/2026): every filter with its count, no colours; picking one filters the rows', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    const trigger = screen.getByRole('button', { name: /Lọc từ trong nhóm/ });
+    expect(trigger).toHaveTextContent('Tất cả · 4');
+    await userEvent.click(trigger);
+    const options = within(await screen.findByRole('listbox')).getAllByRole('option');
+    expect(options.map((o) => o.textContent)).toEqual([
+      'Tất cả4', 'Ưu tiên1', 'Đến hạn7', 'Mới1', 'Bậc 12', 'Bậc 20', 'Bậc 31', 'Bậc 40', 'Bậc 50',
+    ]);
+    await userEvent.click(screen.getByRole('option', { name: /^Bậc 1/ }));
+    expect(screen.getByRole('button', { name: /Lọc từ trong nhóm/ })).toHaveTextContent('Bậc 1 · 2');
+    await waitFor(() => expect(rowNames()).toEqual(['deploy', 'release']));
   });
 
   it('a section filter asks the server for that section once (no whole-deck load)', async () => {
     const { count } = renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
-    await userEvent.click(screen.getByRole('button', { name: 'Đến hạn7' }));
-    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['release']));
+    await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    await userEvent.click(screen.getByRole('button', { name: /Lọc từ trong nhóm/ }));
+    await userEvent.click(await screen.findByRole('option', { name: /^Đến hạn/ }));
+    await waitFor(() => expect(rowNames()).toEqual(['release']));
     expect(count('GET', `${WORDS_URL}&section=due`)).toBe(1);
     expect(count('GET', `/v1/groups/${G}/queue?mode=all`)).toBe(0);
   });
@@ -195,10 +250,10 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
         [`GET ${WORDS_URL}&page_token=p2`]: () => Response.json({ items: WORDS.slice(2), next_page_token: null }),
       }),
     });
-    await screen.findByRole('listitem', { name: 'release' });
-    expect(screen.queryByRole('listitem', { name: 'went' })).not.toBeInTheDocument();
+    await screen.findByRole('row', { name: 'release' });
+    expect(screen.queryByRole('row', { name: 'went' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Xem thêm từ · còn 2 từ' }));
-    expect(await screen.findByRole('listitem', { name: 'ship' })).toBeInTheDocument();
+    expect(await screen.findByRole('row', { name: 'ship' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Xem thêm từ/ })).not.toBeInTheDocument();
   });
 
@@ -227,7 +282,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(retry.closest('[role="alert"]')).not.toBeNull();
     expect(screen.queryByText('Nhóm chưa có từ nào.')).not.toBeInTheDocument();
     await userEvent.click(retry);
-    expect(await screen.findByRole('list', { name: /Toàn bộ 4 từ/ }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole('table', { name: /Toàn bộ 4 từ/ }, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('E17: an unknown or deleted deck shows not found with the way back', async () => {
@@ -296,14 +351,13 @@ describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
   });
 
-  it('control: a deck with words keeps its counts, chart and "Học tất cả N từ" in the menu', async () => {
+  it('control: a deck with words shows its table; the ⋯ menu only renames and deletes', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const main = screen.getByRole('main');
-    expect(await within(main).findByRole('list', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
-    expect(within(main).getByRole('figure')).toBeInTheDocument();
+    expect(await within(main).findByRole('table', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
-    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 4 từ', 'Xóa nhóm']);
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
   });
 });
 

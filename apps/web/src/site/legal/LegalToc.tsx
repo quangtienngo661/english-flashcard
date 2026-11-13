@@ -53,7 +53,7 @@ export function LegalToc({ sections, labels }: { sections: Section[]; labels: La
     <nav
       aria-label={labels.heading}
       className={cn(
-        'z-20 flex flex-col rounded-wm-lg border border-wm-line bg-wm-surface shadow-wm-soft',
+        'z-20 flex flex-col rounded-wm-card border border-wm-line bg-wm-surface shadow-wm-soft',
         'max-lg:[.js_&]:sticky max-lg:[.js_&]:top-15.75 md:max-lg:[.js_&]:top-17.75 max-lg:[.js_&]:backdrop-blur-wm-sm',
         'lg:sticky lg:top-24 lg:w-65 lg:shrink-0 lg:gap-1 lg:overflow-y-auto lg:border-0 lg:px-4 lg:py-5',
         TOC_MAX_HEIGHT,
@@ -66,7 +66,7 @@ export function LegalToc({ sections, labels }: { sections: Section[]; labels: La
         aria-controls={listId}
         aria-label={labels.open}
         onClick={() => setOpen((was) => !was)}
-        className={cn('hidden min-h-11 w-full items-center justify-between gap-3 rounded-wm-lg px-3.5 py-3 text-left max-lg:[.js_&]:flex', FOCUS)}
+        className={cn('hidden min-h-11 w-full items-center justify-between gap-3 rounded-wm-control px-3.5 py-3 text-left max-lg:[.js_&]:flex', FOCUS)}
       >
         <span className="flex min-w-0 flex-col">
           <span className="font-wm-sans text-wm-caption text-wm-muted">{labels.heading}</span>
@@ -89,7 +89,7 @@ export function LegalToc({ sections, labels }: { sections: Section[]; labels: La
               data-current={section.id === current ? '' : undefined}
               onClick={() => setOpen(false)}
               className={cn(
-                'flex min-h-11 items-center rounded-wm-sm px-2.5 py-1.5 font-wm-sans text-wm-small text-wm-muted transition-colors duration-200 hover:text-wm-ink lg:block lg:min-h-0',
+                'flex min-h-11 items-center rounded-wm-control px-2.5 py-1.5 font-wm-sans text-wm-small text-wm-muted transition-colors duration-200 hover:text-wm-ink lg:block lg:min-h-0',
                 'data-current:bg-wm-accent-soft data-current:font-semibold data-current:text-wm-accent',
                 FOCUS,
               )}

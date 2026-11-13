@@ -29,7 +29,7 @@ export function SubscriptionRows({ sources }: { sources: Source[] }) {
   if (subscriptions.length === 0) return null;
   return (
     <section aria-label={t('title')} className="flex w-full flex-col gap-2">
-      <h2 className="font-wm-mono text-wm-mono font-medium text-wm-muted">{t('title')}</h2>
+      <h2 className="text-wm-meta font-medium text-wm-muted">{t('title')}</h2>
       <ul className="flex flex-col gap-3">
         {subscriptions.map((source) => (
           <SubscriptionRow key={source.id} source={source} />
@@ -41,6 +41,7 @@ export function SubscriptionRows({ sources }: { sources: Source[] }) {
 
 function SubscriptionRow({ source }: { source: Source }) {
   const t = useTranslations('App.plans.subscriptions');
+  const tc = useTranslations('App.common');
   const format = useFormat();
   const api = useApi();
   const queryClient = useQueryClient();
@@ -84,7 +85,7 @@ function SubscriptionRow({ source }: { source: Source }) {
   else line = endText ? t('endsOn', { date: endText }) : t('ends');
 
   return (
-    <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4">
+    <Card as="li" className="flex flex-wrap items-center justify-between gap-3 border border-wm-line px-5 py-4 md:px-5 md:py-4">
       <span ref={lineRef} tabIndex={-1} className="font-wm-sans text-wm-small-strong text-wm-ink outline-none">{line}</span>
       {renewing && !requested && (
         <TextButton tone="delete" onPress={() => setOpen(true)}>
@@ -97,11 +98,12 @@ function SubscriptionRow({ source }: { source: Source }) {
         onOpenChange={(next) => { if (!cancel.busy) setOpen(next); }}
         isDismissable={!cancel.busy}
         title={t('dialogTitle')}
+        closeLabel={tc('close')}
         footer={
           <>
-            <Button variant="secondary" onPress={() => setOpen(false)} isDisabled={cancel.busy}>
+            <TextButton tone="muted" onPress={() => setOpen(false)} isDisabled={cancel.busy} className="justify-center">
               {t('keep')}
-            </Button>
+            </TextButton>
             <Button variant="danger" onPress={() => void confirm()} isPending={cancel.busy}>
               {t('confirm')}
             </Button>
@@ -109,7 +111,7 @@ function SubscriptionRow({ source }: { source: Source }) {
         }
       >
         {/* The M3 confirm dialogs (Figma "Xác nhận xóa" 121:4597): what the learner gives up in a fail-soft block. */}
-        <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+        <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
           <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
           <span>{endText ? t('dialogBody', { date: endText }) : t('dialogBodyNoDate')}</span>
         </p>

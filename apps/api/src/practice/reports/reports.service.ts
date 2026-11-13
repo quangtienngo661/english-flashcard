@@ -12,6 +12,7 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { withPracticeLock } from '../practice-lock.js';
+import { voidUnanswered } from '../sessions/void-item.js';
 import type { AnswerKey, Hints, Prompt, QuestionSource, QuestionType } from '../practice.types.js';
 import { allowedStatus, refundDecision, type ResolveStatus } from './refunds.js';
 import { ReportReasonsService } from './report-reasons.service.js';
@@ -139,12 +140,16 @@ export class ReportsService {
           hints: item.question.hints as Hints,
         }, { answer_raw: item.answerRaw, answers_tried: item.answersTried, result: item.result, hint_level: item.hintLevel });
         // The label as the learner saw it; a later rename does not change the report (B7E78).
-        return tx.practiceReport.create({ data: {
+        const report = await tx.practiceReport.create({ data: {
           userId, itemId, senseId: item.senseId, questionSnapshot: snapshot as Prisma.InputJsonValue, reason: reason.code,
           reasonLabel: learner.nativeLanguage === 'vi' ? reason.labelVi : reason.labelEn, note: input.note, createdAt: now,
           questionSource: source, aiOperationId: item.question.aiRequestId, aiCharged: item.question.aiCharged,
           ...(item.question.aiMeta === null ? {} : { aiMeta: item.question.aiMeta as Prisma.InputJsonValue }),
         } });
+        // Owner 14/11/2026 (Cách A): a question reported before it is answered is voided, so `next` moves on and it never counts;
+        // an answered one keeps its result.
+        if (item.result === null) await voidUnanswered(tx, item.id);
+        return report;
       }, transactionOptions));
     } catch (error) {
       // The lock serialises one learner's reports; this only covers a row that appeared outside it.

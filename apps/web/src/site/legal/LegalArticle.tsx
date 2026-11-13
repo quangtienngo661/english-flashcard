@@ -19,17 +19,17 @@ const COMPONENTS: Components = {
   ul: ({ children }) => <ul className={`list-disc ${DOC_LIST} ${ARTICLE_TEXT}`}>{children}</ul>,
   ol: ({ children }) => <ol className={`list-decimal ${DOC_LIST} ${ARTICLE_TEXT}`}>{children}</ol>,
   // Not drawn in Figma (R224): a soft accent block, a bordered table on the surface, mono code.
-  blockquote: ({ children }) => <blockquote className="flex flex-col gap-2 rounded-wm-lg bg-wm-accent-soft px-5 py-4">{children}</blockquote>,
+  blockquote: ({ children }) => <blockquote className="flex flex-col gap-2 rounded-wm-card bg-wm-accent-soft px-5 py-4">{children}</blockquote>,
   table: ({ children }) => (
-    <div className="overflow-x-auto rounded-wm-lg border border-wm-line bg-wm-surface">
+    <div className="overflow-x-auto rounded-wm-card border border-wm-line bg-wm-surface">
       <table className="w-full border-collapse font-wm-sans text-wm-small text-wm-ink">{children}</table>
     </div>
   ),
   th: ({ children }) => <th className="border-b border-wm-line bg-wm-accent-soft px-3 py-2.5 text-left font-semibold">{children}</th>,
   td: ({ children }) => <td className="border-b border-wm-line px-3 py-2.5 align-top">{children}</td>,
-  code: ({ children }) => <code className="rounded-wm-xs bg-wm-accent-soft px-1 font-wm-mono">{children}</code>,
+  code: ({ children }) => <code className="rounded-wm-key bg-wm-accent-soft px-1">{children}</code>,
   pre: ({ children }) => (
-    <pre className="overflow-x-auto rounded-wm-lg border border-wm-line bg-wm-surface p-4 font-wm-mono text-wm-small whitespace-pre-wrap text-wm-ink [&_code]:bg-transparent [&_code]:px-0">
+    <pre className="overflow-x-auto rounded-wm-card border border-wm-line bg-wm-surface p-4 text-wm-small whitespace-pre-wrap text-wm-ink [&_code]:bg-transparent [&_code]:px-0">
       {children}
     </pre>
   ),

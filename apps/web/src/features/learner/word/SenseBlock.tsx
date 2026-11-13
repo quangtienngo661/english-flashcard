@@ -7,8 +7,8 @@ import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
 import { TextButton } from '@/ui/TextButton';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
-import { marked } from '../lookup/DictionaryPage';
-import { StageTag } from './LearningBlock';
+import { TargetWord } from '@/ui/TargetWord';
+import { LevelTag } from './LearningBlock';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
 import type { PronLine } from '@/lib/speech/pronunciation';
 import { wordHref, type ItemState, type PageSense } from './word-api';
@@ -51,7 +51,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
 
   return (
     <article aria-labelledby={headingId} className="flex gap-3 py-4 md:gap-4">
-      <span aria-hidden className="w-4.5 shrink-0 pt-1 font-wm-mono text-wm-mono text-wm-muted md:w-6">
+      <span aria-hidden className="w-4.5 shrink-0 pt-1 text-wm-meta text-wm-muted md:w-6">
         {index}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
@@ -65,7 +65,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
           )}
           {sense.examples[0] && (
             <div className="flex items-start gap-1">
-              <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink">{marked(sense.examples[0], sense.lemma, forms)}</p>
+              <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sense.examples[0]} lemma={sense.lemma} forms={forms} /></p>
               <span className="shrink-0">
                 <SpeakSentence text={sense.examples[0]} />
               </span>
@@ -79,7 +79,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
         </div>
         <div className="shrink-0">
           {item ? (
-            <StageTag level={item.level} group={groupName} />
+            <LevelTag level={item.level} group={groupName} />
           ) : (
             <TextButton tone="add" onPress={() => setDialog('add')}>
               {t('addToGroup')}
@@ -88,7 +88,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
         </div>
       </div>
       {dialog === 'sentences' && <SavedSentencesDialog lemma={sense.lemma} senseId={sense.sense_id} onClose={() => setDialog(null)} />}
-      {dialog === 'add' && <DeckPickerDialog sense={sense} onClose={() => setDialog(null)} />}
+      {dialog === 'add' && <DeckPickerDialog sense={sense} inGroups={item?.group_ids ?? []} onClose={() => setDialog(null)} />}
     </article>
   );
 }

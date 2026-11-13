@@ -51,7 +51,7 @@ export function SourcesPage({ items }: { items: PublicSource[] | null }) {
               {sources.map((source, index) => (
                 <li
                   key={`${source.name}|${source.version}`}
-                  className={`flex flex-col gap-2 rounded-wm-xl p-5 lg:flex-row lg:gap-14 lg:px-9 lg:py-8 ${index % 2 === 0 ? 'bg-wm-surface shadow-wm-soft' : 'bg-wm-accent-soft'}`}
+                  className={`flex flex-col gap-2 rounded-wm-card p-5 lg:flex-row lg:gap-14 lg:px-9 lg:py-8 ${index % 2 === 0 ? 'bg-wm-surface shadow-wm-soft' : 'bg-wm-accent-soft'}`}
                 >
                   <h3 className={`lg:w-95 lg:shrink-0 ${NAME}`}>{source.name}</h3>
                   <div className="flex min-w-0 flex-1 flex-col gap-2 lg:gap-3">
@@ -71,7 +71,7 @@ export function SourcesPage({ items }: { items: PublicSource[] | null }) {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex min-h-11 w-fit items-center gap-1.5 rounded-wm-sm font-wm-sans text-wm-base-strong text-wm-accent ${FOCUS}`}
+                        className={`inline-flex min-h-11 w-fit items-center gap-1.5 rounded-wm-control font-wm-sans text-wm-base-strong text-wm-accent ${FOCUS}`}
                       >
                         {t('link')}
                         <ArrowUpRight aria-hidden className="size-4" />

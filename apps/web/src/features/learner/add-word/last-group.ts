@@ -1,18 +1,28 @@
-/** E21, D4: the deck the learner saved to last, kept in this browser only; empty when storage is blocked. */
+/** E21, D4: the groups the learner saved to last, kept in this browser only; empty when storage is blocked. */
 export const LAST_GROUP_KEY = 'wordmet-web.last-group';
 
-export function readLastGroup(): string | null {
+/** An array of ids (QP1). Older versions stored one bare id; that reads as `[id]`. */
+export function readLastGroups(): string[] {
   try {
-    return window.localStorage.getItem(LAST_GROUP_KEY);
+    const raw = window.localStorage.getItem(LAST_GROUP_KEY);
+    if (!raw) return [];
+    if (!raw.startsWith('[')) return [raw];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-export function writeLastGroup(id: string): void {
+export function writeLastGroups(ids: string[]): void {
   try {
-    window.localStorage.setItem(LAST_GROUP_KEY, id);
+    window.localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(ids));
   } catch {
     // Private window or blocked storage: the sheet just starts with no deck chosen next time.
   }
+}
+
+/** One group, as the bulk add and the stack targets save it. */
+export function writeLastGroup(id: string): void {
+  writeLastGroups([id]);
 }

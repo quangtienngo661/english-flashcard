@@ -2,7 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { pickDate, renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/test-utils/render-app';
 import { Checkbox } from './Checkbox';
 import { DateOfBirthField } from './DateOfBirthField';
 import { GoogleButton } from './GoogleButton';
@@ -89,6 +89,15 @@ describe('ui fields', () => {
     screen.getByRole('radio', { name: 'Sáng' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(onChange).toHaveBeenLastCalledWith('dark');
+  });
+
+  it('Segmented shows a count box after the label and keeps the name "Tất cả 61"', () => {
+    renderApp(
+      <Segmented label="Từ" value="all" onChange={() => {}} options={[{ id: 'all', label: 'Tất cả', count: 61 }, { id: 'due', label: 'Cần ôn', count: 3 }]} />,
+    );
+    expect(screen.getByRole('radio', { name: 'Tất cả 61' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Cần ôn 3' })).not.toBeChecked();
+    expect(screen.getByText('61')).toBeInTheDocument();
   });
 
   it('Select picks an item and calls onChange with its id', async () => {

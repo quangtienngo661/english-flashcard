@@ -2,24 +2,17 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import { Bricolage_Grotesque, JetBrains_Mono, Noto_Sans } from 'next/font/google';
+import { Bricolage_Grotesque, Noto_Sans } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { THEME_COLOR } from '@/app-shell/theme/theme';
 import { routing } from '@/i18n/routing';
 import { buildMetadata } from '@/lib/metadata';
 import '../globals.css';
 
-// Fonts of the new UI (design giao diện mới §5.8), all with Vietnamese glyphs; the variables feed --font-wm-sans/-display/-mono
+// Fonts of the new UI (design giao diện mới §5.8), all with Vietnamese glyphs; the variables feed --font-wm-sans/-display
 // (globals.css, @theme inline). Variable fonts, so no weight list; Bricolage keeps only its wght axis (no `axes`: ~41 KB instead of ~131 KB).
 const notoSans = Noto_Sans({ subsets: ['latin', 'vietnamese'], display: 'swap', variable: '--font-noto-sans' });
 const bricolage = Bricolage_Grotesque({ subsets: ['latin', 'vietnamese'], display: 'swap', variable: '--font-bricolage' });
-// Small labels only: not preloaded, so public pages do not fetch it up front.
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin', 'vietnamese'],
-  display: 'swap',
-  variable: '--font-jetbrains-mono',
-  preload: false,
-});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -46,7 +39,7 @@ export default async function LocaleLayout({ children, params }: LocaleParams & 
     // The learner app's theme script sets data-theme on <html> before React hydrates (design §4.4).
     <html
       lang={locale}
-      className={`${notoSans.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}
+      className={`${notoSans.variable} ${bricolage.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-dvh font-wm-sans">

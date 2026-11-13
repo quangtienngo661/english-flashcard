@@ -21,6 +21,7 @@ import { TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import type { AppLocale } from '@/i18n/routing';
 import { AuthHeading, FormError } from './AuthHeading';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 
 const DIGITS = 6;
 /** The API refuses a new code within this many seconds (auth.otp.email.cooldown). */
@@ -54,6 +55,9 @@ export function VerifyEmailForm() {
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_AFTER_S * 1000);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<{ email?: string; password?: string; code?: string }>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
   const firstStatus = useRef<string | null>(null);
   const submitting = useRef(false);
 
@@ -99,6 +103,16 @@ export function VerifyEmailForm() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const empty = {
+      ...(email ? {} : { email: t('required.email') }),
+      ...(password ? {} : { password: t('required.password') }),
+      ...(complete ? {} : { code: t('required.code') }),
+    };
+    setMissing(empty);
+    if (Object.keys(empty).length > 0) {
+      focusFirstInvalid();
+      return;
+    }
     try {
       await submit();
     } catch (failure) {
@@ -139,17 +153,25 @@ export function VerifyEmailForm() {
 
   return (
     <AuthHeading title={t('verify.title')} intro={intro} onBack={() => router.back()}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {pendingEmail === null && (
-          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
+          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} error={missing.email} />
         )}
         {memoryPassword === null && (
-          <PasswordField label={t('password')} value={typedPassword} onChange={setTypedPassword} autoComplete="current-password" />
+          <PasswordField label={t('password')} value={typedPassword} onChange={setTypedPassword} autoComplete="current-password" error={missing.password} />
         )}
-        <OtpField label={t('verify.title')} hideLabel digitLabel={(n) => t('verify.digit', { n })} value={code} onChange={setCode} length={DIGITS} />
+        <OtpField
+          label={t('verify.title')}
+          hideLabel
+          digitLabel={(n) => t('verify.digit', { n })}
+          value={code}
+          onChange={setCode}
+          length={DIGITS}
+          error={missing.code}
+        />
         {bot.widget}
         <FormError message={error} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store}>
           {t('verify.submit')}
         </Button>
         {wait > 0 ? (

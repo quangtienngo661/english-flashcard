@@ -1,9 +1,10 @@
 'use client';
 
 import { Check, CircleCheck } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
+import { useRouteLocale } from '@/app-shell/route-locale';
 import { Button } from '@/ui/Button';
-import { SpeakWord } from '@/app-ui/SpeakButtons';
+import { SpeakWord } from '@/ui/SpeakButton';
 import type { AnswerResult } from './use-practice-session';
 
 const BLANK = '___';
@@ -22,13 +23,13 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
   busy: boolean;
 }) {
   const t = useTranslations('App.practice.session');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const rows = result.alternative?.rows ?? [];
   const at = sentence.indexOf(BLANK);
   const [before, after] = at < 0 ? [sentence, ''] : [sentence.slice(0, at), sentence.slice(at + BLANK.length)];
   return (
     <div className="flex flex-col gap-3">
-      <div data-feedback className="flex gap-3 rounded-wm-lg bg-wm-accent-soft p-4 motion-safe:animate-feedback-in">
+      <div data-feedback className="flex gap-3 rounded-wm-row bg-wm-accent-soft p-4 motion-safe:animate-wm-feedback-in">
         <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-wm-accent" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="font-wm-display text-wm-word text-wm-accent">{t('alternativeLabel')}</p>
@@ -47,7 +48,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
         </div>
       </div>
       {result.translation && locale === 'vi' && (
-        <div className="flex flex-col gap-1 rounded-wm-lg bg-wm-surface p-4">
+        <div className="flex flex-col gap-1 rounded-wm-row bg-wm-surface p-4">
           <p className="flex items-center gap-2 text-wm-label text-wm-ink">
             {t('translation')}
             <span className="rounded-full bg-wm-accent-soft px-2 py-0.5 text-wm-label text-wm-accent">{t('translationAi')}</span>
@@ -56,7 +57,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
         </div>
       )}
       {/* Same flat surface as the translation above: no border, so the card reads as one piece (UI polish, 07/11/2026). */}
-      <ul className="flex flex-col divide-y divide-wm-line rounded-wm-lg bg-wm-surface px-4">
+      <ul className="flex flex-col divide-y divide-wm-line rounded-wm-row bg-wm-surface px-4">
         {rows.map((row) => (
           <li key={row.sense_id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex min-w-0 flex-col gap-0.5">

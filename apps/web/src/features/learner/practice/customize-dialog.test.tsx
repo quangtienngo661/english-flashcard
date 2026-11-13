@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import type { Route } from '@/app-shell/session/test-support';
 import { PracticePage } from './PracticePage';
 
@@ -102,11 +102,11 @@ describe('Tùy chỉnh phiên: words', () => {
     });
   });
 
-  it('"Chỉ một ngăn": Ngăn 3 ngày shows 10 từ and sends group_filter 2; the word filter goes back to Mọi từ', async () => {
+  it('"Chỉ một bậc": Bậc 2 shows 10 từ and sends group_filter 2; the word filter goes back to Mọi từ', async () => {
     const { view, dialog } = await open('Theo nhóm');
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: /Chỉ một ngăn/ }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Ngăn 3 ngày · 10' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /Chỉ một bậc/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Bậc 2 · 10' }));
     expect(within(dialog).getByText('10 từ')).toBeInTheDocument();
     expect(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' })).not.toBeChecked();
     await userEvent.click(startButton(dialog));
@@ -127,7 +127,7 @@ describe('Tùy chỉnh phiên: words', () => {
   it('the count stops at max_questions_per_session in the fixed mode', async () => {
     const { dialog } = await open('Luyện tất cả');
     await press(dialog, 'Số câu: thêm 1', 10);
-    expect(within(dialog).getByRole('group', { name: 'Số câu' })).toHaveTextContent('20');
+    expect(within(dialog).getByRole('textbox', { name: 'Số câu' })).toHaveValue('20');
     expect(within(dialog).getByRole('button', { name: 'Số câu: thêm 1' })).toBeDisabled();
     expect(within(dialog).queryByText(/^tối đa/)).not.toBeInTheDocument();
   });
@@ -136,7 +136,7 @@ describe('Tùy chỉnh phiên: words', () => {
     const { dialog } = await open('Theo nhóm', 'pro', { session_max_mode: 'scope_words' });
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' }));
     expect(within(dialog).getByText('tối đa 4')).toBeInTheDocument();
-    expect(within(dialog).getByRole('group', { name: 'Số câu' })).toHaveTextContent('4');
+    expect(within(dialog).getByRole('textbox', { name: 'Số câu' })).toHaveValue('4');
     expect(within(dialog).getByRole('button', { name: 'Số câu: thêm 1' })).toBeDisabled();
     expect(startButton(dialog)).toHaveTextContent('Bắt đầu 4 câu');
   });
@@ -148,6 +148,24 @@ describe('Tùy chỉnh phiên: question types', () => {
     for (const name of ['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']) await userEvent.click(within(dialog).getByRole('checkbox', { name }));
     expect(within(dialog).getByText('Chọn ít nhất một kiểu câu.')).toBeInTheDocument();
     expect(startButton(dialog)).toBeDisabled();
+  });
+
+  it('T22: the start button is described by the line that says why it is off, and that line sits in a status', async () => {
+    const { dialog } = await open('Luyện tất cả');
+    expect(startButton(dialog)).not.toHaveAccessibleDescription(/Chọn ít nhất/);
+    for (const name of ['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']) await userEvent.click(within(dialog).getByRole('checkbox', { name }));
+    expect(startButton(dialog)).toHaveAccessibleDescription('Chọn ít nhất một kiểu câu.');
+    expect(within(dialog).getAllByRole('status').some((s) => s.textContent === 'Chọn ít nhất một kiểu câu.')).toBe(true);
+  });
+
+  it('T22: AI on with both AI rows off says why in the description too; every normal type off adds the second line', async () => {
+    const { dialog } = await open('Luyện tất cả');
+    await press(dialog, 'Câu AI viết: thêm 1', 3);
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Trắc nghiệm theo câu' }));
+    expect(startButton(dialog)).toHaveAccessibleDescription('Chọn ít nhất một kiểu câu AI.');
+    for (const name of ['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']) await userEvent.click(within(dialog).getByRole('checkbox', { name }));
+    expect(startButton(dialog)).toHaveAccessibleDescription('Chọn ít nhất một kiểu câu AI. Chọn ít nhất một kiểu câu không cần AI cho 9 câu còn lại.');
   });
 
   it('the prompt style sits on the Gõ từ row; with Gõ từ off it stays there, locked (owner 10/11/2026)', async () => {
@@ -176,7 +194,7 @@ describe('Tùy chỉnh phiên: question types', () => {
 describe('Tùy chỉnh phiên: Câu AI viết', () => {
   it('starts at 0 with the AI rows off; the caption gives the most and the units left', async () => {
     const { dialog } = await open('Luyện tất cả');
-    expect(within(dialog).getByRole('group', { name: 'Câu AI viết' })).toHaveTextContent('0');
+    expect(within(dialog).getByRole('textbox', { name: 'Câu AI viết' })).toHaveValue('0');
     // 50% of 12 questions = 6; 300 − 20 = 280 left.
     expect(within(dialog).getByText('Tối đa 6 câu AI · còn 280 lượt')).toBeInTheDocument();
     expect(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu' })).toBeDisabled();
@@ -204,7 +222,7 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     expect(within(dialog).getByRole('button', { name: 'Câu AI viết: thêm 1' })).toBeDisabled();
     await press(dialog, 'Số câu: bớt 1', 2);
     // 5 questions → 2: the chosen 3 comes down with it.
-    expect(within(dialog).getByRole('group', { name: 'Câu AI viết' })).toHaveTextContent('2');
+    expect(within(dialog).getByRole('textbox', { name: 'Câu AI viết' })).toHaveValue('2');
   });
 
   it('saved sentences and AI fill-in both on: cloze_source own_then_ai, cloze once, and the "?" by the row explains it', async () => {
@@ -292,7 +310,7 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     expect(alert).toHaveTextContent('Phiên này cần 5 lượt câu AI, bạn còn 3. Lượt câu AI mới vào 1/12.');
     expect(startButton(dialog)).toBeDisabled();
     await userEvent.click(within(alert).getByRole('button', { name: 'Bỏ kiểu câu có AI' }));
-    expect(within(dialog).getByRole('group', { name: 'Câu AI viết' })).toHaveTextContent('0');
+    expect(within(dialog).getByRole('textbox', { name: 'Câu AI viết' })).toHaveValue('0');
     expect(startButton(dialog)).toBeEnabled();
     expect(starts(view.calls)).toHaveLength(1);
   });
@@ -306,6 +324,7 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     await userEvent.click(startButton(dialog));
     await within(dialog).findByRole('alert');
     await press(dialog, 'Câu AI viết: bớt 1', 2);
+    expect(within(dialog).getByRole('textbox', { name: 'Câu AI viết' })).toHaveValue('3');
     expect(within(dialog).getByRole('button', { name: 'Câu AI viết: thêm 1' })).toBeDisabled();
     expect(startButton(dialog)).toBeEnabled();
     await waitFor(() => expect(view.calls.filter((c) => c.path === '/v1/me/entitlements').length).toBeGreaterThan(reads));

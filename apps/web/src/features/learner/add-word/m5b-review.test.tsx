@@ -2,8 +2,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Call } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordSheet } from './AddWordSheet';
 import { LAST_GROUP_KEY } from './last-group';
 
@@ -68,7 +68,7 @@ describe('M5b review findings', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Chọn' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
-    expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: RUN.sense_id });
+    expect(quickAdds(calls)[0].body).toEqual({ group_ids: [TRAVEL], sense_id: RUN.sense_id });
     expect((await screen.findAllByText('Đã lưu từ “run” vào nhóm “Du lịch”.')).length).toBeGreaterThan(0);
   });
 
@@ -92,7 +92,7 @@ describe('M5b review findings', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa rồi lưu' }));
     await screen.findByRole('heading', { name: 'Sửa trước khi lưu' });
     expect(screen.queryByText('Dạng chia của:')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect((quickAdds(calls)[0].body as { new_word: Record<string, unknown> }).new_word).not.toHaveProperty('form_of');
   });
@@ -106,7 +106,7 @@ describe('M5b review findings', () => {
     await userEvent.clear(field);
     await userEvent.type(field, 'shipped');
     expect(screen.queryByText('Dạng chia của:')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(1));
     expect((quickAdds(calls)[0].body as { new_word: Record<string, unknown> }).new_word).not.toHaveProperty('form_of');
   });
@@ -122,10 +122,10 @@ describe('M5b review findings', () => {
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa rồi lưu' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await screen.findAllByRole('alert');
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), ' mới');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(2));
     expect(quickAdds(calls)[1].headers['Idempotency-Key']).not.toBe(quickAdds(calls)[0].headers['Idempotency-Key']);
   });
@@ -141,9 +141,9 @@ describe('M5b review findings', () => {
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa rồi lưu' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await screen.findAllByRole('alert');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
     await waitFor(() => expect(quickAdds(calls)).toHaveLength(2));
     expect(quickAdds(calls)[1].headers['Idempotency-Key']).toBe(quickAdds(calls)[0].headers['Idempotency-Key']);
   });

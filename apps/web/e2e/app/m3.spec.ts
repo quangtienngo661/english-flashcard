@@ -60,21 +60,23 @@ function m3Api(long = false): Record<string, MockHandler> {
 }
 
 test.describe('M3 flows (mocked API)', () => {
-  test('lookup → word page → add a meaning to a deck', async ({ page }) => {
+  test('lookup → word page → add a meaning to a deck', async ({ page }, testInfo) => {
     await signedInAs(page, 'free', m3Api());
     await page.goto('/vi/app/lookup?q=left');
-    // Giao diện mới M4.5: the first entry is lifted into the card; its link opens the word page.
-    await page.getByRole('link', { name: vi.lookup.openWordArrow }).click();
+    // Giao diện mới M4.5: from 1024 px the first entry is lifted into the card and its link opens the word page; on phones
+    // there is no card and the entry itself is the link (owner 14/11/2026).
+    if (testInfo.project.name === 'mobile') await page.getByRole('link', { name: /^left/ }).first().click();
+    else await page.getByRole('link', { name: vi.lookup.openWordArrow }).click();
     await expect(page).toHaveURL(/\/vi\/app\/word\?w=left$/);
     const adjective = page.getByRole('article').first();
     await adjective.getByRole('button', { name: vi.word.addToGroup }).click();
     const dialog = page.getByRole('dialog', { name: vi.addWord.pickerTitle });
     // The phone sheet slides up first; wait until it has settled before choosing the deck.
-    await expect(dialog.getByRole('radio', { name: /Du lịch/ }).first()).toBeInViewport();
-    await dialog.getByText('Du lịch', { exact: true }).first().click();
-    await dialog.getByRole('button', { name: 'Lưu vào nhóm' }).click();
+    await expect(dialog.getByRole('option', { name: /Du lịch/ }).first()).toBeInViewport();
+    await dialog.getByRole('option', { name: /Du lịch/ }).first().click();
+    await dialog.getByRole('button', { name: 'Lưu vào 1 nhóm' }).click();
     await expect(page.getByText('Đã thêm “left” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', `/v1/groups/${DECK}/items`)[0].body).toEqual({ sense_id: uuid(1) });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: uuid(1) });
   });
 
   test('N opens Thêm từ; "went" is saved as go to the last-used deck', async ({ page }) => {
@@ -90,7 +92,7 @@ test.describe('M3 flows (mocked API)', () => {
     await sheet.getByRole('textbox', { name: vi.addWord.sentence }).fill('I went to the bank yesterday.');
     await sheet.getByRole('button', { name: 'Lưu', exact: true }).click();
     await expect(page.getByText('Đã lưu từ “went” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, sense_id: uuid(3), sentence: 'I went to the bank yesterday.' });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: uuid(3), sentence: 'I went to the bank yesterday.' });
   });
 
   test('a word Wordmet does not have: manual meaning', async ({ page }) => {
@@ -102,9 +104,9 @@ test.describe('M3 flows (mocked API)', () => {
     await sheet.getByRole('button', { name: vi.addWord.ai.manual }).click();
     const manual = page.getByRole('dialog', { name: vi.addWord.manualTitle });
     await manual.getByRole('textbox', { name: vi.addWord.meaning }).fill('sức hút');
-    await manual.getByRole('button', { name: vi.addWord.saveManual }).click();
+    await manual.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }).click();
     await expect(page.getByText('Đã lưu từ “rizz” vào nhóm “Du lịch”.')).toBeVisible();
-    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_id: DECK, new_word: { lemma: 'rizz', meaning: 'sức hút' } });
+    expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], new_word: { lemma: 'rizz', meaning: 'sức hút' } });
   });
 
   test('saved sentences: one more, then the limit says so with a way to the list', async ({ page }) => {
@@ -150,7 +152,8 @@ test.describe('M3 flows (mocked API)', () => {
 
 // Every M3 page × vi/en × light/dark with the longest content; the desktop (1440) and mobile (390) projects run each once.
 const PAGES: Array<{ path: string; ready: (page: Page) => Promise<void>; open?: (page: Page, locale: 'vi' | 'en') => Promise<void> }> = [
-  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('button', { name: /^left/ }).first()).toBeVisible() },
+  // An entry is a button from 1024 px and a link to the word page on phones.
+  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('heading', { name: 'L', exact: true })).toBeVisible() },
   { path: 'lookup?q=zzzz', ready: (p) => expect(p.getByRole('heading', { level: 2 }).first()).toBeVisible() },
   { path: 'word?w=left', ready: (p) => expect(p.getByRole('article').first()).toBeVisible() },
   {

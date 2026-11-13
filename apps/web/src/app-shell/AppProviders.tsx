@@ -5,8 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { RouterProvider } from 'react-aria-components';
-import { StreakToast } from '@/app-ui/StreakToast';
-import { ToastRegion } from '@/app-ui/Toast';
+import { StreakToast } from '@/ui/StreakToast';
+import { ToastRegion } from '@/ui/Toast';
 import { ApiError, NetworkError } from './api/problem';
 import { hardReplace } from './navigate';
 import { SessionProvider } from './session/session-context';
@@ -64,9 +64,9 @@ export function AppProviders({ children, store }: { children: ReactNode; store?:
 function OfflineBand({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('App');
   return (
-    <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-danger-soft px-4 py-2 text-ui text-ink">
+    <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-wm-fail-soft px-4 py-2 font-wm-sans text-wm-small text-wm-ink">
       <span>{t('offline.message')}</span>
-      <button type="button" onClick={onRetry} className="font-semibold text-primary underline underline-offset-2">
+      <button type="button" onClick={onRetry} className="font-semibold text-wm-accent underline underline-offset-2">
         {t('common.retry')}
       </button>
     </div>

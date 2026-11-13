@@ -35,7 +35,11 @@
   },
   "limits": {
     "/[locale]/app/plans": 1.18,
-    "/[locale]/app/plans/order": 1.18
+    "/[locale]/app/plans/order": 1.18,
+    "/[locale]/app/lookup": 1.2,
+    "/[locale]/app/word": 1.2,
+    "/[locale]/app/practice/session": 1.2,
+    "/[locale]/app/recall": 1.2
   },
-  "limitsWhy": "owner 12/11/2026: plans pages over 110 % after M9.3; lazy CalendarHost regroups chunks onto other routes; 118 % keeps ~30 KB drift margin"
+  "limitsWhy": "owner 12/11/2026: plans pages over 110 % after M9.3; lazy CalendarHost regroups chunks onto other routes; 118 % keeps ~30 KB drift margin; owner 14/11/2026: lookup, word, practice/session, recall were at 109-109.5 % after M9 and reached 111-114 % with the polish round and the ui audit fixes (announcements, field checks); owner accepts the size, owner set 120 %"
 }

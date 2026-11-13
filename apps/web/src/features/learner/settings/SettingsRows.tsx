@@ -15,7 +15,7 @@ export function SettingsSection({ id, title, children }: { id: string; title: st
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className="scroll-mt-24 rounded-wm-xl border border-wm-line bg-wm-surface px-4 pb-1.5 pt-4 shadow-wm-card md:px-6 md:pt-6"
+      className="scroll-mt-24 rounded-wm-card border border-wm-line bg-wm-surface px-4 pb-1.5 pt-4 shadow-wm-card md:px-6 md:pt-6"
     >
       <h2 id={`${id}-title`} tabIndex={-1} className="pb-2 font-wm-display text-xl font-bold text-wm-ink outline-none">
         {title}

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import type { Route } from '@/app-shell/session/test-support';
 import { WeakWordsPage } from './WeakWordsPage';
 
@@ -52,7 +52,7 @@ const base = (over: Record<string, Route> = {}): Record<string, Route> => ({
 const posts = (calls: Array<{ method: string; path: string; body: unknown }>, path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 describe('WeakWordsPage (K/56)', () => {
-  it('all decks first: the count, each word with its meaning, ✓/✗ of the last questions, stage and when it was last wrong', async () => {
+  it('all decks first: the count, each word with its meaning, ✓/✗ of the last questions, level and when it was last wrong', async () => {
     renderApp(<WeakWordsPage />, { routes: base() });
     expect(await screen.findByRole('heading', { name: '6 từ hay sai' })).toBeInTheDocument();
     const row = (await screen.findByText('deploy')).closest('li')!;
@@ -61,7 +61,7 @@ describe('WeakWordsPage (K/56)', () => {
     expect(within(row).getByRole('img', { name: '2 câu đúng' })).toHaveTextContent('2');
     expect(within(row).getByRole('img', { name: '3 câu sai' })).toHaveTextContent('3');
     expect(within(row).queryByText('sai 3/5')).not.toBeInTheDocument();
-    expect(within(row).getByText('1 ngày')).toBeInTheDocument();
+    expect(within(row).getByText('Bậc 1')).toBeInTheDocument();
     expect(within(row).getByText(/hôm nay$/)).toBeInTheDocument();
     expect(screen.getByText('Vào: sai 2 lần trong 5 câu gần nhất, ở mọi kiểu câu.')).toBeInTheDocument();
   });
@@ -89,5 +89,32 @@ describe('WeakWordsPage (K/56)', () => {
     });
     expect(await screen.findByText('Chưa có từ nào hay sai.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Luyện/ })).not.toBeInTheDocument();
+  });
+
+  const viewport = (width: number) => {
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*(\d+)px/.exec(query);
+      return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+    }) as unknown as typeof window.matchMedia;
+  };
+  const originalMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = originalMedia;
+  });
+
+  it('phones (390 px): the "Luyện" card comes before the first word row in document order', async () => {
+    viewport(390);
+    renderApp(<WeakWordsPage />, { routes: base() });
+    const start = await screen.findByRole('button', { name: 'Luyện 6 từ' });
+    const first = (await screen.findByText('cache')).closest('li')!;
+    expect(start.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('desktop (1280 px): the list comes before the "Luyện" card, so Tab order matches the screen', async () => {
+    viewport(1280);
+    renderApp(<WeakWordsPage />, { routes: base() });
+    const start = await screen.findByRole('button', { name: 'Luyện 6 từ' });
+    const first = (await screen.findByText('cache')).closest('li')!;
+    expect(first.compareDocumentPosition(start) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

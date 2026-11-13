@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { CompareLine, compareLetters } from './CompareLine';
 
 // M5.9 (Figma 209:5902): the typed word against the answer, letter by letter, once the answer is shown. GM19: no partial credit.
@@ -35,8 +35,8 @@ describe('compareLetters', () => {
 
 describe('CompareLine', () => {
   it('reads both words and marks the extra and missing letters', () => {
-    renderApp(<CompareLine typed="detoriorate" answer="deteriorate" />, { chrome: false });
-    const line = screen.getByRole('group', { name: 'So chữ: bạn gõ detoriorate, đáp án deteriorate' });
+    renderApp(<CompareLine typed="detoriorate" answer="deteriorate" />, { session: true, chrome: false });
+    const line = screen.getByRole('group', { name: 'Letters: you typed detoriorate, the answer is deteriorate' });
     expect(line.querySelector('[data-mark="extra"]')).toHaveTextContent('o');
     expect(line.querySelector('[data-mark="missing"]')).toHaveTextContent('e');
   });

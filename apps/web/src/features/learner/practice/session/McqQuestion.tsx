@@ -36,7 +36,7 @@ export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, 
             pop={right && chosen}
             onPress={() => onChoose(index)}
             // 3C (owner 27/10/2026): a wrong choice wiggles once (300ms); reduced motion keeps only the colours.
-            className={chosen && !right ? 'motion-safe:animate-wiggle-soft' : undefined}
+            className={chosen && !right ? 'motion-safe:animate-wm-wiggle-soft' : undefined}
           />
         );
       })}

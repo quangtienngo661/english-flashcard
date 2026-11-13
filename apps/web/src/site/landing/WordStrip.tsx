@@ -8,7 +8,7 @@ type Word = LandingCopy['strip']['row1'][number];
 const HIGHLIGHT = new Set(['allocate', 'viable', 'alleviate', 'feasible']);
 
 /**
- * "Dải từ IELTS" `6:40` (phone `9:213`): two rows of word chips, the second set further left, faded at both edges from md. Decorative
+ * "Dải từ" `6:40` (phone `9:213`): two rows of word chips, the second set further left, faded at both edges from md. Decorative
  * (the words come back in the groups section), so it is hidden from screen readers. Each row is a Marquee (52 s; the second reversed, 64 s).
  */
 export function WordStrip({ copy }: { copy: LandingCopy['strip'] }) {
@@ -31,7 +31,7 @@ function Row({ words, className, reverse }: { words: Word[]; className: string; 
           <span
             key={word}
             className={cn(
-              'inline-flex items-baseline gap-2 rounded-wm-lg border px-4 py-2.5',
+              'inline-flex items-baseline gap-2 rounded-wm-control border px-4 py-2.5',
               lit ? 'border-wm-accent bg-wm-accent-soft shadow-wm-btn' : 'border-wm-line bg-wm-surface shadow-wm-soft',
             )}
           >

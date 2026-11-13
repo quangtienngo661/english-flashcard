@@ -2,8 +2,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
-import { StreakToast } from '@/app-ui/StreakToast';
-import { renderApp } from '@/app-ui/test-utils';
+import { StreakToast } from '@/ui/StreakToast';
+import { SessionIntl } from '@/app-shell/SessionIntl';
+import { renderApp } from '@/test-utils/render-app';
+import { testRoute } from '@/test-utils/route-locale';
 import { STREAK_KEY } from '../calendar/calendar-api';
 import type { Card } from '../groups/groups-api';
 import { ReviewSession } from './ReviewSession';
@@ -11,6 +13,7 @@ import { ReviewSession } from './ReviewSession';
 const G = '22222222-2222-4222-8222-222222222222';
 const params = { current: new URLSearchParams({ group: G }) };
 vi.mock('next/navigation', () => ({
+  useParams: () => ({ locale: testRoute.locale }),
   usePathname: () => '/vi/app/review',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => params.current,
@@ -50,35 +53,35 @@ beforeEach(() => {
 
 describe('ReviewSession (K/20–K/22)', () => {
   it('M6.9: Học shows one "Lịch học" in its bar (phone)', async () => {
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    expect(screen.getAllByRole('button', { name: 'Lịch học' })).toHaveLength(1);
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getAllByRole('button', { name: 'Study calendar' })).toHaveLength(1);
   });
 
   it('front shows the word, its part of speech and "Ưu tiên"; Space flips to forms, meaning, example and the saved sentence', async () => {
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
     // Both faces stay mounted (1C); the front is its own face.
-    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 2' })).querySelector<HTMLElement>('[data-face="front"]')!;
+    const front = (await screen.findByRole('group', { name: 'Card 1 of 2' })).querySelector<HTMLElement>('[data-face="front"]')!;
     expect(within(front).getByText('deploy')).toBeInTheDocument();
     expect(within(front).getByText('verb')).toBeInTheDocument();
-    expect(within(front).getByText('Ưu tiên')).toBeInTheDocument();
+    expect(within(front).getByText('Priority')).toBeInTheDocument();
     expect(screen.getByText('triển khai').closest('[data-face]')).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByText('còn 2 thẻ')).toBeInTheDocument();
+    expect(screen.getByText('2 cards left')).toBeInTheDocument();
 
     await userEvent.keyboard(' ');
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
     expect(await screen.findByText('deploys')).toBeInTheDocument();
     expect(screen.getByText('deployed')).toBeInTheDocument();
     expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'They deploy updates every week.')).toBeInTheDocument();
-    const seen = screen.getByText('Câu bạn đã gặp').parentElement!;
-    expect(within(seen).getByText('deploy', { selector: 'mark' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Đã biết/ })).toBeInTheDocument();
+    const seen = screen.getByText('Your saved sentences').parentElement!;
+    expect(within(seen).getByRole('strong')).toHaveTextContent(/^deploy$/);
+    expect(screen.getByRole('button', { name: /Still learning/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Know/ })).toBeInTheDocument();
   });
 
   it('3D flip (owner 27/10/2026, 1C): both faces stay mounted, so the card keeps the taller face; the hidden face is inert and aria-hidden', async () => {
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    const card = await screen.findByRole('group', { name: 'Card 1 of 2' });
     const front = card.querySelector('[data-face="front"]')!;
     const back = card.querySelector('[data-face="back"]')!;
     expect(card).toHaveAttribute('data-flipped', 'false');
@@ -94,21 +97,21 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(card.querySelector('[data-face="front"]')).toBe(front);
     // Option C (owner 27/10/2026): one column — the meaning runs the full width at text-title-lg, the example comes below it.
     const meaning = within(back as HTMLElement).getByText('triển khai');
-    const example = within(back as HTMLElement).getByText('Câu mẫu');
+    const example = within(back as HTMLElement).getByText('Example');
     expect(meaning.compareDocumentPosition(example) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // M5.8: the card is the top of the Học stack; its arrival is a Web Animation (card-stack.test.tsx), not a CSS class.
     expect(card.closest('.cstack')).not.toBeNull();
   });
 
   it('keys 2 and 1 answer Know / Still learning, each press with a new review_id; the summary counts them', async () => {
-    const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('1');
-    expect(await screen.findByRole('heading', { name: 'Xong 2 thẻ.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '2 cards done.' })).toBeInTheDocument();
 
     const sent = posts(calls);
     expect(sent.map((b) => [b.item_id, b.answer, b.group_id])).toEqual([[uuid(1), 'known', G], [uuid(2), 'review', G]]);
@@ -121,47 +124,58 @@ describe('ReviewSession (K/20–K/22)', () => {
   });
 
   it('M5.8: one progress bar counts the cards done; the summary blocks rise 90 ms apart', async () => {
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    expect(screen.getByRole('progressbar', { name: 'còn 2 thẻ' })).toHaveAttribute('aria-valuenow', '0');
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getByRole('progressbar', { name: '2 cards left' })).toHaveAttribute('aria-valuenow', '0');
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
-    expect(screen.getByRole('progressbar', { name: 'còn 1 thẻ' })).toHaveAttribute('aria-valuenow', '1');
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    expect(screen.getByRole('progressbar', { name: '1 card left' })).toHaveAttribute('aria-valuenow', '1');
 
     await userEvent.keyboard(' ');
     await userEvent.keyboard('1');
-    const heading = await screen.findByRole('heading', { name: 'Xong 2 thẻ.' });
+    const heading = await screen.findByRole('heading', { name: '2 cards done.' });
     expect(heading.parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
-    expect(screen.getByTestId('known-count').closest('[class*="animate-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
+    expect(screen.getByTestId('known-count').closest('[class*="animate-wm-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
     // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
-    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
+    expect(screen.getByRole('link', { name: /Back to home/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
   });
 
-  it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
-    const { container } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+  // The focus half of audit 26/10/2026 #8 now holds with a mouse or trackpad only: see "Flip button focus (T18, QA10)".
+  it('after answering, the live region says the new card (audit 26/10/2026 #8)', async () => {
+    const { container } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     const live = container.querySelector('[data-live="result"]')!;
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
     await userEvent.keyboard(' ');
-    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
-    await waitFor(() => expect(live).toHaveTextContent('Thẻ 2 trên 2'));
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Lật thẻ/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    await waitFor(() => expect(live).toHaveTextContent('Card 2 of 2'));
+  });
+
+  it('T16: turning the card says its back in the live line; turning it back clears it', async () => {
+    const { container } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    const live = container.querySelector('[data-live="result"]')!;
+    await userEvent.keyboard(' ');
+    await waitFor(() => expect(live).toHaveTextContent(/^Back: triển khai$/));
+    await userEvent.keyboard(' ');
+    await waitFor(() => expect(live).toHaveTextContent(/^$/));
   });
 
   it('answers only after the card is flipped', async () => {
-    const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard('2');
     expect(posts(calls)).toHaveLength(0);
-    expect(screen.getByRole('group', { name: 'Thẻ 1 trên 2' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Card 1 of 2' })).toBeInTheDocument();
   });
 
   it('a lost connection keeps the card; the retry sends the same review_id (E19)', async () => {
     let fail = true;
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes([DEPLOY, CACHE], {
         'POST /v1/reviews': () => {
           if (fail) {
@@ -172,13 +186,13 @@ describe('ReviewSession (K/20–K/22)', () => {
         },
       }),
     });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
-    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
-    expect(await screen.findByText('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.')).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Thẻ 1 trên 2' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    expect(await screen.findByText("We couldn't save your answer. Check your connection and try again.")).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Card 1 of 2' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     const sent = posts(calls);
     expect(sent).toHaveLength(2);
     expect(sent[1].review_id).toBe(sent[0].review_id);
@@ -187,6 +201,7 @@ describe('ReviewSession (K/20–K/22)', () => {
   it('after a failure, a different answer is a new press with a new review_id', async () => {
     let fail = true;
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes([DEPLOY, CACHE], {
         'POST /v1/reviews': () => {
           if (fail) {
@@ -197,61 +212,67 @@ describe('ReviewSession (K/20–K/22)', () => {
         },
       }),
     });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByText('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.');
+    await screen.findByText("We couldn't save your answer. Check your connection and try again.");
     await userEvent.keyboard('1');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     const sent = posts(calls);
     expect(sent.map((b) => b.answer)).toEqual(['known', 'review']);
     expect(sent[1].review_id).not.toBe(sent[0].review_id);
   });
 
   it('Esc ends the session early with what was answered so far', async () => {
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: 'Xong 1 thẻ.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
     expect(screen.getByTestId('known-count')).toHaveTextContent('1');
     expect(screen.getByTestId('review-count')).toHaveTextContent('0');
   });
 
   it('"Thử lại" on the offline band refetches active queries but the session keeps its cards (review I4)', async () => {
-    const { client, count } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const { client, count } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     await client.refetchQueries({ type: 'active' });
     expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(1);
-    expect(screen.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Card 2 of 2' })).toBeInTheDocument();
   });
 
-  it('đợt C DC9: the first flip of the day shows the streak toast; a later one without `streak` shows nothing new', async () => {
+  it('đợt C DC9, P.17: the first flip of the day shows the streak toast in English at the corner; one toast only, a later save adds none', async () => {
     let first = true;
-    renderApp(<><ReviewSession /><StreakToast /></>, { routes: routes([DEPLOY, CACHE], {
+    // AppProviders' own toast is mounted too, outside SessionIntl, as in production: Học's corner toast replaces it while the session is open.
+    renderApp(<><SessionIntl><ReviewSession /></SessionIntl><StreakToast /></>, { routes: routes([DEPLOY, CACHE], {
       'POST /v1/reviews': () => {
         const streak = first ? { days: 13 } : null;
         first = false;
         return Response.json({ item_id: uuid(1), level: 1, due_date: '2026-10-21', priority: false, streak });
       },
     }) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('13 ngày liên tiếp')).toBeInTheDocument();
-    expect(screen.getAllByText(/ngày liên tiếp/)).toHaveLength(1);
+    expect(await screen.findByText('13-day streak')).toBeInTheDocument();
+    expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('heading', { name: '2 cards done.' });
+    expect(screen.getAllByText(/streak/)).toHaveLength(1);
   });
 
   it('M6.2: the first flip of the day writes the streak cache; no GET /v1/me/streak follows', async () => {
-    const v = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE], {
+    const v = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE], {
       'POST /v1/reviews': () => Response.json({ item_id: uuid(1), level: 1, due_date: '2026-10-21', priority: false, streak: { days: 6 } }),
     }) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
     await waitFor(() => expect(v.client.getQueryData(STREAK_KEY)).toEqual({ days: 6, studied_today: true }));
@@ -260,8 +281,8 @@ describe('ReviewSession (K/20–K/22)', () => {
 
   it('đợt C DC25: mode=new asks for the new words only', async () => {
     params.current = new URLSearchParams({ group: G, mode: 'new' });
-    const { count } = renderApp(<ReviewSession />, { routes: routes([], { [`GET /v1/groups/${G}/queue?mode=new`]: () => Response.json({ cards: [card(4, 'board', { level: 0, section: 'new' })] }) }) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    const { count } = renderApp(<ReviewSession />, { session: true, routes: routes([], { [`GET /v1/groups/${G}/queue?mode=new`]: () => Response.json({ cards: [card(4, 'board', { level: 0, section: 'new' })] }) }) });
+    await screen.findByRole('group', { name: 'Card 1 of 1' });
     expect(count('GET', `/v1/groups/${G}/queue?mode=new`)).toBe(1);
     expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(0);
   });
@@ -271,53 +292,88 @@ describe('ReviewSession (K/20–K/22)', () => {
       id: G, name: 'Công nghệ', version: 1, total: 2, today: { priority: 0, due, new: 0 },
       cells: [0, 2, 0, 0, 0, 0].map((total, level) => ({ level, total, due: 0 })), backlog: 0, available: { due, new: 0 },
     });
-    const view = renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(4)] }) }) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    const view = renderApp(<ReviewSession />, { session: true, routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(4)] }) }) });
+    await screen.findByRole('group', { name: 'Card 1 of 1' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    expect(await screen.findByRole('link', { name: 'Review' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
     view.unmount();
 
-    renderApp(<ReviewSession />, { routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(0)] }) }) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    renderApp(<ReviewSession />, { session: true, routes: routes([CACHE], { 'GET /v1/groups': () => Response.json({ items: [summary(0)] }) }) });
+    await screen.findByRole('group', { name: 'Card 1 of 1' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByRole('heading', { name: 'Xong 1 thẻ.' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Ôn' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Review' })).not.toBeInTheDocument();
   });
 
   it('mode=all asks for every card and labels long-overdue ones', async () => {
     params.current = new URLSearchParams({ group: G, mode: 'all' });
-    const { count } = renderApp(<ReviewSession />, { routes: routes([card(3, 'leave', { section: 'backlog' })]) });
-    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
-    expect(within(front).getByText('Lâu chưa ôn')).toBeInTheDocument();
+    const { count } = renderApp(<ReviewSession />, { session: true, routes: routes([card(3, 'leave', { section: 'backlog' })]) });
+    const front = (await screen.findByRole('group', { name: 'Card 1 of 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
+    expect(within(front).getByText('Long overdue')).toBeInTheDocument();
     expect(count('GET', `/v1/groups/${G}/queue?mode=all`)).toBe(1);
   });
 
   it('a reload starts again from the queue: nothing about the session is stored in the browser', async () => {
-    const first = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const first = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     first.unmount();
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);
-    const second = renderApp(<ReviewSession />, { routes: routes([CACHE]) });
-    expect(await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).toBeInTheDocument();
+    const second = renderApp(<ReviewSession />, { session: true, routes: routes([CACHE]) });
+    expect(await screen.findByRole('group', { name: 'Card 1 of 1' })).toBeInTheDocument();
     expect(second.count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(1);
   });
 
   it('an empty queue offers to study every word', async () => {
-    renderApp(<ReviewSession />, { routes: routes([]) });
-    expect(await screen.findByText('Hôm nay nhóm này không còn thẻ nào.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Học tất cả từ' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=all`);
+    renderApp(<ReviewSession />, { session: true, routes: routes([]) });
+    expect(await screen.findByText('No cards left in this deck today.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Study all words' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=all`);
   });
 
   it('an unknown deck shows not found (E17)', async () => {
     params.current = new URLSearchParams({ group: 'nope' });
-    renderApp(<ReviewSession />, { routes: {} });
-    expect(await screen.findByText('Không tìm thấy nhóm này.')).toBeInTheDocument();
+    renderApp(<ReviewSession />, { session: true, routes: {} });
+    expect(await screen.findByText('This deck doesn’t exist anymore.')).toBeInTheDocument();
+  });
+});
+
+describe('Flip button focus (T18, QA10)', () => {
+  /** QA10: autofocus only with a mouse or trackpad. jsdom's default matchMedia answers false (a touch screen). */
+  const media = window.matchMedia;
+  const finePointer = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('pointer: fine'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = media;
+  });
+
+  it('on a touch screen [Flip card] takes focus neither at the start nor after an answer', async () => {
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).not.toHaveFocus();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).not.toHaveFocus();
+  });
+
+  it('with a mouse or trackpad [Flip card] takes focus at the start and again after an answer', async () => {
+    finePointer();
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).toHaveFocus();
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Flip card/ })).toHaveFocus());
   });
 });
 
@@ -325,19 +381,20 @@ describe('ReviewSession waits for answers', () => {
   it('a second press while the answer is in flight sends nothing', async () => {
     let release!: () => void;
     const { calls } = renderApp(<ReviewSession />, {
+      session: true,
       routes: routes([DEPLOY, CACHE], {
         'POST /v1/reviews': () => new Promise<Response>((resolve) => {
           release = () => resolve(Response.json({ item_id: uuid(1), level: 2, due_date: '2026-10-23', priority: false }));
         }),
       }),
     });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
     await userEvent.keyboard('2');
     await waitFor(() => expect(posts(calls)).toHaveLength(1));
     release();
-    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
     expect(posts(calls)).toHaveLength(1);
   });
 });
@@ -347,9 +404,9 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
 
   it('front: the speak buttons sit outside the flip button; pressing one reads without flipping; Space, 1, 2 on it neither flip nor grade', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
-    const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    const uk = within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' });
+    const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    const front = await screen.findByRole('group', { name: 'Card 1 of 2' });
+    const uk = within(front).getByRole('button', { name: 'Play the US pronunciation' });
     const flip = within(front).getAllByRole('button').find((b) => b.textContent?.includes('deploy') && !b.getAttribute('aria-label'))!;
     expect(flip.contains(uk)).toBe(false);
     expect(uk.closest('button')).toBe(uk);
@@ -367,29 +424,29 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     const uk = makeVoice('en-GB');
     const synth = installSpeech([uk, makeVoice('en-US')]);
     const luggage = card(5, 'luggage', {}, { pos: 'noun', pronunciation: { uk: 'ˈlʌɡ.ɪdʒ', us: 'ˈlʌɡɪdʒ', custom: null, audio: { uk: null, us: 'https://audio.test/us.mp3' } } });
-    renderApp(<ReviewSession />, { routes: routes([luggage]) });
-    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
+    renderApp(<ReviewSession />, { session: true, routes: routes([luggage]) });
+    const front = (await screen.findByRole('group', { name: 'Card 1 of 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
     expect(within(front).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
     expect(within(front).getByText('/ˈlʌɡɪdʒ/')).toBeInTheDocument();
-    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }));
+    await userEvent.click(within(front).getByRole('button', { name: 'Play the US pronunciation' }));
     expect(play).toHaveBeenCalledTimes(1);
-    await userEvent.click(within(front).getByRole('button', { name: 'Nghe giọng Anh-Anh' }));
+    await userEvent.click(within(front).getByRole('button', { name: 'Play the UK pronunciation' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'luggage', voice: uk }));
     await userEvent.keyboard(' ');
-    const back = screen.getByRole('group', { name: 'Thẻ 1 trên 1' }).querySelector<HTMLElement>('[data-face="back"]')!;
+    const back = screen.getByRole('group', { name: 'Card 1 of 1' }).querySelector<HTMLElement>('[data-face="back"]')!;
     expect(within(back).getByText('/ˈlʌɡ.ɪdʒ/')).toBeInTheDocument();
     play.mockRestore();
   });
 
   it('back: the speaker icon by the word (US voice), a button by the example and by the saved sentence (local voice)', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
-    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
-    const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const card = await screen.findByRole('group', { name: 'Card 1 of 2' });
     await within(card).findByText('triển khai');
-    expect(within(card).getAllByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).length).toBeGreaterThan(0);
-    const sentences = within(card).getAllByRole('button', { name: 'Nghe câu' });
+    expect(within(card).getAllByRole('button', { name: 'Play the US pronunciation' }).length).toBeGreaterThan(0);
+    const sentences = within(card).getAllByRole('button', { name: 'Listen to the sentence' });
     expect(sentences).toHaveLength(2);
     await userEvent.click(sentences[1]);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'We deploy the app every Friday.' }));

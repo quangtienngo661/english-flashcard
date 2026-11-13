@@ -16,6 +16,26 @@ export function stepTo(from: number, to: number, count: number): number {
   return d > count / 2 ? d - count : d;
 }
 
+export type ArcSlot = { x: number; y: number; rotate: number; scale: number; opacity: number; z: number };
+
+/**
+ * "Vòng cung" (mockup L881-884, vong-7 L703-704): where the stack k places from the centre sits on the arc. x and y in px of the
+ * 290 px master (the CSS turns them into rem), rotate in degrees. Phones step 128 px, wider screens 230 px; beyond two places it is
+ * hidden.
+ */
+export function arcSlot(k: number, phone: boolean): ArcSlot {
+  const step = phone ? 128 : 230;
+  const a = Math.abs(k);
+  return {
+    x: k * step * 0.84,
+    y: 16 * k * k,
+    rotate: 8 * k,
+    scale: 1 - 0.1 * a,
+    opacity: a > 2 ? 0 : 1 - 0.25 * a,
+    z: 10 - a,
+  };
+}
+
 export type CarouselSlot = { index: number; k: -2 | -1 | 0 | 1 | 2 };
 
 /**
@@ -33,7 +53,7 @@ export function carouselSlots(count: number, centre: number): CarouselSlot[] {
 
 export type RhythmCell = { level: number; total: number; due: number };
 
-/** "nhịp ôn": one segment per stage 0–5, width ∝ words in the stage, fill ∝ its waiting cards (prototype `rhythm`, :663). */
+/** "nhịp ôn": one entry per level 0–5 with its words and its waiting cards (prototype `rhythm`, :663). */
 export function rhythm(cells: readonly RhythmCell[]): RhythmCell[] {
   return [0, 1, 2, 3, 4, 5].map((level) => {
     const cell = cells.find((c) => c.level === level);

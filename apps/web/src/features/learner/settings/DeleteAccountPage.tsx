@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { BackLink } from '@/app-chrome/BackLink';
-import { PageTitle } from '@/app-chrome/PageTitle';
+import { PageTitle } from '@/ui/PageTitle';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
@@ -24,7 +24,7 @@ import { TextField } from '@/ui/TextField';
 import { FormError } from '../auth/AuthHeading';
 import { isAutoRenewing, subscriptionsOf } from '../plans/auto-renewing';
 
-const CARD = 'rounded-wm-xl border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6';
+const CARD = 'rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:p-6';
 
 /**
  * Design §9.4, Figma 121:4503 / 121:4634: what goes and what stays, then "Xác nhận xóa" (the Pro-time note, then the block for a renewing
@@ -82,7 +82,7 @@ function ConfirmCard({ proLost, children }: { proLost: boolean; children: ReactN
         {t('confirmTitle')}
       </h2>
       {proLost && (
-        <div role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 text-wm-fail">
+        <div role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 text-wm-fail">
           <CircleAlert aria-hidden className="mt-0.5 size-4.5 shrink-0" />
           <p className="font-wm-sans text-wm-small-strong">{t('proLost')}</p>
         </div>

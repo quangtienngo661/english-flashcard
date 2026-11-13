@@ -156,4 +156,12 @@ describe('WordsService.search — ipa, example, total (giao diện mới M4.1)',
     const sql = (prisma.$queryRaw.mock.calls[0] as unknown as [TemplateStringsArray])[0].join('?');
     for (const part of ['r.ipa_uk', 'r.ipa_us', 'r.ipa_custom', 'r.examples[1]', 'COUNT(*)']) expect(sql).toContain(part);
   });
+
+  it('meaning texts are joined only for the page, after LIMIT (a join per matched sense took 7 s on 9.8k words)', async () => {
+    const { prisma } = await search([word()]);
+    const sql = (prisma.$queryRaw.mock.calls[0] as unknown as [TemplateStringsArray])[0].join('?');
+    const limit = sql.indexOf('LIMIT');
+    expect(limit).toBeGreaterThan(0);
+    expect(sql.indexOf('sense_revision_texts')).toBeGreaterThan(limit);
+  });
 });

@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordProvider } from '@/features/learner/add-word/add-word-context';
 import { AvatarMenu } from './AvatarMenu';
 import { BackLink } from './BackLink';

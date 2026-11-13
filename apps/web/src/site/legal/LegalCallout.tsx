@@ -14,7 +14,7 @@ export function LegalCallout({ kind }: { kind: 'privacy' | 'terms' }) {
   return (
     <section
       aria-labelledby={titleId}
-      className="flex flex-col items-start gap-4 rounded-wm-xl bg-wm-accent-soft px-5 py-5 md:flex-row md:items-center md:gap-6 md:px-7 md:py-6"
+      className="flex flex-col items-start gap-4 rounded-wm-card bg-wm-accent-soft px-5 py-5 md:flex-row md:items-center md:gap-6 md:px-7 md:py-6"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h2 id={titleId} className={CALLOUT_TITLE}>

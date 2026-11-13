@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { useLarge } from '@/lib/use-large';
 import { EmptyState, ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
@@ -23,8 +24,8 @@ import { StackTargets } from './StackTargets';
 
 /**
  * K/30, M/40, Figma "Từ hóa thẻ" (85:3218 / 85:3667) `/app/lookup?q=&level=&topic=&pos=&mine=`: the big search box, the filter
- * sentence, a dictionary page of the matching words, the selected word lifted into a card and the group stacks to add it to. Phones
- * show the card and the stacks before the page. Pages follow the API's cursors; the ones already seen stay cached.
+ * sentence, a dictionary page of the matching words, the selected word lifted into a card and the group stacks to add it to. Below
+ * 1024 px there is no card and no stacks: each entry links to its word page (owner 14/11/2026). Pages follow the API's cursors; the ones already seen stay cached.
  */
 export function LookupPage() {
   const t = useTranslations('App.lookup');
@@ -32,6 +33,7 @@ export function LookupPage() {
   const locale = useLocale();
   const router = useRouter();
   const errorText = useErrorMessage();
+  const large = useLarge();
   const params = parseLookup(useSearchParams());
   const query = lookupQuery(params);
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
@@ -44,10 +46,13 @@ export function LookupPage() {
     setTokens([null]);
   }
   const list = useWordList(params, tokens.at(-1) ?? null);
+  // While another page of this search loads, the shown words are the previous page's: the page buttons wait for it.
+  const paging = list.isPlaceholderData;
   const words = list.data?.items ?? [];
   const [picked, setPicked] = useState<string | null>(null);
   const selected = words.find((w) => w.lemma === picked) ?? words[0];
-  const wordPage = useWordPage(selected?.lemma ?? null);
+  // Only the card and the stacks need the selected word's page and items; below 1024 px nothing is fetched for them.
+  const wordPage = useWordPage(large ? (selected?.lemma ?? null) : null);
   const sense = selected && wordPage.data ? entrySense(wordPage.data.sections.flatMap((s) => s.senses), selected.meaning_preview, params) : undefined;
   const items = useSenseItems(sense ? [sense.sense_id] : []);
   const item = sense ? items.data?.get(sense.sense_id) : undefined;
@@ -78,7 +83,7 @@ export function LookupPage() {
       </div>
       {bulk && <BulkAddSheet filter={params} onClose={() => setBulk(false)} />}
       {list.isPending ? (
-        <Skeleton className="h-96 w-full rounded-wm-md" />
+        <Skeleton className="h-96 w-full rounded-wm-row" />
       ) : list.isError ? (
         <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} />
       ) : !selected ? (
@@ -92,26 +97,33 @@ export function LookupPage() {
             words={words}
             page={tokens.length}
             selected={selected.lemma}
+            linked={!large}
             onSelect={setPicked}
-            onPrev={tokens.length > 1 ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
-            onNext={list.data?.next_page_token ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
+            onPrev={tokens.length > 1 && !paging ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
+            onNext={list.data?.next_page_token && !paging ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
           />
-          <div className="order-first flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:order-none">
-            <LiftedCard word={selected} sense={sense} item={item} groups={groups} />
-            <h2 className="mt-2 font-wm-display text-wm-base-strong font-bold text-wm-ink">{t('stacksTitle')}</h2>
-            <StackTargets
-              groups={groups}
-              senseId={sense?.sense_id ?? null}
-              lemma={selected.lemma}
-              inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
-            />
-            <div className="flex flex-col items-start gap-1">
-              {sense && <TextButton onPress={() => setPicker(true)}>{t('otherGroup')}</TextButton>}
+          {large && (
+            <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24">
+              <LiftedCard word={selected} sense={sense} item={item} groups={groups} />
+              <h2 className="mt-2 font-wm-display text-wm-base-strong font-bold text-wm-ink">{t('stacksTitle')}</h2>
+              <StackTargets
+                groups={groups}
+                senseId={sense?.sense_id ?? null}
+                lemma={selected.lemma}
+                inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
+              />
+              <div className="flex flex-col items-start gap-1">
+                {sense && (
+                  <TextButton isDisabled={!items.isSuccess} onPress={() => setPicker(true)}>
+                    {t('otherGroup')}
+                  </TextButton>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
-      {picker && sense && <DeckPickerDialog sense={sense} onClose={() => setPicker(false)} />}
+      {picker && sense && <DeckPickerDialog sense={sense} inGroups={item?.group_ids ?? []} onClose={() => setPicker(false)} />}
     </div>
   );
 }
@@ -143,19 +155,23 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
   }
   return (
     <form role="search" onSubmit={submit}>
-      <label className="flex h-11 items-center gap-2.5 rounded-wm-lg border-2 border-wm-accent bg-wm-surface pl-4 pr-3 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-12">
+      <label className="flex h-11 items-center gap-2.5 rounded-wm-control border-2 border-wm-accent bg-wm-surface pl-4 pr-3 shadow-wm-soft focus-within:ring-4 focus-within:ring-wm-accent/16 md:h-12">
         <Search aria-hidden className="size-5 shrink-0 text-wm-accent" />
         <span className="sr-only">{t('searchLabel')}</span>
         <input
           ref={box}
           type="search"
+          name="q"
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={100}
           placeholder={t('searchLabel')}
           className="min-w-0 flex-1 bg-transparent font-wm-sans text-wm-base text-wm-ink outline-none placeholder:text-wm-muted"
         />
-        <kbd aria-hidden className="shrink-0 rounded-wm-sm border border-wm-line bg-wm-bg px-1.5 font-wm-mono text-wm-mono font-bold text-wm-ink">
+        <kbd aria-hidden className="shrink-0 rounded-wm-key border border-wm-line bg-wm-bg px-1.5 text-wm-meta font-bold text-wm-ink">
           /
         </kbd>
       </label>

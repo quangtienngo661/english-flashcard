@@ -97,7 +97,7 @@ export function SettingsToc({ entries }: { entries: TocEntry[] }) {
                 aria-current={current ? 'true' : undefined}
                 onClick={(event) => go(event, entry.id)}
                 className={cn(
-                  'block rounded-wm-md px-3 py-2 font-wm-sans text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
+                  'block rounded-wm-control px-3 py-2 font-wm-sans text-wm-small outline-none focus-visible:outline-3 focus-visible:outline-wm-accent',
                   current ? 'bg-wm-surface font-semibold text-wm-ink shadow-wm-card' : 'text-wm-muted hover:text-wm-ink',
                 )}
               >

@@ -18,6 +18,10 @@ import { useCurrentSession, useStartSession, type AiStartProblem, type StartBody
 
 // Design §5.7: the dialog's code loads on the first open, not with every page.
 const CustomizeDialog = dynamic(() => import('./CustomizeDialog').then((m) => m.CustomizeDialog), { ssr: false });
+const loadCustomizeDialog = () => import('./CustomizeDialog');
+
+/** Starts loading the dialog's chunk when the pointer or focus reaches a [Tùy chỉnh] button, so the first open is not a wait. */
+export const PRELOAD_CUSTOMIZE = { onHoverStart: () => void loadCustomizeDialog(), onFocus: () => void loadCustomizeDialog() };
 
 const NO_WORDS_REASONS = ['group-empty', 'source-empty', 'no-word-fits-types'] as const;
 

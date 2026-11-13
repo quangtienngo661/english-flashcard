@@ -1,5 +1,6 @@
 'use client';
 
+import { shownPos } from '@/lib/pos';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -11,6 +12,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
+import { TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import { GROUPS_KEY } from '../groups/groups-api';
 import { bareIpa, cleanExamples, EditSuggestionForm, type WordDraft } from '../add-word/EditSuggestionForm';
@@ -18,7 +20,7 @@ import { wordHref, type PageSense } from './word-api';
 
 const draftOf = (sense: PageSense): WordDraft => ({
   lemma: sense.lemma,
-  pos: sense.pos ?? '',
+  pos: shownPos(sense.pos),
   meaning: sense.meaning.text,
   level: sense.level ?? '',
   topic: sense.topics[0]?.code ?? '',
@@ -95,12 +97,13 @@ export function EditMyWordDialog({ sense, onClose }: { sense: PageSense; onClose
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('editTitle')}
+      closeLabel={tc('close')}
       isDismissable={!save.busy}
       footer={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button isPending={save.busy} onPress={() => void submit()}>
             {t('saveChanges')}
           </Button>
@@ -149,12 +152,13 @@ export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClo
       isOpen
       onOpenChange={(open) => !open && onClose()}
       title={t('deleteTitle', { word: sense.lemma })}
+      closeLabel={tc('close')}
       isDismissable={!remove.busy}
       footer={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <TextButton tone="muted" onPress={onClose} className="justify-center">
             {tc('cancel')}
-          </Button>
+          </TextButton>
           <Button variant="danger" isPending={remove.busy} onPress={() => void confirm()}>
             {t('delete')}
           </Button>
@@ -162,7 +166,7 @@ export function DeleteMyWordDialog({ sense, onClose }: { sense: PageSense; onClo
       }
     >
       {/* M3's confirm look (Figma "Xác nhận xóa" 121:4597): what is lost in a fail-soft block. */}
-      <p role="note" className="flex items-start gap-2 rounded-wm-lg bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
+      <p role="note" className="flex items-start gap-2 rounded-wm-row bg-wm-fail-soft p-4 font-wm-sans text-wm-small-strong text-wm-fail">
         <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
         <span>{t('deleteBody')}</span>
       </p>

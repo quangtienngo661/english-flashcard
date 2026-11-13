@@ -2,7 +2,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { problem } from '@/app-shell/session/test-support';
 import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { OrderReturnPage } from './OrderReturnPage';
 
 let search = '';

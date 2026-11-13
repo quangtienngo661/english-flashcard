@@ -11,22 +11,23 @@ export function groupColorIndex(id: string): number {
   return hash % 7;
 }
 
-/** Static class strings of one group colour (Tailwind sees every literal below): face border, cards behind, wash, ink, fill. */
-export type GroupTone = { border: string; soft: string; wash: string; ink: string; bg: string };
+/** Static class strings of one group colour (Tailwind sees every literal below): face border, cards behind (as border and as fill), wash, ink, fill. */
+export type GroupTone = { border: string; soft: string; softBg: string; wash: string; ink: string; bg: string };
 
 const TONES: readonly GroupTone[] = [
-  { border: 'border-wm-group-0', soft: 'border-wm-group-0-soft', wash: 'bg-wm-group-0-wash', ink: 'text-wm-group-0-ink', bg: 'bg-wm-group-0' },
-  { border: 'border-wm-group-1', soft: 'border-wm-group-1-soft', wash: 'bg-wm-group-1-wash', ink: 'text-wm-group-1-ink', bg: 'bg-wm-group-1' },
-  { border: 'border-wm-group-2', soft: 'border-wm-group-2-soft', wash: 'bg-wm-group-2-wash', ink: 'text-wm-group-2-ink', bg: 'bg-wm-group-2' },
-  { border: 'border-wm-group-3', soft: 'border-wm-group-3-soft', wash: 'bg-wm-group-3-wash', ink: 'text-wm-group-3-ink', bg: 'bg-wm-group-3' },
-  { border: 'border-wm-group-4', soft: 'border-wm-group-4-soft', wash: 'bg-wm-group-4-wash', ink: 'text-wm-group-4-ink', bg: 'bg-wm-group-4' },
-  { border: 'border-wm-group-5', soft: 'border-wm-group-5-soft', wash: 'bg-wm-group-5-wash', ink: 'text-wm-group-5-ink', bg: 'bg-wm-group-5' },
-  { border: 'border-wm-group-6', soft: 'border-wm-group-6-soft', wash: 'bg-wm-group-6-wash', ink: 'text-wm-group-6-ink', bg: 'bg-wm-group-6' },
+  { border: 'border-wm-group-0', soft: 'border-wm-group-0-soft', softBg: 'bg-wm-group-0-soft', wash: 'bg-wm-group-0-wash', ink: 'text-wm-group-0-ink', bg: 'bg-wm-group-0' },
+  { border: 'border-wm-group-1', soft: 'border-wm-group-1-soft', softBg: 'bg-wm-group-1-soft', wash: 'bg-wm-group-1-wash', ink: 'text-wm-group-1-ink', bg: 'bg-wm-group-1' },
+  { border: 'border-wm-group-2', soft: 'border-wm-group-2-soft', softBg: 'bg-wm-group-2-soft', wash: 'bg-wm-group-2-wash', ink: 'text-wm-group-2-ink', bg: 'bg-wm-group-2' },
+  { border: 'border-wm-group-3', soft: 'border-wm-group-3-soft', softBg: 'bg-wm-group-3-soft', wash: 'bg-wm-group-3-wash', ink: 'text-wm-group-3-ink', bg: 'bg-wm-group-3' },
+  { border: 'border-wm-group-4', soft: 'border-wm-group-4-soft', softBg: 'bg-wm-group-4-soft', wash: 'bg-wm-group-4-wash', ink: 'text-wm-group-4-ink', bg: 'bg-wm-group-4' },
+  { border: 'border-wm-group-5', soft: 'border-wm-group-5-soft', softBg: 'bg-wm-group-5-soft', wash: 'bg-wm-group-5-wash', ink: 'text-wm-group-5-ink', bg: 'bg-wm-group-5' },
+  { border: 'border-wm-group-6', soft: 'border-wm-group-6-soft', softBg: 'bg-wm-group-6-soft', wash: 'bg-wm-group-6-wash', ink: 'text-wm-group-6-ink', bg: 'bg-wm-group-6' },
 ];
 
 const EMPTY: GroupTone = {
   border: 'border-wm-group-empty',
   soft: 'border-wm-group-empty-soft',
+  softBg: 'bg-wm-group-empty-soft',
   wash: 'bg-wm-group-empty-wash',
   ink: 'text-wm-group-empty-ink',
   bg: 'bg-wm-group-empty',

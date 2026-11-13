@@ -488,3 +488,174 @@ Chủ dự án gửi từng tin trên mockup; Claude sửa mockup sau mỗi tin.
 - **Màu mức có token ở M9b**, đợt polish mới dùng; màu ngăn cũ giữ tới lúc đó.
 - **Lưu nhiều nhóm**: thêm trường `group_ids` vào API hay web gọi thêm `POST /v1/groups/:id/items`, chốt ở plan đợt polish.
 
+
+## QP. Plan đợt polish (chủ dự án chốt 12/11/2026)
+
+Nguồn: Part 10 của plan (`docs/superpowers/plans/2026-11-10-giao-dien-moi.md`), code facts
+`docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-12-polish-{kit,screens}.md`. Chủ dự án trả lời trước, Claude nêu ý kiến sau.
+
+### Tóm tắt
+
+| # | Quyết định | Chọn | Ai chốt |
+|---|---|---|---|
+| QP1 | Lưu một từ vào nhiều nhóm | Thêm `group_ids` vào `POST /v1/quick-add`, một transaction | Chủ dự án; Claude đồng ý |
+| QP2 | Đưa đợt polish vào `refactor/giao-dien-moi` | Một PR sau P.18 | Chủ dự án; Claude đồng ý |
+| QP3 | Gợi ý chữ cái đầu của câu điền từ | Giữ `e___` (không hiện số chữ) | Chủ dự án; Claude đồng ý |
+| QP4 | Màu chữ "Đến hạn" | Thêm token `warn`, làm đậm tới khi đạt 4,5:1 | Chủ dự án |
+
+### QP1. Lưu một từ vào nhiều nhóm
+
+Bối cảnh: mockup bản chốt cho chọn nhiều nhóm ("Lưu vào n nhóm"). Dữ liệu đã cho phép (`group_items` nhiều–nhiều), nhưng `POST /v1/quick-add` chỉ
+nhận một `group_id`. Mọi endpoint ghi dùng chung giới hạn `user.write` 30 lần mỗi phút.
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| a. Thêm `group_ids` vào quick-add, lưu mọi nhóm trong transaction đang có | Lưu hết hoặc không lưu gì; một lần ghi | Đổi API (chỉ thêm trường), thêm spec | ✅ |
+| b. Không đổi API; web gọi quick-add rồi `POST /v1/groups/:id/items` cho từng nhóm còn lại | Không đổi API | Có thể lưu một phần, phải báo nhóm nào hỏng; mỗi nhóm một lần ghi | |
+
+Claude đồng ý với a: không có trạng thái lưu dở để giải thích, và service đã chạy một transaction. Trần 10 nhóm mỗi lần là đề xuất của Claude
+trong plan (design không có con số).
+
+### QP2. Số PR
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| Một PR sau P.18 | Một lượt CI, một lần duyệt | PR lớn | ✅ |
+| Mỗi milestone (PL-a, PL-b, PL-c) một PR | PR nhỏ, CI riêng | Ba lượt CI, ba lần duyệt | |
+
+Claude đồng ý; commit theo thứ tự milestone để dễ đọc PR lớn.
+
+### QP3. Gợi ý chữ cái đầu
+
+Bối cảnh: mockup vẽ `e_______` (mỗi chữ còn lại một dấu gạch). Ở Bước 7 chủ dự án đã bỏ số chữ cho câu điền từ (D9 Bước 7: "điền từ thì ba nấc
+gợi ý, bỏ số chữ"); API chỉ gửi chữ cái đầu, web hiện `e___` với mọi từ (CS20).
+
+| Phương án | Được | Mất | |
+|---|---|---|---|
+| Hiện số chữ `e_______` | Khớp mockup | API gửi lại độ dài; đảo D9 Bước 7 và CS20 | |
+| Giữ `e___` | Không đổi API; giữ quyết định Bước 7 | Lệch mockup ở chỗ này | ✅ |
+
+Claude đồng ý: mockup vẽ `e_______` khi chưa đối chiếu với quyết định Bước 7. Câu gõ từ không phải AI giữ gợi ý hiện có.
+
+### QP4. Màu chữ "Đến hạn"
+
+Bối cảnh: chưa có token `warn`; màu `#b07a12` của mockup chỉ đạt 3,72:1 trên nền trắng (chữ nhỏ cần 4,5:1). Claude đề xuất làm đậm tới khi đạt và
+ghi ruling. Chủ dự án: "vậy thì bổ sung". Giá trị tối `#f0c04a` đạt 10:1 trên nền card tối.
+
+### Đề xuất kỹ thuật duyệt cùng Part 10
+
+- Chữ trong phiên bằng tiếng Anh: provider lồng với `locale="en"` để số nhiều đúng; link và khối chỉ dành cho tiếng Việt đọc ngôn ngữ của địa chỉ
+  (`/vi`); khoảng 475 dòng test phiên đổi sang chữ tiếng Anh. Chủ dự án: "ok".
+- `--ease-out-strong` (khối token cũ) chuyển thành token `wm-` trước khi xóa khối cũ. Chủ dự án: "ok".
+- Các đề xuất còn lại ở mục "Decisions this part makes" cuối Part 10 (góc bo theo vai trò, `text-wm-meta`, `ui/levels.ts`, `TargetWord`, × luôn
+  hiện, mũi tên là icon, test helper ở `src/test-utils/`).
+
+## QF. Sửa sau khi test tay đợt polish (chủ dự án chốt 12–13/11/2026)
+
+Chủ dự án test tay Part 10 và gửi từng chỗ cần sửa. Mỗi chỗ được vẽ lại trên trang review có ô chọn
+([artifact `TdRauzhidkQBLUss11Y5j2`](https://claude.ai/artifact/TdRauzhidkQBLUss11Y5j2), 10 bản); lựa chọn đọc từ db `picks` ngày 13/11.
+"Duyệt" là mục chỉ có một bản vẽ. Mục ghi "sửa thêm" là chủ dự án chọn "Cần sửa thêm" kèm ghi chú, rồi bản vẽ lại được duyệt trong chat.
+
+### Tóm tắt
+
+| # | Quyết định | Chọn | Ai chốt |
+|---|---|---|---|
+| f01 | Quầng màu sau băng chuyền Nhóm | A: quầng tròn tan dần | Chủ dự án |
+| f02 | Nút dưới băng chuyền | B: hai tầng | Chủ dự án |
+| f03 | Chân hộp thoại | A: "Quay lại" dạng chữ, cách 12 px, có đường kẻ | Chủ dự án |
+| f04 | Gợi ý chữ cái đầu | l___, gạch nối liền | Chủ dự án |
+| f05 | Panel đúng/sai | C: vé (bản 9: nghĩa là dòng lớn nhất, đáp án nhỏ kèm nút nghe, nền đỏ 12 %) | Chủ dự án |
+| f06 | Màu loang ở phần Giá | Quầng trôi đều như khối cuối trang | Chủ dự án (sửa thêm) |
+| f07 | "Luyện trong câu" | Phần luyện lên đầu card | Chủ dự án |
+| f08 | Hero đổi từ | Như bảng đăng ký, ô đáp án vừa chữ | Chủ dự án |
+| f09 | Viên nhãn hero | B: bỏ nhãn | Chủ dự án |
+| f10 | Link thanh trên | Chỉ chữ đậm, không kiểu mục đang chọn | Chủ dự án (sửa thêm) |
+| f11 | Viên chú thích IELTS | Bỏ hẳn; chữ chỉ-IELTS đổi sang ngữ cảnh chung | Chủ dự án (sửa thêm) |
+| f12 | Bảng đăng ký | Giữ đường nhớ, dời card, card hơi nghiêng | Chủ dự án (sửa thêm, bản 6, 7, 10) |
+| f13 | Màn thấp | Co theo chiều cao, điện thoại ngang hai cột | Chủ dự án |
+| f14 | Ô phím trên nút | Bỏ trên mọi nút trong phiên, giữ hàng chú thích | Chủ dự án (quyết trong chat) |
+| f15 | Ô gõ trong câu | Co giãn theo chữ | Chủ dự án |
+| f16 | Ô số câu | A: ô 36 px có − / + liền | Chủ dự án |
+| f17 | Số ở nút phạm vi | Ô số riêng như chip ở Một nhóm | Chủ dự án |
+| f18 | Thẻ nhóm ở Hôm nay | Nâng lên khi rê chuột hoặc Tab | Chủ dự án |
+| f19 | Hộp Ngày | Giữ bố cục, bỏ Luyện | Chủ dự án (quyết trong chat) |
+| D1–D8 | Đề xuất khi viết plan Part 11 | Như đề xuất | Chủ dự án duyệt plan 13/11 |
+| D9 | Việc để sau | Không làm đợt này | Chủ dự án duyệt plan 13/11 |
+
+### Các mục có nhiều phương án
+
+**f01.** Quầng màu bị một khung chữ nhật cắt, thấy rõ cạnh (sáng và tối).
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ A. Quầng tròn quanh thẻ giữa, mép mờ dần, đổi màu theo nhóm 0,7 s | Có tâm rõ, theo thẻ giữa |
+| B. Quầng loang rộng cả khu, nhạt hơn | Không có tâm; dễ thành một mảng màu phẳng |
+
+**f02.** "Thêm từ" rơi một mình xuống dòng; chú thích bậc xuống dòng.
+
+| Phương án | Trade-off |
+|---|---|
+| A. Một hàng: nút chính, nút phụ, hai link chữ, theo bản chốt | Gọn một hàng nhưng dễ vỡ ở khổ hẹp |
+| ✅ B. Hai tầng: hai nút cùng bề rộng, dưới là hai link chữ | Thêm một dòng; luôn thẳng hàng |
+
+**f03.** "Quay lại" dính sát nút chính.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ A. "Quay lại" dạng chữ có đệm riêng, cách 12 px; chân hộp có đường kẻ | Nhẹ, nút chính nổi rõ |
+| B. "Quay lại" dạng nút viền, hai nút cùng cao | Cân hơn nhưng hai nút tranh nhau |
+
+Kèm theo f03 (D1, khi viết plan): ở Thêm từ, bước chọn nhóm chưa lưu từ, nên nút ở đó ghi "Xong"; nút lưu thật của form ghi "Lưu vào n nhóm".
+Một nhóm hiện hai lần trong hộp chọn (dưới "Dùng gần đây" và trong danh sách) là lỗi, sửa trong F.6.
+
+**f05.** Panel hiện tại là hộp xanh lồng trong hộp hồng. Vòng đầu chốt vị trí: trượt ra từ dưới thẻ, đáp án sai và đúng nằm ngay trong câu. Vòng
+sau (taste-skill) đưa ba cách:
+
+| Phương án | Trade-off |
+|---|---|
+| A. So chữ: chữ bạn gõ (phần thừa tô đỏ) và đáp án | Chỉ rõ chỗ sai; lặp lại đáp án đã có trong câu |
+| B. Thẻ đáp án nghiêng như thẻ học | Đặc sắc; chiếm chỗ, hai cột khó trên điện thoại |
+| ✅ C. Vé: đầu vé "Not quite" và bậc sẽ về, đường đục lỗ, thân vé, nút ở cuối | Riêng, gọn; cần notch khớp màu nền |
+
+Bản 9 (chủ dự án): không nhắc lại đáp án thật to vì đã có trong câu; dòng lớn nhất là nghĩa và định nghĩa, đáp án nhỏ kèm nút nghe; nền đỏ đậm
+hơn một chút (7 % → 12 %). D2, D3: panel Right và panel thử lại dùng cùng dáng vé; hộp gợi ý đang mở nằm giữa thẻ và panel.
+
+**f09.** Viên nhãn chỉ ghi IELTS, trong khi app không chỉ cho IELTS.
+
+| Phương án | Trade-off |
+|---|---|
+| A. Nhãn đổi lần lượt IELTS, TOEIC, Giao tiếp, Công việc, Du lịch | Có chuyển động; IELTS vẫn hiện đầu tiên |
+| ✅ B. Bỏ nhãn, chỉ còn câu | Gọn nhất |
+| C. Một nhãn chung "Từ vựng" | Giữ hình viên nhưng nhãn thừa ý |
+
+**f16.** Ô tăng giảm hiện tại to và không gõ được.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ A. Ô viền mảnh 36 px: nút −, số, nút + | Gõ được và vẫn bấm được |
+| B. Chỉ ô số, gõ hoặc dùng ↑ ↓ | Gọn nhất; trên điện thoại khó tăng giảm |
+
+**f19.** Hộp Ngày phải cuộn. Chủ dự án xin 5 cách bố cục, sau đó thêm 5 cách nữa (A–J trên trang review: ba cột, tab theo phiên, chỉ số và chip,
+dòng thời gian, danh sách bên trái, hai cột, mục mở từng cái, lưới, bảng theo từ, vòng tròn tỉ lệ). Chủ dự án quyết trong chat: giữ bố cục hiện
+tại, chỉ bỏ nút lọc Luyện và khối các phiên luyện.
+
+### Các mục sửa thêm theo ghi chú
+
+- **f06:** chủ dự án chỉ chỗ là `/vi#gia`. Thay hai quầng trôi cùng nhau thành nhiều quầng mờ trôi chậm phủ đều cả khối, như khối cuối trang.
+- **f10:** "không cần kiểu mình đã chọn phần nào, nhưng mình muốn cho nó chữ đậm lên thôi": 15 px, đậm 700, màu chữ chính, rê chuột đổi màu nhấn.
+- **f11:** "bỏ luôn dòng này thì sao": bỏ viên chú thích. D6 (khi viết plan): viên này nằm dưới 12 thẻ từ của khối Nhóm từ; bốn câu chỉ-IELTS
+  đổi: "Đề 12 · Writing" → "Bài báo sáng nay", "Từ của mỗi đề thành một nhóm." → "Từ của mỗi bài thành một nhóm.", "Sau khi làm đề" → "Sau khi
+  đọc một bài", "Bắt đầu với đề bạn vừa làm." → "Bắt đầu với bài bạn vừa đọc.".
+- **f12:** "đưa card từ ở phía trên bên trái một tí, card hôm nay qua phía bên phải và card bài tập nằm bên dưới". Bản 6: card từ thấp hơn, sang
+  phải; bản 7: card bài tập sang trái; bản 10: mỗi card nghiêng một chút. D7: vị trí quy ra cảnh thật 640×868 theo đường cong thật.
+
+### Đề xuất duyệt cùng plan Part 11 (13/11)
+
+- D4: "l___" chỉ là hình; trình đọc màn hình đọc "l… · 4 letters".
+- D5: thẻ luyện ở hero thành ô gõ chữ, năm từ mitigate, allocate, viable, deteriorate, coherent; 3/7/3/1/14 ngày, lên Bậc 3/4/3/2/5.
+- D8: "1 cards waiting" → "1 card waiting".
+- D9, để sau: nút X 32 px trên điện thoại; không có nút Kiểm tra cho ô điền từ trên điện thoại; tên nút đóng khác nhau giữa các phiên; toast góc
+  đè thẻ trên điện thoại; viết hoa "Tiếp theo"/"Ôn gần nhất"; khay xám ở Tùy chỉnh phiên; "Lần luyện gần nhất" sang cột phải; audit2.
+- Rủi ro ghi nhận: viền ô nhập #c7cad3 ≈1,6:1 trên nền trắng, dưới 3:1 của WCAG 1.4.11; để một đợt a11y riêng.
+- Kỹ thuật: ô số dùng `NumberField` của react-aria (đã có trong dự án) thay vì tự viết; ô gõ trong câu co giãn bằng một bản sao ẩn của chữ (chạy
+  trên mọi trình duyệt, không dựa vào `field-sizing`); hero và bảng đăng ký dùng chung một bộ máy gõ chữ.

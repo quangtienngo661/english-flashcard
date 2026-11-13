@@ -184,6 +184,96 @@ Các chỗ sửa khác của mockup thuộc đợt polish (plan riêng, sau M9).
 
 **Còn chờ chủ dự án:** chọn cách đo trên điện thoại (Wi-Fi như đã chốt, hay cắm USB trên Android) trước bước đo của M9.10. Đo khung hình trên điện thoại thật (QM9-7, hướng dẫn `docs/deliveries/giao-dien-moi-do-dien-thoai.md`) là điều kiện của design §14 trước PR cuối vào `dev`; chưa đo (xem as-built M9).
 
+# Giao diện mới — plan tóm tắt, phần 10: đợt polish (12/11/2026)
+
+Plan: "Part 10" trong file plan ở trên. Làm theo [mockup bản chốt](https://claude.ai/artifact/Ccnn3iPkr3srNv7diobFkL) và QM9-9; nhánh
+`feat/giao-dien-moi-polish` từ nhánh dài sau khi PR #268 (M9) merge. Facts: `docs/preparation/GIAO_DIEN_MOI_PLAN_CODE_FACTS_2026-11-12-polish-{kit,screens}.md`.
+
+**PL-a — Hệ thống**
+- P.1: màu theo mức và tên "Mới, Bậc 1–5" ở mọi chỗ; bỏ chữ "ngăn" và màu ngăn.
+- P.2: nhãn, số đếm, phím tắt dùng Noto Sans (bỏ JetBrains Mono); viết hoa chữ đầu nhãn ngay trong file chữ.
+- P.3: góc bo mức C theo vai trò phần tử (phím 4, nút và ô 8, dòng 10, card 14, hộp thoại 16).
+- P.4: mảnh dùng chung: tiêu đề trang, tiêu đề mục, card, tab gạch dưới, chip lọc theo mức, khung hộp thoại một kiểu, tô từ đích, mũi tên; sửa lỗi mất cỡ tiêu đề.
+- P.5: chuyển các mảnh cuối của `app-ui/` sang `ui/` (màn mất mạng, không tìm thấy, toast chuỗi ngày kiểu mới) rồi xóa `app-ui/`.
+- P.6: bỏ token cũ và ba file `dark.css`, `island.css`, `dark-pastel.css`; khung xương lúc tải và thanh trên điện thoại 56 px; sửa đếm chuyển trang của quảng cáo nhà.
+
+**PL-b — Các màn**
+- P.7: Hôm nay: card nhóm chỉ ghi số từ, bỏ dòng "Sai: …", khối từ theo bậc.
+- P.8: Một nhóm: bỏ ô màu trước tiêu đề, thanh tiến độ và chip lọc theo màu mức, danh sách từ thành bảng có tên cột.
+- P.9: Trang một từ và Tra từ: cụm phát âm giữa hai đường kẻ, không in "unspecified", nhãn bậc đủ chữ, tô từ đích, nền vàng cho câu lọc.
+- P.10: Luyện tập và Từ hay sai: bỏ box "Gần đây", một kiểu tiêu đề mục và card, thẻ luyện từ hay sai lên đầu trên điện thoại.
+- P.11: chữ giao diện trong Học, Phiên luyện, Ôn bằng tiếng Anh cho mọi ngôn ngữ; nghĩa, câu dịch, tên nhóm giữ tiếng Việt.
+- P.12: hộp Thêm từ: chọn nhiều nhóm (chồng thẻ nhỏ, "Lưu vào n nhóm"); hộp 4 hai cột từ đầu hộp.
+- P.13: Phiên luyện và Ôn: gõ thẳng vào chỗ trống, khối "AI translation", panel "Not quite" mới, ô gợi ý theo lưới, bỏ dòng hướng dẫn.
+- P.14: panel Đăng ký và Đăng nhập kể vòng học có motion; ô nhập có viền rõ trên nền mesh.
+- P.15: rà mọi hộp thoại: nút ×, "Hủy" dạng chữ, lựa chọn nền trắng.
+
+**PL-c — Motion**
+- P.16: băng chuyền Nhóm kiểu Vòng cung.
+- P.17: bố cục Học theo "Chồng thẻ tan mờ": nút 40 px, X góc phải, nút chỉ icon trên điện thoại.
+
+**Cuối đợt**
+- P.18: kiểm lại 25 chỗ lệch, thu hẹp danh sách khóa chữ cho phép, chạy toàn bộ kiểm thử, chụp bộ ảnh 4 khổ sáng và tối, ghi as-built, mở PR.
+
+**Chủ dự án đã chốt (12/11, QP1–QP4):** lưu nhiều nhóm bằng trường `group_ids` của quick-add (một transaction); một PR cho cả đợt; giữ gợi ý
+`e___`; thêm màu `warn` đủ tương phản. **Còn chờ:** duyệt plan trước khi code; P.6 dừng cho chủ dự án xem ảnh khung xương (chỗ 24).
+
+# Giao diện mới — plan tóm tắt, phần 11: sửa sau khi test tay (13/11/2026)
+
+Plan: "Part 11" trong file plan ở trên; 19 chỗ chủ dự án chốt trên [trang review](https://claude.ai/artifact/TdRauzhidkQBLUss11Y5j2) (bản 10).
+Quyết định: mục QF của decision record. Ba lane song song từ nhánh `feat/giao-dien-moi-polish`.
+
+**Lane A — app**
+- F.1: quầng màu sau băng chuyền Nhóm tan dần vào nền, không còn khung chữ nhật.
+- F.2: dưới băng chuyền: hai nút Học, Ôn cùng bề rộng; hàng dưới "Xem nhóm →" và "Thêm từ"; chú thích bậc một dòng.
+- F.3: Nhóm co theo chiều cao màn; điện thoại ngang hai cột; nút lịch không đè thẻ; e2e kiểm mọi màn ở 4 khổ.
+- F.4: thẻ nhóm ở Hôm nay nâng lên khi rê chuột hoặc Tab.
+- F.5: chân hộp thoại có đường kẻ và khoảng cách 12 px; Thêm từ: nút "Xong" ở bước chọn nhóm, nút lưu ghi "Lưu vào n nhóm".
+- F.6: hộp chọn nhóm không còn hiện một nhóm hai lần.
+- F.7: ô số câu ở Tùy chỉnh phiên gõ tay được, gọn 36 px.
+- F.8: số trong ô riêng ở nút chọn phạm vi Tất cả / Đến hạn / Ưu tiên.
+- F.9: hộp Ngày bỏ nút lọc Luyện và khối phiên luyện.
+- F.10: Tra từ: nút "Nhóm khác" chờ tải xong mới bấm được.
+- F.11: bản tiếng Anh ghi "1 card waiting".
+
+**Lane B — các phiên**
+- F.12: bỏ ô phím trên mọi nút trong phiên; hàng chú thích phím giữ.
+- F.13: gợi ý chữ cái đầu dạng "l___".
+- F.14: panel kết quả dạng vé, trượt ra từ dưới thẻ; đỏ đậm hơn một chút; câu chọn sai cũng gạch trong câu.
+- F.15: ô gõ trong câu co giãn theo chữ.
+
+**Lane C — trang công khai và bảng đăng ký**
+- F.16: tách bộ máy gõ chữ dùng chung; ô đáp án vừa đúng chữ.
+- F.17: bảng đăng ký: dời và nghiêng ba thẻ, không đè đường nhớ; e2e kiểm không chồng.
+- F.18: hero đổi năm từ và gõ chữ như bảng đăng ký; viên nhãn chỉ còn câu.
+- F.19: phần Giá: quầng màu trôi đều như khối cuối trang.
+- F.20: "Luyện trong câu": phần luyện lên ngay dưới mô tả.
+- F.21: link thanh trên chữ đậm.
+- F.22: bỏ viên chú thích IELTS, đổi bốn câu chỉ-IELTS sang ngữ cảnh chung.
+
+**Cuối đợt**
+- F.23: gộp ba lane. F.24: tài liệu và as-built (gồm phần P.18 còn nợ). F.25: kiểm tra đầy đủ, e2e sạch một lượt. F.26: một PR vào `refactor/giao-dien-moi`, merge khi CI xanh, bootstrap để chủ dự án test lại.
+
+# Giao diện mới — plan tóm tắt, phần 12: sửa theo audit giao diện (13/11/2026)
+
+Plan: "Part 12" trong file plan ở trên; nguồn là [report audit](../audit/2026-11-13-web-design-guidelines-review.md) (2 lỗi Cao, 24 lỗi Trung bình).
+Quyết định QA1–QA13 (chủ dự án duyệt cả 13, 13/11/2026) ghi ở đầu Part 12. Làm tuần tự trên `feat/giao-dien-moi-polish`, đi chung PR của đợt polish.
+
+- G.1: dưới 1280 px, ô Tìm từ trên header thành nút kính lúp sang Tra từ; phím `/` vẫn dùng được.
+- G.2: Một nhóm chỉ chia hai cột từ 1280 px; tên từ trong bảng không bị ngắt giữa chữ.
+- G.3: từ 768 đến 1423 px nội dung chừa lề phải cho nút lịch; trên điện thoại nút lịch và nút "+" ẩn khi cuộn xuống.
+- G.4: ô nhập từ (Thêm từ vừa gặp, Tìm từ, Tra từ, hộp Thêm từ) không gạch đỏ chính tả, không bật gợi ý tự điền.
+- G.5: các form đăng ký, đăng nhập, mã OTP, quên/đặt lại mật khẩu, hoàn tất hồ sơ: nút gửi luôn bấm được, báo lỗi cạnh ô thiếu, đưa con trỏ vào ô sai đầu tiên; đăng nhập trống không gửi request.
+- G.6: captcha không tải được thì báo lỗi kèm nút "Tải lại bước xác minh".
+- G.7: công tắc "Chuyển động: Bật / Tắt" ở chân trang công khai; phần minh họa ở bảng đăng ký chạy một vòng rồi dừng.
+- G.8: viền ô chọn và rãnh công tắc đậm hơn (đạt 3:1); chữ màu nhóm 3 tối hơn một chút.
+- G.9: cuộn tới mục hoặc Tab trên điện thoại không bị header che.
+- G.10: trình đọc màn hình đọc được: gợi ý vừa mở, mặt sau thẻ khi lật, tên từ ở nút "Ôn lại" trong tổng kết, lỗi AI, lý do nút Bắt đầu bị tắt ở Tùy chỉnh phiên; hộp báo lỗi câu có trạng thái đang tải và thử lại.
+- G.11: trên điện thoại không tự focus ô gõ đáp án và nút Lật thẻ.
+- G.12: tiêu đề hộp Ngày theo định dạng ngày của ngôn ngữ (en "Nov 13"); thông báo đổi ngày gọn một câu.
+- G.13: bảng từ ở Một nhóm vẫn được đọc là bảng trên điện thoại.
+- G.14: chạy test, lint, typecheck, e2e; kiểm trình duyệt 1440/1024/390 sáng và tối; viết checklist mục 12 cho chủ dự án; as-built.
+
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
 Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
@@ -860,3 +950,31 @@ Kèm các minor sửa ngay: comment `Dialog.tsx:33`, nhãn task ở R251 và R25
 - Lighthouse và Schema chạy trên build bootstrap (localhost, không `INDEXABLE`), chưa chạy trên domain thật.
 - Quầng vàng trang công khai so mockup, và nền cả trang dừng ở 900 px: chưa xác nhận trong trình duyệt thật.
 - Chưa chụp tiếng Anh.
+
+# Giao diện mới — as-built phần 12: sửa theo audit giao diện (13/11/2026)
+
+29 commit từ `227f1926` đến `591c84d2` trên `feat/giao-dien-moi-polish` (chưa push), làm tuần tự theo 6 nhóm. Báo cáo từng nhóm (red-run, quyết định tự
+chốt) ở `.superpowers/sdd/2026-11-10-giao-dien-moi/part12/batch1-report.md` … `batch6-report.md` (git bỏ qua thư mục này).
+
+**Kiểm tra**
+- Unit: `pnpm test` 161 file, 1718/1718 pass sau nhóm 6; lint, typecheck (gồm e2e), kiểm key chữ (0 key thừa) sạch. Admin: lint, typecheck, build
+  sạch; `pnpm test` có 3 test fail khi chạy cả bộ, pass khi chạy riêng (admin không đọc token đã đổi; chưa tìm nguyên nhân).
+- E2E (`pnpm cf:docker`): viewports, m2, m5a, m5b, m6, recall, landing, auth-layout: lượt 1 182 pass, 5 fail vì dòng thông báo mới lặp chữ đang hiện
+  (sửa test ở `591c84d2`); lượt 2 m2 + m6: 35 pass.
+- Trình duyệt (Playwright trên stack `pnpm bootstrap` mới build, script `part12/verify.mjs`, ảnh ở `docs/audit/2026-11-13-web-review-shots/after/`):
+  C1 ở 1024 là nút "Tìm từ", ở 1280 ô tìm rộng 187 px; C2 ở 1024 bảng rộng 864 px, "presentation" một dòng; T1 ở 1024 nút lịch không chạm link
+  hay nút nào ở Luyện tập; trên điện thoại cuộn thì nút trượt đi (`opacity 0`) và quay lại khi dừng; T3 ô Hôm nay `name=word autocomplete=off
+  spellcheck=false`; T11 viền ô chọn #878ea5; T14 `scroll-padding-top` 60 px ở 390; T10 công tắc "Chuyển động" tắt thì bỏ lớp `js` và lưu `off`.
+
+**Khác plan (quyết định trong lúc làm)**
+- G.3: làn cho nút lịch kéo tới 1440 px (plan 1424) vì thanh cuộn Windows 17 px; `lg:px-8` đổi thành `lg:pl-8` để làn không bị đè từ 1024 px.
+- G.5: lỗi "thiếu ô" giữ tới lần bấm sau; focus chuyển theo một bộ đếm mỗi lần đặt lỗi, không theo object lỗi.
+- G.6: chữ lỗi captcha mới là key riêng `App.auth.captchaLoadFailed`; `App.errors.captcha-unavailable` giữ cho lỗi 503 của server.
+- G.7: phần minh họa ở bảng đăng ký chạy một vòng dù công tắc ở trạng thái nào; bật lại chuyển động thì các khối trên màn hiện dần lại một lần.
+- G.12: tiêu đề tiếng Việt vẫn ghép tay "05/11" vì Intl vi-VN in "13-11"; chỉ tiếng Anh qua Intl ("Nov 5").
+
+**Chưa kiểm**
+- Trình đọc màn hình thật (T8, T15, T16, T20–T23, T25, T26): mới đo DOM và test.
+- Tiếng Anh của hộp Ngày trên trình duyệt: tài khoản test để ngôn ngữ tiếng Việt nên `/en/app` chuyển về `/vi`; chỉ có unit test.
+- Captcha thật (T9) và lỗi AI giữa phiên (T21): cần môi trường có Turnstile thật hoặc AI lỗi.
+- iPhone thật: tự viết hoa, nút trượt khi cuộn có quán tính.

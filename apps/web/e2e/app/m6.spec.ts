@@ -17,12 +17,6 @@ const DAY = {
   ],
   next_page_token: null,
 };
-const answer = (session: string, i: number, lemma: string, wrong = false) => ({
-  item_id: `${session}-${i}`, session_id: session, sense_id: `sense-${i}`, lemma, type: 'type_word', prompt_style: 'meaning', prompt: { kind: 'type_meaning' },
-  answer: wrong ? 'deterorate' : lemma, correct: { lemma, text: lemma, choice_index: null, is_true: null }, result: wrong ? 'wrong' : 'correct',
-  skipped: false, tries: 1, hint_level: 0, review_action: null, alternative: false, answered_at: `2026-11-05T13:3${i}:00.000Z`, local_date: '2026-11-05', translation: null,
-});
-
 function calendarApi(): Record<string, MockHandler> {
   return {
     'GET /v1/me/streak': () => ({ json: { days: 6, studied_today: true } }),
@@ -36,9 +30,6 @@ function calendarApi(): Record<string, MockHandler> {
         : { month: req.query.get('month'), days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } },
     }),
     'GET /v1/me/calendar/days/2026-11-05': () => ({ json: DAY }),
-    'GET /v1/practice/history': () => ({
-      json: { items: [answer('s2', 3, 'candidate'), answer('s1', 2, 'deteriorate', true), answer('s1', 1, 'negotiate')], next_page_token: null },
-    }),
   };
 }
 
@@ -72,8 +63,11 @@ test('Hôm nay → Lịch → Ngày; Back → Lịch; Back → closed on the sam
   const day = page.getByRole('dialog', { name: '05/11' });
   await expect(day).toBeVisible();
   await expect(page).toHaveURL(/\/vi\/app\?ngay=2026-11-05$/);
-  await expect(day.getByRole('region', { name: 'Luyện tập · 2 phiên' })).toBeVisible();
-  await expect(day.getByText('bạn trả lời deterorate · đáp án: deteriorate')).toBeVisible();
+  await expect(day.getByRole('region', { name: 'Học 3 từ mới' })).toBeVisible();
+  await expect(day.getByText('Học 3 từ mới · ôn 3 lượt · luyện 3 câu', { exact: true })).toBeVisible();
+  // Part 12 G.12 (T25): one short status line names the day.
+  await expect(day.getByRole('status').filter({ hasText: /^thứ năm 05\/11: Học 3 từ mới/ })).toBeAttached();
+  await expect(day.getByRole('region', { name: /^Luyện tập/ })).toHaveCount(0);
   expect(await seriousViolations(page)).toEqual([]);
   await noSideScroll(page);
 
@@ -114,7 +108,7 @@ test('final review #1: Ngày from a link, closed at once, stays closed (Next mus
   await signedInAs(page, 'free', calendarApi());
   await page.goto('/vi/app/practice?ngay=2026-11-05');
   const day = page.getByRole('dialog', { name: '05/11' });
-  await expect(day.getByRole('region', { name: 'Luyện tập · 2 phiên' })).toBeVisible();
+  await expect(day.getByRole('region', { name: 'Học 3 từ mới' })).toBeVisible();
   await day.getByRole('button', { name: 'Đóng', exact: true }).click();
   await page.waitForTimeout(500);
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -150,16 +144,26 @@ function sessionApi(): Record<string, MockHandler> {
   };
 }
 
+// Polish P.6 (chỗ 25, Figma "Thanh trên app/Mobile" 54:503): the phone header is 56 px; the desktop top bar stays 64 px.
+test('the app header is 56 px high on phones and 64 px on desktop', async ({ page }, info) => {
+  await signedInAs(page, 'free', calendarApi());
+  await page.goto('/vi/app');
+  const header = page.getByRole('banner');
+  await expect(header).toBeVisible();
+  expect((await header.boundingBox())!.height).toBe(info.project.name === 'mobile' ? 56 : 64);
+});
+
 test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating one on desktop; L in the answer box types "l"', async ({ page }, info) => {
   const phone = info.project.name === 'mobile';
   await signedInAs(page, 'free', sessionApi());
   await page.goto(`/vi/app/recall?group=${DECK}`);
-  const input = page.getByRole('textbox', { name: 'Câu trả lời' });
+  const input = page.getByRole('textbox', { name: 'Your answer' });
   await expect(input).toBeVisible();
   await input.pressSequentially('l');
   await expect(input).toHaveValue('l');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const buttons = page.getByRole('button', { name: 'Lịch học' });
+  // The session bar's button is English (QM9-9); Lịch itself is mounted outside the session and keeps the route's language.
+  const buttons = page.getByRole('button', { name: 'Study calendar' });
   await expect(buttons).toHaveCount(1);
   const box = await buttons.boundingBox();
   // Phone: 32 × 34 in the top bar; desktop: the 62 × 66 floating button near the bottom.
@@ -170,9 +174,9 @@ test('M6.9: Ôn and Học carry the calendar in the bar on phones, the floating 
   await noSideScroll(page);
 
   await page.goto(`/vi/app/review?group=${DECK}`);
-  await expect(page.getByRole('group', { name: 'Thẻ 1 trên 1' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Lịch học' })).toHaveCount(1);
-  const learn = await page.getByRole('button', { name: 'Lịch học' }).boundingBox();
+  await expect(page.getByRole('group', { name: 'Card 1 of 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Study calendar' })).toHaveCount(1);
+  const learn = await page.getByRole('button', { name: 'Study calendar' }).boundingBox();
   if (phone) expect(learn!.y).toBeLessThan(80);
   else expect(learn!.y).toBeGreaterThan(700);
   await noSideScroll(page);

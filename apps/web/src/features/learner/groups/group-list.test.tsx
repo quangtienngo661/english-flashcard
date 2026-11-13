@@ -2,7 +2,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { GroupListPage } from './GroupListPage';
 
 const push = vi.fn();
@@ -38,6 +38,28 @@ const centre = async () => within(await region()).getByRole('link');
 const key = (k: string, target: Element = document.body) => act(() => void fireEvent.keyDown(target, { key: k }));
 
 describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('opens on the group shown last (owner 13/11/2026: back from Một nhóm returns to that group, not the first one)', async () => {
+    sessionStorage.setItem('wm-groups-centre', 'g-14');
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    expect(await centre()).toHaveTextContent('Đề 14 · Reading');
+  });
+
+  it('a remembered group that no longer exists falls back to the first group', async () => {
+    sessionStorage.setItem('wm-groups-centre', 'g-gone');
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+  });
+
+  it('stepping remembers the new centre group', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('ArrowRight');
+    expect(await centre()).toHaveTextContent('Đề 9 · Listening');
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe('g-9');
+  });
+
   it('starts on the first group of the carousel order; the only link inside the region is the centre stack', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[3], FIVE[4], FIVE[1], FIVE[0], FIVE[2]]) });
     const link = await centre();
@@ -67,6 +89,19 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     key('ArrowRight');
     expect(await centre()).toHaveTextContent('Đề 9 · Listening');
     expect(screen.getByText('Đề 9 · Listening, 18 thẻ chờ')).toBeInTheDocument();
+  });
+
+  it('five → presses in a row (Review Focus 5): five steps on is the centre, one link, no stack left without its transition', async () => {
+    const SEVEN = [...FIVE.slice(0, 4), deck('g-10', 'Đề 10 · Writing', 3), deck('g-b1', 'Công việc · B1', 0), FIVE[4]];
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(SEVEN) });
+    await centre();
+    for (let i = 0; i < 5; i += 1) key('ArrowRight');
+    // Order: 12, 9, 14, 10 (waiting), Công việc, Đề 11 (done, by name), Du lịch Nhật (empty); five steps on from the first.
+    expect(await centre()).toHaveTextContent('Đề 11 · Speaking');
+    const r = await region();
+    expect(within(r).getAllByRole('link')).toHaveLength(1);
+    // A stack that wraps from one end of the arc to the other jumps without a transition for one frame, then gets it back.
+    r.querySelectorAll<HTMLElement>('[data-k]').forEach((slot) => expect(slot.style.transition).toBe(''));
   });
 
   it('← from the first group wraps to the last', async () => {
@@ -116,12 +151,24 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     }
   });
 
-  it('below the carousel: the rhythm bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
+  it('below the carousel: the "nhịp ôn" eyebrow, the level bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
-    expect(screen.getByRole('figure', { name: 'nhịp ôn: mới → 30 ngày' })).toBeInTheDocument();
+    expect(screen.getByText('nhịp ôn: Mới → Bậc 5')).toBeInTheDocument();
+    const bar = screen.getByRole('figure', { name: 'Số từ theo bậc' });
+    expect(within(bar).getByRole('img', { name: 'Bậc 2 · 3 từ · ôn lại sau 3 ngày' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-12');
-    expect(screen.getByRole('link', { name: 'Xem nhóm →' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
+    expect(screen.getByRole('link', { name: 'Xem nhóm' })).toHaveAttribute('href', '/vi/app/group?id=g-12');
+  });
+
+  it('under the carousel the Học · Ôn buttons come before "Xem nhóm" and "Thêm từ"', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    const order = (name: string) => screen.getByRole('link', { name });
+    const before = (a: HTMLElement, b: HTMLElement) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const open = order('Xem nhóm');
+    expect(before(order('Ôn'), open)).toBe(true);
+    expect(before(open, screen.getByRole('button', { name: 'Thêm từ' }))).toBe(true);
   });
 
   it('F opens the picker; "de 9" leaves Đề 9; Enter makes it the centre and closes the picker', async () => {
@@ -140,9 +187,9 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await userEvent.click(await screen.findByRole('button', { name: /Đề 12 · Writing/ }));
     const list = await screen.findByRole('listbox');
-    expect(within(list).getAllByRole('group').map((g) => g.getAttribute('aria-label'))).toEqual(['còn thẻ chờ', 'xong hôm nay', 'chưa có từ']);
+    expect(within(list).getAllByRole('group').map((g) => g.getAttribute('aria-label'))).toEqual(['Còn thẻ chờ', 'Xong hôm nay', 'Chưa có từ']);
     expect(within(list).getByRole('option', { selected: true })).toHaveTextContent('Đề 12 · Writing');
-    expect(within(list).getByRole('option', { name: /Du lịch Nhật/ })).toHaveTextContent('trống');
+    expect(within(list).getByRole('option', { name: /Du lịch Nhật/ })).toHaveTextContent('Trống');
     expect(within(list).getByRole('option', { name: /Đề 11/ })).toHaveTextContent('10 từ');
   });
 
@@ -175,13 +222,23 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
   });
 
   it('← typed in the top-bar search box does not move the carousel', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
-    await centre();
-    const box = screen.getAllByRole('searchbox')[0] ?? screen.getAllByRole('textbox')[0];
-    key('ArrowLeft', box);
-    key('f', box);
-    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
-    expect(screen.queryByRole('listbox')).toBeNull();
+    // The top bar has a search box from 1280 px (audit C1); narrower it is a link to Tra từ.
+    const media = window.matchMedia;
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*(\d+)px/.exec(query);
+      return { matches: min ? 1440 >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+    }) as unknown as typeof window.matchMedia;
+    try {
+      renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+      await centre();
+      const box = screen.getByRole('searchbox', { name: 'Tìm từ' });
+      key('ArrowLeft', box);
+      key('f', box);
+      expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+      expect(screen.queryByRole('listbox')).toBeNull();
+    } finally {
+      window.matchMedia = media;
+    }
   });
 
   it('one group: no arrow buttons, ← → do nothing', async () => {
@@ -226,6 +283,37 @@ describe('deck dialogs from the list (K/17)', () => {
     await userEvent.dblClick(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
     expect(count('POST', '/v1/groups')).toBe(1);
     release();
+  });
+
+  it('a group just made becomes the centre stack (owner 14/11/2026: the learner does not hunt for it) and is remembered', async () => {
+    sessionStorage.clear();
+    let items: unknown[] = FIVE;
+    renderApp(<GroupListPage />, { chrome: true,
+      routes: withGroups([], {
+        'GET /v1/groups': () => Response.json({ items }),
+        'POST /v1/groups': () => {
+          items = [...FIVE, deck('g-new', 'Mới tạo', 0, 0)];
+          return Response.json({ id: 'g-new', name: 'Mới tạo', version: 1 }, { status: 201 });
+        },
+      }),
+    });
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm' }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Tên nhóm' }), 'Mới tạo');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
+    await waitFor(async () => expect(await centre()).toHaveTextContent('Mới tạo'));
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe('g-new');
+    // Stepping away afterwards stays put: the new group does not pull the carousel back.
+    key('ArrowLeft');
+    expect(await centre()).toHaveTextContent('Du lịch Nhật');
+  });
+
+  it('a group renamed in Một nhóm is still the centre under its new name, even when the new name sorts it elsewhere', async () => {
+    // Một nhóm remembers its group on open (GroupPage); the rename re-sorts the list ("A…" before "Đề 11…" among done groups).
+    sessionStorage.setItem('wm-groups-centre', 'g-11');
+    const renamed = FIVE.map((g) => (g.id === 'g-11' ? { ...g, name: 'A · Speaking', version: 2 } : g));
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(renamed) });
+    expect(await centre()).toHaveTextContent('A · Speaking');
   });
 
   it('a 409 group-limit-reached says the limit with the admin number', async () => {

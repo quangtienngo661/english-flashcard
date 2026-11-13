@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // Owner 10/11/2026 (QBG): the app background is "Mesh + hạt" (round 8, direction 4): four colour halos and a grain layer,
-// cards stay white. The dot grid of round 9 is gone.
+// cards stay white.
 const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
 
 function block(name: string): string | null {
@@ -18,11 +18,6 @@ function block(name: string): string | null {
 }
 
 describe('app background', () => {
-  it('has no dot grid any more', () => {
-    expect(block('dot-grid')).toBeNull();
-    expect(globals).not.toMatch(/background-size:\s*1\.25rem 1\.25rem/);
-  });
-
   it('is four halos in accent, the mark token, pass and accent over the page colour', () => {
     const css = block('app-mesh');
     expect(css).not.toBeNull();

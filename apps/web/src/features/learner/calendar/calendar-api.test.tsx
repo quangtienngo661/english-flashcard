@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
-import { renderApp } from '@/app-ui/test-utils';
+import { renderApp } from '@/test-utils/render-app';
 import { STREAK_KEY, useStreak, writeStreak, type Streak } from './calendar-api';
 
 vi.mock('next/navigation', () => ({

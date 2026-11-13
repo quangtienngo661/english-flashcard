@@ -2,19 +2,23 @@
 
 import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ApiError, NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
-import { EmptyState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
+import { useRouteLocale } from '@/app-shell/route-locale';
+import { NotFoundState } from '@/ui/NotFoundState';
+import { EmptyState } from '@/ui/States';
+import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
-import { BUTTON_BASE, BUTTON_VARIANT } from '@/ui/Button';
-import { Kbd } from '@/ui/Kbd';
+import { useDesktop } from '@/lib/use-desktop';
+import { useFinePointer } from '@/lib/use-fine-pointer';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { StreakToast } from '@/ui/StreakToast';
 import { isId, useGroup, useGroups } from '../groups/groups-api';
 import { CardStack, type CardStackHandle } from './CardStack';
 import { Pile } from './Pile';
@@ -24,13 +28,13 @@ import { useReviewQueue, type Answer } from './use-review-queue';
 const NUDGE_MS = 2200;
 
 /**
- * K/20–K/22 `/app/review?group=&mode=new|all|due` (Học, đợt C), rebuilt as the dissolving card stack (Figma 80:3228 / 80:3321 /
- * 80:3429, prototype chong-the-mo.html): the two piles beside the stack, the buttons under it. Keys: Space turns the card both ways,
- * 1 or ← Cần ôn lại, 2 or → Đã biết, Esc ends; Enter on the summary goes home.
+ * K/20–K/22 `/app/review?group=&mode=new|all|due` (Học, đợt C), the dissolving card stack laid out as mockup L220-304 (P.17): on
+ * desktop the two piles beside the stack, on a phone under it; the buttons under both. Keys: Space turns the card both ways, 1 or ←
+ * Still learning, 2 or → Know, Esc ends; Enter on the summary goes home.
  */
 export function ReviewSession() {
   const t = useTranslations('App');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const params = useSearchParams();
   const raw = params.get('group');
   const id = isId(raw) ? raw.toLowerCase() : null;
@@ -44,13 +48,17 @@ export function ReviewSession() {
   const stack = useRef<CardStackHandle>(null);
   const flipButton = useRef<HTMLButtonElement>(null);
   const [nudged, setNudged] = useState(false);
+  const desktop = useDesktop();
+  // QA10 (audit T18): on a touch screen focus stays put; moving it scrolls the page and rings the button after a tap.
+  const fine = useFinePointer();
+  const flipLabel = session.flipped ? t('review.flipBack') : t('review.flip');
   const notFound =
     id === null || [group.error, session.queue.error].some((e) => e instanceof ApiError && e.problem.status === 404);
 
   // After an answer the next card's turn button takes focus (audit 26/10/2026 #8), so Space and Enter go on from there.
   useEffect(() => {
-    if (session.index > 0) flipButton.current?.focus();
-  }, [session.index]);
+    if (fine && session.index > 0) flipButton.current?.focus();
+  }, [session.index, fine]);
 
   useEffect(() => {
     if (!nudged) return;
@@ -97,7 +105,7 @@ export function ReviewSession() {
   };
   let body: ReactNode;
   if (notFound) body = <NotFoundState title={t('group.notFound')} back={{ href: `/${locale}/app/groups`, label: t('group.toList') }} />;
-  else if (session.queue.isPending || session.finishing) body = <FullScreenSpinner />;
+  else if (session.queue.isPending || session.finishing) body = <SkeletonBlocks />;
   else if (session.done) body = <ReviewSummary counts={session.counts} piles={piles} group={summary} />;
   else if (total === 0)
     body = (
@@ -113,18 +121,34 @@ export function ReviewSession() {
     );
   else
     body = (
-      <div className="flex w-full flex-1 flex-col gap-6">
-        {/* Says which card came up after an answer (audit 26/10/2026 #8); empty until the first answer. */}
+      // Owner 13/11/2026: on desktop the card, the piles and the buttons sit in the middle of the screen's height.
+      <div className="flex w-full flex-1 flex-col gap-6 md:justify-center md:pb-14">
+        {/* Says which card came up after an answer (audit 26/10/2026 #8), and the meaning once the card is turned (audit T16); empty until then. */}
         <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
-          {session.index > 0 && session.card ? t('review.card', { n: session.index + 1, total }) : ''}
+          {session.flipped && session.card
+            ? t('review.back', { meaning: session.card.content.meaning.text })
+            : session.index > 0 && session.card
+              ? t('review.card', { n: session.index + 1, total })
+              : ''}
         </p>
         <div
-          // raw-ok: the pile, stack, pile grid of Figma 80:3228 (the card column capped at 26rem); no token for a three-track grid
-          className="grid grid-cols-2 items-start gap-x-4 gap-y-6 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)_minmax(0,1fr)] md:gap-x-8"
+          // raw-ok: the pile, stack, pile grid of mockup L221 (the card column capped at 22.5rem, 360 px as in the owner's artifact 13/11/2026); no token for a three-track grid
+          className="grid grid-cols-2 items-start gap-x-3 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,22.5rem)_minmax(0,1fr)] md:items-center md:gap-x-7"
         >
-          <Pile tone="review" label={t('review.stillLearning')} words={piles.review} className="md:col-start-1 md:row-start-1 md:pt-10" />
-          <Pile tone="known" label={t('review.know')} words={piles.known} className="md:col-start-3 md:row-start-1 md:pt-10" />
-          <div className="col-span-2 md:col-span-1 md:col-start-2 md:row-start-1">
+          {/* The card first in reading order; on desktop the piles move to its sides (mockup L297: on a phone they sit under it). */}
+          <div className="col-span-2 flex flex-col gap-3 md:col-span-1 md:col-start-2 md:row-start-1">
+            {/* Owner 13/11/2026: where to drag the card, left for Still learning, right for Know (the piles' colours). */}
+            <p role="note" aria-label={t('review.dragHint')} className="flex items-center justify-center gap-3 font-wm-sans text-wm-meta font-semibold">
+              <span className="inline-flex items-center gap-1 text-wm-fail">
+                <ArrowLeft aria-hidden className="size-3.5" />
+                {t('review.stillLearning')}
+              </span>
+              <span className="text-wm-muted">{t('review.dragHint')}</span>
+              <span className="inline-flex items-center gap-1 text-wm-pass">
+                {t('review.know')}
+                <ArrowRight aria-hidden className="size-3.5" />
+              </span>
+            </p>
             <CardStack
               ref={stack}
               cards={session.cards}
@@ -137,6 +161,8 @@ export function ReviewSession() {
               label={session.card ? t('review.card', { n: session.index + 1, total }) : undefined}
             />
           </div>
+          <Pile tone="review" label={t('review.stillLearning')} words={piles.review} chips={desktop} className="md:col-start-1 md:row-start-1" />
+          <Pile tone="known" label={t('review.know')} words={piles.known} chips={desktop} className="md:col-start-3 md:row-start-1" />
         </div>
         <div className="flex flex-col items-center gap-3">
           <p role="status" className={cn('min-h-5 font-wm-sans text-wm-small-strong text-wm-accent transition-opacity duration-200', nudged ? 'opacity-100' : 'opacity-0')}>
@@ -147,93 +173,113 @@ export function ReviewSession() {
               {session.error instanceof NetworkError ? t('review.failed') : errorText(session.error)}
             </p>
           )}
-          <div className="grid w-full max-w-xl grid-cols-2 gap-3 md:flex md:w-auto md:justify-center">
-            <AnswerButton tone="review" disabled={!session.flipped} onPress={() => rate('review')} label={t('review.stillLearning')} keyCap="1" icon={<ArrowLeft aria-hidden className="size-4" />} />
+          {/* Mockup L270-304: 40 px buttons, 14 px bold; on a phone the side ones are 52 px icon squares and Flip card keeps its width. */}
+          <div className="flex w-full justify-center gap-2 md:gap-3">
+            <AnswerButton tone="review" desktop={desktop} disabled={!session.flipped} onPress={() => rate('review')} label={t('review.stillLearning')} />
             <button
               ref={flipButton}
               type="button"
               onClick={session.flip}
-              autoFocus
-              className={cn(BUTTON_BASE, BUTTON_VARIANT.primary, 'col-span-2 row-start-1 md:col-auto md:row-auto md:min-w-44')}
+              // Named by its words alone: the key cap is in aria-keyshortcuts, not "Flip cardSpace".
+              aria-label={flipLabel}
+              aria-keyshortcuts="Space"
+              autoFocus={fine}
+              className={cn(ACTION, 'min-w-37 bg-wm-accent px-5 text-wm-on-accent md:px-3.5')}
             >
               <RotateCcw aria-hidden className="size-4" />
-              {session.flipped ? t('review.flipBack') : t('review.flip')}
-              <span className="hidden md:inline-flex">
-                <Kbd>Space</Kbd>
-              </span>
+              {flipLabel}
             </button>
-            <AnswerButton tone="known" disabled={!session.flipped} onPress={() => rate('known')} label={t('review.know')} keyCap="2" icon={<ArrowRight aria-hidden className="size-4" />} />
+            <AnswerButton tone="known" desktop={desktop} disabled={!session.flipped} onPress={() => rate('known')} label={t('review.know')} />
           </div>
-          <KeyLegend
-            aria-label={t('review.legend')}
-            className="pt-2"
-            items={[
-              { keys: ['Space'], label: t('review.flip') },
-              { keys: ['1', '←'], label: t('review.stillLearning') },
-              { keys: ['2', '→'], label: t('review.know') },
-              { keys: ['Esc'], label: t('review.stop') },
-            ]}
-          />
+          {desktop && (
+            <KeyLegend
+              aria-label={t('review.legend')}
+              className="justify-center pt-1"
+              items={[
+                { keys: ['Space'], label: t('review.flip') },
+                { keys: ['1', '←'], label: t('review.stillLearning') },
+                { keys: ['2', '→'], label: t('review.know') },
+                { keys: ['Esc'], label: t('review.stop') },
+              ]}
+            />
+          )}
         </div>
       </div>
     );
 
   const showProgress = !notFound && !session.done && total > 0;
+  // P.17 (mockup L1187-1189): the X alone, 32 px, at the right end of the bar; the streak toast sits under it.
   const closeClass =
-    'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
-    'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:size-9';
+    'flex size-8 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
+    'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
     <div className="flex flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 pt-4 md:px-6 md:pt-8">
+      <header className="relative mx-auto flex w-full max-w-5xl items-center gap-3 px-4 pt-4 md:px-6 md:pt-8">
+        <span className="hidden max-w-64 truncate font-wm-sans text-wm-small-strong text-wm-ink md:block">{group.data?.name}</span>
+        {showProgress ? (
+          <>
+            <ProgressBar value={session.index} max={total} label={t('review.left', { count: left })} className="min-w-12 flex-1" />
+            <span className="shrink-0 text-wm-meta text-wm-muted">{t('review.left', { count: left })}</span>
+          </>
+        ) : (
+          <span className="flex-1" />
+        )}
+        <CalendarBarButton />
         {session.done || notFound ? (
           <Link href={`/${locale}/app`} aria-label={t('common.close')} className={closeClass}>
-            <X aria-hidden className="size-4.5" />
+            <X aria-hidden className="size-4" />
           </Link>
         ) : (
           <button type="button" aria-label={t('review.close')} onClick={session.end} className={closeClass}>
-            <X aria-hidden className="size-4.5" />
+            <X aria-hidden className="size-4" />
           </button>
         )}
-        <span className="hidden max-w-64 truncate font-wm-sans text-wm-small-strong text-wm-ink md:block">{group.data?.name}</span>
-        {showProgress && (
-          <>
-            <ProgressBar value={session.index} max={total} label={t('review.left', { count: left })} className="min-w-12 flex-1" />
-            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{t('review.left', { count: left })}</span>
-          </>
-        )}
-        <CalendarBarButton />
+        {/* Inside the session subtree, so it speaks English (QM9-9); AppProviders' bottom toast stays empty while this one is mounted. */}
+        <StreakToast placement="session-corner" />
       </header>
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-stretch px-4 py-6 md:px-6">{body}</div>
+      {/* The stack about 20 px under the bar (mockup L1192). */}
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-stretch px-4 pb-6 pt-5 md:px-6">{body}</div>
     </div>
   );
 }
 
+/** Mockup L272: the three Học buttons are 40 px high, 14 px bold, no shadow. */
+const ACTION =
+  'inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-wm-control font-wm-sans text-wm-small font-bold outline-none ' +
+  'transition duration-200 ease-wm-out-strong hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent ' +
+  'motion-safe:active:scale-97';
+
 /**
- * Cần ôn lại / Đã biết under the stack. Before the card is turned they stay pressable but `aria-disabled`: a press shakes the card and
- * says why (prototype chong-the-mo.html:271), instead of doing nothing.
+ * Still learning / Know under the stack (mockup L273-278): coloured text on the surface (dark: a 6 % wash of the colour), named by
+ * `aria-label`; on a phone a 52 px square with the icon only. Before the card is turned they stay pressable but `aria-disabled` at 50 %:
+ * a press shakes the card and says why (prototype chong-the-mo.html:271), instead of doing nothing.
  */
-function AnswerButton({ tone, disabled, onPress, label, keyCap, icon }: {
-  tone: 'review' | 'known'; disabled: boolean; onPress: () => void; label: string; keyCap: string; icon: ReactNode;
+function AnswerButton({ tone, desktop, disabled, onPress, label }: {
+  tone: 'review' | 'known'; desktop: boolean; disabled: boolean; onPress: () => void; label: string;
 }) {
+  const Icon = tone === 'review' ? ArrowLeft : Check;
   return (
     <button
       type="button"
+      aria-label={label}
+      aria-keyshortcuts={tone === 'review' ? '1 ArrowLeft' : '2 ArrowRight'}
       aria-disabled={disabled || undefined}
       onClick={onPress}
       className={cn(
-        BUTTON_BASE,
-        tone === 'known' ? BUTTON_VARIANT.pass : `${BUTTON_VARIANT.secondary} text-wm-fail`,
-        'md:min-w-40',
-        disabled && 'opacity-55 shadow-none',
+        ACTION,
+        'border border-wm-line',
+        tone === 'review' ? 'bg-wm-fail-wash text-wm-fail' : 'bg-wm-pass-wash text-wm-pass',
+        desktop ? 'px-3.5' : 'w-13',
+        disabled && 'cursor-not-allowed opacity-50',
       )}
     >
-      {tone === 'review' && icon}
-      {tone === 'known' && <Check aria-hidden className="size-4" />}
-      {label}
-      <span className="hidden md:inline-flex">
-        <Kbd>{keyCap}</Kbd>
-      </span>
-      {tone === 'known' && icon}
+      <Icon aria-hidden className={desktop ? 'size-4' : 'size-5'} />
+      {desktop && (
+        <>
+          {label}
+          {tone === 'known' && <ArrowRight aria-hidden className="size-4" />}
+        </>
+      )}
     </button>
   );
 }

@@ -15,13 +15,13 @@ export function SiteHeader({ locale }: { locale: AppLocale }) {
   const t = useTranslations('Nav');
   const home = `/${locale}`;
   const anchor =
-    'inline-flex min-h-11 items-center rounded-wm-sm font-wm-sans text-wm-button font-normal text-wm-muted outline-none transition-colors duration-200 hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
+    'inline-flex min-h-11 items-center rounded-wm-control font-wm-sans text-wm-button font-bold text-wm-ink outline-none transition-colors duration-200 hover:text-wm-accent focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
     <header className="sticky top-0 z-40 bg-wm-bg/72 backdrop-blur-wm-sm">
       <Container className="flex h-15 items-center gap-1.5 md:h-17 md:gap-6">
         <a
           href={home}
-          className="mr-auto inline-flex min-h-11 shrink-0 items-center rounded-wm-sm outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+          className="mr-auto inline-flex min-h-11 shrink-0 items-center rounded-wm-control outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
         >
           <AppLogo />
         </a>

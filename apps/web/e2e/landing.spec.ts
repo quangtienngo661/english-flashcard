@@ -137,10 +137,15 @@ const faded = (page: Page) =>
   page.evaluate(() => {
     const out: string[] = [];
     let checked = 0;
+    let hero = 0;
     for (const el of document.querySelectorAll<HTMLElement>('main h1, main h2, main h3, main p, main a, main details')) {
       const box = el.getBoundingClientRect();
-      if (box.width <= 1 || box.height <= 1 || el.closest('[aria-hidden="true"]')) continue;
+      const inHero = !!el.closest('[data-hero-stage]');
+      // The hero stage is aria-hidden (its cycling frames) but drawn: it is checked, minus the frames kept `invisible` to hold its height.
+      if (box.width <= 1 || box.height <= 1 || getComputedStyle(el).visibility === 'hidden') continue;
+      if (el.closest('[aria-hidden="true"]') && !inHero) continue;
       checked++;
+      if (inHero) hero++;
       for (let node: HTMLElement | null = el; node; node = node.parentElement) {
         const style = getComputedStyle(node);
         // An entrance that ended may leave `blur(0px)` behind: that draws nothing.
@@ -150,7 +155,7 @@ const faded = (page: Page) =>
         }
       }
     }
-    return { checked, out };
+    return { checked, hero, out };
   });
 
 test.describe('LR25 reduced motion', () => {
@@ -191,8 +196,10 @@ test.describe('LR35 the page moves when motion is allowed', () => {
   test('after scrolling through the home page, no text is left see-through', async ({ page }) => {
     await open(page);
     await scrollThrough(page);
-    const { checked, out } = await faded(page);
+    const { checked, hero, out } = await faded(page);
     expect(checked).toBeGreaterThanOrEqual(3);
+    // The control: the hero's word card and practice card were looked at (the cycling frames are aria-hidden, so an `aria-hidden` skip lost them).
+    expect(hero).toBeGreaterThanOrEqual(4);
     expect(out).toEqual([]);
   });
   // The 404's entrance is not checked: a directly loaded 404 is drawn on the client, without the head script's `js` class (R239).

@@ -25,7 +25,7 @@ type Props = {
   isDisabled?: boolean;
   /** The check pops in (design §8.2): only on the learner's own right pick. */
   pop?: boolean;
-  /** `motion-safe:animate-wiggle-soft` on a wrong pick and the like (design §8.2). */
+  /** `motion-safe:animate-wm-wiggle-soft` on a wrong pick and the like (design §8.2). */
   className?: string;
 };
 
@@ -37,14 +37,14 @@ export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop
       isDisabled={isDisabled}
       className={cn(
         // raw-ok: Figma "Lựa chọn" draws a 1.5 px border, between the 1 and 2 px utilities
-        'flex min-h-13 w-full items-center gap-3 rounded-wm-lg border-[1.5px] px-4 py-3 text-left outline-none transition duration-200 ease-out-strong',
+        'flex min-h-13 w-full items-center gap-3 rounded-wm-row border-[1.5px] px-4 py-3 text-left outline-none transition duration-200 ease-wm-out-strong',
         'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent data-disabled:cursor-default',
         STATE[state],
         className,
       )}
     >
       {kbd && (
-        <kbd className="hidden size-5.5 shrink-0 items-center justify-center rounded-wm-sm bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent md:inline-flex">
+        <kbd className="hidden size-5.5 shrink-0 items-center justify-center rounded-wm-key bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent md:inline-flex">
           {kbd}
         </kbd>
       )}
@@ -52,7 +52,7 @@ export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop
       {note && (state === 'correct' || state === 'wrong') && (
         <span className={cn('inline-flex shrink-0 items-center gap-1 font-wm-sans text-wm-label', state === 'correct' ? 'text-wm-pass' : 'text-wm-fail')}>
           {state === 'correct'
-            ? <Check aria-hidden className={cn('size-4', pop && 'motion-safe:animate-pop-in')} />
+            ? <Check aria-hidden className={cn('size-4', pop && 'motion-safe:animate-wm-pop-in')} />
             : <X aria-hidden className="size-4" />}
           {note}
         </span>

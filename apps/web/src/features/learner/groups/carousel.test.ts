@@ -1,4 +1,4 @@
-import { carouselOrder, carouselSlots, rhythm, stackDepth, stepTo } from './carousel';
+import { arcSlot, carouselOrder, carouselSlots, rhythm, stackDepth, stepTo } from './carousel';
 import type { GroupSummary } from './groups-api';
 
 const deck = (id: string, name: string, total: number, today: GroupSummary['today']): GroupSummary => ({
@@ -9,6 +9,25 @@ const deck = (id: string, name: string, total: number, today: GroupSummary['toda
 describe('stackDepth (prototype `layers`)', () => {
   it.each([[0, 0], [1, 1], [6, 1], [7, 2], [16, 2], [17, 3], [400, 3]])('%i waiting → %i cards behind', (waiting, depth) => {
     expect(stackDepth(waiting)).toBe(depth);
+  });
+});
+
+describe('arcSlot ("Vòng cung", mockup L881-884, vong-7 L703-704)', () => {
+  it('the centre: in place, full size, on top', () => {
+    expect(arcSlot(0, false)).toEqual({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1, z: 10 });
+  });
+
+  it('two to the right on desktop: 2·230·0.84 across, 16·4 down, 16° turned', () => {
+    expect(arcSlot(2, false)).toEqual({ x: 386.4, y: 64, rotate: 16, scale: 0.8, opacity: 0.5, z: 8 });
+  });
+
+  it('one to the left on a phone: the 128 px step', () => {
+    expect(arcSlot(-1, true)).toEqual({ x: -107.52, y: 16, rotate: -8, scale: 0.9, opacity: 0.75, z: 9 });
+  });
+
+  it('three away is hidden on both sizes', () => {
+    expect(arcSlot(3, false).opacity).toBe(0);
+    expect(arcSlot(-3, true).opacity).toBe(0);
   });
 });
 

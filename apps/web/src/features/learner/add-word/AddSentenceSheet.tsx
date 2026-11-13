@@ -1,5 +1,6 @@
 'use client';
 
+import { shownPos } from '@/lib/pos';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
@@ -13,7 +14,7 @@ import { Select } from '@/ui/Select';
 import { TextButton } from '@/ui/TextButton';
 import { TextField } from '@/ui/TextField';
 import { showToast } from '@/ui/Toast';
-import { highlightWord } from '../groups/highlight';
+import { TargetWord } from '@/ui/TargetWord';
 import { sentencesKey, wordKey } from '../word/word-api';
 
 const SENTENCE_MAX = 300;
@@ -43,7 +44,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
     await api.post(`/v1/senses/${sense.sense_id}/sentences`, { text: text.trim() }, { idempotencyKey: key });
     return true;
   });
-  const info = { word: sense.lemma, pos: sense.pos, meaning: sense.meaning.text, count: sense.sentence_count };
+  const info = { lead: [sense.lemma, shownPos(sense.pos)].filter(Boolean).join(', '), meaning: sense.meaning.text, count: sense.sentence_count };
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,7 +75,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
         {senses && senses.length > 1 && (
           <Select
             label={t('sentenceSense')}
-            items={senses.map((s) => ({ id: s.sense_id, label: `${s.pos} · ${s.meaning.text}` }))}
+            items={senses.map((s) => ({ id: s.sense_id, label: shownPos(s.pos) ? `${shownPos(s.pos)} · ${s.meaning.text}` : s.meaning.text }))}
             value={sense.sense_id}
             onChange={setChosen}
           />
@@ -87,10 +88,10 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
         )}
         {text.trim() && (
           // Figma "Xem trước mặt sau thẻ": the meaning and the sentence with the word highlighted, as on the back of the card.
-          <div className="flex flex-col gap-1.5 rounded-wm-lg border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
-            <p className="font-wm-mono text-wm-mono text-wm-muted">{t('sentencePreview')}</p>
+          <div className="flex flex-col gap-1.5 rounded-wm-card border border-wm-line bg-wm-surface p-5 shadow-wm-card md:-rotate-1">
+            <p className="text-wm-meta text-wm-muted">{t('sentencePreview')}</p>
             <p className="break-words font-wm-display text-wm-word text-wm-ink">{sense.meaning.text}</p>
-            <p className="break-words font-wm-sans text-wm-base text-wm-ink">{highlightWord(text.trim(), sense.lemma)}</p>
+            <p className="break-words font-wm-sans text-wm-base text-wm-ink"><TargetWord text={text.trim()} lemma={sense.lemma} /></p>
           </div>
         )}
         <div className="flex flex-col-reverse gap-2 md:flex-row md:items-center md:justify-end md:gap-5">

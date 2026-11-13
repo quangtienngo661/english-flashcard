@@ -2,10 +2,10 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { clearPendingEmail, readPendingEmail, readPendingPassword, setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
+import { clearPendingEmail, clearPendingPassword, readPendingEmail, readPendingPassword, setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
 import { makeMe, problem, rateLimited, tokenResponse } from '@/app-shell/session/test-support';
-import { parseBirthDate } from '@/app-ui/date-of-birth';
-import { pickDate, renderApp } from '@/app-ui/test-utils';
+import { parseBirthDate } from '@/lib/date-of-birth';
+import { pickDate, renderApp } from '@/test-utils/render-app';
 import { AuthGate } from './AuthGate';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { LoginForm } from './LoginForm';
@@ -123,12 +123,43 @@ describe('RegisterForm (K/01, K/01b)', () => {
     });
   });
 
-  it('K/01b: the button stays off until consent is ticked and the birth date is 13+; no request is sent', async () => {
+  // QA5 (audit T6, T7): the button stays on; a press checks every field, says what is missing under it and focuses the first.
+  it('QA5: pressing with nothing filled sends nothing, shows each missing field and focuses the first name', async () => {
+    const { count } = renderApp(<RegisterForm today={TODAY} />, { routes: signedOut });
+    const submit = screen.getByRole('button', { name: 'Tạo tài khoản' });
+    expect(submit).toBeEnabled();
+    await userEvent.click(submit);
+    const given = screen.getByRole('textbox', { name: 'Tên' });
+    await waitFor(() => expect(given).toHaveFocus());
+    expect(given).toHaveAccessibleDescription('Nhập tên của bạn.');
+    expect(screen.getByLabelText('Ngày sinh')).toHaveAccessibleDescription('Chọn ngày sinh.');
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAccessibleDescription('Nhập email.');
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAccessibleDescription('Nhập mật khẩu.');
+    const consent = screen.getByRole('checkbox');
+    expect(consent).toHaveAttribute('aria-invalid', 'true');
+    expect(consent).toHaveAccessibleDescription('Đồng ý Điều khoản sử dụng và Chính sách bảo mật để tiếp tục.');
+    expect(screen.getByLabelText('Họ (không bắt buộc)')).not.toHaveAttribute('aria-invalid');
+    expect(count('POST', '/v1/auth/register')).toBe(0);
+  });
+
+  it('QA5: only the consent missing → the press focuses the box and says why', async () => {
+    const { count } = renderApp(<RegisterForm today={TODAY} />, { routes: signedOut });
+    await fillRegister();
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+    await waitFor(() => expect(screen.getByRole('checkbox')).toHaveFocus());
+    expect(screen.getByText('Đồng ý Điều khoản sử dụng và Chính sách bảo mật để tiếp tục.')).toBeInTheDocument();
+    expect(count('POST', '/v1/auth/register')).toBe(0);
+  });
+
+  it('K/01b: a birth date under 13 keeps its own message; a press sends nothing and focuses the date', async () => {
     const { count } = renderApp(<RegisterForm today={TODAY} />, { routes: signedOut });
     await fillRegister('14/5/2015');
     expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('checkbox'));
-    expect(screen.getByRole('button', { name: 'Tạo tài khoản' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+    await waitFor(() => expect(screen.getByLabelText('Ngày sinh')).toHaveFocus());
+    expect(screen.getByLabelText('Ngày sinh')).toHaveAccessibleDescription('Bạn cần đủ 13 tuổi để dùng Wordmet.');
+    expect(screen.queryByText('Chọn ngày sinh.')).toBeNull();
     expect(count('POST', '/v1/auth/register')).toBe(0);
   });
 
@@ -142,6 +173,8 @@ describe('RegisterForm (K/01, K/01b)', () => {
     const email = screen.getByRole('textbox', { name: 'Email' });
     expect(email).toHaveAttribute('aria-invalid', 'true');
     expect(email).toHaveAccessibleDescription(hint);
+    // Audit T7: a server error moves focus to its field too.
+    await waitFor(() => expect(email).toHaveFocus());
     expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', '/vi/app/forgot-password');
     expect(replace).not.toHaveBeenCalled();
     expect(readPendingPassword()).toBeNull();
@@ -153,6 +186,7 @@ describe('RegisterForm (K/01, K/01b)', () => {
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     expect(await screen.findByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Ngày sinh')).toHaveFocus());
   });
 
   it('password violations are listed under the password', async () => {
@@ -164,6 +198,9 @@ describe('RegisterForm (K/01, K/01b)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     expect(await screen.findByText('Cần một chữ hoa.')).toBeInTheDocument();
     expect(screen.getByText('Cần một ký tự đặc biệt.')).toBeInTheDocument();
+    const password = screen.getByLabelText('Mật khẩu');
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+    await waitFor(() => expect(password).toHaveFocus());
   });
 
   it('Review Focus 1: a double click sends one request', async () => {
@@ -237,6 +274,21 @@ describe('LoginForm (K/02, K/93)', () => {
     renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') } });
     await login();
     expect(await screen.findByText('Email hoặc mật khẩu chưa đúng.')).toBeInTheDocument();
+  });
+
+  // Audit T27 (13/11/2026): an empty form used to reach the API and come back "Email hoặc mật khẩu chưa đúng.".
+  it('T27: sign-in with empty fields sends no request and shows both errors, focus on Email', async () => {
+    const { count } = renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') } });
+    await userEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    await waitFor(() => expect(email).toHaveFocus());
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(email).toHaveAccessibleDescription('Nhập email.');
+    const password = screen.getByLabelText('Mật khẩu');
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+    expect(password).toHaveAccessibleDescription('Nhập mật khẩu.');
+    expect(count('POST', '/v1/auth/login')).toBe(0);
+    expect(screen.queryByText('Email hoặc mật khẩu chưa đúng.')).toBeNull();
   });
 
   it('E8: 403 account-locked shows the K/93 box and keeps what was typed', async () => {
@@ -322,6 +374,31 @@ describe('VerifyEmailForm (K/03)', () => {
     expect(calls.find((c) => c.path === '/v1/auth/verify-email')!.body).toMatchObject({ email: 'lan@example.com', code: '481205', password: 'Aa1!aaaa', client: 'web' });
     expect(readPendingEmail()).toBeNull();
     expect(readPendingPassword()).toBeNull();
+  });
+
+  it('QA5: with the email and password in memory, pressing with no full code says so under the boxes and focuses box 1', async () => {
+    const { count } = setup();
+    await screen.findByText('Mã đã gửi tới lan@example.com. Mã có hiệu lực 10 phút.');
+    await typeCode('48');
+    await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
+    const first = screen.getByRole('textbox', { name: 'Chữ số 1' });
+    await waitFor(() => expect(first).toHaveFocus());
+    expect(first).toHaveAttribute('aria-invalid', 'true');
+    expect(first).toHaveAccessibleDescription('Nhập đủ 6 số của mã.');
+    expect(count('POST', '/v1/auth/verify-email')).toBe(0);
+  });
+
+  it('QA5: opened without a pending email or password, an empty press names all three and focuses Email', async () => {
+    clearPendingEmail();
+    clearPendingPassword();
+    const { count } = setup();
+    const email = await screen.findByRole('textbox', { name: 'Email' });
+    await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
+    await waitFor(() => expect(email).toHaveFocus());
+    expect(email).toHaveAccessibleDescription('Nhập email.');
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAccessibleDescription('Nhập mật khẩu.');
+    expect(screen.getByRole('textbox', { name: 'Chữ số 1' })).toHaveAccessibleDescription('Nhập đủ 6 số của mã.');
+    expect(count('POST', '/v1/auth/verify-email')).toBe(0);
   });
 
   it('A13-12b: after a reload the password field supplies the password', async () => {
@@ -475,6 +552,38 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/reset-password'));
     expect(readPendingEmail()).toBe('lan@example.com');
     expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com', turnstile_token: 'fake-turnstile-token' });
+  });
+
+  it('QA5: forgot password with no email says so under the field, focuses it and sends nothing', async () => {
+    const { count } = renderApp(<ForgotPasswordForm />, { routes: signedOut });
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi mã' }));
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    await waitFor(() => expect(email).toHaveFocus());
+    expect(email).toHaveAccessibleDescription('Nhập email.');
+    expect(count('POST', '/v1/auth/otp')).toBe(0);
+  });
+
+  it('QA5: reset with nothing filled names the code and the new password and focuses box 1', async () => {
+    writePendingEmail('lan@example.com');
+    const { count } = renderApp(<ResetPasswordForm />, { routes: signedOut });
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    const first = screen.getByRole('textbox', { name: 'Chữ số 1' });
+    await waitFor(() => expect(first).toHaveFocus());
+    expect(first).toHaveAccessibleDescription('Nhập đủ 6 số của mã.');
+    expect(screen.getByLabelText('Mật khẩu mới')).toHaveAccessibleDescription('Nhập mật khẩu.');
+    expect(count('POST', '/v1/auth/password/reset')).toBe(0);
+  });
+
+  it('a wrong reset code from the API shows under the boxes and focuses box 1', async () => {
+    writePendingEmail('lan@example.com');
+    renderApp(<ResetPasswordForm />, { routes: { ...signedOut, 'POST /v1/auth/password/reset': () => problem(400, 'invalid-otp') } });
+    await typeResetCode('481205');
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    const first = screen.getByRole('textbox', { name: 'Chữ số 1' });
+    await waitFor(() => expect(first).toHaveFocus());
+    expect(first).toHaveAttribute('aria-invalid', 'true');
   });
 
   // Plan part 2, M2.8 (Figma 36:447, 153:705): the code is six boxes like Xác minh email, and "Nhập lại mật khẩu mới" is checked here only.

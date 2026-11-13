@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react';
+import { ArrowRight, Star } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
@@ -9,8 +9,8 @@ import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE } from '@/ui/TextButton';
  */
 export function CurrentPlanCard({ title, line, href, linkLabel }: { title: string; line?: string; href: string; linkLabel: string }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-wm-lg border border-wm-line bg-wm-surface p-4 shadow-wm-card md:px-5">
-      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-wm-md bg-wm-accent-soft text-wm-accent">
+    <div className="flex flex-wrap items-center gap-4 rounded-wm-card border border-wm-line bg-wm-surface p-4 shadow-wm-card md:px-5">
+      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-wm-control bg-wm-accent-soft text-wm-accent">
         <Star className="size-5" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -19,6 +19,7 @@ export function CurrentPlanCard({ title, line, href, linkLabel }: { title: strin
       </div>
       <Link href={href} className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'shrink-0')}>
         {linkLabel}
+        <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
       </Link>
     </div>
   );

@@ -42,7 +42,7 @@ export function ChoiceCard({ value, title, note, trailing, isDisabled }: CardPro
       value={value}
       isDisabled={isDisabled}
       // raw-ok: Figma draws the period cards with a 1.5 px border, between the 1 and 2 px utilities
-      className="group flex cursor-pointer items-center gap-3 rounded-wm-lg border-[1.5px] border-wm-line px-4 py-3 outline-none transition duration-200 ease-out-strong data-selected:border-wm-accent data-selected:bg-wm-accent/4 data-focus-visible:outline-3 data-focus-visible:outline-offset-2 data-focus-visible:outline-wm-accent data-disabled:cursor-not-allowed data-disabled:opacity-50"
+      className="group flex cursor-pointer items-center gap-3 rounded-wm-row border-[1.5px] border-wm-line px-4 py-3 outline-none transition duration-200 ease-wm-out-strong data-selected:border-wm-accent data-selected:bg-wm-accent/4 data-focus-visible:outline-3 data-focus-visible:outline-offset-2 data-focus-visible:outline-wm-accent data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
       <span
         aria-hidden
@@ -54,8 +54,8 @@ export function ChoiceCard({ value, title, note, trailing, isDisabled }: CardPro
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-baseline md:gap-2">
         <span className="font-wm-sans text-wm-button text-wm-ink">{title}</span>
         {note && (
-          // raw-ok: Figma's saving note is JetBrains Mono Bold 11, under the 12 px mono token
-          <span className="font-wm-mono text-[0.6875rem] font-bold leading-snug text-wm-pass">{note}</span>
+          // raw-ok: Figma's saving note is Noto Sans Bold 11, under the 12 px meta token
+          <span className="text-[0.6875rem] font-bold leading-snug text-wm-pass">{note}</span>
         )}
       </span>
       {trailing !== undefined && <span className="shrink-0 text-right">{trailing}</span>}

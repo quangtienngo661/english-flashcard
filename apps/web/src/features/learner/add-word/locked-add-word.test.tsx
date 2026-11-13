@@ -3,8 +3,8 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { problem, type Call } from '@/app-shell/session/test-support';
-import { ToastRegion } from '@/app-ui/Toast';
-import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/ui/Toast';
+import { renderApp } from '@/test-utils/render-app';
 import { AddWordProvider, useAddWord, useAddWordScope } from './add-word-context';
 import { AddWordSheet } from './AddWordSheet';
 import { LAST_GROUP_KEY } from './last-group';
@@ -114,8 +114,8 @@ describe('Locked add-word sheet (A14)', () => {
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }, slow));
     expect(await screen.findByText('Đã lưu từ “go” vào nhóm “Du lịch”.', {}, slow)).toBeInTheDocument();
-    expect(quickAdds(calls)[0].body).toEqual({ group_id: TRAVEL, sense_id: GO.sense_id });
-    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(TRAVEL);
+    expect(quickAdds(calls)[0].body).toEqual({ group_ids: [TRAVEL], sense_id: GO.sense_id });
+    expect(window.localStorage.getItem(LAST_GROUP_KEY)).toBe(JSON.stringify([TRAVEL]));
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -133,7 +133,7 @@ describe('Locked add-word sheet (A14)', () => {
     await userEvent.click(within(list).getByText('đi'));
     expect(within(list).getByRole('radio', { name: /hoạt động/ })).toBeChecked();
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }));
-    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_id: TRAVEL, sense_id: OTHER.sense_id }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], sense_id: OTHER.sense_id }));
   });
 
   it('A14-2: all senses already in the deck hides Save and keeps manual entry', async () => {
@@ -153,8 +153,8 @@ describe('Locked add-word sheet (A14)', () => {
     await screen.findByRole('heading', { name: 'Sửa trước khi lưu' }, slow);
     expect(screen.getByText('Lưu vào nhóm: Du lịch')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
-    await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_id: TRAVEL, new_word: { lemma: 'rizz', ai_suggestion: true } }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', ai_suggestion: true } }));
   });
 
   it('A14: manual entry stays locked even when the deck list is empty', async () => {
@@ -164,14 +164,14 @@ describe('Locked add-word sheet (A14)', () => {
     expect(screen.getByText('Lưu vào nhóm:', { exact: false })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm|Tạo nhóm đầu tiên/ })).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
-    await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_id: TRAVEL, new_word: { meaning: 'sức hút' } }));
+    await userEvent.click(screen.getByRole('button', { name: /^Lưu vào \d+ nhóm$/ }));
+    await waitFor(() => expect(quickAdds(calls)[0]?.body).toMatchObject({ group_ids: [TRAVEL], new_word: { meaning: 'sức hút' } }));
   });
 
   it('A14-5: group-full keeps the sheet open', async () => {
     const { onClose } = openLocked({ 'POST /v1/quick-add': () => problem(409, 'group-full') });
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu' }, slow));
-    expect(await screen.findByText('Nhóm “Du lịch” đã đầy. Chọn nhóm khác.', {}, slow)).toBeInTheDocument();
+    expect(await screen.findByText('Du lịch đã đầy. Chưa lưu từ.', {}, slow)).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -187,7 +187,7 @@ describe('Locked add-word sheet (A14)', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Close' }).at(-1)!);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });

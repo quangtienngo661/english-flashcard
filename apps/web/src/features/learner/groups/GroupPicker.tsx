@@ -41,11 +41,11 @@ export function GroupPicker({
       <Button
         aria-haspopup="dialog"
         className={cn(
-          'flex min-h-12 min-w-0 max-w-full items-center gap-2 rounded-wm-lg border-2 bg-wm-surface py-3 pl-4 pr-3 font-wm-sans text-wm-button text-wm-ink shadow-wm-soft outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
+          'flex min-h-12 min-w-0 max-w-full items-center gap-2 rounded-wm-control border-2 bg-wm-surface py-3 pl-4 pr-3 font-wm-sans text-wm-button text-wm-ink shadow-wm-soft outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
           tone.soft,
         )}
       >
-        <span title={t('pickerTitle')} aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', tone.bg)} />
+        <span title={t('pickerTitle')} aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-key', tone.bg)} />
         <span className="min-w-0 truncate">{centre.name}</span>
         <ChevronDown aria-hidden className={cn('size-4 shrink-0 transition-transform duration-200', isOpen && 'rotate-180')} />
       </Button>
@@ -53,7 +53,7 @@ export function GroupPicker({
         placement="bottom end"
         offset={8}
         // raw-ok: 360 px wide (Figma 84:3325) but never wider than the phone minus its gutters
-        className="w-[min(22.5rem,calc(100vw-2rem))] rounded-wm-modal border border-wm-line bg-wm-surface p-3 shadow-wm-pop outline-none motion-safe:data-entering:animate-wm-picker-in"
+        className="w-[min(22.5rem,calc(100vw-2rem))] rounded-wm-row border border-wm-line bg-wm-surface p-3 shadow-wm-pop outline-none motion-safe:data-entering:animate-wm-picker-in"
       >
         <Dialog aria-label={t('pickerTitle')} className="outline-none">
           {({ close }) => (
@@ -105,7 +105,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
   const caption = { waiting: t('capWaiting'), done: t('capDone'), empty: t('capEmpty') };
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex min-h-11 items-center gap-2 rounded-wm-md border-2 border-wm-line bg-wm-bg px-3 focus-within:border-wm-accent">
+      <label className="flex min-h-11 items-center gap-2 rounded-wm-control border-2 border-wm-line bg-wm-surface px-3 focus-within:border-wm-accent">
         <Search aria-hidden className="size-4 shrink-0 text-wm-muted" />
         <input
           role="combobox"
@@ -136,7 +136,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
         {sections.length === 0 && <p className="px-2 py-3 text-wm-small text-wm-muted">{t('noMatch')}</p>}
         {sections.map((section) => (
           <div key={section.key} role="group" aria-label={caption[section.key]} className="flex flex-col gap-0.5">
-            <p aria-hidden className="px-2 pt-1.5 font-wm-mono text-wm-mono text-wm-muted">
+            <p aria-hidden className="px-2 pt-1.5 text-wm-meta text-wm-muted">
               {caption[section.key]}
             </p>
             {section.groups.map((g) => {
@@ -156,7 +156,7 @@ function PickerBody({ groups, centreId, onPick }: { groups: GroupSummary[]; cent
           </div>
         ))}
       </div>
-      <p aria-hidden className="mt-1 hidden gap-3 border-t border-wm-line pl-2 pt-2 font-wm-mono text-wm-mono text-wm-muted md:flex">
+      <p aria-hidden className="mt-1 hidden gap-3 border-t border-wm-line pl-2 pt-2 text-wm-meta text-wm-muted md:flex">
         <span>{t('keysMove')}</span>
         <span>{t('keysPick')}</span>
         <span>{t('keysClose')}</span>
@@ -185,12 +185,12 @@ function Row({ id, group, selected, active, onHover, onPick }: {
       onMouseMove={onHover}
       onClick={onPick}
       className={cn(
-        'flex min-h-10 cursor-pointer items-center gap-3 rounded-wm-md px-2 py-2',
+        'flex min-h-10 cursor-pointer items-center gap-3 rounded-wm-control px-2 py-2',
         selected ? tone.wash : active && 'bg-wm-bg',
         active && 'outline-2 -outline-offset-2 outline-wm-accent/40',
       )}
     >
-      <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-xs', tone.bg)} />
+      <span aria-hidden className={cn('size-2.5 shrink-0 rounded-wm-key', tone.bg)} />
       <span className="min-w-0 flex-1 truncate font-wm-sans text-wm-small-strong text-wm-ink">{group.name}</span>
       {group.total === 0 ? (
         <span className="shrink-0 text-wm-caption text-wm-muted">{t('rowEmpty')}</span>

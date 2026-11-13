@@ -2,16 +2,18 @@
 
 import { CalendarBarButton } from '@/app-chrome/CalendarBarButton';
 import { Check, Layers2, LoaderCircle, X } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NetworkError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
-import { ErrorState } from '@/app-ui/States';
+import { useRouteLocale } from '@/app-shell/route-locale';
+import { ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { StreakToast } from '@/ui/StreakToast';
 import { Tag } from '@/ui/Tag';
 import { TextButton } from '@/ui/TextButton';
 import { useGroups } from '../../groups/groups-api';
@@ -24,14 +26,14 @@ import { AnswerFeedback, feedbackCase } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
 import { PreparingState } from './PreparingState';
-import { ButtonKey, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
+import { PromptTitle, QuestionCard, promptKind } from './QuestionCard';
 import { ReportDialog } from './ReportDialog';
 import { RoundPrompt } from './RoundPrompt';
-import { SentenceText, type BlankFill } from './SentenceQuestions';
+import { SentenceText, TranslationBlock, type BlankFill } from './SentenceQuestions';
 import { SessionNotice } from './SessionNotice';
 import { SessionSummary } from './SessionSummary';
 import { TrueFalseChoices } from './TrueFalseQuestion';
-import { focusAnswer, TryAgainPanel, TypeWordInput } from './TypeWordQuestion';
+import { BlankInput, focusAnswer, TryAgainPanel, TypeWordInput } from './TypeWordQuestion';
 import { usePracticeSession, type Item, type Outcome, type PracticeSessionState } from './use-practice-session';
 
 /**
@@ -42,7 +44,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   const t = useTranslations('App.practice.session');
   const tr = useTranslations('App.recall');
   const tc = useTranslations('App.common');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   const errorText = useErrorMessage();
   const state = usePracticeSession(recall);
   const { phase, session } = state;
@@ -162,27 +164,28 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
   // Figma: the session column is 760 wide, the summary 880 (119:4608).
   const width = done ? 'max-w-220' : 'max-w-190';
   const legend = phase?.kind === 'question' ? legendItems(phase.item, phase.outcome) : [];
+  // P.13 (mockup L1209): the close button is 32 px.
   const closeClass =
-    'flex size-11 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
-    'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent md:size-9';
+    'flex size-8 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none ' +
+    'hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
     <div className="flex flex-1 flex-col">
       {/* Figma "Thanh phiên" (100:3164): close, the source, one progress bar, "câu n / N", the ✓ and ✗ counts. */}
-      <header className={`mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
+      <header className={`relative mx-auto flex w-full ${width} items-center gap-3 px-4 pt-4 md:px-0 md:pt-10`}>
         {stoppable ? (
           <button type="button" aria-label={t('close')} onClick={() => void state.stop()} className={closeClass}>
-            <X aria-hidden className="size-4.5" />
+            <X aria-hidden className="size-4" />
           </button>
         ) : (
           <Link href={practiceHref} aria-label={tc('close')} className={closeClass}>
-            <X aria-hidden className="size-4.5" />
+            <X aria-hidden className="size-4" />
           </Link>
         )}
         {session && <span className="hidden max-w-64 truncate font-wm-sans text-wm-small-strong text-wm-ink md:block">{headerText}</span>}
         {session && total > 0 && (
           <>
             <ProgressBar value={position} max={total} label={progressText} className="min-w-12 flex-1" />
-            <span className="shrink-0 font-wm-mono text-wm-mono text-wm-muted">{progressText}</span>
+            <span className="shrink-0 text-wm-meta text-wm-muted">{progressText}</span>
             <span role="img" aria-label={t('countRight', { count: state.counts.correct })}>
               <Tag tone="pass">
                 <Check aria-hidden className="size-3" />
@@ -198,11 +201,16 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           </>
         )}
         <CalendarBarButton />
+        {/* L-B-5: the session's streak toast (bottom centre, owner 13/11/2026); inside SessionIntl, so English (QM9-9). AppProviders' bottom
+            toast stays empty while this one is mounted. */}
+        <StreakToast placement="session-corner" />
       </header>
-      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10`}>
+      {/* Owner 13/11/2026: the question sits a little lower on desktop, still above the middle (less on a short screen). */}
+      <div className={`mx-auto flex w-full ${width} flex-1 flex-col gap-5 px-4 py-6 md:px-0 md:pb-10 ${done ? '' : 'md:pt-16 [@media(max-height:51.25rem)]:md:pt-9'}`}>
         {body}
+        {/* P.13 (chỗ 17): the keys sit centred right under the panel, desktop only. */}
         {legend.length > 0 && (
-          <KeyLegend aria-label={t('legend.label')} items={legend.map(([keys, key]) => ({ keys, label: t(`legend.${key}`) }))} className="mt-auto pt-4" />
+          <KeyLegend aria-label={t('legend.label')} items={legend.map(([keys, key]) => ({ keys, label: t(`legend.${key}`) }))} className="justify-center" />
         )}
       </div>
       {phase?.kind === 'question' && session && (
@@ -215,7 +223,11 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           subtitle={reportSubtitle(phase.item, t(`kind.${promptKind(phase.item.prompt)}`))}
           isOpen={reporting}
           onClose={() => setReporting(false)}
-          onSent={() => state.markReported(phase.item.item_id)}
+          onSent={() => {
+            state.markReported(phase.item.item_id);
+            // Owner 14/11/2026 (Cách A): the API voided an unanswered question, and an answered one goes on as Next does.
+            void state.next();
+          }}
         />
       )}
     </div>
@@ -247,21 +259,28 @@ function reportSubtitle(item: Item, kind: string): string {
   return 'meaning' in prompt ? `${kind} · ${prompt.meaning}` : kind;
 }
 
-/** What fills a sentence's blank once answered: the right word, and a wrong typed one (struck once the answer is shown). */
+/**
+ * What fills a sentence's blank once answered: the right word, and a wrong typed word or wrong sentence-MCQ pick struck before it (F.14).
+ * Before a final result (a try-again too) a typed sentence keeps its input in the blank (P.13), and an alternative answer keeps the
+ * read-only input.
+ */
 function blankFill(item: Item, outcome: Outcome | null): BlankFill | null {
-  if (outcome?.kind === 'try_again') return outcome.typed ? { wrong: outcome.typed } : null;
   if (outcome?.kind !== 'final' || outcome.result.alternative) return null;
   const { result, chosen } = outcome;
   const prompt = item.prompt;
   const right = prompt.kind === 'mcq_sentence' && result.correct.choice_index !== null ? prompt.options[result.correct.choice_index] : result.correct.text;
-  const typed = chosen && 'text' in chosen && result.result === 'wrong' ? chosen.text : undefined;
-  return { right, wrong: typed };
+  if (result.result !== 'wrong') return { right };
+  const picked = chosenChoice(outcome);
+  const wrong = chosen && 'text' in chosen ? chosen.text
+    : prompt.kind === 'mcq_sentence' && picked !== null ? prompt.options[picked] : undefined;
+  return { right, wrong };
 }
 
 /** The question on screen, its answer controls, hints and the result. */
 function Question({ state, item, recall, onReport }: { state: PracticeSessionState; item: Item; recall: boolean; onReport: () => void }) {
   const t = useTranslations('App.practice.session');
   const errorText = useErrorMessage();
+  const locale = useRouteLocale();
   const phase = state.phase?.kind === 'question' ? state.phase : null;
   const outcome = phase?.outcome ?? null;
   const final = outcome?.kind === 'final' ? outcome : null;
@@ -270,6 +289,13 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
   const nextHint = levels.find((n) => n > item.hint_level);
   const typed = prompt.kind === 'type_meaning' || prompt.kind === 'type_sentence' || prompt.kind === 'cloze';
   const fill = blankFill(item, outcome);
+  // M5.9, chỗ 18: in Ôn a wrong typed word is set against the answer, letter by letter, in the answer field's place.
+  const compared = recall && final && final.result.result === 'wrong' && final.chosen && 'text' in final.chosen ? final.chosen.text : null;
+  // A typed answer keeps its field focused after grading; otherwise the result's primary action takes the focus.
+  const keepsField = prompt.kind === 'type_meaning' && compared === null;
+  // K/79a, P.13: the AI's translation, once answered, under the sentence inside the card; Vietnamese routes only (E41).
+  const translation = final && !final.result.alternative && final.result.translation && locale === 'vi' ? <TranslationBlock text={final.result.translation} /> : null;
+  const onText = (text: string) => void state.answer({ text });
   const choices = (options: string[]) => (
     <Choices
       options={options}
@@ -296,11 +322,21 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
       </>
     );
   } else if (prompt.kind === 'type_meaning') {
-    question = <PromptTitle text={prompt.meaning} label={prompt.context_label} />;
+    question = (
+      <>
+        <PromptTitle text={prompt.meaning} label={prompt.context_label} />
+        {compared !== null && final ? (
+          <CompareLine typed={compared} answer={final.result.correct.text} />
+        ) : (
+          <TypeWordInput key={item.item_id} outcome={outcome} onSubmit={onText} disabled={state.busy} />
+        )}
+      </>
+    );
   } else if (prompt.kind === 'meaning_in_sentence') {
     question = (
       <>
         <SentenceText sentence={prompt.sentence} highlight={prompt.highlight} />
+        {translation}
         {choices(prompt.options)}
       </>
     );
@@ -308,12 +344,18 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
     question = (
       <>
         <SentenceText sentence={prompt.sentence} fill={fill} />
+        {translation}
         {choices(prompt.options)}
       </>
     );
   } else {
-    // type_sentence, cloze (K/78a): the sentence with its blank, filled once answered (Figma 178:5326, 178:5546).
-    question = <SentenceText sentence={prompt.sentence} fill={fill} />;
+    // type_sentence, cloze (K/78a): the blank is the input (P.13); once answered the words take its place (Figma 178:5326, 178:5546).
+    question = (
+      <>
+        <SentenceText sentence={prompt.sentence} fill={fill} input={<BlankInput key={item.item_id} outcome={outcome} onSubmit={onText} />} />
+        {translation}
+      </>
+    );
   }
 
   // One live region from the start of the question, so screen readers hear the result (audit 26/10/2026 #8).
@@ -337,9 +379,9 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
         onReport={onReport}
       >
         {question}
-        {typed && <TypeWordInput key={item.item_id} outcome={outcome} onSubmit={(text) => void state.answer({ text })} disabled={state.busy} />}
-        <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       </QuestionCard>
+      {/* P.13 (ruling L-B-4, mockup L352-361): the hint box is its own box right under the card. */}
+      <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       {final?.result.alternative ? (
         <AlternativeFeedback
           result={final.result}
@@ -349,15 +391,7 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
           busy={state.busy}
         />
       ) : final ? (
-        <>
-          <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
-          {/* M5.9, Figma 209:5902: in Ôn a wrong typed word is set against the answer, letter by letter, once the answer is shown. */}
-          {recall && final.result.result === 'wrong' && final.chosen && 'text' in final.chosen && (
-            <div className="mt-4 motion-safe:animate-feedback-in">
-              <CompareLine typed={final.chosen.text} answer={final.result.correct.text} />
-            </div>
-          )}
-        </>
+        <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!keepsField} />
       ) : outcome?.kind === 'try_again' ? (
         <TryAgainPanel
           sessionWord={outcome.reason === 'session_word'}
@@ -372,7 +406,6 @@ function Question({ state, item, recall, onReport }: { state: PracticeSessionSta
           {item.hint_level === 0 && nextHint !== undefined ? (
             <Button variant="secondary" onPress={() => state.setHintLevel(nextHint)}>
               {t('hint.button')}
-              <ButtonKey>H</ButtonKey>
             </Button>
           ) : (
             <span />
@@ -409,7 +442,7 @@ function Loading() {
 function Ended({ message, href, label }: { message: string; href: string; label?: string }) {
   const t = useTranslations('App.practice.session');
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-display text-wm-word text-wm-ink">{message}</p>
       <Link
         href={href}
@@ -425,14 +458,14 @@ function Ended({ message, href, label }: { message: string; href: string; label?
 function NothingLearned({ groupId }: { groupId: string }) {
   const t = useTranslations('App.recall');
   const tDeck = useTranslations('App.deck');
-  const locale = useLocale();
+  const locale = useRouteLocale();
   return (
-    <div className="flex flex-col items-start gap-3 rounded-wm-xl border border-wm-line bg-wm-surface p-6 shadow-wm-card">
+    <div className="flex flex-col items-start gap-3 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-card">
       <p className="font-wm-display text-wm-word text-wm-ink">{t('nothingTitle')}</p>
       <p className="font-wm-sans text-wm-base text-wm-muted">{t('nothingBody')}</p>
       <Link
         href={`/${locale}/app/review?group=${groupId}&mode=new`}
-        className="inline-flex min-h-11 items-center gap-2 rounded-wm-button bg-wm-accent px-5 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+        className="inline-flex min-h-11 items-center gap-2 rounded-wm-control bg-wm-accent px-5 font-wm-sans text-wm-button text-wm-on-accent shadow-wm-btn outline-none hover:brightness-112 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
       >
         <Layers2 aria-hidden className="size-5 shrink-0" />
         {tDeck('learn')}

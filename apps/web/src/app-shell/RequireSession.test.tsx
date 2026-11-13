@@ -59,7 +59,7 @@ describe('RequireSession', () => {
   it('shows a spinner while the session loads, then the page', async () => {
     at('/vi/app');
     setup(signedIn());
-    expect(screen.getByRole('status')).toHaveTextContent('Đang tải…');
+    expect(screen.getByRole('status', { name: 'Đang tải…' })).toBeInTheDocument();
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
     expect(await screen.findByText('secret')).toBeInTheDocument();
   });

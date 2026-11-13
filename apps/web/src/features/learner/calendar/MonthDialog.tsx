@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Flame, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Heading } from 'react-aria-components';
-import { useFormat } from '@/app-shell/format';
+import { createFormat, useFormat } from '@/app-shell/format';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { addDays, addMonths, daysInMonth, elapsedDays, monthOf } from '@/lib/learner-date';
@@ -29,7 +29,7 @@ export type MonthDialogProps = {
 const FIRST_DAY = `${FIRST_MONTH}-01`;
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const ICON_BUTTON =
-  'flex size-9 shrink-0 items-center justify-center rounded-wm-md border border-wm-line bg-wm-surface text-wm-ink outline-none transition-colors duration-150 ' +
+  'flex size-9 shrink-0 items-center justify-center rounded-wm-control border border-wm-line bg-wm-surface text-wm-ink outline-none transition-colors duration-150 ' +
   'hover:bg-wm-bg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent disabled:cursor-not-allowed disabled:opacity-35';
 // Figma 102:3502 sizes no text token has: title 28 / 22, totals 24 / 18 with "/8" 13 / 10, labels 12.5 / 11, day 17 / 14, "hôm nay" 9.5.
 const RAW = {
@@ -46,7 +46,7 @@ const RAW = {
   // raw-ok: as above
   todayMark: 'text-[0.59375rem]',
   // raw-ok: Figma cell radius 12 on desktop (10 on phones, radius-wm-md); the band of consecutive days ends with radius 14 (radius-wm-lg)
-  cell: 'rounded-wm-md md:rounded-[0.75rem]',
+  cell: 'rounded-wm-control md:rounded-wm-row',
 } as const;
 
 /** The last day of `month` the learner may pick: today in the current month, the month's end before it, the first day after it. */
@@ -62,9 +62,11 @@ function useDayLabel() {
   const weekday = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', locale === 'vi'
     ? { weekday: 'long', timeZone: 'UTC' }
     : { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  // T24: the vi "5/11" goes through the shared Intl format, as the en label does.
+  const dayMonth = createFormat(locale, 'UTC');
   return (cell: GridCell, row: CalendarDay | undefined) => {
     const at = Date.UTC(Number(cell.date.slice(0, 4)), Number(cell.date.slice(5, 7)) - 1, Number(cell.date.slice(8, 10)));
-    const name = locale === 'vi' ? `${weekday.format(at)} ${Number(cell.date.slice(8, 10))}/${Number(cell.date.slice(5, 7))}` : weekday.format(at);
+    const name = locale === 'vi' ? `${weekday.format(at)} ${dayMonth.date(`${cell.date}T00:00:00Z`, 'dayMonth')}` : weekday.format(at);
     if (cell.isFuture) return `${name}: ${t('cellFuture')}`;
     const parts = [
       row && row.learned > 0 ? t('cellLearned', { count: row.learned }) : null,
@@ -134,13 +136,13 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
         <div className="flex flex-wrap items-center gap-x-2 gap-y-3 max-md:pr-10">
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="font-wm-mono text-wm-mono text-wm-muted">{t('label')}</span>
+              <span className="text-wm-meta text-wm-muted">{t('label')}</span>
               <Heading slot="title" className={cn('font-wm-display font-extrabold leading-tight text-wm-ink', RAW.title)}>
                 {format.date(`${month}-15T12:00:00Z`, 'monthYear')}
               </Heading>
             </div>
             {streakDays > 0 && (
-              <span className="flex items-center gap-1.25 rounded-wm-md bg-wm-mark py-1.25 pl-2 pr-3 font-wm-sans text-wm-label font-semibold text-wm-mark-ink">
+              <span className="flex items-center gap-1.25 rounded-wm-control bg-wm-mark py-1.25 pl-2 pr-3 font-wm-sans text-wm-label font-semibold text-wm-mark-ink">
                 <Flame aria-hidden className="size-4 shrink-0" />
                 {t('streak', { days: streakDays })}
               </span>
@@ -178,12 +180,12 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
         ) : !loaded || !totals ? (
           <div role="status" className="flex flex-col gap-3">
             <span className="sr-only">{t('loading')}</span>
-            <Skeleton className="h-14 w-full rounded-wm-lg md:h-18" />
-            <Skeleton className="h-80 w-full rounded-wm-lg md:h-120" />
+            <Skeleton className="h-14 w-full rounded-wm-row md:h-18" />
+            <Skeleton className="h-80 w-full rounded-wm-card md:h-120" />
           </div>
         ) : (
           <>
-            <ul aria-label={t('totals')} className="grid grid-cols-4 rounded-wm-lg border border-wm-line">
+            <ul aria-label={t('totals')} className="grid grid-cols-4 rounded-wm-card border border-wm-line">
               {[
                 { value: totals.study_days, label: t('studyDays'), tone: 'text-wm-ink', extra: t('elapsed', { days: elapsedDays(month, today) }) },
                 { value: totals.learned, label: t('learned'), tone: 'text-wm-accent' },
@@ -204,7 +206,7 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
             <div className="flex flex-col gap-1" onKeyDown={onGridKey}>
               <div aria-hidden className="grid grid-cols-7 px-0.75">
                 {WEEKDAYS.map((day) => (
-                  <span key={day} className="pl-1.5 font-wm-mono text-wm-mono text-wm-muted md:pl-3">
+                  <span key={day} className="pl-1.5 text-wm-meta text-wm-muted md:pl-3">
                     {t(`weekdays.${day}`)}
                   </span>
                 ))}
@@ -242,7 +244,7 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
             </li>
           ))}
           <li className="flex items-center gap-1.5 max-md:basis-full">
-            <span aria-hidden className="h-2.5 w-5.5 rounded-wm-sm bg-wm-accent-soft" />
+            <span aria-hidden className="h-2.5 w-5.5 rounded-wm-key bg-wm-accent-soft" />
             {t('legend.run')}
           </li>
         </ul>
@@ -259,10 +261,10 @@ const GHOST = 'before:content-[attr(data-day)]';
 const DOT = { learn: 'bg-wm-accent', review: 'bg-wm-pass', practice: 'bg-wm-practice' } as const;
 const BAND = {
   none: '',
-  start: 'left-0.75 right-0 rounded-l-wm-lg',
+  start: 'left-0.75 right-0 rounded-l-wm-row',
   middle: 'inset-x-0',
-  end: 'left-0 right-0.75 rounded-r-wm-lg',
-  single: 'inset-x-0.75 rounded-wm-lg',
+  end: 'left-0 right-0.75 rounded-r-wm-row',
+  single: 'inset-x-0.75 rounded-wm-row',
 } as const;
 
 function Cell({ cell, label, todayMark, selected, register, onOpen }: {
@@ -311,7 +313,7 @@ function Cell({ cell, label, todayMark, selected, register, onOpen }: {
           >
             {Number(cell.date.slice(8, 10))}
           </span>
-          {cell.isToday && <span aria-hidden className={cn('font-wm-mono font-bold text-wm-accent max-md:hidden', RAW.todayMark)}>{todayMark}</span>}
+          {cell.isToday && <span aria-hidden className={cn('font-bold text-wm-accent max-md:hidden', RAW.todayMark)}>{todayMark}</span>}
         </span>
         <span aria-hidden className="flex gap-0.5 md:gap-1">
           {dots.map((kind) => (

@@ -123,6 +123,10 @@ services:
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
         # Round C: the origin of the pronunciation files, for the /app CSP media-src.
         NEXT_PUBLIC_AUDIO_BASE_URL: ${AUDIO_PUBLIC_BASE_URL:-http://localhost:${API_PORT:-3000}/v1/dev/audio}
+        # The landing's prices come from the running API at build time (scripts/bootstrap.mjs starts it first).
+        LANDING_API_BASE_URL: http://host.docker.internal:${API_PORT:-3000}
+      extra_hosts:
+        - 'host.docker.internal:host-gateway'
     environment:
       # The browser reaches the API at localhost; this container reaches it by service name (read on the server, e.g. /privacy).
       API_INTERNAL_BASE_URL: http://api:3000

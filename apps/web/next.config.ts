@@ -31,8 +31,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // D21: app route files (page.app.tsx, layout.app.tsx) only exist in builds with the learner app on.
   pageExtensions: appPageExtensions(LEARNER_APP_ENABLED),
-  // D9: hash-based CSP; Next adds integrity attributes to its script files.
-  experimental: { sri: { algorithm: 'sha256' } },
+  // D9: hash-based CSP; Next adds integrity attributes to its script files. staleTimes.dynamic (owner 13/11/2026): a member page seen
+  // in the last 30 s comes back from the router cache, so the way back (Một nhóm → Nhóm) shows the page, not the loading skeleton. The
+  // pages fetch their data on the client (TanStack Query), so the cached part is only the shell.
+  experimental: { sri: { algorithm: 'sha256' }, staleTimes: { dynamic: 30 } },
   async headers() {
     if (process.env.NODE_ENV !== 'production') return [];
     return [

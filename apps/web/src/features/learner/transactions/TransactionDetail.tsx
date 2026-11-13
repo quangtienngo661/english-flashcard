@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import { cn } from '@/lib/cn';
-import { Button } from '@/ui/Button';
+import { TextButton } from '@/ui/TextButton';
 import { Dialog } from '@/ui/Dialog';
 import { showToast } from '@/ui/Toast';
 import { TransactionStatusDot, useTransactionText } from './TransactionRow';
@@ -39,11 +39,11 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
       ? [[
           t('detail.id'),
           <span key="id" className="flex min-w-0 items-center justify-end gap-1">
-            <span className="min-w-0 break-all font-wm-mono text-wm-caption font-medium">{id}</span>
+            <span className="min-w-0 break-all text-wm-caption font-medium">{id}</span>
             <AriaButton
               aria-label={t('detail.copy')}
               onPress={copy}
-              className="flex size-11 shrink-0 items-center justify-center rounded-wm-sm text-wm-muted outline-none hover:bg-wm-bg hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent md:size-8"
+              className="flex size-11 shrink-0 items-center justify-center rounded-wm-control text-wm-muted outline-none hover:bg-wm-bg hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-wm-accent md:size-8"
             >
               <Copy aria-hidden className="size-4" />
             </AriaButton>
@@ -58,13 +58,13 @@ export function TransactionDetail({ item, onClose }: { item: Transaction; onClos
       title={t('detail.title')}
       closeLabel={t('detail.dismiss')}
       footer={
-        <Button variant="secondary" onPress={onClose}>
+        <TextButton tone="muted" onPress={onClose} className="justify-center">
           {t('detail.close')}
-        </Button>
+        </TextButton>
       }
     >
       <div className="flex flex-col items-center gap-2 py-1 text-center">
-        <p className="font-wm-mono text-wm-mono text-wm-muted">{text.line1.toLocaleLowerCase(locale)}</p>
+        <p className="text-wm-meta text-wm-muted">{text.line1.toLocaleLowerCase(locale)}</p>
         <p className={cn(AMOUNT, item.kind === 'refund' ? 'text-wm-pass' : 'text-wm-ink')}>{text.amount}</p>
         <TransactionStatusDot status={item.status} />
       </div>
