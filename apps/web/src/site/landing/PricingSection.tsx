@@ -94,13 +94,10 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
 
         <CheckList items={copy.proList} />
 
-        <div className="flex flex-col gap-3">
-          <ButtonLink reload variant="primary" href={register} className="w-full">
-            {copy.proSignup}
-            <ArrowRight aria-hidden className="size-4" />
-          </ButtonLink>
-          <p className="text-center font-wm-sans text-wm-small text-wm-muted">{copy.noRefund}</p>
-        </div>
+        <ButtonLink reload variant="primary" href={register} className="w-full">
+          {copy.proSignup}
+          <ArrowRight aria-hidden className="size-4" />
+        </ButtonLink>
       </article>
     </Reveal>
   );

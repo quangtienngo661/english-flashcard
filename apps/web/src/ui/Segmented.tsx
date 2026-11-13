@@ -32,8 +32,12 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
       className={fullWidth ? 'flex w-full flex-col' : 'flex shrink-0 flex-col'}
     >
       <Label className="sr-only">{label}</Label>
-      {/* Equal-width options and one font weight, so nothing shifts when the choice changes. */}
-      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-wm-pill bg-wm-accent-soft p-1">
+      {/* Equal-width options and one font weight, so nothing shifts when the choice changes. No option is narrower than its text and
+          count (owner 13/11/2026: with Tailwind's auto-cols-fr, minmax(0, 1fr), "All words 61" spilled its count out of the chosen pill). */}
+      <div
+        // raw-ok: a track never narrower than its option's text and count, and equal when there is room; no token for minmax()
+        className="grid auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-1 rounded-wm-pill bg-wm-accent-soft p-1"
+      >
         {options.map((option) => (
           <Radio
             key={option.id}

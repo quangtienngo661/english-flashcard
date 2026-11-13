@@ -59,7 +59,8 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
       )}
       <Popover
         offset={4}
-        className="w-(--trigger-width) min-w-52 overflow-y-auto overscroll-contain rounded-wm-row bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-wm-menu-in motion-safe:placement-top:data-entering:animate-wm-menu-in-up motion-safe:data-exiting:animate-wm-menu-out"
+        // raw-ok: the list is as wide as its longest option, between the trigger's width and 24rem (or the screen less 2rem)
+        className="w-max min-w-(--trigger-width) max-w-[min(24rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-wm-row bg-wm-surface p-1 shadow-wm-pop motion-safe:data-entering:animate-wm-menu-in motion-safe:placement-top:data-entering:animate-wm-menu-in-up motion-safe:data-exiting:animate-wm-menu-out"
       >
         <ListBox items={items} className="outline-none">
           {(item) => (
@@ -72,7 +73,8 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
                 <>
                   <span className="flex min-w-0 items-center gap-2">
                     {item.icon}
-                    <span className="truncate">{item.label}</span>
+                    {/* Owner 13/11/2026: an option is never cut off; the list grows to fit it and long ones wrap. */}
+                    <span className="break-words">{item.label}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
                     {item.suffix}

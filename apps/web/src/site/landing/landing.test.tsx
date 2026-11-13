@@ -62,7 +62,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(screen.getByText('ôn lại sau')).toBeInTheDocument();
     expect(screen.getByText('từ ôn lại sau 7 ngày')).toBeInTheDocument();
-    expect(pricing().getByText('Không hoàn tiền sau khi đã thanh toán.')).toBeInTheDocument();
+    expect(pricing().queryByText('Không hoàn tiền sau khi đã thanh toán.')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/ngăn|Không hoàn tiền tự động/);
   });
 

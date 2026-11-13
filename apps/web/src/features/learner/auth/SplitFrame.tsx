@@ -26,7 +26,10 @@ export function SplitFrame({ children }: { children: ReactNode }) {
         <AuthFooter />
       </div>
       {/* At least 640 px, growing with the screen up to 896 px (owner 13/11/2026: a fixed 640 px looked pushed to the right when wide). */}
-      <div className="hidden w-[clamp(40rem,46vw,56rem)] shrink-0 xl:block">
+      <div
+        // raw-ok: the panel grows with the screen between 640 and 896 px; no token for clamp()
+        className="hidden w-[clamp(40rem,46vw,56rem)] shrink-0 xl:block"
+      >
         <AuthShowcase />
       </div>
     </main>

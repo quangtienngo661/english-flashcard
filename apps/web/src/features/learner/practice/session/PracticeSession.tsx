@@ -201,7 +201,7 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           </>
         )}
         <CalendarBarButton />
-        {/* L-B-5: the streak toast under the bar at its right end, as in Học; inside SessionIntl, so English (QM9-9). AppProviders' bottom
+        {/* L-B-5: the session's streak toast (bottom centre, owner 13/11/2026); inside SessionIntl, so English (QM9-9). AppProviders' bottom
             toast stays empty while this one is mounted. */}
         <StreakToast placement="session-corner" />
       </header>

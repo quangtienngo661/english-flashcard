@@ -46,15 +46,16 @@ export type StreakPlacement = 'bottom' | 'session-corner';
 
 const PLACE: Record<StreakPlacement, string> = {
   bottom: 'fixed inset-x-0 bottom-28 justify-center px-4 md:bottom-8',
-  // Mockup L1192: under the session bar, at its right end (below the X); the session's header is the positioned parent.
-  'session-corner': 'absolute right-4 top-full mt-3 justify-end md:right-6',
+  // Owner 13/11/2026: in a session too the toast sits at the bottom centre (no longer under the bar's right end). It keeps its own
+  // placement so it still speaks the session's language and the app-wide one stays empty.
+  'session-corner': 'fixed inset-x-0 bottom-28 justify-center px-4 md:bottom-8',
 };
 
 /**
  * Mockup L306-310: a surface pill with a 1 px line, the pop shadow, a flame in a 22 px accent-soft square and "N-day streak". Not the
  * shared toast queue: that one is text only, 5 s, with a close button. It never takes a tap (`pointer-events-none`), and the status
  * region is always there so a screen reader reads the text once when it appears. `placement`: bottom centre (above the answer buttons
- * on a phone), or the corner of a session screen. A session screen mounts its own corner toast inside its subtree, so it speaks the
+ * on a phone), in the app or in a session. A session screen mounts its own toast inside its subtree, so it speaks the
  * session's language (English, QM9-9); the bottom one in AppProviders stays empty meanwhile.
  */
 export function StreakToast({ placement = 'bottom' }: { placement?: StreakPlacement }) {

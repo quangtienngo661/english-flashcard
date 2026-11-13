@@ -44,12 +44,12 @@ describe('StreakToast (đợt C DC9)', () => {
     expect(screen.getByRole('status')).toHaveTextContent('13-day streak');
   });
 
-  it('placement: bottom centre by default; the session corner sits under its bar, at the right (mockup L1192)', () => {
+  it('placement: bottom centre by default; the session one too (owner 13/11/2026)', () => {
     const { unmount } = renderApp(<StreakToast />);
     expect(screen.getByRole('status')).toHaveClass('fixed', 'bottom-28');
     unmount();
     renderApp(<StreakToast placement="session-corner" />);
-    expect(screen.getByRole('status')).toHaveClass('absolute', 'top-full', 'right-4');
+    expect(screen.getByRole('status')).toHaveClass('fixed', 'bottom-28', 'justify-center');
   });
 
   it('P.17: while a session corner toast is mounted the bottom one stays empty, so a streak shows once; it comes back when the session goes', () => {

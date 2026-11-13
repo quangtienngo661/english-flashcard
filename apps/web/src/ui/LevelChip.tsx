@@ -21,7 +21,8 @@ const TONE: Record<LevelChipTone, { rest: string; on: string; count: string }> =
     count: 'ring-wm-level-priority-line',
   },
   due: { rest: 'bg-wm-level-due-tint border-wm-level-due-line', on: 'data-selected:bg-wm-level-due-tint-strong data-selected:border-wm-level-due data-selected:ring-wm-level-due', count: 'ring-wm-level-due-line' },
-  all: { rest: 'bg-wm-level-all-tint border-wm-level-all-line', on: 'data-selected:bg-wm-level-all-tint-strong data-selected:border-wm-accent data-selected:ring-wm-accent', count: 'ring-wm-level-all-line' },
+  // Owner 13/11/2026: the neutral chips (Tất cả, Học, Ôn …) stay light: accent-soft at rest, the surface with an accent ring when chosen.
+  all: { rest: 'bg-wm-accent-soft border-wm-level-all-line', on: 'data-selected:bg-wm-surface data-selected:border-wm-accent data-selected:ring-wm-accent', count: 'ring-wm-level-all-line' },
 };
 
 /**
