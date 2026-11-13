@@ -22,8 +22,8 @@ Nhánh `fix/ui-copy-round-2` từ `origin/dev` `2d858021`. Report đầy đủ: 
   - script so key, thứ tự, đối số ICU, tag: OK;
   - `check-message-keys`: 0 key thừa;
   - typecheck, lint: qua;
-  - vitest web: 1.721 qua, 2 đỏ phụ thuộc giờ máy và cũng đỏ trên `dev`;
+  - vitest web: 1.723/1.723 qua, sau khi cố định giờ trong 2 test nạp lượt AI (hai test này đỏ cả trên `dev` từ 14/11);
   - migration chạy thử trên Postgres tạm ở 3 trạng thái DB;
   - build container web và xem trên `localhost:3001`;
-  - e2e (Playwright trong container Linux): lượt toàn bộ đầu bắt được 2 chỗ e2e còn pin chữ cũ, đã sửa. Lượt chạy lại 6 spec: 115 qua, 1 đỏ (`m1` E2, canh giờ hydrate, chưa đối chứng trên `dev`).
+  - e2e (Playwright trong container Linux): lượt toàn bộ đầu bắt được 2 chỗ e2e còn pin chữ cũ, đã sửa. Lượt chạy lại 6 spec: 115 qua, 1 đỏ (`m1` E2). Test này flaky có từ trước: trên `origin/dev` nó đỏ 2/6 lần, cùng kiểu lỗi.
 - Chưa: màn sau đăng nhập chưa xem bằng trình duyệt, `smoke:giao-dien-moi` chưa chạy, chưa push hay mở PR.
