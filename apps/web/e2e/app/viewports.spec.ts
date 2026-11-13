@@ -68,14 +68,23 @@ for (const size of SIZES) {
     });
 
     test('the top bar: every tab, Thêm từ and the search box fit side by side', async ({ page }) => {
-      test.skip(size.width < 768 || size.width > 1024, 'the top bar shows from 768 px');
+      test.skip(size.width < 768 || size.width > 1280, 'the top bar shows from 768 px');
       await page.clock.setFixedTime(NOW);
       await signedInAs(page, 'pro', api);
       await page.goto('/vi/app');
       const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
       const links = nav.getByRole('link');
       await expect(links).toHaveCount(4);
-      const search = (await page.getByRole('search').boundingBox())!;
+      // Audit C1 (QA2): below 1280 px the box shrank to 23 px, so there it is a round link to Tra từ; from 1280 px the box has room to type.
+      const wide = size.width >= 1280;
+      const searchItem = wide ? page.getByRole('search') : page.getByRole('link', { name: 'Tìm từ' });
+      await expect(searchItem).toBeVisible();
+      if (wide) {
+        expect((await page.getByRole('searchbox', { name: 'Tìm từ' }).boundingBox())!.width, 'the search box is wide enough to type in').toBeGreaterThanOrEqual(160);
+      } else {
+        await expect(page.getByRole('search')).toHaveCount(0);
+      }
+      const search = (await searchItem.boundingBox())!;
       const add = (await page.getByRole('button', { name: /Thêm từ/ }).boundingBox())!;
       const boxes = await links.evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, clipped: el.scrollWidth > el.clientWidth }; }));
       for (const box of boxes) {

@@ -20,10 +20,23 @@ vi.mock('next/navigation', () => ({
 
 const entitlements = { 'GET /v1/me/entitlements': () => Response.json({ plan: 'free', pools: {}, sources: [] }) };
 
+/** A window `width` px wide: `(min-width: Npx)` queries match when width >= N, every other query is false. */
+const media = window.matchMedia;
+const atWidth = (width: number) => {
+  window.matchMedia = ((query: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(query);
+    return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+  }) as unknown as typeof window.matchMedia;
+};
+
 beforeEach(() => {
   pathname = '/vi/app/groups';
   search = new URLSearchParams();
   push.mockReset();
+  atWidth(1440);
+});
+afterEach(() => {
+  window.matchMedia = media;
 });
 
 describe('TopSearch (giao diện mới M4.3)', () => {
@@ -92,6 +105,31 @@ describe('TopSearch (giao diện mới M4.3)', () => {
     renderApp(<TopSearch />);
     await userEvent.type(screen.getByRole('searchbox'), '   {Enter}');
     expect(push).toHaveBeenCalledWith('/vi/app/lookup');
+  });
+});
+
+describe('TopSearch below 1280 px (audit C1, QA2)', () => {
+  beforeEach(() => atWidth(1024));
+
+  it('is a round link named "Tìm từ" to exactly /vi/app/lookup, with no search box', () => {
+    renderApp(<TopSearch />);
+    expect(screen.getByRole('link', { name: 'Tìm từ' })).toHaveAttribute('href', '/vi/app/lookup');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('search')).not.toBeInTheDocument();
+  });
+
+  it('"/" goes to Tra từ with no query', async () => {
+    renderApp(<TopSearch />);
+    await userEvent.keyboard('/');
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith('/vi/app/lookup');
+  });
+
+  it('at exactly 1280 px it is the search box again', () => {
+    atWidth(1280);
+    renderApp(<TopSearch />);
+    expect(screen.getByRole('searchbox', { name: 'Tìm từ' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Tìm từ' })).not.toBeInTheDocument();
   });
 });
 
