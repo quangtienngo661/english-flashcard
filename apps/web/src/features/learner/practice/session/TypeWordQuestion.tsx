@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
+import { useFinePointer } from '@/lib/use-fine-pointer';
 import { FIELD_BOX } from '@/ui/field-styles';
 import { TextButton } from '@/ui/TextButton';
 import { ResultTicket } from './AnswerFeedback';
@@ -13,6 +14,8 @@ import type { Outcome } from './use-practice-session';
 /** What a typed answer field holds and does: the text, read-only after a final result, and Enter's two meanings (send, or retype). */
 function useAnswerField(outcome: Outcome | null, onSubmit: (text: string) => void) {
   const [text, setText] = useState('');
+  // QA10 (audit T17): on a touch screen the box waits for a tap, so the keyboard does not cover the card on every question.
+  const fine = useFinePointer();
   const final = outcome?.kind === 'final';
   const retry = outcome?.kind === 'try_again';
   const shown = final && outcome.chosen && 'text' in outcome.chosen ? outcome.chosen.text : text;
@@ -24,7 +27,7 @@ function useAnswerField(outcome: Outcome | null, onSubmit: (text: string) => voi
     }
     if (!final && text.trim()) onSubmit(text);
   };
-  return { text, setText, shown, final, retry, tries: retry ? outcome.tries : 0, submit };
+  return { text, setText, shown, final, retry, tries: retry ? outcome.tries : 0, submit, fine };
 }
 
 const FIELD_PROPS = { autoComplete: 'off', autoCapitalize: 'none', spellCheck: false, maxLength: 100 } as const;
@@ -52,7 +55,7 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
           value={field.shown}
           onChange={(e) => field.setText(e.target.value)}
           readOnly={field.final}
-          autoFocus
+          autoFocus={field.fine}
           {...FIELD_PROPS}
           placeholder={t('answerPlaceholder')}
           className={cn(FIELD_BOX, 'pr-16 font-semibold placeholder:font-normal', field.retry && 'border-wm-fail')}
@@ -100,7 +103,7 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
             field.submit();
           }}
           readOnly={field.final}
-          autoFocus
+          autoFocus={field.fine}
           enterKeyHint="done"
           {...FIELD_PROPS}
           className={cn(

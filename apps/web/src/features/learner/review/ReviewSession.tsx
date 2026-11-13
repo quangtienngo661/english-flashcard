@@ -15,6 +15,7 @@ import { EmptyState } from '@/ui/States';
 import { SkeletonBlocks } from '@/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { useDesktop } from '@/lib/use-desktop';
+import { useFinePointer } from '@/lib/use-fine-pointer';
 import { KeyLegend } from '@/ui/KeyLegend';
 import { ProgressBar } from '@/ui/ProgressBar';
 import { StreakToast } from '@/ui/StreakToast';
@@ -48,14 +49,16 @@ export function ReviewSession() {
   const flipButton = useRef<HTMLButtonElement>(null);
   const [nudged, setNudged] = useState(false);
   const desktop = useDesktop();
+  // QA10 (audit T18): on a touch screen focus stays put; moving it scrolls the page and rings the button after a tap.
+  const fine = useFinePointer();
   const flipLabel = session.flipped ? t('review.flipBack') : t('review.flip');
   const notFound =
     id === null || [group.error, session.queue.error].some((e) => e instanceof ApiError && e.problem.status === 404);
 
   // After an answer the next card's turn button takes focus (audit 26/10/2026 #8), so Space and Enter go on from there.
   useEffect(() => {
-    if (session.index > 0) flipButton.current?.focus();
-  }, [session.index]);
+    if (fine && session.index > 0) flipButton.current?.focus();
+  }, [session.index, fine]);
 
   useEffect(() => {
     if (!nudged) return;
@@ -180,7 +183,7 @@ export function ReviewSession() {
               // Named by its words alone: the key cap is in aria-keyshortcuts, not "Flip cardSpace".
               aria-label={flipLabel}
               aria-keyshortcuts="Space"
-              autoFocus
+              autoFocus={fine}
               className={cn(ACTION, 'min-w-37 bg-wm-accent px-5 text-wm-on-accent md:px-3.5')}
             >
               <RotateCcw aria-hidden className="size-4" />
