@@ -200,3 +200,53 @@ App đã chạy `pnpm bootstrap`. Đăng nhập bằng `lan.local@example.com`.
   - "Lần luyện gần nhất" chưa sang cột phải.
   - audit2.
 - **Chưa chạy** lượt e2e đầy đủ sau các vòng sửa ngày 13/11.
+
+## 12. Sửa theo audit giao diện 13/11 (Part 12, lỗi Cao và Trung bình)
+
+Nguồn: [report audit](../audit/2026-11-13-web-design-guidelines-review.md) và [trang ảnh minh họa lỗi](../audit/2026-11-13-web-review-shots/index.html)
+(ảnh "trước"). Các commit sau `32760f84` trên nhánh này. Chạy lại `pnpm bootstrap` từ worktree của nhánh rồi đăng nhập `lan.local@example.com`.
+Mã ở cột đầu khớp mã trong report. T2, T12, T19 đã gỡ khỏi report (không phải lỗi) nên không có ở đây.
+Khổ: đổi cỡ bằng DevTools (Ctrl+Shift+M). Mục ghi "trình đọc màn hình" thì kiểm bằng NVDA (Windows) hoặc Narrator (Win+Ctrl+Enter).
+
+### Cao
+
+| Mã | Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|---|
+| C1 | Header | `/`, khổ 1024 và 1279 | Chỗ ô Tìm từ giờ là nút tròn kính lúp; bấm sang Tra từ. Nhấn `/` cũng sang Tra từ. Ở 1280 và 1440 vẫn là ô tìm đủ rộng, gõ thấy cả chữ | Cả hai | ☐ |
+| C2 | Một nhóm | `/groups` → mở nhóm "Kinh doanh · B1", khổ 1024 | Một cột: thẻ nhóm ở trên, bảng từ ở dưới, đủ rộng. "presentation" nằm trên một dòng, "Từ mới" một dòng. Ở 1280 và 1440 mới chia hai cột | Cả hai | ☐ |
+
+### Trung bình
+
+| Mã | Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|---|
+| T1 | Nút lịch nổi | `/practice` ở 1024×768 (có phiên đang dở); `/plans`, `/settings`, `/` ở 1024 và 1280 | Nút lịch nằm ở làn riêng bên phải, không đè "Làm tiếp câu …" hay số liệu nào. Từ 1440 trở lên nội dung rộng như cũ | Sáng | ☐ |
+| T1 | Nút lịch, nút "+" trên điện thoại | `/`, `/plans`, `/settings` ở 390, cuộn xuống rồi dừng, rồi cuộn lên | Cuộn xuống thì hai nút trượt xuống khuất; dừng khoảng nửa giây hoặc cuộn lên thì hiện lại. Không còn che giá "mỗi tháng" hay "Xem tất cả" lúc đang đọc | Cả hai | ☐ |
+| T3–T5 | Ô nhập từ | Hôm nay: ô "Thêm từ vừa gặp"; header: ô Tìm từ (1440); `/lookup`; hộp Thêm từ (phím N) | Gõ một từ sai chính tả kiểu "mitigatee": không có gạch đỏ, không bật danh sách gợi ý tự điền. Ô ở Hôm nay có chữ gợi ý "Ví dụ: mitigate…". Trên iPhone chữ đầu không tự viết hoa | Sáng | ☐ |
+| T6 | Đăng ký | Đăng xuất → `/register`, để trống, bấm "Tạo tài khoản" | Nút bấm được (không mờ). Hiện lỗi dưới từng ô thiếu: "Nhập tên của bạn.", "Chọn ngày sinh.", "Nhập email.", "Nhập mật khẩu.", lỗi đồng ý điều khoản dưới ô tick. Con trỏ nhảy vào ô Tên | Sáng | ☐ |
+| T6 | Các form khác | `/forgot-password`, `/reset-password`, `/verify-email`, để trống rồi bấm nút | Mỗi form báo lỗi ngay dưới ô thiếu (ô mã: "Nhập đủ 6 số của mã."), con trỏ vào ô đầu tiên, không gửi gì lên server | Sáng | ☐ |
+| T7 | Đăng ký, lỗi từ server | `/register`, dùng email đã có `lan.local@example.com`, điền đủ còn lại | Lỗi "email đã dùng" hiện dưới ô Email và con trỏ nhảy vào ô Email | Sáng | ☐ |
+| T8 | Lỗi được đọc | Như T6, bật trình đọc màn hình | Khi con trỏ vào ô lỗi, trình đọc màn hình đọc tên ô rồi đọc câu lỗi | Sáng | ☐ |
+| T27 | Đăng nhập trống | `/login`, để trống, bấm "Đăng nhập" | Báo "Nhập email." và "Nhập mật khẩu." dưới hai ô, con trỏ vào ô Email. Không còn câu "Email hoặc mật khẩu chưa đúng." (DevTools → Network: không có request đăng nhập) | Cả hai | ☐ |
+| T9 | Captcha không tải được | Chỉ kiểm được khi bật captcha thật (site key Turnstile); DevTools → Network → chặn `challenges.cloudflare.com`, mở `/register` | Báo lỗi đỏ "Không tải được bước xác minh." và nút "Tải lại bước xác minh"; bỏ chặn rồi bấm nút thì captcha hiện lại. Lúc captcha đang chạy, cạnh nút có dòng "Đang xác minh…" | Sáng | ☐ |
+| T10 | Công tắc chuyển động | Trang chủ `http://localhost:3001/vi`, cuộn xuống chân trang | Cạnh "Giao diện" có "Chuyển động: Bật / Tắt". Chọn "Tắt": chữ gõ ở hero, dải từ chạy và các vòng lặp dừng ở khung cuối; tải lại trang vẫn tắt. Nếu máy đã bật giảm chuyển động thì công tắc khóa ở "Tắt", có chú thích "Theo cài đặt máy" | Cả hai | ☐ |
+| T10 | Phần minh họa ở trang đăng ký | `/register` ở 1440, chờ khoảng 20 giây | Các từ chạy dọc đường một vòng rồi dừng ở chỗ nghỉ; chữ gõ dừng ở từ cuối. Không chạy lặp mãi | Cả hai | ☐ |
+| T11 | Viền ô chọn, rãnh công tắc | `/lookup` ô "Chỉ từ của tôi"; `/settings` công tắc "Nhắc học qua email" (tắt) | Viền ô vuông và rãnh công tắc lúc tắt đậm rõ hơn trước, nhìn ra ngay trên nền trắng và nền tối | Cả hai | ☐ |
+| T13 | Chữ màu nhóm 3 | Hộp Thêm từ, chọn một nhóm màu vàng cam (nhóm thứ 4 trong danh sách màu) | Chữ tên nhóm trên chip nền vàng nhạt tối hơn, dễ đọc | Sáng | ☐ |
+| T14 | Cuộn tới mục trên điện thoại | Trang chủ ở 390: bấm Tab nhiều lần qua các link; trang `/vi/terms`: bấm mục lục | Phần tử đang focus hoặc tiêu đề mục không nằm dưới thanh trên | Sáng | ☐ |
+| T15 | Gợi ý trong phiên | Ôn hoặc Phiên luyện, bấm "Hint" | Con trỏ chuyển vào dòng gợi ý vừa mở (có viền focus khi dùng Tab); trình đọc màn hình đọc nội dung gợi ý | Sáng | ☐ |
+| T16 | Lật thẻ ở Học | `/review?…` từ nút "Học", nhấn Space | Trình đọc màn hình đọc "Mặt sau: …" kèm nghĩa vừa hiện | Sáng | ☐ |
+| T17 | Ô gõ đáp án trên điện thoại | Phiên luyện có câu Gõ từ, khổ 390 (chế độ điện thoại của DevTools) | Bàn phím không tự bật khi câu hiện; chạm vào ô mới gõ được. Trên máy tính ô vẫn tự focus | Sáng | ☐ |
+| T18 | Nút Lật thẻ trên điện thoại | Học ở 390 (chế độ điện thoại) | Nút Lật thẻ không tự có viền focus khi vào thẻ mới. Trên máy tính vẫn có, Space vẫn lật | Sáng | ☐ |
+| T20 | Tổng kết phiên | Làm hết một phiên luyện có câu sai | Mỗi nút "Cần ôn lại" được trình đọc màn hình đọc kèm tên từ ("Cần ôn lại: release"); bấm xong đọc "Đã thêm…" | Sáng | ☐ |
+| T21 | AI không dùng được | Chỉ kiểm được khi AI lỗi hoặc hết lượt câu AI giữa phiên | Trình đọc màn hình đọc ngay tiêu đề lỗi khi màn đổi | Sáng | ☐ |
+| T22 | Tùy chỉnh phiên | Luyện tập → Tùy chỉnh, bỏ tick cả ba kiểu câu | Dòng lỗi hiện; trình đọc màn hình đọc dòng đó, và khi tới nút "Bắt đầu" thì đọc lý do nút bị tắt | Sáng | ☐ |
+| T23 | Báo lỗi câu hỏi | Trong phiên → "Report"; DevTools → Network → chặn `report-reasons` rồi mở lại | Lúc tải thấy "Loading…"; lỗi thì có dòng lỗi và nút "Try again", bỏ chặn rồi bấm thì danh sách lý do hiện | Sáng | ☐ |
+| T24 | Tiêu đề hộp Ngày | Lịch → bấm một ngày, ở `/vi/app` và `/en/app` | Tiếng Việt "05/11" như cũ; tiếng Anh "Nov 5" | Cả hai | ☐ |
+| T25 | Đổi ngày trong hộp Ngày | Hộp Ngày → nút ngày sau / ngày trước, bật trình đọc màn hình | Đọc một câu gọn kiểu "thứ năm 05/11: …", không đọc cả các nhãn nút lọc | Sáng | ☐ |
+| T26 | Bảng từ trên điện thoại | Một nhóm ở 390, trình đọc màn hình (Narrator: phím T để nhảy bảng) | Bảng được nhận là bảng, mỗi dòng có 4 ô | Sáng | ☐ |
+
+### Đi kèm (Thấp, sửa cùng đợt)
+
+| Mã | Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|---|
+| L38 | Hộp Ngày | Một ngày không học hay ôn từ nào | Câu trống ghi "Không học hay ôn từ nào trong ngày này." | Sáng | ☐ |
