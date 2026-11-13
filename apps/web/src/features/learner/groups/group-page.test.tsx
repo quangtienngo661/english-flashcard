@@ -122,11 +122,13 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(title.textContent).toBe('Công nghệ');
   });
 
-  it('the page head: the stack, the colour title and the three chips with their numbers', async () => {
+  it('the page head: the stack, the colour title and today as a three-part bar with its legend (mockup m9, owner 13/11/2026)', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
-    const chips = await screen.findByRole('list', { name: 'Hôm nay' });
-    expect(within(chips).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['1 ưu tiên', '1 đến hạn', '1 mới']);
+    const today = await screen.findByRole('figure', { name: 'Hôm nay' });
+    expect(today.querySelectorAll('[data-today-part]')).toHaveLength(3);
+    const legend = within(today).getByRole('list');
+    expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['1 ưu tiên', '1 đến hạn', '1 mới']);
     expect(screen.getByRole('link', { name: 'Nhóm của bạn' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
@@ -334,8 +336,8 @@ describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
   it('control: a deck with words keeps its counts, chart and "Học tất cả N từ" in the menu', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const main = screen.getByRole('main');
-    expect(await within(main).findByRole('list', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
-    expect(within(main).getByRole('figure')).toBeInTheDocument();
+    expect(await within(main).findByRole('figure', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
+    expect(within(main).getAllByRole('figure')).toHaveLength(2);
     expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 4 từ', 'Xóa nhóm']);
