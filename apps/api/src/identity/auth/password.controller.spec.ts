@@ -39,7 +39,9 @@ describe('password HTTP routing (unit, isolated persistence)', () => {
   it('B1#22: authenticated mobile change forwards the caller and passthrough response and returns tokens', async () => {
     const res = await ctx.http().post('/v1/auth/password/change').set('Authorization', `Bearer ${token}`).send(changeBody);
     expect(res.status).toBe(200); expect(res.body).toEqual({ access_token: 'access', refresh_token: 'refresh', token_type: 'Bearer', expires_in: 120 });
-    expect(change).toHaveBeenCalledExactlyOnceWith(subject, changeBody, expect.objectContaining({ cookie: expect.any(Function), once: expect.any(Function) }));
+    // F4: the client ip (req.ip; supertest connects over loopback) goes to the service, which keys the login lock on it.
+    expect(change).toHaveBeenCalledExactlyOnceWith(subject, changeBody, expect.objectContaining({ cookie: expect.any(Function), once: expect.any(Function) }),
+      expect.stringMatching(/^(::ffff:)?127\.0\.0\.1$|^::1$/));
     expect(hit).toHaveBeenCalledExactlyOnceWith('user.write', subject.userId); expect(res.headers['set-cookie']).toBeUndefined();
   });
   it('B1#22: web change sets the new secure cookie and omits refresh_token from the body', async () => {

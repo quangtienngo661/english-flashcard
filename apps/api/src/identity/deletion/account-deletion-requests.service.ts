@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { clientIpKey } from '../auth/client-ip-key.js';
 import { decideCredential } from '../auth/credential-decision.js';
 import { PasswordHasher } from '../auth/password-hasher.service.js';
 import { staffUserNotFound } from '../staff/staff.service.js';
@@ -18,9 +20,6 @@ import type { AdminDeleteUserBody, DeleteMyAccountBody } from './delete.schemas.
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 const problem = (status: number, title: string, type: string) => new ProblemDetailsException({ status, title, type });
 
-type PasswordOutcome = { kind: 'ok' | 'wrong' | 'stale' | 'account_locked' }
-  | { kind: 'locked'; lockedUntil: Date | null; newlyLocked: boolean };
-
 /** The checks outside the deletion transaction (design §7.2 step 1), then the deletion itself. */
 @Injectable()
 export class AccountDeletionRequests {
@@ -31,6 +30,7 @@ export class AccountDeletionRequests {
     @Inject(PasswordHasher) private readonly hasher: PasswordHasher,
     @Inject(AccountDeletionRegistry) private readonly registry: AccountDeletionRegistry,
     @Inject(AccountDeletionService) private readonly deletion: AccountDeletionService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   /**
@@ -38,13 +38,15 @@ export class AccountDeletionRequests {
    * A wrong password is a 400, never a 401: the web transport refreshes and resends every 401, which would count each wrong
    * password twice (plan review P3). It still counts once toward the login lockout (IR6), like a wrong current password.
    */
-  async deleteOwn(user: RequestUser, body: DeleteMyAccountBody, ctx: { res: Response; googleReauthUserId: string | null }): Promise<DeletionOutcome> {
+  async deleteOwn(
+    user: RequestUser, body: DeleteMyAccountBody, ctx: { res: Response; googleReauthUserId: string | null; clientIp?: string },
+  ): Promise<DeletionOutcome> {
     const account = await this.prisma.user.findUnique({ where: { id: user.userId }, include: { passwordCredential: true } });
     if (!account) throw problem(401, 'Invalid token', 'invalid-token');
     if (account.staffRole !== null) throw problem(409, 'Staff account', 'staff-account');
     if (normalizeEmail(body.confirm_email) !== account.email) throw problem(400, 'Confirm email mismatch', 'confirm-email-mismatch');
     if (account.passwordCredential) {
-      await this.checkPassword(account.id, account.passwordCredential.hash, body.password);
+      await this.checkPassword(account.id, account.passwordCredential.hash, body.password, ctx.clientIp);
     } else if (ctx.googleReauthUserId !== account.id) {
       throw problem(403, 'Reauthentication required', 'reauth-required');
     }
@@ -69,19 +71,13 @@ export class AccountDeletionRequests {
     return this.deletion.delete({ userId: targetId, by: 'admin', mode: 'normal', actorId, res });
   }
 
-  private async checkPassword(userId: string, verifiedHash: string, password: string | undefined): Promise<void> {
+  private async checkPassword(userId: string, verifiedHash: string, password: string | undefined, clientIp: string | undefined): Promise<void> {
     if (password === undefined) throw problem(400, 'Invalid current password', 'invalid-current-password');
     const passwordMatched = await this.hasher.verify(verifiedHash, password);
-    const outcome = await this.prisma.$transaction(async (tx): Promise<PasswordOutcome> => {
+    const ipKey = clientIpKey(clientIp, this.config.rateLimitHmacKey);
+    const outcome = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, userId);
-      const before = await tx.user.findUnique({ where: { id: userId }, select: { loginLockedUntil: true } });
-      const kind = await decideCredential(tx, { userId, verifiedHash, passwordMatched }, this.clock);
-      if (kind !== 'locked') return { kind };
-      const locked = await tx.user.findUnique({ where: { id: userId }, select: { loginLockedUntil: true } });
-      return {
-        kind, lockedUntil: locked?.loginLockedUntil ?? null,
-        newlyLocked: locked?.loginLockedUntil?.getTime() !== before?.loginLockedUntil?.getTime(),
-      };
+      return decideCredential(tx, { userId, verifiedHash, passwordMatched, ipKey }, this.clock);
     }, transactionOptions);
     if (outcome.kind === 'ok') return;
     if (outcome.kind === 'locked') {

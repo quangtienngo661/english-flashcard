@@ -1,0 +1,197 @@
+# Pre-launch fixes — smoke output (12/11/2026)
+
+Stack: API + worker built from fix/pre-launch-security, fake payOS/billing/Google/AI, TURNSTILE_MODE=fake, port 3310, fresh DBs.
+
+## pnpm smoke:buoc-8 (english_learning_smoke_plf_b8, worker running)
+
+$ node scripts/smoke-buoc-8.mjs
+
+[1] 05:06:21Z setup: API reachable; admins and learners (psql, signed in through the API)
+    ok — database english_learning_smoke_plf_b8; 2 admins, 1 editor, 10 learners signed in
+
+[2] 05:06:24Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
+    ok — ticket → e2d0254e-9d0f-474f-afdb-614e37209f44: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
+    ok — Google without a first name: needs_name true; completing without one → 400; with one → 200
+
+[3] 05:06:29Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
+    ok — under 13 → 400 age-below-minimum, no row, ticket cookie cleared; GET complete without a cookie → 401
+
+[4] 05:06:30Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
+    ok — same id, verified, no password; Google identity linked
+
+[5] 05:06:32Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
+    ok — callback → web with signed_in=google (query and fragment kept), refresh_token cookie, /refresh 200, mail "Google linked"; same sub again OK; another sub for the same email → google-failed (P13)
+
+[6] 05:06:36Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
+    ok — Google session on an admin route → 403 password-login-required; locked → account-locked; email_verified=false → google-email-unverified; forged callback → google-failed
+
+[7] 05:06:39Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
+    ok — before: rows in 8 of 72 user columns
+    ok — wrong password 400 (counted once); right → 204; 72 user columns checked, none points at the user; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused
+
+[8] 05:07:56Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
+    ok — no proof → 403 reauth-required; another Google account → reauth=wrong-account; the right one → cookie → 204; identity gone
+
+[9] 05:07:58Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
+    ok — delete → 409 subscription-renewing; cancel → 202, flag true on return; again → 409; delete → 204; plan rows gone, transaction kept anonymised
+
+[10] 05:08:36Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
+    ok — editor 403; wrong email 400; self 409 self-delete; renewing learner → 204 in the same request; by = admin; "đã xóa" mail sent
+
+[11] 05:08:39Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
+    ok — 204/409: one admin was deleted, the other kept (1 admin(s) left)
+    ok — final review M6: last_admin false with two admins, true for the survivor
+
+[12] 05:08:43Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
+    ok — 1 mail(s) in all; self → one "đã xóa" mail; cleanup → none; deleted_accounts.by keeps who started it
+
+[13] 05:09:01Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
+    ok — retry with a renewing subscription → still deleting (no erase); after cancel_at_period_end → deleted
+
+[14] 05:09:16Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
+    ok — old unverified + old locked-unverified deleted (by cleanup, no mail); verified, fresh unverified and staff kept
+
+[15] 05:09:27Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
+    ok — replay: replayed 1, without a users row 10, pending 0; the restored user and its renewing subscription are gone, no mail
+
+[16] 05:09:45Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
+    ok — late ai_operations row removed by the sweep; a late webhook is ignored with no app_user_id, user_id or payload
+
+[17] 05:11:07Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
+    ok — the report stays under an anon id, note null, learner.answer null, result and refunded unchanged
+
+[18] 05:11:10Z B8E28: a person who deleted and registers again with the same email has no trial history (it is not kept)
+    ok — trial_history gone with the account (0 rows for the deleted user); the same email registers and verifies again
+
+[19] 05:11:13Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
+    ok — deleted in 0.3 s (< 120 s)
+
+[20] 05:11:17Z final review M4 M8: an admin deleting an unverified account sends it no mail; the Google routes answer a rate limit with a redirect back to the app
+    ok — no mail to the unverified address; 25 of 45 Google start calls were sent back to the login page (google-busy), none got a 429 page
+
+== Bước 8 smoke: 20/20 steps in 301 s ==
+PASS  setup
+PASS  B8A1 B8E1
+PASS  B8E9 B8E8
+PASS  B8E6
+PASS  K8 B8E5 B8E58
+PASS  D5 B8E11 B8E3 B8E1
+PASS  B8A2 B8E18 B8E26
+PASS  B8A5 B8E19 B8E20
+PASS  B8A6 B8E57 D31
+PASS  B8A3 B8A4 D31 B8E31 B8E47
+PASS  B8E40
+PASS  B8E22 M14
+PASS  B8E52
+PASS  P4 B8E24 B8E32 D19
+PASS  B8E53 P2 D21
+PASS  M1 R1 B8E25
+PASS  B8E27 D14 D27
+PASS  B8E28
+PASS  B8E49
+PASS  final review M4 M8
+
+## pnpm smoke:buoc-b-payments (english_learning_smoke_plf_pay)
+
+$ node scripts/smoke-buoc-b-payments.mjs
+
+[1] 05:02:29Z LB1A1: Lan buys 1 month through the fake page: paid by webhook, one period from now, Pro, a purchase row of 79.000 ₫ "month"
+    ok — paid, period to 2026-12-12T17:00:00.000Z, Pro, one purchase row
+
+[2] 05:02:32Z LB1E1: the same webhook sent again, and a second delivery of it: still one period, one payment
+    ok — one inbox row, one payment, one period
+
+[3] 05:02:36Z LB1E22: a webhook with a wrong signature is 400 and writes nothing; payOS’s own test webhook (orderCode 123) is 200 and ignored as unknown-order
+    ok — forged → 400 nothing stored; sample → 200 and ignored (unknown-order)
+
+[4] 05:02:38Z LB1A3: the transfer is made but the webhook never comes: the return page asks payOS once, the order becomes paid (reconcile), and F5 does not ask again within 10 s
+    ok — check found the money: paid by reconcile, one period
+
+[5] 05:02:40Z LB1E46: F5 on the return page of a pending order asks payOS at most once per 10 seconds
+    ok — one ask per 10 s; another learner’s order is 404
+
+[6] 05:02:42Z LB1A4: neither webhook nor return page: the hourly job finds the money (reconcile), through the real maintenance CLI
+    ok — paid by the job; 3 months is interval quarter
+
+[7] 05:02:51Z Review Focus 1: the webhook and the return page for the SAME transfer at the same time (Promise.all, ×5 orders): always exactly one period
+    ok — 5 races, 5 times one period, one payment, one purchase row
+
+[8] 05:03:14Z LB1E7 + LB1E26: Lan (already Pro) buys 12 months: the new period starts where the running one ends; the second transfer into a paid order is a second period
+    ok — periods follow end to start; pro_until is the end of the chain
+
+[9] 05:03:17Z LB1E33: admin revokes the middle period of a chain: the next one does not move, Lan is Pro until the end of the first period only
+    ok — gap after the revoke; the later period keeps its dates; revoking twice is 409
+
+[10] 05:03:17Z LB1E9: a short payment then the rest: needs_review amount-short, then paid with one period
+    ok — short → needs_review amount-short; rest → paid, one period, two payments
+
+[11] 05:03:21Z LB1E3 + LB1E5 + LB1E6: admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid
+    ok — confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it
+
+[12] 05:03:25Z M4 (launch B minor): admin confirms an unpaid order: its payOS link is cancelled first, so the old QR takes no second transfer
+    ok — the link is cancelled; paying the old QR adds nothing
+
+[13] 05:03:28Z LB1E17 + LB1E18: payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link
+    ok — 503, key freed, new order with the next code; the stray link cancelled by the job
+
+[14] 05:03:37Z LB1E28: a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone
+    ok — 409 with the current amount; 2 months is 400
+
+[15] 05:03:38Z LB1E36 + LB1E39: the learner deletes the account with an order waiting; the money arrives after: needs_review account-deleted, the payer saved on the order, no period, no purchase row, no payer left in the stored event
+    ok — T1: needs_review, refund info kept, nothing opened, event carries no payer; resolve closes it and clears the info
+
+[16] 05:03:43Z LB1E38: the three payer fields on an order are cleared 90 days after they were saved (the cleanup job), the order stays
+    ok — payer fields cleared, order still needs_review
+
+[17] 05:03:54Z Review I2: the return page counts the transfer first; the webhook then brings it under another reference (same amount, same moment): one period, one purchase row, the second payment attached, no flag
+    ok — reconcile first, webhook second under another reference: one period, outcomes opened-period,attached
+
+[18] 05:04:00Z Review I1: the webhook for a real transfer is ignored (success false); the job then finds the transfer at payOS: the order goes to needs_review provider-mismatch instead of staying pending with the money taken
+    ok — ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look
+
+[19] 05:04:18Z Task 15: the first purchase sends one receipt (Mailpit gets it); the last period ending in 6 days sends one expiry email; a period that a later one covers sends none
+    ok — receipt sent once with its parts; expiry email sent once; a covered period is skipped and nothing goes out
+
+[20] 05:05:16Z periods end: every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until
+    ok — Free again, pro_until null
+
+[21] 05:05:18Z LB1A8: Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)
+    ok — Free window starts at 2026-11-12T04:05:20Z: used 1 of 15 (the Pro one is outside it)
+
+[22] 05:05:22Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — no log files given (set SMOKE_LOGS=a.log,b.log)
+
+== payments smoke: 22/22 steps in 176 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  M4 (launch B minor)
+PASS  LB1E17 + LB1E18
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  Review I2
+PASS  Review I1
+PASS  Task 15
+PASS  periods end
+PASS  LB1A8
+PASS  privacy
+
+## Manual check F2 / F7 (same stack as smoke:buoc-8, first run)
+
+register (new): 201 {"email":"plf-1794459629449@example.com","verification_required":true}
+verify without token (F7): 400
+verify with token: 200
+register (verified email again, F2): 201 {"email":"plf-1794459629449@example.com","verification_required":true}
+mails to this address: [
+  'Bạn đã có tài khoản Wordmet / You already have a Wordmet account',
+  'Xác minh email / Verify your email'
+]

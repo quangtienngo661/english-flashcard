@@ -76,7 +76,7 @@ async function registerAdmin() {
   await expect(
     await fetch(`${BASE}/v1/auth/verify-email`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, password, client: 'web' }),
+      body: JSON.stringify({ email, code, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 200, 'verify admin email',
   );
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
@@ -105,7 +105,7 @@ async function registerLearner() {
   const verified = await expect(
     await fetch(`${BASE}/v1/auth/verify-email`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, password, client: 'web' }),
+      body: JSON.stringify({ email, code, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 200, 'verify learner email',
   ).then((r) => r.json());
   await expect(

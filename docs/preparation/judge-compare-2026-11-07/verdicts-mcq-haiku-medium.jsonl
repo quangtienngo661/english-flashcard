@@ -1,0 +1,20 @@
+{"id": 0, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'crucial' fits; quiet, cheap and minor do not describe what water is to living things."}
+{"id": 1, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'enhance' fits; borrow, ignore and delay make no sense with 'your memory and focus'."}
+{"id": 2, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'reluctant' fits; 'eager' contradicts asking for more details first, and angry/proud do not suit 'to approve' here."}
+{"id": 3, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'obtain' fits; cancel, lose and repair cannot take 'a rare chemical from overseas' to finish the experiment."}
+{"id": 4, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Forget, invite and wash make no sense with a recipe and flour, so only 'require' fits (though the base form lacks the -s this subject needs)."}
+{"id": 5, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'assist' fits; borrow, deny and prepare do not work with 'residents with their shopping'."}
+{"id": 6, "verdict": "fail_major", "fitting_distractors": ["repeat"], "synonym_distractors": [], "reason": "'Repeat' also fits naturally ('will repeat that the bridge is safe under heavy loads'), so a learner choosing it would be marked wrong."}
+{"id": 7, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'abandon' fits; cook, carry and finish are unnatural with 'the old factory' followed by selling the land."}
+{"id": 8, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'achieve' fits; 'avoid' contradicts 'with hard work', and wait/paint do not take 'her goal'."}
+{"id": 9, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'reduce' fits; 'increase' is the opposite and false for turning off lights, while pack and taste are nonsense."}
+{"id": 10, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'preserve' fits; throw, build and spend do not describe what salt does to meat over months."}
+{"id": 11, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'strengthen' fits; 'weaken' is the opposite and false for regular practice, and divide/shout are nonsense."}
+{"id": 12, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'persuade' fits with 'her parents that...'; forbid, ask and argue do not take that structure naturally."}
+{"id": 13, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'significant' fits a study's difference between groups; empty, wet and rude do not."}
+{"id": 14, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'essential' fits; 'optional' is an antonym that makes the claim false, and sweet/silly are irrelevant."}
+{"id": 15, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'huge' fits a rock blocking the only road; thin, tiny and cold are not what makes a rock block a road."}
+{"id": 16, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'rapid' fits; 'slow' contradicts 'no one had time to escape', and flat/shy do not describe a fire's spread."}
+{"id": 17, "verdict": "fail_major", "fitting_distractors": ["hidden"], "synonym_distractors": [], "reason": "'Hidden' also reads naturally ('the mistake was hidden to everyone in the room, even the manager'), so a learner choosing it could be marked wrong."}
+{"id": 18, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'anxious' fits; 'calm' contradicts hiding under the bed, and proud/lazy do not fit 'about the thunderstorm'."}
+{"id": 19, "verdict": "pass", "fitting_distractors": [], "synonym_distractors": [], "reason": "Only 'sufficient' fits 'not ___ to power the laptop'; wild, rare and plain do not."}

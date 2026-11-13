@@ -1,0 +1,102 @@
+{"id":0,"verdict":"fail_major","other_words":["comb"],"reason":"\"Comb\" is a common word and fits her hair equally well."}
+{"id":1,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"heed\", is archaic and does not sound natural after \"pay close\" in a test warning."}
+{"id":2,"verdict":"fail_major","other_words":["beautiful","coastal"],"reason":"\"Beautiful\" fits the route along the coast and is a common A1 word with the same meaning."}
+{"id":3,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"sport\", does not fit because hide and seek is a children's game, not a sport."}
+{"id":4,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"agreement\", does not fit the fixed phrase \"under ___ with the club\"."}
+{"id":5,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"simmer\", is natural but means a gentle heat, not \"đun sôi\"."}
+{"id":6,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"contend\", does not take \"on price with\" naturally and is rare."}
+{"id":7,"verdict":"fail_minor","other_words":["teachers","faculty"],"reason":"\"Teachers\" or \"faculty\" would give a natural staff-room meaning, but both are redundant or rare."}
+{"id":8,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"invoice\", is business paperwork and unnatural for a shoe purchase return."}
+{"id":9,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"pumpkin\", is a natural bread but changes the meaning from banana."}
+{"id":10,"verdict":"fail_minor","other_words":["associate"],"reason":"\"Associate\" fits \"business associate\" but is a formal, less common word."}
+{"id":11,"verdict":"fail_minor","other_words":["application"],"reason":"\"Application\" fits as the full form of \"app\", a close variant."}
+{"id":12,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"download\", is natural but means \"tải về\", not \"cài đặt\"."}
+{"id":13,"verdict":"fail_minor","other_words":["nerve-racking","demanding"],"reason":"Only the rarer \"nerve-racking\" or \"demanding\" fit; \"hard\" or \"tiring\" lose the stress meaning."}
+{"id":14,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"list\", is not what a waiter brings when you are ready to order."}
+{"id":15,"verdict":"fail_major","other_words":["money"],"reason":"\"Money\" fits \"sell foreign money\" and is a basic word with the same meaning here."}
+{"id":16,"verdict":"fail_minor","other_words":["washing","utility"],"reason":"\"Washing room\" or \"utility room\" fit, but both are less usual than \"laundry room\"."}
+{"id":17,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"approximate\", does not sound natural before \"crowd\" and \"expected\" changes the time sense."}
+{"id":18,"verdict":"fail_minor","other_words":["session"],"reason":"\"Board session\" is natural English but a less common word than \"meeting\"."}
+{"id":19,"verdict":"fail_major","other_words":["cook"],"reason":"\"Cook\" fits \"cook it in the oven\" and is a basic A1 word."}
+{"id":20,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"customs\", gives a real term but means a different duty, not \"nhập khẩu\"."}
+{"id":21,"verdict":"fail_major","other_words":["reminder","memory"],"reason":"\"Reminder\" fits \"as a reminder of my trip\" and is a common word with nearly the same meaning."}
+{"id":22,"verdict":"fail_major","other_words":["grow","raise","boost"],"reason":"\"Grow\" and \"raise\" fit \"its sales by twenty percent\" and are common words."}
+{"id":23,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"clothing\", is natural but changes the meaning to a different kind of store."}
+{"id":24,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"deficit\", is a different thing from \"khoản nợ\"."}
+{"id":25,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"backer\", does not form the fixed phrase \"angel ___\" naturally."}
+{"id":26,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"sort\", does not mean \"tái chế\", only separating the waste."}
+{"id":27,"verdict":"fail_major","other_words":["think","recall"],"reason":"\"Think\" fits the common phrase \"I can't think where I put my keys\" and is a basic word."}
+{"id":28,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"page\", does not fit because a web page already has its address bar."}
+{"id":29,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"syrup\", is sweet but \"brown syrup\" is not a natural phrase."}
+{"id":30,"verdict":"fail_minor","other_words":["uncooked","undercooked"],"reason":"\"Uncooked\" fits and means the same, but it is a rarer synonym of \"raw\"."}
+{"id":31,"verdict":"fail_major","other_words":["order","payment","sale"],"reason":"\"Order\" fits \"any order made within thirty days\" and is a common word."}
+{"id":32,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"lunch\", does not fit because the meal is eaten before school."}
+{"id":33,"verdict":"fail_major","other_words":["journey"],"reason":"\"Journey\" fits \"a long road journey\" and is a common word for the same idea."}
+{"id":34,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"tap\", does not fit because the sentence says to use the mouse."}
+{"id":35,"verdict":"fail_major","other_words":["piece"],"reason":"\"Piece\" fits \"a thin piece of ham\" and is a basic word."}
+{"id":36,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"company\", is natural but means \"công ty\", not \"thương hiệu\"."}
+{"id":37,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"digital\", does not give the meaning \"báo thức\"."}
+{"id":38,"verdict":"fail_major","other_words":["employ","recruit"],"reason":"\"Employ\" fits \"employ twenty new engineers\" and is a common B1 word."}
+{"id":39,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"system\", is too general and does not mean \"máy chủ\"."}
+{"id":40,"verdict":"fail_minor","other_words":["components"],"reason":"\"Components\" fits but is a rarer, less usual word in a recipe."}
+{"id":41,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"manage\", needs a different structure and changes the meaning."}
+{"id":42,"verdict":"fail_major","other_words":["sale","bargain"],"reason":"\"Sale\" fits \"the seller and the buyer finally made a sale\" and is a common word."}
+{"id":43,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"stir\", does not make the compound \"deep-___\" and changes the meaning."}
+{"id":44,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"glad\", does not fit because \"happy as a clam\" is a fixed idiom."}
+{"id":45,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"gain\", is unnatural for a shop's two million dollars after costs."}
+{"id":46,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"display\", is unusual after \"touch\"; \"touch screen\" is the fixed phrase."}
+{"id":47,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"stop\", does not mean \"đến nơi\" and changes the sense of the timetable."}
+{"id":48,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"hospitality\", is narrower and does not mean \"dịch vụ\"."}
+{"id":49,"verdict":"fail_major","other_words":["repair","service","check"],"reason":"\"Service\" and \"repair\" fit the sentence and are common words for upkeep."}
+{"id":50,"verdict":"fail_minor","other_words":["parties","players"],"reason":"\"Parties\" or \"key players\" fit, but they are less precise words than \"stakeholders\"."}
+{"id":51,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"holiday\", does not fit because \"on the holiday\" is not a regular time pattern."}
+{"id":52,"verdict":"fail_major","other_words":["put","place"],"reason":"\"Put\" fits \"put their savings in gold\" and is a basic word."}
+{"id":53,"verdict":"fail_major","other_words":["load"],"reason":"\"Load\" fits \"take hours to load\" and is a common word for the same action."}
+{"id":54,"verdict":"fail_major","other_words":["programmer","engineer"],"reason":"\"Programmer\" fits \"the app programmer\" and means the same."}
+{"id":55,"verdict":"fail_major","other_words":["plan"],"reason":"\"Plan\" fits \"the new plan focuses on online shops\" and is a basic word."}
+{"id":56,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"plan\", is not natural after \"paper\" for finding a town."}
+{"id":57,"verdict":"fail_minor","other_words":["depart","leave"],"reason":"\"Depart\" fits the voyage but is a more formal word and does not mean \"lên tàu\"."}
+{"id":58,"verdict":"fail_major","other_words":["case"],"reason":"\"Case\" fits \"a hard-shell case with four wheels\" and is a common short word for suitcase."}
+{"id":59,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"couture\", is also a fixed haute phrase but is about fashion, not food."}
+{"id":60,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"settle\", does not fit the structure \"___ for the meal\"."}
+{"id":61,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"internet\", does not fit after \"stored in the\"; the phrase is \"on the internet\"."}
+{"id":62,"verdict":"fail_minor","other_words":["starving"],"reason":"\"Starving\" fits \"really starving\" but is a stronger word above A1."}
+{"id":63,"verdict":"fail_minor","other_words":["mates"],"reason":"\"Mates\" fits as an informal British word for friends."}
+{"id":64,"verdict":"fail_minor","other_words":["baggage"],"reason":"\"Baggage\" fits as a close synonym of luggage."}
+{"id":65,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"takeover\", is natural but means one bank buys the other, not \"sáp nhập\"."}
+{"id":66,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"card\", does not fit because salary goes into an account, not a card."}
+{"id":67,"verdict":"fail_minor","other_words":["sell"],"reason":"The present \"sell\" also fits \"tickets sell out in one hour\", so the tense is not fixed."}
+{"id":68,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"juice\", is natural but is not a trà."}
+{"id":69,"verdict":"fail_minor","other_words":["Bluetooth","cordless"],"reason":"\"Bluetooth\" fits and avoids a cable, but it names one kind of wireless link."}
+{"id":70,"verdict":"fail_major","other_words":["emergency","immediate"],"reason":"\"Emergency\" fits \"emergency treatment\" and is a common word."}
+{"id":71,"verdict":"fail_minor","other_words":["occupied"],"reason":"\"Occupied\" fits \"too occupied with my exams\" but is a formal word."}
+{"id":72,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"table\", is only part of a database and does not mean \"cơ sở dữ liệu\"."}
+{"id":73,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"attraction\", is a tourist draw, not a point used for giving directions."}
+{"id":74,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"move\", is natural but means relocate, not \"nâng hạng\"."}
+{"id":75,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"protected\", is not the fixed phrase \"end-to-end encrypted\" and means less."}
+{"id":76,"verdict":"fail_major","other_words":["leading","running"],"reason":"\"Leading\" fits \"good at leading a team of twenty people\" and is a common word."}
+{"id":77,"verdict":"fail_major","other_words":["clean"],"reason":"\"Clean\" fits \"clean these shirts in cold water\" and is a basic word."}
+{"id":78,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"get\", is unnatural with \"until Friday\" and does not mean \"mượn\"."}
+{"id":79,"verdict":"fail_major","other_words":["held","arranged"],"reason":"\"Held\" fits \"held a charity sale\" and is a common word."}
+{"id":80,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"experience\", is a real phrase but means \"trải nghiệm\", not \"giao diện\"."}
+{"id":81,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"sit\", is natural but does not mean \"lên men\"."}
+{"id":82,"verdict":"fail_minor","other_words":["mechanize"],"reason":"\"Mechanize\" fits as a rare synonym for automate."}
+{"id":83,"verdict":"fail_minor","other_words":["worked"],"reason":"The past \"worked\" also fits, so the tense is not fixed."}
+{"id":84,"verdict":"fail_minor","other_words":["electronically"],"reason":"\"Electronically\" fits as a less usual word for online."}
+{"id":85,"verdict":"fail_major","other_words":["yearly"],"reason":"\"Yearly\" fits \"its yearly report\" and is a common word."}
+{"id":86,"verdict":"fail_major","other_words":["mess"],"reason":"\"Mess-free\" fits as a common word with the same meaning."}
+{"id":87,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"right\", is natural English but means \"phải\", not \"trái\"."}
+{"id":88,"verdict":"fail_major","other_words":["release","launch"],"reason":"\"Release\" fits \"release the new version of the app\" and is a common word."}
+{"id":89,"verdict":"fail_major","other_words":["sales","revenue"],"reason":"\"Sales\" fits \"annual sales\" and means \"tổng doanh số\" directly."}
+{"id":90,"verdict":"fail_major","other_words":["neat","organized"],"reason":"\"Neat\" fits \"very neat\" and is a common word."}
+{"id":91,"verdict":"fail_major","other_words":["responsibility"],"reason":"\"Responsibility\" fits \"limited responsibility for the delay\" and is a common word."}
+{"id":92,"verdict":"fail_major","other_words":["overseas"],"reason":"\"Overseas\" fits \"lived overseas\" and is a common word."}
+{"id":93,"verdict":"fail_major","other_words":["decoration","topping"],"reason":"\"Decoration\" fits \"as a decoration on top of the fish\" and is a common word."}
+{"id":94,"verdict":"fail_major","other_words":["stop","stopover"],"reason":"\"Stop\" fits \"a six-hour stop in Dubai\" and is a basic word."}
+{"id":95,"verdict":"fail_minor","other_words":["isolated"],"reason":"\"Isolated\" fits but is a higher-level word than \"remote\"."}
+{"id":96,"verdict":"fail_major","other_words":["income","receipts"],"reason":"\"Income\" fits \"tax income\" and is a common word."}
+{"id":97,"verdict":"fail_major","other_words":["good","tasty"],"reason":"\"Good\" and \"tasty\" fit and are basic words."}
+{"id":98,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"delay\", does not take \"on\" and is not a natural fit."}
+{"id":99,"verdict":"fail_major","other_words":["well-paid","profitable"],"reason":"\"Well-paid\" fits \"a well-paid job\" and uses common words."}
+{"id":100,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"suitable\", needs \"for\", not \"with\"."}
+{"id":101,"verdict":"pass","other_words":[],"reason":"The closest candidate, \"right\", is natural English but means \"phải\", not \"trái\"."}

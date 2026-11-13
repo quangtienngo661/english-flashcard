@@ -92,7 +92,7 @@ function grace(s: ReturnType<typeof setup>) {
   s.row.rotatedAt = s.clock.now();
   s.row.successorId = randomUUID();
   s.row.successorCiphertext = seal(successor.token, s.config.refreshGraceKey);
-  s.row.graceUntil = new Date(s.clock.now().getTime() + 10_000);
+  s.row.graceUntil = new Date(s.clock.now().getTime() + 2_000);
   s.findUnique.mockResolvedValueOnce(s.row).mockResolvedValueOnce({
     ...s.row, id: s.row.successorId, tokenHash: successor.hash, rotatedAt: null,
   });
@@ -110,7 +110,7 @@ describe('SessionService transaction invariants', () => {
       where: { id: s.row.id, rotatedAt: null },
       data: {
         rotatedAt: s.clock.now(), successorId: expect.any(String),
-        successorCiphertext: expect.any(String), graceUntil: new Date(s.clock.now().getTime() + 10_000),
+        successorCiphertext: expect.any(String), graceUntil: new Date(s.clock.now().getTime() + 2_000),
       },
     });
     expect(s.chainUpdate).toHaveBeenCalledWith({ where: { id: s.chain.id }, data: { lastUsedAt: s.clock.now() } });
@@ -122,10 +122,10 @@ describe('SessionService transaction invariants', () => {
     expect(s.committed()).toBe(true);
   });
 
-  it('B1#16: grace includes exactly 10 seconds, returns the identical successor, and signs a fresh JWT', async () => {
+  it('B1#16, F5: grace includes exactly 2 seconds, returns the identical successor, and signs a fresh JWT', async () => {
     const s = setup();
     const successor = grace(s);
-    s.clock.advance(10_000);
+    s.clock.advance(2_000);
     const session = await runWithOperationId('grace-operation', () => s.service.refresh(s.original.token, 'mobile'));
     expect(session.refreshToken).toBe(successor.token);
     expect(decodeJwt(session.accessToken).exp).toBe(s.clock.now().getTime() / 1000 + 900);
@@ -136,10 +136,32 @@ describe('SessionService transaction invariants', () => {
     }]);
   });
 
+  it('F5 (review 07/11): a rotation opens a 2-second grace: the old token at +1.5 s gets the successor, at +3 s it is reuse', async () => {
+    const s = setup();
+    const rows = new Map<string, RefreshToken & { chain: SessionChain }>([[s.row.id, s.row]]);
+    s.findUnique.mockImplementation(async (args?: { where: { id: string } }) => rows.get(args!.where.id) ?? null);
+    s.updateMany.mockImplementation(async (args?: { data: Partial<RefreshToken> }) => { Object.assign(s.row, args!.data); return { count: 1 }; });
+    s.create.mockImplementation(async ({ data }) => {
+      const created = { ...s.row, rotatedAt: null, successorId: null, successorCiphertext: null, graceUntil: null, ...data } as RefreshToken & { chain: SessionChain };
+      rows.set(created.id, created);
+      return created;
+    });
+    const rotated = await s.service.refresh(s.original.token, 'mobile');
+
+    s.clock.advance(1_500);
+    expect((await s.service.refresh(s.original.token, 'mobile')).refreshToken).toBe(rotated.refreshToken);
+
+    s.clock.advance(1_500);
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'reuse_detected' },
+    });
+  });
+
   it.each(['reuse', 'expired', 'revoked', 'path_mismatch'] as const)(
     'B1#34: %s is returned by the transaction and becomes 401 only after commit', async (reason) => {
       const s = setup();
-      if (reason === 'reuse') { grace(s); s.clock.advance(11_000); }
+      if (reason === 'reuse') { grace(s); s.clock.advance(3_000); }
       if (reason === 'expired') s.clock.advance(90 * day + 1000);
       if (reason === 'revoked') { s.chain.revokedAt = s.clock.now(); s.chain.revokeReason = 'logout'; }
       if (reason === 'path_mismatch') s.chain.clientType = 'web';

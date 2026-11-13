@@ -10,7 +10,7 @@ import { RateLimiter } from './rate-limiter.service.js';
 function setup() {
   const config = testConfig({ limits: {
     ...DEFAULT_LIMITS,
-    'sample.create': { by: 'user', max: 2, windowSeconds: 60 },
+    'practice.answer': { by: 'user', max: 2, windowSeconds: 60 },
     'user.write': { by: 'user', max: 2, windowSeconds: 3600 },
   } });
   const clock = new FakeClock(new Date('2026-10-07T12:00:00.000Z'));
@@ -37,29 +37,29 @@ function setup() {
 describe('RateLimiter', () => {
   it('B1#33: different named rules at the same window start have independent limits', async () => {
     const { limiter } = setup();
-    for (const rule of ['sample.create', 'user.write'] as const) {
+    for (const rule of ['practice.answer', 'user.write'] as const) {
       await expect(limiter.hit(rule, 'user-1')).resolves.toBeUndefined();
       await expect(limiter.hit(rule, 'user-1')).resolves.toBeUndefined();
       await expect(limiter.hit(rule, 'user-1')).rejects.toMatchObject({
-        problemType: 'rate-limited', retryAfterSeconds: rule === 'sample.create' ? 60 : 3600,
+        problemType: 'rate-limited', retryAfterSeconds: rule === 'practice.answer' ? 60 : 3600,
       });
     }
-    await expect(limiter.hit('sample.create', 'user-2')).resolves.toBeUndefined();
+    await expect(limiter.hit('practice.answer', 'user-2')).resolves.toBeUndefined();
   });
 
   it('B1#33: rejects over-limit hits with 429 and rounds Retry-After up from Clock', async () => {
     const { limiter, clock } = setup();
     clock.advance(59_250);
-    await limiter.hit('sample.create', 'user-1');
-    await limiter.hit('sample.create', 'user-1');
-    const error = await limiter.hit('sample.create', 'user-1').catch((err: unknown) => err);
+    await limiter.hit('practice.answer', 'user-1');
+    await limiter.hit('practice.answer', 'user-1');
+    const error = await limiter.hit('practice.answer', 'user-1').catch((err: unknown) => err);
     expect(error).toBeInstanceOf(ProblemDetailsException);
     expect((error as ProblemDetailsException).getStatus()).toBe(429);
     expect(error).toMatchObject({
       problemTitle: 'Too many requests', problemType: 'rate-limited', retryAfterSeconds: 1,
     });
     clock.advance(750);
-    await expect(limiter.hit('sample.create', 'user-1')).resolves.toBeUndefined();
+    await expect(limiter.hit('practice.answer', 'user-1')).resolves.toBeUndefined();
   });
 
   it.each([
@@ -82,10 +82,10 @@ describe('RateLimiter', () => {
 
   it('uses one upsert with matching create and compound keys and an atomic increment', async () => {
     const { limiter, upsert, clock } = setup();
-    await limiter.hit('sample.create', 'user-1');
+    await limiter.hit('practice.answer', 'user-1');
     expect(upsert).toHaveBeenCalledExactlyOnceWith({
-      where: { key_windowStart: { key: 'sample.create:user:user-1', windowStart: clock.now() } },
-      create: { key: 'sample.create:user:user-1', windowStart: clock.now(), count: 1 },
+      where: { key_windowStart: { key: 'practice.answer:user:user-1', windowStart: clock.now() } },
+      create: { key: 'practice.answer:user:user-1', windowStart: clock.now(), count: 1 },
       update: { count: { increment: 1 } },
     });
   });
@@ -94,7 +94,7 @@ describe('RateLimiter', () => {
     const { limiter, upsert } = setup();
     const error = new Error('database unavailable');
     upsert.mockRejectedValueOnce(error);
-    await expect(limiter.hit('sample.create', 'user-1')).rejects.toBe(error);
+    await expect(limiter.hit('practice.answer', 'user-1')).rejects.toBe(error);
   });
 
   describe('peek', () => {

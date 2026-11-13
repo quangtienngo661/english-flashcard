@@ -163,7 +163,7 @@ async function newestCode(email, atLeast, { allowMissing = false } = {}) {
 }
 
 async function verifyCode(email, code) {
-  return want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
+  return want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
 }
 
 async function requestAndVerify(email) {
@@ -178,11 +178,16 @@ async function ensureAccount(email) {
   const before = (await mailsTo(email)).length;
   const registered = await api('POST', '/v1/auth/register', { body: {
     turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Test', birth_date: '2000-01-01', accept_terms: true, client: 'web' } });
-  if (registered.status === 201) {
+  // Review F2: an existing verified account also answers 201 (with an "account exists" mail and no code), so try the password first.
+  const login = registered.status === 201
+    ? await api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }) : null;
+  if (login?.status === 200) {
+    actor.token = login.json.access_token;
+  } else if (registered.status === 201) {
     actor.created = true;
     // Re-registration in the cooldown may keep the earlier code; resend if no new mail arrives or the code is refused.
     const code = await newestCode(email, before + 1, { allowMissing: true });
-    const first = code ? await api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }) : null;
+    const first = code ? await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }) : null;
     actor.token = first?.status === 200 ? first.json.access_token : (await requestAndVerify(email)).access_token;
   } else if (registered.status === 409) {
     actor.token = await loginToken(email);

@@ -351,11 +351,15 @@ async function main() {
 
   await step('LB1E3 + LB1E5 + LB1E6', 'admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid', async () => {
     const order = await createOrder(S.dung, 1);
+    // The learner paid by QR and payOS's webhook is late: the link is PAID, so it cannot be cancelled and the confirmation goes on (M4).
+    await page(order, 'paid', { webhook: false });
     const confirmed = await want(api('POST', `/v1/admin/orders/${order.id}/confirm-payment`, { token: S.admin.token, idem: true, body: { reference: 'FT2611-BANK', amount: 79000, reason: 'saw it in the bank app' } }), 200, 'confirm');
     check(confirmed.status === 'paid' && confirmed.periods.length === 1 && confirmed.payments[0].source === 'manual', `confirmed ${JSON.stringify(confirmed).slice(0, 200)}`);
     check(orderRow(order.id, 'paid_via') === 'manual', 'paid_via manual');
     await wantProblem(api('POST', `/v1/admin/orders/${order.id}/confirm-payment`, { token: S.admin.token, idem: true, body: { reference: 'FT2611-BANK', amount: 79000, reason: 'again' } }), 409, 'order-already-paid', 'confirm twice');
-    await page(order, 'paid');
+    const tx = fakeTransactions(order.code)[0];
+    check((await postWebhook(order, tx)).status === 200, 'the late webhook');
+    await waitFor(() => eventStatus(order.code, tx.reference), (s) => s !== '' && s !== 'pending', 'the late webhook applied');
     check(periodsOf(order.id) === 1, `the webhook opened another period: ${periodsOf(order.id)}`);
     check(psql(`SELECT string_agg(outcome, ',' ORDER BY received_at) FROM billing_order_payments WHERE order_id = '${order.id}'`) === 'opened-period,attached', 'outcomes');
     const detail = await want(api('GET', `/v1/admin/orders/${order.id}`, { token: S.admin.token }), 200, 'admin detail');
@@ -363,6 +367,17 @@ async function main() {
     const list = await want(api('GET', `/v1/admin/orders?status=paid&q=${detail.description.slice(0, 6)}`, { token: S.admin.token }), 200, 'admin list');
     check(list.items.some((i) => i.id === order.id), 'the admin list finds the order by its transfer note');
     ok('confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it');
+  });
+
+  await step('M4 (launch B minor)', 'admin confirms an unpaid order: its payOS link is cancelled first, so the old QR takes no second transfer', async () => {
+    const order = await createOrder(S.dung, 1);
+    const confirmed = await want(api('POST', `/v1/admin/orders/${order.id}/confirm-payment`, { token: S.admin.token, idem: true, body: { reference: 'FT2611-CASH', amount: 79000, reason: 'paid at the counter' } }), 200, 'confirm');
+    check(confirmed.status === 'paid' && confirmed.periods.length === 1, `confirmed ${JSON.stringify(confirmed).slice(0, 200)}`);
+    check(psql(`SELECT status FROM fake_payos_links WHERE order_code = ${order.code}`) === 'CANCELLED', 'the payOS link is cancelled');
+    await send(`${order.url}&action=paid`, { redirect: 'manual' });
+    const transfers = psql(`SELECT coalesce(jsonb_array_length(transactions::jsonb), 0) FROM fake_payos_links WHERE order_code = ${order.code}`);
+    check(transfers === '0' && paymentsOf(order.id) === 1 && periodsOf(order.id) === 1, `transfers ${transfers}, payments ${paymentsOf(order.id)}, periods ${periodsOf(order.id)}`);
+    ok('the link is cancelled; paying the old QR adds nothing');
   });
 
   await step('LB1E17 + LB1E18', 'payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link', async () => {

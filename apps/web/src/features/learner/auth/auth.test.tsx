@@ -370,7 +370,7 @@ describe('VerifyEmailForm (K/03)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith(destination));
     expect(hardReplace).toHaveBeenCalledTimes(1);
-    expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'Aa1!aaaa');
+    expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'Aa1!aaaa', 'fake-turnstile-token');
     expect(calls.find((c) => c.path === '/v1/auth/verify-email')!.body).toMatchObject({ email: 'lan@example.com', code: '481205', password: 'Aa1!aaaa', client: 'web' });
     expect(readPendingEmail()).toBeNull();
     expect(readPendingPassword()).toBeNull();
@@ -409,7 +409,7 @@ describe('VerifyEmailForm (K/03)', () => {
     await userEvent.type(await screen.findByLabelText('Mật khẩu'), 'reloaded-password');
     await typeCode('481205');
     await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
-    await waitFor(() => expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'reloaded-password'));
+    await waitFor(() => expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'reloaded-password', 'fake-turnstile-token'));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app'));
   });
 
@@ -508,7 +508,7 @@ describe('VerifyEmailForm (K/03)', () => {
     await typeCode('481205');
     await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
     expect(await screen.findByText(wrongCode)).toBeInTheDocument();
-    expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'Aa1!aaaa');
+    expect(verify).toHaveBeenCalledWith('lan@example.com', '481205', 'Aa1!aaaa', 'fake-turnstile-token');
     unmount();
     expect(readPendingPassword()).toBeNull();
     expect(readPendingEmail()).toBe('lan@example.com');
@@ -609,7 +609,7 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     await user.type(screen.getByLabelText('Nhập lại mật khẩu mới'), 'Bb2@bbbb');
     await user.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
-    expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({ email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb' });
+    expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({ email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb', turnstile_token: 'fake-turnstile-token' });
   });
 
   it('Review Focus 3: a mismatched confirm sends nothing and says so under it', async () => {
@@ -636,7 +636,7 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({
-      email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb',
+      email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb', turnstile_token: 'fake-turnstile-token',
     });
     expect(readPendingEmail()).toBeNull();
   });

@@ -50,6 +50,8 @@ const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validat
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const conflict = (type: string, title: string) => new ProblemDetailsException({ status: 409, title, type });
 const FINAL_STATUS_NOTE = 'order-not-pending';
+/** payOS link states that take no more money; any other state (or no answer) means the old QR may still be paid. */
+const LINK_CLOSED: ReadonlySet<string> = new Set(['PAID', 'CANCELLED', 'EXPIRED']);
 
 /** The staff side of orders (launch prep B design §3.9): look, confirm, cancel, resolve, revoke a period. Admin only (`settings.manage`). */
 @Injectable()
@@ -103,8 +105,25 @@ export class AdminOrdersService {
     return detail(row, email, email === null ? null : await this.proOf(row.userId));
   }
 
-  /** "Đã nhận tiền" (T11–T14): the rules and the 409s are `OrderApplier.confirmManual`'s. */
+  /**
+   * "Đã nhận tiền" (T11–T14): the rules and the 409s are `OrderApplier.confirmManual`'s. Launch B minor M4: the payOS link is cancelled
+   * first, outside any lock, so a second transfer on the old QR cannot arrive after Pro was granted by hand. When payOS cannot cancel,
+   * the confirmation goes on only if the link no longer takes money; otherwise 503 and the order is left as it was.
+   */
   async confirmPayment(adminId: string, orderId: string, input: { reference: string; amount: number; reason: string }): Promise<AdminOrderDetail> {
+    const order = await this.orders.findById(this.prisma, orderId);
+    const adapter = this.registry.get('payos');
+    if (order !== null && order.paymentLinkId !== null && order.paidVia === null && order.status !== 'closed' && adapter?.cancelCheckout !== undefined) {
+      const cancelled = await callAdapter(() => adapter.cancelCheckout!(order.orderCode));
+      if (!cancelled.ok) {
+        const link = adapter.getCheckout === undefined ? undefined : await callAdapter(() => adapter.getCheckout!(order.orderCode));
+        const closed = link?.ok === true && (link.value === null || LINK_CLOSED.has(link.value.status));
+        if (!closed) {
+          this.logger.warn('order_confirm_link_open', { order_ref: order.id });
+          throw new ProblemDetailsException({ status: 503, title: 'Payment provider unavailable', type: 'provider-unavailable' });
+        }
+      }
+    }
     await this.applier.confirmManual({ orderId, adminId, reference: input.reference, amount: input.amount, reason: input.reason });
     return this.get(orderId);
   }

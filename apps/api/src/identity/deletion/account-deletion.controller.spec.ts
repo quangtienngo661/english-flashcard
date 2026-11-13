@@ -31,7 +31,9 @@ describe('POST /v1/me/account/delete (unit, mocked service)', () => {
   it('204 with no body when the account is gone; the service gets the caller, the body and the response; both rules are charged', async () => {
     const res = await post(valid);
     expect(res.status).toBe(204); expect(res.text).toBe('');
-    expect(deleteOwn).toHaveBeenCalledWith(expect.objectContaining({ userId }), valid, expect.objectContaining({ googleReauthUserId: null }));
+    // F4: the client ip (req.ip; supertest connects over loopback) goes to the service, which keys the login lock on it.
+    expect(deleteOwn).toHaveBeenCalledWith(expect.objectContaining({ userId }), valid, expect.objectContaining({
+      googleReauthUserId: null, clientIp: expect.stringMatching(/^(::ffff:)?127\.0\.0\.1$|^::1$/) }));
     expect(hit).toHaveBeenCalledWith('user.write', userId);
     expect(hit).toHaveBeenCalledWith('auth.delete.user', userId);
   });

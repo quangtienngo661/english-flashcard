@@ -279,10 +279,12 @@ export class GoogleAuthService {
           // An unverified account holds no learning data (it never had a session): reuse its id as a fresh sign-up (I15, B8E6).
           const updated = await tx.user.updateMany({
             where: { id: userId, emailVerifiedAt: null, status: 'active' },
-            data: { ...profile, failedLoginCount: 0, loginLockedUntil: null, updatedAt: now },
+            data: { ...profile, updatedAt: now },
           });
           if (updated.count === 0) throw emailTaken();
+          await tx.loginFailure.deleteMany({ where: { userId } });
           await tx.passwordCredential.deleteMany({ where: { userId } });
+          await tx.pendingRegistration.deleteMany({ where: { userId } });
           await tx.otpCode.updateMany({ where: { userId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: now } });
           await this.sessions.revokeAllForUser(tx, userId, 'google-signup');
         }

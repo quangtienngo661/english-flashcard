@@ -367,9 +367,11 @@ async function main() {
     ok(`before: rows in ${Object.keys(before.found).length} of ${before.checked} user columns`);
 
     const body = (password) => ({ confirm_email: ` ${u.email.toUpperCase()} `, acknowledged: true, password });
-    const failedBefore = Number(userRow(u.id, 'failed_login_count'));
+    // F4: wrong passwords count in login_failures, one row per (account, client ip key).
+    const failedCount = () => Number(psql(`SELECT COALESCE(SUM(failed_count), 0) FROM login_failures WHERE user_id = '${u.id}'`));
+    const failedBefore = failedCount();
     await wantProblem(api('POST', '/v1/me/account/delete', { token: u.token, body: body('wrong-password') }), 400, 'invalid-current-password', 'wrong password');
-    check(Number(userRow(u.id, 'failed_login_count')) === failedBefore + 1, 'a wrong password was not counted once');
+    check(failedCount() === failedBefore + 1, 'a wrong password was not counted once');
     await wantProblem(api('POST', '/v1/me/account/delete', { token: u.token, body: { ...body(PASSWORD), confirm_email: 'other@example.com' } }), 400, 'confirm-email-mismatch', 'mismatch');
     await wantProblem(api('POST', '/v1/me/account/delete', { token: u.token, body: { ...body(PASSWORD), acknowledged: false } }), 400, 'validation-failed', 'not ticked');
     check(userExists(u.id), 'a refused deletion removed the user');
@@ -596,7 +598,7 @@ async function main() {
     await want(api('POST', '/v1/auth/register', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, client: 'web', given_name: 'Lan', birth_date: '2000-05-17', accept_terms: true } }), 201, 'register again');
     const mails = await waitFor(() => mailsTo(email), (list) => list.length > before, 'the OTP mail');
     const code = (await (await send(`${MAILPIT}/api/v1/message/${mails[0].ID}`)).json()).Text.match(/(\d{6})/)[1];
-    const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify');
+    const verified = await want(api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code, password: PASSWORD, client: 'web' } }), 200, 'verify');
     await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'native language');
     // Trial is off (launch prep A, design 6.9), so `trial_eligible` no longer says anything; the assertion that the history went with the
     // account is the count of trial_history rows for the deleted user, above.

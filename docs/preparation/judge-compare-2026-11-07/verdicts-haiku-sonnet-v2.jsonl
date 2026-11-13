@@ -1,0 +1,102 @@
+{"id":0,"verdict":"fail_major","other_words":["clean"],"reason":"\"clean\" fits and is a common A1 word, as in \"clean your teeth\"."}
+{"id":1,"verdict":"pass","other_words":[],"reason":"The closest candidate \"notice\" does not work with \"pay close ___ to\", which needs attention."}
+{"id":2,"verdict":"fail_major","other_words":["beautiful","famous"],"reason":"\"beautiful\" and \"famous\" both fit the blank and are common words."}
+{"id":3,"verdict":"pass","other_words":[],"reason":"The closest candidate \"sport\" is not played on a board, and \"board ___\" is the fixed phrase for game."}
+{"id":4,"verdict":"fail_major","other_words":["agreement","document"],"reason":"\"agreement\" and \"document\" fit and are common words."}
+{"id":5,"verdict":"pass","other_words":[],"reason":"The closest candidate \"bubble\" describes how water looks, not heating it to boiling, so it loses the meaning."}
+{"id":6,"verdict":"fail_major","other_words":["fight"],"reason":"\"fight for the same customers\" is natural and \"fight\" is a common A2 word."}
+{"id":7,"verdict":"fail_major","other_words":["team"],"reason":"\"team\" fits (\"the hospital team\") and is a common A2 word."}
+{"id":8,"verdict":"pass","other_words":[],"reason":"The closest candidate \"bill\" is what you pay, not what you keep as proof to return shoes."}
+{"id":9,"verdict":"pass","other_words":[],"reason":"The closest candidate \"fruit\" is grammatical but unnatural for a long yellow thing a monkey peels, and it does not name the item."}
+{"id":10,"verdict":"fail_minor","other_words":["associate"],"reason":"Only the less common \"associate\" (business associate) fits with the same meaning."}
+{"id":11,"verdict":"fail_minor","other_words":["application"],"reason":"\"application\" is the full form of the same word, a close variant."}
+{"id":12,"verdict":"fail_major","other_words":["put","add"],"reason":"\"put\" and \"add\" fit (\"put new software on every computer\") and are A1 words."}
+{"id":13,"verdict":"fail_minor","other_words":["demanding"],"reason":"Only \"demanding\" fits with the stress meaning, and it is a less common B2 word."}
+{"id":14,"verdict":"pass","other_words":[],"reason":"The closest candidate \"list\" is not what you ask to see before ordering soup in a restaurant."}
+{"id":15,"verdict":"fail_major","other_words":["money"],"reason":"\"money\" fits (\"the local money\") and is an A1 word."}
+{"id":16,"verdict":"fail_major","other_words":["clothes","washing"],"reason":"\"clothes\" fits and is an A1 word; \"washing\" also fits."}
+{"id":17,"verdict":"fail_major","other_words":["calculate"],"reason":"\"calculate\" fits the engineer and the cost and is a common word."}
+{"id":18,"verdict":"fail_major","other_words":["call","session"],"reason":"\"call\" and \"session\" fit as a team gathering and are common words."}
+{"id":19,"verdict":"fail_major","other_words":["cook"],"reason":"\"cook a cake in the oven\" is natural and \"cook\" is an A1 word."}
+{"id":20,"verdict":"fail_major","other_words":["buy"],"reason":"\"buy cheap cars from abroad\" fits and \"buy\" is an A1 word."}
+{"id":21,"verdict":"fail_major","other_words":["reminder","memory"],"reason":"\"reminder\" and \"memory\" fit and are common words."}
+{"id":22,"verdict":"fail_major","other_words":["raise"],"reason":"\"raise our salaries\" is the everyday phrase and \"raise\" is well known."}
+{"id":23,"verdict":"fail_major","other_words":["team","office"],"reason":"\"team\" and \"office\" fit after \"sales\" and are common words."}
+{"id":24,"verdict":"fail_major","other_words":["loan","money"],"reason":"\"loan\" fits perfectly and is a common word."}
+{"id":25,"verdict":"fail_minor","other_words":["backer"],"reason":"Only less common words like \"backer\" keep the investor meaning."}
+{"id":26,"verdict":"fail_major","other_words":["reuse"],"reason":"\"reuse\" fits and is a common B1 word."}
+{"id":27,"verdict":"fail_minor","other_words":["recall"],"reason":"Only the formal \"recall\" fits."}
+{"id":28,"verdict":"pass","other_words":[],"reason":"The closest candidate \"page\" is natural in \"web page\" but a page is not where you type an address in the search bar."}
+{"id":29,"verdict":"fail_major","other_words":["honey"],"reason":"\"honey\" (and \"milk\") fits as something spooned into tea and is a common word."}
+{"id":30,"verdict":"fail_minor","other_words":["uncooked"],"reason":"Only the close synonym \"uncooked\" fits."}
+{"id":31,"verdict":"fail_major","other_words":["item","product"],"reason":"\"item\" and \"product\" fit and are common A2 words."}
+{"id":32,"verdict":"pass","other_words":[],"reason":"The closest candidate \"lunch\" does not fit \"every morning before school\"."}
+{"id":33,"verdict":"fail_major","other_words":["visit","journey"],"reason":"\"visit\" and \"journey\" fit and are common words."}
+{"id":34,"verdict":"pass","other_words":[],"reason":"The closest candidate \"tap\" is for touchscreens, not for a computer icon."}
+{"id":35,"verdict":"fail_major","other_words":["piece"],"reason":"\"piece of cheese\" fits and \"piece\" is an A1 word."}
+{"id":36,"verdict":"fail_major","other_words":["type","kind"],"reason":"\"type\" and \"kind\" fit and are common words."}
+{"id":37,"verdict":"pass","other_words":[],"reason":"The closest candidate \"timer\" can go off but is not what wakes you up, so the meaning changes."}
+{"id":38,"verdict":"fail_major","other_words":["employ"],"reason":"\"employ\" fits and is a common B1 word."}
+{"id":39,"verdict":"fail_major","other_words":["computer"],"reason":"\"computer\" fits (\"a central computer\") and is an A1 word."}
+{"id":40,"verdict":"fail_major","other_words":["thing","item"],"reason":"\"thing\" fits (\"one more thing to the soup\") and is an A1 word."}
+{"id":41,"verdict":"pass","other_words":[],"reason":"The closest candidate \"manage\" means succeed in doing, not have enough money, so it changes the meaning."}
+{"id":42,"verdict":"fail_major","other_words":["contract","agreement"],"reason":"\"contract\" and \"agreement\" fit and are common words."}
+{"id":43,"verdict":"fail_major","other_words":["cook"],"reason":"\"cook the onions until golden\" is natural and \"cook\" is an A1 word."}
+{"id":44,"verdict":"fail_major","other_words":["glad","excited"],"reason":"\"glad\" and \"excited\" fit and are common words."}
+{"id":45,"verdict":"pass","other_words":[],"reason":"The closest candidate \"loss\" is grammatical but means the opposite of lợi nhuận."}
+{"id":46,"verdict":"fail_minor","other_words":["display"],"reason":"Only the B2 word \"display\" fits."}
+{"id":47,"verdict":"pass","other_words":[],"reason":"The closest candidate \"stop\" is natural but means dừng, not đến nơi."}
+{"id":48,"verdict":"fail_major","other_words":["staff"],"reason":"\"staff\" (and \"kitchen\") fits and is a common word."}
+{"id":49,"verdict":"fail_major","other_words":["check","service"],"reason":"\"check\" and \"service\" fit and are common words."}
+{"id":50,"verdict":"fail_minor","other_words":["party","participant"],"reason":"Only less common words such as \"party\" or \"participant\" keep the meaning."}
+{"id":51,"verdict":"pass","other_words":[],"reason":"The closest candidate \"holidays\" does not fit \"when we have two days off\"."}
+{"id":52,"verdict":"fail_major","other_words":["put"],"reason":"\"put their savings in the stock market\" is natural and \"put\" is an A1 word."}
+{"id":53,"verdict":"fail_major","other_words":["save","get"],"reason":"\"save\" and \"get\" fit and are A1 words."}
+{"id":54,"verdict":"fail_major","other_words":["programmer"],"reason":"\"programmer\" fits and is a common B1 word."}
+{"id":55,"verdict":"fail_major","other_words":["plan"],"reason":"\"plan\" fits and is an A1 word."}
+{"id":56,"verdict":"fail_minor","other_words":["directions"],"reason":"\"directions\" fits but means something different from a map, and few would pick it."}
+{"id":57,"verdict":"fail_major","other_words":["leave","get"],"reason":"\"leave\" and \"get\" fit (\"leave on the flight\") and are A1 words."}
+{"id":58,"verdict":"fail_major","other_words":["bag","luggage"],"reason":"\"bag\" and \"luggage\" fit and are common words."}
+{"id":59,"verdict":"fail_major","other_words":["food"],"reason":"\"food\" fits and is an A1 word."}
+{"id":60,"verdict":"pass","other_words":[],"reason":"The closest candidate \"ask\" fits \"for the tickets\" but does not mean trả tiền."}
+{"id":61,"verdict":"pass","other_words":[],"reason":"The closest candidate \"album\" is a place for photos but not one you open on any device."}
+{"id":62,"verdict":"pass","other_words":[],"reason":"The closest candidate \"starving\" cannot be used after \"very\", and \"weak\" or \"tired\" change the meaning."}
+{"id":63,"verdict":"fail_minor","other_words":["mate"],"reason":"Only the informal British \"mate\" fits."}
+{"id":64,"verdict":"fail_major","other_words":["bags","baggage"],"reason":"\"bags\" and \"baggage\" fit and are common words."}
+{"id":65,"verdict":"fail_minor","other_words":["takeover","combination"],"reason":"Only less common words like \"combination\" or \"takeover\" fit."}
+{"id":66,"verdict":"pass","other_words":[],"reason":"The closest candidate \"card\" can be applied for at a bank but is not what you open to receive a salary."}
+{"id":67,"verdict":"fail_minor","other_words":["offer","serve"],"reason":"Only \"offer\" or \"serve\" fit with a similar meaning, and they are not exact."}
+{"id":68,"verdict":"pass","other_words":[],"reason":"The closest candidate \"coffee\" does not combine with \"green\" as a drink after dinner."}
+{"id":69,"verdict":"fail_minor","other_words":["cordless"],"reason":"Only the rare \"cordless\" fits."}
+{"id":70,"verdict":"fail_major","other_words":["important"],"reason":"\"important\" fits and is a common A1 word."}
+{"id":71,"verdict":"fail_minor","other_words":["occupied"],"reason":"Only the formal \"occupied\" fits."}
+{"id":72,"verdict":"fail_major","other_words":["system","computer"],"reason":"\"system\" and \"computer\" fit and are common words."}
+{"id":73,"verdict":"fail_major","other_words":["place","attraction"],"reason":"\"place\" and \"attraction\" fit and are common words."}
+{"id":74,"verdict":"fail_major","other_words":["change"],"reason":"\"change my old laptop to a faster model\" is natural and \"change\" is an A1 word."}
+{"id":75,"verdict":"fail_major","other_words":["protect"],"reason":"\"protect\" fits and is a common word."}
+{"id":76,"verdict":"fail_major","other_words":["leading","running"],"reason":"\"leading\" and \"running\" fit (\"leading a team\") and are common words."}
+{"id":77,"verdict":"fail_major","other_words":["clean"],"reason":"\"clean your hands\" is natural and \"clean\" is an A1 word."}
+{"id":78,"verdict":"fail_major","other_words":["use"],"reason":"\"use your pen for a minute\" fits and \"use\" is an A1 word."}
+{"id":79,"verdict":"fail_major","other_words":["plan","have"],"reason":"\"plan\" and \"have\" fit and are A1 words."}
+{"id":80,"verdict":"fail_major","other_words":["design","layout"],"reason":"\"design\" and \"layout\" fit and are common words."}
+{"id":81,"verdict":"fail_minor","other_words":["ripen"],"reason":"Only the less common \"ripen\" or \"mature\" fit."}
+{"id":82,"verdict":"fail_minor","other_words":["computerize"],"reason":"Only the rare \"computerize\" fits with the same meaning."}
+{"id":83,"verdict":"pass","other_words":[],"reason":"The closest candidate \"study\" fits grammatically but means học, not làm việc."}
+{"id":84,"verdict":"fail_minor","other_words":["remotely"],"reason":"Only the B2 word \"remotely\" fits."}
+{"id":85,"verdict":"pass","other_words":[],"reason":"The closest candidate \"yearly\" is blocked by the article \"an\", and \"important\" loses the meaning."}
+{"id":86,"verdict":"fail_major","other_words":["mess","stuff"],"reason":"\"mess\" and \"stuff\" fit and are common words."}
+{"id":87,"verdict":"pass","other_words":[],"reason":"The closest candidate \"right\" is grammatical but means the opposite of sang trái."}
+{"id":88,"verdict":"fail_major","other_words":["release","launch"],"reason":"\"release\" and \"launch\" fit and are common words."}
+{"id":89,"verdict":"fail_major","other_words":["sales","income"],"reason":"\"sales\" and \"income\" fit and are common words."}
+{"id":90,"verdict":"fail_major","other_words":["clean","neat"],"reason":"\"clean\" fits and is an A1 word."}
+{"id":91,"verdict":"fail_major","other_words":["responsibility"],"reason":"\"responsibility\" fits and is a common word."}
+{"id":92,"verdict":"fail_major","other_words":["away","overseas"],"reason":"\"away\" fits (\"moved away\") and is an A1 word; \"overseas\" also fits."}
+{"id":93,"verdict":"fail_major","other_words":["decoration","topping"],"reason":"\"decoration\" and \"topping\" fit and are common words."}
+{"id":94,"verdict":"fail_major","other_words":["stop","wait"],"reason":"\"stop\" fits (\"a three-hour stop in Dubai\") and is an A1 word."}
+{"id":95,"verdict":"fail_minor","other_words":["isolated","faraway"],"reason":"Only less common words like \"isolated\" or \"faraway\" keep the meaning."}
+{"id":96,"verdict":"fail_major","other_words":["sales","income"],"reason":"\"sales\" and \"income\" fit and are common words."}
+{"id":97,"verdict":"fail_major","other_words":["good","nice"],"reason":"\"good\" and \"nice\" fit after \"smells\" and are A1 words."}
+{"id":98,"verdict":"fail_major","other_words":["delay"],"reason":"\"delay\" fits and is a common word."}
+{"id":99,"verdict":"fail_major","other_words":["high","good"],"reason":"\"high\" and \"good\" fit and are A1 words."}
+{"id":100,"verdict":"pass","other_words":[],"reason":"The closest candidate \"suitable\" takes \"for\", not \"with\", so it does not fit."}
+{"id":101,"verdict":"pass","other_words":[],"reason":"The closest candidate \"right\" is grammatical but means the opposite of trái."}
