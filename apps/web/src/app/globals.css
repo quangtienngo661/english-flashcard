@@ -365,9 +365,12 @@
     }
   }
 
-  /* From md the header is sticky: neither a Tab-focused element nor an anchor target may land under it
-     (WCAG 2.2 SC 2.4.11). 72 px, the taller of the two headers (the site's 68, the app's TopBar 64); targets keep only their own small
-     scroll-mt-4 on top of this. */
+  /* The header is sticky at every width: neither a Tab-focused element nor an anchor target may land under it (WCAG 2.2 SC 2.4.11).
+     Below md 60 px, the taller of the phone headers (the site's 60, the app's PhoneHeader 56; T14). From md 72 px, the taller of the two
+     headers (the site's 68, the app's TopBar 64). Targets keep only their own small scroll-mt-4 on top of this. */
+  html {
+    scroll-padding-top: --spacing(15);
+  }
   @media (width >= 48rem) {
     html {
       scroll-padding-top: --spacing(18);
