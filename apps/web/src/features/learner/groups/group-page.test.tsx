@@ -149,6 +149,13 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(await screen.findByText(/tạo ngày .*23\/10/)).toBeInTheDocument();
   });
 
+  it('remembers this group as the centre of the Nhóm carousel, so the way back lands on it (owner 13/11/2026)', async () => {
+    sessionStorage.clear();
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe(G);
+  });
+
   it('M3: each word links to its word page', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const row = await screen.findByRole('row', { name: 'deploy' });

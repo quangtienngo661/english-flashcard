@@ -4,7 +4,7 @@ import { MoreHorizontal, Search, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { BackLink } from '@/app-chrome/BackLink';
 import { ApiError } from '@/app-shell/api/problem';
@@ -28,6 +28,7 @@ import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton'
 import { LEVEL_FILL, STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
 import { rhythm } from './carousel';
+import { rememberCentre } from './centre-memory';
 import { deckPlan } from './deck-actions';
 import { useCloseFlip, useFlipFrom } from './flip';
 import { useGroupDialogs } from './GroupDialogs';
@@ -143,6 +144,8 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const pageRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
   useFlipFrom('group-stack', stackRef, pageRef);
+  // Back on Nhóm, the carousel opens on this group (owner 13/11/2026).
+  useEffect(() => rememberCentre(detail.id), [detail.id]);
   const close = useCloseFlip('group-stack-back', stackRef, pageRef);
   const filters: Array<{ id: WordFilter; label: string; tone: LevelChipTone }> = [
     { id: 'all', label: t('filterAll'), tone: 'all' },
@@ -157,7 +160,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   return (
     <div ref={pageRef} className="flex flex-col gap-6">
       <div data-in="0">
-        <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} />
+        <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} prefetch />
       </div>
       <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />

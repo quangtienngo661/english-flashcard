@@ -13,6 +13,7 @@ import { LevelBar } from '@/ui/LevelBar';
 import { TextButton } from '@/ui/TextButton';
 import { useAddWord } from '../add-word/add-word-context';
 import { carouselOrder, rhythm } from './carousel';
+import { readCentre, rememberCentre } from './centre-memory';
 import { waiting } from './deck-actions';
 import { DeckButtons } from './DeckButtons';
 import { ms, rememberRect, token, useFlipFrom } from './flip';
@@ -83,7 +84,11 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
   const t = useTranslations('App.groups');
   const locale = useLocale();
   const router = useRouter();
-  const [centreId, setCentreId] = useState(order[0].id);
+  // The group shown last opens again (back from Một nhóm); one that is gone falls back to the first.
+  const [centreId, setCentreId] = useState(() => {
+    const remembered = readCentre();
+    return remembered && order.some((g) => g.id === remembered) ? remembered : order[0].id;
+  });
   const [announce, setAnnounce] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const centreRef = useRef<HTMLDivElement>(null);
@@ -101,6 +106,7 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     const target = order[index];
     if (!target || index === centre) return;
     setCentreId(target.id);
+    rememberCentre(target.id);
     setAnnounce(t('live', { name: target.name, count: waiting(target) }));
   }
   function step(d: number) {

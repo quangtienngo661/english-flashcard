@@ -38,6 +38,28 @@ const centre = async () => within(await region()).getByRole('link');
 const key = (k: string, target: Element = document.body) => act(() => void fireEvent.keyDown(target, { key: k }));
 
 describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('opens on the group shown last (owner 13/11/2026: back from Một nhóm returns to that group, not the first one)', async () => {
+    sessionStorage.setItem('wm-groups-centre', 'g-14');
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    expect(await centre()).toHaveTextContent('Đề 14 · Reading');
+  });
+
+  it('a remembered group that no longer exists falls back to the first group', async () => {
+    sessionStorage.setItem('wm-groups-centre', 'g-gone');
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+  });
+
+  it('stepping remembers the new centre group', async () => {
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+    await centre();
+    key('ArrowRight');
+    expect(await centre()).toHaveTextContent('Đề 9 · Listening');
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe('g-9');
+  });
+
   it('starts on the first group of the carousel order; the only link inside the region is the centre stack', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[3], FIVE[4], FIVE[1], FIVE[0], FIVE[2]]) });
     const link = await centre();
