@@ -175,6 +175,32 @@ describe('Tra từ: the dictionary page', () => {
     expect(await screen.findByRole('button', { name: /^budget/ })).toBeInTheDocument();
     expect(calls.filter((c) => c.path.startsWith('/v1/words?')).length).toBe(before);
   });
+
+  it('the next page is fetched before "Trang sau" is pressed', async () => {
+    const { calls } = renderApp(<LookupPage />, { routes: base() });
+    expect(await screen.findByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    await waitFor(() => expect(calls.some((c) => c.path === '/v1/words?page_size=20&level=B1&topic=work&page_token=p2')).toBe(true));
+  });
+
+  it('while the next page loads, the current words stay on screen and the page buttons wait', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    renderApp(<LookupPage />, {
+      routes: base({
+        'GET /v1/words?page_size=20&level=B1&topic=work&page_token=p2': async () => {
+          await gate;
+          return Response.json({ items: [row('deadline')], next_page_token: null, total: 24 });
+        },
+      }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
+    expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '← Trang trước' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Trang sau' })).toBeNull();
+    release();
+    expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Trang trước' })).toBeInTheDocument();
+  });
 });
 
 describe('Tra từ: group stacks', () => {
