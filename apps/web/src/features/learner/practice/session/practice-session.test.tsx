@@ -724,6 +724,32 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 });
 
+describe('Typed answer focus (T17, QA10)', () => {
+  /** QA10: autofocus only with a mouse or trackpad. jsdom's default matchMedia answers false (a touch screen). */
+  const media = window.matchMedia;
+  const finePointer = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('pointer: fine'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = media;
+  });
+
+  const typedRoutes = () => routes({ 'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }) });
+
+  it('on a touch screen the word box does not take focus, so the keyboard stays down', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: typedRoutes() });
+    expect(await screen.findByRole('textbox', { name: 'Your answer' })).not.toHaveFocus();
+  });
+
+  it('with a mouse or trackpad the word box takes focus as before', async () => {
+    finePointer();
+    renderApp(<PracticeSession />, { session: true, routes: typedRoutes() });
+    expect(await screen.findByRole('textbox', { name: 'Your answer' })).toHaveFocus();
+  });
+});
+
 describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
   afterEach(() => vi.unstubAllGlobals());
 

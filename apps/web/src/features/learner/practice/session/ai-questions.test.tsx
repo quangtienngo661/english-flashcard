@@ -339,6 +339,30 @@ describe('AI question types (K/78a–K/81)', () => {
 });
 
 // The "Alternative answer" card (session synonyms design §3.2): Lan typed `crucial` into the `vital` sentence.
+describe('Blank focus (T17, QA10)', () => {
+  /** QA10: autofocus only with a mouse or trackpad. jsdom's default matchMedia answers false (a touch screen). */
+  const media = window.matchMedia;
+  const finePointer = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('pointer: fine'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = media;
+  });
+
+  it('on a touch screen the blank does not take focus', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    expect(await screen.findByRole('textbox', { name: 'Missing word' })).not.toHaveFocus();
+  });
+
+  it('with a mouse or trackpad the blank takes focus', async () => {
+    finePointer();
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    expect(await screen.findByRole('textbox', { name: 'Missing word' })).toHaveFocus();
+  });
+});
+
 describe('Alternative answer card', () => {
   const CRUCIAL = 'sense-crucial';
   const VITAL = 'sense-vital';

@@ -342,6 +342,41 @@ describe('ReviewSession (K/20–K/22)', () => {
   });
 });
 
+describe('Flip button focus (T18, QA10)', () => {
+  /** QA10: autofocus only with a mouse or trackpad. jsdom's default matchMedia answers false (a touch screen). */
+  const media = window.matchMedia;
+  const finePointer = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('pointer: fine'), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = media;
+  });
+
+  it('on a touch screen [Flip card] takes focus neither at the start nor after an answer', async () => {
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).not.toHaveFocus();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).not.toHaveFocus();
+  });
+
+  it('with a mouse or trackpad [Flip card] takes focus at the start and again after an answer', async () => {
+    finePointer();
+    renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    expect(screen.getByRole('button', { name: /Flip card/ })).toHaveFocus();
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Card 2 of 2' });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Flip card/ })).toHaveFocus());
+  });
+});
+
 describe('ReviewSession waits for answers', () => {
   it('a second press while the answer is in flight sends nothing', async () => {
     let release!: () => void;
