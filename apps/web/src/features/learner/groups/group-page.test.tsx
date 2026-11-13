@@ -98,21 +98,14 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
   });
 
-  it('the level bar: one segment per non-empty level, the legend names every level with its count', async () => {
+  it('the page head shows no today bar and no level bar (owner 14/11/2026)', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    const bar = await screen.findByRole('figure', { name: 'Số từ theo bậc' });
-    expect(within(bar).getAllByRole('img').map((s) => s.getAttribute('aria-label'))).toEqual([
-      'Mới · 1 từ', 'Bậc 1 · 2 từ · ôn lại sau 1 ngày', 'Bậc 3 · 1 từ · ôn lại sau 7 ngày',
-    ]);
-    expect(within(within(bar).getByRole('list')).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      '1 Mới', '2 Bậc 1', '0 Bậc 2', '1 Bậc 3', '0 Bậc 4', '0 Bậc 5',
-    ]);
-  });
-
-  it('English names the first level "New"', async () => {
-    renderApp(<GroupPage />, { chrome: true, routes: routes(), locale: 'en' });
-    const bar = await screen.findByRole('figure', { name: 'Words by level' });
-    expect(within(bar).getAllByRole('img')[0].getAttribute('aria-label')).toMatch(/^New · /);
+    const main = screen.getByRole('main');
+    expect(await within(main).findByRole('heading', { level: 1, name: 'Công nghệ' }, { timeout: 5000 })).toBeInTheDocument();
+    // Control: the word table rendered, so an empty figure list means the bars are gone, not that the page is still loading.
+    expect(await within(main).findByRole('table')).toBeInTheDocument();
+    expect(within(main).queryByRole('figure')).not.toBeInTheDocument();
+    expect(within(main).queryByText(/ưu tiên$/)).not.toBeInTheDocument();
   });
 
   it('the head has no colour square before the title (Chỗ bổ sung)', async () => {
@@ -122,13 +115,9 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(title.textContent).toBe('Công nghệ');
   });
 
-  it('the page head: the stack, the colour title and today as a three-part bar with its legend (mockup m9, owner 13/11/2026)', async () => {
+  it('the page head: the stack and the title; the back link goes to the groups (mockup m9, owner 13/11/2026)', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'Công nghệ' })).toBeInTheDocument();
-    const today = await screen.findByRole('figure', { name: 'Hôm nay' });
-    expect(today.querySelectorAll('[data-today-part]')).toHaveLength(3);
-    const legend = within(today).getByRole('list');
-    expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['1 ưu tiên', '1 đến hạn', '1 mới']);
     expect(screen.getByRole('link', { name: 'Nhóm của bạn' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
@@ -362,11 +351,10 @@ describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
   });
 
-  it('control: a deck with words keeps its counts and chart; the ⋯ menu only renames and deletes', async () => {
+  it('control: a deck with words shows its table; the ⋯ menu only renames and deletes', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const main = screen.getByRole('main');
-    expect(await within(main).findByRole('figure', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
-    expect(within(main).getAllByRole('figure')).toHaveLength(2);
+    expect(await within(main).findByRole('table', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);

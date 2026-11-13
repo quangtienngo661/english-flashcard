@@ -19,7 +19,6 @@ import { Button } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { Skeleton } from '@/ui/Skeleton';
 import { Card } from '@/ui/Card';
-import { LevelBar } from '@/ui/LevelBar';
 import { PageTitle } from '@/ui/PageTitle';
 import { Select } from '@/ui/Select';
 import { SectionTitle } from '@/ui/SectionTitle';
@@ -27,7 +26,6 @@ import { ButtonLink } from '@/ui/ButtonLink';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
 import { LEVEL_FILL, STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
-import { rhythm } from './carousel';
 import { rememberCentre } from './centre-memory';
 import { deckPlan } from './deck-actions';
 import { useCloseFlip, useFlipFrom } from './flip';
@@ -57,7 +55,7 @@ function filterCount(summary: GroupSummary | undefined, filter: WordFilter, tota
 
 const ALERT = 'flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card';
 
-/** Một nhóm (Figma 84:3552 / 84:3749): `/app/group?id=` — the stack from the carousel, today's counts, the rhythm bar and every word. */
+/** Một nhóm (Figma 84:3552 / 84:3749): `/app/group?id=` — the stack from the carousel, the title and every word. */
 export function GroupPage() {
   const t = useTranslations('App.group');
   const tCommon = useTranslations('App.common');
@@ -179,19 +177,6 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
               {detail.name}
             </PageTitle>
           </div>
-          {summary && !empty && (
-            <TodayBar
-              label={t('todayChips')}
-              parts={[
-                { key: 'priority', fill: 'bg-wm-level-priority', count: summary.today.priority, text: t('chipPriority', { count: summary.today.priority }) },
-                { key: 'due', fill: 'bg-wm-level-due', count: summary.today.due, text: t('chipDue', { count: summary.today.due }) },
-                { key: 'new', fill: LEVEL_FILL[0], count: summary.today.new, text: t('chipNew', { count: summary.today.new }) },
-              ]}
-            />
-          )}
-          {summary && !empty && (
-            <LevelBar size="lg" counts={rhythm(summary.cells).map((c) => c.total)} />
-          )}
           {(() => {
             const menu = (
               <DeckMenu
@@ -445,41 +430,6 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
         </Dialog>
       </td>
     </tr>
-  );
-}
-
-/**
- * Today in this group (mockup m9-ban-chot, Một nhóm; owner 13/11/2026): a thin bar of priority, due and new words, each part as wide as its
- * count, and a legend under it with the number in bold. Up to 380 px wide, above the level bar.
- */
-function TodayBar({ label, parts }: { label: string; parts: Array<{ key: string; fill: string; count: number; text: string }> }) {
-  const total = parts.reduce((sum, part) => sum + part.count, 0);
-  return (
-    <figure aria-label={label} className="m-0 flex w-full max-w-95 flex-col gap-2">
-      <div aria-hidden className="flex h-2 gap-0.75">
-        {total === 0 && <span className="block flex-1 rounded-wm-key bg-wm-line" />}
-        {parts.map((part) =>
-          part.count > 0 ? (
-            <span
-              key={part.key}
-              data-today-part=""
-              className={cn('block min-w-0 rounded-wm-key', part.fill)}
-              // raw-ok: each part is as wide as its count
-              style={{ flexGrow: part.count, flexBasis: 0 }}
-            />
-          ) : null,
-        )}
-      </div>
-      <ul className="flex flex-wrap gap-x-3.5 gap-y-1 text-wm-meta text-wm-muted">
-        {parts.map((part) => (
-          <li key={part.key} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', part.fill)} />
-            {/* The copy is "{count} ưu tiên": the number is drawn apart, in bold. */}
-            <b className="font-bold tabular-nums text-wm-ink">{part.count}</b> {part.text.replace(/^\S+\s/, '')}
-          </li>
-        ))}
-      </ul>
-    </figure>
   );
 }
 
