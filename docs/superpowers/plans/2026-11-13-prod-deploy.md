@@ -29,8 +29,11 @@ for now (Task 8).
 - Secrets live only in `/srv/wordmet/.env` (API and worker) and `/srv/wordmet/ops.env` (scripts) on the VPS. Never in the repo, never in
   chat. The repo holds `deploy/env.production.example` and `deploy/ops.env.example` with names and placeholders only.
 - `rollback.sh` never runs a migration. Migrations stay add-only (expand/contract).
-- Production API env: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, `TRUST_PROXY=uniquelocal`, no `*_FAKE_ENABLED`, Google sign-in
-  unset (Q4 proposal), `MAINTENANCE_ENABLED=false` on `api`, `true` on `worker`.
+- Production API env: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, `TRUST_PROXY=uniquelocal`, no `*_FAKE_ENABLED`,
+  `MAINTENANCE_ENABLED=false` on `api`, `true` on `worker`.
+- Google sign-in on from launch (owner 14/11/2026): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+  `GOOGLE_REDIRECT_URI=https://api.wordmet.com/v1/auth/google/callback`, `OAUTH_COOKIE_KEY` (its own generated secret). The web build
+  needs nothing for it (`GoogleSignIn.tsx` calls `/v1/auth/google/start` on the API base URL).
 - Google voices on from launch (owner 13/11/2026): `GOOGLE_TTS_CREDENTIALS`, `TTS_VOICE_UK`, `TTS_VOICE_US` and the four `AUDIO_STORAGE_*`
   keys of an R2 bucket that is not the backup bucket, `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`; the web build gets the same
   address as `NEXT_PUBLIC_AUDIO_BASE_URL` (CSP `media-src`, `apps/web/src/lib/app-csp.ts:34`). Publishing a sense queues its two
@@ -208,7 +211,8 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
     `GOOGLE_TTS_CREDENTIALS=<base64 of the service account JSON, one line>`, `TTS_VOICE_UK`, `TTS_VOICE_US` (the voices the owner chose),
     `AUDIO_STORAGE_ENDPOINT=https://<account>.r2.cloudflarestorage.com`, `AUDIO_STORAGE_BUCKET`, `AUDIO_STORAGE_ACCESS_KEY_ID`,
     `AUDIO_STORAGE_SECRET_ACCESS_KEY`, `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`, `TTS_FAKE_ENABLED=false`,
-    `AUDIO_STORAGE_FAKE_ENABLED=false`.
+    `AUDIO_STORAGE_FAKE_ENABLED=false`, and the Google sign-in keys of Global Constraints with
+    `GOOGLE_REDIRECT_URI=https://api.wordmet.com/v1/auth/google/callback` and `GOOGLE_FAKE_ENABLED=false`.
   - `ops.env.example`: `R2_BACKUP_ENDPOINT`, `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY`,
     `ALERT_RESEND_API_KEY`, `ALERT_FROM`, `ALERT_TO`. The scripts read `MAIL_DAILY_BUDGET`, `MAIL_BUDGET_KEY` and `POSTGRES_*` from `.env`.
 - [ ] **Step 4: Validate.**
@@ -386,7 +390,7 @@ Not in code: one of the two `legal_versions` rows in the local DB mentions ads o
 - [ ] **Step 1: Run the whole path on this machine (Git Bash and Docker Desktop).**
   - Setup: `WORDMET_HOME` is a scratch folder holding a clone of this branch; `.env` from `env.production.example` with `TURNSTILE_MODE=fake`,
     `BILLING_PRODUCTION=false` and SMTP pointed at Mailpit; `CADDY_SITES=:80`, `HTTP_PORT=8088`, `HTTPS_PORT=8448`; the voice keys left
-    empty (no R2 here), so the API starts with speech audio off.
+    empty (no R2 here), so the API starts with speech audio off; the Google keys empty too (Google sign-in off).
   - First deploy that fails: `POSTGRES_PASSWORD` wrong only for `api`, run `deploy.sh <HEAD>`. Expected: prints
     `no previous version to return to`, exits 1. Fix the password.
   - Deploy: run `deploy.sh <HEAD>`. Expected: `curl -s localhost:8088/v1/health/ready` returns `"status":"ok"`.

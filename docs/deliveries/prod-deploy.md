@@ -7,7 +7,7 @@ Plan đầy đủ: `docs/superpowers/plans/2026-11-13-prod-deploy.md`. Nguồn: 
 - Q9: bỏ TypedSQL, image nhiều tầng.
 - Q10: deploy bằng script chạy tay, build image trên VPS.
 - Q14: công tắc `WEB_DEPLOY_PAUSED`.
-- Q4 (một phần, tối 13/11): bật giọng Google ngay khi launch, file trên R2 `audio.wordmet.com`; tắt AdSense.
+- Q4 (13–14/11): bật giọng Google ngay khi launch, file trên R2 `audio.wordmet.com`; tắt AdSense; bật Google sign-in ngay khi launch.
 
 Nhánh `feat/prod-deploy` từ `origin/dev`, một PR vào `dev`.
 
@@ -28,3 +28,4 @@ Sửa 13/11/2026 sau khi sync `dev` (`2d858021`): thêm việc 8 theo yêu cầu
 cập nhật theo giao diện mới đã vào `dev`. Các việc 1–7 không đổi.
 Sửa tối 13/11: bật giọng Google ngay khi launch. File mẫu môi trường (việc 4) thêm khóa Google TTS và R2 giọng đọc; trang vận hành (việc 5)
 thêm bước `tts:backfill` và kiểm một file trên `audio.wordmet.com`; việc 6 thêm `NEXT_PUBLIC_AUDIO_BASE_URL`.
+Sửa 14/11: bật Google sign-in. File mẫu môi trường (việc 4) có thêm bốn khóa Google với địa chỉ quay về `https://api.wordmet.com/v1/auth/google/callback`.
