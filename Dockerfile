@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1.7
 # One Dockerfile for the three apps; pick one with `target:` (see docker-compose.yml, profile `app`).
-#   api    NestJS API + worker (apps/api). Builds when the container starts, because `prisma generate --sql` (TypedSQL)
-#          must read the live database, which does not exist at image-build time.
+#   api        NestJS API + worker for `pnpm bootstrap` (apps/api). Migrates and builds when the container starts.
+#   api-prod   Production API image (deploy/compose.prod.yml): built once per commit with no database, runs `node dist/main.js`
+#              as the non-root `node` user; the worker runs the same image with `node dist/worker.js`.
+#   api-build  Also the migrate image of production: it keeps the Prisma CLI (`pnpm exec prisma migrate deploy`).
 #   admin  Vite build of apps/admin, served by nginx.
 #   web    Next build of apps/web (learner app on), served by `next start`.
 # Build context is the repo root (the pnpm workspace needs the root lockfile).
@@ -38,6 +40,29 @@ WORKDIR /app/apps/api
 # Compose overrides this only for the one-off commands (seed, admin grant). The API and the worker run together
 # (scripts/run-dev.mjs), the same way `pnpm run:dev` runs them on a host.
 CMD ["sh", "-c", "pnpm db:setup && pnpm build && node scripts/run-dev.mjs"]
+
+# Production build. `prisma generate` needs no database since TypedSQL went (14/11/2026); prisma.config.ts only needs DATABASE_URL to be
+# set, so a placeholder that is never connected to.
+FROM api-deps AS api-build
+COPY apps/api apps/api
+WORKDIR /app/apps/api
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:1/build
+RUN pnpm exec prisma generate && pnpm build
+
+FROM manifests AS api-prod-deps
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store   pnpm install --frozen-lockfile --prod --filter "api..."
+
+FROM node:${NODE_VERSION}-bookworm-slim AS api-prod
+RUN apt-get update   && apt-get install -y --no-install-recommends openssl ca-certificates   && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=api-prod-deps /app/node_modules ./node_modules
+COPY --from=api-prod-deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=api-build /app/apps/api/dist ./apps/api/dist
+COPY --from=api-build /app/apps/api/package.json ./apps/api/package.json
+WORKDIR /app/apps/api
+ENV NODE_ENV=production
+USER node
+CMD ["node", "dist/main.js"]
 
 # ---- admin -----------------------------------------------------------------------------------------------------------
 FROM manifests AS admin-build
