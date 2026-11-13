@@ -950,3 +950,31 @@ Kèm các minor sửa ngay: comment `Dialog.tsx:33`, nhãn task ở R251 và R25
 - Lighthouse và Schema chạy trên build bootstrap (localhost, không `INDEXABLE`), chưa chạy trên domain thật.
 - Quầng vàng trang công khai so mockup, và nền cả trang dừng ở 900 px: chưa xác nhận trong trình duyệt thật.
 - Chưa chụp tiếng Anh.
+
+# Giao diện mới — as-built phần 12: sửa theo audit giao diện (13/11/2026)
+
+29 commit từ `227f1926` đến `591c84d2` trên `feat/giao-dien-moi-polish` (chưa push), làm tuần tự theo 6 nhóm. Báo cáo từng nhóm (red-run, quyết định tự
+chốt) ở `.superpowers/sdd/2026-11-10-giao-dien-moi/part12/batch1-report.md` … `batch6-report.md` (git bỏ qua thư mục này).
+
+**Kiểm tra**
+- Unit: `pnpm test` 161 file, 1718/1718 pass sau nhóm 6; lint, typecheck (gồm e2e), kiểm key chữ (0 key thừa) sạch. Admin: lint, typecheck, build
+  sạch; `pnpm test` có 3 test fail khi chạy cả bộ, pass khi chạy riêng (admin không đọc token đã đổi; chưa tìm nguyên nhân).
+- E2E (`pnpm cf:docker`): viewports, m2, m5a, m5b, m6, recall, landing, auth-layout: lượt 1 182 pass, 5 fail vì dòng thông báo mới lặp chữ đang hiện
+  (sửa test ở `591c84d2`); lượt 2 m2 + m6: 35 pass.
+- Trình duyệt (Playwright trên stack `pnpm bootstrap` mới build, script `part12/verify.mjs`, ảnh ở `docs/audit/2026-11-13-web-review-shots/after/`):
+  C1 ở 1024 là nút "Tìm từ", ở 1280 ô tìm rộng 187 px; C2 ở 1024 bảng rộng 864 px, "presentation" một dòng; T1 ở 1024 nút lịch không chạm link
+  hay nút nào ở Luyện tập; trên điện thoại cuộn thì nút trượt đi (`opacity 0`) và quay lại khi dừng; T3 ô Hôm nay `name=word autocomplete=off
+  spellcheck=false`; T11 viền ô chọn #878ea5; T14 `scroll-padding-top` 60 px ở 390; T10 công tắc "Chuyển động" tắt thì bỏ lớp `js` và lưu `off`.
+
+**Khác plan (quyết định trong lúc làm)**
+- G.3: làn cho nút lịch kéo tới 1440 px (plan 1424) vì thanh cuộn Windows 17 px; `lg:px-8` đổi thành `lg:pl-8` để làn không bị đè từ 1024 px.
+- G.5: lỗi "thiếu ô" giữ tới lần bấm sau; focus chuyển theo một bộ đếm mỗi lần đặt lỗi, không theo object lỗi.
+- G.6: chữ lỗi captcha mới là key riêng `App.auth.captchaLoadFailed`; `App.errors.captcha-unavailable` giữ cho lỗi 503 của server.
+- G.7: phần minh họa ở bảng đăng ký chạy một vòng dù công tắc ở trạng thái nào; bật lại chuyển động thì các khối trên màn hiện dần lại một lần.
+- G.12: tiêu đề tiếng Việt vẫn ghép tay "05/11" vì Intl vi-VN in "13-11"; chỉ tiếng Anh qua Intl ("Nov 5").
+
+**Chưa kiểm**
+- Trình đọc màn hình thật (T8, T15, T16, T20–T23, T25, T26): mới đo DOM và test.
+- Tiếng Anh của hộp Ngày trên trình duyệt: tài khoản test để ngôn ngữ tiếng Việt nên `/en/app` chuyển về `/vi`; chỉ có unit test.
+- Captcha thật (T9) và lỗi AI giữa phiên (T21): cần môi trường có Turnstile thật hoặc AI lỗi.
+- iPhone thật: tự viết hoa, nút trượt khi cuộn có quán tính.

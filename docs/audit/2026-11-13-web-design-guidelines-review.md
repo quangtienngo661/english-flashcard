@@ -13,6 +13,8 @@ Bỏ qua theo yêu cầu (đã biết, để sau): X 32 px trên điện thoại
 
 **Tổng (sau lượt 2):** Cao 2 · Trung bình 24 · Thấp 38. Trong đó 19 lỗi đã thấy trên trình duyệt (TD; T10 và T14 chỉ thấy một phần), còn lại chỉ suy từ code.
 
+**Đã sửa (13/11/2026):** mọi lỗi Cao và Trung bình, cùng L38, trong Part 12 của plan (commit `227f1926` … `591c84d2`); as-built ở `docs/deliveries/giao-dien-moi.md`, checklist tự kiểm ở mục 12 của `docs/deliveries/giao-dien-moi-polish-checklist.md`. Các lỗi Thấp còn lại chưa sửa.
+
 Cột "Bằng chứng": **TD** = đã thấy trên trình duyệt (kèm số đo); **Code** = chỉ suy từ code.
 
 ## Cao
