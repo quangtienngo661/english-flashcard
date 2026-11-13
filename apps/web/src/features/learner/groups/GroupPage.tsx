@@ -172,7 +172,8 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
         {/* Above the group info while it flies in from the carousel (motion doc §3). */}
         <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
         <div data-in="1" className="flex w-full min-w-0 flex-col gap-4">
-          <div className="min-w-0 wrap-anywhere">
+          {/* Owner 14/11/2026: the actions sit right under the title, so the title's own 20 px bottom margin goes here. */}
+          <div className="min-w-0 wrap-anywhere *:mb-0">
             <PageTitle eyebrow={created === null ? t('metaNoDate', { count: detail.item_count }) : t('meta', { count: detail.item_count, date: created })}>
               {detail.name}
             </PageTitle>
