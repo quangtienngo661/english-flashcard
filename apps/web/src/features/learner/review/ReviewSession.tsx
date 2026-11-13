@@ -129,7 +129,19 @@ export function ReviewSession() {
           className="grid grid-cols-2 items-start gap-x-3 gap-y-5 md:grid-cols-[minmax(0,1fr)_minmax(0,22.5rem)_minmax(0,1fr)] md:items-center md:gap-x-7"
         >
           {/* The card first in reading order; on desktop the piles move to its sides (mockup L297: on a phone they sit under it). */}
-          <div className="col-span-2 md:col-span-1 md:col-start-2 md:row-start-1">
+          <div className="col-span-2 flex flex-col gap-3 md:col-span-1 md:col-start-2 md:row-start-1">
+            {/* Owner 13/11/2026: where to drag the card, left for Still learning, right for Know (the piles' colours). */}
+            <p role="note" aria-label={t('review.dragHint')} className="flex items-center justify-center gap-3 font-wm-sans text-wm-meta font-semibold">
+              <span className="inline-flex items-center gap-1 text-wm-fail">
+                <ArrowLeft aria-hidden className="size-3.5" />
+                {t('review.stillLearning')}
+              </span>
+              <span className="text-wm-muted">{t('review.dragHint')}</span>
+              <span className="inline-flex items-center gap-1 text-wm-pass">
+                {t('review.know')}
+                <ArrowRight aria-hidden className="size-3.5" />
+              </span>
+            </p>
             <CardStack
               ref={stack}
               cards={session.cards}

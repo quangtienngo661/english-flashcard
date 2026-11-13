@@ -1059,6 +1059,7 @@
       "stampKnow": "lên {level}",
       "flipBack": "Xem mặt trước",
       "nudge": "Lật thẻ để xem nghĩa trước đã.",
+      "dragHint": "Kéo thẻ",
       "legend": "Phím",
       "stop": "Dừng phiên",
       "pileList": "{name} · {count, number} thẻ",

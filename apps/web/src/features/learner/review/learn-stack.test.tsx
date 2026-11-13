@@ -234,6 +234,13 @@ describe('Học layout (P.17, mockup L227-304)', () => {
     expect(screen.getByRole('region', { name: 'Know' })).toHaveTextContent(/^0Know$/);
   });
 
+  it('above the card a line shows where to drag it: left for Still learning, right for Know (owner 13/11/2026)', async () => {
+    renderApp(<ReviewSession />, { session: true, routes: routes() });
+    await top(1);
+    const hint = screen.getByRole('note', { name: 'Drag the card' });
+    expect(hint).toHaveTextContent(/^Still learning\s*Drag the card\s*Know$/);
+  });
+
   it('the X alone ends the session: a button named "Stop" with no text', async () => {
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);

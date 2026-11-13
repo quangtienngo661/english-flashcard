@@ -1059,6 +1059,7 @@
       "stampKnow": "up to {level}",
       "flipBack": "See the front",
       "nudge": "Flip the card to see the meaning first.",
+      "dragHint": "Drag the card",
       "legend": "Keys",
       "stop": "Stop",
       "pileList": "{name} · {count, plural, one {# card} other {# cards}}",
