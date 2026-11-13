@@ -139,7 +139,7 @@ describe('wm design tokens (web.css, web-dark.css)', () => {
 
 // M3 (design §7.3, §7.4; motion doc §1, §3). Group inks: Figma's darker inks, green and blue mixed with ink (ruling).
 const GROUP = ['#e5603f', '#149384', '#7a55d3', '#d99a17', '#4a9637', '#d2427a', '#2a86d1'];
-const GROUP_INK = ['#984941', '#17696c', '#56429d', '#916d28', '#376d45', '#8c3765', '#29629d'];
+const GROUP_INK = ['#984941', '#17696c', '#56429d', '#86641f', '#376d45', '#8c3765', '#29629d'];
 
 describe('wm group and motion tokens (M3)', () => {
   it('declares seven group colours with soft, wash and ink, plus the empty tone', () => {

@@ -8,6 +8,8 @@
   --color-wm-ink: #eceef5;
   --color-wm-muted: #a6adc4;
   --color-wm-ghost: #353c53;
+  /* QA8: 3,66:1 on surface. */
+  --color-wm-control-line: #6b7392;
   --color-wm-line: #2a3044;
   /* Word page hairlines (mockup L322): ink #eceef5 16 % on surface #171b2a, oklab */
   --color-wm-rule: #333846;

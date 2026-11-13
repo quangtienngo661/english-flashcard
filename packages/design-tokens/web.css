@@ -8,6 +8,8 @@
   --color-wm-ink: #1b2444;
   --color-wm-muted: #525a78;
   --color-wm-ghost: #c9cedc;
+  /* Checkbox box and switch track when off (Part 12, QA8): a non-text control line at 3:1 (3,26:1 on surface, 3,04:1 on bg). */
+  --color-wm-control-line: #878ea5;
   --color-wm-line: #e1e5ee;
   /* Word page hairlines (mockup L322): ink #1b2444 16 % on surface #ffffff, oklab */
   --color-wm-rule: #d6d8df;
@@ -323,7 +325,8 @@
   --color-wm-group-3: #d99a17;
   --color-wm-group-3-soft: color-mix(in srgb, #d99a17 50%, #ffffff);
   --color-wm-group-3-wash: color-mix(in srgb, #d99a17 12%, #ffffff);
-  --color-wm-group-3-ink: #916d28;
+  /* QA9: darkened from #916d28 (4,30:1) to read at 4,93:1 on its wash. */
+  --color-wm-group-3-ink: #86641f;
   --color-wm-group-4: #4a9637;
   --color-wm-group-4-soft: color-mix(in srgb, #4a9637 50%, #ffffff);
   --color-wm-group-4-wash: color-mix(in srgb, #4a9637 12%, #ffffff);

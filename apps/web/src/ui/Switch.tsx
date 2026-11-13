@@ -41,7 +41,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
             </span>
             {description && <span className="font-wm-sans text-wm-caption text-wm-muted">{description}</span>}
           </span>
-          <span aria-hidden className={`${TRACK} bg-wm-ghost opacity-60`}>
+          <span aria-hidden className={`${TRACK} bg-wm-control-line opacity-60`}>
             <span className={`${THUMB} ml-0.5`} />
           </span>
         </button>
@@ -62,7 +62,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
       </span>
       <span
         aria-hidden
-        className={`${TRACK} bg-wm-ghost group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-selected:bg-wm-accent`}
+        className={`${TRACK} bg-wm-control-line group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-selected:bg-wm-accent`}
       >
         <span className={`${THUMB} ml-0.5 group-data-selected:translate-x-5`} />
       </span>
