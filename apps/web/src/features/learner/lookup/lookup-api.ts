@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type Query } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
 
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
@@ -53,19 +54,32 @@ export const lookupHref = (locale: string, p: LookupParams) => {
 
 const PAGE_SIZE = 20;
 
+const wordListOptions = (api: ReturnType<typeof useApi>, query: string, token: string | null) => ({
+  queryKey: ['words', query, 'page', token],
+  queryFn: () =>
+    api.get<WordPage>(`/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${token ? `&page_token=${encodeURIComponent(token)}` : ''}`),
+  staleTime: 60_000,
+});
+
 /**
  * One dictionary page of `GET /v1/words` (M4.5): `token` is the cursor of that page (`null` for the first). Each page has its own
- * cache entry, so going back a page asks nothing.
+ * cache entry, so going back a page asks nothing. The next page is fetched as soon as this one arrives, and while a page of the same
+ * search loads the previous one stays as placeholder (`isPlaceholderData`); a new search or filter starts empty.
  */
 export function useWordList(p: LookupParams, token: string | null) {
   const api = useApi();
+  const client = useQueryClient();
   const query = lookupQuery(p);
-  return useQuery({
-    queryKey: ['words', query, 'page', token],
-    queryFn: () =>
-      api.get<WordPage>(`/v1/words?page_size=${PAGE_SIZE}${query ? `&${query}` : ''}${token ? `&page_token=${encodeURIComponent(token)}` : ''}`),
-    staleTime: 60_000,
+  const list = useQuery({
+    ...wordListOptions(api, query, token),
+    placeholderData: (previous: WordPage | undefined, previousQuery: Query<WordPage, Error, WordPage, readonly unknown[]> | undefined) =>
+      previousQuery?.queryKey[1] === query ? previous : undefined,
   });
+  const next = list.isPlaceholderData ? null : (list.data?.next_page_token ?? null);
+  useEffect(() => {
+    if (next) void client.prefetchQuery(wordListOptions(api, query, next));
+  }, [api, client, query, next]);
+  return list;
 }
 
 export function useTopics() {

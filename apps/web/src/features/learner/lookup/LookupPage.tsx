@@ -46,6 +46,8 @@ export function LookupPage() {
     setTokens([null]);
   }
   const list = useWordList(params, tokens.at(-1) ?? null);
+  // While another page of this search loads, the shown words are the previous page's: the page buttons wait for it.
+  const paging = list.isPlaceholderData;
   const words = list.data?.items ?? [];
   const [picked, setPicked] = useState<string | null>(null);
   const selected = words.find((w) => w.lemma === picked) ?? words[0];
@@ -97,8 +99,8 @@ export function LookupPage() {
             selected={selected.lemma}
             linked={!large}
             onSelect={setPicked}
-            onPrev={tokens.length > 1 ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
-            onNext={list.data?.next_page_token ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
+            onPrev={tokens.length > 1 && !paging ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
+            onNext={list.data?.next_page_token && !paging ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
           />
           {large && (
             <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24">
