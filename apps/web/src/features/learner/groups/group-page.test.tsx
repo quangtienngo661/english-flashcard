@@ -155,11 +155,15 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(within(row).getByRole('link', { name: 'deploy' })).toHaveAttribute('href', '/vi/app/word?w=deploy');
   });
 
-  it('Học · Ôn (đợt C §4.1) and the long-overdue link', async () => {
+  it('the actions of mockup m9 (owner 13/11/2026, no Enter key): [Ôn N thẻ], then Học N từ mới, Học tất cả N từ, Thêm từ as text', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
-    expect(await screen.findByRole('link', { name: 'Học' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
-    expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
-    expect(screen.queryByRole('link', { name: /Ôn 3 thẻ/ })).not.toBeInTheDocument();
+    const recall = await screen.findByRole('link', { name: 'Ôn 2 thẻ' }, { timeout: 5000 });
+    expect(recall).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
+    expect(recall).not.toHaveTextContent('Enter');
+    expect(screen.getByRole('link', { name: 'Học 1 từ mới' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
+    expect(screen.getByRole('link', { name: 'Học tất cả 4 từ' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=all`);
+    expect(screen.getByRole('button', { name: 'Thêm từ' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Học' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /3 từ lâu chưa ôn/ })).toHaveAttribute('href', `/vi/app/group/backlog?id=${G}`);
   });
 
@@ -333,14 +337,14 @@ describe('GroupPage: a deck with no words (owner 06/11/2026)', () => {
     expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
   });
 
-  it('control: a deck with words keeps its counts, chart and "Học tất cả N từ" in the menu', async () => {
+  it('control: a deck with words keeps its counts and chart; the ⋯ menu only renames and deletes', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const main = screen.getByRole('main');
     expect(await within(main).findByRole('figure', { name: 'Hôm nay' }, { timeout: 5000 })).toHaveTextContent('1 ưu tiên');
     expect(within(main).getAllByRole('figure')).toHaveLength(2);
     expect(within(main).queryByRole('heading', { name: 'Nhóm này chưa có từ nào' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tùy chọn nhóm' }));
-    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Học tất cả 4 từ', 'Xóa nhóm']);
+    expect(within(await screen.findByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Đổi tên nhóm', 'Xóa nhóm']);
   });
 });
 

@@ -941,6 +941,8 @@
       "keysClose": "Esc close"
     },
     "group": {
+      "recallCount": "Review {count, plural, one {# card} other {# cards}}",
+      "learnNew": "Learn {count, plural, one {# new word} other {# new words}}",
       "addWord": "Add word",
       "back": "Your decks",
       "meta": "{count, plural, one {# word} other {# words}} · created {date}",

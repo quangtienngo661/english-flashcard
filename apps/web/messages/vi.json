@@ -941,6 +941,8 @@
       "keysClose": "Esc đóng"
     },
     "group": {
+      "recallCount": "Ôn {count, number} thẻ",
+      "learnNew": "Học {count, number} từ mới",
       "addWord": "Thêm từ",
       "back": "Nhóm của bạn",
       "meta": "{count, number} từ · tạo ngày {date}",

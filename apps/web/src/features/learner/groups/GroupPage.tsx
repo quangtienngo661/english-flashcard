@@ -23,11 +23,12 @@ import { LevelBar } from '@/ui/LevelBar';
 import { LevelChip, type LevelChipTone } from '@/ui/LevelChip';
 import { PageTitle } from '@/ui/PageTitle';
 import { SectionTitle } from '@/ui/SectionTitle';
-import { TextButton } from '@/ui/TextButton';
+import { ButtonLink } from '@/ui/ButtonLink';
+import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
 import { LEVEL_FILL, STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
 import { rhythm } from './carousel';
-import { DeckButtons } from './DeckButtons';
+import { deckPlan } from './deck-actions';
 import { useCloseFlip, useFlipFrom } from './flip';
 import { useGroupDialogs } from './GroupDialogs';
 import { GroupStack } from './GroupStack';
@@ -187,16 +188,14 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             {empty ? (
               <Button onPress={() => addWord.open(undefined, { groupId: detail.id })}>{t('addWord')}</Button>
             ) : (
-              summary && <DeckButtons group={summary} buttonClassName="w-29.75 md:w-37" />
+              summary && <GroupActions group={summary} total={detail.item_count} />
             )}
             {!empty && (
-              <TextButton tone="muted" onPress={() => addWord.open(undefined, { groupId: detail.id })} className="text-wm-button md:min-h-11">
+              <TextButton tone="muted" onPress={() => addWord.open(undefined, { groupId: detail.id })} className="text-wm-button text-wm-ink md:min-h-11">
                 {t('addWord')}
               </TextButton>
             )}
             <DeckMenu
-              studyAll={`/${locale}/app/review?group=${detail.id}&mode=all`}
-              total={detail.item_count}
               onRename={() => open({ kind: 'rename', group: detail })}
               onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
             />
@@ -274,7 +273,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
 const MENU_ITEM = 'cursor-pointer rounded-wm-control px-3 py-2 font-wm-sans text-wm-small text-wm-ink outline-none data-focused:bg-wm-accent-soft';
 
 /** The deck's ⋯ menu: rename, study every word, delete. */
-function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; total: number; onRename: () => void; onDelete: () => void }) {
+function DeckMenu({ onRename, onDelete }: { onRename: () => void; onDelete: () => void }) {
   const t = useTranslations('App');
   return (
     <MenuTrigger>
@@ -289,11 +288,6 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
           <MenuItem className={MENU_ITEM} onAction={onRename}>
             {t('groups.rename')}
           </MenuItem>
-          {total > 0 && (
-            <MenuItem className={MENU_ITEM} href={studyAll}>
-              {t('groups.studyAll', { count: total })}
-            </MenuItem>
-          )}
           <MenuItem className={cn(MENU_ITEM, 'text-wm-fail')} onAction={onDelete}>
             {t('groups.delete')}
           </MenuItem>
@@ -467,5 +461,43 @@ function TodayBar({ label, parts }: { label: string; parts: Array<{ key: string;
         ))}
       </ul>
     </figure>
+  );
+}
+
+/**
+ * The actions of mockup m9 (owner 13/11/2026, without the Enter key): the action with work waiting as the one button ("Ôn N thẻ" or
+ * "Học N từ mới"), then as text the other one, "Học tất cả N từ" (moved out of the ⋯ menu) and, after them in the head, "Thêm từ". A deck
+ * done for today offers "Ôn tập" when it has learned words.
+ */
+function GroupActions({ group, total }: { group: GroupSummary; total: number }) {
+  const t = useTranslations('App');
+  const locale = useLocale();
+  const plan = deckPlan(group);
+  const due = group.today.priority + group.today.due;
+  const review = (mode: 'new' | 'all') => `/${locale}/app/review?group=${group.id}&mode=${mode}`;
+  const recall = `/${locale}/app/recall?group=${group.id}`;
+  const actions: Array<{ key: string; href: string; label: string }> = [];
+  if (plan.recall === 'due') actions.push({ key: 'recall', href: recall, label: t('group.recallCount', { count: due }) });
+  if (plan.learn === 'new') actions.push({ key: 'learn', href: review('new'), label: t('group.learnNew', { count: group.today.new }) });
+  if (plan.recall === 'extra') actions.push({ key: 'extra', href: recall, label: t('deck.recallExtra') });
+  if (total > 0) actions.push({ key: 'all', href: review('all'), label: t('groups.studyAll', { count: total }) });
+  const [main, ...rest] = actions;
+  if (!main) return null;
+  return (
+    <>
+      <ButtonLink href={main.href} data-google-vignette="false" variant="primary">
+        {main.label}
+      </ButtonLink>
+      {rest.map((action) => (
+        <Link
+          key={action.key}
+          href={action.href}
+          data-google-vignette="false"
+          className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'text-wm-button md:min-h-11')}
+        >
+          {action.label}
+        </Link>
+      ))}
+    </>
   );
 }
