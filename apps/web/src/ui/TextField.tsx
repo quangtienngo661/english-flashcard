@@ -30,13 +30,14 @@ export type TextFieldProps = {
   /** Shows "12/60" under the field (needs `maxLength`). */
   showCount?: boolean;
   spellCheck?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   inputMode?: 'text' | 'numeric' | 'email';
   onBlur?: () => void;
   autoFocus?: boolean;
 };
 
 /** A labelled text input, controlled (`value`, `onChange`); the look of Figma "Ô nhập" (34:345). The error is tied to the input. */
-export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: TextFieldProps) {
+export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, autoCapitalize, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: TextFieldProps) {
   const t = useTranslations('App.common');
   return (
     <AriaTextField
@@ -60,6 +61,7 @@ export function TextField({ label, labelAside, trailing, value, onChange, error,
         <Input
           placeholder={placeholder}
           spellCheck={spellCheck}
+          autoCapitalize={autoCapitalize}
           inputMode={inputMode}
           min={min}
           max={max}

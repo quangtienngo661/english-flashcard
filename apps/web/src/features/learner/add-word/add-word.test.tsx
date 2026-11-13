@@ -116,18 +116,20 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
   });
 
-  it('audit T5: the word field, in the find view and in the manual form, is named "lemma" with no autofill or spellcheck', async () => {
+  it('audit T5: the word field, in the find view and in the manual form, is named "lemma" with no autofill, spellcheck or capital', async () => {
     open('rizz', { routes: routes() });
     const find = await screen.findByRole('textbox', { name: 'Từ' });
     expect(find).toHaveAttribute('name', 'lemma');
     expect(find).toHaveAttribute('autocomplete', 'off');
     expect(find).toHaveAttribute('spellcheck', 'false');
+    expect(find).toHaveAttribute('autocapitalize', 'none');
     await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
     const manual = await screen.findByRole('textbox', { name: 'Từ' });
     expect(manual).not.toBe(find);
     expect(manual).toHaveAttribute('name', 'lemma');
     expect(manual).toHaveAttribute('autocomplete', 'off');
     expect(manual).toHaveAttribute('spellcheck', 'false');
+    expect(manual).toHaveAttribute('autocapitalize', 'none');
   });
 
   it('manual meaning needs only the meaning', async () => {
