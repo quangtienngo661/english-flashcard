@@ -190,6 +190,20 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     expect(within(table).getAllByRole('row', { name: /^(deploy|release|went|ship)$/ })).toHaveLength(4);
   });
 
+  // T26: below md a row is display:grid, which drops the implicit table roles in Chrome and Safari; explicit roles keep them.
+  // jsdom already gives the implicit roles, so this checks the written roles.
+  it('every row, header and cell states its table role, and each word row has four cells', async () => {
+    renderApp(<GroupPage />, { chrome: true, routes: routes() });
+    const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
+    for (const row of within(table).getAllByRole('row')) expect(row).toHaveAttribute('role', 'row');
+    for (const th of within(table).getAllByRole('columnheader')) expect(th).toHaveAttribute('role', 'columnheader');
+    for (const row of within(table).getAllByRole('row', { name: /^(deploy|release|went|ship)$/ })) {
+      const cells = within(row).getAllByRole('cell');
+      expect(cells).toHaveLength(4);
+      for (const cell of cells) expect(cell).toHaveAttribute('role', 'cell');
+    }
+  });
+
   it('a row shows the part of speech, the level name, a cased status and a changed meaning', async () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
