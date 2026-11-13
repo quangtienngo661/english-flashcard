@@ -276,7 +276,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   // result is showing; the body turns into the two-column grid around them (chỗ 23).
   const wordFields = (
     <div className="flex min-w-0 flex-col gap-4 md:col-start-1">
-      <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
+      <TextField label={t('word')} name="lemma" autoComplete="off" spellCheck={false} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
       {sentenceField}
     </div>
   );
@@ -358,7 +358,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     body = (
       <div className="flex flex-col gap-4">
         <p className="-mt-2 font-wm-sans text-wm-small text-wm-muted">{t('manualSub')}</p>
-        <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} />
+        <TextField label={t('word')} name="lemma" autoComplete="off" spellCheck={false} value={word} onChange={setWord} maxLength={LEMMA_MAX} />
         {via && <p className="-mt-2 font-wm-sans text-wm-caption text-wm-ink">{t('recognized', { kind: kind(via.kind), base: via.base.lemma })}</p>}
         <TextField label={t('meaning')} value={meaning} onChange={setMeaning} maxLength={300} error={fieldError} autoFocus />
         <TextField label={t('edit.ipa')} description={t('edit.ipaHint')} value={ipa} onChange={setIpa} maxLength={IPA_MAX} spellCheck={false} />

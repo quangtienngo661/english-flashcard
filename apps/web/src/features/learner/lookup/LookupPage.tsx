@@ -153,6 +153,10 @@ function SearchBox({ query, onSearch }: { query: string; onSearch: (q: string) =
         <input
           ref={box}
           type="search"
+          name="q"
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={100}

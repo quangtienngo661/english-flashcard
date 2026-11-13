@@ -1189,6 +1189,7 @@
       "quickTitle": "Thêm từ vừa gặp",
       "quickBody": "Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn. Wordmet tự nhận ra dạng chia, như went là dạng của go.",
       "quickSubmit": "Thêm",
+      "quickPlaceholder": "Ví dụ: mitigate…",
       "kinds": {
         "third_person": "dạng ngôi thứ ba",
         "present_participle": "dạng -ing",

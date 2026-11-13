@@ -101,6 +101,15 @@ describe('TopSearch (giao diện mới M4.3)', () => {
     expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
   });
 
+  it('audit T4: the box is named "q" and has no autofill, spellcheck or auto capital', () => {
+    renderApp(<TopSearch />);
+    const box = screen.getByRole('searchbox', { name: 'Tìm từ' });
+    expect(box).toHaveAttribute('name', 'q');
+    expect(box).toHaveAttribute('autocomplete', 'off');
+    expect(box).toHaveAttribute('spellcheck', 'false');
+    expect(box).toHaveAttribute('autocapitalize', 'none');
+  });
+
   it('an empty search goes to Tra từ with no query', async () => {
     renderApp(<TopSearch />);
     await userEvent.type(screen.getByRole('searchbox'), '   {Enter}');

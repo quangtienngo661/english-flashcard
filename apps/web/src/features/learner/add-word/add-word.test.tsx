@@ -116,6 +116,20 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     await waitFor(() => expect(quickAdds(calls)[0]?.body).toEqual({ group_ids: [TRAVEL], new_word: { lemma: 'rizz', meaning: 'sức hút', ipa: 'rɪz' } }));
   });
 
+  it('audit T5: the word field, in the find view and in the manual form, is named "lemma" with no autofill or spellcheck', async () => {
+    open('rizz', { routes: routes() });
+    const find = await screen.findByRole('textbox', { name: 'Từ' });
+    expect(find).toHaveAttribute('name', 'lemma');
+    expect(find).toHaveAttribute('autocomplete', 'off');
+    expect(find).toHaveAttribute('spellcheck', 'false');
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
+    const manual = await screen.findByRole('textbox', { name: 'Từ' });
+    expect(manual).not.toBe(find);
+    expect(manual).toHaveAttribute('name', 'lemma');
+    expect(manual).toHaveAttribute('autocomplete', 'off');
+    expect(manual).toHaveAttribute('spellcheck', 'false');
+  });
+
   it('manual meaning needs only the meaning', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('rizz', { routes: routes() });

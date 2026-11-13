@@ -1189,6 +1189,7 @@
       "quickTitle": "Add a word you just met",
       "quickBody": "Type the word. Paste the sentence too if you have it. Wordmet spots word forms, like went for go.",
       "quickSubmit": "Add",
+      "quickPlaceholder": "For example: mitigate…",
       "kinds": {
         "third_person": "third-person form",
         "present_participle": "-ing form",

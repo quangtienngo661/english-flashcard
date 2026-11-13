@@ -67,6 +67,10 @@ export function TopSearch() {
         <input
           ref={box}
           type="search"
+          name="q"
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           maxLength={100}

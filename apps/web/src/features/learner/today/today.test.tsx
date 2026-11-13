@@ -218,4 +218,15 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Bạn vừa gặp từ nào?' });
     expect(within(sheet).getByRole('textbox', { name: 'Từ' })).toHaveValue('went');
   });
+
+  it('audit T3: the quick-add box is named "word", has a placeholder and no autofill, spellcheck or auto capital', async () => {
+    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
+    await screen.findByRole('region', { name: 'Công nghệ' });
+    const input = within(screen.getByRole('region', { name: 'Thêm từ vừa gặp' })).getByRole('textbox', { name: 'Từ' });
+    expect(input).toHaveAttribute('name', 'word');
+    expect(input).toHaveAttribute('placeholder', 'Ví dụ: mitigate…');
+    expect(input).toHaveAttribute('autocomplete', 'off');
+    expect(input).toHaveAttribute('spellcheck', 'false');
+    expect(input).toHaveAttribute('autocapitalize', 'none');
+  });
 });

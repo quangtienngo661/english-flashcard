@@ -28,6 +28,11 @@ export function QuickAddBox() {
       <form onSubmit={onSubmit} className="flex gap-3">
         <input
           aria-label={t('word')}
+          name="word"
+          placeholder={t('quickPlaceholder')}
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
           value={word}
           onChange={(e) => setWord(e.target.value)}
           maxLength={100}

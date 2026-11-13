@@ -59,6 +59,15 @@ beforeEach(() => {
 });
 
 describe('Tra từ: search and filters', () => {
+  it('audit T4: the search box is named "q" and has no autofill, spellcheck or auto capital', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    const box = await screen.findByRole('searchbox', { name: 'Tìm từ, ví dụ: mitigate' });
+    expect(box).toHaveAttribute('name', 'q');
+    expect(box).toHaveAttribute('autocomplete', 'off');
+    expect(box).toHaveAttribute('spellcheck', 'false');
+    expect(box).toHaveAttribute('autocapitalize', 'none');
+  });
+
   it('sends the URL filters and reads "24 từ trình độ B1, chủ đề Công việc, loại từ tất cả."', async () => {
     const { calls } = renderApp(<LookupPage />, { routes: base() });
     expect(await screen.findByText(sentence('24 từ trình độ B1, chủ đề Công việc, loại từ tất cả.'))).toBeInTheDocument();
