@@ -500,6 +500,7 @@
         "code": "Enter all 6 digits of the code."
       },
       "captchaPending": "Verifying…",
+      "captchaReload": "Reload the check",
       "showcase": {
         "today": "Today",
         "due": "words due",

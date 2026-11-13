@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { turnstileSiteKey } from '@/app-shell/config';
+import { TextButton } from '@/ui/TextButton';
 
 // Cloudflare "Client-side rendering" page (read 04/11/2026): explicit rendering through this script.
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
@@ -30,17 +31,20 @@ export function TurnstileWidget({
   ref,
 }: {
   onToken: (token: string | null) => void;
-  /** Called with true when the script failed to load. */
+  /** Called with true when the script failed to load, false again when the learner asks to reload it. */
   onUnavailable?: (unavailable: boolean) => void;
   ref?: Ref<TurnstileHandle>;
 }) {
   const t = useTranslations('App.errors');
+  const tAuth = useTranslations('App.auth');
   const siteKey = turnstileSiteKey();
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const latest = useRef(onToken);
   const latestUnavailable = useRef(onUnavailable);
   const [unavailable, setUnavailable] = useState(false);
+  // Bumped by "Tải lại bước xác minh": the effect below runs again and adds the script anew (QA6).
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     latest.current = onToken;
     latestUnavailable.current = onUnavailable;
@@ -109,16 +113,25 @@ export function TurnstileWidget({
         widgetId.current = null;
       }
     };
-  }, [siteKey]);
+  }, [siteKey, retry]);
 
   if (siteKey === '') return null;
   return (
     <>
       <div ref={container} />
       {unavailable && (
-        <p role="status" className="font-wm-sans text-wm-caption text-wm-muted">
-          {t('captcha-unavailable')}
-        </p>
+        <div role="alert" className="flex flex-col items-start gap-1 font-wm-sans text-wm-small text-wm-fail">
+          <p>{t('captcha-unavailable')}</p>
+          <TextButton
+            onPress={() => {
+              setUnavailable(false);
+              latestUnavailable.current?.(false);
+              setRetry((n) => n + 1);
+            }}
+          >
+            {tAuth('captchaReload')}
+          </TextButton>
+        </div>
       )}
     </>
   );

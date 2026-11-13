@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { renderApp } from '@/test-utils/render-app';
 import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
@@ -108,11 +109,23 @@ describe('TurnstileWidget with a site key', () => {
     expect(api.remove).toHaveBeenCalledExactlyOnceWith('widget-1');
   });
 
-  it('a script that fails to load leaves no token and says the check is unavailable', () => {
+  // Audit T9, QA6: the failure is an error with a way to try again, not a grey caption that leaves every button off for good.
+  it('a script that fails to load leaves no token, says so as an alert and offers a reload that adds the script again', async () => {
     const onToken = vi.fn();
-    renderApp(<TurnstileWidget onToken={onToken} />);
+    const onUnavailable = vi.fn();
+    renderApp(<TurnstileWidget onToken={onToken} onUnavailable={onUnavailable} />);
     act(() => scripts()[0]!.dispatchEvent(new Event('error')));
     expect(onToken).toHaveBeenLastCalledWith(null);
-    expect(screen.getByRole('status')).toHaveTextContent('Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.');
+    expect(onUnavailable).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole('alert')).toHaveTextContent('Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.');
+    expect(scripts()).toHaveLength(0);
+    await userEvent.click(screen.getByRole('button', { name: 'Tải lại bước xác minh' }));
+    expect(scripts()).toHaveLength(1);
+    expect(scripts()[0]!.src).toBe(SCRIPT_URL);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onUnavailable).toHaveBeenLastCalledWith(false);
+    const api = installTurnstile();
+    act(() => scripts()[0]!.dispatchEvent(new Event('load')));
+    expect(api.render).toHaveBeenCalledTimes(1);
   });
 });

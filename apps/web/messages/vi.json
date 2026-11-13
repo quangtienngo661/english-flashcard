@@ -500,6 +500,7 @@
         "code": "Nhập đủ 6 số của mã."
       },
       "captchaPending": "Đang xác minh…",
+      "captchaReload": "Tải lại bước xác minh",
       "showcase": {
         "today": "Hôm nay",
         "due": "từ đến hạn",
