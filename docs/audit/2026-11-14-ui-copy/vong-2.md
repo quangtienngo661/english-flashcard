@@ -6,6 +6,9 @@
 - `3e0439da` test(web): pin e2e;
 - `a9dd920e` docs;
 - `4b209265` test(web): cố định giờ trong 2 test nạp lượt AI;
+- `cf5b1949` docs;
+- `fcbb66a3` test(api): smoke `giao-dien-moi` gửi `turnstile_token`;
+- `a9fbd9f5` test(web): sửa e2e `m1` E2 flaky;
 - commit docs cuối.
 **Đầu vào:** `vong-1.md` (mục 2.1–2.16, quyết định Q1–Q14), `faq-de-xuat.md` (bản 2), `danh-gia-gemini.md`. Plan:
 `docs/superpowers/plans/2026-11-14-ui-copy-round-2.md`.
@@ -74,14 +77,23 @@
 | Migration FAQ trên Postgres 17 tạm | (A) FAQ nạp sẵn chưa sửa → 6 câu mới. (B) admin đã sửa câu 30 → FAQ giữ nguyên 6 câu cũ. (C) admin xóa 2 câu và thêm câu riêng → câu của admin giữ, thêm 6 câu mới. Lần chạy đầu bắt được lỗi ở (B): xóa 5 câu mà không thêm gì. Đã sửa rồi chạy lại. |
 | Build container web từ nhánh (`docker compose -p el-copy build web`, gồm `next build` và type check) | Qua |
 | Xem trên app thật (`localhost:3001`, bản build của nhánh) | Landing VI hiện chữ mới (tiêu đề không chấm, "Hai gói, khác nhau ở mức luyện tập và AI", "Miễn phí để bắt đầu."). Đăng ký EN: "Terms of Use", "Privacy Policy", "Sign in". Đăng nhập VI với mật khẩu sai, đi qua API thật: "Email hoặc mật khẩu không đúng. Thử lại." Trang Nguồn dữ liệu không còn dòng "tự cập nhật". |
-| E2E web (`pnpm cf:docker`, Playwright trong container Linux, như job `web` của CI) | **Lượt 1, toàn bộ:** 477 qua, 6 đỏ, 2 flaky. 6 test đỏ là `m4.spec.ts` "a default session" và "M4 pages with long content", do e2e còn pin chữ cũ: "You've" và chip Weak words kết thúc bằng "wrong". Đã sửa hai chỗ pin đó. **Lượt 2**, 6 spec đã đụng (`m1`, `m2`, `m4`, `m5a`, `m7a`, `recall`): **115 qua, 1 đỏ.** Test đỏ là `m1` E2 (đăng nhập với `?next`) trên desktop. Ảnh chụp trang lúc lỗi cho thấy hai ô email và mật khẩu bị xóa trắng trước khi bấm "Đăng nhập", nên form báo "Nhập email." Đây là rủi ro canh giờ lúc trang hydrate mà comment trong test đã ghi. Các chuỗi test dùng không đổi; ở lượt 1 test này qua khi chạy lại, và qua trên mobile. **Đối chứng trên `dev`:** dựng một worktree tạm của `origin/dev`, chạy riêng test này 6 lần trên desktop, không cho chạy lại: **2/6 đỏ, cùng kiểu lỗi** (vẫn ở `/vi/app/login?next=…`). Vậy đây là test flaky có từ trước trên `dev`, không do việc sửa chữ. Trên CI, Playwright được chạy lại một lần nên thường qua. |
+| E2E web (`pnpm cf:docker`, Playwright trong container Linux, như job `web` của CI) | **Lượt 1, toàn bộ:** 477 qua, 6 đỏ, 2 flaky. 6 test đỏ là `m4.spec.ts` "a default session" và "M4 pages with long content", do e2e còn pin chữ cũ: "You've" và chip Weak words kết thúc bằng "wrong". Đã sửa hai chỗ pin đó. **Lượt 2**, 6 spec đã đụng (`m1`, `m2`, `m4`, `m5a`, `m7a`, `recall`): **115 qua, 1 đỏ.** Test đỏ là `m1` E2 (đăng nhập với `?next`) trên desktop. Ảnh chụp trang lúc lỗi cho thấy hai ô email và mật khẩu bị xóa trắng trước khi bấm "Đăng nhập", nên form báo "Nhập email." Đây là rủi ro canh giờ lúc trang hydrate mà comment trong test đã ghi. Các chuỗi test dùng không đổi; ở lượt 1 test này qua khi chạy lại, và qua trên mobile. **Đối chứng trên `dev`:** dựng một worktree tạm của `origin/dev`, chạy riêng test này 6 lần trên desktop, không cho chạy lại: **2/6 đỏ, cùng kiểu lỗi** (vẫn ở `/vi/app/login?next=…`). Vậy đây là test flaky có từ trước trên `dev`, không do việc sửa chữ. **Đã sửa** ở commit `a9fbd9f5`: điền, kiểm, bấm và đợi chuyển trang nay được thử lại cùng nhau. Sau khi sửa: **10/10 lần qua**, không cho chạy lại. **Lượt toàn bộ cuối cùng (sau mọi commit): 485 qua, 0 đỏ, 0 flaky** (49 bỏ qua theo cấu hình). |
+
+### 4b. Kiểm trên một stack chạy thật dựng từ nhánh (bổ sung)
+
+Dựng stack Docker riêng `el-r2` từ nhánh này (API, worker, web, Postgres, Redis, Mailpit; cổng 3200, 3011, 5444…; DB mới), không đụng stack của bạn.
+
+| Kiểm | Kết quả |
+|---|---|
+| Migration FAQ trên API chạy thật | `GET /v1/public/faq` trả 6 câu mới. Landing `localhost:3011/vi` hiện đúng 6 câu đó. |
+| `smoke:giao-dien-moi` (API của nhánh, DB mới `english_learning_smoke_gm`, `AI_FAKE_ENABLED=true`, `TURNSTILE_MODE=fake`) | **ALL OK — 16 steps.** Bước FAQ: "6 seeded → draft hidden → 7 with the new one second → 409 faq-version-conflict → 6 after delete". Output: `docs/deliveries/ui-copy-round-2-smoke-output.txt`. Lần chạy đầu dừng ở bước chuẩn bị vì smoke gọi `verify-email` mà thiếu `turnstile_token` (bắt buộc từ đợt sửa bảo mật F7, 12/11; các smoke khác đã gửi). Lỗi này có sẵn trên `dev`. Đã sửa ở commit `fcbb66a3`. |
+| Màn sau đăng nhập, xem bằng trình duyệt (tài khoản thử chỉ có trên stack `el-r2`) | Đăng ký, nhập mã từ Mailpit, chọn ngôn ngữ, rồi xem: **Hôm nay** ("Gõ từ, kể cả dạng đã chia như went (của go)…"); **Cài đặt** VI (không còn "Sáng, tối hoặc theo máy"; "Xem gói học"); **Lịch sử giao dịch** ("Chưa có giao dịch nào", không chấm, không còn dòng chân trang); đổi sang EN: tab trình duyệt "Wordmet · Learn, remember and use English vocabulary", phím tắt "Needs review · Known"; **Decks** (phụ đề đã rút gọn, "Review rhythm"); **Thêm từ** ("What new word did you come across?", "Sentence with the word (optional)", "5 AI credits for lookups left"); **màn ôn** (nút, hai cột thẻ và thanh phím "Needs review" / "Known", "Esc Stop session"); **tổng kết** ("1 card done", "1 day in a row", "Back to Today"); **Practice** ("Words you marked Needs review, oldest first"). |
 
 ## 5. Chưa kiểm, rủi ro
 
-- **Màn trong app sau đăng nhập chưa xem bằng trình duyệt.** Để xem phải tạo một tài khoản thử, và mình không tạo. Các màn này được kiểm bằng 1.700+ test component, vốn render đúng file message thật.
-- **FAQ trên landing ở máy bạn vẫn là bản cũ** cho tới khi API chạy migration mới (container API chạy `db:setup` mỗi lần khởi động) và web build lại. Nếu bạn đã sửa FAQ trong admin, migration không đụng tới FAQ đó (trường hợp B).
-- **`pnpm smoke:giao-dien-moi` chưa chạy lại.** Mình chỉ đổi danh sách câu hỏi nạp sẵn mà smoke so khớp.
+- **Các màn cần dữ liệu đặc biệt** (phiên luyện có câu AI, Từ hay sai có dữ liệu, trang gói Pro đang dùng, xóa tài khoản) chưa xem bằng trình duyệt. Chúng được kiểm bằng test component (render đúng file message thật) và e2e có mock API.
+- **FAQ trên landing ở stack của bạn (`english-learning`)** đổi khi API của bạn chạy code có migration này. Container API chạy `db:setup` mỗi lần khởi động, và web phải build lại. Nếu bạn đã sửa FAQ trong admin, migration không đụng tới FAQ đó (trường hợp B).
 - **`dev` hiện đỏ 2 unit test** (E31, K/75b) cho tới khi nhánh này vào `dev`, vì bản sửa nằm ở commit `4b209265` của nhánh này.
-- **Test e2e `m1` E2 flaky có từ trước trên `dev`** (đỏ 2/6 khi chạy đối chứng). Nên sửa trong một việc riêng: cách điền ô trước khi trang hydrate xong.
+- **Trên `dev` hiện tại**, test e2e `m1` E2 vẫn flaky (đỏ 2/6) và 2 unit test nạp lượt AI vẫn đỏ, cho tới khi nhánh này vào `dev`. Bản sửa ở commit `a9fbd9f5` và `4b209265`.
 - **Container web ở cổng 3001 đang là bản của nhánh này** (`el-copy-web`). Container cũ `english-learning-web-1` chỉ bị dừng, chưa xóa. Muốn trả lại thì chạy `docker rm -f el-copy-web` rồi `docker start english-learning-web-1`.
 - Văn bản pháp lý, email và trang admin không nằm trong hai file message nên chưa rà.

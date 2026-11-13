@@ -1,0 +1,53 @@
+# smoke:giao-dien-moi, UI copy round 2 (14/11/2026)
+# API: image el-r2-api built from fix/ui-copy-round-2, fresh database english_learning_smoke_gm, TURNSTILE_MODE=fake, AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-gm-smoke
+
+
+[1] 20:30:34Z Wait for the API
+    OK — reachable at http://localhost:3300; database english_learning_smoke_gm
+
+[2] 20:30:42Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 20:30:43Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-9c7a4b5a@example.com; learner smokegm-l-9c7a4b5a@example.com; group ac882f97-2c3f-4f89-88b4-af0e56b029d2 with zgeuckwi, zgtmghgw, zgxgpkyi
+
+[4] 20:30:52Z 1b. FAQ: public list without a token; an admin adds a draft, publishes it, hits a stale version, deletes it
+    OK — 6 seeded → draft hidden → 7 with the new one second → 409 faq-version-conflict → 6 after delete
+
+[5] 20:30:52Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgxgpkyi; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[6] 20:30:52Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[7] 20:30:52Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 284c02b3-aba8-4c11-b87e-24eba89cc611: one right (level matches learning_items), one wrong (zgtmghgw); reload counts 1/0; finished
+
+[8] 20:30:53Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-14","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[9] 20:30:53Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgeuckwi","known",1],["learned","zgtmghgw","known",1],["learned","zgeuckwi","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[10] 20:30:53Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"284c02b3-aba8-4c11-b87e-24eba89cc611","group_id":"ac882f97-2c3f-4f89-88b4-af0e56b029d2","local_date":"2026-11-14","last_answer_at":"2026-11-13T20:30:53.177Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgtmghgw"]}
+
+[11] 20:30:53Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgeuckwi","at":"2026-11-13T20:30:52.717Z"}; next_lemma zgxgpkyi (queue zgxgpkyi)
+
+[12] 20:30:53Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[13] 20:30:53Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+[14] 20:30:53Z 11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)
+    OK — total 3 on both pages, 0 for no match; rows [["zgeuckwi","zɪɡ","They use the zgeuckwi daily."],["zgtmghgw","zæɡ","They use the zgtmghgw daily."],["zgxgpkyi",null,"They use the zgxgpkyi daily."]]
+
+[15] 20:30:53Z 12. Report the wrong item; GET /v1/practice/reports shows its lemma, question_type and ai (M6.1)
+    OK — {"lemma":"zgtmghgw","question_type":"type_word","ai":false,"reason_label":"Nghĩa sai","status":"open"}
+
+[16] 20:30:53Z 13. POST /v1/quick-add with group_ids: one word in two groups; a foreign id saves nothing; both fields together → 400 (QP1)
+    OK — qponexcxaxbxa in 2 groups; foreign id → 404 with no qponexcxaxbxab; group_id alone 201; both fields 400
+
+ALL OK — 16 steps in 21s

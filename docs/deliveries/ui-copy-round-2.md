@@ -25,5 +25,7 @@ Nhánh `fix/ui-copy-round-2` từ `origin/dev` `2d858021`. Report đầy đủ: 
   - vitest web: 1.723/1.723 qua, sau khi cố định giờ trong 2 test nạp lượt AI (hai test này đỏ cả trên `dev` từ 14/11);
   - migration chạy thử trên Postgres tạm ở 3 trạng thái DB;
   - build container web và xem trên `localhost:3001`;
-  - e2e (Playwright trong container Linux): lượt toàn bộ đầu bắt được 2 chỗ e2e còn pin chữ cũ, đã sửa. Lượt chạy lại 6 spec: 115 qua, 1 đỏ (`m1` E2). Test này flaky có từ trước: trên `origin/dev` nó đỏ 2/6 lần, cùng kiểu lỗi.
-- Chưa: màn sau đăng nhập chưa xem bằng trình duyệt, `smoke:giao-dien-moi` chưa chạy, chưa push hay mở PR.
+  - e2e (Playwright trong container Linux): lượt toàn bộ cuối cùng 485 qua, 0 đỏ, 0 flaky, sau khi sửa 2 chỗ e2e pin chữ cũ và test flaky `m1` E2 (test này flaky có từ trước, đỏ 2/6 trên `dev`; sau sửa qua 10/10);
+  - `smoke:giao-dien-moi` trên API của nhánh với DB mới: ALL OK, 16 bước (`docs/deliveries/ui-copy-round-2-smoke-output.txt`); smoke đã được sửa để gửi `turnstile_token` khi xác minh email;
+  - xem bằng trình duyệt các màn sau đăng nhập (VI và EN) trên stack Docker riêng dựng từ nhánh, kể cả FAQ mới trên landing.
+- Chưa: một số màn cần dữ liệu đặc biệt (câu AI, gói Pro đang dùng, xóa tài khoản) chỉ kiểm qua test.
