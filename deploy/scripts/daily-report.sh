@@ -39,6 +39,8 @@ main() {
   {
     echo "API requests: $total, 5xx: $errors, p95 latency: $p95"
     echo
+    echo "Newest backup on this server: $(newest_backups 1)"
+    echo
     echo "Disk:"; df -h /
     echo
     echo "Memory:"; free -m 2>/dev/null || grep -E '^(MemTotal|MemAvailable):' /proc/meminfo

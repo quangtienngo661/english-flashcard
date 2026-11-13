@@ -15,8 +15,8 @@ main() {
 
   log "fetch and check out $wanted"
   git fetch --quiet origin
-  git checkout --quiet --detach "$wanted"
-  sha="$(git rev-parse HEAD)"
+  sha="$(resolve_commit "$wanted")"
+  git checkout --quiet --detach "$sha"
   current="$(current_sha)"
 
   log "build wordmet-api:$sha and wordmet-api-migrate:$sha"

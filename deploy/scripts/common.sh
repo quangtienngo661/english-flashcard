@@ -71,3 +71,18 @@ wait_ready() {
   done
   return 1
 }
+
+# Names of the <n> newest database dumps in $WORDMET_HOME/backups, newest first (empty when there are none).
+newest_backups() {
+  find "$WORDMET_HOME/backups" -maxdepth 1 -name 'wordmet-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n "$1" | cut -d' ' -f2
+}
+
+# The full SHA to deploy for <ref> (run after `git fetch origin`): a hex SHA is taken as is; a branch name means the branch on origin,
+# never the clone's local branch, which `git fetch` does not move.
+resolve_commit() {
+  if [[ "$1" =~ ^[0-9a-f]{7,40}$ ]]; then
+    git rev-parse --verify --quiet "$1^{commit}" || die "commit $1 not found"
+  else
+    git rev-parse --verify --quiet "origin/$1^{commit}" || die "origin/$1 not found"
+  fi
+}

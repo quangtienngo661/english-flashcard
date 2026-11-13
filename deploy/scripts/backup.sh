@@ -17,7 +17,20 @@ r2() {
     -v "$BACKUP_DIR:/backups:ro" "$AWS_CLI_IMAGE" --endpoint-url "$R2_BACKUP_ENDPOINT" "$@"
 }
 
+# Any failure emails the owner (alert type `backup`): from cron nobody reads the output.
+# shellcheck disable=SC2329 # called by the EXIT trap
+alert_on_failure() {
+  local status=$? body
+  [ "$status" -eq 0 ] && return 0
+  body="$(mktemp)"
+  { echo "backup.sh failed (exit $status) at $(date -u +%Y-%m-%dT%H:%M:%SZ) on $(hostname)."; echo "Last backups kept on this server:"; newest_backups 3; } > "$body"
+  "$SCRIPTS/send-alert.sh" backup "[wordmet] backup failed" "$body" || log "ERROR: could not send the backup alert"
+  rm -f "$body"
+  return "$status"
+}
+
 main() {
+  trap alert_on_failure EXIT
   load_ops_env R2_BACKUP_ENDPOINT R2_BACKUP_BUCKET R2_BACKUP_ACCESS_KEY_ID R2_BACKUP_SECRET_ACCESS_KEY
   BACKUP_DIR="$WORDMET_HOME/backups"
   mkdir -p "$BACKUP_DIR"
