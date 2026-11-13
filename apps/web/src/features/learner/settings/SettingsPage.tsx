@@ -160,7 +160,6 @@ export function SettingsPage() {
             />
             <SettingsRow
               label={t('theme')}
-              hint={t('themeHint')}
               wide
               control={
                 <Segmented<ThemeChoice>

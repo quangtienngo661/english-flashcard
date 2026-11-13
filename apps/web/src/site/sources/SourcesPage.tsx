@@ -40,7 +40,6 @@ export function SourcesPage({ items }: { items: PublicSource[] | null }) {
         <div className="flex max-w-120 flex-col gap-3.5 pb-6 md:gap-5 md:pb-16">
           <h1 className={PAGE_TITLE}>{t('title')}</h1>
           <p className={LEAD}>{t('intro')}</p>
-          <p className="hidden max-w-115 font-wm-sans text-wm-small text-wm-muted md:block">{t('autoUpdate')}</p>
         </div>
         {sources.length === 0 ? (
           <p className={ARTICLE_TEXT}>{t('empty')}</p>

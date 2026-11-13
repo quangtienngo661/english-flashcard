@@ -191,7 +191,7 @@ test.describe('M2 flows (mocked API)', () => {
     await expect(page.getByRole('group', { name: 'Card 2 of 2' })).toBeVisible();
     await page.keyboard.press('Space');
     await page.keyboard.press('1');
-    await expect(page.getByRole('heading', { name: '2 cards done.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '2 cards done' })).toBeVisible();
     const answers = requests(page, 'POST', '/v1/reviews').map((r) => r.body as { answer: string; review_id: string });
     expect(answers.map((a) => a.answer)).toEqual(['known', 'review']);
     expect(answers[0].review_id).not.toBe(answers[1].review_id);

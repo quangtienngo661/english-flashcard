@@ -196,7 +196,7 @@ describe('ui overlays', () => {
       renderApp(<BacklogPage />, { chrome: true, routes });
       await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word1' }, { timeout: 5000 }));
       await userEvent.click(screen.getByRole('button', { name: 'Bỏ khỏi việc học' }));
-      await expectFrame('Đóng', 'Giữ lại');
+      await expectFrame('Đóng', 'Giữ các từ');
     });
 
     it('GroupPage: the delete-group confirm has the × and a text cancel', async () => {

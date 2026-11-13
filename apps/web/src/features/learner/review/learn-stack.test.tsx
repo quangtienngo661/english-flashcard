@@ -67,7 +67,7 @@ describe('Học, the card stack (M5.8)', () => {
   it('2 before turning the card over sends nothing and says to turn it first; the answers are aria-disabled', async () => {
     const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
-    expect(screen.getByRole('button', { name: /Know/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: /Known/ })).toHaveAttribute('aria-disabled', 'true');
     await userEvent.keyboard('2');
     expect(await screen.findByText('Flip the card to see the meaning first.')).toBeInTheDocument();
     expect(reviews(calls)).toHaveLength(0);
@@ -129,9 +129,9 @@ describe('Học, the card stack (M5.8)', () => {
     await top(2);
     await userEvent.keyboard('{Escape}');
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('heading', { name: /done\.$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /done$/ })).not.toBeInTheDocument();
     release();
-    expect(await screen.findByRole('heading', { name: /done\.$/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /done$/ })).toBeInTheDocument();
     expect(reviews(calls)).toHaveLength(1);
   });
 
@@ -152,26 +152,26 @@ describe('Học, the card stack (M5.8)', () => {
     await top(1);
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByText("We couldn't save your answer. Check your connection and try again.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn’t save your answer. Check your connection and try again.")).toBeInTheDocument();
     expect(await top(1)).toHaveAttribute('data-flipped', 'true');
-    expect(within(screen.getByRole('region', { name: 'Know' })).queryByText('deploy')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Known' })).queryByText('deploy')).not.toBeInTheDocument();
     await userEvent.keyboard('2');
     await top(2);
     await waitFor(() => expect(reviews(calls)).toHaveLength(2));
     expect(reviews(calls)[1].review_id).toBe(reviews(calls)[0].review_id);
   });
 
-  it('the piles show the words; the summary lists the words of "Still learning"', async () => {
+  it('the piles show the words; the summary lists the words of "Needs review"', async () => {
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
     for (const key of ['1', '2', '1']) {
       await userEvent.keyboard(' ');
       await userEvent.keyboard(key);
     }
-    expect(await screen.findByRole('heading', { name: '3 cards done.' })).toBeInTheDocument();
-    const review = screen.getByRole('list', { name: 'Still learning · 2 cards' });
+    expect(await screen.findByRole('heading', { name: '3 cards done' })).toBeInTheDocument();
+    const review = screen.getByRole('list', { name: 'Needs review · 2 cards' });
     expect(within(review).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy', 'merge']);
-    expect(within(screen.getByRole('list', { name: 'Know · 1 card' })).getByText('cache')).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Known · 1 card' })).getByText('cache')).toBeInTheDocument();
   });
 
   it('Review Focus 5: 2 pressed twice in the same instant after a flip records one answer; no card is left behind', async () => {
@@ -187,24 +187,24 @@ describe('Học, the card stack (M5.8)', () => {
     expect(await top(2)).toHaveAttribute('data-flipped', 'false');
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(screen.getAllByRole('group')).toHaveLength(1);
-    expect(within(screen.getByRole('region', { name: 'Know' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy']);
+    expect(within(screen.getByRole('region', { name: 'Known' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['deploy']);
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1 card done' })).toBeInTheDocument();
     expect(reviews(calls).map((b) => [b.item_id, b.answer])).toEqual([[uuid(1), 'known']]);
   });
 });
 
 describe('Học layout (P.17, mockup L227-304)', () => {
-  it('phone: the card comes first, the piles under it; the side buttons are icons named "Still learning" and "Know"; no key hints', async () => {
+  it('phone: the card comes first, the piles under it; the side buttons are icons named "Needs review" and "Known"; no key hints', async () => {
     desktop(false);
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     const card = await top(1);
-    const review = screen.getByRole('region', { name: 'Still learning' });
-    const known = screen.getByRole('region', { name: 'Know' });
+    const review = screen.getByRole('region', { name: 'Needs review' });
+    const known = screen.getByRole('region', { name: 'Known' });
     expect(card.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(review.compareDocumentPosition(known) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^$/);
-    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^$/);
+    expect(screen.getByRole('button', { name: 'Needs review' })).toHaveTextContent(/^$/);
+    expect(screen.getByRole('button', { name: 'Known' })).toHaveTextContent(/^$/);
     expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip card$/);
     expect(document.querySelector('kbd')).toBeNull();
     expect(screen.queryByRole('list', { name: 'Keys' })).not.toBeInTheDocument();
@@ -222,33 +222,33 @@ describe('Học layout (P.17, mockup L227-304)', () => {
     desktop(true);
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     const card = await top(1);
-    expect(screen.getByRole('button', { name: 'Still learning' })).toHaveTextContent(/^Still learning$/);
-    expect(screen.getByRole('button', { name: 'Know' })).toHaveTextContent(/^Know$/);
+    expect(screen.getByRole('button', { name: 'Needs review' })).toHaveTextContent(/^Needs review$/);
+    expect(screen.getByRole('button', { name: 'Known' })).toHaveTextContent(/^Known$/);
     expect(screen.getByRole('button', { name: 'Flip card' })).toHaveTextContent(/^Flip card$/);
     expect(document.querySelectorAll('button kbd')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: 'Know' })).toHaveAttribute('aria-keyshortcuts', '2 ArrowRight');
+    expect(screen.getByRole('button', { name: 'Known' })).toHaveAttribute('aria-keyshortcuts', '2 ArrowRight');
     const legend = screen.getByRole('list', { name: 'Keys' });
-    expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SpaceFlip card', '1←Still learning', '2→Know', 'EscStop']);
+    expect(within(legend).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SpaceFlip card', '1←Needs review', '2→Known', 'EscStop session']);
     expect(within(card).getByText('Click the card or press Space to flip')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Still learning' })).toHaveTextContent(/^0Still learning$/);
-    expect(screen.getByRole('region', { name: 'Know' })).toHaveTextContent(/^0Know$/);
+    expect(screen.getByRole('region', { name: 'Needs review' })).toHaveTextContent(/^0Needs review$/);
+    expect(screen.getByRole('region', { name: 'Known' })).toHaveTextContent(/^0Known$/);
   });
 
-  it('above the card a line shows where to drag it: left for Still learning, right for Know (owner 13/11/2026)', async () => {
+  it('above the card a line shows where to drag it: left for Needs review, right for Known (owner 13/11/2026)', async () => {
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
     const hint = screen.getByRole('note', { name: 'Drag the card' });
-    expect(hint).toHaveTextContent(/^Still learning\s*Drag the card\s*Know$/);
+    expect(hint).toHaveTextContent(/^Needs review\s*Drag the card\s*Known$/);
   });
 
   it('the X alone ends the session: a button named "Stop" with no text', async () => {
     renderApp(<ReviewSession />, { session: true, routes: routes() });
     await top(1);
-    const stop = screen.getByRole('button', { name: 'Stop' });
+    const stop = screen.getByRole('button', { name: 'Close review' });
     expect(stop).toHaveTextContent(/^$/);
     expect(stop).not.toHaveAttribute('title');
     await userEvent.click(stop);
-    expect(await screen.findByRole('heading', { name: /done\.$/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /done$/ })).toBeInTheDocument();
   });
 
   it('L-B-2: the back of the card names its level and when it comes back; a new word says "New word"', async () => {

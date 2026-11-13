@@ -93,8 +93,8 @@ const CASES: Array<[string, GroupSummary, Array<[string, string, string]>]> = [
   ['due and new', deck({ priority: 3, due: 5, new: 5 }), [['Học', '/vi/app/review?group=g1&mode=new', 'secondary'], ['Ôn', '/vi/app/recall?group=g1', 'primary']]],
   ['due only', deck({ priority: 0, due: 4, new: 0 }), [['Học', '/vi/app/review?group=g1&mode=all', 'secondary'], ['Ôn', '/vi/app/recall?group=g1', 'primary']]],
   ['new only, nothing learned', deck({ priority: 0, due: 0, new: 12 }, [12, 0, 0, 0, 0, 0]), [['Học', '/vi/app/review?group=g1&mode=new', 'primary']]],
-  ['new and learned', deck({ priority: 0, due: 0, new: 5 }), [['Học', '/vi/app/review?group=g1&mode=new', 'primary'], ['Ôn tập', '/vi/app/recall?group=g1', 'secondary']]],
-  ['done, learned', deck({ priority: 0, due: 0, new: 0 }), [['Ôn tập', '/vi/app/recall?group=g1', 'secondary']]],
+  ['new and learned', deck({ priority: 0, due: 0, new: 5 }), [['Học', '/vi/app/review?group=g1&mode=new', 'primary'], ['Ôn thêm', '/vi/app/recall?group=g1', 'secondary']]],
+  ['done, learned', deck({ priority: 0, due: 0, new: 0 }), [['Ôn thêm', '/vi/app/recall?group=g1', 'secondary']]],
   ['done, cap reached', deck({ priority: 0, due: 0, new: 0 }, [25, 0, 0, 0, 0, 0]), [['Học', '/vi/app/review?group=g1&mode=all', 'secondary']]],
   ['empty', deck({ priority: 0, due: 0, new: 0 }, [0, 0, 0, 0, 0, 0]), []],
 ];

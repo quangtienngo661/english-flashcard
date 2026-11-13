@@ -62,7 +62,7 @@ describe('LegalLayout (M8.7, Figma 14:172 / 17:260)', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { level: 1, name: 'Chính sách bảo mật' })).toBeInTheDocument();
     expect(screen.getByText('Phiên bản 3 · Có hiệu lực từ 20/11/2026')).toBeInTheDocument();
-    expect(screen.getByText('Dữ liệu Wordmet thu thập, dùng vào việc gì, chia sẻ với ai, và quyền của bạn với dữ liệu của mình.')).toBeInTheDocument();
+    expect(screen.getByText('Dữ liệu Wordmet thu thập, dùng vào việc gì, chia sẻ với ai và quyền của bạn với dữ liệu của mình.')).toBeInTheDocument();
   });
 
   it('without an effective date the line names the version only', () => {
@@ -129,7 +129,7 @@ describe('LegalLayout (M8.7, Figma 14:172 / 17:260)', () => {
   it('the privacy callout asks about data and links the support address', () => {
     drawPrivacy();
     const callout = within(screen.getByRole('region', { name: 'Còn câu hỏi về dữ liệu của bạn?' }));
-    expect(callout.getByText('Gửi từ chính email của tài khoản. Phản hồi trong 02 ngày làm việc.')).toBeInTheDocument();
+    expect(callout.getByText('Gửi từ chính email của tài khoản. Phản hồi trong 2 ngày làm việc.')).toBeInTheDocument();
     expect(callout.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
   });
 

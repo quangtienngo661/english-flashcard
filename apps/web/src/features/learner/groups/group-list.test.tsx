@@ -154,7 +154,7 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
   it('below the carousel: the "nhịp ôn" eyebrow, the level bar, Học · Ôn and "Xem nhóm →" of the centre group', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
     await centre();
-    expect(screen.getByText('nhịp ôn: Mới → Bậc 5')).toBeInTheDocument();
+    expect(screen.getByText('Nhịp ôn: Mới → Bậc 5')).toBeInTheDocument();
     const bar = screen.getByRole('figure', { name: 'Số từ theo bậc' });
     expect(within(bar).getByRole('img', { name: 'Bậc 2 · 3 từ · ôn lại sau 3 ngày' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ôn' })).toHaveAttribute('href', '/vi/app/recall?group=g-12');

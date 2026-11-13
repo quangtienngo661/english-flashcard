@@ -104,7 +104,7 @@ describe('MonthDialog (Figma 102:3278 / 102:3948)', () => {
     expect(await screen.findByText('/31')).toBeInTheDocument();
   });
 
-  it('a 500 shows "Không tải được lịch." and Thử lại asks again', async () => {
+  it('a 500 shows "Không tải được lịch. Kiểm tra mạng rồi thử lại." and Thử lại asks again', async () => {
     let calls = 0;
     renderApp(<MonthDialog {...props()} />, { routes: routes({
       'GET /v1/me/calendar?month=2026-11': () => {
@@ -112,7 +112,7 @@ describe('MonthDialog (Figma 102:3278 / 102:3948)', () => {
         return calls === 1 ? Response.json({ type: 'about:blank', title: 'x', status: 500 }, { status: 500 }) : Response.json(NOVEMBER);
       },
     }) });
-    expect(await screen.findByText('Không tải được lịch.')).toBeInTheDocument();
+    expect(await screen.findByText('Không tải được lịch. Kiểm tra mạng rồi thử lại.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByRole('list', { name: 'Tổng tháng' })).toBeInTheDocument();
     expect(calls).toBe(2);

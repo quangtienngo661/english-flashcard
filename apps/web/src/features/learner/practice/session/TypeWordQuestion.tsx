@@ -153,7 +153,6 @@ export function TryAgainPanel({ sessionWord, onRetry, onHint, hintAvailable, onR
       }
     >
       {!sessionWord && <p className="font-wm-sans text-wm-base-strong text-wm-ink">{t('tryAgainBody')}</p>}
-      <p className="font-wm-sans text-wm-small text-wm-muted">{t('tryAgainNote')}</p>
     </ResultTicket>
   );
 }

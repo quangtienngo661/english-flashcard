@@ -191,8 +191,8 @@ test.describe('M4 flows (mocked API)', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Know/ }).click();
-    await expect(page.getByRole('heading', { name: '4 questions done.' })).toBeVisible();
-    await page.getByRole('list', { name: /Review again · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
+    await expect(page.getByRole('heading', { name: '4 questions done' })).toBeVisible();
+    await page.getByRole('list', { name: /Needs review · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
     await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/report`).map((r) => r.body)).toEqual([{ reason: 'meaning_wrong' }]);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/answer`)).toHaveLength(0);

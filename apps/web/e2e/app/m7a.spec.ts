@@ -110,7 +110,7 @@ test('Xóa tài khoản with a password: tick, email, password, "Xóa vĩnh vi�
   await page.getByLabel('Mật khẩu', { exact: true }).fill('Secret#123');
   await submit.click();
   await expect(page).toHaveURL(/\/vi\/app\/account-deleted$/);
-  await expect(page.getByRole('heading', { name: 'Tài khoản của bạn đã được xóa.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đã xóa tài khoản' })).toBeVisible();
   expect(requests(page, 'POST', '/v1/me/account/delete').map((r) => r.body)).toEqual([
     { confirm_email: 'lan@example.com', acknowledged: true, password: 'Secret#123' },
   ]);

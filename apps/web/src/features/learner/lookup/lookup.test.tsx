@@ -164,14 +164,14 @@ describe('Tra từ: the dictionary page', () => {
     expect(within(card).getByRole('heading', { name: 'candidate' })).toBeInTheDocument();
   });
 
-  it('"Trang sau →" asks for page_token=p2; "← Trang trước" goes back without a request', async () => {
+  it('"Trang sau →" asks for page_token=p2; "Trang trước" goes back without a request', async () => {
     const { calls } = renderApp(<LookupPage />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
     expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
     expect(calls.some((c) => c.path === '/v1/words?page_size=20&level=B1&topic=work&page_token=p2')).toBe(true);
     expect(screen.getByText('— 2 —')).toBeInTheDocument();
     const before = calls.filter((c) => c.path.startsWith('/v1/words?')).length;
-    await userEvent.click(screen.getByRole('button', { name: '← Trang trước' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Trang trước' }));
     expect(await screen.findByRole('button', { name: /^budget/ })).toBeInTheDocument();
     expect(calls.filter((c) => c.path.startsWith('/v1/words?')).length).toBe(before);
   });
@@ -195,11 +195,11 @@ describe('Tra từ: the dictionary page', () => {
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Trang sau' }));
     expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '← Trang trước' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Trang trước' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Trang sau' })).toBeNull();
     release();
     expect(await screen.findByRole('button', { name: /^deadline/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '← Trang trước' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Trang trước' })).toBeInTheDocument();
   });
 });
 
@@ -331,7 +331,7 @@ describe('Tra từ on phones and tablets (below 1024 px): the list opens the wor
     renderApp(<LookupPage />, { routes: base() });
     await screen.findByRole('link', { name: /^budget/ });
     expect(screen.queryByRole('region', { name: 'Thẻ của từ đang chọn' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Bấm vào chồng để thêm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Chọn nhóm để thêm từ' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Thêm vào / })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' })).not.toBeInTheDocument();
   });
@@ -367,7 +367,7 @@ describe('Tra từ on a laptop (from 1024 px): unchanged', () => {
     viewport(1024);
     renderApp(<LookupPage />, { routes: base() });
     expect(await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Bấm vào chồng để thêm' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Chọn nhóm để thêm từ' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^budget/ })).not.toBeInTheDocument();
   });

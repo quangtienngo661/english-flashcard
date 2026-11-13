@@ -237,7 +237,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /Next/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /Next/ }).locator('kbd')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: /Review again/ }).locator('kbd')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Needs review/ }).locator('kbd')).toHaveCount(0);
       // F.12: Enter is named in the key legend, which phones (below md) do not show.
       const wide = (page.viewportSize()?.width ?? 0) >= 768;
       await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(wide ? 1 : 0);

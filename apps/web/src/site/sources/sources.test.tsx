@@ -31,11 +31,11 @@ const hiddenSomewhere = (element: HTMLElement) => {
 };
 
 describe('SourcesPage (M8.7, Figma 16:210 / 18:283)', () => {
-  it('has the title, the lead and the auto-update note', () => {
+  it('has the title and the lead; the auto-update note is gone (UI copy round 2, Q14)', () => {
     draw([cefr]);
     expect(screen.getByRole('heading', { level: 1, name: 'Nguồn dữ liệu' })).toBeInTheDocument();
     expect(screen.getByText('Wordmet dùng các bộ dữ liệu có giấy phép mở sau đây. Cảm ơn những người đã làm ra và chia sẻ chúng.')).toBeInTheDocument();
-    expect(screen.getByText('Trang này tự cập nhật: chỉ hiện nguồn đang có từ người học nhìn thấy.')).toBeInTheDocument();
+    expect(screen.queryByText(/Trang này tự cập nhật/)).not.toBeInTheDocument();
   });
 
   it('3 items: "3 nguồn đang dùng" and one heading per source, in order', () => {

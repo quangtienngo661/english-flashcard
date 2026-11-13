@@ -21,7 +21,7 @@ describe('ui fields', () => {
     await userEvent.click(screen.getByRole('switch', { name: /Kiểu câu có AI/ }));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByText('Dành cho gói Pro.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem Gói học' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.getByRole('link', { name: 'Xem gói học' })).toHaveAttribute('href', '/vi/app/plans');
   });
 
   it('a Switch turns on', async () => {

@@ -141,7 +141,7 @@ describe('Locked add-word sheet (A14)', () => {
     await screen.findByText('Đã có trong nhóm', {}, slow);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Nghĩa khác, tự nhập' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tự nhập nghĩa khác' })).toBeInTheDocument();
   });
 
   it('A14-3: AI suggestion → edit before saving shows the fixed deck line, saves to it', async () => {

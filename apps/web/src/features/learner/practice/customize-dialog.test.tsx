@@ -183,7 +183,7 @@ describe('Tùy chỉnh phiên: question types', () => {
 
   it('saved sentences on, no AI: cloze with cloze_source own; the choice is remembered on this device', async () => {
     const { view, dialog } = await open('Luyện tất cả');
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu bạn đã lưu' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu đã gặp' }));
     expect(localStorage.getItem('wordmet-web.own-sentences')).toBe('on');
     await userEvent.click(startButton(dialog));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
@@ -227,19 +227,19 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
 
   it('saved sentences and AI fill-in both on: cloze_source own_then_ai, cloze once, and the "?" by the row explains it', async () => {
     const { view, dialog } = await open('Luyện tất cả');
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu bạn đã lưu' }));
-    const help = within(dialog).getByRole('button', { name: 'Điền từ vào câu bạn đã lưu là gì?' });
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu đã gặp' }));
+    const help = within(dialog).getByRole('button', { name: 'Điền từ vào câu đã gặp là gì?' });
     // React Aria opens a tooltip on keyboard focus too (jsdom has no real hover): a key press, then focus the "?".
     const showTip = async () => {
       for (let i = 0; i < 40 && document.activeElement !== help; i++) await userEvent.tab();
       return screen.findByRole('tooltip', { hidden: true });
     };
-    expect(await showTip()).toHaveTextContent('Chỉ hỏi từ đã có câu bạn lưu. Không tốn lượt câu AI.');
+    expect(await showTip()).toHaveTextContent('Chỉ hỏi những từ có câu đã gặp. Không tốn lượt câu AI.');
     act(() => help.blur());
     await press(dialog, 'Câu AI viết: thêm 1', 2);
     // Owner 10/11/2026: the explanation sits behind the "?" on hover, not as a line under the rows.
-    expect(within(dialog).queryByText('Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.')).not.toBeInTheDocument();
-    expect(await showTip()).toHaveTextContent('Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.');
+    expect(within(dialog).queryByText('Dùng câu đã gặp cho những từ có sẵn câu; từ còn lại do AI viết.')).not.toBeInTheDocument();
+    expect(await showTip()).toHaveTextContent('Dùng câu đã gặp cho những từ có sẵn câu; từ còn lại do AI viết.');
     act(() => help.blur());
     await userEvent.click(startButton(dialog));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
@@ -334,7 +334,7 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     const { dialog } = await open('Luyện tất cả', 'pro', {}, { 'POST /v1/practice/sessions': problem(503, 'ai-unavailable') });
     await press(dialog, 'Câu AI viết: thêm 1');
     await userEvent.click(startButton(dialog));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Hệ thống đang gặp lỗi, chưa dùng được kiểu câu có AI.');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Kiểu câu AI đang không dùng được.');
   });
 });
 

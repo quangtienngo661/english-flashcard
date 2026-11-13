@@ -58,7 +58,6 @@ export function TransactionsPage() {
             {t('more')}
           </Button>
         )}
-        <p className="text-wm-meta text-wm-muted">{t('foot')}</p>
       </>
     );
 

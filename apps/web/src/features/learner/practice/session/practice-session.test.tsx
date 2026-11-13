@@ -98,10 +98,10 @@ const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 
 
 describe('PracticeSession (K/60–K/67)', () => {
   const cases = [
-    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Know', action: 'known', note: 'Enter means Know: deploy moves up a level. Not sure? Choose Review again.' },
-    { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Next', action: null, note: "deploy isn't due yet, so its schedule stays the same." },
-    { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Next', action: null, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
-    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Review again', action: 'needs_review', note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
+    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Known', action: 'known', note: 'Press Enter to mark it Known: deploy moves up a level. Not sure? Choose Needs review.' },
+    { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Next', action: null, note: "deploy isn’t due yet, so its schedule stays the same." },
+    { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Next', action: null, note: "Hints don’t change the grading, but a correct answer after a hint has no Known button." },
+    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Needs review', action: 'needs_review', note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
   ];
 
   it('M6.2: an answer carrying streak writes the streak cache; no GET /v1/me/streak follows', async () => {
@@ -114,15 +114,15 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(v.count('GET', '/v1/me/streak')).toBe(0);
   });
 
-  it('L-B-5: on a /vi route an answer that earns a streak shows "6-day streak" once, in English, at the session corner', async () => {
+  it('L-B-5: on a /vi route an answer that earns a streak shows "6 days in a row" once, in English, at the session corner', async () => {
     // AppProviders' bottom toast is mounted too, outside SessionIntl, as in production; the session's corner toast replaces it.
     renderApp(<><SessionIntl><PracticeSession /></SessionIntl><StreakToast /></>, { locale: 'vi', routes: routes({
       'POST /v1/practice/items/item-4/answer': () => Response.json(result({ streak: { days: 6 } })),
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('6-day streak')).toBeInTheDocument();
-    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    expect(await screen.findByText('6 days in a row')).toBeInTheDocument();
+    expect(screen.getAllByText(/in a row/)).toHaveLength(1);
     expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
@@ -133,8 +133,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
     expect(await screen.findByText(note)).toBeInTheDocument();
-    const buttons = screen.getAllByRole('button').filter((b) => /^(Review again|Know|Next)/.test(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Review again', 'Know'] : id === 4 ? ['Next', 'Review again'] : ['Review again', 'Next']);
+    const buttons = screen.getAllByRole('button').filter((b) => /^(Needs review|Known|Next)/.test(b.textContent ?? ''));
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Needs review', 'Known'] : id === 4 ? ['Next', 'Needs review'] : ['Needs review', 'Next']);
     buttons.forEach((b) => expect(b.querySelector('kbd')).toBeNull());
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
@@ -146,9 +146,9 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it.each([
-    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a level. Not sure? Choose Review again.' },
-    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn't due yet, so its schedule stays the same." },
-    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
+    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Press Enter to mark it Known: deploy moves up a level. Not sure? Choose Needs review.' },
+    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn’t due yet, so its schedule stays the same." },
+    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don’t change the grading, but a correct answer after a hint has no Known button." },
     { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
   ])('English result note: $note', async ({ answer, note }) => {
     renderApp(<PracticeSession />, { session: true, locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
@@ -160,7 +160,7 @@ describe('PracticeSession (K/60–K/67)', () => {
   it.each([
     { name: 'A16-3: case 4, [Next] → next only', answer: {}, secondary: 'Next', action: null, keyboard: false },
     { name: 'A16-7: case 4, focus secondary + Enter → next only', answer: {}, secondary: 'Next', action: null, keyboard: true },
-    { name: 'A16-7: case 1, focus secondary + Enter → needs_review', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, secondary: 'Review again', action: 'needs_review', keyboard: true },
+    { name: 'A16-7: case 1, focus secondary + Enter → needs_review', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, secondary: 'Needs review', action: 'needs_review', keyboard: true },
   ])('$name', async ({ answer, secondary, action, keyboard }) => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
@@ -184,10 +184,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     const next = await screen.findByRole('button', { name: /Next/ });
     expect(next).toHaveTextContent(/^Next$/);
     expect(next.querySelector('kbd')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Review again|Know/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Needs review|Known/ })).not.toBeInTheDocument();
     // F.14: no case note on the stub; the meaning leads, the answer word follows it.
     const panel = next.closest<HTMLElement>('[data-feedback]')!;
-    expect(panel).toHaveTextContent(/^Not quite\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next$/);
+    expect(panel).toHaveTextContent(/^Incorrect\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next$/);
     expect(next.nextElementSibling).toBeNull();
     await userEvent.keyboard('12');
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
@@ -202,7 +202,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByRole('button', { name: /Review again/ });
+    await screen.findByRole('button', { name: /Needs review/ });
     // Repeats of either shortcut must be inert too.
     fireEvent.keyDown(document.body, { key: '1', repeat: true });
     fireEvent.keyDown(document.body, { key: '2', repeat: true });
@@ -229,7 +229,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     fireEvent.keyDown(document.body, { key: 'Enter' });
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1));
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
@@ -238,7 +238,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await screen.findByText('server');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     await userEvent.keyboard('1');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
     expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1);
     expect(posts(v.calls, '/v1/practice/items/item-5/review')).toHaveLength(0);
@@ -259,10 +259,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     await userEvent.keyboard('{Enter}');
-    expect(await screen.findByRole('alert')).toHaveTextContent("Your answer wasn't saved. Check your connection and try again.");
-    expect(screen.getByText('Not quite')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn’t save your answer. Check your connection and try again.");
+    expect(screen.getByText('Incorrect')).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
@@ -277,10 +277,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Try again later.');
-    expect(screen.getByRole('button', { name: /Know/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Known/ })).toBeEnabled();
     expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
   });
@@ -304,8 +304,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
     await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
-    await waitFor(() => expect(live).toHaveTextContent('Not quite. deploy · triển khai (phần mềm)'));
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Review again/ }));
+    await waitFor(() => expect(live).toHaveTextContent('Incorrect. deploy · triển khai (phần mềm)'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Needs review/ }));
   });
 
   it.each(cases)('F.14: focus still lands on the primary action ($primary) of case $id', async ({ answer, primary, note }) => {
@@ -322,9 +322,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    const panel = (await screen.findByText('Right')).closest<HTMLElement>('[data-feedback]')!;
+    const panel = (await screen.findByText('Correct')).closest<HTMLElement>('[data-feedback]')!;
     expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
-    expect(panel).toHaveTextContent(/^Right\s*deploy isn't due yet, so its schedule stays the same\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Review again\s*Next$/);
+    expect(panel).toHaveTextContent(/^Correct\s*deploy isn’t due yet, so its schedule stays the same\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Needs review\s*Next$/);
   });
 
   it('try_again keeps focus in the word box (Review Focus 5)', async () => {
@@ -337,7 +337,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'cash{Enter}');
-    expect(await screen.findByText('Check the spelling and try again. The answer stays hidden.')).toBeInTheDocument();
+    expect(await screen.findByText('Check the spelling and try again.')).toBeInTheDocument();
     expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Your answer' }));
   });
 
@@ -345,22 +345,22 @@ describe('PracticeSession (K/60–K/67)', () => {
     const view_ = renderApp(<PracticeSession />, { session: true, routes: routes() });
     await screen.findByText('triển khai');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('Not quite')).toBeInTheDocument();
+    expect(await screen.findByText('Incorrect')).toBeInTheDocument();
     const [answer] = posts(view_.calls, '/v1/practice/items/item-4/answer');
     expect(answer.body).toEqual({ choice: 1 });
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Right answer');
+    expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Correct answer');
     expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Your choice');
-    // F.14 (the result ticket): "Not quite" and the case note on the stub, the meaning as the lead with its definition, then the answer
+    // F.14 (the result ticket): "Incorrect" and the case note on the stub, the meaning as the lead with its definition, then the answer
     // word with its speaker; the nested answer box is gone.
-    const panel = screen.getByText('Not quite').closest<HTMLElement>('[data-feedback]')!;
+    const panel = screen.getByText('Incorrect').closest<HTMLElement>('[data-feedback]')!;
     expect(within(panel).queryByRole('group', { name: 'answer' })).not.toBeInTheDocument();
     expect(within(panel).getByText('triển khai (phần mềm)')).toBeInTheDocument();
     expect(within(panel).getByText('to start using a new system')).toBeInTheDocument();
     expect(within(panel).getByText('deploy')).toBeInTheDocument();
-    expect(panel).toHaveTextContent(/^Not quite\s*Press Enter to put deploy.*schedule\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next\s*Review again$/);
-    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
-    expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
+    expect(panel).toHaveTextContent(/^Incorrect\s*Press Enter to put deploy.*schedule\.\s*triển khai \(phần mềm\)\s*to start using a new system\s*deploy\s*Next\s*Needs review$/);
+    expect(screen.getByRole('button', { name: /Needs review/ })).toHaveTextContent(/^Needs review$/);
+    expect(screen.queryByRole('button', { name: /Known/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     expect(screen.getByText('question 5 / 10')).toBeInTheDocument();
@@ -378,7 +378,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
     await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
     release();
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
   });
 
@@ -388,19 +388,19 @@ describe('PracticeSession (K/60–K/67)', () => {
     const card = screen.getByText('triển khai').closest('section')!;
     expect(card).toHaveClass('motion-safe:animate-wm-card-rise');
     await userEvent.keyboard('2');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wm-wiggle-soft');
     expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wm-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
     expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-wm-pop-in');
-    expect(screen.getByText('Not quite').closest('[data-feedback]')).toHaveClass('motion-safe:animate-wm-panel-drop');
+    expect(screen.getByText('Incorrect').closest('[data-feedback]')).toHaveClass('motion-safe:animate-wm-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
     // A new question is a new card: it mounts again, so its rise plays again.
     expect(screen.getByText('server').closest('section')).not.toBe(card);
   });
 
-  it('K/62: true/false right → [Know] (show_known); pressing it reviews the word and goes on', async () => {
+  it('K/62: true/false right → [Known] (show_known); pressing it reviews the word and goes on', async () => {
     const v = renderApp(<PracticeSession />, {
       session: true,
       routes: routes({
@@ -413,10 +413,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     expect(await screen.findByText('True or false')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^1True/ }));
-    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^1True/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
-    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Known/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-5/review')[0].body).toEqual({ action: 'known' });
   });
@@ -435,7 +435,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled();
     await userEvent.type(input, 'cash');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
-    expect(await screen.findByText('Check the spelling and try again. The answer stays hidden.')).toBeInTheDocument();
+    expect(await screen.findByText('Check the spelling and try again.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-6/answer')[0].body).toEqual({ text: 'cash' });
     expect(screen.getByText('Try 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
@@ -507,14 +507,14 @@ describe('PracticeSession (K/60–K/67)', () => {
         [`POST /v1/practice/sessions/${SESSION}/continue`]: () => Response.json({ session: view({ status: 'active', asked: 5, round: 2 }) }),
       }),
     });
-    expect(await screen.findByText("You've done all 5 words")).toBeInTheDocument();
-    expect(await screen.findByText('3 right')).toBeInTheDocument();
+    expect(await screen.findByText("You’ve done all 5 words")).toBeInTheDocument();
+    expect(await screen.findByText('3 correct')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Practice 5 more/ }));
     expect(await screen.findByText('server')).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/continue`)[0].body).toEqual({ continue: true });
   });
 
-  it('K/67: Esc ends the session into the summary; [Review again] per word and for the rest', async () => {
+  it('K/67: Esc ends the session into the summary; [Needs review] per word and for the rest', async () => {
     let reviewed = false;
     const v = renderApp(<PracticeSession />, {
       session: true,
@@ -530,15 +530,15 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: '10 questions done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '10 questions done' })).toBeInTheDocument();
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(1);
     // Figma 119:4608: the ring reads 7/10 right; blocks rise 90 ms apart (design §8.3).
-    expect(screen.getByRole('img', { name: '7/10 right' })).toHaveTextContent('7/10');
-    expect(screen.getByRole('heading', { name: '10 questions done.' }).closest('[class*="animate-wm-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
+    expect(screen.getByRole('img', { name: '7/10 correct' })).toHaveTextContent('7/10');
+    expect(screen.getByRole('heading', { name: '10 questions done' }).closest('[class*="animate-wm-summary-in"]')?.className).toMatch(/animation-delay:90ms/);
     expect(screen.getByText('Công nghệ deck, 3 question types. 1 of 3 sessions left today.')).toBeInTheDocument();
-    const list = screen.getByRole('list', { name: 'Review again · 3 words' });
+    const list = screen.getByRole('list', { name: 'Needs review · 3 words' });
     expect(within(list).getByText('Added to priority')).toBeInTheDocument();
-    await userEvent.click(within(list).getByRole('button', { name: 'Review again: release' }));
+    await userEvent.click(within(list).getByRole('button', { name: 'Needs review: release' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-8/review')).toHaveLength(1));
     await userEvent.click(await screen.findByRole('button', { name: 'Add the other 1 word to priority' }));
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/review-all`)).toHaveLength(1));
@@ -552,7 +552,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -610,7 +610,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     );
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    await screen.findByRole('button', { name: /Review again/ });
+    await screen.findByRole('button', { name: /Needs review/ });
     await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
     await userEvent.click(await within(dialog).findByRole('radio', { name: 'Nghĩa sai' }));
@@ -689,7 +689,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     });
     const input = await screen.findByRole('textbox', { name: 'Your answer' });
     await userEvent.type(input, 'cache{Enter}');
-    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
     expect(input).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
@@ -711,14 +711,14 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(0);
   });
 
-  it('M4 review: a right answer without a hint and without [Know] does not blame hints', async () => {
+  it('M4 review: a right answer without a hint and without [Known] does not blame hints', async () => {
     renderApp(<PracticeSession />, {
       session: true,
       routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 })) }),
     });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
     expect(screen.queryByText(/after a hint/)).not.toBeInTheDocument();
   });
 
@@ -754,7 +754,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('1');
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     const keys = posts(v.calls, '/v1/practice/items/item-4/answer').map((c) => c.headers['Idempotency-Key']);
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
@@ -796,14 +796,14 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
     await screen.findByText('triển khai');
     expect(screen.queryByRole('button', { name: 'Listen' })).not.toBeInTheDocument();
     await userEvent.keyboard('2');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     const uk = screen.getByRole('button', { name: 'Listen' });
     await userEvent.click(uk);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
-    expect(screen.getByText('Not quite')).toBeInTheDocument();
+    expect(screen.getByText('Incorrect')).toBeInTheDocument();
   });
 });
 
@@ -848,7 +848,7 @@ describe('Summary of alternative answers', () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: summaryRoutes(summary, over) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('{Escape}');
-    await screen.findByRole('heading', { name: '10 questions done.' });
+    await screen.findByRole('heading', { name: '10 questions done' });
     return v;
   };
 
@@ -861,12 +861,12 @@ describe('Summary of alternative answers', () => {
         return Response.json({ action: 'needs_review', item_id: 'a1', sense_id: 'sense-crucial', level: 1, due_date: '2026-11-08', priority: true });
       },
     });
-    const list = screen.getByRole('list', { name: 'Review again · 2 words' });
+    const list = screen.getByRole('list', { name: 'Needs review · 2 words' });
     const [, crucial] = within(list).getAllByRole('listitem');
-    await userEvent.click(within(crucial).getByRole('button', { name: 'Review again: crucial' }));
+    await userEvent.click(within(crucial).getByRole('button', { name: 'Needs review: crucial' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/a1/review')).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/a1/review')[0].body).toEqual({ action: 'needs_review', sense_id: 'sense-crucial' });
-    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem')[index]).getByRole('button', { name: /^Review again: / });
+    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Needs review · 2 words' })).getAllByRole('listitem')[index]).getByRole('button', { name: /^Needs review: / });
     // A pending Button shows a spinner icon (React Aria drops aria-busy), so that is what tells a pending row.
     const pending = (index: number) => rowButton(index).querySelector('svg') !== null;
     await waitFor(() => expect(pending(1)).toBe(true));
@@ -877,16 +877,16 @@ describe('Summary of alternative answers', () => {
 
   it('a pressed row shows "Đã đưa vào ưu tiên" and the other keeps its button', async () => {
     await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }] });
-    const [vital, crucial] = within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem');
+    const [vital, crucial] = within(screen.getByRole('list', { name: 'Needs review · 2 words' })).getAllByRole('listitem');
     expect(within(crucial).getByText('Added to priority')).toBeInTheDocument();
     expect(within(crucial).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(vital).getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
+    expect(within(vital).getByRole('button', { name: 'Needs review: vital' })).toBeInTheDocument();
   });
 
   it('T20: the button of each row names its word; "Added to priority" is a status', async () => {
     await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }, { sense_id: 's3', lemma: 'update', meaning: 'cập nhật', item_id: 'item-9', action: null }] });
-    const list = screen.getByRole('list', { name: 'Review again · 3 words' });
-    expect(within(list).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Review again: vital', 'Review again: update']);
+    const list = screen.getByRole('list', { name: 'Needs review · 3 words' });
+    expect(within(list).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Needs review: vital', 'Needs review: update']);
     expect(within(list).getByRole('status')).toHaveTextContent('Added to priority');
   });
 
@@ -894,7 +894,7 @@ describe('Summary of alternative answers', () => {
     await openSummary({ alternatives: 2 });
     const line = await screen.findByText('Including 2 alternative answers');
     // M5.5: no Đúng/Sai tiles any more (Figma 119:4608 has the ring); the line sits with the title, next to the ring of right answers.
-    expect(screen.getByRole('heading', { name: /done\.$/ }).parentElement).toContainElement(line);
+    expect(screen.getByRole('heading', { name: /done$/ }).parentElement).toContainElement(line);
   });
 
   it('CS9: nothing is said when there was none, or when an older API sends no count', async () => {

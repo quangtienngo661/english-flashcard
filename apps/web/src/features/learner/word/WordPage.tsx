@@ -276,9 +276,8 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
 
   return (
     <section id="cau-da-gap" aria-labelledby="cau-da-gap-title" className="flex scroll-mt-24 flex-col gap-3">
-      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-3">
+      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
         <SectionTitle id="cau-da-gap-title">{t('seenTitle')}</SectionTitle>
-        <p className="text-wm-meta text-wm-muted md:flex-1">{t('seenCaption')}</p>
         {learned.length > 0 && (
           <TextButton tone="add" className="self-start" onPress={() => setDialog({ kind: 'add' })}>
             {t('addSentence')}

@@ -38,10 +38,10 @@ describe('StreakToast (đợt C DC9)', () => {
     expect(region).toHaveTextContent('2 ngày liên tiếp');
   });
 
-  it('English: "13-day streak"', () => {
+  it('English: "13 days in a row"', () => {
     renderApp(<StreakToast />, { locale: 'en' });
     act(() => showStreak(13));
-    expect(screen.getByRole('status')).toHaveTextContent('13-day streak');
+    expect(screen.getByRole('status')).toHaveTextContent('13 days in a row');
   });
 
   it('placement: bottom centre by default; the session one too (owner 13/11/2026)', () => {

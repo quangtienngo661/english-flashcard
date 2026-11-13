@@ -273,10 +273,10 @@ describe('LoginForm (K/02, K/93)', () => {
   it('a wrong password says so in the copy of the app', async () => {
     renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') } });
     await login();
-    expect(await screen.findByText('Email hoặc mật khẩu chưa đúng.')).toBeInTheDocument();
+    expect(await screen.findByText('Email hoặc mật khẩu không đúng. Thử lại.')).toBeInTheDocument();
   });
 
-  // Audit T27 (13/11/2026): an empty form used to reach the API and come back "Email hoặc mật khẩu chưa đúng.".
+  // Audit T27 (13/11/2026): an empty form used to reach the API and come back "Email hoặc mật khẩu không đúng. Thử lại.".
   it('T27: sign-in with empty fields sends no request and shows both errors, focus on Email', async () => {
     const { count } = renderApp(<LoginForm />, { routes: { ...signedOut, 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') } });
     await userEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
@@ -288,7 +288,7 @@ describe('LoginForm (K/02, K/93)', () => {
     expect(password).toHaveAttribute('aria-invalid', 'true');
     expect(password).toHaveAccessibleDescription('Nhập mật khẩu.');
     expect(count('POST', '/v1/auth/login')).toBe(0);
-    expect(screen.queryByText('Email hoặc mật khẩu chưa đúng.')).toBeNull();
+    expect(screen.queryByText('Email hoặc mật khẩu không đúng. Thử lại.')).toBeNull();
   });
 
   it('E8: 403 account-locked shows the K/93 box and keeps what was typed', async () => {
@@ -311,7 +311,7 @@ describe('LoginForm (K/02, K/93)', () => {
 });
 
 describe('VerifyEmailForm (K/03)', () => {
-  const wrongCode = 'Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập.';
+  const wrongCode = 'Mã hoặc mật khẩu không đúng hoặc mã đã hết hạn. Nếu email đã được xác minh, đăng nhập để tiếp tục.';
 
   beforeEach(() => {
     writePendingEmail('lan@example.com');
@@ -423,7 +423,7 @@ describe('VerifyEmailForm (K/03)', () => {
   });
 
   it.each([
-    ['vi', 'Bạn đã nhập sai mã quá nhiều lần. Thử lại sau 2 phút, hoặc dùng Quên mật khẩu ở trang đăng nhập.'],
+    ['vi', 'Bạn đã nhập sai mã quá nhiều lần. Thử lại sau 2 phút hoặc dùng Quên mật khẩu ở trang đăng nhập.'],
     ['en', 'Too many wrong codes. Try again in 2 minutes, or use Forgot password on the sign-in page.'],
   ] as const)('429 shows the page-specific wait and points to Forgot password on the sign-in page in %s (review I1, B)', async (locale, text) => {
     setup({ locale, routes: { 'POST /v1/auth/verify-email': () => rateLimited(75) } });
@@ -517,7 +517,7 @@ describe('VerifyEmailForm (K/03)', () => {
   it('?reason=login shows the confirm-email line', async () => {
     search = new URLSearchParams({ reason: 'login' });
     setup();
-    expect(await screen.findByText('Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới lan@example.com.')).toBeInTheDocument();
+    expect(await screen.findByText('Xác minh email để tiếp tục. Mã đã gửi tới lan@example.com.')).toBeInTheDocument();
   });
 
   it('keeps paste and backspace navigation in the six code boxes', async () => {
@@ -700,10 +700,10 @@ describe('Google on the sign-in and sign-up pages (Bước 8)', () => {
   });
 
   it.each([
-    ['google-failed', 'Đăng nhập bằng Google chưa thành công. Hãy thử lại.'],
-    ['google-unavailable', 'Đăng nhập bằng Google đang tạm thời không dùng được. Hãy dùng email và mật khẩu.'],
-    ['google-busy', 'Có quá nhiều lượt đăng nhập bằng Google từ mạng này. Đợi một phút rồi thử lại, hoặc dùng email và mật khẩu.'],
-    ['google-email-unverified', 'Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.'],
+    ['google-failed', 'Không đăng nhập được bằng Google. Thử lại.'],
+    ['google-unavailable', 'Đăng nhập bằng Google đang không dùng được. Dùng email và mật khẩu.'],
+    ['google-busy', 'Có quá nhiều lượt đăng nhập bằng Google từ mạng này. Đợi một phút rồi thử lại hoặc dùng email và mật khẩu.'],
+    ['google-email-unverified', 'Google chưa xác minh email này nên chưa đăng nhập được. Xác minh email ở Google rồi thử lại.'],
   ])('?error=%s shows its text', async (slug, text) => {
     search = new URLSearchParams({ error: slug });
     renderApp(<LoginForm />, { routes: signedOut });
@@ -720,13 +720,13 @@ describe('Google on the sign-in and sign-up pages (Bước 8)', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('register 409 email-taken with reason account-deleting → "Tài khoản này đang được xóa, thử lại sau."', async () => {
+  it('register 409 email-taken with reason account-deleting → "Tài khoản này đang được xóa. Thử lại sau."', async () => {
     renderApp(<RegisterForm today={TODAY} />, {
       routes: { ...signedOut, 'POST /v1/auth/register': () => problem(409, 'email-taken', { reason: 'account-deleting' }) },
     });
     await fillRegister();
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
-    expect(await screen.findByText('Tài khoản này đang được xóa, thử lại sau.')).toBeInTheDocument();
+    expect(await screen.findByText('Tài khoản này đang được xóa. Thử lại sau.')).toBeInTheDocument();
   });
 });

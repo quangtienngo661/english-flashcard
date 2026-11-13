@@ -91,7 +91,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(within(pro).getByRole('radio', { name: /^12 tháng/ })).toBeChecked();
     for (const perk of [
       'AI viết câu luyện cho từng từ bạn học', 'Tra từ bằng AI khi từ điển chưa có', '250 câu AI và 80 lượt tra AI mỗi tháng',
-      '25 phiên luyện mỗi ngày', 'Không quảng cáo', 'Mọi thứ của gói Miễn phí',
+      '25 phiên luyện mỗi ngày', 'Không quảng cáo', 'Mọi quyền lợi của gói Miễn phí',
     ]) expect(within(pro).getByText(perk)).toBeInTheDocument();
     expect(within(pro).getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeEnabled();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(within(pro).queryByText(/Kỳ mới bắt đầu từ/)).not.toBeInTheDocument();
     const buy = within(pro).getByRole('button', { name: 'Mua gói Pro 12 tháng' });
     expect(buy.compareDocumentPosition(sentence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const lastPerk = within(pro).getByText('Mọi thứ của gói Miễn phí');
+    const lastPerk = within(pro).getByText('Mọi quyền lợi của gói Miễn phí');
     expect(lastPerk.compareDocumentPosition(sentence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const terms = within(pro).getByRole('link', { name: 'Điều khoản sử dụng' });
     expect(terms).toHaveAttribute('href', '/vi/terms');
@@ -161,7 +161,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(posts[0].body).toEqual({ period_months: 3, expected_amount: 205000, locale: 'vi' });
   });
 
-  it('LB1E28: 409 price-changed → the prices are read again, "Giá vừa đổi, xem lại trước khi mua", nothing opens, and the next press uses the new price', async () => {
+  it('LB1E28: 409 price-changed → the prices are read again, "Giá vừa thay đổi. Xem lại trước khi mua.", nothing opens, and the next press uses the new price', async () => {
     let prices = PRICES;
     const view = renderApp(<PlansPage />, {
       routes: {
@@ -177,7 +177,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
       },
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Mua gói Pro 12 tháng' }));
-    expect(await screen.findByText('Giá vừa đổi, xem lại trước khi mua')).toBeInTheDocument();
+    expect(await screen.findByText('Giá vừa thay đổi. Xem lại trước khi mua.')).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
     const pro = screen.getByRole('region', { name: 'Pro' });
     expect(await within(pro).findByText(dong(620000))).toBeInTheDocument();
@@ -206,10 +206,10 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8; giao diện mới M
     expect(view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/orders')).toHaveLength(2);
   });
 
-  it('503 → "Chưa tạo được đơn. Thử lại sau ít phút." and the button works again', async () => {
+  it('503 → "Không tạo được đơn hàng. Thử lại sau ít phút." and the button works again', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': () => problem(503, 'provider-unavailable') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Mua gói Pro 12 tháng' }));
-    expect(await screen.findByText('Chưa tạo được đơn. Thử lại sau ít phút.')).toBeInTheDocument();
+    expect(await screen.findByText('Không tạo được đơn hàng. Thử lại sau ít phút.')).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeEnabled();
   });

@@ -96,7 +96,7 @@ export function WeakWordsPage() {
               <h2 id="weak-rules" className="font-wm-sans text-wm-base-strong text-wm-ink">
                 {t('rulesTitle')}
               </h2>
-              {(['in', 'skip', 'out', 'removed'] as const).map((key) => (
+              {(['in', 'skip', 'out'] as const).map((key) => (
                 <p key={key} className="font-wm-sans text-wm-small text-wm-muted">
                   {t(`rules.${key}`)}
                 </p>

@@ -80,15 +80,15 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect(screen.getByText('Review · Du lịch')).toBeInTheDocument();
   });
 
-  it('a right answer says what happened to the schedule; no Know, Review again stays', async () => {
+  it('a right answer says what happened to the schedule; no Known, Needs review stays', async () => {
     renderApp(<RecallSession />, { session: true, routes: routes() });
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
     expect(await screen.findByText('luggage moved up to Level 4.')).toBeInTheDocument();
-    // F.14: the schedule note sits on the ticket's stub, beside "Right".
-    expect(screen.getByText('Right').closest('[data-feedback]')).toHaveTextContent(/^Right\s*luggage moved up to Level 4\.\s*hành lý/);
-    expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Review again/ })).toBeInTheDocument();
+    // F.14: the schedule note sits on the ticket's stub, beside "Correct".
+    expect(screen.getByText('Correct').closest('[data-feedback]')).toHaveTextContent(/^Correct\s*luggage moved up to Level 4\.\s*hành lý/);
+    expect(screen.queryByRole('button', { name: /Known/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Needs review/ })).toBeInTheDocument();
   });
 
   it('đợt C DC9, L-B-5: an answer that is the first study of the day shows the streak toast once, in English, at the session corner', async () => {
@@ -98,8 +98,8 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     }) });
     await screen.findByText('hành lý');
     await userEvent.keyboard('1');
-    expect(await screen.findByText('4-day streak')).toBeInTheDocument();
-    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    expect(await screen.findByText('4 days in a row')).toBeInTheDocument();
+    expect(screen.getAllByText(/in a row/)).toHaveLength(1);
     expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
   });
 
@@ -112,19 +112,19 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     expect(await screen.findByText('luggage stays at Level 2.')).toBeInTheDocument();
   });
 
-  it('the summary: right and moved up, wrong, Review again; new words left → [Học] and the way home', async () => {
+  it('the summary: right and moved up, wrong, Needs review; new words left → [Học] and the way home', async () => {
     renderApp(<RecallSession />, { session: true, routes: routes({
       [`POST /v1/practice/sessions/${S}/next`]: () => Response.json({ state: 'finished', session: view({ status: 'finished', asked: 8 }) }),
     }) });
-    expect(await screen.findByRole('heading', { name: '8 words done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '8 words done' })).toBeInTheDocument();
     const tile = (label: string) => screen.getByText(label).parentElement!;
-    expect(within(tile('Right, moved up')).getByText('5')).toBeInTheDocument();
-    expect(within(tile('Wrong, same level')).getByText('3')).toBeInTheDocument();
-    expect(within(tile('Review again')).getByText('1')).toBeInTheDocument();
-    expect(screen.queryByText('Right, same level')).not.toBeInTheDocument();
+    expect(within(tile('Correct, moved up')).getByText('5')).toBeInTheDocument();
+    expect(within(tile('Incorrect, same level')).getByText('3')).toBeInTheDocument();
+    expect(within(tile('Needs review')).getByText('1')).toBeInTheDocument();
+    expect(screen.queryByText('Correct, same level')).not.toBeInTheDocument();
     expect(await screen.findByText('5 new words left in this deck')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Learn' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
-    expect(screen.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '/vi/app');
+    expect(screen.getByRole('link', { name: 'Back to Today' })).toHaveAttribute('href', '/vi/app');
   });
 
   it('the summary shows "Đúng, giữ bậc" when a right answer kept its level; due words left → [Ôn tiếp]', async () => {
@@ -133,8 +133,8 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
       [`GET /v1/practice/sessions/${S}/summary`]: () => Response.json({ ...SUMMARY, recall: { leveled_up: 3, correct_kept: 2 } }),
       'GET /v1/groups': () => Response.json({ items: [deck({ priority: 0, due: 12, new: 0 })] }),
     }) });
-    expect(await screen.findByText('Right, same level')).toBeInTheDocument();
-    expect(within(screen.getByText('Right, same level').parentElement!).getByText('2')).toBeInTheDocument();
+    expect(await screen.findByText('Correct, same level')).toBeInTheDocument();
+    expect(within(screen.getByText('Correct, same level').parentElement!).getByText('2')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'Review more' })).toHaveAttribute('href', `/vi/app/recall?group=${G}`);
     expect(screen.queryByText(/new words? left in this deck/)).not.toBeInTheDocument();
   });
@@ -143,7 +143,7 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     renderApp(<RecallSession />, { session: true, routes: routes({
       'POST /v1/practice/sessions': () => problem(409, 'practice-no-words', { reason: 'nothing-learned' }),
     }) });
-    expect(await screen.findByText('This deck has no learned words yet.')).toBeInTheDocument();
+    expect(await screen.findByText('This deck has no learned words yet')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Learn' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=new`);
   });
 
@@ -151,14 +151,14 @@ describe('RecallSession (đợt C §4.3, §4.4)', () => {
     renderApp(<RecallSession />, { session: true, routes: routes() });
     await screen.findByText('hành lý');
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: '8 words done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '8 words done' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Close' })).toHaveAttribute('href', `/vi/app/group?id=${G}`);
   });
 
   it('a malformed deck id never reaches the API', async () => {
     params.current = new URLSearchParams({ group: 'nope' });
     const { calls } = renderApp(<RecallSession />, { session: true, routes: routes() });
-    expect(await screen.findByText('This deck doesn’t exist anymore.')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t find this deck.')).toBeInTheDocument();
     expect((calls as Call[]).filter((c) => c.path === '/v1/practice/sessions')).toHaveLength(0);
   });
 });
@@ -181,7 +181,7 @@ describe('Ôn, the rebuilt screens (M5.9)', () => {
       })),
     }) });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Your answer' }), 'deteriorated{Enter}');
-    await screen.findByText('Check the spelling and try again. The answer stays hidden.');
+    await screen.findByText('Check the spelling and try again.');
     expect(wrongTyped(v.calls)).toEqual([{ text: 'deteriorated' }]);
     await userEvent.click(screen.getByRole('button', { name: 'Show answer' }));
     const line = await screen.findByRole('group', { name: 'Letters: you typed deteriorated, the answer is deteriorate' });
@@ -204,6 +204,6 @@ describe('Ôn, the rebuilt screens (M5.9)', () => {
     renderApp(<RecallSession />, { session: true, routes: routes({
       [`POST /v1/practice/sessions/${S}/next`]: () => Response.json({ state: 'finished', session: view({ status: 'finished', asked: 8 }) }),
     }) });
-    expect(await screen.findByRole('img', { name: '5/8 right' })).toHaveTextContent('5/8');
+    expect(await screen.findByRole('img', { name: '5/8 correct' })).toHaveTextContent('5/8');
   });
 });

@@ -174,7 +174,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
     renderApp(<GroupPage />, { chrome: true, routes: routes() });
     const table = await screen.findByRole('table', { name: 'Toàn bộ 4 từ' });
     expect(within(table).getAllByRole('columnheader').map((th) => [th.textContent, th.getAttribute('scope')])).toEqual([
-      ['Từ vựng', 'col'], ['Nghĩa', 'col'], ['Bậc', 'col'], ['Trạng thái', 'col'],
+      ['Từ', 'col'], ['Nghĩa', 'col'], ['Bậc', 'col'], ['Trạng thái', 'col'],
     ]);
     expect(within(table).getAllByRole('row', { name: /^(deploy|release|went|ship)$/ })).toHaveLength(4);
   });
@@ -294,7 +294,7 @@ describe('GroupPage (Figma 84:3552 / 84:3749)', () => {
       }),
     });
     expect(await screen.findByText('Không tìm thấy nhóm này.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Về Danh sách nhóm' })).toHaveAttribute('href', '/vi/app/groups');
+    expect(screen.getByRole('link', { name: 'Về Nhóm của bạn' })).toHaveAttribute('href', '/vi/app/groups');
   });
 
   it('opened from the carousel (owner 10/11/2026): the head draws from the deck list at once, before the deck detail arrives', async () => {
@@ -399,12 +399,12 @@ describe('GroupPage: rename and delete from the ⋯ menu (moved from the list, g
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/groups'));
   });
 
-  it('English: "Delete deck" and "Cancel"', async () => {
+  it('English: "Delete deck" and "Keep deck"', async () => {
     renderApp(<GroupPage />, { chrome: true, locale: 'en', routes: routes() });
     await userEvent.click(await screen.findByRole('button', { name: 'Deck options' }, { timeout: 5000 }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete deck' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Keep deck' })).toBeInTheDocument();
     expect(await within(dialog).findByRole('button', { name: /Delete deck/ })).toBeInTheDocument();
   });
 });

@@ -25,7 +25,7 @@ function renderHome(data: LandingData = FALLBACK_LANDING_DATA) {
   return render(<HomePage copy={vi_.Landing} data={data} locale="vi" />);
 }
 
-const pricing = () => within(screen.getByRole('region', { name: 'Hai gói, không tự gia hạn.' }));
+const pricing = () => within(screen.getByRole('region', { name: 'Hai gói, khác nhau ở mức luyện tập và AI' }));
 /** The row of one period of the Pro card. */
 const period = (label: string) => within(pricing().getByText(label, { exact: true }).closest('li') as HTMLElement);
 
@@ -36,11 +36,11 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
       'H1 Ôn từ đúng lúc, luyện từ trong câu.',
-      'H2 Từ của mỗi bài thành một nhóm.',
+      'H2 Từ của mỗi bài thành một nhóm',
       'H2 Từ lúc gặp tới lúc dùng được',
-      'H2 Hai gói, không tự gia hạn.',
+      'H2 Hai gói, khác nhau ở mức luyện tập và AI',
       'H2 Câu hỏi thường gặp',
-      'H2 Bắt đầu với bài bạn vừa đọc.',
+      'H2 Bắt đầu với bài bạn vừa đọc',
     ];
     expect(headings.map((h) => h.tagName)).toEqual(expected.map((e) => e.slice(0, 2)));
     headings.forEach((h, i) => expect(h).toHaveAccessibleName(expected[i].slice(3)));
@@ -50,9 +50,9 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const { container } = renderHome();
     const ids = [...container.querySelectorAll('section[id]')].map((s) => s.id);
     expect(ids).toEqual(['nhom-tu', 'cach-hoc', 'gia', 'hoi-dap']);
-    expect(screen.getByRole('region', { name: 'Từ của mỗi bài thành một nhóm.' }).id).toBe('nhom-tu');
+    expect(screen.getByRole('region', { name: 'Từ của mỗi bài thành một nhóm' }).id).toBe('nhom-tu');
     expect(screen.getByRole('region', { name: 'Từ lúc gặp tới lúc dùng được' }).id).toBe('cach-hoc');
-    expect(screen.getByRole('region', { name: 'Hai gói, không tự gia hạn.' }).id).toBe('gia');
+    expect(screen.getByRole('region', { name: 'Hai gói, khác nhau ở mức luyện tập và AI' }).id).toBe('gia');
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
   });
 
@@ -90,7 +90,7 @@ describe('PricingSection (QM8-2: three prices, the saving, no struck price, no s
   it('Free costs 0 ₫ and asks for no card; Pro has the "Có AI" chip', () => {
     renderHome();
     expect(pricing().getByText(`0${NBSP}₫`, keepSpaces)).toBeInTheDocument();
-    expect(pricing().getByText('không cần thẻ thanh toán')).toBeInTheDocument();
+    expect(pricing().getByText('không giới hạn thời gian')).toBeInTheDocument();
     expect(pricing().getByText('Có thể có quảng cáo.')).toBeInTheDocument();
     expect(pricing().getByText('Có AI')).toBeInTheDocument();
   });
