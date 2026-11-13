@@ -223,8 +223,7 @@ export class WordsService {
         SELECT * FROM (SELECT e.id, e.lemma, e.pos, e.scope, ${rank} AS rank FROM entries e WHERE ${Prisma.join(entryFilters, ' AND ')}) c
         WHERE c.rank IS NOT NULL
       ), matched AS (
-        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank,
-          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning,
+        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank, r.id AS revision_id,
           array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id,
           r.ipa_uk, r.ipa_us, r.ipa_custom, r.examples[1] AS example
         FROM candidates e
@@ -234,13 +233,11 @@ export class WordsService {
         ) s
         JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
         LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
-        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
-        LEFT JOIN sense_revision_texts definition ON definition.revision_id = r.id AND definition.language = 'en' AND definition.kind = 'definition'
         ${filters.length === 0 ? Prisma.empty : Prisma.sql`WHERE ${Prisma.join(filters, ' AND ')}`}
       ), words AS (
         SELECT lemma, MIN(rank)::int AS rank, array_agg(DISTINCT pos) AS pos_list, bool_or(scope = 'private') AS has_private,
           (array_agg(level ORDER BY array_position(${LEVELS as unknown as string[]}::text[], level)) FILTER (WHERE level IS NOT NULL))[1] AS level,
-          (array_agg(meaning ORDER BY ${previewOrder}))[1] AS meaning_preview,
+          (array_agg(revision_id ORDER BY ${previewOrder}))[1] AS preview_revision,
           (array_agg(ipa_uk ORDER BY ${previewOrder}))[1] AS ipa_uk,
           (array_agg(ipa_us ORDER BY ${previewOrder}))[1] AS ipa_us,
           (array_agg(ipa_custom ORDER BY ${previewOrder}))[1] AS ipa_custom,
@@ -249,8 +246,15 @@ export class WordsService {
       )
       -- The count row always comes back, so a page past the last word (or no match) still reports the total, with a null word.
       SELECT counted.total, page.* FROM (SELECT COUNT(*)::int AS total FROM words) counted
+      -- The meaning texts are joined for the page only: joined per matched sense, the planner (expecting one row) scanned the whole
+      -- text table once per sense, 7 s for 9.8k words.
       LEFT JOIN LATERAL (
-        SELECT * FROM words ${after} ORDER BY rank, lemma COLLATE "C" LIMIT ${query.page_size + 1}
+        SELECT w.lemma, w.rank, w.pos_list, w.has_private, w.level, w.ipa_uk, w.ipa_us, w.ipa_custom, w.example,
+          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning_preview
+        FROM (SELECT * FROM words ${after} ORDER BY rank, lemma COLLATE "C" LIMIT ${query.page_size + 1}) w
+        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = w.preview_revision AND gloss.language = 'vi' AND gloss.kind = 'gloss'
+        LEFT JOIN sense_revision_texts definition
+          ON definition.revision_id = w.preview_revision AND definition.language = 'en' AND definition.kind = 'definition'
       ) page ON true
       ORDER BY page.rank, page.lemma COLLATE "C"`;
     const total = rows[0]?.total ?? 0;
