@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Flame, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Heading } from 'react-aria-components';
-import { useFormat } from '@/app-shell/format';
+import { createFormat, useFormat } from '@/app-shell/format';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { addDays, addMonths, daysInMonth, elapsedDays, monthOf } from '@/lib/learner-date';
@@ -62,9 +62,11 @@ function useDayLabel() {
   const weekday = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', locale === 'vi'
     ? { weekday: 'long', timeZone: 'UTC' }
     : { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  // T24: the vi "5/11" goes through the shared Intl format, as the en label does.
+  const dayMonth = createFormat(locale, 'UTC');
   return (cell: GridCell, row: CalendarDay | undefined) => {
     const at = Date.UTC(Number(cell.date.slice(0, 4)), Number(cell.date.slice(5, 7)) - 1, Number(cell.date.slice(8, 10)));
-    const name = locale === 'vi' ? `${weekday.format(at)} ${Number(cell.date.slice(8, 10))}/${Number(cell.date.slice(5, 7))}` : weekday.format(at);
+    const name = locale === 'vi' ? `${weekday.format(at)} ${dayMonth.date(`${cell.date}T00:00:00Z`, 'dayMonth')}` : weekday.format(at);
     if (cell.isFuture) return `${name}: ${t('cellFuture')}`;
     const parts = [
       row && row.learned > 0 ? t('cellLearned', { count: row.learned }) : null,

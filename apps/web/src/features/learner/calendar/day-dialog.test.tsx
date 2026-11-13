@@ -104,11 +104,11 @@ describe('DayDialog (Figma 103:3820 / 103:4248)', () => {
     expect(screen.getByRole('button', { name: 'Tất cả 32' })).toBeEnabled();
   });
 
-  it('a day with practice only shows the summary and "Ngày này không có."', async () => {
+  it('a day with practice only shows the summary and "Không học hay ôn từ nào trong ngày này."', async () => {
     const day = { ...DAY, counts: { learned: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0, practice_questions: 20 }, items: [] };
     renderApp(<DayDialog {...props()} />, { routes: routes({ 'GET /v1/me/calendar/days/2026-11-05?kind=all&page_size=100': () => Response.json(day) }) });
     expect(await screen.findByText('luyện 20 câu')).toBeInTheDocument();
-    expect(screen.getByText('Ngày này không có.')).toBeInTheDocument();
+    expect(screen.getByText('Không học hay ôn từ nào trong ngày này.')).toBeInTheDocument();
     expect(screen.queryByRole('region')).toBeNull();
     expect(screen.getByRole('button', { name: 'Tất cả 0' })).toBeDisabled();
   });

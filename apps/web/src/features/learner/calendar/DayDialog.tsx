@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useId, useState } from 'react';
 import { Heading } from 'react-aria-components';
+import { createFormat } from '@/app-shell/format';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { groupTone } from '@/lib/group-color';
@@ -78,8 +79,13 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
   const at = Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)));
   const weekday = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'long', timeZone: 'UTC' }).format(at).toLowerCase();
   const monthName = locale === 'vi' ? Number(date.slice(5, 7)) : new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' }).format(at);
-  const dayMonth = `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+  // T24, QA11: en through Intl ("Nov 13"); vi keeps "05/11" (Figma 103:3820), which vi-VN's 2-digit Intl writes "05-11".
+  const dayMonth = locale === 'vi' ? `${date.slice(8, 10)}/${date.slice(5, 7)}` : createFormat(locale, 'UTC').date(`${date}T00:00:00Z`, 'dayMonth');
   const first = day.data?.pages[0];
+  const empty = first ? first.counts.learned + first.counts.reviewed + first.counts.practice_questions === 0 && first.practice_sessions.length === 0 : false;
+  // T25: one persistent line says which day is shown and its numbers; empty while the day loads.
+  const detail = future ? t('future') : first ? summary(first.counts) || (empty ? t('none') : '') : null;
+  const announce = detail === null ? '' : [`${weekday} ${dayMonth}`, detail].filter(Boolean).join(': ');
 
   return (
     <CalendarModal size="day" onDismiss={onBack}>
@@ -100,7 +106,8 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
         </button>
       </div>
 
-      <div key={date} aria-live="polite" className="flex flex-col gap-4 px-4 pb-6 pt-2 motion-safe:animate-wm-overlay-in md:px-7 md:pb-7">
+      <p role="status" className="sr-only">{announce}</p>
+      <div key={date} className="flex flex-col gap-4 px-4 pb-6 pt-2 motion-safe:animate-wm-overlay-in md:px-7 md:pb-7">
         <div className="flex flex-col gap-1">
           <span className="text-wm-meta text-wm-muted">{date === today ? t('todaySuffix', { weekday }) : weekday}</span>
           <Heading slot="title" className={cn('font-wm-display font-extrabold text-wm-ink', RAW.date)}>{dayMonth}</Heading>
@@ -118,7 +125,7 @@ export function DayDialog({ date, today, onDay, onBack, onClose }: DayDialogProp
             <Skeleton className="h-32 w-full rounded-wm-card" />
             <Skeleton className="h-40 w-full rounded-wm-card" />
           </div>
-        ) : first.counts.learned + first.counts.reviewed + first.counts.practice_questions === 0 && first.practice_sessions.length === 0 ? (
+        ) : empty ? (
           <Empty text={t('none')} />
         ) : (
           <DayBody

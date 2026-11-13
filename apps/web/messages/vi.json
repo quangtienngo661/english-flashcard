@@ -897,7 +897,7 @@
         "lemmaGone": "Từ không còn trong kho",
         "future": "Chưa tới ngày này.",
         "none": "Ngày này không có lần học nào.",
-        "sectionNone": "Ngày này không có.",
+        "sectionNone": "Không học hay ôn từ nào trong ngày này.",
         "loading": "Đang tải ngày",
         "error": "Không tải được ngày này."
       }
