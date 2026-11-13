@@ -101,3 +101,26 @@ compose ps                     # what runs, and health
 compose logs --tail 200 api    # or worker, caddy
 cat /srv/wordmet/state/current # the SHA in production
 ```
+
+## Monitoring and cron (M7)
+
+- `watch.sh` (every 5 minutes): log events `request_failed` (5 or more), `maintenance_job_failed`, `account_deletion_failed`,
+  `turnstile_bypassed`; disk above 80 %; less than 300 MB of memory; a service not running or unhealthy; an api or worker restart. One email
+  per kind of problem per hour, through the Resend HTTP API (`send-alert.sh`), so it still works when the app's own mail is broken.
+- `daily-report.sh` (08:00): yesterday's accounts, learners, practice sessions, AI calls and cost, paid orders, mails sent; 5xx count and
+  p95 latency from the Caddy access log; disk and memory.
+- A missing `ops.env` key stops the script and names the key (it lands in `logs/cron.log`).
+
+`crontab -e` as root:
+
+```
+CRON_TZ=Asia/Ho_Chi_Minh
+WORDMET_HOME=/srv/wordmet
+*/5 * * * * /srv/wordmet/app/deploy/scripts/watch.sh >> /srv/wordmet/logs/cron.log 2>&1
+0 8 * * *   /srv/wordmet/app/deploy/scripts/daily-report.sh >> /srv/wordmet/logs/cron.log 2>&1
+0 3 * * *   /srv/wordmet/app/deploy/scripts/backup.sh >> /srv/wordmet/logs/cron.log 2>&1
+15 * * * *  /srv/wordmet/app/deploy/scripts/compose.sh exec -T worker node dist/cli/run-maintenance.js >> /srv/wordmet/logs/cron.log 2>&1
+```
+
+Check that cron runs: `tail /srv/wordmet/logs/cron.log` after 5 minutes shows a `watch.sh` line only when something was wrong; force one with
+`WATCH_DISK_PERCENT=1 /srv/wordmet/app/deploy/scripts/watch.sh`.
