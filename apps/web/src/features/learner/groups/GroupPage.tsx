@@ -260,7 +260,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
               <Card className="p-2 pb-1 md:p-2 md:pb-1">
                 <table aria-label={t('allWords', { count: total })} className="w-full border-separate border-spacing-0 text-left">
                   <thead>
-                    <tr className={ROW}>
+                    <tr role="row" className={ROW}>
                       <Th>{t('colWord')}</Th>
                       <Th className="hidden md:table-cell">{t('colMeaning')}</Th>
                       <Th className="text-right md:text-left">{t('colLevel')}</Th>
@@ -342,7 +342,7 @@ const ROW = 'grid grid-cols-[1fr_auto] md:table-row';
 
 function Th({ className, children }: { className?: string; children: string }) {
   return (
-    <th scope="col" className={cn('whitespace-nowrap border-b border-wm-line px-4 py-2.5 text-left text-wm-meta font-normal text-wm-muted', className)}>
+    <th role="columnheader" scope="col" className={cn('whitespace-nowrap border-b border-wm-line px-4 py-2.5 text-left text-wm-meta font-normal text-wm-muted', className)}>
       {children}
     </th>
   );
@@ -389,8 +389,8 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
   }
 
   return (
-    <tr aria-label={word} className={ROW}>
-      <td className={cn(cell, 'col-start-1 row-start-1 min-w-0 pb-0 md:pb-3')}>
+    <tr role="row" aria-label={word} className={ROW}>
+      <td role="cell" className={cn(cell, 'col-start-1 row-start-1 min-w-0 pb-0 md:pb-3')}>
         <Link
           href={`/${locale}/app/word?w=${encodeURIComponent(word)}`}
           className="font-wm-display text-wm-word text-wm-ink outline-none break-words hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent"
@@ -399,17 +399,17 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
         </Link>
         {shownPos(card.content.pos) && <span className="block text-wm-meta text-wm-muted">{shownPos(card.content.pos)}</span>}
       </td>
-      <td className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
+      <td role="cell" className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
         {card.content.meaning.text}
         {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
       </td>
-      <td className={cn(cell, 'col-start-2 row-start-1 pb-0 text-right md:pb-3 md:text-left')}>
+      <td role="cell" className={cn(cell, 'col-start-2 row-start-1 pb-0 text-right md:pb-3 md:text-left')}>
         <span title={levelInterval(level) ?? undefined} className="inline-flex items-center gap-1.5 whitespace-nowrap text-wm-label text-wm-ink">
           <span aria-hidden className={cn('h-1.5 w-5.5 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
           {levelName(level)}
         </span>
       </td>
-      <td className={cn(cell, phoneDivider, 'col-start-2 row-start-2 pt-0 md:pt-3')}>
+      <td role="cell" className={cn(cell, phoneDivider, 'col-start-2 row-start-2 pt-0 md:pt-3')}>
         <div className="flex items-center justify-end gap-2 md:justify-between">
           <span className={cn('text-wm-label', state.tone)}>{status}</span>
           <TextButton
