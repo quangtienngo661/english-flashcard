@@ -22,7 +22,10 @@ type Props<T extends string> = {
  */
 export function Segmented<T extends string>({ label, value, options, onChange, isDisabled, fullWidth = false, compact = false }: Props<T>) {
   // Owner 10/11/2026: the in-row and full-width segments use smaller type (12px, semibold), so they sit on one line in the options dialog.
-  const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? 'px-2 py-1.5 text-xs font-semibold' : 'px-3.5 py-1.5 text-wm-small-strong';
+  const counted = options.some((option) => option.count !== undefined);
+  // Owner 13/11/2026: with counts, the three words of the scope switch must fit the 272 px words column, so the padding, the gap and
+  // the count box are a step tighter there (room left for a three-digit count).
+  const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? (counted ? 'px-1.25 py-1.5 text-xs font-semibold' : 'px-2 py-1.5 text-xs font-semibold') : 'px-3.5 py-1.5 text-wm-small-strong';
   return (
     <RadioGroup
       value={value}
@@ -36,7 +39,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
           count (owner 13/11/2026: with Tailwind's auto-cols-fr, minmax(0, 1fr), "All words 61" spilled its count out of the chosen pill). */}
       <div
         // raw-ok: a track never narrower than its option's text and count, and equal when there is room; no token for minmax()
-        className="grid auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-1 rounded-wm-pill bg-wm-accent-soft p-1"
+        className={cn('grid auto-cols-[minmax(max-content,1fr)] grid-flow-col rounded-wm-pill bg-wm-accent-soft p-1', counted ? 'gap-0.5' : 'gap-1')}
       >
         {options.map((option) => (
           <Radio
@@ -50,7 +53,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
                 {option.count !== undefined && (
                   <>
                     {' '}
-                    <span className={cn('ms-1.5', isSelected ? `${COUNT_BOX} bg-wm-accent-soft text-wm-accent` : `${COUNT_BOX_REST} ring-wm-line`)}>{option.count}</span>
+                    <span className={cn('ms-1', isSelected ? `${COUNT_BOX} bg-wm-accent-soft text-wm-accent` : `${COUNT_BOX_REST} ring-wm-line`, 'px-1')}>{option.count}</span>
                   </>
                 )}
               </>
