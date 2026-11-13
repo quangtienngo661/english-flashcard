@@ -222,13 +222,23 @@ describe('GroupListPage: carousel (Figma 82:3213, motion doc §3, design §8.5)'
   });
 
   it('← typed in the top-bar search box does not move the carousel', async () => {
-    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
-    await centre();
-    const box = screen.getAllByRole('searchbox')[0] ?? screen.getAllByRole('textbox')[0];
-    key('ArrowLeft', box);
-    key('f', box);
-    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
-    expect(screen.queryByRole('listbox')).toBeNull();
+    // The top bar has a search box from 1280 px (audit C1); narrower it is a link to Tra từ.
+    const media = window.matchMedia;
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*(\d+)px/.exec(query);
+      return { matches: min ? 1440 >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+    }) as unknown as typeof window.matchMedia;
+    try {
+      renderApp(<GroupListPage />, { chrome: true, routes: withGroups(FIVE) });
+      await centre();
+      const box = screen.getByRole('searchbox', { name: 'Tìm từ' });
+      key('ArrowLeft', box);
+      key('f', box);
+      expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+      expect(screen.queryByRole('listbox')).toBeNull();
+    } finally {
+      window.matchMedia = media;
+    }
   });
 
   it('one group: no arrow buttons, ← → do nothing', async () => {
