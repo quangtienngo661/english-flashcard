@@ -347,3 +347,33 @@ describe('wm dark and level tokens (M9.8)', () => {
     expect(webDark).toMatch(/\[data-theme='dark'\] \{\s*color-scheme: dark;/);
   });
 });
+
+// Part 12 (G.8, QA8, QA9): non-text control borders reach 3:1; group ink reads on its light wash.
+describe('wm control line and light group inks (G.8)', () => {
+  /** color-mix(in srgb, #fg p%, #bg) as #rrggbb (per channel on the encoded values, as the browser mixes in srgb). */
+  function mixSrgb(value: string): string {
+    const m = value.match(/^color-mix\(in srgb, (#[0-9a-f]{6}) (\d+)%, (#[0-9a-f]{6})\)$/);
+    if (!m) throw new Error(`not an srgb mix: ${value}`);
+    const p = Number(m[2]) / 100;
+    return `#${[1, 3, 5].map((i) => Math.round(parseInt(m[1].slice(i, i + 2), 16) * p + parseInt(m[3].slice(i, i + 2), 16) * (1 - p))
+      .toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  it('pins the control line, light and dark', () => {
+    expect([light.get('control-line'), dark.get('control-line')]).toEqual(['#878ea5', '#6b7392']);
+  });
+
+  it.each([['light', light], ['dark', dark]] as const)('the control line reaches 3:1 on surface and bg in %s', (_mode, map) => {
+    expect(contrast(map, 'control-line', 'surface')).toBeGreaterThanOrEqual(3);
+    expect(contrast(map, 'control-line', 'bg')).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 'empty'] as const)('light group %s: ink reads at 4.5:1 on its wash', (n) => {
+    const map = new Map([['ink', light.get(`group-${n}-ink`) ?? ''], ['wash', mixSrgb(light.get(`group-${n}-wash`) ?? '')]]);
+    expect(contrast(map, 'ink', 'wash')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('pins the group 3 ink (QA9), light and dark', () => {
+    expect([light.get('group-3-ink'), dark.get('group-3-ink')]).toEqual(['#86641f', '#d99a17']);
+  });
+});
