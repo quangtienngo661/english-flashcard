@@ -5,6 +5,8 @@ name: Deploy web
 # re-run on merge (branching model in CLAUDE.md), so main must only receive PRs whose CI is green.
 # Needs secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit) and CLOUDFLARE_ACCOUNT_ID in environment deploy-env.
 # The landing has no database since the 03/11/2026 redesign (design landing-redesign L2).
+# Pause switch: repository variable WEB_DEPLOY_PAUSED=true stops the automatic deploy on push; a manual run still deploys (Q14).
+# Deploy the API first: the build reads the landing's prices and FAQ from https://api.wordmet.com and fails without them.
 on:
   push:
     branches: [main]
@@ -17,6 +19,7 @@ concurrency:
 jobs:
   deploy:
     name: deploy apps/web to Cloudflare
+    if: github.event_name == 'workflow_dispatch' || vars.WEB_DEPLOY_PAUSED != 'true'
     runs-on: ubuntu-latest
     # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are secrets of this GitHub environment.
     environment: deploy-env
@@ -30,6 +33,14 @@ jobs:
       NEXT_PUBLIC_INDEXABLE: 'true'
       NEXT_PUBLIC_CONTACT_EMAIL: contact@wordmet.com
       NEXT_PUBLIC_SUPPORT_EMAIL: support@wordmet.com
+      NEXT_PUBLIC_LEARNER_APP: 'on'
+      NEXT_PUBLIC_API_BASE_URL: https://api.wordmet.com
+      # Site key of the production Turnstile widget (public; a repository or environment variable, not a secret).
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      # Pronunciation files on R2; the /app CSP media-src allows this origin, without it the speaker falls back to the device voice.
+      NEXT_PUBLIC_AUDIO_BASE_URL: https://audio.wordmet.com
+      # Fail the build when the landing's prices and FAQ cannot be read from the API (next.config.ts).
+      LANDING_DATA_REQUIRED: '1'
     steps:
       - uses: actions/checkout@v4
 
