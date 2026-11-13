@@ -31,7 +31,7 @@ export function TopicSuggestions() {
           <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       </div>
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {data.items.slice(0, ROWS).map((item) => (
           <li key={`${item.topic.code}-${item.level}`}>
             <TopicCard item={item} />
