@@ -93,6 +93,8 @@ switch (command) {
     ensureEnvFile();
     console.log(`Settings from ${envFile}`);
     // --wait returns once every service is healthy. The first start migrates and compiles the API, so allow 10 minutes.
+    // The API first: the web build reads the landing's prices from it (Dockerfile, LANDING_API_BASE_URL).
+    run(composeApp('up', '-d', '--build', '--wait', '--wait-timeout', '600', 'api'));
     run(composeApp('up', '-d', '--build', '--wait', '--wait-timeout', '600'));
     printUrls();
     break;
