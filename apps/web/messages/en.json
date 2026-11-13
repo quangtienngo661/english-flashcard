@@ -1051,6 +1051,7 @@
       "close": "Stop",
       "left": "{count, plural, one {# card left} other {# cards left}}",
       "card": "Card {n, number} of {total, number}",
+      "back": "Back: {meaning}",
       "priority": "Priority",
       "backlog": "Long overdue",
       "hintWeb": "Click the card or press Space to flip",

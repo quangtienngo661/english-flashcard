@@ -120,9 +120,13 @@ export function ReviewSession() {
     body = (
       // Owner 13/11/2026: on desktop the card, the piles and the buttons sit in the middle of the screen's height.
       <div className="flex w-full flex-1 flex-col gap-6 md:justify-center md:pb-14">
-        {/* Says which card came up after an answer (audit 26/10/2026 #8); empty until the first answer. */}
+        {/* Says which card came up after an answer (audit 26/10/2026 #8), and the meaning once the card is turned (audit T16); empty until then. */}
         <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
-          {session.index > 0 && session.card ? t('review.card', { n: session.index + 1, total }) : ''}
+          {session.flipped && session.card
+            ? t('review.back', { meaning: session.card.content.meaning.text })
+            : session.index > 0 && session.card
+              ? t('review.card', { n: session.index + 1, total })
+              : ''}
         </p>
         <div
           // raw-ok: the pile, stack, pile grid of mockup L221 (the card column capped at 22.5rem, 360 px as in the owner's artifact 13/11/2026); no token for a three-track grid

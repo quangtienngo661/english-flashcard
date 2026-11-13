@@ -158,15 +158,14 @@ describe('Tùy chỉnh phiên: question types', () => {
     expect(within(dialog).getAllByRole('status').some((s) => s.textContent === 'Chọn ít nhất một kiểu câu.')).toBe(true);
   });
 
-  it('T22: AI on with both AI rows off says why in the description too; every normal type off adds that line', async () => {
+  it('T22: AI on with both AI rows off says why in the description too; every normal type off adds the second line', async () => {
     const { dialog } = await open('Luyện tất cả');
     await press(dialog, 'Câu AI viết: thêm 1', 3);
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Điền từ vào câu' }));
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Trắc nghiệm theo câu' }));
     expect(startButton(dialog)).toHaveAccessibleDescription('Chọn ít nhất một kiểu câu AI.');
     for (const name of ['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']) await userEvent.click(within(dialog).getByRole('checkbox', { name }));
-    expect(startButton(dialog)).toHaveAccessibleDescription(/Chọn ít nhất một kiểu câu\./);
-    expect(startButton(dialog)).toHaveAccessibleDescription(/Chọn ít nhất một kiểu câu AI\./);
+    expect(startButton(dialog)).toHaveAccessibleDescription('Chọn ít nhất một kiểu câu AI. Chọn ít nhất một kiểu câu không cần AI cho 9 câu còn lại.');
   });
 
   it('the prompt style sits on the Gõ từ row; with Gõ từ off it stays there, locked (owner 10/11/2026)', async () => {

@@ -40,8 +40,11 @@ export function AiUnavailableState({ reason, resetsAt, lemma, error, busy, onRet
   }
   return (
     <section className="flex flex-col gap-3 rounded-wm-card bg-wm-surface p-6">
-      <h1 className="font-wm-display text-wm-word text-wm-ink">{title}</h1>
-      {body && <p className="text-wm-base text-wm-ink">{body}</p>}
+      {/* Audit T21: this state replaces "preparing" without moving focus; the alert reads why AI stopped. */}
+      <div role="alert" className="flex flex-col gap-3">
+        <h1 className="font-wm-display text-wm-word text-wm-ink">{title}</h1>
+        {body && <p className="text-wm-base text-wm-ink">{body}</p>}
+      </div>
       {lemma && retryable && (
         <p className="text-wm-base">
           <SeeWordLink lemma={lemma} />

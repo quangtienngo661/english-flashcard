@@ -3,7 +3,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { Lightbulb } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/ui/Button';
 import { cn } from '@/lib/cn';
@@ -35,6 +35,13 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
   const titleId = useId();
   const levels = hintLevels(item);
   const opened = levels.filter((n) => n <= item.hint_level);
+  // Audit T15: the button that opened a level unmounts; focus goes to the row it opened instead of falling to the page.
+  const rows = useRef(new Map<number, HTMLLIElement>());
+  const seen = useRef(item.hint_level);
+  useEffect(() => {
+    if (item.hint_level > seen.current) rows.current.get(item.hint_level)?.focus();
+    seen.current = item.hint_level;
+  }, [item.hint_level]);
   const hints = useQueries({
     queries: opened.map((level) => ({
       queryKey: ['practice', 'hint', item.item_id, level],
@@ -63,7 +70,15 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
           const on = n <= item.hint_level;
           const value = on ? hints[index]?.data?.hint : undefined;
           return (
-            <li key={n} className="col-span-full grid grid-cols-subgrid items-center">
+            <li
+              key={n}
+              ref={(el) => {
+                if (el) rows.current.set(n, el);
+                else rows.current.delete(n);
+              }}
+              tabIndex={on ? -1 : undefined}
+              className="col-span-full grid grid-cols-subgrid items-center outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent"
+            >
               <span
                 aria-hidden
                 className={cn(
@@ -76,7 +91,8 @@ export function HintPanel({ item, onOpen, locked }: { item: Item; onOpen: (level
               <span className={cn('text-wm-small-strong', value ? 'text-wm-ink' : 'text-wm-muted')}>
                 {value ? ('kind' in value ? t(`kinds.${value.kind}`) : t('kinds.letters')) : t('locked', { n })}
               </span>
-              <span className="min-w-0 break-words text-wm-small text-wm-ink">
+              {/* The hint text arrives after the row opens; a polite live region reads it when it lands. */}
+              <span aria-live={on ? 'polite' : undefined} className="min-w-0 break-words text-wm-small text-wm-ink">
                 {value ? (
                   'kind' in value ? (
                     value.kind === 'first_letter' ? <span className={MASK}>{`${upperFirst(value.text)}___`}</span> : value.text

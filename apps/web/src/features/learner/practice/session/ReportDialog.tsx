@@ -99,6 +99,22 @@ export function ReportDialog({ itemId, kind, privateWord = false, lemma = null, 
       {subtitle && <span className="w-fit rounded-full bg-wm-accent-soft px-2 py-0.5 text-wm-label text-wm-ink">{subtitle}</span>}
       <RadioGroup value={code} onChange={setCode} className="flex flex-col gap-2" isInvalid={tried && !reason}>
         <Label className="text-wm-small-strong text-wm-ink">{t('question')}</Label>
+        {/* Audit T23: without these an unread or failed list left an empty group and no way to send. */}
+        {reasons.isPending && (
+          <p role="status" className="text-wm-small text-wm-muted">
+            {tc('loading')}
+          </p>
+        )}
+        {reasons.isError && (
+          <div className="flex flex-col items-start gap-1.5">
+            <p role="alert" className="text-wm-small text-wm-fail">
+              {errorText(reasons.error)}
+            </p>
+            <TextButton isDisabled={reasons.isFetching} onPress={() => void reasons.refetch()}>
+              {tc('retry')}
+            </TextButton>
+          </div>
+        )}
         {(reasons.data?.items ?? []).map((r) => (
           <Radio
             key={r.code}

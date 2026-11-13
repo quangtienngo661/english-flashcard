@@ -3,7 +3,7 @@
 import { ArrowRight, Check } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
 import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements } from '@/app-shell/queries';
@@ -89,6 +89,7 @@ function CustomizeForm({
   const t = useTranslations('App.practice');
   const tc = useTranslations('App.practice.customize');
   const levelName = useLevelName();
+  const whyId = useId();
   const locale = useLocale();
   const config = useAppConfig().data?.practice;
   const entitlements = useEntitlements().data;
@@ -293,7 +294,14 @@ function CustomizeForm({
               help={<HelpTip label={tc('ownHelpLabel')}>{mixed ? tc('mixLine') : tc('ownHelp')}</HelpTip>}
             />
           </div>
-          {noTypes && <p className={APPEAR_ERROR}>{tc('typesNone')}</p>}
+          {/* Audit T22: the reasons the start is off sit in status regions that stay mounted, and the start button is described by them. */}
+          <div role="status" className="contents">
+            {noTypes && (
+              <p id={`${whyId}-types`} className={APPEAR_ERROR}>
+                {tc('typesNone')}
+              </p>
+            )}
+          </div>
 
           <div className="mt-2 flex items-center gap-3">
             <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('aiTitle')}</h3>
@@ -347,8 +355,18 @@ function CustomizeForm({
       {/* The foot stays in view on phones (Figma 141:4147: sticky); count and order move into it from md. */}
       <div className="sticky -bottom-6 -mx-5 -mb-6 flex flex-col gap-3 border-t border-wm-line bg-wm-surface px-5 pb-6 pt-4 shadow-wm-pop md:static md:-mx-7 md:-mb-7 md:px-7 md:pb-7">
         {aiProblem && aiProblem.kind !== 'locked' && <AiProblemBox problem={aiProblem} onDrop={dropAi} />}
-        {needAi && <p className={APPEAR_ERROR}>{tc('needAi')}</p>}
-        {needRule && <p className={APPEAR_ERROR}>{tc('needRule', { count: count - ai })}</p>}
+        <div role="status" className="contents">
+          {needAi && (
+            <p id={`${whyId}-ai`} className={APPEAR_ERROR}>
+              {tc('needAi')}
+            </p>
+          )}
+          {needRule && (
+            <p id={`${whyId}-rule`} className={APPEAR_ERROR}>
+              {tc('needRule', { count: count - ai })}
+            </p>
+          )}
+        </div>
         {error && (
           <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
             {error}
@@ -376,6 +394,9 @@ function CustomizeForm({
             className="w-full md:ml-auto md:w-auto md:shrink-0"
             isPending={busy}
             isDisabled={noTypes || needAi || needRule || noGroup || quotaBlocked || outLine !== null}
+            aria-describedby={
+              [noTypes && `${whyId}-types`, needAi && `${whyId}-ai`, needRule && `${whyId}-rule`].filter(Boolean).join(' ') || undefined
+            }
             onPress={start}
           >
             {tc('start', { count })}

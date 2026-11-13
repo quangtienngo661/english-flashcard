@@ -538,7 +538,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Công nghệ deck, 3 question types. 1 of 3 sessions left today.')).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Review again · 3 words' });
     expect(within(list).getByText('Added to priority')).toBeInTheDocument();
-    await userEvent.click(within(list).getAllByRole('button', { name: 'Review again' })[0]);
+    await userEvent.click(within(list).getByRole('button', { name: 'Review again: release' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-8/review')).toHaveLength(1));
     await userEvent.click(await screen.findByRole('button', { name: 'Add the other 1 word to priority' }));
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/review-all`)).toHaveLength(1));
@@ -800,10 +800,10 @@ describe('Summary of alternative answers', () => {
     });
     const list = screen.getByRole('list', { name: 'Review again · 2 words' });
     const [, crucial] = within(list).getAllByRole('listitem');
-    await userEvent.click(within(crucial).getByRole('button', { name: 'Review again' }));
+    await userEvent.click(within(crucial).getByRole('button', { name: 'Review again: crucial' }));
     await waitFor(() => expect(posts(v.calls, '/v1/practice/items/a1/review')).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/a1/review')[0].body).toEqual({ action: 'needs_review', sense_id: 'sense-crucial' });
-    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem')[index]).getByRole('button', { name: 'Review again' });
+    const rowButton = (index: number) => within(within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem')[index]).getByRole('button', { name: /^Review again: / });
     // A pending Button shows a spinner icon (React Aria drops aria-busy), so that is what tells a pending row.
     const pending = (index: number) => rowButton(index).querySelector('svg') !== null;
     await waitFor(() => expect(pending(1)).toBe(true));
@@ -817,7 +817,7 @@ describe('Summary of alternative answers', () => {
     const [vital, crucial] = within(screen.getByRole('list', { name: 'Review again · 2 words' })).getAllByRole('listitem');
     expect(within(crucial).getByText('Added to priority')).toBeInTheDocument();
     expect(within(crucial).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(vital).getByRole('button', { name: 'Review again' })).toBeInTheDocument();
+    expect(within(vital).getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
   });
 
   it('T20: the button of each row names its word; "Added to priority" is a status', async () => {

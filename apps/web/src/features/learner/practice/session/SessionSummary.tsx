@@ -127,12 +127,13 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
                     <span className="min-w-0 break-words font-wm-display text-wm-word text-wm-ink">{word.lemma}</span>
                     <span className="min-w-0 flex-1 break-words font-wm-sans text-wm-small text-wm-muted">{word.meaning}</span>
                     {word.action !== null ? (
-                      <span className="flex items-center gap-1 font-wm-sans text-wm-small-strong text-wm-pass">
+                      <span role="status" className="flex items-center gap-1 font-wm-sans text-wm-small-strong text-wm-pass">
                         <Check aria-hidden className="size-4" />
                         {ts('added')}
                       </span>
                     ) : (
-                      <TextButton isDisabled={pressing !== null} onPress={() => void reviewOne(word)}>
+                      // Audit T20: every row has the same words on its button; the name says which word it adds.
+                      <TextButton aria-label={t('session.reviewWord', { lemma: word.lemma })} isDisabled={pressing !== null} onPress={() => void reviewOne(word)}>
                         {pressing === `${word.item_id}:${word.sense_id}` && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
                         {ts('review')}
                       </TextButton>

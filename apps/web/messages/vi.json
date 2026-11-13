@@ -1051,6 +1051,7 @@
       "close": "Đóng phiên ôn",
       "left": "còn {count, number} thẻ",
       "card": "Thẻ {n, number} trên {total, number}",
+      "back": "Mặt sau: {meaning}",
       "priority": "Ưu tiên",
       "backlog": "Lâu chưa ôn",
       "hintWeb": "Bấm vào thẻ hoặc Space để lật",
