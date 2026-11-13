@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/test-utils/render-app';
 import { testRoute } from '@/test-utils/route-locale';
@@ -115,6 +115,12 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
     expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/next`).at(-1)?.body).toEqual({ retry_ai: true });
+  });
+
+  it('T21: the "AI is not available" heading and its line come inside an alert, so the swap is announced', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({ 'GET /v1/practice/sessions/current': noItem, [NEXT]: nextAnswers(unavailable('ai-failed')) }) });
+    await screen.findByRole('heading', { name: 'Something went wrong on our side.' });
+    expect(screen.queryAllByRole('alert').some((alert) => within(alert).queryByRole('heading', { name: 'Something went wrong on our side.' }))).toBe(true);
   });
 
   it('[Để sau] leaves the session open and goes back to Luyện tập', async () => {

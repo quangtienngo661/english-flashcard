@@ -154,6 +154,16 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Flip card/ }));
   });
 
+  it('T16: turning the card says its back in the live line; turning it back clears it', async () => {
+    const { container } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Card 1 of 2' });
+    const live = container.querySelector('[data-live="result"]')!;
+    await userEvent.keyboard(' ');
+    await waitFor(() => expect(live).toHaveTextContent(/^Back: triển khai$/));
+    await userEvent.keyboard(' ');
+    await waitFor(() => expect(live).toHaveTextContent(/^$/));
+  });
+
   it('answers only after the card is flipped', async () => {
     const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Card 1 of 2' });

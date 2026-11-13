@@ -463,6 +463,27 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(within(rows[1]).getByRole('button', { name: /Show hint 2/ })).toBeInTheDocument();
   });
 
+  it('T15: [Hint] moves focus to the opened row and its text sits in a polite live region; [Show hint 2] does the same for row 2', async () => {
+    renderApp(<PracticeSession />, {
+      session: true,
+      routes: routes({
+        'POST /v1/practice/items/item-4/hint': (call) => {
+          const { level } = call.body as { level: number };
+          return Response.json({ level, hint: level === 1 ? { kind: 'definition', text: 'to start using a new system' } : { kind: 'first_letter', text: 'd' } });
+        },
+      }),
+    });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Hint' }));
+    const text = await screen.findByText('to start using a new system');
+    const rows = () => within(screen.getByRole('region', { name: /^Hint \d of 2$/ })).getAllByRole('listitem');
+    await waitFor(() => expect(rows()[0]).toHaveFocus());
+    expect(text.closest('[aria-live="polite"]')).not.toBeNull();
+    await userEvent.click(within(rows()[1]).getByRole('button', { name: /Show hint 2/ }));
+    await screen.findByText('D___');
+    await waitFor(() => expect(rows()[1]).toHaveFocus());
+  });
+
   it('QM9-9 (supersedes design §7.1): an English route shows the total too, "Hint 1 of 2"', async () => {
     renderApp(<PracticeSession />, {
       session: true,
@@ -572,6 +593,32 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(await screen.findByText('Report sent. See the outcome in Settings, under My reports.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/report')[0].body).toEqual({ reason: 'other', note: 'deliver cũng đúng' });
     expect(screen.getByRole('button', { name: 'Reported' })).toBeDisabled();
+  });
+
+  it('T23: while the reasons load the dialog says "Loading…"; a failed read shows an error with [Try again] that reads them again', async () => {
+    let fail = true;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'GET /v1/practice/report-reasons?kind=non_ai': async () => {
+        await gate;
+        if (fail) {
+          fail = false;
+          return problem(500, 'internal');
+        }
+        return Response.json(REASONS);
+      },
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    expect(within(dialog).getByText('Loading…')).toBeInTheDocument();
+    release();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(within(dialog).queryAllByRole('radio')).toHaveLength(0);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    expect(await within(dialog).findAllByRole('radio')).toHaveLength(4);
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('E34: leaving the page (no Esc, no ×) sends nothing; the session stays open on the server', async () => {
@@ -771,6 +818,13 @@ describe('Summary of alternative answers', () => {
     expect(within(crucial).getByText('Added to priority')).toBeInTheDocument();
     expect(within(crucial).queryByRole('button')).not.toBeInTheDocument();
     expect(within(vital).getByRole('button', { name: 'Review again' })).toBeInTheDocument();
+  });
+
+  it('T20: the button of each row names its word; "Added to priority" is a status', async () => {
+    await openSummary({ alternatives: 1, words: [rows[0], { ...rows[1], action: 'needs_review' }, { sense_id: 's3', lemma: 'update', meaning: 'cập nhật', item_id: 'item-9', action: null }] });
+    const list = screen.getByRole('list', { name: 'Review again · 3 words' });
+    expect(within(list).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Review again: vital', 'Review again: update']);
+    expect(within(list).getByRole('status')).toHaveTextContent('Added to priority');
   });
 
   it('CS9: the summary says how many right answers were alternative answers', async () => {
