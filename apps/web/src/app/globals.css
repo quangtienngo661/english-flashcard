@@ -427,7 +427,8 @@
 .gstack[data-size='carousel'] { font-size: 0.7241rem; }
 @media (width >= 48rem) {
   .gstack[data-size='today'] { font-size: 0.6069rem; }
-  .gstack[data-size='page'] { font-size: 0.7241rem; }
+  /* Bản A (owner 13/11/2026): the Một nhóm stack at 240 px wide, a step larger than the 210 px phone carousel. */
+  .gstack[data-size='page'] { font-size: 0.8276rem; }
   .gstack[data-size='carousel'] { font-size: 1rem; }
 }
 .gstack-face {

@@ -981,7 +981,6 @@
       "todayChips": "Today",
       "metaNoDate": "{count, plural, one {# word} other {# words}}",
       "colWord": "Word",
-      "colPos": "Part of speech",
       "colMeaning": "Meaning",
       "colLevel": "Level",
       "colState": "Status"

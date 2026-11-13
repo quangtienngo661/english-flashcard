@@ -4,7 +4,7 @@ import { MoreHorizontal, Search, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { BackLink } from '@/app-chrome/BackLink';
 import { ApiError } from '@/app-shell/api/problem';
@@ -20,8 +20,8 @@ import { Dialog } from '@/ui/Dialog';
 import { Skeleton } from '@/ui/Skeleton';
 import { Card } from '@/ui/Card';
 import { LevelBar } from '@/ui/LevelBar';
-import { LevelChip, type LevelChipTone } from '@/ui/LevelChip';
 import { PageTitle } from '@/ui/PageTitle';
+import { Select } from '@/ui/Select';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { ButtonLink } from '@/ui/ButtonLink';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
@@ -147,12 +147,12 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   // Back on Nhóm, the carousel opens on this group (owner 13/11/2026).
   useEffect(() => rememberCentre(detail.id), [detail.id]);
   const close = useCloseFlip('group-stack-back', stackRef, pageRef);
-  const filters: Array<{ id: WordFilter; label: string; tone: LevelChipTone }> = [
-    { id: 'all', label: t('filterAll'), tone: 'all' },
-    { id: 'priority', label: t('filterPriority'), tone: 'priority' },
-    { id: 'due', label: t('filterDue'), tone: 'due' },
-    { id: 'new', label: t('filterNew'), tone: 0 },
-    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: levelName(level), tone: level })),
+  const filters: Array<{ id: WordFilter; label: string }> = [
+    { id: 'all', label: t('filterAll') },
+    { id: 'priority', label: t('filterPriority') },
+    { id: 'due', label: t('filterDue') },
+    { id: 'new', label: t('filterNew') },
+    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: levelName(level) })),
   ];
   const filterTotal = filterCount(summary, filter, detail.item_count);
   const left = filterTotal === null ? null : Math.max(0, filterTotal - shown.length);
@@ -162,11 +162,17 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       <div data-in="0">
         <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} prefetch />
       </div>
-      <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-11">
+      {/* Bản A (owner 13/11/2026, mockup mot-nhom-hai-cot.html): from 1024 px the group on the left (400 px, it stays while the table
+          scrolls) and the words on the right; narrower, the same parts one under the other. The stack comes first and larger. */}
+      <div
+        // raw-ok: the 400 px group column beside the words (bản A); no token for a two-track grid
+        className="flex flex-col gap-8 lg:grid lg:grid-cols-[25rem_minmax(0,1fr)] lg:items-start lg:gap-9"
+      >
+      <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 lg:sticky lg:top-24 lg:items-start">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
         {/* Above the group info while it flies in from the carousel (motion doc §3). */}
         <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
-        <div data-in="1" className="flex w-full min-w-0 flex-1 flex-col gap-4">
+        <div data-in="1" className="flex w-full min-w-0 flex-col gap-4">
           <div className="min-w-0 wrap-anywhere">
             <PageTitle eyebrow={created === null ? t('metaNoDate', { count: detail.item_count }) : t('meta', { count: detail.item_count, date: created })}>
               {detail.name}
@@ -183,26 +189,29 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             />
           )}
           {summary && !empty && (
-            <div className="max-w-180">
-              <LevelBar size="lg" counts={rhythm(summary.cells).map((c) => c.total)} />
-            </div>
+            <LevelBar size="lg" counts={rhythm(summary.cells).map((c) => c.total)} />
           )}
-          <div className="flex flex-wrap items-center gap-3">
-            {empty ? (
-              <Button onPress={() => addWord.open(undefined, { groupId: detail.id })}>{t('addWord')}</Button>
-            ) : (
-              summary && <GroupActions group={summary} total={detail.item_count} />
-            )}
-            {!empty && (
+          {(() => {
+            const menu = (
+              <DeckMenu
+                onRename={() => open({ kind: 'rename', group: detail })}
+                onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
+              />
+            );
+            const add = (
               <TextButton tone="muted" onPress={() => addWord.open(undefined, { groupId: detail.id })} className="text-wm-button text-wm-ink md:min-h-11">
                 {t('addWord')}
               </TextButton>
-            )}
-            <DeckMenu
-              onRename={() => open({ kind: 'rename', group: detail })}
-              onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
-            />
-          </div>
+            );
+            return empty || !summary ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {empty && <Button onPress={() => addWord.open(undefined, { groupId: detail.id })}>{t('addWord')}</Button>}
+                {menu}
+              </div>
+            ) : (
+              <GroupActions group={summary} total={detail.item_count} menu={menu} add={add} />
+            );
+          })()}
           {summary && summary.backlog > 0 && (
             <Link
               href={`/${locale}/app/group/backlog?id=${detail.id}`}
@@ -219,15 +228,21 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       ) : (
         <section data-in="2" aria-labelledby="all-words" className="flex flex-col gap-3">
           <SectionTitle id="all-words">{t('allWords', { count: total })}</SectionTitle>
-          <div role="group" aria-label={t('filterLabel')} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-            {filters.map((f) => {
+          {/* One dropdown instead of the row of chips (bản A, owner 13/11/2026): no colours, each filter with its count. */}
+          <Select
+            label={t('filterLabel')}
+            hideLabel
+            size="sm"
+            className="w-fit min-w-52"
+            value={filter}
+            onChange={(id) => setFilter(id as WordFilter)}
+            // Until the deck summary arrives only [Tất cả] has a count to show.
+            items={filters.flatMap((f) => {
               const count = filterCount(summary, f.id, detail.item_count);
-              // Until the deck summary arrives only [Tất cả] has a count to show.
-              return count === null ? null : (
-                <LevelChip key={f.id} tone={f.tone} label={f.label} count={count} pressed={f.id === filter} onPress={() => setFilter(f.id)} />
-              );
+              return count === null ? [] : [{ id: f.id, label: f.label, suffix: format.number(count) }];
             })}
-          </div>
+            display={(item) => `${item.label} · ${item.suffix ?? ''}`}
+          />
           {words.isPending ? (
             <div role="status" className="flex flex-col gap-2">
               <span className="sr-only">{t('allWords', { count: total })}</span>
@@ -246,7 +261,6 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
                   <thead>
                     <tr className={ROW}>
                       <Th>{t('colWord')}</Th>
-                      <Th className="hidden md:table-cell">{t('colPos')}</Th>
                       <Th className="hidden md:table-cell">{t('colMeaning')}</Th>
                       <Th className="text-right md:text-left">{t('colLevel')}</Th>
                       <Th className="hidden md:table-cell">{t('colState')}</Th>
@@ -268,6 +282,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
           )}
         </section>
       )}
+      </div>
       {dialogs}
     </div>
   );
@@ -381,8 +396,8 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
         >
           {word}
         </Link>
+        {shownPos(card.content.pos) && <span className="block text-wm-meta text-wm-muted">{shownPos(card.content.pos)}</span>}
       </td>
-      <td className={cn(cell, 'hidden text-wm-meta text-wm-muted md:table-cell')}>{shownPos(card.content.pos)}</td>
       <td className={cn(cell, phoneDivider, 'col-start-1 row-start-2 min-w-0 pt-0 text-wm-small text-wm-muted wrap-anywhere md:pt-3 md:text-wm-base md:text-wm-ink')}>
         {card.content.meaning.text}
         {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
@@ -472,7 +487,7 @@ function TodayBar({ label, parts }: { label: string; parts: Array<{ key: string;
  * "Học N từ mới"), then as text the other one, "Học tất cả N từ" (moved out of the ⋯ menu) and, after them in the head, "Thêm từ". A deck
  * done for today offers "Ôn tập" when it has learned words.
  */
-function GroupActions({ group, total }: { group: GroupSummary; total: number }) {
+function GroupActions({ group, total, menu, add }: { group: GroupSummary; total: number; menu: ReactNode; add: ReactNode }) {
   const t = useTranslations('App');
   const locale = useLocale();
   const plan = deckPlan(group);
@@ -485,22 +500,30 @@ function GroupActions({ group, total }: { group: GroupSummary; total: number }) 
   if (plan.recall === 'extra') actions.push({ key: 'extra', href: recall, label: t('deck.recallExtra') });
   if (total > 0) actions.push({ key: 'all', href: review('all'), label: t('groups.studyAll', { count: total }) });
   const [main, ...rest] = actions;
-  if (!main) return null;
+  // Bản A (owner 13/11/2026): the main action across the column with the ⋯ menu beside it; the text actions on the line below.
   return (
-    <>
-      <ButtonLink href={main.href} data-google-vignette="false" variant="primary">
-        {main.label}
-      </ButtonLink>
-      {rest.map((action) => (
-        <Link
-          key={action.key}
-          href={action.href}
-          data-google-vignette="false"
-          className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'text-wm-button md:min-h-11')}
-        >
-          {action.label}
-        </Link>
-      ))}
-    </>
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex items-center gap-2">
+        {main && (
+          <ButtonLink href={main.href} data-google-vignette="false" variant="primary" className="flex-1">
+            {main.label}
+          </ButtonLink>
+        )}
+        {menu}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4.5 gap-y-1">
+        {rest.map((action) => (
+          <Link
+            key={action.key}
+            href={action.href}
+            data-google-vignette="false"
+            className={cn(TEXT_BUTTON_BASE, TEXT_BUTTON_TONE.normal, 'text-wm-button md:min-h-11')}
+          >
+            {action.label}
+          </Link>
+        ))}
+        {add}
+      </div>
+    </div>
   );
 }
