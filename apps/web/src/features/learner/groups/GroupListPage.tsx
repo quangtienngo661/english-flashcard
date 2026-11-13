@@ -35,6 +35,16 @@ export function GroupListPage() {
   const groups = useGroups();
   const { open, dialogs } = useGroupDialogs();
   const order = carouselOrder(groups.data?.items ?? []);
+  // A group just made becomes the centre once the reloaded list has it (owner 14/11/2026); remembered for an empty page too.
+  const [made, setMade] = useState<string | null>(null);
+  const create = () =>
+    open({
+      kind: 'create',
+      onCreated: (id) => {
+        rememberCentre(id);
+        setMade(id);
+      },
+    });
 
   return (
     <>
@@ -57,13 +67,13 @@ export function GroupListPage() {
           <section className="flex flex-col items-start gap-3 rounded-wm-card bg-wm-surface p-6 shadow-wm-card md:p-8">
             <h2 className="font-wm-display text-wm-card-title text-wm-ink">{tToday('emptyTitle')}</h2>
             <p className="text-wm-base text-wm-muted">{tToday('emptyBody')}</p>
-            <Button size="lg" onPress={() => open({ kind: 'create' })}>
+            <Button size="lg" onPress={create}>
               {tToday('createFirst')}
             </Button>
           </section>
         </>
       ) : (
-        <Carousel order={order} onCreate={() => open({ kind: 'create' })} createLabel={t('create')} />
+        <Carousel order={order} onCreate={create} createLabel={t('create')} made={made} onMadeShown={() => setMade(null)} />
       )}
       {dialogs}
     </>
@@ -80,7 +90,19 @@ function Title({ children }: { children?: ReactNode }) {
   );
 }
 
-function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onCreate: () => void; createLabel: string }) {
+function Carousel({
+  order,
+  onCreate,
+  createLabel,
+  made,
+  onMadeShown,
+}: {
+  order: GroupSummary[];
+  onCreate: () => void;
+  createLabel: string;
+  made: string | null;
+  onMadeShown: () => void;
+}) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
   const router = useRouter();
@@ -133,10 +155,17 @@ function Carousel({ order, onCreate, createLabel }: { order: GroupSummary[]; onC
     openGroup();
   }
 
-  const keys = useRef({ step, openGroup });
+  const keys = useRef({ step, openGroup, goTo });
   useEffect(() => {
-    keys.current = { step, openGroup };
+    keys.current = { step, openGroup, goTo };
   });
+  // The new group moves in with the carousel's own step motion, then `made` clears so a later reload does not pull it back.
+  const madeIndex = made === null ? -1 : order.findIndex((g) => g.id === made);
+  useEffect(() => {
+    if (madeIndex === -1) return;
+    keys.current.goTo(madeIndex);
+    onMadeShown();
+  }, [madeIndex, onMadeShown]);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;

@@ -17,7 +17,7 @@ import { GROUP_NAME_MAX } from './group-name';
 import { groupError, groupKey, useGroup, useGroupMutations, type GroupDetail } from './groups-api';
 
 type Target = { id: string; name: string; version: number };
-type Open = { kind: 'create' } | { kind: 'rename'; group: Target } | { kind: 'delete'; group: Target; leaveTo?: string };
+type Open = { kind: 'create'; onCreated?: (id: string) => void } | { kind: 'rename'; group: Target } | { kind: 'delete'; group: Target; leaveTo?: string };
 
 /** One place that opens the deck dialogs (K/17, K/17b, K/14); a screen renders `dialogs` once and calls `open`. */
 export function useGroupDialogs(): { open: (what: Open) => void; dialogs: ReactNode } {
@@ -25,7 +25,7 @@ export function useGroupDialogs(): { open: (what: Open) => void; dialogs: ReactN
   const close = () => setCurrent(null);
   const dialogs =
     current === null ? null : current.kind === 'create' ? (
-      <CreateGroupDialog onClose={close} />
+      <CreateGroupDialog onClose={close} onCreated={current.onCreated} />
     ) : current.kind === 'rename' ? (
       <RenameGroupDialog group={current.group} onClose={close} />
     ) : (

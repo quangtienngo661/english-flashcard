@@ -285,6 +285,37 @@ describe('deck dialogs from the list (K/17)', () => {
     release();
   });
 
+  it('a group just made becomes the centre stack (owner 14/11/2026: the learner does not hunt for it) and is remembered', async () => {
+    sessionStorage.clear();
+    let items: unknown[] = FIVE;
+    renderApp(<GroupListPage />, { chrome: true,
+      routes: withGroups([], {
+        'GET /v1/groups': () => Response.json({ items }),
+        'POST /v1/groups': () => {
+          items = [...FIVE, deck('g-new', 'Mới tạo', 0, 0)];
+          return Response.json({ id: 'g-new', name: 'Mới tạo', version: 1 }, { status: 201 });
+        },
+      }),
+    });
+    expect(await centre()).toHaveTextContent('Đề 12 · Writing');
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo nhóm' }));
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Tên nhóm' }), 'Mới tạo');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
+    await waitFor(async () => expect(await centre()).toHaveTextContent('Mới tạo'));
+    expect(sessionStorage.getItem('wm-groups-centre')).toBe('g-new');
+    // Stepping away afterwards stays put: the new group does not pull the carousel back.
+    key('ArrowLeft');
+    expect(await centre()).toHaveTextContent('Du lịch Nhật');
+  });
+
+  it('a group renamed in Một nhóm is still the centre under its new name, even when the new name sorts it elsewhere', async () => {
+    // Một nhóm remembers its group on open (GroupPage); the rename re-sorts the list ("A…" before "Đề 11…" among done groups).
+    sessionStorage.setItem('wm-groups-centre', 'g-11');
+    const renamed = FIVE.map((g) => (g.id === 'g-11' ? { ...g, name: 'A · Speaking', version: 2 } : g));
+    renderApp(<GroupListPage />, { chrome: true, routes: withGroups(renamed) });
+    expect(await centre()).toHaveTextContent('A · Speaking');
+  });
+
   it('a 409 group-limit-reached says the limit with the admin number', async () => {
     renderApp(<GroupListPage />, { chrome: true, routes: withGroups([FIVE[0]], { 'POST /v1/groups': () => problem(409, 'group-limit-reached') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tạo nhóm' }));
