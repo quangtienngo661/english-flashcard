@@ -99,7 +99,7 @@ function practiceApi({ long = false, open = false, used = 1 } = {}): Record<stri
     [`POST /v1/practice/items/${uuid(501)}/answer`]: (req) => ({ json: result((req.body as { choice: number }).choice === 0, 'deploy', 'triển khai') }),
     [`POST /v1/practice/items/${uuid(501)}/hint`]: () => ({ json: { level: 1, hint: { kind: 'definition', text: 'to start using a new system' } } }),
     [`POST /v1/practice/items/${uuid(501)}/review`]: (req) => ({ json: { action: (req.body as { action: string }).action, item_id: uuid(501), level: 1, due_date: '2026-10-23', priority: true } }),
-    [`POST /v1/practice/items/${uuid(501)}/report`]: () => ({ status: 201, json: { id: uuid(701) } }),
+    [`POST /v1/practice/items/${uuid(502)}/report`]: () => ({ status: 201, json: { id: uuid(701) } }),
     [`POST /v1/practice/items/${uuid(502)}/answer`]: () => ({ json: result(true, 'server', 'máy chủ') }),
     [`POST /v1/practice/items/${uuid(502)}/review`]: () => ({ json: { action: 'known', item_id: uuid(502), level: 3, due_date: '2026-10-26', priority: false } }),
     [`POST /v1/practice/items/${uuid(503)}/answer`]: (req) => {
@@ -156,23 +156,20 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
     await page.keyboard.press('h');
     await expect(page.getByText('to start using a new system')).toBeVisible();
+    await page.keyboard.press('2');
+    await expect(page.getByText(en.session.wrong, { exact: true })).toBeVisible();
+    await page.keyboard.press('Enter');
+
+    // True/false, reported before an answer (owner 14/11/2026, Cách A): the session moves on to the next question.
+    // P.13: no instruction line; the chip names the kind.
+    await expect(page.getByText(en.session.kind.true_false, { exact: true })).toBeVisible();
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
     await page.getByRole('button', { name: en.session.report.button }).click();
     const dialog = page.getByRole('dialog', { name: en.session.report.title });
     await dialog.getByText('Nghĩa sai', { exact: true }).click();
     await dialog.getByRole('button', { name: en.session.report.send }).click();
     await expect(page.getByText(en.session.report.done)).toBeVisible();
     await expect(dialog).toBeHidden();
-    await page.keyboard.press('2');
-    await expect(page.getByText(en.session.wrong, { exact: true })).toBeVisible();
-    await page.keyboard.press('Enter');
-
-    // True/false, right.
-    // P.13: no instruction line; the chip names the kind.
-    await expect(page.getByText(en.session.kind.true_false, { exact: true })).toBeVisible();
-    expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
-    await page.getByRole('button', { name: /^(1\s?)?True/ }).click();
-    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Know/ }).click();
 
     // Typing: a miss, then the right word.
     const answer = page.getByRole('textbox', { name: en.session.answerLabel });
@@ -197,7 +194,9 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByRole('heading', { name: '4 questions done.' })).toBeVisible();
     await page.getByRole('list', { name: /Review again · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
     await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
-    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/report`).map((r) => r.body)).toEqual([{ reason: 'meaning_wrong' }]);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/answer`)).toHaveLength(0);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/review`)).toHaveLength(0);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(503)}/review`)).toHaveLength(0);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(504)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/answer`)[0].headers['idempotency-key']).toBeTruthy();

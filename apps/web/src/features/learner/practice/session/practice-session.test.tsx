@@ -570,7 +570,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByRole('link', { name: 'Back to Practice' })).toBeInTheDocument();
   });
 
-  it('K/66: reasons in API order (Khác last), a required note, one report; then the button says it was sent', async () => {
+  it('K/66: reasons in API order (Khác last), a required note, one report; then the session moves on (owner 14/11/2026)', async () => {
     const v = renderApp(
       <>
         <PracticeSession />
@@ -592,7 +592,44 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('Report sent. See the outcome in Settings, under My reports.')).toBeInTheDocument();
     expect(posts(v.calls, '/v1/practice/items/item-4/report')[0].body).toEqual({ reason: 'other', note: 'deliver cũng đúng' });
-    expect(screen.getByRole('button', { name: 'Reported' })).toBeDisabled();
+    // The API voided the unanswered question, so the next one comes without an answer or a skip.
+    expect(await screen.findByText('server')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+    expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(0);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Report' })).toBeEnabled();
+  });
+
+  it('a report sent after the answer moves on as Next does: no review is written', async () => {
+    const v = renderApp(
+      <>
+        <PracticeSession />
+        <ToastRegion />
+      </>,
+      { session: true, routes: routes({ 'POST /v1/practice/items/item-4/report': () => Response.json({ id: 'r1' }, { status: 201 }) }) },
+    );
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByRole('button', { name: /Review again/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: 'Nghĩa sai' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('server')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+  });
+
+  it('a report that fails stays on the question with the error', async () => {
+    const v = renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/report': () => problem(500, 'internal') }) });
+    await screen.findByText('triển khai');
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: 'Nghĩa sai' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+    expect(screen.getByText('triển khai')).toBeInTheDocument();
   });
 
   it('T23: while the reasons load the dialog says "Loading…"; a failed read shows an error with [Try again] that reads them again', async () => {

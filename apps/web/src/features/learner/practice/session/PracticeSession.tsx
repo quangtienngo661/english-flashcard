@@ -223,7 +223,11 @@ export function PracticeSession({ recall }: { recall?: { groupId: string } } = {
           subtitle={reportSubtitle(phase.item, t(`kind.${promptKind(phase.item.prompt)}`))}
           isOpen={reporting}
           onClose={() => setReporting(false)}
-          onSent={() => state.markReported(phase.item.item_id)}
+          onSent={() => {
+            state.markReported(phase.item.item_id);
+            // Owner 14/11/2026 (Cách A): the API voided an unanswered question, and an answered one goes on as Next does.
+            void state.next();
+          }}
         />
       )}
     </div>
