@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { useLarge } from '@/lib/use-large';
 import { EmptyState, ErrorState } from '@/ui/States';
 import { Button } from '@/ui/Button';
 import { Checkbox } from '@/ui/Checkbox';
@@ -23,8 +24,8 @@ import { StackTargets } from './StackTargets';
 
 /**
  * K/30, M/40, Figma "Từ hóa thẻ" (85:3218 / 85:3667) `/app/lookup?q=&level=&topic=&pos=&mine=`: the big search box, the filter
- * sentence, a dictionary page of the matching words, the selected word lifted into a card and the group stacks to add it to. Phones
- * show the card and the stacks before the page. Pages follow the API's cursors; the ones already seen stay cached.
+ * sentence, a dictionary page of the matching words, the selected word lifted into a card and the group stacks to add it to. Below
+ * 1024 px there is no card and no stacks: each entry links to its word page (owner 14/11/2026). Pages follow the API's cursors; the ones already seen stay cached.
  */
 export function LookupPage() {
   const t = useTranslations('App.lookup');
@@ -32,6 +33,7 @@ export function LookupPage() {
   const locale = useLocale();
   const router = useRouter();
   const errorText = useErrorMessage();
+  const large = useLarge();
   const params = parseLookup(useSearchParams());
   const query = lookupQuery(params);
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
@@ -47,7 +49,8 @@ export function LookupPage() {
   const words = list.data?.items ?? [];
   const [picked, setPicked] = useState<string | null>(null);
   const selected = words.find((w) => w.lemma === picked) ?? words[0];
-  const wordPage = useWordPage(selected?.lemma ?? null);
+  // Only the card and the stacks need the selected word's page and items; below 1024 px nothing is fetched for them.
+  const wordPage = useWordPage(large ? (selected?.lemma ?? null) : null);
   const sense = selected && wordPage.data ? entrySense(wordPage.data.sections.flatMap((s) => s.senses), selected.meaning_preview, params) : undefined;
   const items = useSenseItems(sense ? [sense.sense_id] : []);
   const item = sense ? items.data?.get(sense.sense_id) : undefined;
@@ -92,27 +95,30 @@ export function LookupPage() {
             words={words}
             page={tokens.length}
             selected={selected.lemma}
+            linked={!large}
             onSelect={setPicked}
             onPrev={tokens.length > 1 ? () => setTokens((prev) => prev.slice(0, -1)) : undefined}
             onNext={list.data?.next_page_token ? () => setTokens((prev) => [...prev, list.data!.next_page_token]) : undefined}
           />
-          <div className="order-first flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:order-none">
-            <LiftedCard word={selected} sense={sense} item={item} groups={groups} />
-            <h2 className="mt-2 font-wm-display text-wm-base-strong font-bold text-wm-ink">{t('stacksTitle')}</h2>
-            <StackTargets
-              groups={groups}
-              senseId={sense?.sense_id ?? null}
-              lemma={selected.lemma}
-              inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
-            />
-            <div className="flex flex-col items-start gap-1">
-              {sense && (
-                <TextButton isDisabled={!items.isSuccess} onPress={() => setPicker(true)}>
-                  {t('otherGroup')}
-                </TextButton>
-              )}
+          {large && (
+            <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24">
+              <LiftedCard word={selected} sense={sense} item={item} groups={groups} />
+              <h2 className="mt-2 font-wm-display text-wm-base-strong font-bold text-wm-ink">{t('stacksTitle')}</h2>
+              <StackTargets
+                groups={groups}
+                senseId={sense?.sense_id ?? null}
+                lemma={selected.lemma}
+                inGroups={sense && items.isSuccess ? (item?.group_ids ?? []) : null}
+              />
+              <div className="flex flex-col items-start gap-1">
+                {sense && (
+                  <TextButton isDisabled={!items.isSuccess} onPress={() => setPicker(true)}>
+                    {t('otherGroup')}
+                  </TextButton>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
       {picker && sense && <DeckPickerDialog sense={sense} inGroups={item?.group_ids ?? []} onClose={() => setPicker(false)} />}

@@ -1,11 +1,13 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { shownPos } from '@/lib/pos';
 import { TargetWord } from '@/ui/TargetWord';
+import { wordHref } from '../word/word-api';
 import type { WordRow } from './lookup-api';
 
 /** Dictionary abbreviations of the parts of speech (Figma: "n.", "v.", "n., v."); others are written out. */
@@ -18,11 +20,13 @@ const posLabel = (list: string[]) => list.filter((p) => shownPos(p)).map((p) => 
  * Figma "Trang từ điển" (85:3285): a paper page with a running header (first word · trang N · last word), letter headings and one
  * entry per word: head, IPA, part of speech, level, "của tôi"; "1" and the meaning; the example with the word highlighted. An entry
  * with no IPA or example has no line for it. Focus or a click selects an entry (not hover: the mouse crosses entries on its way to the stacks); ↑ ↓ move between entries.
+ * With `linked` (below 1024 px, where Tra từ has no card) each entry is a link to its word page instead (owner 14/11/2026).
  */
-export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext }: {
+export function DictionaryPage({ words, page, selected, linked = false, onSelect, onPrev, onNext }: {
   words: WordRow[];
   page: number;
   selected: string | null;
+  linked?: boolean;
   onSelect: (lemma: string) => void;
   onPrev?: () => void;
   onNext?: () => void;
@@ -32,8 +36,8 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-    const entries = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button[data-lemma]')];
-    const at = entries.indexOf(document.activeElement as HTMLButtonElement);
+    const entries = [...event.currentTarget.querySelectorAll<HTMLElement>('[data-lemma]')];
+    const at = entries.indexOf(document.activeElement as HTMLElement);
     if (at < 0) return;
     const next = entries[at + (event.key === 'ArrowDown' ? 1 : -1)];
     if (!next) return;
@@ -60,7 +64,7 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
             <ul className="flex flex-col gap-1">
               {items.map((word) => (
                 <li key={word.lemma}>
-                  <Entry word={word} current={word.lemma === selected} onSelect={() => onSelect(word.lemma)} />
+                  <Entry word={word} current={word.lemma === selected} linked={linked} onSelect={() => onSelect(word.lemma)} />
                 </li>
               ))}
             </ul>
@@ -89,22 +93,33 @@ export function DictionaryPage({ words, page, selected, onSelect, onPrev, onNext
   );
 }
 
-function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; onSelect: () => void }) {
+const ENTRY = cn(
+  // raw-ok: the entry's hover box reaches into the page margin by its own padding
+  'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-row px-2.5 py-2 text-left outline-none',
+  'hover:bg-wm-ink/4 focus-visible:outline-3 focus-visible:outline-wm-accent',
+);
+
+function Entry({ word, current, linked, onSelect }: { word: WordRow; current: boolean; linked: boolean; onSelect: () => void }) {
+  const locale = useLocale();
+  if (linked) {
+    return (
+      <Link href={wordHref(locale, word.lemma)} data-lemma={word.lemma} className={ENTRY}>
+        <EntryBody word={word} />
+      </Link>
+    );
+  }
+  return (
+    <button type="button" data-lemma={word.lemma} aria-current={current} onClick={onSelect} onFocus={onSelect} className={ENTRY}>
+      <EntryBody word={word} />
+    </button>
+  );
+}
+
+function EntryBody({ word }: { word: WordRow }) {
   const t = useTranslations('App.lookup');
   const meaning = /[.!?…]$/.test(word.meaning_preview) ? word.meaning_preview : `${word.meaning_preview}.`;
   return (
-    <button
-      type="button"
-      data-lemma={word.lemma}
-      aria-current={current}
-      onClick={onSelect}
-      onFocus={onSelect}
-      className={cn(
-        // raw-ok: the entry's hover box reaches into the page margin by its own padding
-        'lk-entry -mx-2.5 flex w-[calc(100%+1.25rem)] flex-col gap-0.5 rounded-wm-row px-2.5 py-2 text-left outline-none',
-        'hover:bg-wm-ink/4 focus-visible:outline-3 focus-visible:outline-wm-accent',
-      )}
-    >
+    <>
       <span className="flex flex-wrap items-baseline gap-x-1.5">
         <span className="break-all font-wm-display text-wm-word font-extrabold tracking-tight text-wm-ink md:text-wm-logo">{word.lemma}</span>
         {word.ipa && <span className="font-wm-sans text-wm-small text-wm-muted">/{word.ipa}/</span>}
@@ -122,7 +137,7 @@ function Entry({ word, current, onSelect }: { word: WordRow; current: boolean; o
           <TargetWord text={word.example} lemma={word.lemma} />
         </span>
       )}
-    </button>
+    </>
   );
 }
 

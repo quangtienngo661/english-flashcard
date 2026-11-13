@@ -129,7 +129,7 @@ test('no horizontal scroll on Today with an unbroken name on a deck card (vi)', 
 });
 
 // Giao diện mới M4.5: a 60-character word with no space, lifted into the Tra từ card, must not widen the page (390 px on phones).
-test('no horizontal scroll on Tra từ with an unbroken 60-character word (vi)', async ({ page }) => {
+test('no horizontal scroll on Tra từ with an unbroken 60-character word (vi)', async ({ page }, testInfo) => {
   const word = 'a'.repeat(60);
   const sense = {
     sense_id: '00000000-0000-4000-8000-000000000801', entry_id: '00000000-0000-4000-8000-000000000802', scope: 'catalog', lemma: word, pos: 'noun', level: 'B1',
@@ -144,6 +144,8 @@ test('no horizontal scroll on Tra từ with an unbroken 60-character word (vi)',
     'GET /v1/topics': () => ({ json: { items: [] } }),
   });
   await page.goto('/vi/app/lookup?level=B1');
-  await expect(page.getByRole('region', { name: 'Thẻ của từ đang chọn' }).getByRole('heading', { name: word })).toBeVisible();
+  // Phones have no word card (owner 14/11/2026): the word sits in its entry, a link to the word page.
+  if (testInfo.project.name === 'mobile') await expect(page.getByRole('link', { name: new RegExp(`^${word}`) })).toBeVisible();
+  else await expect(page.getByRole('region', { name: 'Thẻ của từ đang chọn' }).getByRole('heading', { name: word })).toBeVisible();
   await noSideScroll(page);
 });

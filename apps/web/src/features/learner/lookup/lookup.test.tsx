@@ -52,10 +52,24 @@ const base = (extra = {}) => ({
 const lastUrl = (spy: ReturnType<typeof vi.fn>) => new URL(String(spy.mock.calls.at(-1)?.[0]), 'http://x');
 const sentence = (text: string) => (_: string, el: Element | null) => el?.tagName === 'P' && el.textContent === text;
 
+/** A viewport `width` px wide: `(min-width: N px)` queries match when N ≤ width; others do not. */
+function viewport(width: number) {
+  window.matchMedia = ((query: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(query);
+    return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => {}, removeEventListener: () => {} };
+  }) as unknown as typeof window.matchMedia;
+}
+const jsdomMedia = window.matchMedia;
+
 beforeEach(() => {
   nav.params = new URLSearchParams({ level: 'B1', topic: 'work' });
   nav.replace.mockClear();
   nav.push.mockClear();
+  // The card and the stacks are the laptop layout (from 1024 px); the phone layout has its own block at the end.
+  viewport(1440);
+});
+afterEach(() => {
+  window.matchMedia = jsdomMedia;
 });
 
 describe('Tra từ: search and filters', () => {
@@ -281,5 +295,54 @@ describe('Tra từ: "Nhóm khác" waits for the items', () => {
     expect(other).toBeDisabled();
     release();
     await waitFor(() => expect(other).toBeEnabled());
+  });
+});
+
+describe('Tra từ on phones and tablets (below 1024 px): the list opens the word page', () => {
+  beforeEach(() => viewport(390));
+
+  it('shows no word card, no group stacks and no "Nhóm khác"', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    await screen.findByRole('link', { name: /^budget/ });
+    expect(screen.queryByRole('region', { name: 'Thẻ của từ đang chọn' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Bấm vào chồng để thêm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Thêm vào / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nhóm khác hoặc tạo nhóm mới' })).not.toBeInTheDocument();
+  });
+
+  it('every entry is a link to its word page, with the same content', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    const colleague = await screen.findByRole('link', { name: /^colleague/ });
+    expect(colleague).toHaveAttribute('href', '/vi/app/word?w=colleague');
+    expect(colleague.textContent).toBe('colleaguen.B11nghĩa colleague.');
+    for (const lemma of ['budget', 'candidate', 'contract']) {
+      expect(screen.getByRole('link', { name: new RegExp(`^${lemma}`) })).toHaveAttribute('href', `/vi/app/word?w=${lemma}`);
+    }
+    expect(screen.queryByRole('button', { name: /^budget/ })).not.toBeInTheDocument();
+  });
+
+  it("does not load the selected word's page or items, which only the card uses", async () => {
+    const { calls } = renderApp(<LookupPage />, { routes: base() });
+    await screen.findByRole('link', { name: /^budget/ });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls.filter((c) => c.path.startsWith('/v1/words/') || c.path.startsWith('/v1/items'))).toEqual([]);
+  });
+
+  it('↓ moves focus from one entry link to the next', async () => {
+    renderApp(<LookupPage />, { routes: base() });
+    (await screen.findByRole('link', { name: /^budget/ })).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('link', { name: /^candidate/ })).toHaveFocus();
+  });
+});
+
+describe('Tra từ on a laptop (from 1024 px): unchanged', () => {
+  it('at exactly 1024 px the card and the stacks show and entries are buttons', async () => {
+    viewport(1024);
+    renderApp(<LookupPage />, { routes: base() });
+    expect(await screen.findByRole('region', { name: 'Thẻ của từ đang chọn' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Bấm vào chồng để thêm' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^budget/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^budget/ })).not.toBeInTheDocument();
   });
 });

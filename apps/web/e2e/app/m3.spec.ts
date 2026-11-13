@@ -60,11 +60,13 @@ function m3Api(long = false): Record<string, MockHandler> {
 }
 
 test.describe('M3 flows (mocked API)', () => {
-  test('lookup → word page → add a meaning to a deck', async ({ page }) => {
+  test('lookup → word page → add a meaning to a deck', async ({ page }, testInfo) => {
     await signedInAs(page, 'free', m3Api());
     await page.goto('/vi/app/lookup?q=left');
-    // Giao diện mới M4.5: the first entry is lifted into the card; its link opens the word page.
-    await page.getByRole('link', { name: vi.lookup.openWordArrow }).click();
+    // Giao diện mới M4.5: from 1024 px the first entry is lifted into the card and its link opens the word page; on phones
+    // there is no card and the entry itself is the link (owner 14/11/2026).
+    if (testInfo.project.name === 'mobile') await page.getByRole('link', { name: /^left/ }).first().click();
+    else await page.getByRole('link', { name: vi.lookup.openWordArrow }).click();
     await expect(page).toHaveURL(/\/vi\/app\/word\?w=left$/);
     const adjective = page.getByRole('article').first();
     await adjective.getByRole('button', { name: vi.word.addToGroup }).click();
@@ -150,7 +152,8 @@ test.describe('M3 flows (mocked API)', () => {
 
 // Every M3 page × vi/en × light/dark with the longest content; the desktop (1440) and mobile (390) projects run each once.
 const PAGES: Array<{ path: string; ready: (page: Page) => Promise<void>; open?: (page: Page, locale: 'vi' | 'en') => Promise<void> }> = [
-  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('button', { name: /^left/ }).first()).toBeVisible() },
+  // An entry is a button from 1024 px and a link to the word page on phones.
+  { path: 'lookup?q=left', ready: (p) => expect(p.getByRole('heading', { name: 'L', exact: true })).toBeVisible() },
   { path: 'lookup?q=zzzz', ready: (p) => expect(p.getByRole('heading', { level: 2 }).first()).toBeVisible() },
   { path: 'word?w=left', ready: (p) => expect(p.getByRole('article').first()).toBeVisible() },
   {
