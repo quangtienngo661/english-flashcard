@@ -162,13 +162,14 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       <div data-in="0">
         <BackLink href={`/${locale}/app/groups`} label={t('back')} onClick={close} prefetch />
       </div>
-      {/* Bản A (owner 13/11/2026, mockup mot-nhom-hai-cot.html): from 1024 px the group on the left (400 px, it stays while the table
-          scrolls) and the words on the right; narrower, the same parts one under the other. The stack comes first and larger. */}
+      {/* Bản A (owner 13/11/2026, mockup mot-nhom-hai-cot.html): from 1280 px the group on the left (400 px, it stays while the table
+          scrolls) and the words on the right; narrower, the same parts one under the other. The stack comes first and larger. From 1024
+          the table got only 493 px and cut "presentation" mid-word (audit C2), so the split moved to 1280 (QA3). */}
       <div
         // raw-ok: the 400 px group column beside the words (bản A); no token for a two-track grid
-        className="flex flex-col gap-8 lg:grid lg:grid-cols-[25rem_minmax(0,1fr)] lg:items-start lg:gap-9"
+        className="flex flex-col gap-8 xl:grid xl:grid-cols-[25rem_minmax(0,1fr)] xl:items-start xl:gap-9"
       >
-      <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 lg:sticky lg:top-24 lg:items-start">
+      <section aria-label={detail.name} className="relative isolate flex flex-col items-center gap-5 xl:sticky xl:top-24 xl:items-start">
         <div aria-hidden className={cn('gcar-halo -z-10', tone.wash)} />
         {/* Above the group info while it flies in from the carousel (motion doc §3). */}
         <GroupStack group={group} size="page" depth={2} ref={stackRef} className="z-10" />
@@ -392,7 +393,7 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
       <td className={cn(cell, 'col-start-1 row-start-1 min-w-0 pb-0 md:pb-3')}>
         <Link
           href={`/${locale}/app/word?w=${encodeURIComponent(word)}`}
-          className="font-wm-display text-wm-word text-wm-ink outline-none wrap-anywhere hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent"
+          className="font-wm-display text-wm-word text-wm-ink outline-none break-words hover:underline focus-visible:outline-3 focus-visible:outline-wm-accent"
         >
           {word}
         </Link>
