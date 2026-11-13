@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useWordCycle } from '@/lib/word-cycle';
 import { TypingBlank } from '@/ui/TypingBlank';
-import { useMotionAllowed, whileInView } from '../interactive/motion';
+import { motionAllowed, whileInView } from '../interactive/motion';
 import { fill, type LandingCopy } from './copy';
 import { Marked, Progress, WaveBars } from './parts';
 import { TEXT_17 } from './styles';
@@ -13,24 +13,19 @@ import { TEXT_17 } from './styles';
 /**
  * The hero's word card and practice card (F.18, D5): five words typed into the blank in turn. The server HTML is the final frame of the
  * first word (typed, green, "Đúng · lên Bậc 3"). With motion allowed the cycle continues from that frame while the stage is on screen;
- * off screen, with reduced motion and without JS it stands still. The footer's motion switch (T10, QA7) stops it on the final frame of
- * the word it was on, and turning motion on again goes on from there.
+ * off screen, with reduced motion and without JS it stands still.
  */
 export function HeroCycle({ copy }: { copy: LandingCopy['stage'] }) {
   const ref = useRef<HTMLDivElement>(null);
-  const allowed = useMotionAllowed();
-  const [visible, setVisible] = useState(false);
+  const [motion, setMotion] = useState(false);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    return whileInView(el, setVisible);
+    if (!el || !motionAllowed()) return;
+    return whileInView(el, setMotion);
   }, []);
-  const motion = allowed && visible;
 
-  const cycle = useWordCycle({ lengths: copy.cycle.map((c) => c.lemma.length), motion, start: 'final' });
-  const current = cycle.k % copy.cycle.length;
-  // Stopped by the switch: the word it was on, typed and answered (review focus 3 of Part 12), never a half-typed word.
-  const step = allowed ? cycle : { ...cycle, typed: copy.cycle[current].lemma.length, phase: 'done' as const };
+  const step = useWordCycle({ lengths: copy.cycle.map((c) => c.lemma.length), motion, start: 'final' });
+  const current = step.k % copy.cycle.length;
   const word = copy.cycle[current];
   const first = copy.cycle[0];
   const swap = step.k > 0 && 'animate-wm-showcase-swap';

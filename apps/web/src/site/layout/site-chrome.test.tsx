@@ -28,8 +28,6 @@ beforeEach(() => {
 
 afterEach(() => {
   localStorage.clear();
-  document.documentElement.classList.remove('js');
-  document.documentElement.removeAttribute('data-wm-motion');
   delete document.documentElement.dataset.theme;
   vi.useRealTimers();
 });
@@ -103,49 +101,5 @@ describe('SiteFooter', () => {
     await user.click(group.getByRole('radio', { name: 'Sáng' }));
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
     expect(document.documentElement.dataset.theme).toBe('light');
-  });
-
-  // T10 (QA7): a way to stop the landing's loops for readers who have not set reduced motion on their device (WCAG 2.2.2).
-  it('the motion switch turns the site motion off and on and remembers the choice under wordmet-web.motion', async () => {
-    const user = userEvent.setup();
-    document.documentElement.classList.add('js');
-    renderChrome(<SiteFooter locale="vi" />);
-    const group = within(screen.getByRole('radiogroup', { name: 'Chuyển động' }));
-    expect(group.getByRole('radio', { name: 'Bật' })).toBeChecked();
-
-    await user.click(group.getByRole('radio', { name: 'Tắt' }));
-    expect(localStorage.getItem('wordmet-web.motion')).toBe('off');
-    expect(document.documentElement.classList.contains('js')).toBe(false);
-    expect(document.documentElement.getAttribute('data-wm-motion')).toBe('off');
-    expect(group.getByRole('radio', { name: 'Tắt' })).toBeChecked();
-
-    await user.click(group.getByRole('radio', { name: 'Bật' }));
-    expect(localStorage.getItem('wordmet-web.motion')).toBe('on');
-    expect(document.documentElement.classList.contains('js')).toBe(true);
-    expect(document.documentElement.hasAttribute('data-wm-motion')).toBe(false);
-    expect(group.getByRole('radio', { name: 'Bật' })).toBeChecked();
-  });
-
-  it('a page loaded with motion off shows "Tắt" chosen', () => {
-    document.documentElement.setAttribute('data-wm-motion', 'off');
-    renderChrome(<SiteFooter locale="vi" />);
-    expect(within(screen.getByRole('radiogroup', { name: 'Chuyển động' })).getByRole('radio', { name: 'Tắt' })).toBeChecked();
-  });
-
-  it('with reduced motion set on the device the switch shows "Tắt", is disabled and says why', () => {
-    window.matchMedia = ((query: string) =>
-      ({
-        matches: query.includes('prefers-reduced-motion: reduce'),
-        media: query,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }) as unknown as MediaQueryList) as typeof window.matchMedia;
-    renderChrome(<SiteFooter locale="vi" />);
-    const radiogroup = screen.getByRole('radiogroup', { name: 'Chuyển động' });
-    const group = within(radiogroup);
-    expect(group.getByRole('radio', { name: 'Tắt' })).toBeChecked();
-    expect(group.getByRole('radio', { name: 'Bật' })).toBeDisabled();
-    expect(group.getByRole('radio', { name: 'Tắt' })).toBeDisabled();
-    expect(radiogroup).toHaveAccessibleDescription('Theo cài đặt máy');
   });
 });

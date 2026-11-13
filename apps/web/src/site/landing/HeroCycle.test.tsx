@@ -2,7 +2,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import vi_ from '../../../messages/vi.json';
-import { setMotionChoice } from '../interactive/motion';
 import { HeroCycle } from './HeroCycle';
 
 /** motion.ts keeps one observer for the whole file, so the stub reads this flag when an element is watched. */
@@ -47,8 +46,6 @@ beforeEach(() => {
 
 afterEach(() => {
   document.documentElement.classList.remove('js');
-  document.documentElement.removeAttribute('data-wm-motion');
-  localStorage.clear();
   window.matchMedia = realMatchMedia;
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -129,34 +126,5 @@ describe('HeroCycle (F.18)', () => {
     render(<HeroCycle copy={stage} />);
     act(() => void vi.advanceTimersByTime(30000));
     expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
-  });
-
-  // T10 (QA7), review focus 3: the footer switch stops the cycle mid-word on that word's final frame, not on a half-typed word.
-  it('switching motion off mid-word shows that word typed and answered, and stays there; switching on moves on again', () => {
-    vi.useFakeTimers();
-    vi.stubGlobal('IntersectionObserver', VisibleObserver);
-    document.documentElement.classList.add('js');
-    mockReducedMotion(false);
-    const { container } = render(<HeroCycle copy={stage} />);
-    // allocate, three letters typed.
-    act(() => void vi.advanceTimersByTime(1700));
-    act(() => void vi.advanceTimersByTime(900));
-    act(() => void vi.advanceTimersByTime(100));
-    act(() => void vi.advanceTimersByTime(100));
-    const blank = () => container.querySelector('.grid.min-h-15 > p:not(.invisible)') as HTMLElement;
-    expect(blank()).toHaveTextContent('We need to allocateall more time to testing.');
-    expect(html()).not.toContain('Đúng · lên Bậc 4');
-
-    act(() => setMotionChoice(false));
-    expect(blank()).toHaveTextContent('We need to allocateallocate more time to testing.');
-    expect(html()).toContain('Đúng · lên Bậc 4');
-    act(() => void vi.advanceTimersByTime(30_000));
-    expect(screen.getByText('Thẻ từ · ôn lại sau 7 ngày')).toBeInTheDocument();
-    expect(html()).toContain('Đúng · lên Bậc 4');
-
-    act(() => setMotionChoice(true));
-    // One timer per step: each step's effect arms the next, so time goes in small slices.
-    for (let t = 0; t < 100 * 5 + 320 + 260 + 1700 + 100; t += 50) act(() => void vi.advanceTimersByTime(50));
-    expect(screen.queryByText('Thẻ từ · ôn lại sau 7 ngày')).not.toBeInTheDocument();
   });
 });

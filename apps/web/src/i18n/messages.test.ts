@@ -80,10 +80,6 @@ describe('messages', () => {
       dark: 'Tối',
       themeToLight: 'Chuyển sang giao diện sáng',
       themeToDark: 'Chuyển sang giao diện tối',
-      motion: 'Chuyển động',
-      motionOn: 'Bật',
-      motionOff: 'Tắt',
-      motionDevice: 'Theo cài đặt máy',
     });
     for (const messages of [vi, en]) {
       expect('nav' in messages.Landing).toBe(false);
