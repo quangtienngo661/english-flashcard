@@ -29,7 +29,7 @@ Mỗi dòng: **Màn**, **Mở bằng**, **Kiểm gì**, **Sáng/Tối**, ô tick
 | Mũi tên | Link chữ có mũi tên "→" ngắn, cùng nét (icon), không còn "⟶" dài mảnh | Sáng | ☐ |
 | Thanh trên điện thoại | Cao 56 px; thanh tab dưới giữ như trước; icon tab Luyện tập vẫn là ngôi nhà (đã chốt giữ) | Cả hai | ☐ |
 | Khung xương lúc tải | Tải lại cứng (Ctrl+Shift+R) ở Hôm nay, Luyện tập, Nhóm, một trang khác: nền mesh, thanh trên 64 px (56 điện thoại) có chỗ logo và tab; Hôm nay và Luyện tập hai cột từ 1280 px; Nhóm một khối băng chuyền; nội dung không nhảy khi trang thật hiện | Cả hai | ☐ |
-| Toast chuỗi ngày | Học hoặc luyện xong lần đầu trong ngày | Toast trắng có viền, icon lửa trong ô nhỏ; trong phiên nằm góc phải dưới nút X; không đè nút | Cả hai | ☐ |
+| Toast chuỗi ngày | Học hoặc luyện xong lần đầu trong ngày | Toast trắng có viền, icon lửa trong ô nhỏ; nằm dưới, giữa màn hình, cả trong phiên (đổi 13/11, mục 11); không đè nút | Cả hai | ☐ |
 | Màn mất mạng, không tìm thấy | DevTools → Offline rồi chuyển trang; mở một nhóm không tồn tại | Màn mới theo kiểu app (không còn kiểu cũ) | Sáng | ☐ |
 
 ## 2. Hôm nay
@@ -121,5 +121,82 @@ Mỗi dòng: **Màn**, **Mở bằng**, **Kiểm gì**, **Sáng/Tối**, ô tick
 
 - **Chưa chạy trên stack thật:** đợt polish chỉ kiểm bằng unit test và e2e (API giả); chưa ai mở các màn trên bằng trình duyệt với dữ liệu thật.
   Checklist này là lần đầu.
-- **Gợi ý chữ cái đầu** giữ `e___` (QP3), khác mockup `e_______`: đúng như đã chốt.
+- **Gợi ý chữ cái đầu** giữ ba gạch (QP3); chữ đầu viết hoa từ 13/11 (`E___`, mục 11).
 - **Điện thoại thật** (đo khung hình, QM9-7) vẫn là việc trước PR cuối vào `dev`, xem checklist cũ.
+
+## 11. Sửa sau test tay (Part 11 và các vòng 13/11/2026)
+
+Gồm các chỗ bạn chốt trên trang review (f01–f19) và các chỗ bạn gửi trong chat ngày 13/11. Đó là các commit sau `8c1b6a06` trên nhánh này, đến `202ff33f`.
+App đã chạy `pnpm bootstrap`. Đăng nhập bằng `lan.local@example.com`.
+
+### Nhóm, Hôm nay, Thêm từ, Lịch
+
+| Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|
+| Vầng sáng Nhóm (f01, 13/11) | `/groups`, đổi nhóm bằng ← → | Vầng sáng ở giữa phía trên trang, màu theo nhóm giữa, đổi màu trong 0,7 s; không thấy cạnh hay khung chữ nhật | Cả hai | ☐ |
+| Khối dưới băng chuyền (f02) | `/groups` | Hàng 1: Học và Ôn cùng rộng. Hàng 2 ở giữa: "Xem nhóm →" và "Thêm từ". Chú thích bậc một dòng từ 768 px | Sáng | ☐ |
+| Màn thấp (f13) | `/groups` ở 1280×800, 1024×768; điện thoại ngang 844×390 | Học và Ôn thấy ngay, không phải cuộn. Điện thoại ngang thành hai cột. Nút lịch không đè thẻ | Sáng | ☐ |
+| Thẻ nhóm ở Hôm nay (f18) | `/`, rê chuột hoặc Tab vào thẻ nhóm | Thẻ nâng lên 6 px, bóng đậm theo màu nhóm | Cả hai | ☐ |
+| Chân hộp thoại (f03, D1) | Thêm từ → Nhập nghĩa → Chọn nhóm | Chân hộp có đường kẻ. "Quay lại" dạng chữ, cách nút chính 12 px. Bước chọn nhóm ghi "Xong", form ghi "Lưu vào n nhóm" | Sáng | ☐ |
+| Nhóm hiện hai lần (f03) | Hộp chọn nhóm khi có "Dùng gần đây" | Mỗi nhóm hiện một lần; danh sách dưới có tiêu đề "Nhóm khác (n)" | Sáng | ☐ |
+| Dòng từ trong hộp chọn nhóm (13/11) | Tra từ → thêm vào nhóm khác | Dòng "afford, verb: …" là chữ thường, không còn nền vàng | Cả hai | ☐ |
+| Hộp Ngày (f19) | Lịch → bấm một ngày | Không còn nút lọc "Luyện" và khối phiên luyện; dòng tóm tắt vẫn ghi số câu luyện | Cả hai | ☐ |
+| Nút lọc Tất cả / Học / Ôn (13/11) | Hộp Ngày | Nền xanh rất nhạt. Nút đang chọn nền trắng, viền xanh, không còn nền xanh đậm | Sáng | ☐ |
+| "1 card waiting" (D8) | `/en/app/groups`, nhóm có 1 thẻ chờ | Ghi "1 card waiting" | Sáng | ☐ |
+| Tra từ khi đang tải (defect) | `/lookup`, mạng chậm (DevTools → Slow 3G) | "Nhóm khác" bị khóa cho tới khi danh sách tải xong | Sáng | ☐ |
+
+### Tùy chỉnh phiên
+
+| Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|
+| Ô số (f16) | Luyện tập → Tùy chỉnh | Ô 36 px có − và +. Gõ 7 rồi Enter thì thành 7. Gõ 99 rồi bấm ra ngoài thì về mức tối đa. Xóa trống thì giữ số cũ | Sáng | ☐ |
+| Nút phạm vi (f17, 13/11) | Tùy chỉnh: Theo nhóm | "Mọi từ / Cần ôn / Ưu tiên": mỗi lựa chọn có ô số vuông riêng, nằm gọn trong viên. Viên đang chọn là ô vuông bo góc, cao 28 px. Cả thanh không lòi ra mép | Cả hai | ☐ |
+| Mọi nút chia đoạn (13/11) | Tùy chỉnh; Cài đặt | "Theo nghĩa / Theo câu / Trộn", "Chọn nghĩa / Chọn từ / Trộn" và các nút ở Cài đặt có góc vuông bo nhẹ, không còn hình viên thuốc | Sáng | ☐ |
+| Danh sách Thứ tự (13/11) | Tùy chỉnh → Thứ tự | Mọi lựa chọn hiện đủ chữ, không có "…" | Sáng | ☐ |
+| Tooltip "?" (13/11) | Rê chuột vào "?" cạnh "Điền từ vào câu bạn đã lưu" | Chữ đọc rõ ở cả hai theme (theme tối: nền sáng, chữ tối) | Tối | ☐ |
+
+### Phiên luyện, Học, Ôn
+
+| Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|
+| Không còn phím trên nút (f14) | Học, Ôn, phiên luyện ở 1280 | Nút không có ô phím. Hàng chú thích phím vẫn còn, phím tắt vẫn chạy | Sáng | ☐ |
+| Gợi ý chữ cái đầu (f04, 13/11) | Phiên luyện, câu điền từ → Gợi ý | Chữ đầu viết hoa, gạch nối liền: "L___"; cỡ chữ 19 px | Tối | ☐ |
+| Panel sai dạng vé (f05) | Trả lời sai một câu | Trượt ra từ dưới thẻ. Đầu vé ghi "Not quite", có đường đục lỗ. Dòng lớn nhất là nghĩa; đáp án nhỏ màu xanh, kèm nút nghe. Nền đỏ nhạt | Cả hai | ☐ |
+| Notch của vé (13/11) | Cùng màn, theme tối | Hai chỗ khuyết ở hai đầu đường đục lỗ là lỗ thật (nhìn thấy nền trang), không phải chấm tối | Tối | ☐ |
+| Panel đúng và panel thử lại (D2, D3) | Trả lời đúng; gõ sai câu còn được thử lại; mở gợi ý trước khi trả lời | Cùng dáng vé; panel đúng màu xanh, có "Bậc 1 → Bậc 2". Đã mở gợi ý thì vé nằm dưới hộp gợi ý | Cả hai | ☐ |
+| Nút trên điện thoại (13/11) | Panel thử lại ở 390 và 320 | Các nút xếp dọc, rộng hết panel, không dồn sang phải | Sáng | ☐ |
+| Từ chọn sai trong câu (f05) | Trắc nghiệm theo câu, chọn sai | Từ bạn chọn bị gạch trong câu, đứng trước từ đúng | Sáng | ☐ |
+| Ô gõ trong câu (f15) | Câu điền từ, gõ 3 rồi 12 chữ | Ô giãn theo chữ, không thừa chỗ | Sáng | ☐ |
+| Vị trí câu hỏi (13/11) | Phiên luyện ở 1280 | Khối câu hỏi thấp hơn trước một chút, vẫn ở trên giữa màn hình | Sáng | ☐ |
+| Thẻ Học (13/11) | Nhóm → Học ở 1280×900 | Thẻ 360 × 470 px như artifact "Chồng thẻ tan mờ". Màn thấp hơn 736 px thì thẻ thấp lại | Cả hai | ☐ |
+| Toast chuỗi ngày (13/11) | Học hoặc luyện xong lần đầu trong ngày | Toast nằm dưới, giữa màn hình | Sáng | ☐ |
+
+### Trang chủ và Đăng ký
+
+| Màn | Mở bằng | Kiểm gì | Sáng/Tối | ☐ |
+|---|---|---|---|---|
+| Hero (f08, f09, D5) | `http://localhost:3001/vi` | Không còn viên nhãn. Thẻ luyện gõ từ vào ô vừa chữ, rồi chuyển xanh "Đúng · lên Bậc n". Thẻ từ đổi lần lượt 5 từ | Cả hai | ☐ |
+| Màu loang phần Giá (f06) | `/vi#gia` | Nhiều quầng mờ trôi chậm, phủ đều cả khối, không thành một cục | Tối | ☐ |
+| Thẻ Pro (13/11) | `/vi#gia` | Đường sáng chạy trên viền thẻ, không có vệt mờ lồi ra ngoài. Không còn dòng "Không hoàn tiền sau khi đã thanh toán." | Tối | ☐ |
+| "Luyện trong câu" (f07) | `/vi#cach-hoc` | Phần luyện nằm ngay dưới mô tả, không bị đẩy xuống đáy card | Sáng | ☐ |
+| Link thanh trên (f10) | Trang chủ | "Nhóm từ", "Cách học", "Giá" chữ đậm; rê chuột thì đổi sang màu nhấn | Sáng | ☐ |
+| Không chỉ IELTS (f11, D6) | Trang chủ, khối Nhóm từ | Không còn viên "IELTS Writing · Đề 12…". Có chữ "Bài báo sáng nay" và "Từ của mỗi bài thành một nhóm." | Sáng | ☐ |
+| Panel đăng ký (f12, 13/11) | `/vi/app/register` ở 1440 và 1920; thu nhỏ trang (Ctrl −) | Không còn dòng chú thích ở góc dưới phải. Panel rộng theo màn (640–896 px), cảnh bên trong phóng theo. Thẻ từ ở trên trái, thẻ Hôm nay bên phải, thẻ bài tập ở dưới. Không thẻ nào đè đường nhớ | Cả hai | ☐ |
+| Panel lúc tải (13/11) | Tải lại `/vi/app/register` | Thẻ luyện không nhảy từ ô xanh về ô trống; vòng lặp đi tiếp sang từ sau | Sáng | ☐ |
+
+### Đã biết, chưa làm
+
+- **Nhãn Bậc 3** trên panel đăng ký nằm bên phải chấm, trong khi hình vẽ để bên trái. Để bên trái thì nhãn đè lên thẻ từ.
+- **Thẻ từ trên panel đăng ký** chỉ dời sang phải 12 px và hẹp đi 12 px. Dời xa hơn thì góc thẻ đè lên đường đi của các từ.
+- **Trang Gói trong app** vẫn có một dòng về hoàn tiền, nội dung khác dòng đã bỏ ở trang chủ.
+- **Viền ô nhập** #c7cad3 trên nền trắng chỉ đạt khoảng 1,6:1, dưới mức 3:1 của WCAG. Để cho một đợt a11y riêng.
+- **D9, để sau:**
+  - Nút X 32 px trên điện thoại.
+  - Nút Kiểm tra cho ô điền từ trên điện thoại.
+  - Tên nút đóng khác nhau giữa các phiên.
+  - Toast ở góc đè lên thẻ.
+  - Cách viết hoa "Tiếp theo" / "Ôn gần nhất".
+  - Khay xám ở Tùy chỉnh phiên.
+  - "Lần luyện gần nhất" chưa sang cột phải.
+  - audit2.
+- **Chưa chạy** lượt e2e đầy đủ sau các vòng sửa ngày 13/11.
