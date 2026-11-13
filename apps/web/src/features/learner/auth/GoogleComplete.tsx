@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -17,6 +17,7 @@ import { TextField } from '@/ui/TextField';
 import { AuthHeading, ConsentLink, FormError } from './AuthHeading';
 import { GoogleMark } from '@/ui/GoogleButton';
 import { GoogleSignIn } from './GoogleSignIn';
+import { useFocusFirstInvalid } from './focus-first-invalid';
 
 type Info = { email: string; needs_name: boolean };
 type Loaded = { kind: 'ready'; info: Info } | { kind: 'expired' } | { kind: 'error'; message: string } | { kind: 'loading' };
@@ -45,6 +46,9 @@ export function GoogleComplete({ today }: { today?: string }) {
   const [consent, setConsent] = useState(false);
   const [tooYoung, setTooYoung] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<{ givenName?: string; birthDate?: string; consent?: string }>({});
+  const form = useRef<HTMLFormElement>(null);
+  const focusFirstInvalid = useFocusFirstInvalid(form);
 
   useEffect(() => {
     let alive = true;
@@ -74,10 +78,24 @@ export function GoogleComplete({ today }: { today?: string }) {
     event.preventDefault();
     setError(null);
     setTooYoung(false);
+    // The name is asked only when Google gave none (needsName): a prefilled name never shows "Nhập tên của bạn.".
+    const empty = {
+      ...(needsName && givenName.trim() === '' ? { givenName: t('register.givenNameRequired') } : {}),
+      ...(birthDate === null ? { birthDate: t('required.birthDate') } : {}),
+      ...(consent ? {} : { consent: t('required.consent') }),
+    };
+    setMissing(empty);
+    if (Object.keys(empty).length > 0) {
+      focusFirstInvalid();
+      return;
+    }
     try {
       await submit();
     } catch (failure) {
-      if (failure instanceof ApiError && failure.problem.slug === 'age-below-minimum') setTooYoung(true);
+      if (failure instanceof ApiError && failure.problem.slug === 'age-below-minimum') {
+        setTooYoung(true);
+        focusFirstInvalid();
+      }
       else if (failure instanceof ApiError && failure.problem.status === 401) setLoaded({ kind: 'expired' });
       else setError(errorText(failure));
     }
@@ -105,10 +123,17 @@ export function GoogleComplete({ today }: { today?: string }) {
         </p>
       }
     >
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
+      <form ref={form} onSubmit={onSubmit} noValidate className="flex flex-col gap-4 md:gap-5">
         {needsName && (
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
-            <TextField label={t('register.givenName')} value={givenName} onChange={setGivenName} autoComplete="given-name" maxLength={50} />
+            <TextField
+              label={t('register.givenName')}
+              value={givenName}
+              onChange={setGivenName}
+              autoComplete="given-name"
+              maxLength={50}
+              error={missing.givenName}
+            />
             <TextField label={t('register.familyName')} value={familyName} onChange={setFamilyName} autoComplete="family-name" maxLength={50} />
           </div>
         )}
@@ -117,9 +142,10 @@ export function GoogleComplete({ today }: { today?: string }) {
           description={t('register.birthDateHint')}
           onChange={(iso) => { setTooYoung(false); setBirthDate(iso); }}
           serverError={tooYoung ? 'tooYoung' : null}
+          requiredError={missing.birthDate}
           today={today}
         />
-        <Checkbox isSelected={consent} onChange={setConsent}>
+        <Checkbox isSelected={consent} onChange={setConsent} error={missing.consent}>
           {t.rich('register.consent', {
               terms: (chunks) => <ConsentLink href={`/${locale}/terms`} newTab>{chunks}</ConsentLink>,
               privacy: (chunks) => <ConsentLink href={`/${locale}/privacy`} newTab>{chunks}</ConsentLink>,
@@ -127,7 +153,7 @@ export function GoogleComplete({ today }: { today?: string }) {
         </Checkbox>
         <FormError message={error} />
         {tooYoung && <ConsentLink href={`/${locale}/app/login`}>{tg('toLogin')}</ConsentLink>}
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || birthDate === null || !consent || (needsName && givenName.trim() === '')}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store}>
           {tg('submit')}
         </Button>
       </form>

@@ -23,6 +23,8 @@ export type TextFieldProps = {
   placeholder?: string;
   description?: string;
   error?: string;
+  /** Marks the field wrong without a line under it (the password rules list says why). */
+  isInvalid?: boolean;
   isDisabled?: boolean;
   isReadOnly?: boolean;
   isRequired?: boolean;
@@ -37,7 +39,7 @@ export type TextFieldProps = {
 };
 
 /** A labelled text input, controlled (`value`, `onChange`); the look of Figma "Ô nhập" (34:345). The error is tied to the input. */
-export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, autoCapitalize, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: TextFieldProps) {
+export function TextField({ label, labelAside, trailing, value, onChange, error, description, placeholder, spellCheck, autoCapitalize, inputMode, showCount, maxLength, onBlur, min, max, isInvalid, ...rest }: TextFieldProps) {
   const t = useTranslations('App.common');
   return (
     <AriaTextField
@@ -46,7 +48,7 @@ export function TextField({ label, labelAside, trailing, value, onChange, error,
       onChange={onChange}
       onBlur={onBlur}
       maxLength={maxLength}
-      isInvalid={error !== undefined}
+      isInvalid={error !== undefined || isInvalid === true}
       className="group flex w-full min-w-0 flex-col gap-1.5"
     >
       {labelAside ? (
@@ -69,10 +71,12 @@ export function TextField({ label, labelAside, trailing, value, onChange, error,
         />
         {trailing}
       </div>
-      <FieldError className={FIELD_ERROR}>
-        <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-        {error}
-      </FieldError>
+      {error !== undefined && (
+        <FieldError className={FIELD_ERROR}>
+          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {error}
+        </FieldError>
+      )}
       {(description || (showCount && maxLength)) && (
         <div className={`flex items-start justify-between gap-3 ${FIELD_HINT}`}>
           {description ? <Text slot="description">{description}</Text> : <span />}

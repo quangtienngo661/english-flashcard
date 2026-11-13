@@ -494,7 +494,10 @@
       "passwordMismatch": "Mật khẩu nhập lại chưa khớp.",
       "required": {
         "email": "Nhập email.",
-        "password": "Nhập mật khẩu."
+        "password": "Nhập mật khẩu.",
+        "birthDate": "Chọn ngày sinh.",
+        "consent": "Đồng ý Điều khoản sử dụng và Chính sách bảo mật để tiếp tục.",
+        "code": "Nhập đủ 6 số của mã."
       },
       "captchaPending": "Đang xác minh…",
       "showcase": {

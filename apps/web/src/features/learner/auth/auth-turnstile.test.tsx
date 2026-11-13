@@ -100,14 +100,17 @@ describe('LoginForm and the bot check', () => {
     expect(widget.resets).toBe(0);
   });
 
-  it('LA1E5: no token yet, or it expired, keeps the button off; a new token turns it on again', async () => {
+  it('LA1E5, QA5: no token yet, or it expired, keeps the button off with "Đang xác minh…"; a new token turns it on again', async () => {
     renderApp(<LoginForm />, { routes: signedOut });
     await fillLogin();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled());
+    expect(screen.queryByText('Đang xác minh…')).toBeNull();
     act(() => widget.emit(null));
     expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Đang xác minh…');
     act(() => widget.emit('tok-new'));
     expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled();
+    expect(screen.queryByText('Đang xác minh…')).toBeNull();
   });
 
   it('LA1E6: two quick presses send one request', async () => {
@@ -135,6 +138,19 @@ describe('RegisterForm and the bot check', () => {
     expect(await screen.findByText(/Email này đã có tài khoản/)).toBeInTheDocument();
     expect(tokensOf(calls, '/v1/auth/register')).toEqual(['tok-1']);
     expect(widget.resets).toBe(1);
+  });
+});
+
+describe('the other forms and a pending check (QA5)', () => {
+  it.each([
+    ['sign-up', () => <RegisterForm today="2026-10-18" />, 'Tạo tài khoản'],
+    ['forgot password', () => <ForgotPasswordForm />, 'Gửi mã'],
+  ] as const)('%s: only a pending token keeps the button off, with "Đang xác minh…" beside it', async (_name, form, button) => {
+    renderApp(form(), { routes: signedOut });
+    await waitFor(() => expect(screen.getByRole('button', { name: button })).toBeEnabled());
+    act(() => widget.emit(null));
+    expect(screen.getByRole('button', { name: button })).toBeDisabled();
+    expect(screen.getByText('Đang xác minh…')).toBeInTheDocument();
   });
 });
 

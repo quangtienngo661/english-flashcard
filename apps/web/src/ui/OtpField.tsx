@@ -1,7 +1,8 @@
 'use client';
 
 import { type ClipboardEvent, type KeyboardEvent, useId, useRef } from 'react';
-import { FIELD_LABEL } from './field-styles';
+import { CircleAlert } from 'lucide-react';
+import { FIELD_ERROR, FIELD_LABEL } from './field-styles';
 
 type Props = {
   label: string;
@@ -13,14 +14,17 @@ type Props = {
   autoFocus?: boolean;
   /** Keeps the group's name for screen readers only (Xác minh email: the page title already says it). */
   hideLabel?: boolean;
+  /** Marks every box wrong and shows the line under them, tied to each box as its description. */
+  error?: string;
 };
 
 /**
  * Figma "Ô mã" (34:364): one box per digit. A digit moves focus to the next box, Backspace on an empty box goes back one,
  * a paste or an autofilled code strips non-digits and fills from box 1. Typing beside a digit replaces it with the new one.
  */
-export function OtpField({ label, digitLabel, value, onChange, length = 6, autoFocus, hideLabel }: Props) {
+export function OtpField({ label, digitLabel, value, onChange, length = 6, autoFocus, hideLabel, error }: Props) {
   const labelId = useId();
+  const errorId = useId();
   const boxes = useRef<(HTMLInputElement | null)[]>([]);
   const digits = Array.from({ length }, (_, i) => (value[i] ?? '').trim());
   const emit = (next: string[]) => onChange(next.map((d) => d || ' ').join('').trimEnd());
@@ -64,6 +68,8 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
               boxes.current[i] = el;
             }}
             aria-label={digitLabel(i + 1)}
+            aria-invalid={error !== undefined || undefined}
+            aria-describedby={error !== undefined ? errorId : undefined}
             value={digit}
             inputMode="numeric"
             autoComplete={i === 0 ? 'one-time-code' : 'off'}
@@ -76,11 +82,17 @@ export function OtpField({ label, digitLabel, value, onChange, length = 6, autoF
             className={
               'h-13.5 min-w-0 flex-1 rounded-wm-control border-2 border-wm-line bg-wm-surface text-center font-wm-display text-wm-card-title text-wm-ink ' +
               'caret-wm-accent outline-none focus:border-wm-accent focus-visible:ring-4 focus-visible:ring-wm-accent/16 ' +
-              'data-filled:border-wm-accent data-filled:bg-wm-accent-soft md:h-15 md:w-13 md:flex-none'
+              'data-filled:border-wm-accent data-filled:bg-wm-accent-soft aria-invalid:border-wm-fail md:h-15 md:w-13 md:flex-none'
             }
           />
         ))}
       </div>
+      {error !== undefined && (
+        <p id={errorId} className={FIELD_ERROR}>
+          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -494,7 +494,10 @@
       "passwordMismatch": "The passwords don’t match.",
       "required": {
         "email": "Enter your email.",
-        "password": "Enter your password."
+        "password": "Enter your password.",
+        "birthDate": "Choose your date of birth.",
+        "consent": "Agree to the Terms of Use and Privacy Policy to continue.",
+        "code": "Enter all 6 digits of the code."
       },
       "captchaPending": "Verifying…",
       "showcase": {
