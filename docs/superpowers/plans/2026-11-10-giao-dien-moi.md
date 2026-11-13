@@ -5040,3 +5040,162 @@ merge, F.24 docs, F.25 verify, F.26 ship. Rulings continue after the last one Pa
   - Home page: hero, prices, Luyện trong câu, nav, the Nhóm từ block.
   - Sign-up and sign-in at 1440×900.
 - Done when every check is green, CI on the PR is green, and the screenshots are in the as-built.
+
+# Part 12 — Sửa theo audit giao diện 13/11 (branch `feat/giao-dien-moi-polish`)
+
+**Goal:** fix the 2 Cao and 24 Trung bình findings of the Web Interface Guidelines audit (`docs/audit/2026-11-13-web-design-guidelines-review.md`,
+second pass; T2, T12, T19 were withdrawn there), then hand the owner a checklist for those 26 items. Thấp findings wait for a later round.
+
+**Inputs:**
+- The audit report (each row: screen, file:line, evidence, suggested fix) and its illustrated page `docs/audit/2026-11-13-web-review-shots/index.html`.
+- Code facts read this session on `47f7c439` (listed per task below).
+
+**Where:** this worktree, on `feat/giao-dien-moi-polish`, so the fixes ride the polish round's PR into `refactor/giao-dien-moi`. The session that
+owns the polish PR was asked (13/11/2026) not to edit code here until this part reports done. No parallel lanes: the tasks are small and many touch
+shared files (`globals.css`, `messages/*.json`).
+
+## Owner decisions on this part (13/11/2026, all 13 proposals approved as written)
+
+- **QA1 scope:** Cao + Trung bình only; the checklist covers those.
+- **QA2 (C1):** below 1280 px the top bar's search box becomes a round search button to Tra từ, as on phones; "/" still works (it goes to Tra từ).
+- **QA3 (C2):** Một nhóm splits into two columns from 1280 px (`xl`); 1024–1279 px uses the one-column layout.
+- **QA4 (T1):** from 768 px up to where the page's own margin is wide enough, the main column keeps a right lane for the calendar button; on
+  phones the floating buttons slide away while scrolling down and come back on scroll up or when scrolling stops (reduced motion: no slide).
+- **QA5 (T6, T7, T8, T27):** auth submit buttons stay enabled; a press validates, shows the error under each field and focuses the first wrong
+  field; sign-in checks empty fields before calling the API. Only a pending captcha keeps the button off, with "Đang xác minh…" beside it.
+- **QA6 (T9):** a captcha that fails to load shows an error with a "Tải lại bước xác minh" button.
+- **QA7 (T10):** a "Chuyển động: Bật / Tắt" switch in the site footer, remembered; the sign-up panel's showcase plays one round and stops.
+- **QA8 (T11):** a new token for checkbox and switch-track borders, ≥ 3:1 (light #878ea5 3,26:1 on white; dark #6b7392 3,66:1 on surface). The
+  field border #c7cad3 stays for the a11y round.
+- **QA9 (T13):** `--color-wm-group-3-ink` light → #86641f (4,93:1 on its wash).
+- **QA10 (T17, T18):** no autofocus on touch screens for the typed answer and the Flip button; desktop unchanged.
+- **QA11 (T24):** the Ngày title goes through Intl: vi "13/11" as now, en "Nov 13".
+- **QA12:** the remaining items are fixed as the report suggests (T3–T5, T14, T15, T16, T20–T23, T25, T26).
+- **QA13:** red first for behaviour; a defect fix is two commits; pure CSS is checked in the browser (light and dark, 1440/1024/390) instead of a
+  unit test, as in Part 11; `viewports.spec.ts` gains the 1024 checks; the owner's checklist goes to section 12 of
+  `docs/deliveries/giao-dien-moi-polish-checklist.md`.
+
+## Global constraints
+
+Same as Part 11 (wm tokens only, colours only in `packages/design-tokens`, copy in vi + en following the Vietnamese style rule, session copy in
+English, tests by role and visible text, Conventional Commits with the Opus trailer, orphaned message keys removed). New motion has a
+reduced-motion branch. Commit scope `web` (`tokens` for the token change in G.8).
+
+## Tasks
+
+**G.1 Top bar search below 1280 px (C1, QA2).** Files: `app-chrome/TopSearch.tsx`, `app-chrome/TopBar.tsx:57-62`, `lib/use-wide.ts` (1280 px query),
+`app-chrome/top-search.test.tsx`, `e2e/app/viewports.spec.ts` ("the top bar…" test).
+- TopSearch renders the form only when `useWide()`; otherwise a `Link` to `lookupHref(locale, {})` with `aria-label` = `App.chrome.search.placeholder`,
+  the PhoneHeader look (`rounded-wm-pill bg-wm-bg`, `Search` icon) at `size-10` to match Thêm từ's height.
+- "/" when narrow: `router.push(lookupHref(locale, {}))` (Tra từ's own box takes the focus there).
+- Tests (red first): narrow (matchMedia false) → a link named "Tìm từ" to `/vi/app/lookup`, no searchbox; "/" navigates. Wide → the searchbox as now.
+- e2e: at 768 and 1024 the test asserts the search link instead of `role=search`, and every tab ends before it; at 1280 the box is ≥ 160 px wide.
+
+**G.2 Một nhóm two columns from 1280 px (C2, QA3).** File: `groups/GroupPage.tsx:169,171`: `lg:grid lg:grid-cols-[25rem_minmax(0,1fr)] lg:items-start lg:gap-9`
+→ `xl:` variants; the sticky aside `lg:sticky lg:top-24 lg:items-start` → `xl:`. Word cell `wrap-anywhere` (395) → `break-words`.
+- Pure CSS: browser check at 1024 (one column, table full width, "presentation" on one line, "Từ mới" on one line) and 1280/1440 (two columns), light and dark.
+
+**G.3 Calendar button lane and phone scroll-hide (T1, QA4).** Files: `app-chrome/AppChrome.tsx:12` (`MAIN`), `app-chrome/FloatingButtons.tsx`, new
+`lib/use-scroll-away.ts` (+ test), `app/globals.css` (one rule), `e2e/app/viewports.spec.ts`.
+- Lane: the button occupies 94 px from the right edge on desktop (`right-8` + 62 px), so content must end ≥ 102 px from the edge. With `max-w-320`
+  centred and `lg:px-8`, that holds from 89rem (1424 px) up. `MAIN` gets `md:pr-28 min-[89rem]:pr-8` (a 112 px lane at 768–1423 px).
+- Phones: `useScrollAway()` returns `hidden` = scrolled down ≥ 8 px since the last direction change and not within 8 px of the top; it turns false on
+  scroll up and 600 ms after the last scroll event. FloatingButtons sets `data-away` on the stack when `!desktop && hidden`; CSS:
+  `translate-y-[calc(100%+1rem)] opacity-0 pointer-events-none`, transition 200 ms `ease-wm-out`; reduced motion: no transition. `:focus-within`
+  keeps it shown.
+- Tests: the hook with fake timers and dispatched scroll events (down → hidden, up → shown, idle 600 ms → shown, near top → shown).
+- e2e (control first: the calendar button and the page's links are visible): at 1024×768 and 1280×800 on Hôm nay, Luyện tập, Gói and Cài đặt, the
+  calendar button's box meets no visible link or button box.
+
+**G.4 Word inputs without spellcheck or autofill (T3, T4, T5).** Files: `today/QuickAddBox.tsx:29`, `app-chrome/TopSearch.tsx:50`,
+`lookup/LookupPage.tsx:153`, `add-word/AddWordSheet.tsx:279,361`.
+- Add `name` ("word", "q", "q", "lemma"), `autoComplete="off"`, `spellCheck={false}`, `autoCapitalize="none"`. QuickAddBox gets a placeholder from a
+  new key `App.today.quickPlaceholder` ("Ví dụ: mitigate…" / "For example: mitigate…").
+- Tests (red first): each textbox, found by its name, has `autocomplete="off"` and `spellcheck="false"`.
+
+**G.5 Auth forms validate on press (T6, T7, T8, T27, QA5).** Files: `auth/RegisterForm.tsx`, `LoginForm.tsx`, `VerifyEmailForm.tsx`,
+`ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`, `CompleteProfile.tsx`, `GoogleComplete.tsx`, new `auth/focus-first-invalid.ts`, `ui/Checkbox.tsx`
+(error line), messages `App.auth.required.*`, tests `auth.test.tsx`, `CompleteProfile.test.tsx`, `google-complete.test.tsx`, `auth-turnstile.test.tsx`.
+- `isDisabled` keeps only `!store || bot.token === null`; when the token is pending a muted line "Đang xác minh…" / "Verifying…" (`role="status"`)
+  sits above the button.
+- `onSubmit` checks, in field order, before any request: empty email "Nhập email.", empty password "Nhập mật khẩu.", given name (existing
+  `givenNameRequired`), no birth date "Chọn ngày sinh.", consent unticked "Đồng ý Điều khoản sử dụng và Chính sách bảo mật để tiếp tục.", OTP not 6
+  digits "Nhập đủ 6 số của mã." Each error shows under its field (TextField `error`, DateOfBirthField, Checkbox gets an `error` line tied by
+  `aria-describedby`).
+- After errors are set, `focusFirstInvalid(form)` focuses the first `[aria-invalid="true"]` (an effect keyed on the errors object). Server errors
+  (email taken, age, password rules) go through the same path, which fixes T7; T8 is covered because the error is the field's description, read when
+  the field takes focus (RAC 1.22 `FieldError` is a plain `slot="errorMessage"` text, checked in `dist/private/FieldError.js`).
+- T27 is a defect: commit 1 the red test "sign-in with empty fields sends no request and shows both errors, focus on Email"; commit 2 the fix.
+- Tests for each other form: press with nothing filled → the right errors, focus on the first, no request.
+
+**G.6 Captcha that does not load (T9, QA6).** File: `auth/TurnstileWidget.tsx:71-110`, `TurnstileWidget.test.tsx`.
+- `unavailable` shows `t('captcha-unavailable')` in the error style (`text-wm-fail`, `role="alert"`) and a `TextButton` "Tải lại bước xác minh" /
+  "Reload the check" that clears `unavailable`, re-adds the script and renders again (a `retry` counter in the effect's deps).
+- Test (red first): a script `error` event → the alert and the button; pressing it appends a new script tag.
+
+**G.7 Motion switch on public pages; showcase plays once (T10, QA7).** Files: `site/layout/site-head-script.ts`, `site/interactive/motion.ts`,
+`site/layout/SiteFooter.tsx`, new `site/layout/FooterMotionSwitch.tsx` (built like `FooterThemeSwitch`), `site/interactive/DemoLoops.tsx`,
+`site/landing/HeroCycle.tsx`, `features/learner/auth/AuthShowcase.tsx`, `lib/word-cycle.ts`, `app/globals.css` (showcase animations), messages.
+- Storage key `wordmet-web.motion` (`on` default, `off`). The head script does not add `js` when it reads `off`, so the whole site-motion block (every
+  rule sits under `html.js`) and `motionAllowed()` turn off. Switching at runtime: remove `js` and set `data-wm-motion="off"`; `DemoLoops` and
+  `HeroCycle` check `motionAllowed()` before each next step, so a running loop stops on its next tick and puts its end state back. Switching on: add
+  `js` back and dispatch `wm-motion` so in-view loops restart.
+- Footer: label "Chuyển động", options "Bật" / "Tắt" (en "Motion", "On" / "Off"), next to "Giao diện". With reduced motion set by the OS, the switch
+  shows "Tắt", is disabled and carries the note "Theo cài đặt máy".
+- AuthShowcase: `useWordCycle` gets `rounds?: number`; with `rounds: 1` it stops on the last word's final frame. The 14 s showcase CSS animations
+  (`--animate-wm-showcase-*`, globals.css:288-296) run one iteration `forwards` instead of `infinite`; the caret blink runs only while typing.
+- Tests: `site-head-script.test.ts` (off → no `js`), `motion.test.tsx` (switch off mid-loop → stops at the end state), `auth-showcase.test.tsx`
+  (after one round the step stops changing), the footer switch (a radio group named "Chuyển động", persisted).
+
+**G.8 Token for control borders; group 3 ink (T11, T13, QA8, QA9).** Files: `packages/design-tokens/web.css`, `web-dark.css`, `ui/Checkbox.tsx:34`,
+`ui/Switch.tsx:44,65`.
+- New `--color-wm-control-line`: light #878ea5, dark #6b7392. Checkbox box border and the Switch off track use it; selected states unchanged.
+- `--color-wm-group-3-ink` light #916d28 → #86641f. Dark unchanged.
+- Pure colour: browser check of Tra từ "Chỉ từ của tôi", the Cài đặt switch, and the Thêm từ group chip of a group-3 deck, light and dark. Record the
+  ratios in the as-built.
+
+**G.9 Scroll padding at every width (T14).** File: `app/globals.css:367-374`. `html { scroll-padding-top: --spacing(15) }` below md, `--spacing(18)`
+from md. Browser check: Tab through the legal TOC at 390 px, no focused link under the header.
+
+**G.10 Practice and review announcements (T15, T16, T20, T21, T22, T23).** Files and fixes:
+- `practice/session/HintPanel.tsx`: after `item.hint_level` rises, focus the newest opened `<li>` (`tabIndex={-1}`, a ref per level); the value span
+  of an opened row is `aria-live="polite"`. Test: press Hint → focus on the new row, its text present.
+- `review/ReviewSession.tsx:124`: when `session.flipped`, the live line reads the back: a new key `review.back` ("Back: {meaning}") from the card's
+  meaning. Test: flip → the live region has the meaning.
+- `practice/session/SessionSummary.tsx:135`: the TextButton gets `aria-label={t('reviewWord', { lemma })}` (existing key); the "Added" span gets
+  `role="status"`. Test: two rows → two buttons with different names.
+- `practice/session/AiUnavailableState.tsx:42`: `role="alert"` on the heading wrapper. Test: the heading is inside an alert.
+- `practice/CustomizeDialog.tsx:296,350,351`: the three APPEAR_ERROR lines get ids; the Start button gets `aria-describedby` with the shown ones; the
+  lines sit in a `role="status"` wrapper. Test: untick all types → Start is described by the "typesNone" text.
+- `practice/session/ReportDialog.tsx:102`: `reasons.isPending` → "Loading…"; `reasons.isError` → an error line with "Try again" (`refetch`).
+  Test: a 500 on `/report-reasons` → the error and a working retry.
+
+**G.11 No autofocus on touch (T17, T18, QA10).** Files: `practice/session/TypeWordQuestion.tsx:55,103`, `review/ReviewSession.tsx:57,179`, new
+`lib/use-fine-pointer.ts` (`(hover: hover) and (pointer: fine)`, server snapshot false).
+- `autoFocus={fine}`; the line-57 refocus after each answer runs only when `fine`. Tests: with matchMedia false the input/button is not focused;
+  with true it is.
+
+**G.12 Calendar day title and its announcement (T24, T25, QA11).** Files: `calendar/DayDialog.tsx:78-81,103,106`, `calendar/MonthDialog.tsx:62-67`.
+- `dayMonth` = `Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit' | 'numeric', month: '2-digit' | 'short', timeZone: 'UTC' })`
+  (vi "13/11", en "Nov 13"); MonthDialog's vi cell label uses the same formatter.
+- Remove `aria-live` from the keyed panel; add one persistent sr-only `role="status"` outside it, holding "{weekday} {dayMonth}: {summary}".
+- Tests: en title "Nov 13"; after "next day" the status text names the new date; the panel has no `aria-live`.
+
+**G.13 Word table semantics on phones (T26).** File: `groups/GroupPage.tsx:262-270,340-345,391-411`. Explicit roles: `role="row"` on each `<tr>`,
+`role="columnheader"` on `<th>`, `role="cell"` on `<td>` (they survive `display:grid`). The test at `group-page.test.tsx:187` keeps passing; add an
+assertion that each row has 4 cells.
+
+**G.14 Verify, checklist, as-built.**
+- `pnpm --filter web test`, `lint`, `typecheck`; e2e through `pnpm cf:docker` for `viewports`, `m2` (auth), `m5a`, `m5b`, `m6`, `landing`.
+- Browser pass with `pnpm bootstrap` running (pane visible, so animations and smooth scroll run): 1440, 1024, 390, light and dark, every screen of
+  the 26 items; screenshots under `docs/audit/2026-11-13-web-review-shots/after/`.
+- Section 12 of `docs/deliveries/giao-dien-moi-polish-checklist.md`: one line per item (C1–T27), what to open and what you should see.
+- As-built "phần 12" in `docs/deliveries/giao-dien-moi.md`; mark each fixed row in the audit report.
+- Report to the polish PR's session: commits, test output, what was not verified.
+
+## Review focus (Part 12)
+
+1. G.3 lane at 1423 and 1424 px: no overlap on either side of the breakpoint.
+2. G.5 with Google sign-in (GoogleComplete) when the name is prefilled: no false "Nhập tên".
+3. G.7 switching motion off while HeroCycle is mid-word: the hero shows the final frame, not a half-typed word.
+4. G.11 on an iPad with a trackpad (fine pointer and a touch screen): autofocus on, acceptable.

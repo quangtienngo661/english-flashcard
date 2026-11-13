@@ -254,6 +254,26 @@ Quyết định: mục QF của decision record. Ba lane song song từ nhánh `
 **Cuối đợt**
 - F.23: gộp ba lane. F.24: tài liệu và as-built (gồm phần P.18 còn nợ). F.25: kiểm tra đầy đủ, e2e sạch một lượt. F.26: một PR vào `refactor/giao-dien-moi`, merge khi CI xanh, bootstrap để chủ dự án test lại.
 
+# Giao diện mới — plan tóm tắt, phần 12: sửa theo audit giao diện (13/11/2026)
+
+Plan: "Part 12" trong file plan ở trên; nguồn là [report audit](../audit/2026-11-13-web-design-guidelines-review.md) (2 lỗi Cao, 24 lỗi Trung bình).
+Quyết định QA1–QA13 (chủ dự án duyệt cả 13, 13/11/2026) ghi ở đầu Part 12. Làm tuần tự trên `feat/giao-dien-moi-polish`, đi chung PR của đợt polish.
+
+- G.1: dưới 1280 px, ô Tìm từ trên header thành nút kính lúp sang Tra từ; phím `/` vẫn dùng được.
+- G.2: Một nhóm chỉ chia hai cột từ 1280 px; tên từ trong bảng không bị ngắt giữa chữ.
+- G.3: từ 768 đến 1423 px nội dung chừa lề phải cho nút lịch; trên điện thoại nút lịch và nút "+" ẩn khi cuộn xuống.
+- G.4: ô nhập từ (Thêm từ vừa gặp, Tìm từ, Tra từ, hộp Thêm từ) không gạch đỏ chính tả, không bật gợi ý tự điền.
+- G.5: các form đăng ký, đăng nhập, mã OTP, quên/đặt lại mật khẩu, hoàn tất hồ sơ: nút gửi luôn bấm được, báo lỗi cạnh ô thiếu, đưa con trỏ vào ô sai đầu tiên; đăng nhập trống không gửi request.
+- G.6: captcha không tải được thì báo lỗi kèm nút "Tải lại bước xác minh".
+- G.7: công tắc "Chuyển động: Bật / Tắt" ở chân trang công khai; phần minh họa ở bảng đăng ký chạy một vòng rồi dừng.
+- G.8: viền ô chọn và rãnh công tắc đậm hơn (đạt 3:1); chữ màu nhóm 3 tối hơn một chút.
+- G.9: cuộn tới mục hoặc Tab trên điện thoại không bị header che.
+- G.10: trình đọc màn hình đọc được: gợi ý vừa mở, mặt sau thẻ khi lật, tên từ ở nút "Ôn lại" trong tổng kết, lỗi AI, lý do nút Bắt đầu bị tắt ở Tùy chỉnh phiên; hộp báo lỗi câu có trạng thái đang tải và thử lại.
+- G.11: trên điện thoại không tự focus ô gõ đáp án và nút Lật thẻ.
+- G.12: tiêu đề hộp Ngày theo định dạng ngày của ngôn ngữ (en "Nov 13"); thông báo đổi ngày gọn một câu.
+- G.13: bảng từ ở Một nhóm vẫn được đọc là bảng trên điện thoại.
+- G.14: chạy test, lint, typecheck, e2e; kiểm trình duyệt 1440/1024/390 sáng và tối; viết checklist mục 12 cho chủ dự án; as-built.
+
 # Giao diện mới — việc dọn chuyển sang đợt polish (QM8-9, 11/11/2026)
 
 Chủ dự án tự polish và sửa lỗi M1–M7 ở một phiên khác (QM8-8), gồm cả các chỉnh sửa theo khảo sát người dùng. Việc dọn code cũ đụng đúng các file
