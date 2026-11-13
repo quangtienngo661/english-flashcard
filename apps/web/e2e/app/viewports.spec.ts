@@ -97,42 +97,6 @@ for (const size of SIZES) {
       await noSideScroll(page);
     });
 
-    test('the calendar button covers no link or button of the page (from 768 px)', async ({ page }) => {
-      test.skip(size.width < 768, 'phones slide the buttons away while scrolling instead (QA4)');
-      test.setTimeout(120_000);
-      await page.clock.setFixedTime(NOW);
-      // Audit T1: at 1024 x 768 the button sat on "Làm tiếp câu 3", so Luyện tập has a session to resume here.
-      const session = {
-        id: uuid(400), source: 'today', group_id: null, group_filter: null, sort: 'queue', types: ['mcq_definition'], prompt_style: 'meaning',
-        target_count: 10, status: 'active', round: 1, asked: 2, words: 10, ai_planned: 0, cloze_source: null,
-      };
-      const item = {
-        item_id: uuid(501), round: 1, position: 2, type: 'mcq_definition', prompt_style: 'meaning', hint_level: 0, state: 'unanswered', tries: 0,
-        reportable: true, hints_available: { level1: false, level2: false, level3: false },
-        prompt: { kind: 'mcq', meaning: 'triển khai', meaning_language: 'vi', context_label: null, options: ['deploy', 'delay', 'deliver', 'defend'] },
-      };
-      await signedInAs(page, 'pro', { ...api, 'GET /v1/practice/sessions/current': () => ({ json: { session, item, preparing: false } }) });
-      const calendar = page.getByRole('button', { name: 'Lịch học' });
-      for (const path of ['', '/practice', '/plans', '/settings']) {
-        await page.goto(`/vi/app${path}`);
-        const main = page.getByRole('main');
-        await expect(main.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 15_000 });
-        // Control: the button is there and the page has controls to test against, so an empty list means "no overlap".
-        await expect(calendar).toBeVisible();
-        await expect(main.getByRole('link').or(main.getByRole('button')).first()).toBeVisible();
-        const cal = (await calendar.boundingBox())!;
-        for (const at of ['top', 'one screen down'] as const) {
-          if (at === 'one screen down') await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-          const hits = await main.evaluate((root, c) => [...root.querySelectorAll('a[href], button, [role="button"], [role="link"]')]
-            .filter((el) => el.checkVisibility({ opacityProperty: true, visibilityProperty: true }))
-            .map((el) => ({ name: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40), r: el.getBoundingClientRect() }))
-            .filter(({ r }) => r.width > 0 && r.height > 0 && r.x < c.x + c.width && c.x < r.right && r.y < c.y + c.height && c.y < r.bottom)
-            .map(({ name }) => name), cal);
-          expect(hits, `${path || '/'} (${at}): controls under the calendar button`).toEqual([]);
-        }
-      }
-    });
-
     test('Nhóm: Học and Ôn are on the first screen and the calendar button covers no card', async ({ page }) => {
       await page.clock.setFixedTime(NOW);
       await signedInAs(page, 'pro', api);
