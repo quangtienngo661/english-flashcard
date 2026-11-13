@@ -1,3 +1,6 @@
+import { useSyncExternalStore } from 'react';
+import { MOTION_STORAGE_KEY } from '../layout/site-head-script';
+
 // Shared pieces of the home page motion (M8.6, landing bản 3 mapped onto Figma; numbers in the plan's M8.6 Interfaces). The CSS lives in
 // globals.css, block `/* site motion */`: it hides an element only under `html.js` (set by the site's inline head script) and only when
 // motion is allowed, so the server HTML is the end state and reduced motion sees it from the first paint.
@@ -20,6 +23,42 @@ export function prefersReducedMotion(): boolean {
 /** Motion runs only when the head script set `js` (so the CSS start state applies) and the reader has not asked for less motion. */
 export function motionAllowed(): boolean {
   return document.documentElement.classList.contains('js') && !prefersReducedMotion();
+}
+
+/** Fired on window when the footer's motion switch changes (T10, QA7), so loops stop or start again. */
+export const MOTION_EVENT = 'wm-motion';
+
+/** The reader's choice on this page: `off` when the head script or the switch marked <html> `data-wm-motion="off"`. */
+export function motionChoice(): 'on' | 'off' {
+  return document.documentElement.getAttribute('data-wm-motion') === 'off' ? 'off' : 'on';
+}
+
+/**
+ * The footer switch: remembers the choice (MOTION_STORAGE_KEY), then turns the site motion off by taking `js` off <html> (every rule of
+ * the site motion CSS sits under `html.js`, so hidden blocks show and the CSS loops stop) or on by putting it back, and tells the loops.
+ */
+export function setMotionChoice(on: boolean) {
+  try {
+    localStorage.setItem(MOTION_STORAGE_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: the choice holds for this page only.
+  }
+  const html = document.documentElement;
+  html.classList.toggle('js', on);
+  if (on) html.removeAttribute('data-wm-motion');
+  else html.setAttribute('data-wm-motion', 'off');
+  window.dispatchEvent(new Event(MOTION_EVENT));
+}
+
+/** Calls `change` after each switch of the footer's motion switch. Returns the cleanup. */
+export function onMotionChange(change: () => void): () => void {
+  window.addEventListener(MOTION_EVENT, change);
+  return () => window.removeEventListener(MOTION_EVENT, change);
+}
+
+/** `motionAllowed()` as React state: false on the server, then follows the footer switch. */
+export function useMotionAllowed(): boolean {
+  return useSyncExternalStore(onMotionChange, motionAllowed, () => false);
 }
 
 /** Pointer parallax is for a mouse or trackpad only (bản 3). */

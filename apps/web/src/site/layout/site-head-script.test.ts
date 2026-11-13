@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto';
 import { SITE_HEAD_SCRIPT, SITE_HEAD_SCRIPT_HASH } from './site-head-script';
 
 afterEach(() => {
+  localStorage.clear();
+  vi.restoreAllMocks();
+  document.documentElement.removeAttribute('data-wm-motion');
   document.documentElement.classList.remove('js', 'wm-live');
   delete document.documentElement.dataset.theme;
   vi.useRealTimers();
@@ -39,6 +42,31 @@ describe('site head script (theme before paint + the `js` class of the site moti
     new Function(SITE_HEAD_SCRIPT)();
     document.documentElement.classList.add('wm-live');
     vi.advanceTimersByTime(10_000);
+    expect(document.documentElement.classList.contains('js')).toBe(true);
+  });
+
+  // T10 (QA7): the footer's "Chuyển động: Tắt" is remembered, so the next page starts without the site motion at all.
+  it('does not add `js` when the stored motion choice is off, and marks <html> data-wm-motion="off"', () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+    localStorage.setItem('wordmet-web.motion', 'off');
+    new Function(SITE_HEAD_SCRIPT)();
+    expect(document.documentElement.classList.contains('js')).toBe(false);
+    expect(document.documentElement.getAttribute('data-wm-motion')).toBe('off');
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('adds `js` when the stored choice is on, and when storage throws', () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+    localStorage.setItem('wordmet-web.motion', 'on');
+    new Function(SITE_HEAD_SCRIPT)();
+    expect(document.documentElement.classList.contains('js')).toBe(true);
+    expect(document.documentElement.hasAttribute('data-wm-motion')).toBe(false);
+
+    document.documentElement.classList.remove('js');
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    new Function(SITE_HEAD_SCRIPT)();
     expect(document.documentElement.classList.contains('js')).toBe(true);
   });
 });

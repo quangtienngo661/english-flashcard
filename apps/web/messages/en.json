@@ -15,7 +15,11 @@
     "light": "Light",
     "dark": "Dark",
     "themeToLight": "Switch to the light theme",
-    "themeToDark": "Switch to the dark theme"
+    "themeToDark": "Switch to the dark theme",
+    "motion": "Motion",
+    "motionOn": "On",
+    "motionOff": "Off",
+    "motionDevice": "Follows your device settings"
   },
   "Landing": {
     "hero": {

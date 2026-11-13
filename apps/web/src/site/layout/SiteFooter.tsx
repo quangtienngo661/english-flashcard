@@ -3,11 +3,13 @@ import type { AppLocale } from '@/i18n/routing';
 import { site } from '@/lib/site';
 import { AppLogo } from '@/ui/Logo';
 import { Container } from './Container';
+import { FooterMotionSwitch } from './FooterMotionSwitch';
 import { FooterThemeSwitch } from './FooterThemeSwitch';
 
 /**
  * Figma "Chân trang" (`7:209` desktop, `9:100` phone): logo, the three legal pages and the contact address, then the year. Desktop is one
  * row; a phone puts the logo above one wrapping row and adds the theme switch under it (owner QM8-1b′). Links are plain text, as drawn.
+ * The motion switch (T10, QA7) shows at every width, after the theme switch on a phone and at the end of the row from md.
  */
 export function SiteFooter({ locale }: { locale: AppLocale }) {
   const t = useTranslations('Footer');
@@ -49,8 +51,11 @@ export function SiteFooter({ locale }: { locale: AppLocale }) {
           </ul>
           <p className="font-wm-sans text-wm-small text-wm-muted">{t('copyright', { year: new Date().getFullYear() })}</p>
         </div>
-        <div className="md:hidden">
-          <FooterThemeSwitch label={nav('theme')} light={nav('light')} dark={nav('dark')} />
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="md:hidden">
+            <FooterThemeSwitch label={nav('theme')} light={nav('light')} dark={nav('dark')} />
+          </div>
+          <FooterMotionSwitch label={nav('motion')} on={nav('motionOn')} off={nav('motionOff')} deviceNote={nav('motionDevice')} />
         </div>
       </Container>
     </footer>

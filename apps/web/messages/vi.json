@@ -15,7 +15,11 @@
     "light": "Sáng",
     "dark": "Tối",
     "themeToLight": "Chuyển sang giao diện sáng",
-    "themeToDark": "Chuyển sang giao diện tối"
+    "themeToDark": "Chuyển sang giao diện tối",
+    "motion": "Chuyển động",
+    "motionOn": "Bật",
+    "motionOff": "Tắt",
+    "motionDevice": "Theo cài đặt máy"
   },
   "Landing": {
     "hero": {

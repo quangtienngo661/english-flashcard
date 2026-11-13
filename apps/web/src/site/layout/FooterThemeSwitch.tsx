@@ -3,7 +3,7 @@
 import { Label, Radio, RadioGroup } from 'react-aria-components';
 import { useTheme } from '@/app-shell/theme/ThemeProvider';
 
-const OPTION =
+export const OPTION =
   'inline-flex min-h-11 cursor-pointer items-center justify-center whitespace-nowrap rounded-wm-pill px-4 font-wm-sans text-wm-small-strong ' +
   'text-wm-muted outline-none transition duration-200 ease-wm-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent ' +
   'data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row';
