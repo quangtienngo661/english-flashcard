@@ -69,7 +69,7 @@ export function Dialog({ isOpen, onOpenChange, title, titleAside, closeLabel, si
                 </Button>
               </div>
               {children}
-              {footer && <div className="flex flex-col-reverse gap-3 border-t border-wm-line pt-3.5 md:flex-row md:justify-end">{footer}</div>}
+              {footer && <div className="flex flex-col-reverse gap-3 border-t border-wm-line pt-3.5 md:flex-row md:items-center md:justify-end md:gap-5">{footer}</div>}
             </>
           )}
         </AriaDialog>
