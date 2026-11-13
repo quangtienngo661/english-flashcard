@@ -130,6 +130,9 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
   });
 
   it('E31: quota-exhausted → K/74b with the refill date and only [Để sau]', async () => {
+    // LATER is shown as a date only when it is more than a day away: pin the clock so the test does not depend on today.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-10T03:00:00Z'));
     renderApp(<PracticeSession />, { session: true, routes: routes({
       'GET /v1/practice/sessions/current': noItem, [NEXT]: nextAnswers(unavailable('quota-exhausted', { resets_at: LATER })),
     }) });
@@ -167,6 +170,9 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
   });
 
   it('K/75b: ai-fallback because credits ran out tells when they refill', async () => {
+    // LATER is shown as a date only when it is more than a day away: pin the clock so the test does not depend on today.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-10T03:00:00Z'));
     renderApp(<PracticeSession />, { session: true, routes: routes({
       'GET /v1/practice/sessions/current': noItem,
       [NEXT]: nextAnswers({ state: 'question', session: view(), item: mcq(), notice: 'ai-fallback', ai_reason: 'quota-exhausted', resets_at: LATER }),
