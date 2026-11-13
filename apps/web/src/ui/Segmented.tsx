@@ -17,16 +17,14 @@ type Props<T extends string> = {
 };
 
 /**
- * One choice among a few `options`, a radio group named `label`. Figma "Nút chia đoạn" (138:319): fully round, the chosen option on
- * surface with a row shadow.
+ * One choice among a few `options`, a radio group named `label`. Figma "Nút chia đoạn" (138:319), with rounded-square options (owner
+ * 13/11/2026; Figma had pills): the chosen option on surface with a row shadow.
  */
 export function Segmented<T extends string>({ label, value, options, onChange, isDisabled, fullWidth = false, compact = false }: Props<T>) {
   // Owner 10/11/2026: the in-row and full-width segments use smaller type (12px, semibold), so they sit on one line in the options dialog.
   const counted = options.some((option) => option.count !== undefined);
   // Owner 13/11/2026: with counts, the three words of the scope switch must fit the 272 px words column, so the padding, the gap and
   // the count box are a step tighter there (room left for a three-digit count).
-  // Owner 13/11/2026: with counts (the scope switch) the options are rounded squares, like the count boxes in them; the rest stay pills.
-  const shape = counted ? 'rounded-wm-control' : 'rounded-wm-pill';
   const size = compact ? 'px-2 py-1 text-xs font-semibold' : fullWidth ? (counted ? 'px-1.25 py-0.5 text-xs font-semibold' : 'px-2 py-1.5 text-xs font-semibold') : 'px-3.5 py-1.5 text-wm-small-strong';
   return (
     <RadioGroup
@@ -41,13 +39,13 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
           count (owner 13/11/2026: with Tailwind's auto-cols-fr, minmax(0, 1fr), "All words 61" spilled its count out of the chosen pill). */}
       <div
         // raw-ok: a track never narrower than its option's text and count, and equal when there is room; no token for minmax()
-        className={cn('grid auto-cols-[minmax(max-content,1fr)] grid-flow-col bg-wm-accent-soft p-1', counted ? 'gap-0.5 rounded-wm-row' : 'gap-1 rounded-wm-pill')}
+        className={cn('grid auto-cols-[minmax(max-content,1fr)] grid-flow-col rounded-wm-row bg-wm-accent-soft p-1', counted ? 'gap-0.5' : 'gap-1')}
       >
         {options.map((option) => (
           <Radio
             key={option.id}
             value={option.id}
-            className={`cursor-pointer whitespace-nowrap ${shape} text-center ${size} font-wm-sans text-wm-muted outline-none transition duration-200 ease-wm-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row data-disabled:cursor-not-allowed data-disabled:opacity-60`}
+            className={`cursor-pointer whitespace-nowrap rounded-wm-control text-center ${size} font-wm-sans text-wm-muted outline-none transition duration-200 ease-wm-out-strong data-focus-visible:outline-3 data-focus-visible:outline-wm-accent data-selected:bg-wm-surface data-selected:text-wm-ink data-selected:shadow-wm-row data-disabled:cursor-not-allowed data-disabled:opacity-60`}
           >
             {({ isSelected }) => (
               <>
