@@ -24,9 +24,10 @@ export function cycleNext(step: CycleStep, lengths: readonly number[], dueStart:
  * turning it back on continues from that frame with one timer at a time, so a pause never jumps.
  * `start: 'first'` begins at the first word's empty blank; `'final'` begins on its final frame.
  * `lengths` is compared by value, so a new array with the same numbers does not restart the timer.
+ * `rounds` (default: for ever) stops the loop on the final frame of the last word of that round (T10: the sign-up showcase plays once).
  */
-export function useWordCycle({ lengths, motion, start, dueStart = 12 }: {
-  lengths: readonly number[]; motion: boolean; start: 'first' | 'final'; dueStart?: number;
+export function useWordCycle({ lengths, motion, start, dueStart = 12, rounds }: {
+  lengths: readonly number[]; motion: boolean; start: 'first' | 'final'; dueStart?: number; rounds?: number;
 }): CycleStep {
   const key = lengths.join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` stands for the values of `lengths`
@@ -39,10 +40,12 @@ export function useWordCycle({ lengths, motion, start, dueStart = 12 }: {
 
   useEffect(() => {
     if (!motion) return;
+    const { k, phase } = state.step;
+    if (rounds !== undefined && phase === 'done' && k >= rounds * stable.length - 1) return;
     const [ms, after] = cycleNext(state.step, stable, dueStart);
     const timer = setTimeout(() => setState({ step: after, started: true }), ms);
     return () => clearTimeout(timer);
-  }, [motion, state, stable, dueStart]);
+  }, [motion, state, stable, dueStart, rounds]);
 
   return motion || state.started ? state.step : final;
 }

@@ -281,16 +281,17 @@
     radial-gradient(46% 40% at 8% 86%, var(--color-wm-showcase-glow-4), transparent 70%);
 }
 
-/* Motion of the panel's learning loop (P.14, mockup L425-430, L444-451). `inline` so var(--wm-travel-delay) resolves on each travelling
-   word, which sets its own delay. Transform and opacity only, plus offset-distance on the memory path; AuthShowcase leaves every class off
-   with reduced motion and draws the final frame. */
+/* Motion of the panel's learning loop (P.14, mockup L425-430, L444-451). `inline` so var(--wm-travel-delay) and var(--wm-travel-laps)
+   resolve on each travelling word, which sets its own. Transform and opacity only, plus offset-distance on the memory path; AuthShowcase
+   leaves every class off with reduced motion and draws the final frame. Since T10 (QA7) each word makes one lap and a part (`laps`, a
+   fractional iteration count) and keeps the frame it stops on (`forwards`): its still point, the reduced-motion frame. */
 @theme inline {
-  --animate-wm-showcase-travel: wm-showcase-travel 14s linear var(--wm-travel-delay, 0s) infinite;
-  --animate-wm-showcase-level-1: wm-showcase-level-1 14s linear var(--wm-travel-delay, 0s) infinite;
-  --animate-wm-showcase-level-2: wm-showcase-level-2 14s linear var(--wm-travel-delay, 0s) infinite;
-  --animate-wm-showcase-level-3: wm-showcase-level-3 14s linear var(--wm-travel-delay, 0s) infinite;
-  --animate-wm-showcase-level-4: wm-showcase-level-4 14s linear var(--wm-travel-delay, 0s) infinite;
-  --animate-wm-showcase-level-5: wm-showcase-level-5 14s linear var(--wm-travel-delay, 0s) infinite;
+  --animate-wm-showcase-travel: wm-showcase-travel 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-1: wm-showcase-level-1 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-2: wm-showcase-level-2 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-3: wm-showcase-level-3 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-4: wm-showcase-level-4 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-5: wm-showcase-level-5 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
   --animate-wm-showcase-swap: wm-showcase-swap 340ms var(--ease-wm-out-strong) both;
   --animate-wm-showcase-drop: wm-showcase-drop 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
   --animate-wm-showcase-caret: wm-showcase-caret 1s steps(1) infinite;

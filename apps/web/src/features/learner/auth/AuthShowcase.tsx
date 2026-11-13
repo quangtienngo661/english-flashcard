@@ -25,13 +25,18 @@ const NODES: Array<[x: number, y: number, level: Level]> = [[71, 766, 0], [167, 
 /** Each label sits on the side of its dot away from the cards: right for Mới, Bậc 2, 3 and 4, left for Bậc 1 and 5 (Bậc 3 to the right: the word card's foot is on its left). */
 const LABEL_LEFT: ReadonlySet<Level> = new Set<Level>([1, 5]);
 
-/** Travelling words, each 3.5 s behind the one before; with reduced motion they stand still at a level's stretch of the path. */
-const TRAVELLERS: Array<{ word: string; delay: number; still: string; stillLevel: Level }> = [
-  { word: 'mitigate', delay: 0, still: '15%', stillLevel: 0 },
-  { word: 'allocate', delay: -3.5, still: '40%', stillLevel: 2 },
-  { word: 'viable', delay: -7, still: '62%', stillLevel: 3 },
-  { word: 'coherent', delay: -10.5, still: '85%', stillLevel: 4 },
+/**
+ * Travelling words, each 3.5 s behind the one before; with reduced motion they stand still at a level's stretch of the path (`still`, % of
+ * the path). With motion each makes one lap of the 14 s path and then goes on to its still point and stays (T10, QA7): the travel runs from
+ * 2 % to 98 %, so the lap count is 1 + (still − 2) / 96, and every word comes to rest about 16 s in, as the word cycle ends its round.
+ */
+const TRAVELLERS: Array<{ word: string; delay: number; still: number; stillLevel: Level }> = [
+  { word: 'mitigate', delay: 0, still: 15, stillLevel: 0 },
+  { word: 'allocate', delay: -3.5, still: 40, stillLevel: 2 },
+  { word: 'viable', delay: -7, still: 62, stillLevel: 3 },
+  { word: 'coherent', delay: -10.5, still: 85, stillLevel: 4 },
 ];
+const laps = (still: number) => 1 + (still - 2) / 96;
 
 const LEVEL_ANIMATION: Record<Exclude<Level, 0>, string> = {
   1: 'animate-wm-showcase-level-1', 2: 'animate-wm-showcase-level-2', 3: 'animate-wm-showcase-level-3',
@@ -61,7 +66,8 @@ export function AuthShowcase() {
   const motion = !useReducedMotion();
   // Starts on mitigate's final frame, the frame the server renders: starting on the empty blank made the panel jump back from the
   // green answer to an empty box as soon as the page loaded (owner 13/11/2026).
-  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'final' });
+  // One round, then it rests on coherent's final frame (T10, QA7: nothing beside the form moves for ever).
+  const step = useWordCycle({ lengths: LENGTHS, motion, start: 'final', rounds: 1 });
   const word = WORDS[step.k % WORDS.length];
   const panel = useRef<HTMLDivElement>(null);
   const scale = useSceneScale(panel);
@@ -93,7 +99,7 @@ export function AuthShowcase() {
               key={traveller.word}
               className={cn(motion && 'animate-wm-showcase-travel')}
               // raw-ok: the memory path is SVG geometry, and each word has its own delay (or its own still point with reduced motion)
-              style={{ offsetPath: `path('${PATH}')`, offsetRotate: '0deg', offsetDistance: motion ? undefined : traveller.still, '--wm-travel-delay': `${traveller.delay}s` } as CSSProperties}
+              style={{ offsetPath: `path('${PATH}')`, offsetRotate: '0deg', offsetDistance: motion ? undefined : `${traveller.still}%`, '--wm-travel-delay': `${traveller.delay}s`, '--wm-travel-laps': laps(traveller.still) } as CSSProperties}
             >
               <foreignObject x="-70" y="-14" width="140" height="28">
                 <div className="flex h-full items-center justify-center">

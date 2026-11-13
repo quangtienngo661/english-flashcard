@@ -58,4 +58,21 @@ describe('useWordCycle', () => {
     act(() => { vi.advanceTimersByTime(100); });
     expect(result.current.step.typed).toBe(1);
   });
+
+  // T10 (QA7): the sign-up showcase plays one round and stops on the last word's final frame.
+  it('with rounds: 1 stops on the final frame of the last word and arms no more timers', () => {
+    const { result } = renderHook(() => useWordCycle({ lengths: LENGTHS, motion: true, start: 'final', rounds: 1 }));
+    for (let t = 0; t < 20_000; t += 10) act(() => { vi.advanceTimersByTime(10); });
+    expect(result.current).toEqual({ k: 1, typed: 6, phase: 'done', due: 10 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('with rounds: 1 from the first frame it also types the first word, then stops on the last', () => {
+    const { result } = renderHook(() => useWordCycle({ lengths: LENGTHS, motion: true, start: 'first', rounds: 1 }));
+    act(() => { vi.advanceTimersByTime(900); });
+    expect(result.current).toEqual({ k: 0, typed: 1, phase: 'typing', due: 12 });
+    for (let t = 0; t < 20_000; t += 10) act(() => { vi.advanceTimersByTime(10); });
+    expect(result.current).toEqual({ k: 1, typed: 6, phase: 'done', due: 10 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });

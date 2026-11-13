@@ -62,6 +62,20 @@ describe('AuthShowcase', () => {
     expect(screen.getByText('10')).toBeInTheDocument();
   });
 
+  // T10 (QA7): one round of the five words, then it rests on coherent's final frame (WCAG 2.2.2: nothing moves on for ever).
+  it('plays one round and stops on the last word typed and answered', () => {
+    mockReducedMotion(false);
+    renderShowcase();
+    advance(16_000);
+    expect(screen.getByText('logical and well organised')).toBeInTheDocument();
+    expect(screen.getByText('Đúng · lên Bậc 5')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    advance(5_000);
+    expect(screen.getByText('logical and well organised')).toBeInTheDocument();
+    expect(screen.queryByText('to make something bad less serious')).not.toBeInTheDocument();
+    expect(screen.getByText('Đúng · lên Bậc 5')).toBeInTheDocument();
+  });
+
   it('names the six levels on the memory path with their intervals', () => {
     mockReducedMotion(false);
     renderShowcase();
