@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/test-utils/render-app';
-import { DayDialog } from './DayDialog';
+import { DayDialog, type DayDialogProps } from './DayDialog';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/vi/app',
@@ -140,5 +141,26 @@ describe('DayDialog (Figma 103:3820 / 103:4248)', () => {
     expect(p.onBack).toHaveBeenCalledTimes(1);
     await userEvent.keyboard('{Escape}');
     expect(p.onBack).toHaveBeenCalledTimes(2);
+  });
+  // T24, QA11: the title goes through Intl; en reads "Nov 5", not "05/11".
+  it('in English the title is "Nov 5"', async () => {
+    renderApp(<DayDialog {...props()} />, { routes: routes(), locale: 'en' });
+    expect(await screen.findByRole('dialog', { name: 'Nov 5' })).toBeInTheDocument();
+  });
+
+  // T25: one persistent status names the day and its summary; the keyed panel is not a live region.
+  it('one status line names the day; moving to the next day updates the same line; nothing else is live', async () => {
+    function Host(over: Partial<DayDialogProps>) {
+      const [date, setDate] = useState('2026-11-05');
+      return <DayDialog {...props(over)} date={date} onDay={setDate} />;
+    }
+    const DAY6 = { ...DAY, date: '2026-11-06', counts: { ...DAY.counts, learned: 0, reviewed: 3, practice_questions: 0 } };
+    renderApp(<Host />, { routes: routes({ 'GET /v1/me/calendar/days/2026-11-06?kind=all&page_size=100': () => Response.json(DAY6) }) });
+    const line = (text: string) => screen.getAllByRole('status').find((s) => s.textContent === text);
+    await waitFor(() => expect(line('thứ năm 05/11: Học 10 từ mới · ôn 22 lượt · luyện 20 câu')).toBeDefined());
+    const status = line('thứ năm 05/11: Học 10 từ mới · ôn 22 lượt · luyện 20 câu');
+    await userEvent.click(screen.getByRole('button', { name: 'Ngày sau' }));
+    await waitFor(() => expect(status).toHaveTextContent(/^thứ sáu 06\/11: ôn 3 lượt$/));
+    expect(screen.getByRole('dialog').querySelectorAll('[aria-live]')).toHaveLength(0);
   });
 });
