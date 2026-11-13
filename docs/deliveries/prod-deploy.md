@@ -18,4 +18,9 @@ Nhánh `feat/prod-deploy` từ `origin/dev`, một PR vào `dev`.
    và trang hướng dẫn vận hành.
 6. Sửa `deploy-web.yml`: bật `/app`, trỏ `api.wordmet.com`, thêm site key Turnstile, `LANDING_DATA_REQUIRED=1`, công tắc `WEB_DEPLOY_PAUSED`.
 7. Thêm `watch.sh` (5 phút, gửi email cảnh báo, mỗi loại tối đa một thư mỗi giờ), `daily-report.sh` (8:00) và lịch cron.
-8. Tổng duyệt toàn bộ trên máy này (deploy, deploy lần hai, rollback, deploy hỏng, cảnh báo), rồi mở PR vào `dev`.
+8. Bỏ mọi chữ nhắc quảng cáo ở bảng giá trang chủ, trang Gói (thẻ Miễn phí, thẻ Pro, bảng so sánh) và hộp thoại giới thiệu Pro, trong lúc
+   quảng cáo đang tắt. Giữ nguyên phần nạp AdSense và công tắc trong admin.
+9. Tổng duyệt toàn bộ trên máy này (deploy, deploy lần hai, rollback, deploy hỏng, cảnh báo), rồi mở PR vào `dev`.
+
+Sửa 13/11/2026 sau khi sync `dev` (`2d858021`): thêm việc 8 theo yêu cầu chủ dự án; số dòng `app.module.ts` và ghi chú `LANDING_DATA_REQUIRED`
+cập nhật theo giao diện mới đã vào `dev`. Các việc 1–7 không đổi.

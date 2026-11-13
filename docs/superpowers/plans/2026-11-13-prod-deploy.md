@@ -3,7 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let the API and worker run on one VPS behind Caddy, deploy and roll back by SHA with one script each, back up Postgres to R2, build
-the web Worker with the learner app on, and email the owner when something breaks.
+the web Worker with the learner app on, email the owner when something breaks, and stop the plan cards from promising "no ads" while
+ads are off.
 
 **Architecture:** One `docker compose` project on the VPS (`deploy/compose.prod.yml`): Caddy terminates TLS for `api.wordmet.com` and
 `admin-api.wordmet.com` and proxies both to one `api` container; `worker`, `postgres`, `redis` beside it; a `migrate` service runs once per
@@ -16,10 +17,12 @@ image for R2, GitHub Actions.
 **Spec:** `docs/deliveries/deploy-production-runbook.md` on local branch `docs/deploy-checklist-pre-launch` (sections 1, 2, 5, 6, 7).
 Decisions approved 13/11/2026: Q5 one VPS (4 CPU, 8 GB), Q6 DNS straight to the VPS (grey cloud), Q9 replace TypedSQL and build a
 multi-stage image, Q10 deploy and roll back with scripts run by hand on the VPS (image built on the VPS), Q14 `WEB_DEPLOY_PAUSED`.
+Owner 13/11/2026 (after the sync): no AdSense at launch, and every mention of ads leaves the landing pricing and the learner plans page
+for now (Task 8).
 
 ## Global Constraints
 
-- Branch `feat/prod-deploy` from `origin/dev`; one PR into `dev`. Touch no file of `refactor/giao-dien-moi` or `feat/giao-dien-moi-polish`.
+- Branch `feat/prod-deploy` from `origin/dev` (rebased 13/11/2026 onto `2d858021`, after the new UI landed in PR #271); one PR into `dev`.
 - Node `24.11.0`, pnpm `11.6.0`, Prisma `7.10.1` (as pinned in the repo). Add no npm dependency.
 - Every image tag in `deploy/` is an exact version (`postgres:17`, `redis:7.4-alpine` as in `docker-compose.yml`; Caddy and helper images
   pinned to an exact tag checked on Docker Hub when the task is done).
@@ -28,7 +31,7 @@ multi-stage image, Q10 deploy and roll back with scripts run by hand on the VPS 
 - `rollback.sh` never runs a migration. Migrations stay add-only (expand/contract).
 - Production API env: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, `TRUST_PROXY=uniquelocal`, no `*_FAKE_ENABLED`, Google sign-in,
   TTS and audio storage unset (Q4 proposal), `MAINTENANCE_ENABLED=false` on `api`, `true` on `worker`.
-- Commits: Conventional Commits, scopes `api`, `deploy`, `ci`, `docs`.
+- Commits: Conventional Commits, scopes `api`, `deploy`, `ci`, `web`, `docs`.
 
 ## Review Focus
 
@@ -127,7 +130,7 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
 **Files:**
 - Create: `apps/api/src/health/readiness.service.ts`, `apps/api/src/health/readiness.service.spec.ts`,
   `apps/api/src/health/health.controller.spec.ts`
-- Modify: `apps/api/src/health/health.controller.ts`, `apps/api/src/app.module.ts:24-25` (provider)
+- Modify: `apps/api/src/health/health.controller.ts`, `apps/api/src/app.module.ts:25-26` (provider)
 
 **Interfaces:**
 - Produces:
@@ -268,7 +271,8 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
     - `NEXT_PUBLIC_LEARNER_APP: 'on'`;
     - `NEXT_PUBLIC_API_BASE_URL: https://api.wordmet.com`;
     - `NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}`;
-    - `LANDING_DATA_REQUIRED: '1'` (read only by the new landing; the current one ignores it).
+    - `LANDING_DATA_REQUIRED: '1'` (`next.config.ts` then fails the build when the landing's prices and FAQ cannot be read from the API, so the API is
+      deployed first).
   - Header comment: one line on the switch and on deploying the API first.
 - [ ] **Step 2: Lint.** `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:<tag>` Expected: no finding in `deploy-web.yml`.
 - [ ] **Step 3: Commit** `ci(web): build the learner app on deploy and add a pause switch`
@@ -319,7 +323,50 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
 - [ ] **Step 5: Lint** with shellcheck as in Task 5. Expected: no output.
 - [ ] **Step 6: Commit** `build(deploy): add alert and daily report scripts`
 
-### Task 8: Local rehearsal, then PR
+### Task 8: No mention of ads on the plan cards while ads are off
+
+Why: the admin switch `ads_enabled` (default off, `settings.definitions.ts:103`) only drives `ads.show`, which gates the AdSense loader and
+the Pro intro dialog. The copy below is static, so with the switch off the landing still says Free "may have ads" and Pro has "no ads".
+Checked 13/11/2026 on the bootstrap stack: `curl localhost:3001/vi` contains "Có thể có quảng cáo." and "Không quảng cáo". Only the copy
+goes; the loader, the dialog, the `ads` field of the API and the CSP stay, so reverting this one commit brings the copy back.
+
+**Files:**
+- Modify: `apps/web/src/site/landing/PricingSection.tsx:46` (drop the `copy.freeAds` line),
+  `apps/web/src/features/learner/plans/PlansPage.tsx:108` (drop the `freeAds` line from the Free footer) and `:150` (drop the
+  `proList.ads` perk), `apps/web/src/features/learner/plans/CompareTable.tsx:29` (drop the `noAds` row),
+  `apps/web/src/features/learner/house-ad/HouseAd.tsx:92` (drop the `noAds` perk)
+- Modify: `apps/web/messages/vi.json`, `apps/web/messages/en.json`: remove `Landing.plans.freeAds`, the "Không quảng cáo" item of
+  `Landing.plans.proList`, `App.plans.freeAds`, `App.plans.proList.ads`, `App.plans.compareTable.noAds`, `App.houseAd.noAds`; set
+  `App.houseAd.lead` to "Gói Pro có nhiều phiên luyện và nhiều lượt AI hơn mỗi tháng." / "The Pro plan has more practice sessions and more
+  AI uses each month."
+- Test: `apps/web/src/site/landing/landing.test.tsx:94`, `apps/web/src/features/learner/plans/plans.test.tsx:76,93-94,330`,
+  `apps/web/src/features/learner/house-ad/house-ad.test.tsx`
+
+- [ ] **Step 1: Write the failing tests.**
+  - `landing.test.tsx`: replace line 94 with `expect(pricing().queryByText(/quảng cáo/i)).not.toBeInTheDocument();`.
+  - `plans.test.tsx`: line 76 becomes `expect(within(free).queryByText(/quảng cáo/i)).not.toBeInTheDocument();`; the Pro perks test is
+    renamed "…the five perks…", its list drops 'Không quảng cáo' and adds
+    `expect(within(pro).queryByText(/quảng cáo/i)).not.toBeInTheDocument();`; line 330 becomes
+    `expect(within(table).queryByRole('row', { name: /quảng cáo/i })).not.toBeInTheDocument();`, and the body rows are pinned in order by
+    their label: `'Ôn thẻ và lịch ôn', 'Nhắc học qua email', 'Số nhóm', 'Phiên luyện mỗi ngày', 'Câu AI mới mỗi tháng', 'Lượt tra AI mỗi tháng'`
+    (six rows, `App.plans.compareTable` in `vi.json`).
+  - `house-ad.test.tsx`, test `LB2A1` (line 66): once the dialog is open, add
+    `expect(within(dialog).queryByText(/quảng cáo/i)).not.toBeInTheDocument();`.
+- [ ] **Step 2: Run** `pnpm --filter web exec vitest run src/site/landing src/features/learner/plans src/features/learner/house-ad`.
+  Expected: the four changed tests FAIL on the ad text.
+- [ ] **Step 3: Implement** the file list above.
+- [ ] **Step 4: Run** the same command, then `pnpm --filter web exec tsc --noEmit`, `pnpm --filter web lint` and
+  `node apps/web/scripts/check-message-keys.mjs`. Expected: all pass.
+- [ ] **Step 5: Control.** `grep -rn -i "quảng cáo" apps/web/src apps/web/messages` Expected: no line outside test files and comments
+  (before this task it listed 7 message strings).
+- [ ] **Step 6: Run it.** `pnpm bootstrap` (rebuilds the web image), then `curl -s localhost:3001/vi | grep -c "quảng cáo"` Expected: `0`.
+  Open `/vi/app/plans` as a Free learner: no ad line on either card, no ad row in the table.
+- [ ] **Step 7: Commit** `fix(web): drop ad mentions from the plan cards while ads are off`
+
+Not in code: one of the two `legal_versions` rows in the local DB mentions ads or AdSense; the owner edits the privacy text in admin
+`/legal` before publishing (runbook G0). The six landing FAQ rows in the local DB do not mention ads.
+
+### Task 9: Local rehearsal, then PR
 
 **Files:** none new (fixes go to the task that owns the file).
 
@@ -339,4 +386,4 @@ expect(sql.values.slice(2).every((v) => v === clock.now())).toBe(true);
   - what the local rehearsal showed;
   - what only G1 on the VPS can show: real certificates, R2 upload and restore, Resend from the VPS, `TRUST_PROXY` (G3-14).
 
-Backup upload to R2 needs real credentials, so it is first checked at G1 (runbook §5). Everything else in G1 repeats Task 8 on the VPS.
+Backup upload to R2 needs real credentials, so it is first checked at G1 (runbook §5). Everything else in G1 repeats Task 9 on the VPS.
