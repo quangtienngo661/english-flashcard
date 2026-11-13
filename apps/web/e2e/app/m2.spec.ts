@@ -183,7 +183,9 @@ test.describe('M2 flows (mocked API)', () => {
     await expect(page.getByRole('group', { name: 'Card 1 of 2' })).toBeVisible();
     await expect(page.getByText('2 cards left')).toBeVisible();
     await page.keyboard.press('Space');
-    await expect(page.getByText('triển khai')).toBeVisible();
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+    // Part 12 G.10 (T16): the flip is announced with the meaning.
+    await expect(page.getByText('Back: triển khai')).toBeAttached();
     await expect(page.getByText('deploys')).toBeVisible();
     await page.keyboard.press('2');
     await expect(page.getByRole('group', { name: 'Card 2 of 2' })).toBeVisible();

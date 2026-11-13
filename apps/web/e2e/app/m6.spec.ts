@@ -64,7 +64,9 @@ test('Hôm nay → Lịch → Ngày; Back → Lịch; Back → closed on the sam
   await expect(day).toBeVisible();
   await expect(page).toHaveURL(/\/vi\/app\?ngay=2026-11-05$/);
   await expect(day.getByRole('region', { name: 'Học 3 từ mới' })).toBeVisible();
-  await expect(day.getByText('Học 3 từ mới · ôn 3 lượt · luyện 3 câu')).toBeVisible();
+  await expect(day.getByText('Học 3 từ mới · ôn 3 lượt · luyện 3 câu', { exact: true })).toBeVisible();
+  // Part 12 G.12 (T25): one short status line names the day.
+  await expect(day.getByRole('status').filter({ hasText: /^thứ năm 05\/11: Học 3 từ mới/ })).toBeAttached();
   await expect(day.getByRole('region', { name: /^Luyện tập/ })).toHaveCount(0);
   expect(await seriousViolations(page)).toEqual([]);
   await noSideScroll(page);
