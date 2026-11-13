@@ -25,7 +25,7 @@ export const FALLBACK_LANDING_DATA: LandingData = {
     },
     {
       question: 'Gói Miễn phí và Pro khác nhau thế nào?',
-      answer: 'Gói Miễn phí đủ để học hằng ngày: ghi từ, tra nghĩa, ôn thẻ và luyện tập. Pro dành cho người muốn luyện nhiều hơn, có AI viết câu luyện cho từng từ, tra bằng AI và không quảng cáo.',
+      answer: 'Gói Miễn phí đủ để học hằng ngày: ghi từ, tra nghĩa, ôn thẻ và luyện tập. Pro dành cho người muốn luyện nhiều hơn, có AI viết câu luyện cho từng từ và tra bằng AI.',
     },
     {
       question: 'Nghĩa và câu ví dụ trong Wordmet lấy từ đâu?',

@@ -21,14 +21,6 @@ afterEach(() => vi.useRealTimers());
 const SESSION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const PRIVATE = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const LATER = '2026-11-14T17:00:00.000Z'; // 0:00 on 15/11 in Asia/Ho_Chi_Minh
-/**
- * The refill line says "on 15/11" only while LATER is more than a day away (refillKind), so these tests failed for real from 14/11/2026
- * on. Fake only Date, at noon 12/11 in Hồ Chí Minh City; React Query and the user-event timers keep running for real.
- */
-function pinClockBeforeTheEveOfLater() {
-  vi.useFakeTimers({ toFake: ['Date'] });
-  vi.setSystemTime(new Date('2026-11-12T05:00:00.000Z'));
-}
 const view = (over: Record<string, unknown> = {}) => ({
   id: SESSION, source: 'all', group_id: null, group_filter: null, sort: 'least_practiced',
   types: ['mcq_definition', 'cloze', 'meaning_in_sentence'], prompt_style: 'mixed', target_count: 10, status: 'active', round: 1,
@@ -138,7 +130,9 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
   });
 
   it('E31: quota-exhausted → K/74b with the refill date and only [Để sau]', async () => {
-    pinClockBeforeTheEveOfLater();
+    // LATER is shown as a date only when it is more than a day away: pin the clock so the test does not depend on today.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-10T03:00:00Z'));
     renderApp(<PracticeSession />, { session: true, routes: routes({
       'GET /v1/practice/sessions/current': noItem, [NEXT]: nextAnswers(unavailable('quota-exhausted', { resets_at: LATER })),
     }) });
@@ -176,7 +170,9 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
   });
 
   it('K/75b: ai-fallback because credits ran out tells when they refill', async () => {
-    pinClockBeforeTheEveOfLater();
+    // LATER is shown as a date only when it is more than a day away: pin the clock so the test does not depend on today.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-10T03:00:00Z'));
     renderApp(<PracticeSession />, { session: true, routes: routes({
       'GET /v1/practice/sessions/current': noItem,
       [NEXT]: nextAnswers({ state: 'question', session: view(), item: mcq(), notice: 'ai-fallback', ai_reason: 'quota-exhausted', resets_at: LATER }),

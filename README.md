@@ -80,7 +80,7 @@ docker compose up -d
 Set-Location apps/api
 Copy-Item .env.example .env
 node scripts/gen-secret.mjs     # run once per secret and replace each placeholder in .env
-pnpm db:setup                   # migrate + generate the Prisma client and TypedSQL
+pnpm db:setup                   # migrate + generate the Prisma client
 pnpm build
 pnpm run:dev                    # API on :3000 and the worker together
 ```

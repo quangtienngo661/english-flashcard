@@ -8,8 +8,7 @@ import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
-import { recordOtpFailure } from '../../generated/prisma/sql.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import type { OtpPurpose } from '../identity.types.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
@@ -143,7 +142,7 @@ export class OtpService {
     });
     if (updated.count !== 1) return { kind: 'no_live_code' };
     if (matched) return { kind: 'ok' };
-    const [failure] = await tx.$queryRawTyped(recordOtpFailure(userId, purpose, now));
+    const [failure] = await tx.$queryRaw<Array<{ failures: number; locked_until: Date | null }>>(recordOtpFailure(userId, purpose, now));
     if (failure.failures === 21) {
       const lockedUntil = new Date(now.getTime() + day);
       await tx.otpFailureWindow.update({ where: { userId_purpose: { userId, purpose } }, data: { lockedUntil } });
@@ -161,4 +160,25 @@ export class OtpService {
     await this.limiter.hit('auth.otp.email.cooldown', email);
     await this.limiter.hit('auth.otp.email.hourly', email);
   }
+}
+
+/** One failure in the 24 h window of (user, purpose): a window older than 24 h starts again at 1. Every parameter is cast. */
+function recordOtpFailure(userId: string, purpose: OtpPurpose, now: Date): Prisma.Sql {
+  return Prisma.sql`
+    INSERT INTO otp_failure_windows (user_id, purpose, window_start, failures, locked_until)
+    VALUES (${userId}::uuid, ${purpose}::text, ${now}::timestamptz, 1, NULL)
+    ON CONFLICT (user_id, purpose) DO UPDATE
+    SET failures = CASE
+          WHEN otp_failure_windows.window_start < ${now}::timestamptz - interval '24 hours' THEN 1
+          ELSE otp_failure_windows.failures + 1
+        END,
+        window_start = CASE
+          WHEN otp_failure_windows.window_start < ${now}::timestamptz - interval '24 hours' THEN ${now}::timestamptz
+          ELSE otp_failure_windows.window_start
+        END,
+        locked_until = CASE
+          WHEN otp_failure_windows.window_start < ${now}::timestamptz - interval '24 hours' THEN NULL
+          ELSE otp_failure_windows.locked_until
+        END
+    RETURNING failures, locked_until`;
 }

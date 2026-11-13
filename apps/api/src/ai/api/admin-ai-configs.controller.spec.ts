@@ -18,7 +18,7 @@ describe('admin ai configs HTTP (unit, mocked service)', () => {
   const matches = (row: Record<string, any>, where: Record<string, any>) => Object.entries(where).every(([key, value]) => row[key] === value);
   const prisma = {
     sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {},
-    $queryRawTyped: vi.fn(async () => [{ locked: true }]),
+    $queryRaw: vi.fn(async () => [{ locked: true }]),
     $transaction: async (work: (tx: unknown) => Promise<unknown>) => work(prisma),
     idempotencyKey: {
       findFirst: async ({ where }: { where: Record<string, any> }) => keys.find((row) => matches(row, where)) ?? null,

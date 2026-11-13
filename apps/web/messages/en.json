@@ -343,7 +343,6 @@
         "3 phiên luyện mỗi ngày",
         "Dùng thử câu luyện và tra từ bằng AI"
       ],
-      "freeAds": "Có thể có quảng cáo.",
       "freeSignup": "Tạo tài khoản miễn phí",
       "pro": "Pro",
       "proBadge": "Có AI",
@@ -365,7 +364,6 @@
       ],
       "proList": [
         "30 phiên luyện mỗi ngày",
-        "Không quảng cáo",
         "Mọi quyền lợi của gói Miễn phí"
       ],
       "proSignup": "Tạo tài khoản"
@@ -709,10 +707,9 @@
     "houseAd": {
       "title": "Get more with Pro",
       "close": "Close",
-      "lead": "The Pro plan has more practice sessions a day, more AI credits a month and no ads.",
+      "lead": "The Pro plan has more practice sessions a day and more AI credits a month.",
       "sessions": "{count, number} practice sessions a day",
       "ai": "More AI practice questions and AI lookups",
-      "noAds": "No ads",
       "from": "From <b>{price}</b> for 1 month",
       "cta": "See the Pro plan",
       "later": "Later",
@@ -1765,7 +1762,6 @@
       "pro": "Pro",
       "usingThis": "You’re on this plan",
       "freePriceNote": "no charge",
-      "freeAds": "There may be ads.",
       "proBadge": "With AI",
       "perMonth": "a month",
       "perMonthApprox": "≈ {price} a month",
@@ -1796,7 +1792,6 @@
         "aiLookup": "AI lookup when the dictionary has no entry",
         "ai": "{practice, number} AI questions and {lookup, number} AI lookups a month",
         "sessions": "{count, number} practice sessions a day",
-        "ads": "No ads",
         "allFree": "Everything in Free"
       },
       "compare": "Compare plans in detail",
@@ -1808,9 +1803,7 @@
         "sessions": "Practice sessions a day",
         "ai": "New AI questions a month",
         "lookup": "AI lookups a month",
-        "noAds": "No ads",
-        "yes": "Yes",
-        "no": "No"
+        "yes": "Yes"
       }
     },
     "deck": {

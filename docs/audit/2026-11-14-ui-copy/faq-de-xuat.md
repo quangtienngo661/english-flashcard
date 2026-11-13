@@ -48,7 +48,7 @@ AI viết câu luyện cho từ bạn học và tra nghĩa khi từ điển chư
 *Căn cứ: `Landing.plans.aiList.*`, câu FAQ số 6 hiện có, `App.practice.session.report.*`.*
 
 **5. Gói Miễn phí và Pro khác nhau thế nào?**
-Gói Miễn phí đủ để học hằng ngày: ghi từ, tra nghĩa, ôn thẻ và luyện tập. Pro dành cho người muốn luyện nhiều hơn, có AI viết câu luyện cho từng từ, tra bằng AI và không quảng cáo.
+Gói Miễn phí đủ để học hằng ngày: ghi từ, tra nghĩa, ôn thẻ và luyện tập. Pro dành cho người muốn luyện nhiều hơn, có AI viết câu luyện cho từng từ và tra bằng AI.
 *Căn cứ: `Landing.plans.freeList.*`, `Landing.plans.proList.*`, `Landing.plans.aiList.*`.*
 
 **6. Nghĩa và câu ví dụ trong Wordmet lấy từ đâu?**

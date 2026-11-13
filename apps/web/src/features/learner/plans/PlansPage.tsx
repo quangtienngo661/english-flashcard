@@ -105,7 +105,6 @@ export function PlansPage() {
             ]}
             footer={
               <>
-                <p className="font-wm-sans text-wm-small text-wm-muted">{t('freeAds')}</p>
                 {plan === 'free' && <p className="text-wm-meta font-medium text-wm-muted">{t('usingThis')}</p>}
               </>
             }
@@ -147,7 +146,6 @@ export function PlansPage() {
               { text: t('proList.aiLookup'), included: true },
               { text: t('proList.ai', { practice: plans.pro.ai_practice_per_cycle, lookup: plans.pro.ai_lookup_per_cycle }), included: true },
               { text: t('proList.sessions', { count: plans.pro.practice_sessions_per_day }), included: true },
-              { text: t('proList.ads'), included: true },
               { text: t('proList.allFree'), included: true },
             ]}
             footer={
