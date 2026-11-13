@@ -49,13 +49,17 @@ const ruleQuestion = (askedPrivate = false, source = 'rule'): Question => ({
   hints: { level1: null, level2: null }, source, aiRequestId: null, aiMeta: null, aiCharged: false,
 });
 
-const make = (question: Question, options: { recent?: number; existing?: boolean } = {}) => {
+const make = (question: Question, options: { recent?: number; existing?: boolean; result?: string | null } = {}) => {
   const created: Record<string, unknown>[] = [];
   const tx = {
     $executeRaw: vi.fn(async () => 1),
-    practiceSessionItem: { findFirst: vi.fn(async () => ({
-      id: ITEM, userId: USER, senseId: SENSE, answerRaw: '0', answersTried: [], result: 'wrong', hintLevel: 0, question,
-    })) },
+    practiceSessionItem: {
+      findFirst: vi.fn(async () => ({
+        id: ITEM, userId: USER, senseId: SENSE, answerRaw: '0', answersTried: [],
+        result: options.result === undefined ? 'wrong' : options.result, hintLevel: 0, question,
+      })),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
     practiceReportReason: { findUnique: vi.fn(async ({ where }: { where: { code: string } }) => REASONS[where.code] ?? null) },
     practiceReport: {
       findUnique: vi.fn(async () => options.existing ? { id: 'r-0', itemId: ITEM, senseId: SENSE, reason: 'other', reasonLabel: 'Khác',
@@ -168,6 +172,31 @@ describe('ReportsService.create (design §9.2)', () => {
   it('reports_per_hour still applies', async () => {
     const { service } = make(aiQuestion(), { recent: 5 });
     await expect(service.create(vi_, ITEM, input('ai_more_than_one_answer'))).rejects.toMatchObject({ problemType: 'rate-limited', status: 429 });
+  });
+
+  it('owner 14/11/2026 (Cách A): an unanswered item is voided with the report, so next moves on and it never counts', async () => {
+    const { service, tx, created } = make(ruleQuestion(), { result: null });
+    await service.create(vi_, ITEM, input('meaning_wrong'));
+    expect(created).toHaveLength(1);
+    expect(tx.practiceSessionItem.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.practiceSessionItem.updateMany).toHaveBeenCalledWith({ where: { id: ITEM, result: null }, data: { result: 'void' } });
+  });
+
+  it('an answered item keeps its result: nothing is voided', async () => {
+    const { service, tx, created } = make(aiQuestion(), { result: 'correct' });
+    await service.create(vi_, ITEM, input('ai_more_than_one_answer'));
+    expect(created).toHaveLength(1);
+    expect(tx.practiceSessionItem.updateMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['report-exists', { existing: true }, 'meaning_wrong'],
+    ['rate-limited', { recent: 5 }, 'meaning_wrong'],
+    ['validation-failed', {}, 'nope'],
+  ])('a refused report (%s) voids nothing', async (type, options, code) => {
+    const { service, tx } = make(ruleQuestion(), { ...options, result: null });
+    await expect(service.create(vi_, ITEM, input(code))).rejects.toMatchObject({ problemType: type });
+    expect(tx.practiceSessionItem.updateMany).not.toHaveBeenCalled();
   });
 });
 
