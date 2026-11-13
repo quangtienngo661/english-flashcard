@@ -30,11 +30,16 @@ env_get() {
 # Loads $WORDMET_HOME/ops.env and stops with the name of every listed key that is missing or empty.
 load_ops_env() {
   local file="$WORDMET_HOME/ops.env" missing=() key
+  local line name
   [ -f "$file" ] || die "missing $file (copy deploy/ops.env.example)"
-  set -a
-  # shellcheck disable=SC1090
-  . "$file"
-  set +a
+  # Read KEY=value lines as plain text: values such as `Wordmet ops <ops@wordmet.com>` are not shell syntax, so the file is not sourced.
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in '' | '#'*) continue ;; esac
+    name="${line%%=*}"
+    [[ "$name" =~ ^[A-Z_][A-Z0-9_]*$ ]] || continue
+    export "$name=${line#*=}"
+  done < "$file"
   for key in "$@"; do
     [ -n "${!key:-}" ] || missing+=("$key")
   done

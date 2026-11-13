@@ -10,7 +10,8 @@ SERVICES=(caddy api worker postgres redis)
 
 main() {
   load_ops_env ALERT_RESEND_API_KEY ALERT_FROM ALERT_TO
-  local tmp spec name min count disk mem service id state broken="" restarts last
+  local spec name min count disk mem service id state broken="" restarts last
+  # Global, not local: the EXIT trap runs after main has returned.
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
 

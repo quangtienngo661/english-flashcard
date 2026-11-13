@@ -7,11 +7,14 @@ set -euo pipefail
 
 main() {
   load_ops_env ALERT_RESEND_API_KEY ALERT_FROM ALERT_TO
-  local tmp day starts ends total errors p95 file
+  local day starts ends total errors p95 file
+  # Global, not local: the EXIT trap runs after main has returned.
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
-  day="$(TZ=Asia/Ho_Chi_Minh date -d yesterday +%F)"
-  starts="$(TZ=Asia/Ho_Chi_Minh date -d "$day 00:00" +%s)"
+  # The day and its start come from Postgres, like daily-report.sql, so a host without time zone data cannot disagree with the SQL.
+  read -r day starts < <(compose exec -T postgres psql -X -A -t -F ' ' -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -c \
+    "SELECT d, extract(epoch FROM d::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')::bigint FROM (SELECT (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 1 AS d) x")
+  [ -n "$starts" ] || die "could not read the report day from Postgres"
   ends=$((starts + 86400))
 
   {
