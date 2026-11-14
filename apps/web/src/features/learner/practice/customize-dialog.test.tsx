@@ -132,6 +132,23 @@ describe('Tùy chỉnh phiên: words', () => {
     expect(within(dialog).queryByText(/^tối đa/)).not.toBeInTheDocument();
   });
 
+  it('the order list has no "Bấm Cần ôn lại lâu nhất trước", "Quá hạn lâu nhất" or "Lâu chưa luyện" (owner 14/11/2026): five orders, queue first', async () => {
+    const { dialog } = await open('Theo nhóm');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Thứ tự/ }));
+    const options = await screen.findAllByRole('option');
+    expect(options.map((o) => o.textContent?.trim())).toEqual([
+      'Ưu tiên, đến hạn, rồi từ mới', 'Bậc thấp', 'Từ mới', 'Sai nhiều nhất', 'Ngẫu nhiên',
+    ]);
+  });
+
+  it.each([['Đang ưu tiên', 'priority'], ['Luyện tất cả', 'all']])('%s opened in Tùy chỉnh shows and sends the queue order, since its own default is not in the list any more', async (name, source) => {
+    const { view, dialog } = await open(name);
+    expect(within(dialog).getByRole('button', { name: /Thứ tự/ })).toHaveTextContent('Ưu tiên, đến hạn, rồi từ mới');
+    await userEvent.click(startButton(dialog));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toMatchObject({ source, sort: 'queue' });
+  });
+
   it('"Theo số từ" (scope_words): Ưu tiên with 4 words gives "tối đa 4" and the count follows', async () => {
     const { dialog } = await open('Theo nhóm', 'pro', { session_max_mode: 'scope_words' });
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Ưu tiên 4' }));
@@ -210,7 +227,7 @@ describe('Tùy chỉnh phiên: Câu AI viết', () => {
     await userEvent.click(startButton(dialog));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
     expect(starts(view.calls)[0].body).toEqual({
-      source: 'all', types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'mcq_sentence'], prompt_style: 'mixed', count: 12, ai_count: 3,
+      source: 'all', types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'mcq_sentence'], prompt_style: 'mixed', count: 12, sort: 'queue', ai_count: 3,
     });
   });
 

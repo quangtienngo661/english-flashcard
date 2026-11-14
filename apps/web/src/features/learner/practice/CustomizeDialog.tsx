@@ -54,6 +54,9 @@ type Props = {
 };
 
 type Filter = 'all' | 'due' | 'priority';
+/** Owner 14/11/2026: not offered in the order list any more. The API still knows them: a card started without this dialog uses its own default. */
+const HIDDEN_SORTS: readonly Sort[] = ['priority_oldest', 'overdue_first', 'least_practiced'];
+const offered = (sort: Sort): Sort => (HIDDEN_SORTS.includes(sort) ? 'queue' : sort);
 type McPick = 'meaning' | 'word' | 'mixed';
 const SOURCE_NAME: Record<Source, string> = { today: 'hero.title', group: 'sources.group.name', weak: 'sources.weak.name', priority: 'sources.priority.name', all: 'sources.all.name' };
 /** #249 defaults, for an API that does not send the new fields yet. */
@@ -114,7 +117,7 @@ function CustomizeForm({
   const [placement, setPlacement] = useState<'even' | 'random'>('even');
   const [aiWanted, setAiWanted] = useState(0);
   const [countWanted, setCountWanted] = useState<number | null>(null);
-  const [sort, setSort] = useState<Sort>(DEFAULT_SORT[source]);
+  const [sort, setSort] = useState<Sort>(offered(DEFAULT_SORT[source]));
 
   // How many words the scope has: the "N từ" by "Từ", and the most questions in the scope_words mode (#249 §4).
   const group = groups.find((g) => g.id === groupId);
@@ -384,7 +387,7 @@ function CustomizeForm({
               label={tc('order')}
               hideLabel
               size="sm"
-              items={SORTS.map((id) => ({ id, label: tc(`sorts.${id}`) }))}
+              items={SORTS.filter((id) => !HIDDEN_SORTS.includes(id)).map((id) => ({ id, label: tc(`sorts.${id}`) }))}
               value={sort}
               onChange={(id) => setSort(id as Sort)}
             />
