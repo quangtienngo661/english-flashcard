@@ -506,7 +506,7 @@ describe('registration and login (unit, isolated persistence)', () => {
       expect(committed).toBe(true); expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
     });
     it('A13-9: right password, 21st wrong code -> 429 rate-limited with Retry-After; lock mail scheduled; with a wrong password the same request gets 400', async () => {
-      const notice = otpLockedMail(user.email, 'verify_email');
+      const notice = otpLockedMail(user.email, 'verify_email', config.learnerAppUrl);
       otp.checkInTx.mockResolvedValue({ kind: 'locked', lockedUntil: new Date(clock.now().getTime() + 86_400_000), notice });
       const afterResponse = dispatcher.afterResponse.bind(dispatcher);
       const schedule = vi.spyOn(dispatcher, 'afterResponse').mockImplementationOnce((...args) => {

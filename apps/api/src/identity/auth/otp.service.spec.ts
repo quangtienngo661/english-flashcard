@@ -241,7 +241,7 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     tx.$queryRaw.mockResolvedValue([{ failures: 21, locked_until: null }]);
     expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({
       kind: 'locked', lockedUntil: new Date('2026-10-08T12:00:00Z'),
-      notice: expect.objectContaining({ to: dbUser.email, subject: expect.stringContaining('temporarily locked') }),
+      notice: expect.objectContaining({ to: dbUser.email, subject: 'Tạm khóa nhập mã Wordmet / Wordmet codes locked' }),
     });
     expect(tx.otpFailureWindow.update).toHaveBeenCalledWith({
       where: { userId_purpose: { userId, purpose: 'verify_email' } }, data: { lockedUntil: new Date('2026-10-08T12:00:00Z') },
@@ -259,7 +259,7 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     expect(committed).toBe(true);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'a@example.com' } });
     expect(mailer.sent).toHaveLength(1);
-    expect(mailer.sent[0].subject).toContain('Reset your password');
+    expect(mailer.sent[0].subject).toBe('Mã đặt lại mật khẩu Wordmet / Your Wordmet reset code');
   });
 
   it('verify_email: an OTP-locked account -> accepted, nothing issued or mailed after close', async () => {
