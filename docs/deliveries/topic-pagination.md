@@ -15,7 +15,7 @@ Chạy `pnpm --filter api test:scale test/content/topic-pagination.scale.e2e-spe
 
 Các trung vị lấy từ năm request sau warm-up. Query mẫu của chủ đề lớn trả 4 dòng, trung vị 82,0 ms. Một lần thêm cả chủ đề ghi 2.000 sense trong 2.185,2 ms, response 128 byte. Đây là phép đo local trên fixture.
 
-Browser probe dùng learner app cổng 3001 và test API cổng 33492. Trên PowerShell, chạy learner app với `$env:NEXT_PUBLIC_API_BASE_URL='http://localhost:33492'` và `pnpm --filter web dev:app`. Sau khi app sẵn sàng, đặt `$env:WORDMET_TOPIC_PROBE=(Resolve-Path 'apps/web/e2e/support/topic-scale-probe.mjs').Path` rồi chạy lại lệnh scale. Lần đầu browser timeout trong khi Next.js đang compile route. Chưa đo VSTEP B2 với code mới trên production.
+Browser probe dùng learner app cổng 3001 và test API cổng 33492. Tám test qua, gồm browser kiểm tra 20 / 20 / 8 dòng, request từng trang, quay lại từ cache và bốn card. Trên PowerShell, chạy learner app với `$env:NEXT_PUBLIC_API_BASE_URL='http://localhost:33492'` và `pnpm --filter web dev:app`. Sau khi app sẵn sàng, đặt `$env:WORDMET_TOPIC_PROBE=(Resolve-Path 'apps/web/e2e/support/topic-scale-probe.mjs').Path` rồi chạy lại lệnh scale. Chưa đo VSTEP B2 với code mới trên production.
 
 ## Deploy và rollback
 

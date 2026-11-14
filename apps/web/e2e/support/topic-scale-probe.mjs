@@ -44,16 +44,16 @@ try {
   await successful(learning, 1, statusSize(20));
   await successful(summary, 1);
   console.log('[browser topic] first page request paths', paths().join(', '));
-  const firstRow = await rows.first().textContent();
+  const firstRow = await rows.first().getAttribute('aria-label');
   responses.length = 0;
   await page.getByRole('button', { name: 'Trang sau' }).click();
-  await expect(rows.first()).not.toHaveText(firstRow);
+  await expect(rows.first()).not.toHaveAttribute('aria-label', firstRow);
   await expect(rows).toHaveCount(20);
   await successful(browse, 1, (params) => assert.ok(params.get('page_token')));
   await successful(learning, 1, statusSize(20));
   await successful(summary, 0);
   await page.getByRole('button', { name: 'Trang trước' }).click();
-  await expect(rows.first()).toHaveText(firstRow);
+  await expect(rows.first()).toHaveAttribute('aria-label', firstRow);
   await successful(browse, 1);
   await successful(learning, 1);
 
