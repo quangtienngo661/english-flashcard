@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CircleAlert } from 'lucide-react';
+import { Check, CircleAlert, Minus } from 'lucide-react';
 import { useId, type ReactNode, type SyntheticEvent } from 'react';
 import { Checkbox as AriaCheckbox } from 'react-aria-components';
 import { FIELD_ERROR } from './field-styles';
@@ -16,6 +16,7 @@ const keepLinkPresses = (event: SyntheticEvent) => {
  */
 export function Checkbox({
   isSelected,
+  isIndeterminate,
   onChange,
   children,
   isDisabled,
@@ -23,6 +24,7 @@ export function Checkbox({
   error,
 }: {
   isSelected: boolean;
+  isIndeterminate?: boolean;
   onChange: (v: boolean) => void;
   children: ReactNode;
   isDisabled?: boolean;
@@ -33,14 +35,15 @@ export function Checkbox({
   const box = (
     <AriaCheckbox
       isSelected={isSelected}
+      isIndeterminate={isIndeterminate}
       onChange={onChange}
       isDisabled={isDisabled}
       isInvalid={isInvalid || error !== undefined}
       aria-describedby={error !== undefined ? errorId : undefined}
       className="group flex items-start gap-2.5 font-wm-sans text-wm-small text-wm-ink outline-none"
     >
-      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-wm-key border-2 border-wm-control-line bg-wm-surface group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-invalid:border-wm-fail group-data-selected:border-wm-accent group-data-selected:bg-wm-accent">
-        {isSelected && <Check aria-hidden className="size-3.5 text-wm-on-accent" />}
+      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-wm-key border-2 border-wm-control-line bg-wm-surface group-data-focus-visible:outline-3 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-wm-accent group-data-invalid:border-wm-fail group-data-selected:border-wm-accent group-data-selected:bg-wm-accent group-data-indeterminate:border-wm-accent group-data-indeterminate:bg-wm-accent">
+        {isIndeterminate ? <Minus aria-hidden className="size-3.5 text-wm-on-accent" /> : isSelected && <Check aria-hidden className="size-3.5 text-wm-on-accent" />}
       </span>
       <span
         className="min-w-0"

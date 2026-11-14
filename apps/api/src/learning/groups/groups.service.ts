@@ -47,18 +47,23 @@ export class GroupsService {
   async create(userId: string, name: string): Promise<GroupView> {
     // Read before the lock: existing groups above a lowered limit stay, only new ones are refused (B5E64).
     const { groupsPerUser } = (await this.settings.get()).learning;
+    return this.prisma.$transaction(async (tx) => {
+      await withLearnerLock(tx, userId);
+      return this.createInTx(tx, userId, name, groupsPerUser);
+    }, transactionOptions);
+  }
+
+  /** Creates a group inside a transaction that already holds the learner lock. */
+  async createInTx(tx: Prisma.TransactionClient, userId: string, name: string, groupsPerUser: number): Promise<GroupView> {
+    if (await tx.learningGroup.count({ where: { userId } }) >= groupsPerUser) {
+      throw new ProblemDetailsException({ status: 409, title: 'Group limit reached', type: 'group-limit-reached' });
+    }
+    const now = this.clock.now();
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        await withLearnerLock(tx, userId);
-        if (await tx.learningGroup.count({ where: { userId } }) >= groupsPerUser) {
-          throw new ProblemDetailsException({ status: 409, title: 'Group limit reached', type: 'group-limit-reached' });
-        }
-        const now = this.clock.now();
-        const row = await tx.learningGroup.create({
-          data: { userId, name, nameKey: name.toLowerCase(), createdAt: now, updatedAt: now },
-        });
-        return view(row, 0);
-      }, transactionOptions);
+      const row = await tx.learningGroup.create({
+        data: { userId, name, nameKey: name.toLowerCase(), createdAt: now, updatedAt: now },
+      });
+      return view(row, 0);
     } catch (error) {
       if (isUniqueViolation(error)) throw nameTaken();
       throw error;

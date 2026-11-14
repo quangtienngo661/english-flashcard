@@ -25,6 +25,7 @@ import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDra
 import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
 import { AudioService } from './audio/audio.service.js';
 import { PublishService, type PublishItem, type PublishItemResult, type QuickPublishResult, type SenseStateResult } from './senses/publish.service.js';
+import { LearnerContentService, type TopicScope, type TopicSenseOptions } from './learner/learner-content.service.js';
 
 @Injectable()
 export class ContentService {
@@ -44,6 +45,7 @@ export class ContentService {
     @Inject(EntryDeleteService) private readonly entryDeletion: EntryDeleteService,
     @Inject(EntryUsageRegistry) private readonly entryUsage: EntryUsageRegistry,
     @Inject(AudioService) private readonly audio: AudioService,
+    @Inject(LearnerContentService) private readonly learnerContent: LearnerContentService,
   ) {}
 
   /** Deletes a catalog entry that was never published and that nothing else refers to; 409 `entry-in-use` with `reasons` otherwise. */
@@ -276,5 +278,9 @@ export class ContentService {
   bulkCandidates(filter: { level?: Level; topic?: string; pos?: string }, limit: number):
     Promise<{ senseIds: string[]; skippedFunctionWords: number }> {
     return this.privateWords.bulkCandidates(filter, limit);
+  }
+
+  topicSenseIds(scope: TopicScope, options?: TopicSenseOptions): Promise<string[]> {
+    return this.learnerContent.topicSenseIds(scope, options);
   }
 }

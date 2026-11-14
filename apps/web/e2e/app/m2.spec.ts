@@ -77,9 +77,15 @@ const topicApi: Record<string, MockHandler> = {
   'GET /v1/senses': () => ({ json: { items: SENSES, next_page_token: null } }),
   // "budget" is already in a deck.
   'GET /v1/items': () => ({ json: { items: [{ sense_id: SENSES[0].sense_id, item_id: uuid(300), level: 1, due_date: '2026-10-20', priority: false, group_ids: [G] }] } }),
-  [`POST /v1/groups/${NEW}/items/bulk`]: (req) => ({
-    json: { added: ((req.body as { sense_ids?: string[] }).sense_ids ?? []).length, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 },
-  }),
+  'GET /v1/items/topic-summary': () => ({ json: { total: 5, learning: 1, unlearned: 4 } }),
+  'POST /v1/items/topic-add': (req) => {
+    const { mode, sense_ids = [] } = req.body as { mode: string; sense_ids?: string[] };
+    const added = mode === 'selected' ? sense_ids.length : 4;
+    return { json: {
+      mode, group_id: NEW, added, eligible: added, skipped_group_full: 0,
+      ...(mode === 'selected' && { added_ids: sense_ids, already_learning_ids: [], unavailable_ids: [], group_full_ids: [] }),
+    } };
+  },
 };
 
 test.describe('M2 flows (mocked API)', () => {
@@ -162,17 +168,22 @@ test.describe('M2 flows (mocked API)', () => {
     await page.getByRole('checkbox', { name: 'Chọn profit' }).press('Space');
     await page.getByRole('button', { name: 'Thêm 2 từ đã chọn' }).click();
     await expect(page.getByText('Đã thêm 2 từ vào nhóm “Kinh doanh · B1”.')).toBeVisible();
-    expect(requests(page, 'POST', '/v1/groups')[0].body).toEqual({ name: 'Kinh doanh · B1' });
-    expect(requests(page, 'POST', `/v1/groups/${NEW}/items/bulk`)[0].body).toEqual({ sense_ids: [SENSES[1].sense_id, SENSES[2].sense_id] });
+    expect(requests(page, 'POST', '/v1/groups')).toHaveLength(0);
+    expect(requests(page, 'POST', '/v1/items/topic-add')[0].body).toEqual({
+      topic: 'business', level: 'B1', mode: 'selected', target: { new_group_name: 'Kinh doanh · B1' },
+      sense_ids: [SENSES[1].sense_id, SENSES[2].sense_id],
+    });
   });
 
   test('topic picker: add every unlearned word', async ({ page }) => {
     const { handlers } = decksApi([summary(G, 'Công nghệ')]);
     await signedInAs(page, 'free', { ...handlers, ...topicApi });
     await page.goto('/vi/app/topic?code=business&level=B1');
-    await page.getByRole('button', { name: 'Thêm cả 4 từ' }).click();
+    await page.getByRole('button', { name: 'Thêm tất cả từ chưa học (4 từ)' }).click();
     await expect(page.getByText('Đã thêm 4 từ vào nhóm “Kinh doanh · B1”.')).toBeVisible();
-    expect(requests(page, 'POST', `/v1/groups/${NEW}/items/bulk`)[0].body).toEqual({ sense_ids: SENSES.slice(1).map((s) => s.sense_id) });
+    expect(requests(page, 'POST', '/v1/items/topic-add')[0].body).toEqual({
+      topic: 'business', level: 'B1', mode: 'all_unlearned', target: { new_group_name: 'Kinh doanh · B1' },
+    });
   });
 
   test('review session with the keyboard: Space, 2, Space, 1, then Enter goes home', async ({ page }, testInfo) => {

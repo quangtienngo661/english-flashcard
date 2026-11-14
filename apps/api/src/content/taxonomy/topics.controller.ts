@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Header, Inject, Param, Patch, Post } from '@nestjs/common';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import type { Learner } from '../learner/learner-content.guard.js';
@@ -51,7 +51,8 @@ export class LearnerTopicsController {
 
   /** Design §8.8 (D17): "Tạo nhóm nhanh theo chủ đề". */
   @Get('suggestions')
+  @Header('Cache-Control', 'private, no-store')
   suggest(@CurrentLearner() learner: Learner) {
-    return this.suggestions.suggestions(learner.userId, learner.nativeLanguage);
+    return this.suggestions.suggestions(learner.nativeLanguage);
   }
 }
