@@ -1015,7 +1015,7 @@
     },
     "topic": {
       "title": "{topic} · {level}",
-      "intro": "{count, plural, one {# suggested word} other {# suggested words}}. Pick the words you want, or add the whole topic.",
+      "intro": "{count, plural, one {# suggested word} other {# suggested words}}. Pick the words you want to learn.",
       "selectAll": "Select all {count, plural, one {# unlearned word} other {# unlearned words}} on this page",
       "selected": "{count, number} selected",
       "select": "Select {word}",

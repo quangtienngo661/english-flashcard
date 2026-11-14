@@ -108,14 +108,9 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
       for (const id of ids) next.delete(id);
       return next;
     }),
-    onComplete: ({ mode, name, confirmed: { added, full, already, missing } }) => {
-      if (mode === 'all_unlearned' && added > 0) setSelected(new Map());
-      const result = mode === 'all_unlearned' && added + full === 0
-        ? t('noLongerEligible')
-        : t('result', { added, name });
-      const skipped = mode === 'all_unlearned'
-        ? full > 0 && t('resultAllSkipped', { eligible: added + full, full })
-        : already + full + missing > 0 && t('resultSkipped', { already, full, missing });
+    onComplete: ({ name, confirmed: { added, full, already, missing } }) => {
+      const result = t('result', { added, name });
+      const skipped = already + full + missing > 0 && t('resultSkipped', { already, full, missing });
       showToast(skipped ? `${result} ${skipped}` : result, 'success');
     },
     onInvalidTarget: (failed, error) => {
@@ -169,13 +164,12 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
 
   const frozen = add.busy || Boolean(add.paused);
   const canAdd = Boolean(target && !paging && !frozen && !page.isError && !groupsQuery.isFetching);
-  const addAll = () => submit('all_unlearned');
-  function submit(mode: 'all_unlearned' | 'selected') {
+  function submit() {
     if (!canAdd || !target) return;
-    if (mode === 'all_unlearned' ? !summary.isSuccess || !summary.data.unlearned || summary.isFetching : !selected.size) return;
-    const ids = mode === 'selected' ? [...selected].sort(([, a], [, b]) => a.page - b.page || a.row - b.row).map(([id]) => id) : [];
+    if (!selected.size) return;
+    const ids = [...selected].sort(([, a], [, b]) => a.page - b.page || a.row - b.row).map(([id]) => id);
     const name = targetGroup?.name ?? choice?.createdName ?? newGroupName;
-    void add.run({ mode, scope, ids, target: target === NEW_DECK ? { new_group_name: newGroupName } : { group_id: target }, name });
+    void add.run({ mode: 'selected', scope, ids, target: target === NEW_DECK ? { new_group_name: newGroupName } : { group_id: target }, name });
   }
 
   const unlearned = senses.flatMap((sense, row) => learning?.has(sense.sense_id) ? [] : [{ id: sense.sense_id, row }]);
@@ -236,21 +230,6 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
       {summary.isError && <ErrorState message={errorText(summary.error)} onRetry={() => void summary.refetch()} />}
       {groupsQuery.isError && <ErrorState message={errorText(groupsQuery.error)} onRetry={() => void groupsQuery.refetch()} />}
       {targetError && <p role="alert" className="text-wm-small text-wm-fail">{targetError}</p>}
-      {summary.data && summary.data.unlearned > 0 && (
-        <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
-          {!selected.size && !add.paused && (
-            <div className="w-full min-w-0 md:w-72">{targetPicker}</div>
-          )}
-          <TextButton
-            tone="normal"
-            className="w-fit text-wm-button"
-            isDisabled={!canAdd || !summary.isSuccess || summary.isFetching}
-            onPress={addAll}
-          >
-            {t('addAll', { count: summary.data.unlearned })}
-          </TextButton>
-        </div>
-      )}
       {add.interrupted && progress && (
         <p role="status" className="text-wm-small text-wm-muted">{t('confirmed', progress.confirmed)}</p>
       )}
@@ -343,7 +322,7 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
       ) : selected.size > 0 && (
         <FloatingBar label={t('selected', { count: selected.size })}>
           <div className="w-full min-w-0 md:w-72">{targetPicker}</div>
-          <Button isPending={add.busy} isDisabled={!canAdd && !add.busy} onPress={() => submit('selected')}>
+          <Button isPending={add.busy} isDisabled={!canAdd && !add.busy} onPress={submit}>
             {t('addSelected', { count: selected.size })}
             <ArrowRight aria-hidden className="size-4" />
           </Button>

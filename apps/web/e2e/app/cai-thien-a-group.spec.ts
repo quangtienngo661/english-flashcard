@@ -36,7 +36,7 @@ function groupApi(alreadyIn = false): Record<string, MockHandler> {
     },
     'GET /v1/items': () => ({ json: { items: [] } }),
     'GET /v1/items/topic-summary': () => ({ json: { total: 2, learning: 0, unlearned: 2 } }),
-    'POST /v1/items/topic-add': () => ({ json: { mode: 'all_unlearned', group_id: DECK, added: 2, eligible: 2, skipped_group_full: 0 } }),
+    'POST /v1/items/topic-add': () => ({ json: { mode: 'selected', group_id: DECK, added: 2, eligible: 2, skipped_group_full: 0, added_ids: [FIRST.sense_id, SECOND.sense_id], already_learning_ids: [], unavailable_ids: [], group_full_ids: [] } }),
   };
 }
 
@@ -75,7 +75,7 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     expect(requests(page, 'POST', '/v1/quick-add')[0].body).toEqual({ group_ids: [DECK], sense_id: SECOND.sense_id });
   });
 
-  test('A14-7: topic navigation preselects the deck and Add all posts to it without creating a deck', async ({ page }) => {
+  test('A14-7: topic navigation preselects the deck and adds selected words without creating a deck', async ({ page }) => {
     await signedInAs(page, 'free', groupApi());
     const sheet = await openSheet(page);
     await sheet.getByRole('button', { name: vi.addWord.byTopic }).click();
@@ -91,12 +91,12 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await expect(page).toHaveURL(`/vi/app/topic?code=${TOPIC.code}&level=B1&group=${DECK}`);
     await expect(sheet).toBeHidden();
     // The target select lives in the floating bar, shown once a word is ticked (giao diện mới M3, Figma 98:3127).
-    await page.getByRole('checkbox', { name: 'Chọn deploy' }).first().check({ force: true });
+    await page.getByRole('checkbox', { name: /^Chọn tất cả/ }).check({ force: true });
     await expect(page.getByRole('button', { name: new RegExp(vi.topic.addTo) })).toHaveText(NAME);
-    await page.getByRole('button', { name: fill(vi.topic.addAll, { count: 2 }), exact: true }).click();
+    await page.getByRole('button', { name: fill(vi.topic.addSelected, { count: 2 }), exact: true }).click();
     await expect(page.getByText(fill(vi.topic.result, { added: 2, name: NAME }))).toBeVisible();
     expect(requests(page, 'POST', '/v1/items/topic-add')[0].body).toEqual({
-      topic: TOPIC.code, level: 'B1', mode: 'all_unlearned', target: { group_id: DECK },
+      topic: TOPIC.code, level: 'B1', mode: 'selected', target: { group_id: DECK }, sense_ids: [FIRST.sense_id, SECOND.sense_id],
     });
     expect(requests(page, 'POST', '/v1/groups')).toHaveLength(0);
   });

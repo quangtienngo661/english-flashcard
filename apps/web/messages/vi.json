@@ -1015,7 +1015,7 @@
     },
     "topic": {
       "title": "{topic} · {level}",
-      "intro": "{count, number} từ gợi ý. Chọn từ bạn muốn học hoặc thêm cả chủ đề.",
+      "intro": "{count, number} từ gợi ý. Chọn từ bạn muốn học.",
       "selectAll": "Chọn tất cả {count, number} từ chưa học trên trang này",
       "selected": "đã chọn {count, number}",
       "select": "Chọn {word}",

@@ -175,14 +175,16 @@ test.describe('M2 flows (mocked API)', () => {
     });
   });
 
-  test('topic picker: add every unlearned word', async ({ page }) => {
+  test('topic picker: select and add every unlearned word on the page', async ({ page }) => {
     const { handlers } = decksApi([summary(G, 'Công nghệ')]);
     await signedInAs(page, 'free', { ...handlers, ...topicApi });
     await page.goto('/vi/app/topic?code=business&level=B1');
-    await page.getByRole('button', { name: 'Thêm tất cả từ chưa học (4 từ)' }).click();
+    await page.getByRole('checkbox', { name: /^Chọn tất cả/ }).check({ force: true });
+    await page.getByRole('button', { name: 'Thêm 4 từ đã chọn' }).click();
     await expect(page.getByText('Đã thêm 4 từ vào nhóm “Kinh doanh · B1”.')).toBeVisible();
     expect(requests(page, 'POST', '/v1/items/topic-add')[0].body).toEqual({
-      topic: 'business', level: 'B1', mode: 'all_unlearned', target: { new_group_name: 'Kinh doanh · B1' },
+      topic: 'business', level: 'B1', mode: 'selected', target: { new_group_name: 'Kinh doanh · B1' },
+      sense_ids: SENSES.slice(1).map((s) => s.sense_id),
     });
   });
 

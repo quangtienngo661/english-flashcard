@@ -37,7 +37,6 @@ const second = `${first()}&page_token=p2`;
 const summaryPath = (level = 'B1') => `/v1/items/topic-summary?topic=business&level=${level}`;
 const action = '/v1/items/topic-add';
 const scope = { topic: 'business', level: 'B1' };
-const all = (target = { new_group_name: title }) => ({ ...scope, mode: 'all_unlearned', target });
 const selected = (target: { group_id: string } | { new_group_name: string }, ...ids: string[]) => ({ ...scope, mode: 'selected', target, sense_ids: ids });
 const firstItems = '/v1/items?sense_ids=' + Array.from({ length: 20 }, (_, i) => id(i + 1)).join(',');
 const allCheckbox = () => screen.getByRole('checkbox', { name: /^Chọn tất cả .* trên trang này$/ });
@@ -156,7 +155,7 @@ describe('TopicPickerPage', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
     expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^Thêm tất cả từ chưa học/ })).not.toBeInTheDocument();
     const send = () => calls.filter((c) => c.path === action);
     expect(send()).toHaveLength(0);
     await act(async () => finish(Response.json({ items: [deck(DECK, title), deck(SAME, 'Đúng nhóm')] })));
@@ -173,28 +172,11 @@ describe('TopicPickerPage', () => {
     const { routes } = base(5);
     renderApp(<TopicPickerPage />, { routes });
     expect(await screen.findByText(/Nhóm đích không còn khả dụng/)).toBeVisible();
-    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeDisabled();
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: /Thêm vào/i }));
     await userEvent.click(screen.getByRole('option', { name: 'Công việc' }));
-    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeEnabled();
-  });
-
-  it('sends one scope-only all request even if some checkboxes are on, then clears the draft', async () => {
-    const { routes, learning } = base(21, { total: 2694 });
-    const { calls, count } = renderApp(<><TopicPickerPage /><ToastRegion /></>, { routes: {
-      ...routes,
-      [`POST ${action}`]: () => {
-        learning.add(id(3));
-        return Response.json(allReceipt(100, NEW, 2592));
-      },
-    } });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
-    await userEvent.click(await screen.findByRole('button', { name: /^Thêm tất cả từ chưa học/ }));
-    expect(await screen.findByText(/Đã thêm 100 từ vào nhóm “Kinh doanh · B1”/)).toHaveTextContent('2.592 từ không vừa');
-    expect(calls.filter((c) => c.path === action).map((c) => c.body)).toEqual([all()]);
-    expect(calls.some((c) => c.method === 'POST' && c.path.startsWith('/v1/groups'))).toBe(false);
-    expect(screen.queryByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeNull();
-    expect(count('GET', second)).toBe(0);
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeEnabled();
   });
 
   it('uses the existing topic-named group and keeps only still-eligible IDs after a full group receipt', async () => {
@@ -269,10 +251,10 @@ describe('TopicPickerPage', () => {
     expect(new Set([0, 1, 3].map((i) => batches[i].headers['Idempotency-Key'])).size).toBe(3);
   });
 
-  it('provides English labels for the page checkbox and topic-wide action', async () => {
+  it('provides English labels for the page checkbox and pagination', async () => {
     renderApp(<TopicPickerPage />, { locale: 'en', routes: base(21).routes });
     expect(await screen.findByRole('checkbox', { name: /Select all 18 .* on this page/ })).toBeVisible();
-    expect(screen.getByRole('button', { name: /Add all words not yet learned/ })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /Add all words not yet learned/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next page' })).toBeVisible();
   });
 });
