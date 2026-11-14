@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "title": "Wordmet · Learn, remember and use English vocabulary",
-    "description": "Review cards on schedule, practice with AI and save the new words you come across every day.",
+    "description": "Save the new words you come across every day, review them right before you forget and practice them in sentences with AI.",
     "ogAlt": "Wordmet: Learn, remember and use English vocabulary"
   },
   "Nav": {
@@ -19,11 +19,11 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Học từ vựng theo chủ đề bạn cần",
-      "line1": "Ôn từ đúng lúc,",
-      "line2": "luyện từ trong câu.",
+      "topicLabel": "Từ vựng theo đúng chủ đề bạn cần",
+      "line1": "Nhớ từ lâu hơn,",
+      "line2": "dùng từ tự tin trong câu.",
       "accent": "trong câu",
-      "lead": "Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi xếp lịch ôn cho từng từ. Thời gian học dành cho việc luyện từ trong câu.",
+      "lead": "Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi tự xếp lịch ôn cho từng từ. Bạn chỉ việc dành thời gian luyện từ trong câu.",
       "signup": "Bắt đầu miễn phí",
       "howTo": "Xem cách học"
     },
@@ -187,8 +187,8 @@
       ]
     },
     "groups": {
-      "title": "Từ của mỗi bài thành một nhóm",
-      "lead": "Mỗi từ có lịch ôn riêng.",
+      "title": "Mỗi bài đọc thành một nhóm từ của riêng bạn",
+      "lead": "Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.",
       "cards": [
         {
           "word": "mitigate",
@@ -253,12 +253,12 @@
       ]
     },
     "learn": {
-      "title": "Từ lúc gặp tới lúc dùng được",
-      "lead": "Ghi, nghe, luyện và ôn ở cùng một chỗ.",
+      "title": "Từ lúc gặp đến lúc dùng được",
+      "lead": "Ghi, nghe, luyện và ôn: tất cả ở một nơi.",
       "practice": {
         "eyebrow": "Trong buổi học",
-        "title": "Luyện trong câu",
-        "body": "Điền và gõ từ vào câu, không chỉ chọn nghĩa. Sai thì thấy ngay đáp án trong câu.",
+        "title": "Luyện từ trong câu thật",
+        "body": "Điền và gõ từ vào câu thay vì chỉ chọn nghĩa, để từ đi vào cách bạn viết. Sai thì thấy ngay đáp án đặt đúng chỗ.",
         "demoTitle": "Điền từ vào câu",
         "count": "Câu 7/20",
         "scores": [
@@ -292,22 +292,22 @@
       },
       "note": {
         "eyebrow": "Sau khi đọc một bài",
-        "title": "Ghi từ",
-        "body": "Gõ cả dạng đã chia, Wordmet đưa về từ gốc.",
+        "title": "Ghi từ trong vài giây",
+        "body": "Gõ đúng dạng bạn gặp, Wordmet tự đưa về từ gốc.",
         "typed": "deteriorated",
         "lemma": "deteriorate",
         "meaning": "verb · xấu đi"
       },
       "listen": {
         "eyebrow": "Mỗi thẻ",
-        "title": "Nghe và đọc phiên âm",
+        "title": "Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm",
         "word": "viable",
         "ipa": "/ˈvaɪ.ə.bəl/"
       },
       "review": {
         "eyebrow": "Những ngày sau",
-        "title": "Ôn đúng lúc",
-        "body": "Mỗi ngày chỉ ôn những từ đến hạn. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "title": "Ôn đúng lúc sắp quên",
+        "body": "Mỗi ngày chỉ ôn những từ đến hạn, không tốn thời gian cho từ đã nhớ. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
         "bins": [
           {
             "value": "1 ngày",
@@ -333,7 +333,7 @@
       }
     },
     "plans": {
-      "title": "Hai gói, khác nhau ở mức luyện tập và AI",
+      "title": "Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn",
       "lead": "Cả hai gói đều ôn thẻ không giới hạn. Hết Pro, từ và lịch ôn của bạn vẫn còn.",
       "free": "Miễn phí",
       "freeNote": "không giới hạn thời gian",
@@ -346,7 +346,7 @@
       "freeSignup": "Tạo tài khoản miễn phí",
       "pro": "Pro",
       "proBadge": "Có AI",
-      "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",
+      "proLine": "Luyện nhiều hơn mỗi ngày, có AI soạn câu luyện riêng cho từng từ và tra từ cùng bạn.",
       "periods": {
         "1": "1 tháng",
         "3": "3 tháng",
@@ -370,11 +370,11 @@
     },
     "faq": {
       "title": "Câu hỏi thường gặp",
-      "lead": "Không thấy câu bạn cần? Gửi tới {email}."
+      "lead": "Còn câu hỏi khác? Gửi tới {email}, đội Wordmet sẽ trả lời."
     },
     "final": {
-      "title": "Bắt đầu với bài bạn vừa đọc",
-      "note": "Miễn phí để bắt đầu.",
+      "title": "Biến bài bạn vừa đọc thành vốn từ của bạn",
+      "note": "Miễn phí để bắt đầu, không cần cài đặt.",
       "signup": "Tạo tài khoản miễn phí"
     }
   },
