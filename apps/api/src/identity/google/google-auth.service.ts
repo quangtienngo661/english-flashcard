@@ -331,7 +331,7 @@ export class GoogleAuthService {
     if (outcome.kind === 'refused') return this.fail(locale, outcome.error);
     if (link) {
       this.logger.info('google_identity_linked', { user_id: userId });
-      this.dispatcher.afterResponse(res, [sendPrepared(googleLinkedMail(link.email))]);
+      this.dispatcher.afterResponse(res, [sendPrepared(googleLinkedMail(link.email, this.config.learnerAppUrl))]);
     }
     return { location: this.web(saved.next, { signed_in: 'google' }), session: outcome.session };
   }

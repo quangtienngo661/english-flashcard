@@ -93,9 +93,9 @@ async function mailsTo(email) {
   const list = await (await send(`${MAILPIT}/api/v1/messages?limit=500`)).json();
   return (list.messages ?? []).filter((m) => m.To?.some((to) => to.Address === email)).sort((a, b) => (a.Created < b.Created ? 1 : -1));
 }
-const isLockMail = (m) => /Tạm khóa mã xác thực|temporarily locked/i.test(m.Subject);
-const isResetMail = (m) => /đã được đặt lại|Password reset/i.test(m.Subject);
-const isChangedMail = (m) => /đã được đổi|Password changed/i.test(m.Subject);
+const isLockMail = (m) => /Tạm khóa nhập mã|codes locked/i.test(m.Subject);
+const isResetMail = (m) => /đã đặt lại|password was reset/i.test(m.Subject);
+const isChangedMail = (m) => /đã đổi|password was changed/i.test(m.Subject);
 async function codeOf(message) {
   const text = (await (await send(`${MAILPIT}/api/v1/message/${message.ID}`)).json()).Text;
   const match = text.match(/\b(\d{6})\b/);

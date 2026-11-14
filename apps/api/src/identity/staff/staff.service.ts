@@ -150,7 +150,7 @@ export class StaffService {
     }
     this.dispatcher.afterResponse(res, [sendPrepared(body.staff_role === null
       ? learnerAccountMail(email, password, this.config.learnerAppUrl, body.must_change_password)
-      : staffAccountMail(email, password, this.config.adminAppUrl, body.must_change_password))]);
+      : staffAccountMail(email, password, this.config.adminAppUrl, body.must_change_password, this.config.learnerAppUrl))]);
     this.logger.info('staff_account_created', { actor_id: actorId, target_id: userId,
       staff_role: body.staff_role, must_change: body.must_change_password });
     return toView(row);
@@ -191,7 +191,7 @@ export class StaffService {
       if (!emailChanged) return null;
       await this.sessions.revokeAllForUser(tx, targetId, 'email_changed');
       await tx.otpCode.updateMany({ where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: this.clock.now() } });
-      return [emailChangedNoticeMail(target.email, email!), emailChangedConfirmMail(email!, this.config.learnerAppUrl)];
+      return [emailChangedNoticeMail(target.email, email!, this.config.learnerAppUrl, this.config.supportEmail), emailChangedConfirmMail(email!, this.config.learnerAppUrl)];
     }, transactionOptions);
     if (mails) this.dispatcher.afterResponse(res, mails.map((mail) => sendPrepared(mail)));
     // Values may be personal data: field names only.
@@ -221,7 +221,7 @@ export class StaffService {
       await tx.user.update({ where: { id: targetId }, data: { mustChangePassword: body.must_change_password }, select: { id: true } });
       await this.sessions.revokeAllForUser(tx, targetId, 'admin_password_reset');
       const url = target.staffRole === null ? this.config.learnerAppUrl : this.config.adminAppUrl;
-      return adminPasswordResetMail(target.email, password, url, body.must_change_password);
+      return adminPasswordResetMail(target.email, password, url, body.must_change_password, this.config.learnerAppUrl);
     }, transactionOptions);
     this.dispatcher.afterResponse(res, [sendPrepared(mail)]);
     this.logger.info('account_password_reset', { actor_id: actorId, target_id: targetId, must_change: body.must_change_password });

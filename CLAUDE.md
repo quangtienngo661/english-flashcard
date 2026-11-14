@@ -402,6 +402,10 @@ Admin chọn số câu tối đa (cố định hoặc bằng số từ của ph�
 
 `docs/deliveries/ui-copy-round-2.md` (14/11/2026; nhánh `fix/ui-copy-round-2`). Audit, tham khảo, FAQ và report: `docs/audit/2026-11-14-ui-copy/`. Quy ước đã chốt: EN "deck", nút "Needs review" / "Known", "CEFR level" cho trình độ, VI "câu đã gặp", lỗi theo mẫu "Không … được. [việc cần làm].", không "hãy". FAQ landing nạp qua migration `20261114180000_landing_faq_copy`; bản dự phòng phải giống migration (có test).
 
+## Giao diện email — plan & as-built
+
+`docs/deliveries/email-giao-dien.md` (plan tóm tắt 14/11/2026; as-built cùng file; chỉ API). 17 email đang gửi thật có bản HTML (layout bảng, CSS inline, khối chế độ tối) kèm bản text, dựng bằng một hàm chung `renderMail` ở `apps/api/src/common/mail/layout/`; ba email dùng thử, tự gia hạn giữ dạng text, chưa gửi lúc launch. `MailMessage` có thêm `html?`; địa chỉ hỗ trợ lấy từ `SUPPORT_EMAIL` (mặc định `support@wordmet.com`). Xem 17 thư thật trong Mailpit: `pnpm build && pnpm mail:preview` ở `apps/api`. Đã chạy qua Mailpit; **chưa xem trên Gmail, Outlook, Apple Mail thật** (việc của chủ dự án). Design, decisions (D1–D11) và plan: `docs/superpowers/{specs,decisions,plans}/2026-11-14-email-giao-dien*`; mockup `docs/mockups/2026-11-14-email/index.html`; bản rà 20 email `docs/preparation/EMAIL_INVENTORY_2026-11-14.md`. Script đọc chữ trong email (tiêu đề, mã 6 số, dòng `Password:`): bảng ở §8 của design.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

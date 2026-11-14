@@ -82,7 +82,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(sessions.startChain).toHaveBeenCalledExactlyOnceWith(tx, { userId: subject.userId, client: 'web', deviceLabel: 'Browser' });
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
     expect(committed).toBe(true); expect(mailer.sent).toEqual([]);
-    await close(); expect(mailer.sent).toEqual([passwordChangedMail(account.email)]);
+    await close(); expect(mailer.sent).toEqual([passwordChangedMail(account.email, config.learnerAppUrl)]);
   });
   it.each(['wrong', 'stale', 'locked', 'tenth'])('B1E4/B1#34: %s change commits the decision before rejecting and never replaces credentials or sessions', async (reason) => {
     if (reason === 'wrong' || reason === 'tenth') hasher.verify.mockResolvedValue(false);
@@ -193,7 +193,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, subject.userId, 'password_reset');
     expect(sessions.startChain).not.toHaveBeenCalled(); expect(committed).toBe(true); expect(mailer.sent).toEqual([]);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
-    await close(); expect(mailer.sent).toEqual([passwordResetMail(account.email)]);
+    await close(); expect(mailer.sent).toEqual([passwordResetMail(account.email, config.learnerAppUrl)]);
   });
   it('B1#23: reset preserves the locked read of an existing verification timestamp', async () => {
     const verifiedAt = new Date('2026-10-06T00:00:00Z');
@@ -222,7 +222,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
   it('B1#10/B1#34: reset schedules the 21st failure notice after commit BEFORE throwing generic 400 and sends it once after close', async () => {
-    const notice = otpLockedMail(account.email, 'reset_password');
+    const notice = otpLockedMail(account.email, 'reset_password', config.learnerAppUrl);
     otp.checkInTx.mockResolvedValue({ kind: 'locked', lockedUntil: new Date(clock.now().getTime() + 86_400_000), notice });
     const afterResponse = dispatcher.afterResponse.bind(dispatcher);
     const schedule = vi.spyOn(dispatcher, 'afterResponse').mockImplementation((response, jobs) => {

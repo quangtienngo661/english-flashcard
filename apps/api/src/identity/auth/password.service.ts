@@ -76,7 +76,7 @@ export class PasswordService {
       const session = await this.sessions.startChain(tx, {
         userId: user.userId, client: chain.clientType, deviceLabel: chain.deviceLabel ?? undefined,
       });
-      return { kind, session, message: passwordChangedMail(current.email) };
+      return { kind, session, message: passwordChangedMail(current.email, this.config.learnerAppUrl) };
     }, transactionOptions);
     if (outcome.kind === 'invalid_session') throw this.invalidToken();
     // A still-valid access token can outlive the lock's session revocation; this stops it minting a new chain.
@@ -123,7 +123,7 @@ export class PasswordService {
       await tx.loginFailure.deleteMany({ where: { userId: account.id } });
       // The mailbox owner chose a password: a re-registration still waiting for its code loses (review F3).
       await tx.pendingRegistration.deleteMany({ where: { userId: account.id } });
-      return { kind: 'ok', message: passwordResetMail(current.email) };
+      return { kind: 'ok', message: passwordResetMail(current.email, this.config.learnerAppUrl) };
     }, transactionOptions);
     // The counted failure and lock have committed. Register the one-time notice
     // before mapping even a locked reset to the same generic invalid-otp error.

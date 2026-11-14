@@ -12,4 +12,10 @@ describe('FakeMailer', () => {
     await mailer.send(message);
     expect(mailer.sent).toEqual([message]);
   });
+
+  it('keeps the html part of a sent message', async () => {
+    const mailer = new FakeMailer();
+    await mailer.send({ to: 'a@example.com', subject: 's', text: 't', html: '<p>x</p>' });
+    expect(mailer.sent[0]?.html).toBe('<p>x</p>');
+  });
 });

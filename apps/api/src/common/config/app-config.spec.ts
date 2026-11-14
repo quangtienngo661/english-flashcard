@@ -143,6 +143,12 @@ describe('loadConfig', () => {
     }
   });
 
+  it('email design: SUPPORT_EMAIL defaults to support@wordmet.com, takes an address and rejects anything else naming SUPPORT_EMAIL', () => {
+    expect(loadConfig(validEnv()).supportEmail).toBe('support@wordmet.com');
+    expect(loadConfig({ ...validEnv(), SUPPORT_EMAIL: 'help@example.com' }).supportEmail).toBe('help@example.com');
+    expect(() => loadConfig({ ...validEnv(), SUPPORT_EMAIL: 'not-an-email' })).toThrow(/SUPPORT_EMAIL/);
+  });
+
   it('Task 21 (config): REMINDER_TICK_SECONDS defaults to 900 (15 minutes) and must be a positive integer', () => {
     expect(loadConfig(validEnv()).reminders).toEqual({ tickSeconds: 900, runScheduler: true, retryBackoffMs: 60_000 });
     expect(loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: '60' }).reminders.tickSeconds).toBe(60);

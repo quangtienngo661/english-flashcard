@@ -29,4 +29,23 @@ describe('SmtpMailer', () => {
     expect(vi.mocked(nodemailer.createTransport).mock.calls[0][0]).not.toHaveProperty('auth');
     await expect(mailer.send({ to: 'a@example.com', subject: 'test', text: 'body' })).rejects.toBe(error);
   });
+
+  it('passes html with text so nodemailer sends multipart/alternative', async () => {
+    const sendMail = vi.fn(async () => ({}));
+    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail } as unknown as ReturnType<typeof nodemailer.createTransport>);
+    const mailer = new SmtpMailer(testConfig({ smtp: { host: 'h', port: 25, secure: false, from: 'sender@example.com' } }));
+    const message = { to: 'to@example.com', subject: 'test', text: 'body', html: '<p>body</p>' };
+    await mailer.send(message);
+    expect(sendMail).toHaveBeenCalledExactlyOnceWith({ from: 'sender@example.com', to: 'to@example.com', subject: 'test', text: 'body', html: '<p>body</p>' });
+  });
+
+  it('builds a message with both a text/plain and a text/html part', async () => {
+    const real = await vi.importActual<typeof import('nodemailer')>('nodemailer');
+    const transport = real.default.createTransport({ streamTransport: true, buffer: true });
+    const info = await transport.sendMail({ from: 'a@example.com', to: 'b@example.com', subject: 's', text: 'plain body', html: '<p>html body</p>' });
+    const raw = (info as unknown as { message: Buffer }).message.toString('utf8');
+    expect(raw).toContain('multipart/alternative');
+    expect(raw).toContain('text/plain');
+    expect(raw).toContain('text/html');
+  });
 });

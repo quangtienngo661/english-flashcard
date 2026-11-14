@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { deleteIdempotencyKeysOf } from '../../common/idempotency/erase-idempotency-keys.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
@@ -56,6 +57,7 @@ export class AccountDeletionService {
     @Inject(AccountDeletionRegistry) private readonly registry: AccountDeletionRegistry,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   async delete(input: DeleteInput): Promise<DeletionOutcome> {
@@ -156,7 +158,7 @@ export class AccountDeletionService {
   private async sendDeletedMail(input: DeleteInput, email: string): Promise<void> {
     try {
       const years = await this.registry.settings().transactionRetentionYears();
-      const job = sendPrepared(accountDeletedMail(email, years));
+      const job = sendPrepared(accountDeletedMail(email, years, this.config.learnerAppUrl));
       if (input.res) this.dispatcher.afterResponse(input.res, [job]);
       else this.dispatcher.runNow([job]);
     } catch {
