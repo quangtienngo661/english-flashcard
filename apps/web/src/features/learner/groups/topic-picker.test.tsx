@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { problem, rateLimited, type Route } from '@/app-shell/session/test-support';
 import { renderApp } from '@/test-utils/render-app';
-import { ToastRegion } from '@/ui/Toast';
+import { ToastRegion, toastQueue } from '@/ui/Toast';
 import { TopicPickerPage } from './TopicPickerPage';
 
 let search = new URLSearchParams({ code: 'business', level: 'B1' });
@@ -15,190 +17,262 @@ vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => 
 vi.setConfig({ testTimeout: 30_000 });
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-const sense = (n: number) => ({
-  sense_id: id(n), entry_id: `e${n}`, lemma: `word${n}`, pos: 'noun', level: 'B1', is_function_word: false, context_label: null,
+const sense = (n: number, level: string) => ({
+  sense_id: id(n), entry_id: id(n + 1000), lemma: `word${n}`, pos: 'noun', level, is_function_word: false, context_label: null,
   meaning: { text: `nghĩa ${n}`, language: 'vi', translation_missing: false }, definition_en: null, examples: [],
   topics: [{ code: 'business', name: 'Kinh doanh' }],
 });
-const DECK = '33333333-3333-4333-8333-333333333333';
-const base = (total: number, learning: number[] = [1, 2]) => {
-  const senses = Array.from({ length: total }, (_, i) => sense(i + 1));
-  const pages = [senses.slice(0, 100), senses.slice(100)];
-  const ids = senses.map((s) => s.sense_id);
-  const routes: Record<string, (c: { path: string }) => Response> = {
-    'GET /v1/senses?topic=business&level=B1&exclude_function_words=true&page_size=100': () =>
-      Response.json({ items: pages[0], next_page_token: pages[1].length ? 'p2' : null }),
-    'GET /v1/senses?topic=business&level=B1&exclude_function_words=true&page_size=100&page_token=p2': () =>
-      Response.json({ items: pages[1], next_page_token: null }),
-    'GET /v1/groups': () => Response.json({ items: [{ id: DECK, name: 'Công việc', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 }] }),
-    'GET /v1/me/app-config': () => Response.json({ learning: { backlog_after_days: 60, groups_per_user: 100 } }),
-    'GET /v1/me/entitlements': () => Response.json({ plan: 'free', pools: {}, sources: [] }),
-    'POST /v1/groups': () => Response.json({ id: 'new-deck', name: 'Kinh doanh · B1' }, { status: 201 }),
-    'POST /v1/groups/new-deck/items/bulk': () => Response.json({ added: 3, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
+const DECK = id(500);
+const NEW = id(600);
+const SAME = id(700);
+const title = 'Kinh doanh · B1';
+const deck = (deckId: string, name: string) => ({
+  id: deckId, name, version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0, available: { due: 0, new: 0 },
+});
+const ITEM_STATE = (senseId: string) => ({
+  sense_id: senseId, item_id: id(1100), level: 1, due_date: '2026-10-20', priority: false, group_ids: [DECK],
+});
+const first = (level = 'B1') => `/v1/senses?topic=business&level=${level}&exclude_function_words=true&page_size=20`;
+const second = `${first()}&page_token=p2`;
+const summaryPath = (level = 'B1') => `/v1/items/topic-summary?topic=business&level=${level}`;
+const action = '/v1/items/topic-add';
+const scope = { topic: 'business', level: 'B1' };
+const all = (target = { new_group_name: title }) => ({ ...scope, mode: 'all_unlearned', target });
+const selected = (target: { group_id: string } | { new_group_name: string }, ...ids: string[]) => ({ ...scope, mode: 'selected', target, sense_ids: ids });
+const firstItems = '/v1/items?sense_ids=' + Array.from({ length: 20 }, (_, i) => id(i + 1)).join(',');
+const allCheckbox = () => screen.getByRole('checkbox', { name: /^Chọn tất cả .* trên trang này$/ });
+const next = () => screen.getByRole('button', { name: 'Trang sau' });
+const prev = () => screen.getByRole('button', { name: 'Trang trước' });
+
+function base(count: number, { level = 'B1', start = 1, total = count, learned = [1, 2] }: { level?: string; start?: number; total?: number; learned?: number[] } = {}) {
+  const learning = new Set(learned.map(id));
+  const routes: Record<string, Route> = {
+    'GET /v1/groups': () => Response.json({ items: [deck(DECK, 'Công việc')] }),
+    [`GET ${summaryPath(level)}`]: () => Response.json({ total, learning: learning.size, unlearned: total - learning.size }),
   };
-  for (let i = 0; i < ids.length; i += 100) {
-    const chunk = ids.slice(i, i + 100);
-    routes[`GET /v1/items?sense_ids=${chunk.join(',')}`] = () =>
-      Response.json({ items: learning.filter((n) => chunk.includes(id(n))).map((n) => ({ sense_id: id(n), item_id: `i${n}`, level: 1, due_date: '2026-10-20', priority: false, group_ids: [DECK] })) });
+  for (let i = 0; i < count; i += 20) {
+    const page = Array.from({ length: Math.min(count - i, 20) }, (_, j) => sense(start + i + j, level));
+    const ids = page.map((s) => s.sense_id);
+    routes[`GET ${first(level)}${i ? `&page_token=p${i / 20 + 1}` : ''}`] = () =>
+      Response.json({ items: page, next_page_token: i + 20 < count ? `p${i / 20 + 2}` : null });
+    routes[`GET /v1/items?sense_ids=${ids.join(',')}`] = () =>
+      Response.json({ items: ids.filter((sid) => learning.has(sid)).map(ITEM_STATE) });
   }
-  return routes;
-};
+  return { routes, learning };
+}
+
+const allReceipt = (added: number, groupId = NEW, full = 0) => ({
+  mode: 'all_unlearned', group_id: groupId, eligible: added + full, added, skipped_group_full: full,
+});
+const selectedReceipt = (added: string[], { groupId = NEW, full = [], already = [], unavailable = [] }: { groupId?: string | null; full?: string[]; already?: string[]; unavailable?: string[] } = {}) => ({
+  ...allReceipt(added.length, groupId ?? NEW, full.length), group_id: groupId, mode: 'selected',
+  added_ids: added, group_full_ids: full, unavailable_ids: unavailable, already_learning_ids: already,
+});
 
 beforeEach(() => { search = new URLSearchParams({ code: 'business', level: 'B1' }); });
+afterEach(() => { act(() => toastQueue.clear()); });
 
-describe('TopicPickerPage (K/18)', () => {
-  it('A14-7: topic picker with group=<id> targets that deck', async () => {
-    const target = 'abcdefab-abcd-4abc-8abc-abcdefabcdef';
-    search.set('group', target.toUpperCase());
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: {
-      ...base(5),
-      'GET /v1/groups': () => Response.json({ items: [
-        { id: DECK, name: 'Kinh doanh · B1', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
-        { id: target, name: 'Công việc', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
-      ] }),
-      [`POST /v1/groups/${target}/items/bulk`]: () => Response.json({ added: 3, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
-      [`POST /v1/groups/${DECK}/items/bulk`]: () => Response.json({ added: 1, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
+describe('TopicPickerPage', () => {
+  it('requests only the first 20 rows, uses the separate topic total, and preserves selection across pages', async () => {
+    const { routes } = base(21, { total: 2694 });
+    const { count } = renderApp(<TopicPickerPage />, { routes });
+    const user = userEvent.setup();
+    await screen.findByRole('checkbox', { name: 'Chọn word3' });
+    expect(screen.getAllByRole('listitem')).toHaveLength(20);
+    expect(await screen.findByText(/2\.694 từ gợi ý/)).toBeInTheDocument();
+    expect(count('GET', first())).toBe(1);
+    expect(count('GET', firstItems)).toBe(1);
+    expect(count('GET', second)).toBe(0);
+    expect(within(screen.getByRole('listitem', { name: 'word1' })).getByText('đang học · Công việc')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Chọn word1' })).toBeNull();
+
+    expect(screen.queryByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeNull();
+    for (const n of [3, 4, 5, 6, 7]) await user.click(screen.getByRole('checkbox', { name: `Chọn word${n}` }));
+    expect(allCheckbox()).toBePartiallyChecked();
+    await user.click(next());
+    await screen.findByRole('checkbox', { name: 'Chọn word21' });
+    expect(count('GET', second)).toBe(1);
+    expect(count('GET', `/v1/items?sense_ids=${id(21)}`)).toBe(1);
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    await user.click(allCheckbox());
+    expect(screen.getByRole('button', { name: 'Thêm 6 từ đã chọn' })).toBeVisible();
+    await user.click(allCheckbox());
+    expect(screen.getByRole('button', { name: 'Thêm 5 từ đã chọn' })).toBeVisible();
+    await user.click(prev());
+    expect(await screen.findByRole('checkbox', { name: 'Chọn word3' })).toBeChecked();
+    expect(count('GET', first())).toBe(1);
+  });
+
+  it.each(['error', 'empty'] as const)('keeps the current rows and selection while the next cursor is pending then %s, and allows retry', async (failure) => {
+    const { routes } = base(21);
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { finish = resolve; });
+    const success = routes[`GET ${second}`];
+    let retried = false;
+    routes[`GET ${second}`] = (request) => retried ? success(request) : pending;
+    renderApp(<TopicPickerPage />, { routes });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
+    await user.click(next());
+    expect(screen.getByRole('checkbox', { name: 'Chọn word3' })).toBeChecked();
+    expect(next()).toBeDisabled();
+    retried = true;
+    await act(async () => finish(failure === 'error' ? problem(503, 'provider-unavailable') : Response.json({ items: [], next_page_token: null })));
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Chọn word3' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Thử lại' }));
+    expect(await screen.findByRole('checkbox', { name: 'Chọn word21' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeVisible();
+  });
+
+  it('resets the cursor and selection when the address changes level', async () => {
+    const { routes } = base(21);
+    function LevelNavigation() {
+      const [, redraw] = useState(false);
+      return <><button onClick={() => { search.set('level', 'B2'); redraw(true); }}>B2</button><TopicPickerPage /></>;
+    }
+    const { count } = renderApp(<LevelNavigation />, { routes: { ...routes, ...base(3, { level: 'B2', start: 91, learned: [] }).routes } });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
+    await user.click(next());
+    await screen.findByRole('checkbox', { name: 'Chọn word21' });
+    await user.click(screen.getByRole('button', { name: 'B2' }));
+    expect(await screen.findByRole('checkbox', { name: 'Chọn word91' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeNull();
+    expect(count('GET', first('B2'))).toBe(1);
+    expect(count('GET', `${first('B2')}&page_token=p2`)).toBe(0);
+  });
+
+  it('waits for the URL group, submits to that group, and asks for a new target on 404 without losing selection', async () => {
+    search.set('group', SAME.toUpperCase());
+    const { routes } = base(21);
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { finish = resolve; });
+    const { calls } = renderApp(<TopicPickerPage />, { routes: {
+      ...routes,
+      'GET /v1/groups': () => pending,
+      [`POST ${action}`]: () => problem(404, 'not-found'),
     } });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word4' }, { timeout: 5000 }));
-    expect(screen.getByRole('button', { name: /thêm vào/i })).toHaveTextContent('Công việc');
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm cả 3 từ' }));
-    await waitFor(() => expect(calls.find((c) => c.path === `/v1/groups/${target}/items/bulk`)?.body).toEqual({ sense_ids: [id(3), id(4), id(5)] }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word4' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
-    await waitFor(() => expect(calls.filter((c) => c.path === `/v1/groups/${target}/items/bulk`).map((c) => c.body)).toEqual([
-      { sense_ids: [id(3), id(4), id(5)] }, { sense_ids: [id(4)] },
-    ]));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word3' }));
-    await userEvent.click(screen.getByRole('button', { name: /thêm vào/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'Kinh doanh · B1' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
-    await waitFor(() => expect(calls.find((c) => c.path === `/v1/groups/${DECK}/items/bulk`)?.body).toEqual({ sense_ids: [id(3)] }));
-    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(0);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeDisabled();
+    const send = () => calls.filter((c) => c.path === action);
+    expect(send()).toHaveLength(0);
+    await act(async () => finish(Response.json({ items: [deck(DECK, title), deck(SAME, 'Đúng nhóm')] })));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Thêm vào/i })).toHaveTextContent('Đúng nhóm'));
+    await user.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
+    await screen.findByText(/Nhóm đích không còn khả dụng/);
+    expect(send().map((c) => c.body)).toEqual([selected({ group_id: SAME }, id(3))]);
+    expect(screen.getByRole('checkbox', { name: 'Chọn word3' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeDisabled();
   });
 
-  it.each([id(999), '../../bad'])('A14-8: unknown group id → current default', async (group) => {
+  it.each([id(999), '../../bad'])('does not default to a different group for a missing URL target (%s)', async (group) => {
     search.set('group', group);
-    renderApp(<TopicPickerPage />, { chrome: true, routes: base(5) });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }, { timeout: 5000 }));
-    expect(screen.getByRole('button', { name: /thêm vào/i })).toHaveTextContent('Nhóm mới “Kinh doanh · B1”');
+    const { routes } = base(5);
+    renderApp(<TopicPickerPage />, { routes });
+    expect(await screen.findByText(/Nhóm đích không còn khả dụng/)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: /Thêm vào/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'Công việc' }));
+    expect(screen.getByRole('button', { name: /^Thêm tất cả từ chưa học/ })).toBeEnabled();
   });
 
-  it.each([id(999), '../../bad'])('A14-8: unknown group id → current default (topic-named deck, %s)', async (group) => {
-    search.set('group', group);
-    renderApp(<TopicPickerPage />, { chrome: true, routes: { ...base(5),
-      'GET /v1/groups': () => Response.json({ items: [{ id: DECK, name: 'Kinh doanh · B1', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 }] }),
+  it('sends one scope-only all request even if some checkboxes are on, then clears the draft', async () => {
+    const { routes, learning } = base(21, { total: 2694 });
+    const { calls, count } = renderApp(<><TopicPickerPage /><ToastRegion /></>, { routes: {
+      ...routes,
+      [`POST ${action}`]: () => {
+        learning.add(id(3));
+        return Response.json(allReceipt(100, NEW, 2592));
+      },
     } });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }, { timeout: 5000 }));
-    const select = screen.getByRole('button', { name: /thêm vào/i });
-    expect(select).toHaveTextContent('Kinh doanh · B1');
-    expect(select).not.toHaveTextContent('Nhóm mới');
-  });
-
-  it('the floating bar shows only while words are ticked', async () => {
-    renderApp(<TopicPickerPage />, { chrome: true, routes: base(5) });
-    await screen.findByRole('checkbox', { name: 'Chọn word3' }, { timeout: 5000 });
-    expect(screen.queryByRole('button', { name: /đã chọn/ })).toBeNull();
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word3' }));
-    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeInTheDocument();
-  });
-
-  it('counts suggested, unlearned and selected words; learning rows cannot be ticked', async () => {
-    renderApp(<TopicPickerPage />, { chrome: true, routes: base(52) });
-    expect(await screen.findByRole('heading', { name: 'Kinh doanh · B1' })).toBeInTheDocument();
-    expect(screen.getByText('52 từ gợi ý. Chọn từ bạn muốn học hoặc thêm cả chủ đề.')).toBeInTheDocument();
-    expect(await screen.findByRole('checkbox', { name: 'Chọn tất cả 50 từ chưa học' })).toBeInTheDocument();
-    const row1 = screen.getByRole('listitem', { name: 'word1' });
-    expect(within(row1).getByText('đang học · Công việc')).toBeInTheDocument();
-    expect(within(row1).queryByRole('checkbox')).not.toBeInTheDocument();
-    for (const n of [3, 4, 5]) await userEvent.click(screen.getByRole('checkbox', { name: `Chọn word${n}` }));
-    expect(screen.getByText('đã chọn 3')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Thêm 3 từ đã chọn' })).toBeInTheDocument();
-  });
-
-  it('"Thêm 3 từ đã chọn" creates the new deck first, then sends exactly those sense_ids', async () => {
-    const { calls } = renderApp(
-      <>
-        <TopicPickerPage />
-        <ToastRegion />
-      </>,
-      { routes: base(52) },
-    );
-    for (const n of [3, 4, 5]) await userEvent.click(await screen.findByRole('checkbox', { name: `Chọn word${n}` }));
-    expect(screen.getByRole('button', { name: /Nhóm mới “Kinh doanh · B1”/ })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 3 từ đã chọn' }));
-    await waitFor(() => expect(calls.some((c) => c.path === '/v1/groups/new-deck/items/bulk')).toBe(true));
-    const order = calls.filter((c) => c.method === 'POST' && c.path.startsWith('/v1/groups')).map((c) => c.path);
-    expect(order).toEqual(['/v1/groups', '/v1/groups/new-deck/items/bulk']);
-    expect(calls.find((c) => c.method === 'POST' && c.path === '/v1/groups')!.body).toEqual({ name: 'Kinh doanh · B1' });
-    expect(calls.find((c) => c.path.endsWith('/bulk'))!.body).toEqual({ sense_ids: [id(3), id(4), id(5)] });
-    expect(await screen.findByText('Đã thêm 3 từ vào nhóm “Kinh doanh · B1”.')).toBeInTheDocument();
-  });
-
-  it('"Thêm cả 50 từ" sends the 50 unlearned ids when there are 100 or fewer', async () => {
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: base(52) });
-    await userEvent.click(await screen.findByRole('button', { name: 'Thêm cả 50 từ' }));
-    await waitFor(() => expect(calls.some((c) => c.path.endsWith('/bulk'))).toBe(true));
-    const body = calls.find((c) => c.path.endsWith('/bulk'))!.body as { sense_ids: string[] };
-    expect(body.sense_ids).toHaveLength(50);
-    expect(body.sense_ids).not.toContain(id(1));
-  });
-
-  it('over 100 unlearned words, "Thêm cả" sends exactly those ids in batches of 100, each with its own key', async () => {
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: base(130) });
-    await userEvent.click(await screen.findByRole('button', { name: 'Thêm cả 128 từ' }));
-    await waitFor(() => expect(calls.filter((c) => c.path.endsWith('/bulk'))).toHaveLength(2));
-    const bulks = calls.filter((c) => c.path.endsWith('/bulk'));
-    expect(bulks.map((c) => (c.body as { sense_ids: string[] }).sense_ids.length)).toEqual([100, 28]);
-    expect(bulks.flatMap((c) => (c.body as { sense_ids: string[] }).sense_ids)).not.toContain(id(1));
-    expect(bulks[0].headers['Idempotency-Key']).not.toBe(bulks[1].headers['Idempotency-Key']);
-  });
-
-  it('"Thêm cả" after ticking some words still adds every unlearned word (review I1)', async () => {
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: base(52) });
-    for (const n of [3, 4]) await userEvent.click(await screen.findByRole('checkbox', { name: `Chọn word${n}` }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm cả 50 từ' }));
-    await waitFor(() => expect(calls.some((c) => c.path.endsWith('/bulk'))).toBe(true));
-    expect((calls.find((c) => c.path.endsWith('/bulk'))!.body as { sense_ids: string[] }).sense_ids).toHaveLength(50);
-  });
-
-  it('ticking all of more than 100 words sends them in batches of 100 (review I2)', async () => {
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: base(130) });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn tất cả 128 từ chưa học' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 128 từ đã chọn' }));
-    await waitFor(() => expect(calls.filter((c) => c.path.endsWith('/bulk'))).toHaveLength(2));
-    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(1);
-  });
-
-  it('a deck already named like the topic is the default target, so no second deck is created (review I3)', async () => {
-    const SAME = '55555555-5555-4555-8555-555555555555';
-    const routes = {
-      ...base(52),
-      'GET /v1/groups': () =>
-        Response.json({
-          items: [
-            { id: DECK, name: 'Công việc', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
-            { id: SAME, name: 'Kinh doanh · B1', version: 1, total: 3, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
-          ],
-        }),
-      [`POST /v1/groups/${SAME}/items/bulk`]: () =>
-        Response.json({ added: 1, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
-    };
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes });
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /thêm vào/i })).not.toHaveTextContent('Nhóm mới'));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
-    await waitFor(() => expect(calls.some((c) => c.path === `/v1/groups/${SAME}/items/bulk`)).toBe(true));
-    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(0);
+    await userEvent.click(await screen.findByRole('button', { name: /^Thêm tất cả từ chưa học/ }));
+    expect(await screen.findByText(/Đã thêm 100 từ vào nhóm “Kinh doanh · B1”/)).toHaveTextContent('2.592 từ không vừa');
+    expect(calls.filter((c) => c.path === action).map((c) => c.body)).toEqual([all()]);
+    expect(calls.some((c) => c.method === 'POST' && c.path.startsWith('/v1/groups'))).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeNull();
+    expect(count('GET', second)).toBe(0);
   });
 
-  it('after a new deck is made, the next add goes to that deck (review I3)', async () => {
-    const { calls } = renderApp(<TopicPickerPage />, { chrome: true, routes: base(52) });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word3' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
-    await waitFor(() => expect(calls.filter((c) => c.path.endsWith('/bulk'))).toHaveLength(1));
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn word4' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
-    await waitFor(() => expect(calls.filter((c) => c.path.endsWith('/bulk'))).toHaveLength(2));
-    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(1);
+  it('uses the existing topic-named group and keeps only still-eligible IDs after a full group receipt', async () => {
+    const { routes, learning } = base(21);
+    const { calls, count } = renderApp(<><TopicPickerPage /><ToastRegion /></>, { routes: {
+      ...routes,
+      'GET /v1/groups': () => Response.json({ items: [deck(SAME, title)] }),
+      [`POST ${action}`]: () => {
+        learning.add(id(3)).add(id(4));
+        return Response.json(selectedReceipt([id(3)], { groupId: SAME, already: [id(4)], unavailable: [id(5)], full: [id(21)] }));
+      },
+    } });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('checkbox', { name: 'Chọn word5' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn word4' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn word3' }));
+    await user.click(next());
+    await user.click(await screen.findByRole('checkbox', { name: 'Chọn word21' }));
+    await user.click(screen.getByRole('button', { name: 'Thêm 4 từ đã chọn' }));
+    expect(await screen.findByText(/Đã thêm 1 từ vào nhóm/)).toBeVisible();
+    expect(calls.find((c) => c.path === action)?.body).toEqual(selected({ group_id: SAME }, id(3), id(4), id(5), id(21)));
+    expect(screen.getByRole('checkbox', { name: 'Chọn word21' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' })).toBeVisible();
+    expect(count('GET', first())).toBe(1);
+    await waitFor(() => expect(count('GET', second)).toBe(2));
+  });
+
+  it.each(['network', '5xx', '429'] as const)('resumes an unconfirmed batch after %s with the same body and key', async (failure) => {
+    const { routes, learning } = base(201, { learned: [] });
+    let attempt = 0;
+    const { calls } = renderApp(<><TopicPickerPage /><ToastRegion /></>, { routes: {
+      ...routes,
+      'GET /v1/groups': () => Response.json({ items: [deck(DECK, 'Công việc'), ...(attempt > 0 ? [deck(NEW, title)] : [])] }),
+      [`POST ${action}`]: ({ body }) => {
+        const { sense_ids: ids } = body as { sense_ids: string[] };
+        attempt += 1;
+        if (attempt === 2) {
+          if (failure === 'network') throw new TypeError('connection lost');
+          return failure === '429' ? rateLimited(1) : problem(502, '');
+        }
+        for (const sid of ids) learning.add(sid);
+        return Response.json(selectedReceipt(ids));
+      },
+    } });
+    const user = userEvent.setup();
+    await screen.findByRole('checkbox', { name: 'Chọn word1' });
+    for (const n of [21, 41, 61, 81, 101, 121, 141, 161, 181, 201]) {
+      fireEvent.click(allCheckbox());
+      fireEvent.click(next());
+      await screen.findByText(`word${n}`, { exact: true });
+    }
+    await user.click(allCheckbox());
+    await user.click(screen.getByRole('button', { name: 'Thêm 201 từ đã chọn' }));
+    expect(await screen.findByText(/Đã xác nhận.*100 từ/)).toBeVisible();
+    const retry = screen.getByRole('button', { name: 'Tiếp tục thêm' });
+    if (failure === '429') {
+      expect(retry).toBeDisabled();
+      await waitFor(() => expect(retry).toBeEnabled(), { timeout: 3000 });
+    }
+    await user.click(retry);
+    expect(await screen.findByText(/Đã thêm 201 từ vào nhóm/)).toBeVisible();
+    const batches = calls.filter((c) => c.path === action);
+    expect(batches).toHaveLength(4);
+    expect(batches.map((c) => c.body)).toEqual([
+      selected({ new_group_name: title }, ...Array.from({ length: 100 }, (_, i) => id(1 + i))),
+      selected({ group_id: NEW }, ...Array.from({ length: 100 }, (_, i) => id(101 + i))),
+      selected({ group_id: NEW }, ...Array.from({ length: 100 }, (_, i) => id(101 + i))),
+      selected({ group_id: NEW }, id(201)),
+    ]);
+    expect(batches[1].headers['Idempotency-Key']).toBeTruthy();
+    expect(batches[1].headers['Idempotency-Key']).toBe(batches[2].headers['Idempotency-Key']);
+    expect(new Set([0, 1, 3].map((i) => batches[i].headers['Idempotency-Key'])).size).toBe(3);
+  });
+
+  it('provides English labels for the page checkbox and topic-wide action', async () => {
+    renderApp(<TopicPickerPage />, { locale: 'en', routes: base(21).routes });
+    expect(await screen.findByRole('checkbox', { name: /Select all 18 .* on this page/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Add all words not yet learned/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeVisible();
   });
 });

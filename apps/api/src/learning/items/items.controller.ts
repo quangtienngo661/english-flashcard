@@ -1,11 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Query, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Post, Query, UseInterceptors } from '@nestjs/common';
 import type { z } from 'zod';
 import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
 import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import { CurrentLearner, LearnerContent, type Learner } from '../../content/index.js';
 import {
-  addItemBody, bulkAddBody, groupItemParams, groupItemsQuery, groupParams, itemParams, statesQuery,
+  addItemBody, bulkAddBody, groupItemParams, groupItemsQuery, groupParams, itemParams, statesQuery, topicAddBody, topicScopeQuery,
 } from './items.schemas.js';
 import { ItemsService } from './items.service.js';
 
@@ -60,6 +61,23 @@ export class ItemsController {
   @Get('items')
   states(@Query({ schema: statesQuery }) query: z.infer<typeof statesQuery>, @CurrentLearner() learner: Learner) {
     return this.items.states(learner.userId, query.sense_ids);
+  }
+
+  @Get('items/topic-summary')
+  topicSummary(@Query({ schema: topicScopeQuery }) query: z.infer<typeof topicScopeQuery>, @CurrentLearner() learner: Learner) {
+    return this.items.topicSummary(learner.userId, query);
+  }
+
+  @Post('items/topic-add')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  addFromTopic(
+    @Headers('idempotency-key') key: string | undefined,
+    @Body({ schema: topicAddBody }) body: z.infer<typeof topicAddBody>,
+    @CurrentLearner() learner: Learner,
+  ) {
+    if (!key?.trim()) throw new ProblemDetailsException({ status: 400, title: 'Idempotency-Key required' });
+    return this.items.addFromTopic(learner.userId, body, key);
   }
 
   @Delete('items/:id')
