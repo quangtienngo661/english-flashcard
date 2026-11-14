@@ -6,7 +6,6 @@ import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { Public } from '../sessions/public.decorator.js';
 import { writeSession, type TokenResponse } from '../sessions/session-transport.js';
-import { Turnstile } from '../turnstile/turnstile.decorator.js';
 import { changeSchema, resetSchema, type ChangeBody, type ResetBody } from './password.schemas.js';
 import { PasswordService } from './password.service.js';
 
@@ -33,7 +32,7 @@ export class PasswordController {
   @Post('reset')
   @HttpCode(204)
   @Public()
-  @Turnstile('auth.reset.ip')
+  @RateLimit('auth.reset.ip')
   reset(
     @Body({ schema: resetSchema }) body: ResetBody,
     @Res({ passthrough: true }) res: Response,
