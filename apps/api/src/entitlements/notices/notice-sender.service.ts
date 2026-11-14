@@ -122,9 +122,11 @@ export class NoticeSender implements OnModuleInit {
     const profile = await this.identity.getProfile(notice.recipient_user_id);
     const language = profile?.native_language ?? 'vi';
     const date = new Date(notice.period_key);
-    const plansUrl = `${this.config.learnerAppUrl.replace(/\/+$/, '')}/${language}/app/plans`;
+    const appUrl = this.config.learnerAppUrl.replace(/\/+$/, '');
+    const plansUrl = `${appUrl}/${language}/app/plans`;
     const mail = entitlementMail(notice.kind, language, {
-      trialEndsAt: date, periodEnd: date, timeZone: profile?.timezone, plansUrl, ...(receipt === null ? {} : { receipt }),
+      trialEndsAt: date, periodEnd: date, timeZone: profile?.timezone, appUrl, plansUrl, supportEmail: this.config.supportEmail,
+      ...(receipt === null ? {} : { receipt }),
     });
     try {
       await this.mailer.send({ to: address, ...mail });
