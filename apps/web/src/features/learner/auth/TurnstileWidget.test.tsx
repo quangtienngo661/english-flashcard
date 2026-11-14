@@ -8,7 +8,7 @@ import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
 const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 const scripts = () => [...document.querySelectorAll('script')].filter((s) => s.src.includes('challenges.cloudflare.com'));
 
-type RenderOptions = { sitekey: string; 'refresh-expired': string; callback: (token: string) => void; 'expired-callback': () => void; 'error-callback': () => void; 'timeout-callback': () => void };
+type RenderOptions = { sitekey: string; 'refresh-expired': string; size: string; callback: (token: string) => void; 'expired-callback': () => void; 'error-callback': () => void; 'timeout-callback': () => void };
 function installTurnstile() {
   const api = { render: vi.fn<(element: HTMLElement, options: RenderOptions) => string>(() => 'widget-1'), reset: vi.fn(), remove: vi.fn() };
   (window as unknown as { turnstile?: typeof api }).turnstile = api;
@@ -56,12 +56,14 @@ describe('TurnstileWidget with a site key', () => {
   });
 
   // QM2-1 (owner 10/11/2026: "Luôn hiện"): the widget keeps today's options and always shows; no `appearance` option.
-  it('renders with exactly the sitekey, refresh-expired and the four callbacks, so the box always shows', () => {
+  it('renders with exactly the sitekey, refresh-expired, size and the four callbacks, so the box always shows', () => {
     renderApp(<TurnstileWidget onToken={vi.fn()} />);
     const api = installTurnstile();
     act(() => scripts()[0]!.dispatchEvent(new Event('load')));
     const options = api.render.mock.calls[0]![1] as Record<string, unknown>;
-    expect(Object.keys(options).sort()).toEqual(['callback', 'error-callback', 'expired-callback', 'refresh-expired', 'sitekey', 'timeout-callback']);
+    expect(Object.keys(options).sort()).toEqual(['callback', 'error-callback', 'expired-callback', 'refresh-expired', 'sitekey', 'size', 'timeout-callback']);
+    // Owner 14/11/2026: as wide as the sign-in fields (Cloudflare: 'flexible' is 100% of the container, 300 px at least).
+    expect(options).toMatchObject({ size: 'flexible' });
     expect(options).not.toHaveProperty('appearance');
   });
 

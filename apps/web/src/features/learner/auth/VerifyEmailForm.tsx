@@ -12,7 +12,6 @@ import { clearPendingEmail, clearPendingPassword, readPendingEmail, readPendingP
 import { useSession } from '@/app-shell/session/session-context';
 import type { Me } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
-import { useTurnstile } from './use-turnstile';
 import { Button } from '@/ui/Button';
 import { OtpField } from '@/ui/OtpField';
 import { PasswordField } from '@/ui/PasswordField';
@@ -21,7 +20,6 @@ import { TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
 import type { AppLocale } from '@/i18n/routing';
 import { AuthHeading, FormError } from './AuthHeading';
-import { CaptchaPending } from './CaptchaPending';
 import { useFocusFirstInvalid } from './focus-first-invalid';
 
 const DIGITS = 6;
@@ -89,16 +87,12 @@ export function VerifyEmailForm() {
   }, []);
   const wait = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
-  // One widget for both presses (verify and resend); each spends its token. Review 07/11 F7: verify-email needs one too.
-  const bot = useTurnstile();
   const { submit, busy } = useSubmitOnce(async () => {
     submitting.current = true;
     try {
-      await store!.verifyEmail(email, code, password, bot.token ?? undefined);
+      await store!.verifyEmail(email, code, password);
     } catch (failure) {
       submitting.current = false;
-      // The form stays on the page after a failure, so the spent token is replaced; a success leaves the page.
-      bot.reset();
       throw failure;
     }
     clearPendingEmail();
@@ -107,7 +101,6 @@ export function VerifyEmailForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (bot.token === null) return;
     setError(null);
     const empty = {
       ...(email ? {} : { email: t('required.email') }),
@@ -131,12 +124,7 @@ export function VerifyEmailForm() {
 
   // One request per press: the API refuses a second code within 60 s.
   const resendPress = useSubmitOnce(async () => {
-    try {
-      await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'verify_email', email, turnstile_token: bot.token });
-    } finally {
-      // This form stays on the page whatever the answer, so the spent token is always replaced.
-      bot.reset();
-    }
+    await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'verify_email', email });
     setResendAt(Date.now() + RESEND_AFTER_S * 1000);
     setNow(Date.now());
     showToast(t('verify.resent'), 'success');
@@ -174,16 +162,14 @@ export function VerifyEmailForm() {
           length={DIGITS}
           error={missing.code}
         />
-        {bot.widget}
         <FormError message={error} />
-        <CaptchaPending show={bot.pending} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store}>
           {t('verify.submit')}
         </Button>
         {wait > 0 ? (
           <p className="text-center font-wm-sans text-wm-small text-wm-muted">{t('verify.resendIn', { seconds: wait })}</p>
         ) : (
-          <TextButton className="self-center" isDisabled={resendPress.busy || !email || bot.token === null} onPress={() => void resend()}>
+          <TextButton className="self-center" isDisabled={resendPress.busy || !email} onPress={() => void resend()}>
             {t('verify.resend')}
           </TextButton>
         )}

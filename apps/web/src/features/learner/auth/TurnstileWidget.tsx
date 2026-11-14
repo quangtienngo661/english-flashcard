@@ -76,6 +76,8 @@ export function TurnstileWidget({
         sitekey: siteKey,
         // The default, written down so nobody changes it by accident: an expired token is replaced without the form noticing.
         'refresh-expired': 'auto',
+        // Owner 14/11/2026: as wide as the fields above it. 'flexible' is 100% of the container, 300 px at least (Cloudflare widget sizes).
+        size: 'flexible',
         callback: (token: string) => latest.current(token),
         'expired-callback': () => latest.current(null),
         'error-callback': () => latest.current(null),
