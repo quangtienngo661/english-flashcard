@@ -37,6 +37,7 @@
     "smoke:buoc-7": "node scripts/smoke-buoc-7.mjs",
     "smoke:buoc-8": "node scripts/smoke-buoc-8.mjs",
     "smoke:nhom-b": "node scripts/smoke-nhom-b.mjs",
+    "smoke:identity": "node scripts/smoke-identity.mjs",
     "smoke:session-synonyms": "node scripts/smoke-session-synonyms.mjs",
     "smoke:cloze-own-then-ai": "node scripts/smoke-cloze-own-then-ai.mjs",
     "smoke:dot-cai-thien-c": "node scripts/smoke-dot-cai-thien-c.mjs",
