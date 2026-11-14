@@ -31,9 +31,12 @@ test('footer contact is a mailto link', async ({ page }) => {
   await expect(page.getByRole('contentinfo').getByRole('link', { name: copy.vi.Footer.contact })).toHaveAttribute('href', /^mailto:/);
 });
 
-// The language link left the footer with the English landing (design landing-redesign L4); since M8.4 the footer has no page anchors (Figma 7:209).
-test('footer has no language link', async ({ page }) => {
+// Since 14/11/2026 both landings exist, so the footer links to the other one (design landing-redesign L4 reversed); it has no page anchors (Figma 7:209).
+test('footer links to the other language, marked with its own lang', async ({ page }) => {
   await page.goto('/vi');
-  const footer = page.getByRole('contentinfo');
-  await expect(footer.getByRole('link', { name: /english/i })).toHaveCount(0);
+  const link = page.getByRole('contentinfo').getByRole('link', { name: copy.vi.Footer.otherLanguage, exact: true });
+  await expect(link).toHaveAttribute('href', '/en');
+  await expect(link).toHaveAttribute('lang', 'en');
+  await page.goto('/en');
+  await expect(page.getByRole('contentinfo').getByRole('link', { name: copy.en.Footer.otherLanguage, exact: true })).toHaveAttribute('href', '/vi');
 });

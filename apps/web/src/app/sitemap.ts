@@ -6,8 +6,7 @@ import { site } from '@/lib/site';
 const absolute = (path: string) => new URL(path, site.url).toString();
 
 /**
- * Design §11: only indexable pages. The home page lists only locales with a landing (design landing-redesign L4: /en redirects to /vi
- * until the English copy exists). The Privacy Policy joins once the site is indexable, dated by the published text's effective date
+ * Design §11: only indexable pages. The home page lists the locales with a landing (`LANDING_LOCALES`: vi and en). The Privacy Policy joins once the site is indexable, dated by the published text's effective date
  * when the API answers at build; the Terms and the Sources page join only when their `noindex` goes (a launch item, deploy-checklist.md).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -6,12 +6,13 @@ import { Container } from './Container';
 import { FooterThemeSwitch } from './FooterThemeSwitch';
 
 /**
- * Figma "Chân trang" (`7:209` desktop, `9:100` phone): logo, the three legal pages and the contact address, then the year. Desktop is one
+ * Figma "Chân trang" (`7:209` desktop, `9:100` phone): logo, the three legal pages, the contact address and a link to the other language (14/11/2026), then the year. Desktop is one
  * row; a phone puts the logo above one wrapping row and adds the theme switch under it (owner QM8-1b′). Links are plain text, as drawn.
  */
 export function SiteFooter({ locale }: { locale: AppLocale }) {
   const t = useTranslations('Footer');
   const nav = useTranslations('Nav');
+  const other: AppLocale = locale === 'vi' ? 'en' : 'vi';
   const link =
     'inline-flex min-h-11 items-center rounded-wm-control font-wm-sans text-wm-small text-wm-muted outline-none transition-colors duration-200 hover:text-wm-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent';
   return (
@@ -44,6 +45,11 @@ export function SiteFooter({ locale }: { locale: AppLocale }) {
             <li>
               <a href={`mailto:${site.contactEmail}`} className={link}>
                 {t('contact')}
+              </a>
+            </li>
+            <li>
+              <a href={`/${other}`} lang={other} hrefLang={other} className={link}>
+                {t('otherLanguage')}
               </a>
             </li>
           </ul>
