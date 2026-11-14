@@ -10,6 +10,7 @@
     "accounts:export-deletions": "node dist/cli/accounts-deletions.js export",
     "accounts:replay-deletions": "node dist/cli/accounts-deletions.js replay",
     "admin:grant": "node dist/cli/admin-grant.js",
+    "mail:preview": "node dist/cli/mail-preview.js",
     "ipa:build-csv": "node dist/cli/ipa-build-csv.js",
     "tts:backfill": "node dist/cli/tts-backfill.js",
     "build": "nest build",
