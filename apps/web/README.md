@@ -14,8 +14,8 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `pnpm lint` | ESLint plus `scripts/check-tailwind-raw.mjs` (no arbitrary Tailwind values or inline styles) |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm test` | Vitest unit and component tests |
-| `pnpm test:e2e` | Playwright on the Worker (builds, migrates local D1 and starts on port 3100; desktop 1440 and mobile 390, with axe) |
-| `pnpm assert:static` | After a build: fails unless `/vi` and `/en` are prerendered |
+| `pnpm test:e2e` | Playwright on the Worker (builds and starts on port 3100; desktop 1440 and mobile 390, with axe) |
+| `pnpm assert:render-mode` | After a build: fails unless `/vi` and `/en` are prerendered and, with `NEXT_PUBLIC_LEARNER_APP=on`, no page under `/vi/app` or `/en/app` is (the app is rendered per request so each response has its own CSP nonce) |
 
 ## Environment
 
@@ -23,15 +23,26 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 |---|---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `https://wordmet.com` | Absolute URLs in metadata, sitemap and JSON-LD |
 | `NEXT_PUBLIC_INDEXABLE` | off | `true` | Set to `true` at launch; until then robots.txt disallows everything and pages are `noindex` |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | `hello@wordmet.com` | `hello@wordmet.com` | Footer and privacy contact link |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | `contact@wordmet.com` | `contact@wordmet.com` | General contact: the footer link and the legal pages' draft notice (the Terms and Privacy Policy name it for general questions) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `support@wordmet.com` | `support@wordmet.com` | Help with an order, data or a complaint: the support line on Plans and on the order return page |
+| `NEXT_PUBLIC_LEARNER_APP` | off | off until Deploy | `on` builds the learner app under `/vi/app`, `/en/app`; otherwise its files are left out of the build and `/…/app/*` redirects (307) to the landing |
+| `NEXT_PUBLIC_ADSENSE_CLIENT` | blank | the `ca-pub-…` id Google gives once it approves the site | Blank: the Pro introduction dialog is shown to Free learners aged 16 or more on Nhóm and Tra từ. Set: the AdSense script is added only on those two pages, the dialog never shows, and the CSP of `/app` gains the sources Google asks for (launch prep B design §5). Also put `public/ads.txt` with the line AdSense gives. Build-time value: changing it needs a new build |
+| `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | blank (fake widget) | the key of the Turnstile widget (wordmet.com, www and admin hosts) | Cloudflare Turnstile on the sign-up, sign-in and reset forms. Blank uses a fake widget that only an API with `TURNSTILE_MODE=fake` accepts; a build of `https://wordmet.com` with the app on and no key fails |
+| `API_INTERNAL_BASE_URL` | unset | unset | Server-only, read at run time. API origin for requests the web server makes (`/privacy`, `/terms`) when it reaches the API at another address than the browser; the Docker stack sets `http://api:3000`. Unset: `NEXT_PUBLIC_API_BASE_URL` |
+| `LANDING_DATA_REQUIRED` | unset | `1` once the production API answers | Build-time only. `1`: `next build` fails when it cannot read the landing's prices and FAQ from the API. Unset: it prints one `[landing-data]` warning and the home page uses the fallback prices and FAQ (`src/site/landing/landing-data.fallback.ts`) |
+| `LANDING_DATA_SOURCE` | unset | unset | Build-time only. `fallback`: `next build` does not read the API and the home page uses the fallback prices and FAQ (the e2e build sets it) |
+
+`next build` reads the landing's prices (`/v1/public/prices`) and FAQ (`/v1/public/faq`) once, from `API_INTERNAL_BASE_URL`, else
+`NEXT_PUBLIC_API_BASE_URL`, else `http://localhost:3000`, and bakes them into the prerendered `/vi` and `/en` (and the JSON-LD offers). A
+price or FAQ change in the admin shows on the home page only after the next build.
 
 `NEXT_PUBLIC_*` values are baked into the build. Changing them on the Cloudflare dashboard takes effect only after
 the next build and deploy.
 
 ## Deploy (Cloudflare)
 
-OpenNext builds the landing for Cloudflare Workers (`wordmet-web`); the waitlist uses D1 (`wordmet-waitlist`, binding
-`DB`). Workers Builds deploys `main` from `apps/web`. Configuration and setup:
+OpenNext builds the landing for Cloudflare Workers (`wordmet-web`); the landing has no database. Workers Builds deploys `main` from `apps/web`. Configuration and setup:
 `docs/superpowers/specs/2026-10-08-landing-deploy-design.md`, `docs/superpowers/plans/2026-10-08-landing-deploy.md`.
 Run these commands from `apps/web`:
 
@@ -41,33 +52,11 @@ Run these commands from `apps/web`:
 | `pnpm cf:dev` | Run the built Worker with `wrangler dev --port 3100` |
 | `pnpm deploy` | Build with OpenNext and deploy to Cloudflare |
 | `pnpm cf-typegen` | Regenerate `cloudflare-env.d.ts` from Wrangler bindings |
-| `pnpm db:migrate:local` | Apply migrations to local D1 |
-| `pnpm db:migrate:remote` | Apply migrations to production D1 |
 | `pnpm cf:docker [Playwright args]` | Build the Worker, run Playwright e2e and check static pages in Linux |
 | `pnpm gen:og-fonts` | Re-embed OG fonts as base64 in `src/app/[locale]/og-fonts.generated.ts` after changing font files |
 
-Local D1 persists in `.wrangler/state`. Run `pnpm db:migrate:local` before `pnpm dev` or `pnpm cf:dev`.
-Playwright's webServer runs `cf:build`, `db:migrate:local`, `scripts/e2e-cf.mjs` and `cf:dev`; the helper pins a
-geolocation-free `request.cf` via `CLOUDFLARE_CF_FETCH_PATH`.
-
-Run `pnpm db:migrate:remote` before the first deploy and before deploying a new migration. Workers Builds does not
-apply migrations automatically. Set the Production environment values above before building.
-
-View the waitlist (add `--json` to export):
-
-```sh
-pnpm exec wrangler d1 execute wordmet-waitlist --remote --command "SELECT * FROM waitlist ORDER BY created_at"
-```
-
-For an email deletion request, remove the address within 30 days and confirm with the requester. Replace the example
-with the normalized email (trimmed, lowercase); escape any SQL single quote as two single quotes.
-**`--remote` targets production**, including the deletion below:
-
-```sh
-pnpm exec wrangler d1 execute wordmet-waitlist --remote --command "DELETE FROM waitlist WHERE email = 'person@example.com'"
-```
-
-D1 Time Travel is always enabled and keeps 7 days of history on Free.
+Playwright's webServer runs `cf:build`, `scripts/e2e-cf.mjs` and `cf:dev`; the helper pins a geolocation-free `request.cf` via
+`CLOUDFLARE_CF_FETCH_PATH`. Set the Production environment values above before building.
 
 ## Windows
 
@@ -87,7 +76,7 @@ $env:SWC_NATIVE_BINDING_CACHE = "$env:USERPROFILE\.cache\swc-native"
 
 ## Structure
 
-- `src/app/[locale]/page.tsx` only composes sections; components live in `src/components/{ui,layout,sections,interactive,seo}`.
-- Client components (hooks only): `WaitlistForm`, `ClozeCarousel`, `Flashcard`, `Reveal`, `LanguageSwitch`.
-- Copy: `messages/vi.json` and `messages/en.json` (line-break tags `<br>`, `<brMd>`, `<brSm>`).
+- Public pages: routes in `src/app/[locale]/(site)/` (`(pages)/` has the header and footer, `not-found.tsx` has no header); their components live in `src/site/{landing,legal,sources,layout,interactive,seo}`, which may not import `@/features/*` or `@/app-chrome/*`.
+- Client components (hooks only): `Reveal`, `FlyIn`, `TopicTicker`, `Parallax`, `Sweep`, `DemoLoops`, `ThemeToggleButton`, `FooterThemeSwitch`, `LegalToc`, `ReadingProgress`.
+- Copy: `messages/vi.json` and `messages/en.json` (the landing copy is the `Landing` namespace; `en` holds the Vietnamese text until the English landing is built).
 - Tokens: `src/app/globals.css` (`@theme`, rem units, WCAG-checked colours in `src/styles/tokens.test.ts`).

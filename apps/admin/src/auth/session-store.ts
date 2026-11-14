@@ -2,7 +2,16 @@ import type { Transport } from '../api/client';
 import { problemSlug, toApiError } from '../api/problem';
 import { gate } from './gate';
 
-export type Permission = 'roles.manage' | 'content.edit' | 'content.publish' | 'content.import' | 'taxonomy.manage';
+export type Permission =
+  | 'roles.manage'
+  | 'content.edit'
+  | 'content.publish'
+  | 'content.import'
+  | 'taxonomy.manage'
+  | 'settings.manage'
+  | 'entitlements.grant'
+  | 'users.read'
+  | 'ai.view';
 
 export type Me = {
   id: string;
@@ -13,14 +22,22 @@ export type Me = {
   timezone: string;
   staff_role: 'admin' | 'editor' | null;
   permissions: Permission[];
+  /** Bước 8: how this session signed in. A Google session never reaches a staff route (design §5.7). */
+  auth_method?: 'password' | 'google';
+  sign_in_methods?: Array<'password' | 'google'>;
 };
 
-export type Notice = 'no-access' | 'expired' | 'rate-limited';
+export type Notice = 'no-access' | 'password-required' | 'expired' | 'rate-limited' | 'logout-failed';
+
+/** FE38: set while a user-initiated sign-out has not reached the server, so a reload does not quietly resume the session. */
+const LOGOUT_PENDING_KEY = 'wordmet-admin-logout-pending';
 
 export type SessionState =
   /** `retryAt`: when the start-up refresh tries again after a 429 (ms since epoch, B25E30). */
   | { status: 'loading'; retryAt?: number }
   | { status: 'signed-out'; notice: Notice | null }
+  /** The start-up refresh got a 5xx or no answer: the session is kept, the screen offers a retry (FE36). */
+  | { status: 'unavailable' }
   | { status: 'change-password'; me: Me }
   | { status: 'signed-in'; me: Me };
 
@@ -34,7 +51,7 @@ export const CHANNEL_NAME = 'wordmet-admin-auth';
 const DEVICE = { client: 'web', device_label: 'Wordmet Admin' } as const;
 
 type TokenBody = { access_token: string };
-type RefreshResult = 'ok' | 'failed' | 'rate-limited';
+type RefreshResult = 'ok' | 'failed' | 'rate-limited' | 'unavailable';
 
 /** B25E30: a refresh answered 429 is tried this many times in all before the session gives up. */
 export const REFRESH_TRIES = 3;
@@ -70,11 +87,17 @@ export class SessionStore {
       this.leaving = false;
     });
     opts.channel?.addEventListener('message', (event) => {
-      const type = (event.data as { type?: unknown } | null)?.type;
+      const data = event.data as { type?: unknown; failed?: unknown } | null;
+      const type = data?.type;
       if (type === 'logout') {
         this.token = null;
-        this.set({ status: 'signed-out', notice: null });
+        // The sign-out did not reach the server: this tab keeps the pending flag too, so F5 here does not sign back in.
+        const failed = data?.failed === true;
+        if (failed) setLogoutPending(true);
+        this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : null });
       } else if (type === 'login' && this.state.status === 'signed-out') {
+        // A sign-in elsewhere supersedes a sign-out that never reached the server.
+        setLogoutPending(false);
         void this.bootstrap();
       }
     });
@@ -97,11 +120,12 @@ export class SessionStore {
     return this.bootstrapping;
   }
 
-  async login(email: string, password: string): Promise<void> {
-    const res = await this.raw('/v1/auth/login', json('POST', { email, password, ...DEVICE }), null);
+  async login(email: string, password: string, turnstileToken?: string): Promise<void> {
+    const res = await this.raw('/v1/auth/login', json('POST', { email, password, ...(turnstileToken === undefined ? {} : { turnstile_token: turnstileToken }), ...DEVICE }), null);
     if (!res.ok) throw await toApiError(res);
     this.token = ((await res.json()) as TokenBody).access_token;
     await this.recheck();
+    if (this.state.status === 'signed-in' || this.state.status === 'change-password') setLogoutPending(false);
     if (this.state.status === 'signed-in' || this.state.status === 'change-password') this.broadcast({ type: 'login' });
   }
 
@@ -117,14 +141,33 @@ export class SessionStore {
   }
 
   async logout(notice: Notice | null = null): Promise<void> {
-    try {
-      await this.raw('/v1/auth/logout', json('POST', {}, this.csrf()), this.token);
-    } catch {
-      // The local session ends either way; the server-side chain expires on its own.
-    }
+    const done = await this.postLogout();
     this.token = null;
-    this.set({ status: 'signed-out', notice });
-    this.broadcast({ type: 'logout' });
+    const failed = !done && notice === null;
+    if (failed) setLogoutPending(true);
+    this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : notice });
+    this.broadcast(failed ? { type: 'logout', failed: true } : { type: 'logout' });
+  }
+
+  /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
+  async retryLogout(): Promise<void> {
+    const pending = () => this.state.status === 'signed-out' && this.state.notice === 'logout-failed';
+    if (!pending()) return;
+    if (!(await this.postLogout())) return;
+    // A sign-in in another tab may have won meanwhile: then this answer is old news.
+    if (!pending()) return;
+    setLogoutPending(false);
+    this.set({ status: 'signed-out', notice: null });
+  }
+
+  /** True when the server has it: 2xx, 401 and 403 mean "no session left"; 429, 5xx and a network error mean the server did nothing. */
+  private async postLogout(): Promise<boolean> {
+    try {
+      const res = await this.raw('/v1/auth/logout', json('POST', {}, this.csrf()), this.token);
+      return res.ok || res.status === 401 || res.status === 403;
+    } catch {
+      return false;
+    }
   }
 
   /** `GET /v1/me` + gate rule. A failed `/me` leaves the state as it is. */
@@ -133,7 +176,10 @@ export class SessionStore {
     if (!res.ok) return;
     const me = (await res.json()) as Me;
     const next = gate(me);
-    if (next === 'app') this.set({ status: 'signed-in', me });
+    // The cookie is shared with the learner app (design §5.7): a Google sign-in there can become this tab's session at the next
+    // refresh. Staff routes refuse it (403 password-login-required), so the gate sends the person back to the password sign-in (B8E44).
+    if (me.staff_role !== null && me.auth_method === 'google') await this.logout('password-required');
+    else if (next === 'app') this.set({ status: 'signed-in', me });
     else if (next === 'change-password') this.set({ status: 'change-password', me });
     else await this.logout('no-access');
   }
@@ -147,23 +193,35 @@ export class SessionStore {
         const refreshed = await this.refresh();
         if (refreshed === 'ok') await this.recheck();
         else if (refreshed === 'rate-limited') this.giveUpRateLimited();
-        else await this.logout('expired');
+        else if (refreshed === 'failed') await this.logout('expired');
       } else if (slug === 'password-change-required') {
         await this.recheck();
+      } else if (slug === 'password-login-required') {
+        await this.logout('password-required');
       }
     }
     return res;
   };
 
   private async runBootstrap(): Promise<void> {
+    if (isLogoutPending()) {
+      this.set({ status: 'signed-out', notice: 'logout-failed' });
+      return;
+    }
+    const wasUnavailable = this.state.status === 'unavailable';
     try {
       const refreshed = await this.refresh();
       if (refreshed === 'rate-limited') {
         this.giveUpRateLimited();
         return;
       }
+      if (refreshed === 'unavailable') {
+        this.set({ status: 'unavailable' });
+        return;
+      }
       if (refreshed === 'failed') {
-        this.set({ status: 'signed-out', notice: null });
+        // A retry after "unavailable": the session existed, so say it ended.
+        this.set({ status: 'signed-out', notice: wasUnavailable ? 'expired' : null });
         return;
       }
       await this.recheck();
@@ -187,12 +245,21 @@ export class SessionStore {
    */
   private async runRefresh(): Promise<RefreshResult> {
     for (let attempt = 1; ; attempt += 1) {
-      const res = await this.postRefresh();
+      let res: Response;
+      try {
+        res = await this.postRefresh();
+      } catch (error) {
+        // No answer (offline, server down). Not while the page is leaving: that is the unload, not an outage.
+        if (!(error instanceof TypeError) || this.leaving) throw error;
+        this.token = null;
+        return 'unavailable';
+      }
       if (res.ok) {
         this.token = ((await res.json()) as TokenBody).access_token;
         return 'ok';
       }
       this.token = null;
+      if (res.status >= 500) return 'unavailable';
       if (res.status !== 429) return 'failed';
       if (attempt >= REFRESH_TRIES) return 'rate-limited';
       const seconds = retryAfterSeconds(res) ?? REFRESH_RETRY_DEFAULT_S;
@@ -212,7 +279,11 @@ export class SessionStore {
     try {
       return await this.raw('/v1/auth/refresh', { ...init, keepalive: true }, null);
     } catch (error) {
-      if (!(error instanceof TypeError) || this.leaving) throw error;
+      if (!(error instanceof TypeError)) throw error;
+      // The rejection can settle between two pagehide listeners, before ours sets `leaving` (RKC3): decide after the whole
+      // dispatch. A page that is torn down or frozen never runs this timer, so no second refresh is sent.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (this.leaving) throw error;
       return this.raw('/v1/auth/refresh', init, null);
     }
   }
@@ -238,6 +309,8 @@ export class SessionStore {
       await this.logout('expired');
       return res;
     }
+    // The API is down, not the session: no logout, no broadcast. The API client turns this into the offline band.
+    if (refreshed === 'unavailable') throw new TypeError('refresh unavailable');
     return this.raw(path, init, this.token);
   }
 
@@ -251,7 +324,7 @@ export class SessionStore {
     return { 'X-CSRF-Protection': '1' };
   }
 
-  private broadcast(message: { type: 'login' | 'logout' }): void {
+  private broadcast(message: { type: 'login' | 'logout'; failed?: true }): void {
     try {
       this.opts.channel?.postMessage(message);
     } catch {
@@ -267,6 +340,23 @@ export class SessionStore {
 
 function json(method: string, body: unknown, extra: Record<string, string> = {}): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json', ...extra }, body: JSON.stringify(body) };
+}
+
+function isLogoutPending(): boolean {
+  try {
+    return sessionStorage.getItem(LOGOUT_PENDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setLogoutPending(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(LOGOUT_PENDING_KEY, '1');
+    else sessionStorage.removeItem(LOGOUT_PENDING_KEY);
+  } catch {
+    // Storage blocked: the notice still shows this time, a reload just cannot remember it.
+  }
 }
 
 function retryAfterSeconds(res: Response): number | null {

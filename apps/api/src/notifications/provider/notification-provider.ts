@@ -9,5 +9,14 @@ export type NotificationOutcome = 'sent' | 'no-address' | 'budget-exhausted';
  */
 export abstract class NotificationProvider {
   abstract readonly channel: 'email' | 'push';
-  abstract send(userId: string, message: { kind: ReminderKind; language: ReminderLanguage }): Promise<NotificationOutcome>;
+  /** `streakDays`: the study streak to mention (round C, DC29), or null for none. */
+  abstract send(userId: string, message: { kind: ReminderKind; language: ReminderLanguage; streakDays: number | null }): Promise<NotificationOutcome>;
+}
+
+/** The send failed before the message was handed to the mail server (a database read, the budget): certainly not delivered. */
+export class NotSentError extends Error {
+  constructor(readonly original: unknown) {
+    super('Reminder not sent');
+    this.name = 'NotSentError';
+  }
 }

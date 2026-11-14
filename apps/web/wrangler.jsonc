@@ -17,13 +17,5 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "wordmet-web"
     }
-  ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "wordmet-waitlist",
-      "database_id": "a7f12f90-13e4-4e2f-81d0-cf20800c3ec7",
-      "migrations_dir": "migrations"
-    }
   ]
 }

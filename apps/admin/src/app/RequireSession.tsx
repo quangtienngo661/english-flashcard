@@ -7,7 +7,7 @@ export function RequireSession() {
   const { state } = useSession();
   const location = useLocation();
 
-  if (state.status === 'loading') return <SessionLoading />;
+  if (state.status === 'loading' || state.status === 'unavailable') return <SessionLoading />;
   if (state.status === 'signed-out') {
     return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
   }

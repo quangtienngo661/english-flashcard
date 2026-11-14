@@ -1,0 +1,851 @@
+<title>Năm đề xuất GM14–GM18</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one 1160px column, sticky tab bar for the five proposals; each proposal is a stack of demo panels (old vs new side by side). */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --ghost:#c9cedc; --line:#e1e5ee;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --warn:#a2650a; --warn-soft:#fbf0dc;
+  --old:#8a6a2c; --old-soft:#f6efe1;
+  --scrim:rgb(27 36 68 / .30);
+  --shadow-card:0 1px 2px rgb(27 36 68 / .06),0 10px 28px -14px rgb(27 36 68 / .20);
+  --shadow-row:0 1px 2px rgb(27 36 68 / .06),0 4px 12px -8px rgb(27 36 68 / .16);
+  --shadow-pop:0 2px 6px rgb(27 36 68 / .08),0 24px 56px -24px rgb(27 36 68 / .34);
+  --shadow-btn:0 6px 14px -8px rgb(30 58 138 / .55);
+  --ledge:0 .25rem 0 #142a66;
+  --font-sans:'Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --ease-main:cubic-bezier(0.23,1,0.32,1); --ease-std:cubic-bezier(0.2,0,0,1); --ease-enter:cubic-bezier(0.05,0.7,0.1,1);
+  --ease-exit:cubic-bezier(0.3,0,0.8,0.15); --ease-in:cubic-bezier(.4,0,1,1); --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --slow:1;
+  --g0:#e5603f; --g1:#149384; --g2:#7a55d3; --g3:#d99a17; --g4:#4a9637; --g5:#d2427a; --g6:#2a86d1;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --warn:#f0b450; --warn-soft:#2c2412; --old:#d8b678; --old-soft:#2a2416; --scrim:rgb(0 0 0 / .5);
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 10px 28px -14px rgb(0 0 0 / .7); --shadow-row:0 1px 2px rgb(0 0 0 / .4),0 4px 12px -8px rgb(0 0 0 / .6);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .4),0 24px 56px -24px rgb(0 0 0 / .8); --shadow-btn:none; --ledge:0 .25rem 0 #4a5cb0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --warn:#f0b450; --warn-soft:#2c2412; --old:#d8b678; --old-soft:#2a2416; --scrim:rgb(0 0 0 / .5);
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 10px 28px -14px rgb(0 0 0 / .7); --shadow-row:0 1px 2px rgb(0 0 0 / .4),0 4px 12px -8px rgb(0 0 0 / .6);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .4),0 24px 56px -24px rgb(0 0 0 / .8); --shadow-btn:none; --ledge:0 .25rem 0 #4a5cb0; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1160px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.025em;line-height:1.1}
+h2{font-size:26px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+h3{font-size:18px;font-weight:700;line-height:1.3}
+p{margin:0}
+.lead{color:var(--muted);max-width:68ch}
+.mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+header.top{padding-block:32px 16px;display:grid;gap:8px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:24px}
+nav.tabs a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:8px;color:var(--muted);font-weight:600;text-decoration:none;font-size:14px}
+nav.tabs a b{font-family:var(--font-mono);font-weight:500;font-size:12px}
+nav.tabs a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+nav.tabs a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-block:8px 16px}
+section.gm{display:grid;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-card);padding:20px;display:grid;gap:14px;min-width:0}
+.panel>header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.pair{grid-template-columns:minmax(0,1fr)}}
+.side{display:grid;gap:8px;min-width:0}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--font-mono)}
+.tag.old{background:var(--old-soft);color:var(--old)}
+.tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.stage{position:relative;height:220px;border-radius:12px;background:var(--bg);border:1px solid var(--line);overflow:hidden;display:grid;place-items:center}
+.spec{font-family:var(--font-mono);font-size:12px;color:var(--muted);line-height:1.5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;border:0;
+  background:var(--accent);color:var(--on-accent);font:600 14px var(--font-sans);cursor:pointer;box-shadow:var(--shadow-btn)}
+.btn.sec{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line),0 4px 10px -8px rgb(30 58 138 / .45)}
+.btn.sm{min-height:34px;padding:0 12px;font-size:13px}
+.tbtn{background:none;border:0;padding:6px 4px;color:var(--accent);font:600 14px var(--font-sans);cursor:pointer;border-radius:6px}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--accent-soft);gap:2px}
+.seg button{border:0;background:none;color:var(--muted);font:600 13px var(--font-sans);min-height:32px;padding:0 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-row)}
+.choose{border-top:1px dashed var(--line);padding-top:14px;display:grid;gap:6px}
+.choose ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.note{font-size:13px;color:var(--muted)}
+.banner{border-radius:12px;padding:12px 16px;background:var(--warn-soft);color:var(--ink);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.banner[hidden]{display:none}
+html.rm.no-force .stage *, html.rm.no-force .stage{animation-duration:1ms!important;transition-duration:1ms!important}
+
+/* ---------- GM14 demos ---------- */
+.fcard{width:150px;height:96px;perspective:1400px}
+.fcard .in{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.fcard .face{position:absolute;inset:0;border-radius:12px;background:var(--surface);box-shadow:var(--shadow-card);border:1px solid var(--line);
+  display:grid;place-items:center;backface-visibility:hidden;font:700 20px var(--font-display)}
+.fcard .back{transform:rotateY(180deg);font:600 16px var(--font-sans)}
+.old .fcard .in{transition:transform calc(280ms * var(--slow)) var(--ease-std)}
+.new .fcard .in{transition:transform calc(300ms * var(--slow)) var(--ease-main)}
+.flipped .fcard .in{transform:rotateY(180deg)}
+
+.ncard{position:absolute;width:150px;height:96px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-card);
+  display:grid;place-items:center;font:700 20px var(--font-display)}
+.ncard.nxt{opacity:0}
+.old.play .ncard.cur{visibility:hidden}
+.old.play .ncard.nxt{opacity:1;animation:cardRise calc(200ms * var(--slow)) var(--ease-enter) both}
+@keyframes cardRise{from{opacity:0;transform:translateY(.75rem)}}
+.new.play .ncard.cur{animation:dissolve calc(240ms * var(--slow)) var(--ease-main) both}
+.new.play .ncard.nxt{opacity:1;animation:sharpen calc(300ms * var(--slow)) var(--ease-main) both}
+@keyframes dissolve{to{transform:translateX(40px) rotate(5deg) scale(1.22);filter:blur(18px);opacity:0}}
+@keyframes sharpen{from{transform:translateY(16px) scale(.92);filter:blur(10px);opacity:.55}}
+
+.mockpage{position:absolute;inset:0;padding:14px;display:grid;gap:10px;align-content:start}
+.mockpage i{display:block;height:10px;border-radius:5px;background:var(--line)}
+.mockpage .blk{height:54px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow-card)}
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none}
+.dlg{position:absolute;left:50%;top:50%;width:min(240px,80%);transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-pop);
+  padding:14px;display:grid;gap:8px;opacity:0;pointer-events:none}
+.dlg b{font:700 15px var(--font-display)}
+.dlg i{display:block;height:8px;border-radius:4px;background:var(--line)}
+.old.open .scrim{opacity:1;animation:fadeIn calc(200ms * var(--slow)) var(--ease-std) both}
+.old.open .dlg{opacity:1;animation:dialogOld calc(250ms * var(--slow)) var(--ease-enter) both}
+.old.closing .scrim{animation:fadeOut calc(150ms * var(--slow)) var(--ease-exit) both}
+.old.closing .dlg{animation:dialogOldOut calc(150ms * var(--slow)) var(--ease-exit) both}
+@keyframes dialogOld{from{opacity:0;transform:translate(-50%,-50%) translateY(.5rem) scale(.97)}}
+@keyframes dialogOldOut{from{opacity:1;transform:translate(-50%,-50%)}to{opacity:0;transform:translate(-50%,-50%) scale(.98)}}
+.new .scrim{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.new.open .scrim{opacity:1;animation:fadeIn calc(200ms * var(--slow)) var(--ease-main) both}
+.new.open .dlg{opacity:1;animation:dialogNew calc(240ms * var(--slow)) var(--ease-main) both}
+.new.closing .scrim{animation:fadeOut calc(160ms * var(--slow)) var(--ease-in) both}
+.new.closing .dlg{animation:dialogNewOut calc(160ms * var(--slow)) var(--ease-in) both}
+@keyframes dialogNew{from{opacity:0;transform:translate(-50%,-50%) translateY(12px) scale(.97)}}
+@keyframes dialogNewOut{from{opacity:1;transform:translate(-50%,-50%)}to{opacity:0;transform:translate(-50%,-50%) translateY(6px) scale(.98)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+
+.phone{position:relative;width:170px;height:200px;border-radius:22px;border:6px solid var(--ink);background:var(--bg);overflow:hidden}
+.sheet{position:absolute;left:0;right:0;bottom:0;height:62%;background:var(--surface);border-radius:16px 16px 0 0;box-shadow:var(--shadow-pop);
+  padding:12px;display:grid;gap:8px;align-content:start;opacity:0;pointer-events:none}
+.sheet::before{content:"";width:36px;height:4px;border-radius:2px;background:var(--ghost);justify-self:center}
+.sheet i{display:block;height:8px;border-radius:4px;background:var(--line)}
+.old.open .sheet{opacity:1;animation:sheetOld calc(250ms * var(--slow)) var(--ease-enter) both}
+@keyframes sheetOld{from{transform:translateY(100%)}}
+.new.open .sheet{opacity:1;animation:sheetNew calc(240ms * var(--slow)) var(--ease-main) both}
+@keyframes sheetNew{from{transform:translateY(60px);opacity:.4}}
+.old.closing .sheet{animation:sheetOldOut calc(150ms * var(--slow)) var(--ease-exit) both}
+@keyframes sheetOldOut{to{transform:translateY(100%)}}
+.new.closing .sheet{animation:sheetNewOut calc(160ms * var(--slow)) var(--ease-in) both}
+@keyframes sheetNewOut{to{transform:translateY(60px);opacity:0}}
+
+.pressdemo .btn{min-height:44px;padding:0 20px;font-size:15px}
+.old .pbtn{background:var(--accent);color:var(--on-accent);box-shadow:var(--ledge);transition:translate calc(100ms * var(--slow)) var(--ease-std),box-shadow calc(100ms * var(--slow)) var(--ease-std)}
+.old .pbtn:active{translate:0 .18rem;box-shadow:none}
+.new .pbtn{transition:transform calc(150ms * var(--slow)) var(--ease-main),filter calc(200ms * var(--slow)) var(--ease-main)}
+@media (hover:hover){.new .pbtn:hover{filter:brightness(1.12)}}
+.new .pbtn:active{transform:scale(.97)}
+
+.sumgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(280px,90%)}
+.sumgrid .t{grid-column:1/-1;font:800 22px var(--font-display);letter-spacing:-.02em}
+.sumgrid .s{background:var(--surface);border-radius:12px;box-shadow:var(--shadow-row);padding:8px 10px;display:grid}
+.sumgrid .s b{font:800 20px var(--font-display)}
+.sumgrid .s span{font-size:12px;color:var(--muted)}
+.old.play .sumgrid>*{animation:sumOld calc(250ms * var(--slow)) var(--ease-enter) both}
+@keyframes sumOld{from{opacity:0;transform:translateY(.5rem)}}
+.new.play .sumgrid>*{animation:sumNew calc(520ms * var(--slow)) var(--ease-main) both}
+@keyframes sumNew{from{opacity:0;transform:translateY(10px);filter:blur(12px)}}
+
+/* ---------- GM15 ---------- */
+.g15stage{position:relative;height:340px;border-radius:12px;border:1px solid var(--line);background:var(--bg);overflow:hidden}
+.g15stage.phone15{width:min(320px,100%);margin:0 auto;border:8px solid var(--ink);border-radius:28px;height:420px}
+.g15dlg{position:absolute;left:50%;top:50%;width:min(340px,86%);transform:translate(-50%,-50%);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-pop);
+  padding:16px;display:grid;gap:10px;opacity:0;pointer-events:none}
+.phone15 .g15dlg{left:0;right:0;top:auto;bottom:0;width:auto;transform:none;border-radius:16px 16px 0 0}
+.g15dlg header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.g15dlg h3{font-size:17px}
+.g15dlg .x{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;font-size:16px}
+.g15dlg .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--bg);font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.g15stage .scrim{z-index:1}.g15dlg{z-index:2}
+.g15stage.on .scrim{opacity:1;animation:fadeIn calc(200ms * var(--slow)) var(--ease-main) both;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.g15stage.off .scrim{animation:fadeOut calc(160ms * var(--slow)) var(--ease-in) both}
+.g15dlg.show{opacity:1;pointer-events:auto}
+.g15stage[data-mode="shared"] .g15dlg.show{animation:dialogNew calc(240ms * var(--slow)) var(--ease-main) both}
+.g15stage.phone15[data-mode="shared"] .g15dlg.show{animation:sheetNew calc(240ms * var(--slow)) var(--ease-main) both}
+.g15stage[data-mode="shared"] .g15dlg.hide{animation:dialogNewOut calc(160ms * var(--slow)) var(--ease-in) both}
+.g15stage.phone15[data-mode="shared"] .g15dlg.hide{animation:sheetOut calc(160ms * var(--slow)) var(--ease-in) both}
+@keyframes sheetOut{to{transform:translateY(60px);opacity:0}}
+.g15stage[data-mode="each"] .g15dlg[data-k="add"].show{animation:eachTop calc(320ms * var(--slow)) var(--ease-enter) both}
+.g15stage[data-mode="each"] .g15dlg[data-k="group"].show{animation:eachZoom calc(420ms * var(--slow)) var(--ease-spring) both}
+.g15stage[data-mode="each"] .g15dlg[data-k="pro"].show{animation:eachPro calc(560ms * var(--slow)) var(--ease-spring) both}
+.g15stage[data-mode="each"] .g15dlg[data-k="tx"].show{animation:eachRight calc(260ms * var(--slow)) var(--ease-std) both}
+.g15stage[data-mode="each"] .g15dlg.hide{animation:fadeOut calc(200ms * var(--slow)) linear both}
+@keyframes eachTop{from{opacity:0;transform:translate(-50%,-50%) translateY(-28px)}}
+@keyframes eachZoom{from{opacity:0;transform:translate(-50%,-50%) scale(.88)}}
+@keyframes eachPro{from{opacity:0;transform:translate(-50%,-50%) scale(.8) rotate(-2deg)}}
+@keyframes eachRight{from{opacity:0;transform:translate(-50%,-50%) translateX(40px)}}
+.phone15[data-mode="each"] .g15dlg[data-k].show{animation-name:eachPhone}
+@keyframes eachPhone{from{transform:translateY(100%)}}
+.launch{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ---------- GM16 browser ---------- */
+.browser{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow-card)}
+.chrome{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chrome button{min-width:36px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font:600 14px var(--font-sans)}
+.chrome button:disabled{opacity:.4;cursor:default}
+.addr{flex:1 1 220px;min-width:0;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:0 12px;display:flex;align-items:center;font:500 13px var(--font-mono);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.viewport{position:relative;height:440px;overflow:hidden;background:var(--bg)}
+.vpage{position:absolute;inset:0;padding:20px;display:grid;gap:14px;align-content:start}
+.vpage h3{font-size:28px;font-weight:800;letter-spacing:-.025em}
+.vcard{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-card);padding:14px;display:grid;gap:8px;max-width:520px}
+.cal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92%);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-pop);padding:16px;display:grid;gap:10px;z-index:3}
+.cal header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal .x{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mgrid span{font:500 11px var(--font-mono);color:var(--muted);text-align:center}
+.mgrid button{aspect-ratio:1/1;max-width:100%;border:1px solid transparent;border-radius:10px;background:var(--bg);color:var(--ink);font:600 13px var(--font-sans);cursor:pointer;position:relative;padding:0}
+.mgrid button[disabled]{background:none;color:var(--ghost);cursor:default}
+.mgrid button.today{border-color:var(--accent);color:var(--accent)}
+.mgrid button .ds{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:center;gap:2px}
+.mgrid button .ds i{width:4px;height:4px;border-radius:50%}
+.totals{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.totals b{color:var(--ink);font-variant-numeric:tabular-nums}
+.dlist{display:grid;gap:6px;max-height:190px;overflow:auto}
+.dlist .r{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:var(--bg);font-size:14px}
+.dlist .r em{margin-left:auto;font-style:normal;font-size:12px;font-family:var(--font-mono);color:var(--muted)}
+.hist{font:500 12px var(--font-mono);color:var(--muted);display:grid;gap:2px}
+.hist .cur{color:var(--accent);font-weight:600}
+.gone{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px}
+
+/* ---------- GM17 ---------- */
+.conflict{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.conflict{grid-template-columns:minmax(0,1fr)}}
+.minicard{border:1.5px solid var(--g0);border-radius:14px;padding:14px;display:grid;gap:10px;background:var(--surface);box-shadow:var(--shadow-card)}
+.minicard .nm{font:800 20px var(--font-display);letter-spacing:-.02em}
+.twobtn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ylw{background:var(--mark)!important;color:var(--mark-ink)!important}
+.frames{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
+.frames.desk{grid-template-columns:minmax(0,1fr)}
+.frame{border:1px solid var(--line);border-radius:16px;background:var(--bg);overflow:hidden;display:grid;min-width:0}
+.frame .cap{font:600 12px var(--font-mono);color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.screen{padding:16px;display:grid;gap:14px;align-content:start;min-height:420px;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:20px 20px}
+.desk .screen{padding:20px 40px}
+.shead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.shead .x{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--muted);flex:none}
+.shead .ttl{font-weight:600;font-size:14px}
+.pbar{flex:1 1 80px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}
+.pbar b{display:block;height:100%;background:var(--accent);border-radius:3px}
+.cnt{display:inline-flex;gap:4px}
+.cnt span{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 6px;border-radius:6px;font:600 12px var(--font-sans);font-variant-numeric:tabular-nums}
+.cnt .y{background:var(--pass-soft);color:var(--pass)}.cnt .n{background:var(--fail-soft);color:var(--fail)}
+.qcard{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-card);padding:18px;display:grid;gap:12px}
+.qcard .ask{font-size:14px;color:var(--muted)}
+.qcard .mean{font:700 22px var(--font-display);letter-spacing:-.015em;line-height:1.25}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:420px){.opts{grid-template-columns:minmax(0,1fr)}}
+.opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);box-shadow:var(--shadow-row);font-weight:600;font-size:15px}
+.opt kbd,.kbd{font:500 11px var(--font-mono);min-width:20px;height:20px;display:inline-grid;place-items:center;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--muted);padding:0 4px}
+.inp{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:10px;border:1.5px solid var(--accent);background:var(--surface);font-size:16px;box-shadow:0 0 0 3px var(--accent-soft)}
+.inp .caret{width:2px;height:22px;background:var(--accent);margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.tiles{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.desk .tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tile{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-card);padding:12px 14px;display:grid;gap:2px}
+.tile b{font:800 28px var(--font-display);font-variant-numeric:tabular-nums}
+.tile span{font-size:13px}
+.big{font:800 34px var(--font-display);letter-spacing:-.025em}
+
+/* ---------- GM18 ---------- */
+.spec18{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.spec18{grid-template-columns:minmax(0,1fr)}}
+.col18{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px;min-width:0;box-shadow:var(--shadow-row)}
+.col18 .w{font:600 12px var(--font-mono);color:var(--muted)}
+.d64{font-family:var(--font-display);font-size:clamp(34px,5.2vw,56px);line-height:1.05}
+.d96{font-family:var(--font-display);font-size:clamp(56px,8vw,96px);line-height:.9}
+.d32{font-family:var(--font-display);font-size:28px;line-height:1.15}
+.d18{font-family:var(--font-display);font-size:19px;line-height:1.3}
+.tight .d64{letter-spacing:-.025em}.tight .d96{letter-spacing:-.035em}.tight .d32{letter-spacing:-.015em}
+.lh12 .d64{line-height:1.2}.lh12 .d32{line-height:1.25}
+.survey{background:var(--accent-soft);border:0;box-shadow:none}
+.survey ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.survey .verdict{font-weight:600}
+.diff{font:600 18px var(--font-mono);letter-spacing:.02em}
+.diff .bad{background:var(--fail-soft);color:var(--fail);text-decoration:line-through;border-radius:4px;padding:0 2px}
+.diff .ok{background:var(--pass-soft);color:var(--pass);border-radius:4px;padding:0 2px}
+.fb{background:var(--fail-soft);border-radius:14px;padding:14px;display:grid;gap:8px;box-shadow:var(--shadow-card)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="mono">Giao diện mới · đề xuất chờ duyệt · 09/11/2026</span>
+    <h1>Năm đề xuất GM14–GM18</h1>
+    <p class="lead">Mỗi mục đặt bản hiện tại cạnh bản đề xuất để bạn so. Bấm "Chạy lại" để xem chuyển động; bật "Chậm 4 lần" để thấy rõ chỗ khác nhau.</p>
+    <div class="banner" id="rmBanner" hidden>
+      <span>Máy bạn đang bật giảm chuyển động, nên các ví dụ chạy gần như tức thì.</span>
+      <button class="btn sm sec" id="forceMotion" type="button">Xem đủ chuyển động</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Đề xuất">
+    <a href="#gm14"><b>GM14</b> Motion cũ và mới</a>
+    <a href="#gm15"><b>GM15</b> Một kiểu cho mọi hộp</a>
+    <a href="#gm16"><b>GM16</b> Lịch theo URL</a>
+    <a href="#gm17"><b>GM17</b> Màn Ôn nhớ lại</a>
+    <a href="#gm18"><b>GM18</b> Độ đậm tiêu đề</a>
+  </nav>
+
+  <!-- ================= GM14 ================= -->
+  <section class="gm" id="v-gm14" data-view="gm14">
+    <div>
+      <h2>GM14 · Sáu chỗ chuyển động lệch nhau</h2>
+      <p class="lead">Code hiện tại dùng chuyển động của hướng B; tài liệu motion của giao diện mới có số khác. Đề xuất: cả sáu chỗ lấy số mới.</p>
+    </div>
+    <div class="bar">
+      <button class="btn" type="button" data-replay-all>Chạy lại cả sáu</button>
+      <div class="seg" role="group" aria-label="Tốc độ">
+        <button type="button" data-slow="1" aria-pressed="true">Tốc độ thật</button>
+        <button type="button" data-slow="4" aria-pressed="false">Chậm 4 lần</button>
+      </div>
+    </div>
+
+    <div class="panel" data-demo="flip">
+      <header><h3>1. Lật thẻ ôn</h3><button class="tbtn" type="button" data-replay>Chạy lại</button></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><div class="fcard"><div class="in"><div class="face">mitigate</div><div class="face back">giảm nhẹ</div></div></div></div><p class="spec">rotateY 280ms · cubic-bezier(.2,0,0,1)</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><div class="fcard"><div class="in"><div class="face">mitigate</div><div class="face back">giảm nhẹ</div></div></div></div><p class="spec">rotateY 300ms · cubic-bezier(.23,1,.32,1)</p></div>
+      </div>
+    </div>
+
+    <div class="panel" data-demo="next">
+      <header><h3>2. Sang thẻ mới sau khi trả lời</h3><button class="tbtn" type="button" data-replay>Chạy lại</button></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><div class="ncard cur">allocate</div><div class="ncard nxt">deadline</div></div><p class="spec">thẻ cũ biến mất · thẻ mới trồi lên 0,75rem, 200ms</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><div class="ncard cur">allocate</div><div class="ncard nxt">deadline</div></div><p class="spec">thẻ cũ phóng to, mờ 18px, tan 240ms · thẻ mới từ mờ 10px thành nét 300ms</p></div>
+      </div>
+    </div>
+
+    <div class="panel" data-demo="dialog">
+      <header><h3>3. Hộp thoại mở và đóng</h3><button class="tbtn" type="button" data-replay>Mở rồi đóng</button></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><div class="mockpage"><i style="width:40%"></i><div class="blk"></div><div class="blk"></div></div><div class="scrim"></div><div class="dlg"><b>Thêm từ</b><i></i><i style="width:70%"></i></div></div><p class="spec">nhích 0,5rem, 250ms (vào nhanh rồi chậm) · đóng 150ms</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><div class="mockpage"><i style="width:40%"></i><div class="blk"></div><div class="blk"></div></div><div class="scrim"></div><div class="dlg"><b>Thêm từ</b><i></i><i style="width:70%"></i></div></div><p class="spec">nền mờ 3px 200ms · hộp nhích 12px, 240ms · đóng 160ms</p></div>
+      </div>
+    </div>
+
+    <div class="panel" data-demo="sheet">
+      <header><h3>4. Tấm trượt trên điện thoại</h3><button class="tbtn" type="button" data-replay>Mở rồi đóng</button></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><div class="phone"><div class="mockpage"><i style="width:50%"></i><div class="blk"></div></div><div class="scrim"></div><div class="sheet"><i></i><i style="width:60%"></i></div></div></div><p class="spec">trượt lên từ đáy (100%), 250ms</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><div class="phone"><div class="mockpage"><i style="width:50%"></i><div class="blk"></div></div><div class="scrim"></div><div class="sheet"><i></i><i style="width:60%"></i></div></div></div><p class="spec">trượt 60px kèm hiện dần, 240ms</p></div>
+      </div>
+    </div>
+
+    <div class="panel pressdemo" data-demo="press">
+      <header><h3>5. Bấm nút</h3><span class="note">Nhấn giữ từng nút để so</span></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><button class="btn pbtn" type="button">Bắt đầu 20 câu</button></div><p class="spec">nút lún xuống gờ 0,18rem (kiểu hướng B)</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><button class="btn pbtn" type="button">Bắt đầu 20 câu</button></div><p class="spec">rê chuột sáng lên · bấm thu nhỏ còn 97%, 150ms · giữ bóng navy</p></div>
+      </div>
+    </div>
+
+    <div class="panel" data-demo="summary">
+      <header><h3>6. Màn tổng kết hiện ra</h3><button class="tbtn" type="button" data-replay>Chạy lại</button></header>
+      <div class="pair">
+        <div class="side old"><span class="tag old">Hiện tại</span><div class="stage"><div class="sumgrid" data-stagger="50"><div class="t">Xong 20 câu.</div><div class="s"><b>16</b><span>Đúng</span></div><div class="s"><b>4</b><span>Sai</span></div></div></div><p class="spec">nhích 0,5rem, 250ms, cách nhau 50ms</p></div>
+        <div class="side new"><span class="tag new">Đề xuất</span><div class="stage"><div class="sumgrid" data-stagger="90"><div class="t">Xong 20 câu.</div><div class="s"><b>16</b><span>Đúng</span></div><div class="s"><b>4</b><span>Sai</span></div></div></div><p class="spec">từ mờ 12px thành nét, 520ms, cách nhau 90ms</p></div>
+      </div>
+    </div>
+
+    <div class="panel survey">
+      <h3>Khảo sát nói gì</h3>
+      <p class="verdict">Ủng hộ thời lượng và đường cong mới, kèm ba điều kiện.</p>
+      <ul>
+        <li>300 / 240ms nằm trong khoảng NN/g, Material 3 và IBM Carbon khuyên. Ba đường cong cũ của code chính là của Material 3; đường cong mới cùng họ "ra nhanh, chậm dần".</li>
+        <li>Mỗi khối ở màn tổng kết 520ms là quá mốc 500ms mà NN/g coi là bắt đầu thấy chậm: rút còn ≤ 400ms, hoặc cho bấm nút ngay từ đầu.</li>
+        <li>Chi phí thật nằm ở blur: thẻ tan dùng 18px, Framer cảnh báo từ 10px. Trên điện thoại nên giới hạn khoảng 10–12px, hoặc thay bằng mờ đục + thu phóng.</li>
+        <li>Firefox Android có lỗi đã biết: thanh trên kính mờ làm vẽ lại cả trang mỗi lần cuộn.</li>
+        <li>Chưa đo trên máy thật: cần đo một phiên 20 thẻ trên Android tầm thấp và Safari iOS trước khi chốt.</li>
+      </ul>
+    </div>
+    <div class="panel choose">
+      <h3>Bạn chọn</h3>
+      <ul>
+        <li>Lấy số mới cho cả sáu chỗ</li>
+        <li>Giữ số hiện tại cho cả sáu chỗ</li>
+        <li>Chọn từng chỗ (ghi số thứ tự 1–6 muốn lấy bản mới)</li>
+      </ul>
+      <p class="note">Mọi chuyển động dùng biến token, nên đổi lại sau này chỉ sửa một chỗ.</p>
+    </div>
+  </section>
+
+  <!-- ================= GM15 ================= -->
+  <section class="gm" id="v-gm15" data-view="gm15" hidden>
+    <div>
+      <h2>GM15 · Mọi hộp thoại dùng chung một chuyển động</h2>
+      <p class="lead">Tài liệu motion mới chỉ có số cho hộp Lịch. Đề xuất: Thêm từ, Chọn nhóm, Giới thiệu Pro, Chi tiết giao dịch và Tùy chỉnh phiên dùng đúng chuyển động đó. Trên điện thoại, mọi hộp là tấm trượt.</p>
+    </div>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Kiểu chuyển động">
+        <button type="button" data-mode15="shared" aria-pressed="true">Một kiểu chung (đề xuất)</button>
+        <button type="button" data-mode15="each" aria-pressed="false">Mỗi hộp một kiểu</button>
+      </div>
+      <div class="seg" role="group" aria-label="Thiết bị">
+        <button type="button" data-dev15="desk" aria-pressed="true">Máy tính</button>
+        <button type="button" data-dev15="phone" aria-pressed="false">Điện thoại</button>
+      </div>
+      <div class="seg" role="group" aria-label="Tốc độ">
+        <button type="button" data-slow="1" aria-pressed="true">Tốc độ thật</button>
+        <button type="button" data-slow="4" aria-pressed="false">Chậm 4 lần</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="launch">
+        <button class="btn sec sm" type="button" data-open15="add">Thêm từ</button>
+        <button class="btn sec sm" type="button" data-open15="group">Chọn nhóm</button>
+        <button class="btn sec sm" type="button" data-open15="pro">Giới thiệu Pro</button>
+        <button class="btn sec sm" type="button" data-open15="tx">Chi tiết giao dịch</button>
+      </div>
+      <div class="g15stage" id="g15" data-mode="shared">
+        <div class="mockpage"><i style="width:30%"></i><div class="blk"></div><div class="blk"></div><div class="blk"></div></div>
+        <div class="scrim"></div>
+        <div class="g15dlg" data-k="add"><header><h3>Bạn vừa gặp từ nào?</h3><button class="x" type="button" data-close15 aria-label="Đóng">×</button></header><div class="row">cap</div><div class="row">No cap, this is the best phở in town.</div><button class="btn" type="button">Lưu</button></div>
+        <div class="g15dlg" data-k="group"><header><h3>Lưu vào nhóm</h3><button class="x" type="button" data-close15 aria-label="Đóng">×</button></header><div class="row"><span class="dot" style="background:var(--g0)"></span>Đề 12 · Writing</div><div class="row"><span class="dot" style="background:var(--g1)"></span>Đề 9 · Listening</div><div class="row"><span class="dot" style="background:var(--g3)"></span>Từ gặp ngoài đời</div></div>
+        <div class="g15dlg" data-k="pro"><header><h3>Học nhiều hơn với Pro</h3><button class="x" type="button" data-close15 aria-label="Đóng">×</button></header><p class="note">Luyện không giới hạn số phiên mỗi ngày, có câu do AI viết theo từ của bạn.</p><button class="btn" type="button">Xem gói Pro</button></div>
+        <div class="g15dlg" data-k="tx"><header><h3>Chi tiết giao dịch</h3><button class="x" type="button" data-close15 aria-label="Đóng">×</button></header><p class="big">199.000 ₫</p><div class="row">Mua · Pro · 3 tháng<em style="margin-left:auto;font-style:normal;color:var(--pass)">Thành công</em></div></div>
+      </div>
+      <p class="note" id="g15note">Một kiểu chung: nền mờ 200ms, hộp nhích 12px trong 240ms, đóng 160ms. Bấm nền mờ hoặc × để đóng.</p>
+    </div>
+    <div class="panel survey">
+      <h3>Khảo sát nói gì</h3>
+      <p class="verdict">Ủng hộ.</p>
+      <ul>
+        <li>Các design system đã đọc đều dùng một chuyển động cho mỗi loại component, và đóng nhanh hơn mở.</li>
+        <li>Code hiện có 16 file dùng chung một `app-ui/Dialog.tsx`, nên đổi một file là mọi hộp đổi theo.</li>
+        <li>Design mới chỉ có số lúc mở. Cần ghi thêm số lúc đóng; khảo sát đề xuất giữ như code: lớp mờ và hộp 150ms, đường cong tăng tốc.</li>
+      </ul>
+    </div>
+    <div class="panel choose">
+      <h3>Bạn chọn</h3>
+      <ul>
+        <li>Một kiểu chung cho mọi hộp</li>
+        <li>Mỗi hộp một kiểu riêng (cần thiết kế số cho từng hộp trước khi code)</li>
+      </ul>
+      <p class="note">Bốn kiểu ở chế độ "Mỗi hộp một kiểu" chỉ là ví dụ để so, chưa ai thiết kế.</p>
+    </div>
+  </section>
+
+  <!-- ================= GM16 ================= -->
+  <section class="gm" id="v-gm16" data-view="gm16" hidden>
+    <div>
+      <h2>GM16 · Hộp Lịch và Ngày ghi trên địa chỉ trang</h2>
+      <p class="lead">Lan đi từ trang Nhóm sang Hôm nay, mở lịch học, xem ngày 8. Thử bấm Quay lại, Tải lại, hoặc chép địa chỉ ở hai chế độ để thấy khác nhau.</p>
+    </div>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Chế độ">
+        <button type="button" data-mode16="url" aria-pressed="true">Ghi trên URL (đề xuất)</button>
+        <button type="button" data-mode16="state" aria-pressed="false">Chỉ trong trang</button>
+      </div>
+      <button class="tbtn" type="button" id="reset16">Làm lại từ đầu</button>
+    </div>
+    <div class="browser">
+      <div class="chrome">
+        <button type="button" id="back16" aria-label="Quay lại">←</button>
+        <button type="button" id="fwd16" aria-label="Tiến tới">→</button>
+        <button type="button" id="reload16" aria-label="Tải lại">↻</button>
+        <div class="addr" id="addr16" aria-live="polite">wordmet.com/vi/app</div>
+      </div>
+      <div class="viewport" id="vp16"></div>
+    </div>
+    <div class="pair">
+      <div class="panel"><h3>Lịch sử của tab</h3><div class="hist" id="hist16"></div></div>
+      <div class="panel"><h3>Chuyện gì vừa xảy ra</h3><p id="log16" class="note">Bấm "Mở lịch học" trên trang Hôm nay.</p></div>
+    </div>
+    <div class="panel survey">
+      <h3>Khảo sát nói gì</h3>
+      <p class="verdict">Ủng hộ tham số URL, thêm ba luật.</p>
+      <ul>
+        <li>NN/g và Baymard đều nói nút Quay lại nên đóng lớp phủ.</li>
+        <li>Với app dựng ở trình duyệt như Wordmet, tham số URL hợp hơn intercepting routes của Next: cách đó hiện một trang đầy đủ khi tải lại hoặc mở từ link.</li>
+        <li>Luật 1: đổi tháng, đổi ngày, lọc trong hộp chỉ thay địa chỉ, để Quay lại đóng hộp thay vì lùi từng tháng. Baymard khuyên ngược lại cho bộ lọc danh sách trên trang, nên đây là chỗ bạn chọn.</li>
+        <li>Luật 2: hộp mở từ link hoặc sau khi tải lại thì nút đóng chỉ bỏ tham số; không thì đóng hộp sẽ rời khỏi app.</li>
+        <li>Luật 3: "Quay lại ở hộp Ngày về hộp Lịch" chỉ đúng nếu app tự thêm bước Lịch vào lịch sử khi mở thẳng từ link ngày.</li>
+      </ul>
+    </div>
+    <div class="panel choose">
+      <h3>Bạn chọn</h3>
+      <ul>
+        <li>Ghi trên URL: Quay lại đóng hộp; tải lại hay gửi link vẫn mở đúng hộp, đúng ngày</li>
+        <li>Chỉ trong trang: Quay lại rời khỏi trang; tải lại thì hộp đóng</li>
+      </ul>
+      <p class="note">Nếu chọn ghi trên URL, bạn chọn thêm: đổi tháng, đổi ngày</p>
+      <ul>
+        <li>Chỉ thay địa chỉ: Quay lại đóng hộp ngay (như ví dụ ở trên)</li>
+        <li>Thêm bước vào lịch sử: Quay lại lùi từng tháng, từng ngày đã xem</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= GM17 ================= -->
+  <section class="gm" id="v-gm17" data-view="gm17" hidden>
+    <div>
+      <h2>GM17 · Màn Ôn nhớ lại (/app/recall)</h2>
+      <p class="lead">Màn này có trong code từ đợt C: thấy nghĩa, chọn hoặc gõ đúng từ, không có AI. Nó dùng lại khung Phiên luyện, nên chỉ thiếu phần đầu phiên và màn xong phiên. Trước đó có một chỗ cần bạn quyết.</p>
+    </div>
+
+    <div class="panel">
+      <header><h3>Chỗ lệch giữa Figma và code: "Học" và "Ôn" là gì?</h3><span class="tag warn">cần quyết trước</span></header>
+      <div class="conflict">
+        <div class="side">
+          <span class="tag new">Figma (Hôm nay, Nhóm)</span>
+          <div class="minicard"><span class="mono">ôn tiếp · có thẻ ưu tiên</span><span class="nm">Đề 12 · Writing</span>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="button">Ôn 24 thẻ</button><button class="tbtn" type="button">Học cả 48 từ</button></div></div>
+          <p class="note">"Ôn 24 thẻ" mở màn lật thẻ; các khung lật thẻ trong Figma tên là "Ôn".</p>
+        </div>
+        <div class="side">
+          <span class="tag old">Code đợt C (DC3, chủ dự án chốt 06/11)</span>
+          <div class="minicard"><span class="mono">48 từ · 12 đã thuộc</span><span class="nm">Đề 12 · Writing</span>
+            <div class="twobtn"><button class="btn sec" type="button">Học</button><button class="btn ylw" type="button">Ôn</button></div></div>
+          <p class="note">Hai nút bằng nhau, không có số: Học = lật thẻ (/app/review), Ôn = chọn hoặc gõ từ theo nghĩa (/app/recall); nút có việc đang chờ tô vàng.</p>
+        </div>
+      </div>
+      <div class="choose">
+        <h3>Bạn chọn</h3>
+        <ul>
+          <li>Theo code đợt C: đổi chữ trong Figma (nút, tên màn lật thẻ thành "Học"), giữ hai nút bằng nhau</li>
+          <li>Theo Figma: "Ôn" là lật thẻ; khi đó cần đặt tên mới cho màn chọn/gõ từ và đổi DC3</li>
+          <li>Cách khác (ghi rõ)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Thiết bị">
+        <button type="button" data-dev17="phone" aria-pressed="true">Điện thoại</button>
+        <button type="button" data-dev17="desk" aria-pressed="false">Máy tính</button>
+      </div>
+      <span class="note">Chữ lấy từ code hiện tại (`messages/vi.json`: App.recall, App.practice.session).</span>
+    </div>
+
+    <div class="frames" id="frames17">
+      <div class="frame"><div class="cap">1 · Trắc nghiệm theo nghĩa</div>
+        <div class="screen">
+          <div class="shead"><span class="x" aria-hidden="true">×</span><span class="ttl">Ôn · Đề 12 · Writing</span><span class="pbar"><b style="width:37.5%"></b></span><span class="mono">3/8</span><span class="cnt"><span class="y">✓ 2</span><span class="n">✗ 0</span></span></div>
+          <div class="qcard"><span class="mono">trắc nghiệm</span><p class="ask">Chọn từ có nghĩa này</p><p class="mean">giảm nhẹ, làm dịu bớt (tác hại, rủi ro)</p>
+            <div class="opts"><div class="opt"><kbd>1</kbd>allocate</div><div class="opt"><kbd>2</kbd>mitigate</div><div class="opt"><kbd>3</kbd>scrutinize</div><div class="opt"><kbd>4</kbd>deteriorate</div></div></div>
+          <p class="note">Bấm vào đáp án. Chọn xong là chấm luôn.</p>
+        </div></div>
+      <div class="frame"><div class="cap">2 · Gõ từ theo nghĩa</div>
+        <div class="screen">
+          <div class="shead"><span class="x" aria-hidden="true">×</span><span class="ttl">Ôn · Đề 12 · Writing</span><span class="pbar"><b style="width:50%"></b></span><span class="mono">4/8</span><span class="cnt"><span class="y">✓ 3</span><span class="n">✗ 0</span></span></div>
+          <div class="qcard"><span class="mono">gõ từ · theo nghĩa</span><p class="ask">Gõ từ tiếng Anh có nghĩa này</p><p class="mean">phân bổ, chia phần (ngân sách, thời gian)</p>
+            <div class="inp">alloc<span class="caret"></span></div>
+            <div class="acts"><button class="tbtn" type="button">Gợi ý <span class="kbd">H</span></button><button class="btn" type="button">Kiểm tra <span class="kbd" style="background:transparent;color:inherit;border-color:currentColor">Enter</span></button></div></div>
+        </div></div>
+      <div class="frame"><div class="cap">3 · Gõ sai: so chữ đã gõ với đáp án</div>
+        <div class="screen">
+          <div class="shead"><span class="x" aria-hidden="true">×</span><span class="ttl">Ôn · Đề 12 · Writing</span><span class="pbar"><b style="width:50%"></b></span><span class="mono">4/8</span><span class="cnt"><span class="y">✓ 3</span><span class="n">✗ 1</span></span></div>
+          <div class="qcard"><span class="mono">gõ từ · theo nghĩa</span><p class="mean">phân bổ, chia phần (ngân sách, thời gian)</p>
+            <div class="diff" aria-label="Bạn gõ alocate, đáp án allocate">a<span class="ok">l</span>locate <span class="note" style="font:400 13px var(--font-sans)">đáp án</span><br><span class="bad">alocate</span> <span class="note" style="font:400 13px var(--font-sans)">bạn gõ</span></div></div>
+          <div class="fb"><b style="color:var(--fail)">✗ Chưa đúng</b><span class="note">allocate · phân bổ, chia phần</span>
+            <div class="acts"><button class="btn sec sm" type="button">Câu tiếp</button><button class="btn sm" type="button">Cần ôn lại <span class="kbd" style="background:transparent;color:inherit;border-color:currentColor">Enter</span></button></div></div>
+        </div></div>
+      <div class="frame"><div class="cap">4 · Xong phiên Ôn</div>
+        <div class="screen">
+          <p class="big">Xong 8 từ.</p>
+          <div class="tiles">
+            <div class="tile"><b style="color:var(--pass)">5</b><span>Đúng, lên ngăn</span></div>
+            <div class="tile"><b style="color:var(--accent)">1</b><span>Đúng, giữ ngăn</span></div>
+            <div class="tile"><b>1</b><span>Sai, giữ ngăn</span></div>
+            <div class="tile"><b style="color:var(--warn)">1</b><span>Cần ôn lại</span></div>
+          </div>
+          <div class="qcard"><h3>Còn 6 từ mới trong nhóm này</h3><p class="note">Học bây giờ thì ngày mai chúng có trong phiên ôn.</p>
+            <div class="twobtn"><button class="btn" type="button">Học</button><button class="btn sec" type="button">Về trang chủ</button></div></div>
+        </div></div>
+    </div>
+
+    <div class="panel survey">
+      <h3>Khảo sát nói gì</h3>
+      <p class="verdict">Ủng hộ có mockup, nhưng chỉ cần vẽ phần khác với Phiên luyện.</p>
+      <ul>
+        <li>Anki, Duolingo và các nghiên cứu cùng một bố cục: nghĩa ở trên, ô nhập đã sẵn con trỏ, so chữ đã gõ với đáp án, sai thì hiện đáp án ngay.</li>
+        <li>Một nghiên cứu: sửa lại câu trả lời sai giúp nhớ sau một tuần tăng 494%.</li>
+        <li>Màn Ôn đã chạy trên khung Phiên luyện (có khung Figma), nên chỉ cần ba khung mới: câu gõ từ theo nghĩa, kết quả sai có so chữ, màn xong phiên.</li>
+        <li>Chưa kiểm được trang trợ giúp của Quizlet và Memrise (bị chặn).</li>
+      </ul>
+    </div>
+    <div class="panel choose">
+      <h3>Bạn chọn</h3>
+      <ul>
+        <li>Dựng màn Ôn theo các mẫu trên (khung Phiên luyện, đầu phiên "Ôn · tên nhóm")</li>
+        <li>Vẽ thêm vài hướng khác cho màn Ôn trước khi chốt</li>
+      </ul>
+      <p class="note">Câu cần chốt thêm: gõ sai một chữ nhỏ (như "alocate") có tính là đúng không, như Duolingo? Luật hiện tại: phải đúng hẳn.</p>
+      <p class="note">Ô "Đúng, giữ ngăn" chỉ hiện khi phiên có từ chưa đến hạn (đợt C §4.4).</p>
+    </div>
+  </section>
+
+  <!-- ================= GM18 ================= -->
+  <section class="gm" id="v-gm18" data-view="gm18" hidden>
+    <div>
+      <h2>GM18 · Tiêu đề dùng Bricolage độ đậm nào?</h2>
+      <p class="lead">`ui-best-practices.md` ghi tối đa ba độ đậm 400, 600, 700; Figma dùng Bricolage 800 cho tiêu đề trang và số lớn. Cùng chữ, ba độ đậm, đặt cạnh nhau.</p>
+    </div>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Khoảng chữ">
+        <button type="button" data-track="tight" aria-pressed="true">Khoảng chữ như Figma</button>
+        <button type="button" data-track="zero" aria-pressed="false">Khoảng chữ 0</button>
+      </div>
+      <div class="seg" role="group" aria-label="Khoảng dòng">
+        <button type="button" data-lh="tight" aria-pressed="true">Khoảng dòng 1,05 (mockup)</button>
+        <button type="button" data-lh="safe" aria-pressed="false">Khoảng dòng 1,2</button>
+      </div>
+    </div>
+    <div class="spec18 tight" id="spec18">
+      <div class="col18" style="--w:600"><span class="w">600 · SemiBold</span>
+        <p class="d64" style="font-weight:600">Từ lâu chưa ôn</p><p class="d96" style="font-weight:600">18</p><p class="d32" style="font-weight:600">Đề 12 · Writing</p>
+        <p class="d18" style="font-weight:600">Ôn từ đúng lúc, luyện từ trong câu. Đặt mật khẩu mới. Bổ sung hồ sơ. Xong 8 từ.</p></div>
+      <div class="col18"><span class="w">700 · Bold (quy tắc hiện tại)</span>
+        <p class="d64" style="font-weight:700">Từ lâu chưa ôn</p><p class="d96" style="font-weight:700">18</p><p class="d32" style="font-weight:700">Đề 12 · Writing</p>
+        <p class="d18" style="font-weight:700">Ôn từ đúng lúc, luyện từ trong câu. Đặt mật khẩu mới. Bổ sung hồ sơ. Xong 8 từ.</p></div>
+      <div class="col18"><span class="w">800 · ExtraBold (Figma hiện tại)</span>
+        <p class="d64" style="font-weight:800">Từ lâu chưa ôn</p><p class="d96" style="font-weight:800">18</p><p class="d32" style="font-weight:800">Đề 12 · Writing</p>
+        <p class="d18" style="font-weight:800">Ôn từ đúng lúc, luyện từ trong câu. Đặt mật khẩu mới. Bổ sung hồ sơ. Xong 8 từ.</p></div>
+    </div>
+    <div class="panel survey">
+      <h3>Khảo sát nói gì</h3>
+      <p class="verdict">Ủng hộ giữ 800, thêm luật khoảng dòng.</p>
+      <ul>
+        <li>Thêm độ đậm 800 không tốn thêm dung lượng: Google trả cùng một file 41 KB cho mọi khoảng độ đậm. Nếu tải thêm trục cỡ quang học và độ rộng thì file lên khoảng 131 KB; chốt ở M1.</li>
+        <li>Rủi ro lớn hơn là khoảng dòng: dấu tiếng Việt chồng hai tầng ở độ đậm 800 cần khoảng 1,13 lần cỡ chữ giữa hai dòng. Mockup dùng 1,0 và 1,08, nên tiêu đề hai dòng có thể chạm dấu. Bấm "Khoảng dòng 1,2" ở trên để so.</li>
+        <li>Đề xuất luật: tiêu đề có thể xuống dòng dùng khoảng dòng ≥ 1,15 (an toàn 1,2); 1,0 chỉ cho số và tiêu đề một dòng; không cắt tiêu đề bằng `overflow: hidden`.</li>
+        <li>Số đo dùng cách đo chữ của trình duyệt, chưa thử Safari.</li>
+      </ul>
+    </div>
+    <div class="panel choose">
+      <h3>Bạn chọn</h3>
+      <ul>
+        <li>Giữ 800 như Figma, sửa quy tắc thành "400, 600, 700 cho chữ thường; 800 cho tiêu đề và số lớn Bricolage"</li>
+        <li>Đổi Figma về 700, giữ quy tắc ba độ đậm</li>
+        <li>Mức khác (ghi rõ)</li>
+      </ul>
+      <p class="note">Chữ đọc, nút và nhãn không đổi (Noto Sans 400–700, JetBrains Mono 12 px).</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+
+  // ---- reduced motion: the demos exist to show motion, so offer an explicit override
+  const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (rm) { root.classList.add('rm', 'no-force'); $('#rmBanner').hidden = false; }
+  $('#forceMotion').addEventListener('click', () => { root.classList.remove('no-force'); $('#rmBanner').hidden = true; });
+
+  // ---- tabs on the hash
+  const views = ['gm14', 'gm15', 'gm16', 'gm17', 'gm18'];
+  function show() {
+    const h = location.hash.replace('#', '');
+    const v = views.includes(h) ? h : 'gm14';
+    $$('section.gm').forEach((s) => { s.hidden = s.dataset.view !== v; });
+    $$('nav.tabs a').forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + v ? 'page' : 'false'));
+  }
+  window.addEventListener('hashchange', show); show();
+
+  // ---- speed
+  function setSlow(v) {
+    root.style.setProperty('--slow', v);
+    $$('[data-slow]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.slow === String(v))));
+  }
+  $$('[data-slow]').forEach((b) => b.addEventListener('click', () => setSlow(b.dataset.slow)));
+  const slow = () => Number(getComputedStyle(root).getPropertyValue('--slow')) || 1;
+
+  // ---- GM14 replays
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  async function replay(panel) {
+    const kind = panel.dataset.demo;
+    const sides = $$('.side', panel);
+    if (kind === 'flip') { sides.forEach((s) => s.classList.toggle('flipped')); return; }
+    if (kind === 'next' || kind === 'summary') {
+      sides.forEach((s) => {
+        if (kind === 'summary') {
+          const step = Number($('.sumgrid', s).dataset.stagger);
+          $$('.sumgrid > *', s).forEach((c, i) => { c.style.animationDelay = `calc(${i * step}ms * var(--slow))`; });
+        }
+        restart(s, 'play');
+      });
+      if (kind === 'next') { await wait(1200 * slow()); sides.forEach((s) => s.classList.remove('play')); }
+      return;
+    }
+    if (kind === 'dialog' || kind === 'sheet') {
+      sides.forEach((s) => { s.classList.remove('closing'); restart(s, 'open'); });
+      await wait(1100 * slow());
+      sides.forEach((s) => { s.classList.add('closing'); });
+      await wait(260 * slow());
+      sides.forEach((s) => s.classList.remove('open', 'closing'));
+    }
+  }
+  $$('[data-demo]').forEach((p) => { const b = $('[data-replay]', p); if (b) b.addEventListener('click', () => replay(p)); });
+  $('[data-replay-all]').addEventListener('click', () => $$('#v-gm14 [data-demo]').forEach((p) => p.dataset.demo !== 'press' && replay(p)));
+
+  // ---- GM15
+  const g15 = $('#g15');
+  let open15 = null;
+  function close15() {
+    if (!open15) return;
+    const d = open15; open15 = null;
+    d.classList.remove('show'); d.classList.add('hide');
+    g15.classList.remove('on'); g15.classList.add('off');
+    setTimeout(() => { d.classList.remove('hide'); g15.classList.remove('off'); }, 220 * slow());
+  }
+  $$('[data-open15]').forEach((b) => b.addEventListener('click', () => {
+    if (open15) { open15.classList.remove('show'); }
+    const d = $(`.g15dlg[data-k="${b.dataset.open15}"]`, g15);
+    d.classList.remove('hide'); void d.offsetWidth; d.classList.add('show'); open15 = d;
+    restart(g15, 'on');
+  }));
+  $$('[data-close15]').forEach((b) => b.addEventListener('click', close15));
+  $('.scrim', g15).style.pointerEvents = 'auto';
+  $('.scrim', g15).addEventListener('click', close15);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close15(); });
+  $$('[data-mode15]').forEach((b) => b.addEventListener('click', () => {
+    g15.dataset.mode = b.dataset.mode15;
+    $$('[data-mode15]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $('#g15note').textContent = b.dataset.mode15 === 'shared'
+      ? 'Một kiểu chung: nền mờ 200ms, hộp nhích 12px trong 240ms, đóng 160ms. Bấm nền mờ hoặc × để đóng.'
+      : 'Mỗi hộp một kiểu: Thêm từ rơi từ trên, Chọn nhóm phóng to có nảy, Giới thiệu Pro xoay nhẹ, Chi tiết giao dịch trượt từ phải.';
+  }));
+  $$('[data-dev15]').forEach((b) => b.addEventListener('click', () => {
+    close15();
+    g15.classList.toggle('phone15', b.dataset.dev15 === 'phone');
+    $$('[data-dev15]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+
+  // ---- GM16: a fake tab with its own history stack
+  const vp = $('#vp16'), addr = $('#addr16'), hist = $('#hist16'), log = $('#log16');
+  const G = ['var(--g0)', 'var(--g1)', 'var(--g2)', 'var(--g3)'];
+  const days = { 2: [1, 1, 0], 3: [0, 1, 1], 4: [1, 1, 0], 5: [0, 1, 0], 7: [1, 1, 1], 8: [1, 1, 1], 9: [0, 1, 0] };
+  let mode = 'url', stack, idx, ui;
+  function reset() {
+    stack = [{ path: '/vi/app/groups' }, { path: '/vi/app' }]; idx = 1; ui = { modal: null, day: 8 };
+    render(); log.textContent = 'Lan vừa từ trang Nhóm sang Hôm nay. Bấm "Mở lịch học".';
+  }
+  const here = () => stack[idx];
+  function parse(e) {
+    const u = new URL('https://wordmet.com' + e.path);
+    if (u.searchParams.get('ngay')) return { page: u.pathname, modal: 'ngay', day: Number(u.searchParams.get('ngay').slice(-2)) };
+    if (u.searchParams.get('lich')) return { page: u.pathname, modal: 'lich', day: ui.day };
+    return { page: u.pathname, modal: null, day: ui.day };
+  }
+  function push(path) { stack = stack.slice(0, idx + 1); stack.push({ path }); idx++; }
+  function replace(path) { stack[idx] = { path }; }
+  function calHTML() {
+    const head = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => `<span>${d}</span>`).join('');
+    let cells = '';
+    for (let i = 0; i < 6; i++) cells += `<button type="button" disabled>${26 + i}</button>`;
+    for (let d = 1; d <= 30; d++) {
+      const a = days[d]; const fut = d > 9;
+      const dots = a ? `<span class="ds">${a[0] ? '<i style="background:var(--accent)"></i>' : ''}${a[1] ? '<i style="background:var(--pass)"></i>' : ''}${a[2] ? '<i style="background:var(--mark)"></i>' : ''}</span>` : '';
+      cells += `<button type="button" data-day="${d}" class="${d === 9 ? 'today' : ''}" ${fut ? 'disabled' : ''} aria-label="Ngày ${d} tháng 11">${d}${dots}</button>`;
+    }
+    return `<div class="cal" role="dialog" aria-label="Lịch học tháng 11"><header><h3>Tháng 11, 2026</h3><button class="x" type="button" data-act="close" aria-label="Đóng">×</button></header>
+      <div class="mgrid">${head}${cells}</div>
+      <div class="totals"><span><b>7</b> ngày có học</span><span><b>41</b> từ mới</span><span><b>130</b> lượt ôn</span><span><b>5</b> phiên luyện</span></div></div>`;
+  }
+  function dayHTML(d) {
+    const wd = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][new Date(2026, 10, d).getDay()];
+    const rows = days[d] ? `
+      <div class="r"><span class="dot" style="background:${G[0]}"></span>allocate<em>học mới</em></div>
+      <div class="r"><span class="dot" style="background:${G[0]}"></span>mitigate<em>học mới</em></div>
+      <div class="r"><span class="dot" style="background:${G[1]}"></span>deadline<em>Đã biết</em></div>
+      <div class="r"><span class="dot" style="background:${G[3]}"></span>viable<em>Cần ôn lại ×2</em></div>
+      <div class="r"><span class="dot" style="background:var(--muted)"></span>Luyện tập: 1 phiên · 18 câu<em>15 đúng</em></div>` : '<p class="note">Không có hoạt động trong ngày này.</p>';
+    return `<div class="cal" role="dialog" aria-label="Ngày ${d} tháng 11"><header><button class="tbtn" type="button" data-act="toCal">‹ Lịch tháng 11</button><button class="x" type="button" data-act="close" aria-label="Đóng">×</button></header>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><button class="x" type="button" data-act="prev" aria-label="Ngày trước">‹</button><h3>${wd}, ${d} tháng 11</h3><button class="x" type="button" data-act="next" aria-label="Ngày sau" ${d >= 9 ? 'disabled' : ''}>›</button></div>
+      <div class="dlist">${rows}</div></div>`;
+  }
+  function render() {
+    const st = mode === 'url' ? parse(here()) : { page: new URL('https://wordmet.com' + here().path).pathname, modal: ui.modal, day: ui.day };
+    if (mode === 'url') ui.day = st.day;
+    addr.textContent = 'wordmet.com' + here().path;
+    let html;
+    if (st.page === '/vi/app/groups') {
+      html = `<div class="vpage"><h3>Nhóm</h3><div class="vcard"><span class="mono">băng chuyền nhóm</span><b>Đề 12 · Writing</b><p class="note">Trang trước của Lan.</p></div></div>`;
+    } else {
+      html = `<div class="vpage"><h3>Hôm nay</h3><div class="vcard"><span class="mono">ôn tiếp · có thẻ ưu tiên</span><b style="font:800 20px var(--font-display)">Đề 12 · Writing</b><div><button class="btn sm" type="button">Ôn 24 thẻ</button></div></div>
+        <div><button class="tbtn" type="button" data-act="openCal">Mở lịch học →</button></div></div>`;
+      if (st.modal) html += `<div class="scrim" style="opacity:1;pointer-events:auto;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:2" data-act="close"></div>` + (st.modal === 'lich' ? calHTML() : dayHTML(st.day));
+    }
+    vp.innerHTML = html;
+    $('#back16').disabled = idx === 0; $('#fwd16').disabled = idx >= stack.length - 1;
+    hist.innerHTML = stack.map((e, i) => `<div class="${i === idx ? 'cur' : ''}">${i === idx ? '▸ ' : '  '}${e.path}</div>`).join('');
+  }
+  vp.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-act],[data-day]'); if (!t) return;
+    const act = t.dataset.act; const day = t.dataset.day;
+    if (mode === 'url') {
+      const st = parse(here());
+      if (act === 'openCal') { push('/vi/app?lich=2026-11'); log.textContent = 'Mở hộp Lịch: địa chỉ thêm ?lich=2026-11, lịch sử thêm một bước.'; }
+      else if (day) { push(`/vi/app?ngay=2026-11-${String(day).padStart(2, '0')}`); log.textContent = `Bấm ngày ${day}: hộp Ngày thay chỗ, địa chỉ thành ?ngay=…, lịch sử thêm một bước.`; }
+      else if (act === 'prev' || act === 'next') { const d = st.day + (act === 'prev' ? -1 : 1); replace(`/vi/app?ngay=2026-11-${String(d).padStart(2, '0')}`); log.textContent = 'Đổi ngày: chỉ thay địa chỉ, không thêm bước vào lịch sử.'; }
+      else if (act === 'toCal') { if (idx > 0 && parse(stack[idx - 1]).modal === 'lich') { idx--; } else replace('/vi/app?lich=2026-11'); log.textContent = 'Về hộp Lịch (giống bấm Quay lại).'; }
+      else if (act === 'close') { let i = idx; while (i > 0 && parse(stack[i]).modal) i--; if (parse(stack[i]).modal === null && stack[i].path === '/vi/app') { idx = i; } else replace('/vi/app'); log.textContent = 'Đóng hộp: quay về /vi/app, các bước của hộp vẫn còn ở phía Tiến tới.'; }
+    } else {
+      if (act === 'openCal') { ui.modal = 'lich'; log.textContent = 'Mở hộp Lịch: địa chỉ không đổi, lịch sử không thêm bước.'; }
+      else if (day) { ui.modal = 'ngay'; ui.day = Number(day); log.textContent = `Bấm ngày ${day}: hộp Ngày thay chỗ, địa chỉ không đổi.`; }
+      else if (act === 'prev' || act === 'next') { ui.day += act === 'prev' ? -1 : 1; }
+      else if (act === 'toCal') { ui.modal = 'lich'; }
+      else if (act === 'close') { ui.modal = null; log.textContent = 'Đóng hộp.'; }
+    }
+    render();
+  });
+  $('#back16').addEventListener('click', () => {
+    if (idx === 0) return;
+    const was = mode === 'url' ? parse(here()).modal : ui.modal;
+    idx--; if (mode === 'state') ui.modal = null;
+    log.textContent = mode === 'url'
+      ? (was ? 'Quay lại: hộp đóng hoặc lùi một bước (Ngày → Lịch → trang), Lan vẫn ở Hôm nay.' : 'Quay lại: sang trang trước.')
+      : (was ? 'Quay lại: Lan rời Hôm nay, về trang Nhóm; hộp lịch mất theo.' : 'Quay lại: sang trang trước.');
+    render();
+  });
+  $('#fwd16').addEventListener('click', () => { if (idx < stack.length - 1) { idx++; log.textContent = 'Tiến tới.'; render(); } });
+  $('#reload16').addEventListener('click', () => {
+    if (mode === 'state') { ui.modal = null; log.textContent = 'Tải lại: hộp đóng, phải mở lại từ đầu.'; }
+    else log.textContent = 'Tải lại: địa chỉ còn ?lich= hoặc ?ngay=, nên hộp mở lại đúng chỗ. Gửi địa chỉ này cho người khác cũng mở đúng hộp (họ cần đăng nhập và chỉ thấy dữ liệu của họ).';
+    render();
+  });
+  $$('[data-mode16]').forEach((b) => b.addEventListener('click', () => {
+    mode = b.dataset.mode16;
+    $$('[data-mode16]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    reset();
+  }));
+  $('#reset16').addEventListener('click', reset);
+  reset();
+
+  // ---- GM17 device
+  $$('[data-dev17]').forEach((b) => b.addEventListener('click', () => {
+    $('#frames17').classList.toggle('desk', b.dataset.dev17 === 'desk');
+    $$('[data-dev17]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+
+  // ---- GM18 line-height
+  $$('[data-lh]').forEach((b) => b.addEventListener('click', () => {
+    $('#spec18').classList.toggle('lh12', b.dataset.lh === 'safe');
+    $$('[data-lh]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+
+  // ---- GM18 tracking
+  $$('[data-track]').forEach((b) => b.addEventListener('click', () => {
+    $('#spec18').classList.toggle('tight', b.dataset.track === 'tight');
+    $$('[data-track]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+})();
+</script>

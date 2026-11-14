@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Inject, Param, Put } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, Inject, Param, Put } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -8,6 +8,7 @@ import { RequirePermission } from '../../identity/staff/require-permission.decor
 import { LEVELS } from '../content.constants.js';
 import { ContentService } from '../content.service.js';
 import { normalizeText } from './normalize.js';
+import { writeCatalogEntry } from './write-entry.js';
 
 const entryParamsSchema = z.strictObject({ id: z.uuid() });
 const variantsSchema = z.strictObject({ variants: z.array(z.strictObject({
@@ -21,21 +22,12 @@ type EntryParams = z.infer<typeof entryParamsSchema>;
 type VariantsBody = z.infer<typeof variantsSchema>;
 type EditorialLevelBody = z.infer<typeof editorialLevelSchema>;
 type FunctionWordBody = z.infer<typeof functionWordSchema>;
-const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
-async function writeEntry(
+const writeEntry = (
   prisma: PrismaClient, content: ContentService, entryId: string,
   write: (tx: Prisma.TransactionClient) => Promise<void>,
-): Promise<void> {
-  // Resolve the immutable key before opening the transaction, so its first operation is the lock.
-  // Each write method checks that the entry still exists after acquiring that lock.
-  const entry = await prisma.entry.findFirst({ where: { id: entryId, scope: 'catalog' }, select: { lemma: true, pos: true } });
-  if (!entry) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
-  await prisma.$transaction(async (tx) => {
-    await content.lockEntryKey(tx, entry.lemma, entry.pos);
-    await write(tx);
-  }, transactionOptions);
-}
+): Promise<void> => writeCatalogEntry(prisma, content, entryId, write,
+  () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' }));
 
 @Controller('admin/content/entries')
 @RequirePermission('content.edit')
@@ -64,6 +56,14 @@ export class AdminEntriesController {
     @Body({ schema: editorialLevelSchema }) body: EditorialLevelBody,
   ): Promise<void> {
     return writeEntry(this.prisma, this.content, params.id, (tx) => this.content.setEditorialLevel(tx, params.id, body.level));
+  }
+
+  /** Only a word that was never published and that nothing uses; otherwise 409 `entry-in-use` with `reasons`. */
+  @Delete(':id')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  deleteEntry(@Param({ schema: entryParamsSchema }) params: EntryParams): Promise<void> {
+    return this.content.deleteEntry(params.id);
   }
 }
 

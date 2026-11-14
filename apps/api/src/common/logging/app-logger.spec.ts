@@ -33,6 +33,12 @@ describe('AppLogger', () => {
     expect(fields.password).toBe('secret');
   });
 
+  it('B6-3: redacts context_sentence (the API field name) as well as contextSentence', () => {
+    const { logs, logger } = capture();
+    logger.info('test', { context_sentence: 'He deployed it.', user_id: 'user-1' });
+    expect(logs[0]).toMatchObject({ context_sentence: '[redacted]', user_id: 'user-1' });
+  });
+
   it('B1#32: error() logs only name and code, never message', () => {
     const { logs, logger } = capture();
     const err = Object.assign(new Error('secret email@example.com'), { code: 'ECONNECTION', token: 'secret-token' });

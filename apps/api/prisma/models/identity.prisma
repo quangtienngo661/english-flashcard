@@ -6,18 +6,32 @@ model User {
   nativeLanguage   String?   @map("native_language")
   timezone         String
   status           String    @default("active")
-  failedLoginCount Int       @default(0) @map("failed_login_count")
-  loginLockedUntil DateTime? @map("login_locked_until") @db.Timestamptz
   mustChangePassword Boolean @default(false) @map("must_change_password")
+  givenName        String?   @map("given_name") @db.VarChar(50)
+  familyName       String?   @map("family_name") @db.VarChar(50)
+  birthDate        DateTime? @map("birth_date") @db.Date
+  termsAcceptedAt  DateTime? @map("terms_accepted_at") @db.Timestamptz
+  termsVersion     String?   @map("terms_version")
+  lockedAt         DateTime? @map("locked_at") @db.Timestamptz
+  lockedBy         String?   @map("locked_by") @db.Uuid
+  lockReason       String?   @map("lock_reason") @db.VarChar(500)
   lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz
+  deletingSince    DateTime? @map("deleting_since") @db.Timestamptz
+  // Who started the deletion ('self' | 'admin' | 'cleanup'); the retry job writes it to deleted_accounts.by and sends no mail for 'cleanup'.
+  deletingBy       String?   @map("deleting_by") @db.VarChar(16)
+  avatarUrl        String?   @map("avatar_url") @db.VarChar(2048)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   passwordCredential PasswordCredential?
+  identities         UserIdentity[]
   sessionChains      SessionChain[]
   otpCodes           OtpCode[]
   otpFailureWindows  OtpFailureWindow[]
+  loginFailures      LoginFailure[]
+  pendingRegistration PendingRegistration?
 
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("users")
 }
 
@@ -40,10 +54,12 @@ model SessionChain {
   lastUsedAt   DateTime  @map("last_used_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
   revokeReason String?   @map("revoke_reason")
+  authMethod   String    @default("password") @map("auth_method") @db.VarChar(16)
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
 
+  @@index([userId])
   @@map("session_chains")
 }
 
@@ -59,6 +75,7 @@ model RefreshToken {
 
   chain SessionChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
 
+  @@index([chainId])
   @@map("refresh_tokens")
 }
 
@@ -75,6 +92,7 @@ model OtpCode {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, purpose])
   @@map("otp_codes")
 }
 
@@ -91,3 +109,57 @@ model OtpFailureWindow {
   @@map("otp_failure_windows")
 }
 
+/// Wrong passwords per account and client ip (F4): ten lock that pair for 15 minutes; `ip_key` is an HMAC, never the raw ip.
+model LoginFailure {
+  userId      String    @map("user_id") @db.Uuid
+  ipKey       String    @map("ip_key")
+  failedCount Int       @default(0) @map("failed_count")
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz
+  updatedAt   DateTime  @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, ipKey])
+  @@map("login_failures")
+}
+
+model UserIdentity {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  provider  String   @db.VarChar(16)
+  subject   String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@unique([userId, provider])
+  @@map("user_identities")
+}
+
+// No foreign key: the user row is gone. Holds only the id, when and by whom, so a restore from backup can delete the account again (D21).
+model DeletedAccount {
+  userId    String   @id @map("user_id") @db.Uuid
+  deletedAt DateTime @map("deleted_at") @db.Timestamptz
+  by        String   @db.VarChar(16)
+
+  @@index([deletedAt])
+  @@map("deleted_accounts")
+}
+
+// Security review 07/11 F3: a re-registration of an unverified email; applied only when the mailbox code confirms it.
+model PendingRegistration {
+  userId          String   @id @map("user_id") @db.Uuid
+  passwordHash    String   @map("password_hash")
+  givenName       String   @map("given_name") @db.VarChar(50)
+  familyName      String?  @map("family_name") @db.VarChar(50)
+  birthDate       DateTime @map("birth_date") @db.Date
+  timezone        String
+  termsVersion    String   @map("terms_version")
+  termsAcceptedAt DateTime @map("terms_accepted_at") @db.Timestamptz
+  createdAt       DateTime @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pending_registrations")
+}

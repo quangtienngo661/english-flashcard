@@ -3,15 +3,26 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { IdentityService, type Profile } from './identity.service.js';
+import { TermsVersion } from './terms-version.js';
 import { updateProfileSchema, type UpdateProfileBody } from './profile.schemas.js';
+
+/** The profile plus how the caller signed in (this session) and every way the account can (Bước 8, D5, D8). */
+export type MeResponse = Profile & {
+  auth_method: 'password' | 'google'; sign_in_methods: Array<'password' | 'google'>;
+  /** True when the learner accepted a version of the terms that is no longer the published one: the app asks again. */
+  terms_outdated: boolean;
+};
 
 @Controller('me')
 export class ProfileController {
-  constructor(@Inject(IdentityService) private readonly identity: IdentityService) {}
+  constructor(
+    @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(TermsVersion) private readonly terms: TermsVersion,
+  ) {}
 
   @Get()
-  async getProfile(@Req() req: RequestWithUser): Promise<Profile> {
-    return this.requireProfile(await this.identity.getProfile(req.user!.userId));
+  async getProfile(@Req() req: RequestWithUser): Promise<MeResponse> {
+    return this.withSignIn(req, this.requireProfile(await this.identity.getProfile(req.user!.userId)));
   }
 
   @Patch()
@@ -19,8 +30,17 @@ export class ProfileController {
   async updateProfile(
     @Body({ schema: updateProfileSchema }) body: UpdateProfileBody,
     @Req() req: RequestWithUser,
-  ): Promise<Profile> {
-    return this.requireProfile(await this.identity.updateProfile(req.user!.userId, body));
+  ): Promise<MeResponse> {
+    return this.withSignIn(req, this.requireProfile(await this.identity.updateProfile(req.user!.userId, body)));
+  }
+
+  private async withSignIn(req: RequestWithUser, profile: Profile): Promise<MeResponse> {
+    return {
+      ...profile,
+      auth_method: req.account?.authMethod ?? 'password',
+      sign_in_methods: await this.identity.signInMethods(profile.id),
+      terms_outdated: await this.terms.outdated(profile.terms_accepted_at === null ? null : new Date(profile.terms_accepted_at), profile.terms_version),
+    };
   }
 
   private requireProfile(profile: Profile | null): Profile {

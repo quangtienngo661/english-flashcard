@@ -4,7 +4,7 @@ import { CurrentLearner, LearnerContent, type Learner } from '../../content/inde
 import { groupParams } from '../groups/groups.schemas.js';
 import { QueueService } from './queue.service.js';
 
-const queueQuery = z.strictObject({ mode: z.enum(['due', 'all']).default('due') });
+const queueQuery = z.strictObject({ mode: z.enum(['due', 'all', 'new']).default('due') });
 
 @Controller('groups')
 @LearnerContent()

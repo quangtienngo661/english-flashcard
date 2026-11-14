@@ -1,0 +1,136 @@
+import { useFormatter, useTranslations } from 'use-intl';
+import { NumberField } from '../../ui/NumberField';
+import { Select } from '../../ui/Select';
+import { Switch } from '../../ui/Switch';
+import { fieldId, timeOptions, type Bound, type FieldSpec, type Section, type SettingValue } from './settings-api';
+
+type Props = {
+  section: Section;
+  spec: FieldSpec;
+  value: SettingValue;
+  defaultValue: SettingValue;
+  bound: Bound | undefined;
+  error?: string;
+  onChange: (value: SettingValue) => void;
+};
+
+/** The hint line under a field (design §6.7): "`khóa` · 1–30 ngày hoặc để trống = không gửi · mặc định để trống". */
+function useHint() {
+  const t = useTranslations('settings');
+  const format = useFormatter();
+  /** 0.3 → "30%": a ratio is stored as a fraction and read as a percent. */
+  const percent = (fraction: number) => `${format.number(Math.round(fraction * 100))}%`;
+  const shown = (spec: FieldSpec, value: SettingValue) => {
+    if (value === null) return t('hint.empty');
+    if (typeof value === 'boolean') return value ? t('hint.on') : t('hint.off');
+    if (typeof value === 'number') {
+      if (spec.kind === 'ratio') return percent(value);
+      if (spec.kind === 'usd') return format.number(value, { maximumFractionDigits: 2 });
+      return spec.unit === 'percent' ? `${format.number(value)}%` : format.number(value);
+    }
+    return value;
+  };
+  return (spec: FieldSpec, bound: Bound | undefined, defaultValue: SettingValue) => {
+    const parts: string[] = [spec.key];
+    // A choice: "`key` · note · mặc định <label>" (practice AI count, 09/11/2026).
+    if (spec.kind === 'choice') {
+      if (spec.key in NOTE) parts.push(t(`notes.${spec.key as keyof typeof NOTE}`));
+      parts.push(t('hint.default', { value: typeof defaultValue === 'string' ? choiceLabel(t, spec.key, defaultValue) : shown(spec, defaultValue) }));
+      return parts.join(' · ');
+    }
+    if (spec.kind === 'bool') parts.push(t('hint.onOff'));
+    else if (bound) {
+      const n = (v: number | string) => (typeof v === 'number' ? format.number(v) : v);
+      const unit = spec.unit === undefined ? '' : spec.unit === 'percent' ? '%' : ` ${t(`units.${spec.unit}`)}`;
+      let range = spec.kind === 'ratio' && typeof bound.min === 'number' && typeof bound.max === 'number'
+        ? `${percent(bound.min)}–${percent(bound.max)}`
+        : `${n(bound.min)}–${n(bound.max)}${unit}`;
+      if (bound.step_minutes) range += `, ${t('hint.step', { minutes: bound.step_minutes })}`;
+      if (spec.key in CROSS) range += ` ${t(`cross.${spec.key as keyof typeof CROSS}`)}`;
+      if (bound.nullable) {
+        const meaning = spec.key in EMPTY ? t(`emptyMeaning.${spec.key as keyof typeof EMPTY}`) : t('emptyMeaning.noLimit');
+        range += ` ${t('hint.orEmpty', { meaning })}`;
+      }
+      if (spec.key in ZERO) range += `, ${t('hint.zero', { meaning: t(`zeroMeaning.${spec.key as keyof typeof ZERO}`) })}`;
+      parts.push(range);
+    }
+    if (spec.key in NOTE) parts.push(t(`notes.${spec.key as keyof typeof NOTE}`));
+    parts.push(t('hint.default', { value: shown(spec, defaultValue) }));
+    return parts.join(' · ');
+  };
+}
+
+const CROSS = { stop_after_days: 1, default_questions_per_session: 1, pro_practice_sessions_per_day: 1 } as const;
+const EMPTY = { ai_cap_alert_percent: 1 } as const;
+const NOTE = {
+  transaction_retention_years: 1, admin_daily_usd_cap: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, session_max_mode: 1,
+  ai_max_fixed: 1, ai_max_percent: 1, ai_placement: 1,
+} as const;
+const ZERO = {
+  ai_prefetch_count: 1, content_retention_days: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, free_ai_daily_cap: 1, ai_max_fixed: 1,
+} as const;
+
+type SettingsT = ReturnType<typeof useTranslations<'settings'>>;
+/** The label of one value of a choice field, e.g. `ai_placement` `even` → "Rải đều"; the raw value when no label exists. */
+export function choiceLabel(t: SettingsT, key: string, value: string): string {
+  const id = `choices.${key}.${value}` as Parameters<SettingsT>[0];
+  return t.has(id) ? t(id) : value;
+}
+
+/** One setting: a switch, the send-time select or a number field, with its hint and error. */
+export function SettingsField({ section, spec, value, defaultValue, bound, error, onChange }: Props) {
+  const t = useTranslations('settings');
+  const hint = useHint()(spec, bound, defaultValue);
+  const id = fieldId(section, spec.key);
+  const label = t(`fields.${section}.${spec.key}` as Parameters<typeof t>[0]);
+
+  if (spec.kind === 'bool') {
+    return <Switch id={id} label={label} description={hint} isSelected={value === true} onChange={onChange} />;
+  }
+  if (spec.kind === 'choice') {
+    return (
+      <div className="max-w-md">
+        <Select
+          id={id}
+          label={label}
+          description={hint}
+          error={error}
+          value={typeof value === 'string' ? value : ''}
+          onChange={onChange}
+          items={(spec.options ?? []).map((option) => ({ id: option, label: choiceLabel(t, spec.key, option) }))}
+        />
+      </div>
+    );
+  }
+  if (spec.kind === 'time') {
+    return (
+      <div className="max-w-md">
+        <Select
+          id={id}
+          label={label}
+          description={hint}
+          error={error}
+          value={typeof value === 'string' ? value : ''}
+          onChange={onChange}
+          items={timeOptions(bound).map((time) => ({ id: time, label: time }))}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="max-w-md">
+      <NumberField
+        id={id}
+        label={label}
+        description={hint}
+        error={error}
+        value={typeof value === 'number' ? value : null}
+        onChange={onChange}
+        isNullable={bound?.nullable === true}
+        minValue={typeof bound?.min === 'number' ? bound.min : undefined}
+        maxValue={typeof bound?.max === 'number' ? bound.max : undefined}
+        step={spec.kind === 'ratio' || spec.kind === 'usd' ? 0.01 : 1}
+      />
+    </div>
+  );
+}

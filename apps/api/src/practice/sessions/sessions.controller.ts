@@ -1,0 +1,113 @@
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Res, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
+import { z } from 'zod';
+import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
+import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
+import { CurrentLearner, LearnerContent, type Learner } from '../../content/index.js';
+import { LastSessionService, type LastSessionView } from './last-session.service.js';
+import { SessionsService } from './sessions.service.js';
+
+const uuid = z.uuid().transform((value) => value.toLowerCase());
+const QUESTION_TYPES = [
+  'mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence',
+] as const;
+const SORTS = ['level_asc', 'overdue_first', 'new_first', 'least_practiced', 'most_wrong', 'queue', 'priority_oldest', 'random'] as const;
+
+export const startBody = z.strictObject({
+  // Round C (H3): a recall ("Ôn") session of one deck. Then `types`, `sort`, `group_filter`, `prompt_style`, `count`,
+  // `cloze_source`, `ai_count` and `ai_placement` are accepted and ignored: the service fixes them.
+  kind: z.enum(['practice', 'recall']).optional(),
+  source: z.enum(['today', 'all', 'group', 'weak', 'priority']),
+  group_id: uuid.optional(),
+  group_filter: z.enum(['all', 'due', 'priority', '0', '1', '2', '3', '4', '5']).optional(),
+  sort: z.enum(SORTS).optional(),
+  types: z.array(z.enum(QUESTION_TYPES)).min(1).max(QUESTION_TYPES.length).refine((types) => new Set(types).size === types.length).optional(),
+  prompt_style: z.enum(['meaning', 'sentence', 'mixed']).optional(),
+  // The service lowers it to the session maximum (fixed, or the scope's word count up to 100); never a 400 for being too high.
+  count: z.int().min(1).optional(),
+  // Bước 7 (design §6.1): only with cloze. 'own_then_ai' (09/11/2026): a word with a saved sentence is asked from it, else AI writes one.
+  cloze_source: z.enum(['ai', 'own', 'own_then_ai']).optional(),
+  // Practice AI count (09/11/2026): the learner's AI questions, lowered to the admin's maximum; absent = the old split.
+  ai_count: z.int().min(0).optional(),
+  // Used only when the admin lets the learner choose the placement; otherwise ignored.
+  ai_placement: z.enum(['even', 'random']).optional(),
+  // API (b): a deck is required with `group`, allowed with `weak` (its weak words), refused with the other sources.
+}).refine((body) => (body.source === 'group' ? body.group_id !== undefined : body.source === 'weak' || body.group_id === undefined)
+  && (body.source === 'group' || body.group_filter === undefined)
+  && (body.kind === 'recall' || (body.types !== undefined && (body.cloze_source === undefined || body.types.includes('cloze'))))
+  && (body.kind !== 'recall' || body.source === 'group'));
+const sessionParams = z.strictObject({ id: uuid });
+const continueBody = z.strictObject({ continue: z.boolean() });
+// Bước 7 (design §6.6): a new AI request for a slot whose AI failed in an AI-only session.
+const nextBody = z.strictObject({ retry_ai: z.literal(true).optional() }).optional();
+
+@Controller('practice/sessions')
+@LearnerContent()
+export class SessionsController {
+  constructor(
+    @Inject(SessionsService) private readonly sessions: SessionsService,
+    @Inject(LastSessionService) private readonly lastSession: LastSessionService,
+  ) {}
+
+  /** Giao diện mới §10.5: the session with the newest graded answer; 204 when the learner has none. */
+  @Get('last')
+  async last(@CurrentLearner() learner: Learner, @Res({ passthrough: true }) res: Response): Promise<LastSessionView | undefined> {
+    const view = await this.lastSession.last(learner.userId);
+    if (view === null) {
+      res.status(204);
+      return undefined;
+    }
+    return view;
+  }
+
+  @Post()
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  @RateLimit('user.write')
+  start(@Body({ schema: startBody }) body: z.infer<typeof startBody>, @CurrentLearner() learner: Learner) {
+    return this.sessions.start(learner, body);
+  }
+
+  @Get('current')
+  current(@CurrentLearner() learner: Learner) {
+    return this.sessions.current(learner);
+  }
+
+  @Post(':id/next')
+  @HttpCode(200)
+  @RateLimit('practice.answer')
+  next(
+    @Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>,
+    @Body({ schema: nextBody }) body: z.infer<typeof nextBody>,
+    @CurrentLearner() learner: Learner,
+  ) {
+    return this.sessions.next(learner, params.id, body?.retry_ai === true);
+  }
+
+  /** Bước 7 (design §6.4): AI questions made ahead; safe to repeat, so no Idempotency-Key. */
+  @Post(':id/prepare')
+  @HttpCode(200)
+  @RateLimit('practice.answer')
+  prepare(@Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>, @CurrentLearner() learner: Learner) {
+    return this.sessions.prepare(learner, params.id);
+  }
+
+  @Post(':id/continue')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  continue(
+    @Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>,
+    @Body({ schema: continueBody }) body: z.infer<typeof continueBody>,
+    @CurrentLearner() learner: Learner,
+  ) {
+    return this.sessions.continue(learner.userId, params.id, body.continue);
+  }
+
+  @Post(':id/finish')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  finish(@Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>, @CurrentLearner() learner: Learner) {
+    return this.sessions.finish(learner.userId, params.id);
+  }
+}

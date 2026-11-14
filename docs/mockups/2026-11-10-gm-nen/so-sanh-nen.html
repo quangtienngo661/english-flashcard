@@ -1,0 +1,384 @@
+<title>Nền Wordmet: lưới chấm và mesh</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Page = a comparison board: controls on top, the Wordmet "Hôm nay" screen rendered at true 1440/390 size and scaled into frames. */
+:root{
+  /* page chrome (theme-aware) */
+  --page:#eef0f5; --page-ink:#1b2444; --page-muted:#525a78; --page-line:#d9dde8; --page-card:#ffffff; --page-accent:#1e3a8a; --page-accent-soft:#e7ecf8;
+  /* app tokens (the mocked app is always the light theme) */
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#e1e5ee; --ghost:#c9cedc;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5;
+  --g0:#e5603f; --g0-soft:#e1a79d; --g0-ink:#984941; --g1:#149384; --g1-soft:#83bebc; --g1-ink:#17696c;
+  --g2:#7a55d3; --g2-soft:#b0a2e0; --g2-ink:#56429d; --g3:#d99a17; --g3-soft:#dbc18b; --g3-ink:#916d28;
+  --g5:#d2427a; --g5-soft:#d899b8; --g5-ink:#8c3765;
+  --f-sans:"Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-display:"Bricolage Grotesque","Noto Sans",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
+  --sh-card:0 1px 2px rgb(27 36 68 / .06),0 10px 28px -14px rgb(27 36 68 / .2);
+  --sh-btn:0 10px 14px -6px rgb(30 58 138 / .34);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#12172b;--page-ink:#e6e9f4;--page-muted:#a6adc6;--page-line:#2a3150;--page-card:#1a2039;--page-accent:#9db4ff;--page-accent-soft:#232c52;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#12172b;--page-ink:#e6e9f4;--page-muted:#a6adc6;--page-line:#2a3150;--page-card:#1a2039;--page-accent:#9db4ff;--page-accent-soft:#232c52;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--page-ink);font-family:var(--f-sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,4vw,36px);line-height:1.15;margin:0;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--page-muted);max-width:68ch}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.seg{display:inline-flex;background:var(--page-card);border:1px solid var(--page-line);border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
+.seg button{font:600 14px/1.2 var(--f-sans);color:var(--page-muted);background:transparent;border:0;border-radius:9px;padding:9px 14px;cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--page-accent-soft);color:var(--page-accent)}
+.seg button:focus-visible{outline:3px solid var(--page-accent);outline-offset:2px}
+.hint{font:500 12px/1.4 var(--f-mono);color:var(--page-muted)}
+.boards{display:grid;gap:20px;grid-template-columns:1fr}
+.boards.two{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.board{display:grid;gap:8px;min-width:0}
+.board-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.board-head b{font-family:var(--f-display);font-weight:700;font-size:18px}
+.board-head span{color:var(--page-muted);font-size:13.5px}
+.frame{position:relative;width:100%;overflow:hidden;border-radius:14px;border:1px solid var(--page-line);background:var(--bg)}
+.frame .scaler{position:absolute;left:0;top:0;transform-origin:0 0}
+.notes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.note{background:var(--page-card);border:1px solid var(--page-line);border-radius:14px;padding:16px 18px}
+.note h2{font:700 16px/1.3 var(--f-display);margin:0 0 6px}
+.note p{margin:0;color:var(--page-muted);font-size:14px}
+.note ul{margin:6px 0 0;padding-left:18px;color:var(--page-muted);font-size:14px}
+
+/* ============ The mocked app screen ============ */
+.app{position:relative;isolation:isolate;background:var(--bg);color:var(--ink);font-family:var(--f-sans);overflow:hidden}
+.app.desk{width:1440px;min-height:1180px}
+.app.phone{width:390px;min-height:1900px}
+.app .bg,.app .grain{position:absolute;inset:0;z-index:-1;pointer-events:none}
+/* A: dot grid + halos (current, round 9) */
+.v-dots .bg{background:radial-gradient(50% 45% at 8% 0%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 70%),radial-gradient(40% 40% at 100% 100%,color-mix(in srgb,var(--mark) 26%,transparent),transparent 70%)}
+.v-dots .grain{background-image:radial-gradient(color-mix(in srgb,var(--ink) 11%,transparent) 1.1px,transparent 1.4px);background-size:20px 20px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 35%,transparent 90%);mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 35%,transparent 90%)}
+/* B and C: mesh of four halos + SVG grain (round 8, direction 4) */
+.v-mesh .bg,.v-glass .bg{background:radial-gradient(38% 32% at 14% 8%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%),radial-gradient(34% 30% at 90% 14%,color-mix(in srgb,var(--mark) 34%,transparent),transparent 70%),radial-gradient(40% 34% at 76% 94%,color-mix(in srgb,var(--pass) 18%,transparent),transparent 70%),radial-gradient(34% 34% at 4% 92%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%)}
+.v-mesh .grain,.v-glass .grain{opacity:.4;mix-blend-mode:multiply;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.27 0 0 0 .45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.phone.v-mesh .bg,.phone.v-glass .bg{background:radial-gradient(70% 22% at 10% 4%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%),radial-gradient(60% 18% at 95% 22%,color-mix(in srgb,var(--mark) 34%,transparent),transparent 70%),radial-gradient(75% 20% at 80% 70%,color-mix(in srgb,var(--pass) 18%,transparent),transparent 70%),radial-gradient(60% 20% at 0% 92%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%)}
+
+/* blocks */
+.pn{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh-card)}
+.v-glass .pn{background:color-mix(in srgb,var(--surface) 66%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border:1px solid color-mix(in srgb,var(--surface) 85%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--surface) 90%,transparent),0 24px 44px -32px rgb(27 36 68 / .5)}
+
+/* top bar (glass in every variant, already chosen) */
+.tb{position:relative;z-index:2;display:flex;align-items:center;gap:22px;height:64px;padding:0 32px;background:color-mix(in srgb,var(--surface) 72%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border-bottom:1px solid color-mix(in srgb,var(--ink) 7%,transparent)}
+.logo{font:800 22px/1 var(--f-display);letter-spacing:-.045em;color:var(--ink)}
+.logo i{font-style:normal;color:var(--accent)}
+.tabs{display:flex;gap:6px}
+.tab{font:600 15px/1 var(--f-sans);color:var(--muted);padding:10px 12px;border-radius:9px}
+.tab.on{background:var(--accent-soft);color:var(--accent)}
+.sp{flex:1}
+.search{display:flex;align-items:center;gap:10px;width:260px;height:38px;padding:0 10px 0 14px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--muted);font-size:14px}
+.kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border:1px solid var(--line);border-radius:5px;background:var(--bg);font:700 11px/1 var(--f-mono);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:45px;padding:0 20px;border-radius:10px;font:600 15px/1 var(--f-sans);border:1px solid transparent;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--on-accent);box-shadow:var(--sh-btn)}
+.btn.sec{background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:0 1px 1px rgb(27 36 68 / .05),0 8px 14px -10px rgb(27 36 68 / .25)}
+.btn.sm{height:38px;padding:0 14px;font-size:14px}
+.btn .kbd{background:color-mix(in srgb,var(--surface) 18%,transparent);border-color:color-mix(in srgb,var(--surface) 40%,transparent);color:var(--on-accent)}
+.ava{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:700 15px/1 var(--f-sans)}
+.pro{font:600 14px/1 var(--f-sans);color:var(--ink)}
+
+.content{width:1160px;margin:0 auto;padding:32px 0 124px;display:grid;gap:20px}
+.date{font:500 12px/1 var(--f-mono);color:var(--muted)}
+.h1{font:800 44px/1.1 var(--f-display);letter-spacing:-.025em;margin:6px 0 0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.col{display:grid;gap:20px;min-width:0}
+.side{display:grid;gap:16px}
+
+.hero{border:2px solid var(--g0);border-radius:28px;padding:28px;display:flex;align-items:center;gap:24px}
+.v-glass .hero{border:2px solid color-mix(in srgb,var(--g0) 80%,transparent)}
+.hero .l{flex:1;display:grid;gap:12px;min-width:0}
+.mono{font:500 12px/1.3 var(--f-mono);color:var(--muted)}
+.hero .name{font:800 36px/1.1 var(--f-display);letter-spacing:-.02em}
+.small{font-size:14px;color:var(--muted)}
+.bar{display:flex;gap:3px;height:10px}
+.bar i{display:block;border-radius:3px}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.two{display:flex;gap:12px}
+.two .btn{width:148px}
+.big{text-align:right}
+.big b{display:block;font:800 96px/.88 var(--f-display);letter-spacing:-.03em;color:var(--g0-ink)}
+
+.last{padding:20px 24px;display:flex;align-items:center;gap:24px}
+.score b{font:800 34px/1 var(--f-display);letter-spacing:-.02em}
+.last .mid{flex:1;display:grid;gap:6px;min-width:0}
+.last .t{font:600 15px/1.3 var(--f-sans)}
+.track{position:relative;height:6px;border-radius:3px;background:var(--fail);overflow:hidden}
+.track i{position:absolute;inset:0 30% 0 0;background:var(--pass)}
+.pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;gap:4px;align-items:center;padding:3px 8px;border-radius:6px;font:700 13px/1.2 var(--f-sans)}
+.pill.ok{background:var(--pass-soft);color:var(--pass)}
+.pill.no{background:var(--fail-soft);color:var(--fail)}
+.links{display:grid;gap:8px;justify-items:end}
+.link{font:600 14px/1.2 var(--f-sans);color:var(--accent)}
+
+.sec-h{display:flex;gap:12px;align-items:baseline}
+.sec-h b{font:700 24px/1.2 var(--f-display)}
+.cards{display:flex;gap:20px}
+.stack{position:relative;width:176px;height:249px}
+.stack .bk{position:absolute;background:var(--surface);border-radius:18px;border:1.5px solid var(--c-soft)}
+.stack .bk.b1{left:5px;right:5px;top:19px;height:210px;opacity:.85}
+.stack .bk.b2{left:10px;right:10px;top:38px;height:196px;opacity:.55}
+.stack .face{position:absolute;inset:0 0 auto 0;height:223px;background:var(--surface);border:2px solid var(--c);border-radius:19px;padding:17px 16px 13px;display:flex;flex-direction:column;gap:6px;box-shadow:0 19px 38px -24px rgb(27 36 68 / .4)}
+.face .m{font:500 10.5px/1.2 var(--f-mono);color:var(--muted)}
+.face .n{font:800 27px/1.08 var(--f-display);letter-spacing:-.02em}
+.face .w{margin-top:auto;display:flex;gap:4px;align-items:baseline}
+.face .w b{font:800 34px/1 var(--f-display);color:var(--c-ink)}
+.face .w span{font:600 12px/1 var(--f-sans);color:var(--muted)}
+.face .f{border-top:1px solid var(--line);padding-top:8px;font-size:11px;color:var(--muted)}
+.face .f b{font:700 12px/1 var(--f-display);color:var(--ink)}
+.done{font-size:14px;color:var(--muted)}
+
+.topics{display:grid;grid-template-columns:1fr 1fr;gap:6px 28px}
+.topic{display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);padding:12px 2px}
+.topic b{font:600 15px/1.3 var(--f-sans);flex:1}
+
+.box{padding:24px;display:grid;gap:12px}
+.box h3{font:700 20px/1.25 var(--f-display);margin:0}
+.box p{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.input{height:44px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);display:flex;align-items:center;padding:0 14px;color:var(--ghost);font-size:15px;flex:1}
+.v-glass .input{background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.row{display:flex;gap:12px;align-items:center}
+.old b{font:800 52px/.9 var(--f-display);color:var(--fail)}
+.tiers{display:grid;gap:12px}
+.tier{display:grid;grid-template-columns:84px 1fr 56px;gap:12px;align-items:center;font-size:13.5px}
+.tier .k{display:flex;align-items:center;gap:8px}
+.tier .k i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.tier .tr{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.tier .tr i{display:block;height:100%}
+.tier .c{text-align:right;font:500 12px/1 var(--f-mono);color:var(--muted)}
+
+.fab{position:absolute;right:32px;bottom:32px;width:62px;height:66px;border-radius:16px;background:var(--surface);box-shadow:0 24px 28px -16px rgb(27 36 68 / .34),0 2px 3px rgb(27 36 68 / .08);overflow:visible;text-align:center}
+.fab .mo{background:var(--accent);color:var(--on-accent);font:700 10px/20px var(--f-mono);border-radius:16px 16px 0 0}
+.fab .d{font:800 26px/40px var(--f-display)}
+.fab .st{position:absolute;top:-9px;right:-14px;background:var(--mark);color:var(--mark-ink);border:2px solid var(--bg);border-radius:11px;padding:2px 6px;font:800 12px/1 var(--f-display)}
+
+/* phone layout */
+.phone .tb{height:56px;padding:0 16px;gap:12px}
+.phone .tabs,.phone .search,.phone .pro,.phone .btn.add{display:none}
+.phone .content{width:auto;padding:20px 16px 140px;gap:16px}
+.phone .h1{font-size:30px}
+.phone .grid{grid-template-columns:1fr;gap:16px}
+.phone .hero{flex-direction:column-reverse;align-items:stretch;padding:20px;gap:16px}
+.phone .hero .name{font-size:28px}
+.phone .big{text-align:left}
+.phone .big b{font-size:60px}
+.phone .two .btn{flex:1;width:auto}
+.phone .last{flex-wrap:wrap;padding:16px;gap:14px}
+.phone .last .links{grid-auto-flow:column;justify-items:start;width:100%}
+.phone .cards{overflow:hidden;gap:14px}
+.phone .stack{flex:0 0 150px;width:150px;height:212px}
+.phone .stack .face{height:190px;padding:14px 13px 11px}
+.phone .face .n{font-size:23px}
+.phone .face .w b{font-size:29px}
+.phone .stack .bk.b1{top:16px;height:178px}
+.phone .stack .bk.b2{top:32px;height:166px}
+.phone .topics{grid-template-columns:1fr}
+.phone .sec-h .mono{display:none}
+.phone .box{padding:16px}
+.phone .fab{right:16px;bottom:86px;width:54px;height:58px}
+.phone .fab .d{font-size:22px;line-height:34px}
+.phone .tabbar{position:absolute;left:0;right:0;bottom:0;height:72px;display:grid;grid-template-columns:repeat(4,1fr);background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-top:1px solid color-mix(in srgb,var(--ink) 7%,transparent);font:600 11px/1 var(--f-sans);color:var(--muted)}
+.tabbar{display:none}
+.tabbar span{display:grid;place-items:center;align-content:center;gap:6px}
+.tabbar span i{width:22px;height:4px;border-radius:2px;background:currentColor;opacity:.35}
+.tabbar span.on{color:var(--accent)}
+.tabbar span.on i{opacity:1}
+.phone .addfab{position:absolute;right:16px;bottom:154px;width:56px;height:56px;border-radius:28px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:400 28px/1 var(--f-sans);box-shadow:0 10px 28px -10px rgb(30 58 138 / .34)}
+.addfab{display:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>Nền của app: lưới chấm hay mesh</h1>
+    <p class="lede">Màn Hôm nay vẽ theo khung Figma, ở ba cách nền. Bấm để đổi, hoặc chọn "Cạnh nhau" để so hai cách mesh. Thanh trên cùng là kính mờ ở cả ba cách, như đã chốt.</p>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Cách nền">
+      <button type="button" id="v-dots" data-v="dots" aria-pressed="false">A · Lưới chấm (hiện tại)</button>
+      <button type="button" id="v-mesh" data-v="mesh" aria-pressed="false">B · Mesh + hạt, khối trắng</button>
+      <button type="button" id="v-glass" data-v="glass" aria-pressed="false">C · Mesh + hạt + khối kính</button>
+      <button type="button" id="v-both" data-v="both" aria-pressed="false">Cạnh nhau B và C</button>
+    </div>
+    <div class="seg" role="group" aria-label="Khung">
+      <button type="button" id="d-desk" data-d="desk" aria-pressed="true">Máy tính 1440</button>
+      <button type="button" id="d-phone" data-d="phone" aria-pressed="false">Điện thoại 390</button>
+    </div>
+    <span class="hint">phím ← → đổi cách nền</span>
+  </div>
+
+  <section class="boards" id="boards" aria-live="polite"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>A · Lưới chấm (hiện tại)</h2>
+      <p>Chấm 20 px mờ dần ra mép, quầng navy góc trái trên và vàng góc phải dưới. Khối trắng, viền 1 px, bóng navy nhẹ (vòng 9).</p>
+    </div>
+    <div class="note">
+      <h2>B · Mesh + hạt, khối trắng</h2>
+      <p>Bốn quầng navy, vàng, lục, phủ lớp hạt nhiễu mịn. Khối giữ nguyên nền trắng và bóng như Figma.</p>
+      <ul><li>Chỉ đổi một component nền dùng chung.</li><li>Nhẹ máy như hiện tại.</li></ul>
+    </div>
+    <div class="note">
+      <h2>C · Mesh + hạt + khối kính</h2>
+      <p>Như B, nhưng khối trắng trong 66%, mờ nền phía sau (blur 18 px), viền sáng. Thẻ nhóm giữ nền trắng vì là "thẻ" thật.</p>
+      <ul><li>Phải sửa khối ở mọi màn và trong Figma.</li><li>Mỗi khối thêm một lớp blur: máy yếu có thể giật khi cuộn.</li></ul>
+    </div>
+  </section>
+</main>
+
+<template id="screen">
+  <div class="bg"></div><div class="grain"></div>
+  <header class="tb">
+    <span class="logo">wordmet<i>.</i></span>
+    <nav class="tabs"><span class="tab on">Hôm nay</span><span class="tab">Nhóm</span><span class="tab">Luyện tập</span><span class="tab">Tra từ</span></nav>
+    <span class="sp"></span>
+    <span class="search">Tìm từ<span class="sp"></span><span class="kbd">/</span></span>
+    <span class="btn pri sm add">+ Thêm từ <span class="kbd">N</span></span>
+    <span class="pro">Pro</span>
+    <span class="ava">L</span>
+  </header>
+  <div class="content">
+    <div><div class="date">chủ nhật, 08/11</div><div class="h1">Hôm nay</div></div>
+    <div class="grid">
+      <div class="col">
+        <section class="pn hero">
+          <div class="l">
+            <span class="mono">ôn tiếp · có thẻ ưu tiên</span>
+            <span class="name">Đề 12 · Writing</span>
+            <span class="small">nhóm có 48 từ · 12 đã thuộc</span>
+            <div class="bar"><i style="flex:4;background:var(--accent)"></i><i style="flex:14;background:var(--ink)"></i><i style="flex:6;background:var(--ghost)"></i></div>
+            <div class="legend"><span><i style="background:var(--accent)"></i>4 ưu tiên</span><span><i style="background:var(--ink)"></i>14 đến hạn</span><span><i style="background:var(--ghost)"></i>6 mới</span></div>
+            <div class="two"><span class="btn sec">Học</span><span class="btn pri">Ôn</span></div>
+          </div>
+          <div class="big"><b>24</b><span class="mono">thẻ chờ hôm nay</span></div>
+        </section>
+        <section class="pn last">
+          <div class="score"><b>14/20</b><div class="mono">đúng</div></div>
+          <div class="mid">
+            <span class="t">Lần luyện gần nhất</span>
+            <span class="mono">thứ bảy, 07/11 · 20 câu · Đề 12 · Writing</span>
+            <div class="track"><i></i></div>
+            <div class="pills"><span class="pill ok">✓ 14</span><span class="pill no">✕ 6</span><span class="small">Sai: <b style="color:var(--ink)">deteriorate, allocate, viable, scrutiny</b></span></div>
+          </div>
+          <div class="links"><span class="link">Luyện lại từ sai →</span><span class="link">Mở lịch học</span></div>
+        </section>
+        <section style="display:grid;gap:16px">
+          <div class="sec-h"><b>Nhóm của bạn</b><span class="mono">4 nhóm khác còn thẻ chờ · bấm thẻ để mở nhóm</span><span class="sp"></span><span class="link">Xem tất cả 8 nhóm →</span></div>
+          <div class="cards">
+            <div class="stack" style="--c:var(--g1);--c-soft:var(--g1-soft);--c-ink:var(--g1-ink)"><div class="bk b2"></div><div class="bk b1"></div><div class="face"><span class="m">40 từ · 8 đã thuộc</span><span class="n">Đề 9 · Listening</span><span class="w"><b>18</b><span>thẻ chờ</span></span><span class="f">tiếp theo <b>commute</b></span></div></div>
+            <div class="stack" style="--c:var(--g2);--c-soft:var(--g2-soft);--c-ink:var(--g2-ink)"><div class="bk b1"></div><div class="face"><span class="m">36 từ · 8 đã thuộc</span><span class="n">Đề 14 · Reading</span><span class="w"><b>11</b><span>thẻ chờ</span></span><span class="f">tiếp theo <b>prevalent</b></span></div></div>
+            <div class="stack" style="--c:var(--g3);--c-soft:var(--g3-soft);--c-ink:var(--g3-ink)"><div class="bk b1"></div><div class="face"><span class="m">22 từ · 4 đã thuộc</span><span class="n">Từ gặp ngoài đời</span><span class="w"><b>6</b><span>thẻ chờ</span></span><span class="f">tiếp theo <b>overwhelmed</b></span></div></div>
+            <div class="stack" style="--c:var(--g5);--c-soft:var(--g5-soft);--c-ink:var(--g5-ink)"><div class="bk b1"></div><div class="face"><span class="m">28 từ · 9 đã thuộc</span><span class="n">Đề 10 · Writing</span><span class="w"><b>3</b><span>thẻ chờ</span></span><span class="f">tiếp theo <b>allocate</b></span></div></div>
+          </div>
+          <span class="done">Xong hôm nay: Công việc · B1, Đề 11 · Speaking · Chưa có từ: Du lịch Nhật</span>
+        </section>
+        <section style="display:grid;gap:12px">
+          <div class="sec-h"><b style="font-size:22px">Tạo nhóm nhanh theo chủ đề</b><span class="sp"></span><span class="link">Xem mọi chủ đề trong Tra từ →</span></div>
+          <div class="topics">
+            <div class="topic"><b>Công việc · B1</b><span class="mono">24 từ</span><span>→</span></div>
+            <div class="topic"><b>Du lịch · A2</b><span class="mono">18 từ</span><span>→</span></div>
+            <div class="topic"><b>Công nghệ · B2</b><span class="mono">30 từ</span><span>→</span></div>
+            <div class="topic"><b>Đời sống · A2</b><span class="mono">40 từ</span><span>→</span></div>
+          </div>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="pn box">
+          <h3>Thêm từ vừa gặp</h3>
+          <p>Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn. Wordmet tự nhận ra dạng chia, như went → go.</p>
+          <div class="row"><span class="input"></span><span class="btn pri">Thêm</span></div>
+        </section>
+        <section class="pn box old">
+          <div class="row"><b>18</b><div style="flex:1"><div class="t" style="font:600 15px/1.3 var(--f-sans)">từ lâu chưa ôn</div><p>Nhóm Đề 9 · Listening, quá hạn hơn 60 ngày</p></div><span class="link">Xem</span></div>
+        </section>
+        <section class="pn box">
+          <div class="row"><b style="font:700 16px/1.2 var(--f-display)">170 từ theo ngăn</b><span class="sp"></span><span class="mono">đến hạn / tổng</span></div>
+          <div class="tiers">
+            <div class="tier"><span class="k"><i style="background:#9aa3b1"></i>Mới</span><span class="tr"><i style="width:58%;background:#9aa3b1"></i></span><span class="c">11 / 19</span></div>
+            <div class="tier"><span class="k"><i style="background:#c07a45"></i>1 ngày</span><span class="tr"><i style="width:63%;background:#c07a45"></i></span><span class="c">24 / 38</span></div>
+            <div class="tier"><span class="k"><i style="background:#98a2b0"></i>3 ngày</span><span class="tr"><i style="width:42%;background:#98a2b0"></i></span><span class="c">19 / 45</span></div>
+            <div class="tier"><span class="k"><i style="background:#d4a72c"></i>7 ngày</span><span class="tr"><i style="width:18%;background:#d4a72c"></i></span><span class="c">6 / 33</span></div>
+            <div class="tier"><span class="k"><i style="background:#1f9d75"></i>14 ngày</span><span class="tr"><i style="width:0%;background:#1f9d75"></i></span><span class="c">0 / 24</span></div>
+            <div class="tier"><span class="k"><i style="background:#b28bff"></i>30 ngày</span><span class="tr"><i style="width:0%;background:#b28bff"></i></span><span class="c">0 / 11</span></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+  <div class="fab"><div class="mo">T11</div><div class="d">8</div><span class="st">🔥 6</span></div>
+  <div class="addfab">+</div>
+  <nav class="tabbar"><span class="on"><i></i>Hôm nay</span><span><i></i>Nhóm</span><span><i></i>Luyện tập</span><span><i></i>Tra từ</span></nav>
+</template>
+
+<script>
+(function(){
+  var tpl = document.getElementById('screen');
+  var boards = document.getElementById('boards');
+  var LABEL = {
+    dots: ['A · Lưới chấm', 'nền hiện tại trong code và Figma'],
+    mesh: ['B · Mesh + hạt', 'khối trắng như Figma'],
+    glass: ['C · Mesh + hạt + kính', 'khối trắng trong, mờ nền phía sau']
+  };
+  var state = { v: 'mesh', d: 'desk' };
+  try { var s = JSON.parse(localStorage.getItem('nen-cmp') || 'null'); if (s && s.v && s.d) state = s; } catch (e) {}
+
+  function board(v){
+    var wrap = document.createElement('div'); wrap.className = 'board';
+    var head = document.createElement('div'); head.className = 'board-head';
+    head.innerHTML = '<b>' + LABEL[v][0] + '</b><span>' + LABEL[v][1] + '</span>';
+    var frame = document.createElement('div'); frame.className = 'frame';
+    var scaler = document.createElement('div'); scaler.className = 'scaler';
+    var app = document.createElement('div'); app.className = 'app ' + state.d + ' v-' + v;
+    app.appendChild(tpl.content.cloneNode(true));
+    scaler.appendChild(app); frame.appendChild(scaler);
+    wrap.appendChild(head); wrap.appendChild(frame);
+    return wrap;
+  }
+  function fit(){
+    boards.querySelectorAll('.frame').forEach(function(f){
+      var app = f.querySelector('.app');
+      var w = app.offsetWidth, h = app.offsetHeight;
+      var avail = f.clientWidth;
+      var k = Math.min(1, avail / w);
+      if (state.d === 'phone') k = Math.min(1, avail / w, 1);
+      f.querySelector('.scaler').style.transform = 'scale(' + k + ')';
+      f.style.height = Math.round(h * k) + 'px';
+      if (state.d === 'phone') { f.style.maxWidth = Math.round(w * k) + 'px'; f.style.margin = '0 auto'; }
+      else { f.style.maxWidth = ''; f.style.margin = ''; }
+    });
+  }
+  function render(){
+    boards.innerHTML = '';
+    var list = state.v === 'both' ? ['mesh', 'glass'] : [state.v];
+    boards.className = 'boards' + (list.length > 1 ? ' two' : '');
+    list.forEach(function(v){ boards.appendChild(board(v)); });
+    document.querySelectorAll('[data-v]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.v === state.v)); });
+    document.querySelectorAll('[data-d]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.d === state.d)); });
+    try { localStorage.setItem('nen-cmp', JSON.stringify(state)); } catch (e) {}
+    requestAnimationFrame(fit);
+  }
+  document.querySelectorAll('[data-v]').forEach(function(b){ b.addEventListener('click', function(){ state.v = b.dataset.v; render(); }); });
+  document.querySelectorAll('[data-d]').forEach(function(b){ b.addEventListener('click', function(){ state.d = b.dataset.d; render(); }); });
+  var ORDER = ['dots', 'mesh', 'glass', 'both'];
+  document.addEventListener('keydown', function(e){
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var i = ORDER.indexOf(state.v); i = (i + (e.key === 'ArrowRight' ? 1 : ORDER.length - 1)) % ORDER.length;
+    state.v = ORDER[i]; render();
+  });
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  render();
+})();
+</script>

@@ -1,0 +1,9 @@
+DB10a first send: status 500 after 549 ms {"type":"about:blank","status":500,"title":"Internal Server Error","instance":"/v1/probe-idem","operation_id":"a9d18b63-acd3-40c4-9adf-e59709885541"}
+DB10a after the first run ended: groups 1 idempotency rows for the key 0
+DB10a same key again: status 201 {"call":2} handler runs 2 groups 2
+DB10b first: 500; second (sent at 0.6 s): 201 {"call":2} handler runs 2 groups 2
+DB11 warm-up: 2 concurrent POST /v1/groups (distinct users and keys) → statuses [201,201]; slowest 57 ms; total 57 ms; error types 
+DB11 n4: 4 concurrent POST /v1/groups (distinct users and keys) → statuses [201,201,201,201]; slowest 42 ms; total 42 ms; error types 
+DB11 n9: 9 concurrent POST /v1/groups (distinct users and keys) → statuses [201,201,201,201,201,201,201,201,201]; slowest 72 ms; total 72 ms; error types 
+DB11 n10: 10 concurrent POST /v1/groups (distinct users and keys) → statuses [500,500,500,500,500,500,500,500,500,500]; slowest 5046 ms; total 5046 ms; error types about:blank
+DB11 n14: 14 concurrent POST /v1/groups (distinct users and keys) → statuses [201,201,201,201,500,500,500,500,500,500,500,500,500,500]; slowest 5069 ms; total 5069 ms; error types about:blank

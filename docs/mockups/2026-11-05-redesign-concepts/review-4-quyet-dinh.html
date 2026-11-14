@@ -1,0 +1,349 @@
+<title>Bốn quyết định từ review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one 1160px column, sticky tab bar for the four decisions; each decision = context, side-by-side option mockups, "Bạn chọn". */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --ghost:#c9cedc; --line:#e1e5ee;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --warn:#a2650a; --warn-soft:#fbf0dc;
+  --scrim:rgb(27 36 68 / .30);
+  --shadow-card:0 1px 2px rgb(27 36 68 / .06),0 10px 28px -14px rgb(27 36 68 / .20);
+  --shadow-row:0 1px 2px rgb(27 36 68 / .06),0 4px 12px -8px rgb(27 36 68 / .16);
+  --shadow-pop:0 2px 6px rgb(27 36 68 / .08),0 24px 56px -24px rgb(27 36 68 / .34);
+  --shadow-btn:0 6px 14px -8px rgb(30 58 138 / .55);
+  --font-sans:'Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease-main:cubic-bezier(0.23,1,0.32,1);
+  --g0:#e5603f; --g1:#149384; --g2:#7a55d3; --g3:#d99a17;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --warn:#f0b450; --warn-soft:#2c2412; --scrim:rgb(0 0 0 / .5);
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 10px 28px -14px rgb(0 0 0 / .7); --shadow-row:0 1px 2px rgb(0 0 0 / .4),0 4px 12px -8px rgb(0 0 0 / .6);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .4),0 24px 56px -24px rgb(0 0 0 / .8); --shadow-btn:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#171b2a; --ink:#eceef5; --muted:#a6adc4; --ghost:#353c53; --line:#2a3044;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#0f1220; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18;
+  --warn:#f0b450; --warn-soft:#2c2412; --scrim:rgb(0 0 0 / .5);
+  --shadow-card:0 1px 2px rgb(0 0 0 / .4),0 10px 28px -14px rgb(0 0 0 / .7); --shadow-row:0 1px 2px rgb(0 0 0 / .4),0 4px 12px -8px rgb(0 0 0 / .6);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .4),0 24px 56px -24px rgb(0 0 0 / .8); --shadow-btn:none; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1160px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--font-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.025em;line-height:1.15}
+h2{font-size:26px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+h3{font-size:18px;font-weight:700;line-height:1.3}
+h4{font-size:15px;font-weight:700;line-height:1.3}
+p{margin:0}
+.lead{color:var(--muted);max-width:72ch}
+.mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+header.top{padding-block:32px 16px;display:grid;gap:8px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:24px}
+nav.tabs a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:8px;color:var(--muted);font-weight:600;text-decoration:none;font-size:14px}
+nav.tabs a b{font-family:var(--font-mono);font-weight:500;font-size:12px}
+nav.tabs a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.dc{display:grid;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-card);padding:20px;display:grid;gap:14px;min-width:0}
+.panel.flat{box-shadow:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
+@media (max-width:720px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.opt{display:grid;gap:10px;align-content:start;min-width:0}
+.opt .lbl{display:flex;gap:8px;align-items:baseline}
+.letter{font:600 12px var(--font-mono);color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 7px}
+.pros{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.pros li.minus::marker{content:"− "}
+.pros li.plus::marker{content:"+ "}
+.note{font-size:13px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;border:0;
+  background:var(--accent);color:var(--on-accent);font:600 14px var(--font-sans);cursor:pointer;box-shadow:var(--shadow-btn)}
+.btn.sec{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line),0 4px 10px -8px rgb(30 58 138 / .45)}
+.btn.sm{min-height:32px;padding:0 12px;font-size:13px}
+.tbtn{background:none;border:0;padding:4px 2px;color:var(--accent);font:600 14px var(--font-sans);cursor:pointer;border-radius:6px}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--accent-soft);gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;color:var(--muted);font:600 13px var(--font-sans);min-height:32px;padding:0 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-row)}
+.choose{border-top:1px dashed var(--line);padding-top:14px;display:grid;gap:6px}
+.choose ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.ctx{background:var(--accent-soft);border:0;box-shadow:none}
+.ctx ul{margin:0;padding-left:18px;display:grid;gap:4px}
+
+/* mini screens */
+.mini{border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:12px;display:grid;gap:10px;align-content:start;min-height:240px;
+  background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:18px 18px;min-width:0}
+.mini .bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.mini .card{background:var(--surface);border-radius:12px;box-shadow:var(--shadow-card);padding:12px;display:grid;gap:8px;min-width:0}
+.mini .row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:var(--bg);font-size:13px;min-width:0}
+.mini .row .r{margin-left:auto;font:500 11px var(--font-mono);color:var(--muted);white-space:nowrap}
+.hl{outline:2px solid var(--mark);outline-offset:2px;border-radius:8px}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:6px;font:600 11px var(--font-sans);white-space:nowrap}
+.chip.open{background:var(--warn-soft);color:var(--warn)}.chip.ok{background:var(--pass-soft);color:var(--pass)}.chip.no{background:var(--bg);color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.gcard{background:var(--surface);border:1.5px solid var(--g0);border-radius:14px;box-shadow:var(--shadow-card);padding:12px;display:grid;gap:6px;min-width:0}
+.gcard .nm{font:800 18px var(--font-display);letter-spacing:-.015em;line-height:1.2}
+.gcard .due{font:800 28px var(--font-display);color:var(--g0);line-height:1}
+.gcard .foot{font:500 11px var(--font-mono);color:var(--muted)}
+.strike{text-decoration:line-through;color:var(--muted)}
+.missing{border:1.5px dashed var(--ghost);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--muted)}
+.price{display:grid;gap:8px}
+.ptile{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface)}
+.ptile.on{border-color:var(--accent)}
+.ptile b{font:800 17px var(--font-display);white-space:nowrap}
+.ptile span{min-width:0}
+.shimmer{display:inline-block;width:80px;height:16px;border-radius:6px;background:linear-gradient(90deg,var(--line),var(--bg),var(--line));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px}
+.flow span{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.flow i{font-style:normal;color:var(--muted)}
+.warnbox{background:var(--fail-soft);color:var(--ink);border-radius:10px;padding:8px 10px;font-size:13px}
+
+/* AdSense demo */
+.phone{position:relative;width:min(260px,100%);height:440px;border:8px solid var(--ink);border-radius:30px;background:var(--bg);overflow:hidden;margin:0 auto}
+.screen{position:absolute;inset:0;padding:14px;display:grid;gap:10px;align-content:start;transition:opacity .2s}
+.stack{position:relative;height:150px;display:grid;place-items:center}
+.stack .gcard{width:170px;transition:transform 380ms cubic-bezier(.3,1.15,.5,1),opacity 340ms var(--ease-main),filter 340ms var(--ease-main)}
+.side{position:absolute;width:120px!important;opacity:.4;filter:blur(3px)}
+.side.l{left:-70px}.side.r{right:-70px}
+.flip-go .side{opacity:0;filter:blur(12px)}
+.flip-go .stack .center{transform:translateY(-120px) scale(.9)}
+.gpage{position:absolute;inset:0;padding:14px;display:grid;gap:10px;align-content:start;opacity:0;pointer-events:none}
+.gpage.show{opacity:1;pointer-events:auto}
+.gpage.anim>*{animation:in 340ms var(--ease-main) both}
+.gpage.anim>*:nth-child(2){animation-delay:60ms}.gpage.anim>*:nth-child(3){animation-delay:90ms}
+@keyframes in{from{opacity:0;transform:translateY(12px);filter:blur(12px)}}
+.reload{position:absolute;inset:0;background:var(--surface);display:grid;place-items:center;opacity:0;pointer-events:none}
+.reload.show{opacity:1}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.adtag{position:absolute;right:10px;top:10px;font:600 10px var(--font-mono);background:var(--warn-soft);color:var(--warn);padding:2px 6px;border-radius:6px}
+@media (prefers-reduced-motion: reduce){.stack .gcard,.gpage.anim>*,.shimmer,.spin{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="mono">Giao diện mới · review độc lập · 09/11/2026</span>
+    <h1>Bốn quyết định từ review</h1>
+    <p class="lead">Bản review design tìm ra bốn chỗ chỉ bạn quyết được. Mỗi tab có bối cảnh, mockup của từng cách và hệ quả. Mình chưa nói đề xuất; bạn chọn trước.</p>
+  </header>
+  <nav class="tabs" aria-label="Quyết định">
+    <a href="#bao-loi"><b>1</b> Báo lỗi của tôi</a>
+    <a href="#du-lieu"><b>2</b> Dữ liệu còn thiếu</a>
+    <a href="#gia"><b>3</b> Giá trên trang chủ</a>
+    <a href="#quang-cao"><b>4</b> Quảng cáo tải lại trang</a>
+  </nav>
+
+  <!-- ===================== 1 ===================== -->
+  <section class="dc" data-view="bao-loi">
+    <div><h2>1 · "Báo lỗi của tôi" đặt ở đâu?</h2></div>
+    <div class="panel ctx">
+      <ul>
+        <li>Hiện là một tab của trang Lịch sử luyện tập. Đây là chỗ duy nhất Lan xem lại các câu đã báo lỗi, kết quả xử lý và lượt câu AI được trả lại.</li>
+        <li>Design bỏ trang Lịch sử luyện tập (thay bằng hộp Lịch và Ngày), nên tab này mất chỗ.</li>
+        <li>Figma có link "Báo lỗi của tôi" ở chân hộp Lịch nhưng không có màn nào nhận link đó.</li>
+        <li>Sau khi gửi báo lỗi, app đang nói "Xem kết quả trong Lịch sử → Báo lỗi của tôi". Câu này đổi theo chỗ mới.</li>
+      </ul>
+    </div>
+    <div class="grid4">
+      <div class="opt"><div class="lbl"><span class="letter">A</span><h4>Link ở chân hộp Lịch (như Figma)</h4></div>
+        <div class="mini"><div class="card"><div class="bar"><b style="color:var(--ink)">Tháng 11, 2026</b><span style="margin-left:auto">×</span></div>
+          <div class="mono">T2 T3 T4 T5 T6 T7 CN</div><div class="row" style="justify-content:center">lịch tháng</div>
+          <div class="row">7 ngày có học · 41 từ mới</div><div class="hl"><button class="tbtn" type="button">Báo lỗi của tôi →</button></div></div></div>
+        <ul class="pros"><li class="plus">Đúng như Figma, gần chỗ xem lại việc học</li><li class="minus">Phải mở lịch mới thấy; ít ai đoán báo lỗi nằm trong lịch</li></ul></div>
+      <div class="opt"><div class="lbl"><span class="letter">B</span><h4>Một dòng trong Cài đặt</h4></div>
+        <div class="mini"><div class="card"><h4>Cài đặt</h4><div class="row">Tài khoản<span class="r">›</span></div><div class="row">Lịch sử giao dịch<span class="r">›</span></div>
+          <div class="row hl">Báo lỗi của tôi<span class="r">2 đang xem ›</span></div><div class="row">Đăng xuất</div></div></div>
+        <ul class="pros"><li class="plus">Cùng chỗ với các danh sách "của tôi" khác (giao dịch)</li><li class="minus">Xa nơi báo lỗi (phiên luyện); Cài đặt cần thêm một dòng</li></ul></div>
+      <div class="opt"><div class="lbl"><span class="letter">C</span><h4>Một mục trong menu ảnh đại diện</h4></div>
+        <div class="mini"><div class="card" style="justify-self:end;width:min(200px,100%)"><b style="font-size:13px">Nguyễn Lan</b><div class="row">Tài khoản</div><div class="row">Cài đặt</div><div class="row">Lịch sử giao dịch</div>
+          <div class="row hl">Báo lỗi của tôi</div><div class="row">Đăng xuất</div></div></div>
+        <ul class="pros"><li class="plus">Mở được từ mọi màn có thanh trên, hai lần bấm</li><li class="minus">Menu dài thêm một mục; phải sửa component "Menu ảnh đại diện"</li></ul></div>
+      <div class="opt"><div class="lbl"><span class="letter">D</span><h4>Link trên trang Luyện tập</h4></div>
+        <div class="mini"><div class="card"><h4>Luyện tập</h4><div class="row">Bắt đầu 20 câu</div><div class="row">Từ hay sai · 12 từ<span class="r">›</span></div>
+          <div class="hl"><button class="tbtn" type="button">Báo lỗi của tôi · 2 đang xem →</button></div></div></div>
+        <ul class="pros"><li class="plus">Gần nơi phát sinh báo lỗi; có thể hiện số đang chờ</li><li class="minus">Khung Luyện tập trong Figma phải thêm một dòng</li></ul></div>
+    </div>
+    <div class="panel">
+      <h3>Màn đích (giống nhau cho mọi cách)</h3>
+      <p class="note">Một trang riêng `/app/practice/reports` dưới khung trang phụ, dựng lại từ tab hiện có. Chưa có khung Figma; chọn xong mình vẽ thêm.</p>
+      <div class="mini" style="min-height:0"><div class="card"><div class="bar"><span>‹ Luyện tập</span></div><h3>Báo lỗi của tôi</h3>
+        <div class="row"><b>deteriorate</b><span class="note">Đáp án sai</span><span class="r">08/11</span><span class="chip open">Đang xem</span></div>
+        <div class="row"><b>allocate</b><span class="note">Câu khó hiểu</span><span class="r">05/11</span><span class="chip ok">Đã xác nhận lỗi</span></div>
+        <div class="row" style="background:none"><span class="note" style="padding-left:4px">Đã trả lại 1 lượt câu AI</span></div>
+        <div class="row"><b>viable</b><span class="note">Khác</span><span class="r">02/11</span><span class="chip no">Không có lỗi</span></div></div></div>
+    </div>
+    <div class="panel choose"><h3>Bạn chọn</h3><ul><li>A · chân hộp Lịch</li><li>B · Cài đặt</li><li>C · menu ảnh đại diện</li><li>D · trang Luyện tập</li><li>Kết hợp (ví dụ A và D) hoặc chỗ khác</li></ul></div>
+  </section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="dc" data-view="du-lieu" hidden>
+    <div><h2>2 · Figma hiện dữ liệu mà API chưa trả</h2></div>
+    <div class="panel ctx"><ul>
+      <li>Design ghi "API không đổi ngoài phần lịch học", nhưng bốn chỗ trong Figma cần dữ liệu mới.</li>
+      <li>Mỗi chỗ có ba cách: thêm vào API, để web tự tính từ API đang có, hoặc bỏ khỏi giao diện. Mỗi chỗ chọn riêng.</li>
+      <li>Ô viền đứt là phần sẽ không có.</li>
+    </ul></div>
+
+    <div class="panel"><h3>2.1 · Thẻ nhóm: "tiếp theo" và "ôn gần nhất"</h3>
+      <p class="note">Ở băng chuyền Nhóm và các thẻ nhóm ở Hôm nay. API nhóm hiện chỉ trả số thẻ chờ theo ngăn.</p>
+      <div class="grid4">
+        <div class="opt"><span class="letter">Thêm API</span><div class="gcard"><span class="nm">Đề 12 · Writing</span><span class="due">24</span><span class="foot">tiếp theo · prevalent</span><span class="foot">ôn gần nhất · take for granted</span></div>
+          <ul class="pros"><li class="plus">Đúng Figma</li><li class="minus">Thêm hai trường vào `GET /v1/groups`, tính cho từng nhóm</li></ul></div>
+        <div class="opt"><span class="letter">Web tự tính</span><div class="gcard"><span class="nm">Đề 12 · Writing</span><span class="due">24</span><span class="foot">tiếp theo · prevalent</span><span class="missing">ôn gần nhất: không có nguồn</span></div>
+          <ul class="pros"><li class="plus">Không đổi API</li><li class="minus">Gọi hàng đợi của từng nhóm (8 nhóm = 8 lần gọi); "ôn gần nhất" không tính được</li></ul></div>
+        <div class="opt"><span class="letter">Bỏ</span><div class="gcard"><span class="nm">Đề 12 · Writing</span><span class="due">24</span><span class="foot">thẻ chờ hôm nay</span></div>
+          <ul class="pros"><li class="plus">Không thêm việc</li><li class="minus">Thẻ nhóm bớt thông tin; Figma sửa theo</li></ul></div>
+      </div></div>
+
+    <div class="panel"><h3>2.2 · Hôm nay: khối "Lần luyện gần nhất"</h3>
+      <p class="note">API chưa có "phiên luyện gần nhất". Lịch sử câu đã làm có, nhưng không có tên nhóm của phiên.</p>
+      <div class="grid4">
+        <div class="opt"><span class="letter">Thêm API</span><div class="mini" style="min-height:0"><div class="card"><span class="mono">lần luyện gần nhất · thứ bảy, 07/11</span><b>20 câu · Đề 12 · Writing · 14/20 đúng</b><span class="note">Sai: deteriorate, allocate, viable, scrutiny</span><button class="tbtn" type="button" style="justify-self:start">Luyện lại từ sai →</button></div></div>
+          <ul class="pros"><li class="plus">Đúng Figma</li><li class="minus">Endpoint mới `GET /v1/practice/sessions/last`</li></ul></div>
+        <div class="opt"><span class="letter">Web tự tính</span><div class="mini" style="min-height:0"><div class="card"><span class="mono">lần luyện gần nhất · thứ bảy, 07/11</span><b>20 câu · 14/20 đúng</b><span class="missing">tên nhóm: không có</span><span class="note">Sai: deteriorate, allocate, viable, scrutiny</span></div></div>
+          <ul class="pros"><li class="plus">Không đổi API</li><li class="minus">Tải trang đầu lịch sử rồi gom theo phiên; thiếu tên nhóm</li></ul></div>
+        <div class="opt"><span class="letter">Bỏ</span><div class="mini" style="min-height:0"><div class="card"><span class="missing">không có khối này; Hôm nay chỉ còn Ôn tiếp và các nhóm</span></div></div>
+          <ul class="pros"><li class="plus">Không thêm việc</li><li class="minus">Mất lối vào "Luyện lại từ sai" từ Hôm nay (vẫn có ở Luyện tập)</li></ul></div>
+      </div></div>
+
+    <div class="panel"><h3>2.3 · Hộp Ngày: Đã biết / Cần ôn lại, số nhóm, tóm tắt phiên</h3>
+      <p class="note">API lịch là API mới của đợt này (GM6), nên "thêm API" ở đây là thêm trường vào chính API đó.</p>
+      <div class="grid4">
+        <div class="opt"><span class="letter">Thêm vào API lịch</span><div class="mini" style="min-height:0"><div class="card"><b>Ôn 22 lượt</b><div class="row"><b style="color:var(--pass)">16</b> Đã biết, lên một ngăn</div><div class="row"><b style="color:var(--fail)">6</b> Cần ôn lại, về ngăn 1 ngày</div><b>Học 10 từ mới · 4 nhóm</b><div class="row">Luyện tập · 1 phiên · 17/20 đúng</div></div></div>
+          <ul class="pros"><li class="plus">Đúng Figma, một lần gọi</li><li class="minus">API lịch thêm vài trường và ca biên</li></ul></div>
+        <div class="opt"><span class="letter">Web tự tính</span><div class="mini" style="min-height:0"><div class="card"><b>Ôn 22 lượt</b><div class="row"><b style="color:var(--pass)">16</b> Đã biết</div><div class="row"><b style="color:var(--fail)">6</b> Cần ôn lại</div><span class="note">đếm sau khi tải hết các trang (20 dòng một lần)</span></div></div>
+          <ul class="pros"><li class="plus">API gọn hơn</li><li class="minus">Ngày nhiều lượt thì tải nhiều trang mới ra số</li></ul></div>
+        <div class="opt"><span class="letter">Bỏ</span><div class="mini" style="min-height:0"><div class="card"><b>Ôn 22 lượt</b><div class="row">danh sách từ, kèm kết quả từng từ</div><span class="missing">không có số Đã biết / Cần ôn lại, số nhóm, tóm tắt phiên</span></div></div>
+          <ul class="pros"><li class="plus">Không thêm việc</li><li class="minus">Hộp Ngày bớt phần tóm tắt; Figma sửa theo</li></ul></div>
+      </div></div>
+
+    <div class="panel"><h3>2.4 · Nút lịch nổi: số ngày liên tiếp</h3>
+      <p class="note">Hiện API chỉ trả chuỗi ngày kèm lượt học đầu tiên trong ngày, không có lệnh đọc riêng.</p>
+      <div class="grid4">
+        <div class="opt"><span class="letter">Thêm API</span><div class="mini" style="min-height:0;place-items:center"><div class="card" style="width:64px;text-align:center;padding:6px"><span class="mono" style="color:var(--accent)">T11</span><b style="font:800 22px var(--font-display)">9</b><span class="chip" style="background:var(--mark);color:var(--mark-ink);justify-self:center">6 ngày</span></div></div>
+          <ul class="pros"><li class="plus">Luôn đúng, kể cả khi mở app lần đầu trong ngày</li><li class="minus">Thêm `streak` vào API lịch hoặc `GET /v1/me`</li></ul></div>
+        <div class="opt"><span class="letter">Web tự tính</span><div class="mini" style="min-height:0;place-items:center"><div class="card" style="width:64px;text-align:center;padding:6px"><span class="mono" style="color:var(--accent)">T11</span><b style="font:800 22px var(--font-display)">9</b><span class="missing" style="padding:2px">?</span></div></div>
+          <ul class="pros"><li class="plus">Không đổi API</li><li class="minus">Chỉ biết sau lượt học đầu trong ngày; trước đó trống</li></ul></div>
+        <div class="opt"><span class="letter">Bỏ</span><div class="mini" style="min-height:0;place-items:center"><div class="card" style="width:64px;text-align:center;padding:6px"><span class="mono" style="color:var(--accent)">T11</span><b style="font:800 22px var(--font-display)">9</b></div></div>
+          <ul class="pros"><li class="plus">Không thêm việc</li><li class="minus">Chuỗi ngày chỉ còn ở toast sau lượt học đầu</li></ul></div>
+      </div></div>
+    <div class="panel choose"><h3>Bạn chọn</h3><ul><li>2.1 thẻ nhóm: thêm API / tự tính / bỏ</li><li>2.2 lần luyện gần nhất: thêm API / tự tính / bỏ</li><li>2.3 hộp Ngày: thêm vào API lịch / tự tính / bỏ</li><li>2.4 nút lịch: thêm API / tự tính / bỏ</li></ul>
+      <p class="note">Chọn "thêm API" ở chỗ nào thì design sửa câu "API không đổi" và thêm endpoint vào đợt tương ứng.</p></div>
+  </section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="dc" data-view="gia" hidden>
+    <div><h2>3 · Giá trên trang chủ lấy từ đâu?</h2></div>
+    <div class="panel ctx"><ul>
+      <li>Figma trang chủ có bảng giá Pro. Trang chủ trong code hiện chưa ghi giá.</li>
+      <li>Giá là cài đặt admin đổi được mà không cần deploy; trang Gói học trong app đọc giá từ API.</li>
+      <li>Trang chủ phải dựng sẵn để nhanh và tốt cho SEO; CI có bước kiểm điều này.</li>
+      <li>Thử bấm "Admin đổi giá" ở dưới để thấy mỗi cách xử lý ra sao.</li>
+    </ul></div>
+    <div class="panel">
+      <div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center"><button class="btn sm" type="button" id="priceBtn">Admin đổi giá 1 tháng thành 89.000 ₫</button><span class="note" id="priceNote">Giá thật trong hệ thống: 79.000 ₫</span></div>
+      <div class="grid4" id="priceGrid"></div>
+    </div>
+    <div class="panel choose"><h3>Bạn chọn</h3><ul><li>A · đọc giá lúc build</li><li>B · bảng giá tự gọi API trên trình duyệt</li><li>C · lưu đệm có làm mới định kỳ</li><li>D · không ghi giá trên trang chủ</li></ul>
+      <p class="note">Dữ liệu cho Google (JSON-LD) đi theo cách bạn chọn: A, C ghi được giá; B không ghi được giá vì giá chỉ có sau khi trang chạy ở trình duyệt; D không ghi giá.</p></div>
+  </section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="dc" data-view="quang-cao" hidden>
+    <div><h2>4 · Quảng cáo làm tải lại cả trang</h2></div>
+    <div class="panel ctx"><ul>
+      <li>Theo DB38 (đợt launch B), script AdSense chỉ được nạp ở Nhóm và Tra từ. Script đã nạp thì không gỡ ra được, nên rời hai trang đó là tải lại cả trang.</li>
+      <li>Lý do của DB38: để quảng cáo toàn màn (vignette) không hiện ở trang khác như phiên luyện, landing, điều khoản.</li>
+      <li>Hệ quả với giao diện mới: người học Miễn phí có quảng cáo mở một nhóm từ băng chuyền thì trang tải lại, không có hiệu ứng "mở nhóm"; khung app và ô tìm cũng mất trạng thái.</li>
+      <li>Người Pro hoặc người không thấy quảng cáo không bị ảnh hưởng.</li>
+    </ul></div>
+    <div class="grid2">
+      <div class="panel flat"><h3>Lan dùng Pro (không quảng cáo)</h3>
+        <div class="phone" id="phA"><div class="screen car"><span class="mono">Nhóm</span><div class="stack"><div class="gcard side l"><span class="nm">Đề 9</span></div><div class="gcard center"><span class="nm">Đề 12 · Writing</span><span class="due">24</span><span class="foot">bấm để mở</span></div><div class="gcard side r"><span class="nm">Đề 14</span></div></div></div>
+          <div class="gpage"><div class="gcard"><span class="nm">Đề 12 · Writing</span><span class="foot">48 từ · 12 đã thuộc</span></div><div class="mini" style="min-height:120px"><div class="row">allocate</div><div class="row">mitigate</div><div class="row">viable</div></div><span class="note">Trang nhóm</span></div></div>
+        <div style="text-align:center"><button class="btn sm sec" type="button" data-demo="A">Mở nhóm</button></div>
+        <p class="note">Chồng thẻ bay lên làm đầu trang nhóm (FLIP 380ms), phần còn lại hiện từ mờ thành nét.</p></div>
+      <div class="panel flat"><h3>Lan dùng Miễn phí, có quảng cáo</h3>
+        <div class="phone" id="phB"><span class="adtag">có AdSense</span><div class="screen car"><span class="mono">Nhóm</span><div class="stack"><div class="gcard side l"><span class="nm">Đề 9</span></div><div class="gcard center"><span class="nm">Đề 12 · Writing</span><span class="due">24</span><span class="foot">bấm để mở</span></div><div class="gcard side r"><span class="nm">Đề 14</span></div></div></div>
+          <div class="gpage"><div class="gcard"><span class="nm">Đề 12 · Writing</span><span class="foot">48 từ · 12 đã thuộc</span></div><div class="mini" style="min-height:120px"><div class="row">allocate</div><div class="row">mitigate</div><div class="row">viable</div></div><span class="note">Trang nhóm</span></div>
+          <div class="reload"><div style="display:grid;gap:10px;justify-items:center"><div class="spin"></div><span class="note">Đang tải lại trang…</span></div></div></div>
+        <div style="text-align:center"><button class="btn sm sec" type="button" data-demo="B">Mở nhóm</button></div>
+        <p class="note">Trang tải lại (màn trắng, vòng chờ đăng nhập), rồi trang nhóm hiện ra không có hiệu ứng.</p></div>
+    </div>
+    <div class="grid2">
+      <div class="panel flat"><div class="lbl" style="display:flex;gap:8px"><span class="letter">A</span><h4>Giữ DB38</h4></div>
+        <ul class="pros"><li class="plus">Quảng cáo chỉ ở Nhóm, Tra từ; không bao giờ hiện trong phiên luyện hay trang ngoài app</li><li class="minus">Người có quảng cáo: không có hiệu ứng mở nhóm, mỗi lần rời Nhóm, Tra từ chậm hơn vì tải lại</li></ul></div>
+      <div class="panel flat"><div class="lbl" style="display:flex;gap:8px"><span class="letter">B</span><h4>Xem lại DB38: nạp script ở mọi trang app của người Miễn phí, chặn bằng danh sách loại trừ của AdSense</h4></div>
+        <ul class="pros"><li class="plus">Không tải lại; hiệu ứng và khung app giữ nguyên cho mọi người</li><li class="minus">Phụ thuộc việc AdSense tôn trọng danh sách loại trừ khi chuyển trang mềm (A2, chưa kiểm); dễ sót trang mới; quảng cáo có thể theo ra landing</li></ul></div>
+    </div>
+    <div class="panel choose"><h3>Bạn chọn</h3><ul><li>A · giữ DB38, chấp nhận người có quảng cáo không có hiệu ứng mở nhóm</li><li>B · xem lại DB38 (cần kiểm A2 với AdSense thật trước)</li><li>Cách khác (ghi rõ)</li></ul></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const views = ['bao-loi', 'du-lieu', 'gia', 'quang-cao'];
+  function show() {
+    const h = location.hash.replace('#', ''); const v = views.includes(h) ? h : views[0];
+    $$('section.dc').forEach((s) => { s.hidden = s.dataset.view !== v; });
+    $$('nav.tabs a').forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + v ? 'page' : 'false'));
+  }
+  window.addEventListener('hashchange', show); show();
+
+  // ---- prices
+  let changed = false;
+  const fmt = (n) => n.toLocaleString('vi-VN') + ' ₫';
+  function tiles(p1, extra = '') {
+    return `<div class="price"><div class="ptile on"><span>1 tháng</span><b>${p1}</b></div><div class="ptile"><span>3 tháng <span class="strike">237.000 ₫</span></span><b>199.000 ₫</b></div><div class="ptile"><span>12 tháng · ≈ 49.900 ₫/tháng</span><b>599.000 ₫</b></div>${extra}</div>`;
+  }
+  function render() {
+    const real = changed ? 89000 : 79000;
+    $('#priceNote').textContent = 'Giá thật trong hệ thống: ' + fmt(real);
+    const cards = [
+      ['A', 'Đọc giá lúc build', tiles('79.000 ₫'), changed ? '<div class="warnbox">Trang chủ vẫn ghi 79.000 ₫ cho tới lần deploy sau. Lan bấm mua thì thấy 89.000 ₫.</div>' : '', '<div class="flow"><span>build</span><i>→</i><span>đọc giá API</span><i>→</i><span>HTML tĩnh</span></div>',
+        ['<li class="plus">Trang vẫn tĩnh, nhanh; Google đọc được giá</li>', '<li class="minus">Đổi giá phải deploy lại web; quên thì lệch giá</li>']],
+      ['B', 'Bảng giá tự gọi API trên trình duyệt', tiles(fmt(real), '<span class="note">giá hiện sau một lúc: <span class="shimmer"></span></span>'), '', '<div class="flow"><span>HTML tĩnh</span><i>→</i><span>trình duyệt gọi API giá</span><i>→</i><span>điền giá</span></div>',
+        ['<li class="plus">Luôn đúng giá ngay</li>', '<li class="minus">Cần endpoint giá công khai và mở CSP; chỗ giá nháy lúc đầu; Google không thấy giá</li>']],
+      ['C', 'Lưu đệm có làm mới (1 giờ)', tiles(changed ? '79.000 ₫' : '79.000 ₫'), changed ? '<div class="warnbox">Trong tối đa 1 giờ trang chủ còn ghi 79.000 ₫, sau đó tự đổi thành 89.000 ₫.</div>' : '', '<div class="flow"><span>request</span><i>→</i><span>bộ đệm R2 (≤ 1 giờ)</span><i>→</i><span>đọc lại giá</span></div>',
+        ['<li class="plus">Nhanh, tự đúng lại sau tối đa 1 giờ; Google đọc được giá</li>', '<li class="minus">Thêm bucket R2 và cấu hình OpenNext (đã bỏ cách này cho trang pháp lý ở GM11)</li>']],
+      ['D', 'Không ghi giá', '<div class="price"><div class="ptile on"><span>Pro</span><b style="font-size:14px">Xem giá trong app →</b></div></div>', '', '<div class="flow"><span>HTML tĩnh</span><i>→</i><span>trang Gói học (cần đăng nhập)</span></div>',
+        ['<li class="plus">Không bao giờ lệch giá; không thêm việc</li>', '<li class="minus">Khách chưa đăng ký không biết giá trước; Figma bỏ bảng giá</li>']],
+    ];
+    $('#priceGrid').innerHTML = cards.map(([k, t, body, warn, flow, pros]) => `<div class="opt"><div class="lbl"><span class="letter">${k}</span><h4>${t}</h4></div>
+      <div class="mini" style="min-height:0"><div class="card"><span class="mono">trang chủ · gói Pro</span>${body}</div>${warn}</div>${flow}<ul class="pros">${pros.join('')}</ul></div>`).join('');
+  }
+  $('#priceBtn').addEventListener('click', () => { changed = !changed; $('#priceBtn').textContent = changed ? 'Trả giá 1 tháng về 79.000 ₫' : 'Admin đổi giá 1 tháng thành 89.000 ₫'; render(); });
+  render();
+
+  // ---- ads demo
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+  async function play(which) {
+    const ph = which === 'A' ? $('#phA') : $('#phB');
+    const car = $('.car', ph), page = $('.gpage', ph);
+    car.classList.remove('flip-go'); car.style.opacity = 1; page.classList.remove('show', 'anim');
+    await wait(50);
+    if (which === 'A') {
+      car.classList.add('flip-go'); await wait(380);
+      car.style.opacity = 0; page.classList.add('show', 'anim');
+    } else {
+      const rl = $('.reload', ph); rl.classList.add('show'); await wait(1300);
+      car.style.opacity = 0; page.classList.add('show'); rl.classList.remove('show');
+    }
+    await wait(2200);
+    page.classList.remove('show', 'anim'); car.classList.remove('flip-go'); car.style.opacity = 1;
+  }
+  $$('[data-demo]').forEach((b) => b.addEventListener('click', () => play(b.dataset.demo)));
+})();
+</script>

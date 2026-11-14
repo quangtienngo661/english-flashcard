@@ -1,0 +1,146 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { Clock } from '../../common/clock/clock.js';
+import { AppLogger } from '../../common/logging/app-logger.js';
+import { EVAL_JOB_CONCURRENCY } from '../ai.constants.js';
+import { PromptsRepository } from '../prompts/prompts.repository.js';
+import type { Price } from '../runner/cost.js';
+import { RunnerService, type RunReport } from '../runner/runner.service.js';
+import type { Selection } from '../runner/selection.js';
+import { EvalRulesRegistry, ruleResultFor } from './eval-rules.port.js';
+import { EvalRunsRepository, type EvalRunItemRow, type EvalRunRow, type ItemResult } from './eval-runs.repository.js';
+import { expectedResultFor } from './expected.js';
+
+/** An error whose message is safe to store (it carries no content). */
+class EvalRunError extends Error {}
+
+/** Only names and codes are stored: a driver message may echo the data (design §10, ≤ 240 characters). */
+export function oneLine(error: unknown): string {
+  if (error instanceof EvalRunError) return error.message.slice(0, 240);
+  const name = error instanceof Error ? error.name : 'Error';
+  const code = error !== null && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? ` ${error.code}` : '';
+  return `${name}${code}`.slice(0, 240);
+}
+
+function toResult(report: RunReport): ItemResult {
+  const { result, calls } = report;
+  const costs = calls.map((call) => call.cost_usd);
+  return {
+    status: result.status,
+    reason: 'reason' in result ? result.reason : null,
+    output: result.status === 'succeeded' ? result.result : null,
+    raw_output: report.rawOutput,
+    latency_ms: calls.length ? calls.reduce((sum, call) => sum + call.latency_ms, 0) : null,
+    cost_usd: costs.some((cost) => cost === null) ? null : costs.reduce((sum, cost) => sum + Number(cost), 0).toFixed(8),
+    rule: null,
+    expected_result: null,
+  };
+}
+
+/** The runner stopped before a provider attempt because admin spend reached today's cap (nhóm B M3). */
+const isAdminCap = (report: RunReport): boolean => report.result.status === 'unavailable' && report.result.reason === 'admin-usd-cap';
+
+const SKIPPED: ItemResult = {
+  status: 'skipped', reason: 'example-deleted', output: null, raw_output: null, latency_ms: null, cost_usd: null, rule: null, expected_result: null,
+};
+
+/** Runs `items` through `task` with at most `limit` at once. */
+export async function inPool<T>(items: T[], limit: number, task: (item: T) => Promise<void>): Promise<void> {
+  const queue = [...items];
+  await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    for (let item = queue.shift(); item !== undefined; item = queue.shift()) await task(item);
+  }));
+}
+
+/**
+ * One run of the example set (design §10, plan choice 10): the items stored when the run was created, skipping those that already
+ * have a result (B6E93), up to `EVAL_JOB_CONCURRENCY` at once, each a real `eval` call from the item's snapshot with the run row's
+ * selection, stored price and prompt.
+ */
+@Injectable()
+export class EvalJob {
+  constructor(
+    @Inject(Clock) private readonly clock: Clock,
+    @Inject(EvalRunsRepository) private readonly runs: EvalRunsRepository,
+    @Inject(RunnerService) private readonly runner: RunnerService,
+    @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
+    @Inject(EvalRulesRegistry) private readonly rules: EvalRulesRegistry,
+    @Inject(AppLogger) private readonly logger: AppLogger,
+  ) {}
+
+  async run(runId: string): Promise<void> {
+    const run = await this.runs.start(runId, this.clock.now());
+    if (!run) return;
+    try {
+      const pending = await this.runs.pendingItems(run.id);
+      const prompt = await this.prompt(run);
+      const selection = this.selection(run);
+      let stopped = false;
+      let capped = false;
+      await inPool(pending, EVAL_JOB_CONCURRENCY, async (item) => {
+        // A run cancelled (or closed as stalled) meanwhile is no longer `running`: no further paid call, nothing written.
+        if (!stopped && !(await this.runs.isRunning(run.id))) stopped = true;
+        if (stopped) return;
+        const report = item.input === null ? null : await this.execute(run, item, selection, prompt);
+        // Today's admin usd cap (B18): this item is not written, so it stays pending; no further call starts. Items already written stay.
+        if (report && isAdminCap(report)) {
+          stopped = true;
+          capped = true;
+          return;
+        }
+        const result = report === null ? SKIPPED : await this.withRules(run, item.input!, item.expected, toResult(report));
+        await this.runs.completeItem(item.id, result, this.clock.now());
+      });
+      if (capped) await this.runs.fail(run.id, 'admin-usd-cap', this.clock.now());
+      // `finish` is guarded by `status = 'running'` as well; skipping it just spares a statement.
+      else if (!stopped) await this.runs.finish(run.id, this.clock.now());
+    } catch (error) {
+      const message = oneLine(error);
+      this.logger.warn('ai_eval_run_failed', { run_id: run.id, error: message });
+      await this.runs.fail(run.id, message, this.clock.now());
+    }
+  }
+
+  /** Practice's rules and the expected answer, once, on a succeeded result only; never a second provider call (D11). */
+  private async withRules(run: EvalRunRow, input: Record<string, unknown>, expected: Record<string, unknown> | null, result: ItemResult): Promise<ItemResult> {
+    if (result.status !== 'succeeded' || !result.output) return result;
+    const rules = this.rules.get();
+    return {
+      ...result,
+      rule: await ruleResultFor(rules, run.operation, input, result.output),
+      expected_result: expectedResultFor(rules, run.operation, result.output, expected),
+    };
+  }
+
+  private execute(run: EvalRunRow, item: EvalRunItemRow, selection: Selection, prompt: Awaited<ReturnType<EvalJob['prompt']>>): Promise<RunReport> {
+    return this.runner.execute({
+      purpose: 'eval', operation: run.operation, data: item.input, actorId: run.startedBy,
+      callOperationId: `eval-${run.id}-${item.exampleId}`, selection, prompt, ...(run.batchId ? { batchId: run.batchId } : {}),
+    });
+  }
+
+  private async prompt(run: EvalRunRow) {
+    if (run.snapshot) return { instructions: run.snapshot.instructions, examples: run.snapshot.examples, revision: null };
+    if (run.configId !== null) {
+      // The config is read once, before any call: a draft saved again since the run was queued must not run its newer text under the
+      // older version number (Review focus 1), and a draft deleted since has nothing to run.
+      const config = await this.runs.configOf(run.configId);
+      if (!config) throw new EvalRunError('config-deleted');
+      if (config.version !== run.configVersion) throw new EvalRunError('config-changed');
+      return { instructions: config.instructions, examples: config.examples, revision: config.number };
+    }
+    if (run.draft) return { ...run.draft, revision: null };
+    const stored = await this.prompts.atRevision(run.operation, run.promptRevision as number);
+    if (!stored) throw new EvalRunError(`prompt revision ${run.promptRevision} not found`);
+    return stored;
+  }
+
+  /** The stored selection; the price is the one stored on the run row when it was created (E1), so a later price edit changes nothing. */
+  private selection(run: EvalRunRow): Selection {
+    const price: Price | null = run.priceInput !== null && run.priceOutput !== null
+      ? { input: run.priceInput, cachedInput: run.priceCachedInput, output: run.priceOutput } : null;
+    return {
+      operation: run.operation, modelRef: null, provider: run.provider, modelId: run.model, effort: run.effort, thinking: run.thinking,
+      maxOutputTokens: run.maxOutputTokens, price,
+    };
+  }
+}

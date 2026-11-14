@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { checkPasswordPolicy } from '../../auth/password-policy';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
@@ -12,33 +12,38 @@ import { Dialog } from '../../ui/Dialog';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { PasswordRules } from '../account/PasswordRules';
+import { useCountdown } from '../account/useCountdown';
 import { createStaffAccount, type StaffRole } from './staff-api';
 
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Props = { onClose: () => void; onCreated: () => void };
+/** AD18: from the Users screen the dialog also makes learners (`staff_role: null`), its default there. */
+type Props = { onClose: () => void; onCreated: () => void; allowLearner?: boolean };
+type Role = StaffRole | 'learner';
 
 /** Admin creates a staff account (spec §6.2): form → confirmation repeating the email → "created". Never shows a password. */
-export function CreateAccountDialog({ onClose, onCreated }: Props) {
+export function CreateAccountDialog({ onClose, onCreated, allowLearner = false }: Props) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const [step, setStep] = useState<'form' | 'confirm' | 'done'>('form');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<StaffRole>('editor');
+  const [role, setRole] = useState<Role>(allowLearner ? 'learner' : 'editor');
   const [generate, setGenerate] = useState(true);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mustChange, setMustChange] = useState(true);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
+  const wait = useCountdown();
   const mutation = useMutation({
     mutationFn: () =>
       createStaffAccount(api, {
         email: email.trim(),
-        staff_role: role,
+        staff_role: role === 'learner' ? null : role,
         ...(generate ? {} : { password }),
         must_change_password: mustChange,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -58,16 +63,21 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
   }
 
   async function submit() {
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     busy.current = true;
     try {
       await mutation.mutateAsync();
       setStep('done');
       onCreated();
     } catch (e) {
+      if (e instanceof ApiError && e.problem.status === 429) {
+        // Stay on the confirmation: its button carries the countdown.
+        wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+        return;
+      }
       setStep('form');
-      if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t('staff.create.emailTaken'));
-      else setBanner(errorMessage(e));
+      if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t(allowLearner ? 'staff.create.emailTakenUser' : 'staff.create.emailTaken'));
+      else setBanner(errorDetails(e));
     } finally {
       busy.current = false;
     }
@@ -81,7 +91,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         title={t('staff.create.doneTitle')}
         actions={<Button onPress={onClose}>{t('staff.create.close')}</Button>}
       >
-        <p className="break-words text-ui text-muted">{t('staff.create.doneBody', { email: email.trim() })}</p>
+        <p className="break-words text-ui text-muted">{t(role === 'learner' ? 'staff.create.doneBodyLearner' : 'staff.create.doneBody', { email: email.trim() })}</p>
       </Dialog>
     );
   }
@@ -98,14 +108,14 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
             <Button variant="secondary" onPress={() => setStep('form')} isDisabled={mutation.isPending}>
               {t('staff.create.back')}
             </Button>
-            <Button onPress={() => void submit()} isPending={mutation.isPending}>
-              {t('staff.create.submit')}
+            <Button onPress={() => void submit()} isPending={mutation.isPending} isDisabled={wait.remaining > 0}>
+              {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('staff.create.submit')}
             </Button>
           </>
         }
       >
         <p className="break-words text-ui text-muted">
-          {t('staff.create.confirmBody', { role, email: email.trim() })}
+          {t('staff.create.confirmBody', { role: role === 'learner' ? t('users.roles.learner') : role, email: email.trim() })}
           {mustChange ? ` ${t('staff.create.confirmMustChange')}` : ''}
         </p>
       </Dialog>
@@ -127,7 +137,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         </>
       }
     >
-      {banner && <Banner variant="error">{banner}</Banner>}
+      {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
       <TextField
         label={t('staff.create.email')}
         type="email"
@@ -143,8 +153,9 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
       <Select
         label={t('staff.create.role')}
         value={role}
-        onChange={(id) => setRole(id as StaffRole)}
+        onChange={(id) => setRole(id as Role)}
         items={[
+          ...(allowLearner ? [{ id: 'learner', label: t('users.roles.learner') }] : []),
           { id: 'editor', label: 'editor' },
           { id: 'admin', label: 'admin' },
         ]}

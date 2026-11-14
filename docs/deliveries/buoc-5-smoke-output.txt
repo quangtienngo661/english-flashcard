@@ -1,0 +1,370 @@
+Bước 5 smoke outputs (19/10/2026), plan Task 20–21. Code: feat/buoc-5-z1 = origin/dev @ 4357411 (PR #62–#75) + the smoke itself.
+Each run: fresh database english_learning_smoke_b5 (dropdb/createdb, pnpm db:setup, pnpm build), API (node dist/main.js, port 3105)
+and worker (node dist/worker.js) as separate processes, JOB_QUEUE_PREFIX=wordmet-coord, BILLING_FAKE_ENABLED=true, no .env:
+non-secret config from .env.example, each secret generated in the shell (scripts/gen-secret.mjs) and never printed.
+Lines starting with '==' come from the coordinator's runner, not from the smoke.
+
+=================== 1. pnpm smoke:buoc-5, BILLING_FAKE_FETCH_STATE=true (SMOKE_FETCH_STATE=true) ===================
+== recreate database english_learning_smoke_b5
+== build
+== start API and worker as separate processes (port 3105, fetch_state=true); logs <scratch>/api-b5-true.log, <scratch>/api-b5-true.log.worker
+== run: node scripts/smoke-buoc-5.mjs
+
+[1] 11:48:14Z Wait for the API
+    ok — reachable at http://localhost:3105; database english_learning_smoke_b5; fetchState mode ON (BILLING_FAKE_FETCH_STATE=true)
+
+[2] 11:48:14Z Accounts: admin (CLI grant), two editors (created by the admin), learner P (registered, verified)
+    ok — admin smoke5-admin-dcbc35d7@example.com; editors smoke5-editor1-dcbc35d7@example.com, smoke5-editor2-dcbc35d7@example.com; learner P smoke5-learner-dcbc35d7@example.com (cc34083f-581d-4bf1-bc52-f5f427d9931e)
+
+[3] 11:48:18Z B5#1: a new learner reads GET /v1/me/entitlements
+    ok — plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true
+
+[4] 11:48:18Z Practice material for P: a group with two private words
+    ok — group 7563982c-2d9c-426e-9563-93395386dfbf with zsvfkljd, ztgtwumg
+
+[5] 11:48:19Z B5#3: open and abandon five sessions without answering → none is counted
+    ok — five sessions opened (each closes the previous); usage_records has 0 sessions today; used 0
+
+[6] 11:48:20Z B5#2: three sessions answered → the fourth is 403 quota-exhausted with resets_at
+    ok — 3 counted; 4th → 403 quota-exhausted, resets_at 2026-10-19T17:00:00.000Z (next Vietnam midnight)
+
+[7] 11:48:20Z B5#23: admin sets free_practice_sessions_per_day = 5 → the 4th and 5th open today; the 6th is refused
+    ok — limit 5: sessions 4 and 5 opened and counted, the 6th → 403; limit back to 3
+
+[8] 11:48:21Z B5E73: 10 rounds of "start a session" racing "first answer of the open session" (Free, 2 counted)
+    (waiting 60 s so the rounds have the user.write budget)
+    ok — 10 rounds: exactly one of the two won each time (start 0×, answer 10×); never more than 3 counted
+
+[9] 11:49:37Z B5#4: fake subscription_started with a 7-day trial → plan trial, trial_history row, trial-started email
+    ok — plan trial; trial_history 1 row; email "Bạn đã bắt đầu dùng thử Wordmet Pro"
+
+[10] 11:49:42Z B5#5: trial_ends_at − 2 days reached, job → the trial reminder email, exactly once
+    ok — one reminder email after the first run; still one after a second run
+
+[11] 11:49:47Z B5#6: fake renewed after the trial → plan pro, cycle anchor = the renewed period start, AI 300/100
+    ok — plan pro; quota_anchor_at 2026-10-19T11:49:47Z; ai_practice 300, ai_lookup 100 (resets 2026-11-19T11:49:47.985Z)
+
+[12] 11:49:50Z B5#7: renewal_failed; +3 days still Pro (grace); +8 days not Pro (on_hold)
+    ok — grace: Pro at +3 days; free at +8 days; the job wrote on_hold
+
+[13] 11:49:58Z B5#8: fake renewed while on_hold → Pro again at once
+    ok — renewed → active, plan pro
+
+[14] 11:50:01Z B5#9: the same event sent twice → one row, applied once
+    ok — event 2f4e506b-1def-4a40-844d-7b96a5845870: one row, applied; second send acked (200) and changed nothing
+
+[15] 11:50:05Z B5#10: an old expired after a newer renewed → stale, still Pro
+    ok — expired (1 hour old) → stale; plan pro
+
+[16] 11:50:07Z B5#11: cancel_scheduled, then past the period end → Pro until the end, then free
+    ok — Pro while cancel_at_period_end; free past the end; the job wrote expired
+
+[17] 11:50:13Z B5#12: refunded, then refund_reversed (the current transaction) → Pro lost, then back
+    ok — refunded → revoked (free); refund_reversed → active (pro)
+
+[18] 11:50:22Z B5#13: plan_change_scheduled (year → month), then plan_change_canceled → pending_interval appears and goes; Pro throughout
+    ok — pending_interval month after scheduled, null after canceled; plan pro all along
+
+[19] 11:50:28Z B5#28: a trial for an account that already used one (D30) → free in the trial, endTrialNow called; renewed → pro
+    ok — trialing with trial_denied → plan free; fake end_trial_called_at set; trial_reuse_detected in the API log; renewed → pro
+
+[20] 11:50:34Z B5#29: an active subscription past its period with no event (D31) → Pro 3 days over; on_hold 11 days over
+    ok — 3 days over: still Pro after the job; 11 days over: free, the job wrote on_hold
+
+[21] 11:50:43Z B5#30: expired, then renewed for a new period (R2) → pro again
+    ok — expired → free; renewed → active, pro
+
+[22] 11:50:51Z B5#33: a partial refund of the current period's transaction (D34) → Pro lost at once
+    ok — refunded (amount 1) → revoked, plan free
+
+[23] 11:50:56Z B5#14 / B5E1: ten parallel reserves for the last unit → exactly one reserved
+    ok — 10 calls: 1 reserved, 9 quota-exhausted; one reserved row in usage_records (Free + 1 AI unit, B5E32)
+
+[24] 11:50:59Z B5#15: a reservation never confirmed, +3 minutes → the unit is back
+    ok — remaining 0 while reserved; 1 once expires_at passed
+
+[25] 11:50:59Z B5#20: admin sets "AI practice: 0" for a Pro user → reserve refused plan-required
+    ok — plan pro + ai_practice_per_cycle 0 → reserve refused, reason plan-required (HTTP 403 entitlement-required)
+
+[26] 11:51:02Z B5#22: refund one confirmed unit → remaining +1; a second refund changes nothing
+    (network error on GET /v1/admin/entitlements/users/b9ea4273-4f83-40f0-ab37-e688a96df93e: ECONNRESET; retrying)
+    ok — remaining 299 → 300 after the refund → 300 after a second one
+
+[27] 11:51:11Z B5E11: ten learners, one unit left in the system cap, ten parallel reserves → exactly one reserved
+    ok — cap 2 (used 1): 1 reserved, 9 ai-unavailable across 10 learners
+
+[28] 11:51:18Z B5#16: ai_daily_cap = 2, three learners reserve → two pass, the third is ai-unavailable; ai-usage alert_reached
+    ok — reserved, reserved, ai-unavailable (retry after 18516s); ai-usage used 2/2, alert_reached true (no email, D36)
+
+[29] 11:51:24Z B5#17: ai_enabled off → reserve ai-unavailable; a practice session without AI still opens
+    ok — switch off: reserve → ai-unavailable with no Retry-After; P opened a session; switch back on, cap 1000
+
+[30] 11:51:26Z B5#18: admin grants "Pro until a date" to a Free learner → pro at once; listed; revoked → free at once
+    ok — grant 3cb08d23-d737-4f87-a5df-da859a318da0: pro, in the list; revoked → free
+
+[31] 11:51:27Z B5#19: an editor grants to another editor / to themselves / sets AI units → 409 grant-not-allowed with the reason
+    ok — target-is-staff, self-grant, ai-limits-admin-only
+
+[32] 11:51:27Z B5#21: filter the grant history by granted_by = editor and expiring_within_days = 7
+    ok — 1 row(s): the editor's 5-day grant; not the editor's 30-day one, not the admin's
+
+[33] 11:51:28Z B5#32: an editor revokes a grant carrying AI units (D33) → 409 ai-limits-admin-only
+    ok — 409 grant-not-allowed, reason ai-limits-admin-only
+
+[34] 11:51:28Z B5#31: admin grants Pro to someone paying through an auto-renewing fake subscription (D32)
+    ok — without confirmation → 409 target-has-paid-subscription; with it → 201, paid_renewal_action turned_off, fake cancel_called_at set; new anchor 2026-10-19T11:51:34.533Z → ai_practice used 0 of 300
+
+[35] 11:51:35Z B5#35: admin moves the running Pro grant's ends_at one month later (D38)
+    ok — ends_at 2026-11-18T11:51:34.490Z → 2026-12-18T11:51:34.490Z; AI cycle unchanged (resets 2026-11-19T11:51:34.533Z); one row in changes
+
+[36] 11:51:35Z B5#24: private_words_per_user lowered below what P has (rows made with SQL, R13) → old words kept, new ones refused
+    ok — P owns 1002 private words; limit 1000 → a new one is 409 private-word-limit-reached, the 1002 stay; limit back to 10000
+
+[37] 11:51:37Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[38] 11:51:39Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[39] 11:51:40Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 206262ms (run id dcbc35d7; fetchState ON)
+== exit code 0
+== process exits during the run: none
+
+=================== 2. pnpm smoke:buoc-5, BILLING_FAKE_FETCH_STATE=false (SMOKE_FETCH_STATE=false) ===================
+== recreate database english_learning_smoke_b5
+== build
+== start API and worker as separate processes (port 3105, fetch_state=false); logs <scratch>/api-b5-false.log, <scratch>/api-b5-false.log.worker
+== run: node scripts/smoke-buoc-5.mjs
+
+[1] 11:52:29Z Wait for the API
+    ok — reachable at http://localhost:3105; database english_learning_smoke_b5; fetchState mode OFF (BILLING_FAKE_FETCH_STATE=false)
+
+[2] 11:52:29Z Accounts: admin (CLI grant), two editors (created by the admin), learner P (registered, verified)
+    ok — admin smoke5-admin-6fd0071b@example.com; editors smoke5-editor1-6fd0071b@example.com, smoke5-editor2-6fd0071b@example.com; learner P smoke5-learner-6fd0071b@example.com (1b8f2027-e268-4aeb-bed5-e68867776ca4)
+
+[3] 11:52:34Z B5#1: a new learner reads GET /v1/me/entitlements
+    ok — plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true
+
+[4] 11:52:34Z Practice material for P: a group with two private words
+    ok — group 49b67c10-0a97-4fb9-9af7-964774ece925 with zskmzryt, ztxavoiw
+
+[5] 11:52:34Z B5#3: open and abandon five sessions without answering → none is counted
+    ok — five sessions opened (each closes the previous); usage_records has 0 sessions today; used 0
+
+[6] 11:52:35Z B5#2: three sessions answered → the fourth is 403 quota-exhausted with resets_at
+    ok — 3 counted; 4th → 403 quota-exhausted, resets_at 2026-10-19T17:00:00.000Z (next Vietnam midnight)
+
+[7] 11:52:36Z B5#23: admin sets free_practice_sessions_per_day = 5 → the 4th and 5th open today; the 6th is refused
+    ok — limit 5: sessions 4 and 5 opened and counted, the 6th → 403; limit back to 3
+
+[8] 11:52:36Z B5E73: 10 rounds of "start a session" racing "first answer of the open session" (Free, 2 counted)
+    (waiting 60 s so the rounds have the user.write budget)
+    ok — 10 rounds: exactly one of the two won each time (start 0×, answer 10×); never more than 3 counted
+
+[9] 11:53:52Z B5#4: fake subscription_started with a 7-day trial → plan trial, trial_history row, trial-started email
+    ok — plan trial; trial_history 1 row; email "Bạn đã bắt đầu dùng thử Wordmet Pro"
+
+[10] 11:53:57Z B5#5: trial_ends_at − 2 days reached, job → the trial reminder email, exactly once
+    ok — one reminder email after the first run; still one after a second run
+
+[11] 11:54:03Z B5#6: fake renewed after the trial → plan pro, cycle anchor = the renewed period start, AI 300/100
+    ok — plan pro; quota_anchor_at 2026-10-19T11:54:03Z; ai_practice 300, ai_lookup 100 (resets 2026-11-19T11:54:03.327Z)
+
+[12] 11:54:05Z B5#7: renewal_failed; +3 days still Pro (grace); +8 days not Pro (on_hold)
+    ok — grace: Pro at +3 days; free at +8 days; the job wrote on_hold
+
+[13] 11:54:13Z B5#8: fake renewed while on_hold → Pro again at once
+    ok — renewed → active, plan pro
+
+[14] 11:54:16Z B5#9: the same event sent twice → one row, applied once
+    ok — event d3989df8-9eb8-4c56-a2d2-f691cc70a2a2: one row, applied; second send acked (200) and changed nothing
+
+[15] 11:54:20Z B5#10: an old expired after a newer renewed → stale, still Pro
+    ok — expired (1 hour old) → stale; plan pro
+
+[16] 11:54:22Z B5#11: cancel_scheduled, then past the period end → Pro until the end, then free
+    ok — Pro while cancel_at_period_end; free past the end; the job wrote expired
+
+[17] 11:54:29Z B5#12: refunded, then refund_reversed (the current transaction) → Pro lost, then back
+    ok — refunded → revoked (free); refund_reversed → active (pro)
+
+[18] 11:54:37Z B5#13: plan_change_scheduled (year → month), then plan_change_canceled → pending_interval appears and goes; Pro throughout
+    ok — pending_interval month after scheduled, null after canceled; plan pro all along
+
+[19] 11:54:44Z B5#28: a trial for an account that already used one (D30) → free in the trial, endTrialNow called; renewed → pro
+    ok — trialing with trial_denied → plan free; fake end_trial_called_at set; trial_reuse_detected in the API log; renewed → pro
+
+[20] 11:54:49Z B5#29: an active subscription past its period with no event (D31) → Pro 3 days over; on_hold 11 days over
+    ok — 3 days over: still Pro after the job; 11 days over: free, the job wrote on_hold
+
+[21] 11:54:58Z B5#30: expired, then renewed for a new period (R2) → pro again
+    ok — expired → free; renewed → active, pro
+
+[22] 11:55:06Z B5#33: a partial refund of the current period's transaction (D34) → Pro lost at once
+    ok — refunded (amount 1) → revoked, plan free
+
+[23] 11:55:11Z B5#14 / B5E1: ten parallel reserves for the last unit → exactly one reserved
+    ok — 10 calls: 1 reserved, 9 quota-exhausted; one reserved row in usage_records (Free + 1 AI unit, B5E32)
+
+[24] 11:55:14Z B5#15: a reservation never confirmed, +3 minutes → the unit is back
+    ok — remaining 0 while reserved; 1 once expires_at passed
+
+[25] 11:55:15Z B5#20: admin sets "AI practice: 0" for a Pro user → reserve refused plan-required
+    ok — plan pro + ai_practice_per_cycle 0 → reserve refused, reason plan-required (HTTP 403 entitlement-required)
+
+[26] 11:55:17Z B5#22: refund one confirmed unit → remaining +1; a second refund changes nothing
+    (network error on GET /v1/admin/entitlements/users/0d21369d-8195-4f78-989d-7f34251481c1: ECONNRESET; retrying)
+    ok — remaining 299 → 300 after the refund → 300 after a second one
+
+[27] 11:55:25Z B5E11: ten learners, one unit left in the system cap, ten parallel reserves → exactly one reserved
+    ok — cap 2 (used 1): 1 reserved, 9 ai-unavailable across 10 learners
+
+[28] 11:55:33Z B5#16: ai_daily_cap = 2, three learners reserve → two pass, the third is ai-unavailable; ai-usage alert_reached
+    ok — reserved, reserved, ai-unavailable (retry after 18261s); ai-usage used 2/2, alert_reached true (no email, D36)
+
+[29] 11:55:39Z B5#17: ai_enabled off → reserve ai-unavailable; a practice session without AI still opens
+    ok — switch off: reserve → ai-unavailable with no Retry-After; P opened a session; switch back on, cap 1000
+
+[30] 11:55:42Z B5#18: admin grants "Pro until a date" to a Free learner → pro at once; listed; revoked → free at once
+    ok — grant eb714c21-bc9c-408f-9a30-d6674c0910b7: pro, in the list; revoked → free
+
+[31] 11:55:42Z B5#19: an editor grants to another editor / to themselves / sets AI units → 409 grant-not-allowed with the reason
+    ok — target-is-staff, self-grant, ai-limits-admin-only
+
+[32] 11:55:42Z B5#21: filter the grant history by granted_by = editor and expiring_within_days = 7
+    ok — 1 row(s): the editor's 5-day grant; not the editor's 30-day one, not the admin's
+
+[33] 11:55:43Z B5#32: an editor revokes a grant carrying AI units (D33) → 409 ai-limits-admin-only
+    ok — 409 grant-not-allowed, reason ai-limits-admin-only
+
+[34] 11:55:43Z B5#31: admin grants Pro to someone paying through an auto-renewing fake subscription (D32)
+    ok — without confirmation → 409 target-has-paid-subscription; with it → 201, paid_renewal_action turned_off, fake cancel_called_at set; new anchor 2026-10-19T11:55:50.305Z → ai_practice used 0 of 300
+
+[35] 11:55:50Z B5#35: admin moves the running Pro grant's ends_at one month later (D38)
+    ok — ends_at 2026-11-18T11:55:50.248Z → 2026-12-18T11:55:50.248Z; AI cycle unchanged (resets 2026-11-19T11:55:50.305Z); one row in changes
+
+[36] 11:55:50Z B5#24: private_words_per_user lowered below what P has (rows made with SQL, R13) → old words kept, new ones refused
+    ok — P owns 1002 private words; limit 1000 → a new one is 409 private-word-limit-reached, the 1002 stay; limit back to 10000
+
+[37] 11:55:52Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[38] 11:55:55Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[39] 11:55:56Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 206846ms (run id 6fd0071b; fetchState OFF)
+== exit code 0
+== process exits during the run: none
+
+=================== 3. pnpm smoke:buoc-4 (Task 20, B5#34), on the same final code ===================
+== recreate database english_learning_smoke_b5
+== build
+== start API and worker as separate processes (port 3105, fetch_state=true); logs <scratch>/api-b4-final.log, <scratch>/api-b4-final.log.worker
+== run: node scripts/smoke-buoc-4.mjs
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3105; database english_learning_smoke_b5
+
+[2] Register admin and learner
+    ok — admin smoke4-admin-e8ba4423@example.com registered, verified, granted, logged in
+    ok — learner smoke4-learner-e8ba4423@example.com registered with native_language=vi, timezone Asia/Ho_Chi_Minh
+
+[3] Grant the learner 200 sessions a day for one day
+    ok — grant e1d9bf36-9902-41e0-919c-76d7ca4631b9: practice_sessions_per_day 200 until 2026-10-20T11:56:57.156Z
+
+[4] Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them
+    ok — batch 131693fb-bc98-4b7a-9005-4df2256661e8: 8 created, published by job a874c8b9-af84-429b-8ecd-2a44165c0181; the learner sees all 8 with meaning and example
+
+[5] Build group A (W1–W7 + private words P, P2) and group B (W7, W8)
+    ok — group A 912872b5-f7a3-4e4b-8aef-0275f118fc21 has 9 words (2 private), group B 04fa445c-d589-4222-997a-c04735c7ad28 has 2
+
+[6] Each source × each type (count 1, answered right): group A, all, today
+    ok — group × mcq_definition: W1 (mcq) → correct; session finished
+    ok — group × true_false_definition: W1 (true_false) → correct; session finished
+    ok — group × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — all × mcq_definition: W4 (mcq) → correct; session finished
+    ok — all × true_false_definition: W5 (true_false) → correct; session finished
+    ok — all × type_word: W3 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — today × mcq_definition: W1 (mcq) → correct; session finished
+    ok — today × true_false_definition: W1 (true_false) → correct; session finished
+    ok — today × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+
+[7] "Đã biết" on a right answer without hint (B4#9) and "Cần ôn tập" on another
+    ok — W1: "Đã biết" → level 1, no priority; again → same; "Cần ôn tập" after it → 409 review-already-set; W1: "Cần ôn tập" → level 1, priority, due 2026-10-19
+
+[8] Group B, typing only, 4 questions for 2 words: wrong + skip, hints, "Ôn lại" (B4#2), report, summary, review-all
+    ok — W7 (round 1): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 1): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — report c84db987-4ce4-4d51-bbae-f231d447c8b7 on W8's item (stays open); a second report → 409 report-exists
+    ok — after round 1 (2 words) the session waits; "Ôn lại" → active
+    ok — W7 (round 2): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 2): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — order W7@r1, W8@r1, W7@r2, W8@r2; no word twice in a row; finished after 4
+    ok — summary: 4 asked, 2 right, 2 wrong; list = W7 (wrong) + W8 (right with hints); W7 pressed, review-all adds 1 (W8)
+
+[9] "Từ hay sai" (B4#12): W7 with 2 wrong; W8 (right only with hints) is not
+    ok — W7: wrong 2 of 2 counted, level 1
+
+[10] Each type from "Từ hay sai" and "Đang ưu tiên" (count 1, answered right)
+    ok — weak × mcq_definition: W7 → correct; finished
+    ok — weak × true_false_definition: W7 → correct; finished
+    ok — weak × type_word: W7 → correct; finished
+    ok — priority × mcq_definition: W1 → correct; finished
+    ok — priority × true_false_definition: W1 → correct; finished
+    ok — priority × type_word: W1 → correct; finished
+    ok — group B, multiple choice only → 1 word (W7; W8 has no multiple choice, B4#19); true/false only → both words
+
+[11] B4#28 / B4E48 and B4#29: a private word as a chosen option is masked for staff; a private question is not reportable
+    ok — report 8f3b1141-8a60-4d1f-b583-58fb6e74e948: staff response (2 rows) never contains P's word or meaning, shows "[từ riêng của người học]"; resolved no_error; second resolve → 409 report-not-open; a learner → 403
+    ok — a question on a private word: reportable=false, report → 409 report-not-available
+
+[12] History by date (B4#15) and by word
+    ok — 27 rows on 2026-10-19 (newest first), 0 on 2000-01-01, 6 for W7
+
+[13] B4E8: delete a private word while its question shows → current says "word-not-found" with the next question
+    ok — P2's question 6e06b972-843c-40ca-a80c-9167db95b33e showing; DELETE /v1/my-words → 204; current → notice word-not-found + W1's question 7d2d4a9e-8f8a-4d0c-ad75-d4f601560c6a
+    ok — P2's items and questions are gone (read back with psql)
+
+[14] Cleanup: back-date group B session 7 months and leave the last session idle 25 h; run maintenance:run; read back
+    ok — group B items 4 → 0, session gone; report c84db987-4ce4-4d51-bbae-f231d447c8b7 = open|null; idle session → abandoned
+
+ALL CHECKS PASSED in 23369ms (run id e8ba4423; 20 sessions, 47 answers)
+== exit code 0
+== process exits during the run: none
+
+=================== 4. Task 20 step 1: pnpm smoke:buoc-4 WITHOUT the grant step (dev @ 07ee02d, expected to fail) ===================
+== recreate database english_learning_smoke_b5
+NOTICE:  database "english_learning_smoke_b5" does not exist, skipping
+== build
+== start API + worker (port 3105, fetch_state=true); log <scratch>/api-task20-step1.log
+== run: node scripts/smoke-buoc-4.mjs
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3105; database english_learning_smoke_b5
+
+[2] Register admin and learner
+    ok — admin smoke4-admin-89dfcee7@example.com registered, verified, granted, logged in
+    ok — learner smoke4-learner-89dfcee7@example.com registered with native_language=vi, timezone Asia/Ho_Chi_Minh
+
+[3] Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them
+    ok — batch 654ca09e-1be4-4b31-be66-707ec16343b7: 8 created, published by job 71cfb05a-ff87-4448-ae54-d5f24b4e7f98; the learner sees all 8 with meaning and example
+
+[4] Build group A (W1–W7 + private words P, P2) and group B (W7, W8)
+    ok — group A be5462d1-69dc-43d4-80b8-070f7e505ab6 has 9 words (2 private), group B fcf0bc45-fe74-4c63-b9f5-160f80cebee0 has 2
+
+[5] Each source × each type (count 1, answered right): group A, all, today
+    ok — group × mcq_definition: W1 (mcq) → correct; session finished
+    ok — group × true_false_definition: W1 (true_false) → correct; session finished
+    ok — group × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+
+SMOKE TEST FAILED: start {"source":"all","types":["mcq_definition"],"count":1}: expected 201, got 403
+{"resets_at":"2026-10-19T17:00:00.000Z","type":"http://localhost:3000/problems/quota-exhausted","status":403,"title":"Quota exhausted","instance":"/v1/practice/sessions","operation_id":"b1019e98-cc35-4c1d-9d80-6a608254c91e"}
+== exit code 1
+
+[exited with code 0]

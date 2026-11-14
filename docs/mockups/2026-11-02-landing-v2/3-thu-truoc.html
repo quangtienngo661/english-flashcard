@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 3 · Thử trước, đăng ký sau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+/* Structure 2: the first screen is a short practice session that runs; the rest explains what just happened. */
+.hero { padding-block: clamp(2rem, 1rem + 4vw, 4rem) clamp(3rem, 2rem + 4vw, 5rem); }
+.hero .wrap { display: grid; gap: 1.75rem; justify-items: center; text-align: center; }
+.hero .display { max-width: 18ch; }
+.hero .lead { max-width: 38rem; }
+.hero .q-card { width: min(100%, 38rem); text-align: left; }
+.hero-foot { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; justify-content: center; font-size: 0.9375rem; color: var(--muted); }
+
+/* What just happened: one large fragment and two smaller ones, not a row of equal cards. */
+.behind { display: grid; gap: 1.25rem; }
+@media (min-width: 58rem) { .behind { grid-template-columns: 1.2fr 1fr; grid-template-rows: auto auto; } .behind .big { grid-row: span 2; } }
+.piece { padding: 1.4rem; display: grid; gap: 0.9rem; align-content: start; }
+.piece h3 { font-size: 1.25rem; font-weight: 700; }
+.piece > p { color: var(--muted); }
+.addword { background: var(--accent-soft); border-radius: var(--r-panel); padding: 1rem; display: grid; gap: 0.6rem; }
+.addword b { font-size: 1.05rem; }
+.addword .f { display: grid; gap: 0.5rem; }
+.addword .row { display: flex; gap: 0.5rem; }
+.flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.35rem; }
+.flow span { display: grid; justify-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--muted); }
+.flow span i { width: 100%; height: 2.6rem; border-radius: 0.6rem; border: 2px solid var(--ink); display: block; }
+.flow span.on i { background: var(--primary); border-color: var(--primary); }
+.flow span.on { color: var(--ink); font-weight: 600; }
+.weak .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; } .weak .chip { box-shadow: inset 0 0 0 1.5px var(--danger); background: var(--danger-soft); color: var(--danger); }
+
+/* Phone section. */
+.phone-row { display: grid; gap: 2.5rem; align-items: center; }
+@media (min-width: 52rem) { .phone-row { grid-template-columns: 20rem 1fr; gap: 4rem; } }
+.phone .p-hero { background: var(--navy-card); color: var(--on-navy); border-radius: var(--r-card); padding: 1rem; display: grid; gap: 0.5rem; }
+.phone .p-hero b { font-size: 1.5rem; font-weight: 800; }
+.phone .p-hero .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.phone .p-hero .chip { background: transparent; color: var(--on-navy); box-shadow: inset 0 0 0 1.5px var(--on-navy-muted); font-size: 0.6875rem; }
+.phone .p-hero .btn { min-height: 2.3rem; font-size: 0.875rem; justify-self: start; }
+.phone .p-limit { padding: 0.75rem; display: grid; gap: 0.35rem; font-size: 0.75rem; }
+.phone .p-limit b { font-size: 0.9375rem; }
+.phone .p-limit .track { height: 0.4rem; border-radius: 999px; background: var(--neutral-soft); }
+.phone .p-weak { background: var(--danger-soft); border-radius: var(--r-card); padding: 0.75rem; display: grid; gap: 0.35rem; font-size: 0.75rem; }
+.phone .p-weak b { font-size: 0.9375rem; } .phone .p-weak .chips { display: flex; gap: 0.3rem; flex-wrap: wrap; } .phone .p-weak .chip { background: var(--surface); font-size: 0.6875rem; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.ticks { display: grid; gap: 0.6rem; margin-top: 0.5rem; }
+.ticks li { display: flex; gap: 0.6rem; } .ticks .ic { color: var(--success); width: 1.1rem; height: 1.1rem; margin-top: 0.2rem; }
+.final .wrap { display: grid; gap: 1.5rem; justify-items: start; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#ffd84a"/><path d="M14 40h14M36 40h14" stroke="#0f1a3d" stroke-width="6" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-today" viewBox="0 0 24 24"><path d="M2 6h4M2 10h4M2 14h4M2 18h4"/><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9.5 8h5M9.5 12H16M9.5 16H14"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+<div class="mock-bar"><span>Mockup 3 · Thử trước, đăng ký sau</span><a href="index.html">Về mục lục</a></div>
+
+<header class="topbar on-navy">
+  <div class="wrap">
+    <a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+    <nav aria-label="Trang"><a class="tab" href="#vua-roi">Cách Wordmet dạy</a><a class="tab" href="#goi">Gói học</a><a class="tab" href="#hoi-dap">Hỏi đáp</a></nav>
+    <div class="end"><a class="btn btn-navy" href="#">Đăng nhập</a><a class="btn btn-sticker" href="#">Đăng ký</a></div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1 class="display">Thử 3 câu, <span class="hl">thấy ngay cách học</span></h1>
+      <p class="lead">Mỗi câu dưới đây là một câu người học từng gặp ngoài đời. Trong Wordmet, câu luyện là chính câu bạn lưu.</p>
+      <div class="q-card" data-practice aria-label="Phiên luyện thử"></div>
+      <div class="hero-foot"><span>Không cần tài khoản để thử.</span><a class="btn btn-quiet" href="#">Đăng ký miễn phí</a></div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="vua-roi">
+    <div class="wrap">
+      <div class="section-head"><h2 class="title"><span class="hl">Vừa rồi là gì</span></h2><p class="lead">Ba câu bạn vừa làm đi qua đúng những bước người học dùng mỗi ngày.</p></div>
+      <div class="behind">
+        <div class="sheet piece big">
+          <h3>Câu đó đến từ đâu</h3>
+          <p>Bạn gặp từ trong phim, email hay tin nhắn công việc, rồi thêm vào Wordmet kèm câu. Wordmet nhận ra dạng chia, như went → go.</p>
+          <div class="addword"><b>Thêm từ vừa gặp</b>
+            <div class="f"><span class="input" lang="en">borrow</span><span class="input" lang="en" style="min-height:3.5rem">Can I borrow your charger for a minute?</span>
+              <div class="row"><span class="btn btn-ink">Thêm</span><span class="chip chip-green" style="align-self:center">Lưu vào nhóm: Từ gặp trong phim</span></div></div></div>
+        </div>
+        <div class="sheet piece">
+          <h3>Trả lời xong, từ vào ngăn</h3>
+          <p>Nhớ thì từ lên ngăn sau, lâu hơn mới gặp lại.</p>
+          <div class="flow" aria-label="Sáu ngăn ôn"><span class="on"><i></i>Mới</span><span class="on"><i></i>1 ngày</span><span><i></i>3</span><span><i></i>7</span><span><i></i>14</span><span><i></i>30</span></div>
+        </div>
+        <div class="sheet piece weak">
+          <h3>Sai nhiều thì luyện riêng</h3>
+          <p>Sai 2 lần trong 5 câu gần nhất thì từ vào danh sách Từ hay sai.</p>
+          <div class="chips"><span class="chip" lang="en">arrive · sai 2/2</span><span class="chip" lang="en">leave · sai 2/2</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap phone-row">
+      <div class="phone" aria-label="Màn Luyện tập trên điện thoại">
+        <div class="p-top"><span class="logo"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</span><span class="chip" style="background:var(--navy-raised);color:var(--on-navy)">Miễn phí</span></div>
+        <div class="p-body">
+          <span class="title"><span class="hl">Luyện tập</span></span>
+          <div class="sheet p-limit"><b>Phiên luyện hôm nay</b><span class="track"></span><span style="color:var(--muted)">đã dùng 0/3</span></div>
+          <div class="p-hero"><span class="chip chip-sun" style="justify-self:start;font-size:.6875rem;color:var(--ink);box-shadow:none;background:var(--accent)">Luyện nhanh · từ cần ôn hôm nay</span><b>Hôm nay</b><span style="font-size:.75rem;color:var(--on-navy-muted)">152 từ trong 8 nhóm. 10 câu, trộn ba kiểu câu.</span>
+            <div class="chips"><span class="chip">Trắc nghiệm</span><span class="chip">Đúng/sai</span><span class="chip">Gõ từ</span></div><span class="btn btn-sticker">Bắt đầu 10 câu</span></div>
+          <div class="p-weak"><b>Từ hay sai</b><span>Sai 2 lần trong 5 câu gần nhất.</span><span class="chips"><span class="chip" lang="en">arrive · sai 2/2</span><span class="chip" lang="en">leave · sai 2/2</span></span></div>
+        </div>
+        <div class="p-tabs"><span><svg class="ic"><use href="#i-today"/></svg>Hôm nay</span><span><svg class="ic"><use href="#i-folder"/></svg>Nhóm</span><span class="on"><b><svg class="ic"><use href="#i-home"/></svg></b>Luyện tập</span><span><svg class="ic"><use href="#i-search"/></svg>Tra từ</span></div>
+      </div>
+      <div style="display:grid;gap:1rem">
+        <h2 class="title"><span class="hl">Mỗi ngày vài phút</span></h2>
+        <p class="lead">Mở app trên điện thoại hay máy tính, Wordmet đã xếp sẵn 10 câu từ những từ cần ôn hôm nay.</p>
+        <ul class="ticks"><li><svg class="ic"><use href="#i-check"/></svg>Trắc nghiệm, đúng hay sai, gõ từ, điền từ vào câu đã lưu</li><li><svg class="ic"><use href="#i-check"/></svg>Gói Miễn phí: 3 phiên luyện mỗi ngày, ôn thẻ không giới hạn</li><li><svg class="ic"><use href="#i-check"/></svg>Gói Pro: thêm câu do AI viết, đáp án vẫn chấm bằng quy tắc</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="goi">
+    <div class="wrap">
+      <div class="section-head"><h2 class="title"><span class="hl">Học đều mỗi ngày, lên Pro khi cần</span></h2></div>
+      <div class="plans">
+        <div class="sheet plan"><div class="name"><h3>Miễn phí</h3><span class="chip chip-green">Dùng mãi</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Ôn thẻ, lịch ôn, nhắc học qua email</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ và thêm nhanh</li><li><svg class="ic"><use href="#i-check"/></svg>3 phiên luyện mỗi ngày</li><li class="no"><svg class="ic"><use href="#i-x"/></svg>Câu AI và tra bằng AI: cần gói Pro</li></ul>
+          <a class="btn btn-sticker" href="#" style="justify-self:start">Đăng ký miễn phí</a></div>
+        <div class="sheet plan"><div class="name"><h3>Pro</h3><span class="chip">Chưa mở bán</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Nhiều phiên luyện hơn mỗi ngày</li><li><svg class="ic"><use href="#i-check"/></svg>Câu AI viết quanh từ của bạn</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ bằng AI</li><li><svg class="ic"><use href="#i-check"/></svg>Không quảng cáo</li></ul>
+          <p class="foot">Khi Pro mở bán: dùng thử 7 ngày, cần thẻ, hủy trước khi hết hạn thì không bị trừ tiền.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="hoi-dap">
+    <div class="wrap">
+      <div class="section-head"><h2 class="title"><span class="hl">Hỏi đáp</span></h2></div>
+      <div class="faq">
+        <details name="faq" open><summary>Wordmet có miễn phí không?</summary><p>Có. Gói Miễn phí gồm ôn thẻ, lịch ôn, nhắc qua email, tra từ và 3 phiên luyện mỗi ngày. Gói Pro thêm câu AI và tra bằng AI, hiện chưa mở bán.</p></details>
+        <details name="faq"><summary>AI có chấm bài của tôi không?</summary><p>Không. AI chỉ viết câu luyện. Đáp án của bạn được chấm bằng quy tắc, nên không tốn lượt AI.</p></details>
+        <details name="faq"><summary>Tôi chưa biết bắt đầu từ đâu?</summary><p>Chọn một nhóm có sẵn theo trình độ hoặc chủ đề rồi ôn mỗi ngày. Gặp từ mới thì thêm vào nhóm của bạn.</p></details>
+        <details name="faq"><summary>Có app điện thoại không?</summary><p>Wordmet chạy trên trình duyệt, cả máy tính và điện thoại. App điện thoại làm sau.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section navy-band on-navy final">
+    <div class="wrap"><h2 class="title" style="color:#fff;max-width:20ch">Bắt đầu với những từ bạn gặp hôm nay</h2><a class="btn btn-sticker btn-lg" href="#">Đăng ký miễn phí</a></div>
+  </section>
+</main>
+
+<footer class="footer"><div class="wrap"><div class="cols"><a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+  <nav><a href="#">Gói học</a><a href="#">Hỏi đáp</a><a href="#">Liên hệ</a><a href="#">Điều khoản sử dụng</a><a href="#">Chính sách bảo mật</a><a href="#">English</a></nav></div>
+  <span>© 2026 Wordmet</span></div></footer>
+<script src="practice.js"></script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { AccessTokenService } from './access-token.service.js';
+import { AccountStatusReader } from './account-status.reader.js';
 import { IS_PUBLIC_KEY } from './public.decorator.js';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(AccessTokenService) private readonly tokens: AccessTokenService,
+    @Inject(AccountStatusReader) private readonly accounts: AccountStatusReader,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -20,9 +22,17 @@ export class AuthGuard implements CanActivate {
     const authorization = request.headers.authorization;
     const match = typeof authorization === 'string' ? /^Bearer +([^\s]+)$/i.exec(authorization) : null;
     request.user = match ? await this.tokens.verify(match[1]) ?? undefined : undefined;
-    if (!isPublic && !request.user) {
-      throw new ProblemDetailsException({ status: 401, title: 'Invalid token', type: 'invalid-token' });
-    }
+    request.account = undefined;
+    if (isPublic) return true;
+    if (!request.user) throw invalidToken();
+    // D24, D29: a locked or deleting account and a revoked chain are refused now, not when the 15-minute access token expires.
+    const account = await this.accounts.read(request.user.userId, request.user.sessionChainId);
+    if (!account || account.revoked || account.status !== 'active') throw invalidToken();
+    request.account = account;
     return true;
   }
+}
+
+function invalidToken() {
+  return new ProblemDetailsException({ status: 401, title: 'Invalid token', type: 'invalid-token' });
 }

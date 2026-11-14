@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thẻ màu ở bản tối</title>
+<style>
+  body { margin: 0; background: #10131c; color: #eceef5; font: 15px/1.45 system-ui, sans-serif; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lead { color: #b0b7ca; margin: 0 0 24px; max-width: 70ch; }
+  section { margin: 0 0 36px; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .note { color: #b0b7ca; margin: 0 0 12px; max-width: 75ch; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .card { border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 150px; }
+  .card h3 { margin: 0; font-size: 17px; }
+  .card p { margin: 0; font-size: 13px; }
+  .chip { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+  .btn { margin-top: auto; border-radius: 12px; padding: 8px; text-align: center; font-weight: 600; font-size: 14px; }
+  .pros { font-size: 13px; color: #b0b7ca; margin-top: 8px; }
+  .pros b { color: #eceef5; }
+
+  /* A: tinted dark surface (Radix steps 2–3 dark), coloured title/icon, subtle coloured border (step 6) */
+  .a .card { border: 1px solid var(--b); background: var(--bg); }
+  .a .card h3 { color: var(--t); }
+  .a .card p { color: #b0b7ca; }
+  .a .chip { background: #ffffff10; color: #eceef5; border: 1px solid #ffffff22; }
+  .a .btn { background: #ffffff10; border: 1px solid #ffffff2a; color: #eceef5; }
+
+  /* B: neutral dark surface, colour only as an accent (top stripe, icon, button) */
+  .b .card { background: #242b3d; border-top: 5px solid var(--s); }
+  .b .card h3 { color: #eceef5; }
+  .b .card h3 span { color: var(--s); }
+  .b .card p { color: #b0b7ca; }
+  .b .chip { background: #2f364a; color: #eceef5; }
+  .b .btn { background: transparent; border: 2px solid var(--s); color: var(--s); }
+
+  /* C: muted mid tones (desaturated, darker than pastel), dark text */
+  .c .card { background: var(--m); color: #0f1a3d; }
+  .c .card p { color: #2a3150; }
+  .c .chip { background: #ffffffaa; color: #0f1a3d; }
+  .c .btn { background: #ffffffcc; color: #0f1a3d; }
+
+  /* D: saturated solid (what is on :5173 now), dark text */
+  .d .card { background: var(--s); color: #0f1a3d; }
+  .d .card p { color: #2a3150; }
+  .d .chip { background: #fff; color: #0f1a3d; }
+  .d .btn { background: #fff; color: #0f1a3d; }
+
+  .blue   { --bg: #1b2240; --b: #34407a; --t: #a8b8ff; --s: #8da2ff; --m: #7f8fcf; }
+  .red    { --bg: #3a1d1d; --b: #6b3430; --t: #ffab9f; --s: #ff8b7c; --m: #c98579; }
+  .yellow { --bg: #33290f; --b: #6b5620; --t: #ffe27a; --s: #ffd84a; --m: #cfb456; }
+  .green  { --bg: #13301f; --b: #2a5c40; --t: #86e3b4; --s: #5fd39a; --m: #6fb08c; }
+</style>
+</head>
+<body>
+<h1>Thẻ màu ở bản tối: 4 hướng</h1>
+<p class="lead">Cùng 4 thẻ "Luyện theo nguồn khác", trên nền tối thật của app (#10131c). Mở file này bằng trình duyệt để so; chọn hướng nào thì tôi áp vào các thẻ bạn đã liệt kê.</p>
+
+<section class="a">
+  <h2>A. Nền tối ánh màu (kiểu Radix, GitHub, Linear)</h2>
+  <p class="note">Thẻ vẫn tối nhưng pha một chút màu; tiêu đề và viền mang màu. Đây là cách các bộ màu như Radix dùng cho thẻ ở bản tối (bước 2–3 làm nền, bước 6 làm viền, bước 11 làm chữ).</p>
+  <div class="grid">
+    <div class="card blue"><h3>📁 Theo nhóm</h3><p>Một nhóm, lọc theo ngăn hoặc từ ưu tiên.</p><div><span class="chip">Kinh doanh · 113</span><span class="chip">Du lịch · 38</span></div><div class="btn">Tùy chỉnh</div></div>
+    <div class="card red"><h3>◎ Từ hay sai</h3><p>Sai 2 lần trong 5 câu gần nhất.</p><div><span class="chip">arrive · sai 2/2</span></div><div class="btn">Luyện 6 từ</div></div>
+    <div class="card yellow"><h3>☆ Đang ưu tiên</h3><p>Từ bạn đã bấm Cần ôn lại.</p><div><span class="chip">5 từ trong 3 nhóm</span></div><div class="btn">Luyện 5 từ</div></div>
+    <div class="card green"><h3>≋ Luyện tất cả</h3><p>Mọi từ đang học.</p><div><span class="chip">430 từ trong 8 nhóm</span></div><div class="btn">Luyện 10 câu</div></div>
+  </div>
+  <p class="pros"><b>Được:</b> dịu mắt ban đêm, đúng tinh thần bản tối, vẫn phân biệt được màu. <b>Mất:</b> màu kém nổi hơn bản sáng; thẻ trông "trầm".</p>
+</section>
+
+<section class="b">
+  <h2>B. Thẻ tối trung tính, màu chỉ làm điểm nhấn</h2>
+  <p class="note">Thẻ cùng màu nền với các thẻ khác; màu chỉ ở vạch trên, icon và nút. Material khuyên dùng màu nhấn "thưa" để bề mặt tối chiếm phần lớn màn hình.</p>
+  <div class="grid">
+    <div class="card blue"><h3><span>📁</span> Theo nhóm</h3><p>Một nhóm, lọc theo ngăn hoặc từ ưu tiên.</p><div><span class="chip">Kinh doanh · 113</span><span class="chip">Du lịch · 38</span></div><div class="btn">Tùy chỉnh</div></div>
+    <div class="card red"><h3><span>◎</span> Từ hay sai</h3><p>Sai 2 lần trong 5 câu gần nhất.</p><div><span class="chip">arrive · sai 2/2</span></div><div class="btn">Luyện 6 từ</div></div>
+    <div class="card yellow"><h3><span>☆</span> Đang ưu tiên</h3><p>Từ bạn đã bấm Cần ôn lại.</p><div><span class="chip">5 từ trong 3 nhóm</span></div><div class="btn">Luyện 5 từ</div></div>
+    <div class="card green"><h3><span>≋</span> Luyện tất cả</h3><p>Mọi từ đang học.</p><div><span class="chip">430 từ trong 8 nhóm</span></div><div class="btn">Luyện 10 câu</div></div>
+  </div>
+  <p class="pros"><b>Được:</b> gọn, sang, ít chói nhất. <b>Mất:</b> mất cảm giác "thẻ màu" của bản sáng; các thẻ giống nhau hơn.</p>
+</section>
+
+<section class="c">
+  <h2>C. Tông trung, giảm độ rực, chữ tối</h2>
+  <p class="note">Giữ ý "thẻ màu sáng, chữ tối" nhưng hạ độ rực và độ sáng (Material: tránh màu bão hòa trên nền tối vì gây "rung" mắt).</p>
+  <div class="grid">
+    <div class="card blue"><h3>📁 Theo nhóm</h3><p>Một nhóm, lọc theo ngăn hoặc từ ưu tiên.</p><div><span class="chip">Kinh doanh · 113</span><span class="chip">Du lịch · 38</span></div><div class="btn">Tùy chỉnh</div></div>
+    <div class="card red"><h3>◎ Từ hay sai</h3><p>Sai 2 lần trong 5 câu gần nhất.</p><div><span class="chip">arrive · sai 2/2</span></div><div class="btn">Luyện 6 từ</div></div>
+    <div class="card yellow"><h3>☆ Đang ưu tiên</h3><p>Từ bạn đã bấm Cần ôn lại.</p><div><span class="chip">5 từ trong 3 nhóm</span></div><div class="btn">Luyện 5 từ</div></div>
+    <div class="card green"><h3>≋ Luyện tất cả</h3><p>Mọi từ đang học.</p><div><span class="chip">430 từ trong 8 nhóm</span></div><div class="btn">Luyện 10 câu</div></div>
+  </div>
+  <p class="pros"><b>Được:</b> vẫn là thẻ màu, nhưng bớt chói hơn D. <b>Mất:</b> màu hơi "xỉn"; vẫn là mảng sáng lớn trên nền tối.</p>
+</section>
+
+<section class="d">
+  <h2>D. Màu đậm bão hòa, chữ tối (đang chạy ở :5173)</h2>
+  <p class="note">Cùng tông nút vàng "Tạo nhóm".</p>
+  <div class="grid">
+    <div class="card blue"><h3>📁 Theo nhóm</h3><p>Một nhóm, lọc theo ngăn hoặc từ ưu tiên.</p><div><span class="chip">Kinh doanh · 113</span><span class="chip">Du lịch · 38</span></div><div class="btn">Tùy chỉnh</div></div>
+    <div class="card red"><h3>◎ Từ hay sai</h3><p>Sai 2 lần trong 5 câu gần nhất.</p><div><span class="chip">arrive · sai 2/2</span></div><div class="btn">Luyện 6 từ</div></div>
+    <div class="card yellow"><h3>☆ Đang ưu tiên</h3><p>Từ bạn đã bấm Cần ôn lại.</p><div><span class="chip">5 từ trong 3 nhóm</span></div><div class="btn">Luyện 5 từ</div></div>
+    <div class="card green"><h3>≋ Luyện tất cả</h3><p>Mọi từ đang học.</p><div><span class="chip">430 từ trong 8 nhóm</span></div><div class="btn">Luyện 10 câu</div></div>
+  </div>
+  <p class="pros"><b>Được:</b> vui, nổi, giống tinh thần bản sáng. <b>Mất:</b> nhiều mảng rực cạnh nhau trên nền tối dễ chói khi dùng ban đêm.</p>
+</section>
+</body>
+</html>

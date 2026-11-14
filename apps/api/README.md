@@ -50,8 +50,8 @@ $ pnpm run start:prod
 # unit tests
 $ pnpm run test
 
-# e2e tests
-$ pnpm run test:e2e
+# scale measurements (run by hand, not in CI)
+$ pnpm run test:scale
 
 # test coverage
 $ pnpm run test:cov

@@ -10,7 +10,7 @@ import { RateLimiter } from './rate-limiter.service.js';
 function setup() {
   const config = testConfig({ limits: {
     ...DEFAULT_LIMITS,
-    'sample.create': { by: 'user', max: 2, windowSeconds: 60 },
+    'practice.answer': { by: 'user', max: 2, windowSeconds: 60 },
     'user.write': { by: 'user', max: 2, windowSeconds: 3600 },
   } });
   const clock = new FakeClock(new Date('2026-10-07T12:00:00.000Z'));
@@ -25,36 +25,41 @@ function setup() {
     counters.set(id, count);
     return { ...args.create, count };
   });
-  const prisma = { rateLimitCounter: { upsert } } as unknown as PrismaClient;
-  return { config, clock, upsert, limiter: new RateLimiter(prisma, config, clock) };
+  const findUnique = vi.fn(async (args: { where: { key_windowStart: { key: string; windowStart: Date } } }) => {
+    const { key, windowStart } = args.where.key_windowStart;
+    const count = counters.get(`${key}:${windowStart.toISOString()}`);
+    return count === undefined ? null : { key, windowStart, count };
+  });
+  const prisma = { rateLimitCounter: { upsert, findUnique } } as unknown as PrismaClient;
+  return { config, clock, upsert, findUnique, limiter: new RateLimiter(prisma, config, clock) };
 }
 
 describe('RateLimiter', () => {
   it('B1#33: different named rules at the same window start have independent limits', async () => {
     const { limiter } = setup();
-    for (const rule of ['sample.create', 'user.write'] as const) {
+    for (const rule of ['practice.answer', 'user.write'] as const) {
       await expect(limiter.hit(rule, 'user-1')).resolves.toBeUndefined();
       await expect(limiter.hit(rule, 'user-1')).resolves.toBeUndefined();
       await expect(limiter.hit(rule, 'user-1')).rejects.toMatchObject({
-        problemType: 'rate-limited', retryAfterSeconds: rule === 'sample.create' ? 60 : 3600,
+        problemType: 'rate-limited', retryAfterSeconds: rule === 'practice.answer' ? 60 : 3600,
       });
     }
-    await expect(limiter.hit('sample.create', 'user-2')).resolves.toBeUndefined();
+    await expect(limiter.hit('practice.answer', 'user-2')).resolves.toBeUndefined();
   });
 
   it('B1#33: rejects over-limit hits with 429 and rounds Retry-After up from Clock', async () => {
     const { limiter, clock } = setup();
     clock.advance(59_250);
-    await limiter.hit('sample.create', 'user-1');
-    await limiter.hit('sample.create', 'user-1');
-    const error = await limiter.hit('sample.create', 'user-1').catch((err: unknown) => err);
+    await limiter.hit('practice.answer', 'user-1');
+    await limiter.hit('practice.answer', 'user-1');
+    const error = await limiter.hit('practice.answer', 'user-1').catch((err: unknown) => err);
     expect(error).toBeInstanceOf(ProblemDetailsException);
     expect((error as ProblemDetailsException).getStatus()).toBe(429);
     expect(error).toMatchObject({
       problemTitle: 'Too many requests', problemType: 'rate-limited', retryAfterSeconds: 1,
     });
     clock.advance(750);
-    await expect(limiter.hit('sample.create', 'user-1')).resolves.toBeUndefined();
+    await expect(limiter.hit('practice.answer', 'user-1')).resolves.toBeUndefined();
   });
 
   it.each([
@@ -77,10 +82,10 @@ describe('RateLimiter', () => {
 
   it('uses one upsert with matching create and compound keys and an atomic increment', async () => {
     const { limiter, upsert, clock } = setup();
-    await limiter.hit('sample.create', 'user-1');
+    await limiter.hit('practice.answer', 'user-1');
     expect(upsert).toHaveBeenCalledExactlyOnceWith({
-      where: { key_windowStart: { key: 'sample.create:user:user-1', windowStart: clock.now() } },
-      create: { key: 'sample.create:user:user-1', windowStart: clock.now(), count: 1 },
+      where: { key_windowStart: { key: 'practice.answer:user:user-1', windowStart: clock.now() } },
+      create: { key: 'practice.answer:user:user-1', windowStart: clock.now(), count: 1 },
       update: { count: { increment: 1 } },
     });
   });
@@ -89,6 +94,34 @@ describe('RateLimiter', () => {
     const { limiter, upsert } = setup();
     const error = new Error('database unavailable');
     upsert.mockRejectedValueOnce(error);
-    await expect(limiter.hit('sample.create', 'user-1')).rejects.toBe(error);
+    await expect(limiter.hit('practice.answer', 'user-1')).rejects.toBe(error);
+  });
+
+  describe('peek', () => {
+    it('reports used after 3 hits and writes nothing', async () => {
+      const { limiter, upsert } = setup();
+      for (let i = 0; i < 3; i += 1) await limiter.hit('ai.test', 'user-1');
+      const writes = upsert.mock.calls.length;
+      expect(await limiter.peek('ai.test', 'user-1')).toEqual({ limit: 20, used: 3, resetsAt: new Date('2026-10-07T13:00:00.000Z') });
+      expect(await limiter.peek('ai.test', 'user-1')).toMatchObject({ used: 3 });
+      expect(upsert.mock.calls.length).toBe(writes);
+    });
+
+    it('a missing row is used 0', async () => {
+      const { limiter } = setup();
+      expect(await limiter.peek('ai.test', 'nobody')).toMatchObject({ limit: 20, used: 0 });
+    });
+
+    it('resetsAt is the window end: 12:59:59Z gives 13:00:00Z', async () => {
+      const { limiter, clock } = setup();
+      clock.advance(3_599_000);
+      expect((await limiter.peek('ai.test', 'user-1')).resetsAt).toEqual(new Date('2026-10-07T13:00:00.000Z'));
+    });
+
+    it('used above the max is returned as counted', async () => {
+      const { limiter } = setup();
+      for (let i = 0; i < 23; i += 1) await limiter.hit('ai.test', 'user-1').catch(() => undefined);
+      expect((await limiter.peek('ai.test', 'user-1')).used).toBe(23);
+    });
   });
 });

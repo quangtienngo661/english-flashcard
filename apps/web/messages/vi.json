@@ -1,222 +1,1853 @@
 {
   "Metadata": {
-    "title": "Wordmet · Làm chủ từ vựng qua ngữ cảnh thực tế",
-    "description": "Lưu từ mới cùng câu văn bạn từng đọc. Wordmet giúp bạn luyện cách dùng từ tự nhiên và tự động ưu tiên những từ cần ôn thêm.",
-    "ogAlt": "Wordmet: Học và ghi nhớ từ vựng tiếng Anh qua ngữ cảnh thực tế"
+    "title": "Wordmet · Học từ vựng tiếng Anh, ghi nhớ và vận dụng",
+    "description": "Ôn thẻ theo lịch, luyện tập cùng AI và lưu từ mới bạn gặp mỗi ngày.",
+    "ogAlt": "Wordmet: Học từ vựng tiếng Anh, ghi nhớ và vận dụng"
   },
   "Nav": {
-    "howItWorks": "Cách hoạt động",
-    "faq": "Hỏi đáp",
-    "cta": "Đăng ký nhận tin ra mắt",
     "skipToContent": "Chuyển đến nội dung chính",
-    "languageLabel": "Ngôn ngữ"
+    "login": "Đăng nhập",
+    "signup": "Đăng ký",
+    "groups": "Nhóm từ",
+    "howTo": "Cách học",
+    "pricing": "Giá",
+    "theme": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "themeToLight": "Chuyển sang giao diện sáng",
+    "themeToDark": "Chuyển sang giao diện tối"
   },
-  "Hero": {
-    "chip": "Ghi nhớ từ vựng qua những câu bạn thực sự đọc",
-    "title": "Làm chủ từ vựng<br></br>từ ngữ cảnh thực tế",
-    "description": "Lưu từ mới kèm câu văn thực tế. Wordmet giúp bạn luyện cách dùng từ chuẩn xác và tự động nhắc ôn lại đúng thời điểm.",
-    "note": "Hoàn toàn miễn phí · Nhận thông báo ngay khi ra mắt"
-  },
-  "Cloze": {
-    "header": "Câu {current}/{total}",
-    "sourceChip": "Nguồn · Blog công nghệ",
-    "instruction": "Chọn đáp án đúng để hoàn thành câu",
-    "correctTitle": "✓ Chính xác!",
-    "wrongTitle": "✗ Chưa chính xác",
-    "nextSentence": "Câu tiếp theo →",
-    "doneTitle": "Bạn đã hoàn thành 3 câu luyện thử!",
-    "doneBody": "Khi Wordmet ra mắt, bạn có thể biến chính những câu mình từng đọc thành bài tập luyện hàng ngày.",
-    "doneCta": "Đăng ký nhận tin ra mắt",
-    "replay": "Luyện lại",
-    "region": "Bài luyện thử",
-    "items": {
-      "deploy": {
-        "before": "We plan to",
-        "answer": "deploy",
-        "after": "the new version on Friday.",
-        "options": { "o1": "deploy", "o2": "delay", "o3": "deliver", "o4": "decide" },
-        "hint": "Gợi ý: Đưa tính năng hoặc phiên bản phần mềm đến người dùng.",
-        "explanation": "deploy = triển khai, phát hành (phần mềm/hệ thống).",
-        "translation": "“Chúng tôi dự kiến triển khai phiên bản mới vào thứ Sáu.”"
-      },
-      "assume": {
-        "before": "Don't",
-        "answer": "assume",
-        "after": "that everyone has read the email.",
-        "options": { "o1": "assume", "o2": "resume", "o3": "consume", "o4": "assure" },
-        "hint": "Gợi ý: Cho là đúng khi chưa kiểm chứng.",
-        "explanation": "assume = cho rằng, mặc định là đúng (khi chưa xác minh).",
-        "translation": "“Đừng mặc định rằng ai cũng đã đọc email.”"
-      },
-      "borrow": {
-        "before": "Can I",
-        "answer": "borrow",
-        "after": "your charger for a minute?",
-        "options": { "o1": "borrow", "o2": "lend", "o3": "rent", "o4": "owe" },
-        "hint": "Gợi ý: Hỏi xin dùng tạm đồ của người khác.",
-        "explanation": "borrow = mượn (dùng rồi trả). Phân biệt với 'lend' = cho mượn.",
-        "translation": "“Cho mình mượn cục sạc một chút được không?”"
-      }
-    }
-  },
-  "Problem": {
-    "eyebrow": "VẤN ĐỀ",
-    "title": "Lưu từ thì dễ,<br></br>dùng được mới khó",
-    "description": "Chỉ thuộc nghĩa từ thôi là chưa đủ. Bạn cần biết cách đưa từ đó vào đúng ngữ cảnh.",
-    "before": {
-      "label": "Cách học truyền thống",
-      "word": "deploy",
-      "hint": "Chạm để xem nghĩa",
-      "meaning": "triển khai",
-      "caption": "Nhớ nghĩa rời rạc nhưng vẫn lúng túng khi viết hoặc nói."
+  "Landing": {
+    "hero": {
+      "topicLabel": "Học từ vựng theo chủ đề bạn cần",
+      "line1": "Ôn từ đúng lúc,",
+      "line2": "luyện từ trong câu.",
+      "accent": "trong câu",
+      "lead": "Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi xếp lịch ôn cho từng từ. Thời gian học dành cho việc luyện từ trong câu.",
+      "signup": "Bắt đầu miễn phí",
+      "howTo": "Xem cách học"
     },
-    "after": {
-      "label": "Học cùng Wordmet",
-      "caption": "Luyện phản xạ dùng từ ngay trong chính câu bạn từng đọc.",
-      "s1": { "before": "We plan to", "word": "deploy", "after": "the new version on Friday." },
-      "s2": { "before": "Don't", "word": "assume", "after": "that everyone has read the email." },
-      "s3": { "before": "Can I", "word": "_____", "after": "your charger for a minute?" }
-    }
-  },
-  "Steps": {
-    "eyebrow": "CÁCH HOẠT ĐỘNG",
-    "title": "3 bước đơn giản để <brMd></brMd>nằm lòng từ vựng",
-    "step1": {
-      "title": "1. Lưu từ cùng ngữ cảnh",
-      "body": "Lưu lại từ mới kèm câu bạn vừa đọc, hoặc chọn bộ từ vựng sẵn có theo trình độ từ A1 đến C2.",
-      "wordLabel": "Từ mới",
-      "wordValue": "deploy",
-      "sentenceLabel": "Câu chứa từ (không bắt buộc)",
-      "sentenceValue": "We plan to deploy the new version on Friday.",
-      "save": "Lưu từ"
+    "stage": {
+      "cardLabel": "Thẻ từ · ôn lại sau {days} ngày",
+      "practiceTitle": "Điền từ vào câu",
+      "practiceCount": "Câu 4/20",
+      "result": "Đúng · lên Bậc {level}",
+      "cycle": [
+        {
+          "lemma": "mitigate",
+          "pos": "verb",
+          "ipa": "/ˈmɪt.ɪ.ɡeɪt/",
+          "definition": "to make something bad less serious",
+          "meaning": "giảm nhẹ",
+          "example": "Planting trees can help mitigate the effects of urban heat.",
+          "before": "Cities need clear plans to ",
+          "after": " the risk of flooding.",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "allocate",
+          "pos": "verb",
+          "ipa": "/ˈæl.ə.keɪt/",
+          "definition": "to give a share of something for a purpose",
+          "meaning": "phân bổ",
+          "example": "The council will allocate more money to buses.",
+          "before": "We need to ",
+          "after": " more time to testing.",
+          "days": 7,
+          "level": 4
+        },
+        {
+          "lemma": "viable",
+          "pos": "adjective",
+          "ipa": "/ˈvaɪ.ə.bəl/",
+          "definition": "able to work successfully",
+          "meaning": "khả thi",
+          "example": "Solar power is now a viable option.",
+          "before": "Is the plan financially ",
+          "after": "?",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "deteriorate",
+          "pos": "verb",
+          "ipa": "/dɪˈtɪə.ri.ə.reɪt/",
+          "definition": "to become worse over time",
+          "meaning": "xấu đi",
+          "example": "Air quality tends to deteriorate in the dry season.",
+          "before": "His health began to ",
+          "after": " last winter.",
+          "days": 1,
+          "level": 2
+        },
+        {
+          "lemma": "coherent",
+          "pos": "adjective",
+          "ipa": "/kəʊˈhɪə.rənt/",
+          "definition": "logical and well organised",
+          "meaning": "mạch lạc",
+          "example": "She gave a clear and coherent answer.",
+          "before": "Write a ",
+          "after": " argument in your essay.",
+          "days": 14,
+          "level": 5
+        }
+      ],
+      "addedTitle": "Bài báo sáng nay",
+      "addedNote": "vừa thêm",
+      "addedWords": [
+        "mitigate",
+        "allocate",
+        "viable",
+        "scrutiny"
+      ],
+      "addedMore": "+14 từ",
+      "addedMorePhone": "+15 từ",
+      "binWord": "deteriorate",
+      "binNote": "ôn lại sau",
+      "binValue": "7 ngày"
     },
-    "step2": {
-      "title": "2. Luyện dùng từ trong câu",
-      "body": "Đa dạng hình thức ôn tập: điền từ, trắc nghiệm hoặc gõ từ theo gợi ý nghĩa.",
-      "sentenceBefore": "We plan to",
-      "sentenceAfter": "the new version on Friday.",
-      "chips": { "c1": "Điền từ", "c2": "Trắc nghiệm", "c3": "Gõ từ theo nghĩa" }
+    "strip": {
+      "row1": [
+        {
+          "word": "mitigate",
+          "pos": "verb"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj"
+        },
+        {
+          "word": "viable",
+          "pos": "adj"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb"
+        }
+      ],
+      "row2": [
+        {
+          "word": "scrutiny",
+          "pos": "noun"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj"
+        },
+        {
+          "word": "detrimental",
+          "pos": "adj"
+        },
+        {
+          "word": "alleviate",
+          "pos": "verb"
+        },
+        {
+          "word": "incentive",
+          "pos": "noun"
+        },
+        {
+          "word": "undermine",
+          "pos": "verb"
+        },
+        {
+          "word": "feasible",
+          "pos": "adj"
+        },
+        {
+          "word": "consensus",
+          "pos": "noun"
+        }
+      ]
     },
-    "step3": {
-      "title": "3. Ôn tập đúng thời điểm",
-      "body": "Thuật toán thông minh tự động xếp lịch ôn, ưu tiên những từ bạn hay làm sai.",
-      "rows": {
-        "r1": { "word": "deploy", "status": "Sai 2 lần · Cần ôn hôm nay" },
-        "r2": { "word": "assume", "status": "Ôn lại sau 3 ngày" },
-        "r3": { "word": "borrow", "status": "Ôn lại sau 7 ngày" }
-      }
-    }
-  },
-  "Ai": {
-    "eyebrow": "TÍNH NĂNG AI",
-    "title": "Mở rộng vốn từ <brMd></brMd>qua nhiều ngữ cảnh mới",
-    "description": "AI tự động tạo thêm câu luyện tập mới, kèm giải thích chi tiết và dịch nghĩa tiếng Việt chuẩn xác.",
-    "benefits": {
-      "b1": "Giải thích chi tiết lý do chọn đáp án",
-      "b2": "Dịch nghĩa tiếng Việt sát ngữ cảnh",
-      "b3": "Kiểm tra đáp án tức thì, không tốn credit AI"
+    "groups": {
+      "title": "Từ của mỗi bài thành một nhóm",
+      "lead": "Mỗi từ có lịch ôn riêng.",
+      "cards": [
+        {
+          "word": "mitigate",
+          "pos": "verb",
+          "meaning": "giảm nhẹ"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb",
+          "meaning": "phân bổ"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj",
+          "meaning": "đáng kể"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb",
+          "meaning": "xấu đi"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj",
+          "meaning": "không tránh được"
+        },
+        {
+          "word": "viable",
+          "pos": "adj",
+          "meaning": "khả thi"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj",
+          "meaning": "phổ biến"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj",
+          "meaning": "miễn cưỡng"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb",
+          "meaning": "ủng hộ"
+        },
+        {
+          "word": "scrutiny",
+          "pos": "noun",
+          "meaning": "sự xem xét kỹ"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb",
+          "meaning": "dao động"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj",
+          "meaning": "mạch lạc"
+        }
+      ]
     },
-    "chip": "Dùng thử 14 ngày miễn phí · Gói Pro",
-    "card": {
-      "label": "Câu do AI tạo · Từ: assume",
-      "before": "Before the meeting, I",
-      "word": "assumed",
-      "after": "the report was complete.",
-      "explanation": "assume = cho rằng (khi chưa kiểm chứng).",
-      "translation": "“Trước cuộc họp, tôi cho rằng báo cáo đã hoàn thành.”",
-      "report": "Báo lỗi câu này"
-    }
-  },
-  "Plans": {
-    "eyebrow": "GÓI DỊCH VỤ",
-    "title": "Bắt đầu hoàn toàn miễn phí",
-    "description": "Trải nghiệm toàn bộ tính năng AI trong 14 ngày dùng thử. <brSm></brSm>Không cần nhập thẻ thanh toán.",
-    "free": {
-      "name": "Miễn phí",
-      "chip": "Sử dụng vĩnh viễn",
-      "items": {
-        "i1": "Lưu từ vựng kèm câu bạn từng đọc",
-        "i2": "Flashcard & lịch ôn tập tự động",
-        "i3": "Các dạng bài tập cơ bản",
-        "i4": "Tự động ưu tiên những từ hay quên"
-      }
-    },
-    "trial": {
-      "name": "Trải nghiệm AI",
-      "chip": "14 ngày trải nghiệm",
-      "items": {
-        "i1": "Kích hoạt bất cứ khi nào bạn sẵn sàng",
-        "i2": "Luyện tập với câu mới do AI tạo",
-        "i3": "Giải thích chi tiết & bản dịch ngữ cảnh",
-        "i4": "Bao gồm toàn bộ tính năng gói Miễn phí"
-      }
-    }
-  },
-  "Faq": {
-    "eyebrow": "GIẢI ĐÁP",
-    "title": "Câu hỏi thường gặp",
-    "items": {
-      "q1": {
-        "question": "Wordmet giúp tôi học từ vựng hiệu quả hơn bằng cách nào?",
-        "answer": "Wordmet giúp bạn gắn liền từ mới với ngữ cảnh thực tế mà bạn từng gặp. Hệ thống áp dụng phương pháp lặp lại ngắt quãng (Spaced Repetition) để tự động lên lịch ôn tập, giúp bạn chuyển từ vựng từ 'nhận biết' sang 'biết cách sử dụng'."
+    "learn": {
+      "title": "Từ lúc gặp tới lúc dùng được",
+      "lead": "Ghi, nghe, luyện và ôn ở cùng một chỗ.",
+      "practice": {
+        "eyebrow": "Trong buổi học",
+        "title": "Luyện trong câu",
+        "body": "Điền và gõ từ vào câu, không chỉ chọn nghĩa. Sai thì thấy ngay đáp án trong câu.",
+        "demoTitle": "Điền từ vào câu",
+        "count": "Câu 7/20",
+        "scores": [
+          {
+            "n": "5",
+            "label": "đúng"
+          },
+          {
+            "n": "1",
+            "label": "sai"
+          },
+          {
+            "n": "13",
+            "label": "câu còn lại"
+          },
+          {
+            "n": "2",
+            "label": "từ ôn lại sau 7 ngày"
+          }
+        ],
+        "sentence": "Air quality tends to deteriorate in the dry season.",
+        "target": "deteriorate",
+        "choices": [
+          "deteriorate",
+          "allocate",
+          "advocate",
+          "mitigate"
+        ],
+        "right": "Đúng",
+        "wrong": "Sai"
       },
-      "q2": {
-        "question": "Wordmet có hoàn toàn miễn phí không?",
-        "answer": "Có. Các tính năng cốt lõi như lưu từ, flashcard, lịch ôn tự động và bài tập cơ bản đều miễn phí vĩnh viễn. Ngoài ra, bạn được tặng 14 ngày dùng thử tính năng AI tạo câu luyện tập thông minh."
+      "note": {
+        "eyebrow": "Sau khi đọc một bài",
+        "title": "Ghi từ",
+        "body": "Gõ cả dạng đã chia, Wordmet đưa về từ gốc.",
+        "typed": "deteriorated",
+        "lemma": "deteriorate",
+        "meaning": "verb · xấu đi"
       },
-      "q3": {
-        "question": "Wordmet khác gì so với các ứng dụng học từ vựng khác?",
-        "answer": "Thay vì bắt bạn tự tạo thẻ ghi nhớ thủ công hoặc học danh sách từ cố định, Wordmet tự động chuyển chính những câu bạn lưu thành bài tập tương tác. Thuật toán cũng sẽ ưu tiên các từ bạn hay làm sai để tối ưu thời gian ôn tập."
+      "listen": {
+        "eyebrow": "Mỗi thẻ",
+        "title": "Nghe và đọc phiên âm",
+        "word": "viable",
+        "ipa": "/ˈvaɪ.ə.bəl/"
       },
-      "q4": {
-        "question": "Những câu tôi lưu có bị chia sẻ công khai không?",
-        "answer": "Hoàn toàn không. Dữ liệu từ vựng và câu văn bạn lưu là riêng tư 100%, không bị chia sẻ công khai hay đưa vào kho câu dùng chung."
+      "review": {
+        "eyebrow": "Những ngày sau",
+        "title": "Ôn đúng lúc",
+        "body": "Mỗi ngày chỉ ôn những từ đến hạn. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "bins": [
+          {
+            "value": "1 ngày",
+            "label": "ôn lần đầu"
+          },
+          {
+            "value": "3 ngày",
+            "label": "nhớ lần hai"
+          },
+          {
+            "value": "7 ngày",
+            "label": "quen mặt"
+          },
+          {
+            "value": "14 ngày",
+            "label": "dùng được"
+          },
+          {
+            "value": "30 ngày",
+            "label": "nhớ lâu"
+          }
+        ]
       }
+    },
+    "plans": {
+      "title": "Hai gói, khác nhau ở mức luyện tập và AI",
+      "lead": "Cả hai gói đều ôn thẻ không giới hạn. Hết Pro, từ và lịch ôn của bạn vẫn còn.",
+      "free": "Miễn phí",
+      "freeNote": "không giới hạn thời gian",
+      "freeList": [
+        "Ghi từ, tra nghĩa và nghe phiên âm",
+        "Lịch ôn tự động",
+        "3 phiên luyện mỗi ngày",
+        "Dùng thử câu luyện và tra từ bằng AI"
+      ],
+      "freeSignup": "Tạo tài khoản miễn phí",
+      "pro": "Pro",
+      "proBadge": "Có AI",
+      "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",
+      "periods": {
+        "1": "1 tháng",
+        "3": "3 tháng",
+        "12": "12 tháng"
+      },
+      "saving": "−{percent}%",
+      "best": "Tiết kiệm nhất",
+      "perMonth": "mỗi tháng",
+      "perMonthApprox": "≈ {price} mỗi tháng",
+      "aiList": [
+        "AI soạn câu và tra từ",
+        "AI viết câu luyện cho từng từ bạn học",
+        "Tra từ bằng AI khi từ điển chưa có",
+        "Nhiều lượt AI hơn gói Miễn phí"
+      ],
+      "proList": [
+        "30 phiên luyện mỗi ngày",
+        "Mọi quyền lợi của gói Miễn phí"
+      ],
+      "proSignup": "Tạo tài khoản"
+    },
+    "faq": {
+      "title": "Câu hỏi thường gặp",
+      "lead": "Không thấy câu bạn cần? Gửi tới {email}."
+    },
+    "final": {
+      "title": "Bắt đầu với bài bạn vừa đọc",
+      "note": "Miễn phí để bắt đầu.",
+      "signup": "Tạo tài khoản miễn phí"
     }
-  },
-  "FinalCta": {
-    "title": "Bắt đầu ghi nhớ những từ bạn gặp hôm nay"
-  },
-  "Waitlist": {
-    "emailLabel": "Địa chỉ Email",
-    "emailPlaceholder": "Nhập email của bạn...",
-    "submit": "Đăng ký nhận tin ra mắt",
-    "submitting": "Đang gửi đăng ký…",
-    "consent": "Tôi đồng ý với <link>Chính sách bảo mật</link>.",
-    "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ (ví dụ: ten@gmail.com).",
-    "missingConsent": "Bạn cần đồng ý với Chính sách bảo mật để tiếp tục.",
-    "error": "Chưa thể gửi đăng ký. Vui lòng kiểm tra kết nối mạng và thử lại.",
-    "success": "Đăng ký thành công! Wordmet sẽ gửi thông báo cho bạn ngay khi ra mắt."
   },
   "Footer": {
     "privacy": "Chính sách bảo mật",
     "terms": "Điều khoản sử dụng",
+    "sources": "Nguồn dữ liệu",
     "contact": "Liên hệ",
-    "switchLanguage": "English",
     "copyright": "© {year} Wordmet"
   },
   "Legal": {
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
-    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
-    "privacy": {
-      "effective": "Có hiệu lực từ ngày {date}.",
-      "intro": "Trang này giải thích cách Wordmet xử lý địa chỉ email khi bạn đăng ký nhận thông báo ra mắt.",
-      "collectTitle": "Dữ liệu Wordmet thu thập",
-      "collectBody": "Địa chỉ email, ngôn ngữ bạn chọn trên trang (tiếng Việt hoặc tiếng Anh) và thời điểm đăng ký. Trang web chỉ sử dụng 1 cookie để ghi nhớ ngôn ngữ hiển thị; không sử dụng cookie quảng cáo hay công cụ theo dõi hành vi.",
-      "useTitle": "Mục đích sử dụng",
-      "useBody": "Chỉ dùng để gửi email thông báo khi Wordmet chính thức ra mắt. Wordmet cam kết không bán hoặc chia sẻ email của bạn cho bất kỳ bên thứ ba nào.",
-      "storeTitle": "Nơi lưu trữ dữ liệu",
-      "storeBody": "Dữ liệu được lưu trữ an toàn trong cơ sở dữ liệu Cloudflare D1 thuộc tài khoản Wordmet. Cloudflare đóng vai trò cung cấp hạ tầng kỹ thuật và xử lý dữ liệu theo ủy quyền của Wordmet.",
-      "deleteTitle": "Quyền yêu cầu xóa dữ liệu",
-      "deleteBody": "Bạn có thể gửi email đến <link>{email}</link> từ chính địa chỉ đã đăng ký. Wordmet sẽ xóa email của bạn khỏi danh sách trong vòng 30 ngày và gửi xác nhận.",
-      "changesTitle": "Cập nhật chính sách",
-      "changesBody": "Khi Wordmet mở tính năng tài khoản người dùng, chính sách này sẽ được cập nhật chi tiết hơn và thông báo trước cho tất cả người dùng đã đăng ký."
-    }
+    "draftNotice": "Đây là bản nháp. Bản chính thức sẽ có trước khi Wordmet ra mắt.",
+    "effective": "Có hiệu lực từ {date}",
+    "contents": "Mục lục",
+    "privacyLead": "Dữ liệu Wordmet thu thập, dùng vào việc gì, chia sẻ với ai và quyền của bạn với dữ liệu của mình.",
+    "termsLead": "Những gì bạn đồng ý khi dùng Wordmet: tài khoản, gói Pro, thanh toán và nội dung của bạn.",
+    "versionLine": "Phiên bản {version}",
+    "termsScope": "Áp dụng cho wordmet.com",
+    "contentsOpen": "Xem mục lục",
+    "privacyHelpTitle": "Còn câu hỏi về dữ liệu của bạn?",
+    "privacyHelpBody": "Gửi từ chính email của tài khoản. Phản hồi trong 2 ngày làm việc.",
+    "termsHelpTitle": "Có vấn đề với thanh toán?",
+    "termsHelpBody": "Gửi email tài khoản, nội dung chuyển khoản (bắt đầu bằng WM) và ảnh biên nhận."
+  },
+  "Sources": {
+    "title": "Nguồn dữ liệu",
+    "intro": "Wordmet dùng các bộ dữ liệu có giấy phép mở sau đây. Cảm ơn những người đã làm ra và chia sẻ chúng.",
+    "empty": "Hiện chưa có nguồn dữ liệu nào để hiển thị.",
+    "license": "Giấy phép: {license}",
+    "version": "Phiên bản {version}",
+    "link": "Trang gốc",
+    "count": "{count, number} nguồn đang dùng"
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
-    "body": "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.",
+    "body": "Trang này không có hoặc đã chuyển sang địa chỉ khác.",
     "home": "Về trang chủ"
+  },
+  "App": {
+    "common": {
+      "retry": "Thử lại",
+      "loading": "Đang tải…",
+      "close": "Đóng",
+      "cancel": "Hủy",
+      "saveChanges": "Lưu thay đổi",
+      "back": "Quay lại",
+      "notFoundTitle": "Không tìm thấy trang này",
+      "notFoundBody": "Đường dẫn có thể đã cũ.",
+      "home": "Về Hôm nay",
+      "charCount": "{count, number}/{max, number}",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "errorPageTitle": "Không tải được trang này"
+    },
+    "session": {
+      "offlineTitle": "Không kết nối được",
+      "offlineBody": "Kiểm tra mạng rồi thử lại."
+    },
+    "chrome": {
+      "brand": "Wordmet",
+      "skipToContent": "Chuyển đến nội dung chính",
+      "mainNav": "Điều hướng chính",
+      "tabs": {
+        "today": "Hôm nay",
+        "groups": "Nhóm",
+        "practice": "Luyện tập",
+        "lookup": "Tra từ"
+      },
+      "addWord": "Thêm từ",
+      "plans": "Gói học",
+      "settings": "Cài đặt",
+      "themeToDark": "Chuyển sang giao diện tối",
+      "themeToLight": "Chuyển sang giao diện sáng",
+      "logout": "Đăng xuất",
+      "account": "Tài khoản của bạn",
+      "plan": {
+        "free": "Miễn phí",
+        "trial": "Dùng thử",
+        "pro": "Pro"
+      },
+      "search": {
+        "placeholder": "Tìm từ"
+      },
+      "menu": {
+        "account": "Tài khoản",
+        "transactions": "Lịch sử giao dịch",
+        "reports": "Báo lỗi của tôi"
+      }
+    },
+    "ui": {
+      "proBadge": "Pro",
+      "lockedLine": "Dành cho gói Pro.",
+      "seePlans": "Xem gói học",
+      "dob": {
+        "invalid": "Ngày sinh không hợp lệ. Chọn lại ngày.",
+        "tooYoung": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
+        "future": "Ngày sinh không thể sau hôm nay."
+      },
+      "stepper": {
+        "decrease": "{label}: bớt 1",
+        "increase": "{label}: thêm 1"
+      }
+    },
+    "speak": {
+      "word": "Nghe phát âm",
+      "sentence": "Nghe câu",
+      "uk": "Nghe giọng Anh-Anh",
+      "us": "Nghe giọng Anh-Mỹ",
+      "pending": "Đang tạo âm thanh"
+    },
+    "auth": {
+      "passwordMismatch": "Mật khẩu nhập lại chưa khớp.",
+      "required": {
+        "email": "Nhập email.",
+        "password": "Nhập mật khẩu.",
+        "birthDate": "Chọn ngày sinh.",
+        "consent": "Đồng ý Điều khoản sử dụng và Chính sách bảo mật để tiếp tục.",
+        "code": "Nhập đủ 6 số của mã."
+      },
+      "captchaPending": "Đang xác minh…",
+      "captchaReload": "Tải lại bước xác minh",
+      "captchaLoadFailed": "Không tải được bước xác minh.",
+      "showcase": {
+        "today": "Hôm nay",
+        "due": "từ đến hạn",
+        "allocate": "phân bổ",
+        "viable": "khả thi",
+        "mitigate": "giảm nhẹ",
+        "deteriorate": "xấu đi",
+        "coherent": "mạch lạc",
+        "days": "{days, plural, other {# ngày}}",
+        "practice": "Điền từ vào câu",
+        "result": "Đúng · lên {level}",
+        "priority": "{count, number} ưu tiên",
+        "dueCount": "{count, number} đến hạn"
+      },
+      "footer": {
+        "copyright": "© {year} Wordmet",
+        "privacy": "Chính sách bảo mật",
+        "terms": "Điều khoản sử dụng"
+      },
+      "back": "Quay lại",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "google": "Tiếp tục với Google",
+      "or": "Hoặc",
+      "register": {
+        "title": "Tạo tài khoản",
+        "givenName": "Tên",
+        "familyName": "Họ (không bắt buộc)",
+        "birthDate": "Ngày sinh",
+        "birthDateHint": "Wordmet dành cho người từ 13 tuổi.",
+        "confirmPassword": "Nhập lại mật khẩu",
+        "passwordHint": "Tối thiểu 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.",
+        "consent": "Tôi đồng ý với <terms>Điều khoản sử dụng</terms> và <privacy>Chính sách bảo mật</privacy>.",
+        "submit": "Tạo tài khoản",
+        "haveAccount": "Đã có tài khoản?",
+        "login": "Đăng nhập",
+        "givenNameRequired": "Nhập tên của bạn.",
+        "accountDeleting": "Tài khoản này đang được xóa. Thử lại sau."
+      },
+      "passwordRules": {
+        "min_length": "Cần ít nhất 8 ký tự.",
+        "max_length": "Tối đa 128 ký tự.",
+        "uppercase": "Cần một chữ hoa.",
+        "lowercase": "Cần một chữ thường.",
+        "digit": "Cần một chữ số.",
+        "special": "Cần một ký tự đặc biệt.",
+        "same_as_current": "Mật khẩu mới phải khác mật khẩu cũ."
+      },
+      "login": {
+        "title": "Đăng nhập",
+        "forgot": "Quên mật khẩu?",
+        "submit": "Đăng nhập",
+        "noAccount": "Chưa có tài khoản?",
+        "register": "Đăng ký",
+        "lockedTitle": "Tài khoản đang bị khóa",
+        "lockedBody": "Bạn chưa đăng nhập được vào tài khoản này. Liên hệ đội Wordmet nếu bạn cần mở lại.",
+        "expired": "Bạn cần đăng nhập lại.",
+        "rateLimited": "Phiên đăng nhập đã dừng vì trình duyệt này gửi quá nhiều yêu cầu. Đăng nhập lại để tiếp tục.",
+        "logoutFailed": "Chưa đăng xuất xong vì mất kết nối. Đăng nhập lại hoặc thử đăng xuất lần nữa.",
+        "retryLogout": "Đăng xuất lần nữa",
+        "passwordReset": "Đã đổi mật khẩu. Đăng nhập bằng mật khẩu mới."
+      },
+      "verify": {
+        "title": "Nhập mã 6 số",
+        "body": "Mã đã gửi tới {email}. Mã có hiệu lực 10 phút.",
+        "digit": "Chữ số {n, number}",
+        "resendIn": "Gửi lại mã sau {seconds, number} giây",
+        "resend": "Gửi lại mã",
+        "submit": "Xác minh",
+        "resent": "Đã gửi mã mới.",
+        "bodyNoEmail": "Nhập email bạn đã đăng ký và mã 6 số trong thư. Mã có hiệu lực 10 phút.",
+        "loginBody": "Xác minh email để tiếp tục. Mã đã gửi tới {email}.",
+        "wrongCode": "Mã hoặc mật khẩu không đúng hoặc mã đã hết hạn. Nếu email đã được xác minh, đăng nhập để tiếp tục.",
+        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time} hoặc dùng Quên mật khẩu ở trang đăng nhập."
+      },
+      "forgot": {
+        "title": "Quên mật khẩu",
+        "body": "Nhập email của bạn. Nếu email này có tài khoản, Wordmet gửi mã đặt lại tới đó.",
+        "submit": "Gửi mã",
+        "mustChange": "Tài khoản này cần mật khẩu mới trước khi dùng tiếp. Nhập email để nhận mã đặt lại."
+      },
+      "reset": {
+        "title": "Đặt mật khẩu mới",
+        "code": "Mã 6 số trong email",
+        "newPassword": "Mật khẩu mới",
+        "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
+        "confirmPassword": "Nhập lại mật khẩu mới",
+        "submit": "Đổi mật khẩu"
+      },
+      "googleComplete": {
+        "title": "Hoàn tất đăng ký",
+        "intro": "Bạn sắp tạo tài khoản Wordmet bằng {email}. Còn vài thông tin nữa.",
+        "submit": "Tạo tài khoản",
+        "expiredTitle": "Phiên đăng ký đã hết hạn",
+        "expiredBody": "Bạn cần chọn lại tài khoản Google để tiếp tục.",
+        "toLogin": "Về trang đăng nhập"
+      },
+      "complete": {
+        "title": "Bổ sung thông tin tài khoản",
+        "body": "Trước khi học tiếp, bổ sung ngày sinh và đồng ý với điều khoản.",
+        "submit": "Tiếp tục",
+        "updatedTitle": "Điều khoản đã được cập nhật",
+        "updatedBody": "Wordmet vừa đăng bản mới của Điều khoản sử dụng và Chính sách bảo mật. Đọc và đồng ý để tiếp tục học."
+      },
+      "welcome": {
+        "title": "Bạn đọc nghĩa của từ bằng ngôn ngữ nào?",
+        "body": "Giao diện cũng dùng ngôn ngữ này. Đổi lại được trong Cài đặt.",
+        "language": "Ngôn ngữ",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "submit": "Tiếp tục"
+      }
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "toc": "Mục lục",
+      "personal": "Thông tin cá nhân",
+      "fullName": "Họ và tên",
+      "birthDate": "Ngày sinh",
+      "email": "Email",
+      "edit": "Sửa",
+      "planUsage": "Gói và mức sử dụng",
+      "currentPlan": "Gói hiện tại",
+      "seePlans": "Xem gói học",
+      "planUntil": "<b>{plan}</b> · tới hết {date}",
+      "practiceToday": "Phiên luyện hôm nay",
+      "used": "đã dùng {used, number}/{limit, number}",
+      "practiceLeft": "Còn {remaining, number} phiên, mở lại lúc {time}",
+      "aiPractice": "Lượt câu AI",
+      "aiLookup": "Lượt tra AI",
+      "needsPro": "Cần gói Pro",
+      "remaining": "còn {remaining, number}/{limit, number}",
+      "aiPracticeRefill": "Lượt câu AI mới vào {date}",
+      "aiLookupRefill": "Lượt tra AI mới vào {date}",
+      "aiPracticeRefillTime": "Lượt câu AI mới có lúc {time}",
+      "aiLookupRefillTime": "Lượt tra AI mới có lúc {time}",
+      "learning": "Học tập",
+      "language": "Ngôn ngữ",
+      "languageHint": "Nghĩa của từ và giao diện",
+      "languageVi": "Tiếng Việt",
+      "languageEn": "English",
+      "theme": "Giao diện",
+      "themeLight": "Sáng",
+      "themeDark": "Tối",
+      "themeSystem": "Theo hệ thống",
+      "notifications": "Thông báo",
+      "reminders": "Nhắc học qua email",
+      "remindersHint": "Lúc {time} giờ của bạn, chỉ khi có từ đến hạn",
+      "shortcuts": "Phím tắt",
+      "shortcutAdd": "Thêm từ vừa gặp",
+      "shortcutLookup": "Tra từ",
+      "shortcutFlip": "Lật thẻ trong phiên ôn",
+      "shortcutAnswer": "Cần ôn lại · Đã biết",
+      "shortcutExit": "Thoát phiên ôn",
+      "account": "Tài khoản",
+      "logout": "Đăng xuất",
+      "logoutHint": "Thoát khỏi thiết bị này",
+      "deleteAccount": "Xóa tài khoản",
+      "signInMethods": "Đăng nhập bằng",
+      "methodPassword": "Mật khẩu",
+      "methodGoogle": "Google",
+      "setPassword": "Đặt mật khẩu",
+      "setPasswordHint": "Tài khoản này chỉ đăng nhập bằng Google. Đặt mật khẩu để đăng nhập cả bằng email.",
+      "deleteAccountStaff": "Liên hệ admin để xóa tài khoản",
+      "transactions": "Lịch sử giao dịch",
+      "view": "Xem",
+      "reports": "Báo lỗi của tôi",
+      "saved": "Đã lưu thay đổi."
+    },
+    "deleteAccount": {
+      "title": "Xóa tài khoản",
+      "back": "Cài đặt",
+      "deletedTitle": "Những gì bị xóa",
+      "keptTitle": "Những gì còn được giữ",
+      "confirmTitle": "Xác nhận xóa",
+      "deleted": {
+        "learning": "Dữ liệu học: nhóm, lịch ôn, lịch sử trả lời",
+        "privateWords": "Từ riêng và câu đã gặp",
+        "plans": "Gói của bạn",
+        "sessions": "Mọi phiên đăng nhập"
+      },
+      "kept": {
+        "payments": "Hồ sơ thanh toán {years, number} năm, không kèm tên bạn",
+        "paymentsNoYears": "Hồ sơ thanh toán trong thời gian luật yêu cầu, không kèm tên bạn",
+        "reports": "Báo lỗi bạn đã gửi, không kèm tên",
+        "usage": "Số lượt đã dùng, không kèm tên bạn",
+        "totals": "Số liệu tổng hợp, không nhận ra bạn"
+      },
+      "proLost": "Thời gian Pro còn lại sẽ mất, không hoàn tiền.",
+      "blocked": "Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.",
+      "blockedLink": "Đến trang Gói học",
+      "understand": "Tôi hiểu dữ liệu sẽ mất và không khôi phục được",
+      "typeEmail": "Gõ lại email của bạn",
+      "password": "Mật khẩu",
+      "confirmWithGoogle": "Xác nhận bằng Google",
+      "googleConfirmed": "Đã xác nhận bằng Google",
+      "wrongAccount": "Đây không phải tài khoản Google của bạn. Chọn lại đúng tài khoản.",
+      "googleFailed": "Không xác nhận được bằng Google. Thử lại.",
+      "submit": "Xóa vĩnh viễn",
+      "doneTitle": "Đã xóa tài khoản",
+      "doneBody": "Thư xác nhận đã gửi tới email của bạn.",
+      "pendingTitle": "Tài khoản đang được xóa",
+      "pendingBody": "Wordmet đang xóa nốt dữ liệu, có thể mất tới một giờ. Bạn không cần làm gì thêm.",
+      "toLogin": "Về trang đăng nhập"
+    },
+    "houseAd": {
+      "title": "Học nhiều hơn với Pro",
+      "close": "Đóng",
+      "lead": "Gói Pro có thêm phiên luyện mỗi ngày và thêm lượt AI mỗi tháng.",
+      "sessions": "{count, number} phiên luyện mỗi ngày",
+      "ai": "Nhiều câu luyện tập và lượt tra từ bằng AI hơn",
+      "from": "Từ <b>{price}</b> cho 1 tháng",
+      "cta": "Xem gói Pro",
+      "later": "Để sau",
+      "badgePro": "Pro",
+      "badgeAi": "Có AI"
+    },
+    "transactions": {
+      "title": "Lịch sử giao dịch",
+      "back": "Cài đặt",
+      "kinds": {
+        "purchase": "Mua",
+        "renewal": "Gia hạn",
+        "plan_change": "Đổi kỳ",
+        "refund": "Hoàn tiền",
+        "trial": "Dùng thử",
+        "grant": "Cấp gói"
+      },
+      "statuses": {
+        "succeeded": "Thành công",
+        "refunded": "Đã hoàn tiền",
+        "pending": "Đang chờ",
+        "reversed": "Đã hủy hoàn tiền"
+      },
+      "intervals": {
+        "month": "theo tháng",
+        "quarter": "theo quý",
+        "year": "theo năm"
+      },
+      "prepaidIntervals": {
+        "month": "1 tháng",
+        "quarter": "3 tháng",
+        "year": "12 tháng"
+      },
+      "used": "dùng {period}",
+      "rowLabel": "{line1}, {date}, {amount}, {line2}, {status}. Xem chi tiết",
+      "more": "Xem thêm",
+      "planUntil": "{plan} tới hết {date}",
+      "detail": {
+        "title": "Chi tiết giao dịch",
+        "at": "Thời điểm",
+        "period": "Kỳ được dùng",
+        "provider": "Cổng thanh toán",
+        "id": "Mã giao dịch",
+        "atValue": "{date}, {time}",
+        "help": "Có câu hỏi về giao dịch này? Gửi mã giao dịch cho đội Wordmet qua mục Liên hệ.",
+        "close": "Đóng",
+        "copy": "Chép mã giao dịch",
+        "copied": "Đã chép mã giao dịch.",
+        "dismiss": "Đóng chi tiết giao dịch"
+      },
+      "providers": {
+        "fake": "Giả (thử)",
+        "payos": "payOS"
+      },
+      "emptyTitle": "Chưa có giao dịch nào",
+      "emptyBody": "Khi bạn mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.",
+      "noPeriod": "không có kỳ",
+      "currentPlan": "Gói học hiện tại",
+      "seePlans": "Xem gói học",
+      "error": "Không tải được lịch sử giao dịch. Kiểm tra mạng rồi thử lại."
+    },
+    "account": {
+      "title": "Tài khoản",
+      "back": "Cài đặt",
+      "givenName": "Tên",
+      "familyName": "Họ (không bắt buộc)",
+      "birthDate": "Ngày sinh",
+      "verified": "Đã xác minh",
+      "save": "Lưu thay đổi",
+      "profile": "Hồ sơ",
+      "loginEmail": "Email đăng nhập",
+      "ageHint": "Wordmet dành cho người từ 13 tuổi.",
+      "planTitle": "Gói {plan}",
+      "planSessions": "{count, number} phiên luyện mỗi ngày",
+      "seePlan": "Xem gói học"
+    },
+    "today": {
+      "title": "Hôm nay",
+      "heroChipPriority": "Ôn tiếp · có thẻ ưu tiên",
+      "heroChip": "Ôn tiếp",
+      "heroLine": "nhóm có {total, number} từ",
+      "yourGroups": "Nhóm của bạn",
+      "seeAll": "Xem tất cả {count, number} nhóm",
+      "emptyTitle": "Chưa có nhóm nào",
+      "emptyBody": "Tạo nhóm đầu tiên để lưu từ bạn gặp và ôn theo lịch.",
+      "createFirst": "Tạo nhóm đầu tiên",
+      "backlogTitle": "{count, number} từ lâu chưa ôn",
+      "backlogLine": "Nhóm {name}, quá hạn hơn {days, number} ngày",
+      "see": "Xem",
+      "levelsTitle": "{count, number} từ theo bậc",
+      "levelsHint": "Đến hạn / tổng",
+      "levelHelp": "Khoảng ôn lại của {level}",
+      "allDone": "Đã xong thẻ hôm nay. Ngày mai ôn tiếp.",
+      "heroWaiting": "Thẻ chờ hôm nay",
+      "heroBar": "Thẻ chờ hôm nay theo loại",
+      "legendPriority": "{count, number} ưu tiên",
+      "legendDue": "{count, number} đến hạn",
+      "legendNew": "{count, number} mới",
+      "seeAllShort": "Xem tất cả",
+      "yourGroupsHint": "{count, number} nhóm khác còn thẻ chờ",
+      "noteDone": "Xong hôm nay: {names}",
+      "lastTitle": "Lần luyện gần nhất",
+      "lastCorrect": "Đúng",
+      "lastLine": "{date} · {count, number} câu",
+      "lastBar": "{correct, number} đúng, {wrong, number} sai",
+      "lastRetry": "Luyện lại từ sai",
+      "lastCalendar": "Mở lịch học",
+      "backlogLabel": "Từ lâu chưa ôn"
+    },
+    "calendar": {
+      "fab": {
+        "label": "Lịch học",
+        "streak": "{days, number} ngày liên tiếp"
+      },
+      "month": {
+        "label": "lịch học",
+        "streak": "{days, number} ngày liên tiếp",
+        "today": "Về hôm nay",
+        "prev": "Tháng trước",
+        "next": "Tháng sau",
+        "close": "Đóng lịch",
+        "totals": "Tổng tháng",
+        "studyDays": "Ngày có học",
+        "elapsed": "/{days, number}",
+        "learned": "Từ mới đã học",
+        "reviewed": "Lượt ôn",
+        "sessions": "Phiên luyện",
+        "weekdays": {
+          "mon": "T2",
+          "tue": "T3",
+          "wed": "T4",
+          "thu": "T5",
+          "fri": "T6",
+          "sat": "T7",
+          "sun": "CN"
+        },
+        "todayMark": "Hôm nay",
+        "cellLearned": "học {count, number} từ",
+        "cellReviewed": "ôn {count, number} lượt",
+        "cellSessions": "luyện {count, number} phiên",
+        "cellNone": "không học",
+        "cellFuture": "chưa tới",
+        "legend": {
+          "learn": "Học từ mới",
+          "review": "Ôn",
+          "practice": "Luyện tập",
+          "run": "Ngày liền nhau"
+        },
+        "keysPick": "chọn ngày ·",
+        "keysOpen": "xem ngày ·",
+        "keysClose": "đóng",
+        "loading": "Đang tải lịch",
+        "error": "Không tải được lịch. Kiểm tra mạng rồi thử lại."
+      },
+      "day": {
+        "back": "Lịch tháng {month, number}",
+        "prev": "Ngày trước",
+        "next": "Ngày sau",
+        "close": "Đóng",
+        "todaySuffix": "{weekday} · hôm nay",
+        "sumLearned": "Học {count, number} từ mới",
+        "sumReviewed": "ôn {count, number} lượt",
+        "sumPractice": "luyện {count, number} câu",
+        "filterLabel": "Lọc",
+        "all": "Tất cả",
+        "filterLearn": "Học",
+        "filterReview": "Ôn",
+        "learnTitle": "Học {count, number} từ mới",
+        "learnHint": "{count, number} nhóm",
+        "reviewTitle": "Ôn {count, number} lượt",
+        "reviewHint": "lật thẻ và câu ôn",
+        "known": "Đã biết, lên một bậc",
+        "again": "Cần ôn lại, về Bậc 1",
+        "more": "+{count, number} từ",
+        "lemmaGone": "Từ không còn trong từ điển",
+        "future": "Chưa tới ngày này.",
+        "none": "Ngày này không có lần học nào.",
+        "sectionNone": "Không học hay ôn từ nào trong ngày này.",
+        "loading": "Đang tải ngày",
+        "error": "Không tải được ngày này. Kiểm tra mạng rồi thử lại."
+      }
+    },
+    "groups": {
+      "title": "Nhóm của bạn",
+      "create": "Tạo nhóm",
+      "search": "Tìm trong {count, number} nhóm",
+      "noMatch": "Không có nhóm nào khớp.",
+      "words": "{count, number} từ",
+      "addWord": "Thêm từ",
+      "rename": "Đổi tên nhóm",
+      "studyAll": "Học tất cả {count, number} từ",
+      "delete": "Xóa nhóm",
+      "suggestTitle": "Tạo nhóm nhanh theo chủ đề",
+      "suggestAll": "Xem mọi chủ đề trong Tra từ",
+      "suggestCard": "{topic} · {level}",
+      "suggestCount": "{count, number} từ",
+      "createTitle": "Tạo nhóm",
+      "nameLabel": "Tên nhóm",
+      "createSubmit": "Tạo nhóm",
+      "renameTitle": "Đổi tên nhóm",
+      "renameSubmit": "Lưu tên mới",
+      "nameTaken": "Đã có nhóm tên này. Chọn tên khác.",
+      "limit": "Bạn đã có {max, number} nhóm, mức tối đa. Xóa bớt một nhóm để tạo nhóm mới.",
+      "conflict": "Nhóm vừa được đổi ở nơi khác. Xem lại rồi lưu.",
+      "deleteTitle": "Xóa nhóm “{name}”?",
+      "deleteBody": "<b>{count, number} từ chỉ có trong nhóm này</b> sẽ rời khỏi việc ôn và mất tiến độ.",
+      "deleteBodyNone": "Các từ trong nhóm vẫn nằm ở nhóm khác, tiến độ giữ nguyên.",
+      "deleteNote": "Từ bạn tự thêm vẫn còn trong Từ của tôi.",
+      "deleteSubmit": "Xóa nhóm và {count, number} từ",
+      "deleteSubmitNone": "Xóa nhóm",
+      "keep": "Giữ nhóm",
+      "created": "Đã tạo nhóm “{name}”.",
+      "renamed": "Đã đổi tên nhóm.",
+      "deleted": "Đã xóa nhóm “{name}”.",
+      "carousel": "Các nhóm của bạn",
+      "subtitle": "{due, number} thẻ chờ trong {groups, number} nhóm · phím trái, phải hoặc vuốt để đổi nhóm",
+      "subtitlePhone": "{due, number} thẻ chờ trong {groups, number} nhóm · vuốt để đổi nhóm",
+      "prev": "Nhóm trước",
+      "next": "Nhóm sau",
+      "hint": "Bấm để mở nhóm · ↓",
+      "hintPhone": "Chạm để mở nhóm",
+      "live": "{name}, {count, number} thẻ chờ",
+      "rhythm": "Nhịp ôn: Mới → Bậc 5",
+      "open": "Xem nhóm",
+      "pickerTitle": "Chọn nhóm (F)",
+      "capWaiting": "Còn thẻ chờ",
+      "capDone": "Xong hôm nay",
+      "capEmpty": "Chưa có từ",
+      "rowWaiting": "chờ",
+      "rowEmpty": "Trống",
+      "keysMove": "↑ ↓ chọn",
+      "keysPick": "↵ tới nhóm",
+      "keysClose": "Esc đóng"
+    },
+    "group": {
+      "recallCount": "Ôn {count, number} thẻ",
+      "learnNew": "Học {count, number} từ mới",
+      "addWord": "Thêm từ",
+      "back": "Nhóm của bạn",
+      "meta": "{count, number} từ · tạo ngày {date}",
+      "menu": "Tùy chọn nhóm",
+      "backlog": "{count, number} từ lâu chưa ôn",
+      "backlogSee": "Xem",
+      "allWords": "Toàn bộ {count, number} từ",
+      "filterLabel": "Lọc từ trong nhóm",
+      "filterAll": "Tất cả",
+      "filterPriority": "Ưu tiên",
+      "filterDue": "Đến hạn",
+      "filterNew": "Mới",
+      "priorityTag": "Ưu tiên",
+      "senseChanged": "Nghĩa đã đổi",
+      "dueToday": "Đến hạn hôm nay",
+      "dueOn": "Ôn lại {date}",
+      "newWord": "Từ mới",
+      "removeLabel": "Bỏ {word} khỏi nhóm",
+      "removeLastTitle": "Bỏ “{word}” khỏi nhóm?",
+      "removeLastBody": "Từ này chỉ có trong nhóm này. Bỏ đi thì từ rời khỏi việc ôn và mất tiến độ.",
+      "removeLastConfirm": "Bỏ khỏi nhóm",
+      "keep": "Giữ từ",
+      "removed": "Đã bỏ “{word}” khỏi nhóm.",
+      "notFound": "Không tìm thấy nhóm này.",
+      "toList": "Về Nhóm của bạn",
+      "emptyFilter": "Không có từ nào ở mục này.",
+      "loadMore": "Xem thêm từ · còn {count, number} từ",
+      "empty": "Nhóm chưa có từ nào.",
+      "emptyTitle": "Nhóm này chưa có từ nào",
+      "emptyBody": "Thêm từ bạn gặp khi đọc hay xem phim. Bạn cũng có thể chọn từ theo chủ đề trong Tra từ.",
+      "emptyLookup": "Chọn từ theo chủ đề",
+      "loadMoreUnknown": "Xem thêm từ",
+      "metaNoDate": "{count, number} từ",
+      "colWord": "Từ",
+      "colMeaning": "Nghĩa",
+      "colLevel": "Bậc",
+      "colState": "Trạng thái"
+    },
+    "backlog": {
+      "back": "Nhóm {name}",
+      "title": "Từ lâu chưa ôn",
+      "line": "{count, number} từ trong {name} đã quá hạn hơn {days, number} ngày.",
+      "relearnAll": "Học lại cả {count, number} từ",
+      "selected": "Đã chọn {count, number} từ",
+      "relearnSelected": "Học lại {count, number} từ",
+      "forget": "Bỏ khỏi việc học",
+      "colWord": "Từ",
+      "colMeaning": "Nghĩa",
+      "colOverdue": "Quá hạn",
+      "overdueDays": "{count, number} ngày",
+      "select": "Chọn {word}",
+      "showing": "đang có {shown, number}/{total, number} từ",
+      "more": "Xem thêm {count, number} từ",
+      "forgetTitle": "Bỏ {count, number} từ khỏi việc học?",
+      "forgetBody": "Các từ này rời mọi nhóm và mất lịch ôn. Lịch sử ôn vẫn được giữ.",
+      "forgetConfirm": "Bỏ {count, number} từ",
+      "keep": "Giữ các từ",
+      "relearned": "Đã đưa {count, number} từ về Mới.",
+      "forgotten": "Đã bỏ {count, number} từ khỏi việc học.",
+      "empty": "Nhóm này không có từ nào quá hạn lâu.",
+      "countCaption": "Từ quá hạn",
+      "explain": "Từ ở Bậc 1 trở lên mà quá hạn hơn {days, number} ngày sẽ rời phần cần ôn, để việc ôn mỗi ngày không dồn quá dài. <b>Học lại</b>: về Mới, tính như từ mới hôm nay. <b>Bỏ khỏi việc học</b>: rời mọi nhóm, không còn hẹn ôn. <b>Để đó</b>: không làm gì; Wordmet không bao giờ tự xóa từ.",
+      "selectAll": "Chọn tất cả {count, number} từ",
+      "list": "Danh sách từ quá hạn"
+    },
+    "topic": {
+      "title": "{topic} · {level}",
+      "intro": "{count, number} từ gợi ý. Chọn từ bạn muốn học hoặc thêm cả chủ đề.",
+      "selectAll": "Chọn tất cả {count, number} từ chưa học",
+      "selected": "đã chọn {count, number}",
+      "select": "Chọn {word}",
+      "learning": "đang học · {groups}",
+      "learningNoGroup": "đang học",
+      "addTo": "Thêm vào",
+      "newGroup": "Nhóm mới “{name}”",
+      "addAll": "Thêm cả {count, number} từ",
+      "addSelected": "Thêm {count, number} từ đã chọn",
+      "result": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "resultSkipped": "{already, number} từ đã có trong nhóm, {full, number} từ không vừa vì nhóm đã đầy, {missing, number} từ không còn.",
+      "notFound": "Không tìm thấy chủ đề này.",
+      "back": "Quay lại",
+      "none": "Chưa có từ nào cho chủ đề và trình độ này.",
+      "eyebrow": "Chủ đề · trình độ",
+      "countCaption": "Từ chưa học · {learning, number} đang học",
+      "more": "Xem thêm {count, number} từ"
+    },
+    "review": {
+      "close": "Đóng phiên ôn",
+      "left": "còn {count, number} thẻ",
+      "card": "Thẻ {n, number} trên {total, number}",
+      "back": "Mặt sau: {meaning}",
+      "priority": "Ưu tiên",
+      "backlog": "Lâu chưa ôn",
+      "hintWeb": "Bấm vào thẻ hoặc Space để lật",
+      "hintPhone": "Chạm vào thẻ để lật",
+      "flip": "Lật thẻ",
+      "forms": "Dạng chia",
+      "example": "Câu ví dụ",
+      "seen": "Câu bạn đã gặp",
+      "newWord": "Từ mới",
+      "stillLearning": "Cần ôn lại",
+      "know": "Đã biết",
+      "failed": "Không lưu được câu trả lời. Kiểm tra mạng rồi thử lại.",
+      "doneTitle": "Xong {count, number} thẻ",
+      "doneBody": "Thẻ cần ôn lại quay về Bậc 1 và nằm đầu nhóm.",
+      "home": "Về Hôm nay",
+      "emptyTitle": "Hôm nay nhóm này không còn thẻ nào",
+      "studyAll": "Học tất cả từ",
+      "stampReview": "về Bậc 1",
+      "stampKnow": "lên {level}",
+      "flipBack": "Xem mặt trước",
+      "nudge": "Lật thẻ để xem nghĩa trước.",
+      "dragHint": "Kéo thẻ",
+      "legend": "Phím",
+      "stop": "Dừng phiên",
+      "pileList": "{name} · {count, number} thẻ",
+      "ring": "{known, number}/{total, number} thẻ đã biết",
+      "ringCaption": "đã biết"
+    },
+    "lookup": {
+      "title": "Tra từ",
+      "level": "Trình độ: {value}",
+      "topic": "Chủ đề: {value}",
+      "pos": "Loại từ: {value}",
+      "all": "tất cả",
+      "mine": "Chỉ từ của tôi",
+      "clear": "Xóa lọc",
+      "mineTag": "Của tôi",
+      "emptyTitle": "Không tìm thấy từ này",
+      "emptyBody": "Thử bỏ bớt bộ lọc hoặc tự thêm từ này với nghĩa riêng.",
+      "addThis": "Thêm từ này",
+      "topicLabel": "Chủ đề",
+      "searchLabel": "Tìm từ, ví dụ: mitigate",
+      "summary": "{count, number} từ trình độ <lv>{level}</lv>, chủ đề <tp>{topic}</tp>, loại từ <ps>{pos}</ps>.",
+      "page": "trang {n, number}",
+      "pageFoot": "— {n, number} —",
+      "next": "Trang sau",
+      "prev": "Trang trước",
+      "card": "Thẻ của từ đang chọn",
+      "stacksTitle": "Chọn nhóm để thêm từ",
+      "addTo": "Thêm vào {group}",
+      "addHere": "+ thêm vào đây",
+      "hasIt": "✓ đã có",
+      "otherGroup": "Nhóm khác hoặc tạo nhóm mới",
+      "openWordArrow": "Mở trang từ"
+    },
+    "word": {
+      "back": "Tra từ",
+      "senses": "{count, number} nghĩa",
+      "forms": "Dạng chia",
+      "formOf": "Là dạng chia của {base}:",
+      "alsoFormOf": "Cũng là dạng chia của {base}:",
+      "addToGroup": "Thêm vào nhóm",
+      "addCardTitle": "Thêm vào nhóm khác",
+      "sentences": "{count, number} câu đã gặp",
+      "learningTitle": "Bạn đang học",
+      "level": "{group} · {level}",
+      "levelNew": "{group} · chưa ôn lần nào",
+      "addSentence": "Thêm câu đã gặp",
+      "sameTopic": "Cùng chủ đề: {topic}",
+      "notFoundTitle": "Không tìm thấy từ “{word}”",
+      "notFoundBody": "Từ này chưa có trong từ điển Wordmet. Bạn có thể tự thêm từ với nghĩa riêng.",
+      "addThis": "Thêm từ này",
+      "sentencesTitle": "Câu đã gặp · {word}",
+      "deleteSentence": "Xóa câu",
+      "sentenceDeleted": "Đã xóa câu.",
+      "noSentences": "Chưa có câu nào.",
+      "added": "Đã thêm “{word}” vào nhóm “{group}”.",
+      "alreadyIn": "“{word}” đã có trong nhóm “{group}”.",
+      "groupFull": "Nhóm này đã đầy. Chọn nhóm khác.",
+      "tabsLabel": "Các phần của trang từ",
+      "tabMeanings": "Nghĩa",
+      "tabSentences": "Câu đã gặp",
+      "tabForms": "Dạng chia",
+      "tabTopic": "Cùng chủ đề",
+      "levelBar": "Đang ở {level}",
+      "nextReview": "Ôn tiếp",
+      "seenTitle": "Câu bạn đã gặp",
+      "seenMeta": "nghĩa {n, number} · {meaning} · ghi ngày {date}",
+      "sameTopicLabel": "Cùng chủ đề",
+      "levelRange": "Trình độ {range}",
+      "seeTopic": "Xem chủ đề {topic}",
+      "mine": {
+        "label": "Từ của tôi",
+        "aiLabel": "AI gợi ý",
+        "aiSource": "Nguồn: AI gợi ý. Nghĩa này chưa ai duyệt, bạn nên kiểm lại.",
+        "edit": "Sửa từ",
+        "delete": "Xóa từ",
+        "editTitle": "Sửa từ",
+        "saveChanges": "Lưu thay đổi",
+        "saved": "Đã lưu thay đổi.",
+        "deleteTitle": "Xóa từ “{word}”?",
+        "deleteBody": "Từ này, các câu đã gặp của nó và việc học trong mọi nhóm sẽ bị xóa. Không hoàn tác được."
+      }
+    },
+    "addWord": {
+      "byTopic": "Thêm nhiều từ theo chủ đề",
+      "seeWords": "Xem từ",
+      "title": "Bạn vừa gặp từ nào?",
+      "word": "Từ",
+      "sentence": "Câu bạn gặp (không bắt buộc)",
+      "lookingUp": "Đang tra…",
+      "inflection": "{kind} của {base}",
+      "noMatch": "Wordmet chưa có từ “{word}”. Tự nhập nghĩa để lưu.",
+      "pickSense": "Chọn nghĩa",
+      "deck": "Lưu vào nhóm",
+      "chooseDeck": "Chọn nhóm",
+      "deckRequired": "Chọn một nhóm để lưu từ.",
+      "noDecks": "Bạn chưa có nhóm nào. Tạo nhóm đầu tiên để lưu từ này.",
+      "createFirst": "Tạo nhóm đầu tiên",
+      "manualButton": "Tự nhập nghĩa khác",
+      "saveShort": "Lưu",
+      "openGroup": "Xem nhóm",
+      "manualTitle": "Tự nhập nghĩa",
+      "manualSub": "Chỉ bạn thấy từ này.",
+      "recognized": "Wordmet nhận ra đây là {kind} của {base} và đã gắn sẵn.",
+      "meaning": "Nghĩa",
+      "meaningRequired": "Nhập nghĩa của từ.",
+      "wordRequired": "Nhập từ bạn vừa gặp.",
+      "saved": "Đã lưu từ “{word}” vào nhóm “{group}”.",
+      "alreadyIn": "Đã có trong nhóm",
+      "exists": "Bạn đã có từ “{word}” trong Từ của tôi.",
+      "openExisting": "Mở từ này",
+      "groupFull": "Nhóm “{group}” đã đầy. Chọn nhóm khác.",
+      "privateLimit": "Bạn đã có số từ riêng tối đa. Xóa bớt một từ để thêm từ mới.",
+      "sentenceLimit": "Nghĩa này đã đủ số câu tối đa. Xóa bớt một câu để thêm câu mới.",
+      "pickerTitle": "Lưu vào nhóm",
+      "search": "Tìm hoặc tạo nhóm…",
+      "createNew": "Tạo nhóm mới",
+      "createNamed": "Tạo nhóm “{name}”",
+      "recent": "Dùng gần đây",
+      "others": "Nhóm khác ({count, number})",
+      "all": "Tất cả nhóm ({count, number}), A–Z",
+      "results": "Kết quả ({count, number})",
+      "noneNamed": "Chưa có nhóm nào tên “{name}”.",
+      "createAndSave": "Tạo nhóm và lưu",
+      "words": "{count, number} từ",
+      "back": "Quay lại",
+      "quickTitle": "Thêm từ vừa gặp",
+      "quickBody": "Gõ từ, kể cả dạng đã chia như went (của go). Nếu có câu chứa từ, dán thêm vào.",
+      "quickSubmit": "Thêm",
+      "quickPlaceholder": "Ví dụ: mitigate…",
+      "kinds": {
+        "third_person": "dạng ngôi thứ ba",
+        "present_participle": "dạng -ing",
+        "past": "quá khứ",
+        "past_participle": "phân từ quá khứ",
+        "plural": "số nhiều",
+        "comparative": "so sánh hơn",
+        "superlative": "so sánh nhất"
+      },
+      "sentenceTitle": "Thêm câu đã gặp",
+      "sentenceSub": "{lead}: {meaning} · đã có {count, number} câu",
+      "sentenceSubNone": "{lead}: {meaning}",
+      "sentenceField": "Câu",
+      "sentenceSense": "Nghĩa",
+      "sentencePreview": "Mặt sau thẻ",
+      "sentenceSave": "Lưu câu",
+      "sentenceSaved": "Đã lưu câu.",
+      "sentenceRequired": "Nhập câu bạn đã gặp.",
+      "seeSentences": "Xem các câu đã gặp",
+      "bulkButton": "Thêm cả loạt vào nhóm",
+      "bulkTitle": "Thêm cả loạt vào nhóm",
+      "bulkBody": "{filters}. Từ chức năng được bỏ qua; từ đã có trong nhóm giữ nguyên.",
+      "bulkInto": "Vào nhóm",
+      "bulkNewDeck": "Nhóm mới: {name}",
+      "bulkSubmit": "Thêm cả loạt",
+      "bulkResult": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "bulkSkipped": "{already, number} từ đã có trong nhóm, {function, number} từ chức năng bỏ qua, {full, number} từ không vừa vì nhóm đã đầy.",
+      "pickDone": "Xong",
+      "pickerHint": "Chọn được nhiều nhóm.",
+      "selectedCount": "{count, plural, =0 {Chưa chọn nhóm nào} other {Đã chọn # nhóm}}",
+      "saveManual": "Lưu từ",
+      "saveToCount": "Lưu vào {count, number} nhóm",
+      "fullNotSaved": "{group} đã đầy. Chưa lưu từ.",
+      "fullUnknown": "Một nhóm đã đầy. Chưa lưu từ.",
+      "addAnother": "Thêm nhóm khác",
+      "ai": {
+        "button": "Tra bằng AI",
+        "manual": "Tự nhập nghĩa",
+        "left": "còn {count, number} lượt tra AI",
+        "sendSentence": "Gửi kèm câu đã gặp cho AI",
+        "looking": "Đang tra…",
+        "failed": "Không tra được bằng AI lúc này. Thử lại sau.",
+        "retry": "Thử lại",
+        "quota": "Hết lượt tra AI.",
+        "refillDate": "Lượt tra AI mới vào {date}.",
+        "refillTime": "Lượt tra AI mới có lúc {time}.",
+        "notThis": "Không phải nghĩa bạn cần?"
+      },
+      "result": {
+        "title": "Kết quả cho “{word}”",
+        "used": "Đã dùng 1 lượt tra AI · còn {remaining, number}",
+        "catalog": "Nghĩa có sẵn trong từ điển",
+        "choose": "Chọn",
+        "aiLabel": "AI gợi ý",
+        "definition": "Định nghĩa tiếng Anh (chỉ để tham khảo, không lưu): {text}",
+        "caution": "AI gợi ý có thể sai. Kiểm lại trước khi lưu.",
+        "dictionary": "Từ điển",
+        "preview": "Thẻ sẽ lưu · xem trước",
+        "yourSentence": "Câu bạn gặp",
+        "edit": "Sửa rồi lưu"
+      },
+      "edit": {
+        "title": "Sửa trước khi lưu",
+        "word": "Từ",
+        "pos": "Loại từ",
+        "meaning": "Nghĩa",
+        "level": "Trình độ",
+        "topic": "Chủ đề (không bắt buộc)",
+        "formOf": "Dạng chia của:",
+        "examples": "Câu ví dụ (tối đa 2)",
+        "example": "Câu ví dụ {n, number}",
+        "addExample": "+ Thêm câu ví dụ",
+        "exampleHint": "Tối đa 300 ký tự mỗi câu.",
+        "note": "Từ này mang nhãn AI gợi ý tới khi bạn sửa nghĩa, chủ đề hoặc câu ví dụ.",
+        "ipa": "Phiên âm",
+        "ipaHint": "Không bắt buộc."
+      },
+      "recognizedShort": "{kind} của {base}",
+      "lockedDeck": "Lưu vào nhóm: {name}",
+      "deckGone": "Nhóm này không còn."
+    },
+    "levels": {
+      "name": "{level, select, 0 {Mới} other {Bậc {level}}}",
+      "interval": "{days, plural, other {ôn lại sau # ngày}}",
+      "bar": "Số từ theo bậc"
+    },
+    "errors": {
+      "generic": "Có lỗi xảy ra. Thử lại sau.",
+      "code": "Mã: {code}",
+      "inProgress": "Lần bấm trước vẫn đang xử lý. Chờ một lát rồi thử lại.",
+      "account-locked": "Tài khoản đang bị khóa. Liên hệ đội Wordmet nếu bạn cần mở lại.",
+      "age-below-minimum": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
+      "ai-in-progress": "Đang tra…",
+      "ai-lookup-failed": "Không tra được bằng AI lúc này. Thử lại sau.",
+      "ai-quota-insufficient": "Không đủ lượt câu AI cho phiên này.",
+      "ai-unavailable": "AI đang không dùng được. Thử lại sau.",
+      "csrf-header-required": "Có lỗi xảy ra. Tải lại trang rồi thử lại.",
+      "email-already-verified": "Email này đã được xác minh.",
+      "email-taken": "Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu.",
+      "entitlement-required": "Dành cho gói Pro. Mở Gói học để mua.",
+      "forbidden": "Bạn không làm được thao tác này.",
+      "group-full": "Nhóm này đã đủ số từ tối đa.",
+      "group-limit-reached": "Bạn đã có đủ số nhóm tối đa. Xóa bớt một nhóm để tạo nhóm mới.",
+      "group-name-taken": "Đã có nhóm tên này. Chọn tên khác.",
+      "idempotency-key-abandoned": "Lần bấm trước bị dừng giữa chừng. Thử lại.",
+      "invalid-credentials": "Email hoặc mật khẩu không đúng. Thử lại.",
+      "invalid-current-password": "Mật khẩu hiện tại không đúng. Thử lại.",
+      "captcha-failed": "Không qua được bước xác minh. Thử lại.",
+      "captcha-unavailable": "Bước xác minh đang không dùng được. Thử lại sau ít phút.",
+      "cancel-in-store": "Gói này mua qua cửa hàng ứng dụng. Hủy gói trong phần quản lý gói của cửa hàng đó.",
+      "confirm-email-mismatch": "Email bạn gõ không khớp với email của tài khoản. Gõ lại.",
+      "google-email-unverified": "Google chưa xác minh email này nên chưa đăng nhập được. Xác minh email ở Google rồi thử lại.",
+      "google-busy": "Có quá nhiều lượt đăng nhập bằng Google từ mạng này. Đợi một phút rồi thử lại hoặc dùng email và mật khẩu.",
+      "google-failed": "Không đăng nhập được bằng Google. Thử lại.",
+      "google-unavailable": "Đăng nhập bằng Google đang không dùng được. Dùng email và mật khẩu.",
+      "provider-unavailable": "Cổng thanh toán chưa phản hồi. Thử lại sau ít phút.",
+      "reauth-required": "Xác nhận lại bằng tài khoản Google trước khi xóa.",
+      "renewal-not-cancelled": "Gói của bạn đang tự gia hạn. Hủy gói ở trang Gói học rồi thử lại.",
+      "staff-account": "Tài khoản nhân sự không tự xóa được. Nhờ admin xóa.",
+      "subscription-not-cancellable": "Gói này không còn tự gia hạn nên không cần hủy.",
+      "subscription-renewing": "Bạn còn gói đang tự gia hạn. Hủy gói trước khi xóa tài khoản.",
+      "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn. Nhập lại hoặc gửi mã mới.",
+      "invalid-token": "Bạn cần đăng nhập lại.",
+      "mail-unavailable": "Không gửi được email. Thử lại sau ít phút.",
+      "not-found": "Không tìm thấy.",
+      "password-change-required": "Bạn cần đổi mật khẩu trước khi tiếp tục.",
+      "payload-too-large": "Nội dung quá dài. Rút ngắn rồi gửi lại.",
+      "practice-no-words": "Chưa có từ nào để luyện.",
+      "profile-incomplete": "Chọn ngôn ngữ để tiếp tục.",
+      "quota-exhausted": "Bạn đã dùng hết lượt của tính năng này.",
+      "rate-limited": "Có quá nhiều thao tác trong thời gian ngắn. Thử lại sau {seconds, number} giây.",
+      "report-exists": "Bạn đã báo lỗi câu này.",
+      "report-not-available": "Câu này không báo lỗi được.",
+      "sentence-limit-reached": "Nghĩa này đã đủ số câu tối đa. Xóa bớt một câu để thêm câu mới.",
+      "session-closed": "Phiên này đã kết thúc.",
+      "session-not-waiting": "Câu này đã được trả lời.",
+      "share-consent-required": "Không gửi được báo lỗi. Thử lại sau.",
+      "unsupported-media-type": "Định dạng này không dùng được.",
+      "validation-failed": "Thông tin chưa hợp lệ. Xem lại các ô được đánh dấu.",
+      "version-conflict": "Dữ liệu vừa được đổi ở nơi khác. Xem lại rồi lưu."
+    },
+    "offline": {
+      "message": "Không kết nối được. Kiểm tra mạng rồi thử lại."
+    },
+    "practice": {
+      "title": "Luyện tập",
+      "types": {
+        "mcq_definition": "Trắc nghiệm",
+        "true_false_definition": "Đúng/sai",
+        "type_word": "Gõ từ",
+        "cloze": "Điền từ vào câu",
+        "meaning_in_sentence": "Chọn nghĩa trong câu",
+        "mcq_sentence": "Trắc nghiệm theo câu"
+      },
+      "hero": {
+        "chip": "Luyện nhanh · từ cần ôn hôm nay",
+        "title": "Hôm nay",
+        "empty": "Hôm nay không còn từ nào cần ôn. Chọn một nguồn bên dưới.",
+        "start": "Bắt đầu {count, number} câu",
+        "customize": "Tùy chỉnh",
+        "artPrompt": "Ví dụ một câu · chọn từ đúng nghĩa",
+        "artMeaning": "triển khai",
+        "words": "<b>{words, number}</b> từ trong {groups, number} nhóm",
+        "body": "{count, number} câu, trộn ba kiểu: {types}.",
+        "artRight": "Đúng"
+      },
+      "sources": {
+        "title": "Luyện theo nguồn khác",
+        "customize": "Tùy chỉnh: {name}",
+        "customizeButton": "Tùy chỉnh",
+        "reopens": "Mở lại lúc {time}",
+        "group": {
+          "name": "Theo nhóm",
+          "body": "Một nhóm, lọc theo bậc hoặc từ ưu tiên.",
+          "chip": "{name} · {count, number}",
+          "empty": "Chưa có nhóm nào.",
+          "more": "+{count, number} nhóm"
+        },
+        "weak": {
+          "name": "Từ hay sai",
+          "body": "Sai 2 lần trong 5 câu gần nhất. Xếp theo bậc thấp trước.",
+          "chip": "{lemma} · sai {wrong}/{counted}",
+          "more": "+{count, number} từ",
+          "start": "Luyện {count, number} từ",
+          "empty": "Chưa có từ nào hay sai."
+        },
+        "priority": {
+          "name": "Đang ưu tiên",
+          "body": "Từ bạn đã bấm Cần ôn lại, bấm lâu nhất trước.",
+          "chip": "{count, number} từ trong {groups, number} nhóm",
+          "start": "Luyện {count, number} từ",
+          "empty": "Chưa có từ nào đang ưu tiên."
+        },
+        "all": {
+          "name": "Luyện tất cả",
+          "body": "Mọi từ đang học, từ lâu chưa luyện trước.",
+          "chip": "{words, number} từ trong {groups, number} nhóm",
+          "start": "Luyện {count, number} câu",
+          "empty": "Chưa có từ nào trong nhóm."
+        }
+      },
+      "noWords": {
+        "group-empty": "Nhóm này không có từ nào khớp lựa chọn.",
+        "source-empty": "Chưa có từ nào để luyện ở nguồn này.",
+        "no-word-fits-types": "Không từ nào làm được kiểu câu đã chọn. Chọn thêm kiểu câu khác."
+      },
+      "usage": {
+        "title": "Phiên luyện hôm nay",
+        "plan": {
+          "free": "Gói Miễn phí",
+          "trial": "Gói Dùng thử",
+          "pro": "Gói Pro"
+        },
+        "used": "đã dùng {used, number}/{limit, number}",
+        "note": "Một phiên chỉ tính khi bạn trả lời câu đầu tiên. Mở lại lúc {time}.",
+        "out": "Hết phiên luyện hôm nay. Mở lại lúc {time}, còn {wait}.",
+        "hoursMinutes": "{hours} giờ {minutes} phút",
+        "minutes": "{minutes} phút",
+        "outShort": "Hết phiên luyện hôm nay. Mở lại lúc {time}."
+      },
+      "current": {
+        "title": "Phiên đang dở",
+        "body": "{source}, đã làm {done, number}/{total, number} câu. Bắt đầu phiên mới sẽ đóng phiên này.",
+        "bodyOut": "{source}, đã làm {done, number}/{total, number} câu. Phiên này đã tính vào hôm nay nên bạn vẫn làm tiếp được.",
+        "resume": "Làm tiếp câu {n, number}",
+        "resumeWaiting": "Làm tiếp",
+        "source": {
+          "today": "Từ cần ôn hôm nay",
+          "group": "Nhóm {name}",
+          "groupUnknown": "Một nhóm",
+          "weak": "Từ hay sai",
+          "weakGroup": "Từ hay sai của nhóm {name}",
+          "priority": "Từ đang ưu tiên",
+          "all": "Mọi từ đang học"
+        }
+      },
+      "resumeDialog": {
+        "title": "Bạn có phiên đang dở {done, number}/{total, number}",
+        "body": "{source}, đã làm {done, number}/{total, number} câu. Mở phiên mới sẽ đóng phiên này.",
+        "resume": "Làm tiếp",
+        "startNew": "Mở phiên mới"
+      },
+      "out": {
+        "chip": "Hết phiên luyện hôm nay",
+        "title": "Luyện tiếp vào ngày mai",
+        "body": "{plan} có {limit, number} phiên luyện mỗi ngày, mở lại lúc {time}. Trong lúc chờ, ôn thẻ không giới hạn.",
+        "review": "Ôn thẻ"
+      },
+      "shortcuts": {
+        "title": "Phím tắt trong phiên",
+        "choose": "Chọn đáp án",
+        "check": "Kiểm tra, rồi nút đậm",
+        "hint": "Xem gợi ý",
+        "stop": "Dừng phiên, xem tổng kết"
+      },
+      "customize": {
+        "title": "Tùy chỉnh phiên",
+        "group": "Nhóm",
+        "allGroups": "Tất cả nhóm · {count, number}",
+        "filterDue": "Cần ôn",
+        "filterPriority": "Ưu tiên",
+        "levelAll": "Mọi bậc",
+        "typesNone": "Chọn ít nhất một kiểu câu.",
+        "prompt": "Kiểu đề",
+        "promptMeaning": "Theo nghĩa",
+        "promptSentence": "Theo câu",
+        "promptMixed": "Trộn",
+        "count": "Số câu",
+        "order": "Thứ tự",
+        "sorts": {
+          "level_asc": "Bậc thấp",
+          "overdue_first": "Quá hạn lâu nhất",
+          "new_first": "Từ mới",
+          "least_practiced": "Lâu chưa luyện",
+          "most_wrong": "Sai nhiều nhất",
+          "queue": "Ưu tiên, đến hạn, rồi từ mới",
+          "priority_oldest": "Bấm Cần ôn lại lâu nhất trước",
+          "random": "Ngẫu nhiên"
+        },
+        "start": "Bắt đầu {count, number} câu",
+        "sessionsLeft": "Dùng 1 trong {remaining, number} phiên còn lại hôm nay.",
+        "ownToggle": "Điền từ vào câu đã gặp",
+        "quotaTitle": "Không đủ lượt câu AI",
+        "quotaBody": "Phiên này cần {needed, number} lượt câu AI, bạn còn {remaining, number}.",
+        "quotaRefillDate": "Lượt câu AI mới vào {date}.",
+        "quotaRefillTime": "Lượt câu AI mới có lúc {time}.",
+        "aiUnavailable": "Kiểu câu AI đang không dùng được. Bỏ kiểu câu AI để bắt đầu hoặc thử lại sau.",
+        "dropAi": "Bỏ kiểu câu có AI",
+        "words": "Từ",
+        "wordCount": "{count, number} từ",
+        "groupRow": "{name} · {count, number} từ",
+        "filterLabel": "Lấy từ nào",
+        "levelMenu": "Chỉ một bậc",
+        "levelOption": "{level} · {count, number}",
+        "questions": "Câu hỏi",
+        "mcPick": "Kiểu trắc nghiệm theo câu",
+        "mcMeaning": "Chọn nghĩa",
+        "mcWord": "Chọn từ",
+        "mcMixed": "Trộn",
+        "aiTitle": "Câu AI viết",
+        "aiMax": "Tối đa {max, number} câu AI · còn {left, number} lượt",
+        "aiMaxLeft": "Tối đa {max, number} câu AI, vì bạn còn {left, number} lượt",
+        "aiNone": "Phiên {count, number} câu không có câu AI.",
+        "aiOut": "Hết lượt câu AI tháng này.",
+        "seePro": "Xem gói Pro",
+        "mixLine": "Dùng câu đã gặp cho những từ có sẵn câu; từ còn lại do AI viết.",
+        "placement": "Xếp câu AI",
+        "placementEven": "Rải đều",
+        "placementRandom": "Ngẫu nhiên",
+        "needAi": "Chọn ít nhất một kiểu câu AI.",
+        "needRule": "Chọn ít nhất một kiểu câu không cần AI cho {count, number} câu còn lại.",
+        "aiSummary": "Trong đó {count, number} câu AI, {placement}.",
+        "aiSummaryEven": "rải đều",
+        "aiSummaryRandom": "xếp ngẫu nhiên",
+        "filterAllWords": "Mọi từ",
+        "countMaxScope": "tối đa {max, number}",
+        "ownHelpLabel": "Điền từ vào câu đã gặp là gì?",
+        "ownHelp": "Chỉ hỏi những từ có câu đã gặp. Không tốn lượt câu AI."
+      },
+      "session": {
+        "close": "Dừng phiên, xem tổng kết",
+        "header": "Luyện tập · {source}",
+        "aiChip": "Câu AI",
+        "translation": "Bản dịch",
+        "translationAi": "AI dịch",
+        "ai": {
+          "preparingTitle": "Đang tạo câu…",
+          "preparingBody": "Thường mất vài giây.",
+          "errorTitle": "Không tạo được câu hỏi AI",
+          "quotaTitle": "Hết lượt câu AI",
+          "refillDate": "Lượt câu AI mới vào {date}.",
+          "refillTime": "Lượt câu AI mới có lúc {time}.",
+          "planTitle": "Gói của bạn chưa có câu AI",
+          "planBody": "Gói của bạn đã hết hạn nên các câu AI còn lại không tạo được.",
+          "stayOpen": "Nếu dừng, phiên vẫn mở và bạn làm tiếp sau được.",
+          "retry": "Thử lại",
+          "later": "Để sau",
+          "fallback": "Câu này chuyển sang kiểu câu thường.",
+          "fallbackQuota": "Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác.",
+          "notRecognized": "AI chưa nhận ra từ “{lemma}” bạn tự thêm, nên câu này dùng kiểu câu khác.",
+          "notRecognizedStop": "AI chưa nhận ra từ “{lemma}” bạn tự thêm.",
+          "notRecognizedAny": "AI chưa nhận ra một từ bạn tự thêm, nên câu này dùng kiểu câu khác.",
+          "seeWord": "Xem lại từ trong Từ của tôi",
+          "dismiss": "Đóng thông báo"
+        },
+        "progress": "câu {n, number} / {total, number}",
+        "progressDone": "xong {total, number} / {total, number}",
+        "kind": {
+          "mcq": "Trắc nghiệm",
+          "true_false": "Đúng/sai",
+          "type_meaning": "Gõ từ · theo nghĩa",
+          "type_sentence": "Gõ từ · theo câu",
+          "other": "Câu",
+          "cloze": "Điền từ vào câu",
+          "meaning_in_sentence": "Chọn nghĩa trong câu",
+          "mcq_sentence": "Trắc nghiệm theo câu"
+        },
+        "true": "Đúng",
+        "false": "Sai",
+        "rightOption": "Đáp án đúng",
+        "chosen": "Bạn chọn",
+        "chosenRight": "Bạn chọn · đúng",
+        "answerLabel": "Câu trả lời",
+        "blankLabel": "Từ còn thiếu",
+        "answerPlaceholder": "Gõ từ tiếng Anh",
+        "check": "Kiểm tra",
+        "attempt": "Lần {n, number}",
+        "tryAgainBody": "Kiểm tra chính tả rồi gõ lại.",
+        "alternativeLabel": "Đáp án thay thế",
+        "alternativeTyped": "Từ bạn gõ",
+        "alternativeAsked": "Từ của câu này",
+        "reviewWord": "Cần ôn lại: {lemma}",
+        "knowWord": "Đã biết: {lemma}",
+        "retry": "Làm lại",
+        "reveal": "Xem đáp án",
+        "right": "Đúng",
+        "wrong": "Chưa đúng",
+        "revealLine": "{lemma} · {meaning}",
+        "stillLearning": "Cần ôn lại",
+        "know": "Đã biết",
+        "next": "Câu tiếp",
+        "noteWrong": "Nhấn Enter để đưa {lemma} lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.",
+        "noteKnowEnter": "Nhấn Enter là Đã biết: {lemma} lên một bậc. Chưa chắc thì bấm Cần ôn lại.",
+        "noteHint": "Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.",
+        "phoneHint": "Chạm vào đáp án để chấm ngay.",
+        "failed": "Không lưu được câu trả lời. Kiểm tra mạng rồi thử lại.",
+        "closed": "Phiên này đã kết thúc.",
+        "none": "Không có phiên luyện nào đang mở.",
+        "back": "Về Luyện tập",
+        "hint": {
+          "progress": "Gợi ý {opened, number}/{total, number}",
+          "button": "Gợi ý",
+          "open": "Mở gợi ý {n, number}",
+          "locked": "Gợi ý {n, number}",
+          "letters": "{first}… · {length} chữ",
+          "kinds": {
+            "definition": "Định nghĩa",
+            "example": "Câu ví dụ",
+            "meaning": "Nghĩa tiếng Việt",
+            "first_letter": "Chữ cái đầu",
+            "letters": "Chữ cái đầu và số chữ"
+          }
+        },
+        "report": {
+          "button": "Báo lỗi",
+          "sent": "Đã báo lỗi",
+          "title": "Báo lỗi câu này",
+          "question": "Lỗi gì?",
+          "chooseReason": "Chọn một lý do.",
+          "note": "Ghi chú",
+          "optional": "không bắt buộc · {count, number}/{max, number}",
+          "required": "bắt buộc · {count, number}/{max, number}",
+          "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
+          "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
+          "send": "Gửi báo lỗi",
+          "done": "Đã gửi báo lỗi. Xem kết quả ở Cài đặt, mục Báo lỗi của tôi.",
+          "infoAi": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai. Nếu đúng là AI viết sai câu, bạn được trả lại 1 lượt câu AI.",
+          "privateWord": "Đội Wordmet sẽ thấy từ “{lemma}” bạn tự thêm để kiểm tra.",
+          "privateWordUnknown": "Đội Wordmet sẽ thấy từ bạn tự thêm trong câu này để kiểm tra."
+        },
+        "round": {
+          "chip": "Hết vòng {round}",
+          "title": "Bạn đã làm hết {words, number} từ",
+          "body": "Phiên đặt {target, number} câu, nhưng chỉ có {words, number} từ. Luyện lại thêm {left, number} câu với chính các từ này? Wordmet xáo thứ tự và đổi kiểu câu khi được.",
+          "correct": "{count, number} đúng",
+          "wrong": "{count, number} sai",
+          "go": "Luyện lại thêm {left, number} câu",
+          "stop": "Kết thúc, xem tổng kết",
+          "note": "Câu hỏi này chỉ hiện một lần trong phiên. Luyện thêm vẫn tính trong phiên này, không tốn thêm phiên."
+        },
+        "summary": {
+          "title": "Xong {count, number} câu",
+          "line": "{source}, {types}. Hôm nay còn {remaining, number}/{limit, number} phiên luyện.",
+          "lineNoPool": "{source}, {types}.",
+          "alternatives": "Trong đó {count, number} đáp án thay thế",
+          "mixed": "trộn {count, number} kiểu câu",
+          "listTitle": "Cần ôn lại · {count, number} từ",
+          "added": "Đã đưa vào ưu tiên",
+          "review": "Cần ôn lại",
+          "reviewAll": "Đưa {count, number} từ còn lại vào ưu tiên",
+          "home": "Về Luyện tập",
+          "again": "Luyện thêm một phiên",
+          "ring": "{correct, number}/{total, number} câu đúng",
+          "ringCaption": "câu đúng"
+        },
+        "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên.",
+        "countRight": "{count, number} câu đúng",
+        "countWrong": "{count, number} câu sai",
+        "levelMove": "Từ {from} sang {to}",
+        "noteKnowTap": "Bấm Đã biết thì {lemma} lên một bậc.",
+        "noteWrongTap": "Cần ôn lại: {lemma} lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.",
+        "legend": {
+          "label": "Phím",
+          "choose": "Chọn đáp án",
+          "check": "Kiểm tra",
+          "hint": "Gợi ý",
+          "stop": "Dừng phiên",
+          "know": "Đã biết",
+          "review": "Cần ôn lại",
+          "next": "Câu tiếp",
+          "retry": "Làm lại"
+        }
+      },
+      "weak": {
+        "title": "Từ hay sai",
+        "back": "Luyện tập",
+        "group": "Nhóm",
+        "all": "Tất cả nhóm · {count, number}",
+        "deckOption": "{name} · {count, number}",
+        "titleAll": "{count, number} từ hay sai",
+        "titleGroup": "{count, number} từ trong nhóm {name}",
+        "cols": {
+          "word": "Từ",
+          "meaning": "Nghĩa",
+          "recent": "5 câu gần nhất",
+          "level": "Bậc",
+          "last": "Sai gần nhất"
+        },
+        "today": "{time} hôm nay",
+        "more": "Xem thêm",
+        "emptyTitle": "Chưa có từ nào hay sai",
+        "emptyBody": "Từ bạn sai 2 lần trong 5 câu gần nhất sẽ hiện ở đây.",
+        "cardChip": "Luyện từ hay sai",
+        "cardCount": "{count, number} từ",
+        "cardBody": "Bậc thấp trước, trộn ba kiểu câu. Đúng 4 lần liền là từ rời danh sách.",
+        "start": "Luyện {count, number} từ",
+        "startGroup": "Luyện {count, number} từ của nhóm {name}",
+        "customize": "Tùy chỉnh",
+        "rulesTitle": "Từ vào và rời danh sách thế nào?",
+        "rules": {
+          "in": "Vào: sai 2 lần trong 5 câu gần nhất, ở mọi kiểu câu.",
+          "skip": "Không tính: câu đúng nhờ gợi ý và câu bạn đã báo lỗi mà đội Wordmet đang xem, đã sửa hoặc đã xác nhận lỗi.",
+          "out": "Rời: khi 5 câu gần nhất còn dưới 2 câu sai."
+        },
+        "reopens": "Hết phiên luyện hôm nay. Mở lại lúc {time}.",
+        "right": "{count, number} câu đúng",
+        "wrong": "{count, number} câu sai"
+      },
+      "reports": {
+        "status": {
+          "open": "Đang xem",
+          "fixed": "Đã sửa",
+          "no_error": "Không có lỗi",
+          "confirmed": "Đã xác nhận lỗi"
+        },
+        "refunded": "Đã trả lại 1 lượt câu AI",
+        "refunding": "Đang trả lại 1 lượt câu AI",
+        "notRefundable": "Lượt câu AI này không trả lại được",
+        "emptyTitle": "Bạn chưa báo lỗi câu nào",
+        "emptyBody": "Gặp câu sai khi luyện tập, bấm Báo lỗi ngay trên câu đó. Kết quả hiện ở đây.",
+        "toPractice": "Về Luyện tập",
+        "unknownWord": "—",
+        "more": "Xem thêm",
+        "title": "Báo lỗi của tôi",
+        "back": "Cài đặt",
+        "aiQuestion": "câu AI",
+        "foot": "ngày theo múi giờ của bạn · câu do AI viết mà đúng là lỗi thì được trả lại 1 lượt câu AI",
+        "loading": "Đang tải báo lỗi",
+        "error": "Không tải được danh sách báo lỗi. Kiểm tra mạng rồi thử lại."
+      }
+    },
+    "plans": {
+      "subscriptions": {
+        "title": "Gói đang đăng ký",
+        "renewsOn": "Gia hạn ngày {date}",
+        "renews": "Gói đang tự gia hạn",
+        "endsOn": "Gói kết thúc ngày {date}",
+        "ends": "Gói đã hủy gia hạn",
+        "cancel": "Hủy gói",
+        "dialogTitle": "Hủy gói?",
+        "dialogBody": "Gói vẫn dùng tới hết {date}, sau đó không gia hạn. Không hoàn tiền cho thời gian còn lại.",
+        "dialogBodyNoDate": "Gói vẫn dùng tới hết kỳ đã trả tiền, sau đó không gia hạn. Không hoàn tiền cho thời gian còn lại.",
+        "keep": "Giữ gói",
+        "confirm": "Hủy gia hạn",
+        "requested": "Đã gửi yêu cầu hủy gia hạn"
+      },
+      "order": {
+        "checking": "Đang kiểm tra đơn hàng…",
+        "paidTitle": "Thanh toán thành công",
+        "paid": "Gói Pro có hiệu lực đến hết <b>{date}</b>.",
+        "paidNoDate": "Gói Pro đã được kích hoạt.",
+        "rowPlan": "Gói",
+        "planValue": "Pro, {period}",
+        "rowAmount": "Số tiền",
+        "rowCode": "Mã đơn hàng",
+        "start": "Bắt đầu học",
+        "seePlan": "Xem gói",
+        "pendingTitle": "Đang chờ xác nhận thanh toán",
+        "pending": "Gói Pro sẽ tự kích hoạt khi nhận được tiền. Bạn có thể đóng trang này.",
+        "needsReviewTitle": "Giao dịch đang được kiểm tra",
+        "needsReview": "Gói Pro sẽ được kích hoạt sau khi kiểm tra xong.",
+        "contact": "Hỗ trợ: <mail>{email}</mail>",
+        "ended": "Đơn hàng đã hủy hoặc hết hạn",
+        "newOrder": "Bạn có thể tạo đơn mới tại trang Gói học.",
+        "toPlans": "Đến trang Gói học",
+        "notFound": "Không tìm thấy đơn hàng"
+      },
+      "title": "Học đều mỗi ngày, lên Pro khi cần",
+      "lead": "Trả một lần cho mỗi kỳ, không tự gia hạn. Hết kỳ, bạn về gói Miễn phí.",
+      "titlePro": "Bạn đang dùng gói Pro",
+      "titleTrial": "Bạn đang dùng thử gói Pro",
+      "trialUntil": "Dùng thử tới hết {date}.",
+      "period": "Kỳ hạn",
+      "periods": {
+        "1": "1 tháng",
+        "3": "3 tháng",
+        "12": "12 tháng"
+      },
+      "yours": "Gói hiện tại",
+      "free": "Miễn phí",
+      "pro": "Pro",
+      "usingThis": "Bạn đang dùng gói này",
+      "freePriceNote": "không thu tiền",
+      "proBadge": "Có AI",
+      "perMonth": "mỗi tháng",
+      "perMonthApprox": "≈ {price} mỗi tháng",
+      "saving": "−{percent, number}%",
+      "savingBest": "−{percent, number}% · tiết kiệm nhất",
+      "oneTime": "Trả một lần, dùng {period}, không tự gia hạn.",
+      "startsOn": "Kỳ mới bắt đầu từ {date}, khi kỳ hiện tại kết thúc.",
+      "noRefund": "Không hoàn tiền tự động; cần hỗ trợ, liên hệ <mail>{email}</mail>.",
+      "termsLink": "Điều khoản sử dụng",
+      "buy": "Mua gói Pro {period}",
+      "upgrade": "Nâng cấp lên {period}",
+      "currentPeriod": "Đang dùng kỳ này",
+      "priceChanged": "Giá vừa thay đổi. Xem lại trước khi mua.",
+      "buyUnavailable": "Không tạo được đơn hàng. Thử lại sau ít phút.",
+      "nextPeriod": "Kỳ tiếp theo: {from} – {to}",
+      "thenPeriod": "Sau đó: {from} – {to}",
+      "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",
+      "until": "Tới hết {date}",
+      "freeList": {
+        "review": "Ôn thẻ, lịch ôn, nhắc học qua email",
+        "lookup": "Tra từ, thêm nhanh, tối đa {groups, number} nhóm",
+        "sessions": "{count, number} phiên luyện mỗi ngày",
+        "ai": "{practice, number} câu AI và {lookup, number} lượt tra AI mỗi tháng",
+        "aiOff": "Câu AI và tra bằng AI: cần gói Pro"
+      },
+      "proList": {
+        "aiWrite": "AI viết câu luyện cho từng từ bạn học",
+        "aiLookup": "Tra từ bằng AI khi từ điển chưa có",
+        "ai": "{practice, number} câu AI và {lookup, number} lượt tra AI mỗi tháng",
+        "sessions": "{count, number} phiên luyện mỗi ngày",
+        "allFree": "Mọi quyền lợi của gói Miễn phí"
+      },
+      "compare": "So sánh chi tiết các gói",
+      "compareTable": {
+        "feature": "Tính năng",
+        "review": "Ôn thẻ và lịch ôn",
+        "reminders": "Nhắc học qua email",
+        "groups": "Số nhóm",
+        "sessions": "Phiên luyện mỗi ngày",
+        "ai": "Câu AI mới mỗi tháng",
+        "lookup": "Lượt tra AI mỗi tháng",
+        "yes": "Có"
+      }
+    },
+    "deck": {
+      "learn": "Học",
+      "recall": "Ôn",
+      "recallExtra": "Ôn thêm"
+    },
+    "recall": {
+      "header": "Ôn · {group}",
+      "headerNoName": "Ôn",
+      "doneTitle": "Xong {count, number} từ",
+      "leveledUp": "Đúng, lên bậc",
+      "correctKept": "Đúng, giữ bậc",
+      "wrongKept": "Sai, giữ bậc",
+      "needsReview": "Cần ôn lại",
+      "newLeftTitle": "Còn {count, number} từ mới trong nhóm này",
+      "newLeftBody": "Học bây giờ thì ngày mai chúng có trong phiên ôn.",
+      "again": "Ôn tiếp",
+      "home": "Về Hôm nay",
+      "back": "Về nhóm",
+      "nothingTitle": "Nhóm này chưa có từ nào đã học",
+      "nothingBody": "Học vài từ mới trước, rồi quay lại Ôn.",
+      "noteLeveled": "{lemma} lên {level}.",
+      "noteKept": "{lemma} giữ {level}.",
+      "ring": "{correct, number}/{total, number} từ đúng",
+      "ringCaption": "từ đúng",
+      "compare": {
+        "label": "So chữ: bạn gõ {typed}, đáp án {answer}",
+        "typed": "bạn gõ",
+        "answer": "đáp án"
+      }
+    },
+    "streak": {
+      "days": "{days, number} ngày liên tiếp"
+    },
+    "stack": {
+      "words": "{count, number} từ",
+      "empty": "nhóm trống",
+      "waiting": "thẻ chờ",
+      "next": "Tiếp theo",
+      "done": "✓ Xong hôm nay",
+      "last": "Ôn gần nhất",
+      "noWords": "Chưa có từ",
+      "addHint": "Thêm từ để bắt đầu"
+    }
   }
 }

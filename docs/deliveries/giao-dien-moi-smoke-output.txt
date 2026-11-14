@@ -1,0 +1,296 @@
+# pnpm smoke:giao-dien-moi — 10/11/2026, API + worker built from feat/giao-dien-moi-api (5f9ca6fc), fresh DB english_learning_smoke_gm,
+# AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke; secrets generated for the run, no .env.
+
+$ node scripts/smoke-giao-dien-moi.mjs
+
+[1] 02:02:26Z Wait for the API
+    OK — reachable at http://localhost:3000; database english_learning_smoke_gm
+
+[2] 02:02:26Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 02:02:26Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-1dd46ded@example.com; learner smokegm-l-1dd46ded@example.com; group e9d84ce3-c306-4bba-9e76-bd1d3095b14e with zgzooojm, zgcfqqaq, zgbfckkk
+
+[4] 02:02:45Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgbfckkk; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 02:02:45Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 02:02:45Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 353b6955-b350-4346-b7c6-69609068ba55: one right, one wrong (zgcfqqaq), finished
+
+[7] 02:02:46Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-10","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 02:02:46Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgzooojm","known",1],["learned","zgcfqqaq","known",1],["learned","zgzooojm","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 02:02:46Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"353b6955-b350-4346-b7c6-69609068ba55","group_id":"e9d84ce3-c306-4bba-9e76-bd1d3095b14e","local_date":"2026-11-10","last_answer_at":"2026-11-10T02:02:45.944Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgcfqqaq"]}
+
+[10] 02:02:46Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgzooojm","at":"2026-11-10T02:02:45.340Z"}; next_lemma zgbfckkk (queue zgbfckkk)
+
+[11] 02:02:46Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 02:02:47Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+ALL OK — 12 steps in 21s
+
+# pnpm smoke:dot-cai-thien-c — same build, fresh DB english_learning_smoke_c, TTS_FAKE_ENABLED=true, AUDIO_STORAGE_FAKE_ENABLED=true,
+# JOB_QUEUE_PREFIX=wordmet-c-smoke (last lines)
+
+    OK — adding words left studied = false; the first flashcard returned { days: 1 } and flipped the day; the second returned null (days studied now 3)
+
+[12] 02:05:12Z Phiên âm: quick-publish two readings of zqleadivsa → four new recordings, made by the worker
+    OK — 10 recording(s) after the first publish; 4 new ones (2 UK + 2 US) became ready within 30 s
+
+[13] 02:05:14Z The word page gives two different UK files; each URL plays as audio/mpeg
+    OK — UK liːd / lɛd have different files; all four URLs answer 200 audio/mpeg with an mp3 body
+
+[14] 02:05:14Z A CSV with only the transcription columns keeps the meaning and the examples
+    OK — revision 2 → 3 (draft): ipa_uk ˈlɛd; gloss_vi, definition_en and examples unchanged
+
+ALL OK — 14 steps in 30s
+
+# pnpm test:scale, run alone (a first run in parallel with pnpm test measured 582 ms)
+[Review Focus 5] GET /v1/groups, 100 groups x 2000 items: 362 / 400 / 399 ms (median 399 ms, threshold 500 ms)
+[Review Focus 2 breakdown, run 1] total 2256 ms; practiceItems(all) 1265 ms (200000 rows); statsFor 2 ms; sortWords ~33 ms (timed apart); availability 1 batch(es) 882 ms = groupMates 101 ms + candidates 351 ms + filter; rest (sort, transaction, HTTP) 106 ms
+[Review Focus 2 breakdown, run 2] total 2105 ms; practiceItems(all) 1233 ms (200000 rows); statsFor 2 ms; sortWords ~28 ms (timed apart); availability 1 batch(es) 775 ms = groupMates 107 ms + candidates 277 ms + filter; rest (sort, transaction, HTTP) 95 ms
+[Review Focus 2 breakdown, run 3] total 2214 ms; practiceItems(all) 1291 ms (200000 rows); statsFor 2 ms; sortWords ~28 ms (timed apart); availability 1 batch(es) 844 ms = groupMates 109 ms + candidates 287 ms + filter; rest (sort, transaction, HTTP) 78 ms
+[Review Focus 2] POST /v1/practice/sessions, 100 groups x 2000 items: 2256 / 2105 / 2214 ms (median 2214 ms; D39: accepted in Bước 4, measure again before the pilot)
+
+=== M5.1 (feat/giao-dien-moi-m5a), 10/11/2026: fresh english_learning_smoke_gm, API on :3200, AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-gm-smoke
+$ node scripts/smoke-giao-dien-moi.mjs
+
+[1] 05:31:29Z Wait for the API
+    OK — reachable at http://localhost:3200; database english_learning_smoke_gm
+
+[2] 05:31:29Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 05:31:29Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-b0819282@example.com; learner smokegm-l-b0819282@example.com; group 426f5f14-ad60-4767-9eca-95d870625215 with zgfcvqks, zgdgdvnc, zgnielhl
+
+[4] 05:32:14Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgfcvqks; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 05:32:15Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 05:32:15Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 46d3d981-45f9-4723-a16f-599ec42c9e6d: one right (level matches learning_items), one wrong (zgfcvqks); reload counts 1/0; finished
+
+[7] 05:32:20Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-10","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 05:32:20Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgfcvqks","known",1],["learned","zgdgdvnc","known",1],["learned","zgfcvqks","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 05:32:20Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"46d3d981-45f9-4723-a16f-599ec42c9e6d","group_id":"426f5f14-ad60-4767-9eca-95d870625215","local_date":"2026-11-10","last_answer_at":"2026-11-10T05:32:19.387Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgfcvqks"]}
+
+[10] 05:32:20Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgfcvqks","at":"2026-11-10T05:32:15.786Z"}; next_lemma zgnielhl (queue zgnielhl)
+
+[11] 05:32:21Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 05:32:22Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+ALL OK — 12 steps in 53s
+
+# pnpm smoke:giao-dien-moi — 10/11/2026, M4.1 (ipa, example, total on GET /v1/words), API + worker built from feat/giao-dien-moi-m4,
+# fresh DB english_learning_smoke_gm, AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke, PORT=3100; secrets generated for the run, no .env.
+
+
+[1] 04:56:21Z Wait for the API
+    OK — reachable at http://localhost:3100; database english_learning_smoke_gm
+
+[2] 04:56:38Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 04:56:39Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-03e1b048@example.com; learner smokegm-l-03e1b048@example.com; group 26e6aa26-f28a-4bd8-8d99-4710696c265a with zgfyrtqr, zgbjznab, zgzttnhy
+
+[4] 04:57:10Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgfyrtqr; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 04:57:10Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 04:57:11Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 4e6409e0-ea21-4be8-a660-40cefce391f9: one right, one wrong (zgfyrtqr), finished
+
+[7] 04:57:17Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-10","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 04:57:17Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgfyrtqr","known",1],["learned","zgbjznab","known",1],["learned","zgfyrtqr","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 04:57:17Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"4e6409e0-ea21-4be8-a660-40cefce391f9","group_id":"26e6aa26-f28a-4bd8-8d99-4710696c265a","local_date":"2026-11-10","last_answer_at":"2026-11-10T04:57:15.355Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgfyrtqr"]}
+
+[10] 04:57:17Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgfyrtqr","at":"2026-11-10T04:57:11.835Z"}; next_lemma zgzttnhy (queue zgzttnhy)
+
+[11] 04:57:17Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 04:57:18Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+[13] 04:57:18Z 11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)
+    OK — total 3 on both pages, 0 for no match; rows [["zgbjznab","zæɡ","They use the zgbjznab daily."],["zgfyrtqr","zɪɡ","They use the zgfyrtqr daily."],["zgzttnhy",null,"They use the zgzttnhy daily."]]
+
+ALL OK — 13 steps in 57s
+
+=== M5a before PR (feat/giao-dien-moi-m5a, M3 + M4 + dev merged), 10/11/2026: fresh english_learning_smoke_gm, API on :3200, AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-gm-smoke
+$ node scripts/smoke-giao-dien-moi.mjs
+
+[1] 13:33:06Z Wait for the API
+    OK — reachable at http://localhost:3200; database english_learning_smoke_gm
+
+[2] 13:33:06Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 13:33:06Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-081e699b@example.com; learner smokegm-l-081e699b@example.com; group 0d1c4aed-360a-4442-bb02-4ee98dba878d with zgadhcmu, zgahtavg, zgrczadi
+
+[4] 13:33:21Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgadhcmu; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 13:33:21Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 13:33:21Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 2c2d8d9d-ced9-45b9-8a8e-4c307326fd52: one right (level matches learning_items), one wrong (zgadhcmu); reload counts 1/0; finished
+
+[7] 13:33:22Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-10","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 13:33:22Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgadhcmu","known",1],["learned","zgahtavg","known",1],["learned","zgadhcmu","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 13:33:23Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"2c2d8d9d-ced9-45b9-8a8e-4c307326fd52","group_id":"0d1c4aed-360a-4442-bb02-4ee98dba878d","local_date":"2026-11-10","last_answer_at":"2026-11-10T13:33:22.588Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgadhcmu"]}
+
+[10] 13:33:23Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgadhcmu","at":"2026-11-10T13:33:21.664Z"}; next_lemma zgrczadi (queue zgrczadi)
+
+[11] 13:33:23Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 13:33:23Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+[13] 13:33:23Z 11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)
+    OK — total 3 on both pages, 0 for no match; rows [["zgadhcmu","zɪɡ","They use the zgadhcmu daily."],["zgahtavg","zæɡ","They use the zgahtavg daily."],["zgrczadi",null,"They use the zgrczadi daily."]]
+
+ALL OK — 13 steps in 17s
+
+# pnpm smoke:giao-dien-moi — 11/11/2026, M6.1 (lemma, question_type, ai on GET /v1/practice/reports), API + worker built from feat/giao-dien-moi-m6,
+# fresh DB english_learning_smoke_gm_m6 (SMOKE_GM_SUFFIX=_m6, R115), AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke-m6, PORT=3206;
+# .env made from .env.example with generated secrets.
+
+$ node scripts/smoke-giao-dien-moi.mjs
+
+[1] 19:06:32Z Wait for the API
+    OK — reachable at http://localhost:3206; database english_learning_smoke_gm_m6
+
+[2] 19:06:32Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 19:06:32Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-755bee74@example.com; learner smokegm-l-755bee74@example.com; group 9dc0dcad-4bc3-4735-934e-c403e10c39af with zgkqcqqt, zgitnqoq, zglzxgag
+
+[4] 19:06:40Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgkqcqqt; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[5] 19:06:40Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[6] 19:06:40Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session 10704e3f-e5e2-4f22-a1bc-dd6af5cbd63a: one right (level matches learning_items), one wrong (zgitnqoq); reload counts 1/0; finished
+
+[7] 19:06:42Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-11","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[8] 19:06:42Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgkqcqqt","known",1],["learned","zgitnqoq","known",1],["learned","zgkqcqqt","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[9] 19:06:42Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"10704e3f-e5e2-4f22-a1bc-dd6af5cbd63a","group_id":"9dc0dcad-4bc3-4735-934e-c403e10c39af","local_date":"2026-11-11","last_answer_at":"2026-11-10T19:06:41.771Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgitnqoq"]}
+
+[10] 19:06:42Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgkqcqqt","at":"2026-11-10T19:06:40.859Z"}; next_lemma zglzxgag (queue zglzxgag)
+
+[11] 19:06:42Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[12] 19:06:42Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+[13] 19:06:42Z 11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)
+    OK — total 3 on both pages, 0 for no match; rows [["zgitnqoq","zæɡ","They use the zgitnqoq daily."],["zgkqcqqt","zɪɡ","They use the zgkqcqqt daily."],["zglzxgag",null,"They use the zglzxgag daily."]]
+
+[14] 19:06:42Z 12. Report the wrong item; GET /v1/practice/reports shows its lemma, question_type and ai (M6.1)
+    OK — {"lemma":"zgitnqoq","question_type":"type_word","ai":false,"reason_label":"Nghĩa sai","status":"open"}
+
+ALL OK — 14 steps in 10s
+
+# pnpm smoke:giao-dien-moi — 11/11/2026, M8.1 (GET /v1/public/faq, admin FAQ routes), API + worker built from feat/giao-dien-moi-m8a (uncommitted tree),
+# fresh DB english_learning_smoke_gm_m8a (SMOKE_GM_SUFFIX=_m8a), AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-gm-smoke-m8a, PORT=3100; secrets generated for the run, no .env.
+
+
+[1] 10:48:14Z Wait for the API
+    OK — reachable at http://localhost:3100; database english_learning_smoke_gm_m8a
+
+[2] 10:48:14Z 1. GET /v1/public/prices without a token
+    OK — {"currency":"VND","prices":{"1":79000,"3":199000,"12":599000}}
+
+[3] 10:48:15Z Setup: admin (CLI grant) publishes three catalog words; learner L (vi) puts them in a group
+    OK — admin smokegm-admin-1437c17e@example.com; learner smokegm-l-1437c17e@example.com; group 8042ac8e-ba85-45fb-bbb0-ffac878cb105 with zgttgewv, zgzrnlhc, zgeebsuq
+
+[4] 10:49:28Z 1b. FAQ: public list without a token; an admin adds a draft, publishes it, hits a stale version, deletes it
+    OK — 6 seeded → draft hidden → 7 with the new one second → 409 faq-version-conflict → 6 after delete
+
+[5] 10:49:30Z 2. Before studying: next_lemma = first card of queue?mode=due, last_reviewed null, sessions/last 204, streak 0
+    OK — next_lemma zgzrnlhc; last_reviewed null; sessions/last 204; streak {"days":0,"studied_today":false}
+
+[6] 10:49:31Z 3. Learn W1 and W2 ("known"), then flip W1 again from ?mode=all
+    OK — W1, W2 → level 1; W1 flipped again (level stays 1, logged)
+
+[7] 10:49:32Z 4. Practice one session over the group: one right, one wrong, finish
+    OK — session a9bdf80c-1f23-40df-836e-741abbee33c0: one right (level matches learning_items), one wrong (zgzrnlhc); reload counts 1/0; finished
+
+[8] 10:49:38Z 5. GET /v1/me/calendar?month=<this month>
+    OK — {"month":"2026-11","days":[{"date":"2026-11-11","learned":2,"reviewed":1,"practice_sessions":1}],"totals":{"study_days":1,"learned":2,"reviewed":1,"practice_sessions":1}}
+
+[9] 10:49:38Z 6. GET /v1/me/calendar/days/<today>: counts, items, kind filter, a token bound to its kind
+    OK — counts {"learned":2,"reviewed":1,"reviewed_known":1,"reviewed_again":0,"learned_groups":1,"practice_questions":2}; items [["reviewed","zgttgewv","known",1],["learned","zgzrnlhc","known",1],["learned","zgttgewv","known",1]]; kind=reviewed → 1; foreign token → 400
+
+[10] 10:49:38Z 7. GET /v1/practice/sessions/last
+    OK — {"id":"a9bdf80c-1f23-40df-836e-741abbee33c0","group_id":"8042ac8e-ba85-45fb-bbb0-ffac878cb105","local_date":"2026-11-11","last_answer_at":"2026-11-11T10:49:37.269Z","finished":true,"questions":2,"correct":1,"wrong_count":1,"wrong_lemmas":["zgzrnlhc"]}
+
+[11] 10:49:38Z 8. GET /v1/groups after studying: last_reviewed = W1, next_lemma = first card of queue?mode=due
+    OK — last_reviewed {"lemma":"zgttgewv","at":"2026-11-11T10:49:31.994Z"}; next_lemma zgeebsuq (queue zgeebsuq)
+
+[12] 10:49:38Z 9. GET /v1/me/streak: 1 today, 2 after a studied yesterday
+    OK — {"days":1,"studied_today":true} → {"days":2,"studied_today":true}
+
+[13] 10:49:40Z 10. GET /v1/me/calendar?month=2026-13 → 400 naming month
+    OK — ["month: Invalid string: must match pattern /^\\d{4}-(0[1-9]|1[0-2])$/"]
+
+[14] 10:49:40Z 11. GET /v1/words: total over pages, ipa and example of each row match GET /v1/words/{lemma} (M4.1)
+    OK — total 3 on both pages, 0 for no match; rows [["zgeebsuq",null,"They use the zgeebsuq daily."],["zgttgewv","zɪɡ","They use the zgttgewv daily."],["zgzrnlhc","zæɡ","They use the zgzrnlhc daily."]]
+
+[15] 10:49:41Z 12. Report the wrong item; GET /v1/practice/reports shows its lemma, question_type and ai (M6.1)
+    OK — {"lemma":"zgzrnlhc","question_type":"type_word","ai":false,"reason_label":"Nghĩa sai","status":"open"}
+
+ALL OK — 15 steps in 87s

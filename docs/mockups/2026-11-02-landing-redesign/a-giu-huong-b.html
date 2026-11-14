@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup A · Giữ hướng B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Mockup A (Q1a): direction B kept whole (eyebrows, chips, ledges, tinted cards, centred headings);
+   only the section order and the words change. Colours are packages/design-tokens/theme.css. */
+:root {
+  --primary: #2445d6; --primary-deep: #1a32a6; --primary-soft: #eceffe; --on-primary-muted: #dfe5ff;
+  --accent: #ffd84a; --accent-deep: #c9a21a; --accent-soft: #fff4c7;
+  --ink: #0f1a3d; --muted: #4d5577; --surface: #fff; --canvas: #f1f3fd; --border: #e3e6f4;
+  --success: #1b7a46; --success-soft: #e3f4ea; --danger: #b8352a; --danger-soft: #fde8e5;
+  --ledge: 0 0.25rem 0 rgb(15 26 61 / 0.35); --ledge-soft: 0 0.3rem 0 var(--border);
+  --font: 'Lexend', system-ui, sans-serif;
+  --wrap: 72rem; --gutter: clamp(1.25rem, 0.5rem + 2.5vw, 2.5rem);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface); color: var(--ink); font: 400 1.0625rem/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 6px; }
+.on-blue :focus-visible { outline-color: var(--accent); }
+::selection { background: var(--accent); color: var(--ink); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+.mock-bar { background: var(--ink); color: #fff; font-size: 0.8125rem; padding: 0.5rem var(--gutter); display: flex; gap: 1rem; justify-content: space-between; }
+.mock-bar a { color: var(--accent); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 3.25rem; padding: 0 1.4rem; border: 0; border-radius: 0.875rem;
+  font: 600 1.0625rem/1 var(--font); cursor: pointer; text-decoration: none; box-shadow: var(--ledge); transition: transform 100ms, box-shadow 100ms; }
+.btn:active { transform: translateY(0.25rem); box-shadow: none; }
+.btn-sun { background: var(--accent); color: var(--ink); }
+.btn-ink { background: var(--ink); color: #fff; }
+.chip { display: inline-flex; padding: 0.3rem 0.85rem; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 0.875rem; font-weight: 600; }
+.on-blue .chip { background: rgb(255 255 255 / 0.14); color: #fff; }
+.eyebrow { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; color: var(--primary); }
+.head { display: grid; gap: 0.85rem; justify-items: center; text-align: center; margin-bottom: 3rem; }
+.head h2 { font-size: clamp(1.75rem, 1.2rem + 2vw, 2.6rem); font-weight: 800; line-height: 1.15; max-width: 22ch; }
+.head p { color: var(--muted); max-width: 46ch; }
+section { padding-block: clamp(3.5rem, 2rem + 5vw, 6rem); }
+
+/* Header + hero on the blue field */
+.field { background: var(--primary); color: #fff; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.5rem; }
+.logo { display: inline-flex; align-items: center; gap: 0.55rem; font-weight: 800; font-size: 1.25rem; text-decoration: none; }
+.logo i { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: var(--accent); color: var(--ink); font-style: normal; font-size: 0.9rem; letter-spacing: 0.05em; }
+.nav { display: none; gap: 1.5rem; font-size: 0.9375rem; color: var(--on-primary-muted); }
+.nav a { text-decoration: none; }
+.hero { display: grid; gap: 2rem; padding-block: 2.5rem 4.5rem; }
+.hero h1 { font-size: clamp(2.4rem, 1.4rem + 4vw, 4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; max-width: 13ch; }
+.hero .lead { color: var(--on-primary-muted); font-size: 1.1875rem; max-width: 34ch; }
+.hero-copy { display: grid; gap: 1.4rem; align-content: start; }
+@media (min-width: 64rem) { .nav { display: flex; } .hero { grid-template-columns: 1fr 1fr; align-items: center; gap: 3.5rem; } }
+
+/* Practice card */
+.cz-card { background: var(--surface); color: var(--ink); border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 1.5rem 0 var(--primary-deep); }
+.cz-head { display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--muted); font-weight: 600; margin-bottom: 1rem; }
+.cz-source { background: var(--accent-soft); color: var(--ink); padding: 0.15rem 0.6rem; border-radius: 999px; }
+.cz-sentence { font-size: 1.375rem; font-weight: 500; line-height: 1.55; margin-bottom: 1.25rem; }
+.cz-blank { display: inline-block; min-width: 5.5rem; padding: 0 0.6rem; border-radius: 0.5rem; background: var(--accent); font-weight: 700; text-align: center; }
+.cz-blank.is-right { background: var(--success-soft); color: var(--success); outline: 2px solid var(--success); }
+.cz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.cz-opt { min-height: 2.9rem; border: 2px solid var(--border); border-radius: 999px; background: var(--surface); font: 600 1rem var(--font); color: var(--ink); cursor: pointer; box-shadow: var(--ledge-soft); }
+.cz-opt:hover:not(:disabled) { border-color: var(--primary); }
+.cz-opt.is-wrong { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+.cz-opt.is-right { border-color: var(--success); color: var(--success); background: var(--success-soft); }
+.cz-feedback, .cz-done { margin-top: 1rem; display: grid; gap: 0.35rem; font-size: 0.9375rem; color: var(--muted); }
+.cz-feedback.is-right .cz-title { color: var(--success); }
+.cz-feedback.is-wrong .cz-title { color: var(--danger); }
+.cz-title { font-weight: 700; color: var(--ink); }
+.cz-translate { color: var(--ink); }
+.cz-next { justify-self: start; margin-top: 0.5rem; min-height: 2.75rem; padding: 0 1.1rem; border: 0; border-radius: 0.75rem; background: var(--ink); color: #fff; font: 600 0.9375rem var(--font); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; box-shadow: var(--ledge); }
+.cz-done-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.cz-again { background: none; border: 0; font: 600 0.9375rem var(--font); color: var(--primary); text-decoration: underline; cursor: pointer; }
+
+/* Waitlist form */
+.wl { display: grid; gap: 0.7rem; max-width: 30rem; }
+.wl-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.wl input[type=email] { flex: 1 1 14rem; min-height: 3.25rem; padding: 0 1rem; border-radius: 0.875rem; border: 2px solid transparent; font: 400 1rem var(--font); }
+.wl label.consent { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; }
+.wl input[type=checkbox] { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); }
+.wl-msg { font-size: 0.875rem; min-height: 1.3em; }
+.wl-msg.is-error { color: #ffd3cd; } .light .wl-msg.is-error { color: var(--danger); }
+.wl-msg.is-ok { font-weight: 600; }
+.hero .note { font-size: 0.875rem; color: var(--on-primary-muted); }
+
+/* Cards */
+.grid-3 { display: grid; gap: 1.25rem; }
+@media (min-width: 56rem) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+.card { border-radius: 1.25rem; padding: 1.75rem; display: grid; gap: 0.9rem; align-content: start; }
+.card h3 { font-size: 1.3rem; font-weight: 700; }
+.card p { color: var(--muted); }
+.t-blue { background: var(--primary-soft); } .t-sun { background: var(--accent-soft); } .t-green { background: var(--success-soft); }
+.num { justify-self: start; display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 700; font-size: 0.875rem; }
+.mini { background: var(--surface); border-radius: 1rem; padding: 1rem; display: grid; gap: 0.5rem; font-size: 0.9375rem; }
+.mini .field-ui { border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.45rem 0.75rem; }
+.mini small { color: var(--muted); font-size: 0.75rem; display: block; }
+
+/* Boxes band */
+.band { background: var(--primary-soft); }
+.boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (min-width: 48rem) { .boxes { grid-template-columns: repeat(6, 1fr); } }
+.box { background: var(--surface); border-radius: 1rem; padding: 1rem 0.75rem; text-align: center; box-shadow: var(--ledge-soft); }
+.box b { display: block; font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+.box span { font-size: 0.8125rem; color: var(--muted); }
+.weak { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; align-items: center; font-size: 0.9375rem; }
+.weak .chip { background: var(--danger-soft); color: var(--danger); }
+
+/* Practice types */
+.types { display: grid; gap: 1.25rem; }
+@media (min-width: 56rem) { .types { grid-template-columns: 1fr 1fr; } }
+.types ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.types li { display: flex; gap: 0.6rem; }
+.types li::before { content: '✓'; color: var(--success); font-weight: 700; }
+.ai-note { margin-top: 1.25rem; text-align: center; color: var(--muted); }
+
+/* Plans */
+.plans { display: grid; gap: 1.25rem; }
+@media (min-width: 56rem) { .plans { grid-template-columns: 1fr 1fr; } }
+.plan { border: 1px solid var(--border); border-radius: 1.25rem; padding: 1.75rem; display: grid; gap: 1rem; align-content: start; }
+.plan.pro { border: 2px solid var(--primary); box-shadow: var(--ledge-soft); }
+.plan-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.plan h3 { font-size: 1.5rem; font-weight: 800; }
+.plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+.plan li { display: flex; gap: 0.6rem; } .plan li::before { content: '✓'; color: var(--success); font-weight: 700; }
+.pending { font-size: 0.8125rem; color: var(--danger); font-weight: 600; }
+
+/* FAQ */
+.faq { max-width: 50rem; margin-inline: auto; display: grid; gap: 0.75rem; }
+.faq details { background: var(--primary-soft); border-radius: 1rem; }
+.faq details[open] { outline: 2px solid var(--primary); }
+.faq summary { cursor: pointer; padding: 1.15rem 1.5rem; font-weight: 600; font-size: 1.0625rem; list-style: none; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq details p { padding: 0 1.5rem 1.25rem; color: var(--muted); }
+
+.final { background: var(--accent); text-align: center; }
+.final h2 { font-size: clamp(1.75rem, 1.2rem + 2vw, 2.6rem); font-weight: 800; max-width: 20ch; margin: 0 auto 2rem; }
+.final .wl { margin-inline: auto; text-align: left; }
+.final .wl input[type=email] { border-color: var(--ink); }
+footer { padding-block: 2rem; font-size: 0.875rem; color: var(--muted); }
+footer .wrap { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+footer nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="mock-bar"><span>Mockup A (Q1a): giữ nguyên hướng B, chỉ đổi thứ tự và chữ</span><a href="index.html">Về mục lục</a></div>
+
+<div class="field on-blue">
+  <div class="wrap header">
+    <a class="logo" href="#"><i>_ _</i>Wordmet</a>
+    <nav class="nav" aria-label="Wordmet"><a href="#them-tu">Thêm từ</a><a href="#on-tap">Ôn tập</a><a href="#goi">Gói</a><a href="#hoi-dap">Hỏi đáp</a></nav>
+    <a class="btn btn-sun" href="#dang-ky" style="min-height:2.75rem;font-size:.9375rem">Đăng ký nhận tin</a>
+  </div>
+  <div class="wrap hero" id="dang-ky">
+    <div class="hero-copy">
+      <span class="chip" style="justify-self:start">Từ vựng tiếng Anh cho người Việt</span>
+      <h1>Nhớ từ bằng chính câu bạn đã gặp</h1>
+      <p class="lead">Gặp từ mới trong phim, email hay tin nhắn công việc? Lưu nó cùng câu đó. Wordmet xếp lịch ôn và cho bạn luyện trên chính câu ấy.</p>
+      <form class="wl" data-waitlist novalidate>
+        <label class="sr-only" for="a-email">Email</label>
+        <div class="wl-row"><input id="a-email" type="email" placeholder="ten@gmail.com" autocomplete="email"><button class="btn btn-sun" type="submit">Đăng ký nhận tin ra mắt</button></div>
+        <label class="consent"><input type="checkbox"> <span>Tôi đồng ý với <a href="#">Chính sách bảo mật</a>.</span></label>
+        <p class="wl-msg" role="status"></p>
+      </form>
+      <p class="note">Wordmet đang chuẩn bị mở cửa. Để lại email, Wordmet báo bạn khi mở.</p>
+    </div>
+    <div class="cz-card" data-cloze aria-label="Bài luyện thử"></div>
+  </div>
+</div>
+
+<main>
+  <section id="them-tu">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">THÊM TỪ</span><h2>Thêm từ vừa gặp trong vài giây</h2><p>Gõ từ bạn vừa gặp, dán câu chứa nó nếu có. Wordmet tự nhận ra dạng chia, như went → go.</p></div>
+      <div class="grid-3">
+        <div class="card t-blue"><span class="num">1</span><h3>Gõ từ và dán câu</h3><p>Không cần tra trước. Câu là tùy chọn.</p>
+          <div class="mini"><div class="field-ui"><small>Từ vừa gặp</small><span lang="en">went</span></div><div class="field-ui"><small>Câu chứa từ</small><span lang="en">We went over the budget twice.</span></div></div></div>
+        <div class="card t-sun"><span class="num">2</span><h3>Wordmet nhận ra từ gốc</h3><p>Dạng chia về từ gốc, kèm nghĩa và trình độ.</p>
+          <div class="mini"><b lang="en">went → go</b><span>động từ · đi · A1</span></div></div>
+        <div class="card t-green"><span class="num">3</span><h3>Lưu vào nhóm của bạn</h3><p>Từ vào lịch ôn ngay. Câu bạn dán thành câu luyện.</p>
+          <div class="mini"><span>Lưu vào nhóm</span><b>Công việc · 113 từ</b></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="on-tap">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">ÔN TẬP</span><h2>Ôn đúng lúc, không ôn thừa</h2><p>Mỗi từ nằm trong một ngăn. Nhớ thì lên ngăn sau, lâu hơn mới gặp lại.</p></div>
+      <div class="boxes" role="list">
+        <div class="box" role="listitem"><b>Mới</b><span>chưa ôn</span></div>
+        <div class="box" role="listitem"><b>1</b><span>ngày</span></div>
+        <div class="box" role="listitem"><b>3</b><span>ngày</span></div>
+        <div class="box" role="listitem"><b>7</b><span>ngày</span></div>
+        <div class="box" role="listitem"><b>14</b><span>ngày</span></div>
+        <div class="box" role="listitem"><b>30</b><span>ngày</span></div>
+      </div>
+      <p class="weak"><span class="chip">Từ hay sai</span> Sai 2 lần trong 5 câu gần nhất thì từ vào danh sách luyện riêng.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">LUYỆN TẬP</span><h2>Luyện theo nhiều kiểu câu</h2></div>
+      <div class="types">
+        <div class="card t-blue"><h3>Gói Miễn phí</h3><ul><li>Trắc nghiệm nghĩa</li><li>Đúng hay sai</li><li>Gõ từ theo nghĩa hoặc theo câu</li><li>Điền từ vào câu bạn đã lưu</li></ul></div>
+        <div class="card t-sun"><h3>Gói Pro, có AI</h3><ul><li>Câu mới do AI viết quanh từ của bạn</li><li>Chọn nghĩa đúng trong câu</li><li>Trắc nghiệm theo câu</li><li>Tra từ bằng AI</li></ul></div>
+      </div>
+      <p class="ai-note">AI chỉ viết câu. Đáp án của bạn được chấm bằng quy tắc, không tốn lượt AI.</p>
+    </div>
+  </section>
+
+  <section class="band" id="goi">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">GÓI HỌC</span><h2>Bắt đầu miễn phí</h2></div>
+      <div class="plans">
+        <div class="plan"><div class="plan-top"><h3>Miễn phí</h3><span class="chip">Không giới hạn thời gian</span></div>
+          <ul><li>Ôn thẻ và lịch ôn, không giới hạn</li><li>Nhắc ôn qua email</li><li>Tra từ và thêm nhanh</li><li>3 phiên luyện mỗi ngày</li></ul>
+          <a class="btn btn-ink" href="#dang-ky" style="justify-self:start">Đăng ký nhận tin ra mắt</a></div>
+        <div class="plan pro"><div class="plan-top"><h3>Pro</h3><span class="chip">Chưa mở bán</span></div>
+          <ul><li>Nhiều phiên luyện hơn mỗi ngày</li><li>Câu AI và tra bằng AI</li><li>Không quảng cáo</li></ul>
+          <p class="pending">Dùng thử: chờ chốt Q2 (7 ngày theo D16, hay bỏ con số)</p>
+          <a class="btn btn-sun" href="#dang-ky" style="justify-self:start">Đăng ký nhận tin ra mắt</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="hoi-dap">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">HỎI ĐÁP</span><h2>Câu hỏi thường gặp</h2></div>
+      <div class="faq">
+        <details name="faq" open><summary>Wordmet có miễn phí không?</summary><p>Có. Gói Miễn phí gồm ôn thẻ, lịch ôn, nhắc qua email, tra từ và 3 phiên luyện mỗi ngày. Gói Pro thêm câu AI và tra bằng AI, hiện chưa mở bán.</p></details>
+        <details name="faq"><summary>AI có chấm bài của tôi không?</summary><p>Không. AI chỉ viết câu luyện. Đáp án của bạn được chấm bằng quy tắc, nên không tốn lượt AI.</p></details>
+        <details name="faq"><summary>Người khác có thấy từ và câu tôi lưu không?</summary><p>Không. Từ và câu bạn tự thêm chỉ hiện trong tài khoản của bạn.</p></details>
+        <details name="faq"><summary>Có app điện thoại không?</summary><p>Wordmet mở trên web trước, dùng được trên trình duyệt điện thoại. App điện thoại làm sau.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final light">
+    <div class="wrap">
+      <h2>Bắt đầu với những từ bạn gặp hôm nay</h2>
+      <form class="wl" data-waitlist novalidate>
+        <label class="sr-only" for="a-email-2">Email</label>
+        <div class="wl-row"><input id="a-email-2" type="email" placeholder="ten@gmail.com" autocomplete="email"><button class="btn btn-ink" type="submit">Đăng ký nhận tin ra mắt</button></div>
+        <label class="consent"><input type="checkbox"> <span>Tôi đồng ý với <a href="#">Chính sách bảo mật</a>.</span></label>
+        <p class="wl-msg" role="status"></p>
+      </form>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap"><span>© 2026 Wordmet</span><nav><a href="#">Chính sách bảo mật</a><a href="#">Điều khoản sử dụng</a><a href="#">Liên hệ</a><a href="#">English</a></nav></div></footer>
+<script src="shared.js"></script>
+</body>
+</html>

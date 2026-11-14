@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landing mới · ba mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink: #0f1a3d; --muted: #4d5577; --canvas: #f1f3fd; --primary: #2445d6; --danger: #b8352a; --font: 'Lexend', system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--ink); font: 400 1.0625rem/1.6 var(--font); }
+main { width: min(100% - 2.5rem, 62rem); margin: 3rem auto 5rem; display: grid; gap: 2.5rem; }
+h1 { font-size: clamp(2rem, 1.4rem + 2.5vw, 3rem); line-height: 1.1; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: 1.375rem; margin: 0 0 0.75rem; }
+p, ul { margin: 0; } ul { padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+.muted { color: var(--muted); }
+.opts { display: grid; gap: 1.25rem; }
+.opt { background: var(--canvas); border-radius: 1rem; padding: 1.5rem; display: grid; gap: 0.75rem; }
+.opt a.open { justify-self: start; font-weight: 600; color: var(--primary); }
+.warn { color: var(--danger); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>Landing Wordmet: ba hướng để chọn (Q1)</h1>
+    <p class="muted">Mockup ngày 02/11/2026, chỉ để xem, không phải code thật. Bấm thử bài điền từ và form ở mỗi trang. Xem ở màn rộng và thu hẹp cửa sổ để thấy bản điện thoại.</p>
+  </div>
+
+  <div class="opts">
+    <div class="opt"><h2>A. Giữ nguyên hướng B</h2>
+      <p>Giữ cả nhãn nhỏ viết hoa, chip, bóng "gờ", thẻ màu và tiêu đề căn giữa. Chỉ đổi thứ tự các phần và chữ.</p>
+      <p class="muted">Đánh đổi: ít việc nhất, giống app nhất. Các mẫu mà cả hai bộ skill gọi là "AI slop" vẫn còn.</p>
+      <a class="open" href="a-giu-huong-b.html">Mở mockup A</a></div>
+    <div class="opt"><h2>B. Giữ màu và font, bỏ các mẫu bị cấm</h2>
+      <p>Cùng xanh, vàng, Lexend. Không nhãn, không gờ, không hàng thẻ giống nhau, chữ căn trái và lớn hơn. Ảnh sản phẩm là ảnh chụp app thật.</p>
+      <p class="muted">Đánh đổi: landing và app lệch nhau ở bóng và thẻ. Phải chụp lại ảnh app trước khi làm thật.</p>
+      <a class="open" href="b-bo-mau-cam.html">Mở mockup B</a></div>
+    <div class="opt"><h2>C. Thế giới mới: nơi bạn gặp từ</h2>
+      <p>Trang dựng từ những nơi người học gặp từ: phụ đề phim, email, tin nhắn công việc. Nền xanh than như thanh trên của app, vàng là màu đánh dấu từ. Giữ Lexend và logo.</p>
+      <p class="muted">Đánh đổi: khác biệt nhất, nhưng tốn công nhất. Landing tối còn app sáng.</p>
+      <a class="open" href="c-noi-gap-tu.html">Mở mockup C</a></div>
+  </div>
+
+  <div>
+    <h2>Giống nhau ở cả ba</h2>
+    <ul>
+      <li>Chữ viết lại theo sản phẩm thật: 6 ngăn ôn (Mới, 1, 3, 7, 14, 30 ngày), "Từ hay sai", 3 phiên luyện mỗi ngày cho gói Miễn phí, Pro chưa mở bán, AI chỉ viết câu còn đáp án chấm bằng quy tắc.</li>
+      <li>Thứ tự theo luận điểm: luyện thử, thêm từ vừa gặp, ôn đúng lúc, luyện nhiều kiểu, gói, hỏi đáp, đăng ký.</li>
+      <li>Bài điền từ chạy được dùng câu và giải thích có sẵn trong <code>messages/vi.json</code>. Nguồn câu (phim, email, tin nhắn) là ví dụ.</li>
+      <li>Nút chính vẫn là đăng ký nhận tin, vì app chưa mở trên production (Q3 chưa chốt).</li>
+    </ul>
+  </div>
+
+  <div>
+    <h2>Còn mở</h2>
+    <ul>
+      <li class="warn">Q2: lời hứa dùng thử. Trong mockup ghi "Chờ chốt Q2" thay cho con số.</li>
+      <li>Ảnh app chụp ngày 26–27/10 (<code>docs/audit/2026-10-26-ui-nguoi-hoc</code>), có thể đã cũ. Ví dụ "went → go", tên nhóm, email, tin nhắn là dữ liệu mẫu.</li>
+      <li>Câu "Người khác có thấy từ và câu tôi lưu không? Không": thiết kế Bước 3 nói từ riêng thuộc người học. Mình chưa kiểm câu ngữ cảnh có gửi cho nhà cung cấp AI khi tạo câu luyện hay không; nếu có, câu này phải nói rõ.</li>
+      <li>Chỉ có bản tiếng Việt. Bản tiếng Anh làm sau khi chọn hướng.</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

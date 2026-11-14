@@ -32,7 +32,7 @@ describe('admin:grant CLI', () => {
     expect(console.log).toHaveBeenCalledWith('granted'); expect(process.exitCode).toBe(0);
     expect(mocks.disconnect).toHaveBeenCalledOnce(); expect(mocks.close).toHaveBeenCalledOnce();
   });
-  it.each(['not_found', 'unverified'])('B1#29/B1E27: %s exits 1 and prints the outcome', async (outcome) => {
+  it.each(['not_found', 'unverified', 'locked', 'deleting'])('B1#29/B1E27: %s exits 1 and prints the outcome', async (outcome) => {
     mocks.grant.mockResolvedValue(outcome); await run();
     expect(process.exitCode).toBe(1); expect(console.log).toHaveBeenCalledWith(outcome);
     if (outcome === 'not_found') expect(console.log).toHaveBeenCalledWith('register this email first');

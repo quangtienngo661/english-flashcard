@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyPatch, changedFields, crossFieldViolations, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
+  apiValueOf, applyPatch, changedFields, crossFieldViolations, SETTINGS_BOUNDS, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
 } from './settings.definitions.js';
+
+const ENTITLEMENT_DEFAULTS_API = {
+  free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, free_ai_practice_per_cycle: 15, free_ai_lookup_per_cycle: 5,
+  pro_ai_practice_per_cycle: 300, pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
+  trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000, free_ai_daily_cap: 500,
+  ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
+  transaction_retention_years: 10, pro_price_1m_vnd: 79000, pro_price_3m_vnd: 199000, pro_price_12m_vnd: 599000,
+};
+
+const AI_DEFAULTS_API = {
+  call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7,
+  usd_vnd_rate: 26100, eval_held_out_ratio: 0.3, admin_daily_usd_cap: 2, judge_label_min: 30, judge_agreement_min: 0.85,
+  real_judge_limit: 200,
+};
 
 const issues = (input: unknown) => {
   const result = settingsValuesPatchSchema.safeParse(input);
@@ -12,7 +26,252 @@ describe('settings definitions', () => {
   it('design §9: defaults are true, 20:00, 2, 7, 60, 20, 100, 60', () => {
     expect(toApiValues(SETTINGS_DEFAULTS)).toEqual({
       reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
-      learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60 },
+      learning: {
+        new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60, groups_per_user: 100,
+        items_per_group: 2000, active_window_days: 7,
+      },
+      practice: {
+        max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
+        idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null,
+        ai_prefetch_count: 2,
+        session_max_mode: 'fixed', ai_max_mode: 'percent', ai_max_fixed: 5, ai_max_percent: 50, ai_placement: 'even',
+      },
+      entitlements: ENTITLEMENT_DEFAULTS_API,
+      content: { private_words_per_user: 10000, sentences_per_sense: 20 },
+      ai: AI_DEFAULTS_API,
+      identity: { unverified_cleanup_days: 7 },
+      tts: { daily_char_cap: 120000 },
+    });
+  });
+
+  it('Bước 8: unverified_cleanup_days is 1–365 and transaction_retention_years is 5–30 (D15, D19)', () => {
+    expect(issues({ identity: { unverified_cleanup_days: 1 } })).toEqual([]);
+    expect(issues({ identity: { unverified_cleanup_days: 365 } })).toEqual([]);
+    expect(issues({ identity: { unverified_cleanup_days: 0 } })).toEqual(['identity.unverified_cleanup_days']);
+    expect(issues({ identity: { unverified_cleanup_days: 366 } })).toEqual(['identity.unverified_cleanup_days']);
+    expect(issues({ entitlements: { transaction_retention_years: 5 } })).toEqual([]);
+    expect(issues({ entitlements: { transaction_retention_years: 30 } })).toEqual([]);
+    expect(issues({ entitlements: { transaction_retention_years: 4 } })).toEqual(['entitlements.transaction_retention_years']);
+    expect(issues({ entitlements: { transaction_retention_years: 31 } })).toEqual(['entitlements.transaction_retention_years']);
+  });
+
+  it('nhóm B D39 (M6): active_window_days is 1–60, whole days, default 7, filled in for JSON stored before it, and its change is in the history diff', () => {
+    expect(issues({ learning: { active_window_days: 1 } })).toEqual([]);
+    expect(issues({ learning: { active_window_days: 60 } })).toEqual([]);
+    for (const bad of [0, 61, 7.5]) expect(issues({ learning: { active_window_days: bad } }), String(bad)).toEqual(['learning.active_window_days']);
+    expect(issues({ learning: { active_window_days: null } })).toEqual(['learning.active_window_days']);
+    expect(SETTINGS_BOUNDS.learning.active_window_days).toEqual({ min: 1, max: 60 });
+    expect(SETTINGS_DEFAULTS.learning.activeWindowDays).toBe(7);
+    expect(withDefaults({ learning: { backlogAfterDays: 90 } }).learning.activeWindowDays).toBe(7);
+    expect(withDefaults({ learning: { activeWindowDays: 14 } }).learning.activeWindowDays).toBe(14);
+    const next = applyPatch(SETTINGS_DEFAULTS, { learning: { active_window_days: 14 } });
+    expect(next.learning.activeWindowDays).toBe(14);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'learning.active_window_days', oldValue: 7, newValue: 14 }]);
+  });
+
+  it('launch prep B (Q-B8): the three Pro prices default to 79.000, 199.000, 599.000 and take 1.000–10.000.000, whole dong', () => {
+    const keys = ['pro_price_1m_vnd', 'pro_price_3m_vnd', 'pro_price_12m_vnd'] as const;
+    expect(keys.map((key) => toApiValues(SETTINGS_DEFAULTS).entitlements[key])).toEqual([79000, 199000, 599000]);
+    for (const key of keys) {
+      expect(SETTINGS_BOUNDS.entitlements[key]).toEqual({ min: 1000, max: 10000000 });
+      expect(issues({ entitlements: { [key]: 1000 } }), `${key}=1000`).toEqual([]);
+      expect(issues({ entitlements: { [key]: 10000000 } }), `${key}=10000000`).toEqual([]);
+      for (const bad of [999, 10000001, 79000.5, null]) expect(issues({ entitlements: { [key]: bad } }), `${key}=${bad}`).toEqual([`entitlements.${key}`]);
+    }
+    // JSON stored before the prices existed gets the defaults; a stored price is kept; a change is in the history diff.
+    expect(withDefaults({ entitlements: { graceDays: 4 } }).entitlements).toMatchObject({ proPrice1mVnd: 79000, proPrice3mVnd: 199000, proPrice12mVnd: 599000 });
+    expect(withDefaults({ entitlements: { proPrice3mVnd: 189000 } }).entitlements.proPrice3mVnd).toBe(189000);
+    const next = applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_price_3m_vnd: 189000 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'entitlements.pro_price_3m_vnd', oldValue: 199000, newValue: 189000 }]);
+  });
+
+  it('Bước 8: a change to the identity group is recorded in the history diff', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { identity: { unverified_cleanup_days: 3 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'identity.unverified_cleanup_days', oldValue: 7, newValue: 3 }]);
+  });
+
+  it('D18, LA3#14, LB1: defaults are 3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10, 79000, 199000, 599000; learning 100/2000; content 10000/20', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS);
+    expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10, 79000, 199000, 599000]);
+    expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
+    expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
+  });
+
+  it('withDefaults fills the new keys for JSON stored before Bước 5 and keeps a stored null for a nullable key', () => {
+    const before5 = {
+      reminders: { minGapDays: 3 }, learning: { newPerGroupPerDay: 30, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
+      practice: {},
+    };
+    const values = withDefaults(before5);
+    expect(values.entitlements).toEqual(SETTINGS_DEFAULTS.entitlements);
+    expect(values.content).toEqual(SETTINGS_DEFAULTS.content);
+    expect(values.learning).toEqual({ ...SETTINGS_DEFAULTS.learning, newPerGroupPerDay: 30 });
+    expect(withDefaults({ entitlements: { aiCapAlertPercent: null } }).entitlements.aiCapAlertPercent).toBeNull();
+    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 9 } }).entitlements.renewalNoticeDaysBefore).toBe(9);
+  });
+
+  it('Q8 (02/11/2026): a stored value the current bounds reject falls back to the default, so old JSON cannot go under a raised minimum', () => {
+    // Saved before the minimums rose: trial reminder 2 days, renewal notice off (null) or 5 days.
+    const stored = withDefaults({ entitlements: { trialReminderDaysBefore: 2, renewalNoticeDaysBefore: null, graceDays: 4 } }).entitlements;
+    expect(stored.trialReminderDaysBefore).toBe(3);
+    expect(stored.renewalNoticeDaysBefore).toBe(7);
+    expect(stored.graceDays).toBe(4);
+    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 5 } }).entitlements.renewalNoticeDaysBefore).toBe(7);
+    expect(withDefaults({ entitlements: { trialReminderDaysBefore: 6, renewalNoticeDaysBefore: 30 } }).entitlements)
+      .toMatchObject({ trialReminderDaysBefore: 6, renewalNoticeDaysBefore: 30 });
+    // A value of the wrong type falls back too; a valid one beside it is kept.
+    expect(withDefaults({ reminders: { sendTime: 'noon', minGapDays: 3 } }).reminders).toMatchObject({ sendTime: '20:00', minGapDays: 3 });
+  });
+
+  it('Q8 (02/11/2026): the trial reminder is 3–6 days and the renewal notice 7–30 days before, never off', () => {
+    expect(SETTINGS_BOUNDS.entitlements.trial_reminder_days_before).toEqual({ min: 3, max: 6 });
+    expect(SETTINGS_BOUNDS.entitlements.renewal_notice_days_before).toEqual({ min: 7, max: 30 });
+    expect(issues({ entitlements: { trial_reminder_days_before: 2 } })).toEqual(['entitlements.trial_reminder_days_before']);
+    expect(issues({ entitlements: { renewal_notice_days_before: 6 } })).toEqual(['entitlements.renewal_notice_days_before']);
+    expect(issues({ entitlements: { renewal_notice_days_before: null } })).toEqual(['entitlements.renewal_notice_days_before']);
+    expect(issues({ entitlements: { trial_reminder_days_before: 3, renewal_notice_days_before: 7 } })).toEqual([]);
+  });
+
+  it('toApiValues names every new key in snake_case', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity', 'tts']);
+    expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
+    for (const section of Object.values(api)) {
+      for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z0-9]+)*$/);
+    }
+  });
+
+  it('patch schema rejects min − 1 and max + 1 for every new numeric key and accepts both edges', () => {
+    const edges: Array<[string, string, number, number]> = [
+      ['entitlements', 'free_practice_sessions_per_day', 1, 50], ['entitlements', 'pro_practice_sessions_per_day', 1, 200],
+      ['entitlements', 'free_ai_practice_per_cycle', 0, 5000], ['entitlements', 'free_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'free_ai_daily_cap', 0, 100000],
+      ['entitlements', 'pro_ai_practice_per_cycle', 0, 5000], ['entitlements', 'pro_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'trial_ai_practice_per_cycle', 0, 5000], ['entitlements', 'trial_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'grace_days', 0, 16], ['entitlements', 'trial_reminder_days_before', 3, 6],
+      ['entitlements', 'renewal_notice_days_before', 7, 30], ['entitlements', 'ai_daily_cap', 0, 100000],
+      ['entitlements', 'ai_cap_alert_percent', 50, 95], ['entitlements', 'ads_interstitial_per_day', 0, 20],
+      ['entitlements', 'ads_min_interval_minutes', 1, 240],
+      ['learning', 'groups_per_user', 10, 1000], ['learning', 'items_per_group', 100, 10000],
+      ['content', 'private_words_per_user', 1000, 100000], ['content', 'sentences_per_sense', 5, 100],
+    ];
+    for (const [section, key, min, max] of edges) {
+      expect(issues({ [section]: { [key]: min } }), `${key}=${min}`).toEqual([]);
+      expect(issues({ [section]: { [key]: max } }), `${key}=${max}`).toEqual([]);
+      expect(issues({ [section]: { [key]: min - 1 } }), `${key}=${min - 1}`).toEqual([`${section}.${key}`]);
+      expect(issues({ [section]: { [key]: max + 1 } }), `${key}=${max + 1}`).toEqual([`${section}.${key}`]);
+      expect(issues({ [section]: { [key]: min + 0.5 } }), `${key}=${min + 0.5}`).toEqual([`${section}.${key}`]);
+    }
+  });
+
+  it('patch schema accepts null only for ai_daily_cap (Q10) and ai_cap_alert_percent', () => {
+    const nullable = ['ai_daily_cap', 'ai_cap_alert_percent'];
+    for (const key of Object.keys(ENTITLEMENT_DEFAULTS_API)) {
+      expect(issues({ entitlements: { [key]: null } }), key).toEqual(nullable.includes(key) ? [] : [`entitlements.${key}`]);
+    }
+    for (const [section, key] of [['learning', 'groups_per_user'], ['learning', 'items_per_group'],
+      ['content', 'private_words_per_user'], ['content', 'sentences_per_sense']]) {
+      expect(issues({ [section]: { [key]: null } }), key).toEqual([`${section}.${key}`]);
+    }
+    expect(issues({ entitlements: { other: 1 } })).toEqual(['entitlements']);
+    expect(issues({ content: { other: 1 } })).toEqual(['content']);
+  });
+
+  it('patch schema rejects a non-boolean ai_enabled (and ads_enabled)', () => {
+    expect(issues({ entitlements: { ai_enabled: 'false' } })).toEqual(['entitlements.ai_enabled']);
+    expect(issues({ entitlements: { ai_enabled: 0 } })).toEqual(['entitlements.ai_enabled']);
+    expect(issues({ entitlements: { ads_enabled: 'yes' } })).toEqual(['entitlements.ads_enabled']);
+    expect(issues({ entitlements: { ai_enabled: false, ads_enabled: true } })).toEqual([]);
+  });
+
+  it('crossFieldViolations: pro 2 with free 3 → the violation; pro 3 with free 3 → none', () => {
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_practice_sessions_per_day: 2 } })))
+      .toEqual(['values.entitlements.pro_practice_sessions_per_day: Expected at least free_practice_sessions_per_day']);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_practice_sessions_per_day: 3 } })))
+      .toEqual([]);
+  });
+
+  it('changedFields reports entitlements.ai_enabled true → false', () => {
+    const off = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_enabled: false } });
+    expect(off.entitlements.aiEnabled).toBe(false);
+    expect(changedFields(SETTINGS_DEFAULTS, off)).toEqual([{ key: 'entitlements.ai_enabled', oldValue: true, newValue: false }]);
+  });
+
+  it('design 5.4: each practice bound accepts its edges and refuses one step outside; type_word_max_retries also takes null', () => {
+    const edges: Array<[string, number, number]> = [
+      ['max_questions_per_session', 5, 100], ['default_questions_per_session', 1, 100], ['history_months', 3, 24],
+      ['true_false_true_percent', 20, 80], ['idle_session_close_hours', 1, 168], ['reports_per_hour', 5, 100],
+      ['hint_definition_max_chars', 80, 500], ['type_word_max_retries', 1, 10], ['ai_prefetch_count', 0, 20],
+    ];
+    for (const [key, min, max] of edges) {
+      expect(issues({ practice: { [key]: min } }), `${key}=${min}`).toEqual([]);
+      expect(issues({ practice: { [key]: max } }), `${key}=${max}`).toEqual([]);
+      expect(issues({ practice: { [key]: min - 1 } }), `${key}=${min - 1}`).toEqual([`practice.${key}`]);
+      expect(issues({ practice: { [key]: max + 1 } }), `${key}=${max + 1}`).toEqual([`practice.${key}`]);
+    }
+    expect(issues({ practice: { type_word_max_retries: null } })).toEqual([]);
+    expect(issues({ practice: { max_questions_per_session: null } })).toEqual(['practice.max_questions_per_session']);
+    expect(issues({ practice: { type_word_max_retries: 2.5 } })).toEqual(['practice.type_word_max_retries']);
+  });
+
+  it('D35: reviews_per_group_per_day takes null (no limit); new_per_group_per_day and backlog_after_days do not (B4E46)', () => {
+    expect(issues({ learning: { reviews_per_group_per_day: null } })).toEqual([]);
+    expect(issues({ learning: { new_per_group_per_day: null } })).toEqual(['learning.new_per_group_per_day']);
+    expect(issues({ learning: { backlog_after_days: null } })).toEqual(['learning.backlog_after_days']);
+    const cleared = applyPatch(SETTINGS_DEFAULTS, { learning: { reviews_per_group_per_day: null } });
+    expect(cleared.learning.reviewsPerGroupPerDay).toBeNull();
+    expect(changedFields(SETTINGS_DEFAULTS, cleared))
+      .toEqual([{ key: 'learning.reviews_per_group_per_day', oldValue: 100, newValue: null }]);
+    expect(withDefaults({ learning: { reviewsPerGroupPerDay: null } }).learning.reviewsPerGroupPerDay).toBeNull();
+  });
+
+  it('B4E38: default_questions_per_session must not exceed max_questions_per_session on the merged values', () => {
+    const equal = applyPatch(SETTINGS_DEFAULTS, { practice: { default_questions_per_session: 20 } });
+    expect(crossFieldViolations(equal)).toEqual([]);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { practice: { default_questions_per_session: 30 } })))
+      .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { practice: { max_questions_per_session: 5 } })))
+      .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+  });
+
+  describe('practice ai count (09/11/2026)', () => {
+    it('the three choices take only their values', () => {
+      expect(settingsValuesPatchSchema.safeParse({ practice: { session_max_mode: 'scope_words' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { session_max_mode: 'fixed' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { ai_max_mode: 'fixed' } }).success).toBe(true);
+      expect(settingsValuesPatchSchema.safeParse({ practice: { ai_placement: 'learner' } }).success).toBe(true);
+      expect(issues({ practice: { session_max_mode: 'scope' } })).toEqual(['practice.session_max_mode']);
+      expect(issues({ practice: { ai_max_mode: 'percentage' } })).toEqual(['practice.ai_max_mode']);
+      expect(issues({ practice: { ai_placement: 'both' } })).toEqual(['practice.ai_placement']);
+    });
+
+    it('ai_max_fixed and ai_max_percent are whole numbers 0–100', () => {
+      for (const key of ['ai_max_fixed', 'ai_max_percent']) {
+        expect(issues({ practice: { [key]: 0 } }), `${key}=0`).toEqual([]);
+        expect(issues({ practice: { [key]: 100 } }), `${key}=100`).toEqual([]);
+        for (const bad of [-1, 101, 2.5]) expect(issues({ practice: { [key]: bad } }), `${key}=${bad}`).toEqual([`practice.${key}`]);
+      }
+      expect(SETTINGS_BOUNDS.practice).toMatchObject({ ai_max_fixed: { min: 0, max: 100 }, ai_max_percent: { min: 0, max: 100 } });
+      for (const choice of ['session_max_mode', 'ai_max_mode', 'ai_placement']) expect(SETTINGS_BOUNDS.practice).not.toHaveProperty(choice);
+    });
+
+    it('JSON stored before the change gets the five defaults; a stored unknown choice falls back', () => {
+      expect(withDefaults({ practice: { maxQuestionsPerSession: 30, aiPlacement: 'bogus' } }).practice).toMatchObject({
+        maxQuestionsPerSession: 30, aiPlacement: 'even', sessionMaxMode: 'fixed', aiMaxMode: 'percent', aiMaxFixed: 5, aiMaxPercent: 50,
+      });
+    });
+
+    it('default ≤ maximum is checked only in the fixed mode', () => {
+      const over = { ...SETTINGS_DEFAULTS.practice, defaultQuestionsPerSession: 30, maxQuestionsPerSession: 20 };
+      expect(crossFieldViolations({ ...SETTINGS_DEFAULTS, practice: { ...over, sessionMaxMode: 'fixed' } }))
+        .toEqual(['values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+      expect(crossFieldViolations({ ...SETTINGS_DEFAULTS, practice: { ...over, sessionMaxMode: 'scope_words' } })).toEqual([]);
+    });
+
+    it('a choice change is in the history diff', () => {
+      const random = applyPatch(SETTINGS_DEFAULTS, { practice: { ai_placement: 'random' } });
+      expect(changedFields(SETTINGS_DEFAULTS, random)).toEqual([{ key: 'practice.ai_placement', oldValue: 'even', newValue: 'random' }]);
     });
   });
 
@@ -63,6 +322,26 @@ describe('settings definitions', () => {
     ]);
   });
 
+  it('withDefaults fills the practice group; a stored null for type_word_max_retries stays null', () => {
+    expect(withDefaults({ reminders: {}, learning: {} }).practice).toEqual(SETTINGS_DEFAULTS.practice);
+    const stored = withDefaults({ practice: { typeWordMaxRetries: 3, historyMonths: 12 } }).practice;
+    expect(stored).toEqual({ ...SETTINGS_DEFAULTS.practice, typeWordMaxRetries: 3, historyMonths: 12 });
+    expect(withDefaults({ practice: { typeWordMaxRetries: null } }).practice.typeWordMaxRetries).toBeNull();
+  });
+
+  it('changedFields reports 3 → null and a patch with null sets null', () => {
+    const three = applyPatch(SETTINGS_DEFAULTS, { practice: { type_word_max_retries: 3 } });
+    expect(three.practice.typeWordMaxRetries).toBe(3);
+    const cleared = applyPatch(three, { practice: { type_word_max_retries: null } });
+    expect(cleared.practice.typeWordMaxRetries).toBeNull();
+    expect(changedFields(three, cleared)).toEqual([{ key: 'practice.type_word_max_retries', oldValue: 3, newValue: null }]);
+    expect(changedFields(cleared, cleared)).toEqual([]);
+  });
+
+  it('Bước 7 D8: a stored practice group without ai_prefetch_count reads 2', () => {
+    expect(withDefaults({ practice: { historyMonths: 12 } }).practice.aiPrefetchCount).toBe(2);
+  });
+
   it('stored values missing a key fall back to its default', () => {
     expect(withDefaults(null)).toEqual(SETTINGS_DEFAULTS);
     expect(withDefaults({ reminders: { minGapDays: 5 } }).reminders).toEqual({ ...SETTINGS_DEFAULTS.reminders, minGapDays: 5 });
@@ -74,4 +353,189 @@ describe('settings definitions', () => {
     expect(values.reminders.minGapDays).toBe(2);
     expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
   });
+
+  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85, 200', () => {
+    expect(toApiValues(SETTINGS_DEFAULTS).ai).toEqual(AI_DEFAULTS_API);
+    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85, 200]);
+  });
+
+  it('withDefaults fills the ai group for JSON stored before Bước 6 and keeps a stored null cap', () => {
+    const before6 = { reminders: {}, learning: {}, practice: {}, entitlements: { aiDailyCap: 500 }, content: {} };
+    const values = withDefaults(before6);
+    expect(values.ai).toEqual(SETTINGS_DEFAULTS.ai);
+    expect(values.entitlements.aiDailyCap).toBe(500);
+    expect(withDefaults({ ai: { dailyProviderCallsCap: null } }).ai.dailyProviderCallsCap).toBeNull();
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai).toEqual({ ...SETTINGS_DEFAULTS.ai, usdVndRate: 25000 });
+  });
+
+  it('toApiValues names the ten keys in snake_case', () => {
+    expect(Object.keys(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([
+      'call_timeout_seconds', 'max_concurrent_calls', 'daily_provider_calls_cap', 'content_retention_days', 'usd_vnd_rate',
+      'eval_held_out_ratio', 'admin_daily_usd_cap', 'judge_label_min', 'judge_agreement_min', 'real_judge_limit',
+    ]);
+  });
+
+  it('patch schema rejects min − 1 and max + 1 for every ai key', () => {
+    const edges: Array<[string, number, number]> = [
+      ['call_timeout_seconds', 3, 30], ['max_concurrent_calls', 1, 500], ['daily_provider_calls_cap', 0, 1_000_000],
+      ['content_retention_days', 0, 30], ['usd_vnd_rate', 10_000, 100_000],
+    ];
+    for (const [key, min, max] of edges) {
+      expect(issues({ ai: { [key]: min } }), `${key}=${min}`).toEqual([]);
+      expect(issues({ ai: { [key]: max } }), `${key}=${max}`).toEqual([]);
+      expect(issues({ ai: { [key]: min - 1 } }), `${key}=${min - 1}`).toEqual([`ai.${key}`]);
+      expect(issues({ ai: { [key]: max + 1 } }), `${key}=${max + 1}`).toEqual([`ai.${key}`]);
+      expect(issues({ ai: { [key]: min + 0.5 } }), `${key}=${min + 0.5}`).toEqual([`ai.${key}`]);
+    }
+    expect(issues({ ai: { other: 1 } })).toEqual(['ai']);
+  });
+
+  it('M1-T2: eval_held_out_ratio is 0.1–0.5 with at most two decimals, default 0.3', () => {
+    expect(issues({ ai: { eval_held_out_ratio: 0.1 } })).toEqual([]);
+    expect(issues({ ai: { eval_held_out_ratio: 0.5 } })).toEqual([]);
+    expect(issues({ ai: { eval_held_out_ratio: 0.33 } })).toEqual([]);
+    for (const value of [0.09, 0.51, 0.333]) expect(issues({ ai: { eval_held_out_ratio: value } }), String(value)).toEqual(['ai.eval_held_out_ratio']);
+    expect(SETTINGS_DEFAULTS.ai.evalHeldOutRatio).toBe(0.3);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.eval_held_out_ratio).toBe(0.3);
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.evalHeldOutRatio).toBe(0.3);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { eval_held_out_ratio: 0.25 } }).ai.evalHeldOutRatio).toBe(0.25);
+    expect(SETTINGS_BOUNDS.ai.eval_held_out_ratio).toEqual({ min: 0.1, max: 0.5 });
+  });
+
+  it('M3-T2: admin_daily_usd_cap is 0–1000 in cents or null, default 2', () => {
+    for (const value of [0, 2, 1000, null, 0.01]) expect(issues({ ai: { admin_daily_usd_cap: value } }), String(value)).toEqual([]);
+    for (const value of [-0.01, 1000.01, 1.234]) expect(issues({ ai: { admin_daily_usd_cap: value } }), String(value)).toEqual(['ai.admin_daily_usd_cap']);
+    expect(SETTINGS_DEFAULTS.ai.adminDailyUsdCap).toBe(2);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.admin_daily_usd_cap).toBe(2);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { admin_daily_usd_cap: null } }).ai.adminDailyUsdCap).toBeNull();
+    expect(withDefaults({ ai: { adminDailyUsdCap: null } }).ai.adminDailyUsdCap).toBeNull();
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.adminDailyUsdCap).toBe(2);
+    expect(SETTINGS_BOUNDS.ai.admin_daily_usd_cap).toEqual({ min: 0, max: 1000, nullable: true });
+  });
+
+  it('M3-T2: judge_label_min is a whole number 10–1000 (default 30); judge_agreement_min is 0.5–1 with two decimals (default 0.85)', () => {
+    for (const value of [10, 1000]) expect(issues({ ai: { judge_label_min: value } }), String(value)).toEqual([]);
+    for (const value of [9, 1001, 30.5]) expect(issues({ ai: { judge_label_min: value } }), String(value)).toEqual(['ai.judge_label_min']);
+    for (const value of [0.5, 1, 0.85]) expect(issues({ ai: { judge_agreement_min: value } }), String(value)).toEqual([]);
+    for (const value of [0.49, 1.01, 0.855]) expect(issues({ ai: { judge_agreement_min: value } }), String(value)).toEqual(['ai.judge_agreement_min']);
+    expect(issues({ ai: { judge_label_min: null } })).toEqual(['ai.judge_label_min']);
+    expect(issues({ ai: { judge_agreement_min: null } })).toEqual(['ai.judge_agreement_min']);
+    expect(SETTINGS_DEFAULTS.ai).toMatchObject({ judgeLabelMin: 30, judgeAgreementMin: 0.85 });
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.judgeLabelMin).toBe(30);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { judge_label_min: 50, judge_agreement_min: 0.9 } }).ai).toMatchObject({ judgeLabelMin: 50, judgeAgreementMin: 0.9 });
+  });
+
+  it('M4-T5: real_judge_limit is a whole number 1–500 (default 200)', () => {
+    for (const value of [1, 200, 500]) expect(issues({ ai: { real_judge_limit: value } }), String(value)).toEqual([]);
+    for (const value of [0, 501, 2.5, -1]) expect(issues({ ai: { real_judge_limit: value } }), String(value)).toEqual(['ai.real_judge_limit']);
+    expect(issues({ ai: { real_judge_limit: null } })).toEqual(['ai.real_judge_limit']);
+    expect(SETTINGS_BOUNDS.ai.real_judge_limit).toEqual({ min: 1, max: 500 });
+    expect(SETTINGS_DEFAULTS.ai.realJudgeLimit).toBe(200);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.real_judge_limit).toBe(200);
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.realJudgeLimit).toBe(200);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { real_judge_limit: 50 } }).ai.realJudgeLimit).toBe(50);
+    expect(changedFields(SETTINGS_DEFAULTS, applyPatch(SETTINGS_DEFAULTS, { ai: { real_judge_limit: 50 } }))).toEqual([
+      { key: 'ai.real_judge_limit', oldValue: 200, newValue: 50 },
+    ]);
+  });
+
+  it('accepts null only for daily_provider_calls_cap and admin_daily_usd_cap', () => {
+    for (const key of Object.keys(AI_DEFAULTS_API)) {
+      expect(issues({ ai: { [key]: null } }), key).toEqual(key === 'daily_provider_calls_cap' || key === 'admin_daily_usd_cap' ? [] : [`ai.${key}`]);
+    }
+    const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: null } });
+    expect(patched.ai.dailyProviderCallsCap).toBeNull();
+  });
+
+  it('entitlements.ai_daily_cap accepts null (no cap, owner 02/11/2026) and still 0 and 100000; 100001 and -1 are refused', () => {
+    expect(issues({ entitlements: { ai_daily_cap: null } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 0 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100000 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100001 } })).toEqual(['entitlements.ai_daily_cap']);
+    expect(issues({ entitlements: { ai_daily_cap: -1 } })).toEqual(['entitlements.ai_daily_cap']);
+    const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: null } });
+    expect(patched.entitlements.aiDailyCap).toBeNull();
+    expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBeNull();
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
+  });
+
+  it('accepts 0 for daily_provider_calls_cap and content_retention_days', () => {
+    expect(issues({ ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } })).toEqual([]);
+    const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } });
+    expect([patched.ai.dailyProviderCallsCap, patched.ai.contentRetentionDays]).toEqual([0, 0]);
+    expect(crossFieldViolations(patched)).toEqual([]);
+  });
+
+  it('changedFields reports ai.max_concurrent_calls 50 → 1', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { ai: { max_concurrent_calls: 1 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'ai.max_concurrent_calls', oldValue: 50, newValue: 1 }]);
+  });
 });
+
+describe('apiValueOf (M5-T1)', () => {
+  it('reads a value by the key the history rows name it with', () => {
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'reminders.send_time')).toBe('20:00');
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ads_enabled')).toBe(false);
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'practice.type_word_max_retries')).toBeNull();
+    const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: 5 } });
+    expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBe(5);
+  });
+
+  it('every key toApiValues lists is readable, and an unknown key is undefined (not a property of the object)', () => {
+    for (const [section, fields] of Object.entries(toApiValues(SETTINGS_DEFAULTS))) {
+      for (const [apiKey, value] of Object.entries(fields)) expect(apiValueOf(SETTINGS_DEFAULTS, `${section}.${apiKey}`), `${section}.${apiKey}`).toBe(value);
+    }
+    for (const key of ['entitlements.nope', 'nope.ai_daily_cap', 'entitlements', 'constructor', '__proto__', 'entitlements.constructor', '']) {
+      expect(apiValueOf(SETTINGS_DEFAULTS, key), key).toBeUndefined();
+    }
+  });
+
+  it('LA3#14: the three Free AI keys exist with the defaults 15, 5, 500; 5001 is refused; free_ai_daily_cap does not take null', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS).entitlements;
+    expect([api.free_ai_practice_per_cycle, api.free_ai_lookup_per_cycle, api.free_ai_daily_cap]).toEqual([15, 5, 500]);
+    expect(issues({ entitlements: { free_ai_practice_per_cycle: 5001 } })).toEqual(['entitlements.free_ai_practice_per_cycle']);
+    expect(issues({ entitlements: { free_ai_lookup_per_cycle: 5001 } })).toEqual(['entitlements.free_ai_lookup_per_cycle']);
+    expect(issues({ entitlements: { free_ai_daily_cap: 100001 } })).toEqual(['entitlements.free_ai_daily_cap']);
+    expect(issues({ entitlements: { free_ai_daily_cap: null } })).toEqual(['entitlements.free_ai_daily_cap']);
+    expect(SETTINGS_DEFAULTS.entitlements).toMatchObject({ freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5, freeAiDailyCap: 500 });
+  });
+
+  it('RA-16: no cross rule ties Free AI to Pro AI (Pro can be set below Free, and Free to 0 while Pro stays)', () => {
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_ai_practice_per_cycle: 0, pro_ai_lookup_per_cycle: 0 } }))).toEqual([]);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { free_ai_practice_per_cycle: 0, free_ai_lookup_per_cycle: 0 } }))).toEqual([]);
+  });
+
+  it('JSON stored before launch prep A has no Free AI keys: they fill from the defaults and a bad stored value falls back too', () => {
+    expect(withDefaults({ entitlements: { proAiPracticePerCycle: 12 } }).entitlements)
+      .toMatchObject({ proAiPracticePerCycle: 12, freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5, freeAiDailyCap: 500 });
+    expect(withDefaults({ entitlements: { freeAiPracticePerCycle: 9999, freeAiDailyCap: null } }).entitlements)
+      .toMatchObject({ freeAiPracticePerCycle: 15, freeAiDailyCap: 500 });
+    expect(withDefaults({ entitlements: { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 } }).entitlements)
+      .toMatchObject({ freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 });
+  });
+});
+
+describe('round C (H14): tts.daily_char_cap', () => {
+  it('defaults to 120000 and is a whole number 0–1000000', () => {
+    expect(SETTINGS_DEFAULTS.tts.dailyCharCap).toBe(120_000);
+    expect(SETTINGS_BOUNDS.tts.daily_char_cap).toEqual({ min: 0, max: 1_000_000 });
+    expect(toApiValues(SETTINGS_DEFAULTS).tts).toEqual({ daily_char_cap: 120_000 });
+    for (const value of [0, 120_000, 1_000_000]) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual([]);
+    for (const value of [-1, 1_000_001, 1.5, null, '5']) expect(issues({ tts: { daily_char_cap: value } }), String(value)).toEqual(['tts.daily_char_cap']);
+  });
+
+  it('JSON stored before it gets the default; a stored value is kept; a stored value out of bounds falls back', () => {
+    expect(withDefaults({}).tts.dailyCharCap).toBe(120_000);
+    expect(withDefaults({ tts: { dailyCharCap: 50_000 } }).tts.dailyCharCap).toBe(50_000);
+    expect(withDefaults({ tts: { dailyCharCap: 2_000_000 } }).tts.dailyCharCap).toBe(120_000);
+  });
+
+  it('a patch applies and its change is in the history diff', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { tts: { daily_char_cap: 0 } });
+    expect(next.tts.dailyCharCap).toBe(0);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'tts.daily_char_cap', oldValue: 120_000, newValue: 0 }]);
+    expect(apiValueOf(next, 'tts.daily_char_cap')).toBe(0);
+  });
+});
+

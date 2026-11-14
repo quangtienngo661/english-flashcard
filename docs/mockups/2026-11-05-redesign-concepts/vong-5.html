@@ -1,0 +1,864 @@
+<title>Wordmet vòng năm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Geist:wght@300..700&family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..600&family=JetBrains+Mono:wght@400;500;700&family=Big+Shoulders+Display:wght@800&family=Chakra+Petch:wght@500;700&family=Familjen+Grotesk:wght@400;600&display=swap">
+<style>
+/* Layout: sticky concept/screen switcher, one browser-framed screen, notes under it.
+   Round 5 = D (Tiêu điểm) × K (Thẻ bài) dressed with the soft-skill rules: double-bezel surfaces, island nav and buttons,
+   diffused tinted shadows, spring-like curves. Each concept (.cQ–.cS) keeps its own fixed palette. */
+:root {
+  --sh-bg: #eceef2; --sh-fg: #16181d; --sh-muted: #5b606d; --sh-line: #d5d8df; --sh-card: #ffffff; --sh-chip: #e1e4ea;
+  --soft: cubic-bezier(.32, .72, 0, 1); --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+  --f-shell: 'Geist', system-ui, sans-serif; --f-mono: 'JetBrains Mono', ui-monospace, monospace; --f-disp: 'Bricolage Grotesque', 'Geist', sans-serif; --f-serif: 'Fraunces', Georgia, serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sh-bg: #111318; --sh-fg: #e9ebf0; --sh-muted: #9aa0ad; --sh-line: #2a2e37; --sh-card: #191c22; --sh-chip: #23272f; color-scheme: dark } }
+:root[data-theme="dark"] { --sh-bg: #111318; --sh-fg: #e9ebf0; --sh-muted: #9aa0ad; --sh-line: #2a2e37; --sh-card: #191c22; --sh-chip: #23272f; color-scheme: dark }
+@property --o1x { syntax: '<percentage>'; inherits: true; initial-value: 18% }
+@property --o1y { syntax: '<percentage>'; inherits: true; initial-value: 22% }
+@property --o2x { syntax: '<percentage>'; inherits: true; initial-value: 82% }
+@property --o2y { syntax: '<percentage>'; inherits: true; initial-value: 30% }
+@property --oa { syntax: '<number>'; inherits: true; initial-value: 1 }
+*, *::before, *::after { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--sh-bg); color: var(--sh-fg); font-family: var(--f-shell); font-size: 14px; -webkit-font-smoothing: antialiased }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--sh-bg) }
+button { font: inherit; color: inherit }
+a { color: inherit }
+kbd { font: 500 11px/1.3 var(--f-mono); padding: 1px 6px; border-radius: 6px; border: 1px solid currentColor; opacity: .7 }
+.sw { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; background: color-mix(in oklab, var(--sh-bg) 90%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--sh-line); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.sw-in { max-width: 1320px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center }
+.sw h1 { font-size: 15px; font-weight: 700; margin: 0 auto 0 0 }
+.sw h1 span { color: var(--sh-muted); font-weight: 500 }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; background: var(--sh-chip); padding: 3px; border-radius: 10px }
+.seg button { border: 0; background: transparent; color: var(--sh-muted); font-size: 13px; font-weight: 600; padding: 7px 11px; border-radius: 8px; cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 120ms var(--ease-out) }
+.seg button[aria-pressed="true"] { background: var(--sh-card); color: var(--sh-fg); box-shadow: 0 1px 2px rgb(0 0 0 / .14) }
+.seg button:active { transform: scale(.97) }
+.seg button:focus-visible { outline: 2px solid var(--sh-fg); outline-offset: 2px }
+.seg .tag { font-family: var(--f-mono); font-size: 11px; opacity: .6; margin-right: 5px }
+.stage { max-width: 1320px; margin: 0 auto; padding-block: 18px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px }
+.howto { margin: 0; color: var(--sh-muted); font-size: 13px; line-height: 1.55 }
+.howto kbd { border-color: var(--sh-line); background: var(--sh-card); opacity: 1 }
+.frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--sh-line); background: var(--sh-card); box-shadow: 0 24px 60px -36px rgb(0 0 0 / .45) }
+.frame-bar { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 14px; background: var(--sh-chip); border-bottom: 1px solid var(--sh-line) }
+.dots { display: flex; gap: 6px } .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--sh-line) }
+.url { flex: 1; max-width: 420px; margin: 0 auto; text-align: center; font: 12px var(--f-mono); color: var(--sh-muted); background: var(--sh-card); padding: 3px 10px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.viewport { container-type: inline-size; position: relative; overflow: hidden }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px }
+.note { background: var(--sh-card); border: 1px solid var(--sh-line); border-radius: 12px; padding: 14px 16px; min-width: 0 }
+.note h3 { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--sh-muted); margin: 0 0 6px; font-weight: 600 }
+.note p { margin: 0; font-size: 14px; line-height: 1.55 }
+.foot-note { margin: 0; color: var(--sh-muted); font-size: 12px; line-height: 1.5 }
+
+/* ---------- shared screen mechanics ---------- */
+.screen { min-height: 800px; display: flex; flex-direction: column; position: relative; isolation: isolate }
+.play .rise { animation: soft-in 820ms var(--soft) both; animation-delay: calc(80ms + var(--i, 0) * 70ms) }
+.play.app .rise { animation-duration: 420ms; animation-name: soft-in-app; animation-delay: calc(var(--i, 0) * 45ms) }
+@keyframes soft-in { from { opacity: 0; transform: translateY(28px); filter: blur(8px) } }
+@keyframes soft-in-app { from { opacity: 0; transform: translateY(10px); filter: blur(3px) } }
+@keyframes fade { from { opacity: 0 } }
+@keyframes wig { 0%, 100% { transform: translateX(0) } 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+@keyframes blink { 50% { opacity: 0 } }
+.caret { display: inline-block; width: 2px; height: 1.05em; background: currentColor; margin-left: 2px; vertical-align: -.15em; animation: blink 1s steps(1) infinite }
+.mono { font-family: var(--f-mono) }
+.fx { display: inline-block; transition: opacity 220ms ease, filter 220ms ease, transform 220ms var(--soft) }
+.fx.out { opacity: 0; filter: blur(8px); transform: translateY(-4px) }
+.opt { -webkit-tap-highlight-color: transparent }
+.opt:focus-visible { outline: 2px solid currentColor; outline-offset: 4px }
+
+/* double bezel: outer tray + inner core with concentric radius */
+.bz { --r: 2rem; --pad: 6px; border-radius: var(--r); padding: var(--pad); background: var(--shell); box-shadow: inset 0 0 0 1px var(--ring), var(--lift-shadow) }
+.bz > .core { height: 100%; border-radius: calc(var(--r) - var(--pad)); background: var(--core); box-shadow: inset 0 1px 1px var(--hi); padding: 22px 24px; min-width: 0 }
+.eb { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 13px; font: 500 12px var(--f-shell); letter-spacing: .14em; text-transform: uppercase; background: var(--eb-bg); color: var(--eb-fg) }
+.eb i { width: 6px; height: 6px; border-radius: 50%; background: var(--acc) }
+/* island button with nested trailing icon */
+.isl { display: inline-flex; align-items: center; gap: 14px; padding: 7px 7px 7px 22px; border: 0; border-radius: 999px; background: var(--isl-bg); color: var(--isl-fg); font: 600 15px var(--f-shell); cursor: pointer; white-space: nowrap; transition: transform 500ms var(--soft), box-shadow 500ms var(--soft) }
+.isl .ic { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--isl-ic); font-size: 15px; transition: transform 500ms var(--soft) }
+.isl .ic kbd { border: 0; opacity: .85; padding: 0 }
+@media (hover: hover) and (pointer: fine) { .isl:hover .ic { transform: translate(3px, -1px) scale(1.06) } }
+.isl:active { transform: scale(.98) }
+.isl:focus-visible { outline: 2px solid var(--acc); outline-offset: 4px }
+.isl.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ring) }
+.isl.ghost .ic { background: var(--eb-bg) }
+.isl.sm { font-size: 14px; padding: 5px 5px 5px 16px; gap: 10px }
+.isl.sm .ic { width: 30px; height: 30px; font-size: 13px }
+.tlink { border: 0; background: none; cursor: pointer; font: 500 14px var(--f-shell); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: color-mix(in oklab, currentColor 35%, transparent); padding: 6px 2px }
+/* floating island nav */
+.inav { position: sticky; top: 14px; z-index: 5; margin: 16px auto 0; width: max-content; max-width: calc(100% - 32px); display: flex; align-items: center; gap: 18px; padding: 6px 6px 6px 20px; border-radius: 999px; background: var(--nav-bg); box-shadow: inset 0 0 0 1px var(--ring), 0 18px 40px -24px var(--shadow-tint); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2) }
+.inav .links { display: flex; gap: 4px }
+.inav .links a { padding: 7px 12px; border-radius: 999px; font-size: 14px; color: var(--muted); text-decoration: none; transition: color 200ms ease, background-color 200ms ease }
+.inav .links a[aria-current] { background: var(--eb-bg); color: var(--ink) }
+.inav .av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--isl-bg); color: var(--isl-fg) }
+@container (max-width: 760px) { .inav .links { display: none } }
+.word { font: 700 20px var(--f-disp); letter-spacing: -.04em; white-space: nowrap; color: var(--ink) }
+.word::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); margin-left: 2px }
+.hb { position: relative; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--eb-bg); cursor: pointer; flex: none }
+.hb i { position: absolute; left: 12px; right: 12px; height: 1.5px; border-radius: 1px; background: var(--ink); transition: transform 600ms var(--soft), top 600ms var(--soft) }
+.hb i:nth-child(1) { top: 16px } .hb i:nth-child(2) { top: 23px }
+.screen[data-open] .hb i:nth-child(1) { top: 19.5px; transform: rotate(45deg) }
+.screen[data-open] .hb i:nth-child(2) { top: 19.5px; transform: rotate(-45deg) }
+.hb:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px }
+.ov { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; padding: 120px 56px 56px; background: var(--ov-bg); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); opacity: 0; visibility: hidden; transition: opacity 600ms var(--soft), visibility 0s linear 600ms }
+.screen[data-open] .ov { opacity: 1; visibility: visible; transition: opacity 600ms var(--soft), visibility 0s }
+.ov nav { display: grid; gap: 6px }
+.ov a { font: 600 clamp(40px, 6cqi, 76px)/1.15 var(--f-disp); letter-spacing: -.04em; color: var(--ink); text-decoration: none; overflow: hidden; display: block }
+.ov a span { display: inline-block; transform: translateY(110%); opacity: 0; transition: transform 700ms var(--soft), opacity 500ms ease }
+.screen[data-open] .ov a span { transform: none; opacity: 1; transition-delay: calc(100ms + var(--k) * 60ms) }
+.ov a small { font: 500 12px var(--f-mono); color: var(--muted); margin-left: 14px; letter-spacing: 0 }
+
+/* ---------- shared card (K frame, D face) ---------- */
+.t0 { --f: linear-gradient(135deg, #dcd8ce, #fbfaf6 45%, #cfcabf) }
+.t1 { --f: linear-gradient(135deg, #a8683c, #edbb92 45%, #8a5430) }
+.t2 { --f: linear-gradient(135deg, #8f97a5, #f6f8fb 45%, #848c99) }
+.t3 { --f: linear-gradient(135deg, #b88a1c, #f9e491 45%, #98700f) }
+.t4 { --f: linear-gradient(135deg, #0f7a5c, #86e8c8 45%, #0c654c) }
+.t5 { --f: conic-gradient(from 210deg, #ff8ad8, #ffd36b, #8dffb5, #7ad7ff, #b28bff, #ff8ad8) }
+.kc { --wn: 190; --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; --fx: 0px; --fy: 0px; --fr: 0deg; --lift: 0px; --sc: 1; position: relative; width: calc(var(--wn) * 1px); max-width: 100%; aspect-ratio: 63 / 88; font-size: calc(var(--wn) * .0632px); border-radius: .9em; padding: .55em; background: var(--f); transform: translate(var(--fx), calc(var(--fy) + var(--lift))) rotate(var(--fr)) scale(var(--sc)) perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)); box-shadow: 0 2.4em 3.6em -2em var(--card-shadow, rgb(30 30 60 / .38)), 0 .6em 1.2em -.8em var(--card-shadow, rgb(30 30 60 / .3)); transition: transform 700ms var(--soft); flex: none }
+.kc.tilting { transition: transform 90ms linear }
+.kc::after { content: ""; position: absolute; inset: 0; border-radius: .9em; pointer-events: none; background: radial-gradient(circle at var(--mx) var(--my), rgb(255 255 255 / .6), transparent 48%); mix-blend-mode: soft-light; opacity: 0; transition: opacity 300ms ease }
+.kc.tilting::after { opacity: 1 }
+.kc-in { position: relative; height: 100%; border-radius: .55em; background: #f7f5f0; color: #1a1530; overflow: hidden; display: flex; flex-direction: column; box-shadow: inset 0 1px 1px rgb(255 255 255 / .9) }
+.kc.t5 .kc-in::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .75; background: repeating-linear-gradient(115deg, rgb(255 120 220 / 0) 0, rgb(255 120 220 / .28) 6%, rgb(120 220 255 / .28) 12%, rgb(160 255 180 / .28) 18%, rgb(255 120 220 / 0) 24%); background-size: 260% 260%; background-position: var(--mx) var(--my) }
+.kc::before { content: ""; position: absolute; inset: 0; border-radius: .9em; z-index: 3; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / .85) 50%, transparent 65%); background-size: 250% 100%; background-position: 130% 0; opacity: 0 }
+.kc.shine::before { animation: shine 760ms var(--soft) }
+@keyframes shine { 0% { opacity: 1; background-position: 130% 0 } 100% { opacity: 1; background-position: -40% 0 } }
+.kc.flinch { animation: wig 320ms ease }
+.kd { flex: 1; display: flex; flex-direction: column; padding: .8em .9em .7em }
+.kd .top { display: flex; justify-content: space-between; font: 500 .72em var(--f-mono); color: #6d6d78 }
+.kd .w { flex: 1; display: grid; place-items: center; text-align: center; font: 700 min(3.1em, calc(21em / var(--len, 6)))/1.05 var(--f-disp); letter-spacing: -.04em; color: #0c0c10; overflow-wrap: break-word }
+.kd .w.long { font-size: 1.3em; font-weight: 600; letter-spacing: -.01em; line-height: 1.3 }
+.kd .p { font: 500 .78em var(--f-mono); color: #6d6d78; text-align: center; margin: 0 }
+.kd .m { font: 500 1.05em/1.35 var(--f-shell); text-align: center; margin: .25em 0 .5em; color: #0c0c10; min-height: 1.35em }
+.kd .bot { display: flex; justify-content: space-between; font: 500 .72em var(--f-mono); color: #6d6d78; padding-top: .5em; box-shadow: 0 -1px 0 rgb(0 0 0 / .06) }
+.kn { display: flex; justify-content: space-between; align-items: baseline; gap: .4em; padding: .55em .7em .4em; font: 800 1.7em/1.15 'Big Shoulders Display', sans-serif; text-transform: uppercase; min-width: 0 }
+.kn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.kn small { font: 700 .5em 'Chakra Petch', sans-serif; padding: .15em .45em; border-radius: .4em; background: #1a1530; color: #fff; flex: none }
+.ka { flex: 1; min-height: 0; margin: 0 .55em; border-radius: .35em; display: grid; place-items: center; overflow: hidden }
+.ka.g0 { background: repeating-linear-gradient(45deg, #6b3cf0 0 .5em, #7d55f3 .5em 1em) }
+.ka.g1 { background: radial-gradient(#22b8b4 32%, transparent 34%) 0 0 / .9em .9em, #0e7f7c }
+.ka.g2 { background: linear-gradient(90deg, rgb(255 255 255 / .18) 1px, transparent 1px) 0 0 / .8em .8em, linear-gradient(rgb(255 255 255 / .18) 1px, transparent 1px) 0 0 / .8em .8em, #e2467f }
+.ka b { font: 800 6em/1 'Big Shoulders Display', sans-serif; color: rgb(255 255 255 / .35); text-transform: uppercase }
+.kt { display: flex; justify-content: space-between; gap: .5em; padding: .4em .7em; font: 500 .8em 'Chakra Petch', sans-serif; margin-top: .5em; box-shadow: 0 -1px 0 rgb(26 21 48 / .1), 0 1px 0 rgb(26 21 48 / .1) }
+.kx { padding: .45em .7em .3em; font: 400 1em/1.35 'Familjen Grotesk', sans-serif; min-height: 4.4em }
+.kx b { display: block; font-size: 1.2em; font-weight: 600 }
+.kx i { color: #5f5a78; font-size: .9em }
+.kf { display: flex; justify-content: space-between; padding: .3em .7em .5em; font: 700 .72em 'Chakra Petch', sans-serif; color: #5f5a78 }
+.tag { position: absolute; top: -16px; left: 50%; z-index: 4; transform: translateX(-50%) scale(.6); opacity: 0; font: 600 12px var(--f-mono); white-space: nowrap; padding: 7px 14px; border-radius: 999px; background: var(--isl-bg); color: var(--isl-fg); transition: transform 500ms var(--ease-spring), opacity 260ms ease }
+.tag.on { transform: translateX(-50%) scale(1); opacity: 1 }
+.tag.up { background: #13784a; color: #fff }
+.track { display: flex; height: 12px; gap: 4px }
+.track i { flex: var(--n); background: var(--f); border-radius: 999px; transform-origin: left }
+.play .track i { animation: grow 900ms var(--soft) both; animation-delay: calc(260ms + var(--k) * 70ms) }
+@keyframes grow { from { transform: scaleX(.05) } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font: 500 12px var(--f-mono); color: var(--muted) }
+.legend b { color: var(--ink); font-weight: 600 }
+.legend .due::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); margin-right: 6px; vertical-align: 1px }
+.fb { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; animation: soft-in-app 420ms var(--soft) }
+.fb p { margin: 0; font-size: 15px; max-width: 54ch; line-height: 1.5 }
+.qhint { margin: 0; color: var(--muted); font-size: 15px; animation: fade 260ms ease }
+
+/* ============ Q · Bento mềm ============ */
+.cQ { --ink: #0d0f14; --muted: #6b7080; --acc: #d6336c; --shell: rgb(255 255 255 / .5); --ring: rgb(13 15 20 / .06); --core: #ffffff; --hi: rgb(255 255 255 / 1); --shadow-tint: rgb(40 50 90 / .3);
+  --lift-shadow: 0 40px 80px -48px rgb(40 50 90 / .28), 0 14px 28px -20px rgb(40 50 90 / .14); --eb-bg: rgb(13 15 20 / .05); --eb-fg: #3b3f4c; --isl-bg: #0d0f14; --isl-fg: #fff; --isl-ic: rgb(255 255 255 / .14); --nav-bg: rgb(255 255 255 / .72); --ov-bg: rgb(238 240 244 / .86); --card-shadow: rgb(40 50 90 / .32);
+  font-family: var(--f-shell); color: var(--ink); background: radial-gradient(1100px 620px at 12% -12%, #ffffff, transparent 62%), radial-gradient(900px 520px at 100% 0%, #f7eef3, transparent 60%), #eceef2 }
+.q-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 34px 32px 56px }
+.q-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px }
+.q-bento > * { min-width: 0 }
+.s8 { grid-column: span 8 } .s7 { grid-column: span 7 } .s6 { grid-column: span 6 } .s5 { grid-column: span 5 } .s4 { grid-column: span 4 } .s3 { grid-column: span 3 } .r2 { grid-row: span 2 }
+@container (max-width: 880px) { .q-bento { grid-template-columns: 1fr; gap: 22px } .q-bento > * { grid-column: auto; grid-row: auto } }
+.q-num { font: 700 clamp(120px, 15cqi, 196px)/.8 var(--f-disp); letter-spacing: -.065em; margin: 26px 0 16px; font-variant-numeric: tabular-nums }
+.q-lbl { font: 600 30px/1.2 var(--f-disp); letter-spacing: -.03em; margin: 0 }
+.q-sub { color: var(--muted); margin: 8px 0 24px; font-size: 15px }
+.q-cta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 30px }
+.q-tray { display: grid; place-items: center; height: 100%; gap: 14px; padding: 12px 0 }
+.q-tray .kc { --wn: 230 }
+.q-cap { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 }
+.q-h3 { font: 600 18px var(--f-disp); letter-spacing: -.02em; margin: 0 0 14px }
+.q-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px }
+.q-list li { display: flex; justify-content: space-between; gap: 10px; padding: 11px 14px; border-radius: 14px; background: rgb(13 15 20 / .03); font-size: 15px; transition: background-color 300ms var(--soft) }
+@media (hover: hover) and (pointer: fine) { .q-list li:hover { background: rgb(13 15 20 / .06) } }
+.q-list .mono { font-size: 12px; color: var(--muted) }
+.q-in { --r: 1.2rem; --pad: 4px; margin-bottom: 12px }
+.q-in > .core { padding: 12px 16px; font: 500 22px var(--f-mono); display: flex; align-items: center }
+.q-found { margin: 0 0 14px; font-size: 15px } .q-found b { color: var(--acc) }
+.q-ring { display: flex; align-items: center; gap: 16px }
+.q-ring svg { width: 84px; height: 84px; transform: rotate(-90deg) }
+.q-ring circle { fill: none; stroke-width: 8; stroke-linecap: round }
+.q-ring .bg { stroke: rgb(13 15 20 / .07) } .q-ring .fg { stroke: var(--ink); stroke-dasharray: 1; stroke-dashoffset: .333 }
+.play .q-ring .fg { animation: ring 1000ms var(--soft) 300ms both }
+@keyframes ring { from { stroke-dashoffset: 1 } }
+.q-ring b { font: 600 34px/1 var(--f-disp); letter-spacing: -.03em } .q-ring b small { font-size: 16px; color: var(--muted) }
+.q-ring p { margin: 4px 0 0; font-size: 13px; color: var(--muted) }
+.q-session { flex: 1; display: flex; flex-direction: column }
+.q-prog { display: flex; align-items: center; gap: 14px; font: 500 12px var(--f-mono); color: var(--muted) }
+.q-prog .bar { width: 160px; height: 6px; border-radius: 999px; background: rgb(13 15 20 / .08); overflow: hidden }
+.q-prog .bar i { display: block; height: 100%; border-radius: 999px; background: var(--acc); transform-origin: left; transform: scaleX(var(--p, .2)); transition: transform 700ms var(--soft) }
+.q-stagec { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 30px 32px 40px }
+.q-stagetray { --r: 2.6rem; --pad: 8px; width: min(760px, 100%) }
+.q-stagetray > .core { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 34px; align-items: center; padding: 30px 34px; background: linear-gradient(180deg, #ffffff, #f7f8fb) }
+@container (max-width: 760px) { .q-stagetray > .core { grid-template-columns: 1fr; justify-items: center; text-align: center } }
+.q-cardwrap { position: relative }
+.q-cardwrap .kc { --wn: 230 }
+.q-ask { margin: 0 0 6px; font: 500 12px var(--f-mono); color: var(--muted) }
+.q-promptbig { font: 700 clamp(44px, 6cqi, 72px)/1.05 var(--f-disp); letter-spacing: -.045em; margin: 0 0 10px; text-wrap: balance }
+.q-promptbig.long { font-size: 30px; font-weight: 600; letter-spacing: -.015em; line-height: 1.3 }
+.q-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: min(760px, 100%) }
+@container (max-width: 640px) { .q-opts { grid-template-columns: 1fr } }
+.qo { --r: 999px; --pad: 4px; border: 0; cursor: pointer; text-align: left; transition: transform 500ms var(--soft), opacity 300ms ease }
+.qo > .core { display: flex; align-items: center; gap: 14px; padding: 12px 20px 12px 12px; transition: background-color 300ms var(--soft) }
+.qo .key { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgb(13 15 20 / .05); font: 500 12px var(--f-mono); transition: transform 500ms var(--soft), background-color 300ms ease, color 300ms ease; flex: none }
+.qo .lbl { font: 500 22px var(--f-disp); letter-spacing: -.02em }
+@media (hover: hover) and (pointer: fine) { .qo:hover { transform: translateY(-2px) } .qo:hover .key { transform: translateX(2px) scale(1.06) } }
+.qo:active { transform: scale(.98) }
+.qo.is-right > .core, .qo.is-answer > .core { background: #e6f5ec } .qo.is-right .key, .qo.is-answer .key { background: #13784a; color: #fff }
+.qo.is-wrong > .core { background: #fde8ef } .qo.is-wrong .key { background: var(--acc); color: #fff } .qo.is-wrong { animation: wig 320ms ease }
+.qo.is-dim { opacity: .4 }
+.q-session .fb.ok p { color: #13784a }
+.q-lhero { width: 100%; max-width: 1180px; margin: 0 auto; padding: 90px 32px 40px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 40px; align-items: center }
+@container (max-width: 880px) { .q-lhero { grid-template-columns: 1fr; padding-top: 50px } }
+.q-lhero h2 { font: 700 clamp(48px, 6.6cqi, 88px)/1 var(--f-disp); letter-spacing: -.055em; margin: 20px 0 22px; text-wrap: balance }
+.q-lhero h2 span { color: var(--muted); font-weight: 400 }
+.lead { font-size: 18px; line-height: 1.6; color: var(--muted); max-width: 44ch; margin: 0 0 30px }
+.lcta { display: flex; gap: 18px; align-items: center; flex-wrap: wrap }
+.lcta p { margin: 0; font-size: 13px; color: var(--muted) }
+.q-ltray { --r: 2.4rem; --pad: 8px; justify-self: center }
+.q-ltray > .core { padding: 34px; display: grid; place-items: center; background: linear-gradient(180deg, #fff, #f5f6f9) }
+.q-ltray .kc { --wn: 250 }
+.q-feat { width: 100%; max-width: 1180px; margin: 0 auto; padding: 20px 32px 100px }
+.q-feat h3 { font: 600 24px/1.2 var(--f-disp); letter-spacing: -.025em; margin: 14px 0 8px }
+.q-feat p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 15px; max-width: 40ch }
+.ladder { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px }
+.ladder span { display: grid; justify-items: center; gap: 6px; font: 500 11px var(--f-mono); color: var(--muted); text-align: center }
+.ladder span i { width: 44px; aspect-ratio: 63 / 88; border-radius: 6px; background: var(--f); display: block; box-shadow: 0 10px 18px -12px rgb(40 50 90 / .5) }
+.ladder span b { font: 600 13px var(--f-shell); color: var(--ink) }
+.q-feat .q-morph { font: 700 clamp(44px, 5.4cqi, 72px)/1.05 var(--f-disp); letter-spacing: -.05em; margin: 26px 0 14px; color: var(--ink); max-width: none }
+.q-feat .q-morph .to { color: var(--acc) }
+.q-feat .q-free { font: 700 clamp(80px, 9cqi, 120px)/1 var(--f-disp); letter-spacing: -.06em; margin: 16px 0 6px; color: var(--ink) }
+
+/* ============ R · Kính đêm ============ */
+.cR { --ink: #f2f2f5; --muted: #9b9bab; --acc: #ff4f8b; --shell: rgb(255 255 255 / .03); --ring: rgb(255 255 255 / .09); --core: rgb(16 16 24 / .72); --hi: rgb(255 255 255 / .1); --shadow-tint: rgb(0 0 0 / .8);
+  --lift-shadow: 0 40px 80px -40px rgb(0 0 0 / .7); --eb-bg: rgb(255 255 255 / .07); --eb-fg: #d9d9e2; --isl-bg: #f2f2f5; --isl-fg: #0a0a0f; --isl-ic: rgb(10 10 15 / .1); --nav-bg: rgb(16 16 24 / .55); --ov-bg: rgb(6 6 9 / .82); --card-shadow: rgb(0 0 0 / .75);
+  font-family: var(--f-shell); color: var(--ink); color-scheme: dark }
+.cR .screen { background: radial-gradient(640px 460px at var(--o1x) var(--o1y), rgb(214 51 108 / calc(.30 * var(--oa))), transparent 70%), radial-gradient(720px 520px at var(--o2x) var(--o2y), rgb(107 60 240 / calc(.32 * var(--oa))), transparent 70%), radial-gradient(520px 420px at 50% 112%, rgb(20 160 140 / .12), transparent 70%), #060609; transition: --o1x 1.4s var(--soft), --o1y 1.4s var(--soft), --o2x 1.4s var(--soft), --o2y 1.4s var(--soft), --oa .9s ease }
+.r-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 34px 32px 56px; display: grid; gap: 30px }
+.r-top { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 30px; align-items: center }
+@container (max-width: 880px) { .r-top { grid-template-columns: 1fr } }
+.r-num { font: 700 clamp(120px, 15cqi, 200px)/.8 var(--f-disp); letter-spacing: -.065em; margin: 24px 0 16px; text-shadow: 0 0 60px rgb(255 79 139 / .25) }
+.r-lbl { font: 600 30px/1.2 var(--f-disp); letter-spacing: -.03em; margin: 0 }
+.r-sub { color: var(--muted); margin: 8px 0 26px; font-size: 15px }
+.cascade { position: relative; height: 360px }
+.cascade .kc { --wn: 180; position: absolute; left: 50%; top: 50%; margin: -126px 0 0 -90px; --fx: calc((var(--k) - 2) * 92px); --fy: calc(var(--d, 0) * 1px); --fr: calc((var(--k) - 2) * 6deg); --sc: calc(1 - var(--depth, 0) * .05); z-index: var(--z, 1); transition: transform 700ms var(--soft), filter 500ms ease }
+.cascade .kc:nth-child(1) { --depth: 2; --z: 1; --d: 26 } .cascade .kc:nth-child(2) { --depth: 1; --z: 2; --d: 8 } .cascade .kc:nth-child(3) { --depth: 0; --z: 5; --d: 0 } .cascade .kc:nth-child(4) { --depth: 1; --z: 2; --d: 8 } .cascade .kc:nth-child(5) { --depth: 2; --z: 1; --d: 26 }
+@media (hover: hover) and (pointer: fine) { .cascade .kc:hover { --lift: -26px; --fr: 0deg; --sc: 1.04; z-index: 9 } }
+.play .cascade .kc { animation: r-deal 900ms var(--soft) both; animation-delay: calc(200ms + var(--k) * 80ms) }
+@keyframes r-deal { from { opacity: 0; transform: translate(0, 80px) scale(.9) } }
+@container (max-width: 760px) { .cascade { height: auto; display: flex; gap: 14px; overflow-x: auto; padding: 10px 0 } .cascade .kc { position: relative; left: auto; top: auto; margin: 0; --fx: 0px; --fy: 0px; --fr: 0deg; --sc: 1 } }
+.glass { border-radius: 1.6rem; padding: 6px; background: var(--shell); box-shadow: inset 0 0 0 1px var(--ring) }
+.glass > .core { border-radius: calc(1.6rem - 6px); padding: 18px 20px; background: var(--core); box-shadow: inset 0 1px 0 var(--hi); height: 100% }
+.r-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .8fr); gap: 16px }
+@container (max-width: 880px) { .r-row { grid-template-columns: 1fr } }
+.r-h3 { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 0 12px }
+.r-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.r-chips span { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .05) }
+.r-chips b { font: 600 22px/1 var(--f-disp); letter-spacing: -.02em } .r-chips small { font: 500 11px var(--f-mono); color: var(--muted) }
+.r-chips i { width: 18px; height: 4px; border-radius: 2px; background: var(--f); display: block; margin-bottom: 6px }
+.r-chips .d { color: var(--acc) }
+.r-in { font: 500 22px var(--f-mono); display: flex; align-items: center; margin: 0 0 6px }
+.r-found { margin: 0 0 14px; font-size: 15px } .r-found b { color: var(--acc) }
+.r-q { font: 600 44px/1 var(--f-disp); letter-spacing: -.03em; margin: 0 } .r-q small { font-size: 18px; color: var(--muted) }
+.r-small { color: var(--muted); font-size: 13px; margin: 8px 0 0; line-height: 1.5 }
+.r-session { flex: 1; display: flex; flex-direction: column }
+.r-stagec { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 26px 32px 40px }
+.r-deck { position: relative; width: 230px; height: 322px }
+.r-deck .ghost { position: absolute; inset: 0; border-radius: 15px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08); transform: translate(calc(var(--g) * 26px), calc(var(--g) * 8px)) rotate(calc(var(--g) * 5deg)) scale(calc(1 - var(--g) * .05)) }
+.r-deck .kc { --wn: 230; position: relative; z-index: 2 }
+.r-deck .tag { top: -18px }
+.r-ask { margin: 0; font: 500 12px var(--f-mono); color: var(--muted) }
+.r-prompt { font: 700 clamp(48px, 6.4cqi, 84px)/1.02 var(--f-disp); letter-spacing: -.05em; margin: 0; text-align: center; text-wrap: balance }
+.r-prompt.long { font-size: 30px; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; max-width: 24ch }
+.r-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(900px, 100%) }
+@container (max-width: 700px) { .r-opts { grid-template-columns: 1fr 1fr } }
+.ro { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 18px 6px 6px; border: 0; border-radius: 999px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1), inset 0 1px 0 rgb(255 255 255 / .06); color: var(--ink); cursor: pointer; transition: transform 500ms var(--soft), box-shadow 400ms ease, background-color 300ms ease, opacity 300ms ease }
+.ro .key { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgb(255 255 255 / .06); font: 500 12px var(--f-mono); color: var(--muted); transition: transform 500ms var(--soft), background-color 300ms ease, color 300ms ease; flex: none }
+.ro .lbl { font: 500 20px var(--f-disp); letter-spacing: -.02em }
+@media (hover: hover) and (pointer: fine) { .ro:hover { box-shadow: inset 0 0 0 1px rgb(255 255 255 / .3), 0 0 30px rgb(255 79 139 / .15) } .ro:hover .key { transform: translateX(2px) scale(1.06) } }
+.ro:active { transform: scale(.98) }
+.ro.is-right, .ro.is-answer { background: rgb(95 224 160 / .1); box-shadow: inset 0 0 0 1.5px #5fe0a0 } .ro.is-right .key, .ro.is-answer .key { background: #5fe0a0; color: #06110b }
+.ro.is-wrong { box-shadow: inset 0 0 0 1.5px var(--acc); animation: wig 320ms ease } .ro.is-wrong .key { background: var(--acc); color: #fff }
+.ro.is-dim { opacity: .35 }
+.r-session .fb.ok p { color: #a5f3c8 }
+.r-lhero { width: 100%; max-width: 1180px; margin: 0 auto; padding: 90px 32px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; align-items: center }
+@container (max-width: 880px) { .r-lhero { grid-template-columns: 1fr; padding-top: 50px } }
+.r-lhero h2 { font: 700 clamp(48px, 6.4cqi, 86px)/1.02 var(--f-disp); letter-spacing: -.055em; margin: 20px 0 22px; text-wrap: balance }
+.r-lhero h2 span { color: var(--acc) }
+.r-lhero .lead { color: var(--muted) }
+.r-strip { width: 100%; max-width: 1180px; margin: 0 auto 100px; padding: 0 32px }
+.r-strip .core { display: flex; align-items: baseline; gap: clamp(18px, 4cqi, 54px); flex-wrap: wrap; padding: 22px 28px }
+.r-strip b { font: 600 clamp(36px, 5.4cqi, 68px)/1 var(--f-disp); letter-spacing: -.045em }
+.r-strip b:last-of-type { color: var(--acc) }
+.r-strip span { font: 500 12px var(--f-mono); color: var(--muted) }
+
+/* ============ S · Biên tập ============ */
+.cS { --ink: #2a211c; --muted: #7a6e66; --acc: #c8325f; --sage: #dfe5d8; --sage2: #9fb197; --shell: rgb(42 33 28 / .04); --ring: rgb(42 33 28 / .07); --core: #fbf8f2; --hi: rgb(255 255 255 / .9); --shadow-tint: rgb(80 60 40 / .3);
+  --lift-shadow: 0 40px 80px -50px rgb(80 60 40 / .3), 0 14px 28px -22px rgb(80 60 40 / .16); --eb-bg: rgb(42 33 28 / .06); --eb-fg: #5a4d45; --isl-bg: #2a211c; --isl-fg: #f6f2ea; --isl-ic: rgb(246 242 234 / .14); --nav-bg: rgb(251 248 242 / .76); --ov-bg: rgb(246 242 234 / .88); --card-shadow: rgb(80 60 40 / .34);
+  font-family: var(--f-shell); color: var(--ink); background: #f6f2ea }
+.cS .screen::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .05; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>") }
+.cS .serif { font-family: var(--f-serif) }
+.s-split { flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: 70px 32px 60px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 50px; align-items: center }
+@container (max-width: 900px) { .s-split { grid-template-columns: 1fr; padding-top: 40px } }
+.s-h { font: 350 clamp(52px, 7cqi, 96px)/1.04 var(--f-serif); font-variation-settings: 'opsz' 144; letter-spacing: -.035em; margin: 18px 0 20px; text-wrap: balance }
+.s-h em { font-style: italic; font-weight: 300; color: var(--acc) }
+.s-sub { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0 0 28px; max-width: 42ch }
+.s-stats { display: flex; gap: 40px; margin-top: 44px; flex-wrap: wrap }
+.s-stats div { display: grid; gap: 4px }
+.s-stats b { font: 400 44px/1 var(--f-serif); font-variation-settings: 'opsz' 144; letter-spacing: -.03em }
+.s-stats span { font: 500 11px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .12em }
+.s-scroll { position: relative }
+.s-strip { display: flex; gap: 20px; overflow-x: auto; padding: 30px 10px 40px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-mask: linear-gradient(90deg, transparent, #000 6%, #000 88%, transparent); mask: linear-gradient(90deg, transparent, #000 6%, #000 88%, transparent); cursor: grab }
+.s-strip::-webkit-scrollbar { display: none }
+.s-strip .kc { --wn: 190; scroll-snap-align: center; --fy: calc(var(--k) * 0px) }
+.s-strip .kc:nth-child(even) { --fy: 26px }
+.play .s-strip .kc { animation: s-in 900ms var(--soft) both; animation-delay: calc(240ms + var(--k) * 90ms) }
+@keyframes s-in { from { opacity: 0; transform: translateX(60px) } }
+.s-cap { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 10px }
+.s-tiers { list-style: none; margin: 26px 10px 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 24px }
+.s-tiers li { display: flex; align-items: baseline; gap: 10px }
+.s-tiers b { font: 400 34px/1 var(--f-serif); letter-spacing: -.03em }
+.s-tiers span { font-size: 13px; color: var(--muted) }
+.s-tiers i { width: 10px; height: 10px; border-radius: 50%; background: var(--f); display: inline-block; flex: none; transform: translateY(-3px) }
+.s-low { width: 100%; max-width: 1240px; margin: 0 auto 80px; padding: 0 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px }
+@container (max-width: 760px) { .s-low { grid-template-columns: 1fr } }
+.s-low .core { padding: 22px 26px }
+.s-low h3 { font: 500 11px var(--f-mono); color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin: 0 0 10px }
+.s-in { font: 400 30px var(--f-serif); font-style: italic; display: flex; align-items: center; margin: 0 0 4px }
+.s-found { margin: 0 0 14px; font-size: 15px } .s-found b { color: var(--acc) }
+.s-q { font: 400 52px/1 var(--f-serif); letter-spacing: -.03em; margin: 0 } .s-q small { font-size: 22px; color: var(--muted) }
+.s-small { font-size: 14px; color: var(--muted); margin: 8px 0 0 }
+.s-session { flex: 1; display: flex; flex-direction: column }
+.s-pstage { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 50px 32px 50px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 50px; align-items: center }
+@container (max-width: 880px) { .s-pstage { grid-template-columns: 1fr } }
+.s-prompt { font: 350 clamp(64px, 9cqi, 124px)/1.04 var(--f-serif); font-variation-settings: 'opsz' 144; letter-spacing: -.04em; margin: 16px 0 10px; text-wrap: balance }
+.s-prompt.long { font-size: clamp(30px, 3.6cqi, 44px); font-style: italic; line-height: 1.3; letter-spacing: -.015em }
+.s-ask { font: 500 12px var(--f-mono); color: var(--muted); margin: 0 }
+.s-right { display: grid; gap: 22px; justify-items: stretch }
+.s-cardrow { display: flex; align-items: center; gap: 18px; position: relative }
+.s-cardrow .kc { --wn: 150 }
+.s-cardrow .tag { left: 75px; top: -14px }
+.s-cardrow p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5 }
+.s-opts { display: grid; gap: 8px }
+.so { display: flex; align-items: center; gap: 16px; padding: 8px 10px 8px 8px; border: 0; border-radius: 999px; background: var(--shell); box-shadow: inset 0 0 0 1px var(--ring); cursor: pointer; text-align: left; color: var(--ink); transition: background-color 400ms var(--soft), transform 500ms var(--soft), opacity 300ms ease }
+.so .key { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--core); box-shadow: inset 0 1px 1px var(--hi), 0 4px 10px -6px rgb(80 60 40 / .4); font: 500 12px var(--f-mono); flex: none; transition: background-color 300ms ease, color 300ms ease }
+.so .lbl { flex: 1; font: 400 28px/1.1 var(--f-serif); letter-spacing: -.02em }
+.so .ar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; color: var(--muted); transition: transform 500ms var(--soft), background-color 300ms ease }
+@media (hover: hover) and (pointer: fine) { .so:hover { background: var(--sage) } .so:hover .ar { transform: translate(3px, -2px); background: rgb(255 255 255 / .6) } }
+.so:active { transform: scale(.98) }
+.so.is-right, .so.is-answer { background: var(--sage) } .so.is-right .key, .so.is-answer .key { background: #3d6b46; color: #fff }
+.so.is-right .lbl, .so.is-answer .lbl { font-style: italic }
+.so.is-wrong { background: #f6dfe5; animation: wig 320ms ease } .so.is-wrong .key { background: var(--acc); color: #fff } .so.is-wrong .lbl { text-decoration: line-through; text-decoration-color: var(--acc); text-decoration-thickness: 2px }
+.so.is-dim { opacity: .45 }
+.s-session .fb { justify-content: flex-start }
+.s-session .fb.ok p { color: #3d6b46 }
+.s-hbar { width: 100%; max-width: 1180px; margin: 22px auto 0; padding: 0 32px; display: flex; justify-content: space-between; align-items: center; font: 500 12px var(--f-mono); color: var(--muted) }
+.s-hbar .bar { flex: 1; max-width: 320px; height: 2px; margin: 0 18px; background: rgb(42 33 28 / .1); position: relative }
+.s-hbar .bar i { position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--p, .2)); transition: transform 700ms var(--soft) }
+.s-days { width: 100%; max-width: 1240px; margin: 0 auto 90px; padding: 0 32px; display: flex; gap: clamp(20px, 4cqi, 64px); align-items: baseline; flex-wrap: wrap }
+.s-days b { font: 300 clamp(48px, 7cqi, 104px)/1 var(--f-serif); font-variation-settings: 'opsz' 144; letter-spacing: -.04em }
+.s-days b:last-of-type { font-style: italic; color: var(--acc) }
+.s-days span { font: 500 11px var(--f-mono); color: var(--muted); letter-spacing: .12em; text-transform: uppercase }
+
+@media (prefers-reduced-motion: reduce) {
+  .viewport *, .viewport *::before, .viewport *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-property: opacity, color, background-color, box-shadow !important }
+  .play .rise { animation: fade 240ms ease both !important }
+  .fx.out { transform: none; filter: none }
+}
+</style>
+
+<header class="sw">
+  <div class="sw-in">
+    <h1>Wordmet <span>· vòng 5: Tiêu điểm × Thẻ bài, theo soft-skill</span></h1>
+    <div class="seg" role="group" aria-label="Chọn concept">
+      <button type="button" data-pick-c="q"><span class="tag">Q</span>Bento mềm</button>
+      <button type="button" data-pick-c="r"><span class="tag">R</span>Kính đêm</button>
+      <button type="button" data-pick-c="s"><span class="tag">S</span>Biên tập</button>
+    </div>
+    <div class="seg" role="group" aria-label="Chọn màn hình">
+      <button type="button" data-pick-s="landing">Landing</button>
+      <button type="button" data-pick-s="today">Hôm nay</button>
+      <button type="button" data-pick-s="practice">Luyện tập</button>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+  <p class="howto">Ba cách mặc soft-skill cho D × K, mỗi cách một bộ "vibe × bố cục": Q nền bạc + bento lệch, R kính tối + lá xếp chồng theo chiều sâu, S giấy biên tập + chia đôi trang. Landing có nút menu hình hai gạch (bấm để mở menu toàn màn hình). Luyện tập: <kbd>1</kbd>–<kbd>4</kbd>, <kbd>Enter</kbd>, <kbd>H</kbd>.</p>
+  <div class="frame">
+    <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">wordmet.com/vi/app</span></div>
+    <div class="viewport">
+
+<!-- ================= Q · Bento mềm ================= -->
+<section class="concept cQ" data-concept="q">
+  <div class="screen" data-screen="landing">
+    <header class="inav"><span class="word">wordmet</span><nav class="links"><a>Cách học</a><a>Gói học</a><a>Hỏi đáp</a></nav><button type="button" class="isl sm">Bắt đầu <span class="ic">↗</span></button><button type="button" class="hb" aria-label="Mở menu" aria-expanded="false" data-hb><i></i><i></i></button></header>
+    <div class="ov" aria-hidden="true"><nav><a style="--k:0"><span>Cách học<small>01</small></span></a><a style="--k:1"><span>Gói học<small>02</small></span></a><a style="--k:2"><span>Hỏi đáp<small>03</small></span></a><a style="--k:3"><span>Đăng nhập<small>04</small></span></a></nav></div>
+    <section class="q-lhero">
+      <div>
+        <span class="eb rise" style="--i:0"><i></i>Từ vựng tiếng Anh</span>
+        <h2 class="rise" style="--i:1">Từ vựng tiếng Anh, <span>gọn như một bộ lá.</span></h2>
+        <p class="lead rise" style="--i:2">Mỗi từ là một lá. Nhớ đúng thì lá lên hạng và lâu hơn mới quay lại: 1, 3, 7, 14 rồi 30 ngày.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="isl">Bắt đầu miễn phí <span class="ic">↗</span></button><p>3 phiên luyện mỗi ngày.<br>Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div class="bz q-ltray rise" style="--i:2"><div class="core"><div data-dcard="company" data-tier="5" data-wn="250" data-meaning="1"></div></div></div>
+    </section>
+    <section class="q-feat">
+      <div class="q-bento">
+        <div class="bz s7 rise" style="--i:4"><div class="core"><span class="eb"><i></i>Ôn đúng ngày</span><h3>Sáu hạng, theo sáu ngăn ôn.</h3><p>Lá lên một hạng mỗi lần bạn nhớ đúng. Quên thì lá về hạng Đồng và gặp lại ngày mai.</p><div class="ladder"><span><i class="t0"></i><b>Thường</b>mới</span><span><i class="t1"></i><b>Đồng</b>1 ngày</span><span><i class="t2"></i><b>Bạc</b>3 ngày</span><span><i class="t3"></i><b>Vàng</b>7 ngày</span><span><i class="t4"></i><b>Lục bảo</b>14 ngày</span><span><i class="t5"></i><b>Ánh kim</b>30 ngày</span></div></div></div>
+        <div class="bz s5 rise" style="--i:5"><div class="core"><span class="eb"><i></i>Gõ dạng bạn gặp</span><p class="q-morph"><span class="fx mf">went</span> <span class="to">→ <span class="fx mr">go</span></span></p><p><span class="fx mn">động từ, quá khứ</span>. Wordmet tìm từ gốc rồi thêm lá vào nhóm của bạn.</p></div></div>
+        <div class="bz s5 rise" style="--i:6"><div class="core"><span class="eb"><i></i>Miễn phí mỗi ngày</span><p class="q-free">3</p><p>phiên luyện, 15 câu AI và 5 lượt tra AI mỗi tháng.</p></div></div>
+        <div class="bz s7 rise" style="--i:7"><div class="core" style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap"><div><span class="eb"><i></i>Bắt đầu</span><h3>Tạo nhóm đầu tiên từ một chủ đề có sẵn.</h3></div><button type="button" class="isl">Bắt đầu miễn phí <span class="ic">↗</span></button></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="screen app" data-screen="today">
+    <header class="inav"><span class="word">wordmet</span><nav class="links"><a aria-current="page">Hôm nay</a><a>Bộ sưu tập</a><a>Luyện tập</a><a>Tra từ</a></nav><button type="button" class="isl sm ghost">Thêm từ <span class="ic"><kbd>N</kbd></span></button><span class="av">L</span></header>
+    <div class="q-wrap">
+      <div class="q-bento">
+        <div class="bz s8 r2 rise" style="--i:0"><div class="core" style="padding:28px 32px">
+          <span class="eb"><i></i>Thứ Năm · 05.11</span>
+          <p class="q-num count" data-to="20">20</p>
+          <p class="q-lbl">lá chờ bạn hôm nay</p>
+          <p class="q-sub">12 đến hạn · 8 mới · khoảng 6 phút</p>
+          <div class="q-cta"><button type="button" class="isl">Bắt đầu ôn <span class="ic"><kbd>↵</kbd></span></button><button type="button" class="tlink">Chỉ ôn 12 lá đến hạn</button></div>
+          <div class="track"><i class="t0" style="--n:23;--k:0"></i><i class="t1" style="--n:10;--k:1"></i><i class="t2" style="--n:7;--k:2"></i><i class="t3" style="--n:5;--k:3"></i><i class="t4" style="--n:2;--k:4"></i><i class="t5" style="--n:1;--k:5"></i></div>
+          <div class="legend"><span class="due">thường <b>23</b></span><span class="due">đồng <b>10</b></span><span class="due">bạc <b>7</b></span><span>vàng <b>5</b></span><span>lục bảo <b>2</b></span><span>ánh kim <b>1</b></span></div>
+        </div></div>
+        <div class="bz s4 r2 rise" style="--i:1"><div class="core"><div class="q-tray"><div data-dcard="manage" data-tier="1" data-wn="230" data-meaning="1"></div><p class="q-cap">lá trên cùng · 20 / 20</p></div></div></div>
+        <div class="bz s5 rise" style="--i:2"><div class="core"><p class="q-h3">Nhóm</p><ul class="q-list"><li><span>Kinh doanh · A2</span><span class="mono">13 / 31</span></li><li><span>Du lịch · B1</span><span class="mono">6 / 11</span></li><li><span>Từ gặp ngoài đời</span><span class="mono">1 / 6</span></li></ul></div></div>
+        <div class="bz s4 rise" style="--i:3"><div class="core"><p class="q-h3">Vừa gặp</p><div class="bz q-in"><div class="core">went<span class="caret"></span></div></div><p class="q-found">→ <b>go</b> · động từ, quá khứ · A1</p><button type="button" class="isl sm">Thêm lá <span class="ic">↗</span></button></div></div>
+        <div class="bz s3 rise" style="--i:4"><div class="core"><p class="q-h3">Luyện tập</p><div class="q-ring"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="bg" cx="42" cy="42" r="34"/><circle class="fg" cx="42" cy="42" r="34" pathLength="1"/></svg><div><b>2<small>/3</small></b><p>phiên còn lại</p></div></div><p class="r-small" style="color:#6b7080">11 câu AI tháng này</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen app" data-screen="practice">
+    <div class="q-session" data-quiz data-voice="q">
+      <header class="inav" style="gap:14px;padding-right:20px"><span class="word">wordmet</span><span class="q-prog"><span>esc · dừng</span><span class="bar"><i></i></span><span class="q-count">03 / 10</span></span></header>
+      <div class="q-stagec">
+        <div class="bz q-stagetray"><div class="core">
+          <div class="q-cardwrap"><span class="tag q-tag"></span><div class="kc q-card q-tiered t1" style="--wn:230"><div class="kc-in"><div class="kd"><div class="top"><span class="q-no"></span><span>A2</span></div><div class="w q-word">?</div><p class="p q-pos"></p><p class="m q-reveal"></p><div class="bot"><span class="q-tier"></span><span>KD · A2</span></div></div></div></div></div>
+          <div><p class="q-ask"><span class="q-kind"></span> · <span class="q-askt"></span></p><p class="q-promptbig q-prompt"></p></div>
+        </div></div>
+        <div class="q-opts q-optsbox"></div>
+        <div class="fb q-feedback" hidden><p class="q-fbtext"></p><button type="button" class="isl q-next"><span class="q-nextlbl">Câu tiếp</span> <span class="ic"><kbd>↵</kbd></span></button></div>
+        <p class="qhint q-hint" hidden></p>
+        <button type="button" class="tlink q-hintbtn">Gợi ý (H)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R · Kính đêm ================= -->
+<section class="concept cR" data-concept="r" hidden>
+  <div class="screen" data-screen="landing">
+    <header class="inav"><span class="word">wordmet</span><nav class="links"><a>Cách học</a><a>Gói học</a><a>Hỏi đáp</a></nav><button type="button" class="isl sm">Bắt đầu <span class="ic">↗</span></button><button type="button" class="hb" aria-label="Mở menu" aria-expanded="false" data-hb><i></i><i></i></button></header>
+    <div class="ov" aria-hidden="true"><nav><a style="--k:0"><span>Cách học<small>01</small></span></a><a style="--k:1"><span>Gói học<small>02</small></span></a><a style="--k:2"><span>Hỏi đáp<small>03</small></span></a><a style="--k:3"><span>Đăng nhập<small>04</small></span></a></nav></div>
+    <section class="r-lhero">
+      <div>
+        <span class="eb rise" style="--i:0"><i></i>Bộ sưu tập từ vựng</span>
+        <h2 class="rise" style="--i:1">Nhớ càng lâu, <span>lá càng sáng.</span></h2>
+        <p class="lead rise" style="--i:2">Mỗi từ là một lá. Mỗi lần nhớ đúng, lá lên một hạng: từ Đồng tới Ánh kim sau 30 ngày.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="isl">Bắt đầu miễn phí <span class="ic">↗</span></button><p>3 phiên luyện mỗi ngày.<br>Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div class="cascade" aria-label="Năm lá ở năm hạng">
+        <div data-kcard="manage" data-tier="1" data-wn="180" style="--k:0"></div>
+        <div data-kcard="budget" data-tier="2" data-wn="180" style="--k:1"></div>
+        <div data-kcard="company" data-tier="5" data-wn="180" style="--k:2"></div>
+        <div data-kcard="market" data-tier="3" data-wn="180" style="--k:3"></div>
+        <div data-kcard="product" data-tier="4" data-wn="180" style="--k:4"></div>
+      </div>
+    </section>
+    <section class="r-strip rise" style="--i:5"><div class="glass"><div class="core"><span>gặp lại sau</span><b>1</b><b>3</b><b>7</b><b>14</b><b>30</b><span>ngày, nếu lần nào cũng nhớ đúng</span></div></div></section>
+  </div>
+
+  <div class="screen app" data-screen="today">
+    <header class="inav"><span class="word">wordmet</span><nav class="links"><a aria-current="page">Hôm nay</a><a>Bộ sưu tập</a><a>Luyện tập</a><a>Tra từ</a></nav><button type="button" class="isl sm ghost">Thêm từ <span class="ic"><kbd>N</kbd></span></button><span class="av">L</span></header>
+    <div class="r-wrap">
+      <div class="r-top">
+        <div>
+          <span class="eb rise" style="--i:0"><i></i>Thứ Năm · 05.11</span>
+          <p class="r-num rise count" style="--i:1" data-to="20">20</p>
+          <p class="r-lbl rise" style="--i:2">lá cần ôn hôm nay</p>
+          <p class="r-sub rise" style="--i:2">12 đến hạn · 8 mới · khoảng 6 phút</p>
+          <div class="lcta rise" style="--i:3"><button type="button" class="isl">Bắt đầu ôn <span class="ic"><kbd>↵</kbd></span></button><button type="button" class="tlink">Chỉ ôn 12 lá đến hạn</button></div>
+        </div>
+        <div class="cascade" aria-label="Năm lá đến hạn đầu tiên">
+          <div data-kcard="complaint" data-tier="1" data-wn="180" style="--k:0"></div>
+          <div data-kcard="staff" data-tier="1" data-wn="180" style="--k:1"></div>
+          <div data-kcard="manage" data-tier="1" data-wn="180" style="--k:2"></div>
+          <div data-kcard="budget" data-tier="2" data-wn="180" style="--k:3"></div>
+          <div data-kcard="apply" data-tier="2" data-wn="180" style="--k:4"></div>
+        </div>
+      </div>
+      <div class="r-row">
+        <div class="glass rise" style="--i:4"><div class="core"><p class="r-h3">lá theo hạng</p><div class="r-chips"><span><i class="t0"></i><b>23</b><small>thường · <em class="d">8 hôm nay</em></small></span><span><i class="t1"></i><b>10</b><small>đồng · <em class="d">9 hôm nay</em></small></span><span><i class="t2"></i><b>7</b><small>bạc · <em class="d">3 hôm nay</em></small></span><span><i class="t3"></i><b>5</b><small>vàng</small></span><span><i class="t4"></i><b>2</b><small>lục bảo</small></span><span><i class="t5"></i><b>1</b><small>ánh kim</small></span></div></div></div>
+        <div class="glass rise" style="--i:5"><div class="core"><p class="r-h3">vừa gặp</p><p class="r-in">went<span class="caret"></span></p><p class="r-found">→ <b>go</b> · động từ, quá khứ · A1</p><button type="button" class="isl sm">Thêm lá <span class="ic">↗</span></button></div></div>
+        <div class="glass rise" style="--i:6"><div class="core"><p class="r-h3">luyện tập</p><p class="r-q">2<small>/3</small></p><p class="r-small">phiên còn lại hôm nay · 11 câu AI tháng này</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen app" data-screen="practice">
+    <div class="r-session" data-quiz data-voice="r">
+      <header class="inav" style="gap:14px;padding-right:20px"><span class="word">wordmet</span><span class="q-prog"><span>esc · dừng</span><span class="bar" style="background:rgb(255 255 255 / .1)"><i></i></span><span class="q-count">03 / 10</span></span></header>
+      <div class="r-stagec">
+        <div class="r-deck"><span class="ghost" style="--g:2"></span><span class="ghost" style="--g:1"></span><span class="tag q-tag"></span><div class="kc q-card q-tiered t1" style="--wn:230"><div class="kc-in"><div class="kn"><span class="q-name">?</span><small>A2</small></div><div class="ka g0"><b class="q-init">?</b></div><div class="kt"><span class="q-kind"></span><span>KINH DOANH</span></div><div class="kx"><b class="q-meaning">&nbsp;</b></div><div class="kf"><span class="q-no"></span><span class="q-tier"></span></div></div></div></div>
+        <p class="r-ask q-askt"></p>
+        <p class="r-prompt q-prompt"></p>
+        <div class="r-opts q-optsbox"></div>
+        <div class="fb q-feedback" hidden><p class="q-fbtext"></p><button type="button" class="isl q-next"><span class="q-nextlbl">Câu tiếp</span> <span class="ic"><kbd>↵</kbd></span></button></div>
+        <p class="qhint q-hint" hidden></p>
+        <button type="button" class="tlink q-hintbtn">Gợi ý (H)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= S · Biên tập ================= -->
+<section class="concept cS" data-concept="s" hidden>
+  <div class="screen" data-screen="landing">
+    <header class="inav"><span class="word" style="font-family:var(--f-serif);font-weight:500;letter-spacing:-.02em">wordmet</span><nav class="links"><a>Cách học</a><a>Gói học</a><a>Hỏi đáp</a></nav><button type="button" class="isl sm">Bắt đầu <span class="ic">↗</span></button><button type="button" class="hb" aria-label="Mở menu" aria-expanded="false" data-hb><i></i><i></i></button></header>
+    <div class="ov" aria-hidden="true"><nav><a style="--k:0;font-family:var(--f-serif);font-weight:350"><span>Cách học<small>01</small></span></a><a style="--k:1;font-family:var(--f-serif);font-weight:350"><span>Gói học<small>02</small></span></a><a style="--k:2;font-family:var(--f-serif);font-weight:350"><span>Hỏi đáp<small>03</small></span></a><a style="--k:3;font-family:var(--f-serif);font-weight:350"><span>Đăng nhập<small>04</small></span></a></nav></div>
+    <section class="s-split">
+      <div>
+        <span class="eb rise" style="--i:0"><i></i>Sổ từ vựng tiếng Anh</span>
+        <h2 class="s-h rise" style="--i:1">Một cuốn sổ từ vựng <em>biết nhắc bạn</em> ôn đúng ngày.</h2>
+        <p class="s-sub rise" style="--i:2">Mỗi từ là một lá trong sổ. Nhớ đúng thì lá lên hạng và lâu hơn mới quay lại. Quên thì gặp lại vào hôm sau.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="isl">Bắt đầu miễn phí <span class="ic">↗</span></button><p>Không cần thẻ thanh toán.</p></div>
+      </div>
+      <div class="s-scroll rise" style="--i:2">
+        <div class="s-strip" data-dragscroll>
+          <div data-dcard="negotiate" data-tier="0" data-wn="190" data-meaning="1" style="--k:0"></div>
+          <div data-dcard="manage" data-tier="1" data-wn="190" data-meaning="1" style="--k:1"></div>
+          <div data-dcard="budget" data-tier="2" data-wn="190" data-meaning="1" style="--k:2"></div>
+          <div data-dcard="market" data-tier="3" data-wn="190" data-meaning="1" style="--k:3"></div>
+          <div data-dcard="product" data-tier="4" data-wn="190" data-meaning="1" style="--k:4"></div>
+          <div data-dcard="company" data-tier="5" data-wn="190" data-meaning="1" style="--k:5"></div>
+        </div>
+        <p class="s-cap">kéo ngang · sáu hạng của một lá, từ mới tới 30 ngày</p>
+      </div>
+    </section>
+    <section class="s-days rise" style="--i:5"><span>gặp lại sau</span><b>1</b><b>3</b><b>7</b><b>14</b><b>30</b><span>ngày</span></section>
+  </div>
+
+  <div class="screen app" data-screen="today">
+    <header class="inav"><span class="word" style="font-family:var(--f-serif);font-weight:500;letter-spacing:-.02em">wordmet</span><nav class="links"><a aria-current="page">Hôm nay</a><a>Sổ từ</a><a>Luyện tập</a><a>Tra từ</a></nav><button type="button" class="isl sm ghost">Thêm từ <span class="ic"><kbd>N</kbd></span></button><span class="av">L</span></header>
+    <section class="s-split" style="padding-top:50px">
+      <div>
+        <span class="eb rise" style="--i:0"><i></i>Thứ Năm, 5 tháng 11</span>
+        <h2 class="s-h rise" style="--i:1">Hai mươi lá <em>đang chờ</em>.</h2>
+        <p class="s-sub rise" style="--i:2">12 lá đến hạn và 8 lá mới, từ Kinh doanh · A2 và Du lịch · B1.</p>
+        <div class="lcta rise" style="--i:3"><button type="button" class="isl">Ôn 20 lá <span class="ic"><kbd>↵</kbd></span></button><button type="button" class="tlink">Chỉ ôn 12 lá đến hạn</button></div>
+        <div class="s-stats rise" style="--i:4"><div><b>12</b><span>đến hạn</span></div><div><b>8</b><span>mới</span></div><div><b>~6</b><span>phút</span></div></div>
+      </div>
+      <div class="s-scroll rise" style="--i:2">
+        <div class="s-strip" data-dragscroll>
+          <div data-dcard="complaint" data-tier="1" data-wn="180" data-meaning="1" style="--k:0"></div>
+          <div data-dcard="staff" data-tier="1" data-wn="180" data-meaning="1" style="--k:1"></div>
+          <div data-dcard="manage" data-tier="1" data-wn="180" data-meaning="1" style="--k:2"></div>
+          <div data-dcard="budget" data-tier="2" data-wn="180" data-meaning="1" style="--k:3"></div>
+          <div data-dcard="apply" data-tier="2" data-wn="180" data-meaning="1" style="--k:4"></div>
+        </div>
+        <p class="s-cap">kéo ngang · năm lá đầu trong 20 lá hôm nay</p>
+        <ul class="s-tiers"><li><i class="t0"></i><b>23</b><span>thường</span></li><li><i class="t1"></i><b>10</b><span>đồng</span></li><li><i class="t2"></i><b>7</b><span>bạc</span></li><li><i class="t3"></i><b>5</b><span>vàng</span></li><li><i class="t4"></i><b>2</b><span>lục bảo</span></li><li><i class="t5"></i><b>1</b><span>ánh kim</span></li></ul>
+      </div>
+    </section>
+    <div class="s-low">
+      <div class="bz rise" style="--i:5"><div class="core"><h3>Vừa gặp</h3><p class="s-in">went<span class="caret"></span></p><p class="s-found">→ <b>go</b> · động từ, quá khứ · A1</p><button type="button" class="isl sm">Ghi vào sổ <span class="ic">↗</span></button></div></div>
+      <div class="bz rise" style="--i:6"><div class="core"><h3>Luyện tập hôm nay</h3><p class="s-q">2<small>/3</small></p><p class="s-small">phiên còn lại · 11 câu AI tháng này</p></div></div>
+    </div>
+  </div>
+
+  <div class="screen app" data-screen="practice">
+    <div class="s-session" data-quiz data-voice="s">
+      <header class="inav" style="gap:14px;padding-right:20px"><span class="word" style="font-family:var(--f-serif);font-weight:500;letter-spacing:-.02em">wordmet</span><span class="mono" style="font-size:12px;color:var(--muted)">esc · dừng phiên</span></header>
+      <div class="s-hbar"><span class="q-count">Câu 3 / 10</span><span class="bar"><i></i></span><span>Kinh doanh · A2</span></div>
+      <div class="s-pstage">
+        <div>
+          <span class="eb"><i></i><span class="q-kind"></span></span>
+          <p class="s-prompt q-prompt"></p>
+          <p class="s-ask q-askt"></p>
+        </div>
+        <div class="s-right">
+          <div class="s-cardrow"><span class="tag q-tag"></span><div class="kc q-card q-tiered t1" style="--wn:150"><div class="kc-in"><div class="kd"><div class="top"><span class="q-no"></span><span>A2</span></div><div class="w q-word">?</div><p class="m q-reveal"></p><div class="bot"><span class="q-tier"></span><span>KD</span></div></div></div></div><p>Lá này đang ở <b class="q-from"></b>.<br>Nhớ đúng thì lên một hạng.</p></div>
+          <div class="s-opts q-optsbox"></div>
+          <div class="fb q-feedback" hidden><p class="q-fbtext"></p><button type="button" class="isl q-next"><span class="q-nextlbl">Câu tiếp</span> <span class="ic"><kbd>↵</kbd></span></button></div>
+          <p class="qhint q-hint" hidden></p>
+          <button type="button" class="tlink q-hintbtn" style="justify-self:start">Gợi ý (H)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+    </div>
+  </div>
+
+  <div class="notes note-set" data-concept="q">
+    <div class="note"><h3>Bộ soft-skill</h3><p>Soft Structuralism × Asymmetrical Bento: nền bạc trắng, ô bento lệch kích thước, bóng đổ rất loang, viền khay hai lớp (khay ngoài + lõi trong), nút hình viên thuốc có vòng tròn mũi tên bên trong.</p></div>
+    <div class="note"><h3>Giữ từ D × K</h3><p>Số 20 khổng lồ, Bricolage, hồng sen; lá bài có khung theo hạng, thanh hạng 6 màu kim loại.</p></div>
+    <div class="note"><h3>Được</h3><p>Trông cao cấp và yên tĩnh nhất; bento cho phép xếp mọi thứ của Hôm nay trên một màn mà vẫn có thứ bậc rõ.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Nhiều khay lồng nhau làm tốn chỗ và tốn công dựng; bóng loang trên nền sáng dễ mất khi màn hình kém.</p></div>
+    <div class="note"><h3>Motion</h3><p>Landing: hiện lên từ mờ và nhòe trong 820 ms. Trong app rút còn 420 ms vì mở nhiều lần mỗi ngày. Vòng tròn mũi tên trong nút trượt chéo khi rê chuột; nhấn nút thì nút lún 2%.</p></div>
+  </div>
+  <div class="notes note-set" data-concept="r" hidden>
+    <div class="note"><h3>Bộ soft-skill</h3><p>Ethereal Glass × Z-Axis Cascade: nền gần đen, quầng màu hồng sen và tím loang ở nền, khay kính viền mảnh, các lá xếp chồng lệch góc theo chiều sâu.</p></div>
+    <div class="note"><h3>Giữ từ D × K</h3><p>Lá bài đầy đủ của K (tên, hình, nghĩa, số trong bộ), số khổng lồ và hồng sen của D.</p></div>
+    <div class="note"><h3>Được</h3><p>Có sẵn bản tối và cảm giác "đêm học bài". Nền phản ứng theo câu trả lời: đúng thì quầng màu trôi và sáng lên, sai thì tối đi.</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Chữ nhỏ trên nền tối phải giữ đủ tương phản; xếp chồng lệch góc phải bỏ trên điện thoại (đã đổi thành dải cuộn ngang).</p></div>
+    <div class="note"><h3>Motion</h3><p>Lá chia ra từ dưới lên theo lò xo; rê chuột lên một lá thì lá nhấc lên trước. Quầng màu nền đổi vị trí trong 1,4 giây khi trả lời.</p></div>
+  </div>
+  <div class="notes note-set" data-concept="s" hidden>
+    <div class="note"><h3>Bộ soft-skill</h3><p>Editorial Luxury × Editorial Split: giấy ấm, chữ serif biến thiên cỡ rất lớn, vân giấy mờ 5%, nửa trái là chữ, nửa phải là dải lá cuộn ngang.</p></div>
+    <div class="note"><h3>Giữ từ D × K</h3><p>Lá bài D × K (khung hạng, mặt chữ lớn), hồng sen làm màu nhấn duy nhất, phím 1–4.</p></div>
+    <div class="note"><h3>Được</h3><p>Đọc như một cuốn sổ đẹp: số viết bằng chữ ("Hai mươi lá"), đáp án là danh sách chữ serif lớn. Hợp người học lớn tuổi, ít "game".</p></div>
+    <div class="note"><h3>Đánh đổi</h3><p>Giấy kem với serif là kiểu phổ biến của các trang AI làm; khác biệt phải đến từ lá bài và cách dùng chữ.</p></div>
+    <div class="note"><h3>Motion</h3><p>Dải lá trượt vào từ phải và kéo ngang được. Đáp án đúng chuyển sang chữ nghiêng trên nền xanh lá dịu; mũi tên trong đáp án trượt chéo khi rê chuột.</p></div>
+  </div>
+  <p class="foot-note">Số liệu mẫu như vòng 3 và 4. Thông số D và K: docs/mockups/2026-11-05-redesign-concepts/style-da-chon.md.</p>
+</main>
+
+<script>
+(() => {
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const STAGES = ['Mới', '1 ngày', '3 ngày', '7 ngày', '14 ngày', '30 ngày'];
+  const TIERS = ['Thường', 'Đồng', 'Bạc', 'Vàng', 'Lục bảo', 'Ánh kim'];
+  const INTERVAL = [0, 1, 3, 7, 14, 30];
+  const URLS = { landing: 'wordmet.com/vi', today: 'wordmet.com/vi/app', practice: 'wordmet.com/vi/app/practice/session' };
+  const POS = { n: 'danh từ', v: 'động từ', a: 'tính từ' };
+  const RAW = [
+    ['brand,n,thương hiệu,2,0', 'bonus,n,tiền thưởng,0,1', 'complaint,n,lời phàn nàn,1,1', 'retire,v,nghỉ hưu,0,0', 'staff,n,nhân viên,1,1', 'receipt,n,biên lai,1,1', 'professional,a,chuyên nghiệp,0,0', 'market,n,thị trường,3,0', 'manage,v,quản lý,1,1', 'budget,n,ngân sách,2,1', 'manager,n,người quản lý,0,0', 'lend,v,cho vay,0,1', 'advertisement,n,quảng cáo,0,0', 'target,n,mục tiêu,2,0', 'product,n,sản phẩm,4,0', 'increase,v,tăng,0,1', 'boss,n,sếp,1,0', 'apply,v,ứng tuyển,2,1', 'company,n,công ty,5,0', 'branch,n,chi nhánh,0,0', 'customer,n,khách hàng,3,0', 'experience,n,kinh nghiệm,0,1', 'produce,v,sản xuất,0,0', 'achieve,v,đạt được,1,1', 'train,v,đào tạo,0,0', 'deal,n,thương vụ,2,0', 'report,n,báo cáo,3,0', 'earn,v,kiếm được,1,1', 'strategy,n,chiến lược,0,1', 'schedule,n,lịch trình,4,0', 'organize,v,tổ chức,0,0'],
+    ['scenic,a,có cảnh đẹp,0,1', 'delay,v,trì hoãn,1,1', 'guide,n,hướng dẫn viên,1,1', 'luggage,n,hành lý,2,1', 'passport,n,hộ chiếu,3,0', 'journey,n,chuyến đi,0,0', 'destination,n,điểm đến,0,1', 'accommodation,n,chỗ ở,1,1', 'souvenir,n,quà lưu niệm,0,0', 'itinerary,n,lịch trình chuyến đi,2,0', 'departure,n,sự khởi hành,3,0'],
+    ['go,v,đi (went),0,1', 'child,n,đứa trẻ (children),0,0', 'negotiate,v,đàm phán,0,0', 'deadline,n,hạn chót,0,0', 'good,a,tốt (better),0,0', 'mouse,n,con chuột (mice),0,0'],
+  ];
+  const WORDS = [];
+  RAW.forEach((list, g) => list.forEach((row) => { const [w, p, m, s, d] = row.split(','); WORDS.push({ w, p, m, s: Number(s), due: d === '1', g, no: WORDS.length + 1 }); }));
+  const BY = Object.fromEntries(WORDS.map((o) => [o.w, o]));
+  const SET = ['KD', 'DL', 'NGĐ'], TOTAL = [31, 11, 6], START = [0, 31, 42];
+  const EX = { company: 'She works for a small company.', market: 'The Asian market is growing fast.', budget: 'We must stay within our budget this year.', manage: 'She manages a team of ten people.', complaint: 'We take every complaint seriously.', staff: 'The staff are very friendly.', apply: 'I applied for a job at a bank.', product: 'Our new product goes on sale in May.' };
+  const LV = { company: 'A1', staff: 'A2', manage: 'A2', budget: 'B1', market: 'A2', complaint: 'B1', apply: 'A2', product: 'A2', negotiate: 'B1' };
+  const QS = [
+    { kind: 'Trắc nghiệm', ask: 'chọn từ có nghĩa này', prompt: 'quản lý', opts: ['report', 'product', 'company', 'manage'], a: 3, meaning: 'quản lý', hint: 'Động từ, bắt đầu bằng "m".', stage: 1 },
+    { kind: 'Trắc nghiệm', ask: 'chọn từ có nghĩa này', prompt: 'ứng tuyển', opts: ['complaint', 'apply', 'brand', 'company'], a: 1, meaning: 'ứng tuyển', hint: 'Động từ, 5 chữ cái.', stage: 2 },
+    { kind: 'Điền từ', ask: 'chọn từ hợp với câu', prompt: 'We must stay within our ____ this year.', opts: ['brand', 'target', 'budget', 'deal'], a: 2, meaning: 'ngân sách', hint: 'Danh từ: số tiền được phép tiêu trong một kỳ.', stage: 2 },
+  ];
+  const ORBS = [['18%', '22%', '82%', '30%'], ['70%', '18%', '24%', '64%'], ['40%', '70%', '78%', '14%'], ['86%', '58%', '12%', '20%']];
+  const cur = { c: 'q', s: 'today' };
+  const timers = new Set();
+  const later = (fn, ms) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); return t; };
+  const clearAll = () => { timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); timers.clear(); };
+  const $$ = (root, sel) => [...root.querySelectorAll(sel)];
+  const setText = (root, sel, txt) => $$(root, sel).forEach((el) => { el.textContent = txt; });
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const pad = (n, l = 3) => String(n).padStart(l, '0');
+  const collNo = (o) => `${SET[o.g]} · ${pad(o.no - START[o.g])}/${pad(TOTAL[o.g])}`;
+
+  function kHTML(o, tier, wn, k) {
+    const ex = EX[o.w] ? `<i>${esc(EX[o.w])}</i>` : '';
+    return `<div class="kc t${tier} tiltable" style="--wn:${wn};--k:${k}"><div class="kc-in"><div class="kn"><span>${esc(o.w)}</span><small>${LV[o.w] || 'A2'}</small></div><div class="ka g${o.g}"><b>${esc(o.w[0])}</b></div><div class="kt"><span>${POS[o.p]}</span><span>${TIERS[tier]}</span></div><div class="kx"><b>${esc(o.m)}</b>${ex}</div><div class="kf"><span>${collNo(o)}</span><span>${STAGES[tier]}</span></div></div></div>`;
+  }
+  function dHTML(o, tier, wn, k, meaning) {
+    return `<div class="kc t${tier} tiltable" style="--wn:${wn};--k:${k}"><div class="kc-in"><div class="kd"><div class="top"><span>${collNo(o)}</span><span>${LV[o.w] || 'A2'}</span></div><div class="w" style="--len:${o.w.length}">${esc(o.w)}</div><p class="p">${POS[o.p]}</p><p class="m">${meaning ? esc(o.m) : '&nbsp;'}</p><div class="bot"><span>${TIERS[tier].toLocaleLowerCase('vi')}</span><span>${STAGES[tier]}</span></div></div></div></div>`;
+  }
+  $$(document, '[data-kcard]').forEach((s) => { s.outerHTML = kHTML(BY[s.dataset.kcard], Number(s.dataset.tier), Number(s.dataset.wn), s.style.getPropertyValue('--k') || 0); });
+  $$(document, '[data-dcard]').forEach((s) => { s.outerHTML = dHTML(BY[s.dataset.dcard], Number(s.dataset.tier), Number(s.dataset.wn), s.style.getPropertyValue('--k') || 0, s.dataset.meaning); });
+
+  function bindTilt(c) {
+    if (!FINE || REDUCED || c._tilt || c.closest('.cascade')) return;
+    c._tilt = true;
+    c.addEventListener('pointermove', (e) => {
+      const r = c.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      c.classList.add('tilting');
+      c.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`); c.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+      c.style.setProperty('--rx', `${((0.5 - py) * 16).toFixed(1)}deg`); c.style.setProperty('--ry', `${((px - 0.5) * 20).toFixed(1)}deg`);
+    });
+    c.addEventListener('pointerleave', () => { c.classList.remove('tilting'); c.style.removeProperty('--rx'); c.style.removeProperty('--ry'); });
+  }
+  $$(document, '.tiltable').forEach(bindTilt);
+
+  /* island menu */
+  $$(document, '[data-hb]').forEach((hb) => hb.addEventListener('click', () => {
+    const sc = hb.closest('.screen');
+    const open = !sc.hasAttribute('data-open');
+    if (open) sc.setAttribute('data-open', ''); else sc.removeAttribute('data-open');
+    hb.setAttribute('aria-expanded', String(open)); hb.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
+    sc.querySelector('.ov').setAttribute('aria-hidden', String(!open));
+  }));
+
+  /* drag-to-scroll for editorial strips */
+  $$(document, '[data-dragscroll]').forEach((el) => {
+    let x0 = 0, s0 = 0, on = false;
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; on = true; x0 = e.clientX; s0 = el.scrollLeft; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; el.style.scrollSnapType = 'none'; });
+    el.addEventListener('pointermove', (e) => { if (on) el.scrollLeft = s0 - (e.clientX - x0); });
+    const end = () => { if (!on) return; on = false; el.style.cursor = ''; el.style.scrollSnapType = ''; };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  });
+
+  /* morph in Q landing */
+  function morphLoop(sc) {
+    const f = sc.querySelector('.mf'); if (!f) return;
+    const forms = [['went', 'go', 'động từ, quá khứ'], ['met', 'meet', 'động từ, quá khứ'], ['children', 'child', 'danh từ, số nhiều'], ['better', 'good', 'tính từ, so sánh hơn']];
+    const parts = [f, sc.querySelector('.mr'), sc.querySelector('.mn')];
+    let i = 0;
+    const t = setInterval(() => {
+      i = (i + 1) % forms.length;
+      parts.forEach((p) => p.classList.add('out'));
+      later(() => { forms[i].forEach((txt, k) => { parts[k].textContent = txt; }); parts.forEach((p) => p.classList.remove('out')); }, 230);
+    }, 2800);
+    timers.add(t);
+  }
+  function countUp(el) {
+    const to = Number(el.dataset.to);
+    if (REDUCED) { el.textContent = to; return; }
+    const t0 = performance.now();
+    const step = (t) => { const p = Math.min(1, (t - t0) / 700); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+
+  /* quiz */
+  function resetQuiz(quiz) { quiz._i = 0; quiz._orb = 0; renderQ(quiz); }
+  function renderQ(quiz) {
+    const q = QS[quiz._i % QS.length];
+    const n = 3 + quiz._i;
+    const v = quiz.dataset.voice;
+    const word = BY[q.opts[q.a]];
+    quiz._answered = false;
+    setText(quiz, '.q-kind', q.kind);
+    setText(quiz, '.q-askt', q.ask);
+    setText(quiz, '.q-count', v === 's' ? `Câu ${n} / 10` : `${pad(n, 2)} / 10`);
+    setText(quiz, '.q-no', collNo(word));
+    setText(quiz, '.q-tier', `${TIERS[q.stage].toLocaleLowerCase('vi')} · ${STAGES[q.stage]}`);
+    setText(quiz, '.q-from', `hạng ${TIERS[q.stage].toLocaleLowerCase('vi')} (ngăn ${STAGES[q.stage]})`);
+    setText(quiz, '.q-pos', POS[word.p]);
+    setText(quiz, '.q-word', '?'); setText(quiz, '.q-name', '?'); setText(quiz, '.q-init', '?');
+    $$(quiz, '.q-word').forEach((el) => el.style.setProperty('--len', 1));
+    $$(quiz, '.q-reveal, .q-meaning').forEach((el) => { el.textContent = ' '; });
+    quiz.style.setProperty('--p', ((n - 1) / 10).toFixed(2));
+    const long = q.prompt.length > 16;
+    $$(quiz, '.q-prompt').forEach((p) => { p.textContent = q.prompt; p.classList.toggle('long', long); });
+    const card = quiz.querySelector('.q-card');
+    card.classList.remove('shine', 'flinch', 't0', 't1', 't2', 't3', 't4', 't5'); card.classList.add(`t${q.stage}`);
+    const tag = quiz.querySelector('.q-tag'); tag.className = 'tag q-tag';
+    const box = quiz.querySelector('.q-optsbox');
+    box.innerHTML = q.opts.map((o, k) => {
+      if (v === 'q') return `<button type="button" class="opt qo bz" data-k="${k}"><span class="core"><span class="key">${k + 1}</span><span class="lbl">${esc(o)}</span></span></button>`;
+      if (v === 'r') return `<button type="button" class="opt ro" data-k="${k}"><span class="key">${k + 1}</span><span class="lbl">${esc(o)}</span></button>`;
+      return `<button type="button" class="opt so" data-k="${k}"><span class="key">${k + 1}</span><span class="lbl">${esc(o)}</span><span class="ar">↗</span></button>`;
+    }).join('');
+    $$(box, '.opt').forEach((b) => b.addEventListener('click', () => answer(quiz, Number(b.dataset.k))));
+    const hint = quiz.querySelector('.q-hint'); hint.hidden = true; hint.textContent = q.hint;
+    const fb = quiz.querySelector('.q-feedback'); fb.hidden = true; fb.classList.remove('ok', 'bad');
+  }
+  function feedback(q, right, to) {
+    const w = q.opts[q.a];
+    const stay = !right && q.stage === 1;
+    const t = TIERS[to].toLocaleLowerCase('vi');
+    return right ? `Đúng · ${w}, ${q.meaning}. Lá lên hạng ${t}, gặp lại sau ${INTERVAL[to]} ngày.` : `Chưa đúng · ${w}, ${q.meaning}. Lá ${stay ? 'giữ hạng đồng' : 'về hạng đồng'}, gặp lại ngày mai.`;
+  }
+  function answer(quiz, k) {
+    if (quiz._answered) return;
+    const q = QS[quiz._i % QS.length];
+    if (k < 0 || k >= q.opts.length) return;
+    quiz._answered = true;
+    const right = k === q.a, v = quiz.dataset.voice;
+    const to = right ? Math.min(q.stage + 1, 5) : 1;
+    const word = BY[q.opts[q.a]];
+    $$(quiz, '.opt').forEach((b, j) => { if (j === k) b.classList.add('is-picked', right ? 'is-right' : 'is-wrong'); else if (!right && j === q.a) b.classList.add('is-answer'); else b.classList.add('is-dim'); });
+    const card = quiz.querySelector('.q-card'), tag = quiz.querySelector('.q-tag');
+    if (!REDUCED) { card.classList.remove('shine', 'flinch'); void card.offsetWidth; card.classList.add(right ? 'shine' : 'flinch'); }
+    later(() => {
+      card.classList.remove('t0', 't1', 't2', 't3', 't4', 't5'); card.classList.add(`t${to}`);
+      setText(quiz, '.q-tier', `${TIERS[to].toLocaleLowerCase('vi')} · ${STAGES[to]}`);
+      setText(quiz, '.q-word', word.w); $$(quiz, '.q-word').forEach((el) => el.style.setProperty('--len', word.w.length));
+      setText(quiz, '.q-name', word.w); setText(quiz, '.q-init', word.w[0]);
+      setText(quiz, '.q-reveal', q.meaning);
+      $$(quiz, '.q-meaning').forEach((el) => { el.textContent = EX[word.w] || q.meaning; });
+    }, REDUCED ? 0 : 280);
+    tag.textContent = right ? `lên hạng ${TIERS[to].toLocaleLowerCase('vi')} · ${STAGES[to]}` : (q.stage === 1 ? 'giữ hạng đồng · 1 ngày' : 'về hạng đồng · 1 ngày');
+    tag.classList.toggle('up', right);
+    later(() => tag.classList.add('on'), REDUCED ? 0 : 300);
+    if (v === 'r') {
+      const sc = quiz.closest('.screen');
+      if (right) { quiz._orb = (quiz._orb + 1) % ORBS.length; const [a, b, c, d] = ORBS[quiz._orb]; sc.style.setProperty('--o1x', a); sc.style.setProperty('--o1y', b); sc.style.setProperty('--o2x', c); sc.style.setProperty('--o2y', d); sc.style.setProperty('--oa', '1.35'); }
+      else sc.style.setProperty('--oa', '.45');
+    }
+    const fb = quiz.querySelector('.q-feedback');
+    fb.classList.add(right ? 'ok' : 'bad');
+    fb.querySelector('.q-fbtext').textContent = feedback(q, right, to);
+    setText(fb, '.q-nextlbl', right ? 'Đã biết' : 'Câu tiếp');
+    fb.hidden = false;
+    quiz.style.setProperty('--p', ((3 + quiz._i) / 10).toFixed(2));
+    const nb = fb.querySelector('.q-next'); if (nb) nb.focus({ preventScroll: true });
+  }
+  function next(quiz) {
+    if (!quiz._answered) return;
+    const v = quiz.dataset.voice;
+    const items = [quiz.querySelector('.q-card'), ...$$(quiz, '.q-prompt')];
+    const go = () => {
+      quiz._i += 1; renderQ(quiz);
+      if (v === 'r') quiz.closest('.screen').style.setProperty('--oa', '1');
+      if (!REDUCED) items.forEach((el) => el.animate([{ opacity: 0, transform: 'translateY(14px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 520, easing: 'cubic-bezier(.32, .72, 0, 1)' }));
+    };
+    if (REDUCED) { go(); return; }
+    items.forEach((el) => el.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: 160, easing: 'ease', fill: 'forwards' }));
+    later(() => { items.forEach((el) => el.getAnimations().forEach((a) => a.cancel())); go(); }, 160);
+  }
+  function toggleHint(quiz) { const h = quiz.querySelector('.q-hint'); h.hidden = !h.hidden; }
+  $$(document, '[data-quiz]').forEach((quiz) => {
+    $$(quiz, '.q-next').forEach((b) => b.addEventListener('click', () => next(quiz)));
+    $$(quiz, '.q-hintbtn').forEach((b) => b.addEventListener('click', () => toggleHint(quiz)));
+  });
+
+  /* switcher */
+  function parseHash() { const m = /^#([qrs])-(landing|today|practice)$/.exec(location.hash); if (m) { cur.c = m[1]; cur.s = m[2]; } }
+  function show() {
+    clearAll();
+    $$(document, '.concept').forEach((el) => { el.hidden = el.dataset.concept !== cur.c; });
+    const concept = document.querySelector(`.concept[data-concept="${cur.c}"]`);
+    $$(concept, '.screen').forEach((sc) => { sc.hidden = sc.dataset.screen !== cur.s; sc.classList.remove('play'); sc.removeAttribute('data-open'); });
+    const sc = concept.querySelector(`.screen[data-screen="${cur.s}"]`);
+    void sc.offsetWidth; sc.classList.add('play');
+    ['--o1x', '--o1y', '--o2x', '--o2y', '--oa'].forEach((p) => sc.style.removeProperty(p));
+    $$(document, '[data-pick-c]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pickC === cur.c)));
+    $$(document, '[data-pick-s]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pickS === cur.s)));
+    $$(document, '.note-set').forEach((nn) => { nn.hidden = nn.dataset.concept !== cur.c; });
+    document.querySelector('.url').textContent = URLS[cur.s];
+    $$(sc, '.count[data-to]').forEach(countUp);
+    $$(sc, '[data-quiz]').forEach(resetQuiz);
+    morphLoop(sc);
+    const h = `#${cur.c}-${cur.s}`;
+    if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* hash routing is a convenience */ } }
+  }
+  $$(document, '[data-pick-c]').forEach((b) => b.addEventListener('click', () => { cur.c = b.dataset.pickC; show(); }));
+  $$(document, '[data-pick-s]').forEach((b) => b.addEventListener('click', () => { cur.s = b.dataset.pickS; show(); }));
+  window.addEventListener('hashchange', () => { const before = `${cur.c}-${cur.s}`; parseHash(); if (`${cur.c}-${cur.s}` !== before) show(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, [contenteditable]')) return;
+    const sc = document.querySelector('.concept:not([hidden]) .screen:not([hidden])');
+    if (!sc) return;
+    if (e.key === 'Escape' && sc.hasAttribute('data-open')) { sc.querySelector('[data-hb]').click(); return; }
+    const quiz = sc.querySelector('[data-quiz]');
+    if (!quiz) return;
+    const btn = e.target.closest && e.target.closest('button');
+    if (btn && btn.classList.contains('opt') && e.key === 'Enter') { e.preventDefault(); if (quiz._answered) next(quiz); else answer(quiz, Number(btn.dataset.k)); return; }
+    if (btn && (e.key === 'Enter' || e.key === ' ') && !btn.classList.contains('q-next')) return;
+    if (/^[1-4]$/.test(e.key)) { answer(quiz, Number(e.key) - 1); e.preventDefault(); }
+    else if (e.key === 'Enter' && quiz._answered) { next(quiz); e.preventDefault(); }
+    else if (e.key === 'h' || e.key === 'H') toggleHint(quiz);
+  });
+  parseHash();
+  show();
+})();
+</script>

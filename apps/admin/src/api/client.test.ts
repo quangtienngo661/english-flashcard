@@ -38,6 +38,33 @@ describe('createApiClient', () => {
     expect(send.mock.calls[0][1]).toMatchObject({ method: 'PUT', body: '{"staff_role":"editor"}' });
   });
 
+  it('put: Idempotency-Key header when given, none when not', async () => {
+    const { api, send } = setup();
+    await api.put('/v1/x', { a: 1 }, { idempotencyKey: 'k-put' });
+    await api.put('/v1/x', { a: 1 });
+    expect(headersOf(send.mock.calls[0][1])['Idempotency-Key']).toBe('k-put');
+    expect(Object.keys(headersOf(send.mock.calls[1][1]))).not.toContain('Idempotency-Key');
+  });
+
+  it('patch: sends PATCH, a JSON body and the Idempotency-Key header', async () => {
+    const { api, send } = setup();
+    await api.patch('/x', { b: 2 }, { idempotencyKey: 'k' });
+    const init = send.mock.calls[0][1];
+    expect(init.method).toBe('PATCH');
+    expect(init.body).toBe('{"b":2}');
+    expect(headersOf(init)).toMatchObject({ 'Content-Type': 'application/json', 'Idempotency-Key': 'k' });
+  });
+
+  it('delete: sends DELETE with no body, the Idempotency-Key header, and resolves undefined on 204', async () => {
+    const { api, send } = setup(() => new Response(null, { status: 204 }));
+    await expect(api.delete('/v1/x/1', { idempotencyKey: 'k-del' })).resolves.toBeUndefined();
+    const init = send.mock.calls[0][1];
+    expect(init.method).toBe('DELETE');
+    expect(init.body).toBeUndefined();
+    expect(headersOf(init)['Idempotency-Key']).toBe('k-del');
+    expect(headersOf(init)['Content-Type']).toBeUndefined();
+  });
+
   it('postForm sends Idempotency-Key and no Content-Type header (browser sets the multipart boundary)', async () => {
     const { api, send } = setup();
     const form = new FormData();

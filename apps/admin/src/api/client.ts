@@ -5,7 +5,9 @@ export type Transport = (path: string, init: RequestInit) => Promise<Response>;
 export type ApiClient = {
   get<T>(path: string): Promise<T>;
   post<T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }): Promise<T>;
-  put<T>(path: string, body: unknown): Promise<T>;
+  put<T>(path: string, body: unknown, opts?: { idempotencyKey?: string }): Promise<T>;
+  patch<T>(path: string, body: unknown, opts?: { idempotencyKey?: string }): Promise<T>;
+  delete<T>(path: string, opts?: { idempotencyKey?: string }): Promise<T>;
   postForm<T>(path: string, form: FormData, opts: { idempotencyKey: string }): Promise<T>;
   getBlob(path: string): Promise<Blob>;
 };
@@ -38,7 +40,9 @@ export function createApiClient(opts: { send: Transport }): ApiClient {
   return {
     get: (path) => json(path, { method: 'GET', headers: {} }),
     post: (path, body, o) => json(path, jsonInit('POST', body, o?.idempotencyKey)),
-    put: (path, body) => json(path, jsonInit('PUT', body)),
+    put: (path, body, o) => json(path, jsonInit('PUT', body, o?.idempotencyKey)),
+    patch: (path, body, o) => json(path, jsonInit('PATCH', body, o?.idempotencyKey)),
+    delete: (path, o) => json(path, jsonInit('DELETE', undefined, o?.idempotencyKey)),
     // No Content-Type here: the browser sets multipart/form-data with its boundary.
     postForm: (path, form, o) => json(path, { method: 'POST', headers: { 'Idempotency-Key': o.idempotencyKey }, body: form }),
     getBlob: async (path) => (await request(path, { method: 'GET', headers: {} })).blob(),

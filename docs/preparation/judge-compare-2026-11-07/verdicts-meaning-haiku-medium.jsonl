@@ -1,0 +1,20 @@
+{"id": 0, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A match between two teams that lasts ninety minutes is a game; matchstick, pairing and parking lot do not fit."}
+{"id": 1, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Flowers blooming after winter can only be the season; coil, water source and spoon do not fit."}
+{"id": 2, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A gold ring slid onto a finger is jewellery; phone ring, circle of people and wall do not fit."}
+{"id": 3, "verdict": "fail_major", "fitting_wrong_meanings": ["bữa tiệc"], "reason": "A birthday party at someone's house is a social event (bữa tiệc), not a political party, so the sentence does not use meaning_vi."}
+{"id": 4, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A singer holding a high note is a musical note; written note, banknote and chair do not fit."}
+{"id": 5, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Shuffling a deck and dealing one card to each player is a playing card; bank card and greeting card do not fit."}
+{"id": 6, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Running a bakery with sisters means managing a business; running on foot, flowing and sleeping do not fit."}
+{"id": 7, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Paying with a ten-dollar bill and getting change back is money returned; 'sự thay đổi' and clothes do not fit."}
+{"id": 8, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Asking a waiter for the check in a restaurant is the bill; cheque and inspection are not plausible here."}
+{"id": 9, "verdict": "fail_major", "fitting_wrong_meanings": ["món đã gọi, đơn đặt hàng"], "reason": "The waiter brought my order means the food I ordered, not 'trật tự, thứ tự', so the sentence does not use meaning_vi."}
+{"id": 10, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A bank paying interest on savings accounts is money interest; curiosity and hobby do not fit."}
+{"id": 11, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Scoring the winning point in a game is a score point; sharp tip and main idea do not fit."}
+{"id": 12, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Needing capital before opening a second shop is business funds; capital city and capital letter do not fit."}
+{"id": 13, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A box carried in one hand is light in weight; bright, pale colour and noisy do not fit."}
+{"id": 14, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "A vase made of thin glass that breaks easily is the material; a drinking glass and window pane do not fit 'made of'."}
+{"id": 15, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Cooking soup in the kitchen is clearly the kitchen; the other places are unrelated distractors."}
+{"id": 16, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Being upset because someone broke his phone is anger; sleepy, hungry and happy do not fit."}
+{"id": 17, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Spending an afternoon looking at old paintings is a museum visit; library, airport and hospital do not fit."}
+{"id": 18, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Finishing lunch because the bus was coming means fast; quietly, carefully and happily do not fit."}
+{"id": 19, "verdict": "pass", "fitting_wrong_meanings": [], "reason": "Shoes bought two pairs because they were cheap means low-priced; expensive, noisy and clean do not fit."}

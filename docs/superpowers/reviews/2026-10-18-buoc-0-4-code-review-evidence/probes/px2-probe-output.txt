@@ -1,0 +1,39 @@
+PX2 control GET /v1/groups: median 260 ms (260 / 267 / 226), rows 0
+PX2 practiceItems({ kind: all }): median 1267 ms (1393 / 1267 / 1232), rows 200000
+PX2 practiceItems({ kind: today }): median 604 ms (658 / 604 / 573), rows 13490
+PX2 PLAN all:
+  Gather Merge  (cost=33736.53..1751030.64 rows=200000 width=105) (actual time=290.464..678.044 rows=200000 loops=1)
+    Workers Planned: 1
+    Workers Launched: 1
+    ->  Sort  (cost=32736.52..33030.63 rows=117647 width=65) (actual time=282.372..291.370 rows=100000 loops=2)
+          Sort Key: i.id
+          Sort Method: external merge  Disk: 8424kB
+          Worker 0:  Sort Method: external merge  Disk: 7640kB
+          ->  Parallel Hash Semi Join  (cost=12443.49..18001.72 rows=117647 width=65) (actual time=218.062..254.240 rows=100000 loops=2)
+                Hash Cond: (i.sense_id = vs.id)
+                ->  Parallel Seq Scan on learning_items i  (cost=0.00..3940.59 rows=117647 width=65) (actual time=0.028..6.193 rows=100000 loops=2)
+                      Filter: (user_id = '87ac57b6-150c-4b81-bd98-00327c270023'::uuid)
+                ->  Parallel Hash  (cost=11401.83..11401.83 rows=83333 width=16) (actual time=217.341..217.566 rows=100000 loops=2)
+                      Buckets: 262144  Batches: 1  Memory Usage: 11456kB
+                      ->  Parallel Hash Join  (cost=5999.41..11401.83 rows=83333 width=16) (actual time=167.741..201.373 rows=100000 loops=2)
+                            Hash Cond: (vs.entry_id = ve.id)
+                            ->  Parallel Seq Scan on senses vs  (cost=0.00..5183.67 rows=83333 width=32) (actual time=0.491..7.284 rows=100000 loops=2)
+                                  Filter: ((live_revision_id IS NOT NULL) AND (state = 'open'::text))
+                            ->  Parallel Hash  (cost=4528.82..4528.82 rows=117647 width=16) (actual time=166.451..166.452 rows=100000 loops=2)
+                                  Buckets: 262144  Batches: 1  Memory Usage: 11456kB
+                                  ->  Parallel Seq Scan on entries ve  (cost=0.00..4528.82 rows=117647 width=16) (actual time=141.488..149.480 rows=100000 loops=2)
+                                        Filter: ((scope = 'catalog'::text) OR ((scope = 'private'::text) AND (owner_user_id = '87ac57b6-150c-4b81-bd98-00327c270023'::uuid)))
+    SubPlan 1
+      ->  Aggregate  (cost=8.44..8.45 rows=1 width=8) (actual time=0.001..0.001 rows=1 loops=200000)
+            ->  Index Scan using group_items_item_id_idx on group_items gi  (cost=0.42..8.44 rows=1 width=8) (actual time=0.001..0.001 rows=1 loops=200000)
+                  Index Cond: (item_id = i.id)
+    SubPlan 2
+      ->  Aggregate  (cost=0.00..0.01 rows=1 width=8) (actual time=0.000..0.000 rows=1 loops=200000)
+            ->  Seq Scan on learning_log l  (cost=0.00..0.00 rows=1 width=8) (actual time=0.000..0.000 rows=0 loops=200000)
+                  Filter: ((user_id = i.user_id) AND (item_id = i.id) AND (kind = 'review'::text) AND (answer = 'review'::text))
+  Planning Time: 0.326 ms
+  JIT:
+    Functions: 63
+    Options: Inlining true, Optimization true, Expressions true, Deforming true
+    Timing: Generation 1.546 ms (Deform 0.736 ms), Inlining 47.710 ms, Optimization 137.722 ms, Emission 97.686 ms, Total 284.665 ms
+  Execution Time: 689.555 ms

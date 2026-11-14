@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { isSourceComplete, type SourceView } from './sources.service.js';
+import { describe, expect, it, vi } from 'vitest';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { AGID_SOURCE_ID, OWNER_SOURCE_ID } from '../content.constants.js';
+import { isSourceComplete, SourcesService, type SourceView } from './sources.service.js';
 
 const source: SourceView = {
   id: '00000000-0000-4000-8000-000000000002', kind: 'third_party', name: 'CEFR-J',
-  version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 10,
+  version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 10, protected: true,
 };
 
 describe('source completeness', () => {
@@ -19,5 +22,327 @@ describe('source completeness', () => {
       expect(isSourceComplete({ ...source, license: blank })).toBe(false);
       expect(isSourceComplete({ ...source, version: blank, license: blank })).toBe(false);
     }
+  });
+});
+
+const ID = '00000000-0000-4000-8000-0000000000c1';
+const row = {
+  id: ID, kind: 'third_party', name: 'CEFR-J', version: '1.5', url: null, license: 'test license', attribution: '', displayPriority: 10,
+};
+const prismaError = (code: string) => new Prisma.PrismaClientKnownRequestError(code, { code, clientVersion: 'x' });
+
+function setup() {
+  const prisma = {
+    dataSource: { update: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
+    $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
+  };
+  return { prisma, service: new SourcesService(prisma as unknown as PrismaClient) };
+}
+
+async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string }> {
+  try {
+    await promise;
+  } catch (error) {
+    if (error instanceof ProblemDetailsException) return { status: error.getStatus(), type: error.problemType };
+    throw error;
+  }
+  throw new Error('expected a problem');
+}
+
+describe('SourcesService.update', () => {
+  it('writes only the keys that were sent, mapping display_priority, and returns the view', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockResolvedValue({ ...row, name: 'CEFR-J v2', displayPriority: 3 });
+    const view = await service.update(ID, { name: 'CEFR-J v2', display_priority: 3 });
+    expect(prisma.dataSource.update).toHaveBeenCalledOnce();
+    expect(prisma.dataSource.update.mock.calls[0]![0]).toMatchObject({
+      where: { id: ID, kind: 'third_party' }, data: { name: 'CEFR-J v2', displayPriority: 3 },
+    });
+    expect(Object.keys(prisma.dataSource.update.mock.calls[0]![0].data).sort()).toEqual(['displayPriority', 'name']);
+    expect(view).toEqual({
+      id: ID, kind: 'third_party', name: 'CEFR-J v2', version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 3,
+      protected: false,
+    });
+  });
+
+  it('url: null is written (clears the link), it is not treated as "not sent"', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockResolvedValue(row);
+    await service.update(ID, { url: null });
+    expect(prisma.dataSource.update.mock.calls[0]![0].data).toEqual({ url: null });
+  });
+
+  it('only a third_party row can match: the update filters on kind', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockResolvedValue(row);
+    await service.update(ID, { license: 'x' });
+    expect(prisma.dataSource.update.mock.calls[0]![0].where).toEqual({ id: ID, kind: 'third_party' });
+    expect(prisma.dataSource.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('unknown id → 404 not-found', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockRejectedValue(prismaError('P2025'));
+    prisma.dataSource.findUnique.mockResolvedValue(null);
+    expect(await problem(service.update(ID, { name: 'x' }))).toEqual({ status: 404, type: 'not-found' });
+  });
+
+  it('an owner source → 409 source-protected', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockRejectedValue(prismaError('P2025'));
+    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'owner' });
+    expect(await problem(service.update(ID, { name: 'x' }))).toEqual({ status: 409, type: 'source-protected' });
+  });
+
+  it('no row matched yet a third_party source is there (cannot happen): the error is not disguised as a problem', async () => {
+    const { prisma, service } = setup();
+    const missing = prismaError('P2025');
+    prisma.dataSource.update.mockRejectedValue(missing);
+    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'third_party' });
+    await expect(service.update(ID, { name: 'x' })).rejects.toBe(missing);
+  });
+
+  it('a (name, version) pair another source has → 409 source-exists', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
+    prisma.dataSource.update.mockRejectedValue(prismaError('P2002'));
+    expect(await problem(service.update(ID, { name: 'AGID', version: '2016.01.19' }))).toEqual({ status: 409, type: 'source-exists' });
+  });
+
+  it('any other database error is not turned into a problem', async () => {
+    const { prisma, service } = setup();
+    const boom = new Error('connection lost');
+    prisma.dataSource.update.mockRejectedValue(boom);
+    await expect(service.update(ID, { name: 'x' })).rejects.toBe(boom);
+  });
+});
+
+describe('SourcesService.update: the version of a source that has data (Q15, owner 02/11/2026)', () => {
+  const sqlOf = (call: unknown[]) => ({ text: (call[0] as TemplateStringsArray).join('?').replace(/\s+/g, ' ').trim(), values: call.slice(1) });
+
+  it('one query decides: a different version is locked when entry_levels, import_batches or import_row_keys refers to the source', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
+    prisma.dataSource.update.mockResolvedValue({ ...row, version: '1.6' });
+    await service.update(ID, { version: '1.6' });
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const { text, values } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain("ds.version <> ?");
+    expect(text).toContain('EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)');
+    expect(text).toContain('EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)');
+    expect(text).toContain('EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)');
+    expect(text).toContain("ds.kind = 'third_party'");
+    expect(values).toEqual(['1.6', ID]);
+  });
+
+  it('a source with data and a different version → 409 source-version-locked, nothing is written', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: true }]);
+    expect(await problem(service.update(ID, { version: '1.6' }))).toEqual({ status: 409, type: 'source-version-locked' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+  });
+
+  it('the locked refusal also stops the other keys sent with the version', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: true }]);
+    expect(await problem(service.update(ID, { version: '1.6', license: 'CC BY' }))).toEqual({ status: 409, type: 'source-version-locked' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+  });
+
+  it('a source with no data, or the same version, is not locked: the update runs', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
+    prisma.dataSource.update.mockResolvedValue({ ...row, version: '1.6' });
+    expect((await service.update(ID, { version: '1.6' })).version).toBe('1.6');
+    expect(prisma.dataSource.update.mock.calls[0]![0].data).toEqual({ version: '1.6' });
+  });
+
+  it('no row matched the check (unknown id or the owner): the update decides, so 404 / source-protected stay as they are', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.dataSource.update.mockRejectedValue(prismaError('P2025'));
+    prisma.dataSource.findUnique.mockResolvedValue(null);
+    expect(await problem(service.update(ID, { version: '1.6' }))).toEqual({ status: 404, type: 'not-found' });
+  });
+
+  it('no version sent: no check at all, so licence, attribution and the rest of a source with data stay editable', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockResolvedValue(row);
+    await service.update(ID, { license: 'CC BY-SA 4.0', attribution: 'CEFR-J Project' });
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.dataSource.update).toHaveBeenCalledOnce();
+  });
+});
+
+describe('SourcesService.remove', () => {
+  const sqlOf = (call: unknown[]) => ({ text: (call[0] as TemplateStringsArray).join('?').replace(/\s+/g, ' ').trim(), values: call.slice(1) });
+
+  it('one guarded DELETE: third_party only, and nothing in entry_levels, import_batches or import_row_keys refers to it', async () => {
+    const { prisma, service } = setup();
+    prisma.$executeRaw.mockResolvedValue(1);
+    await service.remove(ID);
+    expect(prisma.$executeRaw).toHaveBeenCalledOnce();
+    const { text, values } = sqlOf(prisma.$executeRaw.mock.calls[0]!);
+    expect(text).toContain('DELETE FROM data_sources');
+    expect(text).toContain("kind = 'third_party'");
+    expect(text).toContain('NOT EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)');
+    expect(text).toContain('NOT EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)');
+    expect(text).toContain('NOT EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)');
+    expect(values).toEqual([ID]);
+    expect(prisma.dataSource.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('nothing deleted and no such row → 404 not-found', async () => {
+    const { prisma, service } = setup();
+    prisma.$executeRaw.mockResolvedValue(0);
+    prisma.dataSource.findUnique.mockResolvedValue(null);
+    expect(await problem(service.remove(ID))).toEqual({ status: 404, type: 'not-found' });
+  });
+
+  it('nothing deleted and the row is an owner source → 409 source-protected', async () => {
+    const { prisma, service } = setup();
+    prisma.$executeRaw.mockResolvedValue(0);
+    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'owner' });
+    expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-protected' });
+  });
+
+  it('nothing deleted and a third_party row is still there → 409 source-in-use', async () => {
+    const { prisma, service } = setup();
+    prisma.$executeRaw.mockResolvedValue(0);
+    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'third_party' });
+    expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-in-use' });
+  });
+
+  it.each([
+    ['P2003', undefined],
+    // What a raw statement really throws for a foreign-key refusal (seen against Postgres 17, Prisma 7.10 with the pg adapter).
+    ['P2010', { driverAdapterError: { name: 'DriverAdapterError', cause: {
+      originalCode: '23503', kind: 'ForeignKeyConstraintViolation', constraint: { index: 'entry_levels_source_id_fkey' },
+      originalMessage: 'update or delete on table "data_sources" violates foreign key constraint "entry_levels_source_id_fkey"',
+    } } }],
+  ])('a foreign-key refusal (%s: a level written between the guard and the delete) → 409 source-in-use', async (code, meta) => {
+    const { prisma, service } = setup();
+    prisma.$executeRaw.mockRejectedValue(new Prisma.PrismaClientKnownRequestError('fk', { code, clientVersion: 'x', meta }));
+    expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-in-use' });
+  });
+
+  it('a raw error that is not a foreign-key refusal (P2010 with another driver code) is not turned into a problem', async () => {
+    const { prisma, service } = setup();
+    const boom = new Prisma.PrismaClientKnownRequestError('x', { code: 'P2010', clientVersion: 'x', meta: {
+      driverAdapterError: { cause: { originalCode: '40001', kind: 'TransactionWriteConflict' } },
+    } });
+    prisma.$executeRaw.mockRejectedValue(boom);
+    await expect(service.remove(ID)).rejects.toBe(boom);
+  });
+
+  it('any other database error is not turned into a problem', async () => {
+    const { prisma, service } = setup();
+    const boom = new Error('connection lost');
+    prisma.$executeRaw.mockRejectedValue(boom);
+    await expect(service.remove(ID)).rejects.toBe(boom);
+  });
+});
+
+describe('the built-in AGID source (its licence notice is required on the public page)', () => {
+  it('update and remove refuse it as source-protected without touching the database', async () => {
+    const { prisma, service } = setup();
+    expect(await problem(service.update(AGID_SOURCE_ID, { name: 'x' }))).toEqual({ status: 409, type: 'source-protected' });
+    expect(await problem(service.remove(AGID_SOURCE_ID))).toEqual({ status: 409, type: 'source-protected' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('the view flags it, and the owner source, as protected; a third-party source is not', async () => {
+    const { prisma, service } = setup();
+    const raw = { id: ID, kind: 'third_party', name: 'CEFR-J', version: '1.5', url: null, license: 'x', attribution: '', display_priority: 10, shown_to_learners: false };
+    prisma.$queryRaw.mockResolvedValue([{ ...raw, id: OWNER_SOURCE_ID, kind: 'owner' }, { ...raw, id: AGID_SOURCE_ID }, raw]);
+    const { items } = await service.list();
+    expect(items.map((item) => item.protected)).toEqual([true, true, false]);
+  });
+});
+
+describe('SourcesService.listShown / list: which sources are shown to learners (owner 05/11/2026)', () => {
+  const sqlOf = (call: unknown[]) => {
+    const query = call[0] as Prisma.Sql;
+    return { text: query.text.replace(/\s+/g, ' ').trim(), values: query.values };
+  };
+  const dbRow = (over: Record<string, unknown> = {}) => ({
+    id: ID, kind: 'third_party', name: 'CEFR-J', version: '1.5', url: null, license: 'CC BY-SA 4.0', attribution: 'cite me',
+    display_priority: 10, shown_to_learners: true, ...over,
+  });
+
+  it('listShown returns the rows the query gives, in that order, as source views', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([dbRow({ name: 'A' }), dbRow({ id: AGID_SOURCE_ID, name: 'AGID', display_priority: 20 })]);
+    const shown = await service.listShown();
+    expect(shown.map((s) => s.name)).toEqual(['A', 'AGID']);
+    expect(shown[1]).toEqual({
+      id: AGID_SOURCE_ID, kind: 'third_party', name: 'AGID', version: '1.5', url: null, license: 'CC BY-SA 4.0', attribution: 'cite me',
+      display_priority: 20, protected: true,
+    });
+    expect(shown[0]).not.toHaveProperty('shown_to_learners');
+  });
+
+  it('listShown filters in SQL: third_party only, a visible catalog sense, AGID through library inflections, priority order', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.listShown();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const { text, values } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain("ds.kind = 'third_party'");
+    expect(text).toContain('FROM entry_levels el JOIN entries e ON e.id = el.entry_id');
+    expect(text).toContain('el.source_id = ds.id');
+    expect(text).toContain("e.scope = 'catalog'");
+    expect(text).toContain("s.state = 'open' AND s.live_revision_id IS NOT NULL");
+    expect(text).toContain('FROM entry_inflections ei JOIN entries e ON e.id = ei.entry_id');
+    expect(text).toContain("ei.source = 'library'");
+    expect(text).toMatch(/ds\.id = \$1::uuid AND EXISTS/);
+    expect(text).toMatch(/ORDER BY ds\.display_priority, ds\.id$/);
+    expect(values).toEqual([AGID_SOURCE_ID]);
+  });
+
+  it('round C: a source is also shown when the live transcription of a visible catalog sense came from it, and not for a draft', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.listShown();
+    const { text } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    const branch = text.slice(text.indexOf('FROM sense_revisions r'));
+    expect(text).toContain('FROM sense_revisions r JOIN senses s ON s.live_revision_id = r.id JOIN entries e ON e.id = s.entry_id');
+    expect(text).toContain('r.ipa_source_id = ds.id');
+    // The live revision of an open catalog sense: a draft that names the source is not in use yet.
+    expect(branch).toContain("s.state = 'open'");
+    expect(branch).toContain("e.scope = 'catalog'");
+    expect(text.indexOf('r.ipa_source_id = ds.id')).toBeLessThan(text.indexOf('ds.id = $1::uuid'));
+  });
+
+  it('listShown on a database with nothing shown is an empty list', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    expect(await service.listShown()).toEqual([]);
+  });
+
+  it('list (admin) returns every source with the shown_to_learners flag, computed by the same expression, with the owner row last by priority', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([dbRow(), dbRow({ id: OWNER_SOURCE_ID, kind: 'owner', name: 'Wordmet', shown_to_learners: false })]);
+    const { items } = await service.list();
+    expect(items.map((s) => [s.name, s.shown_to_learners])).toEqual([['CEFR-J', true], ['Wordmet', false]]);
+    expect(items[1]).toMatchObject({ protected: true, kind: 'owner' });
+    const { text } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain('AS shown_to_learners');
+    expect(text).not.toContain('WHERE ds.kind');
+    expect(prisma.dataSource.findMany).not.toHaveBeenCalled();
+  });
+
+  it('the shown condition and the flag are the same SQL fragment (they cannot drift)', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.list();
+    await service.listShown();
+    const flagQuery = sqlOf(prisma.$queryRaw.mock.calls[0]!).text;
+    const filterQuery = sqlOf(prisma.$queryRaw.mock.calls[1]!).text;
+    const condition = filterQuery.slice(filterQuery.indexOf('WHERE ') + 'WHERE '.length, filterQuery.indexOf(' ORDER BY'));
+    expect(condition).toContain("ds.kind = 'third_party'");
+    expect(flagQuery).toContain(`${condition} AS shown_to_learners`);
   });
 });

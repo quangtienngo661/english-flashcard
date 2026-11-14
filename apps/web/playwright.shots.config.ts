@@ -1,0 +1,20 @@
+import { defineConfig, devices } from '@playwright/test';
+
+// Screenshots for the owner's milestone review, against the real stack (API + worker + DB) and the app on :3001
+// (`pnpm dev:app`). Not part of CI. Output: test-results/shots/<milestone>/<locale>-<scheme>-<width>-<page>.png
+export default defineConfig({
+  testDir: './e2e-shots',
+  fullyParallel: false,
+  workers: 1,
+  reporter: [['list']],
+  timeout: 1_800_000,
+  // Playwright empties its output dir at the start of a run; keep it apart from test-results/shots so a partial re-run (SHOTS_ONLY) cannot delete the other sets.
+  outputDir: 'test-results/.pw',
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: process.env.SHOTS_BASE_URL ?? 'http://localhost:3001',
+    // A locator that never shows must fail its set, not hold the run until the test timeout.
+    actionTimeout: 45_000,
+    navigationTimeout: 60_000,
+  },
+});

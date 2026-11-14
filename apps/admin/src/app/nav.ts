@@ -15,26 +15,35 @@ export type NavEntry = {
   etaNote?: 'apiReady' | 'unconfirmed';
 };
 
-// Admin-only AI pages: the session has no AI permission yet, so `roles.manage` (admin) stands in.
-const ADMIN: Permission[] = ['roles.manage'];
-
-/** 16 items in 6 groups, in the order of the Figma `Sidebar`. */
+/** 28 items in 6 groups ("Chính sách & điều khoản" is the legal documents, 03/11/2026; "Hỏi đáp trang chủ" is the home page FAQ, M8): the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4) and Đơn hàng (launch prep B, 04/11/2026); "Cấu hình" replaced Thao tác and Prompt (nhóm B M2); "Judge" is nhóm B M3; "Câu AI thật" is nhóm B M4. */
 export const NAV: NavEntry[] = [
-  { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: [], available: false },
+  { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: ['ai.view'], available: true },
+  { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
+  { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: ['content.edit'], available: true },
+  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: true },
   { group: 'content', path: '/uploads', labelKey: 'nav.uploads', needs: ['content.import'], available: true },
   { group: 'content', path: '/publish-jobs', labelKey: 'nav.publishJobs', needs: ['content.publish'], available: true },
   { group: 'content', path: '/export', labelKey: 'nav.export', needs: ['content.edit'], available: true },
   { group: 'content', path: '/sources', labelKey: 'nav.sources', needs: ['content.import'], available: true },
-  { group: 'content', path: '/words', labelKey: 'nav.words', needs: [], available: false, etaNote: 'apiReady' },
-  { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: [], available: false, etaNote: 'apiReady' },
-  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: false, etaNote: 'apiReady' },
-  { group: 'practice', path: '/reported', labelKey: 'nav.reported', needs: [], available: false, plannedStep: '4/7' },
-  { group: 'practice', path: '/irregular-forms', labelKey: 'nav.irregular', needs: [], available: false, plannedStep: '4/7' },
-  { group: 'learners', path: '/users', labelKey: 'nav.users', needs: [], available: false, plannedStep: '5–8', etaNote: 'unconfirmed' },
-  { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: [], available: false, plannedStep: '5' },
-  { group: 'ai', path: '/ai/settings', labelKey: 'nav.aiSettings', needs: ADMIN, available: false, plannedStep: '5–6' },
-  { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ADMIN, available: false, plannedStep: '6' },
-  { group: 'ai', path: '/ai/eval-sets', labelKey: 'nav.evalSets', needs: ADMIN, available: false, plannedStep: '6' },
+  { group: 'content', path: '/unknown-forms', labelKey: 'nav.unknownForms', needs: ['content.edit'], available: true },
+  { group: 'practice', path: '/reports', labelKey: 'nav.reports', needs: ['content.edit'], available: true },
+  { group: 'practice', path: '/report-reasons', labelKey: 'nav.reportReasons', needs: ['settings.manage'], available: true },
+  { group: 'practice', path: '/refunds', labelKey: 'nav.refunds', needs: ['settings.manage'], available: true },
+  { group: 'learners', path: '/users', labelKey: 'nav.users', needs: ['users.read'], available: true },
+  { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: ['entitlements.grant'], available: true },
+  { group: 'learners', path: '/orders', labelKey: 'nav.orders', needs: ['settings.manage'], available: true },
+  { group: 'learners', path: '/transactions', labelKey: 'nav.transactions', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/status', labelKey: 'nav.aiStatus', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/models', labelKey: 'nav.aiModels', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/configs', labelKey: 'nav.aiConfigs', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/real-questions', labelKey: 'nav.aiRealQuestions', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/judges', labelKey: 'nav.aiJudges', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/calls', labelKey: 'nav.aiCalls', needs: ['settings.manage'], available: true },
+  { group: 'system', path: '/settings', labelKey: 'nav.settings', needs: ['settings.manage'], available: true },
+  { group: 'system', path: '/legal', labelKey: 'nav.legal', needs: ['settings.manage'], available: true },
+  { group: 'system', path: '/faq', labelKey: 'nav.faq', needs: ['settings.manage'], available: true },
   { group: 'system', path: '/staff', labelKey: 'nav.staff', needs: ['roles.manage'], available: true },
 ];
 
@@ -46,7 +55,7 @@ export function firstVisiblePath(permissions: Permission[]): string | null {
   return visibleNav(permissions)[0]?.path ?? null;
 }
 
-/** Where `/`, a successful login and a forbidden path lead: Lô nhập, else the first page the user may open. */
+/** Where `/`, a successful login and the no-access page's button lead: Lô nhập, else the first page the user may open. */
 export function homePath(permissions: Permission[]): string {
   return canAccess('/uploads', permissions) ? '/uploads' : (firstVisiblePath(permissions) ?? '/uploads');
 }

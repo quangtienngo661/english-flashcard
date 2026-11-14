@@ -152,8 +152,16 @@ export function PanelHead({ title, status }: { title: ReactNode; status?: ReactN
   );
 }
 
-export function PanelBody({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-5">{children}</div>;
+/** `focusable`: a body that can scroll and holds nothing to focus (read-only rows) needs a tab stop of its own, or axe flags `scrollable-region-focusable` on a phone. */
+export function PanelBody({ children, focusable = false }: { children: ReactNode; focusable?: boolean }) {
+  return (
+    <div
+      tabIndex={focusable ? 0 : undefined}
+      className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-5${focusable ? ' outline-none focus-visible:ring-2 focus-visible:ring-primary' : ''}`}
+    >
+      {children}
+    </div>
+  );
 }
 
 /** Actions, kept at the bottom of the panel. */

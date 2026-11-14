@@ -1,0 +1,572 @@
+<title>Chế độ tối M9</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: one column of decisions; each decision shows its options as real 390 px phone frames side by side, dark app tokens inside
+   the frames, the page chrome follows the viewer's theme. Tokens: Wordmet web.css / web-dark.css (Figma JKnyUUtGjpGpfKK4PqBfdY). */
+:root{
+  --page-bg:#f6f7fa; --page-card:#ffffff; --page-ink:#1b2444; --page-muted:#525a78; --page-line:#e1e5ee; --page-accent:#1e3a8a;
+  --page-accent-soft:#e7ecf8; --page-rec:#1b7a46;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --f-body:'Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-close:cubic-bezier(0.4,0,1,1);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.27 0 0 0 .45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --grain-raw:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --page-bg:#0b0d17; --page-card:#121524; --page-ink:#eceef5; --page-muted:#a6adc4; --page-line:#262b3d; --page-accent:#8da2ff;
+  --page-accent-soft:#1f2747; --page-rec:#62c98f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page-bg:#0b0d17; --page-card:#121524; --page-ink:#eceef5; --page-muted:#a6adc4; --page-line:#262b3d; --page-accent:#8da2ff;
+  --page-accent-soft:#1f2747; --page-rec:#62c98f; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--page-bg);color:var(--page-ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:1240px;margin-inline:auto;display:flex;flex-direction:column;gap:56px}
+h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem);font-weight:800;letter-spacing:-0.025em;line-height:1.15}
+h2{font-size:1.625rem;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
+p{margin:0;max-width:68ch}
+.lead{color:var(--page-muted);font-size:1.0625rem}
+.intro{display:flex;flex-direction:column;gap:16px}
+.how{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;font-size:.875rem;color:var(--page-muted)}
+.toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;color:var(--page-ink);font-weight:600}
+.toggle input{width:18px;height:18px;accent-color:var(--page-accent)}
+.mono{font-family:var(--f-mono);font-size:.75rem}
+
+section.q{display:flex;flex-direction:column;gap:20px;padding-top:32px;border-top:1px solid var(--page-line)}
+.q-head{display:flex;flex-direction:column;gap:6px}
+.q-num{font-family:var(--f-mono);font-size:.75rem;color:var(--page-muted)}
+.q-why{font-size:.9375rem;color:var(--page-muted);max-width:76ch}
+.q-why b{color:var(--page-ink);font-weight:600}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),390px));gap:28px 24px;justify-content:start}
+figure.opt{margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+figcaption{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.9375rem}
+figcaption .letter{font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1}
+figcaption .src{font-family:var(--f-mono);font-size:.75rem;color:var(--page-muted)}
+.rec-tag{font-family:var(--f-mono);font-size:.6875rem;padding:2px 8px;border-radius:999px;border:1px solid var(--page-rec);color:var(--page-rec)}
+figure.opt.rec .phone{outline:2px solid var(--page-rec);outline-offset:4px}
+figure.lt-ref{display:none}
+body.show-light figure.lt-ref{display:flex}
+.note{font-size:.8125rem;color:var(--page-muted)}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px}
+.page-btn{font:600 .875rem var(--f-body);color:var(--page-ink);background:var(--page-card);border:1px solid var(--page-line);
+  border-radius:10px;min-height:40px;padding:0 16px;cursor:pointer}
+.page-btn:hover{border-color:var(--page-accent)}
+.page-btn:focus-visible,.toggle input:focus-visible{outline:3px solid var(--page-accent);outline-offset:2px}
+.page-btn[aria-pressed="true"]{background:var(--page-accent-soft);border-color:var(--page-accent)}
+
+/* ---------- App tokens inside the frames ---------- */
+.dk{--bg:#0f1220;--surface:#171b2a;--ink:#eceef5;--muted:#a6adc4;--ghost:#353c53;--line:#2a3044;--accent:#8da2ff;--accent-soft:#1f2747;
+  --on-accent:#0f1220;--mark:#ffd84a;--mark-ink:#1b2444;--pass:#62c98f;--pass-soft:#142a1e;--fail:#ff8d80;--fail-soft:#311a18;
+  --sh-card:0 1px 2px rgb(0 0 0/.4),0 10px 28px -14px rgb(0 0 0/.6);--sh-pop:0 2px 6px rgb(0 0 0/.4),0 24px 56px -24px rgb(0 0 0/.7);
+  --sh-soft:0 1px 2px rgb(0 0 0/.4),0 14px 34px -14px rgb(0 0 0/.7);--sh-row:0 1px 2px rgb(0 0 0/.35),0 4px 12px -8px rgb(0 0 0/.6);
+  --sh-btn:none;--halo-y:12%;--grain-img:var(--grain-raw);--grain-blend:soft-light;--grain-op:.07;color-scheme:dark}
+.lt{--bg:#f6f7fa;--surface:#ffffff;--ink:#1b2444;--muted:#525a78;--ghost:#c9cedc;--line:#e1e5ee;--accent:#1e3a8a;--accent-soft:#e7ecf8;
+  --on-accent:#ffffff;--mark:#ffd84a;--mark-ink:#1b2444;--pass:#1b7a46;--pass-soft:#e4f2ea;--fail:#b8352a;--fail-soft:#f8e7e5;
+  --sh-card:0 1px 2px rgb(27 36 68/.06),0 10px 28px -14px rgb(27 36 68/.2);--sh-pop:0 2px 6px rgb(27 36 68/.08),0 24px 56px -24px rgb(27 36 68/.34);
+  --sh-soft:0 1px 2px rgb(27 36 68/.05),0 14px 34px -14px rgb(27 36 68/.22);--sh-row:0 1px 2px rgb(27 36 68/.06),0 4px 12px -8px rgb(27 36 68/.16);
+  --sh-btn:0 10px 28px -10px rgb(30 58 138/.34);--halo-y:34%;--grain-img:var(--grain);--grain-blend:multiply;--grain-op:.4;color-scheme:light}
+/* Background option A of decision 10 = what the code runs today in dark. */
+.dk.bg-now{--halo-y:34%;--grain-img:var(--grain);--grain-blend:screen;--grain-op:.12}
+
+.phone{position:relative;width:100%;max-width:390px;border-radius:28px;overflow:hidden;border:1px solid var(--page-line);
+  font-family:var(--f-body);color:var(--ink);font-size:16px;line-height:1.6}
+.mesh{isolation:isolate;background-color:var(--bg);background-image:
+  radial-gradient(38% 32% at 14% 8%,color-mix(in oklab,var(--accent) 20%,transparent),transparent 70%),
+  radial-gradient(34% 30% at 90% 14%,color-mix(in oklab,var(--mark) var(--halo-y),transparent),transparent 70%),
+  radial-gradient(40% 34% at 76% 94%,color-mix(in oklab,var(--pass) 18%,transparent),transparent 70%),
+  radial-gradient(34% 34% at 4% 92%,color-mix(in oklab,var(--accent) 12%,transparent),transparent 70%)}
+.mesh::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:var(--grain-img);
+  mix-blend-mode:var(--grain-blend);opacity:var(--grain-op)}
+.screen{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;padding:20px 16px 24px;min-height:420px}
+.app-title{font-family:var(--f-display);font-size:1.875rem;font-weight:800;letter-spacing:-0.023em;line-height:1.1;margin:4px 0 0}
+.card{background:var(--surface);border-radius:20px;box-shadow:var(--sh-card);padding:20px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:.8125rem;font-weight:600;color:var(--muted)}
+.small{font-size:.875rem;color:var(--muted)}
+.big-n{font-family:var(--f-display);font-weight:800;font-size:3.5rem;line-height:1;letter-spacing:-0.03em}
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:10px;height:10px;border-radius:3px}
+
+/* Buttons (ui/Button.tsx): radius 10, min-h 44, 15/600; hover brightness 1.12 200 ms, press scale .97 150 ms. */
+.b{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:10px;border:0;
+  font:600 .9375rem/1.4 var(--f-body);cursor:pointer;transition:filter 200ms ease,transform 150ms var(--ease-out),box-shadow 200ms ease}
+.b:hover{filter:brightness(1.12)}
+.b:active{transform:scale(.97)}
+.b:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.b-primary{background:var(--accent);color:var(--on-accent);box-shadow:var(--sh-btn)}
+.b-secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:var(--sh-soft)}
+.b-danger{background:var(--fail);color:var(--on-accent)}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.glow-btn{--sh-btn:0 10px 28px -10px rgb(141 162 255/.35)}
+.lt .glow-btn{--sh-btn:0 10px 28px -10px rgb(30 58 138/.34)}
+
+/* Decision 7: scrim + dialog. */
+.row-card{background:var(--surface);border-radius:14px;box-shadow:var(--sh-row);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.row-card .nm{flex:1;font-weight:600;font-size:.9375rem}
+.scrim{position:absolute;inset:0;z-index:5;display:flex;align-items:flex-end;justify-content:center;padding:12px;
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.scrim.navy{background:rgb(27 36 68/.30)}
+.scrim.black{background:rgb(0 0 0/.55)}
+.dialog{width:100%;background:var(--surface);border-radius:16px;box-shadow:var(--sh-pop);padding:20px;display:flex;flex-direction:column;gap:16px}
+.dialog h3{margin:0;font-family:var(--f-display);font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;line-height:1.3}
+.dialog .foot{display:flex;flex-direction:column-reverse;gap:8px}
+.dialog .foot .b{width:100%}
+.play .scrim{animation:scrim-in 320ms var(--ease-out) both}
+.play .dialog{animation:pop-in 320ms var(--ease-out) both}
+@keyframes scrim-in{from{opacity:0}to{opacity:1}}
+@keyframes pop-in{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+
+/* Decision 8: dictionary paper (globals.css .lk-paper). */
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:44px;
+  padding:0 14px;font-size:.9375rem}
+.search .q{flex:1}
+.paper{border-radius:4px 10px 10px 4px;padding:22px 20px;display:flex;flex-direction:column;gap:12px}
+.paper.light{background:#fbfaf6;border:1px solid #e8e4d8;box-shadow:0 24px 48px -28px rgb(27 36 68/.45);
+  --p-ink:#1b2444;--p-muted:#525a78;--p-accent:#1e3a8a;--p-rule:#e8e4d8;--p-chip:#eef0f4}
+.dk .paper.light{box-shadow:0 24px 48px -28px rgb(0 0 0/.8)}
+.paper.dark{background:#1e2334;border:1px solid #2e3449;box-shadow:0 24px 48px -28px rgb(0 0 0/.8);
+  --p-ink:#eceef5;--p-muted:#a6adc4;--p-accent:#8da2ff;--p-rule:#2e3449;--p-chip:#262c40}
+.paper{color:var(--p-ink)}
+.lemma{font-family:var(--f-display);font-size:2.25rem;font-weight:700;letter-spacing:-0.028em;line-height:1.1}
+.meta{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.chip{font-size:.8125rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--p-chip);color:var(--p-ink)}
+.ipa{font-family:var(--f-mono);font-size:.8125rem;color:var(--p-muted)}
+.rule{border:0;border-top:1px solid var(--p-rule);margin:2px 0}
+.sense{display:flex;flex-direction:column;gap:4px}
+.sense .def{font-weight:600}
+.sense .ex{color:var(--p-muted);font-size:.9375rem}
+.sense .ex mark{background:#ffd84a;color:#1b2444;border-radius:3px;padding:0 3px}
+.more{color:var(--p-accent);font-weight:600;font-size:.875rem}
+
+/* Decision 9: group colour. */
+.gstage{position:relative;display:flex;justify-content:center;padding:18px 0 6px}
+.halo{position:absolute;inset:6% 12% 4%;border-radius:50%;filter:blur(44px);opacity:.9;background:var(--g-wash);
+  transition:background-color 700ms var(--ease-out),background 700ms var(--ease-out)}
+.stack{position:relative;width:78%;aspect-ratio:1/1.05}
+.stack .sheet{position:absolute;inset:0;border-radius:20px;background:var(--g-soft);transform:rotate(-5deg) translate(-6px,8px);
+  transition:background 700ms var(--ease-out)}
+.stack .front{position:absolute;inset:0;border-radius:20px;background:var(--surface);box-shadow:var(--sh-card);border-top:6px solid var(--g);
+  padding:18px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color 700ms var(--ease-out)}
+.stack .gname{font-weight:600;font-size:1rem;display:flex;align-items:center;gap:8px}
+.gnum{font-family:var(--f-display);font-weight:800;font-size:6rem;line-height:.9;letter-spacing:-0.04em;color:var(--g-num);
+  transition:color 700ms var(--ease-out)}
+.picker{background:var(--surface);border-radius:16px;box-shadow:var(--sh-card);padding:8px;display:flex;flex-direction:column;gap:2px}
+.prow{display:flex;align-items:center;gap:12px;min-height:40px;padding:8px;border-radius:10px;font-size:.875rem}
+.prow .pn{flex:1;font-weight:600;color:var(--ink)}
+.prow .pc{font-size:.8125rem;color:var(--muted)}
+.prow .pc b{font-family:var(--f-display);font-weight:800;font-size:.9375rem}
+.prow.sel{background:var(--r-wash)}
+.ratio{font-family:var(--f-mono);font-size:.6875rem;color:var(--muted)}
+.ratio.bad{color:var(--fail)}
+
+/* Decision 10: background zoom. */
+.zoom{height:150px;overflow:hidden;border-radius:16px;position:relative;border:1px solid var(--page-line)}
+/* The inner box has the phone's size; scale(3) after moving left two thirds shows its top right corner three times larger. */
+.zoom .inner{position:absolute;left:0;top:0;width:100%;height:420px;transform-origin:0 0;transform:scale(3) translate(-66.6%,0)}
+
+/* Decision 11: filters and tabs. */
+.ctl-list{display:flex;flex-direction:column;gap:14px}
+.ctl{display:flex;flex-direction:column;gap:6px}
+.ctl .where{font-family:var(--f-mono);font-size:.6875rem;color:var(--muted)}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--accent-soft);align-self:flex-start}
+.seg span{padding:4px 14px;border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.seg span.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-row)}
+.box-f{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;align-self:flex-start}
+.box-f span{padding:4px 10px;border-radius:6px;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.box-f span.on{background:var(--ink);color:var(--surface)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{padding:4px 12px;border-radius:10px;border:1px solid var(--line);font-size:.875rem;color:var(--ink)}
+.chips span b{font-family:var(--f-mono);font-weight:500;margin-left:4px}
+.chips span.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line)}
+.tabs span{padding:6px 0;font-size:.9375rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--ink);border-color:var(--ink)}
+.tabs.acc span.on{color:var(--ink);border-color:var(--accent)}
+.topnav{display:flex;gap:4px}
+.topnav span{padding:6px 12px;border-radius:8px;font-size:.875rem;font-weight:600;color:var(--muted)}
+.topnav span.on{background:var(--accent-soft);color:var(--ink)}
+.menu-f{display:flex;gap:16px;font-size:.875rem}
+.menu-f span{color:var(--accent);font-weight:600;border-bottom:2px solid var(--accent)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills span{padding:5px 14px;border-radius:999px;border:1px solid var(--line);font-size:.8125rem;font-weight:600;color:var(--muted);background:var(--surface)}
+.pills span.on{background:var(--accent-soft);border-color:color-mix(in oklab,var(--accent) 45%,transparent);color:var(--ink)}
+.pills span b{font-family:var(--f-mono);font-weight:500;margin-left:4px}
+.pills span .chev{margin-left:4px;color:var(--muted)}
+
+footer{display:flex;flex-direction:column;gap:8px;padding-top:32px;border-top:1px solid var(--page-line);font-size:.9375rem}
+footer p{color:var(--page-muted)}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Chế độ tối: 6 chỗ cần chọn</h1>
+    <p class="lead">Mỗi mục vẽ hai cách trên khung điện thoại 390 px, dùng màu tối của app (Figma Dark và <span class="mono">web-dark.css</span>). Khung viền xanh lá là cách Claude nghiêng về. Trả lời trong chat theo dạng “6B, 7B, 8A…”.</p>
+    <div class="how">
+      <label class="toggle" for="show-light"><input type="checkbox" id="show-light"> Hiện bản sáng để đối chiếu</label>
+      <span>Nền của mọi khung tối là cách B của mục 10, trừ khung 10A.</span>
+    </div>
+  </header>
+
+  <!-- 6. Button shadow -->
+  <section class="q" id="q6" aria-labelledby="q6-h">
+    <div class="q-head">
+      <span class="q-num">Câu 6</span>
+      <h2 id="q6-h">Bóng nút chính</h2>
+      <p class="q-why">Nút “Học” trên nền tối. Di chuột và bấm thử để xem motion. <b>Vì sao B:</b> vòng 15 (bản mới nhất) bỏ bóng nút ở chế độ tối; trên nền tối, chiều sâu đến từ bậc màu nền, còn ánh xanh dưới nút trông như hiệu ứng trang trí.</p>
+    </div>
+    <div class="opts">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> bóng navy hiện có <span class="src">web.css --shadow-wm-btn</span></figcaption>
+        <div class="phone lt mesh" data-tpl="today"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Ánh xanh dưới nút <span class="src">toi-5-man.html</span></figcaption>
+        <div class="phone dk mesh glow-btn" data-tpl="today"></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Không bóng <span class="src">vòng 15</span> <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="today"></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 7. Scrim -->
+  <section class="q" id="q7" aria-labelledby="q7-h">
+    <div class="q-head">
+      <span class="q-num">Câu 7</span>
+      <h2 id="q7-h">Lớp mờ sau hộp thoại</h2>
+      <p class="q-why">Hộp “Xóa nhóm” mở trên trang Nhóm, cả hai cách mờ 3 px. <b>Vì sao B:</b> navy 30% sáng hơn nền tối, nên đặt lên card nó làm trang sáng lên (<span class="mono">#171b2a → #181e32</span>) thay vì tối đi; hộp thoại không tách khỏi trang.</p>
+    </div>
+    <div class="btn-row"><button type="button" class="page-btn" id="replay">Mở lại hộp thoại</button></div>
+    <div class="opts" id="dialogs">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> navy 30% hiện có <span class="src">ui/Dialog.tsx:43</span></figcaption>
+        <div class="phone lt mesh" data-tpl="dialog" data-scrim="navy"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Navy 30% <span class="src">toi-5-man, code hiện tại</span></figcaption>
+        <div class="phone dk mesh" data-tpl="dialog" data-scrim="navy"></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Đen 55% <span class="src">vòng 9–15</span> <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="dialog" data-scrim="black"></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 8. Dictionary paper -->
+  <section class="q" id="q8" aria-labelledby="q8-h">
+    <div class="q-head">
+      <span class="q-num">Câu 8</span>
+      <h2 id="q8-h">Giấy từ điển ở Tra từ</h2>
+      <p class="q-why">A là cách code đang làm (R71, R80): giấy giữ màu sáng ở chế độ tối. <b>Vì sao B:</b> một khối trắng lớn giữa màn tối gây chói khi đọc ban đêm. Giấy B sáng hơn card một bậc và vẫn giữ viền, gáy bo lệch, vạch kẻ của giấy.</p>
+    </div>
+    <div class="opts">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> giấy hiện có <span class="src">globals.css .lk-paper</span></figcaption>
+        <div class="phone lt mesh" data-tpl="paper" data-paper="light"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Giữ giấy sáng <span class="src">R71, R80</span></figcaption>
+        <div class="phone dk mesh" data-tpl="paper" data-paper="light"></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Giấy tối <span class="src">#1e2334, viền #2e3449</span> <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="paper" data-paper="dark"></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 9. Group colour -->
+  <section class="q" id="q9" aria-labelledby="q9-h">
+    <div class="q-head">
+      <span class="q-num">Câu 9</span>
+      <h2 id="q9-h">Số theo màu nhóm</h2>
+      <p class="q-why">Chồng thẻ ở Nhóm (số 96 px) và bộ chọn nhóm (số 13 px trên dòng đang chọn). Bấm tên nhóm để đổi màu và xem quầng chuyển. Khung đầu là app hiện tại: quầng gần trắng và dòng đang chọn gần như mất chữ. Ở A và B, nền nhạt và quầng đã sửa (trộn với nền tối). <b>Vì sao B:</b> màu chính của nhóm tím, hồng, xám chỉ đạt 3,3–3,9:1 trên card và dưới 4,5:1 trên dòng đang chọn, nên chữ nhỏ khó đọc; bản sáng hơn đạt từ 4,6:1 ở mọi nhóm.</p>
+    </div>
+    <div class="btn-row" role="group" aria-label="Đổi nhóm">
+      <button type="button" class="page-btn" data-g="2" aria-pressed="true">Nhóm tím</button>
+      <button type="button" class="page-btn" data-g="0" aria-pressed="false">Nhóm cam</button>
+      <button type="button" class="page-btn" data-g="5" aria-pressed="false">Nhóm hồng</button>
+      <button type="button" class="page-btn" data-g="empty" aria-pressed="false">Nhóm trống</button>
+    </div>
+    <div class="opts" id="groups">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> hiện có <span class="src">web.css group-*-ink, -wash</span></figcaption>
+        <div class="phone lt mesh" data-tpl="group" data-mode="light"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">Hiện tại</span> app đang chạy <span class="src">web-dark.css chép giá trị sáng</span></figcaption>
+        <div class="phone dk mesh" data-tpl="group" data-mode="now"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Màu chính của nhóm <span class="src">toi-5-man</span></figcaption>
+        <div class="phone dk mesh" data-tpl="group" data-mode="main"></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Bản sáng hơn cho nền tối <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="group" data-mode="dark"></div>
+      </figure>
+    </div>
+    <p class="note">Số tương phản dưới mỗi dòng tính trực tiếp trong trang theo công thức WCAG 2.x. Chữ nhỏ cần 4,5:1, chữ lớn (số 96 px) cần 3:1.</p>
+  </section>
+
+  <!-- 10. Background -->
+  <section class="q" id="q10" aria-labelledby="q10-h">
+    <div class="q-head">
+      <span class="q-num">Câu 10</span>
+      <h2 id="q10-h">Nền mesh và hạt ở chế độ tối</h2>
+      <p class="q-why">A là bản tạm code đang chạy: quầng như bản sáng (vàng 34%), hạt <span class="mono">screen</span> 12%. B theo landing bản 3: quầng vàng giảm còn 12%, hạt <span class="mono">soft-light</span> 7%. Ô dưới mỗi khung phóng to 3 lần góc trên bên phải để thấy hạt. <b>Vì sao B:</b> landing bản 3 là bản bạn đã chốt cho trang chủ, và quầng vàng 34% trên nền tối thành một vệt vàng đục.</p>
+    </div>
+    <div class="opts">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> hiện có <span class="src">globals.css app-mesh</span></figcaption>
+        <div class="phone lt mesh" data-tpl="bg"></div>
+        <div class="zoom lt"><div class="inner mesh"></div></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Bản tạm hiện tại <span class="src">globals.css:439–443</span></figcaption>
+        <div class="phone dk bg-now mesh" data-tpl="bg"></div>
+        <div class="zoom dk bg-now"><div class="inner mesh"></div></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Theo landing bản 3 <span class="src">landing-mo.html</span> <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="bg"></div>
+        <div class="zoom dk"><div class="inner mesh"></div></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 11. Filters and tabs -->
+  <section class="q" id="q11" aria-labelledby="q11-h">
+    <div class="q-head">
+      <span class="q-num">Câu 11 (chỗ 15 của audit)</span>
+      <h2 id="q11-h">Bộ lọc và tab</h2>
+      <p class="q-why">A là 6 kiểu đang có, mỗi dòng ghi màn dùng nó. Ở chế độ tối, ô chọn nền ink của hộp Ngày và Một nhóm đảo thành khối sáng. B gom về hai kiểu: <b>tab</b> gạch dưới màu nhấn để chuyển phần trong một trang, và <b>viên</b> nền nhấn nhạt cho mọi bộ lọc, nút chia đoạn và menu trên.</p>
+    </div>
+    <div class="opts">
+      <figure class="opt lt-ref">
+        <figcaption><span class="letter">Sáng</span> 6 kiểu hiện có</figcaption>
+        <div class="phone lt mesh" data-tpl="ctl-now"></div>
+      </figure>
+      <figure class="opt">
+        <figcaption><span class="letter">A</span> Giữ 6 kiểu <span class="src">code hiện tại</span></figcaption>
+        <div class="phone dk mesh" data-tpl="ctl-now"></div>
+      </figure>
+      <figure class="opt rec">
+        <figcaption><span class="letter">B</span> Hai kiểu: tab và viên <span class="rec-tag">Claude nghiêng về</span></figcaption>
+        <div class="phone dk mesh" data-tpl="ctl-new"></div>
+      </figure>
+    </div>
+  </section>
+
+  <footer>
+    <p>Chưa có trong trang này: bề rộng thanh phiên (câu 12) vì chưa đo khung Figma của Phiên, Ôn và Học; các màn có phần riêng (câu 4) vẽ sau khi bạn chọn ở đây.</p>
+    <p>File: <span class="mono">docs/mockups/2026-11-05-redesign-concepts/m9-toi-so-sanh.html</span></p>
+  </footer>
+</main>
+
+<template id="tpl-today">
+  <div class="screen">
+    <h3 class="app-title">Hôm nay</h3>
+    <div class="card">
+      <span class="label">Cần ôn hôm nay</span>
+      <div style="display:flex;align-items:baseline;gap:10px"><span class="big-n">38</span><span class="small">thẻ trong 3 nhóm</span></div>
+      <div class="dots"><span class="dot" style="background:#e5603f"></span><span class="dot" style="background:#149384"></span><span class="dot" style="background:#7a55d3"></span><span class="small" style="margin-left:4px">Động từ, Du lịch, Công việc</span></div>
+      <div class="btns"><button type="button" class="b b-primary">Học 38 thẻ</button><button type="button" class="b b-secondary">Luyện tập</button></div>
+    </div>
+    <div class="card">
+      <span class="label">Lần luyện gần nhất</span>
+      <span style="font-weight:600">8/10 câu đúng</span>
+      <span class="small">Hôm qua, 21:40</span>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-dialog">
+  <div class="screen">
+    <h3 class="app-title">Nhóm</h3>
+    <div class="row-card"><span class="dot" style="background:#e5603f"></span><span class="nm">Động từ</span><span class="small">12 thẻ chờ</span></div>
+    <div class="row-card"><span class="dot" style="background:#149384"></span><span class="nm">Du lịch</span><span class="small">9 thẻ chờ</span></div>
+    <div class="row-card"><span class="dot" style="background:#7a55d3"></span><span class="nm">Công việc</span><span class="small">17 thẻ chờ</span></div>
+    <div class="row-card"><span class="dot" style="background:#d2427a"></span><span class="nm">Cảm xúc</span><span class="small">4 thẻ chờ</span></div>
+  </div>
+  <div class="scrim">
+    <div class="dialog" role="dialog" aria-label="Xóa nhóm Động từ">
+      <h3>Xóa nhóm Động từ?</h3>
+      <p class="small" style="color:var(--muted)">12 từ trong nhóm chuyển về “Chưa xếp nhóm”. Tiến độ học của từng từ vẫn giữ.</p>
+      <div class="foot"><button type="button" class="b b-secondary">Hủy</button><button type="button" class="b b-danger">Xóa nhóm</button></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-paper">
+  <div class="screen">
+    <div class="search"><span class="q">resilient</span><span class="small">Esc</span></div>
+    <article class="paper">
+      <div class="lemma">resilient</div>
+      <div class="meta"><span class="chip">tính từ</span><span class="ipa">UK /rɪˈzɪl.jənt/</span><span class="ipa">B2</span></div>
+      <hr class="rule">
+      <div class="sense"><span class="def">1. kiên cường, mau lấy lại tinh thần</span><span class="ex">Children are often more <mark>resilient</mark> than adults.</span></div>
+      <hr class="rule">
+      <div class="sense"><span class="def">2. (vật liệu) đàn hồi, chịu va đập</span><span class="ex">a <mark>resilient</mark> rubber floor</span></div>
+      <span class="more">Thêm vào nhóm</span>
+    </article>
+  </div>
+</template>
+
+<template id="tpl-group">
+  <div class="screen">
+    <h3 class="app-title">Nhóm</h3>
+    <div class="gstage">
+      <div class="halo"></div>
+      <div class="stack">
+        <div class="sheet"></div>
+        <div class="front">
+          <span class="gname"><span class="dot" style="background:var(--g)"></span><span class="gn">Công việc</span></span>
+          <div><div class="gnum">17</div><span class="small">thẻ chờ</span></div>
+          <span class="ratio r-big"></span>
+        </div>
+      </div>
+    </div>
+    <div class="picker">
+      <div class="prow sel" data-row="0"><span class="dot"></span><span class="pn"></span><span class="pc"><b></b> thẻ chờ</span></div>
+      <div class="prow" data-row="1"><span class="dot"></span><span class="pn"></span><span class="pc"><b></b> thẻ chờ</span></div>
+      <div class="prow" data-row="2"><span class="dot"></span><span class="pn"></span><span class="pc"><b></b> thẻ chờ</span></div>
+    </div>
+    <span class="ratio r-small"></span>
+  </div>
+</template>
+
+<template id="tpl-bg">
+  <div class="screen" style="min-height:360px">
+    <h3 class="app-title">Luyện tập</h3>
+    <div class="card" style="gap:8px">
+      <span class="label">Phiên tiếp theo</span>
+      <span style="font-weight:600">10 câu, trộn bốn dạng</span>
+      <div class="btns"><button type="button" class="b b-primary">Bắt đầu</button></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-ctl-now">
+  <div class="screen ctl-list">
+    <div class="ctl"><span class="where">Tùy chỉnh phiên · ui/Segmented</span><div class="seg"><span>10</span><span class="on">20</span><span>30</span></div></div>
+    <div class="ctl"><span class="where">Hộp Ngày · DayDialog:180</span><div class="box-f"><span class="on">Tất cả</span><span>Học</span><span>Ôn</span><span>Luyện</span></div></div>
+    <div class="ctl"><span class="where">Một nhóm · GroupPage:252</span><div class="chips"><span class="on">Tất cả<b>48</b></span><span>Đang chờ<b>17</b></span><span>Đã thuộc<b>9</b></span></div></div>
+    <div class="ctl"><span class="where">Trang một từ · WordPage:232</span><div class="tabs"><span class="on">Nghĩa</span><span>Ví dụ</span><span>Dạng từ</span></div></div>
+    <div class="ctl"><span class="where">Thanh trên · TopBar:37</span><div class="topnav"><span class="on">Hôm nay</span><span>Nhóm</span><span>Tra từ</span></div></div>
+    <div class="ctl"><span class="where">Tra từ · LookupFilters:58</span><div class="menu-f"><span>Mọi trình độ ▾</span><span>Mọi chủ đề ▾</span></div></div>
+  </div>
+</template>
+
+<template id="tpl-ctl-new">
+  <div class="screen ctl-list">
+    <div class="ctl"><span class="where">Tùy chỉnh phiên · viên</span><div class="pills"><span>10</span><span class="on">20</span><span>30</span></div></div>
+    <div class="ctl"><span class="where">Hộp Ngày · viên</span><div class="pills"><span class="on">Tất cả</span><span>Học</span><span>Ôn</span><span>Luyện</span></div></div>
+    <div class="ctl"><span class="where">Một nhóm · viên</span><div class="pills"><span class="on">Tất cả<b>48</b></span><span>Đang chờ<b>17</b></span><span>Đã thuộc<b>9</b></span></div></div>
+    <div class="ctl"><span class="where">Trang một từ · tab</span><div class="tabs acc"><span class="on">Nghĩa</span><span>Ví dụ</span><span>Dạng từ</span></div></div>
+    <div class="ctl"><span class="where">Thanh trên · viên</span><div class="pills"><span class="on">Hôm nay</span><span>Nhóm</span><span>Tra từ</span></div></div>
+    <div class="ctl"><span class="where">Tra từ · viên mở menu</span><div class="pills"><span>Mọi trình độ<span class="chev">▾</span></span><span>Mọi chủ đề<span class="chev">▾</span></span></div></div>
+  </div>
+</template>
+
+<script>
+(function(){
+  // Fill every frame from its template.
+  document.querySelectorAll('.phone[data-tpl]').forEach(function(el){
+    var t = document.getElementById('tpl-' + el.dataset.tpl);
+    el.appendChild(t.content.cloneNode(true));
+    if (el.dataset.scrim) el.querySelector('.scrim').classList.add(el.dataset.scrim);
+    if (el.dataset.paper) el.querySelector('.paper').classList.add(el.dataset.paper);
+  });
+
+  var cb = document.getElementById('show-light');
+  try { if (localStorage.getItem('m9-show-light') === '1') { cb.checked = true; document.body.classList.add('show-light'); } } catch (e) {}
+  cb.addEventListener('change', function(){
+    document.body.classList.toggle('show-light', cb.checked);
+    try { localStorage.setItem('m9-show-light', cb.checked ? '1' : '0'); } catch (e) {}
+  });
+
+  // Decision 7: replay the open motion (overlay 320 ms ease-out).
+  var dialogs = document.getElementById('dialogs');
+  function replay(){ dialogs.classList.remove('play'); void dialogs.offsetWidth; dialogs.classList.add('play'); }
+  document.getElementById('replay').addEventListener('click', replay);
+  replay();
+
+  // Decision 9: group colours. Light values = web.css; "dark" = lightened until >= 4.6:1 on the dark wash row (computed 11/11/2026).
+  var SURF_D = '#171b2a', SURF_L = '#ffffff';
+  var G = {
+    '0': { name: 'Động từ',  n: 12, c: '#e5603f', ink: '#984941', dark: '#e87052' },
+    '1': { name: 'Du lịch',  n: 9,  c: '#149384', ink: '#17696c', dark: '#37a396' },
+    '2': { name: 'Công việc', n: 17, c: '#7a55d3', ink: '#56429d', dark: '#9d81de' },
+    '3': { name: 'Gia đình', n: 6,  c: '#d99a17', ink: '#916d28', dark: '#d99a17' },
+    '4': { name: 'Thiên nhiên', n: 11, c: '#4a9637', ink: '#376d45', dark: '#62a451' },
+    '5': { name: 'Cảm xúc',  n: 4,  c: '#d2427a', ink: '#8c3765', dark: '#dc6c97' },
+    '6': { name: 'Công nghệ', n: 21, c: '#2a86d1', ink: '#29629d', dark: '#4c99d8' },
+    'empty': { name: 'Chưa xếp nhóm', n: 3, c: '#64708c', ink: '#525a78', dark: '#8992a8' }
+  };
+  function hex(h){ return [1,3,5].map(function(i){ return parseInt(h.slice(i,i+2),16); }); }
+  function toHex(c){ return '#' + c.map(function(v){ return Math.round(v).toString(16).padStart(2,'0'); }).join(''); }
+  function mix(a,b,t){ var A=hex(a),B=hex(b); return toHex(A.map(function(v,i){ return v*t + B[i]*(1-t); })); }
+  function lin(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+  function lum(h){ var c=hex(h); return 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]); }
+  function cr(a,b){ var x=lum(a),y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
+  function fmt(r){ return r.toFixed(2).replace('.', ','); }
+
+  function tones(g, mode){
+    var light = mode === 'light';
+    var surf = light ? SURF_L : SURF_D;
+    // "now" copies the light tokens into dark (web-dark.css today): wash/soft mixed with white, light ink.
+    var wash = (light || mode === 'now') ? mix(g.c, '#ffffff', 0.12) : mix(g.c, SURF_D, 0.16);
+    var soft = (light || mode === 'now') ? mix(g.c, '#ffffff', 0.5) : mix(g.c, SURF_D, 0.34);
+    var num = (light || mode === 'now') ? g.ink : (mode === 'main' ? g.c : g.dark);
+    var halo = (light || mode === 'now') ? wash : mix(g.c, '#0f1220', 0.30);
+    return { surf: surf, wash: wash, soft: soft, num: num, halo: halo };
+  }
+
+  var order = { '2': ['2','0','5'], '0': ['0','2','5'], '5': ['5','0','2'], 'empty': ['empty','0','2'] };
+  function paintGroups(key){
+    document.querySelectorAll('.phone[data-tpl="group"]').forEach(function(ph){
+      var mode = ph.dataset.mode, g = G[key], t = tones(g, mode);
+      ph.style.setProperty('--g', g.c);
+      ph.style.setProperty('--g-num', t.num);
+      ph.style.setProperty('--g-soft', t.soft);
+      ph.style.setProperty('--g-wash', t.halo);
+      ph.querySelector('.gn').textContent = g.name;
+      ph.querySelector('.gnum').textContent = g.n;
+      var big = cr(t.num, t.surf);
+      var rb = ph.querySelector('.r-big');
+      rb.textContent = 'Số lớn trên card ' + fmt(big) + ':1';
+      rb.classList.toggle('bad', big < 3);
+      var smallMin = 99;
+      order[key].forEach(function(k, i){
+        var row = ph.querySelector('[data-row="' + i + '"]'), gg = G[k], tt = tones(gg, mode);
+        row.querySelector('.dot').style.background = gg.c;
+        row.querySelector('.pn').textContent = gg.name;
+        var b = row.querySelector('b'); b.textContent = gg.n; b.style.color = tt.num;
+        if (i === 0) {
+          row.style.setProperty('--r-wash', tt.wash);
+          var textOnWash = cr(mode === 'light' ? '#1b2444' : '#eceef5', tt.wash);
+          var numOnWash = cr(tt.num, tt.wash);
+          smallMin = Math.min(textOnWash, numOnWash);
+          var rs = ph.querySelector('.r-small');
+          rs.textContent = 'Dòng đang chọn: tên ' + fmt(textOnWash) + ':1, số ' + fmt(numOnWash) + ':1';
+          rs.classList.toggle('bad', smallMin < 4.5);
+        }
+      });
+    });
+    document.querySelectorAll('[data-g]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.g === key)); });
+  }
+  document.querySelectorAll('[data-g]').forEach(function(b){ b.addEventListener('click', function(){ paintGroups(b.dataset.g); }); });
+  paintGroups('2');
+})();
+</script>

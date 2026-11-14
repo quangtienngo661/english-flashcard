@@ -1,0 +1,387 @@
+import { expect, test, type Page } from '@playwright/test';
+import { copy } from '../copy';
+import { seriousViolations } from '../support/axe';
+import { APP_CONFIG, entitlementsBody, LONG, nextHcmMidnight } from '../support/fixtures';
+import { problem, requests, signedInAs, type MockHandler } from '../support/mock-api';
+
+const vi = copy.vi.App.practice;
+// Sessions speak English on every route (QM9-9, SessionIntl).
+const en = copy.en.App.practice;
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const DECK = uuid(301);
+const SESSION = uuid(400);
+const LONG_MEANING = 'triển khai phần mềm lên máy chủ thật để mọi người dùng có thể sử dụng phiên bản mới nhất của ứng dụng ngay lập tức';
+const LONG_OPTION = 'internationalization-ready-microservices';
+
+const deck = (name = 'Công nghệ') => ({
+  id: DECK, name, version: 1, total: 18, today: { priority: 2, due: 6, new: 3 },
+  cells: [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: 3, due: 1 })), backlog: 0,
+});
+const hints = { level1: true, level2: true, level3: false };
+const mcq = (long: boolean) => ({
+  item_id: uuid(501), round: 1, position: 1, type: 'mcq_definition', prompt_style: 'meaning', hint_level: 0, state: 'unanswered', tries: 0, reportable: true,
+  hints_available: hints,
+  prompt: { kind: 'mcq', meaning: long ? LONG_MEANING : 'triển khai', meaning_language: 'vi', context_label: 'phần mềm', options: ['deploy', long ? LONG_OPTION : 'delay', 'deliver', 'defend'] },
+});
+const trueFalse = {
+  item_id: uuid(502), round: 1, position: 2, type: 'true_false_definition', prompt_style: 'meaning', hint_level: 0, state: 'unanswered', tries: 0, reportable: true,
+  hints_available: { level1: false, level2: false, level3: false },
+  prompt: { kind: 'true_false', lemma: 'server', meaning: 'máy chủ', meaning_language: 'vi', context_label: null },
+};
+const typed = (n: number) => ({
+  item_id: uuid(500 + n), round: n > 3 ? 2 : 1, position: n, type: 'type_word', prompt_style: 'meaning', hint_level: 0, state: 'unanswered', tries: 0, reportable: true,
+  hints_available: hints,
+  prompt: { kind: 'type_meaning', meaning: 'bộ nhớ đệm', meaning_language: 'vi', context_label: 'máy tính' },
+});
+const result = (right: boolean, lemma: string, meaning: string, over: Record<string, unknown> = {}) => ({
+  result: right ? 'correct' : 'wrong', skipped: false, tries: 1, hint_level: 0,
+  correct: { lemma, text: lemma, choice_index: lemma === 'deploy' ? 0 : null, is_true: lemma === 'server' ? true : null },
+  meaning, definition_en: null, show_known: right, highlight_needs_review: !right, translation: null, ...over,
+});
+
+/**
+ * A practice API for one learner: a 4-question session over 3 words (so it asks to continue after round 1), MCQ, true/false,
+ * typing with one retry; the summary lists the wrong word. `long` gives the long meaning and option (Review Focus 2).
+ */
+function practiceApi({ long = false, open = false, used = 1 } = {}): Record<string, MockHandler> {
+  let asked = open ? 1 : 0;
+  let status = open ? 'active' : 'none';
+  const questions = [mcq(long), trueFalse, typed(3), typed(4)];
+  const view = () => ({
+    id: SESSION, source: 'today', group_id: null, group_filter: null, sort: 'queue', types: ['mcq_definition', 'true_false_definition', 'type_word'],
+    prompt_style: 'mixed', target_count: 4, status, round: asked > 3 ? 2 : 1, asked, words: 3, ai_planned: 0, cloze_source: null,
+  });
+  let continued = false;
+  const ask = () => {
+    if (asked === 3 && status === 'active' && !continued) {
+      status = 'waiting_continue';
+      return { json: { state: 'waiting_continue', session: view() } };
+    }
+    if (asked >= 4) {
+      status = 'finished';
+      return { json: { state: 'finished', session: view() } };
+    }
+    asked += 1;
+    return { json: { state: 'question', session: view(), item: questions[asked - 1] } };
+  };
+  let typedTries = 0;
+  return {
+    'GET /v1/groups': () => ({ json: { items: [deck(long ? LONG.deckName : 'Công nghệ')] } }),
+    'GET /v1/me/entitlements': () => {
+      const body = entitlementsBody('free');
+      body.pools.practice_sessions = { limit: 3, used, remaining: 3 - used, resets_at: nextHcmMidnight() };
+      return { json: body };
+    },
+    'GET /v1/practice/sessions/current': () =>
+      status === 'active' || status === 'waiting_continue'
+        ? { json: { session: view(), item: status === 'active' ? questions[asked - 1] : null, preparing: false } }
+        : problem(404, 'not-found'),
+    'POST /v1/practice/sessions': () => {
+      if (used >= 3) return problem(403, 'quota-exhausted', { resets_at: nextHcmMidnight() });
+      asked = 0;
+      status = 'active';
+      used += 1;
+      return { status: 201, json: { session: view() } };
+    },
+    [`POST /v1/practice/sessions/${SESSION}/next`]: ask,
+    [`POST /v1/practice/sessions/${SESSION}/continue`]: (req) => {
+      continued = true;
+      status = (req.body as { continue: boolean }).continue ? 'active' : 'finished';
+      return { json: { session: view() } };
+    },
+    [`POST /v1/practice/sessions/${SESSION}/finish`]: () => {
+      status = 'finished';
+      return { json: { session: view() } };
+    },
+    [`GET /v1/practice/sessions/${SESSION}/summary`]: () => ({
+      json: { session: view(), asked, correct: Math.max(0, asked - 1), wrong: 1, words: [{ sense_id: uuid(601), lemma: 'deploy', meaning: 'triển khai', item_id: uuid(501), action: null }] },
+    }),
+    [`POST /v1/practice/items/${uuid(501)}/answer`]: (req) => ({ json: result((req.body as { choice: number }).choice === 0, 'deploy', 'triển khai') }),
+    [`POST /v1/practice/items/${uuid(501)}/hint`]: () => ({ json: { level: 1, hint: { kind: 'definition', text: 'to start using a new system' } } }),
+    [`POST /v1/practice/items/${uuid(501)}/review`]: (req) => ({ json: { action: (req.body as { action: string }).action, item_id: uuid(501), level: 1, due_date: '2026-10-23', priority: true } }),
+    [`POST /v1/practice/items/${uuid(502)}/report`]: () => ({ status: 201, json: { id: uuid(701) } }),
+    [`POST /v1/practice/items/${uuid(502)}/answer`]: () => ({ json: result(true, 'server', 'máy chủ') }),
+    [`POST /v1/practice/items/${uuid(502)}/review`]: () => ({ json: { action: 'known', item_id: uuid(502), level: 3, due_date: '2026-10-26', priority: false } }),
+    [`POST /v1/practice/items/${uuid(503)}/answer`]: (req) => {
+      typedTries += 1;
+      if (typedTries === 1) return { json: { result: 'try_again', tries: 1 } };
+      return { json: result((req.body as { text: string }).text === 'cache', 'cache', 'bộ nhớ đệm', { tries: 2, show_known: false }) };
+    },
+    [`POST /v1/practice/items/${uuid(504)}/answer`]: () => ({ json: result(true, 'cache', 'bộ nhớ đệm') }),
+    [`POST /v1/practice/items/${uuid(504)}/review`]: () => ({ json: { action: 'known', item_id: uuid(504), level: 3, due_date: '2026-10-26', priority: false } }),
+    'GET /v1/practice/report-reasons': () => ({
+      json: { items: [
+        { code: 'meaning_wrong', label: 'Nghĩa sai', detail_hint: null, note_required: false },
+        { code: 'graded_wrong', label: 'Đáp án đúng mà bị chấm sai', detail_hint: null, note_required: false },
+        { code: 'hint_wrong', label: 'Gợi ý sai', detail_hint: null, note_required: false },
+        { code: 'other', label: 'Khác', detail_hint: null, note_required: true },
+      ] },
+    }),
+    'GET /v1/practice/weak-words/groups': () => ({ json: { total: 4, items: [{ group_id: DECK, name: long ? LONG.deckName : 'Công nghệ', count: 2 }] } }),
+    'GET /v1/practice/weak-words': (req) => ({
+      json: {
+        items: [
+          { sense_id: uuid(601), lemma: 'deploy', wrong: 3, counted: 5, level: 1, last_wrong_at: new Date().toISOString(), meaning: long ? LONG_MEANING : 'triển khai' },
+          ...(req.query.get('group_id') ? [] : [{ sense_id: uuid(602), lemma: 'cache', wrong: 2, counted: 4, level: 2, last_wrong_at: '2026-10-20T14:00:00Z', meaning: 'bộ nhớ đệm' }]),
+        ],
+        next_page_token: null,
+      },
+    }),
+    'GET /v1/practice/history': () => ({
+      json: {
+        items: [
+          { item_id: uuid(501), session_id: SESSION, sense_id: uuid(601), lemma: 'deploy', type: 'mcq_definition', prompt_style: 'meaning',
+            prompt: { kind: 'mcq', meaning: long ? LONG_MEANING : 'triển khai', options: ['deploy', 'delay', 'deliver', 'defend'] }, answer: '1',
+            correct: { lemma: 'deploy', text: 'deploy', choice_index: 0, is_true: null }, result: 'wrong', skipped: false, tries: 1, hint_level: 0,
+            review_action: 'needs_review', answered_at: new Date().toISOString(), local_date: '2026-10-23', translation: null },
+        ],
+        next_page_token: null,
+      },
+    }),
+    'GET /v1/practice/reports': () => ({
+      json: { items: [{ id: uuid(701), item_id: uuid(501), sense_id: uuid(601), reason_label: long ? 'Câu sai ngữ pháp hoặc không tự nhiên' : 'Khác', status: 'confirmed', refunded: true, created_at: '2026-10-22T03:00:00Z', resolved_at: '2026-10-22T05:00:00Z', lemma: 'deploy', question_type: 'cloze', ai: true }], next_page_token: null },
+    }),
+  };
+}
+
+test.describe('M4 flows (mocked API)', () => {
+  test('a default session: each question type, a hint, a retry, the round prompt, a report and the summary', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi());
+    await page.goto('/vi/app/practice');
+    await page.getByRole('region', { name: vi.hero.title }).getByRole('button', { name: 'Bắt đầu 10 câu' }).click();
+    await expect(page).toHaveURL(/\/vi\/app\/practice\/session$/);
+    expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toEqual({ source: 'today', types: ['mcq_definition', 'true_false_definition', 'type_word'], count: 10 });
+
+    // MCQ: a hint with H, then a wrong choice with key 2.
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+    await page.keyboard.press('h');
+    await expect(page.getByText('to start using a new system')).toBeVisible();
+    await page.keyboard.press('2');
+    await expect(page.getByText(en.session.wrong, { exact: true })).toBeVisible();
+    await page.keyboard.press('Enter');
+
+    // True/false, reported before an answer (owner 14/11/2026, Cách A): the session moves on to the next question.
+    // P.13: no instruction line; the chip names the kind.
+    await expect(page.getByText(en.session.kind.true_false, { exact: true })).toBeVisible();
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
+    await page.getByRole('button', { name: en.session.report.button }).click();
+    const dialog = page.getByRole('dialog', { name: en.session.report.title });
+    await dialog.getByText('Nghĩa sai', { exact: true }).click();
+    await dialog.getByRole('button', { name: en.session.report.send }).click();
+    await expect(page.getByText(en.session.report.done)).toBeVisible();
+    await expect(dialog).toBeHidden();
+
+    // Typing: a miss, then the right word.
+    const answer = page.getByRole('textbox', { name: en.session.answerLabel });
+    await answer.fill('cash');
+    await page.getByRole('button', { name: en.session.check }).click();
+    await expect(page.getByText(en.session.tryAgainBody)).toBeVisible();
+    await answer.fill('cache');
+    await answer.press('Enter');
+    // F.14: the ticket shows the meaning and the word on their own lines; the live region still reads them as one line.
+    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+    await expect(page.getByText(`${en.session.right}. cache · bộ nhớ đệm`, { exact: true })).toBeAttached();
+    await page.keyboard.press('Enter');
+
+    // Round prompt, one more question, then the summary.
+    await expect(page.getByText("You’ve done all 3 words")).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('textbox', { name: en.session.answerLabel })).toBeVisible();
+    await page.getByRole('textbox', { name: en.session.answerLabel }).fill('cache');
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Know/ }).click();
+    await expect(page.getByRole('heading', { name: '4 questions done' })).toBeVisible();
+    await page.getByRole('list', { name: /Needs review · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
+    await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/report`).map((r) => r.body)).toEqual([{ reason: 'meaning_wrong' }]);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/answer`)).toHaveLength(0);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/review`)).toHaveLength(0);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(503)}/review`)).toHaveLength(0);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(504)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/answer`)[0].headers['idempotency-key']).toBeTruthy();
+  });
+
+  test('reload inside a session resumes the open question (Review Focus 4)', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi({ open: true }));
+    await page.goto('/vi/app/practice/session');
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+    expect(requests(page, 'POST', '/v1/practice/sessions')).toHaveLength(0);
+  });
+
+  test('E35: starting while a session is open asks first; [Làm tiếp] goes back to it', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi({ open: true }));
+    await page.goto('/vi/app/practice');
+    await expect(page.getByRole('region', { name: vi.current.title })).toBeVisible();
+    await page.getByRole('region', { name: vi.hero.title }).getByRole('button', { name: 'Bắt đầu 10 câu' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Bạn có phiên đang dở 0/4' });
+    await dialog.getByRole('button', { name: vi.resumeDialog.resume }).click();
+    await expect(page).toHaveURL(/\/vi\/app\/practice\/session$/);
+    expect(requests(page, 'POST', '/v1/practice/sessions')).toHaveLength(0);
+  });
+
+  test('K/55: a Free learner with no session left sees when they refill and [Ôn thẻ]', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi({ used: 3 }));
+    await page.goto('/vi/app/practice');
+    const hero = page.getByRole('region', { name: vi.out.title });
+    await expect(hero).toContainText('mở lại lúc 0:00');
+    await expect(hero.getByRole('link', { name: vi.out.review })).toBeVisible();
+    await expect(page.getByText('đã dùng 3/3')).toBeVisible();
+  });
+
+  test('weak words by deck: the deck narrows the list and the start sends group_id', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi());
+    await page.goto('/vi/app/practice/weak');
+    await expect(page.getByRole('heading', { name: '4 từ hay sai' })).toBeVisible();
+    // M4 review: from 768 px each weak word is one table row: word, meaning, the ✓/✗ chips (M5.5), level, last wrong, left to right on one line.
+    const row = page.getByRole('listitem').filter({ has: page.getByRole('img', { name: '3 câu sai' }) });
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      const cells = [row.getByText('deploy', { exact: true }), row.getByText('triển khai', { exact: true }), row.getByRole('img', { name: '3 câu sai' }), row.getByText('Bậc 1', { exact: true })];
+      const boxes = await Promise.all(cells.map(async (cell) => (await cell.boundingBox())!));
+      // Cells of different type sizes are centred on the row, so compare their middles.
+      const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+      for (const b of boxes) expect(Math.abs(middle(b) - middle(boxes[0]))).toBeLessThan(8);
+      expect(boxes.map((b) => b.x)).toEqual([...boxes.map((b) => b.x)].sort((a, b) => a - b));
+      const last = (await row.getByText(/hôm nay$/).boundingBox())!;
+      expect(Math.abs(middle(last) - middle(boxes[0]))).toBeLessThan(8);
+    }
+    await page.getByRole('button', { name: /Nhóm/ }).click();
+    await page.getByRole('option', { name: 'Công nghệ · 2' }).click();
+    await expect(page.getByRole('heading', { name: '2 từ trong nhóm Công nghệ' })).toBeVisible();
+    await page.getByRole('button', { name: 'Luyện 2 từ của nhóm Công nghệ' }).click();
+    await expect(page).toHaveURL(/\/vi\/app\/practice\/session$/);
+    expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({ source: 'weak', group_id: DECK });
+  });
+
+  test('M6.7: the old history address with a date opens that day of the calendar (server redirect on the Worker build)', async ({ page }) => {
+    await signedInAs(page, 'free', { ...practiceApi(), ...calendarApi() });
+    await page.goto('/vi/app/practice/history?date=2026-11-05');
+    await expect(page).toHaveURL(/\/vi\/app\/practice\?(.*&)?ngay=2026-11-05$/);
+    await expect(page.getByRole('dialog', { name: '05/11' })).toBeVisible();
+  });
+
+  test('M6.8: the old reports tab address opens Báo lỗi của tôi in Settings', async ({ page }) => {
+    await signedInAs(page, 'free', practiceApi());
+    await page.goto('/vi/app/practice/history?tab=reports');
+    await expect(page).toHaveURL(/\/vi\/app\/settings\/reports$/);
+    await expect(page.getByRole('heading', { level: 1, name: vi.reports.title })).toBeVisible();
+    await expect(page.getByText(`deploy · Khác`)).toBeVisible();
+    await expect(page.getByText(`điền từ vào câu · ${vi.reports.refunded}`)).toBeVisible();
+  });
+
+  test('plans: numbers from the config, Pro for sale in three periods', async ({ page }) => {
+    await signedInAs(page, 'free');
+    await page.goto('/vi/app/plans');
+    await expect(page.getByRole('heading', { level: 1, name: copy.vi.App.plans.title })).toBeVisible();
+    await expect(page.getByText(`${APP_CONFIG.plans.pro.practice_sessions_per_day} phiên luyện mỗi ngày`)).toBeVisible();
+    await expect(page.getByRole('radio', { name: /^12 tháng/ })).toBeChecked();
+    await expect(page.getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeVisible();
+    await expect(page.getByRole('table', { name: copy.vi.App.plans.compare })).toBeVisible();
+  });
+});
+
+type Shot = { path: string; ready: (p: Page) => Promise<void>; open?: (p: Page) => Promise<void> };
+const PAGES: Shot[] = [
+  { path: 'practice', ready: (p) => expect(p.getByRole('heading', { level: 2 }).first()).toBeVisible() },
+  {
+    path: 'practice',
+    ready: (p) => expect(p.getByRole('dialog')).toBeVisible(),
+    open: async (p) => {
+      await p.getByRole('button', { name: /^(Tùy chỉnh|Customize): / }).first().click();
+    },
+  },
+  { path: 'practice/session', ready: (p) => expect(p.getByText(LONG_OPTION)).toBeVisible() },
+  // M5.5: phones show only the word and its ✓/✗ chips (Figma 119:4482), so wait for a chip, not the meaning.
+  { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|incorrect)$/ }).first()).toBeVisible() },
+  { path: 'settings/reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên', { exact: false })).toBeVisible() },
+  { path: 'plans', ready: (p) => expect(p.getByRole('heading', { level: 1 })).toBeVisible() },
+];
+
+async function noSideScroll(page: Page, where: string) {
+  const wide = await page.evaluate(() =>
+    document.documentElement.scrollWidth <= window.innerWidth
+      ? []
+      : [...document.querySelectorAll('body *')]
+          .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+          .slice(-5)
+          .map((el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 80)} → ${Math.round(el.getBoundingClientRect().right)}`),
+  );
+  expect(wide, where).toEqual([]);
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  for (const locale of ['vi', 'en'] as const) {
+    // The desktop/mobile projects cover 1440/390 px for both result cases.
+    test(`axe and overflow: case 1 and case 4 feedback (${locale}, ${scheme})`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await page.emulateMedia({ colorScheme: scheme });
+      const t = copy.en.App.practice.session;
+      for (const kind of [1, 4] as const) {
+        await signedInAs(page, 'free', {
+          ...practiceApi({ long: true, open: true }),
+          [`POST /v1/practice/items/${uuid(501)}/answer`]: () => ({ json: result(kind === 1, 'deploy', LONG_MEANING) }),
+        }, { native_language: locale });
+        await page.goto(`/${locale}/app/practice/session`);
+        await expect(page.getByText(LONG_MEANING, { exact: true })).toBeVisible();
+        await page.keyboard.press(kind === 1 ? '1' : '2');
+        const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
+        await expect(primary).toBeVisible();
+        await expect(primary.locator('kbd')).toHaveCount(0);
+        // F.12: Enter is named in the key legend, which phones (below md) do not show.
+        const wide = (page.viewportSize()?.width ?? 0) >= 768;
+        await expect(page.getByRole('list', { name: 'Keys' }).locator('kbd', { hasText: 'Enter' })).toHaveCount(wide ? 1 : 0);
+        if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
+        const where = `${locale} case ${kind} feedback (${scheme})`;
+        await noSideScroll(page, where);
+        expect(await seriousViolations(page), where).toEqual([]);
+        await page.keyboard.press('Enter');
+        await expect(page.getByText(t.kind.true_false, { exact: true })).toBeVisible();
+        expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: kind === 1 ? 'known' : 'needs_review' }]);
+        expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+      }
+    });
+
+    test(`axe and overflow: M4 pages with long content (${locale}, ${scheme})`, async ({ page }) => {
+      test.setTimeout(240_000);
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const { path, ready, open } of PAGES) {
+        await signedInAs(page, 'free', practiceApi({ long: true, open: path === 'practice/session' }), { native_language: locale });
+        await page.goto(`/${locale}/app/${path}`);
+        if (open) {
+          await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+          await open(page);
+        }
+        await ready(page);
+        const where = `${locale}/app/${path}${open ? ' (dialog)' : ''}`;
+        await noSideScroll(page, where);
+        expect(await seriousViolations(page), where).toEqual([]);
+      }
+    });
+  }
+}
+
+test('long typed answer stays inside the screen (Review Focus 2)', async ({ page }) => {
+  await signedInAs(page, 'free', { ...practiceApi({ open: true }) });
+  await page.goto('/vi/app/practice/session');
+  await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
+  await page.keyboard.press('1');
+  await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: /^(1\s?)?True/ }).click();
+  await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Know/ }).click();
+  await page.getByRole('textbox', { name: en.session.answerLabel }).fill('x'.repeat(100));
+  await noSideScroll(page, 'typed answer');
+});
+
+/** The study calendar's endpoints for one quiet day (M6.7). */
+function calendarApi(): Record<string, MockHandler> {
+  return {
+    'GET /v1/me/calendar': (req) => ({ json: { month: req.query.get('month'), days: [], totals: { study_days: 0, learned: 0, reviewed: 0, practice_sessions: 0 } } }),
+    'GET /v1/me/calendar/days/2026-11-05': () => ({
+      json: { date: '2026-11-05', counts: { learned: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0, practice_questions: 0 }, items: [], practice_sessions: [], next_page_token: null },
+    }),
+  };
+}

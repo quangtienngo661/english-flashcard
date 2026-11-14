@@ -47,7 +47,7 @@ test('upload success navigates to /uploads/<batch_id>, with a key and the file i
 test('axe: sources list and form, uploads list and form (with a file) have no serious or critical violations', async ({ page }) => {
   await signedInAs(page, 'editor', {
     'GET /v1/admin/content/sources': () => ({
-      json: { items: [{ id: 's1', kind: 'third_party', name: 'CEFR-J Vocabulary Profile', version: '1.5', url: null, license: 'CC BY 4.0', attribution: '', display_priority: 10 }] },
+      json: { items: [{ id: 's1', kind: 'third_party', name: 'CEFR-J Vocabulary Profile', version: '1.5', url: null, license: 'CC BY 4.0', attribution: '', display_priority: 10, shown_to_learners: true }] },
     }),
     [`GET ${UPLOADS}`]: list([{ id: 'b1', status: 'succeeded', file_name: 'cefr-j-1.5.csv', row_count: 3200, created_at: '2026-10-14T09:30:00.000Z' }]),
   });

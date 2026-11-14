@@ -1,0 +1,539 @@
+<title>Số câu AI và cài đặt luyện tập</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Lexend:wght@400;500;700;800&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: chooser (5 layouts × plan × device), one scaled device with the dialog over a dimmed Luyện tập page, notes per layout. */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#dde1ea; --ghost:#c9cedc;
+  --accent:#1e3a8a; --accent-soft:#e7ecf8; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5; --frame:#e9ebf1;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif; --f-body:'Noto Sans',system-ui,sans-serif;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --shadow-card:0 1px 2px rgb(30 58 138 / .06),0 16px 34px -20px rgb(30 58 138 / .34);
+  --shadow-pop:0 2px 6px rgb(30 58 138 / .10),0 30px 70px -26px rgb(30 58 138 / .50);
+  --scrim:rgb(27 36 68 / .30); --sel:color-mix(in srgb,var(--accent) 6%,var(--surface));
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 18px 36px -20px rgb(0 0 0 / .85); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --scrim:rgb(0 0 0 / .55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549; --ghost:#3a4157; --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c;
+  --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; --frame:#0b0d14;
+  --shadow-card:0 18px 36px -20px rgb(0 0 0 / .85); --shadow-pop:0 30px 70px -24px rgb(0 0 0 / .9); --scrim:rgb(0 0 0 / .55); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--frame);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+.mu{color:var(--muted)}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:18px}
+.intro{display:grid;gap:8px;max-width:78ch}
+.intro h1{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.intro p{color:var(--muted)}
+.vrow{font-size:14px;font-weight:600;color:var(--muted)}
+.choose{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;text-align:left}
+.chip small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.stage{position:relative;overflow:hidden;border-radius:20px;justify-self:center}
+.scaler{transform-origin:top left;width:max-content}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.notes section{background:var(--surface);border-radius:16px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.notes h3{font-size:16px;font-weight:700}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--muted);line-height:1.5}
+.notes b{color:var(--ink);font-weight:600}
+.notes .wide{grid-column:1 / -1}
+@media (max-width:900px){.notes{grid-template-columns:1fr}}
+
+/* ===== device: dimmed Luyện tập page behind the dialog ===== */
+.dev{position:relative;overflow:hidden;background:var(--bg)}
+.dev.desk{width:1200px;height:960px} .dev.phone{width:390px;height:844px}
+.back{position:absolute;inset:0;padding:96px 60px;display:grid;gap:20px;align-content:start;background-image:radial-gradient(color-mix(in srgb,var(--ink) 11%,transparent) 1.1px,transparent 1.4px);background-size:20px 20px}
+.back .bar{position:absolute;left:0;right:0;top:0;height:64px;background:color-mix(in srgb,var(--surface) 70%,transparent);border-bottom:1px solid var(--line)}
+.back h2{font-size:44px;font-weight:700;letter-spacing:-.03em}
+.back .blk{background:var(--surface);border:1px solid var(--line);border-radius:18px;height:220px;box-shadow:var(--shadow-card)}
+.back .row{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.phone .back{padding:76px 16px} .phone .back h2{font-size:30px} .phone .back .row{grid-template-columns:1fr}
+.scrim{position:absolute;inset:0;background:var(--scrim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+
+/* ===== dialog shell =====
+   Rules from ui-best-practices.md:
+   type 24 / 16 / 14 (+12 for badges); weights 400 / 600 / 700; Noto Sans + Bricolage only;
+   spacing 4 · 8 · 12 · 16 · 24 · 32; radius: buttons full pill, cards 14–28, fields 10;
+   groups split by white space, not lines; navy only for the start button, links, focus and small selection marks;
+   phone tap targets ≥ 44 px; motion only on transform and opacity. */
+.dlg{--fs-title:24px;--fs-body:16px;--fs-small:14px;--fs-badge:12px;--ctl-line:color-mix(in srgb,var(--muted) 70%,var(--surface));--on-line:color-mix(in srgb,var(--accent) 45%,var(--line));
+  position:absolute;left:50%;top:40px;transform:translateX(-50%);width:600px;max-height:880px;background:var(--surface);border-radius:24px;box-shadow:var(--shadow-pop);display:flex;flex-direction:column;overflow:hidden;font-size:var(--fs-body);line-height:1.6}
+.dlg.wide{width:820px}
+.phone .dlg,.phone .dlg.wide{left:0;right:0;top:auto;bottom:0;width:auto;transform:none;max-height:788px;border-radius:24px 24px 0 0}
+.grab{display:none;width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0}
+.phone .grab{display:block}
+.dh{display:flex;align-items:center;gap:8px;padding:24px 24px 8px}
+.phone .dh{padding:8px 16px 8px}
+.dh h2{font-size:var(--fs-title);font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.dh .src{color:var(--muted)}
+.x{margin-left:auto;width:40px;height:40px;border-radius:50%;border:0;background:var(--bg);display:grid;place-items:center;color:var(--muted);flex:none}
+.phone .x{width:44px;height:44px}
+.bd{flex:1;overflow:auto;padding:8px 24px 24px;display:grid;gap:24px;align-content:start}
+.phone .bd{padding:8px 16px 16px}
+.ft{padding:16px 24px 24px;display:grid;gap:8px;background:var(--surface);box-shadow:0 -16px 16px -16px rgb(27 36 68 / .16)}
+.phone .ft{padding:12px 16px 16px}
+.ft .sum{font-size:var(--fs-small);color:var(--muted)}
+.ft .sum b{color:var(--ink);font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:var(--fs-body);white-space:nowrap;transition:transform .15s var(--ease)}
+.btn:hover{background:color-mix(in srgb,var(--accent) 86%,#ffffff)} .btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;background:var(--accent)}
+.btn.wide{width:100%}
+.lnk{background:none;border:0;padding:0;font-weight:600;font-size:var(--fs-small);color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 35%,transparent);text-underline-offset:4px}
+.lnk.mut{color:var(--muted)}
+
+/* ===== shared controls ===== */
+.sec{display:grid;gap:12px}
+.sh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sh h3{font-size:var(--fs-body);font-weight:700;font-family:var(--f-body)}
+.sh .n{font-size:var(--fs-body);font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.sh small{font-size:var(--fs-small);color:var(--muted)}
+.cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--ctl-line);background:var(--surface);display:grid;place-items:center;flex:none}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.cb .ic{width:13px;height:13px;stroke-width:3.2}
+.rd{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ctl-line);background:var(--surface);flex:none}
+.rd.on{border:6px solid var(--accent)}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.tag{font-size:var(--fs-badge);font-weight:600;line-height:1.5;padding:1px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--ctl-line);border:0;padding:0;position:relative;flex:none}
+.sw::before{content:"";position:absolute;inset:-9px -4px}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform .15s var(--ease)}
+.sw.on{background:var(--accent)} .sw.on::after{transform:translateX(18px)}
+.sw.lock{opacity:.5}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:var(--fs-small);font-weight:600}
+.phone .pill{height:44px}
+.pill small{font-size:var(--fs-small);font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.pill.on{border-color:var(--on-line);background:var(--sel)}
+.pills .lbl{width:100%;font-size:var(--fs-small);color:var(--muted);margin-top:4px}
+.segi{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg)}
+.segi button{border:0;background:transparent;min-height:32px;padding:0 12px;border-radius:999px;font-size:var(--fs-small);font-weight:600;color:var(--muted);white-space:nowrap}
+.phone .segi button{min-height:44px}
+.segi button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(27 36 68 / .12),0 2px 8px -2px rgb(27 36 68 / .14)}
+.segi button[disabled]{opacity:.45;cursor:not-allowed}
+.sel{position:relative}
+.selb{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 16px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:var(--fs-body);font-weight:600;text-align:left}
+.selb .grow{flex:1;min-width:0}
+.selb small{font-size:var(--fs-small);font-weight:400;color:var(--muted)}
+.selb.open{border-color:var(--on-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:5;background:var(--surface);border-radius:14px;box-shadow:var(--shadow-pop);padding:8px;display:grid;gap:4px;max-height:300px;overflow:auto;animation:popIn .18s var(--ease)}
+.pop.narrow{right:auto;min-width:260px}
+@keyframes popIn{from{opacity:0;transform:translateY(-4px)}}
+.pop .q{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:var(--fs-small);margin-bottom:4px}
+.op{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 12px;border-radius:10px;border:0;background:none;text-align:left;font-size:var(--fs-body);width:100%}
+.phone .op{min-height:44px}
+.op:hover{background:var(--bg)}
+.op.on{background:var(--sel);font-weight:600}
+.op small{margin-left:auto;font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.step{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.step .b{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.phone .step .b{width:44px;height:44px}
+.step .b[disabled]{opacity:.35;cursor:not-allowed}
+.step .v{font-family:var(--f-display);font-weight:700;font-size:var(--fs-title);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+.step .mu{font-size:var(--fs-small)}
+.ai-line,.note{font-size:var(--fs-small);color:var(--muted)}
+.ai-line b{color:var(--ink);font-weight:600}
+.warn{font-size:var(--fs-small);color:var(--fail);font-weight:600}
+
+/* selectable boxes: a div holding the toggle button plus, below it, its own options (never a button inside a button) */
+.trow,.tcard,.cell{border-radius:14px;border:1.5px solid var(--line);background:var(--surface)}
+.trow.on,.tcard.on,.cell.on{border-color:var(--on-line);background:var(--sel)}
+.trow.dis,.tcard.dis,.cell.dis{opacity:.45}
+.tb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 16px;border:0;background:none;border-radius:13px;text-align:left;width:100%}
+.tb b{font-weight:600}
+.tb .ask{grid-column:2 / -1;font-size:var(--fs-small);color:var(--muted)}
+.sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-small);color:var(--muted)}
+.trow .sub{padding:0 16px 12px 48px}
+.tb2{display:grid;gap:4px;align-content:start;border:0;background:none;text-align:left;width:100%;border-radius:13px}
+.tlist{display:grid;gap:8px}
+.ghead{display:flex;align-items:center;gap:8px;margin-top:8px}
+.ghead b{font-size:var(--fs-body);font-weight:700}
+.ghead .sp{flex:1}
+
+/* V2 two columns */
+.cols{display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}
+.phone .cols{grid-template-columns:1fr;gap:24px}
+.glist{display:grid;gap:4px;max-height:330px;overflow:auto;background:var(--bg);border-radius:14px;padding:4px}
+.gopt{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 12px;border-radius:10px;border:0;background:none;text-align:left;width:100%;font-size:var(--fs-body)}
+.phone .gopt{min-height:44px}
+.gopt.on{background:var(--surface);font-weight:600;box-shadow:0 1px 2px rgb(27 36 68 / .10)}
+.gopt small{margin-left:auto;font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.tcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.phone .tcards{grid-template-columns:1fr}
+.tcards .span2{grid-column:1 / -1}
+.tcard .tb2{padding:12px 16px}
+.tcard .sub{padding:0 16px 12px 48px}
+.tcard .t,.cell .t{display:flex;align-items:center;gap:12px}
+.tcard .t b,.cell .t b{font-weight:600;flex:1;line-height:1.35}
+.tcard .ask,.cell .ask{font-size:var(--fs-small);color:var(--muted);padding-left:32px}
+.aibox{display:grid;gap:12px}
+.ftrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ftrow .sp{flex:1}
+.ftrow .mu{font-size:var(--fs-small)}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:0s!important;animation:none!important}}
+/* ===== vòng 13: hai cột gọn ===== */
+.dlg.w2{width:840px}
+.phone .dlg.w2{width:auto}
+.cols2{display:grid;grid-template-columns:272px minmax(0,1fr);gap:32px;align-items:start}
+.phone .cols2{grid-template-columns:1fr;gap:24px}
+.col{display:grid;gap:12px;align-content:start}
+.colh{display:flex;align-items:center;gap:8px;min-height:32px}
+.colh h3{font-family:var(--f-body);font-size:var(--fs-body);font-weight:700}
+.colh span{font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.colh .stg{margin-left:auto;align-self:center}
+.colh .stg .txb{margin:0 -8px 0 0}
+.colh .stg .pop{left:auto;right:-8px}
+/* grouped lists: one tinted panel, rows inside, the chosen row lifts to white (no card borders) */
+.gl,.ql{display:grid;gap:2px;padding:4px;border-radius:14px;background:var(--bg)}
+.gr{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:0;border-radius:10px;background:none;text-align:left;width:100%;transition:transform .12s var(--ease)}
+.gr:hover{background:color-mix(in srgb,var(--surface) 55%,transparent)}
+.gr:active{transform:scale(.985)}
+.gr.on{background:var(--surface);font-weight:600;box-shadow:0 1px 2px rgb(27 36 68 / .10),0 2px 8px -2px rgb(27 36 68 / .12)}
+.gr .n{margin-left:auto;font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.gr .ck{width:16px;height:16px;color:var(--accent);visibility:hidden}
+.gr.on .ck{visibility:visible}
+.gr[disabled]{opacity:.45;cursor:not-allowed}
+.phone .gr{height:44px}
+.q{display:flex;align-items:center;gap:8px;min-height:40px;border-radius:10px;padding-right:4px}
+.q.on{background:var(--surface);box-shadow:0 1px 2px rgb(27 36 68 / .10),0 2px 8px -2px rgb(27 36 68 / .12)}
+.q.dis{opacity:.45}
+.qb{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:40px;padding:0 12px;border:0;background:none;border-radius:10px;text-align:left;transition:transform .12s var(--ease)}
+.qb:active{transform:scale(.985)}
+.q.on .qb{font-weight:600}
+.q .segi{flex:none;padding:2px;animation:popIn .18s var(--ease)}
+.q .segi button{min-height:28px;padding:0 10px}
+.q .nt{font-size:var(--fs-small);color:var(--muted);padding-right:8px}
+.phone .q{flex-wrap:wrap;padding-right:0}
+.phone .qb{min-height:44px;flex:1 0 100%}
+/* phone: a row's options sit under its label and run to the row's right edge, so every edge lines up */
+.phone .q .segi{display:flex;flex:1 1 100%;margin:0 12px 12px 44px}
+.phone .q .segi button{flex:1;min-height:44px;padding:0 8px}
+.phone .q .nt{padding:0 12px 12px 44px}
+.aih{display:flex;align-items:center;gap:8px;min-height:32px;margin-top:12px}
+/* phone: number of questions and order become two aligned rows in the body; the footer keeps only the start button */
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 4px 0 12px;border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgb(27 36 68 / .10),0 2px 8px -2px rgb(27 36 68 / .12)}
+.srow .sel .pop{left:auto;right:0}
+.srow .txb{margin:0 -4px 0 0}
+.srt{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-small)}
+.srt > .k{color:var(--muted)}
+.aih b{font-weight:700}
+.aih .sp{flex:1}
+.fseg{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg)}
+.fseg button{flex:1;border:0;background:transparent;min-height:32px;border-radius:999px;font-size:var(--fs-small);font-weight:600;color:var(--muted);white-space:nowrap;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.fseg button small{font-size:inherit;font-weight:400;font-variant-numeric:tabular-nums}
+.fseg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(27 36 68 / .12),0 2px 8px -2px rgb(27 36 68 / .14)}
+.phone .fseg button{min-height:44px}
+.txb{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 8px;margin-left:-8px;border:0;background:none;border-radius:10px;font-size:var(--fs-small);font-weight:600;color:var(--ink)}
+.txb .k{color:var(--muted);font-weight:400}
+.txb:hover{background:var(--bg)}
+.txb .ic{width:16px;height:16px;color:var(--muted)}
+.phone .txb{min-height:44px}
+.pop.up{top:auto;bottom:calc(100% + 8px)}
+.pop.fit{right:auto;min-width:240px}
+.ftr{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.ftr .btn{margin-left:auto;min-width:220px}
+.phone .ftr .btn{width:100%;margin-left:0}
+.stp{display:inline-flex;align-items:center;gap:4px;padding:4px;border-radius:999px;background:var(--bg)}
+.stp button{width:32px;height:32px;border-radius:50%;border:0;background:var(--surface);display:grid;place-items:center;box-shadow:0 1px 2px rgb(27 36 68 / .12);transition:transform .12s var(--ease)}
+.stp button:active{transform:scale(.92)}
+.stp button[disabled]{opacity:.4;cursor:not-allowed;transform:none}
+.stp button .ic{width:16px;height:16px}
+.stp .v{min-width:32px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.phone .stp button{width:44px;height:44px}
+.cnt{display:inline-flex;align-items:center;gap:8px;font-size:var(--fs-small);color:var(--muted)}
+.ft .warn,.warnbox{margin-bottom:4px}
+.warnbox{display:grid;gap:4px;padding:12px 16px;border-radius:14px;background:var(--fail-soft)}
+.warnbox b{color:var(--fail)}
+.warnbox p{font-size:var(--fs-small)}
+.warnbox .lnk{justify-self:start;color:var(--fail);text-decoration-color:color-mix(in srgb,var(--fail) 40%,transparent)}
+.phone .dlg .lnk{min-height:44px;display:inline-flex;align-items:center}
+/* ===== vòng 14: admin tab + AI count ===== */
+:root{--a-primary:#2445d6;--a-primary-soft:#eceffe;--a-on-primary:#ffffff;--a-ink:#0f1a3d;--a-muted:#4d5577;--a-surface:#ffffff;--a-canvas:#f1f3fd;--a-border:#e3e6f4;--a-border-strong:#7d84a8;--a-navy:#1b2444;--a-navy-raised:#2c3760;--a-on-navy:#f1f3fd;--a-on-navy-muted:#b9c1e0;--a-logo-dot:#ffd84a;--a-new:#7a5200;--a-new-soft:#fff4c7;--f-admin:'Lexend','Noto Sans',system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--a-primary:#8ea2ff;--a-primary-soft:#1e2750;--a-on-primary:#0f1426;--a-ink:#e8ebf7;--a-muted:#a3abc9;--a-surface:#171d33;--a-canvas:#0f1426;--a-border:#2a3150;--a-border-strong:#5b6488;--a-navy:#0b1020;--a-navy-raised:#1d2645;--a-on-navy:#e8ebf7;--a-on-navy-muted:#9aa3c4;--a-new:#ffd84a;--a-new-soft:#3a3010}}
+:root[data-theme="dark"]{--a-primary:#8ea2ff;--a-primary-soft:#1e2750;--a-on-primary:#0f1426;--a-ink:#e8ebf7;--a-muted:#a3abc9;--a-surface:#171d33;--a-canvas:#0f1426;--a-border:#2a3150;--a-border-strong:#5b6488;--a-navy:#0b1020;--a-navy-raised:#1d2645;--a-on-navy:#e8ebf7;--a-on-navy-muted:#9aa3c4;--a-new:#ffd84a;--a-new-soft:#3a3010}
+.lnk{text-decoration:none}
+.part{display:grid;gap:12px}
+.part h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.adm{display:grid;grid-template-columns:208px minmax(0,1fr);border-radius:20px;overflow:hidden;background:var(--a-canvas);color:var(--a-ink);font-family:var(--f-admin);font-size:14px;line-height:1.55;border:1px solid var(--a-border)}
+.side{background:var(--a-navy);padding:20px 12px;display:grid;gap:2px;align-content:start}
+.side .logo{color:var(--a-on-navy);font-weight:800;font-size:18px;padding:0 10px 16px;letter-spacing:-.01em}
+.side .logo i{font-style:normal;color:var(--a-logo-dot)}
+.side span{display:block;padding:8px 10px;border-radius:10px;color:var(--a-on-navy-muted)}
+.side span.on{background:var(--a-navy-raised);color:var(--a-on-navy);font-weight:700}
+.amain{padding:28px 32px 32px;display:grid;gap:16px;align-content:start;min-width:0}
+.amain h1{font-family:var(--f-admin);font-size:28px;font-weight:800;letter-spacing:-.02em}
+.atabs{display:flex;gap:4px;align-items:end;border-bottom:1px solid var(--a-border);overflow-x:auto}
+.atabs span{padding:10px 12px;color:var(--a-muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.atabs span.on{color:var(--a-ink);font-weight:700;border-color:var(--a-primary)}
+.atabs .hist{margin-left:auto;border:0;background:none;color:var(--a-primary);font-weight:500;padding:10px 8px;white-space:nowrap}
+.apanel{background:var(--a-surface);border:1px solid var(--a-border);border-radius:16px;padding:20px 24px;display:grid}
+.apanel h2{font-family:var(--f-admin);font-size:20px;font-weight:800;letter-spacing:-.01em;padding-bottom:8px}
+.af{border-bottom:1px solid var(--a-border);padding:16px 0;display:grid;gap:8px;max-width:42rem}
+.af:last-child{border-bottom:0}
+.af.dim{opacity:.5}
+.af .lab{display:flex;align-items:center;gap:8px;font-weight:500;flex-wrap:wrap}
+.newtag{font-size:12px;font-weight:700;padding:0 8px;border-radius:999px;background:var(--a-new-soft);color:var(--a-new)}
+.ain{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ain select,.ain input{height:40px;border:1px solid var(--a-border-strong);border-radius:10px;background:var(--a-surface);color:var(--a-ink);font:inherit;padding:0 12px}
+.ain select{min-width:16rem;max-width:100%}
+.ain input{width:6.5rem;font-variant-numeric:tabular-nums}
+.ain .u{color:var(--a-muted)}
+.ain select:focus-visible,.ain input:focus-visible{outline:3px solid var(--a-primary);outline-offset:1px}
+.ahint{font-size:12px;color:var(--a-muted)}
+.ahint code{font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:12px}
+.aex{font-size:13px;border-radius:10px;padding:8px 12px;background:var(--a-primary-soft);color:var(--a-ink);font-variant-numeric:tabular-nums}
+.asave{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chg{flex:1;min-width:0;font-size:13px;color:var(--a-muted)}
+.chg b{color:var(--a-ink);font-weight:500}
+.abtn{height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--a-primary);color:var(--a-on-primary);font-family:var(--f-admin);font-weight:700}
+.abtn[disabled]{opacity:.45;cursor:not-allowed}
+@media (max-width:760px){.adm{grid-template-columns:1fr}.side{display:none}.amain{padding:20px 16px}.apanel{padding:16px}.ain select{min-width:0;width:100%}}
+.pl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:var(--fs-small);color:var(--muted)}
+.ql.off{opacity:.45}
+.ql.off .qb{cursor:not-allowed}
+.mx2{font-size:var(--fs-small);color:var(--muted);font-variant-numeric:tabular-nums}
+.adminbar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:14px;color:var(--muted)}
+.adminbar b{color:var(--ink);font-weight:600}
+</style>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Số câu AI và cài đặt luyện tập</h1>
+    <p>Vòng 14. Phần trên là tab Luyện tập trong admin với các cài đặt mới. Phần dưới là hộp Tùy chỉnh phiên của vòng 13, đổi theo cài đặt admin ngay khi bạn chọn, chưa cần bấm Lưu. Bấm thử được cả hai.</p>
+  </header>
+
+  <section class="part" aria-labelledby="p1">
+    <h2 id="p1">Admin · Cài đặt hệ thống · Luyện tập</h2>
+    <div class="adm">
+      <nav class="side" aria-label="Menu admin"><p class="logo">wordmet<i>.</i> admin</p><span>Tổng quan</span><span>Từ</span><span>Nghĩa</span><span>Chủ đề</span><span>Người dùng</span><span>AI</span><span>Báo lỗi</span><span class="on">Cài đặt hệ thống</span></nav>
+      <div class="amain">
+        <h1>Cài đặt hệ thống</h1>
+        <div class="atabs"><span>Nhắc học</span><span>Học và ôn</span><span class="on">Luyện tập</span><span>Gói và lượt</span><span>Nội dung</span><span>AI</span><span>Tài khoản</span><span>Giọng đọc</span><button type="button" class="hist">Lịch sử thay đổi</button></div>
+        <section class="apanel" aria-labelledby="ap">
+          <h2 id="ap">Luyện tập</h2>
+          <div class="af">
+            <label class="lab" for="smode">Số câu tối đa mỗi phiên <span class="newtag">Mới: chế độ</span></label>
+            <div class="ain"><select id="smode"><option value="fixed">Mức cố định</option><option value="scope">Bằng số từ của phạm vi</option></select>
+              <span id="smaxw"><input id="smax" type="number" min="5" max="100" step="1" value="20" aria-label="Số câu tối đa"> <span class="u">câu</span></span></div>
+            <p class="ahint" id="smodeh"></p>
+          </div>
+          <div class="af">
+            <label class="lab" for="sdef">Số câu mặc định</label>
+            <div class="ain"><input id="sdef" type="number" min="1" max="100" step="1" value="10"> <span class="u">câu</span></div>
+            <p class="ahint" id="sdefh"></p>
+          </div>
+          <div class="af">
+            <label class="lab" for="amode">Số câu AI tối đa mỗi phiên <span class="newtag">Mới</span></label>
+            <div class="ain"><select id="amode"><option value="fixed">Mức cố định</option><option value="percent" selected>Theo tỉ lệ số câu của phiên</option></select>
+              <span id="afixw"><input id="afix" type="number" min="0" max="100" step="1" value="5" aria-label="Số câu AI tối đa"> <span class="u">câu</span></span>
+              <span id="apctw"><input id="apct" type="number" min="0" max="100" step="1" value="50" aria-label="Tỉ lệ câu AI tối đa"> <span class="u">%</span></span></div>
+            <p class="ahint" id="amodeh"></p>
+            <p class="aex" id="aex"></p>
+          </div>
+          <div class="af">
+            <label class="lab" for="place">Cách xếp câu AI <span class="newtag">Mới</span></label>
+            <div class="ain"><select id="place"><option value="even">Rải đều</option><option value="random">Ngẫu nhiên</option><option value="learner">Để người học chọn</option></select></div>
+            <p class="ahint" id="placeh"></p>
+          </div>
+          <div class="af dim" aria-hidden="true"><span class="lab">Giữ lịch sử luyện tập</span><div class="ain"><input type="number" value="6" tabindex="-1" aria-label="Giữ lịch sử luyện tập"> <span class="u">tháng</span></div><p class="ahint"><code>history_months</code> · 3–24 tháng · mặc định 6</p></div>
+          <div class="af dim" aria-hidden="true"><span class="lab">Số câu AI tạo trước</span><div class="ain"><input type="number" value="2" tabindex="-1" aria-label="Số câu AI tạo trước"></div><p class="ahint"><code>ai_prefetch_count</code> · 0–20, 0 = tắt · mặc định 2</p></div>
+        </section>
+        <div class="asave"><p class="chg" id="chg" aria-live="polite"></p><button type="button" class="abtn" id="asave">Lưu thay đổi</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p2">
+    <h2 id="p2">Hộp Tùy chỉnh phiên</h2>
+    <p class="adminbar" id="adminbar"></p>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="Khung"><button type="button" data-dev="desk">Máy tính</button><button type="button" data-dev="phone">Điện thoại</button></div>
+      <div class="seg" role="group" aria-label="Gói"><button type="button" data-plan="pro">Pro · còn 280 lượt AI</button><button type="button" data-plan="low">Pro · còn 3 lượt</button><button type="button" data-plan="free">Miễn phí · còn 9 lượt</button><button type="button" data-plan="out">Miễn phí · hết lượt</button></div>
+      <button type="button" class="lnk mut" data-reset>Về mặc định</button>
+    </div>
+    <div class="stage" id="stage"><div class="scaler" id="scaler"><div class="dev desk" id="dev"></div></div></div>
+  </section>
+  <section class="notes" id="notes"></section>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var IC = { x:'<path d="M6 6l12 12M18 6L6 18"/>', down:'<path d="m6 9 6 6 6-6"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', minus:'<path d="M5 12h14"/>', plus:'<path d="M12 5v14M5 12h14"/>', arr:'<path d="M5 12h14M13 6l6 6-6 6"/>' };
+  function ic(k){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + IC[k] + '</svg>'; }
+
+  /* ---------- admin ---------- */
+  var SMODE = { fixed:'Mức cố định', scope:'Bằng số từ của phạm vi' }, AMODE = { fixed:'Mức cố định', percent:'Theo tỉ lệ số câu của phiên' }, PLACE = { even:'Rải đều', random:'Ngẫu nhiên', learner:'Để người học chọn' };
+  var LABEL = { smode:'Số câu tối đa mỗi phiên (chế độ)', smax:'Số câu tối đa mỗi phiên', sdef:'Số câu mặc định', amode:'Số câu AI tối đa (chế độ)', afix:'Số câu AI tối đa (mức cố định)', apct:'Số câu AI tối đa (tỉ lệ)', place:'Cách xếp câu AI' };
+  function adminFresh(){ return { smode:'fixed', smax:20, sdef:10, amode:'percent', afix:5, apct:50, place:'even' }; }
+  var A = adminFresh(), A0 = adminFresh(), S = null;
+  function clampInt(v, lo, hi, d){ v = parseInt(v, 10); return isNaN(v) ? d : Math.max(lo, Math.min(hi, v)); }
+  function readAdmin(){ A.smode = $('smode').value; A.amode = $('amode').value; A.place = $('place').value;
+    A.smax = clampInt($('smax').value, 5, 100, A.smax); A.sdef = clampInt($('sdef').value, 1, 100, A.sdef); A.afix = clampInt($('afix').value, 0, 100, A.afix); A.apct = clampInt($('apct').value, 0, 100, A.apct); }
+  function shown(k, v){ if (k === 'smode') return SMODE[v]; if (k === 'amode') return AMODE[v]; if (k === 'place') return PLACE[v]; if (k === 'apct') return v + '%'; return String(v); }
+  function aiAdminMax(n){ return A.amode === 'fixed' ? Math.min(A.afix, n) : Math.floor(n * A.apct / 100); }
+  function adminView(){
+    $('smaxw').hidden = A.smode !== 'fixed'; $('afixw').hidden = A.amode !== 'fixed'; $('apctw').hidden = A.amode !== 'percent';
+    $('smodeh').innerHTML = A.smode === 'fixed' ? '<code>session_max_mode</code>, <code>max_questions_per_session</code> · 5–100 câu · mặc định Mức cố định, 20'
+      : '<code>session_max_mode</code> · tối đa bằng số từ của phạm vi người học chọn (Mọi từ, Cần ôn, Ưu tiên hoặc một ngăn), không quá 100 · mặc định Mức cố định';
+    $('sdefh').innerHTML = '<code>default_questions_per_session</code> · 1–100' + (A.smode === 'fixed' ? ' và ≤ số tối đa' : '; phạm vi ít từ hơn thì lấy số từ') + ' · mặc định 10';
+    $('amodeh').innerHTML = A.amode === 'fixed' ? '<code>ai_max_mode</code>, <code>ai_max_fixed</code> · 0–100 câu, 0 = không có câu AI, không vượt số câu của phiên · mặc định Theo tỉ lệ'
+      : '<code>ai_max_mode</code>, <code>ai_max_percent</code> · 0–100%, làm tròn xuống · mặc định Theo tỉ lệ, 50%';
+    $('aex').textContent = 'Ví dụ: ' + [7, 10, 20].map(function(n){ return 'phiên ' + n + ' câu → tối đa ' + aiAdminMax(n) + ' câu AI'; }).join(' · ');
+    $('placeh').innerHTML = '<code>ai_placement</code> · ' + (A.place === 'learner' ? 'hộp Tùy chỉnh phiên hiện thêm lựa chọn Rải đều / Ngẫu nhiên khi người học chọn ít nhất 1 câu AI' : 'người học không thấy lựa chọn này') + ' · mặc định Rải đều';
+    var diff = Object.keys(A).filter(function(k){ return A[k] !== A0[k]; });
+    $('chg').innerHTML = diff.length ? 'Khi lưu, lịch sử ghi: ' + diff.map(function(k){ return '<b>' + LABEL[k] + '</b> ' + shown(k, A0[k]) + ' → ' + shown(k, A[k]); }).join('; ') : 'Chưa có thay đổi.';
+    $('asave').disabled = !diff.length;
+  }
+  ['smode','smax','sdef','amode','afix','apct','place'].forEach(function(id){
+    $(id).addEventListener(/mode$|^place$/.test(id) ? 'change' : 'input', function(){ readAdmin(); adminView(); clamp(); render(); }); });
+  $('asave').addEventListener('click', function(){ A0 = JSON.parse(JSON.stringify(A)); adminView(); $('chg').textContent = 'Đã lưu.'; });
+
+  /* ---------- learner dialog ---------- */
+  var TIER = ['#9aa3b1','#c07a45','#98a2b0','#d4a72c','#1f9d75','#b28bff'], STAGE = ['Mới','1 ngày','3 ngày','7 ngày','14 ngày','30 ngày'];
+  var G = [['Đề 12 · Writing','#e5603f',48],['Đề 9 · Listening','#149384',40],['Đề 14 · Reading','#7a55d3',36],['Từ gặp ngoài đời','#d99a17',22],['Đề 10 · Writing','#d2427a',28],['Công việc · B1','#2a86d1',24],['Đề 11 · Speaking','#4a9637',30],['Du lịch Nhật','#64708c',0]];
+  function counts(i){ var n = G[i][2]; if (i === 0) return { all:48, due:24, pri:4, cells:[6,12,10,8,7,5] };
+    var c = [.12,.25,.21,.17,.15,.1].map(function(p){ return Math.round(n * p); }); c[5] = n - c.slice(0,5).reduce(function(a,b){ return a + b; }, 0); return { all:n, due:Math.round(n*.4), pri:Math.round(n*.08), cells:c }; }
+  var SORTS = [['queue','Ưu tiên, đến hạn, rồi từ mới'],['level_asc','Ngăn thấp'],['overdue_first','Quá hạn lâu nhất'],['new_first','Từ mới'],['least_practiced','Lâu chưa luyện'],['most_wrong','Sai nhiều nhất'],['priority_oldest','Bấm Cần ôn lại lâu nhất trước'],['random','Ngẫu nhiên']];
+  var LEFT = 28, PLANS = { pro:{ free:false, ai:280 }, low:{ free:false, ai:3 }, free:{ free:true, ai:9 }, out:{ free:true, ai:0 } };
+  var st = { dev: innerWidth < 700 ? 'phone' : 'desk', plan:'pro' };
+  function fresh(){ S = { g:0, f:'all', on:{ mcq:1, tf:1, twm:1, tws:1, cloze:1, mis:1, mcqs:1 }, own:false, count:10, ai:0, place:'even', sort:'queue', pop:null }; S.count = Math.min(A.sdef, sessMax()); }
+  var ph = function(){ return st.dev === 'phone'; }, aiLeft = function(){ return PLANS[st.plan].ai; };
+  var tw = function(){ return S.on.twm || S.on.tws; }, mc = function(){ return !!(S.on.mis || S.on.mcqs); };
+  function fCount(){ var c = counts(S.g); if (S.f === 'all') return c.all; if (S.f === 'due') return c.due; if (S.f === 'pri') return c.pri; return c.cells[Number(S.f.slice(1))]; }
+  function sessMax(){ return A.smode === 'fixed' ? A.smax : Math.max(1, Math.min(fCount(), 100)); }
+  function aiCap(){ return aiAdminMax(S.count); }
+  function aiMax(){ return Math.min(aiCap(), aiLeft()); }
+  function clamp(){ if (!S) return; S.count = Math.max(1, Math.min(S.count, sessMax())); S.ai = Math.max(0, Math.min(S.ai, aiMax())); }
+  function aiTypes(){ return (S.on.cloze ? 1 : 0) + (S.on.mis ? 1 : 0) + (S.on.mcqs ? 1 : 0); }
+  function ruleTypes(){ return (S.on.mcq ? 1 : 0) + (S.on.tf ? 1 : 0) + (tw() ? 1 : 0) + (S.own ? 1 : 0); }
+  function needAi(){ return S.ai > 0 && aiTypes() === 0; }
+  function needRule(){ return S.ai < S.count && ruleTypes() === 0; }
+  function ok(){ return !needAi() && !needRule(); }
+  function placeNow(){ return A.place === 'learner' ? S.place : A.place; }
+  function sortName(){ return SORTS.filter(function(s){ return s[0] === S.sort; })[0][1]; }
+  function cb(on){ return '<span class="cb' + (on ? ' on' : '') + '">' + (on ? ic('check') : '') + '</span>'; }
+  function gdot(i){ return '<i class="dot" style="background:' + G[i][1] + '"></i>'; }
+  function seg(attr, items, cur){ return '<span class="segi">' + items.map(function(x){ return '<button type="button" class="' + (cur === x[0] ? 'on' : '') + '" ' + attr + '="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</span>'; }
+  function op(attr, on, label, small){ return '<button type="button" class="op' + (on ? ' on' : '') + '" ' + attr + '>' + label + (small !== undefined ? '<small>' + small + '</small>' : '') + '</button>'; }
+  function stp(attr, v, lo, hi, name){ return '<span class="stp"><button type="button" ' + attr + '="-1" aria-label="Bớt 1 ' + name + '"' + (v <= lo ? ' disabled' : '') + '>' + ic('minus') + '</button><span class="v">' + v + '</span><button type="button" ' + attr + '="1" aria-label="Thêm 1 ' + name + '"' + (v >= hi ? ' disabled' : '') + '>' + ic('plus') + '</button></span>'; }
+
+  function groupList(){
+    if (ph()) { var open = S.pop === 'g'; return '<div class="sel"><button type="button" class="selb' + (open ? ' open' : '') + '" data-pop="g" aria-expanded="' + open + '">' + gdot(S.g) + '<span class="grow">' + G[S.g][0] + '</span>' + ic('down') + '</button>' +
+      (open ? '<div class="pop">' + G.map(function(g, i){ return op('data-g="' + i + '"' + (g[2] ? '' : ' disabled'), i === S.g, gdot(i) + g[0], g[2] ? g[2] + ' từ' : 'chưa có từ'); }).join('') + '</div>' : '') + '</div>'; }
+    return '<div class="gl" role="radiogroup" aria-label="Nhóm">' + G.map(function(g, i){ var on = i === S.g;
+      return '<button type="button" class="gr' + (on ? ' on' : '') + '" role="radio" aria-checked="' + on + '" data-g="' + i + '"' + (g[2] ? '' : ' disabled title="Nhóm chưa có từ"') + '>' + gdot(i) + '<span>' + g[0] + '</span><span class="n">' + (g[2] || '0') + '</span>' + ic('check').replace('class="ic"', 'class="ic ck"') + '</button>'; }).join('') + '</div>'; }
+  function filterSeg(){ var c = counts(S.g), it = [['all','Mọi từ',c.all],['due','Cần ôn',c.due],['pri','Ưu tiên',c.pri]];
+    return '<div class="fseg" role="radiogroup" aria-label="Lấy từ nào">' + it.map(function(x){ var on = S.f === x[0]; return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? 'on' : '') + '" data-f="' + x[0] + '">' + x[1] + ' <small>' + x[2] + '</small></button>'; }).join('') + '</div>'; }
+  function stageBtn(){ var c = counts(S.g), isS = S.f.charAt(0) === 's', open = S.pop === 'stage';
+    return '<div class="sel stg"><button type="button" class="txb" data-pop="stage" aria-expanded="' + open + '">' + (isS ? '<i class="dot" style="background:' + TIER[Number(S.f.slice(1))] + '"></i>Ngăn ' + STAGE[Number(S.f.slice(1))] : '<span class="k">Chỉ một ngăn</span>') + ic('down') + '</button>' +
+      (open ? '<div class="pop fit">' + op('data-f="all"', !isS, 'Mọi ngăn') + STAGE.map(function(s, i){ return op('data-f="s' + i + '"', S.f === 's' + i, '<i class="dot" style="background:' + TIER[i] + '"></i>Ngăn ' + s, c.cells[i]); }).join('') + '</div>' : '') + '</div>'; }
+
+  function row(attr, on, dis, name, tail){ return '<div class="q' + (on ? ' on' : '') + (dis ? ' dis' : '') + '"><button type="button" class="qb" ' + attr + ' aria-pressed="' + !!on + '"' + (dis ? ' aria-disabled="true"' : '') + '>' + cb(on) + '<span>' + name + '</span></button>' + (tail || '') + '</div>'; }
+  function aiLine(){
+    if (aiLeft() === 0) return '<p class="ai-line">Hết lượt câu AI tháng này. ' + (PLANS[st.plan].free ? '<button type="button" class="lnk">Xem gói Pro</button>' : 'Lượt mới vào 01/12.') + '</p>';
+    if (aiCap() === 0) return '<p class="ai-line">Phiên ' + S.count + ' câu không có câu AI.</p>';
+    return '<p class="ai-line">Tối đa <b>' + aiMax() + '</b> câu AI' + (aiLeft() < aiCap() ? ', vì bạn còn ' + aiLeft() + ' lượt' : ' · còn ' + aiLeft() + ' lượt') + '</p>'; }
+  function questions(){
+    var prompt = S.on.twm && S.on.tws ? 'mixed' : S.on.twm ? 'meaning' : 'sentence', ask = S.on.mis && S.on.mcqs ? 'mixed' : S.on.mis ? 'meaning' : 'word', off = S.ai === 0;
+    var base = '<div class="ql">' +
+      row('data-t="mcq"', !!S.on.mcq, false, 'Trắc nghiệm') +
+      row('data-t="tf"', !!S.on.tf, false, 'Đúng/sai') +
+      row('data-t="tw"', tw(), false, 'Gõ từ', tw() ? seg('data-prompt', [['meaning','Theo nghĩa'],['sentence','Theo câu'],['mixed','Trộn']], prompt) : '') +
+      row('data-act="own"', S.own, false, 'Điền từ vào câu bạn đã lưu') + '</div>';
+    var aiHead = '<div class="aih"><b>Câu AI viết</b><span class="sp"></span>' + stp('data-ai', S.ai, 0, aiMax(), 'câu AI') + '</div>';
+    var aiRows = '<div class="ql' + (off ? ' off' : '') + '"' + (off ? ' title="Chọn ít nhất 1 câu AI để bật"' : '') + '>' +
+      row('data-t="cloze"', !!S.on.cloze, off, 'Điền từ vào câu') +
+      row('data-t="mc"', mc(), off, 'Trắc nghiệm theo câu', mc() && !off ? seg('data-mc', [['meaning','Chọn nghĩa'],['word','Chọn từ'],['mixed','Trộn']], ask) : '') + '</div>';
+    var mixNote = S.ai > 0 && S.own && S.on.cloze ? '<p class="ai-line">Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết.</p>' : '';
+    var place = A.place === 'learner' && S.ai > 0 ? '<div class="pl"><span>Xếp câu AI</span>' + seg('data-place', [['even','Rải đều'],['random','Ngẫu nhiên']], S.place) + '</div>' : '';
+    return base + aiHead + aiLine() + aiRows + mixNote + place; }
+
+  function maxNote(){ return A.smode === 'scope' ? '<span class="mx2">tối đa ' + sessMax() + '</span>' : ''; }
+  function sortSel(up){ var open = S.pop === 'sort'; return '<div class="sel"><button type="button" class="txb" data-pop="sort" aria-expanded="' + open + '">' + sortName() + ic('down') + '</button>' +
+    (open ? '<div class="pop fit' + (up ? ' up' : '') + '">' + SORTS.map(function(s){ return op('data-sort="' + s[0] + '"', s[0] === S.sort, s[1]); }).join('') + '</div>' : '') + '</div>'; }
+  function phoneRows(){ return '<div class="ql"><div class="srow"><span>Số câu ' + maxNote() + '</span>' + stp('data-count', S.count, 1, sessMax(), 'câu') + '</div><div class="srow"><span>Thứ tự</span>' + sortSel(false) + '</div></div>'; }
+  function footer(){
+    var warn = needAi() ? '<p class="warn">Chọn ít nhất một kiểu câu AI.</p>' : needRule() ? '<p class="warn">Chọn ít nhất một kiểu câu không cần AI cho ' + (S.count - S.ai) + ' câu còn lại.</p>' : '';
+    var ctl = ph() ? '' : '<span class="cnt">Số câu ' + stp('data-count', S.count, 1, sessMax(), 'câu') + maxNote() + '</span><span class="srt"><span class="k">Thứ tự:</span>' + sortSel(true) + '</span>';
+    var sum = (S.ai > 0 ? 'Trong đó <b>' + S.ai + '</b> câu AI, ' + (placeNow() === 'even' ? 'rải đều' : 'xếp ngẫu nhiên') + '. ' : '') + 'Dùng 1 trong ' + LEFT + ' phiên còn lại hôm nay.';
+    return '<div class="ft">' + warn + '<div class="ftr">' + ctl + '<button type="button" class="btn"' + (ok() ? '' : ' disabled') + '>Bắt đầu ' + S.count + ' câu ' + ic('arr') + '</button></div><p class="sum">' + sum + '</p></div>'; }
+  function dialog(){ return '<div class="dlg w2" role="dialog" aria-label="Tùy chỉnh phiên"><span class="grab"></span><div class="dh"><h2>Tùy chỉnh phiên</h2><button type="button" class="x" aria-label="Đóng">' + ic('x') + '</button></div>' +
+    '<div class="bd"><div class="cols2"><section class="col"><div class="colh"><h3>Từ</h3><span>' + fCount() + ' từ</span>' + stageBtn() + '</div>' + groupList() + filterSeg() + '</section>' +
+    '<section class="col"><div class="colh"><h3>Câu hỏi</h3></div>' + questions() + '</section>' + (ph() ? '<section class="col">' + phoneRows() + '</section>' : '') + '</div></div>' + footer() + '</div>'; }
+
+  var NOTES = '<section><h3>Admin</h3><ul>' + [
+    '<b>Ba cài đặt mới</b> trong tab Luyện tập, đặt ngay dưới hai số câu cũ. Mỗi dropdown chỉ hiện ô số của chế độ đang chọn; số của chế độ bị ẩn vẫn giữ.',
+    '<b>Dòng gợi ý</b> theo kiểu các ô đang có: tên khóa, khoảng giá trị, mặc định. Ô số câu AI có thêm một dòng ví dụ tính sẵn để admin thấy ngay kết quả.',
+    '<b>Lịch sử thay đổi</b> ghi nhãn tiếng Việt: đổi một dropdown rồi xem dòng cạnh nút Lưu.',
+    'Hai ô mờ ở cuối là cài đặt cũ, chỉ để thấy vị trí của ô mới.'
+  ].map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></section><section><h3>Hộp Tùy chỉnh phiên</h3><ul>' + [
+    '<b>Công tắc "Câu AI viết" thành ô − / + số câu AI</b>, mặc định 0. Ở 0, hai kiểu câu AI mờ và không bấm được.',
+    '<b>Tối đa</b> là số nhỏ hơn giữa mức admin cho và số lượt AI còn lại. Dòng dưới nói vì sao: "Tối đa 3 câu AI, vì bạn còn 3 lượt".',
+    '<b>Hết lượt:</b> ô khóa ở 0. Gói Miễn phí có nút xem gói Pro; gói Pro thấy ngày có lượt mới.',
+    '<b>Gói Miễn phí không còn bị khóa AI</b> (15 lượt mỗi tháng): bỏ nhãn Pro và công tắc khóa của vòng 13.',
+    '<b>Câu đã lưu bật cùng câu AI:</b> không còn làm mờ ô Điền từ vào câu; thay bằng dòng "Từ nào đã có câu bạn lưu thì dùng câu đó, từ khác do AI viết".',
+    '<b>Xếp câu AI</b> chỉ hiện khi admin chọn "Để người học chọn" và số câu AI từ 1 trở lên.',
+    '<b>Chế độ "Bằng số từ của phạm vi":</b> ô Số câu có thêm "tối đa N" và dừng ở N; chọn Ưu tiên (4 từ) thì tối đa 4.',
+    '<b>Điểm mới phát hiện khi vẽ:</b> tắt hết kiểu câu thường mà số câu AI nhỏ hơn số câu, thì các câu còn lại không có kiểu nào để hỏi. Hộp báo "Chọn ít nhất một kiểu câu không cần AI cho N câu còn lại"; API cũng cần từ chối trường hợp này.'
+  ].map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></section>';
+
+  var dev = $('dev'), scaler = $('scaler'), stage = $('stage');
+  function backdrop(){ return '<div class="back" aria-hidden="true"><div class="bar"></div><h2>Luyện tập</h2><div class="row"><div class="blk"></div><div class="blk" style="height:300px"></div></div><div class="blk" style="height:320px"></div></div><div class="scrim"></div>'; }
+  function adminBar(){ return 'Cài đặt admin đang dùng: <b>' + (A.smode === 'fixed' ? 'tối đa ' + A.smax + ' câu' : 'tối đa bằng số từ') + '</b> · <b>' + (A.amode === 'fixed' ? 'tối đa ' + A.afix + ' câu AI' : 'câu AI tối đa ' + A.apct + '%') + '</b> · <b>' + PLACE[A.place] + '</b>'; }
+  function render(){
+    if (!S) return;
+    var keep = dev.querySelector('.bd'), top = keep ? keep.scrollTop : 0;
+    dev.className = 'dev ' + st.dev;
+    dev.innerHTML = backdrop() + dialog();
+    var bd = dev.querySelector('.bd'); if (bd) bd.scrollTop = top;
+    document.querySelectorAll('[data-dev]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.dev === st.dev)); });
+    document.querySelectorAll('[data-plan]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.plan === st.plan)); });
+    $('adminbar').innerHTML = adminBar(); $('notes').innerHTML = NOTES; fit();
+  }
+  function fit(){ var W = ph() ? 390 : 1200, s = Math.min(1, stage.parentElement.clientWidth / W); scaler.style.transform = 'scale(' + s + ')'; stage.style.width = Math.floor(W * s) + 'px'; stage.style.height = Math.ceil(dev.offsetHeight * s) + 'px'; }
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var b = t.closest('[data-dev],[data-plan],[data-reset]');
+    if (b && !dev.contains(b)) { if (b.dataset.dev) st.dev = b.dataset.dev; if (b.dataset.plan) st.plan = b.dataset.plan; if (b.hasAttribute('data-reset')) fresh(); S.pop = null; clamp(); render(); return; }
+    if (!dev.contains(t)) return;
+    var x;
+    if ((x = t.closest('[data-pop]'))) { S.pop = S.pop === x.dataset.pop ? null : x.dataset.pop; render(); return; }
+    if ((x = t.closest('[data-g]'))) { if (x.disabled) return; S.g = Number(x.dataset.g); S.f = 'all'; S.pop = null; clamp(); render(); return; }
+    if ((x = t.closest('[data-f]'))) { S.f = x.dataset.f; S.pop = null; clamp(); render(); return; }
+    if ((x = t.closest('[data-sort]'))) { S.sort = x.dataset.sort; S.pop = null; render(); return; }
+    if ((x = t.closest('[data-count]'))) { if (x.disabled) return; S.count += Number(x.dataset.count); clamp(); render(); return; }
+    if ((x = t.closest('[data-ai]'))) { if (x.disabled) return; S.ai += Number(x.dataset.ai); clamp(); render(); return; }
+    if ((x = t.closest('[data-place]'))) { S.place = x.dataset.place; render(); return; }
+    if ((x = t.closest('[data-prompt]'))) { var k = x.dataset.prompt; S.on.twm = k !== 'sentence' ? 1 : 0; S.on.tws = k !== 'meaning' ? 1 : 0; render(); return; }
+    if ((x = t.closest('[data-mc]'))) { var m = x.dataset.mc; S.on.mis = m !== 'word' ? 1 : 0; S.on.mcqs = m !== 'meaning' ? 1 : 0; render(); return; }
+    if ((x = t.closest('[data-act]'))) { if (x.dataset.act === 'own') S.own = !S.own; render(); return; }
+    if ((x = t.closest('[data-t]'))) { if (x.getAttribute('aria-disabled') === 'true') return; var k2 = x.dataset.t;
+      if (k2 === 'tw') { var on = tw(); S.on.twm = on ? 0 : 1; S.on.tws = on ? 0 : 1; }
+      else if (k2 === 'mc') { var m2 = mc(); S.on.mis = m2 ? 0 : 1; S.on.mcqs = m2 ? 0 : 1; }
+      else S.on[k2] = S.on[k2] ? 0 : 1;
+      render(); return; }
+    if (S.pop && !t.closest('.pop')) { S.pop = null; render(); }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && S && S.pop) { S.pop = null; render(); } });
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage.parentElement); else addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  fresh(); adminView(); render();
+})();
+</script>

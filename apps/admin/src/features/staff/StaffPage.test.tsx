@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { problem } from '../../auth/test-support';
+import { problem, rateLimited } from '../../auth/test-support';
 import { LIST_URL, ME_ADMIN, renderApp, row } from './test-utils';
 
 const t = vi.staff;
@@ -139,7 +139,7 @@ describe('StaffPage — changing a role', () => {
     expect(await within(dialog).findByText(t.dialog.lastAdmin)).toBeInTheDocument();
   });
 
-  it('B25E5: an admin who demotes themself to editor → /me is re-read, /staff leaves the nav and the page moves on', async () => {
+  it('B25E5: an admin who demotes themself to editor → /me is re-read, /staff leaves the nav and the page shows the no-access view', async () => {
     let meReads = 0;
     renderApp('/staff', {
       [LIST_URL]: listOk,
@@ -155,11 +155,12 @@ describe('StaffPage — changing a role', () => {
     expect(within(dialog).getByText(t.dialog.selfTitle)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: t.dialog.selfConfirm }));
 
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.uploads));
+    expect(await screen.findByText(vi.noAccess.title)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.staff);
     expect(screen.queryByRole('link', { name: vi.nav.staff })).toBeNull();
   });
 
-  it('Review Focus 4: an admin who demotes themself still sees the toast after being moved off /staff', async () => {
+  it('Review Focus 4: an admin who demotes themself still sees the toast after /staff turns into the no-access view', async () => {
     let meReads = 0;
     renderApp('/staff', {
       [LIST_URL]: listOk,
@@ -172,7 +173,7 @@ describe('StaffPage — changing a role', () => {
     await userEvent.click(screen.getAllByRole('button', { name: t.list.change })[0]);
     await userEvent.click(await screen.findByRole('button', { name: t.card.grantEditor }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.dialog.selfConfirm }));
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.uploads));
+    expect(await screen.findByText(vi.noAccess.title)).toBeInTheDocument();
     expect(screen.getByText(t.toast.granted.replace('{role}', 'editor').replace('{email}', 'admin@wordmet.com'))).toBeInTheDocument();
   });
 
@@ -188,4 +189,32 @@ describe('StaffPage — changing a role', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(count('PUT', '/v1/admin/users/u9/staff-role')).toBe(1);
   });
+});
+
+const retryIn = (n: number) => vi.errors.retryIn.replace('{seconds}', String(n));
+afterEach(() => vitest.useRealTimers());
+async function tick() {
+  await act(async () => {
+    await vitest.advanceTimersByTimeAsync(1000);
+  });
+}
+
+describe('StaffPage — role dialog rate limit', () => {
+  it('B25#18: 429 with Retry-After 30 disables confirm and counts 30 → 0, then re-enables', async () => {
+    await openStaff({
+      'GET /v1/admin/users?email=new%40x.co': () => Response.json(row({ id: 'u9', email: 'new@x.co', staff_role: null })),
+      'PUT /v1/admin/users/u9/staff-role': () => rateLimited(30),
+    });
+    await search('new@x.co');
+    await userEvent.click(await screen.findByRole('button', { name: t.card.grantEditor }));
+    const dialog = await screen.findByRole('dialog');
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.confirm }));
+
+    expect(await within(dialog).findByRole('button', { name: retryIn(30) })).toBeDisabled();
+    await tick();
+    expect(within(dialog).getByRole('button', { name: retryIn(29) })).toBeDisabled();
+    for (let i = 0; i < 29; i++) await tick();
+    expect(within(dialog).getByRole('button', { name: vi.common.confirm })).toBeEnabled();
+  }, 20_000);
 });

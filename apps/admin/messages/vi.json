@@ -1,40 +1,122 @@
 {
   "errors": {
     "generic": "Có lỗi xảy ra",
+    "code": "Mã: {code}",
+    "copyCode": "Chép mã",
     "inProgress": "Yêu cầu trước vẫn đang chạy",
     "noAccess": "Bạn không có quyền truy cập trang web này",
+    "baseline-required": "Bản đang chạy chưa có lần chạy trọn trên phiên bản bộ ví dụ mới nhất.",
     "batch-filter-unavailable": "Bộ lọc theo lô này không dùng được",
     "batch-not-revertable": "Lô này không hoàn tác được",
     "csrf-header-required": "Yêu cầu thiếu header bảo vệ CSRF (lỗi lập trình)",
+    "draft-busy": "Nháp đang có lần chạy. Hủy lần chạy rồi xóa.",
+    "draft-exists": "Thao tác này đã có một nháp. Trang đã được tải lại.",
+    "draft-version-conflict": "Nháp vừa được người khác sửa.",
     "email-already-verified": "Email này đã được xác minh",
+    "email-not-verified": "Email chưa được xác nhận. Dùng Quên mật khẩu để xác nhận.",
     "email-taken": "Email đã được dùng",
+    "entry-in-use": "Từ này đang được dùng nên chưa xóa được.",
+    "eval-required": "Nháp chưa có lần chạy trọn trên phiên bản bộ ví dụ mới nhất.",
+    "eval-set-conflict": "Một admin khác vừa chốt phiên bản. Danh sách phiên bản đã được tải lại.",
+    "eval-set-incomplete": "Chưa chốt được phiên bản.",
+    "eval-set-mismatch": "Hai lần chạy không cùng phiên bản bộ ví dụ nên không so được.",
+    "example-held-out": "Ví dụ held-out không sửa được khi chưa mở.",
+    "example-not-held-out": "Ví dụ này không còn là held-out. Danh sách đã được tải lại.",
+    "expected-invalid": "Ô mong đợi chưa hợp lệ.",
     "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
+    "faq-version-conflict": "Câu hỏi vừa được người khác sửa. Tải lại rồi thử lại.",
+    "few-shot-invalid": "Có ví dụ mẫu không qua luật.",
     "file-invalid": "File không hợp lệ",
     "file-too-large": "File quá lớn (tối đa 10 MB)",
     "forbidden": "Bạn không còn quyền làm thao tác này",
+    "grant-not-active": "Lần cấp này đã thu hồi hoặc đã hết hạn.",
+    "grant-not-allowed": "Editor không cấp được cho tài khoản này.",
     "idempotency-key-abandoned": "Yêu cầu trước đã bị bỏ dở, hãy bấm gửi lại",
     "invalid-credentials": "Email hoặc mật khẩu không đúng",
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
+    "account-deleted": "Tài khoản của người học đã bị xóa, không mở kỳ được.",
+    "account-deleting": "Tài khoản này đang được xóa, chưa sửa được.",
+    "captcha-failed": "Chưa xác minh được bạn không phải máy. Hãy thử lại.",
+    "captcha-unavailable": "Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.",
+    "confirm-email-mismatch": "Email gõ lại chưa khớp với email của tài khoản.",
+    "last-admin": "Đây là admin cuối cùng nên chưa xóa được.",
+    "password-login-required": "Cần đăng nhập bằng mật khẩu để vào trang quản trị.",
+    "renewal-not-cancelled": "Chưa tắt được gia hạn gói ở nhà cung cấp thanh toán, nên chưa xóa tài khoản. Thử lại sau.",
+    "self-delete": "Admin không tự xóa chính mình.",
     "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
     "invalid-token": "Phiên hoặc liên kết không hợp lệ",
+    "job-not-active": "Lô này đã kết thúc.",
     "level-source-required": "File có cột level, hãy chọn nguồn level",
+    "lock-rule": "Không khóa được chính bạn hoặc một admin.",
     "mail-unavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+    "admin-usd-cap": "Đã tiêu tới trần USD việc admin hôm nay. Chờ sang ngày mới hoặc nâng trần ở Cài đặt.",
+    "judge-pass-running": "Bản judge này đang chấm ở một lượt khác.",
+    "judge-provider": "Judge chỉ dùng model Anthropic.",
+    "judge-revision-conflict": "Judge vừa được người khác sửa.",
+    "model-exists": "Model đã có.",
+    "model-price-missing": "Model chưa nhập giá. Nhập giá ở trang Model rồi chạy lại.",
+    "model-in-use": "Model đang được thao tác dùng, chưa xóa được.",
+    "model-not-found": "Nhà cung cấp không có model này. Kiểm lại tên model.",
+    "model-not-set": "Thao tác này chưa có model. Chọn model ở Cấu hình.",
+    "model-not-supported": "Model này chưa dùng được với Wordmet.",
+    "no-previous": "Chưa có cấu hình nào trước đó để quay về.",
     "not-found": "Không tìm thấy",
+    "nothing-to-judge": "Không có câu nào để chấm theo bộ lọc này.",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
+    "order-already-paid": "Đơn đã có kỳ.",
+    "order-changed": "Đơn vừa thay đổi. Đóng cửa sổ này, xem lại đơn rồi thử lại.",
+    "order-closed": "Đơn đã đóng, không nhận tiền được nữa.",
+    "order-not-pending": "Đơn không còn ở trạng thái chờ, không hủy được.",
+    "order-not-resolvable": "Đơn này không có gì để xử lý.",
+    "period-already-revoked": "Kỳ này đã được thu hồi rồi.",
+    "operation-settings-conflict": "Có người vừa đổi thao tác này. Tải lại để xem bản mới.",
     "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
     "payload-too-large": "Dữ liệu gửi lên quá lớn",
     "profile-incomplete": "Hồ sơ chưa đầy đủ",
+    "prompt-revision-conflict": "Có người vừa lưu prompt này. Tải lại để xem bản mới.",
+    "provider-not-configured": "Nhà cung cấp chưa có key.",
+    "provider-unavailable": "Nhà cung cấp đang không trả lời. Thử lại sau ít phút.",
+    "publish-incomplete": "Còn thiếu nội dung nên chưa publish được. Điền các ô còn thiếu rồi thử lại.",
+    "publish-stale": "Dữ liệu đã đổi. Xem lại trước khi publish.",
+    "publish-warnings": "Có cảnh báo. Đọc cảnh báo rồi chọn publish tiếp.",
     "rate-limited": "Thao tác quá nhanh, hãy đợi một lát",
+    "replacement-exists": "Nghĩa này đã có bản thay thế đang chờ. Hoàn tất bản đó trước.",
+    "replacement-waiting": "Nghĩa này đang là bản thay thế chưa publish nên chưa thay tiếp được. Hãy publish nó trước.",
+    "report-not-open": "Báo lỗi này đã được xử lý.",
+    "report-reason-exists": "Đã có lý do mã này.",
+    "resolve-status-not-allowed": "Không xử lý được báo lỗi này. Tải lại trang.",
+    "retryIn": "Thử lại sau {seconds} giây",
+    "revision-rejected": "Bản này đã bị từ chối nên không publish được. Hãy sửa để tạo bản mới.",
+    "run-active": "Lần chạy đang chạy, hãy dừng trước khi xóa.",
+    "run-is-evidence": "Lần chạy này là bằng chứng của một lần publish nên chưa xóa được.",
+    "run-not-active": "Lần chạy này đã kết thúc.",
     "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
+    "sense-entry-mismatch": "Nghĩa này không thuộc từ đang chọn. Tải lại trang.",
+    "sense-exists": "Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới.",
+    "sense-retired": "Nghĩa này đã retire nên không sửa được.",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-not-eligible": "Câu này không đưa vào bộ ví dụ được.",
+    "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
+    "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
+    "source-version-locked": "Nguồn đã có dữ liệu nhập, không thể đổi phiên bản. Vui lòng tạo nguồn mới.",
     "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
+    "stale-revision": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
+    "too-many-examples": "Chỉ nhận tối đa 3 câu ví dụ. Bỏ bớt rồi lưu lại.",
+    "topic-archived": "Có chủ đề đã ẩn. Bỏ chủ đề đó rồi lưu lại.",
     "topic-exists": "Topic này đã tồn tại",
+    "unknown-topic": "Có mã chủ đề không tồn tại. Hãy chọn lại chủ đề.",
     "unsupported-media-type": "Định dạng dữ liệu không được hỗ trợ",
-    "validation-failed": "Dữ liệu không hợp lệ"
+    "validation-failed": "Dữ liệu không hợp lệ",
+    "version-conflict": "Có người vừa lưu cài đặt khác. Tải lại để xem bản mới.",
+    "word-form-exists": "Dạng này đã có.",
+    "not-a-draft": "Bản này đã đăng nên không sửa hay xóa được.",
+    "legal-busy": "Có người vừa tạo bản nháp. Hãy thử lại."
   },
   "notice": {
-    "expired": "Phiên đăng nhập đã hết hạn"
+    "expired": "Phiên đăng nhập đã hết hạn",
+    "logoutFailed": "Chưa đăng xuất được khỏi máy chủ.",
+    "passwordRequired": "Đăng nhập lại bằng mật khẩu để vào trang quản trị"
   },
   "common": {
     "retry": "Thử lại",
@@ -42,7 +124,10 @@
     "confirm": "Xác nhận",
     "loadMore": "Tải thêm",
     "loading": "Đang tải…",
-    "close": "Đóng"
+    "close": "Đóng",
+    "system": "Hệ thống",
+    "unknownUser": "Người dùng đã xóa",
+    "unsavedChanges": "(có thay đổi chưa lưu)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -58,21 +143,55 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "words": "Từ",
+    "senses": "Nghĩa",
+    "topics": "Chủ đề",
     "uploads": "Lô nhập",
     "publishJobs": "Publish job",
     "export": "Xuất CSV",
     "sources": "Nguồn",
-    "words": "Từ",
-    "senses": "Nghĩa",
-    "topics": "Chủ đề",
-    "reported": "Câu bị báo lỗi",
-    "irregular": "Dạng bất quy tắc",
+    "unknownForms": "Dạng chia chưa biết",
+    "reports": "Báo lỗi",
+    "reportReasons": "Lý do báo lỗi",
+    "refunds": "Trả lượt",
     "users": "Người dùng",
-    "entitlements": "Quyền lợi & lượt AI",
-    "aiSettings": "Cài đặt AI",
-    "aiCosts": "Chi phí & đối soát",
-    "evalSets": "Bộ ví dụ",
+    "entitlements": "Cấp gói và lượt",
+    "orders": "Đơn hàng",
+    "transactions": "Giao dịch",
+    "aiStatus": "Tình trạng",
+    "aiModels": "Model",
+    "aiConfigs": "Cấu hình",
+    "aiEval": "Bộ ví dụ",
+    "aiRealQuestions": "Câu AI thật",
+    "aiJudges": "Judge",
+    "aiCosts": "Chi phí",
+    "aiCalls": "Các lần gọi",
+    "settings": "Cài đặt hệ thống",
+    "legal": "Chính sách & điều khoản",
+    "faq": "Hỏi đáp trang chủ",
     "staff": "Vai trò & staff"
+  },
+  "session": {
+    "unavailable": "Không kết nối được máy chủ. Phiên đăng nhập của bạn vẫn được giữ.",
+    "retry": "Thử lại"
+  },
+  "noAccess": {
+    "title": "Bạn không có quyền xem trang này.",
+    "home": "Về trang chủ"
+  },
+  "leave": {
+    "title": "Rời trang?",
+    "body": "Thay đổi chưa lưu sẽ mất.",
+    "stay": "Ở lại",
+    "leave": "Rời trang",
+    "discardTitle": "Bỏ thay đổi?",
+    "discard": "Bỏ thay đổi",
+    "keepEditing": "Tiếp tục sửa"
+  },
+  "draft": {
+    "message": "Bạn có thay đổi chưa lưu từ lần trước.",
+    "restore": "Khôi phục",
+    "discard": "Bỏ"
   },
   "offline": {
     "message": "Không kết nối được máy chủ"
@@ -81,7 +200,8 @@
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
     "empty": "Chưa có mục nào",
-    "shown": "{count} mục đã hiển thị"
+    "shown": "{count} mục đã hiển thị",
+    "selectAll": "Chọn tất cả trên trang"
   },
   "account": {
     "login": {
@@ -128,6 +248,1561 @@
       "lowercase": "Có chữ thường",
       "digit": "Có chữ số",
       "special": "Có ký tự đặc biệt"
+    }
+  },
+  "ai": {
+    "operations": {
+      "names": {
+        "generate_cloze": "Sinh câu điền từ",
+        "lookup_word": "Tra từ bằng AI",
+        "translate_sentence": "Dịch câu",
+        "generate_meaning_question": "Sinh câu hỏi nghĩa",
+        "generate_sentence_mcq": "Sinh câu chọn đáp án",
+        "check_private_word": "Kiểm từ riêng",
+        "judge": "Judge chấm điểm"
+      },
+      "row": {
+        "model": "Model",
+        "noModel": "Không có model",
+        "effort": "Effort",
+        "effortDefault": "Mặc định",
+        "effortDropped": "Model này không có mức {effort}",
+        "thinking": "Thinking",
+        "thinkingDefault": "Mặc định",
+        "thinkingOff": "Tắt",
+        "thinkingCannotOff": "Model này không tắt được thinking.",
+        "thinkingNeedsEffort": "Tắt thinking cần effort high trở xuống.",
+        "maxTokens": "Số token đầu ra tối đa"
+      }
+    },
+    "reasons": {
+      "ai-disabled": "AI đang tắt",
+      "model-not-set": "Chưa chọn model",
+      "provider-not-configured": "Nhà cung cấp chưa có key",
+      "daily-call-cap": "Chạm trần lời gọi",
+      "admin-usd-cap": "Chạm trần USD việc admin",
+      "provider-quota": "Nhà cung cấp hết hạn mức"
+    },
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "fake": "Fake"
+    },
+    "status": {
+      "today": {
+        "calls": "Lời gọi của người học hôm nay: {calls}/{cap}",
+        "callsNoCap": "Lời gọi của người học hôm nay: {calls}",
+        "adminSpend": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent}, không có trần",
+        "failed": "Lỗi: {count} ({cost})",
+        "cost": "Chi phí hôm nay: {usd} · {vnd}",
+        "providers": "Nhà cung cấp có key: {names}",
+        "noProvider": "Nhà cung cấp có key: chưa có",
+        "system": "AI toàn hệ thống: {state}",
+        "on": "Đang bật",
+        "off": "Đang tắt",
+        "openSettings": "Mở Cài đặt"
+      },
+      "cols": {
+        "operation": "Thao tác",
+        "ready": "Sẵn sàng",
+        "reason": "Lý do / Model",
+        "lastError": "Lỗi gần nhất",
+        "warning": "Cảnh báo model"
+      },
+      "ready": "Sẵn sàng",
+      "notReady": "Chưa sẵn sàng",
+      "chooseModel": "Chọn model",
+      "chooseModelFor": "Chọn model cho {operation}",
+      "noError": "—",
+      "purposes": {
+        "learner": "người học",
+        "test": "chạy thử",
+        "eval": "bộ ví dụ",
+        "judge": "judge"
+      },
+      "shutdown": "Ngừng ngày {date}",
+      "lifecycle": "Vòng đời: {lifecycle}",
+      "errorNote": "Gồm cả lỗi khi chạy thử và chạy bộ ví dụ."
+    },
+    "models": {
+      "add": "Thêm model",
+      "empty": "Chưa có model nào",
+      "emptyHint": "Thêm model đầu tiên để chọn cho các thao tác AI.",
+      "cols": {
+        "model": "Nhà cung cấp · Model id",
+        "price": "Giá đầu vào / đầu vào cache / đầu ra (US$ mỗi 1 triệu token)",
+        "usedBy": "Thao tác đang dùng",
+        "lifecycle": "Vòng đời",
+        "estimate": "Ước tính mỗi lời gọi",
+        "checked": "Kiểm tra thông tin lần cuối",
+        "actions": "Hành động"
+      },
+      "noPrice": "Chưa có giá",
+      "none": "—",
+      "editPrice": "Sửa giá",
+      "editPriceFor": "Sửa giá {model}",
+      "refresh": "Đọc lại thông tin",
+      "refreshFor": "Đọc lại thông tin {model}",
+      "delete": "Xóa",
+      "deleteFor": "Xóa {model}",
+      "estimate": "{usd} · {vnd}",
+      "usedBy": "Thao tác đang dùng: {operations}.",
+      "deleteTitle": "Xóa model {model}?",
+      "deleteBody": "Model bị xóa khỏi danh sách và không hoàn tác được.",
+      "deleteConfirm": "Xóa model",
+      "hide": "Ẩn khỏi ô chọn model",
+      "hiddenBadge": "Đã ẩn",
+      "toast": {
+        "added": "Đã thêm model {model}.",
+        "saved": "Đã lưu thay đổi của {model}.",
+        "refreshed": "Đã đọc lại thông tin của {model}.",
+        "deleted": "Đã xóa model {model}."
+      },
+      "form": {
+        "addTitle": "Thêm model",
+        "editTitle": "Sửa giá {model}",
+        "provider": "Nhà cung cấp",
+        "modelId": "Model id",
+        "modelIdHint": "Đúng tên model như nhà cung cấp ghi.",
+        "priceInput": "Giá đầu vào (US$ mỗi 1 triệu token)",
+        "priceCached": "Giá đầu vào cache (US$ mỗi 1 triệu token)",
+        "priceOutput": "Giá đầu ra (US$ mỗi 1 triệu token)",
+        "priceHint": "Từ 0 đến 1000, tối đa 4 số lẻ. Để trống nếu chưa biết.",
+        "fakePrice": "Model Fake luôn có giá 0.",
+        "note": "Ghi chú",
+        "submitAdd": "Thêm",
+        "submitSave": "Lưu",
+        "noProvider": "Chưa có nhà cung cấp nào có key, nên chưa thêm được model.",
+        "modelIdRequired": "Nhập model id.",
+        "modelIdInvalid": "Chỉ dùng chữ, số và các ký tự . _ : - (tối đa 100 ký tự).",
+        "priceInvalid": "Nhập số từ 0 đến 1.000, tối đa 4 số lẻ."
+      }
+    },
+    "prompts": {
+      "instructions": "Lời dặn",
+      "instructionsHint": "Tối đa 8.000 ký tự.",
+      "inputFields": "Dữ liệu prompt nhận: {fields}",
+      "examples": "Ví dụ ({count}/10)",
+      "examplesHint": "Tối đa 10 ví dụ, mỗi ví dụ một cặp vào/ra.",
+      "example": "Ví dụ {n}",
+      "output": "Đầu ra (JSON)",
+      "fieldHint": "Để trống là null. Danh sách viết dạng JSON, bắt đầu bằng dấu [.",
+      "addExample": "Thêm ví dụ",
+      "remove": "Xóa",
+      "removeExample": "Xóa ví dụ {n}",
+      "guard": "Câu chặn cố định (không sửa được)",
+      "hideNewer": "Ẩn bản mới",
+      "copyToEditor": "Chép vào ô sửa",
+      "errors": {
+        "tooLong": "Lời dặn dài quá 8.000 ký tự. Rút gọn rồi lưu lại.",
+        "blank": "Nhập lời dặn.",
+        "outputJson": "Đầu ra phải là một object JSON. Sửa lại rồi thử lại."
+      },
+      "test": {
+        "title": "Chạy thử",
+        "run": "Chạy thử",
+        "quota": "Còn {remaining}/{limit} lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)",
+        "pick": "Ví dụ từ Bộ ví dụ (chọn tối đa 5)",
+        "pickEmpty": "Bộ ví dụ của thao tác này chưa có ví dụ nào.",
+        "quotaFailed": "Không đọc được số lần chạy thử còn lại.",
+        "examplesFailed": "Không đọc được bộ ví dụ. [Chạy thử] vẫn chạy với 5 ví dụ đầu của Bộ ví dụ, hoặc ví dụ trong prompt khi bộ trống.",
+        "withSelected": "Chạy với: {count} ví dụ đã chọn",
+        "withFirst": "Chạy với: {count} ví dụ đầu của Bộ ví dụ",
+        "withPrompt": "Chạy với: ví dụ trong prompt",
+        "note": "Chạy bản đang sửa, chưa cần lưu. Mỗi lần chạy gọi AI thật và tốn một lượt.",
+        "needExample": "Cần ít nhất một ví dụ để chạy thử.",
+        "rateLimited": "Đã dùng hết {limit} lần chạy thử trong giờ này. Thử lại lúc {time}.",
+        "openConfigs": "Mở Cấu hình",
+        "results": "Kết quả chạy thử",
+        "sample": "Mẫu {n}",
+        "input": "Đầu vào",
+        "status": "Trạng thái",
+        "reason": "Lý do",
+        "outputLabel": "Đầu ra",
+        "none": "—",
+        "statuses": {
+          "succeeded": "Thành công",
+          "transient_failure": "Lỗi tạm thời",
+          "permanent_failure": "Lỗi",
+          "unavailable": "Không chạy được"
+        }
+      },
+      "history": {
+        "title": "Lịch sử",
+        "revision": "Bản {revision}",
+        "savedBy": "{at} · {by}",
+        "viewFor": "Xem bản {revision}",
+        "view": "Xem",
+        "viewTitle": "Bản số {revision}",
+        "note": "Muốn quay về bản cũ: mở bản đó rồi lưu lại.",
+        "empty": "Chưa có bản nào."
+      }
+    },
+    "configs": {
+      "operation": "Thao tác",
+      "live": {
+        "title": "Bản đang chạy · cấu hình {number}",
+        "noModel": "Chưa chọn model: thao tác này đang tắt.",
+        "publishedBy": "Publish {at} · {by}",
+        "content": "Lời dặn và ví dụ của bản đang chạy"
+      },
+      "draft": {
+        "create": "Tạo nháp",
+        "title": "Nháp · cấu hình {number} · lần sửa {version}",
+        "save": "Lưu nháp",
+        "saved": "Đã lưu nháp, lần sửa {version}.",
+        "conflict": "Nháp vừa được người khác sửa.",
+        "reload": "Tải bản mới",
+        "newerTitle": "Nháp mới nhất: lần sửa {version}",
+        "delete": "Xóa nháp",
+        "deleteConfirm": "Xóa nháp cấu hình {number}?",
+        "deleteBody": "Nháp bị xóa và không hoàn tác được. Bản đang chạy không đổi.",
+        "deleted": "Đã xóa nháp.",
+        "busy": "Nháp đang có lần chạy. Hủy lần chạy rồi xóa.",
+        "fewShotInvalid": "Ví dụ mẫu {n} không qua luật: {problems}",
+        "saveFirst": "Lưu nháp trước khi chạy thử hoặc chạy bộ ví dụ.",
+        "note": "Ghi chú",
+        "runSet": "Chạy bộ ví dụ với nháp",
+        "runSetNote": "Chạy cả bộ ví dụ (phiên bản {version}) với nháp đã lưu. Kết quả mở ở màn Bộ ví dụ.",
+        "testNote": "Chạy nháp đã lưu. Mỗi lần chạy gọi AI thật và tốn một lượt.",
+        "noModelToTest": "Nháp chưa có model. Chọn model và lưu nháp trước khi chạy thử."
+      },
+      "publish": {
+        "title": "Publish nháp",
+        "set": "Phiên bản bộ ví dụ {version}",
+        "noSet": "Chưa có phiên bản chốt. Chốt một phiên bản ở trang Bộ ví dụ.",
+        "evalRequired": "Nháp chưa có lần chạy trọn trên phiên bản {version}.",
+        "baselineRequired": "Bản đang chạy chưa có lần chạy trọn trên phiên bản {version}.",
+        "runLive": "Chạy bản đang chạy trên phiên bản {version}",
+        "rateDrop": "Tỉ lệ đạt {criterion} giảm từ {before}% xuống {after}%.",
+        "judgeRateDrop": "Tỉ lệ đạt judge {name} bản {revision} ({criterion}) giảm từ {before}% xuống {after}%.",
+        "criteria": {
+          "shape": "khuôn",
+          "rule": "luật",
+          "expected": "mong đợi"
+        },
+        "devRegressed": "{count} ví dụ dev trước đạt, nay trượt.",
+        "heldOutUp": "Số ví dụ held-out trượt tăng từ {before} lên {after}.",
+        "acknowledge": "Tôi đã đọc cảnh báo và vẫn publish",
+        "submit": "Publish",
+        "done": "Đã publish cấu hình {number}. Áp từ lần gọi sau.",
+        "stale": "Dữ liệu đã đổi. Xem lại trước khi publish.",
+        "saveFirst": "Lưu nháp trước khi publish.",
+        "noBaseline": "Bản đang chạy chưa có model: publish này không so với bản nào.",
+        "turnOffNote": "Nháp không có model: publish sẽ tắt AI của thao tác này, không cần lần chạy.",
+        "turnOffDialog": "Tắt AI của thao tác này? Người học sẽ nhận câu không AI.",
+        "turnOffConfirm": "Tắt AI",
+        "turnedOff": "Đã tắt AI của thao tác này (cấu hình {number}). Quay về bản trước để bật lại."
+      },
+      "rollback": {
+        "button": "Quay về cấu hình {number}",
+        "confirm": "Quay về cấu hình {number}? Người học dùng cấu hình {number} từ lần gọi sau; nháp đang có giữ nguyên.",
+        "go": "Quay về",
+        "done": "Đã quay về cấu hình {number}."
+      },
+      "history": {
+        "title": "Lịch sử publish",
+        "publish": "Publish cấu hình {number} (thay cấu hình {from})",
+        "rollback": "Quay về cấu hình {number}",
+        "turnOff": "Tắt AI: cấu hình {number} (thay cấu hình {from})",
+        "fromHere": "Tạo nháp từ bản này",
+        "empty": "Chưa có lần publish nào."
+      },
+      "oldPrompts": "Lịch sử prompt trước khi có cấu hình",
+      "oldPromptsNote": "Các bản prompt đã lưu trước khi có cấu hình. Có nháp thì chép được vào nháp."
+    },
+    "eval": {
+      "operation": "Thao tác",
+      "examples": "Ví dụ ({count}/1.000)",
+      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ held-out; ví dụ held-out bị ẩn cho tới khi bạn mở. Chạy thử ở Cấu hình chỉ dùng ví dụ dev.",
+      "counts": "{dev} dev · {heldOut} held-out",
+      "heldOutHidden": "Ví dụ held-out: nội dung được ẩn",
+      "list": {
+        "sort": "Sắp xếp",
+        "sorts": {
+          "oldest": "Cũ nhất trước",
+          "newest": "Mới nhất trước",
+          "az": "Từ A → Z",
+          "za": "Từ Z → A",
+          "devFirst": "Dev trước",
+          "heldOutFirst": "Held-out trước"
+        },
+        "pages": "Phân trang bộ ví dụ",
+        "page": "Trang {page}/{pages}",
+        "previous": "Trang trước",
+        "next": "Trang sau",
+        "search": "Tìm ví dụ dev",
+        "searchPlaceholder": "Từ hoặc nghĩa…",
+        "splitFilter": "Phần",
+        "allSplits": "Dev & held-out",
+        "level": "Trình độ dev",
+        "allLevels": "Tất cả trình độ",
+        "filterHint": "Bộ lọc từ và trình độ chỉ tìm trong dev. Nội dung held-out luôn được ẩn.",
+        "filteredCount": "{count} kết quả đang lọc",
+        "levelColumn": "Trình độ",
+        "range": "Hiển thị {from}–{to} / {total}"
+      },
+      "split": {
+        "dev": "dev",
+        "heldOut": "held-out"
+      },
+      "reveal": {
+        "button": "Mở ví dụ held-out",
+        "title": "Mở ví dụ held-out?",
+        "body": "Sau khi mở, ví dụ này chuyển sang dev và không còn là đề thi. Các phiên bản đã chốt vẫn giữ nó ở phần held-out và ghi là đã bị xem.",
+        "confirm": "Mở ví dụ"
+      },
+      "freeze": {
+        "button": "Chốt phiên bản",
+        "title": "Chốt phiên bản {version}?",
+        "body": "Bộ đang soạn ({dev} dev, {heldOut} held-out) được chụp lại thành phiên bản {version}. Sửa ví dụ sau đó không đổi phiên bản này.",
+        "confirm": "Chốt phiên bản",
+        "incomplete": "Chưa chốt được phiên bản.",
+        "missingExpected": "{count} ví dụ chưa có ô mong đợi.",
+        "noHeldOut": "Bộ chưa có ví dụ held-out nào.",
+        "rowMissing": "Chưa có ô mong đợi"
+      },
+      "set": {
+        "label": "Bộ chạy",
+        "version": "Phiên bản {version}",
+        "working": "Bộ đang soạn (chỉ để thử nhanh, không so được)",
+        "workingShort": "Bộ đang soạn",
+        "legacy": "Trước khi có phiên bản"
+      },
+      "sets": {
+        "title": "Phiên bản đã chốt",
+        "empty": "Chưa có phiên bản nào.",
+        "version": "Phiên bản {version}",
+        "revealed": "{count} ví dụ held-out đã bị xem",
+        "deleted": "Đã xóa khỏi bộ đang soạn",
+        "seen": "Đã bị xem",
+        "cols": {
+          "version": "Phiên bản",
+          "frozenAt": "Chốt lúc",
+          "counts": "Số ví dụ",
+          "seen": "Held-out đã bị xem"
+        }
+      },
+      "add": "Thêm ví dụ",
+      "bulk": {
+        "add": "Nhập hàng loạt",
+        "title": "Nhập nhiều ví dụ",
+        "hint": "Mỗi dòng là một ví dụ, tối đa {max} dòng mỗi lần. Dòng đầu là tên cột: {fields}; cột expected (JSON, ví dụ {example}), bắt buộc với thao tác có ô mong đợi; cột split (dev hoặc held_out) và cột note không bắt buộc. Dán từ bảng tính cũng được. Dòng nào sai thì bị bỏ qua, các dòng đúng vẫn được nhập.",
+        "filePrompt": "Kéo file vào đây",
+        "fileHint": "CSV, TSV hoặc JSON Lines, tối đa 2 MB",
+        "choose": "Chọn file",
+        "change": "Chọn file khác",
+        "fileTooLarge": "File lớn hơn 2 MB.",
+        "fileLoaded": "Nội dung đã được đưa vào ô bên dưới.",
+        "paste": "Hoặc dán nội dung",
+        "readable": "Đọc được {count} dòng",
+        "unreadable": "{count} dòng không đọc được",
+        "submit": "Nhập {count} ví dụ",
+        "added": "Đã thêm {count} ví dụ.",
+        "skipped": "{count} dòng bị bỏ qua. Sửa rồi nhập lại các dòng này:",
+        "line": "Dòng {line}",
+        "noRoom": "Bộ ví dụ chỉ còn chỗ cho {room} ví dụ, bạn đang nhập {sent}.",
+        "problems": {
+          "empty": "Chưa có dòng nào để nhập.",
+          "columns": "Tên cột không đúng: {names}. Các cột hợp lệ: {fields}.",
+          "tooMany": "Có {count} dòng, mỗi lần nhập tối đa {max}."
+        },
+        "reasons": {
+          "bad-json": "không phải JSON hợp lệ",
+          "not-object": "không phải một đối tượng JSON",
+          "columns": "nhiều ô hơn số cột"
+        }
+      },
+      "empty": "Thao tác này chưa có ví dụ nào.",
+      "emptyHint": "Thêm ví dụ để chạy thử prompt và chạy bộ ví dụ.",
+      "examplesFailed": "Không đọc được bộ ví dụ.",
+      "cols": {
+        "input": "Đầu vào",
+        "split": "Phần",
+        "note": "Ghi chú",
+        "createdBy": "Người thêm",
+        "actions": "Hành động"
+      },
+      "edit": "Sửa",
+      "editFor": "Sửa ví dụ {summary}",
+      "delete": "Xóa",
+      "deleteFor": "Xóa ví dụ {summary}",
+      "deleteTitle": "Xóa ví dụ này?",
+      "deleteBody": "Lần chạy đã có vẫn giữ kết quả. Lần chạy sau không còn ví dụ này.",
+      "deleteConfirm": "Xóa ví dụ",
+      "toast": {
+        "added": "Đã thêm ví dụ.",
+        "addedHeldOut": "Đã thêm ví dụ. Ví dụ này vào phần held-out nên được ẩn.",
+        "revealed": "Đã mở ví dụ. Ví dụ đã chuyển sang dev.",
+        "revealedDeleted": "Đã mở ví dụ. Ví dụ đã bị xóa khỏi bộ đang soạn nên chỉ còn trong các phiên bản đã chốt.",
+        "frozen": "Đã chốt phiên bản {version}.",
+        "saved": "Đã lưu ví dụ.",
+        "deleted": "Đã xóa ví dụ.",
+        "stopped": "Đã dừng lần chạy.",
+        "runDeleted": "Đã xóa lần chạy."
+      },
+      "stop": {
+        "button": "Dừng lần chạy",
+        "title": "Dừng lần chạy này?",
+        "body": "Các ví dụ chưa chạy sẽ không gọi AI nữa. Lời gọi đã gửi vẫn bị tính phí, và lần chạy đã dừng không chạy tiếp được. Kết quả các ví dụ đã chạy vẫn được giữ.",
+        "confirm": "Dừng lần chạy",
+        "keep": "Để chạy tiếp"
+      },
+      "removeRun": {
+        "button": "Xóa lần chạy",
+        "title": "Xóa lần chạy này?",
+        "body": "Kết quả từng ví dụ của lần chạy này sẽ mất. Chi phí đã tính vẫn nằm trong báo cáo Chi phí.",
+        "confirm": "Xóa lần chạy"
+      },
+      "form": {
+        "addTitle": "Thêm ví dụ",
+        "editTitle": "Sửa ví dụ",
+        "fieldsHint": "Dữ liệu prompt nhận: {fields}. Để trống là null. Danh sách viết dạng JSON, bắt đầu bằng dấu [.",
+        "note": "Ghi chú",
+        "noteHint": "Không bắt buộc, tối đa 500 ký tự.",
+        "submitAdd": "Thêm ví dụ",
+        "submitSave": "Lưu",
+        "tooMany": "Mỗi thao tác tối đa 1.000 ví dụ.",
+        "expected": {
+          "title": "Ô mong đợi",
+          "forms": {
+            "label": "Các dạng được nhận",
+            "hint": "Cách nhau bằng dấu phẩy. Bỏ dạng bạn không muốn câu dùng.",
+            "filled": "Đã điền {count} dạng từ kho.",
+            "notFound": "Không thấy từ này trong kho. Gõ các dạng được nhận, cách nhau bằng dấu phẩy."
+          },
+          "lemma": "Lemma",
+          "partOfSpeech": "Từ loại",
+          "verdict": "Kết luận",
+          "verdictPlaceholder": "Chọn kết luận"
+        }
+      },
+      "run": {
+        "title": "Chạy bộ ví dụ",
+        "start": "Chạy bộ ví dụ",
+        "judge": "Chấm bằng judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (chưa chọn model)",
+        "note": "Chạy cả bộ với prompt hiện tại. Mỗi lần chạy gọi AI thật cho từng ví dụ và tốn một lượt.",
+        "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Cấu hình)",
+        "quotaFailed": "Không đọc được số lần chạy còn lại.",
+        "needExample": "Bộ ví dụ của thao tác này chưa có ví dụ nào. Thêm ví dụ rồi chạy lại.",
+        "rateLimited": "Đã dùng hết {limit} lần chạy trong giờ này. Thử lại lúc {time}.",
+        "wait": "Chờ {seconds} giây"
+      },
+      "runs": {
+        "title": "Lần chạy",
+        "empty": "Chưa có lần chạy nào.",
+        "emptyHint": "Bấm [Chạy bộ ví dụ] để chạy cả bộ.",
+        "cols": {
+          "time": "Thời điểm",
+          "status": "Trạng thái",
+          "progress": "Tiến độ",
+          "valid": "Hợp lệ",
+          "set": "Bộ",
+          "prompt": "Bản prompt",
+          "startedBy": "Người chạy"
+        }
+      },
+      "status": {
+        "queued": "Đang chờ",
+        "running": "Đang chạy",
+        "finished": "Xong",
+        "failed": "Lỗi",
+        "cancelled": "Đã dừng"
+      },
+      "detail": {
+        "title": "Lần chạy {time}",
+        "progress": "Tiến độ",
+        "valid": "Hợp lệ",
+        "avgLatency": "Thời gian trung bình",
+        "cost": "Chi phí",
+        "model": "Model",
+        "prompt": "Bản prompt",
+        "startedBy": "Người chạy",
+        "set": "Bộ",
+        "draft": "Bản nháp",
+        "config": "Cấu hình {number}",
+        "configGone": "Cấu hình đã xóa",
+        "configChanged": "Nháp đã được lưu lại sau khi lần chạy này được tạo, nên lần chạy bị hủy. Chạy lại với nháp mới.",
+        "revision": "Bản số {revision}",
+        "latency": "{ms} ms",
+        "costVnd": "{usd} · {vnd} theo tỷ giá hôm nay",
+        "unknownCost": "{count} lời gọi chưa có giá",
+        "none": "—",
+        "queued": "Đang chờ worker nhận lần chạy. Trang tự cập nhật.",
+        "queuedLong": "Chưa có worker nhận lần chạy này.",
+        "running": "Đang chạy: {done}/{total} ví dụ. Trang tự cập nhật.",
+        "failed": "Lỗi: {error}",
+        "failedNoReason": "Lần chạy bị lỗi.",
+        "cancelled": "Lần chạy đã dừng. Kết quả các ví dụ đã chạy vẫn được giữ.",
+        "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ.",
+        "results": "Kết quả từng ví dụ",
+        "deletedExample": "Ví dụ đã xóa",
+        "rawOutput": "Xem đầu ra gốc",
+        "notFound": "Không tìm thấy lần chạy này. Có thể mã lần chạy sai.",
+        "skipped": "Bỏ qua (ví dụ đã xóa)",
+        "cols": {
+          "example": "Ví dụ",
+          "status": "Trạng thái",
+          "reason": "Lý do",
+          "output": "Đầu ra",
+          "rule": "Luật",
+          "expected": "Mong đợi",
+          "latency": "Thời gian",
+          "cost": "Chi phí"
+        },
+        "rule": {
+          "pass": "Đạt",
+          "fail": "Không đạt: {problems}",
+          "skippedNotInCatalog": "Bỏ qua: không có trong kho",
+          "skippedNoRules": "Bỏ qua: chưa có luật",
+          "skipped": "Bỏ qua",
+          "notApplicable": "Không áp dụng"
+        },
+        "expectedResult": {
+          "pass": "Đạt",
+          "fail": "Không đạt"
+        },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} bản {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Đang chờ",
+            "running": "Đang chấm",
+            "finished": "Đã xong",
+            "failed": "Dừng"
+          },
+          "errors": {
+            "admin-usd-cap": "Dừng vì đã tiêu tới trần USD việc admin hôm nay.",
+            "stalled": "Dừng vì worker không phản hồi.",
+            "run-failed": "Không chấm vì lần chạy không xong.",
+            "model-price-missing": "Model của judge chưa có giá."
+          },
+          "start": "Chấm bằng judge",
+          "select": "Judge",
+          "sameProvider": "Model viết câu và judge cùng là Anthropic: judge có thể dễ dãi với văn phong cùng họ.",
+          "stats": "Judge {name} bản {revision} · {criterion}: dev đạt {pass}/{scored} (nặng {major}, nhẹ {minor}) · held-out đạt {hpass}/{hscored} · {unjudged} không chấm được",
+          "calibrated": "Đã hiệu chỉnh",
+          "uncalibrated": "Chưa hiệu chỉnh",
+          "verdicts": {
+            "pass": "Đạt",
+            "fail_major": "Không đạt nặng",
+            "fail_minor": "Không đạt nhẹ",
+            "unjudged": "Không chấm được"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} bản {revision}",
+          "labelNone": "Chưa gắn",
+          "labelFor": "Nhãn · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Nhãn"
+          },
+          "labelQueue": "Gắn nhãn lần lượt"
+        },
+        "stats": {
+          "dev": "Dev: khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
+          "heldOut": "Held-out (chỉ số tổng): khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
+          "transient": "{count} ví dụ lỗi tạm thời, tính là không đạt khuôn.",
+          "heldOutHidden": "Ví dụ held-out không được liệt kê."
+        }
+      },
+      "compare": {
+        "title": "So sánh",
+        "select": "So với lần chạy (trước)",
+        "choose": "Chọn lần chạy",
+        "option": "{time} · {model}",
+        "workingSet": "Lần chạy trên bộ đang soạn không so được.",
+        "noOther": "Chưa có lần chạy nào khác trên phiên bản này để so.",
+        "cols": {
+          "criterion": "Tiêu chí",
+          "devBefore": "Dev (trước)",
+          "devNow": "Dev (nay)",
+          "heldOutBefore": "Held-out (trước)",
+          "heldOutNow": "Held-out (nay)"
+        },
+        "rows": {
+          "shape": "Khuôn",
+          "rule": "Luật",
+          "expected": "Mong đợi"
+        },
+        "devRegressions": "Ví dụ dev trước đạt, nay trượt ({count})",
+        "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
+        "judgeRow": "Judge {name} bản {revision} · {criterion}",
+        "judgeUnmatched": "{name}: chỉ một lần chạy có điểm của bản {revision}.",
+        "judgeBoth": "Chấm cả hai bằng {name}",
+        "judgeRunning": "Đang chấm. So sánh sẽ tự cập nhật khi xong.",
+        "judgeStopped": "Lượt chấm đã dừng: {error}",
+        "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
+        "criteria": {
+          "shape": "khuôn",
+          "rule": "luật",
+          "expected": "mong đợi"
+        }
+      },
+      "bulkDelete": {
+        "selected": "Đã chọn {count} ví dụ",
+        "clear": "Bỏ chọn",
+        "selectFiltered": "Chọn toàn bộ",
+        "selectRow": "Chọn ví dụ {summary}",
+        "selectHeldOut": "Chọn ví dụ held-out {id}",
+        "button": "Xóa đã chọn ({count})",
+        "title": "Xóa {count} ví dụ đã chọn?",
+        "counts": "{dev} dev · {heldOut} held-out",
+        "body": "Xóa khỏi bộ đang soạn. Các phiên bản đã chốt và kết quả eval cũ vẫn được giữ. Không thể hoàn tác.",
+        "confirm": "Xóa {count} ví dụ",
+        "done": "Đã xóa {deleted} ví dụ; {missing} ví dụ đã không còn tồn tại.",
+        "retry": "Thử lại xóa {count} ví dụ",
+        "retryHint": "Chưa xác nhận được kết quả. Thử lại cùng yêu cầu để nhận kết quả đã lưu."
+      },
+      "tabs": {
+        "label": "Trang bộ ví dụ",
+        "list": "Danh sách ví dụ",
+        "sets": "Phiên bản đã chốt",
+        "runs": "Lần chạy"
+      },
+      "stats": {
+        "label": "Số ví dụ dev và held-out",
+        "dev": "{count} dev",
+        "heldOut": "{count} held-out"
+      }
+    },
+    "judges": {
+      "add": "Thêm judge",
+      "empty": "Chưa có judge nào",
+      "emptyHint": "Thêm judge đầu tiên để chấm đầu ra của AI.",
+      "cols": {
+        "judge": "Judge",
+        "operations": "Thao tác được chấm",
+        "model": "Model",
+        "state": "Trạng thái",
+        "actions": "Hành động"
+      },
+      "name": "{name} · bản {revision}",
+      "noModel": "Chưa chọn model",
+      "active": "Đang dùng",
+      "inactive": "Đã tắt",
+      "edit": "Sửa",
+      "editFor": "Sửa {name}",
+      "clone": "Nhân bản judge",
+      "cloneFor": "Nhân bản judge {name}",
+      "agreement": "Độ khớp",
+      "agreementFor": "Độ khớp của {name}",
+      "editor": {
+        "title": "Judge {name}",
+        "titleNew": "Thêm judge",
+        "name": "Tên",
+        "operations": "Thao tác được chấm",
+        "criteria": "Tiêu chí",
+        "criterion": "Tiêu chí {n}",
+        "code": "Mã",
+        "question": "Câu hỏi",
+        "addCriterion": "Thêm tiêu chí",
+        "removeCriterion": "Xóa tiêu chí {n}",
+        "instructions": "Hướng dẫn",
+        "examples": "Ví dụ mẫu",
+        "model": "Model",
+        "modelHint": "Judge chỉ dùng model Anthropic và không được biết model nào viết câu.",
+        "active": "Đang dùng",
+        "save": "Lưu bản mới",
+        "create": "Tạo judge",
+        "saved": "Đã lưu bản {revision}.",
+        "savedSame": "Đã lưu (không đổi bản).",
+        "created": "Đã tạo judge {name}.",
+        "reload": "Tải bản mới",
+        "reloadNote": "Tải bản mới thay các ô bằng bản đó; chỗ bạn đang sửa sẽ mất.",
+        "close": "Đóng",
+        "history": "Các bản",
+        "revision": "Bản {revision} · {date} · {email} · {model}",
+        "historyFailed": "Chưa tải được các bản."
+      },
+      "cloneDialog": {
+        "title": "Nhân bản judge",
+        "name": "Tên",
+        "defaultName": "{name} (bản sao)",
+        "confirm": "Nhân bản",
+        "done": "Đã tạo judge {name}."
+      },
+      "label": {
+        "title": "Gắn nhãn · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Đầu vào",
+        "output": "Đầu ra",
+        "criterion": "Tiêu chí",
+        "pass": "Đạt (1)",
+        "major": "Không đạt nặng (2)",
+        "minor": "Không đạt nhẹ (3)",
+        "skip": "Bỏ qua",
+        "previous": "Trước",
+        "hint": "Phím 1, 2, 3 để gắn nhãn. Nhãn dùng chung cho mọi bản judge. Ví dụ held-out không có ở đây.",
+        "labelled": "Đã gắn: {verdict}",
+        "end": "Đã đi hết {total} đầu ra.",
+        "backToRun": "Quay lại lần chạy",
+        "backToPass": "Quay lại lượt chấm",
+        "empty": "Lần chạy không có đầu ra dev nào để gắn nhãn.",
+        "emptyPass": "Lượt chấm không có câu nào để gắn nhãn.",
+        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ hoặc một lượt chấm ở Câu AI thật, bằng liên kết “Gắn nhãn lần lượt”."
+      },
+      "agreementPanel": {
+        "title": "Độ khớp với nhãn · {name}",
+        "row": "Bản {revision} · {criterion}: {labeled} nhãn · khớp đạt/không đạt {rate} · khớp cả mức {exact}",
+        "calibrated": "Đã hiệu chỉnh",
+        "uncalibrated": "Chưa hiệu chỉnh",
+        "need": "Cần ít nhất {min} nhãn và khớp từ {ratio}.",
+        "noRate": "—",
+        "close": "Đóng"
+      }
+    },
+    "real": {
+      "note": "Judge chấm các câu AI mà người học đã gặp gần đây, trong thời gian hệ thống còn giữ nội dung lời gọi AI. Câu có từ riêng của người học không bao giờ được chấm.",
+      "noJudge": "Chưa có judge nào đang bật cho các thao tác này. Thêm hoặc bật một judge ở trang Judge.",
+      "noJudgeLink": "Mở trang Judge",
+      "pick": "Chọn câu để chấm",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "pair": "Cấu hình · model",
+        "testOnly": "Chỉ tài khoản test (admin, editor)"
+      },
+      "pairAll": "Tất cả",
+      "pairOption": "Cấu hình {number} · {model} ({count} câu)",
+      "pairOptionNoConfig": "Trước khi có cấu hình · {model} ({count} câu)",
+      "estimate": {
+        "selected": "Sẽ chấm {selected} câu (tối đa {limit}), mới nhất trước.",
+        "remaining": "Còn {remaining} câu chưa chấm sau lượt này.",
+        "skippedPrivate": "Bỏ qua {count} câu có từ riêng của người học.",
+        "skippedNoContent": "Bỏ qua {count} câu đã hết hạn giữ nội dung.",
+        "skippedJudged": "Bỏ qua {count} câu bản judge này đã chấm.",
+        "cost": "Chi phí ước tính: {usd} USD",
+        "costUnknown": "Chi phí ước tính: chưa ước tính được (bản judge này chưa chấm lần nào).",
+        "cap": "Trần chi phí việc admin mỗi ngày: {cap} USD.",
+        "retentionOff": "Không có câu nào để chấm: hệ thống đang không giữ nội dung lời gọi AI (số ngày giữ nội dung = 0).",
+        "noStaff": "Chưa có tài khoản admin hay editor nào.",
+        "empty": "Không có câu nào khớp bộ lọc."
+      },
+      "start": "Chấm {count} câu",
+      "passes": {
+        "title": "Các lượt chấm",
+        "empty": "Chưa có lượt chấm nào.",
+        "emptyHint": "Chọn câu ở trên rồi bấm [Chấm … câu].",
+        "pass": "{time} · {judge} bản {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} bản {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Lượt chấm",
+          "status": "Trạng thái"
+        }
+      },
+      "results": {
+        "title": "Lượt chấm · {time}",
+        "titleUnknown": "Lượt chấm",
+        "notFound": "Không tìm thấy lượt chấm này.",
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "filters": "Bộ lọc",
+        "startedBy": "Người chạy",
+        "cost": "Chi phí",
+        "judgeLine": "{name} bản {revision} · {model}",
+        "judgeNoModel": "{name} bản {revision}",
+        "allPairs": "Mọi cấu hình",
+        "pair": "Cấu hình {number} · {model}",
+        "testOnly": "Chỉ tài khoản test",
+        "queued": "Đang chờ worker nhận lượt chấm.",
+        "running": "Đang chấm {judged}/{total} câu.",
+        "failedNoReason": "Lượt chấm dừng, không có lý do.",
+        "section": "Kết quả",
+        "empty": "Lượt chấm không có câu nào.",
+        "cols": {
+          "question": "Câu",
+          "pair": "Cấu hình · model",
+          "score": "Điểm",
+          "reason": "Lý do",
+          "label": "Nhãn",
+          "actions": "Hành động"
+        },
+        "pending": "Chưa chấm",
+        "deleted": "Câu đã bị xóa, chỉ còn ảnh chụp lúc chấm.",
+        "none": "—"
+      },
+      "add": {
+        "button": "Đưa vào bộ ví dụ",
+        "buttonFor": "Đưa vào bộ ví dụ · {question}",
+        "title": "Đưa vào bộ ví dụ",
+        "body": "Ví dụ mới vào bộ đang soạn của {operation}, phần dev.",
+        "word": "{word} · {pos}",
+        "rebuilt": "Nội dung gốc đã quá 7 ngày nên không còn. Đầu vào sẽ được dựng lại từ nội dung hiện tại của nghĩa trong kho: phương án nhiễu và nghĩa khác được chọn mới, nghĩa có thể đã sửa so với lúc tạo câu.",
+        "confirm": "Thêm vào bộ ví dụ",
+        "added": "Đã thêm vào bộ ví dụ (dev).",
+        "openEval": "Mở Bộ ví dụ",
+        "notEligible": {
+          "private-word": "Câu có từ riêng của người học nên không đưa vào bộ ví dụ.",
+          "sense-gone": "Nghĩa của câu này không còn trong kho nên không dựng lại được đầu vào.",
+          "no-input": "Kho không đủ nghĩa hoặc từ để dựng lại phương án nhiễu.",
+          "report-not-confirmed": "Chỉ báo lỗi đã xác nhận mới đưa vào bộ ví dụ được.",
+          "not-ai": "Chỉ câu do AI tạo mới đưa vào bộ ví dụ được."
+        }
+      }
+    },
+    "costs": {
+      "note": "Chi phí là ước tính từ số token và giá đã nhập.",
+      "filters": {
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "groupBy": "Nhóm theo",
+        "apply": "Xem"
+      },
+      "groups": {
+        "day": "Ngày",
+        "operation": "Thao tác",
+        "model": "Model",
+        "purpose": "Mục đích",
+        "outcome": "Kết quả"
+      },
+      "cols": {
+        "group": "Nhóm",
+        "calls": "Lời gọi",
+        "input": "Token đầu vào",
+        "cached": "Token cache",
+        "output": "Token đầu ra",
+        "reasoning": "Token suy luận",
+        "usd": "Chi phí US$",
+        "vnd": "Chi phí ₫",
+        "unknown": "Lời gọi chưa có giá"
+      },
+      "total": "Tổng",
+      "empty": "Không có lời gọi nào trong khoảng ngày này.",
+      "errors": {
+        "required": "Chọn ngày.",
+        "fromAfterTo": "Từ ngày phải trước hoặc bằng Đến ngày.",
+        "tooLong": "Khoảng ngày tối đa 366 ngày."
+      },
+      "batches": {
+        "tabsLabel": "Cách xem chi phí",
+        "tab": "Theo lần chạy",
+        "aggregate": "Tổng hợp hiện có",
+        "note": "Mỗi dòng là một lần chạy của admin. Token và chi phí gồm tất cả lời gọi, kể cả retry. Usage người học nằm trong báo cáo tổng hợp.",
+        "partial": "Tạm tính · batch chưa kết thúc",
+        "unknown": "Chưa đủ giá",
+        "knownSubtotal": "Phần đã biết giá: {cost} · {count} calls chưa có giá.",
+        "all": "Tất cả",
+        "operation": "Thao tác",
+        "kind": "Loại batch",
+        "status": "Trạng thái",
+        "empty": "Chưa có batch trong khoảng này.",
+        "open": "Chi tiết batch {id}",
+        "title": "Chi tiết batch",
+        "kinds": {
+          "test": "Chạy thử",
+          "eval": "Eval",
+          "judge": "Judge"
+        },
+        "statuses": {
+          "queued": "Đang chờ",
+          "running": "Đang chạy",
+          "finished": "Xong",
+          "failed": "Thất bại",
+          "cancelled": "Đã dừng"
+        },
+        "cols": {
+          "batch": "Batch / lần chạy",
+          "model": "Model & cấu hình",
+          "progress": "Tiến độ",
+          "tokens": "Token input / output",
+          "cost": "Chi phí USD"
+        },
+        "progress": "{done}/{total} ví dụ",
+        "calls": "{calls} calls · {retries} retry, đã gồm trong tổng",
+        "extraTokens": "Cached: {cached} · Reasoning: {reasoning}",
+        "fingerprint": "Fingerprint",
+        "saved": "Snapshot của bản đã lưu",
+        "temporary": "Chạy tạm · chưa lưu nháp",
+        "sourceUnknown": "Không có thông tin nguồn snapshot",
+        "config": "Cấu hình {id} · v{version}",
+        "noConfig": "Không gắn cấu hình",
+        "snapshotNote": "Snapshot giữ nội dung và settings lúc chạy. Sửa nháp sau đó không đổi lần chạy này.",
+        "snapshot": "Prompt & settings snapshot",
+        "noSnapshot": "Batch cũ không có snapshot.",
+        "startedBy": "Người chạy",
+        "createdAt": "Tạo lúc",
+        "startedAt": "Bắt đầu",
+        "finishedAt": "Kết thúc",
+        "evalSource": "Mở kết quả eval",
+        "judgeSource": "Mở lượt judge",
+        "parent": "Mở batch cha",
+        "draft": "Mở cấu hình nguồn",
+        "outputs": "Kết quả chạy thử",
+        "output": "Output",
+        "expires": "Output được giữ đến {date}",
+        "expired": "Output đã hết hạn hoặc không được lưu.",
+        "heldOut": "Nội dung held-out được ẩn.",
+        "resultsElsewhere": "Xem kết quả ở nguồn eval hoặc judge. Trang này không hiển thị input hay output held-out.",
+        "notFound": "Không tìm thấy batch.",
+        "invalidId": "Batch ID không hợp lệ."
+      }
+    },
+    "calls": {
+      "search": {
+        "label": "Mã thao tác (operation_id)",
+        "submit": "Tìm",
+        "placeholder": "Dán mã từ báo lỗi hoặc log"
+      },
+      "hint": "Nhập mã thao tác để xem các lần gọi của nó.",
+      "empty": "Không có lời gọi nào với mã này.",
+      "forId": "Mã thao tác: {id}",
+      "cols": {
+        "attempt": "Lần thử",
+        "purpose": "Mục đích",
+        "operation": "Thao tác",
+        "model": "Model",
+        "outcome": "Kết quả",
+        "http": "HTTP",
+        "tokens": "Token",
+        "cost": "Chi phí",
+        "time": "Thời gian",
+        "content": "Nội dung"
+      },
+      "tokensInOut": "{input} vào · {output} ra",
+      "tokensExtra": "cache {cached} · suy luận {reasoning}",
+      "costUnknown": "Chưa có giá",
+      "revision": "Prompt bản {revision}",
+      "untilDate": "Còn tới {date}",
+      "noContent": "Không còn nội dung",
+      "heldOut": "held-out",
+      "hiddenContent": "Nội dung được ẩn",
+      "view": "Xem",
+      "viewFor": "Xem nội dung lần thử {attempt}",
+      "content": {
+        "title": "Nội dung lần gọi",
+        "request": "Yêu cầu",
+        "response": "Phản hồi"
+      }
+    },
+    "workspace": {
+      "intro": "Tạo nhiều hướng thử nghiệm, chạy đối chiếu rồi chọn bản để publish.",
+      "pages": "Trang cấu hình",
+      "drafts": "Các bản nháp",
+      "history": "Lịch sử",
+      "live": "Bản đang chạy",
+      "expandLive": "Mở bản đang chạy",
+      "collapseLive": "Thu gọn bản đang chạy",
+      "liveNote": "Bản này phục vụ người học. Chạy nháp và chạy tạm không thay đổi nó.",
+      "empty": "Chưa có nháp. Tạo nháp từ bản đang chạy để bắt đầu.",
+      "name": "Tên nháp",
+      "unnamed": "Nháp #{number}",
+      "version": "Lần lưu {version}",
+      "batch": "Xem batch",
+      "unknownCost": "Chưa đủ giá",
+      "actions": "Hành động nháp #{number}",
+      "menu": {
+        "edit": "Sửa nháp",
+        "test": "Chạy thử",
+        "eval": "Chạy eval",
+        "clone": "Nhân bản",
+        "publish": "Publish",
+        "delete": "Xóa nháp"
+      },
+      "revisions": "Các lần lưu nháp",
+      "legacy": "Lịch sử prompt cũ",
+      "viewRevisions": "Xem revisions",
+      "emptyRevisions": "Chưa có lần lưu.",
+      "back": "Danh sách nháp",
+      "temporaryNote": "Chạy tạm toàn bộ nội dung đang sửa, gồm model và settings. Không tự lưu nháp.",
+      "search": "Tìm ví dụ dev",
+      "level": "Trình độ",
+      "allLevels": "Tất cả",
+      "chosen": "Đã chọn {count}/5",
+      "snapshot": "Snapshot của lần chạy",
+      "savedTarget": "Nháp đã lưu",
+      "temporaryTarget": "Nội dung đang sửa",
+      "liveTarget": "Bản đang chạy",
+      "target": "Chạy với",
+      "runSnapshot": "Nội dung và model được giữ ở thời điểm chạy.",
+      "olderRuns": "Tải các lần chạy cũ hơn",
+      "cost": "Chi phí USD",
+      "model": "Model",
+      "noSelection": "Không chọn: server dùng tối đa 5 ví dụ dev hoặc few-shot.",
+      "noMatches": "Không có ví dụ dev phù hợp.",
+      "historyTabs": "Các loại lịch sử",
+      "revisionTitle": "Nháp · lần lưu {version}",
+      "savedContent": "Nội dung đã lưu",
+      "checkAgain": "Kiểm tra lại",
+      "gone": "Nháp đã bị xóa hoặc publish. Quay lại danh sách để chọn nháp khác.",
+      "clearSelection": "Bỏ chọn",
+      "pickDev": "Chọn từ dev",
+      "promptHistory": "Lịch sử prompt",
+      "cols": {
+        "draft": "Nháp",
+        "model": "Model",
+        "lastRun": "Lần chạy gần nhất",
+        "updated": "Cập nhật"
+      },
+      "notRun": "Chưa chạy"
+    }
+  },
+  "entitlements": {
+    "aiToday": "Lượt AI hôm nay: {used}/{cap}",
+    "aiTodayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
+    "aiTodayError": "Chưa xem được lượt AI hôm nay.",
+    "filters": {
+      "learner": "Người học (email)",
+      "grantedBy": "Người cấp (email)",
+      "emailPlaceholder": "Email đầy đủ",
+      "active": "Còn hiệu lực",
+      "activeAll": "Tất cả",
+      "activeYes": "Còn hiệu lực",
+      "activeNo": "Đã hết hiệu lực",
+      "expiring": "Sắp hết hạn trong … ngày",
+      "expiringHint": "Từ 1 đến 365 ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "learner": "Người học",
+      "kind": "Loại",
+      "limits": "Con số",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "grantedBy": "Người cấp",
+      "reason": "Lý do",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "kinds": {
+      "plan": "Gói Pro",
+      "limits": "Con số riêng"
+    },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} phiên luyện mỗi ngày",
+      "ai_practice_per_cycle": "{n} lượt câu AI mỗi tháng",
+      "ai_lookup_per_cycle": "{n} lượt tra AI mỗi tháng"
+    },
+    "statuses": {
+      "active": "Đang hiệu lực",
+      "scheduled": "Chưa bắt đầu",
+      "revoked": "Đã thu hồi",
+      "expired": "Đã hết hạn",
+      "replaced": "Bị thay thế"
+    },
+    "actions": {
+      "editDates": "Sửa ngày",
+      "revoke": "Thu hồi",
+      "editDatesFor": "Sửa ngày lần cấp của {email}",
+      "revokeFor": "Thu hồi lần cấp của {email}"
+    },
+    "revokedNote": "Thu hồi: {reason}",
+    "empty": "Chưa cấp gói hay con số riêng cho ai.",
+    "emptyFiltered": "Không có lần cấp nào khớp bộ lọc. Đổi email hoặc số ngày rồi xem lại.",
+    "footer": "Mới nhất trước · 20 lần cấp mỗi trang · ngày theo múi giờ Asia/Ho_Chi_Minh",
+    "revoke": {
+      "title": "Thu hồi lần cấp của {email}?",
+      "body": "Lần cấp dừng có hiệu lực ngay. Muốn cấp lại thì cấp một lần mới.",
+      "summary": "{kind} · {status} từ {date}",
+      "reason": "Lý do thu hồi (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "keep": "Giữ nguyên",
+      "confirm": "Thu hồi",
+      "done": "Đã thu hồi lần cấp của {email}."
+    },
+    "editDates": {
+      "title": "Sửa ngày lần cấp của {email}",
+      "summary": "{kind} · {status} từ {date}",
+      "from": "Từ ngày",
+      "fromLocked": "Lần cấp đã bắt đầu nên không đổi được ngày bắt đầu.",
+      "fromHint": "Chỉ sửa được khi lần cấp chưa bắt đầu.",
+      "to": "Tới ngày",
+      "reason": "Lý do (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "hint": "Dời ra hay rút ngắn đều được, miễn ngày mới vẫn ở tương lai. Lượt AI không đếm lại.",
+      "noChange": "Chưa đổi ngày nào.",
+      "dateRequired": "Hãy chọn ngày.",
+      "lastChange": "Lần sửa trước: {date} · {email} · {change} · {reason}",
+      "changeFrom": "từ {old} → {new}",
+      "changeTo": "tới {old} → {new}",
+      "keep": "Hủy",
+      "confirm": "Lưu ngày mới",
+      "done": "Đã lưu ngày mới cho {email}."
+    },
+    "new": {
+      "open": "Cấp mới",
+      "title": "Cấp gói hoặc con số riêng",
+      "email": "Người học (tìm theo email)",
+      "emailPlaceholder": "Email đầy đủ của người học",
+      "check": "Kiểm",
+      "checking": "Đang kiểm…",
+      "confirmed": "Đã xác nhận tài khoản {email}.",
+      "notFound": "Không có tài khoản với email này.",
+      "retryAt": "Thử lại lúc {time}.",
+      "lookupFailed": "Chưa kiểm được email này. Hãy thử lại.",
+      "emailRequired": "Hãy nhập email rồi kiểm.",
+      "emailShort": "Nhập ít nhất 3 ký tự của email.",
+      "kind": "Loại",
+      "practiceSessions": "Phiên luyện mỗi ngày (0–200)",
+      "aiPractice": "Lượt câu AI mỗi tháng (0–5.000)",
+      "aiLookup": "Lượt tra AI mỗi tháng (0–5.000)",
+      "limitInvalid": "Nhập số nguyên trong khoảng cho phép.",
+      "limitsRequired": "Hãy nhập ít nhất một con số.",
+      "from": "Từ ngày",
+      "fromHint": "Để trống thì bắt đầu ngay bây giờ.",
+      "fromPast": "Ngày bắt đầu không được ở quá khứ.",
+      "to": "Tới ngày",
+      "toHint": "Ngày cuối cùng còn hiệu lực.",
+      "toRequired": "Hãy chọn ngày kết thúc.",
+      "toBeforeFrom": "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
+      "reason": "Lý do (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "note": "Cấp gói Pro bắt đầu ngay sẽ thay lần cấp gói đang có. Lượt AI mới tính theo chu kỳ tháng từ ngày bắt đầu.",
+      "submit": "Cấp",
+      "done": "Đã cấp cho {email}.",
+      "understood": "Đã hiểu",
+      "notSupported": "Đã cấp. Chưa tắt được tự gia hạn ở cổng thanh toán; người học vẫn có thể bị trừ tiền kỳ sau.",
+      "confirm": {
+        "title": "Cấp gói Pro cho {email}?",
+        "intro": "Người này đang trả tiền cho gói Pro và đang tự gia hạn. Cấp gói sẽ:",
+        "turnOff": "tắt tự gia hạn của gói trả tiền, không hoàn tiền;",
+        "keepPaid": "phần kỳ đã trả còn lại vẫn là Pro;",
+        "replace": "thu hồi lần cấp gói đang có (nếu có) và đếm lượt AI lại từ hôm nay.",
+        "keep": "Giữ nguyên",
+        "ok": "Cấp và tắt tự gia hạn"
+      }
+    },
+    "refusal": {
+      "self-grant": "Bạn không cấp được cho chính mình.",
+      "target-is-admin": "Editor không cấp được cho tài khoản admin.",
+      "target-is-staff": "Editor không cấp được cho tài khoản staff.",
+      "ai-limits-admin-only": "Con số lượt AI chỉ admin đặt được.",
+      "target-has-paid-subscription": "Người này đang trả tiền cho gói Pro và đang tự gia hạn."
+    }
+  },
+  "orders": {
+    "intro": "Mỗi lần người học bấm Mua là một đơn. Xem tiền đã tới chưa; khi thấy tiền trong app ngân hàng mà hệ thống chưa biết, bấm Đã nhận tiền; hủy đơn đang chờ, đóng đơn đã xử lý xong, thu hồi một kỳ. Chỉ admin.",
+    "filters": {
+      "email": "Email người học",
+      "emailPlaceholder": "Tìm theo email",
+      "status": "Trạng thái",
+      "allStatuses": "Mọi trạng thái",
+      "needsAttention": "Cần xem",
+      "code": "Nội dung chuyển khoản",
+      "codePlaceholder": "WM…",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "user": "Người học",
+      "plan": "Kỳ · Số tiền",
+      "code": "Nội dung CK",
+      "at": "Tạo lúc",
+      "status": "Trạng thái"
+    },
+    "months": "{count} tháng",
+    "statuses": {
+      "pending": "Đang chờ",
+      "paid": "Đã trả",
+      "expired": "Hết hạn",
+      "cancelled": "Đã hủy",
+      "failed": "Không tạo được link",
+      "needs_review": "Cần xem",
+      "closed": "Đã đóng"
+    },
+    "reasons": {
+      "amount-short": "Trả thiếu",
+      "amount-over": "Trả dư",
+      "late-payment": "Trả muộn",
+      "account-deleted": "Tài khoản đã xóa",
+      "extra-payment": "Có khoản trả thêm",
+      "reconcile-mismatch": "Đối soát lệch khóa",
+      "provider-mismatch": "payOS báo có tiền nhưng không liệt kê giao dịch"
+    },
+    "sources": {
+      "webhook": "Webhook",
+      "reconcile": "Đối soát",
+      "manual": "Nhân viên"
+    },
+    "outcomes": {
+      "opened-period": "Mở kỳ",
+      "attached": "Gắn vào lần trả trước",
+      "counted": "Đã tính",
+      "flagged": "Cần xem",
+      "refund-needed": "Cần hoàn tiền"
+    },
+    "proSources": {
+      "prepaid": "Kỳ trả trước",
+      "grant": "Đội cấp Pro"
+    },
+    "periods": {
+      "revoked": "Đã thu hồi {date}"
+    },
+    "detailLink": "Chi tiết",
+    "detailFor": "Chi tiết đơn của {email}",
+    "footer": "{count} đơn · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh",
+    "empty": "Không có đơn nào khớp bộ lọc. Đổi email, trạng thái hoặc khoảng ngày rồi xem lại.",
+    "detail": {
+      "title": "Chi tiết đơn",
+      "user": "Người học",
+      "userId": "Mã người học",
+      "description": "Nội dung chuyển khoản",
+      "code": "Mã đơn (orderCode)",
+      "plan": "Kỳ · Số tiền",
+      "status": "Trạng thái",
+      "reason": "Cần xem vì",
+      "via": "Tiền được ghi nhận qua",
+      "createdAt": "Tạo lúc",
+      "expiresAt": "Link hết hạn lúc",
+      "paymentsTitle": "Các lần trả",
+      "noPayments": "Chưa có lần trả nào.",
+      "providerTime": "payOS ghi {time}",
+      "periodsTitle": "Các kỳ đã mở",
+      "noPeriods": "Đơn chưa mở kỳ nào.",
+      "proTitle": "Pro của người học bây giờ",
+      "proUntil": "Pro tới hết {date}",
+      "proNone": "Người học hiện không ở Pro.",
+      "refundTitle": "Thông tin để hoàn tiền",
+      "refundName": "Tên người chuyển",
+      "refundAccount": "Số tài khoản",
+      "refundBank": "Ngân hàng",
+      "refundNote": "Chỉ lưu khi tiền tới sau khi tài khoản đã bị xóa; tự xóa sau 90 ngày hoặc khi bấm Đã xử lý.",
+      "resolutionTitle": "Đã xử lý",
+      "close": "Đóng"
+    },
+    "actions": {
+      "confirm": "Đã nhận tiền",
+      "cancel": "Hủy đơn",
+      "resolve": "Đã xử lý",
+      "revoke": "Thu hồi kỳ"
+    },
+    "confirm": {
+      "title": "Đã nhận tiền",
+      "body": "Bạn đã thấy {amount} cho nội dung {code} trong app ngân hàng, mà hệ thống chưa biết. Người học sẽ có kỳ Pro ngay.",
+      "reference": "Mã tham chiếu của ngân hàng",
+      "amount": "Số tiền đã nhận (₫)",
+      "reason": "Lý do",
+      "invalid": "Nhập mã tham chiếu, số tiền là số nguyên dương và lý do (tối đa 300 ký tự).",
+      "submit": "Xác nhận đã nhận"
+    },
+    "cancel": {
+      "title": "Hủy đơn",
+      "body": "Hủy đơn {code}? Link thanh toán sẽ bị hủy ở payOS, người học không trả được nữa.",
+      "keep": "Giữ đơn",
+      "confirm": "Hủy đơn"
+    },
+    "resolve": {
+      "title": "Đã xử lý",
+      "body": "Ghi lại việc đã làm. Đơn cần xem sẽ đóng; đơn đã trả có cờ sẽ được tắt cờ. Thông tin hoàn tiền của đơn bị xóa.",
+      "note": "Ghi chú",
+      "placeholder": "Đã hoàn 199.000 ₫ qua ngân hàng ngày 06/11",
+      "invalid": "Nhập ghi chú (tối đa 300 ký tự).",
+      "submit": "Đánh dấu đã xử lý"
+    },
+    "revoke": {
+      "title": "Thu hồi kỳ",
+      "body": "Kỳ này thôi được tính từ bây giờ. Kỳ sau không dời chỗ; dòng giao dịch giữ nguyên, hoàn tiền (nếu có) làm ở ngân hàng.",
+      "reason": "Lý do",
+      "invalid": "Nhập lý do (tối đa 300 ký tự).",
+      "keep": "Giữ kỳ",
+      "submit": "Thu hồi"
+    }
+  },
+  "transactions": {
+    "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
+    "filters": {
+      "email": "Email người học",
+      "emailPlaceholder": "Tìm theo email",
+      "kind": "Loại",
+      "allKinds": "Tất cả loại",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "user": "Người học",
+      "kind": "Loại",
+      "plan": "Gói · Kỳ được dùng",
+      "at": "Thời điểm",
+      "amount": "Số tiền · Cổng",
+      "status": "Trạng thái"
+    },
+    "kinds": {
+      "purchase": "Mua",
+      "renewal": "Gia hạn",
+      "plan_change": "Đổi kỳ",
+      "refund": "Hoàn tiền",
+      "trial": "Dùng thử",
+      "grant": "Đội cấp"
+    },
+    "statuses": {
+      "succeeded": "Thành công",
+      "refunded": "Đã hoàn tiền",
+      "pending": "Đang chờ",
+      "reversed": "Đã hủy hoàn tiền"
+    },
+    "intervals": {
+      "month": "theo tháng",
+      "year": "theo năm"
+    },
+    "planInterval": "{plan} · {interval}",
+    "providers": {
+      "fake": "Giả (thử)"
+    },
+    "noGateway": "Không qua cổng",
+    "detailLink": "Chi tiết",
+    "detailFor": "Chi tiết giao dịch của {email}",
+    "footer": "{count} giao dịch · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh",
+    "empty": "Không có giao dịch nào khớp bộ lọc. Đổi email, loại hoặc khoảng ngày rồi xem lại.",
+    "detail": {
+      "title": "Chi tiết giao dịch",
+      "user": "Người học",
+      "userId": "Mã người học",
+      "kind": "Loại",
+      "plan": "Gói",
+      "amount": "Số tiền",
+      "at": "Thời điểm",
+      "period": "Kỳ được dùng",
+      "status": "Trạng thái",
+      "gateway": "Cổng thanh toán",
+      "testEnv": "{gateway} · môi trường test",
+      "txId": "Mã giao dịch của cổng",
+      "readOnly": "Chỉ xem. Hoàn tiền làm ở cổng thanh toán; sự kiện hoàn tiền của cổng tự cập nhật dòng này.",
+      "close": "Đóng"
+    }
+  },
+  "reportReasons": {
+    "add": "Thêm lý do",
+    "cols": {
+      "position": "Thứ tự",
+      "code": "Mã",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "active": "Đang dùng",
+      "updatedBy": "Sửa lần cuối bởi",
+      "actions": "Thao tác"
+    },
+    "appliesTo": {
+      "ai": "Câu AI",
+      "non_ai": "Câu thường",
+      "all": "Cả hai"
+    },
+    "yes": "Có",
+    "no": "Không",
+    "edit": "Sửa",
+    "editFor": "Sửa lý do {code}",
+    "activeFor": "Đang dùng: {code}",
+    "note": "Lý do đã tắt không hiện cho người học; báo lỗi cũ giữ tên lúc gửi.",
+    "empty": "Chưa có lý do báo lỗi nào.",
+    "emptyHint": "Thêm lý do để người học có thể chọn khi báo lỗi.",
+    "newTitle": "Thêm lý do báo lỗi",
+    "editTitle": "Sửa lý do báo lỗi",
+    "form": {
+      "code": "Mã",
+      "codeHint": "Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _",
+      "codeInvalid": "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "labelHint": "1–100 ký tự",
+      "labelInvalid": "Nhập tên từ 1 đến 100 ký tự.",
+      "hintVi": "Gợi ý trong ô ghi chú (tiếng Việt)",
+      "hintEn": "Gợi ý trong ô ghi chú (tiếng Anh)",
+      "hintHint": "Không bắt buộc, tối đa 200 ký tự",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "refundableHint": "Chỉ có tác dụng với câu AI",
+      "position": "Thứ tự",
+      "positionHint": "Từ 0 đến 10.000; số nhỏ hiện trước",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000.",
+      "save": "Lưu"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Trạng thái",
+      "reason": "Lý do",
+      "source": "Nguồn câu",
+      "allStatuses": "Tất cả trạng thái",
+      "allReasons": "Tất cả lý do",
+      "allSources": "Mọi nguồn"
+    },
+    "statuses": {
+      "open": "Chưa xử lý",
+      "no_error": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Đã xác nhận lỗi"
+    },
+    "sources": {
+      "rule": "Câu thường",
+      "ai": "Câu AI"
+    },
+    "types": {
+      "mcq_definition": "Trắc nghiệm",
+      "true_false_definition": "Đúng / Sai",
+      "type_word": "Gõ từ",
+      "cloze": "Điền chỗ trống",
+      "meaning_in_sentence": "Nghĩa trong câu",
+      "mcq_sentence": "Trắc nghiệm trong câu"
+    },
+    "cols": {
+      "word": "Từ",
+      "type": "Kiểu câu",
+      "reason": "Lý do",
+      "source": "Nguồn",
+      "note": "Ghi chú",
+      "sentAt": "Ngày gửi",
+      "status": "Trạng thái",
+      "resolvedBy": "Người xử lý"
+    },
+    "empty": "Không còn báo lỗi chưa xử lý.",
+    "emptyFiltered": "Không có báo lỗi nào khớp bộ lọc.",
+    "detail": {
+      "title": "Báo lỗi · {word}",
+      "titleUnknown": "Báo lỗi",
+      "notFound": "Không tìm thấy báo lỗi này.",
+      "backToList": "Về danh sách báo lỗi",
+      "question": "Câu hỏi",
+      "prompt": "Đề",
+      "meaning": "Nghĩa",
+      "sentence": "Câu",
+      "options": "Các lựa chọn",
+      "correctAnswer": "Đáp án đúng",
+      "correctMark": "Đáp án đúng",
+      "learnerPicked": "Người học chọn",
+      "unclearOption": "Không rõ lựa chọn nào",
+      "learnerAnswer": "Câu trả lời của người học",
+      "noAnswer": "Chưa trả lời",
+      "triedAnswers": "Đã thử",
+      "hints": "Gợi ý đã xem",
+      "noHints": "Không xem gợi ý nào",
+      "true": "Đúng",
+      "false": "Sai",
+      "reason": "Lý do",
+      "note": "Ghi chú của người học",
+      "noNote": "Không có ghi chú",
+      "ai": "Thông tin AI",
+      "operationId": "Mã thao tác",
+      "callId": "Mã lời gọi",
+      "model": "Model",
+      "promptRevision": "Bản prompt",
+      "openCall": "Xem lần gọi này",
+      "resolved": "Đã xử lý",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "Đã trả lại 1 lượt câu AI",
+      "refundPending": "Chưa trả được, hệ thống thử lại mỗi giờ",
+      "notRefunded": "Không trả lượt",
+      "fixHint": "Sửa nội dung ở Nghĩa",
+      "fixLink": "Mở nghĩa của từ “{word}”"
+    },
+    "actions": {
+      "noError": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Xác nhận lỗi",
+      "refundLine": "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học."
+    }
+  },
+  "users": {
+    "create": "Tạo người dùng",
+    "edit": {
+      "title": "Sửa {email}",
+      "emailHint": "Email mới phải được xác nhận lại; người dùng bị đăng xuất, email cũ nhận thư báo.",
+      "emailInvalid": "Nhập email hợp lệ",
+      "emailTaken": "Email này đã có tài khoản khác.",
+      "nameInvalid": "Từ 1 đến 50 ký tự.",
+      "tooYoung": "Người dùng phải từ 13 tuổi.",
+      "timezone": "Múi giờ",
+      "timezoneHint": "Tên múi giờ IANA, ví dụ Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Nhập múi giờ",
+      "save": "Lưu",
+      "saved": "Đã lưu {email}."
+    },
+    "reset": {
+      "title": "Đặt lại mật khẩu cho {email}",
+      "body": "Mật khẩu mới được gửi qua email. Người dùng bị đăng xuất khỏi mọi thiết bị.",
+      "mustChange": "Bắt đổi mật khẩu ở lần đăng nhập tới",
+      "confirm": "Đặt lại mật khẩu",
+      "done": "Đã đặt lại mật khẩu cho {email}."
+    },
+    "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
+    "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
+    "searchShort": "Gõ từ 2 ký tự",
+    "filters": {
+      "status": "Trạng thái",
+      "all": "Tất cả",
+      "active": "Đang hoạt động",
+      "locked": "Đang khóa",
+      "deleting": "Đang xóa"
+    },
+    "cols": {
+      "email": "Email",
+      "name": "Họ tên",
+      "role": "Vai trò",
+      "verified": "Email đã xác minh",
+      "status": "Trạng thái",
+      "created": "Ngày tạo",
+      "lastSeen": "Lần cuối vào"
+    },
+    "roles": {
+      "admin": "admin",
+      "editor": "editor",
+      "learner": "người học"
+    },
+    "statuses": {
+      "active": "Đang hoạt động",
+      "locked": "Đang khóa",
+      "deleting": "Đang xóa"
+    },
+    "verified": {
+      "yes": "Đã xác minh",
+      "no": "Chưa xác minh"
+    },
+    "footer": "Mới nhất trước · 20 người mỗi trang",
+    "empty": "Chưa có người dùng nào.",
+    "emptySearch": "Không có ai khớp “{q}”. Thử tìm theo email.",
+    "emptyFiltered": "Không có người dùng nào ở trạng thái này.",
+    "detail": {
+      "titleUnknown": "Người dùng",
+      "notFound": "Không tìm thấy người dùng này.",
+      "backToList": "Về danh sách",
+      "email": "Email",
+      "givenName": "Tên",
+      "familyName": "Họ",
+      "birthDate": "Ngày sinh",
+      "terms": "Đồng ý điều khoản",
+      "termsValue": "{time} · bản {version}",
+      "role": "Vai trò",
+      "status": "Trạng thái",
+      "lockedLine": "Đang khóa từ {time} · bởi {who}",
+      "lockReason": "Lý do: {reason}",
+      "lock": "Khóa tài khoản",
+      "unlock": "Mở khóa",
+      "unlocked": "Đã mở khóa {email}.",
+      "locked": "Đã khóa {email}.",
+      "edit": "Sửa",
+      "resetPassword": "Đặt lại mật khẩu",
+      "signIn": "Đăng nhập bằng",
+      "methodPassword": "Mật khẩu",
+      "methodGoogle": "Google",
+      "deleteAction": "Xóa tài khoản",
+      "deleted": "Đã xóa tài khoản {email}.",
+      "deletePending": "Đang hoàn tất việc xóa {email}.",
+      "deletingLine": "Tài khoản đang được xóa. Các thao tác khác tạm khóa; bấm Xóa tài khoản để chạy lại nếu việc xóa bị kẹt."
+    },
+    "delete": {
+      "title": "Xóa tài khoản {email}?",
+      "body": "Mọi dữ liệu học, từ riêng, câu tự viết và gói của người này bị xóa vĩnh viễn. Hồ sơ thanh toán còn giữ không kèm tên. Không khôi phục được.",
+      "renewing": "Gói tự gia hạn sẽ được tắt",
+      "typeEmail": "Gõ lại email để xác nhận",
+      "confirm": "Xóa vĩnh viễn",
+      "keep": "Giữ lại"
+    },
+    "lock": {
+      "title": "Khóa tài khoản {email}?",
+      "body": "Người này bị đăng xuất khỏi mọi thiết bị và không đăng nhập được tới khi mở khóa.",
+      "reason": "Lý do (1–500 ký tự, một dòng)",
+      "reasonInvalid": "Nhập lý do từ 1 đến 500 ký tự, trên một dòng.",
+      "confirm": "Khóa tài khoản",
+      "keep": "Giữ nguyên"
     }
   },
   "staff": {
@@ -192,7 +1867,9 @@
       "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
       "close": "Đóng",
       "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
-      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
+      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+      "emailTakenUser": "Email này đã có tài khoản.",
+      "doneBodyLearner": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Lần đầu đăng nhập, người học sẽ được hỏi ngày sinh và đồng ý điều khoản."
     }
   },
   "navGroups": {
@@ -213,13 +1890,18 @@
       "words": "Danh sách từ kèm biến thể chính tả, level biên tập và cờ từ chức năng.",
       "senses": "Soạn nháp nghĩa, đánh dấu đã rà, publish và xem lịch sử revision.",
       "topics": "Thêm, đổi tên tiếng Việt và tiếng Anh, lưu trữ chủ đề.",
-      "reported": "Hàng chờ câu bị người học báo lỗi; ẩn, gỡ hoặc khôi phục câu.",
-      "irregular": "Danh sách dạng bất quy tắc (go → went, gone) để kiểm câu do AI sinh.",
+      "unknownForms": "Dạng chia mà bảng chưa biết (go → went, gone) để nhận hoặc bỏ qua, dùng kiểm câu do AI sinh.",
+      "reports": "Hàng chờ câu bị người học báo lỗi; ẩn, gỡ hoặc khôi phục câu.",
+      "reportReasons": "Thêm, sửa và tắt các lý do báo lỗi mà người học được chọn.",
+      "refunds": "Trả lượt AI cho người học khi một lỗi do AI đã được xác nhận.",
       "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
       "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
-      "aiSettings": "Bật hoặc tắt AI toàn hệ thống và đặt trần chi phí mỗi ngày.",
+      "aiModels": "Thêm model của OpenAI và Anthropic, bật hoặc tắt từng model.",
+      "aiConfigs": "Soạn nháp cấu hình của từng thao tác AI (lời dặn, model, effort), chạy thử, so với bản đang chạy rồi publish hoặc quay về.",
+      "aiEval": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho người học.",
       "aiCosts": "Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.",
-      "evalSets": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho pilot."
+      "aiCalls": "Từng lần gọi AI: thao tác, model, thời gian, kết quả và chi phí.",
+      "settings": "Các con số điều khiển hệ thống: nhắc học, học và ôn, luyện tập, gói và lượt, nội dung, AI."
     },
     "etaUnconfirmed": "Dự kiến: Bước {step} (chưa chốt)"
   },
@@ -229,6 +1911,7 @@
     "succeeded": "Hoàn tất",
     "partial": "Một phần",
     "failed": "Thất bại",
+    "cancelled": "Đã dừng",
     "reverted": "Đã hoàn tác"
   },
   "sources": {
@@ -240,7 +1923,25 @@
       "name": "Tên nguồn",
       "version": "Phiên bản",
       "license": "License",
-      "priority": "Ưu tiên"
+      "priority": "Ưu tiên",
+      "shown": "Hiện cho người học",
+      "shownYes": "Có",
+      "shownNo": "Không",
+      "actions": "Hành động"
+    },
+    "shownNote": "Nguồn hiện trên trang Nguồn dữ liệu khi có ít nhất một nghĩa đã publish.",
+    "edit": "Sửa",
+    "editFor": "Sửa nguồn {name}",
+    "editTitle": "Sửa nguồn “{name}”",
+    "delete": "Xóa",
+    "deleteFor": "Xóa nguồn {name}",
+    "deleteTitle": "Xóa nguồn “{name}”?",
+    "deleteBody": "Nguồn bị xóa khỏi danh sách và khỏi trang license công khai, không hoàn tác được.",
+    "deleteConfirm": "Xóa nguồn",
+    "ownerNote": "Nguồn có sẵn của hệ thống, không sửa hoặc xóa được",
+    "toast": {
+      "saved": "Đã lưu nguồn “{name}”.",
+      "deleted": "Đã xóa nguồn “{name}”."
     },
     "form": {
       "name": "Tên nguồn",
@@ -320,6 +2021,8 @@
     "batch": "Lô nhập",
     "all": "Tất cả",
     "download": "Tải CSV",
+    "withoutSenses": "Từ chưa có nghĩa",
+    "withoutSensesHint": "Xuất các từ chưa có nghĩa nào; chỉ Level được dùng để lọc.",
     "archived": "đã lưu trữ",
     "statuses": {
       "unpublishable": "Chưa publish được",
@@ -356,6 +2059,811 @@
     "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
-    "confirmAllSubmit": "Publish tất cả"
+    "confirmAllSubmit": "Publish tất cả",
+    "stop": "Dừng lô",
+    "stopTitle": "Dừng publish job #{id}?",
+    "stopBody": "Các sense đã publish vẫn giữ nguyên. Lô dừng trước sense tiếp theo và không chạy tiếp được; muốn publish phần còn lại, tạo publish job mới.",
+    "stopKeep": "Không dừng",
+    "stopped": "Đã dừng publish job #{id}",
+    "stoppedNotice": "Lô đã dừng sau {done} / {total} sense. Các sense đã publish vẫn giữ nguyên; phần còn lại chưa được publish."
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Email người xử lý",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "report": "Báo lỗi",
+      "user": "Người học",
+      "resolver": "Người xử lý",
+      "role": "Vai trò",
+      "refunded": "Trả lượt",
+      "at": "Thời điểm"
+    },
+    "reportLink": "Xem báo lỗi",
+    "selfResolved": "Tự xử lý báo lỗi của mình",
+    "refunded": {
+      "true": "Đã trả",
+      "false": "Không trả",
+      "null": "Đang thử lại"
+    },
+    "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
+    "note": "Không thu hồi được lượt đã trả."
+  },
+  "unknownForms": {
+    "intro": "Dạng AI đã dùng mà bảng dạng chia chưa có. Có thể lẫn từ đồng nghĩa, cụm nhiều chữ, lỗi chính tả.",
+    "cols": {
+      "lemma": "Từ gốc",
+      "form": "Dạng AI dùng",
+      "rejected": "Số lần bị loại",
+      "first": "Lần đầu",
+      "last": "Lần gần nhất"
+    },
+    "accept": "Nhận dạng này",
+    "acceptFor": "Nhận dạng “{form}” của “{lemma}”",
+    "ignore": "Bỏ qua",
+    "ignoreFor": "Bỏ qua dạng “{form}” của “{lemma}”",
+    "accepted": "Đã thêm “{form}” vào dạng chia của “{lemma}”.",
+    "undo": "Hoàn tác",
+    "undone": "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”.",
+    "empty": "Chưa có dạng chia nào cần xem.",
+    "emptyHint": "Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây."
+  },
+  "settings": {
+    "tabsLabel": "Nhóm cài đặt",
+    "tabs": {
+      "reminders": "Nhắc học",
+      "learning": "Học và ôn",
+      "practice": "Luyện tập",
+      "entitlements": "Gói và lượt",
+      "content": "Nội dung",
+      "ai": "AI",
+      "identity": "Tài khoản",
+      "tts": "Giọng đọc"
+    },
+    "save": "Lưu thay đổi",
+    "saved": "Đã lưu",
+    "history": "Lịch sử thay đổi",
+    "outOfRange": "Giá trị ngoài khoảng cho phép.",
+    "reload": "Tải lại",
+    "reloadTitle": "Tải lại cài đặt?",
+    "reloadBody": "Thay đổi chưa lưu sẽ mất.",
+    "emailTemplates": "Mẫu email: bàn sau.",
+    "hint": {
+      "default": "mặc định {value}",
+      "on": "bật",
+      "off": "tắt",
+      "onOff": "bật/tắt",
+      "empty": "để trống",
+      "orEmpty": "hoặc để trống = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "mỗi {minutes} phút"
+    },
+    "emptyMeaning": {
+      "noLimit": "không giới hạn",
+      "ai_cap_alert_percent": "không tô vàng"
+    },
+    "notes": {
+      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ",
+      "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết.",
+      "free_ai_practice_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing",
+      "free_ai_lookup_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing",
+      "session_max_mode": "Bằng số từ: tối đa là số từ của phạm vi người học chọn, không quá 100",
+      "ai_max_fixed": "không vượt số câu của phiên",
+      "ai_max_percent": "làm tròn xuống",
+      "ai_placement": "Để người học chọn: hộp Tùy chỉnh phiên hiện Rải đều / Ngẫu nhiên khi người học chọn ít nhất 1 câu AI"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "tắt",
+      "content_retention_days": "không lưu",
+      "free_ai_practice_per_cycle": "gói Miễn phí không có câu AI",
+      "free_ai_lookup_per_cycle": "gói Miễn phí không tra AI được",
+      "free_ai_daily_cap": "người dùng gói Miễn phí không dùng được AI",
+      "ai_max_fixed": "không có câu AI"
+    },
+    "cross": {
+      "stop_after_days": "và lớn hơn ô trên",
+      "default_questions_per_session": "và ≤ số tối đa khi chọn Mức cố định",
+      "pro_practice_sessions_per_day": "và ≥ gói Miễn phí"
+    },
+    "units": {
+      "days": "ngày",
+      "hours": "giờ",
+      "minutes": "phút",
+      "months": "tháng",
+      "percent": "%",
+      "chars": "ký tự",
+      "seconds": "giây",
+      "sessions": "phiên",
+      "uses": "lượt",
+      "years": "năm",
+      "times": "lần",
+      "vnd": "đồng",
+      "questions": "câu"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Bật nhắc học toàn hệ thống",
+        "send_time": "Giờ gửi theo giờ người học",
+        "min_gap_days": "Khoảng cách tối thiểu giữa hai email nhắc",
+        "inactive_after_days": "Vắng bao lâu thì gửi “Đã lâu rồi bạn chưa vào học”",
+        "stop_after_days": "Vắng bao lâu thì ngừng nhắc"
+      },
+      "learning": {
+        "new_per_group_per_day": "Từ mới mỗi nhóm mỗi ngày",
+        "reviews_per_group_per_day": "Từ ôn mỗi nhóm mỗi ngày",
+        "backlog_after_days": "Quá hạn bao lâu thì vào danh sách cân nhắc",
+        "groups_per_user": "Số nhóm mỗi người",
+        "items_per_group": "Số từ mỗi nhóm",
+        "active_window_days": "Số ngày gần nhất tính là “đang học” (D7/D30)"
+      },
+      "practice": {
+        "session_max_mode": "Số câu tối đa mỗi phiên",
+        "max_questions_per_session": "Mức cố định",
+        "default_questions_per_session": "Số câu mặc định",
+        "ai_max_mode": "Số câu AI tối đa mỗi phiên",
+        "ai_max_fixed": "Mức cố định",
+        "ai_max_percent": "Tỉ lệ so với số câu của phiên",
+        "ai_placement": "Cách xếp câu AI",
+        "history_months": "Giữ lịch sử luyện tập",
+        "true_false_true_percent": "Tỉ lệ cặp đúng ở câu Đúng/sai",
+        "idle_session_close_hours": "Tự đóng phiên bỏ dở sau",
+        "reports_per_hour": "Số báo lỗi mỗi giờ mỗi người",
+        "hint_definition_max_chars": "Độ dài tối đa của định nghĩa làm gợi ý",
+        "type_word_max_retries": "Số lần làm lại khi gõ sai",
+        "ai_prefetch_count": "Số câu AI tạo trước"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Miễn phí",
+        "pro_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Pro",
+        "free_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Miễn phí",
+        "free_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Miễn phí",
+        "pro_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Pro",
+        "pro_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Pro",
+        "trial_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Dùng thử",
+        "trial_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Dùng thử",
+        "grace_days": "Số ngày ân hạn",
+        "trial_reminder_days_before": "Nhắc trước khi hết dùng thử",
+        "renewal_notice_days_before": "Nhắc trước khi gia hạn",
+        "ai_enabled": "Bật AI toàn hệ thống",
+        "ai_daily_cap": "Trần lượt AI mỗi ngày, toàn hệ thống",
+        "free_ai_daily_cap": "Trần lượt AI mỗi ngày, gói Miễn phí",
+        "ai_cap_alert_percent": "Tô vàng khi dùng tới",
+        "ads_enabled": "Bật quảng cáo",
+        "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",
+        "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo",
+        "transaction_retention_years": "Giữ hồ sơ thanh toán sau khi xóa tài khoản",
+        "pro_price_1m_vnd": "Giá Pro 1 tháng",
+        "pro_price_3m_vnd": "Giá Pro 3 tháng",
+        "pro_price_12m_vnd": "Giá Pro 12 tháng"
+      },
+      "content": {
+        "private_words_per_user": "Số từ riêng mỗi người",
+        "sentences_per_sense": "Số câu đã gặp mỗi nghĩa"
+      },
+      "ai": {
+        "call_timeout_seconds": "Thời gian chờ mỗi lời gọi",
+        "max_concurrent_calls": "Số lời gọi cùng lúc",
+        "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
+        "content_retention_days": "Giữ nội dung lời gọi",
+        "usd_vnd_rate": "Tỷ giá USD → VND",
+        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out",
+        "admin_daily_usd_cap": "Trần USD việc admin mỗi ngày",
+        "judge_label_min": "Số nhãn tối thiểu để tin judge",
+        "judge_agreement_min": "Độ khớp tối thiểu với nhãn",
+        "real_judge_limit": "Số câu tối đa mỗi lượt chấm câu thật"
+      },
+      "identity": {
+        "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"
+      },
+      "tts": {
+        "daily_char_cap": "Trần ký tự TTS mỗi ngày"
+      }
+    },
+    "aiUsage": {
+      "today": "Lượt AI hôm nay: {used}/{cap} ({percent}%)",
+      "todayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
+      "split": "Đã xác nhận {confirmed} · đang giữ chỗ {reserved}",
+      "zone": "Tính theo ngày giờ Việt Nam.",
+      "error": "Chưa tải được lượt AI hôm nay."
+    },
+    "historyDialog": {
+      "title": "Lịch sử thay đổi",
+      "empty": "Chưa có thay đổi nào.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Người dùng đã xóa"
+    },
+    "choices": {
+      "session_max_mode": {
+        "fixed": "Mức cố định",
+        "scope_words": "Bằng số từ của phạm vi"
+      },
+      "ai_max_mode": {
+        "fixed": "Mức cố định",
+        "percent": "Theo tỉ lệ số câu của phiên"
+      },
+      "ai_placement": {
+        "even": "Rải đều",
+        "random": "Ngẫu nhiên",
+        "learner": "Để người học chọn"
+      }
+    },
+    "aiCapExample": "Ví dụ: phiên {q1} câu → tối đa {a1} câu AI · phiên {q2} câu → {a2} · phiên {q3} câu → {a3}"
+  },
+  "words": {
+    "search": "Tìm từ",
+    "searchPlaceholder": "Tìm theo từ hoặc cách viết khác",
+    "searchSubmit": "Tìm",
+    "pasteButton": "Dán danh sách từ",
+    "filters": {
+      "all": "Tất cả",
+      "level": "Trình độ",
+      "hasSense": "Nghĩa",
+      "hasSenseHint": "Có nghĩa tính cả nghĩa đã ngừng dùng.",
+      "withSense": "Có nghĩa",
+      "withoutSense": "Chưa có nghĩa",
+      "conflict": "Trình độ lệch nhau",
+      "batch": "Lô nhập"
+    },
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "level": "Trình độ hiển thị",
+      "senses": "Nghĩa",
+      "functionWord": "Từ chức năng",
+      "variants": "Cách viết khác"
+    },
+    "conflictBadge": "lệch",
+    "noSense": "Chưa có nghĩa",
+    "senseCount": "{count} nghĩa",
+    "published": "{count} đã publish",
+    "drafts": "{count} bản nháp",
+    "retired": "{count} ngừng dùng",
+    "yes": "Có",
+    "no": "Không",
+    "empty": "Không có từ nào khớp bộ lọc.",
+    "footer": "{count} từ đã hiển thị · 20 mỗi lần tải",
+    "actions": "Thao tác",
+    "actionsFor": "Thao tác cho {word}",
+    "editLevel": "Sửa trình độ",
+    "editVariants": "Sửa cách viết khác",
+    "editFunctionWord": "Đánh dấu từ chức năng",
+    "addSense": "Thêm nghĩa",
+    "deleteWord": "Xóa từ",
+    "deleteTitle": "Xóa “{word}”?",
+    "deleteBody": "Từ này và các nghĩa bản nháp chưa publish của nó sẽ bị xóa. Không hoàn tác được.",
+    "deleteConfirm": "Xóa từ",
+    "deleted": "Đã xóa “{word}”",
+    "deleteBlocked": {
+      "title": "Không xóa được “{word}”:",
+      "published-sense": "Từ này đã có nghĩa được publish.",
+      "form-of-link": "Có nghĩa của từ khác ghi từ này là dạng gốc của nó.",
+      "learner-data": "Từ này đã có dữ liệu học của người học.",
+      "batch-record": "Từ này thuộc một lô nhập chưa hoàn tác. Hoàn tác lô đó trước.",
+      "publish-job": "Từ này có trong báo cáo của một lần publish hàng loạt.",
+      "active-job": "Đang có lô nhập hoặc lần publish hàng loạt chạy liên quan. Chờ chạy xong rồi thử lại."
+    },
+    "save": "Lưu",
+    "saved": "Đã lưu “{word}”",
+    "level": "Trình độ",
+    "noLevel": "Chưa có trình độ",
+    "levelTitle": "Sửa trình độ “{word}”",
+    "levelHint": "Trình độ này thay mọi trình độ từ nguồn khi hiển thị.",
+    "functionWord": "Từ chức năng",
+    "functionWordTitle": "Từ chức năng “{word}”",
+    "auto": "Tự suy (hiện: {value})",
+    "variantsTitle": "Cách viết khác của “{word}”",
+    "noVariants": "Chưa có cách viết khác.",
+    "variantText": "Cách viết",
+    "variantKind": "Loại",
+    "kinds": {
+      "spelling": "Chính tả khác",
+      "alias": "Tên gọi khác"
+    },
+    "acceptedAsAnswer": "Chấp nhận khi người học gõ",
+    "removeVariant": "Xóa",
+    "addVariant": "Thêm cách viết",
+    "paste": {
+      "title": "Dán danh sách từ",
+      "label": "Danh sách từ",
+      "hint": "Mỗi dòng một từ: lemma,pos (tối đa 500 dòng). Mỗi từ mới có sẵn một nghĩa trống để soạn.",
+      "tooMany": "Có {count} dòng, tối đa {max}. Bớt dòng rồi thử lại.",
+      "submit": "Thêm các từ này",
+      "summary": "Đã tạo {created} · đã có {exists} · sai {invalid}",
+      "line": "Dòng {line}",
+      "status": {
+        "created": "Đã tạo",
+        "exists": "Đã có",
+        "invalid": "Sai"
+      },
+      "writeSense": "Soạn nghĩa",
+      "invalid": "Cần đúng dạng lemma,pos với loại từ hợp lệ.",
+      "caseWarning": "Từ này chỉ khác một từ có sẵn ở chữ hoa/thường."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "Tất cả",
+      "status": "Trạng thái",
+      "level": "Trình độ",
+      "pos": "Loại từ",
+      "topic": "Chủ đề",
+      "batch": "Lô nhập",
+      "statuses": {
+        "unpublishable": "Thiếu nội dung",
+        "open_draft": "Bản nháp đang mở",
+        "published": "Đã publish"
+      }
+    },
+    "archived": "đã lưu trữ",
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "gloss": "Nghĩa tiếng Việt",
+      "level": "Trình độ",
+      "status": "Trạng thái",
+      "revision": "Bản sửa",
+      "missing": "Thiếu"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "reviewed": "Đã review",
+      "published": "Đã publish",
+      "rejected": "Bị từ chối",
+      "superseded": "Bản cũ",
+      "unpublished": "Đã gỡ khỏi app",
+      "retired": "Ngừng dùng",
+      "none": "Chưa có nội dung"
+    },
+    "openEdit": "#{revision} · có bản sửa mở",
+    "empty": "Không có nghĩa nào khớp bộ lọc.",
+    "footer": "{count} nghĩa đã hiển thị · 20 mỗi lần tải",
+    "bulk": {
+      "region": "Thao tác hàng loạt",
+      "selected": "Đã chọn {count} nghĩa",
+      "pick": "Chọn {word}",
+      "tooMany": "Mỗi lần tối đa {max} nghĩa.",
+      "actions": {
+        "review": "Đánh dấu đã review",
+        "reject": "Từ chối",
+        "publish": "Publish",
+        "unpublish": "Gỡ khỏi app",
+        "retire": "Ngừng dùng"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Gỡ {count} nghĩa khỏi app?",
+          "body": "Người học không còn thấy các nghĩa này cho tới khi publish lại."
+        },
+        "retire": {
+          "title": "Ngừng dùng {count} nghĩa?",
+          "body": "Nghĩa ngừng dùng không sửa hay publish lại được nữa."
+        }
+      },
+      "resultTitle": "Kết quả",
+      "summary": "{ok} nghĩa thành công · {failed} nghĩa không làm được",
+      "close": "Đóng",
+      "reasons": {
+        "stale-revision": "Nghĩa đã đổi, tải lại",
+        "publish-incomplete": "Còn thiếu nội dung",
+        "sense-retired": "Nghĩa đã ngừng dùng",
+        "not-found": "Không tìm thấy nghĩa",
+        "sense-not-found": "Không tìm thấy nghĩa",
+        "revision-not-open": "Bản sửa này không còn mở để review",
+        "revision-rejected": "Bản này đã bị từ chối",
+        "other": "Không làm được ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "nghĩa tiếng Việt",
+        "example-missing": "câu ví dụ",
+        "level-missing": "trình độ"
+      }
+    },
+    "detail": {
+      "back": "Nghĩa",
+      "notFound": "Không tìm thấy nghĩa này. Có thể link đã cũ.",
+      "noLevel": "chưa có trình độ",
+      "publishedWithEdit": "Đã publish, có bản sửa mở",
+      "content": "Nội dung",
+      "gloss": "Nghĩa tiếng Việt",
+      "definition": "Định nghĩa tiếng Anh",
+      "examples": "Câu ví dụ (tối đa {max})",
+      "example": "Câu ví dụ {n}",
+      "removeExample": "Xóa câu ví dụ {n}",
+      "addExample": "Thêm câu ví dụ",
+      "topics": "Chủ đề",
+      "noTopics": "Chưa có chủ đề nào.",
+      "acceptedForms": "Dạng được chấp nhận",
+      "acceptedFormsHint": "Cách nhau bằng dấu phẩy, ví dụ: deploys, deployed, deploying",
+      "saveDraft": "Lưu bản nháp",
+      "savePublish": "Lưu và publish",
+      "draftSaved": "Đã lưu bản nháp",
+      "published": "Đã lưu và publish",
+      "droppedTopics": "Đã bỏ chủ đề đã lưu trữ: {topics}",
+      "stale": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
+      "reload": "Tải lại",
+      "incomplete": "Còn thiếu {missing} nên chưa publish được.",
+      "people": "Người thao tác (gần nhất)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Bản nháp chưa review",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Đổi trạng thái gần nhất: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "publish",
+        "unpublished": "gỡ khỏi app",
+        "retired": "ngừng dùng"
+      },
+      "unknownUser": "người dùng đã xóa",
+      "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử.",
+      "ipaUk": "Phiên âm UK",
+      "ipaUs": "Phiên âm US",
+      "ipaSource": "Nguồn: {name}",
+      "ipaSourceOwn": "Nguồn: Wordmet",
+      "ipaInvalid": "Ký hiệu “{char}” không có trong bảng phiên âm.",
+      "audio": "Giọng đọc",
+      "audioReady": "Có giọng",
+      "audioPending": "Đang tạo",
+      "audioFailed": "Lỗi",
+      "audioNone": "Chưa có",
+      "audioRetry": "Tạo lại",
+      "audioRetried": "Đã xếp lại việc tạo giọng đọc.",
+      "audioLine": "{voice} · {status}"
+    }
+  },
+  "topics": {
+    "intro": "Sửa tên, lưu trữ và dùng lại chủ đề. Không xóa chủ đề.",
+    "cols": {
+      "code": "Mã",
+      "vi": "Tên tiếng Việt",
+      "en": "Tên tiếng Anh",
+      "state": "Trạng thái"
+    },
+    "active": "Đang dùng",
+    "archived": "Đã lưu trữ",
+    "rename": "Sửa tên",
+    "renameFor": "Sửa tên {code}",
+    "archive": "Lưu trữ",
+    "archiveFor": "Lưu trữ {code}",
+    "restore": "Dùng lại",
+    "restoreFor": "Dùng lại {code}",
+    "addTitle": "Thêm chủ đề",
+    "renameTitle": "Sửa tên chủ đề “{code}”",
+    "add": "Thêm",
+    "save": "Lưu",
+    "code": "Mã",
+    "codeHint": "Chữ thường, số và dấu gạch ngang, ví dụ: food, daily-life. Không đổi được sau khi tạo.",
+    "codeRule": "Mã chỉ gồm chữ thường a–z, số và dấu gạch ngang.",
+    "exists": "Đã có chủ đề mã này. Chọn mã khác.",
+    "nameVi": "Tên tiếng Việt",
+    "nameEn": "Tên tiếng Anh",
+    "created": "Đã thêm chủ đề “{code}”",
+    "renamed": "Đã đổi tên “{code}”",
+    "archivedToast": "Đã lưu trữ “{code}”",
+    "restoredToast": "Đã dùng lại “{code}”",
+    "empty": "Chưa có chủ đề nào.",
+    "footer": "{count} chủ đề"
+  },
+  "dashboard": {
+    "note": "Số liệu tổng hợp về AI trong khoảng thời gian đã chọn, tính theo giờ Việt Nam. Không bao gồm nội dung câu hỏi hay thông tin người học.",
+    "range": "Khoảng thời gian",
+    "lastDays": "{days} ngày gần nhất",
+    "empty": "Chưa có dữ liệu trong khoảng thời gian này.",
+    "aiDisabled": "Tính năng AI đang tắt đối với người học (Cài đặt › Gói và hạn mức).",
+    "ready": "Sẵn sàng",
+    "ms": "{ms} ms",
+    "today": {
+      "title": "Tổng quan hôm nay",
+      "calls": "Lời gọi AI của người học / giới hạn ngày",
+      "cost": "Chi phí AI hôm nay",
+      "units": "Lượt AI của người học / giới hạn hệ thống",
+      "notReady": "Thao tác chưa sẵn sàng",
+      "adminUsd": "USD việc của admin hôm nay / trần",
+      "adminUsdReached": "Đã chạm trần USD: chạy thử, eval và judge bị chặn tới 0 giờ."
+    },
+    "health": {
+      "title": "Tình trạng vận hành",
+      "hint": "Chỉ tính các lượt gọi phục vụ người học, không bao gồm Chạy thử và Bộ ví dụ.",
+      "calls": "Lượt gọi của người học",
+      "failed": "Tỉ lệ lỗi chung",
+      "chart": "Lượt gọi của người học theo ngày",
+      "ok": "Thành công",
+      "failedCalls": "Lỗi"
+    },
+    "cost": {
+      "title": "Chi phí",
+      "hint": "Bao gồm mọi lượt gọi, kể cả Chạy thử và Bộ ví dụ. Quy đổi sang đồng theo tỉ giá hiện hành trong Cài đặt.",
+      "total": "Tổng chi phí",
+      "usd": "Tổng chi phí (USD)",
+      "calls": "Tổng lượt gọi",
+      "unknown": "Lượt gọi chưa xác định giá",
+      "chart": "Chi phí theo ngày",
+      "byOperation": "Theo thao tác",
+      "byModel": "Theo model",
+      "byPurpose": "Theo mục đích sử dụng"
+    },
+    "quality": {
+      "title": "Chất lượng câu hỏi AI",
+      "hint": "Đối chiếu câu hỏi AI với câu hỏi không dùng AI trong cùng khoảng thời gian: tỉ lệ trả lời đúng, dùng gợi ý và bỏ qua.",
+      "reports": "Báo lỗi",
+      "noReports": "Không có báo lỗi trong khoảng thời gian này.",
+      "aiReasons": "Lý do báo lỗi câu hỏi AI",
+      "forms": "Dạng chia từ chưa có trong bảng và kiểm tra từ riêng",
+      "newForms": "Dạng chia mới phát sinh",
+      "formsSeen": "Dạng chia tiếp tục xuất hiện",
+      "wordCheck": "Kiểm tra từ riêng: {verdict}",
+      "compare": "Câu hỏi AI so với câu hỏi không dùng AI",
+      "reportsAi": "Báo lỗi câu hỏi AI",
+      "retry": {
+        "title": "Câu AI phải viết lại vì không đạt kiểm tra tự động",
+        "hint": "Tỉ lệ câu AI bị kiểm tra tự động loại ở lần đầu nên phải nhờ AI viết lại. Trong ngoặc: số câu viết lại / số câu AI trả về lần đầu."
+      }
+    },
+    "impact": {
+      "title": "Tác động đến người học",
+      "hint": "Khi không tạo được câu hỏi AI, phiên luyện tập tự động chuyển sang câu hỏi không dùng AI.",
+      "requests": "Câu hỏi AI được yêu cầu",
+      "failedShare": "Tỉ lệ không tạo được",
+      "failures": "Nguyên nhân không tạo được",
+      "noFailure": "Không có câu hỏi AI nào bị lỗi.",
+      "sessions": "Phiên có câu hỏi AI, theo nguyên nhân AI dừng",
+      "notStopped": "AI hoạt động bình thường"
+    },
+    "evals": {
+      "title": "Eval gần nhất",
+      "hint": "Lần chạy xong trọn gần nhất của cấu hình đang chạy, trên phiên bản bộ ví dụ mới nhất. Held-out chỉ có số tổng.",
+      "run": "Cấu hình {number} · {model} · phiên bản {version} · {date}",
+      "noSet": "Chưa có phiên bản bộ ví dụ đã chốt.",
+      "noModel": "Cấu hình đang chạy chưa có model.",
+      "noRun": "Chưa có lần chạy xong trọn của cấu hình đang chạy trên phiên bản {version}.",
+      "split": "Phần",
+      "dev": "Dev",
+      "heldOut": "Held-out",
+      "shape": "Khuôn",
+      "rule": "Luật",
+      "expected": "Mong đợi",
+      "judge": "Judge {name} bản {revision} · {criterion}"
+    },
+    "judge": {
+      "title": "Điểm judge theo cấu hình",
+      "hint": "Theo thao tác và cặp (số cấu hình, model): từ eval trên phiên bản bộ ví dụ mới nhất và từ câu thật trong khoảng đã chọn. Vạch đứt là chỗ đổi bản judge.",
+      "chart": "{judge} · {criterion} · {operation}",
+      "column": "{source} · cấu hình {number} · {model}",
+      "axisConfig": "Cấu hình {number}",
+      "sources": {
+        "eval": "Eval",
+        "real": "Câu thật"
+      },
+      "marker": "Bản judge {revision}",
+      "calibrated": "Đã hiệu chỉnh",
+      "uncalibrated": "Chưa hiệu chỉnh",
+      "agreement": "{agree}/{labeled} nhãn khớp",
+      "pass": "Đạt",
+      "failMajor": "Lỗi nặng",
+      "failMinor": "Lỗi nhẹ",
+      "unscored": "Không chấm được",
+      "cols": {
+        "group": "Nhóm",
+        "revision": "Bản judge",
+        "calibration": "Hiệu chỉnh"
+      },
+      "empty": "Chưa có điểm judge nào."
+    },
+    "real": {
+      "title": "Chấm câu AI thật",
+      "hint": "Lượt chấm câu thật đã xong gần nhất của mỗi thao tác, trong khoảng đã chọn.",
+      "cols": {
+        "judge": "Judge",
+        "criterion": "Tiêu chí",
+        "scoredAt": "Lúc chấm"
+      },
+      "empty": "Chưa có lượt chấm câu thật nào xong trong khoảng này."
+    },
+    "usage": {
+      "title": "Hạn mức sử dụng",
+      "hint": "Lượt AI của người học theo ngày, mỗi ngày đối chiếu với giới hạn của chính ngày đó.",
+      "total": "Tổng lượt AI đã dùng",
+      "daysAtCap": "Số ngày đạt giới hạn",
+      "refunds": "Lượt đã hoàn lại",
+      "peakLearners": "Số người học cao nhất trong ngày",
+      "chart": "Lượt AI theo ngày",
+      "practice": "Câu hỏi AI khi luyện tập",
+      "lookup": "Tra cứu từ bằng AI",
+      "dayCap": "Giới hạn ngày đó",
+      "noCap": "Không giới hạn",
+      "atCap": "Đạt giới hạn",
+      "yes": "Có",
+      "pro": {
+        "title": "Người dùng gói Pro đã dùng bao nhiêu hạn mức",
+        "hint": "Tính theo chu kỳ hiện tại của từng người, không phụ thuộc khoảng thời gian đã chọn. Mỗi người được xếp theo loại có tỉ lệ đã dùng cao hơn: câu hỏi AI khi luyện tập hoặc tra cứu từ bằng AI.",
+        "learners": "Người dùng gói Pro",
+        "none": "Chưa có người dùng gói Pro",
+        "chart": "Số người dùng gói Pro theo mức đã dùng",
+        "bucketZero": "Chưa dùng (0 %)",
+        "bucketLow": "Đã dùng 1–49 %",
+        "bucketMid": "Đã dùng 50–79 %",
+        "bucketHigh": "Đã dùng 80–99 %",
+        "bucketFull": "Đã dùng hết (100 %)",
+        "noLimit": "{count} người dùng gói Pro không có hạn mức AI nên không nằm trong các nhóm trên.",
+        "truncated": "Có nhiều người dùng gói Pro hơn số hệ thống tính trong một lần, nên các con số chỉ phản ánh một phần."
+      }
+    },
+    "retention": {
+      "title": "Người học có quay lại không",
+      "hint": "“Đang học” = có ít nhất một lần học (ôn thẻ, thêm hoặc bỏ từ, trả lời câu luyện tập) trong {days} ngày gần nhất. Không tính tài khoản admin, editor và tài khoản chưa xác nhận email. Chỉ có số từ ngày bắt đầu ghi lần học.",
+      "active": "Đang học hôm nay",
+      "stopped": "Đã ngừng",
+      "cohorts": "Theo tuần đăng ký (giờ Việt Nam, tuần bắt đầu thứ Hai)",
+      "cols": {
+        "week": "Tuần đăng ký",
+        "size": "Số người",
+        "d7": "D7",
+        "d30": "D30"
+      },
+      "weekOf": "Từ {date}",
+      "rate": "{percent} ({count}/{size})",
+      "blank": "“—”: nhóm chưa tới ngày +7 / +30, hoặc không có ai đăng ký."
+    },
+    "cols": {
+      "operation": "Thao tác",
+      "ready": "Trạng thái",
+      "calls": "Lượt gọi",
+      "failedShare": "Tỉ lệ lỗi",
+      "p50": "Thời gian p50",
+      "p95": "Thời gian p95",
+      "errors": "Loại lỗi",
+      "group": "Nhóm",
+      "vnd": "Chi phí (₫)",
+      "usd": "Chi phí (USD)",
+      "unknownCost": "Chưa xác định giá",
+      "type": "Dạng câu hỏi",
+      "source": "Nguồn",
+      "asked": "Số câu đã hỏi",
+      "correct": "Trả lời đúng",
+      "hinted": "Dùng gợi ý",
+      "skipped": "Bỏ qua",
+      "reports": "Báo lỗi",
+      "per1000": "Báo lỗi / 1.000 câu",
+      "open": "Chưa xử lý",
+      "fixed": "Đã sửa",
+      "noError": "Không có lỗi",
+      "confirmed": "Đã xác nhận",
+      "refunded": "Đã hoàn lượt",
+      "date": "Ngày",
+      "learners": "Người học"
+    },
+    "types": {
+      "mcq_definition": "Chọn từ theo nghĩa",
+      "true_false_definition": "Đúng / sai",
+      "type_word": "Nhập từ",
+      "cloze": "Điền vào chỗ trống",
+      "meaning_in_sentence": "Nghĩa của từ trong câu",
+      "mcq_sentence": "Chọn từ phù hợp với câu"
+    },
+    "sources": {
+      "ai": "AI",
+      "rule": "Không dùng AI",
+      "own_sentence": "Câu do người học nhập"
+    },
+    "failures": {
+      "ai-unavailable": "AI chưa sẵn sàng",
+      "quota-exhausted": "Hết lượt AI",
+      "plan-required": "Gói hiện tại không có AI",
+      "ai-failed": "Lượt gọi AI thất bại",
+      "rejected": "Không đạt kiểm tra tự động",
+      "input-mismatch": "Dữ liệu từ đã thay đổi",
+      "word-not-recognized": "AI không nhận diện được từ riêng"
+    },
+    "verdicts": {
+      "ok": "hợp lệ",
+      "not_recognized": "không nhận diện được"
+    },
+    "byOperation": "Xem chi tiết theo thao tác",
+    "showTable": "Xem dạng bảng"
+  },
+  "legal": {
+    "title": "Chính sách & điều khoản",
+    "intro": "Soạn Chính sách bảo mật và Điều khoản sử dụng. Hai văn bản chung một phiên bản: khi đăng bản mới, người học đã đồng ý bản cũ sẽ được hỏi lại.",
+    "current": "Đang đăng: bản {number}, có hiệu lực từ {date}.",
+    "noCurrent": "Chưa đăng bản nào. Trang Chính sách bảo mật và Điều khoản trên web vẫn hiện thông báo bản nháp.",
+    "create": "Tạo bản nháp",
+    "empty": "Chưa có phiên bản nào",
+    "emptyHint": "Bấm [Tạo bản nháp], soạn nội dung rồi đăng.",
+    "list": {
+      "number": "Bản",
+      "status": "Trạng thái",
+      "effective": "Có hiệu lực từ",
+      "updated": "Cập nhật",
+      "publishedBy": "Đăng bởi",
+      "english": "Tiếng Anh",
+      "yes": "Có",
+      "no": "Chưa",
+      "open": "Mở bản {number}"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đang đăng",
+      "superseded": "Đã thay"
+    },
+    "editor": {
+      "heading": "Bản {number}",
+      "back": "Về danh sách",
+      "tabs": "Văn bản",
+      "privacy": "Chính sách bảo mật",
+      "terms": "Điều khoản sử dụng",
+      "vi": "Tiếng Việt",
+      "en": "Tiếng Anh (không bắt buộc)",
+      "effective": "Có hiệu lực từ",
+      "effectiveHint": "Ngày hiện trên trang, dạng năm-tháng-ngày, ví dụ 2026-11-10.",
+      "preview": "Xem trước",
+      "previewEmpty": "Chưa có nội dung để xem trước.",
+      "save": "Lưu",
+      "saved": "Đã lưu bản {number}.",
+      "dirty": "Chưa lưu",
+      "publish": "Đăng",
+      "publishFirst": "Lưu trước khi đăng.",
+      "delete": "Xóa nháp",
+      "copy": "Tạo nháp từ bản này",
+      "readOnly": "Bản này đã đăng nên không sửa được. Muốn sửa, hãy tạo nháp từ bản này.",
+      "required": "Cần có nội dung.",
+      "needDate": "Cần chọn ngày có hiệu lực.",
+      "reload": "Tải bản mới",
+      "conflict": "Nháp vừa được lưu từ nơi khác. Tải bản mới để tiếp tục."
+    },
+    "publishDialog": {
+      "title": "Đăng bản {number}?",
+      "body": "Người học đã đồng ý bản trước sẽ phải đồng ý lại trước khi dùng tiếp. Trang Chính sách bảo mật và Điều khoản trên web đổi sang bản này ngay.",
+      "confirm": "Đăng"
+    },
+    "deleteDialog": {
+      "title": "Xóa bản nháp {number}?",
+      "body": "Nháp bị xóa hẳn, không khôi phục được.",
+      "confirm": "Xóa nháp"
+    },
+    "toast": {
+      "created": "Đã tạo bản nháp {number}.",
+      "published": "Đã đăng bản {number}.",
+      "deleted": "Đã xóa bản nháp {number}."
+    }
+  },
+  "faq": {
+    "banner": "Trang chủ chỉ hiện câu đã đăng, và cập nhật sau lần deploy web tiếp theo.",
+    "add": "Thêm câu hỏi",
+    "edit": "Sửa",
+    "editFor": "Sửa câu hỏi: {question}",
+    "delete": "Xóa",
+    "deleteFor": "Xóa câu hỏi: {question}",
+    "cols": {
+      "position": "Thứ tự",
+      "question": "Câu hỏi",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "published": "Đã đăng",
+      "draft": "Nháp"
+    },
+    "empty": "Chưa có câu hỏi nào.",
+    "emptyHint": "Câu hỏi đã đăng hiện ở trang chủ.",
+    "newTitle": "Thêm câu hỏi",
+    "editTitle": "Sửa câu hỏi",
+    "form": {
+      "question": "Câu hỏi",
+      "answer": "Câu trả lời",
+      "position": "Thứ tự",
+      "positionHint": "Số nhỏ đứng trước.",
+      "published": "Đăng lên trang chủ",
+      "save": "Lưu",
+      "questionInvalid": "Nhập câu hỏi, tối đa 300 ký tự.",
+      "answerInvalid": "Nhập câu trả lời, tối đa 2.000 ký tự.",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000."
+    },
+    "deleteDialog": {
+      "title": "Xóa câu hỏi này?",
+      "confirm": "Xóa"
+    }
   }
 }

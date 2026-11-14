@@ -13,7 +13,7 @@ export interface LogSink {
 }
 
 export const LOG_SINK = 'LOG_SINK';
-const REDACT_KEY_PATTERN = /password|otp|code|token|cookie|authorization|answer|contextSentence/i;
+const REDACT_KEY_PATTERN = /password|otp|code|token|cookie|authorization|answer|context_?sentence/i;
 const REDACTED = '[redacted]';
 
 function serializeError(err: unknown): { name: string; code?: string | number } {

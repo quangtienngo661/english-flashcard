@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "exports": {
-    "./theme.css": "./theme.css"
+    "./theme.css": "./theme.css",
+    "./web.css": "./web.css",
+    "./web-dark.css": "./web-dark.css"
   }
 }

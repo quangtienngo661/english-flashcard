@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-// Shared tokens come from the workspace package (spec UB3); resolving it here also proves apps/web can import it.
+// theme.css is admin's since P.6 (apps/web no longer imports it); the checks that still apply to it stay here, read from the package.
 const themePath = createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css');
 const theme = readFileSync(themePath, 'utf8');
 const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
@@ -21,9 +21,16 @@ function luminance(hex: string): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
+// session-card aliases canvas (as in Figma).
+function hexOf(name: string): string | undefined {
+  const value = colors.get(name);
+  const alias = value?.match(/^var\(--color-([a-z0-9-]+)\)$/);
+  return alias ? hexOf(alias[1]) : value;
+}
+
 function contrast(fg: string, bg: string): number {
-  const a = colors.get(fg);
-  const b = colors.get(bg);
+  const a = hexOf(fg);
+  const b = hexOf(bg);
   if (!a || !b) throw new Error(`missing color token ${a ? bg : fg}`);
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
@@ -51,30 +58,28 @@ describe('design tokens', () => {
     expect(failures).toEqual([]);
   });
 
-  it('LP31 size tokens use rem and the clamp tokens hit the Figma sizes', () => {
-    const sized = [
-      ...['text', 'container'].flatMap((p) => [...tokens(globals, p)].map(([k, v]) => [`${p}-${k}`, v])),
-      ...['radius', 'shadow'].flatMap((p) => [...tokens(theme, p)].map(([k, v]) => [`${p}-${k}`, v])),
-    ];
-    expect(sized.length).toBeGreaterThan(20);
+  it('LP31 theme.css radius and shadow tokens use rem', () => {
+    const sized = ['radius', 'shadow'].flatMap((p) => [...tokens(theme, p)].map(([k, v]) => [`${p}-${k}`, v]));
+    expect(sized).toHaveLength(11);
     expect(sized.filter(([, v]) => /\dpx/.test(v)).map(([k]) => k)).toEqual([]);
-
-    const evalClamp = (value: string, width: number) => {
-      const m = value.match(/clamp\(([\d.]+)rem,\s*([\d.]+)rem\s*\+\s*([\d.]+)vw,\s*([\d.]+)rem\)/);
-      if (!m) throw new Error(`not a clamp: ${value}`);
-      const [min, base, vw, max] = m.slice(1).map(Number);
-      return Math.min(Math.max(base * 16 + (vw / 100) * width, min * 16), max * 16);
-    };
-    const text = tokens(globals, 'text');
-    const expected: Record<string, [number, number]> = { display: [36, 60], cta: [28, 44], h2: [28, 40] };
-    for (const [name, [at390, at1440]] of Object.entries(expected)) {
-      expect(evalClamp(text.get(name) ?? '', 390)).toBeCloseTo(at390, 0);
-      expect(evalClamp(text.get(name) ?? '', 1440)).toBeCloseTo(at1440, 0);
-    }
   });
 
   it('UBC1 apps/web declares no color tokens', () => {
     // Declarations only: using a shared colour through var(--color-…) is expected.
     expect(globals).not.toMatch(/--color-[a-z0-9-]+\s*:/);
+  });
+});
+
+// A merge once dropped a closing brace in globals.css; jsdom tests never parse it, only the production build failed.
+describe('globals.css syntax', () => {
+  it('every block that opens also closes', () => {
+    const code = globals.replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^'\n]*'|"[^"\n]*"/g, '');
+    let depth = 0;
+    for (const ch of code) {
+      if (ch === '{') depth += 1;
+      if (ch === '}') depth -= 1;
+      expect(depth).toBeGreaterThanOrEqual(0);
+    }
+    expect(depth).toBe(0);
   });
 });

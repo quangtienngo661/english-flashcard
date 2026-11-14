@@ -3,6 +3,8 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
 import { seriousViolations } from './support/axe';
+import { dashboardMocks } from './support/dashboard-mocks';
+import { expectNoHorizontalScroll } from './support/overflow';
 
 const emptyUploads = {
   json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null },
@@ -33,7 +35,7 @@ test.describe('shell (vi)', () => {
     await expect(admin.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.staff })).toBeVisible();
   });
 
-  test('Task 12a: group titles TỔNG QUAN … HỆ THỐNG are visible at 1440; at 390 the drawer lists all 16 items and scrolls inside the viewport', async ({ page }, info) => {
+  test('Task 12a: group titles TỔNG QUAN … HỆ THỐNG are visible at 1440; at 390 the drawer lists all 28 items and scrolls inside the viewport', async ({ page }, info) => {
     await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
     await page.goto('/uploads');
     await openNavIfCollapsed(page);
@@ -41,7 +43,7 @@ test.describe('shell (vi)', () => {
     for (const title of Object.values(vi.navGroups)) {
       await expect(nav.getByRole('group', { name: title, exact: true })).toBeAttached();
     }
-    await expect(nav.getByRole('link')).toHaveCount(16);
+    await expect(nav.getByRole('link')).toHaveCount(28);
     if (info.project.name === 'mobile') {
       const last = nav.getByRole('link', { name: vi.nav.staff });
       await last.scrollIntoViewIfNeeded();
@@ -54,13 +56,34 @@ test.describe('shell (vi)', () => {
     }
   });
 
-  test('Task 12a: an unavailable menu item opens "Tính năng chưa có" with its purpose and planned step; axe is clean', async ({ page }) => {
-    await signedInAs(page, 'admin', {});
-    await page.goto('/ai/costs');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.aiCosts);
-    await expect(page.getByText(vi.comingSoon.title)).toBeVisible();
-    await expect(page.getByText(vi.comingSoon.purpose.aiCosts)).toBeVisible();
-    await expect(page.getByText('Dự kiến: Bước 6')).toBeVisible();
+  test('the AI dashboard (owner 28/10/2026) shows its sections for an editor with ai.view; axe is clean', async ({ page }) => {
+    await signedInAs(page, 'editor', dashboardMocks);
+    await page.goto('/dashboard');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.dashboard);
+    for (const title of [vi.dashboard.today.title, vi.dashboard.health.title, vi.dashboard.cost.title, vi.dashboard.quality.title,
+      vi.dashboard.impact.title, vi.dashboard.evals.title, vi.dashboard.judge.title, vi.dashboard.real.title, vi.dashboard.usage.title,
+      vi.dashboard.retention.title]) {
+      await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
+    }
+    // The retention card (nhóm B M6): today's two tiles, and the weeks as a table (stacked cards on a phone, so only the visible copy counts):
+    // a week with people shows its share, the empty week shows dashes, never 0 %.
+    const retention = page.getByRole('heading', { level: 2, name: vi.dashboard.retention.title }).locator('xpath=ancestor::section[1]');
+    const visible = (locator: Locator) => locator.filter({ visible: true });
+    await expect(retention.getByText(vi.dashboard.retention.active)).toBeVisible();
+    await expect(visible(retention.getByText('Từ 19/10'))).toBeVisible();
+    await expect(visible(retention.getByText(/^60\s?% \(3\/5\)$/))).toBeVisible();
+    await expect(visible(retention.getByText('—', { exact: true })).first()).toBeVisible();
+    await expect(retention.getByText(/0\s?% \(0\/0\)/)).toHaveCount(0);
+    await expect(page.getByRole('group', { name: vi.dashboard.cost.chart })).toBeVisible();
+    await expect(page.getByRole('list', { name: vi.dashboard.quality.retry.title })).toBeVisible();
+    await expect(page.getByRole('list', { name: vi.dashboard.usage.pro.chart })).toBeVisible();
+    // The judge chart of the mock: two judge revisions, so one dashed marker, and a column for each of the three groups.
+    const judge = page.getByRole('group', { name: `Chỉ một đáp án · single_answer · ${vi.ai.operations.names.generate_cloze}` });
+    await expect(judge).toBeVisible();
+    await expect(judge.getByText(vi.dashboard.judge.marker.replace('{revision}', '2'))).toBeVisible();
+    await expect(judge.getByRole('img')).toHaveCount(3);
+    await expect(page.getByText(vi.dashboard.today.adminUsd)).toBeVisible();
+    await expectNoHorizontalScroll(page);
     expect(await seriousViolations(page)).toEqual([]);
   });
 
@@ -70,9 +93,14 @@ test.describe('shell (vi)', () => {
     await expect(page).toHaveURL(/\/uploads$/);
   });
 
-  test('an editor opening /staff is sent to the first visible page', async ({ page }) => {
+  test('an editor opening /staff keeps the title, sees the no-access text, and [Về trang chủ] leads to /uploads', async ({ page }) => {
     await signedInAs(page, 'editor', { 'GET /v1/admin/content/uploads': () => emptyUploads });
     await page.goto('/staff');
+    await expect(page).toHaveURL(/\/staff$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.staff);
+    await expect(page.getByText(vi.noAccess.title)).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.getByRole('button', { name: vi.noAccess.home }).click();
     await expect(page).toHaveURL(/\/uploads$/);
   });
 
@@ -123,7 +151,7 @@ test.describe('shell (vi)', () => {
     await expect(active).toHaveAttribute('aria-current', 'page');
     expect(await active.getByText(vi.nav.uploads).evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
     for (const link of await aside.getByRole('link').all()) await expect(link.locator('svg')).toHaveCount(1);
-    // The foot stays on screen at 1440×900 even with all 16 items: only the menu list scrolls.
+    // The foot stays on screen at 1440×900 even with all 28 items: only the menu list scrolls.
     await expect(aside.getByRole('group', { name: vi.shell.language })).toBeInViewport({ ratio: 1 });
     const account = aside.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) });
     await expect(account).toBeInViewport({ ratio: 1 });

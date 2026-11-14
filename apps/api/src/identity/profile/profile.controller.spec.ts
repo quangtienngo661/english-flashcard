@@ -4,15 +4,20 @@ import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { createTestApp, type TestApp } from '../../../test/support/create-test-app.js';
+import { testConfig } from '../../../test/support/test-config.js';
 import { AccessTokenService } from '../sessions/access-token.service.js';
+
+const testTermsVersion = testConfig().termsVersion;
 
 describe('profile HTTP routing (unit, isolated persistence)', () => {
   let ctx: TestApp;
   let token: string;
   let row: { id: string; email: string; emailVerifiedAt: Date | null; nativeLanguage: string | null;
-    timezone: string; staffRole: string | null } | null;
+    timezone: string; staffRole: string | null; mustChangePassword: boolean; givenName: string | null;
+    familyName: string | null; birthDate: Date | null; termsAcceptedAt: Date | null; termsVersion: string | null;
+    passwordCredential: { userId: string } | null; identities: Array<{ provider: string }> } | null;
   let userId: string;
-  const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, $disconnect: async () => {} };
+  const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, legalVersion: { findFirst: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const get = () => ctx.http().get('/v1/me').set('Authorization', `Bearer ${token}`);
   const patch = (body: object) => ctx.http().patch('/v1/me').set('Authorization', `Bearer ${token}`).send(body);
@@ -24,7 +29,9 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   beforeEach(async () => {
     userId = randomUUID();
     row = { id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Ho_Chi_Minh', staffRole: null };
+      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null, termsAcceptedAt: null, termsVersion: null,
+      passwordCredential: { userId }, identities: [] };
+    prisma.legalVersion.findFirst.mockReset().mockResolvedValue(null);
     prisma.user.findUnique.mockReset().mockImplementation(async () => row && { ...row });
     prisma.user.update.mockReset().mockImplementation(async ({ data }) => {
       if (!row) throw { code: 'P2025' };
@@ -38,11 +45,33 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
+  it('terms_outdated is true once the admin published a version the learner has not accepted; accepting records it and clears the flag', async () => {
+    row!.termsAcceptedAt = ctx.clock.now();
+    row!.termsVersion = '1';
+    prisma.legalVersion.findFirst.mockResolvedValue({ number: 2 });
+    const res = await get();
+    expect(res.body).toMatchObject({ terms_version: '1', terms_outdated: true });
+    const done = await patch({ accept_terms: true });
+    expect(done.status).toBe(200);
+    expect(done.body).toMatchObject({ terms_version: '2', terms_outdated: false });
+    expect(row!.termsVersion).toBe('2');
+  });
+
+  it('terms_outdated stays false before any consent (the first acceptance is a different prompt) and with no published version', async () => {
+    prisma.legalVersion.findFirst.mockResolvedValue({ number: 2 });
+    expect((await get()).body).toMatchObject({ terms_accepted_at: null, terms_outdated: false });
+    row!.termsAcceptedAt = ctx.clock.now();
+    row!.termsVersion = testTermsVersion;
+    prisma.legalVersion.findFirst.mockResolvedValue(null);
+    expect((await get()).body).toMatchObject({ terms_outdated: false });
+  });
+
   it('B2#67/B1#25: GET returns only the public profile and all four content permissions for stored admin and editor roles', async () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email: row!.email, email_verified: false, native_language: null,
-      timezone: row!.timezone, staff_role: null, permissions: [] });
+      timezone: row!.timezone, staff_role: null, permissions: [], must_change_password: false,
+      given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, terms_version: null, terms_outdated: false, auth_method: 'password', sign_in_methods: ['password'] });
     row!.emailVerifiedAt = ctx.clock.now();
     for (const staffRole of ['admin', 'editor']) {
       row!.staffRole = staffRole;
@@ -50,33 +79,46 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(profile.status).toBe(200);
       expect(profile.body).toMatchObject({ email_verified: true, staff_role: staffRole, permissions: [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
-        ...(staffRole === 'admin' ? ['settings.manage'] : []),
+        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read', 'ai.view',
       ] });
     }
     expect(hit).not.toHaveBeenCalled();
   });
-  it('B1#24/S8: partial PATCH changes vi then en, preserving other fields and accepted aliases', async () => {
+  it('B8 (D5): auth_method comes from the calling chain and sign_in_methods lists password and Google', async () => {
+    ctx.accountStatus.state = { status: 'active', authMethod: 'google', revoked: false };
+    row!.passwordCredential = null;
+    row!.identities = [{ provider: 'google' }];
+    const res = await get();
+    expect(res.body).toMatchObject({ auth_method: 'google', sign_in_methods: ['google'] });
+    row!.passwordCredential = { userId };
+    expect((await get()).body.sign_in_methods).toEqual(['password', 'google']);
+    ctx.accountStatus.state = { status: 'active', authMethod: 'password', revoked: false };
+  });
+  it('B1#24/S8/C2: partial PATCH changes vi then en, preserving other fields and storing an accepted alias as its canonical name', async () => {
     const before = { ...row! };
     for (const language of ['vi', 'en']) {
       const res = await patch({ native_language: language });
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ id: userId, email: before.email, email_verified: false, native_language: language,
-        timezone: before.timezone, staff_role: null, permissions: [] });
+        timezone: before.timezone, staff_role: null, permissions: [], must_change_password: false,
+        given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, terms_version: null, terms_outdated: false, auth_method: 'password', sign_in_methods: ['password'] });
     }
     expect((await patch({ timezone: 'Asia/Saigon' })).status).toBe(200);
-    const alias = await patch({ timezone: 'Asia/Ho_Chi_Minh' });
-    expect(alias.status).toBe(200); expect(alias.body.timezone).toBe('Asia/Ho_Chi_Minh');
+    const alias = await patch({ timezone: 'asia/ho_chi_minh' });
+    expect(alias.status).toBe(200); expect(alias.body.timezone).toBe('Asia/Saigon');
     expect(alias.body.native_language).toBe('en');
     expect(row).toEqual({ ...before, nativeLanguage: 'en' });
     expect(hit).toHaveBeenCalledTimes(4);
     for (const call of hit.mock.calls) expect(call).toEqual(['user.write', userId]);
   });
-  it('B1#24/SE5: invalid or extra fields reject the whole PATCH with Problem Details and no writes', async () => {
+  it('B1#24/SE5/GA4: invalid or extra fields reject the whole PATCH with Problem Details and no writes', async () => {
     const before = { ...row! };
     for (const body of [{ native_language: 'fr' }, { native_language: null }, { native_language: 42 },
       { timezone: 42 }, { timezone: null }, { timezone: 'x'.repeat(65) },
-      { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' },
-      { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true }]) {
+      { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' }, { timezone: '+07:00' },
+      { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true },
+      { birth_date: null }, { birth_date: '2010-02-30' }, { birth_date: '1899-12-31' }, { birth_date: '14/05/2008' },
+      { given_name: null }, { given_name: '' }, { given_name: '   ' }, { given_name: 'x'.repeat(51) }]) {
       const res = await patch(body);
       expect(res.status).toBe(400);
       expect(res.body.type).toBe('https://api.example.com/problems/validation-failed');
@@ -85,6 +127,24 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(row).toEqual(before);
     }
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+  it('GET /v1/me returns names and birth date (null for an old account)', async () => {
+    expect((await get()).body).toMatchObject({ given_name: null, family_name: null, birth_date: null });
+    Object.assign(row!, { givenName: 'Lan', familyName: 'Nguyen', birthDate: new Date('2000-02-29T00:00:00Z') });
+    expect((await get()).body).toMatchObject({ given_name: 'Lan', family_name: 'Nguyen', birth_date: '2000-02-29' });
+  });
+  it('FE15: an old account sets given_name', async () => {
+    const res = await patch({ given_name: '  Lan ' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ given_name: 'Lan', family_name: null, birth_date: null });
+    expect(row!.givenName).toBe('Lan');
+  });
+  it('PATCH family_name null clears it', async () => {
+    row!.familyName = 'Nguyen';
+    const res = await patch({ family_name: null });
+    expect(res.status).toBe(200);
+    expect(res.body.family_name).toBeNull(); expect(row!.familyName).toBeNull();
+    expect((await patch({ family_name: '' })).body.family_name).toBeNull();
   });
   it('B1#24: an empty PATCH returns the current profile', async () => {
     const before = { ...row! };

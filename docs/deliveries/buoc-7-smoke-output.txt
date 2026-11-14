@@ -1,0 +1,202 @@
+# pnpm smoke:buoc-7 — output (21/10/2026)
+#
+# Code: dev @ c1d5feb (after PR #115) + this branch's smoke script; run 1 was on f628e4c, the head of PR #115, whose tree is identical to c1d5feb.
+# Each run on a recreated database english_learning_smoke_b7: dropdb/createdb, pnpm db:setup, pnpm build, pnpm run:dev (API + worker), then pnpm smoke:buoc-7.
+# Environment of every process: .env.example values, secrets generated in the shell (never printed, no .env), AI_FAKE_ENABLED=true,
+# JOB_QUEUE_PREFIX=wordmet-b7-smoke, OPENAI_API_KEY and ANTHROPIC_API_KEY empty, PORT=3017. No real provider call (D3).
+# 'network error … ECONNRESET; retrying' lines: the API closes an idle keep-alive socket after 5 s (seen in Bước 5); the request is resent.
+
+## Run 1
+
+[1] 12:18:03Z Wait for the API
+    ok — reachable at http://localhost:3017; database english_learning_smoke_b7; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b7-smoke, no key
+
+[2] 12:18:03Z Accounts: admin (CLI grant), editor (created by the admin), learners L1, L2, L3 (vi)
+    ok — admin smoke7-admin-f44e6639@example.com; editor smoke7-editor-f44e6639@example.com; learners smoke7-l1-f44e6639@example.com, smoke7-l2-f44e6639@example.com, smoke7-l3-f44e6639@example.com (native_language vi)
+
+[3] 12:18:07Z AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok chosen for five operations
+    ok — five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok chosen, all five ready; ai_prefetch_count 2
+
+[4] 12:18:07Z Content: import 36 verbs (gloss, short definition, example, inflections) in 12 topic/level buckets and publish
+    ok — batch 2756c5a5-040d-4c0a-b4d7-20d6bcaa96e7: 36 created, published by job 283a3ac3-2686-46a1-b748-fc8c4059d0e4; a learner sees them
+
+[5] 12:18:11Z Entitlements: L1 Pro with 87 AI practice units and 200 sessions a day; L2 stays Free; L3 Pro with 3 units
+    ok — L1 pro, ai_practice 87/87, ai_lookup 100; L2 free (no AI); L3 pro, ai_practice 3
+
+[6] 12:18:12Z Groups: one per bucket (bulk add by topic and level), plus an empty one for a saved AI suggestion
+    ok — L1: G1, G4, G5, G6, G7, GR1, GR2, GR3, GR5, G57, G117, G9; L2: GL2; L3: GL3
+
+[7] 12:18:13Z AC1 (B7E45, B7E7): Pro learner, 87 units, "gõ từ + điền từ AI", 10 questions, prepare after opening and after each question
+    ok — ai_planned 5, marked positions 2,4,6,8,10; every AI question made by prepare before next; 5 cloze (AI) + 5 typing, all right; 82 units left; 5 confirmed use rows
+
+[8] 12:18:25Z AC2 (B7E59, B7E15): the same session again, stopped at question 4 and abandoned; the next session reuses the unseen AI questions at 0 units
+    ok — session 2: 4 AI questions made (2 shown, 2 unseen), 4 units; abandoned by session 3, which marked both unseen words, reused their questions (0 units) and made 3 new ones; 75 units left
+
+[9] 12:18:36Z AC3 (B7E2): L3 has 3 units left; a session that needs 5 is refused, one that needs 3 opens
+    ok — count 5 → 403 ai-quota-insufficient (remaining 3, needed 5, resets_at 2026-11-21T12:18:11.993Z), no usage row; count 3 → opens (ai_planned 3), still 3 units
+
+[10] 12:18:37Z AC4 (B7E49, B7E10, B7E30): AI fails (fake:refuse) twice in a mixed session, no prepare → typing for those words, one ai-fallback notice, no unit
+    ok — positions 2 and 4 fell back to typing on the same word; notices [null,"ai-fallback",null,null]; both requests failed/ai-failed with the unit released; 75 units left
+
+[11] 12:18:45Z AC4 with prepare (B7E113, §6.4, §6.6): prepare fails both AI words; next switches type at once, calls AI no more, shows ai-fallback once
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":2}; both AI words asked as typing at once, no further AI call (2 calls, all from prepare)
+    ok — typing on both words, no further AI call; notices [{"k":1,"marked":false,"notice":null,"ai_reason":null},{"k":2,"marked":true,"notice":"ai-fallback","ai_reason":"ai-failed"},{"k":3,"marked":false,"notice":null,"ai_reason":null},{"k":4,"marked":true,"notice":null,"ai_reason":null}]
+
+[12] 12:18:51Z AC5 (B7E48, B7E31): AI-only session, AI times out (fake:slow) → ai_unavailable; next again → same, no AI call; retry_ai once AI is back (fake:503-then-ok) → AI question
+    ok — timeout after 10134 ms → ai_unavailable/ai-failed (unit released); again → same, no new call; retry_ai with fake:503-then-ok → cloze (calls provider-error,succeeded), 1 unit; cloze wrong → try_again, skip → wrong/skipped
+
+[13] 12:19:08Z AC6 (B7E34, B7E96, B7E97): fake:bad-form → rejected twice (#2), the form is recorded; staff accept it → the next AI question passes
+    ok — first request rejected (reason ai-failed) after 3fb87e60-42e1-42bb-8503-07fe9f849557 and #2; "zqfoptkgment" recorded twice and listed; editor accepted it (again → 409); list hides it; retry → cloze accepted "zqfoptkgment", one call, 1 unit
+
+[14] 12:19:15Z AC7 (B7E50–B7E56, B7E18, B7E124, plan choice 6): the three AI types and cloze from a saved sentence: hints, grading, translation
+    ok — mcq_sentence: hint 1 = definition, hint 2/3 → 409, right option "zqwdoacb", translation; meaning_in_sentence: highlight, 4 meanings, right = meaning, translation; cloze: hints d…/definition/meaning, another word → try_again, "Z…." → correct; saved-sentence cloze: no unit, not reportable, translation null; history shows option and translation; 3 units
+
+[15] 12:19:20Z AC8 (B7E70, B7E73, B7E76, B7E84): L1 reports the AI cloze; the editor confirms; the unit comes back; the admin sees it in refunds
+    ok — 7 reasons for ai, 4 for non_ai; report 36278057-def3-443a-91dc-2e813a82dd05 open with label "Có hơn một đáp án đúng"; staff row has op id, model fake:ok, prompt_revision 2; fixed → 409; confirmed by the editor → refunded, 70 → 71 units, one credit row; again → 409 report-not-open; L1 sees refunded true; admin refunds row (self_resolved false); editor → 403
+
+[16] 12:19:21Z AC9 (B7E19, B7E21, B7E93): AI lookup of an unknown word; the same key again; saved as a private word with 2 examples
+    ok — "rizzsuju": suggestion noun / "nghĩa giả", no catalog sense; 1 lookup unit; same key → same body, no call, no unit; 3 examples → 400; saved with 2 examples, draft_source ai_suggestion, ai_suggested true
+
+[17] 12:19:24Z AC10 (B7E91, B7E92): AI lookup of a catalog lemma, then of the word L1 just saved
+    ok — "zqkvdeif" → catalog_senses [423d8666-7c20-4880-a347-d77f409760f2]; "rizzsuju" → catalog_senses has L1's private sense; 2 units
+
+[18] 12:19:25Z Plan choices 3–4: a lemma-only edit keeps "AI gợi ý"; an examples edit publishes a new revision and drops it
+    ok — lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example
+
+[19] 12:19:25Z AC11 (B7E1, B7E22): a Free learner opens a session with cloze (either source) or an AI type, and looks a word up with AI
+    ok — cloze own, cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens
+
+[20] 12:19:26Z AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list
+    ok — "smoke_f44e6639" added (same code → 409, editor → 403) and listed for ai; no note → 400; renamed + moved to non_ai → lists follow; on an AI question → 400; turned off → gone from both lists, report → 400
+
+[21] 12:19:26Z Review Focus 1 (B7E16, B7E111, B7E112): five next calls at once on one AI slot → one item, one request, one unit
+    ok — 5 parallel replies {"question":1,"preparing":4}, all naming one item; 1 item, 1 request (ready), usage use:confirmed; a later next returns the same item
+
+[22] 12:19:29Z Review Focus 2 (B7E32, B7E114, B7E65): a generation stuck past the stale time is taken over with the same request id and input; one unit
+    ok — request e64017da-e090-495e-8bb6-d043f8862cc7: stuck generating with a reserved unit; current → item null, preparing true, no call; after back-dating (3 min) the next call took it over with the same id and stored input → cloze in 2653 ms; the first run's late timeout left it ready; 1 item, usage use:confirmed, calls timeout + succeeded
+
+[23] 12:19:43Z Review Focus 3 (B7E115, CR23, B7E23): a private word deleted between prepare and next leaves no question, request or check of it
+    (network error on POST /v1/practice/sessions/fb2acea1-5ccf-4759-855d-b2d6781285e5/next: ECONNRESET; retrying)
+    ok — prepare made P3's question (word check ok, no unit for the check) and the other word's; DELETE /v1/my-words → P3's question, request, check and items gone (psql); next asks the other word
+
+[24] 12:19:51Z Review Focus 4 (B7E75, B7E118): confirming an AI question that was given for free gives no credit
+    ok — report 6761b4a8-ec16-4b05-a67b-0e183649ae37 snapshots ai_charged false; confirmed → refunded false, no credit row, 67 units unchanged
+
+[25] 12:19:52Z Review Focus 5 (B7E79, B7E80, §7.8): staff see a private word in an AI option only as a mask; the asked private word only with consent
+    ok — mcq_sentence option P5 → staff see "[từ riêng của người học]" (also as the chosen answer); meaning_in_sentence option → "[nghĩa của từ riêng]"; P5 asked: no consent → 400, with consent → staff see P5
+
+[26] 12:19:58Z B7E57: a catalog sense revised after its AI question was made ahead → that question is not reused; a new one is made
+    (429 on POST /v1/practice/sessions/5ed5070c-2ec9-434a-8722-e8f8d02dd290/finish; waiting 1s)
+    ok — unseen question 6f07b7ae-3041-49eb-a898-b40a29aeb90c made on revision 2c751915-a33d-43b3-a648-700880985e3b; after quick-publish (live 52aa1de0-f760-46af-b82b-97c1c1208344) the next session made a new question (1 unit) and never asked the old one
+
+[27] 12:20:04Z B7E60 and §12.1: the hourly job keeps an unseen AI question from yesterday, deletes one past history_months, and requests older than 7 days
+    ok — back-dated 1 day → kept; back-dated 6 months + 1 day → deleted; request back-dated 8 days → deleted, a recent one kept
+
+[28] 12:20:13Z B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — 503 ai-unavailable, reason model-not-set, no session row; typing alone opens
+
+[29] 12:20:14Z B7E98, B7E58, B7E23 (fake:not-recognized): an unrecognised private word falls back with notice word-not-recognized, and has no AI type until edited
+    ok — not_recognized → typing with notice word-not-recognized (sense_id), no unit held, verdict stored; cloze only → 409 practice-no-words; after a meaning edit the word is checked again (ok) and gets an AI cloze, 1 unit
+
+[30] 12:20:21Z B7E98 with prepare (§6.5 A, §6.6 last row): the check rejects the word during prepare; next switches type with notice word-not-recognized
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 139s (30 steps).
+
+## Run 2 (database dropped and recreated)
+
+[1] 12:23:05Z Wait for the API
+    ok — reachable at http://localhost:3017; database english_learning_smoke_b7; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b7-smoke, no key
+
+[2] 12:23:05Z Accounts: admin (CLI grant), editor (created by the admin), learners L1, L2, L3 (vi)
+    ok — admin smoke7-admin-20e34f06@example.com; editor smoke7-editor-20e34f06@example.com; learners smoke7-l1-20e34f06@example.com, smoke7-l2-20e34f06@example.com, smoke7-l3-20e34f06@example.com (native_language vi)
+
+[3] 12:23:09Z AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok chosen for five operations
+    ok — five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok chosen, all five ready; ai_prefetch_count 2
+
+[4] 12:23:09Z Content: import 36 verbs (gloss, short definition, example, inflections) in 12 topic/level buckets and publish
+    ok — batch 9aaf1af5-b29f-4e39-a350-4494358a1a16: 36 created, published by job 8ae168d1-46fb-4181-bdbf-3a669d2ff7ed; a learner sees them
+
+[5] 12:23:14Z Entitlements: L1 Pro with 87 AI practice units and 200 sessions a day; L2 stays Free; L3 Pro with 3 units
+    ok — L1 pro, ai_practice 87/87, ai_lookup 100; L2 free (no AI); L3 pro, ai_practice 3
+
+[6] 12:23:14Z Groups: one per bucket (bulk add by topic and level), plus an empty one for a saved AI suggestion
+    ok — L1: G1, G4, G5, G6, G7, GR1, GR2, GR3, GR5, G57, G117, G9; L2: GL2; L3: GL3
+
+[7] 12:23:15Z AC1 (B7E45, B7E7): Pro learner, 87 units, "gõ từ + điền từ AI", 10 questions, prepare after opening and after each question
+    ok — ai_planned 5, marked positions 2,4,6,8,10; every AI question made by prepare before next; 5 cloze (AI) + 5 typing, all right; 82 units left; 5 confirmed use rows
+
+[8] 12:23:28Z AC2 (B7E59, B7E15): the same session again, stopped at question 4 and abandoned; the next session reuses the unseen AI questions at 0 units
+    ok — session 2: 4 AI questions made (2 shown, 2 unseen), 4 units; abandoned by session 3, which marked both unseen words, reused their questions (0 units) and made 3 new ones; 75 units left
+
+[9] 12:23:40Z AC3 (B7E2): L3 has 3 units left; a session that needs 5 is refused, one that needs 3 opens
+    ok — count 5 → 403 ai-quota-insufficient (remaining 3, needed 5, resets_at 2026-11-21T12:23:14.161Z), no usage row; count 3 → opens (ai_planned 3), still 3 units
+
+[10] 12:23:40Z AC4 (B7E49, B7E10, B7E30): AI fails (fake:refuse) twice in a mixed session, no prepare → typing for those words, one ai-fallback notice, no unit
+    ok — positions 2 and 4 fell back to typing on the same word; notices [null,"ai-fallback",null,null]; both requests failed/ai-failed with the unit released; 75 units left
+
+[11] 12:23:48Z AC4 with prepare (B7E113, §6.4, §6.6): prepare fails both AI words; next switches type at once, calls AI no more, shows ai-fallback once
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":2}; both AI words asked as typing at once, no further AI call (2 calls, all from prepare)
+    ok — typing on both words, no further AI call; notices [{"k":1,"marked":false,"notice":null,"ai_reason":null},{"k":2,"marked":true,"notice":"ai-fallback","ai_reason":"ai-failed"},{"k":3,"marked":false,"notice":null,"ai_reason":null},{"k":4,"marked":true,"notice":null,"ai_reason":null}]
+
+[12] 12:23:54Z AC5 (B7E48, B7E31): AI-only session, AI times out (fake:slow) → ai_unavailable; next again → same, no AI call; retry_ai once AI is back (fake:503-then-ok) → AI question
+    ok — timeout after 10147 ms → ai_unavailable/ai-failed (unit released); again → same, no new call; retry_ai with fake:503-then-ok → cloze (calls provider-error,succeeded), 1 unit; cloze wrong → try_again, skip → wrong/skipped
+
+[13] 12:24:12Z AC6 (B7E34, B7E96, B7E97): fake:bad-form → rejected twice (#2), the form is recorded; staff accept it → the next AI question passes
+    ok — first request rejected (reason ai-failed) after 774a9d11-c240-4377-81be-c717cddb54d6 and #2; "zqxbdnhpment" recorded twice and listed; editor accepted it (again → 409); list hides it; retry → cloze accepted "zqxbdnhpment", one call, 1 unit
+
+[14] 12:24:19Z AC7 (B7E50–B7E56, B7E18, B7E124, plan choice 6): the three AI types and cloze from a saved sentence: hints, grading, translation
+    ok — mcq_sentence: hint 1 = definition, hint 2/3 → 409, right option "zquuncnds", translation; meaning_in_sentence: highlight, 4 meanings, right = meaning, translation; cloze: hints d…/definition/meaning, another word → try_again, "Z…." → correct; saved-sentence cloze: no unit, not reportable, translation null; history shows option and translation; 3 units
+
+[15] 12:24:23Z AC8 (B7E70, B7E73, B7E76, B7E84): L1 reports the AI cloze; the editor confirms; the unit comes back; the admin sees it in refunds
+    ok — 7 reasons for ai, 4 for non_ai; report de831642-35b2-4e93-8b8d-f0216289028c open with label "Có hơn một đáp án đúng"; staff row has op id, model fake:ok, prompt_revision 2; fixed → 409; confirmed by the editor → refunded, 70 → 71 units, one credit row; again → 409 report-not-open; L1 sees refunded true; admin refunds row (self_resolved false); editor → 403
+
+[16] 12:24:24Z AC9 (B7E19, B7E21, B7E93): AI lookup of an unknown word; the same key again; saved as a private word with 2 examples
+    ok — "rizzzpvo": suggestion noun / "nghĩa giả", no catalog sense; 1 lookup unit; same key → same body, no call, no unit; 3 examples → 400; saved with 2 examples, draft_source ai_suggestion, ai_suggested true
+
+[17] 12:24:28Z AC10 (B7E91, B7E92): AI lookup of a catalog lemma, then of the word L1 just saved
+    ok — "zqqdmxrc" → catalog_senses [0a52bbf2-979f-42a2-b2a2-20948fc94b11]; "rizzzpvo" → catalog_senses has L1's private sense; 2 units
+
+[18] 12:24:28Z Plan choices 3–4: a lemma-only edit keeps "AI gợi ý"; an examples edit publishes a new revision and drops it
+    ok — lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example
+
+[19] 12:24:29Z AC11 (B7E1, B7E22): a Free learner opens a session with cloze (either source) or an AI type, and looks a word up with AI
+    ok — cloze own, cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens
+
+[20] 12:24:29Z AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list
+    ok — "smoke_20e34f06" added (same code → 409, editor → 403) and listed for ai; no note → 400; renamed + moved to non_ai → lists follow; on an AI question → 400; turned off → gone from both lists, report → 400
+
+[21] 12:24:30Z Review Focus 1 (B7E16, B7E111, B7E112): five next calls at once on one AI slot → one item, one request, one unit
+    ok — 5 parallel replies {"question":1,"preparing":4}, all naming one item; 1 item, 1 request (ready), usage use:confirmed; a later next returns the same item
+
+[22] 12:24:33Z Review Focus 2 (B7E32, B7E114, B7E65): a generation stuck past the stale time is taken over with the same request id and input; one unit
+    ok — request 195e3cd7-3ef0-4faf-b060-4d28be3d419a: stuck generating with a reserved unit; current → item null, preparing true, no call; after back-dating (3 min) the next call took it over with the same id and stored input → cloze in 2529 ms; the first run's late timeout left it ready; 1 item, usage use:confirmed, calls timeout + succeeded
+
+[23] 12:24:46Z Review Focus 3 (B7E115, CR23, B7E23): a private word deleted between prepare and next leaves no question, request or check of it
+    (network error on POST /v1/practice/sessions/4213f36f-ffb0-48d9-b2ed-2ceec27bf72f/next: ECONNRESET; retrying)
+    ok — prepare made P3's question (word check ok, no unit for the check) and the other word's; DELETE /v1/my-words → P3's question, request, check and items gone (psql); next asks the other word
+
+[24] 12:24:54Z Review Focus 4 (B7E75, B7E118): confirming an AI question that was given for free gives no credit
+    ok — report 3d5e5964-add5-467d-be47-c9116072a9e2 snapshots ai_charged false; confirmed → refunded false, no credit row, 67 units unchanged
+
+[25] 12:24:55Z Review Focus 5 (B7E79, B7E80, §7.8): staff see a private word in an AI option only as a mask; the asked private word only with consent
+    ok — mcq_sentence option P5 → staff see "[từ riêng của người học]" (also as the chosen answer); meaning_in_sentence option → "[nghĩa của từ riêng]"; P5 asked: no consent → 400, with consent → staff see P5
+
+[26] 12:25:01Z B7E57: a catalog sense revised after its AI question was made ahead → that question is not reused; a new one is made
+    ok — unseen question 00b290ad-ed06-4663-b931-72a72439462a made on revision f0c8de06-2784-4bc9-ad8a-da82afe9347e; after quick-publish (live 0ead731c-ef3d-4d54-af6a-f0e781d06c04) the next session made a new question (1 unit) and never asked the old one
+
+[27] 12:25:06Z B7E60 and §12.1: the hourly job keeps an unseen AI question from yesterday, deletes one past history_months, and requests older than 7 days
+    ok — back-dated 1 day → kept; back-dated 6 months + 1 day → deleted; request back-dated 8 days → deleted, a recent one kept
+
+[28] 12:25:14Z B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — 503 ai-unavailable, reason model-not-set, no session row; typing alone opens
+
+[29] 12:25:15Z B7E98, B7E58, B7E23 (fake:not-recognized): an unrecognised private word falls back with notice word-not-recognized, and has no AI type until edited
+    ok — not_recognized → typing with notice word-not-recognized (sense_id), no unit held, verdict stored; cloze only → 409 practice-no-words; after a meaning edit the word is checked again (ok) and gets an AI cloze, 1 unit
+
+[30] 12:25:22Z B7E98 with prepare (§6.5 A, §6.6 last row): the check rejects the word during prepare; next switches type with notice word-not-recognized
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 138s (30 steps).

@@ -4,18 +4,26 @@ import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
+import { EntryDeleteService } from './catalog/entry-delete.service.js';
+import { EntryUsageRegistry, type EntryUsageProbe } from './catalog/entry-usage.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
-import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
+import { revertRecords, type RevertContext, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
 import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
+import { WordFormsService, type WordFormAdded } from './word-forms/word-forms.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
+import {
+  catalogPracticeSensesByLemma, practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses, type CandidateSense,
+  type LemmaMeanings, type PracticeSense,
+} from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
 import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
+import { AudioService } from './audio/audio.service.js';
 import { PublishService, type PublishItem, type PublishItemResult, type QuickPublishResult, type SenseStateResult } from './senses/publish.service.js';
 
 @Injectable()
@@ -32,7 +40,35 @@ export class ContentService {
     @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
     @Inject(SentencesService) private readonly sentences: SentencesService,
     @Inject(WordsService) private readonly words: WordsService,
+    @Inject(WordFormsService) private readonly wordForms: WordFormsService,
+    @Inject(EntryDeleteService) private readonly entryDeletion: EntryDeleteService,
+    @Inject(EntryUsageRegistry) private readonly entryUsage: EntryUsageRegistry,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
+
+  /** Deletes a catalog entry that was never published and that nothing else refers to; 409 `entry-in-use` with `reasons` otherwise. */
+  deleteEntry(entryId: string): Promise<void> {
+    return this.entryDeletion.deleteEntry(entryId);
+  }
+
+  /** Learning, Practice and Pipeline register the part of the delete check that reads their own tables, when they start. */
+  registerEntryUsageProbe(probe: EntryUsageProbe): void {
+    this.entryUsage.register(probe);
+  }
+
+  /** Bước 7 design §10: a form staff accept for a lemma (Practice's unknown-forms flow). */
+  addWordForm(actorId: string, lemma: string, form: string): Promise<WordFormAdded> {
+    return this.wordForms.add(actorId, lemma, form);
+  }
+
+  removeWordForm(id: string): Promise<boolean> {
+    return this.wordForms.remove(id);
+  }
+
+  /** `lemmaKey + ' ' + formKey` of the pairs staff accepted, so Practice can hide them from its unknown-forms list. */
+  knownWordForms(pairs: Array<{ lemmaKey: string; formKey: string }>): Promise<Set<string>> {
+    return this.wordForms.known(pairs);
+  }
 
   getSource(id: string): Promise<SourceView | null> {
     return this.sources.getSource(id);
@@ -91,28 +127,43 @@ export class ContentService {
   }
 
   // Unlike other writes, revert owns one entry-key-locked transaction per entry, so it takes no tx.
-  revertRecords(records: RevertRecord[]): Promise<RevertReport> {
-    return revertRecords(this.prisma, this.entries, records);
+  revertRecords(records: RevertRecord[], context: RevertContext): Promise<RevertReport> {
+    return revertRecords(this.prisma, this.entries, records, context);
   }
 
-  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
-    return this.senses.markRevisions(tx, items);
+  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string): Promise<MarkRevisionResult[]> {
+    return this.senses.markRevisions(tx, items, actorId);
   }
 
-  publishItem(item: PublishItem, actorId: string): Promise<PublishItemResult> {
-    return this.publish.publishItem(item, actorId);
+  /** Round C: the recordings are made after the publish has committed, and a failure to queue them never fails the publish. */
+  async publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    const result = await this.publish.publishItem(item, actorId, opts);
+    if (result.outcome === 'published') await this.audio.ensureForSenses([item.senseId]);
+    return result;
   }
 
-  unpublish(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.unpublish(senseIds);
+  /** Hiding a sense can change how its siblings are read (`lead` with two readings becomes one), so they are looked at again. */
+  async unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    const results = await this.publish.unpublish(senseIds, actorId);
+    await this.audio.ensureForSenses(results.filter(({ ok }) => ok).map(({ senseId }) => senseId));
+    return results;
   }
 
-  retire(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.retire(senseIds);
+  async retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    const results = await this.publish.retire(senseIds, actorId);
+    await this.audio.ensureForSenses(results.filter(({ ok }) => ok).map(({ senseId }) => senseId));
+    return results;
   }
 
-  quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
-    return this.publish.quickPublish(input.senseId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+  async quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
+    const result = await this.publish.quickPublish(input.senseId, input.actorId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+    if (result.outcome === 'published') await this.audio.ensureForSenses([input.senseId]);
+    return result;
+  }
+
+  /** Round C: queues the recordings of these senses (and their siblings); call it after the write that changed them has committed. */
+  ensureAudio(senseIds: string[]): Promise<string[]> {
+    return this.audio.ensureForSenses(senseIds);
   }
 
   latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {
@@ -132,8 +183,9 @@ export class ContentService {
     return this.queries.exportEntriesWithoutSense(filter, limit);
   }
 
-  resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
-    return this.queries.resolveBatchRecordOwners(records);
+  resolveBatchRecordOwners(records: ScopeRecord[], db?: Prisma.TransactionClient | PrismaClient):
+    Promise<{ entryIds: string[]; senseIds: string[] }> {
+    return this.queries.resolveBatchRecordOwners(records, db);
   }
 
   replaceInflections(tx: Prisma.TransactionClient, entryId: string, source: InflectionSource, forms: InflectionInput[]): Promise<void> {
@@ -156,12 +208,17 @@ export class ContentService {
     return this.privateWords.deletePrivateEntryContent(tx, ownerId, entryId);
   }
 
+  privateSenseIdsOf(tx: Prisma.TransactionClient, userId: string): Promise<string[]> {
+    return this.privateWords.privateSenseIdsOf(tx, userId);
+  }
+
   addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
     return this.sentences.addSentence(tx, input);
   }
 
-  listSentences(userId: string, senseIds: string[]): Promise<Map<string, Sentence[]>> {
-    return this.sentences.listSentences(userId, senseIds);
+  /** A caller inside an open transaction passes its `tx` as `db` (Bước 7 plan choice 5). */
+  listSentences(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient): Promise<Map<string, Sentence[]>> {
+    return this.sentences.listSentences(userId, senseIds, db);
   }
 
   deleteSentence(userId: string, id: string): Promise<boolean> {
@@ -173,8 +230,47 @@ export class ContentService {
     return this.words.cardContent(viewerId, senseIds, nativeLanguage);
   }
 
-  visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
-    return this.privateWords.visibleSenseIds(viewerId, senseIds);
+  /**
+   * Practice questions: visible senses only, with examples, spellings, accepted answers and inflections. A caller inside an
+   * open transaction passes its `tx` as `db`, so the read needs no second connection.
+   */
+  practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, PracticeSense>> {
+    return practiceSenses(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** The open catalog senses of a lemma (`pos` null = any part of speech); Practice's eval rules use it, nobody's private word is read. */
+  catalogPracticeSensesByLemma(lemma: string, pos: string | null, nativeLanguage: 'vi' | 'en'): Promise<PracticeSense[]> {
+    return catalogPracticeSensesByLemma(this.prisma, lemma, pos, nativeLanguage);
+  }
+
+  /** Distractor and true/false candidates: visible senses only, light enough for thousands of ids. */
+  practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, CandidateSense>> {
+    return practiceCandidates(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** Every visible meaning of these lemmas (case-insensitive), so a distractor is never also right (T6/FE25). */
+  practiceLemmaMeanings(viewerId: string, lemmas: string[], _nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<LemmaMeanings> {
+    return practiceLemmaMeanings(db ?? this.prisma, viewerId, lemmas);
+  }
+
+  /** Wrong meanings of a `meaning_in_sentence` question, step 1 (Bước 7 design §7.4): other visible senses of the same entry. */
+  practiceOtherSenses(viewerId: string, senseId: string, nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<CandidateSense[]> {
+    return practiceOtherSenses(db ?? this.prisma, viewerId, senseId, nativeLanguage);
+  }
+
+  /** Wrong meanings, step 3 (Bước 7 design §7.4): random catalog senses with a Vietnamese gloss, none of `excludeLemmas`. */
+  practiceRandomMeanings(viewerId: string, excludeLemmas: string[], count: number, nativeLanguage: 'vi' | 'en',
+    db?: Prisma.TransactionClient | PrismaClient): Promise<CandidateSense[]> {
+    return practiceRandomMeanings(db ?? this.prisma, viewerId, excludeLemmas, count, nativeLanguage);
+  }
+
+  /** A caller inside an open transaction passes its `tx` as `db` (Bước 7 plan choice 5). */
+  visibleSenseIds(viewerId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient): Promise<Set<string>> {
+    return this.privateWords.visibleSenseIds(viewerId, senseIds, db);
   }
 
   bulkCandidates(filter: { level?: Level; topic?: string; pos?: string }, limit: number):

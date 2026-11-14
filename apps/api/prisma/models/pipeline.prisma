@@ -94,6 +94,7 @@ model BatchRecord {
   batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@unique([batchId, recordType, recordId])
+  @@index([recordType, recordId])
   @@map("batch_records")
 }
 

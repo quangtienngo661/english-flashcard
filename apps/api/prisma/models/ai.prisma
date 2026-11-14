@@ -1,0 +1,569 @@
+// AI Integration (Bước 6, design §11; nhóm B). Every user/actor id is a plain UUID: no relation crosses a module boundary. The foreign
+// keys are all inside the module (a model named by a choice, a config or a judge revision is never deleted: ON DELETE RESTRICT).
+// CHECKs on the enum columns live in the migration (as practice.prisma, entitlements.prisma).
+
+// One model an admin added (design §6.1). Unknown information is null; unknown effort levels are stored as [] (plan choice 9).
+model AiModel {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // openai | anthropic | fake (CHECK).
+  provider          String
+  modelId           String    @map("model_id")
+  shutdownAt        DateTime? @map("shutdown_at") @db.Timestamptz
+  // active | deprecated | retired (CHECK; Anthropic only).
+  lifecycle         String?
+  effortLevels      String[]  @default([]) @map("effort_levels")
+  // disabled | between_tools (CHECK): how this model turns thinking off.
+  thinkingOff       String?   @map("thinking_off")
+  structuredOutputs Boolean?  @map("structured_outputs")
+  maxOutputTokens   Int?      @map("max_output_tokens")
+  // USD per million tokens, typed by the admin (design §6.5).
+  priceInput        Decimal?  @map("price_input") @db.Decimal(12, 4)
+  priceCachedInput  Decimal?  @map("price_cached_input") @db.Decimal(12, 4)
+  priceOutput       Decimal?  @map("price_output") @db.Decimal(12, 4)
+  note              String?
+  // Set by an admin ("Ẩn khỏi ô chọn model", D40); the provider refresh never writes it. Pickers skip a hidden model.
+  hidden            Boolean   @default(false)
+  // Always written from Clock (no database default).
+  infoCheckedAt     DateTime  @map("info_checked_at") @db.Timestamptz
+  createdBy         String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  configs           AiConfig[]
+  judgeRevisions    AiJudgeRevision[]
+
+  @@unique([provider, modelId])
+  @@map("ai_models")
+}
+
+// The choice of one operation (design §6.3): history only since nhóm B M2 (the gateway reads the live config); no foreign key to ai_models any more,
+// so a model that only an old choice names can be deleted. model_ref null = the operation was off (D9).
+model AiOperationSetting {
+  // One of the six operations (CHECK). Read-only history since nhóm B M2: the gateway reads ai_live_configs.
+  operation       String    @id
+  modelRef        String?   @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' (CHECK) or null; resolved to the model's thinking_off at call time (plan choice 9).
+  thinking        String?
+  // > 0 (CHECK); null = no limit (D25).
+  maxOutputTokens Int?      @map("max_output_tokens")
+  version         Int       @default(0)
+  updatedBy       String?   @map("updated_by") @db.Uuid
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("ai_operation_settings")
+}
+
+// One change of an operation's choice (append-only).
+model AiOperationSettingChange {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation String
+  oldValue  Json     @map("old_value")
+  newValue  Json     @map("new_value")
+  changedBy String   @map("changed_by") @db.Uuid
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz
+
+  @@index([operation, changedAt])
+  @@map("ai_operation_setting_changes")
+}
+
+// The prompt in use for one operation (design §7.3). History only since nhóm B M2: the gateway reads the live config.
+model AiPrompt {
+  operation    String   @id
+  instructions String
+  examples     Json
+  revision     Int
+  updatedBy    String   @map("updated_by") @db.Uuid
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("ai_prompts")
+}
+
+// One save of a prompt (append-only).
+model AiPromptRevision {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation    String
+  revision     Int
+  instructions String
+  examples     Json
+  savedBy      String   @map("saved_by") @db.Uuid
+  savedAt      DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  @@unique([operation, revision])
+  @@map("ai_prompt_revisions")
+}
+
+// One operation id of a caller, replayed for 24 h (design §8.1–8.2).
+model AiOperationRecord {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  operationId String    @map("operation_id")
+  operation   String
+  fingerprint String
+  // running | succeeded | permanent_failure (CHECK).
+  status      String
+  attemptId   String    @map("attempt_id") @db.Uuid
+  startedAt   DateTime  @map("started_at") @db.Timestamptz
+  deadlineAt  DateTime  @map("deadline_at") @db.Timestamptz
+  result      Json?
+  meta        Json?
+  finishedAt  DateTime? @map("finished_at") @db.Timestamptz
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId, operationId])
+  @@index([expiresAt])
+  @@index([status, deadlineAt])
+  @@map("ai_operations")
+}
+
+// One call to a provider (design §9), kept for good.
+model AiCall {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operationId       String    @map("operation_id")
+  aiOperationId     String?   @map("ai_operation_id") @db.Uuid
+  batchId           String?   @map("batch_id") @db.Uuid
+  // 1 | 2 (CHECK).
+  attempt           Int
+  // learner | test | eval | judge (CHECK; judge since nhóm B M3).
+  purpose           String
+  operation         String
+  provider          String
+  model             String
+  effort            String?
+  thinking          String?
+  maxOutputTokens   Int?      @map("max_output_tokens")
+  // The config number since nhóm B M2 (the prompt revision before).
+  promptRevision    Int?      @map("prompt_revision")
+  // succeeded or the call's own reason (CHECK, plan choice 2).
+  outcome           String
+  httpStatus        Int?      @map("http_status")
+  providerErrorCode String?   @map("provider_error_code")
+  latencyMs         Int       @map("latency_ms")
+  inputTokens       Int?      @map("input_tokens")
+  cachedInputTokens Int?      @map("cached_input_tokens")
+  outputTokens      Int?      @map("output_tokens")
+  reasoningTokens   Int?      @map("reasoning_tokens")
+  costUsd           Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  costKnown         Boolean   @map("cost_known")
+  providerRequestId String?   @map("provider_request_id")
+  // The learner, or the admin of a test or eval call (plan choice 3); nulled by deleteUserData.
+  userId            String?   @map("user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([operationId])
+  @@index([batchId])
+  @@index([userId])
+  @@map("ai_calls")
+}
+
+// The content of one call, kept content_retention_days (design §9).
+model AiCallContent {
+  callId    String   @id @map("call_id") @db.Uuid
+  request   Json
+  response  String?
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt])
+  @@map("ai_call_contents")
+}
+
+// One example of the example set (design §10).
+model AiEvalExample {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation String
+  input     Json
+  note      String?
+  // dev | held_out (CHECK). Nhóm B design §5.1: held-out examples stay hidden until revealed.
+  split      String    @default("dev")
+  // The expected answer by operation (design §5.1); null for translate_sentence, generate_sentence_mcq and examples from before nhóm B.
+  expected   Json?
+  // manual | import | report | real_judge (CHECK).
+  source     String    @default("manual")
+  sourceRef  String?   @map("source_ref")
+  revealedAt DateTime? @map("revealed_at") @db.Timestamptz
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([operation])
+  @@index([operation, split])
+  @@map("ai_eval_examples")
+}
+
+// A frozen version of one operation's example set (nhóm B design §5.1 "Chốt phiên bản"); never changes after it is made.
+model AiEvalSet {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation    String
+  version      Int
+  heldOutRatio Decimal  @map("held_out_ratio") @db.Decimal(3, 2)
+  frozenBy     String   @map("frozen_by") @db.Uuid
+  frozenAt     DateTime @default(now()) @map("frozen_at") @db.Timestamptz
+
+  items AiEvalSetItem[]
+  runs  AiEvalRun[]
+
+  @@unique([operation, version])
+  @@map("ai_eval_sets")
+}
+
+// The snapshot of one example when its set was frozen. `example_id` has no foreign key: the example may be deleted from the working set later.
+model AiEvalSetItem {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  setId      String    @map("set_id") @db.Uuid
+  exampleId  String    @map("example_id") @db.Uuid
+  position   Int
+  // dev | held_out (CHECK).
+  split      String
+  input      Json
+  expected   Json?
+  revealedAt DateTime? @map("revealed_at") @db.Timestamptz
+
+  set AiEvalSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@unique([setId, exampleId])
+  @@index([exampleId])
+  @@map("ai_eval_set_items")
+}
+
+// One run of the example set (design §10). It stores the resolved request and the examples taken at creation (plan choice 10).
+model AiEvalRun {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation        String
+  provider         String
+  model            String
+  effort           String?
+  thinking         String?
+  maxOutputTokens  Int?      @map("max_output_tokens")
+  // Exactly one of prompt_revision, draft and config_id is set (CHECK; config_id since nhóm B M2).
+  promptRevision   Int?      @map("prompt_revision")
+  draft            Json?
+  // null = the working set (a quick try, not comparable, not evidence for a publish).
+  setId            String?   @map("set_id") @db.Uuid
+  // USD per million tokens of the model when the run was made (design §4), so the cost never depends on a later price edit.
+  priceInput       Decimal?  @map("price_input") @db.Decimal(12, 4)
+  priceCachedInput Decimal?  @map("price_cached_input") @db.Decimal(12, 4)
+  priceOutput      Decimal?  @map("price_output") @db.Decimal(12, 4)
+  // true = made before nhóm B: it has no set and cannot be compared.
+  legacy           Boolean   @default(false)
+  // queued | running | finished | failed (CHECK).
+  status           String
+  total            Int
+  validCount       Int       @default(0) @map("valid_count")
+  avgLatencyMs     Int?      @map("avg_latency_ms")
+  costUsd          Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  costUnknownCount Int       @default(0) @map("cost_unknown_count")
+  error            String?
+  startedBy        String    @map("started_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt        DateTime? @map("started_at") @db.Timestamptz
+  finishedAt       DateTime? @map("finished_at") @db.Timestamptz
+  heartbeatAt      DateTime? @map("heartbeat_at") @db.Timestamptz
+  // The config this run tried (nhóm B M2): no foreign key, a deleted draft keeps its runs. Both set together (CHECK).
+  configId         String?   @map("config_id") @db.Uuid
+  configVersion    Int?      @map("config_version")
+  snapshot         Json?
+  fingerprint      String?
+  batchId          String?   @map("batch_id") @db.Uuid
+  // Set when a run that holds human labels is "deleted" (nhóm B M3): the run and its items stay, hidden.
+  hiddenAt         DateTime? @map("hidden_at") @db.Timestamptz
+
+  set      AiEvalSet?      @relation(fields: [setId], references: [id], onDelete: Restrict)
+  runItems AiEvalRunItem[]
+  judgePasses AiJudgePass[]
+  candidateOf AiConfigEvent[] @relation("EventCandidateRun")
+  baselineOf  AiConfigEvent[] @relation("EventBaselineRun")
+
+  @@index([operation, createdAt])
+  @@index([status, heartbeatAt])
+  @@index([setId])
+  @@index([configId, setId, createdAt])
+  @@map("ai_eval_runs")
+}
+
+// The snapshot and the result of one example in one run (nhóm B design §4). `example_id` has no foreign key (the example may be gone).
+model AiEvalRunItem {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId          String   @map("run_id") @db.Uuid
+  exampleId      String   @map("example_id") @db.Uuid
+  position       Int
+  // dev | held_out (CHECK).
+  split          String
+  // null only for a result migrated from before nhóm B whose example was already deleted.
+  input          Json?
+  expected       Json?
+  // pending | succeeded | transient_failure | permanent_failure | unavailable | in_progress | skipped (CHECK).
+  status         String   @default("pending")
+  reason         String?
+  output         Json?
+  rawOutput      String?  @map("raw_output")
+  // { status: pass | fail | skipped | not_applicable, problems, reason } from Practice's rules.
+  rule           Json?
+  // pass | fail | null (CHECK).
+  expectedResult String?  @map("expected_result")
+  latencyMs      Int?     @map("latency_ms")
+  costUsd        Decimal? @map("cost_usd") @db.Decimal(14, 8)
+  // Hidden when a run that holds human labels is "deleted" (used from M3).
+  hidden         Boolean  @default(false)
+
+  run AiEvalRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, exampleId])
+  @@index([runId, status])
+  @@map("ai_eval_run_items")
+}
+
+// One config of an operation (nhóm B design §4, §6): prompt + model + effort + thinking + tokens as one versioned unit.
+// draft | published | retired (CHECK). Multiple drafts per operation; soft deletion keeps their execution and revision history.
+model AiConfig {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation       String
+  // Handed out by ai_live_configs.last_number, never twice.
+  number          Int
+  name            String?
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  fingerprint     String?
+  // 0 on creation, +1 on each save of the draft.
+  version         Int       @default(0)
+  instructions    String
+  examples        Json
+  modelRef        String?   @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' | null (CHECK): how the operations API already names it.
+  thinking        String?
+  maxOutputTokens Int?      @map("max_output_tokens")
+  status          String
+  // The config this one was copied from (no foreign key).
+  createdFrom     String?   @map("created_from") @db.Uuid
+  note            String?
+  createdBy       String    @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  publishedBy     String?   @map("published_by") @db.Uuid
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz
+
+  model       AiModel?        @relation(fields: [modelRef], references: [id], onDelete: Restrict)
+  live        AiLiveConfig[]  @relation("LiveConfig")
+  previousOf  AiLiveConfig[]  @relation("PreviousConfig")
+  events      AiConfigEvent[] @relation("EventConfig")
+  eventsFrom  AiConfigEvent[] @relation("EventFromConfig")
+  revisions   AiConfigRevision[]
+
+  @@unique([operation, number])
+  @@map("ai_configs")
+}
+
+// The pointer "which config runs now" of each operation (26/10 câu 18). `last_number` is the counter of draft numbers.
+model AiLiveConfig {
+  operation        String  @id
+  configId         String  @map("config_id") @db.Uuid
+  previousConfigId String? @map("previous_config_id") @db.Uuid
+  version          Int     @default(0)
+  lastNumber       Int     @map("last_number")
+
+  config   AiConfig  @relation("LiveConfig", fields: [configId], references: [id], onDelete: Restrict)
+  previous AiConfig? @relation("PreviousConfig", fields: [previousConfigId], references: [id], onDelete: Restrict)
+
+  @@map("ai_live_configs")
+}
+
+// Append-only history of publishes and rollbacks. publish | rollback (CHECK). The two run ids are the evidence of a publish:
+// a run named here cannot be deleted (foreign key RESTRICT).
+model AiConfigEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation      String
+  kind           String
+  configId       String   @map("config_id") @db.Uuid
+  fromConfigId   String?  @map("from_config_id") @db.Uuid
+  candidateRunId String?  @map("candidate_run_id") @db.Uuid
+  baselineRunId  String?  @map("baseline_run_id") @db.Uuid
+  warnings       Json     @default("[]")
+  actorId        String   @map("actor_id") @db.Uuid
+  at             DateTime @default(now()) @db.Timestamptz
+
+  config     AiConfig   @relation("EventConfig", fields: [configId], references: [id], onDelete: Restrict)
+  fromConfig AiConfig?  @relation("EventFromConfig", fields: [fromConfigId], references: [id], onDelete: Restrict)
+  candidate  AiEvalRun? @relation("EventCandidateRun", fields: [candidateRunId], references: [id], onDelete: Restrict)
+  baseline   AiEvalRun? @relation("EventBaselineRun", fields: [baselineRunId], references: [id], onDelete: Restrict)
+
+  @@index([operation, at])
+  @@map("ai_config_events")
+}
+
+// A judge: an AI reviewer of the outputs of one or more operations (nhóm B design §4, §5.4). `operations` is a non-empty subset of the six
+// (CHECK `ai_judges_operations_check` in the migration). What it asks and how it is tuned lives in its revisions.
+model AiJudge {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  operations String[]
+  active     Boolean  @default(true)
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  revisions AiJudgeRevision[]
+
+  @@map("ai_judges")
+}
+
+// One saved version of a judge. A new revision exists only when a field here changes, so scores and calibration keep applying to the revision
+// that made them. `model_ref` null = no model chosen yet (the seeded judge). CHECKs on thinking and max_output_tokens are in the migration.
+model AiJudgeRevision {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeId         String   @map("judge_id") @db.Uuid
+  revision        Int
+  // [{ code, question }]
+  criteria        Json
+  instructions    String
+  examples        Json
+  modelRef        String?  @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' (CHECK) or null.
+  thinking        String?
+  // > 0 (CHECK); null = the operation default.
+  maxOutputTokens Int?     @map("max_output_tokens")
+  savedBy         String   @map("saved_by") @db.Uuid
+  savedAt         DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  judge  AiJudge        @relation(fields: [judgeId], references: [id], onDelete: Restrict)
+  model  AiModel?       @relation(fields: [modelRef], references: [id], onDelete: Restrict)
+  passes AiJudgePass[]
+  scores AiJudgeScore[]
+
+  @@unique([judgeId, revision])
+  @@map("ai_judge_revisions")
+}
+
+// One pass of a judge revision over a set of outputs: the eval run it is attached to, or the real questions a filter picked.
+// The partial unique index `ai_judge_passes_one_active_key` (one queued or running pass per revision) and the CHECKs are in the migration.
+model AiJudgePass {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeRevisionId String    @map("judge_revision_id") @db.Uuid
+  // eval_run | real (CHECK); (kind = 'eval_run') = (eval_run_id IS NOT NULL) (CHECK).
+  kind            String
+  // The operation whose outputs are judged (CHECK: one of the six).
+  operation       String
+  evalRunId       String?   @map("eval_run_id") @db.Uuid
+  filters         Json?
+  limit           Int?
+  // queued | running | finished | failed (CHECK).
+  status          String
+  error           String?
+  // null until the pass takes its snapshot of subjects.
+  total           Int?
+  judged          Int       @default(0)
+  costUsd         Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  startedBy       String    @map("started_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt       DateTime? @map("started_at") @db.Timestamptz
+  finishedAt      DateTime? @map("finished_at") @db.Timestamptz
+  heartbeatAt     DateTime? @map("heartbeat_at") @db.Timestamptz
+
+  revision AiJudgeRevision  @relation(fields: [judgeRevisionId], references: [id], onDelete: Restrict)
+  evalRun  AiEvalRun?       @relation(fields: [evalRunId], references: [id], onDelete: Cascade)
+  items    AiJudgePassItem[]
+  scores   AiJudgeScore[]
+
+  @@index([evalRunId])
+  @@index([status, heartbeatAt])
+  @@map("ai_judge_passes")
+}
+
+// The snapshot of one subject when its pass started: what the judge sees stays the same however long the pass takes.
+model AiJudgePassItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  passId      String  @map("pass_id") @db.Uuid
+  position    Int
+  // eval_item | real_question (CHECK).
+  subjectKind String  @map("subject_kind")
+  subjectId   String  @map("subject_id") @db.Uuid
+  input       Json
+  output      Json
+  context     Json?
+  done        Boolean @default(false)
+
+  pass AiJudgePass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([passId, subjectKind, subjectId])
+  @@map("ai_judge_pass_items")
+}
+
+// One verdict of one judge revision on one criterion of one subject. A subject is judged once per revision and criterion.
+model AiJudgeScore {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeRevisionId String   @map("judge_revision_id") @db.Uuid
+  // eval_item | real_question (CHECK).
+  subjectKind     String   @map("subject_kind")
+  subjectId       String   @map("subject_id") @db.Uuid
+  criterion       String
+  // pass | fail_major | fail_minor, or null = "không chấm được" (CHECK); `problem` says why.
+  verdict         String?
+  problem         String?
+  reason          String?
+  passId          String   @map("pass_id") @db.Uuid
+  // The ai_calls row of the judge call; no foreign key (calls are kept for good, but a score must not depend on them).
+  callId          String?  @map("call_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  revision AiJudgeRevision @relation(fields: [judgeRevisionId], references: [id], onDelete: Restrict)
+  pass     AiJudgePass     @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([judgeRevisionId, subjectKind, subjectId, criterion])
+  @@index([subjectKind, subjectId])
+  @@map("ai_judge_scores")
+}
+
+// The owner's own verdict on one criterion of one subject (the "Gắn nhãn" screen); what a judge's agreement is measured against.
+model AiLabel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subjectKind String   @map("subject_kind")
+  subjectId   String   @map("subject_id") @db.Uuid
+  criterion   String
+  // pass | fail_major | fail_minor (CHECK).
+  verdict     String
+  labeledBy   String   @map("labeled_by") @db.Uuid
+  labeledAt   DateTime @default(now()) @map("labeled_at") @db.Timestamptz
+
+  @@unique([subjectKind, subjectId, criterion])
+  @@map("ai_labels")
+}
+
+// Immutable saved versions; NULL fingerprints identify migration snapshots, computed from content on read.
+model AiConfigRevision {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configId String @map("config_id") @db.Uuid
+  version Int
+  content Json
+  fingerprint String?
+  name String?
+  note String?
+  savedBy String @map("saved_by") @db.Uuid
+  savedAt DateTime @default(now()) @map("saved_at") @db.Timestamptz
+  config AiConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+  @@unique([configId,version])
+  @@map("ai_config_revisions")
+}
+
+// Durable metadata for admin work. Expiring request/response content stays in ai_call_contents.
+model AiBatch {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind String
+  operation String
+  status String @default("queued")
+  configId String? @map("config_id") @db.Uuid
+  configVersion Int? @map("config_version")
+  fingerprint String?
+  snapshot Json?
+  sourceId String? @unique @map("source_id") @db.Uuid
+  parentId String? @map("parent_id") @db.Uuid
+  model String
+  provider String
+  total Int
+  actorId String @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  startedAt DateTime? @map("started_at") @db.Timestamptz
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz
+  @@index([createdAt,id])
+  @@index([configId])
+  @@map("ai_batches")
+}

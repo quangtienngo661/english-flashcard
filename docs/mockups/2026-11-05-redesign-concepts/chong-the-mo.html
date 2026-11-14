@@ -1,0 +1,438 @@
+<title>Chồng thẻ tan mờ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one review screen; piles left and right of a single stack; the stack's depth is told by blur, and a swiped card dissolves instead of flying away. Tokens follow the UI-criteria report. */
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --ink:#1b2444; --muted:#525a78; --line:#dde1ea;
+  --accent:#2445d6; --accent-soft:#e8ecfc; --on-accent:#ffffff; --mark:#ffd84a; --mark-ink:#1b2444;
+  --pass:#1b7a46; --pass-soft:#e4f2ea; --fail:#b8352a; --fail-soft:#f8e7e5;
+  --f-display:'Bricolage Grotesque','Noto Sans',system-ui,sans-serif;
+  --f-body:'Noto Sans',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --slow:1;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131c; --surface:#1a1f2d; --ink:#eceef5; --muted:#a6adc4; --line:#2e3549;
+  --accent:#8da2ff; --accent-soft:#1f2747; --on-accent:#10131c; --pass:#62c98f; --pass-soft:#142a1e; --fail:#ff8d80; --fail-soft:#311a18; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+h1,h2,h3{font-family:var(--f-display);margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.key{font-family:var(--f-mono);font-size:11px;font-weight:700;min-width:22px;height:22px;display:inline-grid;place-items:center;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--bg);color:var(--ink)}
+.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+
+.ws{max-width:1000px;margin:0 auto;display:grid;gap:18px}
+.bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.bar h1{font-size:22px;font-weight:700;line-height:1.35}
+.ticks{display:flex;gap:4px;list-style:none;margin:0 0 0 auto;padding:0}
+.ticks li{width:20px;height:6px;border-radius:3px;background:var(--line)}
+.ticks li.now{background:var(--ink)} .ticks li.known{background:var(--pass)} .ticks li.again{background:var(--fail)}
+.left{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.close{display:inline-flex;align-items:center;gap:6px;font-size:14px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+
+.arena{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px;min-height:540px}
+.pile{display:grid;gap:4px;justify-items:center;text-align:center;align-content:center;min-height:200px}
+.pile .pn{font-family:var(--f-display);font-weight:800;font-size:46px;line-height:1.2;font-variant-numeric:tabular-nums}
+.pile .pl{display:flex;align-items:center;gap:6px;font-weight:600}
+.pile.again{color:var(--fail)} .pile.known{color:var(--pass)}
+.pile.hot .pl{text-decoration:underline;text-underline-offset:4px}
+.minis{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;align-items:center;min-height:120px}
+.minis li{font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px;animation:chipIn calc(300ms * var(--slow)) var(--ease-out) both}
+@keyframes chipIn{from{opacity:0;filter:blur(6px);transform:translateY(-6px) scale(.96)}to{opacity:1;filter:blur(0);transform:none}}
+.bump{animation:bump calc(220ms * var(--slow)) var(--ease-out)}
+@keyframes bump{from{transform:scale(1.12)}to{transform:none}}
+
+/* stack */
+.stack{position:relative;width:min(360px,86vw);height:470px}
+.card{position:absolute;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;perspective:1400px;
+  transition:transform calc(300ms * var(--slow)) var(--ease-out),filter calc(300ms * var(--slow)) var(--ease-out),opacity calc(300ms * var(--slow)) var(--ease-out)}
+.card[data-depth="0"]{z-index:4}
+.card[data-depth="1"]{z-index:3;transform:translateY(16px) scale(.95);filter:blur(5px);opacity:.85}
+.card[data-depth="2"]{z-index:2;transform:translateY(30px) scale(.9);filter:blur(9px);opacity:.5}
+.card[data-depth="3"]{z-index:1;transform:translateY(40px) scale(.86);filter:blur(12px);opacity:0}
+.card.dragging,.card.following,.card.notr{transition:none}
+.card.dragging{cursor:grabbing}
+.card.settle{transition:transform calc(380ms * var(--slow)) var(--ease-out),filter calc(380ms * var(--slow)) var(--ease-out),opacity calc(380ms * var(--slow)) var(--ease-out)}
+.card.flying{pointer-events:none;z-index:6}
+.flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform calc(300ms * var(--slow)) var(--ease-out)}
+.card.is-flipped .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 24px 48px -28px color-mix(in srgb,var(--ink) 45%,transparent)}
+.back{transform:rotateY(180deg)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pos{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.say{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;cursor:pointer}
+.say svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.word{flex:1;display:grid;place-content:center;text-align:center;gap:6px}
+.lemma{font-family:var(--f-display);font-weight:700;font-size:46px;line-height:1.3;letter-spacing:-.01em}
+.ipa{font-size:18px;color:var(--muted)}
+.hint{text-align:center;font-size:13px;color:var(--muted)}
+.bl{font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.3}
+.bl i{font-family:var(--f-mono);font-style:normal;font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
+.def{font-size:18px;line-height:1.5}
+.vi{font-size:15px;color:var(--muted)}
+.ex{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:4px;font-size:16px;line-height:1.55}
+.stagep{margin-top:auto;font-size:13px;color:var(--muted)}
+.stamp{position:absolute;top:22px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:62%;padding:6px 10px;border-radius:10px;border:2px solid currentColor;background:var(--surface);font-weight:700;font-size:15px;opacity:0;pointer-events:none;z-index:2}
+.stamp small{display:block;width:100%;font-weight:500;font-size:12px}
+.stamp svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.stamp.again{left:18px;color:var(--fail);transform:rotate(-7deg)}
+.stamp.known{right:18px;color:var(--pass);transform:rotate(7deg)}
+
+.nudge{min-height:1.6em;text-align:center;font-size:14px;color:var(--muted)}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.act{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;cursor:pointer}
+.act.again{color:var(--fail)} .act.known{color:var(--pass)}
+.act[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+
+/* summary */
+.sum{display:grid;gap:16px;max-width:640px;margin:24px auto 0;text-align:center}
+.sum h2{font-size:34px;font-weight:800;line-height:1.3}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left}
+.res section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.res .n{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1.2}
+.res .known .n,.res .known .l{color:var(--pass)} .res .again .n,.res .again .l{color:var(--fail)}
+.res ul{margin:6px 0 0;padding-left:18px}
+.sum .rv{animation:blurIn calc(520ms * var(--slow)) var(--ease-out) both;animation-delay:calc(var(--k) * 90ms * var(--slow))}
+@keyframes blurIn{from{opacity:0;filter:blur(12px);transform:translateY(10px)}to{opacity:1;filter:blur(0);transform:none}}
+.sum .again-btn{justify-self:center}
+
+/* reduced motion: no blur, no scale, no 3D turn */
+.ws.rm .card[data-depth="1"],.ws.rm .card[data-depth="2"]{filter:none}
+.ws.rm .card[data-depth="1"]{transform:translateY(12px)} .ws.rm .card[data-depth="2"]{transform:translateY(22px)}
+.ws.rm .flip{transition:none} .ws.rm .card.is-flipped .flip{transform:none}
+.ws.rm .back{transform:none;opacity:0;transition:opacity calc(160ms * var(--slow)) linear} .ws.rm .front{transition:opacity calc(160ms * var(--slow)) linear}
+.ws.rm .card.is-flipped .back{opacity:1} .ws.rm .card.is-flipped .front{opacity:0}
+.ws.rm .minis li,.ws.rm .sum .rv{animation-name:fadeOnly}
+@keyframes fadeOnly{from{opacity:0}to{opacity:1}}
+
+/* demo panel + notes */
+.panel{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+.panel label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink)}
+.panel button{font-size:14px;padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.notes{display:grid;gap:8px;max-width:72ch;margin:0 auto;font-size:15px}
+.notes h2{font-size:18px;font-weight:700}
+.notes ul{margin:0;padding-left:20px;display:grid;gap:4px;color:var(--muted)}
+.notes b{color:var(--ink);font-weight:600}
+
+@media (max-width:760px){
+  .arena{grid-template-columns:1fr 1fr;gap:12px;min-height:0}
+  .stack{grid-column:1 / -1;justify-self:center;order:-1;height:440px}
+  .pile{min-height:0}.pile .pn{font-size:32px}.minis{min-height:0}
+  .ticks{margin-left:0;width:100%}.ticks li{flex:1}
+  .lemma{font-size:40px}
+}
+</style>
+
+<main class="ws" id="ws">
+  <header class="bar">
+    <div><span class="lbl">Ôn nhóm</span><h1>IELTS Writing · Đề 12</h1></div>
+    <ol class="ticks" id="ticks" aria-hidden="true"></ol>
+    <span class="left" id="left"></span>
+    <button type="button" class="close" id="close">Kết thúc <span class="key">Esc</span></button>
+  </header>
+
+  <div id="run">
+    <div class="arena">
+      <div class="pile again" id="pileAgain"><span class="pn">0</span><span class="pl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Cần ôn lại</span><ul class="minis"></ul></div>
+      <div class="stack" id="stack"></div>
+      <div class="pile known" id="pileKnow"><span class="pn">0</span><span class="pl">Đã biết<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span><ul class="minis"></ul></div>
+    </div>
+    <p class="nudge" id="nudge" aria-live="polite"></p>
+    <div class="actions">
+      <button type="button" class="act again" id="bAgain"><span class="key">1</span>Cần ôn lại</button>
+      <button type="button" class="act" id="bFlip"><span id="flipTxt">Lật thẻ</span><span class="key">Space</span></button>
+      <button type="button" class="act known" id="bKnow">Đã biết<span class="key">2</span></button>
+    </div>
+  </div>
+  <section class="sum" id="sum" hidden aria-live="polite"></section>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="panel" role="group" aria-label="Xem motion">
+    <span class="lbl">Xem motion</span>
+    <label><input type="checkbox" id="slow"> Chậm ×4</label>
+    <label><input type="checkbox" id="rmBox"> Giảm chuyển động</label>
+    <button type="button" id="restart">Ôn lại từ đầu</button>
+  </div>
+
+  <section class="notes" aria-labelledby="h-notes">
+    <h2 id="h-notes">Nhịp motion trong bản này</h2>
+    <ul>
+      <li><b>Kéo:</b> thẻ theo tay và nghiêng theo hướng kéo. Gần ngưỡng 110 px thì thẻ mờ nhẹ 1,5 px, thẻ phía sau nét dần.</li>
+      <li><b>Thả qua ngưỡng hoặc vuốt nhanh:</b> thẻ phóng to 1,22 lần, mờ 18 px rồi tan trong 300 ms.</li>
+      <li><b>Thẻ mới:</b> hiện từ mờ 10 px và 92% kích thước, nét lại trong 300 ms, chạy cùng lúc với thẻ cũ tan.</li>
+      <li><b>Bấm phím 1 hoặc 2:</b> thẻ tan trong 240 ms. Bấm tiếp ngay vẫn được nhận, không phải chờ.</li>
+      <li><b>Giảm chuyển động:</b> không mờ, không phóng, không lật 3D; thẻ chỉ mờ dần trong 140 ms.</li>
+      <li><b>Chi phí:</b> <code>filter: blur</code> tốn GPU hơn transform. Cần thử trên laptop yếu trước khi đưa vào app.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(function(){
+  var CARDS = [
+    { lemma:'mitigate', pos:'verb', ipa:'/ˈmɪt.ɪ.ɡeɪt/', def:'to make something bad less serious', vi:'giảm nhẹ', ex:'Planting trees can help mitigate the effects of urban heat.', forms:['mitigates','mitigated','mitigating'], stage:1 },
+    { lemma:'allocate', pos:'verb', ipa:'/ˈæl.ə.keɪt/', def:'to give a share of something for a particular purpose', vi:'phân bổ', ex:'The council allocated more money to public transport.', forms:['allocates','allocated','allocating'], stage:0 },
+    { lemma:'substantial', pos:'adjective', ipa:'/səbˈstæn.ʃəl/', def:'large in amount or importance', vi:'đáng kể', ex:'There has been a substantial rise in online learning.', forms:[], stage:2 },
+    { lemma:'deteriorate', pos:'verb', ipa:'/dɪˈtɪə.ɹi.ə.ɹeɪt/', def:'to become worse over time', vi:'xấu đi', ex:'Air quality tends to deteriorate in the dry season.', forms:['deteriorates','deteriorated','deteriorating'], stage:1 },
+    { lemma:'inevitable', pos:'adjective', ipa:'/ɪˈnɛv.ɪ.tə.bəl/', def:'certain to happen and impossible to avoid', vi:'không tránh được', ex:'Some job losses are inevitable as factories automate.', forms:[], stage:0 },
+    { lemma:'viable', pos:'adjective', ipa:'/ˈvaɪ.ə.bəl/', def:'able to work successfully', vi:'khả thi', ex:'Solar power is now a viable option for many homes.', forms:[], stage:3 },
+    { lemma:'prevalent', pos:'adjective', ipa:'/ˈpɹɛv.ə.lənt/', def:'common in a particular place or group', vi:'phổ biến', ex:'Short videos are prevalent among teenagers.', forms:[], stage:1 },
+    { lemma:'reluctant', pos:'adjective', ipa:'/ɹɪˈlʌk.tənt/', def:'not wanting to do something', vi:'miễn cưỡng', ex:'Many students are reluctant to speak in class.', forms:[], stage:0 }
+  ];
+  var STAGES = ['Mới','1 ngày','3 ngày','7 ngày','14 ngày','30 ngày'];
+  var THRESHOLD = 110, EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
+  var $ = function(id){ return document.getElementById(id); };
+  var ws = $('ws'), stack = $('stack'), ticks = $('ticks'), leftEl = $('left'), nudgeEl = $('nudge'), live = $('live');
+  var pileAgain = $('pileAgain'), pileKnow = $('pileKnow'), bAgain = $('bAgain'), bFlip = $('bFlip'), bKnow = $('bKnow'), run = $('run'), sum = $('sum');
+  var mq = matchMedia('(prefers-reduced-motion: reduce)');
+  var slow = 1;
+  var reduced = function(){ return ws.classList.contains('rm'); };
+  var i = 0, flipped = false, results = [], ended = false, nudgeTimer = 0;
+
+  function esc(s){ return s.replace(/[&<>"]/g, function(ch){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[ch]; }); }
+  function highlight(sentence, c){
+    var words = [c.lemma].concat(c.forms || []).sort(function(a, b){ return b.length - a.length; });
+    var re = new RegExp('\\b(' + words.join('|') + ')\\b', 'i');
+    return esc(sentence).replace(re, '<mark>$1</mark>');
+  }
+  var SAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+  var ICON_NO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var ICON_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  function makeCard(k){
+    var c = CARDS[k], el = document.createElement('article');
+    el.className = 'card'; el.dataset.idx = String(k); el.dataset.depth = '3';
+    el.setAttribute('aria-label', 'Thẻ ' + (k + 1) + ' trên ' + CARDS.length);
+    el.innerHTML = '<div class="flip">' +
+      '<section class="face front"><div class="top"><span class="pos">' + c.pos + '</span><button type="button" class="say" data-say="' + esc(c.lemma) + '" aria-label="Nghe ' + esc(c.lemma) + '">' + SAY + '</button></div>' +
+        '<div class="word"><p class="lemma">' + esc(c.lemma) + '</p><p class="ipa">' + c.ipa + '</p></div><p class="hint">Bấm vào thẻ hoặc Space để lật</p></section>' +
+      '<section class="face back"><div class="top"><span class="bl">' + esc(c.lemma) + '<i>' + c.pos + '</i></span><button type="button" class="say" data-say="' + esc(c.lemma) + '" aria-label="Nghe ' + esc(c.lemma) + '">' + SAY + '</button></div>' +
+        '<p class="def">' + esc(c.def) + '</p><p class="vi">' + esc(c.vi) + '</p><div class="ex"><span class="lbl">Câu mẫu</span><p>' + highlight(c.ex, c) + '</p></div><p class="stagep">Đang ở ngăn ' + STAGES[c.stage] + '</p></section>' +
+      '</div>' +
+      '<span class="stamp again">' + ICON_NO + 'Cần ôn lại<small>về ngăn 1 ngày</small></span>' +
+      '<span class="stamp known">' + ICON_OK + 'Đã biết<small>lên ngăn ' + STAGES[Math.min(c.stage + 1, 5)] + '</small></span>';
+    el.querySelector('.back').inert = true;
+    bindDrag(el);
+    return el;
+  }
+
+  function topCard(){ return stack.querySelector('.card[data-depth="0"]:not(.flying)'); }
+
+  /* the card that becomes top blur-zooms in from wherever it was */
+  function arrive(el, wasFollowing){
+    if (reduced()) { el.animate([{ opacity: .4 }, { opacity: 1 }], { duration: 140 * slow, easing: 'linear' }); return; }
+    var from = wasFollowing
+      ? { transform: el.style.transform || 'none', filter: el.style.filter || 'blur(0px)', opacity: el.style.opacity || '1' }
+      : { transform: 'translateY(16px) scale(.92)', filter: 'blur(10px)', opacity: .55 };
+    el.classList.add('notr');
+    el.style.transform = ''; el.style.filter = ''; el.style.opacity = '';
+    el.animate([from, { transform: 'none', filter: 'blur(0px)', opacity: 1 }], { duration: 300 * slow, easing: EASE })
+      .onfinish = function(){ el.classList.remove('notr'); };
+    requestAnimationFrame(function(){ el.classList.remove('notr'); });
+  }
+
+  function fill(){
+    var want = [i, i + 1, i + 2, i + 3].filter(function(k){ return k < CARDS.length; });
+    Array.from(stack.children).forEach(function(n){ if (!n.classList.contains('flying') && want.indexOf(Number(n.dataset.idx)) < 0) n.remove(); });
+    want.forEach(function(k, d){
+      var n = stack.querySelector('.card[data-idx="' + k + '"]:not(.flying)');
+      var fresh = !n;
+      if (fresh) { n = makeCard(k); stack.appendChild(n); void n.offsetWidth; }
+      var wasDepth = n.dataset.depth, wasFollowing = n.classList.contains('following');
+      n.classList.remove('following');
+      n.dataset.depth = String(d);
+      if (d === 0 && wasDepth !== '0' && !fresh) arrive(n, wasFollowing);
+      else { n.style.transform = ''; n.style.filter = ''; n.style.opacity = ''; }
+      n.querySelector('.front').inert = d !== 0; n.querySelector('.back').inert = true;
+      n.setAttribute('aria-hidden', d === 0 ? 'false' : 'true');
+    });
+    flipped = false;
+    setButtons(); progress();
+  }
+
+  function progress(){
+    leftEl.textContent = 'còn ' + (CARDS.length - i) + ' thẻ';
+    ticks.innerHTML = CARDS.map(function(_, k){ var r = results[k]; return '<li class="' + (r ? r.ans : (k === i && !ended ? 'now' : '')) + '"></li>'; }).join('');
+  }
+  function setButtons(){
+    bAgain.setAttribute('aria-disabled', String(!flipped)); bKnow.setAttribute('aria-disabled', String(!flipped));
+    $('flipTxt').textContent = flipped ? 'Xem mặt trước' : 'Lật thẻ';
+  }
+  function flip(){
+    var top = topCard(); if (!top || ended) return;
+    flipped = !flipped;
+    top.classList.toggle('is-flipped', flipped);
+    top.querySelector('.front').inert = flipped; top.querySelector('.back').inert = !flipped;
+    setButtons(); say('');
+  }
+  function say(text){ clearTimeout(nudgeTimer); nudgeEl.textContent = text; if (text) nudgeTimer = setTimeout(function(){ nudgeEl.textContent = ''; }, 2200); }
+  function nudge(){
+    var top = topCard(); if (!top) return;
+    say('Lật thẻ để xem nghĩa trước đã.');
+    if (reduced()) return;
+    top.animate([{ transform: 'none' }, { transform: 'translateX(-9px) rotate(-1.2deg)' }, { transform: 'translateX(8px) rotate(1deg)' }, { transform: 'none' }], { duration: 300 * slow, easing: 'ease-out' });
+  }
+
+  /* drag */
+  function setDragVisual(top, dx, dy, armed){
+    var p = Math.min(1, Math.abs(dx) / THRESHOLD), rm = reduced();
+    top.style.transform = rm ? 'translateX(' + dx + 'px)' : 'translate(' + dx + 'px,' + (dy * .3) + 'px) rotate(' + Math.max(-14, Math.min(14, dx * .055)) + 'deg)';
+    if (!rm) top.style.filter = flipped ? 'blur(' + (p * 1.5).toFixed(2) + 'px)' : '';
+    top.querySelector('.stamp.again').style.opacity = dx < 0 && flipped ? String(p) : '0';
+    top.querySelector('.stamp.known').style.opacity = dx > 0 && flipped ? String(p) : '0';
+    pileAgain.classList.toggle('hot', armed === 'again'); pileKnow.classList.toggle('hot', armed === 'known');
+    var next = stack.querySelector('.card[data-depth="1"]');
+    if (next && flipped && !rm) {
+      next.classList.add('following');
+      next.style.transform = 'translateY(' + (16 - 12 * p) + 'px) scale(' + (.95 + .04 * p) + ')';
+      next.style.filter = 'blur(' + ((1 - p) * 5).toFixed(2) + 'px)';
+      next.style.opacity = String(.85 + .15 * p);
+    }
+  }
+  function clearDragVisual(top){
+    top.querySelectorAll('.stamp').forEach(function(s){ s.style.opacity = '0'; });
+    pileAgain.classList.remove('hot'); pileKnow.classList.remove('hot');
+    var next = stack.querySelector('.card[data-depth="1"]');
+    if (next) { next.classList.remove('following'); next.style.transform = ''; next.style.filter = ''; next.style.opacity = ''; }
+  }
+  function bindDrag(el){
+    var d = null;
+    el.addEventListener('pointerdown', function(e){
+      if (d || ended || el.dataset.depth !== '0' || el.classList.contains('flying') || e.button > 0) return;
+      if (e.target.closest('button')) return;
+      d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), lx: e.clientX, lt: performance.now(), v: 0, dx: 0, dy: 0, moved: 0 };
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', function(e){
+      if (!d || e.pointerId !== d.id) return;
+      var rx = e.clientX - d.x0, ry = e.clientY - d.y0;
+      d.moved = Math.max(d.moved, Math.hypot(rx, ry));
+      if (d.moved < 4) return;
+      el.classList.add('dragging');
+      var now = performance.now(), dt = now - d.lt;
+      if (dt > 0) d.v = .7 * d.v + .3 * ((e.clientX - d.lx) / dt);
+      d.lx = e.clientX; d.lt = now;
+      d.dx = flipped ? rx : Math.sign(rx) * Math.min(56, Math.abs(rx) * .3);
+      d.dy = flipped ? ry : ry * .3;
+      if (!flipped && Math.abs(rx) > 40) say('Lật thẻ để xem nghĩa trước đã.');
+      var armed = flipped && Math.abs(d.dx) > THRESHOLD ? (d.dx < 0 ? 'again' : 'known') : null;
+      setDragVisual(el, d.dx, d.dy, armed);
+    });
+    function end(e){
+      if (!d || e.pointerId !== d.id) return;
+      var g = d; d = null;
+      try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (g.moved < 6 && performance.now() - g.t0 < 400 && e.type === 'pointerup') { el.classList.remove('dragging'); flip(); return; }
+      var fast = Math.abs(g.v) > .55 && Math.abs(g.dx) > 30 && Math.sign(g.v) === Math.sign(g.dx);
+      if (flipped && (Math.abs(g.dx) > THRESHOLD || fast)) { commit(g.dx < 0 ? 'again' : 'known', 'drag', g.v); return; }
+      el.classList.remove('dragging'); el.classList.add('settle');
+      el.style.transform = ''; el.style.filter = ''; el.style.opacity = '';
+      clearDragVisual(el);
+      setTimeout(function(){ el.classList.remove('settle'); }, 400 * slow);
+    }
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('click', function(e){
+      var b = e.target.closest('.say'); if (!b) return;
+      try { var u = new SpeechSynthesisUtterance(b.dataset.say); u.lang = 'en-GB'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (err) {}
+    });
+  }
+
+  /* answer: the card dissolves (scale up, blur, fade) while the next one blur-zooms in */
+  function commit(ans, how, v){
+    var top = topCard(); if (!top || ended) return;
+    if (!flipped) { nudge(); return; }
+    var k = Number(top.dataset.idx), c = CARDS[k];
+    results[k] = { lemma: c.lemma, ans: ans };
+    var cs = getComputedStyle(top), curT = cs.transform, curF = cs.filter, curO = cs.opacity;
+    top.classList.remove('dragging', 'settle'); top.classList.add('flying');
+    var stamp = top.querySelector(ans === 'known' ? '.stamp.known' : '.stamp.again');
+    top.querySelectorAll('.stamp').forEach(function(s){ s.style.opacity = '0'; });
+    stamp.style.opacity = '1';
+    pileAgain.classList.remove('hot'); pileKnow.classList.remove('hot');
+    live.textContent = (ans === 'known' ? 'Đã biết' : 'Cần ôn lại') + ': ' + c.lemma + '.';
+    var pile = ans === 'known' ? pileKnow : pileAgain;
+    var land = function(){ top.remove(); if (i >= CARDS.length && !ended) finish(); };
+    addMini(pile, c.lemma);
+    if (reduced()) {
+      top.animate([{ opacity: curO }, { opacity: 0 }], { duration: 140 * slow, fill: 'forwards' }).onfinish = land;
+    } else {
+      var dir = ans === 'known' ? 1 : -1, base = curT === 'none' ? '' : curT + ' ';
+      var speed = Math.min(1, Math.abs(v || 0) / 2);
+      var to = base + 'translateX(' + (dir * (how === 'drag' ? 70 : 40)) + 'px) rotate(' + (dir * (how === 'drag' ? 3 : 5)) + 'deg) scale(1.22)';
+      top.animate([
+        { transform: curT === 'none' ? 'none' : curT, filter: curF === 'none' ? 'blur(0px)' : curF, opacity: curO },
+        { transform: to, filter: 'blur(18px)', opacity: 0 }
+      ], { duration: (how === 'drag' ? 300 - speed * 80 : 240) * slow, easing: EASE, fill: 'forwards' }).onfinish = land;
+    }
+    i += 1;
+    fill();
+  }
+
+  function addMini(pile, word){
+    var box = pile.querySelector('.minis'), li = document.createElement('li');
+    li.textContent = word; box.prepend(li);
+    while (box.children.length > 5) box.lastElementChild.remove();
+    var n = pile.querySelector('.pn');
+    n.textContent = String(results.filter(function(r){ return r && r.ans === (pile === pileKnow ? 'known' : 'again'); }).length);
+    if (!reduced()) { n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump'); }
+  }
+
+  function finish(){
+    if (ended) return;
+    ended = true; progress();
+    var done = results.filter(Boolean), known = done.filter(function(r){ return r.ans === 'known'; }), again = done.filter(function(r){ return r.ans === 'again'; });
+    var list = function(arr){ return arr.length ? '<ul>' + arr.map(function(r){ return '<li>' + esc(r.lemma) + '</li>'; }).join('') + '</ul>' : '<p>Không có thẻ nào.</p>'; };
+    sum.innerHTML = '<h2 class="rv" style="--k:0">Xong ' + done.length + ' thẻ.</h2>' +
+      (again.length ? '<p class="rv" style="--k:1">Thẻ cần ôn lại quay về ngăn 1 ngày và nằm đầu nhóm.</p>' : '') +
+      '<div class="res rv" style="--k:2"><section class="known"><p class="n">' + known.length + '</p><p class="l">Đã biết</p>' + list(known) + '</section>' +
+      '<section class="again"><p class="n">' + again.length + '</p><p class="l">Cần ôn lại</p>' + list(again) + '</section></div>' +
+      '<button type="button" class="act again-btn rv" style="--k:3" id="sumAgain">Ôn lại từ đầu <span class="key">Enter</span></button>';
+    run.hidden = true; sum.hidden = false;
+    $('sumAgain').addEventListener('click', restart);
+    $('sumAgain').focus({ preventScroll: true });
+  }
+  function restart(){
+    i = 0; results = []; ended = false;
+    stack.innerHTML = '';
+    [pileAgain, pileKnow].forEach(function(p){ p.querySelector('.minis').innerHTML = ''; p.querySelector('.pn').textContent = '0'; });
+    sum.hidden = true; sum.innerHTML = ''; run.hidden = false; say('');
+    fill();
+  }
+
+  bFlip.addEventListener('click', flip);
+  bAgain.addEventListener('click', function(){ commit('again', 'key'); });
+  bKnow.addEventListener('click', function(){ commit('known', 'key'); });
+  $('close').addEventListener('click', finish);
+  $('restart').addEventListener('click', restart);
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t.closest && t.closest('input, textarea')) return;
+    if (ended) { if (e.key === 'Enter' && !(t.closest && t.closest('button'))) restart(); return; }
+    if ((e.key === ' ' || e.key === 'Enter') && t.closest && t.closest('button')) return;
+    if (e.key === ' ') { e.preventDefault(); flip(); }
+    else if (e.key === 'ArrowLeft' || e.key === '1') { e.preventDefault(); commit('again', 'key'); }
+    else if (e.key === 'ArrowRight' || e.key === '2') { e.preventDefault(); commit('known', 'key'); }
+    else if (e.key === 'Escape') finish();
+  });
+  $('slow').addEventListener('change', function(e){ slow = e.target.checked ? 4 : 1; document.documentElement.style.setProperty('--slow', slow); e.target.blur(); });
+  $('rmBox').addEventListener('change', function(e){ ws.classList.toggle('rm', e.target.checked); e.target.blur(); });
+  if (mq.matches) { $('rmBox').checked = true; ws.classList.add('rm'); }
+
+  fill();
+})();
+</script>

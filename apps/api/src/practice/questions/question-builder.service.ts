@@ -1,0 +1,210 @@
+import { Inject, Injectable } from '@nestjs/common';
+import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { ContentService, maskExample, type CandidateSense, type LemmaMeanings, type PracticeSense } from '../../content/index.js';
+import { LearningService } from '../../learning/index.js';
+import type { AppSettings } from '../../settings/index.js';
+import { normalizeAnswer } from '../grading/normalize.js';
+import { mcqForms, pickWrongMeanings } from '../ai/ai-checks.js';
+import { contentKey } from '../ai/ai-inputs.js';
+import { ownSentenceQuestion } from '../ai/ai-question.js';
+import { WordChecksRepository } from '../ai/word-checks.repository.js';
+import { MCQ_OPTIONS } from '../practice.constants.js';
+import { usesSavedSentences, type AnswerKey, type Blank, type ClozeRole, type ClozeSource, type Hints, type Prompt, type PromptStyle, type QuestionType } from '../practice.types.js';
+import { eligibleCandidates, pickDistractors, shuffle } from './distractors.js';
+import { buildHints } from './hints.js';
+import { availableTypes, chooseType, typingStyle, type AiTypeFacts } from './question-types.js';
+
+type NativeLanguage = 'vi' | 'en';
+
+export type BuiltQuestion = {
+  type: QuestionType; promptStyle: PromptStyle; prompt: Prompt; answerKey: AnswerKey; hints: Hints;
+  // practice_questions.blank: sentence prompts only.
+  blank: Blank | null;
+  distractorSenseIds: string[];
+};
+export type BuildInput = {
+  userId: string; nativeLanguage: NativeLanguage; senseId: string; chosenTypes: QuestionType[];
+  promptStyle: 'meaning' | 'sentence' | 'mixed'; previousType: QuestionType | null; avoidDistractors: string[];
+  settings: AppSettings['practice']; random: () => number;
+  /** Bước 7: the session's cloze source; only 'own' and 'own_then_ai' make `cloze` buildable here (AI cloze goes through the generator). */
+  clozeSource?: ClozeSource | null;
+  /** The client to read through: a caller inside an open transaction passes its `tx` (default: the global client). */
+  db?: Prisma.TransactionClient | PrismaClient;
+};
+
+const DISTRACTORS = MCQ_OPTIONS - 1;
+const NEW_TYPES: QuestionType[] = ['cloze', 'meaning_in_sentence', 'mcq_sentence'];
+
+/** Builds one question from the learner's groups and Content (design 7.3–7.7, D34); nothing here is written. */
+@Injectable()
+export class QuestionBuilder {
+  constructor(
+    @Inject(ContentService) private readonly content: ContentService,
+    @Inject(LearningService) private readonly learning: LearningService,
+    @Inject(WordChecksRepository) private readonly wordChecks: WordChecksRepository,
+  ) {}
+
+  /**
+   * The chosen types each word can take now (design 7.3); a word missing from the map is not visible. One group-mates call
+   * and one candidates call for the whole batch.
+   */
+  async availability(input: {
+    userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[];
+    clozeSource?: ClozeSource | null;
+    // 'own_then_ai' only: which side of the cloze is asked about (see availableTypes); missing = either side.
+    clozeRole?: ClozeRole;
+    db?: Prisma.TransactionClient | PrismaClient;
+  }): Promise<Map<string, QuestionType[]>> {
+    const { userId, nativeLanguage, senseIds, chosenTypes, db } = input;
+    const choiceAi = chosenTypes.includes('meaning_in_sentence') || chosenTypes.includes('mcq_sentence');
+    const need = chosenTypes.includes('mcq_definition') ? DISTRACTORS : chosenTypes.includes('true_false_definition') ? 1 : 0;
+    const mates = need > 0 || choiceAi ? await this.learning.practiceGroupMates(userId, senseIds, db) : new Map<string, string[]>();
+    const ids = [...new Set([...senseIds, ...[...mates.values()].flat()])];
+    const senses = await this.content.practiceCandidates(userId, ids, nativeLanguage, db);
+    const meanings = need > 0 || choiceAi
+      ? await this.content.practiceLemmaMeanings(userId, [...senses.values()].map((s) => s.lemma), nativeLanguage, db)
+      : undefined;
+    const facts = chosenTypes.some((type) => NEW_TYPES.includes(type))
+      ? await this.aiFacts({
+        userId, nativeLanguage, senseIds, chosenTypes, clozeSource: input.clozeSource ?? 'ai', clozeRole: input.clozeRole, mates, senses,
+        meanings: meanings ?? new Map(), db,
+      })
+      : new Map<string, AiTypeFacts>();
+    const result = new Map<string, QuestionType[]>();
+    for (const senseId of senseIds) {
+      const asked = senses.get(senseId);
+      if (!asked) continue;
+      const candidates = (mates.get(senseId) ?? []).flatMap((id) => senses.get(id) ?? []);
+      result.set(senseId, availableTypes(asked, eligibleCandidates(asked, candidates, need, meanings).length, chosenTypes,
+        facts.get(senseId)));
+    }
+    return result;
+  }
+
+  /** What the Bước 7 types need per word (design §6.2): one read per kind for the batch, one per word for its other senses. */
+  private async aiFacts(input: {
+    userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[]; clozeSource: ClozeSource;
+    clozeRole?: ClozeRole; mates: Map<string, string[]>; senses: Map<string, CandidateSense>; meanings: LemmaMeanings;
+    db?: Prisma.TransactionClient | PrismaClient;
+  }): Promise<Map<string, AiTypeFacts>> {
+    const { userId, nativeLanguage, senseIds, chosenTypes, clozeSource, clozeRole, mates, senses, meanings, db } = input;
+    const full = await this.content.practiceSenses(userId, senseIds, nativeLanguage, db);
+    // Both sides of 'own_then_ai' need the saved sentences: the own side to take them, the AI side to leave those words alone.
+    const own = chosenTypes.includes('cloze') && usesSavedSentences(clozeSource)
+      ? await this.content.listSentences(userId, senseIds, db) : new Map<string, Array<{ text: string }>>();
+    const wantsMeaning = chosenTypes.includes('meaning_in_sentence');
+    const randoms = wantsMeaning
+      ? await this.content.practiceRandomMeanings(userId, [...full.values()].map((s) => s.lemma), DISTRACTORS, nativeLanguage, db)
+      : [];
+    const result = new Map<string, AiTypeFacts>();
+    for (const senseId of senseIds) {
+      const sense = full.get(senseId);
+      if (!sense) continue;
+      const candidates = (mates.get(senseId) ?? []).flatMap((id) => senses.get(id) ?? []);
+      const target = { lemma: sense.lemma, variants: sense.variants, inflections: sense.inflections };
+      const check = sense.scope === 'private' ? await this.wordChecks.get(userId, senseId) : null;
+      const others = wantsMeaning && sense.gloss_vi !== null
+        ? await this.content.practiceOtherSenses(userId, senseId, nativeLanguage, db) : [];
+      const wrong = wantsMeaning ? pickWrongMeanings(sense, others, candidates, randoms, meanings) : null;
+      const forms = chosenTypes.includes('mcq_sentence')
+        ? mcqForms(sense, eligibleCandidates(sense, candidates, Infinity, meanings)).map((f) => f.candidates.length) : [];
+      result.set(senseId, {
+        clozeSource,
+        clozeRole,
+        hasViMeaning: sense.gloss_vi !== null,
+        ownSentence: (own.get(senseId) ?? []).some(({ text }) => maskExample(text, target) !== null),
+        meaningPool: wrong?.length ?? 0,
+        mcqForms: Math.max(0, ...forms),
+        wordRejected: check !== null && check.verdict === 'not_recognized'
+          && check.contentKey === contentKey(sense.lemma, sense.pos, sense.gloss_vi ?? ''),
+      });
+    }
+    return result;
+  }
+
+  async build(input: BuildInput): Promise<BuiltQuestion | { skip: 'not-visible' | 'no-type' }> {
+    const { userId, nativeLanguage, senseId, random, db } = input;
+    const sense = (await this.content.practiceSenses(userId, [senseId], nativeLanguage, db)).get(senseId);
+    if (!sense) return { skip: 'not-visible' };
+    const mates = (await this.learning.practiceGroupMates(userId, [senseId], db)).get(senseId) ?? [];
+    const candidates = await this.content.practiceCandidates(userId, mates, nativeLanguage, db);
+    const pool = mates.flatMap((id) => candidates.get(id) ?? []);
+    const meanings = await this.content.practiceLemmaMeanings(userId, [sense.lemma, ...pool.map((c) => c.lemma)], nativeLanguage, db);
+    const eligible = eligibleCandidates(sense, pool, Infinity, meanings);
+    const target = { lemma: sense.lemma, variants: sense.variants, inflections: sense.inflections };
+    // Bước 7 (design §7.3): cloze from the learner's saved sentences that maskExample can mask (B7E52); the only non-AI new type.
+    const ownMasked = input.chosenTypes.includes('cloze') && usesSavedSentences(input.clozeSource ?? null)
+      ? ((await this.content.listSentences(userId, [senseId], db)).get(senseId) ?? [])
+        .flatMap(({ text }) => maskExample(text, target) ?? [])
+      : [];
+    // `build` makes rule questions only, so under 'own_then_ai' it is the own side that asks for the cloze here.
+    const extra: AiTypeFacts | undefined = usesSavedSentences(input.clozeSource ?? null) ? {
+      clozeSource: input.clozeSource!, clozeRole: 'own', hasViMeaning: false, ownSentence: ownMasked.length > 0, meaningPool: 0, mcqForms: 0,
+      wordRejected: false,
+    } : undefined;
+    const available = availableTypes(sense, eligible.length, input.chosenTypes, extra);
+    if (available.length === 0) return { skip: 'no-type' };
+    const type = chooseType(available, input.previousType, random);
+    if (type === 'cloze') {
+      return ownSentenceQuestion(sense, ownMasked[Math.floor(random() * ownMasked.length)], nativeLanguage,
+        input.settings.hintDefinitionMaxChars);
+    }
+
+    const masked = sense.examples.flatMap((example) => maskExample(example, target) ?? []);
+    const reveal = { lemma: sense.lemma, meaning: sense.meaning.text, definition_en: sense.definition_en };
+    const asked_private = sense.scope === 'private';
+    const meaning = { meaning: sense.meaning.text, meaning_language: sense.meaning.language, context_label: sense.context_label };
+    const hints = (style: PromptStyle, main: string) => buildHints({
+      type, style, meaning: sense.meaning, definition_en: sense.definition_en, maskedFirstExample: masked[0]?.masked ?? null,
+      main, maxDefinitionChars: input.settings.hintDefinitionMaxChars,
+    });
+
+    if (type === 'mcq_definition') {
+      const distractors = pickDistractors(eligible, DISTRACTORS, input.avoidDistractors, random)!;
+      const options: Array<PracticeSense | CandidateSense> = shuffle([sense, ...distractors], random);
+      return {
+        type, promptStyle: 'meaning', prompt: { kind: 'mcq', ...meaning, options: options.map((o) => o.lemma) },
+        answerKey: {
+          kind: 'mcq', reveal, asked_private, correct_index: options.indexOf(sense),
+          option_private: options.map((o) => o.scope === 'private'),
+        },
+        hints: hints('meaning', sense.lemma), blank: null, distractorSenseIds: distractors.map((d) => d.sense_id),
+      };
+    }
+    if (type === 'true_false_definition') {
+      const isTrue = random() * 100 < input.settings.trueFalseTruePercent;
+      const paired = isTrue ? sense : pickDistractors(eligible, 1, input.avoidDistractors, random)![0];
+      return {
+        type, promptStyle: 'meaning',
+        // D37 (owner): true/false never shows a context label, on the true pair or the false one.
+        prompt: {
+          kind: 'true_false', lemma: sense.lemma, meaning: paired.meaning.text, meaning_language: paired.meaning.language,
+          context_label: null,
+        },
+        answerKey: { kind: 'true_false', reveal, asked_private, is_true: isTrue, paired_private: paired.scope === 'private' },
+        hints: hints('meaning', sense.lemma), blank: null, distractorSenseIds: isTrue ? [] : [paired.sense_id],
+      };
+    }
+    const style = typingStyle(input.promptStyle, masked.length > 0, random);
+    if (style === 'sentence') {
+      const chosen = masked[Math.floor(random() * masked.length)];
+      // A base blank in an accepted spelling takes every accepted spelling; an inflected or non-accepted one only itself.
+      const takesAll = chosen.base && (chosen.blank === sense.lemma || sense.accepted.includes(chosen.blank));
+      const accepted = takesAll ? [sense.lemma, ...sense.accepted, chosen.blank] : [chosen.blank];
+      return {
+        type, promptStyle: 'sentence', prompt: { kind: 'type_sentence', sentence: chosen.masked },
+        answerKey: { kind: 'type_word', reveal, asked_private, main: chosen.blank, accepted: normalizedSet(accepted) },
+        hints: hints('sentence', chosen.blank), blank: { text: chosen.blank, base: chosen.base }, distractorSenseIds: [],
+      };
+    }
+    return {
+      type, promptStyle: 'meaning', prompt: { kind: 'type_meaning', ...meaning },
+      answerKey: {
+        kind: 'type_word', reveal, asked_private, main: sense.lemma, accepted: normalizedSet([sense.lemma, ...sense.accepted]),
+      },
+      hints: hints('meaning', sense.lemma), blank: null, distractorSenseIds: [],
+    };
+  }
+}
+
+const normalizedSet = (texts: string[]) => [...new Set(texts.map(normalizeAnswer))];

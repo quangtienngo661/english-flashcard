@@ -17,13 +17,19 @@ export class IdentityCleanupService implements OnModuleInit {
     this.scheduler.register('identity-cleanup', (now) => this.runOnce(now));
   }
 
-  async runOnce(now: Date): Promise<{ graceSecrets: number; otpCodes: number; chains: number }> {
+  async runOnce(now: Date): Promise<{ graceSecrets: number; otpCodes: number; otpFailureWindows: number; loginFailures: number; chains: number }> {
     const at = (ms: number) => new Date(now.getTime() - ms);
     const graceSecrets = await this.prisma.refreshToken.updateMany({
       where: { successorCiphertext: { not: null }, graceUntil: { lt: now } },
       data: { successorCiphertext: null },
     });
     const otpCodes = await this.prisma.otpCode.deleteMany({ where: { expiresAt: { lt: at(day) } } });
+    // B1-5: a wrong-code counter older than 48 hours counts for nothing; one still locking the user stays until the lock ends.
+    const otpFailureWindows = await this.prisma.otpFailureWindow.deleteMany({
+      where: { windowStart: { lt: at(2 * day) }, OR: [{ lockedUntil: null }, { lockedUntil: { lt: now } }] },
+    });
+    // F4: a login lock lasts 15 minutes, so a row untouched for a day neither locks nor counts toward a lock worth keeping.
+    const loginFailures = await this.prisma.loginFailure.deleteMany({ where: { updatedAt: { lt: at(day) } } });
     // "Dead for more than 30 days": revoked 30 d ago, or expired 30 d ago by the 90 d idle or the
     // 365 d absolute limit without ever being revoked. Tokens cascade with their chain.
     const chains = await this.prisma.sessionChain.deleteMany({
@@ -35,6 +41,9 @@ export class IdentityCleanupService implements OnModuleInit {
         ],
       },
     });
-    return { graceSecrets: graceSecrets.count, otpCodes: otpCodes.count, chains: chains.count };
+    return {
+      graceSecrets: graceSecrets.count, otpCodes: otpCodes.count, otpFailureWindows: otpFailureWindows.count,
+      loginFailures: loginFailures.count, chains: chains.count,
+    };
   }
 }

@@ -6,12 +6,20 @@ import { contentKey, formatInflections, levelKey, type NormalizedRow } from '../
 export type ImportFileRow = { normalized: NormalizedRow; raw: string[] };
 type KeyTuple = { kind: string; sourceId: string; rowKey: string; contentHash: string };
 const signature = (key: KeyTuple) => JSON.stringify([key.kind, key.sourceId, key.rowKey, key.contentHash]);
+const EMPTY_CONTENT = { glossVi: null, definitionEn: null, examplesEn: [], topicCodes: [], acceptedForms: [] };
+
+/** The hash of the row's own content cells, as stored in its `content` row key (the expression of Bước 2 D13). */
+export function rowContentHash(row: NormalizedRow): string {
+  return contentHash(mergeContent(EMPTY_CONTENT, row.content ?? {}));
+}
 
 /** Duplicate identity wins over D13, even when the two rows have different content hashes.
  * settledContentKeys reconstructs earlier successful rows on a crash retry without processing them.
  * D13 is deliberately conservative: level keys hash identity, NOT level/variants. Require a
  * successful corresponding row from identical file bytes before bypassing the row processor.
  * Content patches needing a merge, and sense_id guards, remain the processor's responsibility.
+ * contentAppliedRows (D14): a row without sense_id or form_of whose content key and hash any other non-reverted batch
+ * already applied, whatever its file bytes or level source; the processor then leaves its content alone.
  */
 export async function prefilterRows(
   db: Pick<Prisma.TransactionClient, 'importRowKey' | 'importRowOutcome'>,
@@ -19,7 +27,7 @@ export async function prefilterRows(
   batch: { batchId: string; levelSourceId: string | null; fileSha256: string },
   settledContentKeys: ReadonlyMap<string, number> = new Map(),
 ): Promise<{ toProcess: ImportFileRow[]; unchangedRows: ImportFileRow[];
-  duplicateRows: Array<{ row: ImportFileRow; errors: RowError[] }> }> {
+  duplicateRows: Array<{ row: ImportFileRow; errors: RowError[] }>; contentAppliedRows: Set<number> }> {
   const firstRows = new Map(settledContentKeys);
   const duplicateRows: Array<{ row: ImportFileRow; errors: RowError[] }> = [];
   const surviving: Array<{ row: ImportFileRow; keys: KeyTuple[] }> = [];
@@ -57,15 +65,15 @@ export async function prefilterRows(
     }
     if (normalized.content !== null) {
       keys.push({ kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(normalized).key,
-        contentHash: contentHash(mergeContent({ glossVi: null, definitionEn: null, examplesEn: [], topicCodes: [], acceptedForms: [] },
-          normalized.content)),
-      });
+        contentHash: rowContentHash(normalized) });
     }
     surviving.push({ row, keys });
   }
 
   const rowKeys = [...new Set(surviving.flatMap(({ keys }) => keys.map(({ rowKey }) => rowKey)))];
-  if (rowKeys.length === 0) return { toProcess: surviving.map(({ row }) => row), unchangedRows: [], duplicateRows };
+  if (rowKeys.length === 0) {
+    return { toProcess: surviving.map(({ row }) => row), unchangedRows: [], duplicateRows, contentAppliedRows: new Set() };
+  }
   // One key lookup for the file; matching hashes in memory keeps the bind count bounded even
   // at importMaxRows. No query (and no per-row transaction) for duplicate rows rejected above.
   const existing = await db.importRowKey.findMany({ where: {
@@ -77,7 +85,9 @@ export async function prefilterRows(
     batch: { select: { fileSha256: true, levelSourceId: true } },
   } });
   const matches = new Map<string, Set<string>>();
+  const appliedContent = new Set<string>();
   for (const key of existing) {
+    if (key.kind === 'content' && key.batchId !== batch.batchId) appliedContent.add(signature(key));
     if (key.batchId === batch.batchId || key.batch.fileSha256 !== batch.fileSha256
       || key.batch.levelSourceId !== batch.levelSourceId) continue;
     const tuple = signature(key);
@@ -93,7 +103,13 @@ export async function prefilterRows(
   const appliedRows = new Set(applied.map(({ batchId, rowNumber }) => JSON.stringify([batchId, rowNumber])));
   const toProcess: ImportFileRow[] = [];
   const unchangedRows: ImportFileRow[] = [];
+  const contentAppliedRows = new Set<number>();
   for (const { row, keys } of surviving) {
+    const content = keys.find(({ kind }) => kind === 'content');
+    // form_of is not part of the row's content hash, so a row carrying a form_of cell is always applied again.
+    if (row.normalized.senseId === null && row.normalized.formOf === null && content && appliedContent.has(signature(content))) {
+      contentAppliedRows.add(row.normalized.rowNumber);
+    }
     const firstMatch = keys.length > 0 ? matches.get(signature(keys[0])) : undefined;
     // H1: an inflections cell replaces the entry's whole set, and a later batch may have replaced what this same file
     // once set; so a row carrying one is always processed again (sameForms in the processor keeps that cheap).
@@ -103,5 +119,5 @@ export async function prefilterRows(
       && keys.every((key) => matches.get(signature(key))?.has(id)));
     (unchanged ? unchangedRows : toProcess).push(row);
   }
-  return { toProcess, unchangedRows, duplicateRows };
+  return { toProcess, unchangedRows, duplicateRows, contentAppliedRows };
 }

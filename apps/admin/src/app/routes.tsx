@@ -1,14 +1,40 @@
-import { Navigate, Route, Routes } from 'react-router';
+import { createRoutesFromElements, Navigate, Route, useLocation, type RouteObject } from 'react-router';
 import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
+import { AiCallsPage } from '../features/ai/AiCallsPage';
+import { AiConfigsPage } from '../features/ai/configs/AiConfigsPage';
+import { AiCostsPage } from '../features/ai/AiCostsPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { AiEvalPage } from '../features/ai/AiEvalPage';
+import { AiJudgesPage } from '../features/ai/judges/AiJudgesPage';
+import { LabelQueuePage } from '../features/ai/judges/LabelQueuePage';
+import { RealQuestionsPage } from '../features/ai/real-questions/RealQuestionsPage';
+import { AiModelsPage } from '../features/ai/AiModelsPage';
+import { AiStatusPage } from '../features/ai/AiStatusPage';
+import { GrantsPage } from '../features/entitlements/GrantsPage';
 import { ExportPage } from '../features/export/ExportPage';
+import { ReportReasonsPage } from '../features/reports/ReportReasonsPage';
+import { RefundsPage } from '../features/reports/RefundsPage';
+import { ReportsPage } from '../features/reports/ReportsPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
+import { SenseDetail } from '../features/senses/SenseDetail';
+import { SensesPage } from '../features/senses/SensesPage';
+import { SettingsPage } from '../features/settings/SettingsPage';
+import { LegalEditorPage } from '../features/legal/LegalEditorPage';
+import { LegalPage } from '../features/legal/LegalPage';
+import { FaqPage } from '../features/faq/FaqPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { UsersPage } from '../features/users/UsersPage';
+import { TopicsPage } from '../features/topics/TopicsPage';
+import { OrdersPage } from '../features/orders/OrdersPage';
+import { TransactionsPage } from '../features/transactions/TransactionsPage';
+import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
+import { WordsPage } from '../features/words/WordsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
 import { Shell } from './Shell';
@@ -20,35 +46,93 @@ function Home() {
   return <Navigate to={homePath(state.me.permissions)} replace />;
 }
 
-export function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="login" element={<LoginPage />} />
-      <Route path="forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="change-password" element={<ChangePasswordPage />} />
-      <Route element={<RequireSession />}>
-        <Route element={<Shell />}>
-          <Route index element={<Home />} />
-          {/* A list page owns its children (UB8, UB9): `new` opens the form dialog, `:id` the detail panel. */}
-          <Route path="uploads" element={<UploadsPage />}>
-            <Route path="new" element={null} />
-            <Route path=":id" element={null} />
-          </Route>
-          <Route path="publish-jobs" element={<PublishJobsPage />}>
-            <Route path="new" element={null} />
-            <Route path=":id" element={null} />
-          </Route>
-          <Route path="export" element={<ExportPage />} />
-          <Route path="sources" element={<SourcesPage />}>
-            <Route path="new" element={null} />
-          </Route>
-          <Route path="staff" element={<StaffPage />} />
-          {NAV.filter((entry) => !entry.available).map((entry) => (
-            <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />
-          ))}
-        </Route>
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+/** `/ai/operations` and `/ai/prompts` (pages that no longer exist) → `/ai/configs`, keeping the query (`?op=`). */
+function ToConfigs() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/ai/configs', search }} replace />;
 }
+
+/** Route objects, not `<Routes>`: a data router is what lets the shell block navigation (`useBlocker`). */
+export const appRoutes: RouteObject[] = createRoutesFromElements(
+  <>
+    <Route path="login" element={<LoginPage />} />
+    <Route path="forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="change-password" element={<ChangePasswordPage />} />
+    <Route element={<RequireSession />}>
+      <Route element={<Shell />}>
+        <Route index element={<Home />} />
+        {/* A list page owns its children (UB8, UB9): `new` opens the form dialog, `:id` the detail panel. */}
+        <Route path="words" element={<WordsPage />} />
+        <Route path="senses" element={<SensesPage />} />
+        <Route path="senses/:id" element={<SenseDetail />} />
+        <Route path="topics" element={<TopicsPage />} />
+        <Route path="uploads" element={<UploadsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="publish-jobs" element={<PublishJobsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="export" element={<ExportPage />} />
+        <Route path="sources" element={<SourcesPage />}>
+          <Route path="new" element={null} />
+        </Route>
+        <Route path="reports" element={<ReportsPage />}>
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="report-reasons" element={<ReportReasonsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":code" element={null} />
+        </Route>
+        <Route path="refunds" element={<RefundsPage />} />
+        <Route path="unknown-forms" element={<UnknownFormsPage />} />
+        <Route path="users" element={<UsersPage />}>
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="entitlements" element={<GrantsPage />}>
+          <Route path="new" element={null} />
+        </Route>
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="ai/status" element={<AiStatusPage />} />
+        <Route path="ai/models" element={<AiModelsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="ai/configs" element={<AiConfigsPage />}>
+          <Route path="drafts/:id" element={null} />
+          <Route path="history" element={null} />
+        </Route>
+        {/* The Thao tác and Prompt pages became "Cấu hình": old links and bookmarks keep the operation (`?op=`). */}
+        <Route path="ai/operations" element={<ToConfigs />} />
+        <Route path="ai/prompts" element={<ToConfigs />} />
+        <Route path="ai/eval" element={<AiEvalPage />}>
+          <Route path="new" element={null} />
+          <Route path="bulk" element={null} />
+          <Route path="sets" element={null} />
+          <Route path="runs" element={null} />
+          <Route path="runs/:id" element={null} />
+        </Route>
+        <Route path="ai/real-questions" element={<RealQuestionsPage />} />
+        <Route path="ai/judges" element={<AiJudgesPage />} />
+        <Route path="ai/judges/label" element={<LabelQueuePage />} />
+        <Route path="ai/costs" element={<AiCostsPage />} />
+        <Route path="ai/calls" element={<AiCallsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="legal" element={<LegalPage />} />
+        <Route path="legal/:id" element={<LegalEditorPage />} />
+        <Route path="faq" element={<FaqPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="staff" element={<StaffPage />} />
+        {NAV.filter((entry) => !entry.available).map((entry) => (
+          <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />
+        ))}
+      </Route>
+    </Route>
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </>,
+);

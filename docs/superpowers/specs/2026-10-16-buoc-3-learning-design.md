@@ -1,5 +1,12 @@
 # Design — Bước 3: Learning (kèm phần Content dời từ Bước 2)
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B3-6): design và code lệch ở các chỗ sau, nội dung gốc giữ nguyên.**
+> - Header ("chưa duyệt toàn bộ… đang implement") **đã thay bởi** `docs/deliveries/buoc-3.md`: phần hệ thống đã merge (PR #28–#44, 18/10/2026); §17 as-built nằm ở file đó.
+> - B3E2 (LN5): từ ở mức 0 luôn đến hạn (`schedule.ts`), nên một từ mới lên **mức 2** sau hai lần "Đã biết" qua nửa đêm, không phải "ôn sớm".
+> - §8.3 (LN8): `sending` của ngày cũ **có** tính vào `min_gap_days` (`eligibility.ts`, `reminder-tick.service.ts`; khớp D37).
+> - §19 ("AGID chưa đo"): **đã đo** (commit `121be0c`, "fixture 50/50 … 99/100 by hand").
+> - §6.3 (LN4): "tổng số từ" đếm khác nhau giữa `groups.service.ts` (cả nghĩa đã đổi) và `queue.queries.ts` (chỉ nghĩa còn thấy); LN4 và LN5 là câu 21, 22 "chưa chốt" trong decision record sửa thiếu sót, chưa có người giữ.
+
 > **Trạng thái 17/10/2026: chưa duyệt toàn bộ.** Phần hệ thống (mục 1–15) đã trình bày từng phần và chủ dự án duyệt trong chat;
 > đã rà lại một lượt (`../reviews/2026-10-17-buoc-3-design-plan-review.md`). **Phần giao diện (mục 16) làm ở phiên riêng** và có
 > plan riêng. Mục 17 trỏ sang plan hệ thống (D41). "Xong khi": chủ dự án tự báo khi Bước 3 xong (D45). Nguồn dạng chia: AGID (D46). Đang implement theo plan hệ thống.
@@ -325,7 +332,7 @@ không đụng chi phí" của D6 Bước 1). `PUT` mang `version`; hai admin c�
 | Hai email nhắc của một người cách nhau ít nhất (ngày) | 2 | 1–7 (Chốt 17/10, D44) |
 | Ngưỡng vắng: chuyển sang "lâu rồi" / dừng hẳn | 7 / 60 ngày | 3–30 / 30–180 |
 | Trần từ mới mỗi nhóm mỗi ngày | 20 | 1–100 |
-| Trần từ ôn mỗi nhóm mỗi ngày | 100 | 10–500 |
+| Trần từ ôn mỗi nhóm mỗi ngày | 100 | 10–500; **để trống = không giới hạn** (D35 của Bước 4, design Bước 4 mục 5.3–5.4) |
 | Số ngày quá hạn để vào danh sách cân nhắc | 60 | 30–365 |
 
 Ngưỡng dừng email nhắc (80% hạn mức email, 20% còn lại dành cho OTP) và các giới hạn số nhóm, số từ mỗi nhóm, số từ riêng là **hằng số trong code** ở Bước 3;

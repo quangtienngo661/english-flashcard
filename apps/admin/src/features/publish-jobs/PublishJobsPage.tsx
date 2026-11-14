@@ -71,7 +71,7 @@ export function PublishJobsPage() {
       className: 'w-2/5',
       cell: (j) => filterSummary(j.filter, (id) => t('publishJobs.batchFilter', { id })) || t('publishJobs.filterNone'),
     },
-    { key: 'status', header: t('publishJobs.list.status'), className: 'w-3/20', cell: (j) => <StatusBadge status={j.status} /> },
+    { key: 'status', header: t('publishJobs.list.status'), className: 'w-3/20', cell: (j) => <StatusBadge status={j.cancelled ? 'cancelled' : j.status} /> },
     { key: 'count', header: t('publishJobs.list.count'), className: 'w-3/20 whitespace-nowrap tabular-nums', cell: (j) => format.number(j.snapshot_count) },
     { key: 'time', header: t('publishJobs.list.time'), className: 'w-3/20 whitespace-nowrap', cell: (j) => dateTime(j.created_at) },
   ];

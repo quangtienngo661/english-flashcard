@@ -4,9 +4,9 @@ import { z } from 'zod';
 export const APP_CONFIG = 'APP_CONFIG';
 
 export type RateLimitRuleName =
-  | 'sample.create'
   | 'auth.register.ip'
   | 'auth.login.ip'
+  | 'auth.verify.ip'
   | 'auth.otp.ip'
   | 'auth.otp.email.cooldown'
   | 'auth.otp.email.hourly'
@@ -16,7 +16,15 @@ export type RateLimitRuleName =
   | 'auth.reset.ip'
   | 'mail.ip.daily'
   | 'user.write'
-  | 'learning.review';
+  | 'learning.review'
+  | 'practice.answer'
+  | 'ai.test'
+  | 'entitlements.lookup'
+  | 'auth.google.ip'
+  | 'auth.delete.user'
+  | 'auth.captcha.ip'
+  | 'public.prices.ip'
+  | 'public.faq.ip';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -26,6 +34,8 @@ export interface RateLimitRuleConfig {
 
 export interface AppConfig {
   databaseUrl: string;
+  /** Connection pool of the Prisma client: the size, and how long a request waits for a free connection (T16). */
+  database: { poolMax: number; poolTimeoutMs: number };
   redisUrl: string;
   jwt: {
     keys: Array<{ kid: string; secret: Uint8Array }>;
@@ -52,6 +62,8 @@ export interface AppConfig {
   adminAppUrl: string;
   /** Origin of the learner app (apps/web); reminder emails link to `<learnerAppUrl>/<language>/app/settings`. */
   learnerAppUrl: string;
+  /** Version of the Terms/Privacy text a learner accepts at registration. */
+  termsVersion: string;
   maintenanceEnabled: boolean;
   content: {
     publishMaxItems: number;
@@ -79,13 +91,78 @@ export interface AppConfig {
     /** First retry delay of a reminder send after a transient SMTP error; doubles per attempt (L15). */
     retryBackoffMs: number;
   };
+  /** Billing gateway (design §9.1). The fake provider never runs in production (R17). */
+  billing: {
+    production: boolean;
+    fakeEnabled: boolean;
+    fakeSecret: Buffer | null;
+    /** Off lets the smoke run the path of a provider without `fetchState` (R10). */
+    fakeFetchState: boolean;
+  };
+  /** AI gateway (Bước 6, design §13). A key is `null` when that provider is not configured; keys are never logged. */
+  ai: {
+    openaiApiKey: string | null;
+    anthropicApiKey: string | null;
+    /** The fake provider (models `fake:*`) never runs in production (B6E45). */
+    fakeEnabled: boolean;
+  };
+  /**
+   * payOS, the one-time VietQR payment (launch prep B, design §3.3). `fake` wins over `real`; the fake never runs in production (LB1E41)
+   * and signs its webhooks with `billing.fakeSecret`. The three keys are secrets: never logged.
+   */
+  payos: {
+    mode: 'real' | 'fake' | 'off';
+    clientId: string | null;
+    apiKey: string | null;
+    checksumKey: string | null;
+  };
+  /**
+   * Pre-made speech audio (round C, design §5.4–5.5). Storage is Cloudflare R2 (`r2`, the four keys together) or a local folder (`local`,
+   * the fake); null = off and the app keeps the browser voice. `publicBaseUrl` has no trailing slash. Neither fake runs in production.
+   */
+  audio: {
+    storage: 'r2' | 'local' | null;
+    publicBaseUrl: string | null;
+    r2: { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string } | null;
+    localDir: string;
+  };
+  /**
+   * The text-to-speech provider: `google` (service account credentials, secret: never logged), `fake` (tests and the smoke) or null.
+   * The voices are Google voice names (e.g. en-GB-Wavenet-B); the language code is their first five characters.
+   */
+  tts: {
+    provider: 'google' | 'fake' | null;
+    voiceUk: string;
+    voiceUs: string;
+    credentials: { clientEmail: string; privateKey: string; projectId: string } | null;
+  };
+  /** Google sign-in (Bước 8, design §5.2). `fake` wins over `real`; the fake never runs in production (B8E38). */
+  google: {
+    mode: 'off' | 'real' | 'fake';
+    clientId: string | null;
+    clientSecret: string | null;
+    /** The API's own callback URL; the fake page returns to it too. */
+    redirectUri: string | null;
+    /** Origin of `redirectUri`: the API does not otherwise know its own address (used for `start_url`). */
+    apiOrigin: string | null;
+    /** Seals the short-lived Google cookies (AES-256-GCM, 32 bytes). */
+    cookieKey: Buffer | null;
+  };
+  /** Cloudflare Turnstile on register, login and OTP requests (launch prep A, design 4.2). `fake` and `off` never run in production. */
+  turnstile: {
+    mode: 'real' | 'fake' | 'off';
+    secretKey: string | null;
+    /** Hostnames siteverify may report for a passed token (apex, www and the admin host). */
+    allowedHostnames: string[];
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
 export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
-  'sample.create': { by: 'user', max: 10, windowSeconds: 60 },
   'auth.register.ip': { by: 'ip', max: 5, windowSeconds: 3600 },
   'auth.login.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+  // ASSUMPTION number, design 4.2.
+  'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'auth.otp.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'auth.otp.email.cooldown': { by: 'email', max: 1, windowSeconds: 60 },
   'auth.otp.email.hourly': { by: 'email', max: 5, windowSeconds: 3600 },
@@ -97,6 +174,21 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
   // Flashcard answers: a fast session goes well past 30 a minute.
   'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
+  // Practice next/hint/answer/skip/review: a quick multiple-choice session writes 2–3 times per question (Bước 4 R1).
+  'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
+  // Admin test calls of the AI gateway (Bước 6 design §12.1).
+  'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
+  // Staff look a learner up by email before a grant (design §5.2): 60 an hour, per staff account.
+  'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
+  // Bước 8: Google start, callback and complete (design §5), and the account deletion check against password guessing (design §7.2).
+  'auth.google.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+  'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
+  // Calls to Cloudflare siteverify per IP, counted only in `real` mode before the call (launch prep A, design 4.2).
+  'auth.captcha.ip': { by: 'ip', max: 60, windowSeconds: 60 },
+  // Giao diện mới §10.6: the landing page reads the Pro prices at build time; 60 a minute per IP.
+  'public.prices.ip': { by: 'ip', max: 60, windowSeconds: 60 },
+  // Giao diện mới §10.7: the landing page reads the FAQ at build time; its own counter, so it does not share the prices one.
+  'public.faq.ip': { by: 'ip', max: 60, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);
@@ -133,10 +225,30 @@ function isTrustedProxy(value: string): boolean {
   });
 }
 
+/** `GOOGLE_TTS_CREDENTIALS`: base64 of the service account JSON. A failure names the variable and never the value. */
+const ttsCredentials = z.string().optional().transform((value, ctx) => {
+  const text = value?.trim();
+  if (!text) return null;
+  try {
+    const json: unknown = JSON.parse(Buffer.from(text, 'base64').toString('utf8'));
+    const record = json !== null && typeof json === 'object' && !Array.isArray(json) ? json as Record<string, unknown> : {};
+    const field = (name: string) => (typeof record[name] === 'string' && record[name] !== '' ? record[name] as string : null);
+    const [clientEmail, privateKey, projectId] = [field('client_email'), field('private_key'), field('project_id')];
+    if (clientEmail !== null && privateKey !== null && projectId !== null) return { clientEmail, privateKey, projectId };
+  } catch {
+    // Falls through to the issue below.
+  }
+  ctx.addIssue({ code: 'custom', message: 'must be the base64 of a service account JSON with client_email, private_key and project_id' });
+  return z.NEVER;
+});
+const optionalText = z.string().optional().transform((value) => value?.trim() || null);
+
 const envSchema = z.object({
   DATABASE_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['postgres:', 'postgresql:'].includes(value.protocol))
     .transform((value) => value.toString()),
+  DATABASE_POOL_MAX: positiveInteger.default(20),
+  DATABASE_POOL_TIMEOUT_MS: positiveInteger.default(5000),
   REDIS_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['redis:', 'rediss:'].includes(value.protocol))
     .transform((value) => value.toString()),
@@ -167,12 +279,13 @@ const envSchema = z.object({
     const url = new URL(value);
     return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
   }),
+  TERMS_VERSION: nonEmpty,
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
   IMPORT_MAX_ROWS: positiveInteger.default(20_000),
   IMPORT_MAX_BYTES: positiveInteger.default(10_485_760),
-  EXPORT_MAX_ROWS: positiveInteger.default(5_000),
+  EXPORT_MAX_ROWS: positiveInteger.default(10_000),
   IMPORT_LEASE_SECONDS: positiveInteger.default(60),
   IMPORT_HEARTBEAT_SECONDS: positiveInteger.default(20),
   IMPORT_RECONCILE_SECONDS: positiveInteger.default(30),
@@ -184,6 +297,122 @@ const envSchema = z.object({
   IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
   REMINDER_TICK_SECONDS: positiveInteger.default(900),
   REMINDER_RETRY_BACKOFF_MS: positiveInteger.default(60_000),
+  // No default (Q13, 07/11/2026): every guard below keys on it, so an environment that forgets it must not start with the fakes reachable.
+  BILLING_PRODUCTION: booleanString,
+  BILLING_FAKE_ENABLED: booleanString.default(false),
+  BILLING_FAKE_SECRET: secretSchema().optional(),
+  BILLING_FAKE_FETCH_STATE: booleanString.default(true),
+  AI_FAKE_ENABLED: booleanString.default(false),
+  OPENAI_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  ANTHROPIC_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  // Read by the AI SDKs themselves, which add these headers to every provider call; no client option turns them off (D29).
+  OPENAI_CUSTOM_HEADERS: z.string().optional(),
+  ANTHROPIC_CUSTOM_HEADERS: z.string().optional(),
+  GOOGLE_TTS_CREDENTIALS: ttsCredentials,
+  TTS_VOICE_UK: nonEmpty.default('en-GB-Wavenet-B'),
+  TTS_VOICE_US: nonEmpty.default('en-US-Wavenet-D'),
+  TTS_FAKE_ENABLED: booleanString.default(false),
+  AUDIO_STORAGE_ENDPOINT: optionalText,
+  AUDIO_STORAGE_BUCKET: optionalText,
+  AUDIO_STORAGE_ACCESS_KEY_ID: optionalText,
+  AUDIO_STORAGE_SECRET_ACCESS_KEY: optionalText,
+  AUDIO_PUBLIC_BASE_URL: optionalText,
+  AUDIO_STORAGE_FAKE_ENABLED: booleanString.default(false),
+  AUDIO_STORAGE_FAKE_DIR: nonEmpty.default('.tmp/audio'),
+  GOOGLE_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
+  GOOGLE_CLIENT_SECRET: z.string().optional().transform((value) => value?.trim() || null),
+  GOOGLE_REDIRECT_URI: z.string().optional().transform((value) => value?.trim() || null)
+    .refine((value) => value === null || (URL.canParse(value) && ['http:', 'https:'].includes(new URL(value).protocol))),
+  OAUTH_COOKIE_KEY: secretSchema(32).optional(),
+  GOOGLE_FAKE_ENABLED: booleanString.default(false),
+  PAYOS_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_CHECKSUM_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_FAKE_ENABLED: booleanString.default(false),
+  // No default: a production that forgets the variable must not start without a bot check (design 4.2).
+  TURNSTILE_MODE: z.enum(['real', 'fake', 'off']),
+  // Not `secretSchema`: a Turnstile secret is not base64url.
+  // A line `TURNSTILE_SECRET_KEY=` of .env.example loads as an empty string: blank counts as unset, as OPENAI_API_KEY does.
+  TURNSTILE_SECRET_KEY: z.string().optional().transform((value) => value?.trim() || undefined),
+  TURNSTILE_ALLOWED_HOSTNAMES: z.string().optional()
+    .transform((value) => (value ?? '').split(',').map((host) => host.trim()).filter((host) => host !== '')),
+}).superRefine((values, ctx) => {
+  // Empty or blank counts as unset, as the SDKs' own readEnv does.
+  for (const name of ['OPENAI_CUSTOM_HEADERS', 'ANTHROPIC_CUSTOM_HEADERS'] as const) {
+    if (values[name]?.trim()) {
+      ctx.addIssue({ code: 'custom', path: [name], message: 'must be unset: the AI SDK would add these headers to every provider call (D29)' });
+    }
+  }
+  if (values.BILLING_PRODUCTION && values.BILLING_FAKE_ENABLED) {
+    const message = 'The fake billing provider is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_PRODUCTION && values.AI_FAKE_ENABLED) {
+    const message = 'The fake AI provider is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['AI_FAKE_ENABLED'], message });
+  }
+  for (const name of ['TTS_FAKE_ENABLED', 'AUDIO_STORAGE_FAKE_ENABLED'] as const) {
+    if (values.BILLING_PRODUCTION && values[name]) {
+      const message = name === 'TTS_FAKE_ENABLED' ? 'The fake speech provider is not allowed in production' : 'The local fake audio storage is not allowed in production';
+      ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+      ctx.addIssue({ code: 'custom', path: [name], message });
+    }
+  }
+  // The real storage needs all four keys together (like payOS); the fake wins, so stray real values beside it are not checked.
+  const storageKeys = ['AUDIO_STORAGE_ENDPOINT', 'AUDIO_STORAGE_BUCKET', 'AUDIO_STORAGE_ACCESS_KEY_ID', 'AUDIO_STORAGE_SECRET_ACCESS_KEY'] as const;
+  const storageOn = values.AUDIO_STORAGE_FAKE_ENABLED || storageKeys.some((name) => values[name] !== null);
+  if (!values.AUDIO_STORAGE_FAKE_ENABLED && storageKeys.some((name) => values[name] !== null)) {
+    for (const name of storageKeys) {
+      if (values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when any AUDIO_STORAGE_* key is set (all keys together)' });
+    }
+  }
+  if (storageOn && values.AUDIO_PUBLIC_BASE_URL === null) {
+    ctx.addIssue({ code: 'custom', path: ['AUDIO_PUBLIC_BASE_URL'], message: 'Required when audio storage is on' });
+  }
+  if (values.AUDIO_PUBLIC_BASE_URL !== null && !(URL.canParse(values.AUDIO_PUBLIC_BASE_URL)
+    && ['http:', 'https:'].includes(new URL(values.AUDIO_PUBLIC_BASE_URL).protocol))) {
+    ctx.addIssue({ code: 'custom', path: ['AUDIO_PUBLIC_BASE_URL'], message: 'Must be an http(s) URL' });
+  }
+  if (values.BILLING_PRODUCTION && values.GOOGLE_FAKE_ENABLED) {
+    const message = 'The fake Google page is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['GOOGLE_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_PRODUCTION && values.PAYOS_FAKE_ENABLED) {
+    const message = 'The fake payOS is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['PAYOS_FAKE_ENABLED'], message });
+  }
+  // The real payOS needs all three keys together; the fake wins, so stray real values beside it are not checked (LB1E42).
+  const payosKeys = ['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY'] as const;
+  if (!values.PAYOS_FAKE_ENABLED && payosKeys.some((name) => values[name] !== null)) {
+    for (const name of payosKeys) {
+      if (values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when any PAYOS_* key is set' });
+    }
+  }
+  if (values.PAYOS_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when PAYOS_FAKE_ENABLED=true' });
+  }
+  if (values.BILLING_PRODUCTION && values.TURNSTILE_MODE !== 'real') {
+    const message = 'The fake or disabled bot check is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['TURNSTILE_MODE'], message });
+  }
+  if (values.TURNSTILE_MODE === 'real') {
+    if (values.TURNSTILE_SECRET_KEY === undefined) ctx.addIssue({ code: 'custom', path: ['TURNSTILE_SECRET_KEY'], message: 'Required when TURNSTILE_MODE=real' });
+    if (values.TURNSTILE_ALLOWED_HOSTNAMES.length === 0) ctx.addIssue({ code: 'custom', path: ['TURNSTILE_ALLOWED_HOSTNAMES'], message: 'Required when TURNSTILE_MODE=real' });
+  }
+  if (values.GOOGLE_FAKE_ENABLED || values.GOOGLE_CLIENT_ID !== null) {
+    const required = values.GOOGLE_FAKE_ENABLED ? ['GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'] : ['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'];
+    for (const name of required as Array<'GOOGLE_CLIENT_SECRET' | 'GOOGLE_REDIRECT_URI' | 'OAUTH_COOKIE_KEY'>) {
+      if (values[name] === undefined || values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when Google sign-in is on' });
+    }
+  }
+  if (values.BILLING_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when BILLING_FAKE_ENABLED=true' });
+  }
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -195,6 +424,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   const values = result.data;
   return {
     databaseUrl: values.DATABASE_URL,
+    database: { poolMax: values.DATABASE_POOL_MAX, poolTimeoutMs: values.DATABASE_POOL_TIMEOUT_MS },
     redisUrl: values.REDIS_URL,
     jwt: {
       keys: values.JWT_KEYS,
@@ -220,6 +450,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     problemTypeBase: values.PROBLEM_TYPE_BASE,
     adminAppUrl: values.ADMIN_APP_URL,
     learnerAppUrl: values.LEARNER_APP_URL,
+    termsVersion: values.TERMS_VERSION,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
     pipeline: {
@@ -238,6 +469,51 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
     },
     reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true, retryBackoffMs: values.REMINDER_RETRY_BACKOFF_MS },
+    billing: {
+      production: values.BILLING_PRODUCTION,
+      fakeEnabled: values.BILLING_FAKE_ENABLED,
+      fakeSecret: values.BILLING_FAKE_SECRET ?? null,
+      fakeFetchState: values.BILLING_FAKE_FETCH_STATE,
+    },
+    ai: {
+      openaiApiKey: values.OPENAI_API_KEY,
+      anthropicApiKey: values.ANTHROPIC_API_KEY,
+      fakeEnabled: values.AI_FAKE_ENABLED,
+    },
+    payos: {
+      mode: values.PAYOS_FAKE_ENABLED ? 'fake' : values.PAYOS_CLIENT_ID !== null ? 'real' : 'off',
+      clientId: values.PAYOS_CLIENT_ID,
+      apiKey: values.PAYOS_API_KEY,
+      checksumKey: values.PAYOS_CHECKSUM_KEY,
+    },
+    audio: {
+      storage: values.AUDIO_STORAGE_FAKE_ENABLED ? 'local' : values.AUDIO_STORAGE_ENDPOINT !== null ? 'r2' : null,
+      publicBaseUrl: values.AUDIO_PUBLIC_BASE_URL?.replace(/\/+$/, '') ?? null,
+      r2: !values.AUDIO_STORAGE_FAKE_ENABLED && values.AUDIO_STORAGE_ENDPOINT !== null ? {
+        endpoint: values.AUDIO_STORAGE_ENDPOINT, bucket: values.AUDIO_STORAGE_BUCKET!, accessKeyId: values.AUDIO_STORAGE_ACCESS_KEY_ID!,
+        secretAccessKey: values.AUDIO_STORAGE_SECRET_ACCESS_KEY!,
+      } : null,
+      localDir: values.AUDIO_STORAGE_FAKE_DIR,
+    },
+    tts: {
+      provider: values.TTS_FAKE_ENABLED ? 'fake' : values.GOOGLE_TTS_CREDENTIALS !== null ? 'google' : null,
+      voiceUk: values.TTS_VOICE_UK,
+      voiceUs: values.TTS_VOICE_US,
+      credentials: values.GOOGLE_TTS_CREDENTIALS,
+    },
+    google: {
+      mode: values.GOOGLE_FAKE_ENABLED ? 'fake' : values.GOOGLE_CLIENT_ID !== null ? 'real' : 'off',
+      clientId: values.GOOGLE_CLIENT_ID,
+      clientSecret: values.GOOGLE_CLIENT_SECRET,
+      redirectUri: values.GOOGLE_REDIRECT_URI,
+      apiOrigin: values.GOOGLE_REDIRECT_URI === null ? null : new URL(values.GOOGLE_REDIRECT_URI).origin,
+      cookieKey: values.OAUTH_COOKIE_KEY ?? null,
+    },
+    turnstile: {
+      mode: values.TURNSTILE_MODE,
+      secretKey: values.TURNSTILE_SECRET_KEY ?? null,
+      allowedHostnames: values.TURNSTILE_ALLOWED_HOSTNAMES,
+    },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }

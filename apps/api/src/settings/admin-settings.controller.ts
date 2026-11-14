@@ -5,7 +5,7 @@ import { Idempotent } from '../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../common/request-user/request-user.js';
 import { RequirePermission } from '../identity/staff/require-permission.decorator.js';
-import { SETTINGS_BOUNDS, settingsValuesPatchSchema, toApiValues } from './settings.definitions.js';
+import { SETTINGS_BOUNDS, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues } from './settings.definitions.js';
 import { SettingsService } from './settings.service.js';
 
 const putSettingsSchema = z.strictObject({ version: z.number().int().min(0), values: settingsValuesPatchSchema });
@@ -22,7 +22,7 @@ export class AdminSettingsController {
   @Get()
   async read() {
     const { version, values } = await this.settings.current();
-    return { version, values: toApiValues(values), bounds: SETTINGS_BOUNDS };
+    return { version, values: toApiValues(values), defaults: toApiValues(SETTINGS_DEFAULTS), bounds: SETTINGS_BOUNDS };
   }
 
   @Put()

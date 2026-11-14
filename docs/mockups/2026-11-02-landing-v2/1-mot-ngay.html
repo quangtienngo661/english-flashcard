@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 1 · Một ngày với Wordmet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script>document.documentElement.classList.add('js'); setTimeout(() => { if (!window.__motion) document.documentElement.classList.add('motion-failsafe'); }, 2500);</script>
+<style>
+/* Structure 6: the page follows one day of a learner, the two situations in PRODUCT.md (review on a schedule, meet a word outside).
+   Review round (taste-skill + Emil Kowalski, 02/11/2026): one dominant headline, the hour lives in each heading instead of an
+   eyebrow, product pieces are marked data-ui, fewer type sizes, a measured motion layer. */
+
+/* Hero: the headline owns the full width; copy and the day rail share the row below. */
+.hero { padding-block: clamp(2.5rem, 1rem + 4.5vw, 5.5rem) clamp(4rem, 2rem + 6vw, 8rem); }
+.hero h1 { font-weight: 800; letter-spacing: -0.035em; line-height: 0.98; font-size: clamp(2.2rem, 0.75rem + 5.8vw, 5.5rem); text-wrap: balance; max-width: 21ch; }
+.hero-row { display: grid; gap: 2.5rem; margin-top: clamp(1.75rem, 1rem + 2vw, 3rem); }
+.hero-copy { display: grid; gap: 1.5rem; align-content: start; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+.note { font-size: 0.8125rem; color: var(--muted); }
+@media (min-width: 62rem) { .hero-row { grid-template-columns: 0.85fr 1.15fr; gap: 4.5rem; align-items: start; } }
+
+/* The day rail: three hours, each a piece of the real app. */
+.day { display: grid; gap: 0.9rem; }
+.moment { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; align-items: start; }
+.time { display: grid; justify-items: center; gap: 0.3rem; padding-top: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.time .ic { width: 1.4rem; height: 1.4rem; }
+.moment [data-ui] { padding: 1rem 1.1rem; display: grid; gap: 0.6rem; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.moment small { color: var(--muted); font-size: 0.8125rem; }
+.mini-q span { display: inline-block; border-bottom: 2px solid var(--ink); width: 4.5rem; }
+
+/* Chapters: each heading carries its hour. */
+.chapter { display: grid; gap: 2.5rem; align-items: center; }
+@media (min-width: 58rem) { .chapter { grid-template-columns: 0.8fr 1.2fr; gap: 5rem; } .chapter.flip { grid-template-columns: 1.2fr 0.8fr; } .chapter.flip > :first-child { order: 2; } }
+.copy { display: grid; gap: 1.25rem; align-content: start; }
+.hour { font-variant-numeric: tabular-nums; }
+.ticks { display: grid; gap: 0.55rem; }
+.ticks li { display: flex; gap: 0.6rem; align-items: flex-start; }
+.ticks .ic { color: var(--success); width: 1.1rem; height: 1.1rem; margin-top: 0.2rem; }
+.on-navy .ticks .ic { color: var(--accent); }
+
+.pair { display: grid; gap: 1rem; }
+@media (min-width: 40rem) { .pair { grid-template-columns: 1.4fr 1fr; align-items: start; } }
+.today { padding: 1.5rem; display: grid; gap: 1rem; }
+.today h3 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.stats { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.boxes-panel { padding: 1.1rem 1.2rem; display: grid; gap: 0.55rem; font-size: 0.8125rem; }
+.boxes-panel .r { display: grid; grid-template-columns: 3.75rem 1fr 2.5rem; gap: 0.75rem; align-items: center; font-variant-numeric: tabular-nums; }
+.boxes-panel .r span:last-child { text-align: right; font-weight: 700; }
+
+.addword { background: var(--accent-soft); border-radius: var(--r-card); box-shadow: 0 0.3rem 0 var(--accent-deep); padding: 1.25rem; display: grid; gap: 0.75rem; }
+.addword b { font-size: 1.1875rem; }
+.addword p { font-size: 0.8125rem; color: var(--muted); }
+.addword .f { display: flex; gap: 0.5rem; }
+.word { padding: 1.25rem; display: grid; gap: 0.6rem; }
+.word .head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.word .head b { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+.word .seen { background: var(--accent-soft); border-radius: var(--r-inner); padding: 0.6rem 0.8rem; }
+.word .seen mark { background: none; color: var(--primary); font-weight: 700; }
+
+.evening .q-card { color: var(--ink); }
+.weak-card { background: var(--danger-soft); border-radius: var(--r-card); padding: 1.1rem 1.2rem; display: grid; gap: 0.6rem; color: var(--ink); }
+.weak-card b { display: flex; gap: 0.5rem; align-items: center; font-size: 1.1875rem; }
+.weak-card p { font-size: 0.8125rem; }
+.weak-card .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.weak-card .chip { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink); }
+
+#sang .stat { min-width: 5.25rem; }
+#trua .pair { grid-template-columns: 1fr; max-width: 30rem; }
+.final .wrap { display: grid; gap: 1.75rem; justify-items: start; }
+.final h2 { color: #fff; font-size: clamp(2rem, 1rem + 3.4vw, 3.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 16ch; text-wrap: balance; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#ffd84a"/><path d="M14 40h14M36 40h14" stroke="#0f1a3d" stroke-width="6" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><path d="M16 9a5 5 0 0 1 0 6"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+</svg>
+<div class="mock-bar"><span>Mockup 1 · Một ngày với Wordmet, bản sau đánh giá (<a href="1-mot-ngay-truoc.html">xem bản trước</a>)</span><a href="index.html">Về mục lục</a></div>
+
+<header class="topbar on-navy">
+  <div class="wrap">
+    <a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+    <nav aria-label="Trang"><a class="tab" href="#sang">Sáng</a><a class="tab" href="#trua">Trưa</a><a class="tab" href="#toi">Tối</a><a class="tab" href="#goi">Gói học</a><a class="tab" href="#hoi-dap">Hỏi đáp</a></nav>
+    <div class="end"><a class="btn btn-navy" href="#">Đăng nhập</a><a class="btn btn-sticker" href="#">Đăng ký</a></div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1 class="reveal">Nhớ từ bằng chính <span class="hl">câu bạn đã gặp</span></h1>
+      <div class="hero-row">
+        <div class="hero-copy reveal">
+          <p class="lead">Gặp từ mới thì lưu kèm câu. Wordmet xếp lịch ôn, nhắc bạn đúng ngày, và cho bạn luyện trên chính câu ấy.</p>
+          <div class="hero-actions">
+            <a class="btn btn-sticker btn-lg" href="#">Đăng ký miễn phí</a>
+            <span class="note">Đã có tài khoản? <a class="link" href="#">Đăng nhập</a></span>
+          </div>
+          <p class="note">Miễn phí, không cần thẻ. Học trên trình duyệt máy tính và điện thoại.</p>
+        </div>
+        <ol class="day" aria-label="Một ngày học với Wordmet">
+          <li class="moment reveal"><span class="time"><svg class="ic"><use href="#i-sun"/></svg>7:30</span>
+            <div class="sheet" data-ui><div class="row"><b>Kinh doanh · B1</b><span class="chip chip-sun">Ôn tiếp</span></div>
+              <div class="row"><small>29 thẻ chờ hôm nay</small><a class="btn btn-sticker btn-sm" href="#sang">Ôn 29 thẻ</a></div></div></li>
+          <li class="moment reveal"><span class="time"><svg class="ic"><use href="#i-msg"/></svg>12:15</span>
+            <div class="sheet" data-ui><small>Tin nhắn công việc</small><p lang="en">We plan to <b>deploy</b> the new version on Friday.</p>
+              <div class="row"><small><b lang="en" style="color:var(--ink)">deploy</b> · triển khai</small><span class="chip chip-green"><svg class="ic" style="width:.9rem;height:.9rem"><use href="#i-check"/></svg>Đã lưu kèm câu</span></div></div></li>
+          <li class="moment reveal"><span class="time"><svg class="ic"><use href="#i-moon"/></svg>21:00</span>
+            <div class="sheet" data-ui><div class="row"><small>Luyện 10 câu · câu 4/10</small><span class="chip chip-soft">Câu đã gặp</span></div>
+              <p class="mini-q" lang="en">We plan to <span></span> the new version on Friday.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="sang">
+    <div class="wrap chapter">
+      <div class="copy reveal">
+        <h2 class="title"><span class="hl"><span class="hour">7:30</span>, ôn thẻ đến hạn</span></h2>
+        <p class="lead">Mở app là thấy nhóm nào cần ôn và còn bao nhiêu thẻ. Nhớ thì thẻ lên ngăn sau, lâu hơn mới gặp lại.</p>
+        <ul class="ticks"><li><svg class="ic"><use href="#i-check"/></svg>Sáu ngăn: mới, 1, 3, 7, 14, 30 ngày</li><li><svg class="ic"><use href="#i-check"/></svg>Nhắc ôn qua email khi có thẻ đến hạn</li><li><svg class="ic"><use href="#i-check"/></svg>Ôn thẻ không giới hạn ở gói Miễn phí</li></ul>
+      </div>
+      <div class="pair reveal">
+        <div class="hero-card today" data-ui aria-label="Thẻ Hôm nay trong app">
+          <span class="chip chip-sun" style="justify-self:start">Ôn tiếp</span>
+          <h3>Kinh doanh · B1</h3>
+          <small style="color:var(--muted)">29 thẻ chờ hôm nay · nhóm có 113 từ</small>
+          <div class="stats"><div class="stat"><b>0</b><span><i class="dot" style="background:var(--accent)"></i>ưu tiên</span></div><div class="stat"><b>9</b><span><i class="dot" style="background:var(--primary)"></i>đến hạn</span></div><div class="stat"><b>20</b><span><i class="dot" style="background:var(--muted)"></i>mới</span></div></div>
+          <a class="btn btn-sticker" href="#" style="justify-self:start">Ôn 29 thẻ</a>
+        </div>
+        <div class="sheet boxes-panel" data-ui aria-label="Số từ theo ngăn trong app">
+          <b style="font-size:1rem">430 từ theo ngăn</b>
+          <div class="r"><span>Mới</span><span class="bar on"></span><span>410</span></div>
+          <div class="r"><span>1 ngày</span><span class="bar on"></span><span>20</span></div>
+          <div class="r"><span>3 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>7 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>14 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>30 ngày</span><span class="bar"></span><span>0</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="trua">
+    <div class="wrap chapter flip">
+      <div class="copy reveal">
+        <h2 class="title"><span class="hl"><span class="hour">12:15</span>, gặp từ lạ thì thêm ngay</span></h2>
+        <p class="lead">Gõ từ vừa gặp, dán câu chứa nó nếu có. Wordmet nhận ra dạng chia, như went → go, và giữ câu đó cùng từ.</p>
+        <ul class="ticks"><li><svg class="ic"><use href="#i-check"/></svg>Có sẵn từ theo trình độ A1–C2 và chủ đề</li><li><svg class="ic"><use href="#i-check"/></svg>Từ chưa có thì tự thêm thành từ của bạn</li><li><svg class="ic"><use href="#i-check"/></svg>Nghe phát âm từ và câu</li></ul>
+      </div>
+      <div class="pair reveal">
+        <div class="addword" data-ui aria-label="Ô Thêm từ vừa gặp trong app">
+          <b>Thêm từ vừa gặp</b>
+          <p>Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn.</p>
+          <div class="f"><span class="input" lang="en">deploy</span><span class="btn btn-ink">Thêm</span></div>
+        </div>
+        <div class="sheet word" data-ui aria-label="Trang từ deploy trong app">
+          <div class="head"><b lang="en">deploy</b><span class="chip chip-blue">B1</span><svg class="ic" style="color:var(--primary)"><use href="#i-vol"/></svg></div>
+          <span><span class="chip">động từ</span> triển khai, phát hành</span>
+          <p class="seen" lang="en">We plan to <mark>deploy</mark> the new version on Friday.</p>
+          <span class="chip chip-green" style="justify-self:start">Đang học · 1 câu đã gặp</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section navy-band on-navy evening" id="toi">
+    <div class="wrap chapter">
+      <div class="copy reveal">
+        <h2 class="title" style="color:#fff"><span class="hour">21:00</span>, luyện trên câu bạn đã lưu</h2>
+        <p class="lead">Thử ngay ba câu bên cạnh. Gói Miễn phí có 3 phiên luyện mỗi ngày: trắc nghiệm, đúng hay sai, gõ từ, điền từ vào câu.</p>
+        <div class="weak-card" data-ui aria-label="Thẻ Từ hay sai trong app"><b><svg class="ic"><use href="#i-target"/></svg>Từ hay sai</b><p>Sai 2 lần trong 5 câu gần nhất thì từ vào đây để luyện riêng.</p>
+          <div class="chips"><span class="chip" lang="en">arrive · sai 2/2</span><span class="chip" lang="en">leave · sai 2/2</span></div></div>
+      </div>
+      <div class="q-card reveal" data-ui data-practice aria-label="Phiên luyện thử"></div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="goi">
+    <div class="wrap">
+      <div class="section-head reveal"><h2 class="title"><span class="hl">Học đều mỗi ngày, lên Pro khi cần</span></h2></div>
+      <div class="plans reveal">
+        <div class="sheet plan"><div class="name"><h3>Miễn phí</h3><span class="chip chip-green">Dùng mãi</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Ôn thẻ, lịch ôn, nhắc học qua email</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ và thêm nhanh</li><li><svg class="ic"><use href="#i-check"/></svg>3 phiên luyện mỗi ngày</li></ul>
+          <a class="btn btn-sticker" href="#" style="justify-self:start">Đăng ký miễn phí</a></div>
+        <div class="sheet plan"><div class="name"><h3>Pro</h3><span class="chip">Chưa mở bán</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Nhiều phiên luyện hơn mỗi ngày</li><li><svg class="ic"><use href="#i-check"/></svg>Câu AI viết quanh từ của bạn, chấm bằng quy tắc</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ bằng AI</li><li><svg class="ic"><use href="#i-check"/></svg>Không quảng cáo</li></ul>
+          <p class="foot">Khi Pro mở bán: dùng thử 7 ngày, cần thẻ, hủy trước khi hết hạn thì không bị trừ tiền.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="hoi-dap">
+    <div class="wrap">
+      <div class="section-head reveal"><h2 class="title"><span class="hl">Hỏi đáp</span></h2></div>
+      <div class="faq reveal">
+        <details name="faq" open><summary>Wordmet có miễn phí không?</summary><p>Có. Gói Miễn phí gồm ôn thẻ, lịch ôn, nhắc qua email, tra từ và 3 phiên luyện mỗi ngày. Gói Pro thêm câu AI và tra bằng AI, hiện chưa mở bán.</p></details>
+        <details name="faq"><summary>AI có chấm bài của tôi không?</summary><p>Không. AI chỉ viết câu luyện. Đáp án của bạn được chấm bằng quy tắc, nên không tốn lượt AI.</p></details>
+        <details name="faq"><summary>Tôi chưa biết bắt đầu từ đâu?</summary><p>Chọn một nhóm có sẵn theo trình độ hoặc chủ đề, như Du lịch A2 hay Kinh doanh B1, rồi ôn mỗi ngày. Gặp từ mới thì thêm vào nhóm của bạn.</p></details>
+        <details name="faq"><summary>Có app điện thoại không?</summary><p>Wordmet chạy trên trình duyệt, cả máy tính và điện thoại. App điện thoại làm sau.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section navy-band on-navy final">
+    <div class="wrap">
+      <h2 class="reveal">Bắt đầu với những từ bạn gặp hôm nay</h2>
+      <a class="btn btn-sticker btn-lg reveal" href="#">Đăng ký miễn phí</a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer"><div class="wrap"><div class="cols"><a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+  <nav><a href="#">Gói học</a><a href="#">Hỏi đáp</a><a href="#">Liên hệ</a><a href="#">Điều khoản sử dụng</a><a href="#">Chính sách bảo mật</a><a href="#">English</a></nav></div>
+  <span>© 2026 Wordmet</span></div></footer>
+<script src="practice.js"></script>
+<script src="motion.js"></script>
+</body>
+</html>

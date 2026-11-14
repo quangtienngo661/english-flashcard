@@ -8,7 +8,8 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
 import { ChannelChooser } from '../provider/channel-chooser.js';
-import { classifyMailError } from './mail-error.js';
+import { NotSentError } from '../provider/notification-provider.js';
+import { classifyMailError } from '../../common/mail/mail-error.js';
 import {
   ReminderQueueService, type ReminderSendAttempt, type ReminderSendData,
 } from './reminder-queue.service.js';
@@ -52,6 +53,10 @@ export class ReminderSendService implements OnModuleInit {
     if (!provider) return skipped('reminders-off');
     // The learner may have finished today's cards since the tick (D27).
     if (!(await this.learning.cardsLeftToday([{ userId, today: localDate }])).has(userId)) return skipped('no-cards-left');
+    // The streak line (round C, DC29): only for a streak of 2 or more that today has not yet kept. The mail is sent exactly when it
+    // was before; this only adds a line to it.
+    const streak = await this.learning.streakAsOf(userId, localDate);
+    const streakDays = !streak.studiedToday && streak.days >= 2 ? streak.days : null;
 
     try {
       await this.prisma.reminderDelivery.create({ data: { userId, localDate: dateValue(localDate), kind, state: 'sending' } });
@@ -62,9 +67,12 @@ export class ReminderSendService implements OnModuleInit {
 
     let outcome;
     try {
-      outcome = await provider.send(userId, { kind, language });
+      outcome = await provider.send(userId, { kind, language, streakDays });
     } catch (error) {
-      const errorKind = classifyMailError(error);
+      // A NotSentError means the mailer was never called (B3-3): certainly not delivered, like a 4xx.
+      const notSent = error instanceof NotSentError;
+      const errorKind = notSent ? 'transient' : classifyMailError(error);
+      const cause = notSent ? error.original : error;
       if (errorKind === 'unknown') {
         // The server may already have the message: keep `sending` so nothing retries it (D37, M9).
         this.logger.warn('reminder_outcome_unknown', { user_id: userId, local_date: localDate, kind, error });
@@ -73,11 +81,12 @@ export class ReminderSendService implements OnModuleInit {
       if (errorKind === 'permanent' || attempt.lastAttempt) {
         // Close the day so later ticks and retries stop (M7); a permanent error costs one attempt only.
         await this.prisma.reminderDelivery.update({ where: key, data: { state: 'failed' } });
-        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, reason: errorKind, error });
+        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, reason: errorKind, error: cause });
         if (errorKind === 'permanent') throw new UnrecoverableError('Permanent SMTP error');
         throw error;
       }
-      // Certainly not delivered: free the day for BullMQ's retry.
+      // Certainly not delivered: free the day for BullMQ's retry, and leave a line so a flapping SMTP server is visible (B3-4).
+      this.logger.warn('reminder_retry', { user_id: userId, local_date: localDate, kind, error: cause });
       await this.prisma.reminderDelivery.delete({ where: key });
       throw error;
     }

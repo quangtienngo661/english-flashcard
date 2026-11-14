@@ -7,7 +7,7 @@ type RevertRecord = Parameters<ContentService['revertRecords']>[0][number];
 type RevertReport = Awaited<ReturnType<ContentService['revertRecords']>>;
 const recordTypes: RevertRecord['type'][] = ['entry', 'variant', 'level', 'sense', 'revision'];
 
-function checkBatch(batch: { revertedAt: Date | null; job: { status: string } } | null): void {
+function checkBatch(batch: { revertedAt: Date | null; job: { status: string } } | null): asserts batch {
   if (!batch) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
   if (batch.revertedAt !== null || ['queued', 'running'].includes(batch.job.status)) {
     throw new ProblemDetailsException({ status: 409, title: 'Batch not revertable', type: 'batch-not-revertable' });
@@ -16,8 +16,9 @@ function checkBatch(batch: { revertedAt: Date | null; job: { status: string } } 
 
 /** Plain function: synchronous pipeline orchestration; Content owns its entry transactions. */
 export async function revertBatch(prisma: PrismaClient, content: ContentService, clock: Clock, batchId: string): Promise<RevertReport> {
-  const select = { revertedAt: true, job: { select: { status: true } } } as const;
-  checkBatch(await prisma.importBatch.findUnique({ where: { id: batchId }, select }));
+  const select = { revertedAt: true, job: { select: { status: true, finishedAt: true } } } as const;
+  const batch = await prisma.importBatch.findUnique({ where: { id: batchId }, select });
+  checkBatch(batch);
   const created = await prisma.batchRecord.findMany({ where: { batchId },
     select: { recordType: true, recordId: true, meta: true }, orderBy: [{ recordType: 'asc' }, { recordId: 'asc' }],
   });
@@ -32,7 +33,11 @@ export async function revertBatch(prisma: PrismaClient, content: ContentService,
     }
     return record;
   });
-  const reverted = await content.revertRecords(records);
+  // Plain values for Content (D3): when the batch finished, and which revisions it recorded itself.
+  const reverted = await content.revertRecords(records, {
+    batchFinishedAt: batch.job.finishedAt,
+    ownRevisionIds: new Set(records.filter((record) => record.type === 'revision').map((record) => record.id)),
+  });
   // Bước 3 does not record inflection changes per batch (L8): a file with an inflections column leaves them in place.
   const headers = await prisma.importBatch.findUniqueOrThrow({ where: { id: batchId }, select: { rawHeaders: true } });
   const rawHeaders = Array.isArray(headers.rawHeaders) ? headers.rawHeaders : [];

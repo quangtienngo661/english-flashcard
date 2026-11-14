@@ -2,32 +2,32 @@ import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { NAV } from '../../app/nav';
+import { NAV, type NavEntry } from '../../app/nav';
 import { ComingSoonPage } from './ComingSoonPage';
 
 const item = (path: string) => NAV.find((n) => n.path === path)!;
-const show = (path: string) =>
+const show = (path: string, over: Partial<NavEntry> = {}) =>
   render(
     <IntlProvider locale="vi" messages={vi}>
-      <ComingSoonPage item={item(path)} />
+      <ComingSoonPage item={{ ...item(path), ...over }} />
     </IntlProvider>,
   );
 
 describe('ComingSoonPage', () => {
-  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 6" for /ai/costs', () => {
-    show('/ai/costs');
+  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 5" for an entry with a planned step', () => {
+    show('/dashboard', { plannedStep: '5' });
     expect(screen.getByText('Tính năng chưa có')).toBeInTheDocument();
-    expect(screen.getByText('Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.')).toBeInTheDocument();
-    expect(screen.getByText('Dự kiến: Bước 6')).toBeInTheDocument();
+    expect(screen.getByText(vi.comingSoon.purpose.dashboard)).toBeInTheDocument();
+    expect(screen.getByText('Dự kiến: Bước 5')).toBeInTheDocument();
   });
 
-  it('an item with no planned step says so; the Bước 2 API note appears for words', () => {
+  it('an item with no planned step says so', () => {
     show('/dashboard');
     expect(screen.getByText('Dự kiến: chưa xếp bước')).toBeInTheDocument();
   });
 
-  it('words: the API is ready since Bước 2', () => {
-    show('/words');
+  it('an entry whose API is ready says so', () => {
+    show('/dashboard', { etaNote: 'apiReady' });
     expect(screen.getByText('Dự kiến: chưa xếp bước (API đã có từ Bước 2)')).toBeInTheDocument();
   });
 

@@ -1,0 +1,708 @@
+import { describe, expect, it, vi } from 'vitest';
+import type { AiService } from '../../ai/index.js';
+import { FakeClock } from '../../common/clock/clock.js';
+import type { ContentService, Learner } from '../../content/index.js';
+import type { EntitlementsService, EntitlementsSnapshot, Refusal } from '../../entitlements/index.js';
+import type { PracticeSession, PrismaClient } from '../../generated/prisma/client.js';
+import type { LearningService, PracticeItem } from '../../learning/index.js';
+import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
+import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
+import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
+import { AiSessionPlanner, type AiSessionPlan } from '../ai/ai-session-planner.service.js';
+import type { WordChecksRepository } from '../ai/word-checks.repository.js';
+import type { QuestionBuilder } from '../questions/question-builder.service.js';
+import type { ItemWithQuestion } from './session-views.js';
+import type { PracticeStats } from '../weak/practice-stats.js';
+import { startBody } from './sessions.controller.js';
+import { SessionsService } from './sessions.service.js';
+
+const learner: Learner = { userId: '00000000-0000-4000-8000-000000000001', nativeLanguage: 'vi' };
+const now = new Date('2026-10-19T03:00:00Z');
+const RESETS_AT = '2026-10-19T17:00:00.000Z';
+
+const item = (senseId: string): PracticeItem => ({
+  item_id: `i-${senseId}`, sense_id: senseId, level: 1, due_date: '2026-10-19', priority: false, section: 'learning',
+  due_now: true, added_at: '2026-10-01T00:00:00.000Z', last_needs_review_at: null,
+} as unknown as PracticeItem);
+
+const sessionRow = (overrides: Partial<PracticeSession> = {}): PracticeSession => ({
+  id: 'sess-1', userId: learner.userId, kind: 'practice', source: 'all', groupId: null, groupFilter: null, sort: 'level_asc',
+  types: ['mcq_definition'], promptStyle: 'meaning', targetCount: 5, senseIds: ['s1'], status: 'active', continued: null,
+  pendingNotice: null, startedAt: now, lastActivityAt: now, endedAt: null, clozeSource: null, aiPlanned: 0, aiSenseIds: [],
+  pendingAiRequestId: null, aiStopped: null, aiNoticeShown: false, aiPlacement: null, ...overrides,
+});
+
+type Decision = { allowed: true } | ({ allowed: false } & Refusal);
+
+function setup(options: {
+  early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
+  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[]; realAiPlanner?: boolean;
+  /** Practice AI count (09/11/2026): practice settings over the defaults. */
+  practice?: Partial<AppSettings['practice']>;
+} = {}) {
+  const calls: string[] = [];
+  // Facade reads made while the transaction is open without the transaction's own client (each would borrow a second connection).
+  const globalReads: string[] = [];
+  const state = { inTx: false };
+  const via = (name: string, db: unknown) => { if (state.inTx && db !== tx) globalReads.push(name); };
+  const quotaResults = [options.early ?? { allowed: true }, options.late ?? { allowed: true }];
+  const tx = {
+    $executeRaw: vi.fn(async () => { calls.push('practice-lock'); return 0; }),
+    $queryRaw: vi.fn(async () => [{ id: 'sess-1' }]),
+    practiceSession: {
+      updateMany: vi.fn(async () => { calls.push('updateMany'); return { count: 1 }; }),
+      create: vi.fn(async ({ data }: { data: Partial<PracticeSession> }) => {
+        calls.push('create');
+        return sessionRow(data);
+      }),
+      findUniqueOrThrow: vi.fn(async () => sessionRow(options.session)),
+      update: vi.fn(async () => sessionRow(options.session)),
+    },
+    practiceSessionItem: { findMany: vi.fn(async () => []) },
+  };
+  const prisma = {
+    $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => {
+      calls.push('transaction');
+      state.inTx = true;
+      try { return await fn(tx); } finally { state.inTx = false; }
+    }),
+    practiceSession: { updateMany: vi.fn(async () => ({ count: 0 })), findFirst: vi.fn(async () => sessionRow(options.session)) },
+  } as unknown as PrismaClient;
+  const entitlements = {
+    snapshot: vi.fn(async () => options.snapshot ?? null),
+    check: vi.fn(async (_userId: string, _feature: string, db?: unknown) => { calls.push('check'); via('check', db); return { allowed: true }; }),
+    checkQuota: vi.fn(async (_userId: string, _pool: string, maybeTx?: unknown) => {
+      calls.push(maybeTx === undefined ? 'checkQuota' : 'checkQuota(tx)');
+      return quotaResults.shift() ?? { allowed: true };
+    }),
+    recordPracticeSession: vi.fn(async () => undefined),
+  };
+  const learning = {
+    practiceItems: vi.fn(async (_userId: string, _scope: unknown, db?: unknown) => {
+      calls.push('practiceItems');
+      via('practiceItems', db);
+      return options.items ?? [item('s1'), item('s2')];
+    }),
+    practiceCheck: vi.fn(async (_userId: string, _senseId: string, _groupId: string | null, db?: unknown) => {
+      via('practiceCheck', db);
+      return { groupExists: true, item: null };
+    }),
+  };
+  const builder = {
+    availability: vi.fn(async ({ senseIds, db }: { senseIds: string[]; db?: unknown }) => {
+      calls.push('availability');
+      via('availability', db);
+      return new Map(senseIds.map((id) => [id, ['mcq_definition']]));
+    }),
+    build: vi.fn(async ({ db }: { db?: unknown }) => { via('build', db); return { skip: true }; }),
+  };
+  const values: AppSettings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, ...options.practice } };
+  const settings = { get: vi.fn(async (db?: unknown) => { via('settings.get', db); return values; }) };
+  const aiPlanner = {
+    gate: vi.fn(async () => { calls.push('gate'); return options.snapshot ?? null; }),
+    plan: vi.fn(async () => options.aiPlan ?? { aiPlanned: 0, aiSenseIds: [] }),
+  };
+  const service = new SessionsService(prisma, new FakeClock(now), settings as unknown as SettingsService,
+    entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
+    {
+      statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }),
+      weakSenses: vi.fn(async () => (options.weak ?? []).map((w) => ({ item: w, stats: { wrong: 2, counted: 5, last_wrong_at: '2026-10-20T03:00:00.000Z' } }))),
+    } as unknown as PracticeStats,
+    options.realAiPlanner
+      ? new AiSessionPlanner(prisma, {} as AiService, entitlements as unknown as EntitlementsService,
+        {} as ContentService, {} as WordChecksRepository)
+      : aiPlanner as unknown as AiSessionPlanner,
+    {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
+  return { service, tx, calls, entitlements, builder, learning, settings, globalReads, aiPlanner };
+}
+
+const input = { source: 'all' as const, types: ['mcq_definition' as const] };
+const exhausted: Decision = { allowed: false, reason: 'quota-exhausted', resets_at: RESETS_AT };
+
+describe('SessionsService.start — session quota (Bước 5)', () => {
+  it('B5E73/R4: start calls checkQuota after updateMany and before create, passing the transaction', async () => {
+    const { service, tx, calls, entitlements } = setup();
+    await service.start(learner, input);
+    expect(calls.indexOf('checkQuota(tx)')).toBeGreaterThan(calls.indexOf('updateMany'));
+    expect(calls.indexOf('checkQuota(tx)')).toBeLessThan(calls.indexOf('create'));
+    expect(entitlements.checkQuota).toHaveBeenLastCalledWith(learner.userId, 'practice_sessions', tx);
+  });
+
+  it('B5#2: a refusal after updateMany → 403 quota-exhausted with resets_at, create never called', async () => {
+    const { service, tx } = setup({ late: exhausted });
+    await expect(service.start(learner, input)).rejects.toMatchObject({
+      status: 403, problemType: 'quota-exhausted', extensions: { resets_at: RESETS_AT },
+    });
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('an exhausted learner is refused by the early check before the availability walk, even for an empty group', async () => {
+    for (const items of [[item('s1')], []]) {
+      const { service, builder, calls, tx } = setup({ early: exhausted, items });
+      await expect(service.start(learner, { ...input, source: items.length ? 'all' : 'group', group_id: 'g1' } as never))
+        .rejects.toMatchObject({ status: 403, problemType: 'quota-exhausted' });
+      expect(builder.availability).not.toHaveBeenCalled();
+      expect(calls).not.toContain('practiceItems');
+      expect(calls[0]).toBe('checkQuota');
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    }
+  });
+
+  it('B5E83: plan-required → 403 entitlement-required', async () => {
+    const { service } = setup({ early: { allowed: false, reason: 'plan-required' } });
+    await expect(service.start(learner, input)).rejects.toMatchObject({ status: 403, problemType: 'entitlement-required' });
+  });
+
+  it('B5E22: starting a session records nothing', async () => {
+    const { service, entitlements } = setup();
+    await service.start(learner, input);
+    expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionsService.start — reads before the transaction (PX4)', () => {
+  it('PX4: start reads the source items and the availability before opening the transaction', async () => {
+    const { service, calls, builder, learning } = setup();
+    await service.start(learner, { ...input, sort: 'least_practiced' });
+    const opened = calls.indexOf('transaction');
+    expect(opened).toBeGreaterThan(-1);
+    // Everything that reads through the global client has run by the time the one transaction connection is taken.
+    for (const read of ['check', 'practiceItems', 'statsFor', 'availability']) {
+      expect(calls.indexOf(read), read).toBeGreaterThan(-1);
+      expect(calls.indexOf(read), read).toBeLessThan(opened);
+    }
+    expect(calls.indexOf('practiceItems')).toBeLessThan(calls.indexOf('availability'));
+    // Inside it: the lock, the close, the counted quota check and the create only.
+    expect(calls.slice(opened + 1)).toEqual(['practice-lock', 'updateMany', 'checkQuota(tx)', 'create']);
+    expect(learning.practiceItems).toHaveBeenCalledTimes(1);
+    expect(builder.availability).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['an empty group', { ...input, source: 'group' as const, group_id: 'g1' }, [], 'group-empty'],
+    ['an empty source', input, [], 'source-empty'],
+  ])('PX4: %s is refused before a transaction is opened', async (_name, startInput, items, reason) => {
+    const { service, calls, tx } = setup({ items });
+    await expect(service.start(learner, startInput as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason },
+    });
+    expect(calls).not.toContain('transaction');
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('PX4: no word fits the chosen types → refused before a transaction, the open session left alone', async () => {
+    const { service, calls, tx, builder } = setup();
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) => {
+      calls.push('availability');
+      return new Map(senseIds.map((id) => [id, []]));
+    });
+    await expect(service.start(learner, input)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' },
+    });
+    expect(calls).not.toContain('transaction');
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('PX4: a refusal by the practice.basic entitlement is thrown before a transaction is opened', async () => {
+    const { service, calls, entitlements } = setup();
+    entitlements.check.mockImplementationOnce(async () => {
+      calls.push('check');
+      return { allowed: false, reason: 'plan-required' } as never;
+    });
+    await expect(service.start(learner, input)).rejects.toMatchObject({ status: 403, problemType: 'entitlement-required' });
+    expect(calls).not.toContain('transaction');
+  });
+});
+
+describe('SessionsService.next — no session quota (Bước 5)', () => {
+  it('B5E26: next never calls checkQuota; it keeps the practice.basic check', async () => {
+    const { service, entitlements, tx } = setup();
+    await expect(service.next(learner, 'sess-1')).resolves.toMatchObject({ state: 'waiting_continue' });
+    expect(entitlements.check).toHaveBeenCalledWith(learner.userId, 'practice.basic', tx);
+    expect(entitlements.checkQuota).not.toHaveBeenCalled();
+  });
+
+  it('B5E25: voiding an item does not call recordPracticeSession', async () => {
+    const { service, tx, entitlements } = setup();
+    const voidItem = (service as unknown as { voidItem: (t: unknown, i: ItemWithQuestion) => Promise<void> }).voidItem
+      .bind(service);
+    Object.assign(tx.practiceSessionItem, { updateMany: vi.fn(async () => ({ count: 1 })) });
+    await voidItem(tx, { id: 'it-1' } as ItemWithQuestion);
+    expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionsService.current / next — every read goes through the transaction (PX4)', () => {
+  const group = { source: 'group' as const, groupId: 'g1', senseIds: ['s1'] };
+
+  it('PX4: next reads the group, the usable words, the entitlement, the settings and the question through tx', async () => {
+    const { service, tx, learning, entitlements, settings, builder, globalReads } = setup({ session: group });
+    await expect(service.next(learner, 'sess-1')).resolves.toMatchObject({ state: 'waiting_continue' });
+    expect(learning.practiceCheck).toHaveBeenCalledWith(learner.userId, 's1', 'g1', tx);
+    expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'group', groupId: 'g1', filter: 'all' }, tx);
+    expect(entitlements.check).toHaveBeenCalledWith(learner.userId, 'practice.basic', tx);
+    expect(settings.get).toHaveBeenCalledWith(tx);
+    expect(builder.build).toHaveBeenCalledWith(expect.objectContaining({ db: tx }));
+    expect(globalReads).toEqual([]);
+  });
+
+  it('PX4: next on a session of the whole list reads the usable words through tx', async () => {
+    const { service, tx, learning, globalReads } = setup();
+    await service.next(learner, 'sess-1');
+    expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'senses', senseIds: ['s1'] }, tx);
+    expect(globalReads).toEqual([]);
+  });
+
+  it('PX4: current reads the group and the usable words through tx', async () => {
+    const { service, tx, learning, globalReads } = setup({ session: group });
+    await expect(service.current(learner)).resolves.toMatchObject({ item: null });
+    expect(learning.practiceCheck).toHaveBeenCalledWith(learner.userId, 's1', 'g1', tx);
+    expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'group', groupId: 'g1', filter: 'all' }, tx);
+    expect(globalReads).toEqual([]);
+  });
+});
+
+describe('SessionsService.start — Bước 7 types (design §6.1)', () => {
+  const free = () => setup({ realAiPlanner: true, snapshot: {
+    features: { 'ai.practice': { allowed: false, reason: 'plan-required' } },
+  } as unknown as EntitlementsSnapshot });
+
+  it('A3-1: Free, typing + own cloze → the session opens with ai_planned 0 and cloze_source own', async () => {
+    const { service, builder, entitlements, tx } = free();
+    builder.availability.mockImplementation(async ({ senseIds }) =>
+      new Map(senseIds.map((id) => [id, ['type_word', 'cloze']])));
+    const result = await service.start(learner, { source: 'all', types: ['type_word', 'cloze'], cloze_source: 'own' });
+    expect(result.session).toMatchObject({ ai_planned: 0, cloze_source: 'own' });
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      types: ['type_word', 'cloze'], aiPlanned: 0, aiSenseIds: [], clozeSource: 'own',
+    }) });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({
+      chosenTypes: ['type_word', 'cloze'], clozeSource: 'own',
+    }));
+    expect(entitlements.snapshot).not.toHaveBeenCalled();
+    expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+
+  it('A3-2: Free, only own cloze without saved sentences → 409 practice-no-words, no-word-fits-types', async () => {
+    const { service, builder, entitlements, tx } = free();
+    builder.availability.mockImplementation(async ({ senseIds }) => new Map(senseIds.map((id) => [id, []])));
+    await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own' })).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' },
+    });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ chosenTypes: ['cloze'], clozeSource: 'own' }));
+    expect(entitlements.snapshot).not.toHaveBeenCalled();
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('Free, only AI cloze → still 403 entitlement-required before reading words', async () => {
+    const { service, builder, entitlements, calls } = free();
+    await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai' })).rejects.toMatchObject({
+      status: 403, problemType: 'entitlement-required',
+    });
+    expect(entitlements.snapshot).toHaveBeenCalledExactlyOnceWith(learner.userId);
+    expect(builder.availability).not.toHaveBeenCalled();
+    expect(calls).not.toContain('practiceItems');
+    expect(calls).not.toContain('transaction');
+  });
+
+  it('the AI gate runs before the words are read; the plan is stored with the cloze source', async () => {
+    const plan = { aiPlanned: 1, aiSenseIds: ['s2'] };
+    const { service, tx, calls, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot, aiPlan: plan });
+    const result = await service.start(learner, { source: 'all', types: ['type_word', 'cloze'] });
+    expect(calls.indexOf('gate')).toBeLessThan(calls.indexOf('practiceItems'));
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['type_word', 'cloze'], 'ai');
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ clozeSource: 'ai' }));
+    expect(aiPlanner.plan).toHaveBeenCalledWith(learner, expect.objectContaining({ count: 10, kept: expect.arrayContaining(['s1', 's2']), clozeSource: 'ai' }), {});
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      clozeSource: 'ai', aiPlanned: 1, aiSenseIds: ['s2'],
+    }) });
+    expect(result.session).toMatchObject({ ai_planned: 1, cloze_source: 'ai' });
+  });
+
+  it('cloze_source own is kept; without cloze it is null', async () => {
+    const own = setup();
+    await own.service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own' });
+    expect(own.tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clozeSource: 'own' }) });
+    const none = setup();
+    await none.service.start(learner, input);
+    expect(none.tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clozeSource: null, aiPlanned: 0 }) });
+  });
+
+  it('own_then_ai: the gate sees the mixed source; words are kept by either side; the plan is made from the AI side only', async () => {
+    const { service, tx, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot, aiPlan: { aiPlanned: 1, aiSenseIds: ['s2'] } });
+    // s1 has a saved sentence (only the own side offers it the cloze); s2 has none (only the AI side does).
+    builder.availability.mockImplementation((async ({ senseIds, clozeRole }: { senseIds: string[]; clozeRole?: 'own' | 'ai' }) =>
+      new Map(senseIds.map((id) => [id, clozeRole === 'ai' && id === 's1' ? [] : ['cloze']]))) as never);
+    const result = await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own_then_ai' });
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['cloze'], 'own_then_ai');
+    const [keep, aiSide] = builder.availability.mock.calls.map(([arg]) => arg as unknown as Record<string, unknown>);
+    expect(builder.availability).toHaveBeenCalledTimes(2);
+    expect(keep).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai' });
+    expect(keep.clozeRole).toBeUndefined();
+    expect(aiSide).toMatchObject({ chosenTypes: ['cloze'], clozeSource: 'own_then_ai', clozeRole: 'ai', senseIds: expect.arrayContaining(['s1', 's2']) });
+    expect(aiPlanner.plan).toHaveBeenCalledWith(learner, expect.objectContaining({
+      clozeSource: 'own_then_ai', kept: expect.arrayContaining(['s1', 's2']),
+      available: new Map([['s1', []], ['s2', ['cloze']]]),
+    }), {});
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      clozeSource: 'own_then_ai', aiPlanned: 1, aiSenseIds: ['s2'],
+    }) });
+    expect(result.session).toMatchObject({ ai_planned: 1, cloze_source: 'own_then_ai' });
+  });
+
+  it('the other sources do not ask the AI side a second time', async () => {
+    for (const cloze_source of ['ai', 'own'] as const) {
+      const { service, builder } = setup();
+      await service.start(learner, { source: 'all', types: ['cloze'], cloze_source });
+      expect(builder.availability, cloze_source).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('own_then_ai on a plan without ai.practice → 403 entitlement-required before any word is read', async () => {
+    const { service, builder, calls } = free();
+    await expect(service.start(learner, { source: 'all', types: ['type_word', 'cloze'], cloze_source: 'own_then_ai' })).rejects.toMatchObject({
+      status: 403, problemType: 'entitlement-required',
+    });
+    expect(builder.availability).not.toHaveBeenCalled();
+    expect(calls).not.toContain('practiceItems');
+  });
+
+  it('startBody takes cloze_source own_then_ai only together with cloze, and refuses an unknown source', () => {
+    const body = { source: 'today', types: ['type_word', 'cloze'] };
+    expect(startBody.safeParse({ ...body, cloze_source: 'own_then_ai' }).success).toBe(true);
+    expect(startBody.safeParse({ source: 'today', types: ['type_word'], cloze_source: 'own_then_ai' }).success).toBe(false);
+    expect(startBody.safeParse({ ...body, cloze_source: 'mixed' }).success).toBe(false);
+  });
+
+  it('a refusal of the gate stops before any word is read and before the transaction', async () => {
+    const { service, aiPlanner, calls } = setup();
+    aiPlanner.gate.mockRejectedValueOnce(new Error('entitlement-required'));
+    await expect(service.start(learner, { source: 'all', types: ['cloze'] })).rejects.toThrow('entitlement-required');
+    expect(calls).not.toContain('practiceItems');
+    expect(calls).not.toContain('transaction');
+  });
+});
+
+describe('SessionsService — weak words of one deck (API (b), design §8.2)', () => {
+  const G = '11111111-1111-4111-8111-111111111111';
+
+  it('weak + group_id practises the weak words that are in the deck', async () => {
+    const { service, learning, builder } = setup({ weak: [item('s1'), item('s2'), item('s3')], items: [item('s2'), item('s3'), item('s9')] });
+    await service.start(learner, { source: 'weak', group_id: G, types: ['mcq_definition'] } as never);
+    expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'group', groupId: G, filter: 'all' });
+    expect([...builder.availability.mock.calls[0][0].senseIds].sort()).toEqual(['s2', 's3']);
+  });
+
+  it('GB6: weak + a deck without weak words → 409 practice-no-words, reason source-empty', async () => {
+    const { service } = setup({ weak: [item('s1')], items: [item('s9')] });
+    await expect(service.start(learner, { source: 'weak', group_id: G, types: ['mcq_definition'] } as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'source-empty' },
+    });
+  });
+
+  it('GB8: a weak session of a deck is not ended when the deck is deleted', async () => {
+    const { service, learning } = setup({ session: { source: 'weak', groupId: G, senseIds: ['s1', 's2'] } });
+    learning.practiceCheck.mockImplementation(async () => ({ groupExists: false, item: null }));
+    const result = await service.next(learner, 'sess-1');
+    expect(JSON.stringify(result)).not.toContain('group-not-found');
+  });
+});
+
+describe('SessionsService — recall sessions (round C, H3–H5)', () => {
+  const recallInput = { kind: 'recall' as const, source: 'group' as const, group_id: 'g1' };
+  const words = (n: number) => Array.from({ length: n }, (_, i) => item(`s${i + 1}`));
+
+  it('opens a recall session with the fixed types, meaning prompts and queue order, and never checks the practice quota', async () => {
+    const { service, tx, entitlements, aiPlanner, learning } = setup({ items: words(4) });
+    await service.start(learner, recallInput as never);
+    expect(entitlements.checkQuota).not.toHaveBeenCalled();
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+    expect(aiPlanner.plan).not.toHaveBeenCalled();
+    expect(learning.practiceItems.mock.calls[0][1]).toEqual({ kind: 'learned', groupId: 'g1' });
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data).toMatchObject({
+      kind: 'recall', source: 'group', groupId: 'g1', groupFilter: 'all', types: ['mcq_definition', 'type_word'], promptStyle: 'meaning',
+      sort: 'queue', targetCount: 4, clozeSource: null, aiPlanned: 0, aiSenseIds: [],
+    });
+  });
+
+  it('asks for min(default questions per session, usable words): 30 words → 10', async () => {
+    const { service, tx } = setup({ items: words(30) });
+    await service.start(learner, recallInput as never);
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data.targetCount).toBe(10);
+  });
+
+  it('closes only the open session of the same kind: a practice session in progress stays', async () => {
+    const { service, tx } = setup({ items: words(2) });
+    await service.start(learner, recallInput as never);
+    expect(tx.practiceSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: learner.userId, kind: 'recall' }) }));
+  });
+
+  it('a practice start closes only practice sessions', async () => {
+    const { service, tx } = setup();
+    await service.start(learner, input);
+    expect(tx.practiceSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ kind: 'practice' }) }));
+    const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+    expect(data.kind).toBe('practice');
+  });
+
+  it('a group with nothing learned → 409 practice-no-words, reason nothing-learned', async () => {
+    const { service, tx } = setup({ items: [] });
+    await expect(service.start(learner, recallInput as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'nothing-learned' } });
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('asks the builder for the two recall types; a 3-word group where only type_word fits still opens', async () => {
+    const { service, builder, tx } = setup({ items: words(3) });
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) => new Map(senseIds.map((id) => [id, ['type_word']])) as never);
+    await service.start(learner, recallInput as never);
+    expect(builder.availability.mock.calls[0][0]).toMatchObject({ chosenTypes: ['mcq_definition', 'type_word'], clozeSource: null });
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('current() looks only at practice sessions: a recall session open alone → 404', async () => {
+    const { service, prisma } = setupCurrent();
+    await expect(service.current(learner)).rejects.toMatchObject({ status: 404 });
+    expect(prisma.practiceSession.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: learner.userId, kind: 'practice' }) }));
+  });
+
+  it('the start body: kind recall needs source group and a group_id; types become optional', () => {
+    const ok = startBody.safeParse({ kind: 'recall', source: 'group', group_id: '11111111-1111-4111-8111-111111111111' });
+    expect(ok.success).toBe(true);
+    for (const bad of [
+      { kind: 'recall', source: 'today' },
+      { kind: 'recall', source: 'group' },
+      { kind: 'recall', source: 'all', group_id: '11111111-1111-4111-8111-111111111111' },
+    ]) expect(startBody.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+    // A practice session still needs its types.
+    expect(startBody.safeParse({ source: 'today' }).success).toBe(false);
+    expect(startBody.safeParse({ kind: 'practice', source: 'today', types: ['type_word'] }).success).toBe(true);
+  });
+});
+
+describe("SessionsService.start — the learner's ai count and the session maximum (practice ai count §4, 09/11/2026)", () => {
+  const words = (n: number) => Array.from({ length: n }, (_, i) => item(`s${i + 1}`));
+  const createData = (tx: ReturnType<typeof setup>['tx']) =>
+    (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+  const planInput = (aiPlanner: ReturnType<typeof setup>['aiPlanner']) =>
+    (aiPlanner.plan.mock.calls as unknown as Array<[Learner, Record<string, unknown>]>)[0][1];
+  const mixed = { source: 'all' as const, types: ['mcq_definition' as const, 'cloze' as const], cloze_source: 'ai' as const };
+  const validationFailed = { status: 400, problemType: 'validation-failed' };
+
+  it('startBody: ai_count is a whole number ≥ 0; ai_placement is even or random', () => {
+    const body = { source: 'today', types: ['type_word'] };
+    for (const ai_count of [0, 3]) expect(startBody.safeParse({ ...body, ai_count }).success, String(ai_count)).toBe(true);
+    for (const ai_count of [-1, 2.5, '3']) expect(startBody.safeParse({ ...body, ai_count }).success, String(ai_count)).toBe(false);
+    for (const ai_placement of ['even', 'random']) expect(startBody.safeParse({ ...body, ai_placement }).success, ai_placement).toBe(true);
+    for (const ai_placement of ['learner', 'bogus']) expect(startBody.safeParse({ ...body, ai_placement }).success, ai_placement).toBe(false);
+    expect(startBody.safeParse({ kind: 'recall', source: 'group', group_id: '11111111-1111-4111-8111-111111111111', ai_count: 3 }).success)
+      .toBe(true);
+  });
+
+  it('ai_count path: the words are read before the AI gate', async () => {
+    const { service, calls } = setup({ snapshot: {} as EntitlementsSnapshot });
+    await service.start(learner, { ...mixed, ai_count: 2 });
+    expect(calls.indexOf('gate')).toBeGreaterThan(-1);
+    expect(calls.indexOf('practiceItems')).toBeLessThan(calls.indexOf('gate'));
+  });
+
+  it('old path keeps its order: without ai_count the gate runs before the words are read', async () => {
+    const { service, calls } = setup({ snapshot: {} as EntitlementsSnapshot });
+    await service.start(learner, mixed);
+    expect(calls.indexOf('gate')).toBeGreaterThan(-1);
+    expect(calls.indexOf('gate')).toBeLessThan(calls.indexOf('practiceItems'));
+  });
+
+  it('fixed mode: count 25 over the maximum 20 is lowered to 20, not refused', async () => {
+    const { service, tx } = setup({ items: words(30) });
+    await service.start(learner, { ...input, count: 25 });
+    expect(createData(tx).targetCount).toBe(20);
+  });
+
+  describe('scope_words mode', () => {
+    const scope = { sessionMaxMode: 'scope_words' as const };
+
+    it('a group of 4 words, count 10 → targetCount 4', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(4) });
+      await service.start(learner, { ...input, count: 10 });
+      expect(createData(tx).targetCount).toBe(4);
+    });
+
+    it('no count, default 10, 4 words → targetCount 4', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(4) });
+      await service.start(learner, input);
+      expect(createData(tx).targetCount).toBe(4);
+    });
+
+    it('24 words in scope, 21 of them askable with the chosen types, count 24 → targetCount 21, no word asked twice', async () => {
+      const { service, tx, builder } = setup({ practice: scope, items: words(24) });
+      builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) =>
+        new Map(senseIds.map((id) => [id, ['s3', 's9', 's17'].includes(id) ? [] : ['mcq_definition']])) as never);
+      await service.start(learner, { ...input, count: 24 });
+      expect(createData(tx).targetCount).toBe(21);
+      expect((createData(tx).senseIds as string[]).length).toBe(21);
+    });
+
+    it('300 words, count 100 → targetCount 100', async () => {
+      const { service, tx } = setup({ practice: scope, items: words(300) });
+      await service.start(learner, { ...input, count: 100 });
+      expect(createData(tx).targetCount).toBe(100);
+    });
+
+    it('an empty group → 409 practice-no-words, group-empty', async () => {
+      const { service, tx } = setup({ practice: scope, items: [] });
+      await expect(service.start(learner, { ...input, source: 'group', group_id: 'g1', ai_count: 0 } as never)).rejects.toMatchObject({
+        status: 409, problemType: 'practice-no-words', extensions: { reason: 'group-empty' },
+      });
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the ai count reaching the planner', () => {
+    it('percent 50, count 10, ai_count 3 → plan gets aiCount 3, placement even, count 10; the row stores even', async () => {
+      const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 3 });
+      expect(planInput(aiPlanner)).toMatchObject({ aiCount: 3, placement: 'even', count: 10 });
+      expect(createData(tx)).toMatchObject({ aiPlacement: 'even', targetCount: 10 });
+    });
+
+    it('percent 50, count 10, ai_count 9 → plan gets aiCount 5', async () => {
+      const { service, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 9 });
+      expect(planInput(aiPlanner).aiCount).toBe(5);
+    });
+
+    it('scope_words, 4 words, percent 50, ai_count 3, admin learner, body random → aiCount 2, placement random, count 4', async () => {
+      const { service, tx, aiPlanner } = setup({
+        snapshot: {} as EntitlementsSnapshot, items: words(4), practice: { sessionMaxMode: 'scope_words', aiPlacement: 'learner' },
+      });
+      await service.start(learner, { ...mixed, count: 10, ai_count: 3, ai_placement: 'random' });
+      expect(planInput(aiPlanner)).toMatchObject({ aiCount: 2, placement: 'random', count: 4 });
+      expect(createData(tx)).toMatchObject({ aiPlacement: 'random', targetCount: 4 });
+    });
+
+    it('admin even, body random → placement even', async () => {
+      const { service, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiPlacement: 'even' } });
+      await service.start(learner, { ...mixed, ai_count: 2, ai_placement: 'random' });
+      expect(planInput(aiPlanner).placement).toBe('even');
+    });
+  });
+
+  describe('400 validation-failed, no session created', () => {
+    it('ai_count 2 with no AI type → 400 before any quota check or read', async () => {
+      const { service, tx, calls } = setup();
+      await expect(service.start(learner, { source: 'all', types: ['mcq_definition'], ai_count: 2 })).rejects.toMatchObject(validationFailed);
+      expect(calls).toEqual([]);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('ai_count 1, count 4, only AI cloze → 400: the 3 other questions have no type', async () => {
+      const { service, tx } = setup({ snapshot: {} as EntitlementsSnapshot, items: words(4) });
+      await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai', count: 4, ai_count: 1 }))
+        .rejects.toMatchObject(validationFailed);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('percent 10, count 5, ai_count 2, only AI types → K 0 leaves no type: 400, not 409 no-word-fits-types', async () => {
+      const { service, tx, builder, aiPlanner } = setup({ practice: { aiMaxPercent: 10 } });
+      await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai', count: 5, ai_count: 2 }))
+        .rejects.toMatchObject(validationFailed);
+      expect(builder.availability).not.toHaveBeenCalled();
+      expect(aiPlanner.gate).not.toHaveBeenCalled();
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+
+    it('ai_count 0 with only AI types → 400 before any quota check or read', async () => {
+      const { service, tx, calls } = setup();
+      await expect(service.start(learner, { source: 'all', types: ['meaning_in_sentence'], ai_count: 0 })).rejects.toMatchObject(validationFailed);
+      expect(calls).toEqual([]);
+      expect(tx.practiceSession.create).not.toHaveBeenCalled();
+    });
+  });
+
+  it('percent 100, ai_count 10, count 10, only AI types → the session opens with aiCount 10', async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiMaxPercent: 100 } });
+    await service.start(learner, { source: 'all', types: ['cloze', 'mcq_sentence'], cloze_source: 'ai', count: 10, ai_count: 10 });
+    expect(planInput(aiPlanner).aiCount).toBe(10);
+    expect(tx.practiceSession.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('ai_count 0: the AI types are dropped from the session and the gate is not called', async () => {
+    const { service, tx, aiPlanner } = setup();
+    await service.start(learner, { source: 'all', types: ['mcq_definition', 'meaning_in_sentence'], ai_count: 0 });
+    expect(createData(tx)).toMatchObject({ types: ['mcq_definition'], clozeSource: null, aiPlacement: 'even' });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+  });
+
+  it('review focus 3: ai_count 0 with own_then_ai → the session becomes own and keeps its cloze', async () => {
+    const { service, tx, aiPlanner } = setup();
+    await service.start(learner, { source: 'all', types: ['cloze', 'mcq_definition'], cloze_source: 'own_then_ai', ai_count: 0 });
+    expect(createData(tx)).toMatchObject({ clozeSource: 'own', types: ['cloze', 'mcq_definition'] });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+  });
+
+  it('review focus 4: percent 10, count 5, ai_count 2 → K 0, so AI switched off system-wide does not refuse; the gate is not called', async () => {
+    const { service, tx, aiPlanner } = setup({ practice: { aiMaxPercent: 10 } });
+    aiPlanner.gate.mockRejectedValue(Object.assign(new Error('ai-unavailable'), { status: 503 }));
+    await service.start(learner, { ...mixed, count: 5, ai_count: 2 });
+    expect(aiPlanner.gate).not.toHaveBeenCalled();
+    expect(createData(tx)).toMatchObject({ types: ['mcq_definition'], clozeSource: null, targetCount: 5 });
+  });
+
+  it('final K 0: scope_words, percent 50, count 10, ai_count 3, one usable word → aiCount 0, targetCount 1, no AI type stored', async () => {
+    const { service, tx, aiPlanner, builder } = setup({
+      snapshot: {} as EntitlementsSnapshot, items: words(4), practice: { sessionMaxMode: 'scope_words' },
+    });
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) =>
+      new Map(senseIds.map((id) => [id, id === 's2' ? ['mcq_definition', 'cloze'] : []])) as never);
+    await service.start(learner, { ...mixed, count: 10, ai_count: 3 });
+    expect(aiPlanner.gate).toHaveBeenCalledTimes(1);
+    expect(planInput(aiPlanner).aiCount).toBe(0);
+    expect(createData(tx)).toMatchObject({ targetCount: 1, types: ['mcq_definition'], clozeSource: null, senseIds: ['s2'] });
+  });
+
+  it("own_then_ai with ai_count 2: the plan gets the AI side's availability", async () => {
+    const { service, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot });
+    builder.availability.mockImplementation((async ({ senseIds, clozeRole }: { senseIds: string[]; clozeRole?: 'own' | 'ai' }) =>
+      new Map(senseIds.map((id) => [id, clozeRole === 'ai' && id === 's1' ? [] : ['cloze']]))) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own_then_ai', ai_count: 2 });
+    expect(planInput(aiPlanner)).toMatchObject({
+      clozeSource: 'own_then_ai', aiCount: 2, available: new Map([['s1', []], ['s2', ['cloze']]]),
+    });
+  });
+
+  it('review focus 1: no ai_count ignores the AI settings — fixed 0 still plans the old way, aiPlacement null', async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot, practice: { aiMaxMode: 'fixed', aiMaxFixed: 0 } });
+    await service.start(learner, { ...mixed, count: 10 });
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['mcq_definition', 'cloze'], 'ai');
+    expect(planInput(aiPlanner).aiCount).toBeUndefined();
+    expect(createData(tx)).toMatchObject({ aiPlacement: null, types: ['mcq_definition', 'cloze'], clozeSource: 'ai' });
+  });
+
+  it("not enough units: the planner's 403 stops the start, no session is created", async () => {
+    const { service, tx, aiPlanner } = setup({ snapshot: {} as EntitlementsSnapshot });
+    aiPlanner.plan.mockRejectedValueOnce(Object.assign(new Error('ai-quota-insufficient'), { status: 403 }));
+    await expect(service.start(learner, { ...mixed, ai_count: 2 })).rejects.toThrow('ai-quota-insufficient');
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('a recall start with ai_count 3 opens as before', async () => {
+    const { service, tx, aiPlanner } = setup({ items: words(4) });
+    await service.start(learner, { kind: 'recall', source: 'group', group_id: 'g1', ai_count: 3 } as never);
+    expect(aiPlanner.plan).not.toHaveBeenCalled();
+    expect(createData(tx)).toMatchObject({ kind: 'recall', targetCount: 4, aiPlanned: 0 });
+  });
+});
+
+function setupCurrent() {
+  const { service, ...rest } = setup();
+  const prisma = (service as unknown as { prisma: { practiceSession: { findFirst: ReturnType<typeof vi.fn> } } }).prisma;
+  prisma.practiceSession.findFirst = vi.fn(async () => null);
+  return { service, prisma, ...rest };
+}

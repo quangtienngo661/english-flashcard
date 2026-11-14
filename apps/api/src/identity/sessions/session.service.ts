@@ -14,6 +14,8 @@ import { open, seal } from './grace-cipher.js';
 import { newRefreshToken } from './refresh-token.js';
 
 const day = 86_400_000;
+/** How long a just-rotated token still returns its successor (concurrent tabs) instead of counting as reuse (review 07/11 F5). */
+const REFRESH_GRACE_MS = 2_000;
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
 export interface IssuedSession {
@@ -27,7 +29,7 @@ export interface IssuedSession {
 type SessionMaterial = Omit<IssuedSession, 'accessToken'>;
 type RefreshOutcome =
   | { kind: 'rotated' | 'grace'; session: SessionMaterial }
-  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' };
+  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' | 'locked' | 'unverified' };
 
 @Injectable()
 export class SessionService {
@@ -42,13 +44,13 @@ export class SessionService {
 
   /** The caller must already hold withUserLock(tx, input.userId). */
   async startChain(tx: Prisma.TransactionClient, input: {
-    userId: string; client: ClientType; deviceLabel?: string;
+    userId: string; client: ClientType; deviceLabel?: string; authMethod?: 'password' | 'google';
   }): Promise<IssuedSession> {
     const now = this.clock.now();
     const chain = await tx.sessionChain.create({
       data: {
         userId: input.userId, clientType: input.client, deviceLabel: input.deviceLabel,
-        createdAt: now, lastUsedAt: now,
+        createdAt: now, lastUsedAt: now, authMethod: input.authMethod ?? 'password',
       },
     });
     await tx.user.update({ where: { id: input.userId }, data: { lastSeenAt: now } });
@@ -141,11 +143,33 @@ export class SessionService {
     // A zero-count CAS gets one fresh decision, allowing the winner's grace path.
     // Two failed CAS attempts under the same advisory lock indicate an unexpected invariant violation.
     for (let attempt = 0; attempt < 2; attempt++) {
-      const row = await tx.refreshToken.findUnique({ where: { id: tokenId }, include: { chain: true } });
+      const row = await tx.refreshToken.findUnique({
+        where: { id: tokenId }, include: { chain: { include: { user: { select: { status: true, emailVerifiedAt: true } } } } },
+      });
       const successor = row?.successorId
         ? await tx.refreshToken.findUnique({ where: { id: row.successorId } }) : null;
       const now = this.clock.now();
       if (!row || row.chain.revokedAt) return { kind: 'rejected', reason: 'revoked' };
+      // Locking revokes every chain; this read also catches a chain that somehow outlived it (FE9).
+      if (row.chain.user.status === 'locked') {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'locked' },
+        });
+        return { kind: 'rejected', reason: 'locked' };
+      }
+      // D24: Tx A of a deletion revokes the chains; this read catches one that outlived it.
+      if (row.chain.user.status === 'deleting') {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'account-deleted' },
+        });
+        return { kind: 'rejected', reason: 'locked' };
+      }
+      if (row.chain.user.emailVerifiedAt === null) {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'unverified' },
+        });
+        return { kind: 'rejected', reason: 'unverified' };
+      }
       const chain = row.chain;
       if (chain.clientType !== path) return { kind: 'rejected', reason: 'path_mismatch' };
       if (now.getTime() > chain.lastUsedAt.getTime() + 90 * day
@@ -175,7 +199,7 @@ export class SessionService {
         where: { id: row.id, rotatedAt: null },
         data: {
           rotatedAt: now, successorId, successorCiphertext: seal(fresh.token, this.config.refreshGraceKey),
-          graceUntil: new Date(now.getTime() + 10_000),
+          graceUntil: new Date(now.getTime() + REFRESH_GRACE_MS),
         },
       });
       if (rotated.count === 0) continue;

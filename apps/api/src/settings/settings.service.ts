@@ -3,12 +3,13 @@ import { Clock } from '../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import { decodePageToken, encodePageToken } from '../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../common/problem-details/problem-details.exception.js';
-import type { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import {
-  applyPatch, changedFields, crossFieldViolations, withDefaults,
+  apiValueOf, applyPatch, changedFields, crossFieldViolations, SETTINGS_DEFAULTS, withDefaults,
   type AppSettings, type SettingsValuesPatch,
 } from './settings.definitions.js';
+import { settingValueAt } from './setting-history.js';
 
 const GLOBAL_KEY = 'global';
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -32,13 +33,16 @@ export class SettingsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
   ) {}
 
-  /** Current values; the defaults until an admin first saves. */
-  async get(): Promise<AppSettings> {
-    return (await this.current()).values;
+  /**
+   * Current values; the defaults until an admin first saves. A caller inside a transaction that holds a lock passes its
+   * `tx`, so the read needs no second connection.
+   */
+  async get(db: Prisma.TransactionClient = this.prisma): Promise<AppSettings> {
+    return (await this.current(db)).values;
   }
 
-  async current(): Promise<{ version: number; values: AppSettings }> {
-    const row = await this.prisma.appSetting.findUnique({ where: { key: GLOBAL_KEY } });
+  async current(db: Prisma.TransactionClient = this.prisma): Promise<{ version: number; values: AppSettings }> {
+    const row = await db.appSetting.findUnique({ where: { key: GLOBAL_KEY } });
     return { version: row?.version ?? 0, values: withDefaults(row?.value) };
   }
 
@@ -67,7 +71,8 @@ export class SettingsService {
         const changes = changedFields(before, after);
         if (changes.length) {
           await tx.appSettingChange.createMany({ data: changes.map(({ key, oldValue, newValue }) => ({
-            key, oldValue, newValue, changedBy: actorId, changedAt: now,
+            // The columns are required Json: an empty value ("để trống") is stored as JSON null.
+            key, oldValue: oldValue ?? Prisma.JsonNull, newValue: newValue ?? Prisma.JsonNull, changedBy: actorId, changedAt: now,
           })) });
         }
         return { version: version + 1, values: after };
@@ -77,6 +82,22 @@ export class SettingsService {
       if (isUniqueViolation(error)) throw versionConflict();
       throw error;
     }
+  }
+
+  /**
+   * The value setting `key` (`<section>.<api_key>`) had at each instant, in the order of `instants`: the AI dashboard measures every day
+   * against the cap of that day (nhóm B design §8.1, B44). One read of the key's history and one of the current values for all instants.
+   */
+  async valuesAt(key: string, instants: Date[]): Promise<unknown[]> {
+    if (apiValueOf(SETTINGS_DEFAULTS, key) === undefined) throw new Error(`Unknown setting key ${key}`);
+    const [changes, { values }] = await Promise.all([
+      this.prisma.appSettingChange.findMany({
+        where: { key }, orderBy: [{ changedAt: 'asc' }, { id: 'asc' }], select: { oldValue: true, newValue: true, changedAt: true },
+      }),
+      this.current(),
+    ]);
+    const current = apiValueOf(values, key);
+    return instants.map((instant) => settingValueAt(changes, current, instant));
   }
 
   async history(pageSize: number, pageToken?: string): Promise<{ items: SettingChangeView[]; next_page_token: string | null }> {

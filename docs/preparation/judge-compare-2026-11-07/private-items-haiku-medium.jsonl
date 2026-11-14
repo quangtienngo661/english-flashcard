@@ -1,0 +1,20 @@
+{"id": 0, "input": {"word": "laptop", "part_of_speech": "noun", "meaning_vi": "máy tính xách tay"}, "output": {"verdict": "ok"}}
+{"id": 1, "input": {"word": "ghosting", "part_of_speech": "noun", "meaning_vi": "việc cắt liên lạc đột ngột không giải thích"}, "output": {"verdict": "ok"}}
+{"id": 2, "input": {"word": "give up", "part_of_speech": "verb", "meaning_vi": "từ bỏ"}, "output": {"verdict": "ok"}}
+{"id": 3, "input": {"word": "API", "part_of_speech": "noun", "meaning_vi": "giao diện lập trình ứng dụng"}, "output": {"verdict": "ok"}}
+{"id": 4, "input": {"word": "Excel", "part_of_speech": "noun", "meaning_vi": "phần mềm bảng tính của Microsoft"}, "output": {"verdict": "ok"}}
+{"id": 5, "input": {"word": "huge", "part_of_speech": "adjective", "meaning_vi": "rất to"}, "output": {"verdict": "ok"}}
+{"id": 6, "input": {"word": "piece of cake", "part_of_speech": "unspecified", "meaning_vi": "việc rất dễ"}, "output": {"verdict": "ok"}}
+{"id": 7, "input": {"word": "lorry", "part_of_speech": "noun", "meaning_vi": "xe tải"}, "output": {"verdict": "ok"}}
+{"id": 8, "input": {"word": "petrichor", "part_of_speech": "noun", "meaning_vi": "mùi đất sau cơn mưa"}, "output": {"verdict": "ok"}}
+{"id": 9, "input": {"word": "ASAP", "part_of_speech": "unspecified", "meaning_vi": "càng sớm càng tốt"}, "output": {"verdict": "ok"}}
+{"id": 10, "input": {"word": "recieve", "part_of_speech": "verb", "meaning_vi": "nhận"}, "output": {"verdict": "not_recognized"}}
+{"id": 11, "input": {"word": "beautifull", "part_of_speech": "adjective", "meaning_vi": "đẹp"}, "output": {"verdict": "not_recognized"}}
+{"id": 12, "input": {"word": "library", "part_of_speech": "noun", "meaning_vi": "hiệu sách"}, "output": {"verdict": "not_recognized"}}
+{"id": 13, "input": {"word": "actually", "part_of_speech": "adverb", "meaning_vi": "hiện tại, hiện nay"}, "output": {"verdict": "not_recognized"}}
+{"id": 14, "input": {"word": "sensible", "part_of_speech": "adjective", "meaning_vi": "nhạy cảm"}, "output": {"verdict": "not_recognized"}}
+{"id": 15, "input": {"word": "xe máy", "part_of_speech": "noun", "meaning_vi": "xe máy"}, "output": {"verdict": "not_recognized"}}
+{"id": 16, "input": {"word": "blorptastic", "part_of_speech": "adjective", "meaning_vi": "tuyệt vời"}, "output": {"verdict": "not_recognized"}}
+{"id": 17, "input": {"word": "borrow", "part_of_speech": "verb", "meaning_vi": "cho (ai) mượn"}, "output": {"verdict": "not_recognized"}}
+{"id": 18, "input": {"word": "eventually", "part_of_speech": "adverb", "meaning_vi": "có thể, có lẽ"}, "output": {"verdict": "not_recognized"}}
+{"id": 19, "input": {"word": "sympathetic", "part_of_speech": "adjective", "meaning_vi": "dễ mến, dễ thương"}, "output": {"verdict": "not_recognized"}}

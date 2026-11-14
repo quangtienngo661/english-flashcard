@@ -8,6 +8,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
   }
   return {
     databaseUrl: 'postgresql://dev:dev@localhost:5432/test',
+    database: { poolMax: 20, poolTimeoutMs: 5000 },
     redisUrl: 'redis://localhost:6379',
     jwt: {
       keys: [{ kid: 'test', secret: randomBytes(32) }],
@@ -24,6 +25,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     problemTypeBase: 'https://api.example.com/problems/',
     adminAppUrl: 'http://localhost:5173',
     learnerAppUrl: 'http://localhost:3001',
+    termsVersion: '2026-10-20',
     maintenanceEnabled: false,
     content: { publishMaxItems: 500 },
     pipeline: {
@@ -44,6 +46,13 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     // Off so other suites with workers on are not slowed by reminder ticks; reminder suites turn it on,
     // with a low tick so they see several ticks in a few seconds.
     reminders: { tickSeconds: 1, runScheduler: false, retryBackoffMs: 10 },
+    billing: { production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true },
+    ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
+    payos: { mode: 'off', clientId: null, apiKey: null, checksumKey: null },
+    audio: { storage: null, publicBaseUrl: null, r2: null, localDir: '.tmp/audio' },
+    tts: { provider: null, voiceUk: 'en-GB-Wavenet-B', voiceUs: 'en-US-Wavenet-D', credentials: null },
+    google: { mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: randomBytes(32) },
+    turnstile: { mode: 'off', secretKey: null, allowedHostnames: [] },
     limits,
     ...overrides,
   };

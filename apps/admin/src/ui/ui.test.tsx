@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, MemoryRouter, Route, Routes, useLocation, useNavigationType } from 'react-router';
 import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,10 +8,16 @@ import en from '../../messages/en.json';
 import { Banner } from './Banner';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
+import { ConfirmDialog } from './ConfirmDialog';
 import { DataList } from './DataList';
 import { FileDrop } from './FileDrop';
 import { ListState } from './ListState';
+import { NumberField } from './NumberField';
+import { RadioGroup } from './RadioGroup';
 import { Stat } from './Stat';
+import { Switch } from './Switch';
+import { Tabs } from './Tabs';
+import { TextArea } from './TextArea';
 import { TextField } from './TextField';
 
 const wrap = (ui: React.ReactNode, path = '/list') =>
@@ -123,6 +129,63 @@ describe('DataList', () => {
     expect(selectedCards.map((c) => c.textContent)).toEqual([expect.stringContaining('b@x.co')]);
   });
 
+  function Selectable({ onChange, initial = [] }: { onChange?: (next: Set<string>) => void; initial?: string[] }) {
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set(initial));
+    return (
+      <DataList
+        rows={rows}
+        rowKey={(r) => r.id}
+        columns={columns}
+        state="ready"
+        selection={{
+          selected,
+          onChange: (next) => {
+            onChange?.(next);
+            setSelected(next);
+          },
+          label: (r) => `Select ${r.email}`,
+        }}
+      />
+    );
+  }
+
+  it('selection: toggling a row reports the new set; the table has a checkbox column', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['2']);
+    expect(within(table).getByRole('checkbox', { name: 'Select b@x.co' })).toBeChecked();
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual([]);
+  });
+
+  it('selection: the header checkbox selects every row of the page, then clears them; partial is mixed', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} initial={['1', 'elsewhere']} />);
+    const all = within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll });
+    expect(all).toBePartiallyChecked();
+    await userEvent.click(all);
+    expect([...onChange.mock.calls.at(-1)![0]].sort()).toEqual(['1', '2', 'elsewhere']);
+    await userEvent.click(within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['elsewhere']);
+  });
+
+  it('selection: each card has the same checkbox (390 layout)', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const card = screen.getAllByTestId('card')[0];
+    await userEvent.click(within(card).getByRole('checkbox', { name: 'Select a@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['1']);
+  });
+
+  it('without selection there is no checkbox', () => {
+    wrap(<DataList rows={rows} rowKey={(r) => r.id} columns={columns} state="ready" />);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.getAllByRole('columnheader')).toHaveLength(2);
+  });
+
   it('delegates empty to ListState', () => {
     wrap(<DataList rows={[]} rowKey={(r: { id: string }) => r.id} columns={[]} state="ready" emptyText="Nothing here" />);
     expect(screen.queryByRole('table')).toBeNull();
@@ -195,13 +258,41 @@ describe('Stat and Banner', () => {
     expect(within(container).getByText('7').className).toContain('text-danger');
   });
 
-  it('Banner info, error and offline use the B fills', () => {
-    const expected = { info: 'bg-primary-soft', error: 'bg-danger-soft', offline: 'bg-accent-soft' } as const;
+  it('Banner info, error, offline and warning use the B fills', () => {
+    const expected = { info: 'bg-primary-soft', error: 'bg-danger-soft', offline: 'bg-accent-soft', warning: 'bg-accent-soft' } as const;
     for (const [variant, bg] of Object.entries(expected)) {
       const { unmount } = wrap(<Banner variant={variant as keyof typeof expected}>Note</Banner>);
       expect(screen.getByText('Note').parentElement!.className, variant).toContain(bg);
       unmount();
     }
+  });
+});
+
+describe('Banner error code', () => {
+  it('B25#19: shows "Code: op-123" as rendered text', () => {
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    expect(screen.getByText('Code: op-123')).toBeTruthy();
+  });
+
+  it('the copy button writes op-123 to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    await userEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(writeText).toHaveBeenCalledWith('op-123');
+  });
+
+  it('without a code there is no code text and no copy button', () => {
+    wrap(<Banner variant="error">Oops</Banner>);
+    expect(screen.queryByText(/Code:/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copy code' })).toBeNull();
+  });
+
+  it('a missing navigator.clipboard does not throw when copying', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    await userEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(screen.getByText('Code: op-123')).toBeTruthy();
   });
 });
 
@@ -218,5 +309,253 @@ describe('Button and TextField', () => {
     const input = screen.getByLabelText('Email');
     expect(input).toBeInvalid();
     expect(input).toHaveAccessibleDescription('Wrong email');
+  });
+});
+
+describe('ConfirmDialog', () => {
+  const props = { title: 'Leave this page?', confirmLabel: 'Leave', onConfirm: () => {}, onCancel: () => {} };
+
+  it('shows the title and body; confirm and cancel call their handlers; cancel defaults to common.cancel', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(
+      <ConfirmDialog {...props} isOpen onConfirm={onConfirm} onCancel={onCancel}>
+        Unsaved changes will be lost.
+      </ConfirmDialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Leave this page?' });
+    expect(dialog).toHaveTextContent('Unsaved changes will be lost.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(dialog).getByRole('button', { name: en.common.cancel }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc calls onCancel, not onConfirm', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen cancelLabel="Stay" onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: 'Stay' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('tone danger styles the confirm button; while pending neither Esc nor the buttons act', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen tone="danger" isPending onConfirm={onConfirm} onCancel={onCancel} />);
+    const confirm = screen.getByRole('button', { name: 'Leave' });
+    expect(confirm.className).toContain('bg-danger');
+    await userEvent.click(confirm);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: en.common.cancel }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing while closed', () => {
+    wrap(<ConfirmDialog {...props} isOpen={false} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
+  it('TextArea shows its label and reports typing', async () => {
+    const onChange = vi.fn();
+    wrap(<TextArea label="Prompt" value="" onChange={onChange} description="Plain text" />);
+    await userEvent.type(screen.getByLabelText('Prompt'), 'a');
+    expect(onChange).toHaveBeenCalledWith('a');
+    expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text');
+  });
+
+  it('TextArea counter shows 1,234/8,000 and, over maxLength, is danger-styled and still accepts input', async () => {
+    const { rerender } = wrap(<TextArea label="Prompt" value={'x'.repeat(1234)} onChange={() => {}} maxLength={8000} counter />);
+    expect(screen.getByText('1,234/8,000')).not.toHaveAttribute('data-over');
+    expect(screen.getByLabelText('Prompt')).not.toHaveAttribute('aria-invalid', 'true');
+
+    function Harness() {
+      const [v, setV] = useState('abc');
+      return <TextArea label="Prompt" value={v} onChange={setV} maxLength={3} counter />;
+    }
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <MemoryRouter>
+          <Harness />
+        </MemoryRouter>
+      </IntlProvider>,
+    );
+    const box = screen.getByLabelText('Prompt');
+    await userEvent.type(box, 'de');
+    expect(box).toHaveValue('abcde');
+    const counter = screen.getByText('5/3');
+    expect(counter).toHaveAttribute('data-over');
+    expect(counter.className).toContain('data-over:text-danger');
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('TextArea without a counter hands maxLength to the browser', () => {
+    wrap(<TextArea label="Note" value="" onChange={() => {}} maxLength={5} />);
+    expect(screen.getByLabelText('Note')).toHaveAttribute('maxlength', '5');
+  });
+
+  it('Switch shows its label and description and reports a toggle', async () => {
+    const onChange = vi.fn();
+    wrap(<Switch label="AI on" description="Turns every AI call on" isSelected={false} onChange={onChange} />);
+    const sw = screen.getByRole('switch', { name: 'AI on' });
+    expect(sw).toHaveAccessibleDescription('Turns every AI call on');
+    await userEvent.click(sw);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('NumberField reports numbers; cleared it reports null only when nullable', async () => {
+    const onChange = vi.fn();
+    const { rerender } = wrap(<NumberField label="Daily cap" value={5} onChange={onChange} isNullable minValue={0} />);
+    const input = screen.getByLabelText('Daily cap');
+    expect(input).toHaveValue('5');
+    await userEvent.clear(input);
+    await userEvent.tab(); // React Aria commits a number on blur
+    expect(onChange).toHaveBeenLastCalledWith(null);
+
+    onChange.mockClear();
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <NumberField label="Daily cap" value={5} onChange={onChange} />
+      </IntlProvider>,
+    );
+    await userEvent.clear(screen.getByLabelText('Daily cap'));
+    await userEvent.tab();
+    expect(onChange).not.toHaveBeenCalled();
+
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <NumberField label="Daily cap" value={null} onChange={onChange} />
+      </IntlProvider>,
+    );
+    await userEvent.type(screen.getByLabelText('Daily cap'), '7');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(7);
+  });
+
+  it('NumberField shows an empty value as an empty field and its error', () => {
+    wrap(<NumberField label="Cap" value={null} onChange={() => {}} isNullable error="Too big" />);
+    expect(screen.getByLabelText('Cap')).toHaveValue('');
+    expect(screen.getByLabelText('Cap')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Too big')).toBeInTheDocument();
+  });
+
+  it('RadioGroup lists its items with descriptions and reports the chosen id', async () => {
+    const onChange = vi.fn();
+    wrap(
+      <RadioGroup
+        label="Effort"
+        value="low"
+        onChange={onChange}
+        items={[
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High', description: 'Slower, costs more' },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('radiogroup', { name: 'Effort' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Low/ })).toBeChecked();
+    expect(screen.getByText('Slower, costs more')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: /High/ }));
+    expect(onChange).toHaveBeenCalledWith('high');
+  });
+
+  it('RadioGroup: an item description describes the radio but is not part of its name', () => {
+    wrap(
+      <RadioGroup
+        label="Effort"
+        value="low"
+        onChange={() => {}}
+        items={[
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High', description: 'Slower, costs more' },
+        ]}
+      />,
+    );
+    const high = screen.getByRole('radio', { name: 'High' });
+    expect(high).toHaveAccessibleName('High');
+    expect(high).toHaveAccessibleDescription('Slower, costs more');
+    expect(screen.getByRole('radio', { name: 'Low' })).toHaveAccessibleDescription('');
+  });
+
+  it('NumberField displays in the app locale: vi "1.234,5", en "1,234.5"', () => {
+    const inLocale = (locale: string) => (
+      <IntlProvider locale={locale} messages={en}>
+        <NumberField label="Cap" value={1234.5} onChange={() => {}} />
+      </IntlProvider>
+    );
+    const { unmount } = render(inLocale('vi'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1.234,5');
+    unmount();
+    render(inLocale('en'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1,234.5');
+  });
+
+  it('TextArea counter follows the app locale (vi "1.234/8.000") and describes the field', () => {
+    render(
+      <IntlProvider locale="vi" messages={en}>
+        <TextArea label="Prompt" value={'x'.repeat(9000)} onChange={() => {}} maxLength={8000} counter description="Plain text" />
+      </IntlProvider>,
+    );
+    expect(screen.getByText('9.000/8.000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text 9.000/8.000');
+  });
+});
+
+describe('Tabs', () => {
+  const items = [
+    { id: 'a', label: 'Alpha' },
+    { id: 'b', label: 'Beta', marked: true },
+    { id: 'c', label: 'Gamma' },
+  ];
+
+  function Controlled({ onSelect }: { onSelect?: (id: string) => void }) {
+    const [selected, setSelected] = useState('a');
+    return (
+      <Tabs
+        label="Sections"
+        items={items}
+        selected={selected}
+        onSelect={(id) => {
+          onSelect?.(id);
+          setSelected(id);
+        }}
+        aside={<a href="#history">History</a>}
+      >
+        {(id) => <p>panel {id}</p>}
+      </Tabs>
+    );
+  }
+
+  it('shows the selected panel only and reports a click', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel a');
+    await userEvent.click(screen.getByRole('tab', { name: /Gamma/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('c');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel c');
+    expect(screen.getByRole('link', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('arrow keys move the selection', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Alpha' }));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onSelect).toHaveBeenLastCalledWith('b');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel b');
+  });
+
+  it('a marked tab carries a dot that is named for screen readers (§6.7)', () => {
+    wrap(<Controlled />);
+    const beta = screen.getByRole('tab', { name: /Beta/ });
+    expect(within(beta).getByTestId('tab-dot')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Beta\s*\(unsaved changes\)$/ })).toBe(beta);
+    expect(within(screen.getByRole('tab', { name: 'Alpha' })).queryByTestId('tab-dot')).toBeNull();
   });
 });

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mặt sau thẻ</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Values copied from packages/design-tokens/theme.css and apps/web/src/app/globals.css (27/10/2026). */
+  :root {
+    --primary: #2445d6; --ink: #0f1a3d; --muted: #4d5577; --surface: #fff; --canvas: #f1f3fd; --border: #e3e6f4;
+    --accent: #ffd84a; --accent-soft: #fff4c7; --shadow-ink: rgb(15 26 61 / 0.35);
+    --h2: 2.375rem;      /* text-h2 at 1280px wide (clamp 1.75rem → 2.5rem) */
+    --h2-phone: 1.75rem; /* text-h2 at 390px */
+    --title-lg: 1.5rem; --h3: 1.375rem; --title: 1.25rem; --ui: .875rem; --caption: .8125rem;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Lexend, system-ui, sans-serif; background: var(--canvas); color: var(--ink); }
+  main { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  .lead { color: var(--muted); margin: 0 0 1rem; }
+  .bar { display: flex; gap: .5rem; flex-wrap: wrap; position: sticky; top: .5rem; z-index: 2; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: .6rem .8rem; }
+  .bar button { font: inherit; font-weight: 600; border: 2px solid #7d84a8; background: var(--surface); border-radius: .75rem; padding: .35rem .8rem; cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--accent); border-color: var(--ink); }
+  .opt { margin-top: 2rem; }
+  .opt h2 { font-size: 1.15rem; margin: 0 0 .2rem; display: flex; gap: .5rem; align-items: center; }
+  .opt p.d { color: var(--muted); margin: 0 0 .8rem; font-size: .9rem; }
+  .tag { font-size: .75rem; font-weight: 700; background: var(--accent); border-radius: 999px; padding: .1rem .55rem; }
+  .row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .frame { width: 36rem; max-width: 100%; }
+  body.phone .frame { width: 21.5rem; }
+
+  /* The card as in Flashcard.tsx: border-2 ink, rounded-card, ledge shadow, a tilted sheet behind. */
+  .stack { position: relative; }
+  .stack::before { content: ''; position: absolute; inset: 0; transform: rotate(-2deg); border: 2px solid var(--ink); border-radius: 1.25rem; background: var(--surface); }
+  .card { position: relative; min-height: 18rem; border: 2px solid var(--ink); border-radius: 1.25rem; background: var(--surface); box-shadow: 0 .25rem 0 var(--shadow-ink); overflow: hidden; display: grid; }
+  .col { display: flex; flex-direction: column; gap: .5rem; padding: 1.25rem; min-width: 0; }
+  .badge { width: fit-content; font-size: var(--caption); font-weight: 600; background: var(--accent); border-radius: 999px; padding: .1rem .5rem; }
+  .lemma { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5rem; margin: 0; }
+  .lemma b { font-size: var(--h3); }
+  .lemma i { font-style: normal; color: var(--muted); font-size: var(--ui); }
+  .spk { color: var(--primary); font-size: 1rem; }
+  .meaning { margin: 0; font-weight: 700; overflow-wrap: break-word; }
+  .forms { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
+  .forms li { border: 1px solid var(--border); border-radius: .5rem; padding: .1rem .5rem; font-size: var(--caption); }
+  .label { font-size: var(--caption); font-weight: 600; color: var(--muted); margin: 0; }
+  .ex { display: flex; gap: .25rem; align-items: flex-start; font-size: var(--ui); margin: 0; }
+  .ex span { flex: 1; }
+  .ex mark { background: none; color: var(--primary); font-weight: 600; }
+  .seen { background: var(--accent-soft); }
+  .seen .label { color: var(--ink); }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1.5rem; }
+  .btns div { min-height: 2.75rem; border-radius: .875rem; display: flex; align-items: center; padding: 0 1rem; font-weight: 600; font-size: .95rem; }
+  .btns .q { border: 2px solid #7d84a8; box-shadow: 0 .18rem 0 #7d84a8; background: var(--surface); }
+  .btns .k { background: var(--accent); box-shadow: 0 .18rem 0 #c9a21a; }
+
+  /* Layouts */
+  .two { grid-template-columns: 1fr 1fr; }
+  body.phone .two { grid-template-columns: 1fr; }
+  .meaning.big { font-size: var(--h2); line-height: 1.18; }
+  body.phone .meaning.big { font-size: var(--h2-phone); }
+  .meaning.mid { font-size: var(--title-lg); line-height: 1.25; }
+  .stackcol { grid-template-columns: 1fr; }
+  .stackcol .divider { border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mặt sau thẻ ôn — các cách bố trí</h1>
+  <p class="lead">Hai từ trong ảnh bạn gửi: <b>persuade</b> (nghĩa tiếng Anh dài) và <b>laptop</b> (nghĩa tiếng Việt ngắn). Chọn khổ màn hình để xem trên web hay trên điện thoại.</p>
+  <div class="bar">
+    <button aria-pressed="true" data-w="web">Web (thẻ rộng 576px)</button>
+    <button aria-pressed="false" data-w="phone">Điện thoại (343px)</button>
+  </div>
+  <div id="opts"></div>
+</main>
+<script>
+const WORDS = [
+  { lemma: 'persuade', pos: 'verb', badge: 'Priority', meaning: 'To make someone agree to do something by giving reasons.', forms: ['persuades', 'persuading', 'persuaded'], label: 'Example',
+    ex: 'She <mark>persuaded</mark> the client to sign the contract.', btn: ['Still learning', 'Know'] },
+  { lemma: 'laptop', pos: 'noun', meaning: 'máy tính xách tay', forms: ['laptops'], label: 'Câu mẫu', ex: 'He takes his <mark>laptop</mark> to the café.',
+    seen: 'I left my <mark>laptop</mark> at the office yesterday.', btn: ['Cần ôn lại', 'Đã biết'] },
+];
+const head = (w) => `${w.badge ? `<span class="badge">${w.badge}</span>` : ''}<p class="lemma"><b>${w.lemma}</b><i>${w.pos}</i><span class="spk">🔈</span></p>`;
+const forms = (w) => `<ul class="forms">${w.forms.map((f) => `<li>${f}</li>`).join('')}</ul>`;
+const example = (w) => `<p class="label">${w.label}</p><p class="ex"><span>${w.ex}</span><span class="spk" style="flex:none">🔈</span></p>`;
+const seen = (w) => w.seen ? `<div class="col seen"><p class="label">${w.label === 'Example' ? 'Sentences you met' : 'Câu bạn đã gặp'}</p><p class="ex"><span>${w.seen}</span><span class="spk" style="flex:none">🔈</span></p></div>` : '';
+const btns = (w) => `<div class="btns"><div class="q">${w.btn[0]}</div><div class="k">${w.btn[1]}</div></div>`;
+
+const OPTIONS = [
+  { id: 'Hiện tại', name: 'Như bây giờ', d: 'Hai cột trên web: trái là từ + nghĩa (chữ rất to, text-h2 ≈ 38px), phải là câu mẫu.',
+    card: (w) => `<div class="card two"><div class="col">${head(w)}<p class="meaning big">${w.meaning}</p>${forms(w)}</div><div><div class="col">${example(w)}</div>${seen(w)}</div></div>` },
+  { id: 'A', name: 'Giữ hai cột, chữ nghĩa nhỏ lại', d: 'Bố cục không đổi; nghĩa xuống cỡ text-title-lg (24px), vẫn đậm.',
+    card: (w) => `<div class="card two"><div class="col">${head(w)}<p class="meaning mid">${w.meaning}</p>${forms(w)}</div><div><div class="col">${example(w)}</div>${seen(w)}</div></div>` },
+  { id: 'B', name: 'Nghĩa trải hết chiều ngang, câu mẫu ở dưới (chữ to như cũ)', d: 'Một cột: từ, nghĩa chạy hết bề ngang thẻ, dạng chia; một đường kẻ mảnh, rồi câu mẫu và câu đã gặp bên dưới. Nghĩa giữ cỡ text-h2.',
+    card: (w) => `<div class="card stackcol"><div class="col">${head(w)}<p class="meaning big">${w.meaning}</p>${forms(w)}</div><div class="col divider">${example(w)}</div>${seen(w)}</div>` },
+  { id: 'C', name: 'Nghĩa trải hết chiều ngang, câu mẫu ở dưới, chữ nghĩa nhỏ lại', d: 'Như B, nhưng nghĩa ở cỡ text-title-lg (24px) như A.',
+    card: (w) => `<div class="card stackcol"><div class="col">${head(w)}<p class="meaning mid">${w.meaning}</p>${forms(w)}</div><div class="col divider">${example(w)}</div>${seen(w)}</div>` },
+];
+document.getElementById('opts').innerHTML = OPTIONS.map((o) => `
+  <section class="opt"><h2><span class="tag">${o.id}</span>${o.name}</h2><p class="d">${o.d}</p>
+  <div class="row">${WORDS.map((w) => `<div class="frame"><div class="stack">${o.card(w)}</div>${btns(w)}</div>`).join('')}</div></section>`).join('');
+document.querySelectorAll('.bar button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('.bar button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  document.body.classList.toggle('phone', b.dataset.w === 'phone');
+});
+</script>
+</body>
+</html>

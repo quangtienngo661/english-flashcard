@@ -1,0 +1,102 @@
+{"id": 0, "verdict": "fail_minor", "other_words": ["clean"], "reason": "\"clean\" fits (\"I clean my teeth\") but is more general than brushing."}
+{"id": 1, "verdict": "fail_minor", "other_words": ["heed"], "reason": "\"heed\" fits (\"pay heed\") with the same meaning but is rare and formal."}
+{"id": 2, "verdict": "fail_minor", "other_words": ["beautiful", "picturesque"], "reason": "\"beautiful\" fits but is more general, and \"picturesque\" is a rare close synonym."}
+{"id": 3, "verdict": "fail_minor", "other_words": ["round", "match"], "reason": "\"round\" and \"match\" fit but are close variants that few learners would write."}
+{"id": 4, "verdict": "fail_major", "other_words": ["deal", "agreement"], "reason": "\"deal\" fits (\"a three-year deal\") with the same meaning and is a common word."}
+{"id": 5, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"bubble\", is clumsy next to \"bubbles come up\" and does not mean \"sôi\"."}
+{"id": 6, "verdict": "fail_minor", "other_words": ["play"], "reason": "\"play\" fits (\"play against one another\") but is more general and loses the idea of competing."}
+{"id": 7, "verdict": "fail_major", "other_words": ["team"], "reason": "\"team\" fits (\"a team of 20 people\") with the same meaning (đội ngũ) and is a common word."}
+{"id": 8, "verdict": "fail_minor", "other_words": ["bill", "invoice"], "reason": "\"bill\" and \"invoice\" can fit a shop paper but are less usual or formal."}
+{"id": 9, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"plantain\", is not a long yellow fruit that monkeys like, so only \"banana\" fits."}
+{"id": 10, "verdict": "fail_minor", "other_words": ["associate"], "reason": "\"associate\" fits (\"business associate\") but is formal and slightly different in meaning."}
+{"id": 11, "verdict": "fail_minor", "other_words": ["application"], "reason": "\"application\" fits but is only the long form of \"app\"."}
+{"id": 12, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"open\", is natural but means \"mở\", not \"cài đặt\"."}
+{"id": 13, "verdict": "fail_minor", "other_words": ["hard", "difficult", "demanding"], "reason": "\"hard\" and \"difficult\" fit but are more general; \"demanding\" is above the level."}
+{"id": 14, "verdict": "fail_minor", "other_words": ["list"], "reason": "\"list\" fits (\"a list to choose from\") but is more general than a menu."}
+{"id": 15, "verdict": "fail_minor", "other_words": ["money"], "reason": "\"money\" fits (\"the official money\") but is more general and loses the idea of a national system."}
+{"id": 16, "verdict": "fail_major", "other_words": ["washing"], "reason": "\"washing\" fits (\"do the washing\") with the same meaning and is a common word."}
+{"id": 17, "verdict": "fail_minor", "other_words": ["guess", "reckon"], "reason": "\"guess\" and \"reckon\" fit (\"guess the cost at\") but lose the idea of calculating."}
+{"id": 18, "verdict": "fail_minor", "other_words": ["session", "briefing", "huddle"], "reason": "\"session\" or \"briefing\" fit a weekly team gathering but are narrower or less usual."}
+{"id": 19, "verdict": "fail_minor", "other_words": ["cook"], "reason": "\"cook\" fits (\"cook the cake in the oven\") but is more general than baking."}
+{"id": 20, "verdict": "fail_minor", "other_words": ["buy", "get"], "reason": "\"buy\" fits (\"buy oil from other countries\") but is more general and loses the idea of bringing goods in."}
+{"id": 21, "verdict": "fail_minor", "other_words": ["reminder", "memento", "keepsake"], "reason": "\"reminder\" fits but loses the idea of a gift, and \"memento\" and \"keepsake\" are rare."}
+{"id": 22, "verdict": "fail_major", "other_words": ["raise"], "reason": "\"raise\" fits (\"raise the number\") with the same meaning and is a common word."}
+{"id": 23, "verdict": "fail_minor", "other_words": ["division", "section", "unit"], "reason": "\"division\" fits with the same meaning but is above B1; \"section\" and \"unit\" are looser."}
+{"id": 24, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"trouble\", is natural but does not mean \"khoản nợ\" and does not match \"money she owed\"."}
+{"id": 25, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"entrepreneur\", is natural after \"An\" but means someone who starts a business, not an investor."}
+{"id": 26, "verdict": "fail_minor", "other_words": ["reuse"], "reason": "\"reuse\" fits but is more general; it does not mean turning it into something new."}
+{"id": 27, "verdict": "fail_minor", "other_words": ["recall"], "reason": "\"recall\" fits with the same meaning but is more formal and above the level."}
+{"id": 28, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"program\", is not natural after \"web\"; only \"browser\" fits \"such as Chrome\"."}
+{"id": 29, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"salt\", is white but does not make tea sweet."}
+{"id": 30, "verdict": "fail_major", "other_words": ["uncooked"], "reason": "\"uncooked\" fits with the same meaning and is a transparent, common word."}
+{"id": 31, "verdict": "fail_minor", "other_words": ["payment", "buying"], "reason": "\"payment\" fits (\"proof of payment\") but means thanh toán, and \"buying\" is less natural."}
+{"id": 32, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"brunch\", is a late-morning meal, not the first meal of the day."}
+{"id": 33, "verdict": "fail_minor", "other_words": ["excursion", "outing", "tour"], "reason": "\"outing\" and \"excursion\" fit but are rarer; \"tour\" is narrower."}
+{"id": 34, "verdict": "fail_minor", "other_words": ["press", "tap"], "reason": "\"press\" fits (\"press on the button\") but loses the idea of clicking with a mouse."}
+{"id": 35, "verdict": "fail_minor", "other_words": ["piece"], "reason": "\"piece\" fits (\"a thin piece of bread\") but is more general than a slice."}
+{"id": 36, "verdict": "fail_minor", "other_words": ["maker", "manufacturer", "make"], "reason": "\"maker\" fits but names the company, not the brand, and \"make\" is a rare variant."}
+{"id": 37, "verdict": "fail_minor", "other_words": ["clock", "timer"], "reason": "\"clock\" fits (\"my phone's clock goes off\") but is more general than the alarm."}
+{"id": 38, "verdict": "fail_major", "other_words": ["employ"], "reason": "\"employ\" fits (\"employ Maria as the new cook\") with the same meaning and is a known word."}
+{"id": 39, "verdict": "fail_minor", "other_words": ["host"], "reason": "\"host\" fits (\"the website's host\") but is a rarer, technical term."}
+{"id": 40, "verdict": "fail_minor", "other_words": ["item", "component"], "reason": "\"item\" fits but is more general, and \"component\" is formal."}
+{"id": 41, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"manage\", is natural but means \"xoay xở được\", not \"đủ khả năng chi trả\"."}
+{"id": 42, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"bargain\", is natural but means a cheap price, not an agreement."}
+{"id": 43, "verdict": "fail_minor", "other_words": ["cook", "scramble"], "reason": "\"cook\" fits (\"cook the eggs in a pan\") but is more general than frying."}
+{"id": 44, "verdict": "fail_major", "other_words": ["glad", "cheerful", "joyful"], "reason": "\"glad\" and \"cheerful\" fit with the same meaning and are common words."}
+{"id": 45, "verdict": "fail_minor", "other_words": ["gain"], "reason": "\"gain\" fits (\"made a gain of $200\") but is a less usual close synonym."}
+{"id": 46, "verdict": "fail_minor", "other_words": ["display"], "reason": "\"display\" fits with the same meaning but is a more technical, higher-level word."}
+{"id": 47, "verdict": "fail_minor", "other_words": ["land"], "reason": "\"land\" fits (\"as soon as you land at the airport\") but is narrower than arriving."}
+{"id": 48, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"delivery\", is natural but means giao hàng, not \"dịch vụ\"."}
+{"id": 49, "verdict": "fail_major", "other_words": ["service"], "reason": "\"service\" fits (\"service the machines\") with the same meaning (bảo dưỡng) and is a known word."}
+{"id": 50, "verdict": "fail_minor", "other_words": ["people", "parties"], "reason": "\"people\" fits but is more general and loses the idea of having an interest in the company."}
+{"id": 51, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"holidays\", is not the usual name for Saturday and Sunday."}
+{"id": 52, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"trade\", is natural but means mua bán, not \"đầu tư\"."}
+{"id": 53, "verdict": "fail_minor", "other_words": ["save", "get", "copy"], "reason": "\"save\" fits (\"save the file to your computer\") but is more general than downloading."}
+{"id": 54, "verdict": "fail_major", "other_words": ["programmer", "engineer"], "reason": "\"programmer\" fits with the same meaning (lập trình viên) and is a common word."}
+{"id": 55, "verdict": "fail_minor", "other_words": ["plan", "tactic"], "reason": "\"plan\" fits (\"his plan was to\") but is more general, and \"tactic\" is a close variant."}
+{"id": 56, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"atlas\", is natural but is a book of maps, not a map."}
+{"id": 57, "verdict": "fail_major", "other_words": ["board"], "reason": "\"board\" fits (\"board at Dover\") with the same meaning and is a common word."}
+{"id": 58, "verdict": "fail_minor", "other_words": ["bag", "case"], "reason": "\"bag\" fits but is more general, and \"case\" is a short variant of suitcase."}
+{"id": 59, "verdict": "fail_major", "other_words": ["cooking", "food"], "reason": "\"cooking\" fits (\"French cooking\") with almost the same meaning and is a common word."}
+{"id": 60, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"buy\", does not take \"for the food\"; only \"pay\" fits."}
+{"id": 61, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"internet\", is not natural after \"in the\" and means a network, not cloud storage."}
+{"id": 62, "verdict": "fail_minor", "other_words": ["famished", "ravenous"], "reason": "\"famished\" fits with the same meaning but is rare and above A1."}
+{"id": 63, "verdict": "fail_minor", "other_words": ["mate", "pal", "buddy"], "reason": "\"mate\" and \"pal\" fit but are informal or regional."}
+{"id": 64, "verdict": "fail_major", "other_words": ["baggage"], "reason": "\"baggage\" fits (\"baggage cart\") with the same meaning (hành lý) and is a known airport word."}
+{"id": 65, "verdict": "fail_minor", "other_words": ["deal", "consolidation"], "reason": "\"deal\" fits but is more general, and \"consolidation\" is a rare close variant."}
+{"id": 66, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"deposit\", is not natural after \"opened a bank\" and means tiền gửi."}
+{"id": 67, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"give\", is natural but means \"cho\", not \"bán\", and clashes with \"buy your old bike\"."}
+{"id": 68, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"coffee\", is not made from a bag of black leaves."}
+{"id": 69, "verdict": "fail_minor", "other_words": ["cordless", "Bluetooth"], "reason": "\"cordless\" fits with the same meaning but is a rare choice for headphones."}
+{"id": 70, "verdict": "fail_minor", "other_words": ["important", "priority"], "reason": "\"important\" fits (\"marked important\") but is more general than urgent."}
+{"id": 71, "verdict": "fail_minor", "other_words": ["occupied", "swamped"], "reason": "\"occupied\" and \"swamped\" fit but are formal or informal variants."}
+{"id": 72, "verdict": "fail_minor", "other_words": ["data", "records", "system"], "reason": "\"data\" and \"records\" fit but are more general than a database."}
+{"id": 73, "verdict": "fail_minor", "other_words": ["monument", "attraction", "icon"], "reason": "\"monument\" fits as a close, rarer word; \"attraction\" and \"icon\" fit but shift the meaning."}
+{"id": 74, "verdict": "fail_minor", "other_words": ["change", "convert"], "reason": "\"change\" fits (\"change your ticket to business class\") but is more general than upgrading."}
+{"id": 75, "verdict": "fail_minor", "other_words": ["encode", "scramble", "lock"], "reason": "\"encode\" fits as a rarer close word; \"lock\" fits but is more general."}
+{"id": 76, "verdict": "fail_major", "other_words": ["run"], "reason": "\"run\" fits (\"run the shop\") with the same meaning and is a common word."}
+{"id": 77, "verdict": "fail_minor", "other_words": ["clean"], "reason": "\"clean\" fits (\"clean your hands\") but is more general than washing."}
+{"id": 78, "verdict": "fail_minor", "other_words": ["take", "get", "rent"], "reason": "\"take\" and \"get\" fit but are more general than borrowing."}
+{"id": 79, "verdict": "fail_major", "other_words": ["plan", "arrange"], "reason": "\"plan\" and \"arrange\" fit with the same meaning and are common words."}
+{"id": 80, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"experience\", is natural after \"user\" but means trải nghiệm, not \"giao diện\"."}
+{"id": 81, "verdict": "fail_minor", "other_words": ["change"], "reason": "\"change\" fits loosely but is more general than fermenting."}
+{"id": 82, "verdict": "fail_minor", "other_words": ["computerize", "schedule"], "reason": "\"computerize\" fits as a rare close word, and \"schedule\" fits but means set a time."}
+{"id": 83, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"am\", is natural but means being somewhere, not \"làm việc\"."}
+{"id": 84, "verdict": "fail_minor", "other_words": ["internet", "interactive"], "reason": "\"internet\" fits (\"an internet class\") as a close variant, and \"interactive\" shifts the meaning."}
+{"id": 85, "verdict": "fail_major", "other_words": ["yearly"], "reason": "\"yearly\" fits with the same meaning and is a common word."}
+{"id": 86, "verdict": "fail_major", "other_words": ["mess", "junk", "stuff"], "reason": "\"mess\" and \"junk\" fit (\"cleared the mess off her desk\") with the same meaning and are common words."}
+{"id": 87, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"back\", does not fit \"Turn ___, not right\"; only \"left\" fits."}
+{"id": 88, "verdict": "fail_minor", "other_words": ["release", "push", "publish"], "reason": "\"release\" and \"publish\" fit but are looser or informal."}
+{"id": 89, "verdict": "fail_major", "other_words": ["sales", "revenue"], "reason": "\"sales\" and \"revenue\" fit with the same meaning and are known at this level."}
+{"id": 90, "verdict": "fail_major", "other_words": ["organized", "orderly"], "reason": "\"organized\" fits (\"neat and organized\") with the same meaning and is a common word."}
+{"id": 91, "verdict": "fail_major", "other_words": ["responsibility"], "reason": "\"responsibility\" fits (\"legal responsibility\") with the same meaning and is a common word."}
+{"id": 92, "verdict": "fail_major", "other_words": ["overseas"], "reason": "\"overseas\" fits (\"study overseas\") with the same meaning and is a common word."}
+{"id": 93, "verdict": "fail_major", "other_words": ["decorate", "top"], "reason": "\"decorate\" fits (\"decorate it with parsley\") with the same meaning (trang trí) and is a common word."}
+{"id": 94, "verdict": "fail_minor", "other_words": ["stopover", "wait", "stop"], "reason": "\"stopover\" is a regional variant; \"wait\" and \"stop\" fit but are more general."}
+{"id": 95, "verdict": "fail_major", "other_words": ["isolated", "faraway", "distant"], "reason": "\"isolated\" and \"faraway\" fit with the same meaning and are known words."}
+{"id": 96, "verdict": "fail_major", "other_words": ["turnover", "income"], "reason": "\"turnover\" and \"income\" fit (\"sales turnover\") with the same meaning and are known at B2."}
+{"id": 97, "verdict": "pass", "other_words": [], "reason": "The closest candidate, \"delightful\", has ten letters, so only the nine-letter \"delicious\" fits."}
+{"id": 98, "verdict": "fail_major", "other_words": ["delay", "stall", "dawdle"], "reason": "\"delay\" fits (\"tend to delay by cleaning\") with the same meaning and is a common word."}
+{"id": 99, "verdict": "fail_major", "other_words": ["profitable", "valuable"], "reason": "\"profitable\" fits (\"a profitable contract\") with the same meaning and is a common word."}
+{"id": 100, "verdict": "fail_minor", "other_words": ["usable"], "reason": "\"usable\" fits (\"usable with your phone\") but is more general than compatible."}
+{"id": 101, "verdict": "fail_minor", "other_words": ["other"], "reason": "\"other\" fits (\"your other hand\") but is more general than left."}

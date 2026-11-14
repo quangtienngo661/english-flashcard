@@ -1,23 +1,25 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { localDate } from '../../common/time/local-date.js';
 import { ContentRuleError, ContentService, type InflectionKind, type Level } from '../../content/index.js';
-import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { ItemsService } from '../items/items.service.js';
 import { withLearnerLock } from '../learning-lock.js';
+import { PRIVATE_SENSES_CLEANUP, type PrivateSensesCleanup } from '../private-senses-cleanup.port.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 const conflicts = new Set(['private-word-exists', 'private-word-limit-reached', 'sentence-limit-reached']);
 
 export type NewWord = {
   lemma: string; pos?: string | null; meaning: string; level?: Level | null; topics?: string[];
-  form_of?: { entry_id: string; kind: InflectionKind };
+  form_of?: { entry_id: string; kind: InflectionKind }; examples?: string[]; ai_suggestion?: boolean; ipa?: string | null;
 };
-export type QuickAddInput = { groupId: string; senseId?: string; newWord?: NewWord; sentence?: string };
+/** `groupIds` holds at least one id, without duplicates; the first group's link is the one reported in the result. */
+export type QuickAddInput = { groupIds: string[]; senseId?: string; newWord?: NewWord; sentence?: string };
 export type QuickAddResult = {
   item_id: string; sense_id: string; created_item: boolean; created_word: boolean; sentence_id: string | null;
 };
@@ -46,20 +48,19 @@ export class QuickAddService {
     @Inject(ContentService) private readonly content: ContentService,
     @Inject(GroupsService) private readonly groups: GroupsService,
     @Inject(ItemsService) private readonly items: ItemsService,
+    @Optional() @Inject(PRIVATE_SENSES_CLEANUP) private readonly privateSensesCleanup?: PrivateSensesCleanup,
   ) {}
 
   /** B3#8, B3#9: private word, sentence, item and group link in one transaction — any refusal stores nothing (B3E11). */
   async quickAdd(userId: string, nativeLanguage: 'vi' | 'en', input: QuickAddInput): Promise<QuickAddResult> {
     const profile = await this.identity.getProfile(userId);
     if (!profile) throw notFound();
-    if (input.senseId !== undefined && !(await this.content.visibleSenseIds(userId, [input.senseId])).has(input.senseId)) {
-      await this.groups.assertOwned(this.prisma, userId, input.groupId);
-      throw notFound();
-    }
-    return contentProblems(() => this.prisma.$transaction(async (tx) => {
+    const result = await contentProblems(() => this.prisma.$transaction(async (tx) => {
       // Learning's lock first, then Content's owner lock inside createPrivateSense: the same order as deleteMyWord.
       await withLearnerLock(tx, userId);
-      await this.groups.assertOwned(tx, userId, input.groupId);
+      for (const groupId of input.groupIds) await this.groups.assertOwned(tx, userId, groupId);
+      // B3-5: the visibility read happens under the lock and on this transaction, not before it.
+      if (input.senseId !== undefined && !(await this.content.visibleSenseIds(userId, [input.senseId], tx)).has(input.senseId)) throw notFound();
       let senseId = input.senseId!;
       const word = input.newWord;
       if (word) {
@@ -67,10 +68,13 @@ export class QuickAddService {
           ownerId: userId, lemma: word.lemma, pos: word.pos ?? null, meaning: { text: word.meaning, language: nativeLanguage },
           level: word.level ?? null, topicCodes: word.topics ?? [],
           formOf: word.form_of ? { entryId: word.form_of.entry_id, kind: word.form_of.kind } : null,
+          examples: word.examples ?? [], aiSuggestion: word.ai_suggestion ?? false, ipa: word.ipa ?? null,
         })).senseId;
       }
       const today = localDate(profile.timezone, this.clock.now());
-      const item = await this.items.linkInTx(tx, userId, input.groupId, senseId, today);
+      const links = [];
+      for (const groupId of input.groupIds) links.push(await this.linkOrNameFullGroup(tx, userId, groupId, senseId, today));
+      const item = links[0];
       const sentence = input.sentence === undefined ? null
         : await this.content.addSentence(tx, { userId, senseId, text: input.sentence });
       return {
@@ -78,6 +82,24 @@ export class QuickAddService {
         sentence_id: sentence?.id ?? null,
       };
     }, transactionOptions));
+    // After the commit (round C): the recordings of a new private word; a failure here never undoes the add.
+    if (result.created_word) await this.content.ensureAudio([result.sense_id]);
+    return result;
+  }
+
+  /** QP1: a full group refuses the whole add; the problem names that group in the `group_id` extension (machine-readable, final review I2). */
+  private async linkOrNameFullGroup(tx: Prisma.TransactionClient, userId: string, groupId: string, senseId: string, today: string) {
+    try {
+      return await this.items.linkInTx(tx, userId, groupId, senseId, today);
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.problemType === 'group-full') {
+        throw new ProblemDetailsException({
+          status: 409, title: 'Group full', type: 'group-full',
+          detail: 'One of the chosen groups is full.', extensions: { group_id: groupId },
+        });
+      }
+      throw error;
+    }
   }
 
   /** B3E17 / CR23: the private entry with its senses and sentences, plus their items, group links and log rows. */
@@ -85,6 +107,8 @@ export class QuickAddService {
     await contentProblems(() => this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       const { senseIds } = await this.content.deletePrivateEntryContent(tx, userId, entryId);
+      // Practice's rows go before the items: the port locks practice rows, and nothing may hold a Learning item first.
+      await this.privateSensesCleanup?.deleteForSenses(tx, userId, senseIds);
       await tx.learningItem.deleteMany({ where: { userId, senseId: { in: senseIds } } });
       await tx.learningLogEntry.deleteMany({ where: { userId, senseId: { in: senseIds } } });
     }, transactionOptions));

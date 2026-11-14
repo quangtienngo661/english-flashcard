@@ -4,7 +4,7 @@ import { FakeClock } from '../clock/clock.js';
 import { AppLogger, type LogEntry } from '../logging/app-logger.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import { MailBudget, mailLimit, REMINDER_MAIL_SHARE } from './mail-budget.service.js';
+import { MailBudget, mailLimit, PAYMENT_MAIL_SHARE, REMINDER_MAIL_SHARE } from './mail-budget.service.js';
 
 function setup(budget = 2) {
   const config = testConfig({ mailDailyBudget: budget, mailBudgetKey: 'test' });
@@ -105,5 +105,10 @@ describe('MailBudget', () => {
     expect(mailLimit(1500, REMINDER_MAIL_SHARE)).toBe(1200);
     expect(mailLimit(1, 0.8)).toBe(0);
     expect(mailLimit(10, 1)).toBe(10);
+  });
+
+  it('R18: entitlement emails get their own 95% ceiling, above the reminders', () => {
+    expect(PAYMENT_MAIL_SHARE).toBe(0.95);
+    expect(mailLimit(1500, PAYMENT_MAIL_SHARE)).toBe(1425);
   });
 });

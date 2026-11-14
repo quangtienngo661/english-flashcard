@@ -292,3 +292,70 @@ Claude đề xuất cụ thể "test thành công": CI xanh trên PR (lint, type
 **Cách làm kỹ thuật — phiên luyện lưu ở đâu (chủ dự án, 18/10/2026): hướng 1 chốt** — server giữ phiên (bảng phiên luyện; app xin
 "câu tiếp theo" và "tổng kết"). Kiểm code 18/10: Settings có nhóm cài đặt kèm khoảng cho phép (`settings.definitions.ts`); có sẵn
 `MaintenanceScheduler` cho job dọn hằng ngày (đang dọn `idempotency-keys`).
+
+**Đọc lại các lưu ý của design (chủ dự án, 18/10/2026):**
+- **⚠1, ⚠2 → đổi lớn:** đáp án nhiễu **chỉ lấy trong phạm vi nhóm**, không cần lấy từ catalog; từ riêng thì lấy trong từ riêng, được
+  thì thêm từ catalog, nhưng "các đáp án nên phạm vi trong một nhóm từ đó thôi cũng được, dễ quản lý hơn". Chưa rõ: nguồn không theo
+  nhóm (Hôm nay, Ôn tất cả, Từ hay sai, Đang ưu tiên) lấy phạm vi nào; còn cần cột `synonyms` không.
+- **⚠3:** khi làm đúng, **vẫn giữ nút "Cần ôn tập"** nếu người học muốn ôn lại.
+- **⚠5:** chủ dự án xin phân tích sâu hơn mục 8–14.
+- **⚠6:** chủ dự án hỏi admin có chỉnh được toàn bộ các con số không.
+- **⚠8 (chốt):** giữ cách chủ dự án trả lời trước; khi cần Claude đề xuất, chủ dự án sẽ nói ngay trong câu đó.
+- **⚠9:** chủ dự án xin kiểm trạng thái Bước 3.
+- **⚠10:** nếu thuộc Bước 7 thì lưu lại, không thì phân tích sâu.
+- **⚠11 (chốt):** đề bài hiện loại từ; "phải đúng ngữ pháp nữa chứ không phải đúng từ rồi thôi".
+- **⚠12 (chốt):** bảng sắp xếp mặc định.
+- ⚠4, ⚠7: chưa trả lời.
+
+**Đọc lại lưu ý, vòng 2 (chủ dự án, 18/10/2026):**
+- **Bước 3 xong phần hệ thống** (chủ dự án báo); giao diện làm riêng, không theo plan đã đưa.
+- **⚠3 (mới):** gõ **sai** → hai nút **"Làm lại"** và "Cần ôn tập"; gõ **đúng** → "Đã biết" và "Cần ôn tập". "Làm lại" khác chốt cũ
+  "sai thì hiện đáp án, sang câu tiếp, không thử lại cùng câu (F40)" → Claude hỏi lại.
+- **⚠6 (chốt):** admin chỉnh được toàn bộ các con số trong danh sách; giữ cố định đáp án ≤ 100 ký tự và ghi chú ≤ 300 ký tự.
+- **⚠10 (chốt):** ba luật soạn nội dung thuộc Bước 4 (việc ngoài app).
+- **Mục 8, 9, 10, 11 (chốt):** từ hay sai chỉ gồm từ còn đang học, thứ tự và lý do; lịch sử; báo lỗi (báo được trước khi trả lời, 20 lần
+  mỗi giờ, staff không thấy danh tính); phiên bỏ ngang 24 giờ tự đóng; admin đổi cài đặt thì phiên đang mở giữ số cũ.
+- **Hai máy cùng nộp (chốt):** cái tới trước được ghi, còn lại bị chặn.
+- **Cột `synonyms`:** chủ dự án "với mình thì không" cần, nhờ Claude kiểm lại khi đáp án nhiễu đã lấy trong nhóm.
+- Chưa hiểu, Claude giải thích lại: báo cáo chưa xử lý được giữ; mục 12 quyền; "bấm nút sai lúc"; nguồn trống; (a) phạm vi cho nguồn
+  không theo nhóm; (b) bộ lọc loại từ, level. Chủ dự án kể Quizlet: nội dung bị xóa giữa lúc học thì vẫn học tiếp, tải lại trang mới báo
+  không tìm thấy.
+
+**Vòng 3 đọc lại lưu ý (chủ dự án, 18/10/2026):**
+- Báo cáo chưa xử lý giữ lại kèm bản sao: ok.
+- **(a) Phạm vi đáp án nhiễu (chốt): các nhóm chứa từ đang hỏi.**
+- **(b) Bỏ bộ lọc** loại từ, level (chốt): "thêm bộ lọc thì phức tạp hơn mà không tối ưu được".
+- **⚠3 (đổi):** gõ sai thì **không hiện đáp án ngay** (có thể chỉ gõ nhầm); thay bằng nút **"Bỏ qua"** (tên tạm): khi bí thì bấm để hiện
+  đáp án và lưu từ vào danh sách để học. Claude hỏi chi tiết (số lần làm lại, cách tính lượt, "lưu vào danh sách" là gì).
+
+**⚠14 — Làm lại, Bỏ qua (chủ dự án, 18/10/2026, chốt):**
+- Số lần làm lại: **admin chỉnh N; để trống là không giới hạn**.
+- Sai rồi làm lại mới đúng: **tính là đúng**.
+- Bỏ qua: **chỉ hiện đáp án, kèm nút "Cần ôn tập"** để người học tự bấm.
+- Trắc nghiệm sai: **báo sai, hiện đáp án ngay**, "sau đó đưa vào từ đang sai hoặc cần ôn tập" (Claude hỏi lại: tự động hay người học bấm,
+  vì D16 chỉ cho người học đổi mức). Chủ dự án xin nhắc lại dạng đúng/sai là gì.
+- **⚠15 (chốt): (a)** — giữ D16: trắc nghiệm, đúng/sai sai thì hiện nút "Cần ôn tập" nổi bật để người học tự bấm; câu sai tự tính vào
+  "từ hay sai". Đúng/sai xử lý như trắc nghiệm (sai thì hiện đáp án ngay; Claude hiểu từ câu "ok", chưa được nói riêng).
+
+**4 điểm cuối, vòng 1 (chủ dự án, 18/10/2026):**
+- **⚠13:** "đề không ghi loại từ luôn bạn, chỉ cần hiện câu bỏ trống cái từ cần điền thôi" → Claude hỏi lại: đề là câu có chỗ trống (câu ví dụ
+  catalog, không AI) hay vẫn là nghĩa tiếng Việt chỉ bỏ loại từ; áp cho dạng nào (⚠11 đã chốt đề gõ từ hiện loại từ).
+- **⚠3:** chủ dự án xin bối cảnh của trang tổng kết.
+- **⚠5, tải lại trang:** chủ dự án muốn **làm như Quizlet**.
+- **⚠4:** chủ dự án hỏi trường hợp người học muốn học sớm hơn lịch: "chỉ cần đưa vào danh sách đã biết thôi" → Claude giải thích D19 (Bước 3:
+  "Đã biết" trước hạn không đổi gì) và hỏi lại.
+
+**4 điểm cuối, vòng 2 (chủ dự án, 18/10/2026, chốt):**
+- **Tải lại trang như Quizlet:** đang làm dở vẫn chấm bình thường; tải lại hoặc xin câu tiếp thì từ đã gỡ/bỏ/xóa báo "Không tìm thấy từ
+  này", câu đó không tính, sang câu sau; phiên Theo nhóm mà nhóm đã xóa thì báo "Không tìm thấy nhóm này" và kết thúc phiên.
+- **⚠13: thiết kế cả hai kiểu đề:** kiểu A (nghĩa → chọn từ) và kiểu B (câu ví dụ catalog bỏ trống → chọn từ, không AI). Cách đưa cho
+  người học: Claude hỏi tiếp.
+- **⚠11 đổi: đề không hiện loại từ** (mọi dạng).
+- **⚠4: giữ D19 tạm thời** (chưa tới hạn thì không hiện "Đã biết"); khi demo có vấn đề sẽ sửa.
+- **⚠3: tổng kết chỉ một danh sách "Cần ôn tập: từ A, từ B, từ C…"**, không phân loại.
+- **⚠16 (chốt): cách 3** — vẫn ba dạng bài (trắc nghiệm, đúng/sai, gõ từ), thêm lựa chọn "Kiểu đề: theo nghĩa / theo câu / trộn" khi mở
+  phiên (Claude mô phỏng ba cách trước khi chủ dự án chọn). Claude hiểu: gõ từ cũng theo kiểu đề đã chọn (như mô phỏng); đúng/sai luôn theo
+  nghĩa; từ không có câu ví dụ thì về theo nghĩa (chờ xác nhận).
+- **Xác nhận cuối (chủ dự án, 18/10/2026: "ok"):** gõ từ theo kiểu đề; đúng/sai luôn theo nghĩa, sai thì hiện đáp án ngay; kiểu đề mặc định
+  "Trộn" (50/50 khi có câu ví dụ); tổng kết mỗi từ có nút "Cần ôn tập" và nút "Đưa tất cả vào ưu tiên"; mục 12 kiểm quyền (luôn cho phép,
+  hỏi khi bắt đầu phiên và khi tạo mỗi câu, không hỏi lúc chấm). → Design chốt hết.

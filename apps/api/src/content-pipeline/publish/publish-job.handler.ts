@@ -10,6 +10,7 @@ import { BackgroundJobsService } from '../jobs/background-jobs.service.js';
 import { JobHandlerRegistry } from '../jobs/job-handler.registry.js';
 import { LeaseLostError, type JobContext, type JobHandler } from '../jobs/job-types.js';
 import { withTransientRetry } from '../jobs/transient-retry.js';
+import { recountPublishJob } from './publish-counters.js';
 
 @Injectable()
 export class PublishJobHandler implements JobHandler, OnModuleInit {
@@ -39,6 +40,8 @@ export class PublishJobHandler implements JobHandler, OnModuleInit {
           where: { jobId: ctx.jobId, outcome: 'pending' }, orderBy: { senseId: 'asc' }, select: { senseId: true },
         });
         for (const { senseId } of pending) {
+          // A cancel bumps the lease epoch, so this ctx.tx throws LeaseLostError before the next sense: the loop ends
+          // there (rethrown below, swallowed by the runner). Senses already published stay published.
           await withTransientRetry(() => ctx.tx(async (tx) => {
             const where = { jobId_senseId: { jobId: ctx.jobId, senseId } };
             const item = await tx.publishJobItem.findUniqueOrThrow({ where });
@@ -47,7 +50,9 @@ export class PublishJobHandler implements JobHandler, OnModuleInit {
             // The job's FOR SHARE fence stays held throughout Content's existing entry transaction.
             // If a crash occurs after publication but before this outcome commits, Content's
             // idempotent publishItem returns already_published on recovery.
-            const result = await this.content.publishItem({ senseId, revision: item.revisionNo }, actor.createdBy);
+            const result = await this.content.publishItem({ senseId, revision: item.revisionNo }, actor.createdBy, {
+              skipUnpublished: true,
+            });
             await tx.publishJobItem.update({ where, data: {
               outcome: result.outcome, reason: result.outcome === 'refused' ? result.reason : null,
             } });
@@ -75,17 +80,6 @@ export class PublishJobHandler implements JobHandler, OnModuleInit {
   }
 
   private saveReport(ctx: JobContext) {
-    return ctx.tx(async (tx) => {
-      const outcomes = await tx.publishJobItem.groupBy({ by: ['outcome'], where: { jobId: ctx.jobId }, _count: { _all: true } });
-      const counts = { processed: 0, pending: 0, published: 0, already_published: 0, refused: 0 };
-      for (const { outcome, _count } of outcomes) {
-        if (outcome === 'pending' || outcome === 'published' || outcome === 'already_published' || outcome === 'refused') {
-          counts[outcome] = _count._all;
-        }
-      }
-      counts.processed = counts.published + counts.already_published + counts.refused;
-      await tx.publishJob.update({ where: { id: ctx.jobId }, data: { counters: counts } });
-      return counts;
-    });
+    return ctx.tx((tx) => recountPublishJob(tx, ctx.jobId));
   }
 }

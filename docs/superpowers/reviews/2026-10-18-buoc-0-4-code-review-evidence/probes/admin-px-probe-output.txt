@@ -1,0 +1,17 @@
+# Probe output, 18/10/2026 (review worktrees; files: admin-session.zz-review-probes.test.ts, practice-distractors.zz-review-probes.spec.ts)
+
+## apps/admin @ dc4cbe0 — pnpm exec vitest run src/auth/zz-review-probes.test.ts (4 passed)
+AD1 request error is ApiError: true
+AD1 POST /v1/auth/logout sent: 1
+AD1 this tab state: {"status":"signed-out","notice":"expired"}
+AD1 other tab state: {"status":"signed-out","notice":null}
+AD1-start state after refresh 503 at page start: {"status":"signed-out","notice":null}
+AD2 logout sent: 1 threw: false state: {"status":"signed-out","notice":null}
+AD2 after reload: {"status":"signed-in"}
+AD8 state right after logout: signed-out
+AD8 state after the slow /me returned: signed-in hasAccessToken: false
+
+## apps/api @ PR #48 head 70d6e8e (practice files identical at 30e0fff) — pnpm exec vitest run src/practice/questions/zz-review-probes.spec.ts (3 passed)
+PX1a kept distractors: ["quick:nhanh trí","slow:chậm"]
+PX1a (swapped order) kept distractors: ["quick:nhanh trí"]
+PX1b kept candidates: ["arrange:sắp xếp, bố trí"]

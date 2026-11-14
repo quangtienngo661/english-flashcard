@@ -36,6 +36,7 @@ export function RevertDialog({ batchId, fileName, onClose, onReverted }: Props) 
       {action.error && (
         <Banner
           variant="error"
+          code={action.error.code}
           action={
             action.canRetry ? (
               <Button variant="secondary" onPress={() => void action.submit()}>
@@ -44,7 +45,7 @@ export function RevertDialog({ batchId, fileName, onClose, onReverted }: Props) 
             ) : undefined
           }
         >
-          {action.error}
+          {action.error.message}
         </Banner>
       )}
     </Dialog>

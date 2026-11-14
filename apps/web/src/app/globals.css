@@ -1,88 +1,215 @@
 @import 'tailwindcss';
-@import '@wordmet/design-tokens/theme.css';
+/* The app's tokens (design giao diện mới §7.1): the `wm-` set; dark values apply only under <html data-theme='dark'>. theme.css is
+   admin's only since the polish round (P.6). */
+@import '@wordmet/design-tokens/web.css';
+@import '@wordmet/design-tokens/web-dark.css';
 
+/* Font tokens of the new UI (design §5.8). `inline`, so the var() resolves where the utility is used, under the next/font class on <html>;
+   the names avoid theme.css's --font-sans (admin) and Tailwind's --font-mono. */
+@theme inline {
+  --font-wm-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-wm-display: var(--font-bricolage), var(--font-noto-sans), sans-serif;
+}
+
+/* Dialog and sheet motion of the new UI (GM15, motion §5–§6): enter on the main curve, close in 150ms on the accelerating one. */
 @theme {
-  /* Type: rem; display/cta/h2 scale fluidly between 390px and 1440px (spec §6.1). */
-  --text-display: clamp(2.25rem, 1.6929rem + 2.2857vw, 3.75rem);
-  --text-display--line-height: 1.1;
-  --text-display--letter-spacing: -0.02em;
-  --text-cta: clamp(1.75rem, 1.3786rem + 1.5238vw, 2.75rem);
-  --text-cta--line-height: 1.15;
-  --text-cta--letter-spacing: -0.015em;
-  --text-h2: clamp(1.75rem, 1.4714rem + 1.1429vw, 2.5rem);
-  --text-h2--line-height: 1.18;
-  --text-h2--letter-spacing: -0.015em;
-  --text-title-lg: 1.5rem;
-  --text-title-lg--line-height: 1.25;
-  --text-h3: 1.375rem;
-  --text-h3--line-height: 1.3;
-  --text-title: 1.25rem;
-  --text-title--line-height: 1.3;
-  --text-lead: 1.1875rem;
-  --text-lead--line-height: 1.5;
-  --text-subtitle: 1.125rem;
-  --text-subtitle--line-height: 1.5;
-  --text-body-lg: 1.0625rem;
-  --text-body-lg--line-height: 1.5;
-  --text-body: 1rem;
-  --text-body--line-height: 1.5;
-  --text-label: 0.9375rem;
-  --text-label--line-height: 1.5;
-  --text-small: 0.875rem;
-  --text-small--line-height: 1.4;
-  --text-caption: 0.8125rem;
-  --text-caption--line-height: 1.3;
+  --animate-wm-overlay-in: wm-fade-in 200ms var(--ease-wm-out-strong);
+  --animate-wm-dialog-in: wm-dialog-in 240ms var(--ease-wm-out-strong);
+  --animate-wm-sheet-in: wm-sheet-in 240ms var(--ease-wm-out-strong);
+  --animate-wm-pop-out: wm-pop-out 150ms var(--ease-wm-close) forwards;
+  /* The group picker (motion doc §3): from a little above, smaller and blurred, 220ms on the main curve. */
+  --animate-wm-picker-in: wm-picker-in 220ms var(--ease-wm-out);
 
-  /* Max widths (rem); Figma fixed widths become maxima (spec §6.4). */
-  --container-content: 70rem;
-  --container-cta: 62.5rem;
-  --container-faq: 50rem;
-  --container-heading: 47.5rem;
-  --container-prose: 40rem;
-  --container-practice: 35rem;
-  --container-copy: 31.25rem;
-  --container-aside: 30rem;
-
-  /* Sticky header (from md): its min height doubles as the page's scroll padding (UB16, WCAG 2.4.11). */
-  --spacing-header: 4.5rem;
-
-  /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
-  --transition-duration-faq: 250ms;
-
-  /* Practice card (design §5.2). Used only through motion-safe:, so reduced motion never declares them. */
-  --animate-card-in: card-in var(--transition-duration-slow) var(--ease-spring) both;
-  --animate-wiggle: wiggle var(--motion-wiggle) var(--ease-standard);
-  --animate-pop: pop var(--motion-pop) var(--ease-spring);
-
-  @keyframes card-in {
+  @keyframes wm-picker-in {
     from {
       opacity: 0;
-      transform: translateY(2rem) rotate(3deg);
+      transform: translateY(-6px) scale(0.97);
+      filter: blur(6px);
     }
   }
 
-  @keyframes wiggle {
-    25% {
-      transform: rotate(-6deg);
-    }
-    50% {
-      transform: rotate(5deg);
-    }
-    75% {
-      transform: rotate(-2deg);
+  @keyframes wm-fade-in {
+    from {
+      opacity: 0;
     }
   }
 
-  @keyframes pop {
-    40% {
-      transform: scale(1.12);
+  @keyframes wm-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+  @keyframes wm-sheet-in {
+    from {
+      opacity: 0.4;
+      transform: translateY(3.75rem);
+    }
+  }
+  @keyframes wm-pop-out {
+    to {
+      opacity: 0;
     }
   }
 }
 
-/* The practice card leans slightly on wide screens and stands upright on phones (design §5.1). */
-@utility tilt-card {
-  rotate: -1.5deg;
+/* Phones blur less during scene changes (design §8.1): at most 12px. Outside @theme, which holds only variables and keyframes. */
+@media (width < 48rem) {
+  :root {
+    --blur-wm-lg: 12px;
+  }
+}
+
+/* The kit's small motions, moved from the old @theme block in the polish round (P.6) with their timings unchanged: menus and
+   popovers, toasts, the theme button, the practice card and answer feedback, the end-of-session summary and the streak flame.
+   Used through motion-safe:, or stopped by the reduced-motion rule at the end of @layer base. */
+@theme {
+  --animate-wm-menu-in: wm-menu-in 200ms var(--ease-wm-enter) both;
+  --animate-wm-menu-in-up: wm-menu-in-up 200ms var(--ease-wm-enter) both;
+  --animate-wm-menu-out: wm-fade-out 150ms var(--ease-wm-exit) both;
+  --animate-wm-toast-in: wm-toast-in 300ms var(--ease-wm-spring) both;
+  /* Theme button (owner 27/10/2026): the old icon flies up and out while the new one rises into place. */
+  --animate-wm-theme-icon-in: wm-theme-icon-in 250ms var(--ease-wm-enter) both;
+  --animate-wm-theme-icon-out: wm-theme-icon-out 250ms var(--ease-wm-exit) both;
+  /* Learner sessions (owner 27/10/2026, docs/audit/2026-10-26-motion-nguoi-hoc.md): next card, answer feedback, the wiggle (300ms). */
+  --animate-wm-bar-grow: wm-bar-grow 700ms var(--ease-wm-out) both;
+  --animate-wm-card-rise: wm-card-rise 200ms var(--ease-wm-enter) both;
+  --animate-wm-feedback-in: wm-feedback-in 160ms var(--ease-wm-enter) both;
+  /* F.14: the result ticket slides down from under the question card (or the hint box), ease-out with no overshoot. */
+  --animate-wm-panel-drop: wm-panel-drop 420ms var(--ease-wm-out) both;
+  --animate-wm-wiggle-soft: wm-wiggle-soft 300ms var(--ease-wm-standard);
+  --animate-wm-pop-in: wm-pop-in 180ms var(--ease-wm-spring) both;
+  /* End-of-session summary: its blocks rise one after another, 90ms apart, 400ms each (design §8.3, GM20). */
+  --animate-wm-summary-in: wm-summary-in 400ms var(--ease-wm-enter) both;
+  /* Đợt C DC9: the streak toast's flame bounces once, from its base, just after the pill lands (once a day, so it may delight). */
+  --animate-wm-streak-flame: wm-streak-flame 400ms var(--ease-wm-spring) 120ms both;
+
+  @keyframes wm-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes wm-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+  }
+  @keyframes wm-menu-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+  @keyframes wm-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.9rem) scale(0.96);
+    }
+  }
+  @keyframes wm-theme-icon-in {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+  @keyframes wm-theme-icon-out {
+    to {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+  @keyframes wm-bar-grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes wm-card-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+  @keyframes wm-feedback-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+  @keyframes wm-panel-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-2.25rem);
+    }
+  }
+  @keyframes wm-wiggle-soft {
+    25% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(2.5deg);
+    }
+    75% {
+      transform: rotate(-1deg);
+    }
+  }
+  @keyframes wm-pop-in {
+    from {
+      transform: scale(0.8);
+    }
+  }
+  @keyframes wm-summary-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+  @keyframes wm-streak-flame {
+    0% {
+      transform: scale(0.9);
+    }
+    55% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+
+/* A popover opened above its trigger slides up instead of down (from apps/admin). */
+@custom-variant placement-top (&[data-placement='top']);
+
+/* A closing toast fades down (motion audit #5). React Aria removes a toast at once, so ui/Toast.tsx closes it inside a view
+   transition and these rules animate only the toasts. The page is left out of the transition (no root snapshot) and clicks pass through
+   the overlay, so it stays live and clickable meanwhile. The app has no other view transition; one added later must name its own parts. */
+:root {
+  view-transition-name: none;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(.toast) {
+  animation-duration: 150ms;
+  animation-timing-function: var(--ease-wm-standard);
+}
+
+::view-transition-old(.toast):only-child {
+  animation: wm-toast-out 150ms var(--ease-wm-exit) forwards;
+}
+
+@keyframes wm-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* Phone bars fixed to the bottom keep clear of the home indicator. */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @utility no-scrollbar {
@@ -92,76 +219,181 @@
   }
 }
 
-/* Animate the native disclosure in both directions; older browsers keep the normal details behavior. */
-@supports (interpolate-size: allow-keywords) and selector(::details-content) {
-  .faq-item {
-    interpolate-size: allow-keywords;
+/* The app background of the new UI, "Mesh + hạt" (owner 10/11/2026, QBG; Figma "Nền app/Mesh hạt" 95:315, 95:321): four halos (navy top
+   left, yellow top right, green bottom right, light navy bottom left) under a grain layer. Colours only through tokens. The grain is an
+   SVG turbulence filter in a data: URI (CSP img-src allows data:). */
+@utility app-mesh {
+  background-color: var(--color-wm-bg);
+  background-image:
+    radial-gradient(38% 32% at 14% 8%, color-mix(in oklab, var(--color-wm-accent) 20%, transparent), transparent 70%),
+    radial-gradient(34% 30% at 90% 14%, var(--color-wm-halo-mark), transparent 70%),
+    radial-gradient(40% 34% at 76% 94%, color-mix(in oklab, var(--color-wm-pass) 18%, transparent), transparent 70%),
+    radial-gradient(34% 34% at 4% 92%, color-mix(in oklab, var(--color-wm-accent) 12%, transparent), transparent 70%);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.4;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.27 0 0 0 .45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
-
-  .faq-item::details-content {
-    block-size: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition:
-      block-size var(--transition-duration-faq) var(--ease-standard),
-      opacity var(--transition-duration-faq) var(--ease-standard),
-      content-visibility var(--transition-duration-faq) allow-discrete;
-  }
-
-  .faq-item[open]::details-content {
-    block-size: auto;
-    opacity: 1;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .faq-item::details-content {
-      transition: none;
-    }
+  /* Dark: the same turbulence without the colour matrix (mockup --grain-raw), blended with soft-light so it grains the page without lightening it. */
+  html[data-theme='dark'] &::before {
+    mix-blend-mode: soft-light;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
 }
 
+/* F.14: the result ticket's perforation (drawing panelC): a 1.5 px dashed line across the panel at 40 % of the text colour (set fail or
+   pass on the element). The negative margin is the panel's px-6. */
+@utility ticket-perf {
+  position: relative;
+  height: 0;
+  margin-inline: -1.5rem;
+  border-top: 1.5px dashed color-mix(in oklab, currentColor 40%, transparent);
+}
+/* Its two 16 px notches, cut out of the panel's sides at --ticket-perf-y (set by ResultTicket), so whatever is behind the panel shows
+   through. Until it is measured the circles sit above the panel and cut nothing. */
+@utility ticket-cut {
+  mask:
+    radial-gradient(circle 0.5rem at 0 var(--ticket-perf-y, -2rem), transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 0.5rem at 100% var(--ticket-perf-y, -2rem), transparent 98%, #000) right / 51% 100% no-repeat;
+}
+
+/* The two soft glows behind the centred sign-in card (Figma 36:385 "Quầng sáng": navy above left, yellow below right; P.14 strength from
+   mockup L452-456). */
+@utility auth-card-glow {
+  background-image:
+    radial-gradient(ellipse 50% 45% at 30% 30%, var(--color-wm-card-glow-accent), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 75% 70%, var(--color-wm-halo-mark), transparent 70%);
+  filter: blur(var(--blur-wm-md));
+}
+
+/* The ground of the sign-in and sign-up panel (P.14, mockup L432-443): accent 13 % on bg under four glows (navy top left, yellow top right,
+   green bottom right, navy bottom left). Dark values come from web-dark.css. */
+@utility auth-showcase-ground {
+  background-color: var(--color-wm-showcase-ground);
+  background-image:
+    radial-gradient(46% 36% at 18% 14%, var(--color-wm-showcase-glow-1), transparent 70%),
+    radial-gradient(40% 30% at 88% 10%, var(--color-wm-showcase-glow-2), transparent 70%),
+    radial-gradient(52% 40% at 82% 92%, var(--color-wm-showcase-glow-3), transparent 70%),
+    radial-gradient(46% 40% at 8% 86%, var(--color-wm-showcase-glow-4), transparent 70%);
+}
+
+/* Motion of the panel's learning loop (P.14, mockup L425-430, L444-451). `inline` so var(--wm-travel-delay) and var(--wm-travel-laps)
+   resolve on each travelling word, which sets its own. Transform and opacity only, plus offset-distance on the memory path; AuthShowcase
+   leaves every class off with reduced motion and draws the final frame. Since T10 (QA7) each word makes one lap and a part (`laps`, a
+   fractional iteration count) and keeps the frame it stops on (`forwards`): its still point, the reduced-motion frame. */
+@theme inline {
+  --animate-wm-showcase-travel: wm-showcase-travel 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-1: wm-showcase-level-1 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-2: wm-showcase-level-2 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-3: wm-showcase-level-3 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-4: wm-showcase-level-4 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-level-5: wm-showcase-level-5 14s linear var(--wm-travel-delay, 0s) var(--wm-travel-laps, 1) forwards;
+  --animate-wm-showcase-swap: wm-showcase-swap 340ms var(--ease-wm-out-strong) both;
+  --animate-wm-showcase-drop: wm-showcase-drop 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  --animate-wm-showcase-caret: wm-showcase-caret 1s steps(1) infinite;
+  --animate-wm-showcase-key: wm-showcase-key 380ms var(--ease-wm-out-strong) both;
+}
+
+@keyframes wm-showcase-travel {
+  from {
+    offset-distance: 2%;
+  }
+  to {
+    offset-distance: 98%;
+  }
+}
+/* The travelling word's square steps through the level colours: one layer per level fades in at its fifth of the path (mockup L430). */
+@keyframes wm-showcase-level-1 {
+  0%, 16% { opacity: 0; }
+  20%, 100% { opacity: 1; }
+}
+@keyframes wm-showcase-level-2 {
+  0%, 36% { opacity: 0; }
+  40%, 100% { opacity: 1; }
+}
+@keyframes wm-showcase-level-3 {
+  0%, 56% { opacity: 0; }
+  60%, 100% { opacity: 1; }
+}
+@keyframes wm-showcase-level-4 {
+  0%, 76% { opacity: 0; }
+  80%, 100% { opacity: 1; }
+}
+@keyframes wm-showcase-level-5 {
+  0%, 91% { opacity: 0; }
+  95%, 100% { opacity: 1; }
+}
+@keyframes wm-showcase-swap {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(6px);
+  }
+}
+@keyframes wm-showcase-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-40%);
+  }
+}
+@keyframes wm-showcase-caret {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes wm-showcase-key {
+  40% {
+    transform: scale(0.86);
+  }
+}
 
 @layer base {
   html {
     scroll-behavior: smooth;
   }
 
-  /* From md the header is sticky: neither a Tab-focused element nor an anchor target may land under it
-     (WCAG 2.2 SC 2.4.11). Targets keep only their own small scroll-mt-4 on top of this. */
+  /* Owner 10/11/2026: on screens wider than 1440px the whole page scales with the width (everything in rem grows), no ceiling.
+     Softened the same day after a look at 1920×1080 ("hơi to"): 16px at 1440px, about 16.9px at 1920px, 18px at 2560px, about
+     20.3px at 3840px. Below 1440px nothing changes. Percent and rem keep the reader's own font size. */
+  @media (width > 90rem) {
+    html {
+      font-size: max(100%, 0.8393rem + 0.1786vw);
+    }
+  }
+
+  /* The header is sticky at every width: neither a Tab-focused element nor an anchor target may land under it (WCAG 2.2 SC 2.4.11).
+     Below md 60 px, the taller of the phone headers (the site's 60, the app's PhoneHeader 56; T14). From md 72 px, the taller of the two
+     headers (the site's 68, the app's TopBar 64). Targets keep only their own small scroll-mt-4 on top of this. */
+  html {
+    scroll-padding-top: --spacing(15);
+  }
   @media (width >= 48rem) {
     html {
-      scroll-padding-top: var(--spacing-header);
+      scroll-padding-top: --spacing(18);
     }
   }
 
   body {
-    background-color: var(--color-surface);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
+    background-color: var(--color-wm-surface);
+    color: var(--color-wm-ink);
+    font-family: var(--font-wm-sans);
     -webkit-font-smoothing: antialiased;
+    /* Every control draws its own focus ring and press state, so the grey flash a tap paints on mobile browsers is turned off. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   summary::-webkit-details-marker {
     display: none;
   }
 
+  /* The fallback ring of anything that draws none of its own; the kit's controls draw the same accent ring themselves. */
   :focus-visible {
-    outline: 3px solid var(--color-primary);
+    outline: 3px solid var(--color-wm-accent);
     outline-offset: 3px;
-  }
-
-  /* A primary ring would vanish on the blue field and a yellow one on the yellow band (contrast 5.24 both ways). */
-  .bg-primary :focus-visible {
-    outline-color: var(--color-accent);
-  }
-
-  .bg-accent :focus-visible {
-    outline-color: var(--color-primary);
-  }
-
-  /* White cards on the blue field (the practice card) go back to the blue ring: yellow on white is 1.38:1. */
-  .bg-primary .bg-surface :focus-visible {
-    outline-color: var(--color-primary);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -176,5 +408,973 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+/* Group stack (M3 Figma A §2.3, §4; GroupStack.tsx). One design drawn at 290×368 px ("Thẻ giữa", carousel centre) and scaled: every
+   length below is in em of that master at font-size 16px (px ÷ 16), and data-size sets the font-size (Figma widths ÷ 290 × 16). */
+.gstack {
+  position: relative;
+  width: 18.125em;
+  flex: none;
+  font-size: 1rem;
+}
+/* Room for the cards behind: how far the lowest one reaches below the face (its translateY less half its scale loss of 23em). */
+.gstack[data-layers='1'] { padding-bottom: 0.635em; }
+.gstack[data-layers='2'] { padding-bottom: 1.129em; }
+.gstack[data-layers='3'] { padding-bottom: 1.416em; }
+/* Hôm nay row: 176 px desktop, 150 px phone. */
+.gstack[data-size='today'] { font-size: 0.5173rem; }
+/* Một nhóm head: 210 px desktop, 150 px phone. */
+.gstack[data-size='page'] { font-size: 0.5173rem; }
+/* Carousel centre: 290 px desktop, 210 px phone. */
+.gstack[data-size='carousel'] { font-size: 0.7241rem; }
+@media (width >= 48rem) {
+  .gstack[data-size='today'] { font-size: 0.6069rem; }
+  /* Bản A (owner 13/11/2026): the Một nhóm stack at 240 px wide, a step larger than the 210 px phone carousel. */
+  .gstack[data-size='page'] { font-size: 0.8276rem; }
+  .gstack[data-size='carousel'] { font-size: 1rem; }
+}
+.gstack-face {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 23em;
+  flex-direction: column;
+  overflow: hidden;
+  border-width: 2px;
+  border-style: solid;
+  background: var(--color-wm-surface);
+  padding: 1.603em 1.743em 1.394em;
+  /* Tinted with the group colour like the prototype (vong 10 `.gc`), over a faint ink contact shadow. */
+  box-shadow:
+    var(--shadow-wm-contact),
+    0 2.23em 4.18em -2.65em color-mix(in srgb, var(--gstack-tone, var(--color-wm-ink)) 70%, transparent);
+  color: var(--color-wm-ink);
+}
+/* An empty group (no word): dashed, on its wash (mockup L487). */
+.gstack-face[data-empty] {
+  border-style: dashed;
+  background: var(--color-wm-group-empty-wash);
+}
+/* The cards behind (mockup L483-485, d1-d3): the face's size, lower, smaller, blurred and fainter. The mockup's em is 290/13 px; here
+   1em is 16 px at 290 px, so .95/1.8/2.5em become 1.325/2.509/3.486em and the 2.5/5/7 px blur is .156/.3125/.4375em. */
+.gstack-behind {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 23em;
+  border-width: 1.5px;
+  border-style: solid;
+  background: var(--color-wm-surface);
+}
+.gstack-behind[data-behind='1'] { transform: translateY(1.325em) scale(0.94); filter: blur(0.156em); opacity: 0.85; }
+.gstack-behind[data-behind='2'] { transform: translateY(2.509em) scale(0.88); filter: blur(0.3125em); opacity: 0.55; }
+.gstack-behind[data-behind='3'] { transform: translateY(3.486em) scale(0.82); filter: blur(0.4375em); opacity: 0.3; }
+.gstack-meta {
+  font-size: 1.0875em;
+  font-weight: 500;
+  color: var(--color-wm-muted);
+}
+.gstack-name {
+  margin-top: 0.35em;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+  font-family: var(--font-wm-display);
+  font-size: 2.858em;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.021em;
+}
+.gstack-grow { flex: 1; }
+.gstack-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 1.255em;
+  font-weight: 600;
+  color: var(--color-wm-muted);
+}
+.gstack-count b {
+  font-family: var(--font-wm-display);
+  font-size: 3em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.gstack-state {
+  font-family: var(--font-wm-display);
+  font-size: 1.6em;
+  font-weight: 800;
+}
+.gstack-foot {
+  margin-top: 0.7em;
+  border-top: 1px solid var(--color-wm-line);
+  padding-top: 0.6em;
+  overflow: hidden;
+  font-size: 1.144em;
+  color: var(--color-wm-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gstack-foot b {
+  font-family: var(--font-wm-display);
+  font-size: 1.12em;
+  font-weight: 700;
+  color: var(--color-wm-ink);
+}
+
+/* The Nhóm carousel "Vòng cung" (mockup L466-499, vong-7 L192-201; GroupCarousel.tsx). Each slot carries its arcSlot numbers inline:
+   --x (desktop) and --xp (phone) and --y in px of the 290 px master (turned into rem here, as the page scales on wide screens), --r in
+   degrees, --s, --o and --z; data-abs is |k|. Phones: 340 px track, one neighbour each side in reach; from 48rem: 450 px, two.
+   --gcar-step is the arc's horizontal step (step × 0.84), read by a press on the track to find the stack under it. */
+.gcar-track {
+  position: relative;
+  height: 21.25rem;
+  --gcar-step: 6.72rem;
+}
+@media (width >= 48rem) {
+  .gcar-track {
+    height: 28.125rem;
+    --gcar-step: 12.075rem;
+  }
+}
+.gcar-slot {
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  translate: -50% 0;
+  transform-origin: 50% 130%;
+  transform: translateX(calc(var(--xp) * 0.0625rem * var(--gk, 1))) translateY(calc(var(--y) * 0.0625rem * var(--gk, 1))) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+  opacity: var(--o);
+  z-index: var(--z);
+  transition:
+    transform var(--transition-duration-wm-carousel) var(--ease-wm-carousel),
+    opacity var(--transition-duration-wm-fade) var(--ease-wm-out);
+}
+@media (width >= 48rem) {
+  .gcar-slot {
+    top: 2.125rem;
+    transform: translateX(calc(var(--x) * 0.0625rem * var(--gk, 1))) translateY(calc(var(--y) * 0.0625rem * var(--gk, 1))) rotate(calc(var(--r) * 1deg)) scale(var(--s));
+  }
+}
+.gcar-slot[data-abs='3'] { pointer-events: none; }
+.gcar-slot .gstack {
+  transition: translate 300ms var(--ease-wm-out);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .gcar-slot[data-abs='0']:hover .gstack {
+    translate: 0 -8px;
+  }
+}
+.gcar-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+/* The glow behind the arc in the centre group's colour, its colour changing in 700ms. One radial that fades out inside its own box
+   (the mask), so no edge shows on any side (owner f01, 13/11/2026; drawing `.car .glowA`). */
+.gcar-glow {
+  /* Owner 13/11/2026 (artifact "Chồng thẻ và trang từ điển", N2 .glow): the glow lights the top of the page, centred, in the colour of
+     the centre group, and fades out downwards. Fixed to the viewport so no box edge can cut it (the carousel row clips sideways). */
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 40rem;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 50% at 50% 40%, color-mix(in srgb, currentColor 26%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, currentColor 7%, transparent), transparent 80%);
+  transition: color var(--transition-duration-wm-halo) var(--ease-wm-out);
+}
+.gcar-glow.border-wm-group-0 { color: var(--color-wm-group-0); }
+.gcar-glow.border-wm-group-1 { color: var(--color-wm-group-1); }
+.gcar-glow.border-wm-group-2 { color: var(--color-wm-group-2); }
+.gcar-glow.border-wm-group-3 { color: var(--color-wm-group-3); }
+.gcar-glow.border-wm-group-4 { color: var(--color-wm-group-4); }
+.gcar-glow.border-wm-group-5 { color: var(--color-wm-group-5); }
+.gcar-glow.border-wm-group-6 { color: var(--color-wm-group-6); }
+.gcar-glow.border-wm-group-empty { color: var(--color-wm-group-empty); }
+/* "Quầng màu nhóm" behind the Một nhóm head (GroupPage.tsx): a soft glow in the group's wash; its colour changes in 700ms. */
+.gcar-halo {
+  position: absolute;
+  inset: 0 8% 10%;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.9;
+  transition: background-color var(--transition-duration-wm-halo) var(--ease-wm-out);
+}
+/* The block under the arc rises in again for each group (mockup L939-945): rows 14px up, 460ms, 45ms apart. */
+@keyframes wm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.gcar-rise > * {
+  animation: wm-rise var(--transition-duration-wm-rise) var(--ease-wm-rise) both;
+}
+.gcar-rise > :nth-child(2) { animation-delay: 45ms; }
+.gcar-rise > :nth-child(3) { animation-delay: 90ms; }
+@media (prefers-reduced-motion: reduce) {
+  .gcar-slot,
+  .gcar-slot .gstack,
+  .gcar-glow,
+  .gcar-halo {
+    transition: none;
+  }
+  .gcar-rise > * {
+    animation: none;
+  }
+}
+
+/* Một nhóm opening from the carousel (motion doc §3, flip.ts): while the stack flies (FLIP 380ms), the other parts come in from
+   blur(12px) translateY(12px), 340ms, 60ms then 22ms apart. Closing: they dissolve in 150ms before the route changes. */
+@keyframes wm-page-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(12px);
+  }
+}
+@keyframes wm-page-out {
+  to {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+.wm-page-in [data-in] {
+  animation: wm-page-in var(--transition-duration-wm-page-in) var(--ease-wm-out) both;
+  animation-delay: 60ms;
+}
+.wm-page-in [data-in='1'] { animation-delay: 82ms; }
+.wm-page-in [data-in='2'] { animation-delay: 104ms; }
+.wm-page-out [data-in] {
+  animation: wm-page-out var(--transition-duration-wm-close) var(--ease-wm-close) forwards;
+}
+
+/* Tra từ "Từ hóa thẻ" (M4.5, Figma 85:3218, motion doc §4). The group stacks are the Nhóm card at about 0.55: 114 px desktop,
+   107 px phone. */
+.gstack[data-size='lookup'] { font-size: 5.9px; }
+@media (width >= 48rem) {
+  .gstack[data-size='lookup'] { font-size: 6.29px; }
+}
+.lk-stack {
+  transition: transform 250ms var(--ease-wm-out), opacity 250ms var(--ease-wm-out);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lk-stack:not(:disabled):hover { transform: translateY(-4px); }
+}
+.lk-stack:disabled { opacity: 0.55; cursor: default; }
+/* The paper page: warm white, a hairline border, the binding side less rounded. */
+/* Word page title (Figma 118:4413 / 118:4714): Bricolage ExtraBold 56 px on phones, 84 px from 768 px; no token holds these sizes. */
+.wd-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+@media (min-width: 48rem) {
+  .wd-title { font-size: 5.25rem; }
+}
+.lk-paper {
+  background: var(--color-wm-paper);
+  border: 1px solid var(--color-wm-paper-line);
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: var(--shadow-wm-paper);
+  color: var(--color-wm-ink);
+}
+.lk-rule { border-color: var(--color-wm-paper-line); }
+/* The entry whose card is lifted stays as a dashed hole; its text keeps full contrast (axe), unlike Figma's greyed text. */
+.lk-entry[aria-current='true'] {
+  outline: 1.5px dashed color-mix(in srgb, var(--color-wm-ink) 35%, transparent);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--color-wm-ink) 4%, transparent);
+}
+.lk-card { rotate: -1.5deg; box-shadow: var(--shadow-wm-paper-card); }
+.lk-card-behind { rotate: 1deg; translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
+@keyframes lk-card-in {
+  from { translate: 0 16px; scale: 0.92; filter: blur(10px); opacity: 0.5; }
+  to { translate: 0 0; scale: 1; filter: blur(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lk-card { animation: lk-card-in 300ms var(--ease-wm-out); }
+}
+
+/* Fit by height (owner f13, 13/11/2026): the stack, the track and the arc's offsets (--gk) shrink together on a short screen, so the title,
+   the carousel and the Below block fit 1280 x 800 and 1024 x 768 with no scroll. On a phone on its side (landscape, under 30rem high) Nhóm
+   turns into two columns: the carousel left, the Below block right (.gpage). */
+@media (width >= 48rem) and (height <= 51.25rem) {
+  .gstack[data-size='carousel'] { font-size: 0.7241rem; }
+  .gcar-track {
+    height: 21.25rem;
+    --gk: 0.7241;
+    --gcar-step: 8.745rem;
+  }
+  .gcar-slot { top: 1.5rem; }
+}
+@media (orientation: landscape) and (height <= 30rem) {
+  .gstack[data-size='carousel'] { font-size: 0.5173rem; }
+  .gcar-track {
+    height: 14rem;
+    --gk: 0.5173;
+    --gcar-step: 6.246rem;
+  }
+  .gcar-slot { top: 1rem; }
+  /* Under 48rem the phone offsets and step apply: the stack shrinks from 0.7241rem to 0.5173rem, so they shrink by the same 0.7144. */
+  @media (width < 48rem) {
+    .gcar-track {
+      --gk: 0.7144;
+      --gcar-step: 4.801rem;
+    }
+  }
+  .gpage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1.5rem;
+    row-gap: 0.5rem;
+  }
+  /* DOM order is the reading order: the title row across the top, then the carousel (left), then the Below block (right). */
+  .gpage > [data-part='0'] { grid-column: 1 / -1; grid-row: 1; flex-direction: row; align-items: center; justify-content: space-between; }
+  .gpage > [data-part='0'] p { display: none; }
+  .gpage > [data-part='0'] h1 { font-size: 1.75rem; line-height: 1.1; }
+  .gpage > [data-part='0'] > div { margin-bottom: 0; }
+  .gpage > .relative { grid-column: 1; grid-row: 2; }
+  .gpage > [data-part='3'] { grid-column: 2; grid-row: 2; padding-right: 5rem; }
+  /* Under 48rem the Below block's own buttons already keep 4.5rem clear of the calendar button. */
+  @media (width < 48rem) {
+    .gpage > [data-part='3'] { padding-right: 0; }
+    /* Học and Ôn side by side, so both stay above the tab bar (4.5rem of the row stays clear of the calendar button). */
+    .gdeck { flex-wrap: nowrap; gap: 0.5rem; }
+    .gdeck-btn { width: 7rem; }
+  }
+}
+
+/* How many stacks each side a press on the track can reach (GroupCarousel onTrackClick): one on phones, two from 48rem. */
+.gcar-track { --gcar-reach: 1; }
+@media (width >= 48rem) {
+  .gcar-track { --gcar-reach: 2; }
+}
+
+/* Opening a group from Nhóm (motion doc §3, GroupListPage): the centre stack lifts while every other part blurs to 12px and fades,
+   170ms, 10ms apart; back from Một nhóm the same parts sharpen in, 340ms, 60ms then 22ms apart, without a lift. */
+@keyframes wm-lift {
+  to {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
+@keyframes wm-sharpen-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+.wm-carousel-out [data-part],
+.wm-carousel-out .gcar-slot:not([data-abs='0']) {
+  animation: wm-page-out var(--transition-duration-wm-lift) var(--ease-wm-close) forwards;
+}
+.wm-carousel-out [data-part='1'] { animation-delay: 10ms; }
+.wm-carousel-out [data-part='2'] { animation-delay: 20ms; }
+.wm-carousel-out [data-part='3'] { animation-delay: 30ms; }
+.wm-carousel-out .gcar-slot[data-abs='0'] .gstack {
+  animation: wm-lift var(--transition-duration-wm-lift) var(--ease-wm-out) forwards;
+}
+.wm-carousel-in [data-part],
+.wm-carousel-in .gcar-slot:not([data-abs='0']) {
+  animation: wm-sharpen-in var(--transition-duration-wm-page-in) var(--ease-wm-out) both;
+  animation-delay: 60ms;
+}
+.wm-carousel-in [data-part='1'] { animation-delay: 82ms; }
+.wm-carousel-in [data-part='2'] { animation-delay: 104ms; }
+.wm-carousel-in [data-part='3'] { animation-delay: 126ms; }
+@media (prefers-reduced-motion: reduce) {
+  .wm-carousel-out [data-part],
+  .wm-carousel-out .gcar-slot,
+  .wm-carousel-out .gstack,
+  .wm-carousel-in [data-part],
+  .wm-carousel-in .gcar-slot {
+    animation: none;
+  }
+}
+
+/* A deck card pressed on Hôm nay lifts before its group opens (owner 10/11/2026; motion doc §3 numbers). */
+.gstack.wm-card-lift {
+  animation: wm-lift var(--transition-duration-wm-lift) var(--ease-wm-out) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gstack.wm-card-lift {
+    animation: none;
+  }
+}
+
+/* The stack face knows its group colour for the tinted shadow (owner 10/11/2026, artifact vong 10). */
+.gstack-face.border-wm-group-0 { --gstack-tone: var(--color-wm-group-0); }
+.gstack-face.border-wm-group-1 { --gstack-tone: var(--color-wm-group-1); }
+.gstack-face.border-wm-group-2 { --gstack-tone: var(--color-wm-group-2); }
+.gstack-face.border-wm-group-3 { --gstack-tone: var(--color-wm-group-3); }
+.gstack-face.border-wm-group-4 { --gstack-tone: var(--color-wm-group-4); }
+.gstack-face.border-wm-group-5 { --gstack-tone: var(--color-wm-group-5); }
+.gstack-face.border-wm-group-6 { --gstack-tone: var(--color-wm-group-6); }
+.gstack-face.border-wm-group-empty { --gstack-tone: var(--color-wm-group-empty); }
+
+/* The Hôm nay deck row (DeckRow.tsx): room inside the scroller for the stacks' shadows (a scroller clips both axes), taken back
+   with a negative margin, and soft edges where more cards wait. */
+/* Hôm nay "Nhóm của bạn" (DeckRow.tsx, owner 11/11/2026): the cards share the row evenly and only those that fit are shown. --deck-min
+   is the narrowest a card may get (the old fixed sizes: 150 px phone, 176 px desktop); DeckRow reads it to count the columns. Each cell
+   is a size container and the card scales its em to the cell: the stack is 18.125em wide (.gstack). */
+.deck-row {
+  --deck-min: 150px;
+  align-items: start;
+}
+@media (width >= 48rem) {
+  .deck-row { --deck-min: 176px; }
+}
+.deck-row-cell {
+  min-width: 0;
+  container-type: inline-size;
+}
+.deck-row-cell .gstack[data-size='today'] {
+  font-size: calc(100cqi / 18.125);
+}
+/* Hover and keyboard focus lift a deck on Hôm nay (owner f18): up 6px, a stronger shadow in the deck's own colour; pressing scales it
+   down. The 170 ms press lift (wm-card-lift) still plays on top. Reduced motion: only the shadow changes. */
+@media (hover: hover) {
+  .deck-row-cell .gstack {
+    transition: translate 0.3s var(--ease-wm-out), scale 0.3s var(--ease-wm-out);
+  }
+  .deck-row-cell .gstack .gstack-face {
+    transition: box-shadow 0.3s var(--ease-wm-out);
+  }
+  .deck-row-cell .gstack:hover,
+  .deck-row-cell .gstack:has(a:focus-visible) {
+    translate: 0 -6px;
+  }
+  .deck-row-cell .gstack:hover .gstack-face,
+  .deck-row-cell .gstack:has(a:focus-visible) .gstack-face {
+    box-shadow:
+      var(--shadow-wm-contact),
+      0 3.2em 4.6em -2.6em color-mix(in srgb, var(--gstack-tone, var(--color-wm-ink)) 85%, transparent);
+  }
+  .deck-row-cell .gstack:active {
+    scale: 0.98;
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+  .deck-row-cell .gstack:hover,
+  .deck-row-cell .gstack:has(a:focus-visible),
+  .deck-row-cell .gstack:active {
+    translate: none;
+    scale: none;
+  }
+}
+
+/* M5.7, the Học card stack (motion doc §2, prototype chong-the-mo.html). The cards share one grid cell, so the stack is as tall as the
+   top card; the cards behind sit lower, smaller and blurred, and move between depths in 300 ms on the main curve. The top card has no
+   CSS transition: a drag moves it through its inline transform and its arrival is a Web Animation (lib/stack-motion.ts). */
+.cstack {
+  position: relative;
+  display: grid;
+  perspective: 1400px;
+}
+.cstack > .cstack-card {
+  grid-area: 1 / 1;
+  transition:
+    transform 300ms var(--ease-wm-out-strong),
+    filter 300ms var(--ease-wm-out-strong),
+    opacity 300ms var(--ease-wm-out-strong);
+}
+.cstack-card[data-depth='1'] { z-index: 3; transform: translateY(16px) scale(0.95); filter: blur(5px); opacity: 0.85; }
+.cstack-card[data-depth='2'] { z-index: 2; transform: translateY(30px) scale(0.9); filter: blur(9px); opacity: 0.5; }
+.cstack-card[data-depth='3'] { z-index: 1; transform: translateY(40px) scale(0.86); filter: blur(12px); opacity: 0; }
+.cstack > .cstack-top {
+  z-index: 5;
+  transition: none;
+  /* A tall back face still scrolls on a phone; a sideways drag rates the card (Review Focus 5). */
+  touch-action: pan-y;
+  cursor: grab;
+  /* A sideways drag must not select the card's words (the gm-m5b drag shot showed it); the prototype does the same. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cstack-top:active { cursor: grabbing; }
+.cstack-card[data-leaving] { z-index: 6; pointer-events: none; }
+.cstack-flip {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 300ms var(--ease-wm-out-strong);
+}
+.cstack-flip[data-flipped='true'] { transform: rotateY(180deg); }
+.cstack-face { grid-area: 1 / 1; backface-visibility: hidden; }
+.cstack-back { transform: rotateY(180deg); }
+/* Motion doc §8: no blur or scale behind, only offsets; the faces swap without turning. */
+@media (prefers-reduced-motion: reduce) {
+  .cstack-card[data-depth='1'] { transform: translateY(12px); filter: none; opacity: 1; }
+  .cstack-card[data-depth='2'] { transform: translateY(22px); filter: none; opacity: 1; }
+  .cstack-card[data-depth='3'] { transform: translateY(22px); filter: none; opacity: 0; }
+  .cstack-flip[data-flipped='true'], .cstack-back { transform: none; }
+  .cstack-face[aria-hidden='true'] { opacity: 0; }
+}
+
+/* site motion */
+/* Giao diện mới M8.6: the motion of the public pages, landing bản 3 (docs/mockups/2026-11-05-redesign-concepts/landing-mo.html) mapped onto
+   Figma page 2:3 with the numbers of the plan's M8.6 Interfaces. Three rules hold for the whole block:
+   - Before JS the server HTML is the end state. Only `html.js` (added by the site's inline head script, S/layout/site-head-script.ts)
+     hides an element before it comes in, and every rule here sits under `html.js`.
+   - Reduced motion: the whole block is inside `prefers-reduced-motion: no-preference`, so nothing hides, moves or loops.
+   - Only transform, opacity and filter move (the closing glow turns a gradient angle, bản 3's own). Below 768 px no blur passes 12 px.
+   The code that marks the elements is in S/interactive/. */
+@property --wm-ang {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+:root {
+  --wm-site-ease: var(--ease-wm-out);
+  /* No cap above 768 px; phones cap every blur at 12 px (design §8.1). */
+  --wm-blur-cap: 999px;
+  /* Words: opacity 650 ms; blur 12 → 0 and .3em → 0 in 800 ms; 60 ms apart. */
+  --wm-site-word-fade: 650ms;
+  --wm-site-word-move: 800ms;
+  --wm-site-word-stagger: 60ms;
+  --wm-site-word-blur: 12px;
+  --wm-site-word-rise: 0.3em;
+  /* Reveal: opacity 700 ms; blur 16 → 0 and translateY(18px) scale(.985) → none in 900 ms. */
+  --wm-site-reveal-fade: 700ms;
+  --wm-site-reveal-move: 900ms;
+  --wm-site-reveal-blur: 16px;
+  --wm-site-reveal-rise: 18px;
+  --wm-site-reveal-scale: 0.985;
+  /* Halos 16 s / 19 s; the 404's 5 s. */
+  --wm-site-halo-a: 16s;
+  --wm-site-halo-b: 19s;
+  --wm-site-halo-404: 5s;
+  /* Wave bars 900 ms, 150 ms apart; floating cards bob 6 s (−5 px ↔ 6 px) and follow the pointer in 400 ms. */
+  --wm-site-wave: 900ms;
+  --wm-site-wave-step: -150ms;
+  --wm-site-bob: 6s;
+  --wm-site-bob-up: -5px;
+  --wm-site-bob-down: 6px;
+  --wm-site-parallax: 400ms;
+  /* Word strip: 52 s, the reversed row 64 s. */
+  --wm-site-strip: 52s;
+  --wm-site-strip-reverse: 64s;
+  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all). */
+  --wm-site-flash: 1100ms;
+  /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
+  --wm-site-caret: 1s;
+  --wm-site-ping: 2.4s;
+  --wm-site-result: 400ms;
+  --wm-site-result-rise: 8px;
+  --wm-site-result-blur: 6px;
+  /* Closing card glow: one turn in 6 s, blur 40 px. Pro card: the light's blur, the badges' 3000 ms round. */
+  --wm-site-glow-turn: 6s;
+  --wm-site-glow-blur: 40px;
+  --wm-site-badge: 3000ms;
+  /* 404 (Figma scene 5, 24:427): card opacity 700 ms, rise 28 px and scale .96 in 1000 ms; "404" from −22 px at 250 ms; the text and the
+     button from 14 px at 450 / 550 / 680 ms; each 800 ms (opacity 600). */
+  --wm-site-404-card-fade: 700ms;
+  --wm-site-404-card-move: 1000ms;
+  --wm-site-404-card-rise: 28px;
+  --wm-site-404-card-scale: 0.96;
+  --wm-site-404-fade: 600ms;
+  --wm-site-404-move: 800ms;
+  --wm-site-404-drop: -22px;
+  --wm-site-404-rise: 14px;
+}
+
+@media (width < 48rem) {
+  :root {
+    --wm-blur-cap: 12px;
+  }
+}
+
+@keyframes wm-site-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes wm-site-word {
+  from {
+    filter: blur(min(var(--wm-site-word-blur), var(--wm-blur-cap)));
+    transform: translateY(var(--wm-site-word-rise));
+  }
+}
+@keyframes wm-site-reveal {
+  from {
+    filter: blur(min(var(--wm-blur, var(--wm-site-reveal-blur)), var(--wm-blur-cap)));
+    transform: translateY(var(--wm-site-reveal-rise)) scale(var(--wm-site-reveal-scale));
+  }
+}
+/* bản 3's drift: the blue halo right and down, growing; the yellow one left and up, shrinking. */
+@keyframes wm-site-drift-a {
+  to {
+    transform: translate(18%, 46px) scale(1.1);
+  }
+}
+@keyframes wm-site-drift-b {
+  to {
+    transform: translate(-20%, -34px) scale(0.92);
+  }
+}
+/* F.19: the one glow layer behind the prices (Figma f06): three radial colours, blurred, drifting 18 s. */
+.wm-price-drift {
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(36% 40% at 30% 40%, var(--color-wm-drift-accent), transparent 70%),
+    radial-gradient(34% 36% at 70% 55%, var(--color-wm-drift-mark), transparent 70%),
+    radial-gradient(40% 40% at 50% 90%, var(--color-wm-drift-pass), transparent 70%);
+  filter: blur(28px);
+}
+@media (width < 48rem) {
+  .wm-price-drift {
+    filter: blur(12px);
+  }
+}
+@keyframes wm-price-drift {
+  0% {
+    transform: translate(-6%, -4%) scale(1);
+  }
+  50% {
+    transform: translate(5%, 3%) scale(1.08);
+  }
+  100% {
+    transform: translate(-3%, 6%) scale(1.02);
+  }
+}
+@keyframes wm-site-drift-404-a {
+  to {
+    transform: translate(50px, 30px);
+  }
+}
+@keyframes wm-site-drift-404-b {
+  to {
+    transform: translate(-40px, -24px);
+  }
+}
+@keyframes wm-site-wave {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* `translate`, not `transform`: the card keeps its `rotate` (Tailwind's rotate-* utilities) and its pointer offset (`transform`). */
+@keyframes wm-site-bob {
+  from {
+    translate: 0 var(--wm-site-bob-up);
+  }
+  to {
+    translate: 0 var(--wm-site-bob-down);
+  }
+}
+@keyframes wm-site-slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* 240 ms of 1100 ms = 21.82 %. */
+@keyframes wm-site-flash {
+  0% {
+    opacity: 0;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  21.82% {
+    opacity: 1;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wm-site-blink {
+  50% {
+    opacity: 0;
+  }
+}
+/* bản 3's ping as a ring that grows 16 px past the 52 px button (scale 84 / 52) and fades by 70 %. */
+@keyframes wm-site-ping {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.62);
+  }
+}
+@keyframes wm-site-turn {
+  to {
+    --wm-ang: 360deg;
+  }
+}
+/* Up to 1.18 in 250 ms (E), back in 350 ms (ease-in-out), then still until the 3000 ms round ends: 250 / 3000 = 8.33 %, 600 / 3000 = 20 %. */
+@keyframes wm-site-badge {
+  0% {
+    scale: 1;
+    animation-timing-function: var(--wm-site-ease);
+  }
+  8.33% {
+    scale: 1.18;
+    animation-timing-function: ease-in-out;
+  }
+  20%,
+  100% {
+    scale: 1;
+  }
+}
+@keyframes wm-site-404-card {
+  from {
+    transform: translateY(var(--wm-site-404-card-rise)) scale(var(--wm-site-404-card-scale));
+  }
+}
+@keyframes wm-site-404-drop {
+  from {
+    transform: translateY(var(--wm-site-404-drop));
+  }
+}
+@keyframes wm-site-404-rise {
+  from {
+    transform: translateY(var(--wm-site-404-rise));
+  }
+}
+
+[data-wm-word] {
+  display: inline-block;
+}
+
+/* Print matches `prefers-reduced-motion: no-preference` too: a block that has not scrolled in yet would print blank (M8b review I2, R249). */
+@media print {
+  html.js [data-wm-reveal],
+  html.js [data-wm-reveal] [data-wm-word],
+  html.js [data-group-card] {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Reveal and Words (S/interactive/Reveal.tsx, SplitWords.tsx): hidden until `data-wm-in`, then one run of the keyframes above. */
+  html.js [data-wm-reveal='block']:not([data-wm-in]),
+  html.js [data-wm-reveal='words']:not([data-wm-in]) [data-wm-word] {
+    opacity: 0;
+  }
+  html.js [data-wm-reveal='block'][data-wm-in] {
+    animation:
+      wm-site-fade var(--wm-site-reveal-fade) var(--wm-site-ease) both,
+      wm-site-reveal var(--wm-site-reveal-move) var(--wm-site-ease) both;
+    animation-delay: var(--wm-delay, 0ms);
+  }
+  html.js [data-wm-reveal='words'][data-wm-in] [data-wm-word] {
+    animation:
+      wm-site-fade var(--wm-site-word-fade) var(--wm-site-ease) both,
+      wm-site-word var(--wm-site-word-move) var(--wm-site-ease) both;
+    animation-delay: calc(var(--wm-delay, 0ms) + var(--wm-i, 0) * var(--wm-site-word-stagger));
+  }
+
+  /* Halos (S/landing/parts.tsx Glow; the 404's from M8.7), off below 760 px. */
+  html.js [data-wm-halo='accent'] {
+    animation: wm-site-drift-a var(--wm-site-halo-a) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='mark'] {
+    animation: wm-site-drift-b var(--wm-site-halo-b) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='404-accent'] {
+    animation: wm-site-drift-404-a var(--wm-site-halo-404) ease-in-out infinite alternate;
+  }
+  html.js [data-wm-halo='404-mark'] {
+    animation: wm-site-drift-404-b var(--wm-site-halo-404) ease-in-out infinite alternate;
+  }
+  html.js .wm-price-drift {
+    animation: wm-price-drift 18s ease-in-out infinite alternate;
+  }
+  @media (width < 47.5rem) {
+    html.js [data-wm-halo],
+    html.js .wm-price-drift {
+      animation: none;
+    }
+  }
+
+  /* Wave bars: each bar 150 ms behind the one before. */
+  html.js [data-wave] > * {
+    animation: wm-site-wave var(--wm-site-wave) ease-in-out infinite;
+  }
+  html.js [data-wave] > :nth-child(2) {
+    animation-delay: calc(1 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(3) {
+    animation-delay: calc(2 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(4) {
+    animation-delay: calc(3 * var(--wm-site-wave-step));
+  }
+  html.js [data-wave] > :nth-child(5) {
+    animation-delay: calc(4 * var(--wm-site-wave-step));
+  }
+
+  /* Floating cards: bob, and follow a fine pointer by their depth (S/interactive/Parallax.tsx writes --wm-px / --wm-py). */
+  html.js [data-float] {
+    transform: translate(calc(var(--wm-px, 0) * var(--wm-depth) * 1px), calc(var(--wm-py, 0) * var(--wm-depth) * 1px));
+    transition: transform var(--wm-site-parallax) var(--wm-site-ease);
+    animation: wm-site-bob var(--wm-site-bob) ease-in-out infinite alternate;
+  }
+  html.js [data-float='added'] {
+    --wm-depth: 14;
+  }
+  html.js [data-float='bin'] {
+    --wm-depth: 22;
+    animation-delay: -2s;
+  }
+
+  /* Word strip (S/interactive/Marquee.tsx). */
+  html.js [data-wm-marquee] {
+    animation: wm-site-slide var(--wm-site-strip) linear infinite;
+  }
+  html.js [data-wm-marquee='reverse'] {
+    animation-duration: var(--wm-site-strip-reverse);
+    animation-direction: reverse;
+  }
+
+  /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands. */
+  html.js [data-wm-fly] ul {
+    perspective: 1400px;
+  }
+  html.js [data-wm-fly]:not([data-wm-in]) [data-group-card] {
+    opacity: 0;
+  }
+  html.js [data-group-card][data-wm-lit]::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: 0 0 0 1.5px var(--color-wm-accent);
+    animation: wm-site-flash var(--wm-site-flash) both;
+  }
+
+  /* Demo cards (S/interactive/DemoLoops.tsx): caret, the result row while the word is typed again, the listen ping. */
+  html.js [data-caret] {
+    animation: wm-site-blink var(--wm-site-caret) steps(1) infinite;
+  }
+  html.js [data-result] {
+    transition:
+      opacity var(--wm-site-result) var(--wm-site-ease),
+      transform var(--wm-site-result) var(--wm-site-ease),
+      filter var(--wm-site-result) var(--wm-site-ease);
+  }
+  html.js [data-result][data-wm-off] {
+    opacity: 0;
+    transform: translateY(var(--wm-site-result-rise));
+    filter: blur(var(--wm-site-result-blur));
+  }
+  html.js [data-listen] {
+    position: relative;
+    isolation: isolate;
+  }
+  html.js [data-listen]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--color-wm-accent);
+    animation: wm-site-ping var(--wm-site-ping) ease-out infinite;
+  }
+
+  /* Pro card: a short light runs round its 2 px border only while the card is on screen (`data-wm-on`), like the closing card's ring;
+     nothing is drawn outside the card (owner 13/11/2026). The badges pulse on the same switch. */
+  html.js [data-pro-ring][data-wm-on]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 2px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-accent) 74%, var(--color-wm-mark) 82%, transparent 94%);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    animation: wm-site-turn var(--wm-site-glow-turn) linear infinite;
+  }
+  html.js [data-wm-on] [data-ai-block] > li [data-ai-badge] {
+    animation: wm-site-badge var(--wm-site-badge) infinite both;
+    animation-delay: 900ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(2) [data-ai-badge] {
+    animation-delay: 1150ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(3) [data-ai-badge] {
+    animation-delay: 1400ms;
+  }
+  html.js [data-wm-on] [data-ai-block] > li:nth-child(4) [data-ai-badge] {
+    animation-delay: 1650ms;
+  }
+
+  /* Closing card: bản 3's glow running around the card while it is on screen; a 1.5 px ring on the transparent border and a blurred glow
+     inside it. */
+  html.js [data-final-card] {
+    position: relative;
+    isolation: isolate;
+  }
+  html.js [data-final-card][data-wm-on]::before,
+  html.js [data-final-card][data-wm-on]::after {
+    content: '';
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: wm-site-turn var(--wm-site-glow-turn) linear infinite;
+  }
+  html.js [data-final-card][data-wm-on]::before {
+    inset: -1.5px;
+    padding: 1.5px;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-accent) 74%, var(--color-wm-mark) 82%, transparent 94%);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+  html.js [data-final-card][data-wm-on]::after {
+    inset: 8%;
+    z-index: -1;
+    background: conic-gradient(from var(--wm-ang), transparent 0 58%, var(--color-wm-glow-accent) 74%, var(--color-wm-glow-mark) 82%, transparent 94%);
+    filter: blur(min(var(--wm-site-glow-blur), var(--wm-blur-cap)));
+  }
+
+  /* 404 (Figma scene 5): it plays on load, so CSS alone runs it; M8.7 puts these attributes on its card. */
+  html.js [data-wm-404='card'] {
+    animation:
+      wm-site-fade var(--wm-site-404-card-fade) var(--wm-site-ease) both,
+      wm-site-404-card var(--wm-site-404-card-move) var(--wm-site-ease) both;
+  }
+  html.js [data-wm-404='code'] {
+    animation:
+      wm-site-fade var(--wm-site-404-fade) var(--wm-site-ease) both,
+      wm-site-404-drop var(--wm-site-404-move) var(--wm-site-ease) both;
+    animation-delay: 250ms;
+  }
+  html.js [data-wm-404='title'],
+  html.js [data-wm-404='body'],
+  html.js [data-wm-404='button'] {
+    animation:
+      wm-site-fade var(--wm-site-404-fade) var(--wm-site-ease) both,
+      wm-site-404-rise var(--wm-site-404-move) var(--wm-site-ease) both;
+    animation-delay: 450ms;
+  }
+  html.js [data-wm-404='body'] {
+    animation-delay: 550ms;
+  }
+  html.js [data-wm-404='button'] {
+    animation-delay: 680ms;
   }
 }

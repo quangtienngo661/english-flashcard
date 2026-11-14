@@ -1,40 +1,122 @@
 {
   "errors": {
     "generic": "Something went wrong",
+    "code": "Code: {code}",
+    "copyCode": "Copy code",
     "inProgress": "The previous request is still running",
     "noAccess": "You do not have access to this site",
+    "baseline-required": "The live config has no complete run on the newest example-set version.",
     "batch-filter-unavailable": "This batch filter is not available",
     "batch-not-revertable": "This batch cannot be reverted",
     "csrf-header-required": "The request is missing the CSRF protection header (programming error)",
+    "draft-busy": "The draft has a run going. Stop the run, then delete.",
+    "draft-exists": "This operation already has a draft. The page was reloaded.",
+    "draft-version-conflict": "Someone else just edited the draft.",
     "email-already-verified": "This email is already verified",
+    "email-not-verified": "Email not confirmed. Use Forgot password to confirm it.",
     "email-taken": "This email is already in use",
+    "entry-in-use": "This word is in use and cannot be deleted yet.",
+    "eval-required": "The draft has no complete run on the newest example-set version.",
+    "eval-set-conflict": "Another admin has just frozen a version. The list of versions was reloaded.",
+    "eval-set-incomplete": "The version could not be frozen.",
+    "eval-set-mismatch": "The two runs are not on the same version of the example set, so they cannot be compared.",
+    "example-held-out": "A held-out example cannot be edited until it is opened.",
+    "example-not-held-out": "This example is no longer held-out. The list was reloaded.",
+    "expected-invalid": "The expected answer is not valid.",
     "export-too-large": "Too many rows to export, narrow the filters",
+    "faq-version-conflict": "Someone else just edited this question. Reload and try again.",
+    "few-shot-invalid": "A few-shot example breaks the rules.",
     "file-invalid": "The file is not valid",
     "file-too-large": "The file is too large (10 MB maximum)",
     "forbidden": "You no longer have permission to do this",
+    "grant-not-active": "This grant was already revoked or has expired.",
+    "grant-not-allowed": "An editor cannot grant to this account.",
     "idempotency-key-abandoned": "The previous request was abandoned, please submit again",
     "invalid-credentials": "Wrong email or password",
     "invalid-current-password": "The current password is wrong",
+    "account-deleted": "The learner's account is deleted, so no period can be opened.",
+    "account-deleting": "This account is being deleted and cannot be changed.",
+    "captcha-failed": "We couldn't check that you're not a bot. Please try again.",
+    "captcha-unavailable": "The bot check is unavailable right now. Please try again in a few minutes.",
+    "confirm-email-mismatch": "The email you typed does not match the account.",
+    "last-admin": "This is the last admin and cannot be deleted.",
+    "password-login-required": "Sign in with a password to use the admin site.",
+    "renewal-not-cancelled": "Could not switch off the plan renewal at the payment provider, so the account was not deleted. Try again later.",
+    "self-delete": "An admin cannot delete their own account.",
     "invalid-otp": "The code is wrong or has expired",
     "invalid-token": "The session or link is not valid",
+    "job-not-active": "This job has already ended.",
     "level-source-required": "The file has a level column, choose a level source",
+    "lock-rule": "You cannot lock yourself or an admin.",
     "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+    "admin-usd-cap": "Today's admin USD cap is spent. Wait for the next day or raise the cap in Settings.",
+    "judge-pass-running": "This judge revision is already scoring in another pass.",
+    "judge-provider": "A judge uses Anthropic models only.",
+    "judge-revision-conflict": "Someone else just changed this judge.",
+    "model-exists": "This model is already added.",
+    "model-price-missing": "The model has no price yet. Enter its price on the Model page and run again.",
+    "model-in-use": "An operation still uses this model, so it cannot be deleted yet.",
+    "model-not-found": "The provider has no such model. Check the model name.",
+    "model-not-set": "This operation has no model yet. Choose one under Configs.",
+    "model-not-supported": "This model cannot be used with Wordmet yet.",
+    "no-previous": "There is no earlier config to go back to.",
     "not-found": "Not found",
+    "nothing-to-judge": "There is no question to judge with these filters.",
     "nothing-to-publish": "Nothing is eligible to publish",
+    "order-already-paid": "The order already has a period.",
+    "order-changed": "The order just changed. Close this window, look at the order again and retry.",
+    "order-closed": "The order is closed and takes no more money.",
+    "order-not-pending": "The order is no longer waiting, so it cannot be cancelled.",
+    "order-not-resolvable": "There is nothing to deal with on this order.",
+    "period-already-revoked": "This period is already revoked.",
+    "operation-settings-conflict": "Someone just changed this operation. Reload to see the latest version.",
     "password-change-required": "You must change your password before continuing",
     "payload-too-large": "The request is too large",
     "profile-incomplete": "The profile is incomplete",
+    "prompt-revision-conflict": "Someone just saved this prompt. Reload to see the latest version.",
+    "provider-not-configured": "The provider has no key yet.",
+    "provider-unavailable": "The provider is not responding. Try again in a few minutes.",
+    "publish-incomplete": "Some content is missing, so it cannot be published yet. Fill in the missing fields and try again.",
+    "publish-stale": "The data changed. Review it before publishing.",
+    "publish-warnings": "There are warnings. Read them, then choose to publish anyway.",
     "rate-limited": "Too many attempts, wait a moment",
+    "replacement-exists": "This sense already has a replacement waiting. Finish that one first.",
+    "replacement-waiting": "This sense is a replacement that is not published yet, so it cannot be replaced again. Publish it first.",
+    "report-not-open": "This report has already been handled.",
+    "report-reason-exists": "A reason with this code already exists.",
+    "resolve-status-not-allowed": "This report cannot be handled this way. Reload the page.",
+    "retryIn": "Try again in {seconds} s",
+    "revision-rejected": "This revision was rejected, so it cannot be published. Edit it to make a new one.",
+    "run-active": "The run is still active. Stop it before deleting.",
+    "run-is-evidence": "This run is the evidence of a publish, so it cannot be deleted.",
+    "run-not-active": "This run has already ended.",
     "same_as_current": "The new password must differ from the current one",
+    "sense-entry-mismatch": "This sense does not belong to the selected word. Reload the page.",
+    "sense-exists": "This word already has a sense with that context label. Edit the existing sense instead of adding a new one.",
+    "sense-retired": "This sense is retired and cannot be edited.",
     "source-exists": "This data source already exists",
+    "source-not-eligible": "This question cannot be added to the example set.",
+    "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
+    "source-protected": "A built-in source cannot be edited or deleted.",
+    "source-version-locked": "This source has imported data, so its version cannot be changed. Please create a new source.",
     "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
+    "stale-revision": "This sense was just edited. Reload to see the latest version.",
+    "too-many-examples": "At most 3 example sentences are allowed. Remove some and save again.",
+    "topic-archived": "A topic is archived. Remove it and save again.",
     "topic-exists": "This topic already exists",
+    "unknown-topic": "A topic code does not exist. Choose the topics again.",
     "unsupported-media-type": "The data format is not supported",
-    "validation-failed": "The data is not valid"
+    "validation-failed": "The data is not valid",
+    "version-conflict": "Someone else just saved the settings. Reload to see the latest version.",
+    "word-form-exists": "This form already exists.",
+    "not-a-draft": "This version is published, so it cannot be edited or deleted.",
+    "legal-busy": "Someone just created a draft. Please try again."
   },
   "notice": {
-    "expired": "Your session has expired"
+    "expired": "Your session has expired",
+    "logoutFailed": "Signing out on the server failed.",
+    "passwordRequired": "Sign in again with your password to use the admin site"
   },
   "common": {
     "retry": "Retry",
@@ -42,7 +124,10 @@
     "confirm": "Confirm",
     "loadMore": "Load more",
     "loading": "Loading…",
-    "close": "Close"
+    "close": "Close",
+    "system": "System",
+    "unknownUser": "Deleted user",
+    "unsavedChanges": "(unsaved changes)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -58,21 +143,55 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "words": "Words",
+    "senses": "Senses",
+    "topics": "Topics",
     "uploads": "Imports",
     "publishJobs": "Publish jobs",
     "export": "Export CSV",
     "sources": "Sources",
-    "words": "Words",
-    "senses": "Senses",
-    "topics": "Topics",
-    "reported": "Reported questions",
-    "irregular": "Irregular forms",
+    "unknownForms": "Unknown forms",
+    "reports": "Reports",
+    "reportReasons": "Report reasons",
+    "refunds": "Refunds",
     "users": "Users",
-    "entitlements": "Entitlements & AI uses",
-    "aiSettings": "AI settings",
-    "aiCosts": "Costs & reconciliation",
-    "evalSets": "Example sets",
+    "entitlements": "Grant plans and uses",
+    "orders": "Orders",
+    "transactions": "Transactions",
+    "aiStatus": "Status",
+    "aiModels": "Models",
+    "aiConfigs": "Configs",
+    "aiEval": "Example sets",
+    "aiRealQuestions": "Real AI questions",
+    "aiJudges": "Judge",
+    "aiCosts": "Costs",
+    "aiCalls": "Calls",
+    "settings": "System settings",
+    "legal": "Policies & terms",
+    "faq": "Home page FAQ",
     "staff": "Roles & staff"
+  },
+  "session": {
+    "unavailable": "Can't reach the server. Your session is kept.",
+    "retry": "Try again"
+  },
+  "noAccess": {
+    "title": "You don't have access to this page.",
+    "home": "Back to home"
+  },
+  "leave": {
+    "title": "Leave this page?",
+    "body": "Unsaved changes will be lost.",
+    "stay": "Stay",
+    "leave": "Leave",
+    "discardTitle": "Discard changes?",
+    "discard": "Discard",
+    "keepEditing": "Keep editing"
+  },
+  "draft": {
+    "message": "You have unsaved changes from last time.",
+    "restore": "Restore",
+    "discard": "Discard"
   },
   "offline": {
     "message": "Cannot reach the server"
@@ -81,7 +200,8 @@
     "loading": "Loading…",
     "error": "Could not load the list",
     "empty": "Nothing here yet",
-    "shown": "{count} items shown"
+    "shown": "{count} items shown",
+    "selectAll": "Select all on this page"
   },
   "account": {
     "login": {
@@ -128,6 +248,1561 @@
       "lowercase": "A lowercase letter",
       "digit": "A digit",
       "special": "A special character"
+    }
+  },
+  "ai": {
+    "operations": {
+      "names": {
+        "generate_cloze": "Generate fill-in-the-blank",
+        "lookup_word": "AI word lookup",
+        "translate_sentence": "Translate sentence",
+        "generate_meaning_question": "Generate meaning question",
+        "generate_sentence_mcq": "Generate sentence choice",
+        "check_private_word": "Check private word",
+        "judge": "Judge scoring"
+      },
+      "row": {
+        "model": "Model",
+        "noModel": "No model",
+        "effort": "Effort",
+        "effortDefault": "Default",
+        "effortDropped": "This model has no {effort} level",
+        "thinking": "Thinking",
+        "thinkingDefault": "Default",
+        "thinkingOff": "Off",
+        "thinkingCannotOff": "This model cannot turn thinking off.",
+        "thinkingNeedsEffort": "Turning thinking off needs effort high or below.",
+        "maxTokens": "Maximum output tokens"
+      }
+    },
+    "reasons": {
+      "ai-disabled": "AI is off",
+      "model-not-set": "No model chosen",
+      "provider-not-configured": "Provider has no key",
+      "daily-call-cap": "Daily call cap reached",
+      "admin-usd-cap": "Admin USD cap reached",
+      "provider-quota": "Provider quota used up"
+    },
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "fake": "Fake"
+    },
+    "status": {
+      "today": {
+        "calls": "Learner calls today: {calls}/{cap}",
+        "callsNoCap": "Learner calls today: {calls}",
+        "adminSpend": "Admin work today (test runs, example set, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Admin work today (test runs, example set, judge): {spent}, no cap",
+        "failed": "Failed: {count} ({cost})",
+        "cost": "Cost today: {usd} · {vnd}",
+        "providers": "Providers with a key: {names}",
+        "noProvider": "Providers with a key: none",
+        "system": "AI system-wide: {state}",
+        "on": "On",
+        "off": "Off",
+        "openSettings": "Open Settings"
+      },
+      "cols": {
+        "operation": "Operation",
+        "ready": "Ready",
+        "reason": "Reason / Model",
+        "lastError": "Last error",
+        "warning": "Model warning"
+      },
+      "ready": "Ready",
+      "notReady": "Not ready",
+      "chooseModel": "Choose model",
+      "chooseModelFor": "Choose model for {operation}",
+      "noError": "—",
+      "purposes": {
+        "learner": "learner",
+        "test": "test run",
+        "eval": "example set",
+        "judge": "judge"
+      },
+      "shutdown": "Shuts down {date}",
+      "lifecycle": "Lifecycle: {lifecycle}",
+      "errorNote": "Includes errors from test runs and example-set runs."
+    },
+    "models": {
+      "add": "Add model",
+      "empty": "No models yet",
+      "emptyHint": "Add the first model to choose it for the AI operations.",
+      "cols": {
+        "model": "Provider · Model id",
+        "price": "Input / cached input / output price (US$ per 1 million tokens)",
+        "usedBy": "Used by",
+        "lifecycle": "Lifecycle",
+        "estimate": "Estimate per call",
+        "checked": "Info last checked",
+        "actions": "Actions"
+      },
+      "noPrice": "No price yet",
+      "none": "—",
+      "editPrice": "Edit price",
+      "editPriceFor": "Edit price of {model}",
+      "refresh": "Re-read info",
+      "refreshFor": "Re-read info of {model}",
+      "delete": "Delete",
+      "deleteFor": "Delete {model}",
+      "estimate": "{usd} · {vnd}",
+      "usedBy": "Used by: {operations}.",
+      "deleteTitle": "Delete model {model}?",
+      "deleteBody": "The model is removed from the list and this cannot be undone.",
+      "deleteConfirm": "Delete model",
+      "hide": "Hide from model pickers",
+      "hiddenBadge": "Hidden",
+      "toast": {
+        "added": "Model {model} added.",
+        "saved": "Changes to {model} saved.",
+        "refreshed": "Info of {model} re-read.",
+        "deleted": "Model {model} deleted."
+      },
+      "form": {
+        "addTitle": "Add model",
+        "editTitle": "Edit price of {model}",
+        "provider": "Provider",
+        "modelId": "Model id",
+        "modelIdHint": "The model name exactly as the provider writes it.",
+        "priceInput": "Input price (US$ per 1 million tokens)",
+        "priceCached": "Cached input price (US$ per 1 million tokens)",
+        "priceOutput": "Output price (US$ per 1 million tokens)",
+        "priceHint": "0 to 1,000, up to 4 decimals. Leave empty if unknown.",
+        "fakePrice": "The Fake model always costs 0.",
+        "note": "Note",
+        "submitAdd": "Add",
+        "submitSave": "Save",
+        "noProvider": "No provider has a key yet, so no model can be added.",
+        "modelIdRequired": "Enter the model id.",
+        "modelIdInvalid": "Use only letters, digits and the characters . _ : - (up to 100 characters).",
+        "priceInvalid": "Enter a number from 0 to 1,000 with up to 4 decimals."
+      }
+    },
+    "prompts": {
+      "instructions": "Instructions",
+      "instructionsHint": "Up to 8,000 characters.",
+      "inputFields": "Data the prompt receives: {fields}",
+      "examples": "Examples ({count}/10)",
+      "examplesHint": "Up to 10 examples, each an input/output pair.",
+      "example": "Example {n}",
+      "output": "Output (JSON)",
+      "fieldHint": "Leave empty for null. Write a list as JSON, starting with [.",
+      "addExample": "Add example",
+      "remove": "Remove",
+      "removeExample": "Remove example {n}",
+      "guard": "Fixed guard sentence (cannot be edited)",
+      "hideNewer": "Hide the newer revision",
+      "copyToEditor": "Copy into the editor",
+      "errors": {
+        "tooLong": "The instructions are over 8,000 characters. Shorten them and save again.",
+        "blank": "Enter the instructions.",
+        "outputJson": "The output must be a JSON object. Fix it and try again."
+      },
+      "test": {
+        "title": "Test run",
+        "run": "Test run",
+        "quota": "{remaining}/{limit} test runs left this hour (shared with Example set)",
+        "pick": "Examples from the example set (choose up to 5)",
+        "pickEmpty": "This operation’s example set has no examples yet.",
+        "quotaFailed": "Could not read the test runs left.",
+        "examplesFailed": "Could not read the example set. [Test run] still runs with the first 5 examples of the example set, or the prompt's own examples when the set is empty.",
+        "withSelected": "Runs with: {count} chosen examples",
+        "withFirst": "Runs with: the first {count} examples of the example set",
+        "withPrompt": "Runs with: the examples in the prompt",
+        "note": "Runs the version you are editing, no need to save. Each run makes a real AI call and uses one run.",
+        "needExample": "At least one example is needed for a test run.",
+        "rateLimited": "All {limit} test runs of this hour are used. Try again at {time}.",
+        "openConfigs": "Open Configs",
+        "results": "Test run results",
+        "sample": "Sample {n}",
+        "input": "Input",
+        "status": "Status",
+        "reason": "Reason",
+        "outputLabel": "Output",
+        "none": "—",
+        "statuses": {
+          "succeeded": "Succeeded",
+          "transient_failure": "Temporary failure",
+          "permanent_failure": "Failed",
+          "unavailable": "Could not run"
+        }
+      },
+      "history": {
+        "title": "History",
+        "revision": "Revision {revision}",
+        "savedBy": "{at} · {by}",
+        "viewFor": "View revision {revision}",
+        "view": "View",
+        "viewTitle": "Revision {revision}",
+        "note": "To go back to an old revision: open it, then save it again.",
+        "empty": "No revisions yet."
+      }
+    },
+    "configs": {
+      "operation": "Operation",
+      "live": {
+        "title": "Live · config {number}",
+        "noModel": "No model chosen: this operation is off.",
+        "publishedBy": "Published {at} · {by}",
+        "content": "Instructions and examples of the live config"
+      },
+      "draft": {
+        "create": "Create draft",
+        "title": "Draft · config {number} · edit {version}",
+        "save": "Save draft",
+        "saved": "Draft saved, edit {version}.",
+        "conflict": "Someone else just edited the draft.",
+        "reload": "Load the newer draft",
+        "newerTitle": "Newest draft: edit {version}",
+        "delete": "Delete draft",
+        "deleteConfirm": "Delete the draft of config {number}?",
+        "deleteBody": "The draft is deleted and this cannot be undone. The live config does not change.",
+        "deleted": "Draft deleted.",
+        "busy": "The draft has a run going. Stop the run, then delete.",
+        "fewShotInvalid": "Few-shot example {n} breaks the rules: {problems}",
+        "saveFirst": "Save the draft before a test run or running the example set.",
+        "note": "Note",
+        "runSet": "Run the example set with the draft",
+        "runSetNote": "Runs the whole example set (version {version}) with the saved draft. The result opens on the example-set screen.",
+        "testNote": "Runs the saved draft. Each run calls the real AI and uses one slot.",
+        "noModelToTest": "The draft has no model. Choose a model and save the draft before a test run."
+      },
+      "publish": {
+        "title": "Publish the draft",
+        "set": "Example-set version {version}",
+        "noSet": "There is no frozen version. Freeze one on the example-set page.",
+        "evalRequired": "The draft has no complete run on version {version}.",
+        "baselineRequired": "The live config has no complete run on version {version}.",
+        "runLive": "Run the live config on version {version}",
+        "rateDrop": "The pass rate on {criterion} dropped from {before}% to {after}%.",
+        "judgeRateDrop": "The pass rate of judge {name} revision {revision} ({criterion}) dropped from {before}% to {after}%.",
+        "criteria": {
+          "shape": "shape",
+          "rule": "rules",
+          "expected": "expected answer"
+        },
+        "devRegressed": "{count} dev examples passed before and fail now.",
+        "heldOutUp": "Held-out failures rose from {before} to {after}.",
+        "acknowledge": "I read the warnings and still want to publish",
+        "submit": "Publish",
+        "done": "Published config {number}. It applies from the next call.",
+        "stale": "The data changed. Review it before publishing.",
+        "saveFirst": "Save the draft before publishing.",
+        "noBaseline": "The live config has no model: this publish is not compared with anything.",
+        "turnOffNote": "The draft has no model: publishing it turns AI off for this operation, no run needed.",
+        "turnOffDialog": "Turn AI off for this operation? Learners will get non-AI questions.",
+        "turnOffConfirm": "Turn AI off",
+        "turnedOff": "AI is off for this operation (config {number}). Roll back to turn it on again."
+      },
+      "rollback": {
+        "button": "Roll back to config {number}",
+        "confirm": "Roll back to config {number}? Learners use config {number} from the next call; the draft you have stays as it is.",
+        "go": "Roll back",
+        "done": "Rolled back to config {number}."
+      },
+      "history": {
+        "title": "Publish history",
+        "publish": "Published config {number} (replacing config {from})",
+        "rollback": "Rolled back to config {number}",
+        "turnOff": "AI turned off: config {number} (replacing config {from})",
+        "fromHere": "Create a draft from this one",
+        "empty": "Nothing has been published yet."
+      },
+      "oldPrompts": "Prompt history from before configs",
+      "oldPromptsNote": "Prompt revisions saved before configs existed. With a draft open you can copy one into it."
+    },
+    "eval": {
+      "operation": "Operation",
+      "examples": "Examples ({count}/1,000)",
+      "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Configs page use dev examples only.",
+      "counts": "{dev} dev · {heldOut} held-out",
+      "heldOutHidden": "Held-out example: content hidden",
+      "list": {
+        "sort": "Sort by",
+        "sorts": {
+          "oldest": "Oldest first",
+          "newest": "Newest first",
+          "az": "A → Z",
+          "za": "Z → A",
+          "devFirst": "Dev first",
+          "heldOutFirst": "Held-out first"
+        },
+        "pages": "Example list pages",
+        "page": "Page {page} of {pages}",
+        "previous": "Previous page",
+        "next": "Next page",
+        "search": "Search dev examples",
+        "searchPlaceholder": "Word or meaning…",
+        "splitFilter": "Split",
+        "allSplits": "Dev & held-out",
+        "level": "Dev level",
+        "allLevels": "All levels",
+        "filterHint": "Word and level filters search dev only. Held-out content stays hidden.",
+        "filteredCount": "{count} filtered results",
+        "levelColumn": "Level",
+        "range": "Showing {from}–{to} of {total}"
+      },
+      "split": {
+        "dev": "dev",
+        "heldOut": "held-out"
+      },
+      "reveal": {
+        "button": "Open held-out example",
+        "title": "Open this held-out example?",
+        "body": "Once opened, this example moves to dev and is no longer part of the exam. Frozen versions keep it in their held-out part and record that it was seen.",
+        "confirm": "Open example"
+      },
+      "freeze": {
+        "button": "Freeze version",
+        "title": "Freeze version {version}?",
+        "body": "The set being edited ({dev} dev, {heldOut} held-out) is saved as version {version}. Editing examples afterwards does not change this version.",
+        "confirm": "Freeze version",
+        "incomplete": "The version could not be frozen.",
+        "missingExpected": "{count, plural, one {# example has} other {# examples have}} no expected answer.",
+        "noHeldOut": "The set has no held-out example.",
+        "rowMissing": "No expected answer yet"
+      },
+      "set": {
+        "label": "Example set to run",
+        "version": "Version {version}",
+        "working": "Set being edited (quick try only, cannot be compared)",
+        "workingShort": "Set being edited",
+        "legacy": "Before versions existed"
+      },
+      "sets": {
+        "title": "Frozen versions",
+        "empty": "No version yet.",
+        "version": "Version {version}",
+        "revealed": "{count, plural, one {# held-out example was} other {# held-out examples were}} seen",
+        "deleted": "Deleted from the set being edited",
+        "seen": "Seen",
+        "cols": {
+          "version": "Version",
+          "frozenAt": "Frozen at",
+          "counts": "Examples",
+          "seen": "Held-out seen"
+        }
+      },
+      "add": "Add example",
+      "bulk": {
+        "add": "Bulk import",
+        "title": "Import many examples",
+        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}; the expected column (JSON, for example {example}) is required for an operation with an expected answer; the split column (dev or held_out) and the note column are optional. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
+        "filePrompt": "Drop a file here",
+        "fileHint": "CSV, TSV or JSON Lines, up to 2 MB",
+        "choose": "Choose file",
+        "change": "Choose another file",
+        "fileTooLarge": "The file is larger than 2 MB.",
+        "fileLoaded": "Its content is in the box below.",
+        "paste": "Or paste the content",
+        "readable": "{count} lines read",
+        "unreadable": "{count} lines could not be read",
+        "submit": "Import {count} examples",
+        "added": "{count} examples added.",
+        "skipped": "{count} lines skipped. Fix them and import those lines again:",
+        "line": "Line {line}",
+        "noRoom": "The example set has room for {room} more, you are importing {sent}.",
+        "problems": {
+          "empty": "There are no lines to import.",
+          "columns": "Unknown columns: {names}. Valid columns: {fields}.",
+          "tooMany": "{count} lines; at most {max} per import."
+        },
+        "reasons": {
+          "bad-json": "not valid JSON",
+          "not-object": "not a JSON object",
+          "columns": "more cells than columns"
+        }
+      },
+      "empty": "This operation has no examples yet.",
+      "emptyHint": "Add examples to test the prompt and run the example set.",
+      "examplesFailed": "Could not read the example set.",
+      "cols": {
+        "input": "Input",
+        "split": "Part",
+        "note": "Note",
+        "createdBy": "Added by",
+        "actions": "Actions"
+      },
+      "edit": "Edit",
+      "editFor": "Edit example {summary}",
+      "delete": "Delete",
+      "deleteFor": "Delete example {summary}",
+      "deleteTitle": "Delete this example?",
+      "deleteBody": "Runs so far keep their results. Later runs no longer include this example.",
+      "deleteConfirm": "Delete example",
+      "toast": {
+        "added": "Example added.",
+        "addedHeldOut": "Example added. It went into the held-out part, so it is hidden.",
+        "revealed": "Example opened. It moved to dev.",
+        "revealedDeleted": "Example opened. It was deleted from the set being edited, so it only remains in frozen versions.",
+        "frozen": "Version {version} frozen.",
+        "saved": "Example saved.",
+        "deleted": "Example deleted.",
+        "stopped": "Run stopped.",
+        "runDeleted": "Run deleted."
+      },
+      "stop": {
+        "button": "Stop run",
+        "title": "Stop this run?",
+        "body": "Examples not yet run will not call the AI. Calls already sent are still charged, and a stopped run cannot be resumed. Results of the examples already run are kept.",
+        "confirm": "Stop run",
+        "keep": "Let it run"
+      },
+      "removeRun": {
+        "button": "Delete run",
+        "title": "Delete this run?",
+        "body": "The per-example results of this run are lost. The cost already incurred stays in the Costs report.",
+        "confirm": "Delete run"
+      },
+      "form": {
+        "addTitle": "Add example",
+        "editTitle": "Edit example",
+        "fieldsHint": "Data the prompt receives: {fields}. Empty means null. Write a list as JSON, starting with [.",
+        "note": "Note",
+        "noteHint": "Optional, up to 500 characters.",
+        "submitAdd": "Add example",
+        "submitSave": "Save",
+        "tooMany": "Each operation can have at most 1,000 examples.",
+        "expected": {
+          "title": "Expected answer",
+          "forms": {
+            "label": "Accepted forms",
+            "hint": "Separated by commas. Remove the forms you do not want the sentence to use.",
+            "filled": "{count} forms filled in from the catalog.",
+            "notFound": "This word is not in the catalog. Type the accepted forms, separated by commas."
+          },
+          "lemma": "Lemma",
+          "partOfSpeech": "Part of speech",
+          "verdict": "Verdict",
+          "verdictPlaceholder": "Choose a verdict"
+        }
+      },
+      "run": {
+        "title": "Run example set",
+        "start": "Run example set",
+        "judge": "Score with a judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (no model chosen)",
+        "note": "Runs the whole set with the current prompt. Each run calls the AI for every example and uses one run.",
+        "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Configs page)",
+        "quotaFailed": "Could not read the runs left.",
+        "needExample": "This operation’s example set has no examples. Add an example, then run again.",
+        "rateLimited": "All {limit} runs this hour are used. Try again at {time}.",
+        "wait": "Wait {seconds} s"
+      },
+      "runs": {
+        "title": "Runs",
+        "empty": "No runs yet.",
+        "emptyHint": "Press [Run example set] to run the whole set.",
+        "cols": {
+          "time": "Time",
+          "status": "Status",
+          "progress": "Progress",
+          "valid": "Valid",
+          "set": "Set",
+          "prompt": "Prompt revision",
+          "startedBy": "Started by"
+        }
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "finished": "Done",
+        "failed": "Failed",
+        "cancelled": "Stopped"
+      },
+      "detail": {
+        "title": "Run {time}",
+        "progress": "Progress",
+        "valid": "Valid",
+        "avgLatency": "Average time",
+        "cost": "Cost",
+        "model": "Model",
+        "prompt": "Prompt revision",
+        "startedBy": "Started by",
+        "set": "Set",
+        "draft": "Draft",
+        "config": "Config {number}",
+        "configGone": "Deleted config",
+        "configChanged": "The draft was saved again after this run was made, so the run was cancelled. Run it again with the new draft.",
+        "revision": "Revision {revision}",
+        "latency": "{ms} ms",
+        "costVnd": "{usd} · {vnd} at today’s rate",
+        "unknownCost": "{count} calls without a price",
+        "none": "—",
+        "queued": "Waiting for a worker to pick up the run. The page updates by itself.",
+        "queuedLong": "No worker has picked up this run yet.",
+        "running": "Running: {done}/{total} examples. The page updates by itself.",
+        "failed": "Failed: {error}",
+        "failedNoReason": "The run failed.",
+        "cancelled": "The run was stopped. Results of the examples already run are kept.",
+        "background": "Closing the page does not stop the run; open it again to see its progress.",
+        "results": "Result per example",
+        "deletedExample": "Deleted example",
+        "rawOutput": "Show raw output",
+        "notFound": "This run was not found. The run id may be wrong.",
+        "skipped": "Skipped (example deleted)",
+        "cols": {
+          "example": "Example",
+          "status": "Status",
+          "reason": "Reason",
+          "output": "Output",
+          "rule": "Rules",
+          "expected": "Expected",
+          "latency": "Time",
+          "cost": "Cost"
+        },
+        "rule": {
+          "pass": "Pass",
+          "fail": "Fail: {problems}",
+          "skippedNotInCatalog": "Skipped: not in the catalog",
+          "skippedNoRules": "Skipped: no rules yet",
+          "skipped": "Skipped",
+          "notApplicable": "Not applicable"
+        },
+        "expectedResult": {
+          "pass": "Pass",
+          "fail": "Fail"
+        },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} revision {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Waiting",
+            "running": "Scoring",
+            "finished": "Done",
+            "failed": "Stopped"
+          },
+          "errors": {
+            "admin-usd-cap": "Stopped because today's admin USD cap is spent.",
+            "stalled": "Stopped because the worker did not answer.",
+            "run-failed": "Not scored because the run did not finish.",
+            "model-price-missing": "The judge's model has no price."
+          },
+          "start": "Score with a judge",
+          "select": "Judge",
+          "sameProvider": "The model that wrote the sentences and the judge are both Anthropic: the judge may be lenient with a style of its own family.",
+          "stats": "Judge {name} revision {revision} · {criterion}: dev pass {pass}/{scored} (major {major}, minor {minor}) · held-out pass {hpass}/{hscored} · {unjudged} could not be scored",
+          "calibrated": "Calibrated",
+          "uncalibrated": "Not calibrated",
+          "verdicts": {
+            "pass": "Pass",
+            "fail_major": "Major fail",
+            "fail_minor": "Minor fail",
+            "unjudged": "Could not be scored"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} revision {revision}",
+          "labelNone": "Not labelled",
+          "labelFor": "Label · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Label"
+          },
+          "labelQueue": "Label one by one"
+        },
+        "stats": {
+          "dev": "Dev: shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "heldOut": "Held-out (totals only): shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "transient": "{count, plural, one {# example failed} other {# examples failed}} temporarily and count as failing the shape.",
+          "heldOutHidden": "Held-out examples are not listed."
+        }
+      },
+      "compare": {
+        "title": "Compare",
+        "select": "Compare with run (before)",
+        "choose": "Choose a run",
+        "option": "{time} · {model}",
+        "workingSet": "A run on the set being edited cannot be compared.",
+        "noOther": "No other run on this version to compare with yet.",
+        "cols": {
+          "criterion": "Criterion",
+          "devBefore": "Dev (before)",
+          "devNow": "Dev (now)",
+          "heldOutBefore": "Held-out (before)",
+          "heldOutNow": "Held-out (now)"
+        },
+        "rows": {
+          "shape": "Shape",
+          "rule": "Rules",
+          "expected": "Expected"
+        },
+        "devRegressions": "Dev examples that passed before and fail now ({count})",
+        "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
+        "judgeRow": "Judge {name} revision {revision} · {criterion}",
+        "judgeUnmatched": "{name}: only one run has scores of revision {revision}.",
+        "judgeBoth": "Score both with {name}",
+        "judgeRunning": "Scoring. The comparison updates when it is done.",
+        "judgeStopped": "The scoring pass stopped: {error}",
+        "noRegressions": "No example passed before and fails now.",
+        "criteria": {
+          "shape": "shape",
+          "rule": "rules",
+          "expected": "expected"
+        }
+      },
+      "bulkDelete": {
+        "selected": "{count} examples selected",
+        "clear": "Clear selection",
+        "selectFiltered": "Select all",
+        "selectRow": "Select example {summary}",
+        "selectHeldOut": "Select held-out example {id}",
+        "button": "Delete selected ({count})",
+        "title": "Delete {count} selected examples?",
+        "counts": "{dev} dev · {heldOut} held-out",
+        "body": "Remove from the working set. Frozen versions and previous eval results are preserved. This cannot be undone.",
+        "confirm": "Delete {count} examples",
+        "done": "Deleted {deleted} examples; {missing} examples were already missing.",
+        "retry": "Retry deleting {count} examples",
+        "retryHint": "The result could not be confirmed. Retry the same request to retrieve its saved result."
+      },
+      "tabs": {
+        "label": "Example set pages",
+        "list": "Examples",
+        "sets": "Frozen versions",
+        "runs": "Runs"
+      },
+      "stats": {
+        "label": "Dev and held-out examples",
+        "dev": "{count} dev",
+        "heldOut": "{count} held-out"
+      }
+    },
+    "judges": {
+      "add": "Add judge",
+      "empty": "No judge yet",
+      "emptyHint": "Add the first judge to score what the AI writes.",
+      "cols": {
+        "judge": "Judge",
+        "operations": "Operations it scores",
+        "model": "Model",
+        "state": "Status",
+        "actions": "Actions"
+      },
+      "name": "{name} · revision {revision}",
+      "noModel": "No model chosen",
+      "active": "In use",
+      "inactive": "Off",
+      "edit": "Edit",
+      "editFor": "Edit {name}",
+      "clone": "Clone judge",
+      "cloneFor": "Clone judge {name}",
+      "agreement": "Agreement",
+      "agreementFor": "Agreement of {name}",
+      "editor": {
+        "title": "Judge {name}",
+        "titleNew": "Add judge",
+        "name": "Name",
+        "operations": "Operations it scores",
+        "criteria": "Criteria",
+        "criterion": "Criterion {n}",
+        "code": "Code",
+        "question": "Question",
+        "addCriterion": "Add criterion",
+        "removeCriterion": "Remove criterion {n}",
+        "instructions": "Instructions",
+        "examples": "Sample examples",
+        "model": "Model",
+        "modelHint": "A judge uses Anthropic models only and is not told which model wrote the output.",
+        "active": "In use",
+        "save": "Save as new revision",
+        "create": "Create judge",
+        "saved": "Saved revision {revision}.",
+        "savedSame": "Saved (revision unchanged).",
+        "created": "Created judge {name}.",
+        "reload": "Load the new revision",
+        "reloadNote": "Loading the new revision replaces the fields with it; what you were editing is lost.",
+        "close": "Close",
+        "history": "Revisions",
+        "revision": "Revision {revision} · {date} · {email} · {model}",
+        "historyFailed": "Could not load the revisions."
+      },
+      "cloneDialog": {
+        "title": "Clone judge",
+        "name": "Name",
+        "defaultName": "{name} (copy)",
+        "confirm": "Clone",
+        "done": "Created judge {name}."
+      },
+      "label": {
+        "title": "Label · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Input",
+        "output": "Output",
+        "criterion": "Criterion",
+        "pass": "Pass (1)",
+        "major": "Major fail (2)",
+        "minor": "Minor fail (3)",
+        "skip": "Skip",
+        "previous": "Previous",
+        "hint": "Keys 1, 2, 3 label the output. A label is shared by every judge revision. Held-out examples are not here.",
+        "labelled": "Labelled: {verdict}",
+        "end": "Went through all {total} outputs.",
+        "backToRun": "Back to the run",
+        "backToPass": "Back to the pass",
+        "empty": "The run has no dev output to label.",
+        "emptyPass": "The pass has no question to label.",
+        "missing": "Open this screen from a run on the Example sets page or a pass on the Real AI questions page, with the “Label one by one” link."
+      },
+      "agreementPanel": {
+        "title": "Agreement with the labels · {name}",
+        "row": "Revision {revision} · {criterion}: {labeled} labels · agree pass/fail {rate} · agree on level {exact}",
+        "calibrated": "Calibrated",
+        "uncalibrated": "Not calibrated",
+        "need": "Needs at least {min} labels and agreement from {ratio}.",
+        "noRate": "—",
+        "close": "Close"
+      }
+    },
+    "real": {
+      "note": "The judge scores the AI questions learners met recently, while the system still keeps the content of AI calls. A question with a learner's private word is never judged.",
+      "noJudge": "No judge is switched on for these operations. Add or switch on a judge on the Judge page.",
+      "noJudgeLink": "Open the Judge page",
+      "pick": "Choose the questions to judge",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Operation",
+        "pair": "Config · model",
+        "testOnly": "Test accounts only (admin, editor)"
+      },
+      "pairAll": "All",
+      "pairOption": "Config {number} · {model} ({count} questions)",
+      "pairOptionNoConfig": "Before configs · {model} ({count} questions)",
+      "estimate": {
+        "selected": "Will judge {selected} questions (at most {limit}), newest first.",
+        "remaining": "{remaining} questions will still be unjudged after this pass.",
+        "skippedPrivate": "Skipping {count} questions with a learner's private word.",
+        "skippedNoContent": "Skipping {count} questions whose content is no longer kept.",
+        "skippedJudged": "Skipping {count} questions this judge revision already judged.",
+        "cost": "Estimated cost: {usd} USD",
+        "costUnknown": "Estimated cost: cannot be estimated yet (this judge revision has not judged anything).",
+        "cap": "Admin cost cap per day: {cap} USD.",
+        "retentionOff": "There is nothing to judge: the system is not keeping the content of AI calls (days kept = 0).",
+        "noStaff": "There is no admin or editor account yet.",
+        "empty": "No question matches the filters."
+      },
+      "start": "Judge {count} questions",
+      "passes": {
+        "title": "Judge passes",
+        "empty": "No pass yet.",
+        "emptyHint": "Choose the questions above, then press [Judge … questions].",
+        "pass": "{time} · {judge} revision {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} revision {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Pass",
+          "status": "Status"
+        }
+      },
+      "results": {
+        "title": "Judge pass · {time}",
+        "titleUnknown": "Judge pass",
+        "notFound": "This pass was not found.",
+        "judge": "Judge",
+        "operation": "Operation",
+        "filters": "Filters",
+        "startedBy": "Started by",
+        "cost": "Cost",
+        "judgeLine": "{name} revision {revision} · {model}",
+        "judgeNoModel": "{name} revision {revision}",
+        "allPairs": "Every config",
+        "pair": "Config {number} · {model}",
+        "testOnly": "Test accounts only",
+        "queued": "Waiting for the worker to pick the pass up.",
+        "running": "Judging {judged}/{total} questions.",
+        "failedNoReason": "The pass stopped with no reason.",
+        "section": "Results",
+        "empty": "The pass has no question.",
+        "cols": {
+          "question": "Question",
+          "pair": "Config · model",
+          "score": "Score",
+          "reason": "Reason",
+          "label": "Label",
+          "actions": "Actions"
+        },
+        "pending": "Not judged yet",
+        "deleted": "The question was deleted; only the snapshot taken when it was judged is left.",
+        "none": "—"
+      },
+      "add": {
+        "button": "Add to the example set",
+        "buttonFor": "Add to the example set · {question}",
+        "title": "Add to the example set",
+        "body": "The new example goes into the working set of {operation}, as a dev example.",
+        "word": "{word} · {pos}",
+        "rebuilt": "The original content is older than 7 days and no longer kept. The input will be rebuilt from the sense's current content in the catalog: distractors and other meanings are chosen again, and the sense may have been edited since the question was made.",
+        "confirm": "Add to the example set",
+        "added": "Added to the example set (dev).",
+        "openEval": "Open Example sets",
+        "notEligible": {
+          "private-word": "This question has a learner's private word, so it is not added to the example set.",
+          "sense-gone": "This question's sense is no longer in the catalog, so its input cannot be rebuilt.",
+          "no-input": "The catalog does not have enough senses or words to rebuild the distractors.",
+          "report-not-confirmed": "Only a confirmed report can be added to the example set.",
+          "not-ai": "Only a question made by the AI can be added to the example set."
+        }
+      }
+    },
+    "costs": {
+      "note": "Costs are estimated from token counts and the prices entered.",
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "groupBy": "Group by",
+        "apply": "Show"
+      },
+      "groups": {
+        "day": "Day",
+        "operation": "Operation",
+        "model": "Model",
+        "purpose": "Purpose",
+        "outcome": "Outcome"
+      },
+      "cols": {
+        "group": "Group",
+        "calls": "Calls",
+        "input": "Input tokens",
+        "cached": "Cached tokens",
+        "output": "Output tokens",
+        "reasoning": "Reasoning tokens",
+        "usd": "Cost US$",
+        "vnd": "Cost ₫",
+        "unknown": "Calls without a price"
+      },
+      "total": "Total",
+      "empty": "No calls in this date range.",
+      "errors": {
+        "required": "Pick a date.",
+        "fromAfterTo": "From must be on or before To.",
+        "tooLong": "The range is at most 366 days."
+      },
+      "batches": {
+        "tabsLabel": "Cost view",
+        "tab": "By batch",
+        "aggregate": "Existing aggregate report",
+        "note": "Each row is one admin run. Tokens and costs include every call, including retries. Learner usage remains in the aggregate report.",
+        "partial": "Partial · batch has not ended",
+        "unknown": "Price incomplete",
+        "knownSubtotal": "Known subtotal: {cost} · {count} calls without a price.",
+        "all": "All",
+        "operation": "Operation",
+        "kind": "Batch kind",
+        "status": "Status",
+        "empty": "No batches in this range.",
+        "open": "Batch details {id}",
+        "title": "Batch details",
+        "kinds": {
+          "test": "Quick test",
+          "eval": "Eval",
+          "judge": "Judge"
+        },
+        "statuses": {
+          "queued": "Queued",
+          "running": "Running",
+          "finished": "Finished",
+          "failed": "Failed",
+          "cancelled": "Cancelled"
+        },
+        "cols": {
+          "batch": "Batch / run",
+          "model": "Model & configuration",
+          "progress": "Progress",
+          "tokens": "Input / output tokens",
+          "cost": "Cost USD"
+        },
+        "progress": "{done}/{total} examples",
+        "calls": "{calls} calls · {retries} retries, included in totals",
+        "extraTokens": "Cached: {cached} · Reasoning: {reasoning}",
+        "fingerprint": "Fingerprint",
+        "saved": "Saved configuration snapshot",
+        "temporary": "Temporary run · draft not saved",
+        "sourceUnknown": "Snapshot source unavailable",
+        "config": "Configuration {id} · v{version}",
+        "noConfig": "No linked configuration",
+        "snapshotNote": "The snapshot keeps the content and settings used for this run. Later draft edits do not change this run.",
+        "snapshot": "Prompt & settings snapshot",
+        "noSnapshot": "This legacy batch has no snapshot.",
+        "startedBy": "Started by",
+        "createdAt": "Created",
+        "startedAt": "Started",
+        "finishedAt": "Finished",
+        "evalSource": "Open eval results",
+        "judgeSource": "Open judge pass",
+        "parent": "Open parent batch",
+        "draft": "Open source configuration",
+        "outputs": "Quick test results",
+        "output": "Output",
+        "expires": "Output retained until {date}",
+        "expired": "Output expired or was not retained.",
+        "heldOut": "Held-out content is hidden.",
+        "resultsElsewhere": "See results at the eval or judge source. This page does not display held-out inputs or outputs.",
+        "notFound": "Batch not found.",
+        "invalidId": "Invalid batch ID."
+      }
+    },
+    "calls": {
+      "search": {
+        "label": "Operation id (operation_id)",
+        "submit": "Search",
+        "placeholder": "Paste the id from an error report or a log"
+      },
+      "hint": "Enter an operation id to see its calls.",
+      "empty": "No calls with this id.",
+      "forId": "Operation id: {id}",
+      "cols": {
+        "attempt": "Attempt",
+        "purpose": "Purpose",
+        "operation": "Operation",
+        "model": "Model",
+        "outcome": "Outcome",
+        "http": "HTTP",
+        "tokens": "Tokens",
+        "cost": "Cost",
+        "time": "Time",
+        "content": "Content"
+      },
+      "tokensInOut": "{input} in · {output} out",
+      "tokensExtra": "cache {cached} · reasoning {reasoning}",
+      "costUnknown": "No price yet",
+      "revision": "Prompt revision {revision}",
+      "untilDate": "Kept until {date}",
+      "noContent": "Content no longer available",
+      "heldOut": "held-out",
+      "hiddenContent": "Content hidden",
+      "view": "View",
+      "viewFor": "View the content of attempt {attempt}",
+      "content": {
+        "title": "Call content",
+        "request": "Request",
+        "response": "Response"
+      }
+    },
+    "workspace": {
+      "intro": "Create experiments, compare runs, then choose a config to publish.",
+      "pages": "Config pages",
+      "drafts": "Drafts",
+      "history": "History",
+      "live": "Live config",
+      "expandLive": "Expand live config",
+      "collapseLive": "Collapse live config",
+      "liveNote": "This config serves learners. Draft and temporary runs do not change it.",
+      "empty": "No drafts yet. Create one from the live config to start.",
+      "name": "Draft name",
+      "unnamed": "Draft #{number}",
+      "version": "Save {version}",
+      "batch": "View batch",
+      "unknownCost": "Price incomplete",
+      "actions": "Actions for draft #{number}",
+      "menu": {
+        "edit": "Edit draft",
+        "test": "Quick test",
+        "eval": "Run eval",
+        "clone": "Clone",
+        "publish": "Publish",
+        "delete": "Delete draft"
+      },
+      "revisions": "Draft revisions",
+      "legacy": "Legacy prompt history",
+      "viewRevisions": "View revisions",
+      "emptyRevisions": "No revisions yet.",
+      "back": "Draft list",
+      "temporaryNote": "Run all unsaved content, including model and settings. Does not save the draft.",
+      "search": "Search dev examples",
+      "level": "Level",
+      "allLevels": "All levels",
+      "chosen": "Selected {count}/5",
+      "snapshot": "Run snapshot",
+      "savedTarget": "Saved draft",
+      "temporaryTarget": "Unsaved form",
+      "liveTarget": "Live config",
+      "target": "Run with",
+      "runSnapshot": "Content and model are frozen at the time of the run.",
+      "olderRuns": "Load older runs",
+      "cost": "Cost USD",
+      "model": "Model",
+      "noSelection": "No selection: the server uses up to 5 dev examples or few-shot examples.",
+      "noMatches": "No matching dev examples.",
+      "historyTabs": "History types",
+      "revisionTitle": "Draft · save {version}",
+      "savedContent": "Saved content",
+      "checkAgain": "Recheck",
+      "gone": "This draft was deleted or published. Return to the list to choose another draft.",
+      "clearSelection": "Clear selection",
+      "pickDev": "Choose dev examples",
+      "promptHistory": "Prompt history",
+      "cols": {
+        "draft": "Draft",
+        "model": "Model",
+        "lastRun": "Last run",
+        "updated": "Updated"
+      },
+      "notRun": "Not run"
+    }
+  },
+  "entitlements": {
+    "aiToday": "AI uses today: {used}/{cap}",
+    "aiTodayNoCap": "AI uses today: {used} (no limit)",
+    "aiTodayError": "Could not load today's AI uses.",
+    "filters": {
+      "learner": "Learner (email)",
+      "grantedBy": "Granted by (email)",
+      "emailPlaceholder": "Full email address",
+      "active": "Still in effect",
+      "activeAll": "All",
+      "activeYes": "Still in effect",
+      "activeNo": "No longer in effect",
+      "expiring": "Expiring within … days",
+      "expiringHint": "1 to 365 days",
+      "apply": "Filter"
+    },
+    "cols": {
+      "learner": "Learner",
+      "kind": "Type",
+      "limits": "Numbers",
+      "from": "From",
+      "to": "Until",
+      "grantedBy": "Granted by",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "kinds": {
+      "plan": "Pro plan",
+      "limits": "Custom numbers"
+    },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} practice sessions a day",
+      "ai_practice_per_cycle": "{n} AI question uses a month",
+      "ai_lookup_per_cycle": "{n} AI lookup uses a month"
+    },
+    "statuses": {
+      "active": "Active",
+      "scheduled": "Not started",
+      "revoked": "Revoked",
+      "expired": "Expired",
+      "replaced": "Replaced"
+    },
+    "actions": {
+      "editDates": "Edit dates",
+      "revoke": "Revoke",
+      "editDatesFor": "Edit dates of the grant for {email}",
+      "revokeFor": "Revoke the grant for {email}"
+    },
+    "revokedNote": "Revoked: {reason}",
+    "empty": "No plan or custom numbers granted to anyone yet.",
+    "emptyFiltered": "No grant matches the filters. Change the emails or the number of days and look again.",
+    "footer": "Newest first · 20 grants per page · dates in Asia/Ho_Chi_Minh time",
+    "revoke": {
+      "title": "Revoke the grant for {email}?",
+      "body": "The grant stops at once. To give it back, make a new grant.",
+      "summary": "{kind} · {status} from {date}",
+      "reason": "Reason for revoking (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "keep": "Keep it",
+      "confirm": "Revoke",
+      "done": "Revoked the grant for {email}."
+    },
+    "editDates": {
+      "title": "Edit dates of the grant for {email}",
+      "summary": "{kind} · {status} from {date}",
+      "from": "From",
+      "fromLocked": "This grant has started, so its start date cannot change.",
+      "fromHint": "Can only be changed before the grant starts.",
+      "to": "Until",
+      "reason": "Reason (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "hint": "Moving it later or earlier both work, as long as the new date is still in the future. AI uses are not counted again.",
+      "noChange": "No date has changed.",
+      "dateRequired": "Pick a date.",
+      "lastChange": "Last edit: {date} · {email} · {change} · {reason}",
+      "changeFrom": "from {old} → {new}",
+      "changeTo": "until {old} → {new}",
+      "keep": "Cancel",
+      "confirm": "Save new dates",
+      "done": "Saved the new dates for {email}."
+    },
+    "new": {
+      "open": "New grant",
+      "title": "Grant a plan or custom numbers",
+      "email": "Learner (find by email)",
+      "emailPlaceholder": "The learner's full email address",
+      "check": "Check",
+      "checking": "Checking…",
+      "confirmed": "Confirmed account {email}.",
+      "notFound": "No account has this email.",
+      "retryAt": "Try again at {time}.",
+      "lookupFailed": "Could not check this email. Try again.",
+      "emailRequired": "Enter an email, then check it.",
+      "emailShort": "Enter at least 3 characters of the email.",
+      "kind": "Type",
+      "practiceSessions": "Practice sessions per day (0–200)",
+      "aiPractice": "AI question uses per month (0–5,000)",
+      "aiLookup": "AI lookup uses per month (0–5,000)",
+      "limitInvalid": "Enter a whole number within the allowed range.",
+      "limitsRequired": "Enter at least one number.",
+      "from": "From",
+      "fromHint": "Leave empty to start right now.",
+      "fromPast": "The start day cannot be in the past.",
+      "to": "Until",
+      "toHint": "The last day it stays in effect.",
+      "toRequired": "Pick the last day.",
+      "toBeforeFrom": "The last day must be on or after the start day.",
+      "reason": "Reason (1–300 characters)",
+      "reasonInvalid": "Enter a reason, at most 300 characters.",
+      "note": "A Pro grant that starts now replaces the Pro grant already in place. New AI uses count by monthly cycle from the start day.",
+      "submit": "Grant",
+      "done": "Granted to {email}.",
+      "understood": "Got it",
+      "notSupported": "Granted. Auto-renewal could not be turned off at the payment provider; the learner may still be charged next period.",
+      "confirm": {
+        "title": "Grant Pro to {email}?",
+        "intro": "This person pays for Pro and renews automatically. Granting will:",
+        "turnOff": "turn off auto-renewal of the paid plan, with no refund;",
+        "keepPaid": "the rest of the period already paid stays Pro;",
+        "replace": "revoke the grant already in place (if any) and count AI uses again from today.",
+        "keep": "Keep as is",
+        "ok": "Grant and turn off auto-renewal"
+      }
+    },
+    "refusal": {
+      "self-grant": "You cannot grant to yourself.",
+      "target-is-admin": "An editor cannot grant to an admin account.",
+      "target-is-staff": "An editor cannot grant to a staff account.",
+      "ai-limits-admin-only": "Only an admin can set AI use numbers.",
+      "target-has-paid-subscription": "This person pays for Pro and renews automatically."
+    }
+  },
+  "orders": {
+    "intro": "Every time a learner presses Buy there is an order. See whether the money arrived; when you see it in the bank app and the system does not, press Money received; cancel a waiting order, close one that is dealt with, revoke a period. Admins only.",
+    "filters": {
+      "email": "Learner email",
+      "emailPlaceholder": "Search by email",
+      "status": "Status",
+      "allStatuses": "Every status",
+      "needsAttention": "Needs a look",
+      "code": "Transfer note",
+      "codePlaceholder": "WM…",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "user": "Learner",
+      "plan": "Period · Amount",
+      "code": "Transfer note",
+      "at": "Created",
+      "status": "Status"
+    },
+    "months": "{count, plural, one {# month} other {# months}}",
+    "statuses": {
+      "pending": "Waiting",
+      "paid": "Paid",
+      "expired": "Expired",
+      "cancelled": "Cancelled",
+      "failed": "Link not created",
+      "needs_review": "Needs a look",
+      "closed": "Closed"
+    },
+    "reasons": {
+      "amount-short": "Paid too little",
+      "amount-over": "Paid too much",
+      "late-payment": "Paid late",
+      "account-deleted": "Account deleted",
+      "extra-payment": "An extra payment came",
+      "reconcile-mismatch": "Reconciliation key mismatch",
+      "provider-mismatch": "payOS says money came but lists no transfer"
+    },
+    "sources": {
+      "webhook": "Webhook",
+      "reconcile": "Reconciliation",
+      "manual": "Staff"
+    },
+    "outcomes": {
+      "opened-period": "Opened a period",
+      "attached": "Attached to an earlier payment",
+      "counted": "Counted",
+      "flagged": "Needs a look",
+      "refund-needed": "Needs a refund"
+    },
+    "proSources": {
+      "prepaid": "Prepaid period",
+      "grant": "Pro granted by the team"
+    },
+    "periods": {
+      "revoked": "Revoked {date}"
+    },
+    "detailLink": "Details",
+    "detailFor": "Details of the order of {email}",
+    "footer": "{count, plural, one {# order} other {# orders}} · newest first · dates and times in the Asia/Ho_Chi_Minh zone",
+    "empty": "No order matches the filters. Change the email, status or dates and look again.",
+    "detail": {
+      "title": "Order details",
+      "user": "Learner",
+      "userId": "Learner id",
+      "description": "Transfer note",
+      "code": "Order code (orderCode)",
+      "plan": "Period · Amount",
+      "status": "Status",
+      "reason": "Needs a look because",
+      "via": "Money recorded through",
+      "createdAt": "Created",
+      "expiresAt": "Link expires",
+      "paymentsTitle": "Payments",
+      "noPayments": "No payment yet.",
+      "providerTime": "payOS wrote {time}",
+      "periodsTitle": "Periods opened",
+      "noPeriods": "The order has opened no period.",
+      "proTitle": "The learner's Pro now",
+      "proUntil": "Pro through {date}",
+      "proNone": "The learner is not on Pro now.",
+      "refundTitle": "Information for a refund",
+      "refundName": "Payer's name",
+      "refundAccount": "Account number",
+      "refundBank": "Bank",
+      "refundNote": "Kept only when money arrives after the account was deleted; removed after 90 days or when you press Dealt with.",
+      "resolutionTitle": "Dealt with",
+      "close": "Close"
+    },
+    "actions": {
+      "confirm": "Money received",
+      "cancel": "Cancel order",
+      "resolve": "Dealt with",
+      "revoke": "Revoke period"
+    },
+    "confirm": {
+      "title": "Money received",
+      "body": "You saw {amount} with the note {code} in the bank app, and the system does not know it. The learner gets the Pro period at once.",
+      "reference": "The bank's reference",
+      "amount": "Amount received (₫)",
+      "reason": "Reason",
+      "invalid": "Enter the reference, the amount as a positive whole number and a reason (up to 300 characters).",
+      "submit": "Confirm received"
+    },
+    "cancel": {
+      "title": "Cancel order",
+      "body": "Cancel order {code}? The payment link is cancelled at payOS and the learner cannot pay it any more.",
+      "keep": "Keep the order",
+      "confirm": "Cancel order"
+    },
+    "resolve": {
+      "title": "Dealt with",
+      "body": "Write down what was done. An order that needed a look is closed; a paid order with a flag loses the flag. The order's refund information is deleted.",
+      "note": "Note",
+      "placeholder": "Refunded 199,000 ₫ through the bank on 06/11",
+      "invalid": "Enter a note (up to 300 characters).",
+      "submit": "Mark as dealt with"
+    },
+    "revoke": {
+      "title": "Revoke period",
+      "body": "This period stops counting from now. Later periods do not move; the transaction row stays, and a refund (if any) is made at the bank.",
+      "reason": "Reason",
+      "invalid": "Enter a reason (up to 300 characters).",
+      "keep": "Keep the period",
+      "submit": "Revoke"
+    }
+  },
+  "transactions": {
+    "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",
+    "filters": {
+      "email": "Learner email",
+      "emailPlaceholder": "Search by email",
+      "kind": "Type",
+      "allKinds": "All types",
+      "from": "From",
+      "to": "To",
+      "apply": "Filter"
+    },
+    "cols": {
+      "user": "Learner",
+      "kind": "Type",
+      "plan": "Plan · Active period",
+      "at": "Time",
+      "amount": "Amount · Provider",
+      "status": "Status"
+    },
+    "kinds": {
+      "purchase": "Purchase",
+      "renewal": "Renewal",
+      "plan_change": "Billing change",
+      "refund": "Refund",
+      "trial": "Trial",
+      "grant": "Team grant"
+    },
+    "statuses": {
+      "succeeded": "Succeeded",
+      "refunded": "Refunded",
+      "pending": "Pending",
+      "reversed": "Refund reversed"
+    },
+    "intervals": {
+      "month": "monthly",
+      "year": "yearly"
+    },
+    "planInterval": "{plan} · {interval}",
+    "providers": {
+      "fake": "Fake (test)"
+    },
+    "noGateway": "No provider",
+    "detailLink": "Details",
+    "detailFor": "Transaction details for {email}",
+    "footer": "{count, plural, one {# transaction} other {# transactions}} · newest first · times in Asia/Ho_Chi_Minh",
+    "empty": "No transactions match the filters. Change the email, type or dates and try again.",
+    "detail": {
+      "title": "Transaction details",
+      "user": "Learner",
+      "userId": "Learner ID",
+      "kind": "Type",
+      "plan": "Plan",
+      "amount": "Amount",
+      "at": "Time",
+      "period": "Active period",
+      "status": "Status",
+      "gateway": "Payment provider",
+      "testEnv": "{gateway} · test environment",
+      "txId": "Provider transaction ID",
+      "readOnly": "Read only. Refunds are made at the payment provider; its refund event updates this row.",
+      "close": "Close"
+    }
+  },
+  "reportReasons": {
+    "add": "Add reason",
+    "cols": {
+      "position": "Order",
+      "code": "Code",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "active": "In use",
+      "updatedBy": "Last edited by",
+      "actions": "Actions"
+    },
+    "appliesTo": {
+      "ai": "AI questions",
+      "non_ai": "Regular questions",
+      "all": "Both"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "editFor": "Edit reason {code}",
+    "activeFor": "In use: {code}",
+    "note": "A turned-off reason is no longer shown to learners; older reports keep the name they were sent with.",
+    "empty": "There are no report reasons yet.",
+    "emptyHint": "Add a reason so learners can pick it when reporting a problem.",
+    "newTitle": "Add a report reason",
+    "editTitle": "Edit a report reason",
+    "form": {
+      "code": "Code",
+      "codeHint": "Starts with a letter, 2–40 characters of a–z, 0–9, _",
+      "codeInvalid": "The code must start with a letter and be 2–40 characters of a–z, 0–9, _.",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "labelHint": "1–100 characters",
+      "labelInvalid": "Enter a name of 1 to 100 characters.",
+      "hintVi": "Hint in the note box (Vietnamese)",
+      "hintEn": "Hint in the note box (English)",
+      "hintHint": "Optional, up to 200 characters",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "refundableHint": "Only has an effect on AI questions",
+      "position": "Order",
+      "positionHint": "From 0 to 10,000; smaller shows first",
+      "positionInvalid": "Enter a whole number from 0 to 10,000.",
+      "save": "Save"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Status",
+      "reason": "Reason",
+      "source": "Question source",
+      "allStatuses": "All statuses",
+      "allReasons": "All reasons",
+      "allSources": "Any source"
+    },
+    "statuses": {
+      "open": "Open",
+      "no_error": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Error confirmed"
+    },
+    "sources": {
+      "rule": "Rule question",
+      "ai": "AI question"
+    },
+    "types": {
+      "mcq_definition": "Multiple choice",
+      "true_false_definition": "True / False",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in a sentence",
+      "mcq_sentence": "Multiple choice in a sentence"
+    },
+    "cols": {
+      "word": "Word",
+      "type": "Question type",
+      "reason": "Reason",
+      "source": "Source",
+      "note": "Note",
+      "sentAt": "Sent",
+      "status": "Status",
+      "resolvedBy": "Handled by"
+    },
+    "empty": "No open reports left.",
+    "emptyFiltered": "No reports match the filters.",
+    "detail": {
+      "title": "Report · {word}",
+      "titleUnknown": "Report",
+      "notFound": "This report was not found.",
+      "backToList": "Back to the reports",
+      "question": "Question",
+      "prompt": "Prompt",
+      "meaning": "Meaning",
+      "sentence": "Sentence",
+      "options": "Options",
+      "correctAnswer": "Correct answer",
+      "correctMark": "Correct answer",
+      "learnerPicked": "Learner chose",
+      "unclearOption": "Cannot tell which option",
+      "learnerAnswer": "Learner's answer",
+      "noAnswer": "No answer",
+      "triedAnswers": "Tried",
+      "hints": "Hints seen",
+      "noHints": "No hint was used",
+      "true": "True",
+      "false": "False",
+      "reason": "Reason",
+      "note": "Learner's note",
+      "noNote": "No note",
+      "ai": "AI details",
+      "operationId": "Operation ID",
+      "callId": "Call ID",
+      "model": "Model",
+      "promptRevision": "Prompt revision",
+      "openCall": "View this call",
+      "resolved": "Handled",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "1 AI question unit given back",
+      "refundPending": "Not refunded yet, the system retries every hour",
+      "notRefunded": "No unit refunded",
+      "fixHint": "Edit the content under Senses",
+      "fixLink": "Open the senses of “{word}”"
+    },
+    "actions": {
+      "noError": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Confirm error",
+      "refundLine": "Confirming the error gives the learner back 1 AI question unit."
+    }
+  },
+  "users": {
+    "create": "Create user",
+    "edit": {
+      "title": "Edit {email}",
+      "emailHint": "The new email must be confirmed again; the user is signed out and the old address gets a notice.",
+      "emailInvalid": "Enter a valid email",
+      "emailTaken": "Another account already uses this email.",
+      "nameInvalid": "1 to 50 characters.",
+      "tooYoung": "The user must be at least 13.",
+      "timezone": "Time zone",
+      "timezoneHint": "An IANA zone name, e.g. Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Enter a time zone",
+      "save": "Save",
+      "saved": "Saved {email}."
+    },
+    "reset": {
+      "title": "Reset the password of {email}",
+      "body": "The new password is sent by email. The user is signed out everywhere.",
+      "mustChange": "Ask for a new password at the next sign-in",
+      "confirm": "Reset password",
+      "done": "Password reset for {email}."
+    },
+    "search": "Search by email, family or given name (2+ characters)",
+    "searchHint": "Not case-sensitive; accents matter.",
+    "searchShort": "Type at least 2 characters",
+    "filters": {
+      "status": "Status",
+      "all": "All",
+      "active": "Active",
+      "locked": "Locked",
+      "deleting": "Deleting"
+    },
+    "cols": {
+      "email": "Email",
+      "name": "Name",
+      "role": "Role",
+      "verified": "Email verified",
+      "status": "Status",
+      "created": "Created",
+      "lastSeen": "Last seen"
+    },
+    "roles": {
+      "admin": "admin",
+      "editor": "editor",
+      "learner": "learner"
+    },
+    "statuses": {
+      "active": "Active",
+      "locked": "Locked",
+      "deleting": "Deleting"
+    },
+    "verified": {
+      "yes": "Verified",
+      "no": "Not verified"
+    },
+    "footer": "Newest first · 20 people per page",
+    "empty": "No users yet.",
+    "emptySearch": "Nobody matches “{q}”. Try searching by email.",
+    "emptyFiltered": "No user has this status.",
+    "detail": {
+      "titleUnknown": "User",
+      "notFound": "This user was not found.",
+      "backToList": "Back to the list",
+      "email": "Email",
+      "givenName": "Given name",
+      "familyName": "Family name",
+      "birthDate": "Date of birth",
+      "terms": "Accepted the terms",
+      "termsValue": "{time} · version {version}",
+      "role": "Role",
+      "status": "Status",
+      "lockedLine": "Locked since {time} · by {who}",
+      "lockReason": "Reason: {reason}",
+      "lock": "Lock account",
+      "unlock": "Unlock",
+      "unlocked": "Unlocked {email}.",
+      "locked": "Locked {email}.",
+      "edit": "Edit",
+      "resetPassword": "Reset password",
+      "signIn": "Signs in with",
+      "methodPassword": "Password",
+      "methodGoogle": "Google",
+      "deleteAction": "Delete account",
+      "deleted": "Deleted the account {email}.",
+      "deletePending": "Finishing the deletion of {email}.",
+      "deletingLine": "This account is being deleted. Other actions are off; press Delete account to run it again if the deletion is stuck."
+    },
+    "delete": {
+      "title": "Delete the account {email}?",
+      "body": "All of this person's learning data, private words, own sentences and plans are deleted for good. Payment records stay, without the name. This cannot be undone.",
+      "renewing": "The renewing plan will be switched off",
+      "typeEmail": "Type the email again to confirm",
+      "confirm": "Delete permanently",
+      "keep": "Keep"
+    },
+    "lock": {
+      "title": "Lock the account of {email}?",
+      "body": "This person is signed out of every device and cannot sign in until the account is unlocked.",
+      "reason": "Reason (1–500 characters, one line)",
+      "reasonInvalid": "Enter a reason of 1 to 500 characters, on one line.",
+      "confirm": "Lock account",
+      "keep": "Keep as is"
     }
   },
   "staff": {
@@ -192,7 +1867,9 @@
       "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use “Forgot password” on the login page.",
       "close": "Close",
       "emailTaken": "This email already has an account. Use “Find by email” above and grant a role.",
-      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
+      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+      "emailTakenUser": "This email already has an account.",
+      "doneBodyLearner": "The account was created and the password was sent to {email}. On first sign-in the learner is asked for a birth date and to accept the terms."
     }
   },
   "navGroups": {
@@ -213,13 +1890,18 @@
       "words": "Word list with spelling variants, editorial level and function-word flag.",
       "senses": "Draft senses, mark them reviewed, publish and see the revision history.",
       "topics": "Add, rename in Vietnamese and English, and archive topics.",
-      "reported": "Queue of questions reported by learners; hide, remove or restore a question.",
-      "irregular": "List of irregular forms (go → went, gone) used to check AI-generated questions.",
+      "unknownForms": "Inflected forms the tables do not know (go → went, gone) to accept or skip; they are used to check AI-generated questions.",
+      "reports": "Queue of questions reported by learners; hide, remove or restore a question.",
+      "reportReasons": "Add, edit and turn off the reasons learners can pick when reporting a question.",
+      "refunds": "Give AI uses back to a learner when an AI error has been confirmed.",
       "users": "User list, account status, lock or unlock.",
       "entitlements": "Grant and revoke access and AI uses for learners, with a reason and an expiry.",
-      "aiSettings": "Turn AI on or off for the whole system and set the daily cost cap.",
+      "aiModels": "Add OpenAI and Anthropic models and turn each one on or off.",
+      "aiConfigs": "Draft the config of each AI operation (instructions, model, effort), test it, compare it with the live one, then publish or roll back.",
+      "aiEval": "Approved example sets and their run results before AI is enabled for learners.",
       "aiCosts": "Log of every AI call, totals per day and per model, invoice reconciliation.",
-      "evalSets": "Approved example sets and their run results before AI is enabled for the pilot."
+      "aiCalls": "Every AI call: operation, model, time, result and cost.",
+      "settings": "The numbers that steer the system: reminders, learning and review, practice, plans and uses, content, AI."
     },
     "etaUnconfirmed": "Planned: Step {step} (not confirmed)"
   },
@@ -229,6 +1911,7 @@
     "succeeded": "Done",
     "partial": "Partial",
     "failed": "Failed",
+    "cancelled": "Stopped",
     "reverted": "Reverted"
   },
   "sources": {
@@ -240,7 +1923,25 @@
       "name": "Source name",
       "version": "Version",
       "license": "License",
-      "priority": "Priority"
+      "priority": "Priority",
+      "shown": "Shown to learners",
+      "shownYes": "Yes",
+      "shownNo": "No",
+      "actions": "Actions"
+    },
+    "shownNote": "A source appears on the Data sources page when at least one of its senses is published.",
+    "edit": "Edit",
+    "editFor": "Edit source {name}",
+    "editTitle": "Edit source “{name}”",
+    "delete": "Delete",
+    "deleteFor": "Delete source {name}",
+    "deleteTitle": "Delete source “{name}”?",
+    "deleteBody": "The source is removed from the list and from the public license page, and this cannot be undone.",
+    "deleteConfirm": "Delete source",
+    "ownerNote": "A built-in source, cannot be edited or deleted",
+    "toast": {
+      "saved": "Source “{name}” saved.",
+      "deleted": "Source “{name}” deleted."
     },
     "form": {
       "name": "Source name",
@@ -320,6 +2021,8 @@
     "batch": "Import batch",
     "all": "All",
     "download": "Download CSV",
+    "withoutSenses": "Words without senses",
+    "withoutSensesHint": "Exports the words that have no sense yet; only Level filters.",
     "archived": "archived",
     "statuses": {
       "unpublishable": "Not publishable yet",
@@ -356,6 +2059,811 @@
     "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
-    "confirmAllSubmit": "Publish everything"
+    "confirmAllSubmit": "Publish everything",
+    "stop": "Stop job",
+    "stopTitle": "Stop publish job #{id}?",
+    "stopBody": "Senses already published stay published. The job stops before the next sense and cannot be resumed; to publish the rest, create a new publish job.",
+    "stopKeep": "Keep running",
+    "stopped": "Stopped publish job #{id}",
+    "stoppedNotice": "The job stopped after {done} / {total} senses. Senses already published stay published; the rest were not published."
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Resolver email",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "report": "Report",
+      "user": "Learner",
+      "resolver": "Resolved by",
+      "role": "Role",
+      "refunded": "Unit given back",
+      "at": "Time"
+    },
+    "reportLink": "View report",
+    "selfResolved": "Resolved their own report",
+    "refunded": {
+      "true": "Given back",
+      "false": "Not given back",
+      "null": "Retrying"
+    },
+    "empty": "No confirmed errors in this range yet.",
+    "note": "A unit that was given back cannot be taken back."
+  },
+  "unknownForms": {
+    "intro": "Forms the AI used that the word-form table does not have yet. They can include synonyms, multi-word phrases and typos.",
+    "cols": {
+      "lemma": "Base word",
+      "form": "Form the AI used",
+      "rejected": "Times rejected",
+      "first": "First seen",
+      "last": "Last seen"
+    },
+    "accept": "Accept this form",
+    "acceptFor": "Accept “{form}” for “{lemma}”",
+    "ignore": "Ignore",
+    "ignoreFor": "Ignore “{form}” for “{lemma}”",
+    "accepted": "Added “{form}” to the forms of “{lemma}”.",
+    "undo": "Undo",
+    "undone": "Removed “{form}” from the forms of “{lemma}”.",
+    "empty": "No forms to review yet.",
+    "emptyHint": "When the AI uses a form the table does not know, it shows up here."
+  },
+  "settings": {
+    "tabsLabel": "Setting groups",
+    "tabs": {
+      "reminders": "Reminders",
+      "learning": "Learning and review",
+      "practice": "Practice",
+      "entitlements": "Plans and quotas",
+      "content": "Content",
+      "ai": "AI",
+      "identity": "Accounts",
+      "tts": "Voice"
+    },
+    "save": "Save changes",
+    "saved": "Saved",
+    "history": "Change history",
+    "outOfRange": "This value is outside the allowed range.",
+    "reload": "Reload",
+    "reloadTitle": "Reload the settings?",
+    "reloadBody": "Unsaved changes will be lost.",
+    "emailTemplates": "Email templates: to be discussed.",
+    "hint": {
+      "default": "default {value}",
+      "on": "on",
+      "off": "off",
+      "onOff": "on/off",
+      "empty": "empty",
+      "orEmpty": "or empty = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "every {minutes} minutes"
+    },
+    "emptyMeaning": {
+      "noLimit": "no limit",
+      "ai_cap_alert_percent": "no yellow alert"
+    },
+    "notes": {
+      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document",
+      "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything.",
+      "free_ai_practice_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change",
+      "free_ai_lookup_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change",
+      "session_max_mode": "Word count: the maximum is the number of words in the scope the learner picks, at most 100",
+      "ai_max_fixed": "never above the session’s questions",
+      "ai_max_percent": "rounded down",
+      "ai_placement": "Let the learner choose: the Customize session dialog shows Spread evenly / Random once the learner picks at least 1 AI question"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "off",
+      "content_retention_days": "not kept",
+      "free_ai_practice_per_cycle": "the Free plan has no AI questions",
+      "free_ai_lookup_per_cycle": "the Free plan cannot use AI lookup",
+      "free_ai_daily_cap": "Free-plan users cannot use AI",
+      "ai_max_fixed": "no AI questions"
+    },
+    "cross": {
+      "stop_after_days": "and greater than the field above",
+      "default_questions_per_session": "and ≤ the maximum when Fixed number is chosen",
+      "pro_practice_sessions_per_day": "and ≥ the Free plan"
+    },
+    "units": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes",
+      "months": "months",
+      "percent": "%",
+      "chars": "characters",
+      "seconds": "seconds",
+      "sessions": "sessions",
+      "uses": "uses",
+      "years": "years",
+      "times": "times",
+      "vnd": "VND",
+      "questions": "questions"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Reminders on for the whole system",
+        "send_time": "Send time, in the learner’s time",
+        "min_gap_days": "Minimum gap between two reminder emails",
+        "inactive_after_days": "Away for how long before “It’s been a while”",
+        "stop_after_days": "Away for how long before reminders stop"
+      },
+      "learning": {
+        "new_per_group_per_day": "New words per group per day",
+        "reviews_per_group_per_day": "Reviews per group per day",
+        "backlog_after_days": "Overdue for how long before the backlog list",
+        "groups_per_user": "Groups per person",
+        "items_per_group": "Words per group",
+        "active_window_days": "Most recent days that count as “still learning” (D7/D30)"
+      },
+      "practice": {
+        "session_max_mode": "Maximum questions per session",
+        "max_questions_per_session": "Fixed number",
+        "default_questions_per_session": "Default questions per session",
+        "ai_max_mode": "Maximum AI questions per session",
+        "ai_max_fixed": "Fixed number",
+        "ai_max_percent": "Share of the session’s questions",
+        "ai_placement": "AI question placement",
+        "history_months": "Keep practice history for",
+        "true_false_true_percent": "Share of true pairs in True/False",
+        "idle_session_close_hours": "Close an abandoned session after",
+        "reports_per_hour": "Reports per hour per person",
+        "hint_definition_max_chars": "Maximum length of a definition used as a hint",
+        "type_word_max_retries": "Retries after a wrong typed answer",
+        "ai_prefetch_count": "AI questions generated ahead"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Practice sessions per day, Free plan",
+        "pro_practice_sessions_per_day": "Practice sessions per day, Pro",
+        "free_ai_practice_per_cycle": "AI questions per month, Free",
+        "free_ai_lookup_per_cycle": "AI lookups per month, Free",
+        "pro_ai_practice_per_cycle": "AI questions per month, Pro",
+        "pro_ai_lookup_per_cycle": "AI lookups per month, Pro",
+        "trial_ai_practice_per_cycle": "AI questions per month, Trial",
+        "trial_ai_lookup_per_cycle": "AI lookups per month, Trial",
+        "grace_days": "Grace days",
+        "trial_reminder_days_before": "Remind before the trial ends",
+        "renewal_notice_days_before": "Remind before renewal",
+        "ai_enabled": "AI on for the whole system",
+        "ai_daily_cap": "Daily AI cap, whole system",
+        "free_ai_daily_cap": "Daily AI cap, Free plan",
+        "ai_cap_alert_percent": "Turn yellow at",
+        "ads_enabled": "Ads on",
+        "ads_interstitial_per_day": "Full-screen ads per day",
+        "ads_min_interval_minutes": "Gap between two ads",
+        "transaction_retention_years": "Keep payment records after an account is deleted",
+        "pro_price_1m_vnd": "Pro price, 1 month",
+        "pro_price_3m_vnd": "Pro price, 3 months",
+        "pro_price_12m_vnd": "Pro price, 12 months"
+      },
+      "content": {
+        "private_words_per_user": "Private words per person",
+        "sentences_per_sense": "Seen sentences per sense"
+      },
+      "ai": {
+        "call_timeout_seconds": "Timeout per call",
+        "max_concurrent_calls": "Concurrent calls",
+        "daily_provider_calls_cap": "Provider calls cap per day",
+        "content_retention_days": "Keep call content for",
+        "usd_vnd_rate": "USD → VND rate",
+        "eval_held_out_ratio": "Held-out share of the example set",
+        "admin_daily_usd_cap": "Admin USD cap per day",
+        "judge_label_min": "Labels needed to trust a judge",
+        "judge_agreement_min": "Minimum agreement with the labels",
+        "real_judge_limit": "Most real questions per judge pass"
+      },
+      "identity": {
+        "unverified_cleanup_days": "Delete accounts that never verified their email after"
+      },
+      "tts": {
+        "daily_char_cap": "Daily TTS character cap"
+      }
+    },
+    "aiUsage": {
+      "today": "AI uses today: {used}/{cap} ({percent}%)",
+      "todayNoCap": "AI uses today: {used} (no limit)",
+      "split": "Confirmed {confirmed} · reserved {reserved}",
+      "zone": "Counted by the Vietnam day.",
+      "error": "Today’s AI uses could not be loaded."
+    },
+    "historyDialog": {
+      "title": "Change history",
+      "empty": "No changes yet.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Deleted user"
+    },
+    "choices": {
+      "session_max_mode": {
+        "fixed": "Fixed number",
+        "scope_words": "Word count of the scope"
+      },
+      "ai_max_mode": {
+        "fixed": "Fixed number",
+        "percent": "Share of the session’s questions"
+      },
+      "ai_placement": {
+        "even": "Spread evenly",
+        "random": "Random",
+        "learner": "Let the learner choose"
+      }
+    },
+    "aiCapExample": "Example: a {q1}-question session → at most {a1} AI questions · {q2} questions → {a2} · {q3} questions → {a3}"
+  },
+  "words": {
+    "search": "Search words",
+    "searchPlaceholder": "Search by word or other spelling",
+    "searchSubmit": "Search",
+    "pasteButton": "Paste a word list",
+    "filters": {
+      "all": "All",
+      "level": "Level",
+      "hasSense": "Senses",
+      "hasSenseHint": "Has senses counts retired senses too.",
+      "withSense": "Has senses",
+      "withoutSense": "No senses yet",
+      "conflict": "Levels disagree",
+      "batch": "Import batch"
+    },
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "level": "Shown level",
+      "senses": "Senses",
+      "functionWord": "Function word",
+      "variants": "Other spellings"
+    },
+    "conflictBadge": "disagree",
+    "noSense": "No senses yet",
+    "senseCount": "{count, plural, one {# sense} other {# senses}}",
+    "published": "{count} published",
+    "drafts": "{count, plural, one {# draft} other {# drafts}}",
+    "retired": "{count} retired",
+    "yes": "Yes",
+    "no": "No",
+    "empty": "No word matches these filters.",
+    "footer": "{count} words shown · 20 per load",
+    "actions": "Actions",
+    "actionsFor": "Actions for {word}",
+    "editLevel": "Edit level",
+    "editVariants": "Edit other spellings",
+    "editFunctionWord": "Mark as function word",
+    "addSense": "Add a sense",
+    "deleteWord": "Delete word",
+    "deleteTitle": "Delete “{word}”?",
+    "deleteBody": "This word and its unpublished draft senses are removed. This cannot be undone.",
+    "deleteConfirm": "Delete word",
+    "deleted": "Deleted “{word}”",
+    "deleteBlocked": {
+      "title": "“{word}” cannot be deleted:",
+      "published-sense": "This word has a sense that was published.",
+      "form-of-link": "A sense of another word is recorded as a form of this word.",
+      "learner-data": "Learners have study data for this word.",
+      "batch-record": "This word belongs to an import batch that was not reverted. Revert that batch first.",
+      "publish-job": "This word is listed in the report of a bulk publish.",
+      "active-job": "An import batch or a bulk publish that involves it is running. Wait for it to finish, then try again."
+    },
+    "save": "Save",
+    "saved": "Saved “{word}”",
+    "level": "Level",
+    "noLevel": "No level yet",
+    "levelTitle": "Level of “{word}”",
+    "levelHint": "This level replaces every source level on display.",
+    "functionWord": "Function word",
+    "functionWordTitle": "Function word “{word}”",
+    "auto": "Derived (now: {value})",
+    "variantsTitle": "Other spellings of “{word}”",
+    "noVariants": "No other spellings yet.",
+    "variantText": "Spelling",
+    "variantKind": "Kind",
+    "kinds": {
+      "spelling": "Other spelling",
+      "alias": "Alias"
+    },
+    "acceptedAsAnswer": "Accept when a learner types it",
+    "removeVariant": "Remove",
+    "addVariant": "Add a spelling",
+    "paste": {
+      "title": "Paste a word list",
+      "label": "Word list",
+      "hint": "One word per line: lemma,pos (at most 500 lines). Each new word comes with an empty sense to write.",
+      "tooMany": "{count} lines, at most {max}. Remove some and try again.",
+      "submit": "Add these words",
+      "summary": "Created {created} · already there {exists} · invalid {invalid}",
+      "line": "Line {line}",
+      "status": {
+        "created": "Created",
+        "exists": "Already there",
+        "invalid": "Invalid"
+      },
+      "writeSense": "Write the sense",
+      "invalid": "Needs lemma,pos with a valid part of speech.",
+      "caseWarning": "This word differs from an existing one only by letter case."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "All",
+      "status": "Status",
+      "level": "Level",
+      "pos": "Part of speech",
+      "topic": "Topic",
+      "batch": "Import batch",
+      "statuses": {
+        "unpublishable": "Missing content",
+        "open_draft": "Open draft",
+        "published": "Published"
+      }
+    },
+    "archived": "archived",
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "gloss": "Vietnamese meaning",
+      "level": "Level",
+      "status": "Status",
+      "revision": "Revision",
+      "missing": "Missing"
+    },
+    "status": {
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "published": "Published",
+      "rejected": "Rejected",
+      "superseded": "Superseded",
+      "unpublished": "Removed from the app",
+      "retired": "Retired",
+      "none": "No content yet"
+    },
+    "openEdit": "#{revision} · open edit",
+    "empty": "No sense matches these filters.",
+    "footer": "{count} senses shown · 20 per load",
+    "bulk": {
+      "region": "Bulk actions",
+      "selected": "{count} selected",
+      "pick": "Select {word}",
+      "tooMany": "At most {max} senses at a time.",
+      "actions": {
+        "review": "Mark reviewed",
+        "reject": "Reject",
+        "publish": "Publish",
+        "unpublish": "Remove from the app",
+        "retire": "Retire"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Remove {count} senses from the app?",
+          "body": "Learners no longer see these senses until they are published again."
+        },
+        "retire": {
+          "title": "Retire {count} senses?",
+          "body": "A retired sense can no longer be edited or published."
+        }
+      },
+      "resultTitle": "Result",
+      "summary": "{ok} succeeded · {failed} could not be done",
+      "close": "Close",
+      "reasons": {
+        "stale-revision": "The sense changed, reload",
+        "publish-incomplete": "Content is missing",
+        "sense-retired": "The sense is retired",
+        "not-found": "Sense not found",
+        "sense-not-found": "Sense not found",
+        "revision-not-open": "This revision is no longer open for review",
+        "revision-rejected": "This revision was rejected",
+        "other": "Could not be done ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "Vietnamese meaning",
+        "example-missing": "example sentence",
+        "level-missing": "level"
+      }
+    },
+    "detail": {
+      "back": "Senses",
+      "notFound": "This sense was not found. The link may be old.",
+      "noLevel": "no level yet",
+      "publishedWithEdit": "Published, with an open edit",
+      "content": "Content",
+      "gloss": "Vietnamese meaning",
+      "definition": "English definition",
+      "examples": "Example sentences (at most {max})",
+      "example": "Example sentence {n}",
+      "removeExample": "Remove example sentence {n}",
+      "addExample": "Add an example sentence",
+      "topics": "Topics",
+      "noTopics": "No topics yet.",
+      "acceptedForms": "Accepted forms",
+      "acceptedFormsHint": "Separated by commas, e.g. deploys, deployed, deploying",
+      "saveDraft": "Save draft",
+      "savePublish": "Save and publish",
+      "draftSaved": "Draft saved",
+      "published": "Saved and published",
+      "droppedTopics": "Archived topics were dropped: {topics}",
+      "stale": "This sense was just edited. Reload to see the new version.",
+      "reload": "Reload",
+      "incomplete": "{missing} missing, so it was not published.",
+      "people": "Last people (latest only)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Draft not reviewed yet",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Last state change: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "published",
+        "unpublished": "removed from the app",
+        "retired": "retired"
+      },
+      "unknownUser": "deleted user",
+      "lastOnly": "Only the latest is kept, no history.",
+      "ipaUk": "UK pronunciation",
+      "ipaUs": "US pronunciation",
+      "ipaSource": "Source: {name}",
+      "ipaSourceOwn": "Source: Wordmet",
+      "ipaInvalid": "“{char}” is not an IPA symbol.",
+      "audio": "Voice",
+      "audioReady": "Ready",
+      "audioPending": "Being made",
+      "audioFailed": "Failed",
+      "audioNone": "None yet",
+      "audioRetry": "Try again",
+      "audioRetried": "The voice is queued again.",
+      "audioLine": "{voice} · {status}"
+    }
+  },
+  "topics": {
+    "intro": "Rename, archive and use topics again. Topics are never deleted.",
+    "cols": {
+      "code": "Code",
+      "vi": "Vietnamese name",
+      "en": "English name",
+      "state": "Status"
+    },
+    "active": "In use",
+    "archived": "Archived",
+    "rename": "Rename",
+    "renameFor": "Rename {code}",
+    "archive": "Archive",
+    "archiveFor": "Archive {code}",
+    "restore": "Use again",
+    "restoreFor": "Use {code} again",
+    "addTitle": "Add a topic",
+    "renameTitle": "Rename topic “{code}”",
+    "add": "Add",
+    "save": "Save",
+    "code": "Code",
+    "codeHint": "Lower-case letters, digits and hyphens, e.g. food, daily-life. It cannot change later.",
+    "codeRule": "A code has only lower-case a–z, digits and hyphens.",
+    "exists": "A topic with this code exists. Pick another code.",
+    "nameVi": "Vietnamese name",
+    "nameEn": "English name",
+    "created": "Added topic “{code}”",
+    "renamed": "Renamed “{code}”",
+    "archivedToast": "Archived “{code}”",
+    "restoredToast": "“{code}” is in use again",
+    "empty": "No topics yet.",
+    "footer": "{count, plural, one {# topic} other {# topics}}"
+  },
+  "dashboard": {
+    "note": "Aggregated AI figures for the selected period, in Vietnam time. Question content and learner details are not included.",
+    "range": "Period",
+    "lastDays": "Last {days} days",
+    "empty": "No data for this period.",
+    "aiDisabled": "AI is turned off for learners (Settings › Plans and limits).",
+    "ready": "Ready",
+    "ms": "{ms} ms",
+    "today": {
+      "title": "Today at a glance",
+      "calls": "Learner AI calls / daily limit",
+      "cost": "AI cost today",
+      "units": "Learner AI units / system limit",
+      "notReady": "Operations not ready",
+      "adminUsd": "Admin USD today / cap",
+      "adminUsdReached": "USD cap reached: test runs, evals and judge calls are blocked until midnight."
+    },
+    "health": {
+      "title": "Operational status",
+      "hint": "Learner-facing calls only. Test runs and example-set runs are excluded.",
+      "calls": "Learner calls",
+      "failed": "Overall error rate",
+      "chart": "Learner calls per day",
+      "ok": "Succeeded",
+      "failedCalls": "Failed"
+    },
+    "cost": {
+      "title": "Cost",
+      "hint": "Includes every call, test runs and example-set runs among them. Converted to VND at the current rate in Settings.",
+      "total": "Total cost",
+      "usd": "Total cost (USD)",
+      "calls": "Total calls",
+      "unknown": "Calls with unknown pricing",
+      "chart": "Cost per day",
+      "byOperation": "By operation",
+      "byModel": "By model",
+      "byPurpose": "By purpose"
+    },
+    "quality": {
+      "title": "AI question quality",
+      "hint": "AI questions compared with non-AI questions over the same period: correct answers, hints used and skips.",
+      "reports": "Reports",
+      "noReports": "No reports for this period.",
+      "aiReasons": "Report reasons for AI questions",
+      "forms": "Unrecognized word forms and private-word checks",
+      "newForms": "New word forms",
+      "formsSeen": "Word forms seen again",
+      "wordCheck": "Private-word check: {verdict}",
+      "compare": "AI questions compared with non-AI questions",
+      "reportsAi": "Reports on AI questions",
+      "retry": {
+        "title": "AI questions rewritten after failing the automatic check",
+        "hint": "Share of AI answers rejected by the automatic check on the first try, so the AI was asked to write another one. In brackets: rewritten / first AI answers."
+      }
+    },
+    "impact": {
+      "title": "Learner impact",
+      "hint": "When an AI question cannot be generated, the session falls back to a non-AI question.",
+      "requests": "AI questions requested",
+      "failedShare": "Generation failure rate",
+      "failures": "Failure causes",
+      "noFailure": "No AI question failed.",
+      "sessions": "Sessions with AI questions, by reason AI stopped",
+      "notStopped": "AI ran normally"
+    },
+    "evals": {
+      "title": "Latest eval",
+      "hint": "The latest complete run of the live config, on the newest version of the example set. Held-out shows totals only.",
+      "run": "Config {number} · {model} · version {version} · {date}",
+      "noSet": "No frozen version of the example set yet.",
+      "noModel": "The live config has no model yet.",
+      "noRun": "No complete run of the live config on version {version} yet.",
+      "split": "Split",
+      "dev": "Dev",
+      "heldOut": "Held-out",
+      "shape": "Shape",
+      "rule": "Rules",
+      "expected": "Expected",
+      "judge": "Judge {name} rev. {revision} · {criterion}"
+    },
+    "judge": {
+      "title": "Judge scores by config",
+      "hint": "By operation and (config number, model) pair: from evals on the newest example-set version and from real questions in the selected period. A dashed line marks where the judge revision changes.",
+      "chart": "{judge} · {criterion} · {operation}",
+      "column": "{source} · config {number} · {model}",
+      "axisConfig": "Config {number}",
+      "sources": {
+        "eval": "Eval",
+        "real": "Real questions"
+      },
+      "marker": "Judge rev. {revision}",
+      "calibrated": "Calibrated",
+      "uncalibrated": "Not calibrated",
+      "agreement": "{agree}/{labeled} labels agree",
+      "pass": "Pass",
+      "failMajor": "Major fail",
+      "failMinor": "Minor fail",
+      "unscored": "Could not score",
+      "cols": {
+        "group": "Group",
+        "revision": "Judge revision",
+        "calibration": "Calibration"
+      },
+      "empty": "No judge scores yet."
+    },
+    "real": {
+      "title": "Real AI question checks",
+      "hint": "The latest finished judge pass over real questions of each operation, in the selected period.",
+      "cols": {
+        "judge": "Judge",
+        "criterion": "Criterion",
+        "scoredAt": "Scored at"
+      },
+      "empty": "No judge pass over real questions has finished in this period."
+    },
+    "usage": {
+      "title": "Usage limits",
+      "hint": "Learner AI units per day, each day measured against that day’s own limit.",
+      "total": "Total AI units used",
+      "daysAtCap": "Days at the limit",
+      "refunds": "Units refunded",
+      "peakLearners": "Peak learners in a day",
+      "chart": "AI units per day",
+      "practice": "AI practice questions",
+      "lookup": "AI word lookups",
+      "dayCap": "Limit that day",
+      "noCap": "No limit",
+      "atCap": "At the limit",
+      "yes": "Yes",
+      "pro": {
+        "title": "How much of their limit Pro learners have used",
+        "hint": "Counted in each learner’s current cycle, whatever period is selected. Each learner is placed by the pool they have used the most of: AI practice questions or AI word lookups.",
+        "learners": "Pro learners",
+        "none": "No Pro learners yet",
+        "chart": "Pro learners by share of limit used",
+        "bucketZero": "None used (0%)",
+        "bucketLow": "Used 1–49%",
+        "bucketMid": "Used 50–79%",
+        "bucketHigh": "Used 80–99%",
+        "bucketFull": "Used all (100%)",
+        "noLimit": "{count, plural, one {# Pro learner has} other {# Pro learners have}} no AI limit and {count, plural, one {is} other {are}} not in the groups above.",
+        "truncated": "There are more Pro learners than one read covers, so these figures show only part of them."
+      }
+    },
+    "retention": {
+      "title": "Are learners coming back?",
+      "hint": "“Still learning” = at least one learning action (reviewing cards, adding or removing words, answering practice questions) in the last {days, plural, one {# day} other {# days}}. Admin and editor accounts and accounts that have not confirmed their email are not counted. Figures only exist from the day activity started to be recorded.",
+      "active": "Still learning today",
+      "stopped": "Stopped",
+      "cohorts": "By registration week (Vietnam time, weeks start on Monday)",
+      "cols": {
+        "week": "Registration week",
+        "size": "People",
+        "d7": "D7",
+        "d30": "D30"
+      },
+      "weekOf": "From {date}",
+      "rate": "{percent} ({count}/{size})",
+      "blank": "“—”: the group has not reached day +7 / +30 yet, or nobody registered."
+    },
+    "cols": {
+      "operation": "Operation",
+      "ready": "Status",
+      "calls": "Calls",
+      "failedShare": "Error rate",
+      "p50": "p50 latency",
+      "p95": "p95 latency",
+      "errors": "Error types",
+      "group": "Group",
+      "vnd": "Cost (₫)",
+      "usd": "Cost (USD)",
+      "unknownCost": "Unknown pricing",
+      "type": "Question type",
+      "source": "Source",
+      "asked": "Questions asked",
+      "correct": "Correct",
+      "hinted": "Hint used",
+      "skipped": "Skipped",
+      "reports": "Reports",
+      "per1000": "Reports / 1,000 questions",
+      "open": "Open",
+      "fixed": "Fixed",
+      "noError": "No error found",
+      "confirmed": "Confirmed",
+      "refunded": "Refunded",
+      "date": "Date",
+      "learners": "Learners"
+    },
+    "types": {
+      "mcq_definition": "Choose the word by meaning",
+      "true_false_definition": "True / false",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in context",
+      "mcq_sentence": "Choose the word that fits"
+    },
+    "sources": {
+      "ai": "AI",
+      "rule": "Non-AI",
+      "own_sentence": "Learner-written sentence"
+    },
+    "failures": {
+      "ai-unavailable": "AI not ready",
+      "quota-exhausted": "AI units exhausted",
+      "plan-required": "Current plan has no AI",
+      "ai-failed": "AI call failed",
+      "rejected": "Failed automatic validation",
+      "input-mismatch": "Word data changed",
+      "word-not-recognized": "AI did not recognize the private word"
+    },
+    "verdicts": {
+      "ok": "valid",
+      "not_recognized": "not recognized"
+    },
+    "byOperation": "View details by operation",
+    "showTable": "View as table"
+  },
+  "legal": {
+    "title": "Policies & terms",
+    "intro": "Write the Privacy Policy and the Terms of Use. The two texts share one version: when a new version is published, learners who accepted the old one are asked again.",
+    "current": "Published: version {number}, effective {date}.",
+    "noCurrent": "Nothing is published yet. The Privacy Policy and Terms pages on the web still show the draft notice.",
+    "create": "Create a draft",
+    "empty": "No versions yet",
+    "emptyHint": "Press [Create a draft], write the texts, then publish.",
+    "list": {
+      "number": "Version",
+      "status": "Status",
+      "effective": "Effective from",
+      "updated": "Updated",
+      "publishedBy": "Published by",
+      "english": "English",
+      "yes": "Yes",
+      "no": "Not yet",
+      "open": "Open version {number}"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "superseded": "Replaced"
+    },
+    "editor": {
+      "heading": "Version {number}",
+      "back": "Back to the list",
+      "tabs": "Documents",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Use",
+      "vi": "Vietnamese",
+      "en": "English (optional)",
+      "effective": "Effective from",
+      "effectiveHint": "The date shown on the page, as year-month-day, for example 2026-11-10.",
+      "preview": "Preview",
+      "previewEmpty": "Nothing to preview yet.",
+      "save": "Save",
+      "saved": "Version {number} saved.",
+      "dirty": "Unsaved",
+      "publish": "Publish",
+      "publishFirst": "Save before publishing.",
+      "delete": "Delete draft",
+      "copy": "Create a draft from this version",
+      "readOnly": "This version is published and cannot be edited. To change it, create a draft from it.",
+      "required": "This text is required.",
+      "needDate": "Choose the effective date.",
+      "reload": "Load the new version",
+      "conflict": "The draft was just saved from elsewhere. Load the new version to continue."
+    },
+    "publishDialog": {
+      "title": "Publish version {number}?",
+      "body": "Learners who accepted the previous version must accept again before they continue. The Privacy Policy and Terms pages on the web switch to this version at once.",
+      "confirm": "Publish"
+    },
+    "deleteDialog": {
+      "title": "Delete draft {number}?",
+      "body": "The draft is deleted for good and cannot be restored.",
+      "confirm": "Delete draft"
+    },
+    "toast": {
+      "created": "Draft {number} created.",
+      "published": "Version {number} published.",
+      "deleted": "Draft {number} deleted."
+    }
+  },
+  "faq": {
+    "banner": "The home page shows only published questions, and updates after the next web deploy.",
+    "add": "Add question",
+    "edit": "Edit",
+    "editFor": "Edit question: {question}",
+    "delete": "Delete",
+    "deleteFor": "Delete question: {question}",
+    "cols": {
+      "position": "Order",
+      "question": "Question",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "empty": "There are no questions yet.",
+    "emptyHint": "Published questions show on the home page.",
+    "newTitle": "Add a question",
+    "editTitle": "Edit a question",
+    "form": {
+      "question": "Question",
+      "answer": "Answer",
+      "position": "Order",
+      "positionHint": "Smaller numbers come first.",
+      "published": "Publish on the home page",
+      "save": "Save",
+      "questionInvalid": "Enter a question of up to 300 characters.",
+      "answerInvalid": "Enter an answer of up to 2,000 characters.",
+      "positionInvalid": "Enter a whole number from 0 to 10,000."
+    },
+    "deleteDialog": {
+      "title": "Delete this question?",
+      "confirm": "Delete"
+    }
   }
 }

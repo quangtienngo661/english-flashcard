@@ -9,6 +9,9 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 /** Share of the daily budget reminder emails may use; the rest stays for OTP (design 8.2, D24). */
 export const REMINDER_MAIL_SHARE = 0.8;
 
+/** Share entitlement emails (trial, renewal) may use: above the reminders, still leaving 5% for OTP (Bước 5 R18). */
+export const PAYMENT_MAIL_SHARE = 0.95;
+
 /** The one place a share of the budget becomes a mail count: the reminder tick and provider stop at the same number. */
 export function mailLimit(budget: number, share: number): number {
   return Math.floor(share * budget);

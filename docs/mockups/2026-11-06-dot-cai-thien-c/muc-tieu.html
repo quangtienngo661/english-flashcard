@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup chọn mục tiêu</title>
+<meta name="description" content="Mockup M3 đợt cải thiện C: người mới chọn mục tiêu học và nhận gợi ý bộ từ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2445d6;--primary-deep:#1a32a6;--primary-soft:#eceffe;--accent:#ffd84a;--accent-deep:#c9a21a;--accent-soft:#fff4c7;--ink:#0f1a3d;--muted:#4d5577;--canvas:#f1f3fd;--canvas-deep:#dde1f5;--border:#e3e6f4;--border-strong:#7d84a8;--success:#1b7a46;--success-soft:#e3f4ea;--navy:#1b2444;--on-navy:#f1f3fd;--note:#4d5577}
+*{box-sizing:border-box}
+body{margin:0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);background:#e7eaf6;font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+p,h1,h2,h3{text-wrap:pretty}
+p{max-width:62ch}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 24px;background:#fff}
+.controls b{margin-right:12px}
+.controls .gap{flex:1}
+.tab{border:2px solid var(--border-strong);background:#fff;border-radius:.75rem;padding:6px 14px;font-weight:600;transition:background-color .15s}
+.tab:hover{background:var(--primary-soft)}
+.tab[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0;padding:0 24px 16px;background:#fff;color:var(--muted);font-size:15px;max-width:none}
+.flow span{background:var(--canvas);border-radius:999px;padding:2px 10px}
+.flow span.new{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.stage{padding:24px;display:flex;justify-content:center}
+.frame{width:1100px;max-width:100%;min-height:720px;background:var(--canvas);border-radius:1.25rem;overflow:hidden;transition:width .25s cubic-bezier(.2,0,0,1)}
+.frame.phone{width:390px}
+.bar{background:var(--navy);color:var(--on-navy);display:flex;align-items:center;gap:20px;padding:14px 28px;font-weight:600}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px}
+.logo i{display:inline-block;width:32px;height:18px;border-radius:6px;background:var(--accent)}
+.nav{display:flex;gap:6px}
+.nav span{padding:8px 14px;border-radius:.75rem}
+.nav span.on{background:var(--accent);color:var(--ink)}
+.bare .nav{display:none}
+.phone .nav{display:none}
+.page{display:none;padding:32px 28px 40px}
+.page.on{display:block;animation:enter .32s cubic-bezier(.2,0,0,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.goal[aria-pressed=true] .ck{animation:pop .28s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+.phone .page{padding:20px 16px 32px}
+.title{display:inline-block;font-size:40px;line-height:1.15;letter-spacing:-.01em;font-weight:800;margin:0 0 8px;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:.35em;text-underline-offset:-.18em;text-decoration-skip-ink:none}
+.phone .title{font-size:30px}
+.sub{color:var(--muted);margin:0 0 24px}
+h2{font-size:22px;margin:0 0 12px;letter-spacing:-.005em}
+
+/* Nút: ledge của design B */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:.875rem;font-weight:600;border:2px solid var(--border-strong);background:#fff;white-space:nowrap;box-shadow:0 .3rem 0 var(--border);transition:transform .15s cubic-bezier(.2,0,0,1),box-shadow .15s,background-color .15s} /* taste-skill-ignore: ledge cua design B */
+.btn:hover{background:var(--primary-soft)}
+.btn.on{background:var(--accent);border-color:var(--accent);box-shadow:0 .25rem 0 var(--accent-deep)} /* taste-skill-ignore: ledge cua design B */
+.btn.on:hover{background:#ffe066}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 transparent} /* taste-skill-ignore: nut lun xuong gap ledge */
+.btn.sm{min-height:40px;padding:0 14px;font-size:14px}
+.link{border:0;background:none;color:var(--primary);font-weight:600;padding:8px 4px;border-radius:.5rem}
+.link:hover{text-decoration:underline}
+.btn:focus-visible,.tab:focus-visible,.goal:focus-visible,.lvl-chip:focus-visible,.link:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+
+/* Lưới mục tiêu */
+.goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:720px}
+.phone .goals{grid-template-columns:1fr}
+.goal{position:relative;display:grid;grid-template-columns:44px 1fr;gap:4px 14px;align-items:center;text-align:left;background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:14px 16px;transition:border-color .15s,background-color .15s,transform .15s cubic-bezier(.2,0,0,1)}
+.goal:hover{border-color:var(--border-strong)}
+.goal:active{transform:scale(.99)}
+.goal .ic{grid-row:span 2;width:44px;height:44px;border-radius:.75rem;background:var(--canvas);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.goal .ic svg{width:24px;height:24px}
+.goal b{font-size:18px;line-height:1.25}
+.goal small{color:var(--muted);font-size:15px;line-height:1.4}
+.goal .ck{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;display:none;align-items:center;justify-content:center}
+.goal .ck svg{width:14px;height:14px}
+.goal[aria-pressed=true]{border-color:var(--primary);border-bottom-width:4px;background:var(--primary-soft);padding-bottom:12px}
+.goal[aria-pressed=true] .ic{background:#fff;color:var(--primary)}
+.goal[aria-pressed=true] .ck{display:flex}
+.goal.plain{cursor:default}
+.goal.plain:active{transform:none}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:24px}
+
+/* Vùng chú thích: tách khỏi giao diện thật */
+.note{margin-top:40px;border:2px dashed var(--border-strong);background:#f4f3ef;border-radius:1.25rem;padding:20px}
+.note > p{margin:0 0 14px;color:var(--note);font-weight:600}
+.q{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700;margin-right:8px;vertical-align:2px;letter-spacing:.01em}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.phone .opts{grid-template-columns:1fr}
+.opt{background:#fff;border-radius:1rem;padding:16px;display:flex;flex-direction:column;gap:10px}
+.opt h3{margin:0;font-size:16px}
+.opt p{margin:0;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.lvl-chip{border:2px solid var(--border-strong);background:#fff;border-radius:.5rem;min-width:44px;padding:2px 10px;font-weight:600;font-size:14px;transition:background-color .15s}
+.lvl-chip:hover{background:var(--primary-soft)}
+.lvl-chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* Gợi ý bộ từ */
+.path{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start;max-width:980px}
+.phone .path{grid-template-columns:1fr}
+.decks{background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:4px 20px}
+.deck{display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:center;padding:16px 0;border-top:2px solid var(--canvas)}
+.deck:first-child{border-top:0}
+.deck b{font-size:18px}
+.deck .lv{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 8px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:2px}
+.deck small{grid-column:1;color:var(--muted);font-size:15px}
+.deck .btn{grid-row:span 2}
+.side{background:var(--primary-soft);border:2px solid #c9d0ef;border-bottom:4px solid var(--primary);border-radius:1.25rem;padding:20px;display:flex;flex-direction:column;gap:6px}
+.side .big{font-size:34px;font-weight:800;line-height:1.1}
+.side .btn{margin-top:12px;width:100%}
+.num{font-variant-numeric:tabular-nums}
+
+/* Hôm nay (lấy từ mockup M1) */
+.hero{background:var(--primary-soft);border:2px solid #c9d0ef;border-bottom:4px solid var(--primary);border-radius:1.25rem;padding:24px;display:flex;flex-direction:column;gap:6px;max-width:840px}
+.hero h2{font-size:34px;font-weight:800;margin:0}
+.hero .btn{align-self:flex-start;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:24px;max-width:840px}
+.phone .cards{grid-template-columns:1fr}
+.gcard{background:#fff;border:2px solid var(--border);border-radius:1.25rem;overflow:hidden;display:flex;flex-direction:column}
+.band{height:56px;display:flex;align-items:flex-end;gap:4px;padding:12px 16px}
+.band b{width:14px;border:2px solid var(--ink);border-radius:4px;background:transparent}
+.gcard .in{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1}
+.gcard h3{margin:0;font-size:20px}
+.gcard .btn{margin-top:auto;min-height:44px}
+.gcard .in > small{color:var(--muted);margin-bottom:10px}
+
+/* Cài đặt, thẻ người dùng cũ, admin */
+.setting{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:16px 20px;max-width:620px}
+.setting small{color:var(--muted)}
+.banner{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;background:var(--accent-soft);border-radius:1.25rem;padding:18px 20px;max-width:840px}
+.banner small{color:var(--muted)}
+.banner .acts{display:flex;gap:8px;align-items:center}
+.cap{color:var(--muted);margin:10px 0 0}
+.sec{margin-top:36px}
+.form{max-width:620px;display:flex;flex-direction:column;gap:18px;background:#fff;border:2px solid var(--border);border-radius:1.25rem;padding:24px}
+label,.field{font-weight:600;display:flex;flex-direction:column;gap:8px}
+input{font:inherit;font-weight:400;border:2px solid var(--border-strong);border-radius:.75rem;padding:10px 12px;background:#fff}
+input:focus-visible{outline:3px solid var(--primary);outline-offset:1px}
+.help{font-weight:400;color:var(--muted)}
+.topic-chip{border:2px solid var(--border-strong);background:#fff;border-radius:999px;padding:2px 12px;font-weight:600;font-size:14px}
+.topic-chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+@media (max-width:760px){.goals,.opts,.opts.two,.cards,.path{grid-template-columns:1fr}.page{padding:20px 16px 32px}.title{font-size:30px}.nav{display:none}}
+@media (prefers-reduced-motion:reduce){.frame,.btn,.goal,.tab{transition:none}.page.on,.goal[aria-pressed=true] .ck{animation:none}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <b>Màn hình</b>
+  <button class="tab" data-page="goal" aria-pressed="true">1. Chọn mục tiêu</button>
+  <button class="tab" data-page="suggest" aria-pressed="false">2. Gợi ý bộ từ</button>
+  <button class="tab" data-page="today" aria-pressed="false">3. Hôm nay sau đó</button>
+  <button class="tab" data-page="change" aria-pressed="false">4. Đổi mục tiêu</button>
+  <button class="tab" data-page="admin" aria-pressed="false">5. Admin soạn lộ trình</button>
+  <b style="margin:0 4px 0 16px">Khung</b><button class="tab" data-size="desk" aria-pressed="true">Máy tính</button>
+  <button class="tab" data-size="phone" aria-pressed="false">Điện thoại</button>
+</div>
+<p class="flow">Luồng người mới: <span>Đăng ký</span>→<span>Xác thực email</span>→<span>Chọn ngôn ngữ (đã có)</span>→<span class="new">Chọn mục tiêu</span>→<span class="new">Gợi ý bộ từ</span>→<span>Hôm nay</span>· Khung viền nét đứt là chú thích, không phải giao diện. Số từ là số minh họa.</p>
+
+<main class="stage"><div class="frame bare" id="frame">
+  <nav class="bar"><span class="logo"><i></i>Wordmet</span><span class="nav"><span class="on">Hôm nay</span><span>Nhóm</span><span>Tra từ</span><span>Luyện tập</span></span></nav>
+
+  <section class="page on" id="goal" data-bare>
+    <h1 class="title">Bạn học tiếng Anh để làm gì?</h1>
+    <p class="sub">Chọn một mục tiêu để nhận gợi ý bộ từ.</p>
+    <div class="goals" role="group" aria-label="Mục tiêu">
+      <button class="goal" aria-pressed="false"><span class="ic">%cap%</span><b>IELTS</b><small>Học thuật, du học</small><span class="ck">%ok%</span></button>
+      <button class="goal" aria-pressed="true"><span class="ic">%bag%</span><b>TOEIC</b><small>Công sở, kinh doanh</small><span class="ck">%ok%</span></button>
+      <button class="goal" aria-pressed="false"><span class="ic">%mail%</span><b>Đi làm</b><small>Email, họp, thuyết trình</small><span class="ck">%ok%</span></button>
+      <button class="goal" aria-pressed="false"><span class="ic">%chat%</span><b>Giao tiếp hằng ngày</b><small>Ăn uống, mua sắm, đi lại</small><span class="ck">%ok%</span></button>
+      <button class="goal" aria-pressed="false"><span class="ic">%code%</span><b>Công nghệ</b><small>Lập trình, sản phẩm số</small><span class="ck">%ok%</span></button>
+      <button class="goal" aria-pressed="false"><span class="ic">%compass%</span><b>Chưa có mục tiêu</b><small>Tự chọn chủ đề sau</small><span class="ck">%ok%</span></button>
+    </div>
+    <div class="actions"><button class="btn on">Tiếp tục</button><button class="link">Bỏ qua</button></div>
+
+    <div class="note">
+      <p><span class="q">Câu 1</span>Có nút "Bỏ qua" không.</p><p><span class="q">Câu 2</span>Trình độ lấy từ đâu, ba phương án:</p>
+      <div class="opts">
+        <div class="opt"><h3>A. Tự chọn trình độ</h3>
+          <div class="chips"><button class="lvl-chip">A1</button><button class="lvl-chip">A2</button><button class="lvl-chip" aria-pressed="true">B1</button><button class="lvl-chip">B2</button><button class="lvl-chip">C1</button><button class="lvl-chip">C2</button></div>
+          <p>Hiện dưới lưới mục tiêu. Gợi ý lấy từ ở mức đã chọn.</p></div>
+        <div class="opt"><h3>B. Mục tiêu có sẵn trình độ</h3>
+          <div class="goal plain" aria-pressed="true"><span class="ic">%bag%</span><b>TOEIC</b><small>Công sở, kinh doanh · B1–B2</small></div>
+          <p>Người học không chọn mức; lộ trình tự mang khoảng trình độ.</p></div>
+        <div class="opt"><h3>C. Không theo trình độ</h3>
+          <div class="goal plain" aria-pressed="true"><span class="ic">%bag%</span><b>TOEIC</b><small>Công sở, kinh doanh</small></div>
+          <p>Lấy mọi từ của chủ đề, từ dễ tới khó.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="suggest" data-bare>
+    <h1 class="title">Lộ trình TOEIC</h1>
+    <p class="sub">Từ trong kho, chủ đề kinh doanh và tiếp thị, mức B1–B2.</p>
+    <div class="path">
+      <div class="decks">
+        <div class="deck"><b>Kinh doanh<span class="lv">B1</span></b><button class="btn sm">Xem và thêm</button><small>meeting, invoice, deadline, supplier…</small></div>
+        <div class="deck"><b>Kinh doanh<span class="lv">B2</span></b><button class="btn sm">Xem và thêm</button><small>negotiate, revenue, merger, forecast…</small></div>
+        <div class="deck"><b>Tiếp thị<span class="lv">B1</span></b><button class="btn sm">Xem và thêm</button><small>brand, campaign, customer, discount…</small></div>
+      </div>
+      <aside class="side">
+        <span class="help">Cả lộ trình</span>
+        <span class="big num">274 từ</span>
+        <span class="help num">3 nhóm · 123, 91 và 60 từ</span>
+        <button class="btn on">Tạo 3 nhóm và bắt đầu</button>
+      </aside>
+    </div>
+    <div class="actions"><button class="link">Về Hôm nay</button></div>
+
+    <div class="note">
+      <p><span class="q">Câu 5</span>Sau khi chọn mục tiêu, hai phương án:</p>
+      <div class="opts two">
+        <div class="opt"><h3>A. Tạo nhóm luôn</h3><p>Chỉ có khối bên phải. Một bấm: app tạo 3 nhóm, thêm sẵn từ, đưa về Hôm nay. Không có nút "Xem và thêm".</p></div>
+        <div class="opt"><h3>B. Người học tự chọn</h3><p>Chỉ có danh sách bên trái. "Xem và thêm" mở trang chọn từ theo chủ đề đã có, tích từng từ hoặc thêm cả bộ.</p></div>
+      </div>
+      <p style="margin:14px 0 0"><span class="q">Câu 3</span>Với IELTS: lấy danh sách từ riêng cho kỳ thi, hay ghép gần đúng bằng chủ đề và trình độ như TOEIC ở trên.</p>
+    </div>
+  </section>
+
+  <section class="page" id="today">
+    <h1 class="title">Hôm nay</h1>
+    <div class="hero">
+      <span class="help">Lộ trình TOEIC</span>
+      <h2 class="num">20 từ mới đang chờ</h2>
+      <span class="help">Lấy từ 3 nhóm vừa tạo</span>
+      <button class="btn on">Học</button>
+    </div>
+    <div class="cards">
+      <article class="gcard"><div class="band" style="background:#dfe6ff"><b style="height:30px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b></div><div class="in"><h3>Kinh doanh · B1</h3><small class="num">123 từ mới</small><button class="btn">Học</button></div></article>
+      <article class="gcard"><div class="band" style="background:#fff0bf"><b style="height:30px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b></div><div class="in"><h3>Kinh doanh · B2</h3><small class="num">91 từ mới</small><button class="btn">Học</button></div></article>
+      <article class="gcard"><div class="band" style="background:#dff3e8"><b style="height:30px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b><b style="height:10px"></b></div><div class="in"><h3>Tiếp thị · B1</h3><small class="num">60 từ mới</small><button class="btn">Học</button></div></article>
+    </div>
+    <p class="cap">Người mới vào là đã có nhóm để Học, không còn màn trống. Hôm nay và thẻ nhóm giữ như mockup M1; nhóm chỉ có từ mới nên chỉ có nút Học.</p>
+  </section>
+
+  <section class="page" id="change">
+    <h1 class="title">Cài đặt</h1>
+    <div class="setting"><div><b>Mục tiêu học</b><br><small>TOEIC · B1–B2</small></div><button class="btn sm">Đổi mục tiêu</button></div>
+    <p class="cap">Đổi mục tiêu chỉ đổi gợi ý; nhóm và từ đã thêm giữ nguyên.</p>
+    <div class="sec">
+      <h2>Trang Hôm nay của người dùng cũ hoặc người đã bỏ qua</h2>
+      <div class="banner"><div><b>Chọn mục tiêu để nhận gợi ý bộ từ</b><br><small>IELTS, TOEIC, đi làm…</small></div><div class="acts"><button class="btn on sm">Chọn mục tiêu</button><button class="link">Ẩn</button></div></div>
+      <p class="cap">Ẩn hẳn sau khi chọn mục tiêu hoặc bấm Ẩn.</p>
+    </div>
+    <div class="note"><p><span class="q">Câu 6</span>Có cho đổi mục tiêu không, đổi ở đâu.</p><p style="margin:0"><span class="q">Câu 1</span>Người dùng cũ có thấy không, thấy ở đâu.</p></div>
+  </section>
+
+  <section class="page" id="admin">
+    <h1 class="title">Lộ trình</h1>
+    <div class="form">
+      <label>Tên<input value="TOEIC"></label>
+      <label>Mô tả ngắn<input value="Công sở, kinh doanh"></label>
+      <div class="field">Chủ đề<span class="chips"><button class="topic-chip" aria-pressed="true">Kinh doanh</button><button class="topic-chip" aria-pressed="true">Tiếp thị</button><button class="topic-chip">Công nghệ</button><button class="topic-chip">Ẩm thực</button><button class="topic-chip">Đời sống</button></span></div>
+      <div class="field">Trình độ<span class="chips"><button class="lvl-chip">A1</button><button class="lvl-chip">A2</button><button class="lvl-chip" aria-pressed="true">B1</button><button class="lvl-chip" aria-pressed="true">B2</button><button class="lvl-chip">C1</button><button class="lvl-chip">C2</button></span><span class="help">Chỉ có khi câu 2 chọn B.</span></div>
+      <label>Thứ tự hiện<input value="2" inputmode="numeric"></label>
+      <div class="actions" style="margin-top:4px"><button class="btn on">Lưu lộ trình</button><button class="link">Ẩn khỏi người học</button></div>
+    </div>
+    <div class="note"><p style="margin:0"><span class="q">Câu 4</span>Màn này chỉ có nếu admin soạn lộ trình. Nếu cố định trong code thì đổi lộ trình phải sửa code và deploy.</p></div>
+  </section>
+</div></main>
+
+<script>
+const I={
+cap:'<path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
+bag:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
+mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+chat:'<path d="M4 5h16v11H9l-5 4V5z"/>',
+code:'<path d="M9 8l-4 4 4 4"/><path d="M15 8l4 4-4 4"/>',
+compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2z"/>',
+ok:'<path d="M5 12l5 5 9-10"/>'};
+const svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+document.body.innerHTML=document.body.innerHTML.replace(/%(\w+)%/g,(m,k)=>I[k]?svg(I[k]):m);
+const frame=document.getElementById('frame');
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
+  document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===id)));
+  frame.classList.toggle('bare',document.getElementById(id).hasAttribute('data-bare'));
+}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
+document.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{
+  frame.classList.toggle('phone',b.dataset.size==='phone');
+  document.querySelectorAll('[data-size]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+}));
+document.querySelectorAll('.goals .goal').forEach(g=>g.addEventListener('click',()=>document.querySelectorAll('.goals .goal').forEach(x=>x.setAttribute('aria-pressed',String(x===g)))));
+const h=location.hash.slice(2).split('-');
+if(h[0]&&document.getElementById(h[0]))show(h[0]);
+if(h[1]==='phone')document.querySelector('[data-size=phone]').click();
+</script>
+</body>
+</html>

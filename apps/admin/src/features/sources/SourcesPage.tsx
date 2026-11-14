@@ -2,33 +2,78 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useMatch, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
-import { useErrorMessage } from '../../api/use-error-message';
+import { ApiError } from '../../api/problem';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { PageActions } from '../../app/shell-slots';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { DataList, type Column } from '../../ui/DataList';
 import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
-import { createSource, listSources, type SourceView } from '../content/content-api';
+import { showToast } from '../../ui/Toast';
+import { useCountdown } from '../account/useCountdown';
+import { createSource, deleteSource, listSources, type AdminSourceView, type SourceView } from '../content/content-api';
+import { SourceEditDialog } from './SourceEditDialog';
 
 export function SourcesPage() {
   const t = useTranslations();
   const api = useApi();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const errorDetails = useErrorDetails();
   const list = useQuery({ queryKey: ['sources'], queryFn: () => listSources(api) });
   const rows = list.data ?? [];
   // `/sources/new` keeps the list and opens the form over it (UB9).
   const isNew = useMatch('/sources/new') !== null;
   const [formPending, setFormPending] = useState(false);
+  const [editing, setEditing] = useState<SourceView | null>(null);
+  const [deleting, setDeleting] = useState<SourceView | null>(null);
+  const [problem, setProblem] = useState<ErrorDetails | null>(null);
+  const remove = useMutation({
+    mutationFn: (source: SourceView) => deleteSource(api, source.id),
+    onMutate: () => setProblem(null),
+    onSuccess: async (_, source) => {
+      setDeleting(null);
+      await queryClient.invalidateQueries({ queryKey: ['sources'] });
+      showToast(t('sources.toast.deleted', { name: source.name }));
+    },
+    onError: (e) => {
+      setDeleting(null);
+      setProblem(errorDetails(e));
+      // Deleted from another tab: the list still shows it until it is reloaded.
+      if (e instanceof ApiError && e.problem.status === 404) void queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
 
-  const columns: Column<SourceView>[] = [
+  const columns: Column<AdminSourceView>[] = [
     // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
-    { key: 'name', header: t('sources.list.name'), className: 'w-2/5', cell: (s) => s.name },
-    { key: 'version', header: t('sources.list.version'), className: 'w-1/5', cell: (s) => s.version || '—' },
-    { key: 'license', header: t('sources.list.license'), className: 'w-1/5', cell: (s) => s.license || '—' },
-    { key: 'priority', header: t('sources.list.priority'), className: 'w-1/5 tabular-nums', cell: (s) => s.display_priority },
+    { key: 'name', header: t('sources.list.name'), className: 'w-1/4', cell: (s) => s.name },
+    { key: 'version', header: t('sources.list.version'), className: 'w-1/12', cell: (s) => s.version || '—' },
+    { key: 'license', header: t('sources.list.license'), className: 'w-1/4', cell: (s) => s.license || '—' },
+    { key: 'priority', header: t('sources.list.priority'), className: 'w-1/12 tabular-nums', cell: (s) => s.display_priority },
+    { key: 'shown', header: t('sources.list.shown'), className: 'w-1/6', cell: (s) => (s.shown_to_learners ? t('sources.list.shownYes') : t('sources.list.shownNo')) },
+    {
+      key: 'actions',
+      header: t('sources.list.actions'),
+      card: 'action',
+      // The owner's and the AGID source are built in: the API refuses to change or delete them, so the row says so instead of offering buttons.
+      cell: (s) =>
+        s.protected || s.kind === 'owner' ? (
+          <span className="text-xs text-muted">{t('sources.ownerNote')}</span>
+        ) : (
+          <span className="flex flex-wrap gap-1">
+            <Button variant="ghost" aria-label={t('sources.editFor', { name: s.name })} onPress={() => setEditing(s)}>
+              {t('sources.edit')}
+            </Button>
+            <Button variant="ghost" className="text-danger" aria-label={t('sources.deleteFor', { name: s.name })} onPress={() => setDeleting(s)}>
+              {t('sources.delete')}
+            </Button>
+          </span>
+        ),
+    },
   ];
 
   return (
@@ -36,6 +81,8 @@ export function SourcesPage() {
       <PageActions>
         <Button onPress={() => void navigate('/sources/new')}>{t('sources.register')}</Button>
       </PageActions>
+      {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
+      <p className="text-sm text-muted">{t('sources.shownNote')}</p>
       <DataList
         rows={rows}
         rowKey={(s) => s.id}
@@ -54,17 +101,30 @@ export function SourcesPage() {
       >
         <SourceForm onPendingChange={setFormPending} />
       </Dialog>
+      {editing && <SourceEditDialog key={editing.id} source={editing} onClose={() => setEditing(null)} />}
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        title={t('sources.deleteTitle', { name: deleting?.name ?? '' })}
+        confirmLabel={t('sources.deleteConfirm')}
+        tone="danger"
+        isPending={remove.isPending}
+        onConfirm={() => deleting && remove.mutate(deleting)}
+        onCancel={() => setDeleting(null)}
+      >
+        {t('sources.deleteBody')}
+      </ConfirmDialog>
     </div>
   );
 }
 
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 const IS_INT = /^-?\d+$/;
 
 /** Spec §6.3 "Nguồn dữ liệu": register a source. Version and license are required only for a level source. Shown in a dialog (UB9). */
 export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -75,8 +135,9 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const [priority, setPriority] = useState('100');
   const [asLevelSource, setAsLevelSource] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
+  const wait = useCountdown();
   const mutation = useMutation({
     mutationFn: () =>
       createSource(api, {
@@ -94,7 +155,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const star = (label: string, required: boolean) => (required ? `${label} *` : label);
 
   async function submit() {
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     const next: Record<string, string> = {};
     if (name.trim() === '') next.name = t('sources.form.required');
     if (asLevelSource && version.trim() === '') next.version = t('sources.form.required');
@@ -110,7 +171,8 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       await queryClient.invalidateQueries({ queryKey: ['sources'] });
       void navigate('/sources');
     } catch (e) {
-      setBanner(errorMessage(e));
+      if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      else setBanner(errorDetails(e));
     } finally {
       busy.current = false;
     }
@@ -125,7 +187,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       }}
       className="flex flex-col gap-4"
     >
-      {banner && <Banner variant="error">{banner}</Banner>}
+      {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
       <div className="grid gap-4 shell:grid-cols-2">
         <TextField label={star(t('sources.form.name'), true)} autoComplete="off" value={name} onChange={setName} error={errors.name} />
         <TextField label={star(t('sources.form.version'), asLevelSource)} autoComplete="off" value={version} onChange={setVersion} error={errors.version} />
@@ -149,8 +211,8 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
         <Button variant="secondary" onPress={() => void navigate('/sources')}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" isPending={mutation.isPending}>
-          {t('sources.form.save')}
+        <Button type="submit" isPending={mutation.isPending} isDisabled={wait.remaining > 0}>
+          {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('sources.form.save')}
         </Button>
       </div>
     </form>

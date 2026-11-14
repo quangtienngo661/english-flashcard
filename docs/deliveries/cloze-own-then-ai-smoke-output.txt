@@ -1,0 +1,44 @@
+# pnpm smoke:cloze-own-then-ai — output (09/11/2026)
+#
+# Code: origin/dev @ 17add16e + branch feat/cloze-own-then-ai (cloze source own_then_ai; API only). Run on a recreated database
+# english_learning_smoke_cloze_mix: DROP DATABASE / CREATE DATABASE, prisma migrate deploy (all migrations, including
+# 20261112150000_cloze_source_own_then_ai), pnpm build, pnpm run:dev (API + worker), then pnpm smoke:cloze-own-then-ai.
+# Environment of every process: .env.example values with secrets generated for this run (the local apps/api/.env is not read:
+# SMOKE_IGNORE_ENV_FILE=1), AI_FAKE_ENABLED=true, TURNSTILE_MODE=fake, JOB_QUEUE_PREFIX=wordmet-cm-smoke, no OPENAI_API_KEY / ANTHROPIC_API_KEY.
+# A first run on the same code failed two steps of the script itself (a delete without an Idempotency-Key; a Free-plan expectation that
+# was out of date: since launch prep A a Free account has 15 AI units a month, so the mixed source opens for it). The script was
+# corrected and this is the run on a fresh database after that.
+#
+$ node scripts/smoke-cloze-own-then-ai.mjs
+
+[1] 04:33:24Z Wait for the API
+    ok — reachable at http://localhost:3000; database english_learning_smoke_cloze_mix; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-cm-smoke, no key
+
+[2] 04:33:24Z Accounts: admin (CLI grant), a second admin that publishes configs, learner L1 (Pro) and learner L2 (Free)
+    ok — admin smokecm-admin-ddb91746@example.com; publisher smokecm-publisher-ddb91746@example.com; learners smokecm-l1-ddb91746@example.com and smokecm-l2-ddb91746@example.com
+
+[3] 04:33:30Z AI setup: fake provider on; fake:ok published for generate_cloze and the operation is ready
+    ok — fake:ok is the live model of generate_cloze and the operation is ready
+
+[4] 04:33:31Z Content: import 3 verbs in one technology/A1 bucket and publish
+    ok — batch 5af4a551-5507-419e-a54c-518015c203d1: 3 created and published; senses zqjxfkzp, zqubpouh, zqpdpomc
+
+[5] 04:33:33Z Entitlements: L1 Pro with 20 AI units and 200 sessions a day; L2 stays Free; L1's group holds the three words
+    ok — L1 pro, 20 AI units; group 47173460-fb76-433d-aacd-7df4149970f7 holds the three words; L2 is Free
+
+[6] 04:33:33Z Source own_then_ai: the database accepts it; an unknown source, and the source without a cloze, are refused with 400
+    ok — session 5bc347f0-a778-4481-a2f1-0a65198982de stored cloze_source own_then_ai (the CHECK accepts it); "mixed" and own_then_ai without cloze → 400
+
+[7] 04:33:34Z One saved sentence of three: ai_planned 2; the saved-sentence word is asked from it, the other two from AI; 2 units spent
+    ok — asked zqpdpomc:ai, zqubpouh:ai, zqjxfkzp:own_sentence; item.ai true/true/false; units 20 → 18
+
+[8] 04:33:36Z Every word has a saved sentence: ai_planned 0, three questions from saved sentences, no unit spent, no AI request
+    ok — all three words from saved sentences, 0 AI requests, units stay 18
+
+[9] 04:33:38Z Not enough units: two words need AI and L1 has 1 unit → 403 ai-quota-insufficient with remaining 1 and needed 2, before the session opens
+    ok — needed 2, remaining 1: refused before the session opened
+
+[10] 04:33:39Z A Free learner (15 AI units a month) opens the mixed source and plans AI for words without a saved sentence; the old sources behave as before
+    ok — L2 Free (feature allowed, 15/15 units) with own_then_ai → opens, ai_planned 3 (no saved sentence); L1 own → ai_planned 0; ai → ai_planned 3
+
+Smoke cloze own_then_ai passed in 16s (10 steps).

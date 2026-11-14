@@ -14,14 +14,15 @@ import { useTranslations } from 'use-intl';
  * mount and disappears at once (UB23).
  */
 
-export type ToastMessage = { text: string };
+export type ToastAction = { label: string; onPress: () => void };
+export type ToastMessage = { text: string; action?: ToastAction };
 
 /** One queue for the whole app, so a toast outlives the page that raised it (Review Focus 4). */
 export const toastQueue = new AriaToastQueue<ToastMessage>({ maxVisibleToasts: 3 });
 
 /** Confirms an action; closes itself after 5 s (design §6.2). */
-export function showToast(text: string): void {
-  toastQueue.add({ text }, { timeout: 5000 });
+export function showToast(text: string, action?: ToastAction): void {
+  toastQueue.add({ text, action }, { timeout: 5000 });
 }
 
 export function ToastRegion() {
@@ -36,6 +37,17 @@ export function ToastRegion() {
           <AriaToastContent className="min-w-0 wrap-anywhere">
             <Text slot="title">{toast.content.text}</Text>
           </AriaToastContent>
+          {toast.content.action && (
+            <Button
+              className="shrink-0 rounded-sm px-1 font-semibold text-accent outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              onPress={() => {
+                toast.content.action?.onPress();
+                toastQueue.close(toast.key);
+              }}
+            >
+              {toast.content.action.label}
+            </Button>
+          )}
           <Button
             slot="close"
             aria-label={t('common.close')}

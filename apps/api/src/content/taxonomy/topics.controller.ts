@@ -7,6 +7,7 @@ import {
   createTopicSchema, topicParamsSchema, updateTopicSchema,
   type CreateTopicBody, type TopicParams, type UpdateTopicBody,
 } from './topics.schemas.js';
+import { TopicSuggestionsService } from './topic-suggestions.service.js';
 import { TopicsService, type TopicView } from './topics.service.js';
 
 @Controller('admin/taxonomy/topics')
@@ -38,10 +39,19 @@ export class TopicsController {
 @Controller('topics')
 @LearnerContent()
 export class LearnerTopicsController {
-  constructor(@Inject(TopicsService) private readonly topics: TopicsService) {}
+  constructor(
+    @Inject(TopicsService) private readonly topics: TopicsService,
+    @Inject(TopicSuggestionsService) private readonly suggestions: TopicSuggestionsService,
+  ) {}
 
   @Get()
   list(@CurrentLearner() learner: Learner) {
     return this.topics.list(learner.nativeLanguage);
+  }
+
+  /** Design §8.8 (D17): "Tạo nhóm nhanh theo chủ đề". */
+  @Get('suggestions')
+  suggest(@CurrentLearner() learner: Learner) {
+    return this.suggestions.suggestions(learner.userId, learner.nativeLanguage);
   }
 }

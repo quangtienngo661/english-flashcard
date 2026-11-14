@@ -18,7 +18,7 @@ export class GroupsController {
 
   @Get()
   list(@CurrentLearner() learner: Learner) {
-    return this.queue.list(learner.userId);
+    return this.queue.list(learner);
   }
 
   @Post()

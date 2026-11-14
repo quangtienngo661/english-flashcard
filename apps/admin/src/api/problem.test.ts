@@ -42,6 +42,104 @@ describe('problem mapping', () => {
     expect(err.retryAfterSeconds).toBeNull();
   });
 
+  it('a top-level reason string is kept; a non-string reason is dropped', async () => {
+    const kept = await toApiError(
+      problemResponse(409, { type: 'http://x/problems/grant-not-allowed', status: 409, title: 'g', reason: 'self-grant' }),
+    );
+    expect(kept.problem.reason).toBe('self-grant');
+    const dropped = await toApiError(problemResponse(409, { type: 'http://x/problems/grant-not-allowed', status: 409, title: 'g', reason: 7 }));
+    expect(dropped.problem.reason).toBeUndefined();
+  });
+
+  it('entry-in-use: the top-level reasons list is kept (strings only); a non-list is dropped; the slug has its own message', async () => {
+    const kept = await toApiError(problemResponse(409, {
+      type: 'http://x/problems/entry-in-use', status: 409, title: 'e', reasons: ['published-sense', 7, 'learner-data'],
+    }));
+    expect(kept.problem.slug).toBe('entry-in-use');
+    expect(kept.problem.reasons).toEqual(['published-sense', 'learner-data']);
+    expect(errorMessageKey(kept.problem)).toBe('errors.entry-in-use');
+    const dropped = await toApiError(problemResponse(409, { type: 'http://x/problems/entry-in-use', status: 409, title: 'e', reasons: 'published-sense' }));
+    expect(dropped.problem.reasons).toBeUndefined();
+    expect(KNOWN_ERROR_SLUGS).toContain('entry-in-use');
+  });
+
+  it('eval-set-incomplete: missing_expected (strings only) and no_held_out (a boolean) are kept; other shapes are dropped', async () => {
+    const kept = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/eval-set-incomplete', status: 422, title: 'e', missing_expected: ['e1', 4, 'e2'], no_held_out: true,
+    }));
+    expect(kept.problem.slug).toBe('eval-set-incomplete');
+    expect(kept.problem.missing_expected).toEqual(['e1', 'e2']);
+    expect(kept.problem.no_held_out).toBe(true);
+    expect(errorMessageKey(kept.problem)).toBe('errors.eval-set-incomplete');
+    const dropped = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/eval-set-incomplete', status: 422, title: 'e', missing_expected: 'e1', no_held_out: 'yes',
+    }));
+    expect(dropped.problem.missing_expected).toBeUndefined();
+    expect(dropped.problem.no_held_out).toBeUndefined();
+  });
+
+  it('the golden-set slugs each have a message of their own', () => {
+    for (const slug of ['eval-set-conflict', 'eval-set-incomplete', 'eval-set-mismatch', 'example-held-out', 'example-not-held-out', 'expected-invalid']) {
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('the config lifecycle slugs each have a message of their own', () => {
+    for (const slug of [
+      'run-is-evidence', 'draft-exists', 'draft-busy', 'draft-version-conflict', 'eval-required', 'baseline-required', 'publish-stale',
+      'publish-warnings', 'no-previous', 'few-shot-invalid',
+    ]) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('the Turnstile slugs (launch prep A) each have a message of their own', () => {
+    for (const [slug, status] of [['captcha-failed', 400], ['captcha-unavailable', 503]] as const) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('the legal-document slugs each have a message of their own', () => {
+    for (const slug of ['not-a-draft', 'legal-busy', 'draft-version-conflict', 'publish-stale']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('the home page faq slug has a message of its own', () => {
+    expect(KNOWN_ERROR_SLUGS).toContain('faq-version-conflict');
+    expect(errorMessageKey(problem({ slug: 'faq-version-conflict', status: 409 }))).toBe('errors.faq-version-conflict');
+  });
+
+  it('the judge and cap slugs each have a message of their own', () => {
+    for (const slug of ['judge-provider', 'judge-revision-conflict', 'judge-pass-running', 'admin-usd-cap', 'model-price-missing']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('the real-question slugs (nhóm B M4) each have a message of their own, and the reason of source-not-eligible is kept', async () => {
+    for (const slug of ['nothing-to-judge', 'source-not-eligible']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+    const refused = await toApiError(problemResponse(409, { type: 'http://x/problems/source-not-eligible', status: 409, title: 's', reason: 'private-word' }));
+    expect(refused.problem.reason).toBe('private-word');
+  });
+
+  it('few-shot-invalid: the examples that broke the rules are kept with their position and problems; other shapes are dropped', async () => {
+    const kept = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f',
+      examples: [{ index: 1, problems: ['not-a-form', 7] }, { index: 'x', problems: [] }, { problems: ['p'] }, 'bad'],
+    }));
+    expect(kept.problem.slug).toBe('few-shot-invalid');
+    expect(kept.problem.examples).toEqual([{ index: 1, problems: ['not-a-form'] }]);
+    const dropped = await toApiError(problemResponse(422, { type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f', examples: 'nope' }));
+    expect(dropped.problem.examples).toBeUndefined();
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);
@@ -68,6 +166,22 @@ describe('problem mapping', () => {
       'validation-failed', 'rate-limited', 'file-invalid', 'file-too-large', 'payload-too-large', 'level-source-required',
       'source-incomplete', 'source-exists', 'nothing-to-publish', 'batch-not-revertable', 'batch-filter-unavailable',
       'export-too-large', 'idempotency-key-abandoned', 'csrf-header-required', 'mail-unavailable', 'invalid-token', 'forbidden',
+    ]) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+    }
+  });
+
+  it('KNOWN_ERROR_SLUGS knows source-version-locked (a source that has data keeps its version, Q15)', () => {
+    expect(KNOWN_ERROR_SLUGS).toContain('source-version-locked');
+  });
+
+  it('KNOWN_ERROR_SLUGS covers every slug of design §4.5', () => {
+    for (const slug of [
+      'version-conflict', 'lock-rule', 'report-not-open', 'resolve-status-not-allowed', 'report-reason-exists', 'grant-not-allowed',
+      'grant-not-active', 'model-exists', 'model-in-use', 'model-not-found', 'model-not-supported', 'provider-not-configured',
+      'provider-unavailable', 'model-not-set', 'operation-settings-conflict', 'prompt-revision-conflict', 'word-form-exists',
+      'stale-revision', 'publish-incomplete', 'sense-exists', 'replacement-exists', 'replacement-waiting', 'sense-retired',
+      'sense-entry-mismatch', 'revision-rejected', 'unknown-topic', 'topic-archived', 'too-many-examples', 'topic-exists',
     ]) {
       expect(KNOWN_ERROR_SLUGS).toContain(slug);
     }

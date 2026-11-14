@@ -1,11 +1,22 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
+import { SettingsModule } from '../settings/index.js';
+import { AudioRepository } from './audio/audio.queries.js';
+import { AudioService } from './audio/audio.service.js';
+import { TtsQueueService } from './audio/tts-queue.service.js';
+import { ttsAdapterProvider } from './audio/tts-adapter.provider.js';
+import { TtsWorkerService } from './audio/tts-worker.service.js';
+import { audioStorageProvider } from './audio/audio-storage.provider.js';
+import { DevAudioController } from './audio/dev-audio.controller.js';
 import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
 import { AdminCatalogQueries } from './catalog/admin-catalog.queries.js';
 import { AdminEntriesController, EntryFunctionWordController } from './catalog/admin-entries.controller.js';
 import { EntriesService } from './catalog/entries.service.js';
+import { EntryDeleteService } from './catalog/entry-delete.service.js';
+import { EntryUsageRegistry } from './catalog/entry-usage.js';
 import { LevelsService } from './catalog/levels.service.js';
 import { ContentService } from './content.service.js';
+import { ContentAccountEraser } from './private/account-eraser.provider.js';
 import { InflectionsService } from './inflections/inflections.service.js';
 import { MyWordsController } from './private/my-words.controller.js';
 import { PrivateWordsService } from './private/private-words.service.js';
@@ -24,17 +35,29 @@ import { AdminPublishController } from './senses/admin-publish.controller.js';
 import { PublishService } from './senses/publish.service.js';
 import { SensesService } from './senses/senses.service.js';
 import { LearnerTopicsController, TopicsController } from './taxonomy/topics.controller.js';
+import { TopicSuggestionQueries } from './taxonomy/topic-suggestions.queries.js';
+import { TopicSuggestionsService } from './taxonomy/topic-suggestions.service.js';
 import { TopicsService } from './taxonomy/topics.service.js';
+import { AiModule } from '../ai/index.js';
+import { EntitlementsModule } from '../entitlements/index.js';
+import { AiLookupController } from './lookup/ai-lookup.controller.js';
+import { AiLookupService } from './lookup/ai-lookup.service.js';
+import { AdminWordFormsController } from './word-forms/admin-word-forms.controller.js';
+import { WordFormsService } from './word-forms/word-forms.service.js';
 
 @Module({
-  imports: [IdentityModule],
+  // AiModule and EntitlementsModule for the AI lookup (Bước 7 design §11.1); neither imports Content (facts P7).
+  imports: [IdentityModule, SettingsModule, AiModule, EntitlementsModule],
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
     AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController, WordsController,
+    AdminWordFormsController, AiLookupController, DevAudioController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
-    PrivateWordsService, SentencesService, WordsService, IdempotencyInterceptor],
+    PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
+    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser, audioStorageProvider, AudioRepository, AudioService, TtsQueueService,
+    ttsAdapterProvider, TtsWorkerService],
   exports: [ContentService],
 })
 export class ContentModule {}

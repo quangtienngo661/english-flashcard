@@ -7,7 +7,9 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
-import { visibleSenseCondition } from '../learner/visible-senses.js';
+import { AudioService } from '../audio/audio.service.js';
+import { SentencesService } from '../sentences/sentences.service.js';
+import { visibleEntryCondition } from '../learner/visible-senses.js';
 
 type NativeLanguage = 'vi' | 'en';
 export type WordSense = {
@@ -15,12 +17,35 @@ export type WordSense = {
   context_label: string | null; meaning: { text: string; language: NativeLanguage; translation_missing: boolean };
   definition_en: string | null; examples: string[]; topics: Array<{ code: string; name: string }>;
   form_of: { entry_id: string; lemma: string; pos: string; kind: InflectionKind } | null;
+  /** The live revision came from an AI suggestion the learner saved and has not edited since (Bước 7 design §11.2). */
+  ai_suggested: boolean;
+  /**
+   * Round C (H9): the transcription without slashes (UK and US of the catalog, `custom` = the learner's note on a private word) and the
+   * URL of the pre-made recording when its file is ready; `audio` stays null until then.
+   */
+  pronunciation: {
+    uk: string | null; us: string | null; custom: string | null; audio: { uk: string | null; us: string | null };
+  };
 };
+/** A sense on the word page (`GET /words/{lemma}`): adds the viewer's saved-sentence count (API (e)). */
+export type WordPageSense = WordSense & { sentence_count: number };
+
 export type WordListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string; mine?: boolean;
 };
-export type WordRow = { lemma: string; pos_list: string[]; level: Level | null; meaning_preview: string; has_private: boolean };
-type SenseRow = Omit<WordSense, 'meaning' | 'form_of'> & {
+/**
+ * One word of the list. Giao diện mới M4.1: `ipa` and `example` come from the sense the preview meaning comes from (UK IPA, else US,
+ * else the learner's own note on a private word; its first example).
+ */
+export type WordRow = {
+  lemma: string; pos_list: string[]; level: Level | null; meaning_preview: string; has_private: boolean;
+  ipa: string | null; example: string | null;
+};
+type WordListRow = Omit<WordRow, 'ipa'> & {
+  rank: number; total: number; ipa_uk: string | null; ipa_us: string | null; ipa_custom: string | null;
+};
+type SenseRow = Omit<WordSense, 'meaning' | 'form_of' | 'pronunciation'> & {
+  ipa_uk: string | null; ipa_us: string | null; ipa_custom: string | null;
   gloss_vi: string | null; form_of_entry_id: string | null; form_kind: InflectionKind | null;
   form_lemma: string | null; form_pos: string | null;
 };
@@ -32,8 +57,8 @@ const cursorSchema = z.strictObject({
 });
 const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 
-/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). */
-const displayedLevel = Prisma.sql`
+/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). Practice reads use it too. */
+export const displayedLevel = Prisma.sql`
   SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
   WHERE el.entry_id = e.id
   ORDER BY (el.basis IN ('editorial', 'user')) DESC,
@@ -43,22 +68,34 @@ const displayedLevel = Prisma.sql`
     array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
   LIMIT 1`;
 
-/** The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. */
-const visible = (viewerId: string) => visibleSenseCondition(Prisma.sql`s.id`, viewerId);
+/**
+ * The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. Written on the
+ * rows of the query itself, with the entry half from `visibleEntryCondition`, so Postgres starts from the viewer's own entries and
+ * the catalog instead of from every learner's senses (T5). It is the same test as `visibleSenseCondition`, which Learning embeds.
+ */
+const visibleEntry = (viewerId: string) => visibleEntryCondition(Prisma.sql`e`, viewerId);
+const openLive = Prisma.sql`s.state = 'open' AND s.live_revision_id IS NOT NULL`;
+const visible = (viewerId: string) => Prisma.sql`${openLive} AND ${visibleEntry(viewerId)}`;
 
-function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
-  // Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated.
-  const nativeGloss = nativeLanguage === 'vi' && row.gloss_vi !== null;
-  const useEnglish = !nativeGloss && row.definition_en !== null;
+/** Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated. */
+export function senseMeaning(glossVi: string | null, definitionEn: string | null, nativeLanguage: NativeLanguage): WordSense['meaning'] {
+  const nativeGloss = nativeLanguage === 'vi' && glossVi !== null;
+  const useEnglish = !nativeGloss && definitionEn !== null;
+  return { text: (useEnglish ? definitionEn : glossVi) ?? '', language: useEnglish ? 'en' : 'vi',
+    translation_missing: !useEnglish && nativeLanguage !== 'vi' };
+}
+
+function view(row: SenseRow, nativeLanguage: NativeLanguage, audio: { uk: string | null; us: string | null } = { uk: null, us: null }): WordSense {
   return {
     sense_id: row.sense_id, entry_id: row.entry_id, scope: row.scope, lemma: row.lemma, pos: row.pos, level: row.level,
     // Private labels (p2, p3, …) only keep the live-sense index unique; they are never shown.
     context_label: row.scope === 'private' ? null : row.context_label,
-    meaning: { text: (useEnglish ? row.definition_en : row.gloss_vi) ?? '', language: useEnglish ? 'en' : 'vi',
-      translation_missing: !useEnglish && nativeLanguage !== 'vi' },
+    meaning: senseMeaning(row.gloss_vi, row.definition_en, nativeLanguage),
     definition_en: row.definition_en, examples: row.examples, topics: row.topics,
     form_of: row.form_of_entry_id && row.form_kind && row.form_lemma && row.form_pos
       ? { entry_id: row.form_of_entry_id, lemma: row.form_lemma, pos: row.form_pos, kind: row.form_kind } : null,
+    ai_suggested: row.ai_suggested,
+    pronunciation: { uk: row.ipa_uk, us: row.ipa_us, custom: row.ipa_custom, audio },
   };
 }
 
@@ -68,17 +105,24 @@ export class WordsService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
+    @Inject(SentencesService) private readonly sentences: SentencesService,
+    @Inject(AudioService) private readonly audio: AudioService,
   ) {}
 
   /** One statement per read: visibility, displayed level and live content on one snapshot. */
-  private async senses(viewerId: string, nativeLanguage: NativeLanguage, where: Prisma.Sql): Promise<WordSense[]> {
+  private async senses(viewerId: string, nativeLanguage: NativeLanguage, where: Prisma.Sql, byEntry = false): Promise<WordSense[]> {
+    // byEntry: the condition is on entries, so start from the viewer's matching entries and probe senses(entry_id) once for each;
+    // OFFSET 0 stops the planner from flattening that back into a scan of every learner's senses (T5).
+    const from = byEntry
+      ? Prisma.sql`entries e CROSS JOIN LATERAL (SELECT * FROM senses s WHERE s.entry_id = e.id AND ${openLive} OFFSET 0) s`
+      : Prisma.sql`senses s JOIN entries e ON e.id = s.entry_id`;
     const rows = await this.prisma.$queryRaw<SenseRow[]>`
       SELECT s.id::text AS sense_id, e.id::text AS entry_id, e.scope, e.lemma, e.pos, s.context_label,
         displayed.level, r.examples, gloss.text AS gloss_vi, definition.text AS definition_en,
         COALESCE(topics.items, '[]'::jsonb) AS topics,
-        r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos
-      FROM senses s
-      JOIN entries e ON e.id = s.entry_id
+        r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos,
+        r.draft_source = 'ai_suggestion' AS ai_suggested, r.ipa_uk, r.ipa_us, r.ipa_custom
+      FROM ${from}
       JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
       LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
       LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
@@ -94,7 +138,9 @@ export class WordsService {
       WHERE ${visible(viewerId)} AND ${where}
       ORDER BY e.lemma COLLATE "C", array_position(${posOrder}::text[], e.pos), (e.scope = 'private'),
         s.context_label NULLS FIRST, s.created_at, s.id`;
-    return rows.map((row) => view(row, nativeLanguage));
+    // The recordings that are ready for these senses; a failure only leaves the URLs null (the app falls back to the browser voice).
+    const audio = await this.audio.urlsForSenses(rows.map((row) => row.sense_id));
+    return rows.map((row) => view(row, nativeLanguage, audio.get(row.sense_id)));
   }
 
   cardContent(viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage): Promise<Map<string, WordSense>> {
@@ -104,7 +150,7 @@ export class WordsService {
   }
 
   async wordPage(viewerId: string, lemma: string, nativeLanguage: NativeLanguage) {
-    const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`e.lemma = ${lemma}`);
+    const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`e.lemma = ${lemma}`, true);
     if (senses.length === 0) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
     const entryIds = [...new Set(senses.map(({ entry_id }) => entry_id))];
     const forms = await this.prisma.$queryRaw<Array<{ kind: InflectionKind; form: string; position: number; has_page: boolean }>>`
@@ -117,9 +163,12 @@ export class WordsService {
     // Every form of a kind, in the stored order (AGID order for library forms); the UI plan decides what to show.
     forms.sort((a, b) => INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind)
       || a.position - b.position || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
+    // API (e): the viewer's saved-sentence count, on the word page only (lookup and review cards share WordSense unchanged).
+    const counts = await this.sentences.counts(viewerId, senses.map((s) => s.sense_id));
     // senses() already orders by part of speech, so each section's senses arrive together.
-    const sections: Array<{ pos: string; senses: WordSense[] }> = [];
-    for (const sense of senses) {
+    const sections: Array<{ pos: string; senses: WordPageSense[] }> = [];
+    for (const base of senses) {
+      const sense: WordPageSense = { ...base, sentence_count: counts.get(base.sense_id) ?? 0 };
       if (sections.at(-1)?.pos !== sense.pos) sections.push({ pos: sense.pos, senses: [] });
       sections.at(-1)!.senses.push(sense);
     }
@@ -129,10 +178,10 @@ export class WordsService {
   /** Case-insensitive: the senses spelled q (lemma or variant), then every base listing q as an inflected form. */
   async lookup(viewerId: string, q: string, nativeLanguage: NativeLanguage) {
     const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`(lower(e.lemma) = ${q}
-      OR EXISTS (SELECT 1 FROM entry_variants v WHERE v.entry_id = e.id AND lower(v.text) = ${q}))`);
+      OR EXISTS (SELECT 1 FROM entry_variants v WHERE v.entry_id = e.id AND lower(v.text) = ${q}))`, true);
     const bases = await this.inflections.entriesByForm(q, viewerId);
     const baseSenses = bases.length === 0 ? [] : await this.senses(viewerId, nativeLanguage,
-      Prisma.sql`e.id = ANY(${[...new Set(bases.map(({ entryId }) => entryId))]}::uuid[])`);
+      Prisma.sql`e.id = ANY(${[...new Set(bases.map(({ entryId }) => entryId))]}::uuid[])`, true);
     const viaInflection = bases.map((base) => ({
       kind: base.kind, base: { entry_id: base.entryId, lemma: base.lemma, pos: base.pos },
       senses: baseSenses.filter(({ entry_id }) => entry_id === base.entryId),
@@ -155,42 +204,70 @@ export class WordsService {
       SELECT MIN(CASE WHEN lower(head.text) = ${query.q} THEN 0 WHEN head.text ILIKE ${escaped + '%'} ESCAPE ${'\\'} THEN 1 ELSE 2 END)
       FROM (SELECT e.lemma AS text UNION ALL SELECT v.text FROM entry_variants v WHERE v.entry_id = e.id) head
       WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'})`;
-    const filters = [
-      visible(viewerId), Prisma.sql`s.live_revision_id IS NOT NULL`,
-      ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
-      ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
+    // Entry-level tests run first, on their own, so Postgres reads only the viewer's entries and the catalog before it touches
+    // senses; folded into the big join it started from every learner's senses (T5).
+    const entryFilters = [
+      visibleEntry(viewerId),
       ...(query.pos === undefined ? [] : [Prisma.sql`e.pos = ${query.pos}`]),
       ...(query.mine ? [Prisma.sql`e.scope = 'private'`] : []),
     ];
+    const filters = [
+      ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
+      ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
+    ];
     const after = cursor ? Prisma.sql`WHERE (rank, lemma COLLATE "C") > (${cursor.rank}, ${cursor.lemma} COLLATE "C")` : Prisma.empty;
-    const rows = await this.prisma.$queryRaw<Array<WordRow & { rank: number }>>`
-      WITH matched AS (
-        SELECT e.lemma, e.pos, e.scope, displayed.level, ${rank} AS rank,
-          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning,
-          array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id
-        FROM senses s
-        JOIN entries e ON e.id = s.entry_id
+    // The preview sense of a word: catalog before private, then part of speech, label, age (meaning, IPA and example all come from it).
+    const previewOrder = Prisma.sql`(scope = 'private'), pos_rank, context_label NULLS FIRST, created_at, id`;
+    const rows = await this.prisma.$queryRaw<WordListRow[]>`
+      WITH candidates AS MATERIALIZED (
+        SELECT * FROM (SELECT e.id, e.lemma, e.pos, e.scope, ${rank} AS rank FROM entries e WHERE ${Prisma.join(entryFilters, ' AND ')}) c
+        WHERE c.rank IS NOT NULL
+      ), matched AS (
+        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank, r.id AS revision_id,
+          array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id,
+          r.ipa_uk, r.ipa_us, r.ipa_custom, r.examples[1] AS example
+        FROM candidates e
+        -- One probe of senses(entry_id) per candidate (OFFSET 0 keeps the planner from flattening it back into a scan of every sense).
+        CROSS JOIN LATERAL (
+          SELECT s.id, s.context_label, s.created_at, s.live_revision_id FROM senses s WHERE s.entry_id = e.id AND ${openLive} OFFSET 0
+        ) s
         JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
         LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
-        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
-        LEFT JOIN sense_revision_texts definition ON definition.revision_id = r.id AND definition.language = 'en' AND definition.kind = 'definition'
-        WHERE ${Prisma.join(filters, ' AND ')}
+        ${filters.length === 0 ? Prisma.empty : Prisma.sql`WHERE ${Prisma.join(filters, ' AND ')}`}
       ), words AS (
         SELECT lemma, MIN(rank)::int AS rank, array_agg(DISTINCT pos) AS pos_list, bool_or(scope = 'private') AS has_private,
           (array_agg(level ORDER BY array_position(${LEVELS as unknown as string[]}::text[], level)) FILTER (WHERE level IS NOT NULL))[1] AS level,
-          (array_agg(meaning ORDER BY (scope = 'private'), pos_rank, context_label NULLS FIRST, created_at, id))[1] AS meaning_preview
+          (array_agg(revision_id ORDER BY ${previewOrder}))[1] AS preview_revision,
+          (array_agg(ipa_uk ORDER BY ${previewOrder}))[1] AS ipa_uk,
+          (array_agg(ipa_us ORDER BY ${previewOrder}))[1] AS ipa_us,
+          (array_agg(ipa_custom ORDER BY ${previewOrder}))[1] AS ipa_custom,
+          (array_agg(example ORDER BY ${previewOrder}))[1] AS example
         FROM matched WHERE rank IS NOT NULL GROUP BY lemma
       )
-      SELECT * FROM words ${after}
-      ORDER BY rank, lemma COLLATE "C"
-      LIMIT ${query.page_size + 1}`;
-    const page = rows.slice(0, query.page_size);
+      -- The count row always comes back, so a page past the last word (or no match) still reports the total, with a null word.
+      SELECT counted.total, page.* FROM (SELECT COUNT(*)::int AS total FROM words) counted
+      -- The meaning texts are joined for the page only: joined per matched sense, the planner (expecting one row) scanned the whole
+      -- text table once per sense, 7 s for 9.8k words.
+      LEFT JOIN LATERAL (
+        SELECT w.lemma, w.rank, w.pos_list, w.has_private, w.level, w.ipa_uk, w.ipa_us, w.ipa_custom, w.example,
+          CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning_preview
+        FROM (SELECT * FROM words ${after} ORDER BY rank, lemma COLLATE "C" LIMIT ${query.page_size + 1}) w
+        LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = w.preview_revision AND gloss.language = 'vi' AND gloss.kind = 'gloss'
+        LEFT JOIN sense_revision_texts definition
+          ON definition.revision_id = w.preview_revision AND definition.language = 'en' AND definition.kind = 'definition'
+      ) page ON true
+      ORDER BY page.rank, page.lemma COLLATE "C"`;
+    const total = rows[0]?.total ?? 0;
+    const found = rows.filter((row) => row.lemma !== null);
+    const page = found.slice(0, query.page_size);
     const last = page.at(-1);
     return {
-      items: page.map(({ lemma, pos_list, level, meaning_preview, has_private }) => ({
+      items: page.map(({ lemma, pos_list, level, meaning_preview, has_private, ipa_uk, ipa_us, ipa_custom, example }): WordRow => ({
         lemma, pos_list: [...pos_list].sort((a, b) => posRank(a) - posRank(b)), level: level ?? null, meaning_preview, has_private,
+        ipa: ipa_uk ?? ipa_us ?? ipa_custom ?? null, example: example ?? null,
       })),
-      next_page_token: rows.length > query.page_size && last ? encodeBoundToken({ rank: last.rank, lemma: last.lemma }, binding) : null,
+      next_page_token: found.length > query.page_size && last ? encodeBoundToken({ rank: last.rank, lemma: last.lemma }, binding) : null,
+      total,
     };
   }
 }

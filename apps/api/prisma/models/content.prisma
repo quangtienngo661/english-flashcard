@@ -30,6 +30,7 @@ model DataSource {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   levels EntryLevel[]
+  ipaRevisions SenseRevision[] @relation("IpaSource")
 
   @@unique([name, version])
   @@map("data_sources")
@@ -99,6 +100,9 @@ model Sense {
   state           String   @default("open")
   liveRevisionId  String?  @map("live_revision_id") @db.Uuid
   replacesSenseId String?  @map("replaces_sense_id") @db.Uuid
+  // Latest actor and time of an unpublish, retire or replacement (Identity user id, no FK).
+  stateChangedBy  String?  @map("state_changed_by") @db.Uuid
+  stateChangedAt  DateTime? @map("state_changed_at") @db.Timestamptz
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   entry         Entry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
@@ -107,6 +111,7 @@ model Sense {
   revisions     SenseRevision[]
   sentences     ContextSentence[]
 
+  @@index([entryId])
   @@map("senses")
 }
 
@@ -120,15 +125,26 @@ model SenseRevision {
   createdBy     String    @map("created_by") @db.Uuid
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
   publishedAt   DateTime? @map("published_at") @db.Timestamptz
+  // Who reviewed or rejected it and who published it (Identity user ids, no FK).
+  reviewedBy    String?   @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz
+  publishedBy   String?   @map("published_by") @db.Uuid
   examples      String[]  @default([])
   topicCodes    String[]  @default([]) @map("topic_codes")
   acceptedForms String[]  @default([]) @map("accepted_forms")
   // "This sense is a form of <entry>" (D29); the link is to the entry, not a sense, so it survives sense replacement.
   formOfEntryId String?   @map("form_of_entry_id") @db.Uuid
   formKind      String?   @map("form_kind")
+  // Round C: UK / US transcription without the slashes; `ipa_source_id` = the data source it came from (null = typed by hand);
+  // `ipa_custom` = the learner's own note on a private word.
+  ipaUk         String?   @map("ipa_uk") @db.VarChar(100)
+  ipaUs         String?   @map("ipa_us") @db.VarChar(100)
+  ipaSourceId   String?   @map("ipa_source_id") @db.Uuid
+  ipaCustom     String?   @map("ipa_custom") @db.VarChar(100)
 
-  sense  Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
-  formOf Entry?              @relation("FormOf", fields: [formOfEntryId], references: [id], onDelete: SetNull)
+  sense     Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
+  formOf    Entry?              @relation("FormOf", fields: [formOfEntryId], references: [id], onDelete: SetNull)
+  ipaSource DataSource?         @relation("IpaSource", fields: [ipaSourceId], references: [id], onDelete: SetNull)
   texts  SenseRevisionText[]
 
   @@unique([senseId, revisionNo])
@@ -168,6 +184,21 @@ model EntryInflection {
   @@map("entry_inflections")
 }
 
+/// A form staff accepted for a lemma (Bước 7 design §10); applies to every entry with that lemma, catalog and private.
+model WordFormAddition {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lemmaKey  String   @map("lemma_key")
+  form      String
+  // Lower-case NFC of form, as entry_inflections.form_key.
+  formKey   String   @map("form_key")
+  // Identity user id; no cross-module FK.
+  addedBy   String   @map("added_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([lemmaKey, formKey])
+  @@map("word_form_additions")
+}
+
 /// A sentence where a learner met a word (design 7.4); only its owner sees it.
 model ContextSentence {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -181,4 +212,23 @@ model ContextSentence {
 
   @@index([userId, senseId])
   @@map("context_sentences")
+}
+
+// Round C: one pre-made recording (design §5.5). `key` = sha256(voice_name | text | phonemes); the mp3 is at tts/v1/<key>.mp3.
+model SpeechAudio {
+  key       String    @id
+  voice     String
+  voiceName String    @map("voice_name")
+  text      String
+  phonemes  String?
+  status    String    @default("pending")
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  charCount Int?      @map("char_count")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  readyAt   DateTime? @map("ready_at") @db.Timestamptz
+
+  @@index([status, updatedAt])
+  @@map("speech_audio")
 }

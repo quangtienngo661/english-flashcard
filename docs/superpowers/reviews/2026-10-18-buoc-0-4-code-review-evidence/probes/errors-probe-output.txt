@@ -1,0 +1,5 @@
+FD3 control: failed login status 401 log entries so far 1 ["login_failed"]
+FD5 GET /v1/groups/:id/items with a well-formed token holding id "not-a-uuid": 500 {"type":"about:blank","status":500,"title":"Internal Server Error","instance":"/v1/groups/754e9141-6f78-4046-a8dd-4e7a7feafd27/items?page_token=eyJiaW5kaW5nIjoiNzU0ZTkxNDEtNmY3OC00MDQ2LWE4ZGQtNGU3YTdmZWFmZDI3OiIsInBheWxv
+FD3 log entries written during that request: 0 entries mentioning its operation_id: 0 levels: []
+FD5 control, a malformed id in the path: 400
+FD3 control, total log entries in this app so far: 1 sample events: ["login_failed"]

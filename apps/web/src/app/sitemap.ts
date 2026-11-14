@@ -1,15 +1,33 @@
 import type { MetadataRoute } from 'next';
-import { routing } from '@/i18n/routing';
+import { LANDING_LOCALES } from '@/lib/landing-locale';
+import { fetchLegal } from '@/lib/legal';
 import { site } from '@/lib/site';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const languages = Object.fromEntries(routing.locales.map((l) => [l, new URL(`/${l}`, site.url).toString()]));
-  const pages: MetadataRoute.Sitemap = routing.locales.map((locale) => ({
-    url: new URL(`/${locale}`, site.url).toString(),
+const absolute = (path: string) => new URL(path, site.url).toString();
+
+/**
+ * Design §11: only indexable pages. The home page lists only locales with a landing (design landing-redesign L4: /en redirects to /vi
+ * until the English copy exists). The Privacy Policy joins once the site is indexable, dated by the published text's effective date
+ * when the API answers at build; the Terms and the Sources page join only when their `noindex` goes (a launch item, deploy-checklist.md).
+ */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const languages = Object.fromEntries(LANDING_LOCALES.map((l) => [l, absolute(`/${l}`)]));
+  const pages: MetadataRoute.Sitemap = LANDING_LOCALES.map((locale) => ({
+    url: absolute(`/${locale}`),
     changeFrequency: 'monthly',
     priority: 1,
     alternates: { languages },
   }));
-  // Privacy page left out while legal links are hidden until launch (09/10/2026).
+  if (!site.indexable) return pages;
+
+  // 'force-cache': read once at build, so the sitemap stays static; no answer only drops the date.
+  const effectiveDate = (await fetchLegal('force-cache'))?.effective_date;
+  pages.push({
+    url: absolute('/vi/privacy'),
+    ...(effectiveDate ? { lastModified: effectiveDate } : {}),
+    changeFrequency: 'yearly',
+    priority: 0.3,
+    alternates: { languages: { vi: absolute('/vi/privacy'), en: absolute('/en/privacy') } },
+  });
   return pages;
 }

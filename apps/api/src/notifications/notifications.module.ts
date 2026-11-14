@@ -7,6 +7,7 @@ import { SettingsModule } from '../settings/index.js';
 import { ReminderPrefsService } from './prefs/reminder-prefs.service.js';
 import { RemindersController } from './prefs/reminders.controller.js';
 import { ChannelChooser } from './provider/channel-chooser.js';
+import { NotificationsAccountEraser } from './account-eraser.provider.js';
 import { EmailProvider } from './provider/email.provider.js';
 import { ReminderQueueService } from './scheduler/reminder-queue.service.js';
 import { ReminderSendService } from './scheduler/reminder-send.service.js';
@@ -17,7 +18,7 @@ import { ReminderTickService } from './scheduler/reminder-tick.service.js';
   controllers: [RemindersController],
   providers: [
     ReminderPrefsService, EmailProvider, ChannelChooser, IdempotencyInterceptor,
-    ReminderQueueService, ReminderTickService, ReminderSendService,
+    ReminderQueueService, ReminderTickService, ReminderSendService, NotificationsAccountEraser,
   ],
 })
 export class NotificationsModule {}

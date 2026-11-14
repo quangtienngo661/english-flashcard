@@ -1,10 +1,14 @@
 import { FieldError, Input, Label, Text, TextField as AriaTextField } from 'react-aria-components';
 
 type Props = {
+  /** So a form can focus the field (`document.getElementById`), e.g. the first one a 400 flagged. */
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'email' | 'password' | 'url';
+  /** Focus left the field (after the last `onChange`). */
+  onBlur?: () => void;
+  type?: 'text' | 'email' | 'password' | 'url' | 'date';
   name?: string;
   autoComplete?: string;
   placeholder?: string;

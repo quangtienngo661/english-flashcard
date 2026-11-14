@@ -25,9 +25,10 @@ function gate() {
 function setup() {
   const config = testConfig();
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
-  const chain: SessionChain = {
+  const chain: SessionChain & { user: { status: string; emailVerifiedAt: Date | null } } = {
     id: randomUUID(), userId: randomUUID(), clientType: 'mobile', deviceLabel: null,
-    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null,
+    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null, authMethod: 'password',
+    user: { status: 'active', emailVerifiedAt: clock.now() },
   };
   const original = newRefreshToken();
   const row: RefreshToken & { chain: SessionChain } = {
@@ -91,7 +92,7 @@ function grace(s: ReturnType<typeof setup>) {
   s.row.rotatedAt = s.clock.now();
   s.row.successorId = randomUUID();
   s.row.successorCiphertext = seal(successor.token, s.config.refreshGraceKey);
-  s.row.graceUntil = new Date(s.clock.now().getTime() + 10_000);
+  s.row.graceUntil = new Date(s.clock.now().getTime() + 2_000);
   s.findUnique.mockResolvedValueOnce(s.row).mockResolvedValueOnce({
     ...s.row, id: s.row.successorId, tokenHash: successor.hash, rotatedAt: null,
   });
@@ -109,7 +110,7 @@ describe('SessionService transaction invariants', () => {
       where: { id: s.row.id, rotatedAt: null },
       data: {
         rotatedAt: s.clock.now(), successorId: expect.any(String),
-        successorCiphertext: expect.any(String), graceUntil: new Date(s.clock.now().getTime() + 10_000),
+        successorCiphertext: expect.any(String), graceUntil: new Date(s.clock.now().getTime() + 2_000),
       },
     });
     expect(s.chainUpdate).toHaveBeenCalledWith({ where: { id: s.chain.id }, data: { lastUsedAt: s.clock.now() } });
@@ -121,10 +122,10 @@ describe('SessionService transaction invariants', () => {
     expect(s.committed()).toBe(true);
   });
 
-  it('B1#16: grace includes exactly 10 seconds, returns the identical successor, and signs a fresh JWT', async () => {
+  it('B1#16, F5: grace includes exactly 2 seconds, returns the identical successor, and signs a fresh JWT', async () => {
     const s = setup();
     const successor = grace(s);
-    s.clock.advance(10_000);
+    s.clock.advance(2_000);
     const session = await runWithOperationId('grace-operation', () => s.service.refresh(s.original.token, 'mobile'));
     expect(session.refreshToken).toBe(successor.token);
     expect(decodeJwt(session.accessToken).exp).toBe(s.clock.now().getTime() / 1000 + 900);
@@ -135,10 +136,32 @@ describe('SessionService transaction invariants', () => {
     }]);
   });
 
+  it('F5 (review 07/11): a rotation opens a 2-second grace: the old token at +1.5 s gets the successor, at +3 s it is reuse', async () => {
+    const s = setup();
+    const rows = new Map<string, RefreshToken & { chain: SessionChain }>([[s.row.id, s.row]]);
+    s.findUnique.mockImplementation(async (args?: { where: { id: string } }) => rows.get(args!.where.id) ?? null);
+    s.updateMany.mockImplementation(async (args?: { data: Partial<RefreshToken> }) => { Object.assign(s.row, args!.data); return { count: 1 }; });
+    s.create.mockImplementation(async ({ data }) => {
+      const created = { ...s.row, rotatedAt: null, successorId: null, successorCiphertext: null, graceUntil: null, ...data } as RefreshToken & { chain: SessionChain };
+      rows.set(created.id, created);
+      return created;
+    });
+    const rotated = await s.service.refresh(s.original.token, 'mobile');
+
+    s.clock.advance(1_500);
+    expect((await s.service.refresh(s.original.token, 'mobile')).refreshToken).toBe(rotated.refreshToken);
+
+    s.clock.advance(1_500);
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'reuse_detected' },
+    });
+  });
+
   it.each(['reuse', 'expired', 'revoked', 'path_mismatch'] as const)(
     'B1#34: %s is returned by the transaction and becomes 401 only after commit', async (reason) => {
       const s = setup();
-      if (reason === 'reuse') { grace(s); s.clock.advance(11_000); }
+      if (reason === 'reuse') { grace(s); s.clock.advance(3_000); }
       if (reason === 'expired') s.clock.advance(90 * day + 1000);
       if (reason === 'revoked') { s.chain.revokedAt = s.clock.now(); s.chain.revokeReason = 'logout'; }
       if (reason === 'path_mismatch') s.chain.clientType = 'web';
@@ -159,6 +182,42 @@ describe('SessionService transaction invariants', () => {
       }
     },
   );
+
+  it('FE9: refresh of a locked user → 401 and the chain is revoked', async () => {
+    const s = setup();
+    s.chain.user.status = 'locked';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.findUnique).toHaveBeenCalledWith({ where: { id: s.row.id },
+      include: { chain: { include: { user: { select: { status: true, emailVerifiedAt: true } } } } } });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'locked' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('A13-14: refreshing a chain whose user is unverified → rejected, chain revoked with reason unverified, 401 invalid-token', async () => {
+    const s = setup();
+    s.chain.user.emailVerifiedAt = null;
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'unverified' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('A13-14: a locked and unverified user is revoked with reason locked', async () => {
+    const s = setup();
+    s.chain.user.status = 'locked';
+    s.chain.user.emailVerifiedAt = null;
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'locked' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
 
   it('B1#18: rotation clips refresh expiry to the absolute deadline', async () => {
     const s = setup();
@@ -303,6 +362,7 @@ describe('SessionService transaction invariants', () => {
     const session = await s.service.startChain(tx, { userId: s.chain.userId, client: 'mobile', deviceLabel: 'Phone' });
     expect(createChain).toHaveBeenCalledWith({ data: {
       userId: s.chain.userId, clientType: 'mobile', deviceLabel: 'Phone', createdAt: s.clock.now(), lastUsedAt: s.clock.now(),
+      authMethod: 'password',
     } });
     expect(s.userUpdate).toHaveBeenCalledWith({ where: { id: s.chain.userId }, data: { lastSeenAt: s.clock.now() } });
     expect(findMany).toHaveBeenCalledWith({
@@ -326,6 +386,35 @@ describe('SessionService transaction invariants', () => {
     } else expect(s.chainUpdateMany).not.toHaveBeenCalled();
     expect(s.transaction).not.toHaveBeenCalled();
     expect(s.lock).not.toHaveBeenCalled();
+  });
+
+  it('B8 (D5): startChain stores the sign-in method; Google only when asked', async () => {
+    const s = setup();
+    const createChain = vi.fn(async () => s.chain);
+    const tx = {
+      ...s.tx, sessionChain: { create: createChain, findMany: vi.fn(async () => []), updateMany: s.chainUpdateMany },
+    } as unknown as Prisma.TransactionClient;
+    await s.service.startChain(tx, { userId: s.chain.userId, client: 'web', authMethod: 'google' });
+    expect(createChain).toHaveBeenCalledWith({ data: expect.objectContaining({ authMethod: 'google' }) });
+  });
+
+  it('B8 (D24, IE11): refresh of a chain whose user is deleting → 401 and the chain is revoked with reason account-deleted', async () => {
+    const s = setup();
+    s.chain.user.status = 'deleting';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'account-deleted' },
+    });
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('B8 Review Focus 5: a refresh inside the grace window of a chain Tx A just revoked is refused (regression guard)', async () => {
+    const s = setup();
+    grace(s);
+    s.chain.revokedAt = s.clock.now();
+    s.chain.user.status = 'deleting';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.sign).not.toHaveBeenCalled();
   });
 
   it.each(['rotated', 'revoked', 'path_mismatch'] as const)(

@@ -1,0 +1,20 @@
+{"id": 0, "verdict": "pass", "wrong_fields": [], "reason": "Lemma child, noun, \"trẻ em\", definition and example all fit the plural children."}
+{"id": 1, "verdict": "pass", "wrong_fields": [], "reason": "Better is the comparative of the adjective good, and \"giỏi hơn, tốt hơn\" with its definition matches the skill/quality sense in the sentence."}
+{"id": 2, "verdict": "pass", "wrong_fields": [], "reason": "Lemma run is right and \"điều hành, quản lý\", the definition and the shop example all match the 'manage a business' sense used in context."}
+{"id": 3, "verdict": "pass", "wrong_fields": [], "reason": "Mice is the plural of the noun mouse; \"chuột nhắt\", the animal definition and the example are consistent."}
+{"id": 4, "verdict": "pass", "wrong_fields": [], "reason": "Flew is past of fly (verb), and \"bay\", the definition and the birds example match the context."}
+{"id": 5, "verdict": "pass", "wrong_fields": [], "reason": "Bat is the baseball/cricket stick as in the sentence; \"gậy (đánh bóng chày)\", definition and example all agree."}
+{"id": 6, "verdict": "pass", "wrong_fields": [], "reason": "Fair is the noun 'funfair/exhibition event' as in county fair; \"hội chợ\" and the school-fair example fit."}
+{"id": 7, "verdict": "pass", "wrong_fields": [], "reason": "Rock as the music genre matches the context, and meaning_vi, definition and example are all about music."}
+{"id": 8, "verdict": "pass", "wrong_fields": [], "reason": "Spring as a metal coil in a mattress is correct; \"lò xo\", definition and chair example all use the coil sense."}
+{"id": 9, "verdict": "pass", "wrong_fields": [], "reason": "Bear as a verb meaning tolerate matches \"can't bear the noise\"; meaning, definition and example are consistent."}
+{"id": 10, "verdict": "pass", "wrong_fields": [], "reason": "Lemma give up (phrasal verb) with the 'stop a habit' sense fits \"gave up smoking\"; \"bỏ, từ bỏ\" and the coffee example are right."}
+{"id": 11, "verdict": "pass", "wrong_fields": [], "reason": "Misspelling recieve is correctly resolved to the verb receive, with a correct meaning, definition and example."}
+{"id": 12, "verdict": "pass", "wrong_fields": [], "reason": "Misspelling definately is correctly resolved to the adverb definitely; \"chắc chắn\", definition and example fit."}
+{"id": 13, "verdict": "pass", "wrong_fields": [], "reason": "Book as a noun meaning a printed book is the most common sense, and all fields agree."}
+{"id": 14, "verdict": "pass", "wrong_fields": [], "reason": "Fast as a verb 'go without food' matches Ramadan fasting; \"nhịn ăn\", definition and example are right."}
+{"id": 15, "verdict": "pass", "wrong_fields": [], "reason": "Lead as the noun for the metal (pipes) is correct, and \"chì (kim loại)\", definition and example all use that sense."}
+{"id": 16, "verdict": "pass", "wrong_fields": [], "reason": "Minute as the adjective 'extremely small' (not the time unit) fits the sentence; \"rất nhỏ\" and the example are right."}
+{"id": 17, "verdict": "pass", "wrong_fields": [], "reason": "Booked resolves to verb book in the 'reserve' sense; \"đặt trước\", definition and hotel example match the context."}
+{"id": 18, "verdict": "pass", "wrong_fields": [], "reason": "Address as a verb 'speak formally to an audience' matches \"address the nation\"; \"phát biểu trước\" and the class example fit."}
+{"id": 19, "verdict": "pass", "wrong_fields": [], "reason": "Kind as a noun meaning 'type' fits \"what kind of music\"; \"loại\", definition and example are right."}

@@ -1,0 +1,595 @@
+<title>Bảy câu hỏi M8</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: one column of question blocks; inside each, option cards side by side (stack on phone). Mock screens keep the product's light palette. */
+:root {
+  --bg: #f6f7fa; --surface: #ffffff; --ink: #1b2444; --muted: #525a78; --line: #e1e5ee;
+  --accent: #1e3a8a; --accent-soft: #e7ecf8; --mark: #ffd84a; --warn-soft: #fdf3d0; --warn-ink: #6b4e00;
+  /* product screen (always the light theme of Wordmet, like a screenshot) */
+  --s-bg: #f6f7fa; --s-surface: #ffffff; --s-ink: #1b2444; --s-muted: #525a78; --s-line: #e1e5ee;
+  --s-accent: #1e3a8a; --s-accent-soft: #e7ecf8; --s-mark: #ffd84a; --s-on-accent: #ffffff; --s-ghost: #c9cedc;
+  /* product screen in its dark theme (Q1b demo) */
+  --d-bg: #0f1220; --d-surface: #1a1f33; --d-ink: #e8ebf5; --d-muted: #a3aac4; --d-line: #2c3350; --d-accent: #8fa8ff;
+  --old-navy: #1b2444; --old-yellow: #ffe08a; --old-bar: #1c1b22;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --shadow: 0 1px 2px rgb(27 36 68 / .05), 0 14px 34px -14px rgb(27 36 68 / .22);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1220; --surface: #181c2e; --ink: #e8ebf5; --muted: #a3aac4; --line: #2a3048;
+  --accent: #9db3ff; --accent-soft: #1f2a4d; --warn-soft: #3a3016; --warn-ink: #f3d77a; color-scheme: dark;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 14px 34px -14px rgb(0 0 0 / .6);
+} }
+:root[data-theme="dark"] {
+  --bg: #0f1220; --surface: #181c2e; --ink: #e8ebf5; --muted: #a3aac4; --line: #2a3048;
+  --accent: #9db3ff; --accent-soft: #1f2a4d; --warn-soft: #3a3016; --warn-ink: #f3d77a; color-scheme: dark;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 14px 34px -14px rgb(0 0 0 / .6);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 4.5vw, 2.75rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 68ch; }
+.head { display: flex; flex-direction: column; gap: 12px; }
+.howto { display: inline-flex; gap: 8px; align-items: center; font-family: var(--f-mono); font-size: 13px; background: var(--accent-soft); color: var(--accent); padding: 6px 12px; border-radius: 8px; align-self: flex-start; }
+section.q { display: flex; flex-direction: column; gap: 16px; }
+.qtag { font-family: var(--f-mono); font-size: 13px; color: var(--accent); letter-spacing: .02em; }
+.ctx { color: var(--muted); max-width: 72ch; }
+.ctx b { color: var(--ink); font-weight: 600; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; align-items: stretch; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.opt-h { display: flex; gap: 10px; align-items: baseline; }
+.letter { font-family: var(--f-mono); font-weight: 500; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; color: var(--muted); }
+.opt-t { font-weight: 600; }
+.facts { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+.facts span b { color: var(--ink); font-weight: 600; }
+.note { font-size: 13px; color: var(--muted); }
+.shared { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.warn { background: var(--warn-soft); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.flow i { font-style: normal; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; }
+.flow em { font-style: normal; color: var(--muted); }
+
+/* ---- product screen frame ---- */
+.scr { background: var(--s-bg); color: var(--s-ink); border: 1px solid var(--s-line); border-radius: 10px; overflow: hidden; font-family: var(--f-body); }
+.scr.dark { background: var(--d-bg); color: var(--d-ink); border-color: var(--d-line); }
+.bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: color-mix(in srgb, var(--s-bg) 80%, transparent); border-bottom: 1px solid var(--s-line); font-size: 12px; }
+.scr.dark .bar { background: var(--d-bg); border-color: var(--d-line); }
+.logo { font-family: var(--f-display); font-weight: 800; font-size: 15px; letter-spacing: -0.01em; }
+.logo span { color: var(--s-accent); }
+.scr.dark .logo span { color: var(--d-accent); }
+.links { display: flex; gap: 12px; margin-left: auto; color: var(--s-muted); }
+.scr.dark .links { color: var(--d-muted); }
+.btn { background: var(--s-accent); color: var(--s-on-accent); border-radius: 8px; padding: 5px 10px; font-weight: 600; font-size: 12px; white-space: nowrap; border: 0; font-family: inherit; }
+.textlink { color: var(--s-ink); font-weight: 600; white-space: nowrap; }
+.scr.dark .textlink { color: var(--d-ink); }
+.hl { outline: 2px solid var(--s-mark); outline-offset: 2px; border-radius: 6px; }
+.phone { width: 220px; max-width: 100%; }
+.iconbtn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--s-line); background: var(--s-surface); display: grid; place-items: center; cursor: pointer; color: var(--s-ink); }
+.scr.dark .iconbtn { border-color: var(--d-line); background: var(--d-surface); color: var(--d-ink); }
+.hero-mini { padding: 18px 14px 20px; display: flex; flex-direction: column; gap: 8px; }
+.hero-mini b { font-family: var(--f-display); font-weight: 700; font-size: 18px; line-height: 1.2; }
+.hero-mini b span { color: var(--s-accent); }
+.scr.dark .hero-mini b span { color: var(--d-accent); }
+.hero-mini small { color: var(--s-muted); font-size: 11px; }
+.scr.dark .hero-mini small { color: var(--d-muted); }
+
+/* pricing */
+.pro { background: var(--s-surface); border: 2px solid var(--s-accent); border-radius: 16px; margin: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.pro h4 { margin: 0; font-family: var(--f-display); font-size: 17px; color: var(--s-accent); }
+.cells { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.cell { border: 1px solid var(--s-line); background: var(--s-bg); border-radius: 10px; padding: 8px 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; text-align: left; font-family: inherit; color: var(--s-ink); cursor: pointer; }
+.cell[aria-pressed="true"] { border: 2px solid var(--s-accent); background: var(--s-accent-soft); padding: 7px 5px; }
+.cell.static { cursor: default; }
+.cell .p { font-family: var(--f-display); font-weight: 700; font-size: 14px; }
+.cell s { color: var(--s-muted); min-height: 1.3em; }
+.cell .pm { color: var(--s-muted); }
+.save { font-family: var(--f-mono); font-size: 10px; background: var(--s-accent-soft); color: var(--s-accent); border-radius: 6px; padding: 0 4px; align-self: flex-start; }
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; justify-content: space-between; gap: 8px; border: 1px solid var(--s-line); border-radius: 10px; padding: 8px 10px; font-size: 12px; background: var(--s-bg); }
+.row b { font-family: var(--f-display); }
+.wide { width: 100%; text-align: center; padding: 8px; font-size: 13px; }
+
+/* motion lanes */
+.lane-stage { padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; min-height: 230px; }
+.mhead { font-family: var(--f-display); font-weight: 700; font-size: 20px; line-height: 1.25; min-height: 52px; }
+.mhead span { display: inline-block; }
+.mhead span.acc { color: var(--s-accent); }
+.strip { overflow: hidden; background: var(--s-surface); border: 1px solid var(--s-line); border-radius: 10px; padding: 6px 0; }
+.strow { display: flex; gap: 6px; width: max-content; padding-left: 6px; }
+.chip { font-size: 11px; padding: 3px 8px; border-radius: 8px; background: var(--s-bg); border: 1px solid var(--s-line); white-space: nowrap; }
+.chip b { font-family: var(--f-display); }
+.box { position: relative; height: 54px; border: 1.5px solid var(--s-line); border-radius: 14px; display: grid; place-items: center; font-size: 12px; color: var(--s-muted); background: var(--s-surface); }
+.dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--s-accent); top: -5px; left: -5px; opacity: 0; box-shadow: 0 0 10px 2px rgb(30 58 138 / .45); }
+.replay { align-self: flex-start; font-family: var(--f-body); font-weight: 600; font-size: 14px; color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+.replay:focus-visible, .cell:focus-visible, .iconbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* legal */
+.legal { padding: 14px; display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 12px; font-size: 11px; }
+.legal-head { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 3px; }
+.legal-head small { color: var(--s-muted); }
+.legal-head b { font-family: var(--f-display); font-size: 18px; font-weight: 700; }
+.toc { background: var(--s-surface); border-radius: 10px; box-shadow: 0 6px 16px -10px rgb(27 36 68 / .4); padding: 8px; display: flex; flex-direction: column; gap: 2px; align-self: start; }
+.toc .cur { background: var(--s-accent-soft); color: var(--s-accent); border-radius: 5px; padding: 1px 4px; font-weight: 600; }
+.toc span { padding: 1px 4px; color: var(--s-muted); }
+.art { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.art .h { font-family: var(--f-display); font-weight: 700; font-size: 12px; }
+.ln { height: 6px; border-radius: 3px; background: var(--s-line); }
+.dup { background: #fde2df; color: #8f2219; border-radius: 4px; padding: 0 4px; }
+.prog { height: 3px; background: var(--s-line); }
+.prog i { display: block; height: 3px; width: 38%; background: var(--s-accent); }
+
+/* sources */
+.src { margin: 12px; background: var(--s-surface); border-radius: 16px; box-shadow: 0 6px 16px -10px rgb(27 36 68 / .4); padding: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.src b.n { font-family: var(--f-display); font-size: 16px; }
+.pill { display: inline-flex; gap: 6px; align-items: center; background: var(--s-accent-soft); color: var(--s-accent); border-radius: 999px; padding: 2px 9px; font-weight: 600; font-size: 11px; align-self: flex-start; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--s-accent); }
+.src .m { color: var(--s-muted); }
+.admin { border-top: 1px solid var(--s-line); background: var(--s-surface); padding: 10px 12px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+.admin label { color: var(--s-muted); }
+.admin .in { border: 1px solid var(--s-line); border-radius: 6px; padding: 4px 8px; background: var(--s-bg); }
+
+/* faq */
+.faq { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.fq { background: var(--s-surface); border-radius: 10px; padding: 8px 10px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.fq b { font-weight: 600; }
+.fq .ans { color: var(--s-muted); }
+.fq .todo { color: var(--s-ghost); border: 1px dashed var(--s-ghost); border-radius: 6px; padding: 2px 6px; align-self: flex-start; font-size: 11px; }
+.draft { font-family: var(--f-mono); font-size: 10px; background: var(--s-accent-soft); color: var(--s-accent); border-radius: 5px; padding: 0 5px; margin-right: 4px; }
+
+/* favicon / og */
+.tab { display: flex; align-items: center; gap: 8px; background: #dde1ea; padding: 8px 10px 0; }
+.tabin { display: flex; align-items: center; gap: 8px; background: var(--s-surface); border-radius: 8px 8px 0 0; padding: 6px 10px; font-size: 12px; color: var(--s-ink); }
+.fav { width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; flex: none; }
+.fav.old { background: var(--old-yellow); }
+.fav.old::before { content: ""; width: 10px; height: 3px; border-left: 4px solid var(--old-bar); border-right: 4px solid var(--old-bar); margin-top: 6px; box-sizing: border-box; }
+.fav.new { background: var(--s-surface); border: 1px solid var(--s-line); font-family: var(--f-display); font-weight: 800; font-size: 11px; color: var(--s-ink); line-height: 1; }
+.fav.new span { color: var(--s-accent); }
+.og { margin: 12px; border-radius: 10px; overflow: hidden; border: 1px solid var(--s-line); background: var(--s-surface); font-size: 11px; }
+.og-img { aspect-ratio: 1200 / 630; max-width: 100%; padding: 14px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; }
+.og-img.old { background: var(--old-navy); color: #ffffff; }
+.og-img.old .mk { color: #ffd84a; font-weight: 800; letter-spacing: .1em; }
+.og-img.old b { font-family: var(--f-display); font-size: 16px; line-height: 1.15; }
+.og-img.old small { color: #b9c1e0; }
+.og-img.new { background: var(--s-bg); color: var(--s-ink); }
+.og-img.new b { font-family: var(--f-display); font-size: 16px; line-height: 1.15; }
+.og-img.new b span { color: var(--s-accent); }
+.og-cap { padding: 6px 10px; color: var(--s-muted); border-top: 1px solid var(--s-line); }
+.pending { margin: 12px; border: 1.5px dashed var(--s-ghost); border-radius: 10px; aspect-ratio: 1200 / 630; max-width: 100%; display: grid; place-items: center; color: var(--s-muted); font-size: 12px; text-align: center; padding: 10px; }
+footer.end { color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; font-size: 14px; }
+/* follow-up block: real-size phone header and controls */
+.realphone { width: 358px; max-width: 100%; }
+.rbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--s-bg); border-bottom: 1px solid var(--s-line); white-space: nowrap; overflow: hidden; }
+.rlogo { font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; margin-right: auto; }
+.rlogo span { color: var(--s-accent); }
+.rbtn { min-height: 44px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 10px; font-weight: 600; font-size: 15px; flex: none; }
+.rbtn.navy { background: var(--s-accent); color: var(--s-on-accent); }
+.rbtn.white { background: var(--s-surface); color: var(--s-ink); box-shadow: inset 0 0 0 1px var(--s-line); }
+.rtog { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1px var(--s-line); background: var(--s-surface); color: var(--s-ink); }
+.measure { font-family: var(--f-mono); font-size: 12px; }
+.measure.bad { color: #b8352a; }
+.measure.ok { color: #1b7a46; }
+.rfoot { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--s-muted); align-items: center; border-top: 1px solid var(--s-line); }
+.seg { display: inline-flex; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--s-line); overflow: hidden; }
+.seg span { padding: 3px 10px; }
+.seg span.on { background: var(--s-accent-soft); color: var(--s-accent); font-weight: 600; }
+.herob { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.herob b { font-family: var(--f-display); font-size: 20px; line-height: 1.2; }
+.herob .row2 { display: flex; gap: 8px; flex-wrap: wrap; }
+.pausebar { display: flex; align-items: center; gap: 8px; padding: 8px; }
+.pausebar .strip { flex: 1; min-width: 0; }
+.pausebtn { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 6px 12px; background: var(--s-surface); box-shadow: inset 0 0 0 1px var(--s-line); color: var(--s-ink); font: 600 12px var(--f-body); cursor: pointer; }
+.pausebtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.blurrow { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; padding: 12px; }
+.blurrow figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.blurrow figcaption { font-family: var(--f-mono); font-size: 11px; color: var(--s-muted); }
+.blurcard { height: 90px; border-radius: 12px; background: var(--s-surface); box-shadow: inset 0 0 0 1px var(--s-line); display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { .dot { display: none; } }
+</style>
+
+<main class="page">
+  <header class="head">
+    <h1>Bảy câu hỏi trước khi viết plan M8</h1>
+    <p class="lead">M8 làm lại trang công khai: trang chủ, Chính sách bảo mật, Điều khoản sử dụng, Nguồn dữ liệu, 404. Mỗi khối dưới đây là một chỗ Figma, code và design chưa khớp. Các phương án đặt cạnh nhau, không phương án nào được đề xuất trước. Lan là người học ví dụ.</p>
+    <span class="howto">Trả lời trong chat: 1a: …, 1b: …, 2: …, 3: …, 4: …, 5: …, 6: …, 7: …</span>
+  </header>
+
+  <!-- 1a -->
+  <section class="q" id="q1a">
+    <span class="qtag">Câu 1a · Thanh trên</span>
+    <h2>Lan đã có tài khoản thì đăng nhập từ đâu?</h2>
+    <p class="ctx">Figma vẽ thanh trên chỉ có ba link và nút <b>Dùng thử</b>. Không còn "Đăng nhập" ở thanh trên, ở phần đầu trang hay ở chân trang. Trang Đăng ký hiện có dòng "Đã có tài khoản? Đăng nhập".</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Theo Figma, không có link Đăng nhập</span></div>
+        <div class="scr"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"><span>Nhóm từ</span><span>Cách học</span><span>Giá</span></span><span class="btn hl">Dùng thử</span></div></div>
+        <div class="scr phone"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"></span><span class="btn hl">Dùng thử</span></div></div>
+        <div class="flow"><i>Dùng thử</i><em>→</em><i>trang Đăng ký</i><em>→</em><i>Đã có tài khoản? Đăng nhập</i><em>→</em><i>trang Đăng nhập</i></div>
+        <div class="facts"><span><b>Lan:</b> 2 lần bấm, phải biết rằng "Dùng thử" dẫn tới chỗ đăng nhập.</span><span><b>Việc phát sinh:</b> không.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Thêm link chữ "Đăng nhập" cạnh "Dùng thử"</span></div>
+        <div class="scr"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"><span>Nhóm từ</span><span>Cách học</span><span>Giá</span></span><span class="textlink hl">Đăng nhập</span><span class="btn">Dùng thử</span></div></div>
+        <div class="scr phone"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"></span><span class="textlink hl">Đăng nhập</span><span class="btn">Dùng thử</span></div></div>
+        <div class="flow"><i>Đăng nhập</i><em>→</em><i>trang Đăng nhập</i></div>
+        <div class="facts"><span><b>Lan:</b> 1 lần bấm.</span><span><b>Việc phát sinh:</b> sửa khung Figma thanh trên cho khớp; điện thoại chật hơn một chút.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 1b -->
+  <section class="q" id="q1b">
+    <span class="qtag">Câu 1b · Sáng và tối</span>
+    <h2>Trang công khai có nút đổi sáng/tối không?</h2>
+    <p class="ctx">Trang chủ hiện có nút đổi sáng/tối ở thanh trên; Figma bỏ nút này. Trong app, Lan đổi giao diện ở Cài đặt.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Bỏ nút, trang theo cài đặt của máy</span></div>
+        <div class="scr"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"><span>Giá</span></span><span class="btn">Dùng thử</span></div><div class="hero-mini"><b>Ôn từ đúng lúc, luyện từ <span>trong câu.</span></b><small>Máy của Lan để sáng</small></div></div>
+        <div class="scr dark"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"><span>Giá</span></span><span class="btn">Dùng thử</span></div><div class="hero-mini"><b>Ôn từ đúng lúc, luyện từ <span>trong câu.</span></b><small>Máy của Lan để tối</small></div></div>
+        <div class="facts"><span><b>Lan:</b> muốn trang tối thì phải đổi cài đặt máy, hoặc vào app rồi đổi ở Cài đặt.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Giữ nút đổi ở thanh trên</span></div>
+        <div class="scr" id="themeDemo"><div class="bar"><span class="logo">wordmet<span>.</span></span><span class="links"><span>Giá</span></span><button class="iconbtn" id="themeBtn" type="button" aria-label="Đổi sáng hoặc tối"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button><span class="btn">Dùng thử</span></div><div class="hero-mini"><b>Ôn từ đúng lúc, luyện từ <span>trong câu.</span></b><small id="themeNote">Bấm nút mặt trăng để thử</small></div></div>
+        <div class="facts"><span><b>Lan:</b> đổi ngay trên trang, lựa chọn được nhớ khi vào app.</span><span><b>Việc phát sinh:</b> thêm nút vào khung Figma; trên điện thoại thanh trên có ba thứ.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="q" id="q2">
+    <span class="qtag">Câu 2 · Bảng giá</span>
+    <h2>Khách chưa có tài khoản thấy gì ở bảng giá?</h2>
+    <p class="ctx">Figma vẽ ô chọn kỳ 1, 3, 12 tháng và nút <b>Mua gói Pro 12 tháng</b>. Người xem trang chủ chưa đăng nhập, và hiện chưa có đường nào để khách mua ngay. Giá là giá mặc định của API: 79.000, 199.000, 599.000 ₫. Bấm vào các ô để thử.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Giữ nút mua, đăng ký xong vào thẳng Gói học</span></div>
+        <div class="scr"><div class="pro" data-mode="buy"><h4>Pro</h4><div class="cells" role="group" aria-label="Chọn kỳ, phương án a"></div><span class="btn wide" data-label>Mua gói Pro 12 tháng</span></div></div>
+        <div class="flow"><i>Mua gói Pro 12 tháng</i><em>→</em><i>Đăng ký</i><em>→</em><i>Gói học, chọn sẵn 12 tháng</i><em>→</em><i>thanh toán</i></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> app phải nhớ kỳ Lan chọn qua cả bước đăng ký và xác minh email.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Chọn kỳ để xem giá, nút là "Tạo tài khoản"</span></div>
+        <div class="scr"><div class="pro" data-mode="look"><h4>Pro</h4><div class="cells" role="group" aria-label="Chọn kỳ, phương án b"></div><span class="btn wide">Tạo tài khoản miễn phí</span></div></div>
+        <div class="flow"><i>Tạo tài khoản</i><em>→</em><i>Hôm nay</i><em>→</em><i>muốn mua thì vào Gói học, chọn lại kỳ</i></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> ít; ô chọn chỉ đổi phần giá đang hiện.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Bỏ ô chọn, chỉ hiện ba giá</span></div>
+        <div class="scr"><div class="pro"><h4>Pro</h4><div class="rows"><div class="row"><span>1 tháng</span><b>79.000 ₫</b></div><div class="row"><span>3 tháng · ≈ 66.300 ₫ mỗi tháng</span><b>199.000 ₫</b></div><div class="row"><span>12 tháng · ≈ 49.900 ₫ mỗi tháng</span><b>599.000 ₫</b></div></div><span class="btn wide">Tạo tài khoản miễn phí</span></div></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> ít nhất; trang không cần script cho bảng giá.</span><span><b>Khác Figma:</b> mất kiểu thẻ chọn và giá gạch.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="q" id="q3">
+    <span class="qtag">Câu 3 · Chuyển động</span>
+    <h2>Trang chủ chuyển động theo số nào?</h2>
+    <p class="ctx">Figma có số cho cả sáu cảnh, nhưng trái luật motion đã ghi: mỗi chữ hiện 0,8–1,15 giây và mờ tới 24 px; dải từ, vệt sáng quanh thẻ "Phần cuối", chữ chủ đề đổi liên tục và hai quầng sáng thì chạy mãi. Luật ghi: hiện trong khoảng 0,3 giây, mờ tối đa 18 px (điện thoại 12 px), không lặp ở màn dùng hằng ngày.</p>
+    <div class="opts" id="lanes">
+      <article class="opt" data-lane="a">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Đúng số Figma</span></div>
+        <div class="scr"><div class="lane-stage"><div class="mhead"></div><div class="strip"><div class="strow"></div></div><div class="box">thẻ "Phần cuối"<span class="dot"></span></div></div></div>
+        <div class="facts"><span>Mỗi chữ 0,8 giây, mờ 12 px rồi nét, chữ sau trễ 0,07 giây. Dải từ và vệt sáng chạy không dừng.</span></div>
+      </article>
+      <article class="opt" data-lane="b">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Theo luật motion</span></div>
+        <div class="scr"><div class="lane-stage"><div class="mhead"></div><div class="strip"><div class="strow"></div></div><div class="box">thẻ "Phần cuối"<span class="dot"></span></div></div></div>
+        <div class="facts"><span>Cả câu hiện trong 0,32 giây. Dải từ đứng yên, không có vệt sáng.</span></div>
+      </article>
+      <article class="opt" data-lane="c">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Lúc hiện theo Figma, phần lặp chạy một lượt</span></div>
+        <div class="scr"><div class="lane-stage"><div class="mhead"></div><div class="strip"><div class="strow"></div></div><div class="box">thẻ "Phần cuối"<span class="dot"></span></div></div></div>
+        <div class="facts"><span>Chữ hiện như (a). Dải từ trôi một lượt, vệt sáng chạy một vòng, rồi tất cả đứng yên.</span></div>
+      </article>
+    </div>
+    <button class="replay" id="replay" type="button">Chạy lại cả ba</button>
+    <p class="note" id="rmNote" hidden>Máy đang bật "giảm chuyển động", nên mô phỏng đứng yên. Ở mọi phương án, người bật chế độ này thấy ngay trạng thái cuối.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="q" id="q4">
+    <span class="qtag">Câu 4 · Chính sách và Điều khoản</span>
+    <h2>Ai bỏ phần đầu bị trùng của văn bản pháp lý?</h2>
+    <p class="ctx">Văn bản soạn trong admin bắt đầu bằng tiêu đề, dòng "Phiên bản · Có hiệu lực từ…", đoạn mở và một "Mục lục" viết tay. Figma vẽ những thứ này thành khung trang, kèm mục lục dính bên trái và thanh tiến độ đọc. Giữ cả hai thì trang trông như sau:</p>
+    <div class="shared">
+      <div class="scr"><div class="prog"><i></i></div><div class="legal"><div class="legal-head"><small>Có hiệu lực từ 20/11/2026</small><b>Chính sách bảo mật</b><small>Dữ liệu Wordmet thu thập, dùng vào việc gì…</small></div><div class="toc"><span class="cur">1. Về chính sách</span><span>2. Dữ liệu</span><span>3. Dùng để làm gì</span></div><div class="art"><span class="h dup">Chính sách bảo mật</span><span class="dup">Phiên bản 2 · Có hiệu lực từ 20/11/2026</span><span class="dup">Mục lục: 1. Về chính sách 2. Dữ liệu 3. …</span><span class="h">1. Về chính sách này</span><span class="ln"></span><span class="ln" style="width:80%"></span></div></div></div>
+      <p class="warn">Phần tô đỏ là chỗ trùng: hai tiêu đề, hai dòng ngày, hai mục lục.</p>
+    </div>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Code tự bỏ phần đầu</span></div>
+        <div class="scr"><div class="prog"><i></i></div><div class="legal"><div class="legal-head"><small>Phiên bản 2 · Có hiệu lực từ 20/11/2026</small><b>Chính sách bảo mật</b></div><div class="toc"><span class="cur">1. Về chính sách</span><span>2. Dữ liệu</span><span>3. Dùng để làm gì</span></div><div class="art"><span class="h">1. Về chính sách này</span><span class="ln"></span><span class="ln" style="width:80%"></span><span class="ln" style="width:90%"></span></div></div></div>
+        <div class="facts"><span><b>Bạn:</b> không phải sửa văn bản.</span><span><b>Rủi ro:</b> code cắt theo mẫu "tiêu đề → dòng ngày → đoạn mở → Mục lục"; văn bản đổi cấu trúc thì có thể cắt sai.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Bạn sửa văn bản trong admin</span></div>
+        <div class="scr"><div class="prog"><i></i></div><div class="legal"><div class="legal-head"><small>Phiên bản 2 · Có hiệu lực từ 20/11/2026</small><b>Chính sách bảo mật</b></div><div class="toc"><span class="cur">1. Về chính sách</span><span>2. Dữ liệu</span><span>3. Dùng để làm gì</span></div><div class="art"><span class="h">1. Về chính sách này</span><span class="ln"></span><span class="ln" style="width:80%"></span><span class="ln" style="width:90%"></span></div></div></div>
+        <div class="facts"><span><b>Bạn:</b> bỏ bốn phần đầu ở cả hai văn bản rồi đăng bản mới. Người học đã đồng ý bản cũ sẽ được hỏi lại.</span><span><b>Code:</b> không cắt gì. Trang nhìn giống hệt (a).</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Giữ văn bản, bỏ khung Figma</span></div>
+        <div class="scr"><div class="legal" style="grid-template-columns:minmax(0,1fr)"><div class="art"><span class="h" style="font-size:16px">Chính sách bảo mật</span><span>Phiên bản 2 · Có hiệu lực từ 20/11/2026</span><span>Mục lục: 1. Về chính sách 2. Dữ liệu 3. …</span><span class="h">1. Về chính sách này</span><span class="ln"></span><span class="ln" style="width:80%"></span></div></div></div>
+        <div class="facts"><span><b>Khác Figma:</b> không có mục lục dính bên trái, không có thanh tiến độ đọc, không có hộp liên hệ cuối trang.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="q" id="q5">
+    <span class="qtag">Câu 5 · Nguồn dữ liệu</span>
+    <h2>Nhãn "Dùng cho" lấy từ đâu?</h2>
+    <p class="ctx">Figma vẽ mỗi nguồn kèm nhãn "Dùng cho: Cấp độ A1–B2". API hiện trả tên, phiên bản, giấy phép, đường dẫn và dòng ghi công, nhưng không có thông tin này. Dòng ghi công vẫn hiện trên điện thoại ở mọi phương án, vì giấy phép yêu cầu.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Thêm trường ở API, admin tự gõ</span></div>
+        <div class="scr"><div class="src"><b class="n">CEFR-J Wordlist</b><span class="pill">Dùng cho: Cấp độ A1–B2</span><span class="m">Phiên bản 1.5 · Giấy phép: miễn phí, cần trích dẫn</span></div><div class="admin"><label for="src-use">Admin · Nguồn dữ liệu · Dùng cho</label><span class="in" id="src-use">Cấp độ A1–B2</span></div></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> thêm cột ở DB, sửa API, thêm ô ở màn admin Nguồn dữ liệu.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">API tự suy ra từ quy tắc chọn nguồn</span></div>
+        <div class="scr"><div class="src"><b class="n">CEFR-J Wordlist</b><span class="pill">Dùng cho: Cấp độ A1–B2</span><span class="m">Phiên bản 1.5 · Giấy phép: miễn phí, cần trích dẫn</span></div><div class="admin"><label>API ghép nhãn</label><span>nguồn cấp độ → "Cấp độ" + dải cấp đang có từ</span></div></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> sửa API; nguồn mới chưa có quy tắc thì không có nhãn.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Bỏ nhãn</span></div>
+        <div class="scr"><div class="src"><b class="n">CEFR-J Wordlist</b><span class="m">Phiên bản 1.5 · Giấy phép: miễn phí, cần trích dẫn</span></div></div>
+        <div class="facts"><span><b>Việc phát sinh:</b> không. Lan không biết nguồn nào phục vụ phần nào của app.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="q" id="q6">
+    <span class="qtag">Câu 6 · Câu chữ trang chủ</span>
+    <h2>Ai viết phần câu chữ còn thiếu?</h2>
+    <p class="ctx">5 trong 6 câu hỏi thường gặp chưa có câu trả lời. Câu "Không hoàn tiền sau khi đã thanh toán." khác câu trong app: "Không hoàn tiền tự động; cần hỗ trợ, liên hệ support@wordmet.com". Vài câu không khớp app: "Mỗi nhóm có lịch ôn riêng" (lịch ôn tính theo từng từ), và chữ "ngăn" hiện trên trang công khai.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Bạn tự viết</span></div>
+        <div class="scr"><div class="faq">
+          <div class="fq"><b>Gói Pro có tự gia hạn không?</b><span class="ans">Không. Bạn trả một lần cho mỗi kỳ…</span></div>
+          <div class="fq"><b>Hết Pro thì từ và lịch ôn có mất không?</b><span class="todo">bạn viết</span></div>
+          <div class="fq"><b>Dùng trên điện thoại được không?</b><span class="todo">bạn viết</span></div>
+          <div class="fq"><b>Có được hoàn tiền không?</b><span class="todo">bạn viết</span></div>
+        </div></div>
+        <div class="facts"><span><b>Tiến độ:</b> PR chờ bạn gửi câu chữ.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Mình viết nháp theo hành vi của app, bạn duyệt</span></div>
+        <div class="scr"><div class="faq">
+          <div class="fq"><b>Gói Pro có tự gia hạn không?</b><span class="ans">Không. Bạn trả một lần cho mỗi kỳ…</span></div>
+          <div class="fq"><b>Hết Pro thì từ và lịch ôn có mất không?</b><span class="ans"><span class="draft">nháp</span>viết từ quy tắc gói trong code</span></div>
+          <div class="fq"><b>Dùng trên điện thoại được không?</b><span class="ans"><span class="draft">nháp</span>…</span></div>
+          <div class="fq"><b>Có được hoàn tiền không?</b><span class="ans"><span class="draft">nháp</span>khớp câu trong app và Điều khoản</span></div>
+        </div></div>
+        <div class="facts"><span><b>Tiến độ:</b> PR có đủ câu chữ; bạn sửa trong PR trước khi merge.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Tạm chỉ hiện câu đã có trả lời</span></div>
+        <div class="scr"><div class="faq">
+          <div class="fq"><b>Gói Pro có tự gia hạn không?</b><span class="ans">Không. Bạn trả một lần cho mỗi kỳ…</span></div>
+          <div class="fq"><b>AI có chấm bài của tôi không?</b><span class="ans">Không. AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.</span></div>
+        </div></div>
+        <div class="facts"><span><b>Tiến độ:</b> PR không chờ ai; bốn câu còn lại thêm sau.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="q" id="q7">
+    <span class="qtag">Câu 7 · Favicon và ảnh chia sẻ link</span>
+    <h2>Biểu tượng tab và ảnh khi gửi link trông thế nào?</h2>
+    <p class="ctx">Figma không có khung cho hai thứ này. Hiện tại favicon là dấu "_ _" trên ô vàng, ảnh chia sẻ là nền navy với chữ Lexend. Logo mới chỉ là chữ "wordmet.".</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">a</span><span class="opt-t">Giữ hình cũ, chỉ đổi font</span></div>
+        <div class="scr"><div class="tab"><div class="tabin"><span class="fav old" aria-hidden="true"></span>Wordmet</div></div><div class="og"><div class="og-img old"><span class="mk">_ _ Wordmet</span><b>Học từ vựng tiếng Anh, ghi nhớ và vận dụng</b><small>chữ đổi từ Lexend sang Bricolage và Noto Sans</small></div><div class="og-cap">wordmet.com</div></div></div>
+        <div class="facts"><span><b>Khác trang:</b> tab và ảnh chia sẻ vẫn mang nhận diện cũ (vàng, navy) bên cạnh trang mới.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">b</span><span class="opt-t">Vẽ mới trong Figma rồi mới code</span></div>
+        <div class="scr"><div class="tab"><div class="tabin"><span class="fav" style="border:1.5px dashed var(--s-ghost)" aria-hidden="true"></span>Wordmet</div></div><div class="pending">Khung Figma "Favicon" và "Ảnh chia sẻ 1200 × 630"<br>vẽ trước, bạn duyệt, code theo</div></div>
+        <div class="facts"><span><b>Tiến độ:</b> thêm một bước vẽ và duyệt trước khi code phần này.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">c</span><span class="opt-t">Mình dựng bằng code theo logo mới</span></div>
+        <div class="scr"><div class="tab"><div class="tabin"><span class="fav new" aria-hidden="true">w<span>.</span></span>Wordmet</div></div><div class="og"><div class="og-img new"><span class="logo">wordmet<span>.</span></span><b>Ôn từ đúng lúc, luyện từ <span>trong câu.</span></b></div><div class="og-cap">wordmet.com</div></div></div>
+        <div class="facts"><span><b>Tiến độ:</b> bạn xem ảnh trong PR rồi duyệt. Hình trên chỉ là ví dụ.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- follow-up: three things to settle after the first answers -->
+  <section class="q" id="them">
+    <span class="qtag">Bổ sung · ba chỗ cần chốt sau câu trả lời đầu</span>
+    <h2>Hai nút ở thanh trên, nút sáng/tối trên điện thoại, nút dừng chuyển động</h2>
+    <p class="ctx">Bạn đã chọn: bỏ "Dùng thử", thay bằng <b>Đăng nhập</b> và <b>Đăng ký</b>; giữ nút sáng/tối; chuyển động theo bản 3 và Figma. Ba khối dưới đây vẽ ba chỗ còn phải chốt, ở đúng cỡ thật.</p>
+
+    <h3 class="opt-t">A. Nút nào màu navy?</h3>
+    <p class="ctx">Màu navy là nút chính, chỗ mắt nhìn đầu tiên. Dưới thanh trên, phần đầu trang có nút navy "Bắt đầu miễn phí", dẫn tới trang Đăng ký.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">A1</span><span class="opt-t">Đăng nhập navy, Đăng ký trắng (cách bạn chọn)</span></div>
+        <div class="scr"><div class="rbar"><span class="rlogo">wordmet<span>.</span></span><span class="rbtn navy">Đăng nhập</span><span class="rbtn white">Đăng ký</span></div><div class="herob"><b>Ôn từ đúng lúc, luyện từ trong câu.</b><div class="row2"><span class="rbtn navy">Bắt đầu miễn phí</span><span class="rbtn white">Xem cách học</span></div></div></div>
+        <div class="facts"><span>Màn hình có hai nút navy: một dẫn tới Đăng nhập, một dẫn tới Đăng ký.</span><span>Người đã có tài khoản thấy ngay chỗ đăng nhập.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">A2</span><span class="opt-t">Đăng ký navy, Đăng nhập trắng (cách mình đề xuất)</span></div>
+        <div class="scr"><div class="rbar"><span class="rlogo">wordmet<span>.</span></span><span class="rbtn white">Đăng nhập</span><span class="rbtn navy">Đăng ký</span></div><div class="herob"><b>Ôn từ đúng lúc, luyện từ trong câu.</b><div class="row2"><span class="rbtn navy">Bắt đầu miễn phí</span><span class="rbtn white">Xem cách học</span></div></div></div>
+        <div class="facts"><span>Mọi nút navy trên trang đều dẫn tới Đăng ký.</span><span>Người đã có tài khoản tìm nút trắng "Đăng nhập".</span></div>
+      </article>
+    </div>
+
+    <h3 class="opt-t">B. Nút sáng/tối trên điện thoại để ở đâu?</h3>
+    <p class="ctx">Màn điện thoại 390 px còn 358 px cho thanh trên. Các khối dưới vẽ đúng cỡ thật: logo 22 px, nút cao 44 px (cỡ ngón tay chạm được). Dòng chữ nhỏ dưới mỗi khối là số đo thật trên trang này.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">B1</span><span class="opt-t">Giữ trên thanh trên</span></div>
+        <div class="scr realphone"><div class="rbar" data-measure><span class="rlogo">wordmet<span>.</span></span><span class="rtog" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span><span class="rbtn white">Đăng nhập</span><span class="rbtn navy">Đăng ký</span></div></div>
+        <span class="measure" data-out></span>
+        <div class="facts"><span>Bốn thứ trên một hàng. Nếu thiếu chỗ thì phải thu nhỏ nút xuống dưới 44 px, hoặc thu nhỏ logo.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">B2</span><span class="opt-t">Chuyển xuống chân trang trên điện thoại</span></div>
+        <div class="scr realphone"><div class="rbar" data-measure><span class="rlogo">wordmet<span>.</span></span><span class="rbtn white">Đăng nhập</span><span class="rbtn navy">Đăng ký</span></div><div class="rfoot"><span>Chính sách bảo mật</span><span>Điều khoản sử dụng</span><span>Nguồn dữ liệu</span><span>Giao diện <span class="seg"><span class="on">Sáng</span><span>Tối</span></span></span></div></div>
+        <span class="measure" data-out></span>
+        <div class="facts"><span>Thanh trên còn ba thứ. Đổi sáng/tối trên điện thoại phải cuộn xuống cuối trang. Trên máy tính nút vẫn ở thanh trên.</span></div>
+      </article>
+    </div>
+
+    <h3 class="opt-t">C. Nút dừng chuyển động và độ mờ trên điện thoại</h3>
+    <p class="ctx">WCAG 2.2.2 (mức A, mức thấp nhất của chuẩn truy cập web): thứ gì tự chuyển động quá 5 giây và chạy cùng lúc với nội dung khác thì phải có cách để người xem dừng nó. Trang chủ có dải từ, vệt sáng và quầng sáng chạy không ngừng. Bấm nút dưới để thử.</p>
+    <div class="opts">
+      <article class="opt">
+        <div class="opt-h"><span class="letter">C1</span><span class="opt-t">Có nút "Dừng chuyển động"</span></div>
+        <div class="scr"><div class="pausebar"><div class="strip"><div class="strow" id="pauseRow"></div></div><button class="pausebtn" id="pauseBtn" type="button" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg><span>Dừng chuyển động</span></button></div></div>
+        <div class="facts"><span>Một nút nhỏ, đặt cuối dải từ (hoặc góc dưới trang). Bấm một lần, mọi thứ chạy vòng trên trang đứng yên.</span></div>
+      </article>
+      <article class="opt">
+        <div class="opt-h"><span class="letter">C2</span><span class="opt-t">Không có nút</span></div>
+        <div class="scr"><div class="pausebar"><div class="strip"><div class="strow" id="noPauseRow"></div></div></div></div>
+        <div class="facts"><span>Đúng như bản 3 và Figma. Người bật "giảm chuyển động" trong máy vẫn thấy trang đứng yên; người khác không dừng được.</span></div>
+      </article>
+    </div>
+    <div class="shared">
+      <p class="ctx"><b>Độ mờ trên điện thoại.</b> Khối ảnh trong hero hiện từ mờ 24 px (số Figma). Design ghi điện thoại tối đa 12 px, vì làm mờ khối lớn tốn sức máy, điện thoại yếu dễ giật. Nhìn bằng mắt, hai mức gần như giống nhau; khác nhau ở độ mượt trên máy yếu.</p>
+      <div class="scr"><div class="blurrow"><figure><div class="blurcard" data-blur="24">mitigate</div><figcaption>mờ 24 px (số Figma)</figcaption></figure><figure><div class="blurcard" data-blur="12">mitigate</div><figcaption>mờ 12 px (giới hạn điện thoại)</figcaption></figure></div></div>
+      <button class="replay" id="blurReplay" type="button">Chạy lại hai khối</button>
+    </div>
+  </section>
+
+  <footer class="end">Đã chốt: 1b giữ nút sáng/tối, 2 hiện ba giá kèm phần trăm, 3 chuyển động theo bản 3 và Figma, 4 bạn sửa văn bản trong admin, 5 bỏ nhãn, 6 làm FAQ trong admin ở M8 và mình viết nháp câu trả lời, 7 vẽ Figma trước.</footer>
+</main>
+
+<script>
+(function () {
+  // Q1b: theme toggle on the mock screen
+  var demo = document.getElementById('themeDemo'), btn = document.getElementById('themeBtn'), note = document.getElementById('themeNote');
+  btn.addEventListener('click', function () {
+    var dark = demo.classList.toggle('dark');
+    note.textContent = dark ? 'Đã đổi sang tối, bấm lại để về sáng' : 'Đã đổi về sáng';
+  });
+
+  // Q2: period cells
+  var P = [
+    { m: 1, label: '1 tháng', price: '79.000 ₫', struck: '', pm: 'mỗi tháng', save: '' },
+    { m: 3, label: '3 tháng', price: '199.000 ₫', struck: '237.000 ₫', pm: '≈ 66.300 ₫/tháng', save: '−16%' },
+    { m: 12, label: '12 tháng', price: '599.000 ₫', struck: '948.000 ₫', pm: '≈ 49.900 ₫/tháng', save: '−37%' }
+  ];
+  document.querySelectorAll('.pro[data-mode]').forEach(function (card) {
+    var wrap = card.querySelector('.cells'), label = card.querySelector('[data-label]');
+    P.forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'cell'; b.setAttribute('aria-pressed', p.m === 12 ? 'true' : 'false');
+      b.innerHTML = '<span>' + p.label + '</span>' + (p.save ? '<span class="save">' + p.save + '</span>' : '<span class="save" style="visibility:hidden">0</span>') +
+        '<s>' + (p.struck || '&nbsp;') + '</s><span class="p">' + p.price + '</span><span class="pm">' + p.pm + '</span>';
+      b.addEventListener('click', function () {
+        wrap.querySelectorAll('.cell').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+        if (label) label.textContent = 'Mua gói Pro ' + p.label;
+      });
+      wrap.appendChild(b);
+    });
+  });
+
+  // Q3: motion lanes
+  var words = ['Ôn', 'từ', 'đúng', 'lúc,', 'luyện', 'từ', 'trong', 'câu.'];
+  var chips = [['mitigate', 'verb'], ['allocate', 'verb'], ['viable', 'adj'], ['scrutiny', 'noun'], ['fluctuate', 'verb'], ['coherent', 'adj'], ['feasible', 'adj'], ['advocate', 'verb']];
+  var E = 'cubic-bezier(.23,1,.32,1)';
+  var cfg = {
+    a: { dur: 800, stag: 70, y: 24, blur: 12, loop: Infinity },
+    b: { dur: 320, stag: 0, y: 10, blur: 0, loop: 0 },
+    c: { dur: 800, stag: 70, y: 24, blur: 12, loop: 1 }
+  };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) document.getElementById('rmNote').hidden = false;
+  var running = [];
+  function build(lane) {
+    var head = lane.querySelector('.mhead');
+    head.innerHTML = words.map(function (w, i) { return '<span' + (i >= 6 ? ' class="acc"' : '') + '>' + w + '</span>'; }).join(' ');
+    var row = lane.querySelector('.strow');
+    row.innerHTML = chips.concat(chips).map(function (c) { return '<span class="chip"><b>' + c[0] + '</b> ' + c[1] + '</span>'; }).join('');
+  }
+  function run() {
+    running.forEach(function (a) { a.cancel(); }); running = [];
+    document.querySelectorAll('#lanes [data-lane]').forEach(function (lane) {
+      var c = cfg[lane.getAttribute('data-lane')];
+      build(lane);
+      if (reduce || !lane.animate) return;
+      Array.prototype.forEach.call(lane.querySelectorAll('.mhead span'), function (s, i) {
+        running.push(s.animate([
+          { opacity: 0, transform: 'translateY(' + c.y + 'px)', filter: 'blur(' + c.blur + 'px)' },
+          { opacity: 1, transform: 'none', filter: 'blur(0px)' }
+        ], { duration: c.dur, delay: 120 + i * c.stag, easing: E, fill: 'backwards' }));
+      });
+      var row = lane.querySelector('.strow');
+      if (c.loop > 0) running.push(row.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }], { duration: 12000, iterations: c.loop, easing: 'linear' }));
+      var box = lane.querySelector('.box'), dot = lane.querySelector('.dot');
+      if (c.loop > 0) {
+        var w = box.clientWidth, h = box.clientHeight;
+        dot.style.opacity = '1';
+        running.push(dot.animate([
+          { transform: 'translate(0,0)' }, { transform: 'translate(' + w + 'px,0)' }, { transform: 'translate(' + w + 'px,' + h + 'px)' },
+          { transform: 'translate(0,' + h + 'px)' }, { transform: 'translate(0,0)' }
+        ], { duration: 6000, iterations: c.loop, easing: 'linear', delay: 900 }));
+      } else { dot.style.opacity = '0'; }
+    });
+  }
+  document.getElementById('replay').addEventListener('click', run);
+  run();
+
+  // Follow-up B: measure the real-size phone bars
+  function measure() {
+    document.querySelectorAll('[data-measure]').forEach(function (bar) {
+      var out = bar.closest('.opt').querySelector('[data-out]');
+      var cs = getComputedStyle(bar), kids = Array.prototype.slice.call(bar.children);
+      if (!bar.clientWidth) return;
+      var need = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.columnGap || cs.gap || 0) * (kids.length - 1);
+      kids.forEach(function (k) { need += k.getBoundingClientRect().width; });
+      var spare = Math.round(bar.clientWidth - need);
+      if (spare < 0) { out.textContent = 'Thiếu ' + (-spare) + ' px trên màn 390 px: không vừa một hàng'; out.className = 'measure bad'; }
+      else { out.textContent = 'Vừa trên màn 390 px, còn dư ' + spare + ' px'; out.className = 'measure ok'; }
+    });
+  }
+  window.addEventListener('load', measure);
+  window.addEventListener('resize', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { requestAnimationFrame(measure); });
+  setTimeout(measure, 1500);
+
+  // Follow-up C: pause control and blur comparison
+  function fill(row) { row.innerHTML = chips.concat(chips).map(function (c) { return '<span class="chip"><b>' + c[0] + '</b> ' + c[1] + '</span>'; }).join(''); }
+  var pr = document.getElementById('pauseRow'), nr = document.getElementById('noPauseRow');
+  fill(pr); fill(nr);
+  var pa = null, na = null;
+  if (!reduce && pr.animate) {
+    pa = pr.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }], { duration: 12000, iterations: Infinity, easing: 'linear' });
+    na = nr.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }], { duration: 12000, iterations: Infinity, easing: 'linear' });
+  }
+  var pb = document.getElementById('pauseBtn');
+  pb.addEventListener('click', function () {
+    var on = pb.getAttribute('aria-pressed') === 'true';
+    pb.setAttribute('aria-pressed', on ? 'false' : 'true');
+    pb.querySelector('span').textContent = on ? 'Dừng chuyển động' : 'Chạy lại chuyển động';
+    if (pa) { if (on) pa.play(); else pa.pause(); }
+  });
+  function blurRun() {
+    document.querySelectorAll('[data-blur]').forEach(function (el) {
+      if (reduce || !el.animate) return;
+      var b = el.getAttribute('data-blur');
+      el.animate([{ opacity: 0, filter: 'blur(' + b + 'px)', transform: 'translateY(18px) scale(.985)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }], { duration: 900, easing: E, fill: 'backwards', delay: 150 });
+    });
+  }
+  document.getElementById('blurReplay').addEventListener('click', blurRun);
+  blurRun();
+})();
+</script>

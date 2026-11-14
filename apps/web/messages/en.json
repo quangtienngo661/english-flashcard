@@ -1,222 +1,1853 @@
 {
   "Metadata": {
-    "title": "Wordmet · Master words from real contexts",
-    "description": "Save new words directly from what you read. Wordmet turns them into fill-in-the-blank exercises and automatically schedules smart reviews.",
-    "ogAlt": "Wordmet: Learn English vocabulary from the sentences you read"
+    "title": "Wordmet · Learn, remember and use English vocabulary",
+    "description": "Review cards on schedule, practice with AI and save the new words you come across every day.",
+    "ogAlt": "Wordmet: Learn, remember and use English vocabulary"
   },
   "Nav": {
-    "howItWorks": "How it works",
-    "faq": "FAQ",
-    "cta": "Get notified at launch",
     "skipToContent": "Skip to main content",
-    "languageLabel": "Language"
+    "login": "Sign in",
+    "signup": "Sign up",
+    "groups": "Decks",
+    "howTo": "How it works",
+    "pricing": "Pricing",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "themeToLight": "Switch to the light theme",
+    "themeToDark": "Switch to the dark theme"
   },
-  "Hero": {
-    "chip": "Turn real-world sentences into vocabulary practice",
-    "title": "Master the words<br></br>you actually encounter",
-    "description": "Save new words alongside their original sentences. Wordmet creates interactive fill-in-the-blank exercises and prioritizes the words you need to review.",
-    "note": "100% Free · Launch updates only"
-  },
-  "Cloze": {
-    "header": "Try it · Sentence {current}/{total}",
-    "sourceChip": "Saved sentence · Tech blog",
-    "instruction": "Select the correct answer to complete the sentence",
-    "correctTitle": "✓ Correct!",
-    "wrongTitle": "✗ Not quite",
-    "nextSentence": "Next sentence →",
-    "doneTitle": "You've finished the sample exercises!",
-    "doneBody": "When Wordmet launches, you'll be able to practice with sentences from your own reading list.",
-    "doneCta": "Get notified at launch",
-    "replay": "Try again",
-    "region": "Interactive preview",
-    "items": {
-      "deploy": {
-        "before": "We plan to",
-        "answer": "deploy",
-        "after": "the new version on Friday.",
-        "options": { "o1": "deploy", "o2": "delay", "o3": "deliver", "o4": "decide" },
-        "hint": "Hint: To release new software or features to users.",
-        "explanation": "deploy = to release software or systems for use.",
-        "translation": "VI: “Chúng tôi dự kiến triển khai phiên bản mới vào thứ Sáu.”"
-      },
-      "assume": {
-        "before": "Don't",
-        "answer": "assume",
-        "after": "that everyone has read the email.",
-        "options": { "o1": "assume", "o2": "resume", "o3": "consume", "o4": "assure" },
-        "hint": "Hint: To accept something as true without verification.",
-        "explanation": "assume = to suppose something is true without checking.",
-        "translation": "VI: “Đừng mặc định rằng ai cũng đã đọc email.”"
-      },
-      "borrow": {
-        "before": "Can I",
-        "answer": "borrow",
-        "after": "your charger for a minute?",
-        "options": { "o1": "borrow", "o2": "lend", "o3": "rent", "o4": "owe" },
-        "hint": "Hint: To take something temporarily with intention to return it.",
-        "explanation": "borrow = to temporarily take something. (Contrast with 'lend' = to give).",
-        "translation": "VI: “Cho mình mượn cục sạc một chút được không?”"
-      }
-    }
-  },
-  "Problem": {
-    "eyebrow": "THE PROBLEM",
-    "title": "Saving words is easy.<br></br>Using them is hard.",
-    "description": "Memorizing definitions isn't enough. You need to know how words work in context.",
-    "before": {
-      "label": "Traditional flashcards",
-      "word": "deploy",
-      "hint": "Tap to reveal meaning",
-      "meaning": "to release (software)",
-      "caption": "Weeks later: You remember the definition, but still hesitate to use it."
+  "Landing": {
+    "hero": {
+      "topicLabel": "Học từ vựng theo chủ đề bạn cần",
+      "line1": "Ôn từ đúng lúc,",
+      "line2": "luyện từ trong câu.",
+      "accent": "trong câu",
+      "lead": "Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi xếp lịch ôn cho từng từ. Thời gian học dành cho việc luyện từ trong câu.",
+      "signup": "Bắt đầu miễn phí",
+      "howTo": "Xem cách học"
     },
-    "after": {
-      "label": "With Wordmet",
-      "caption": "Practice using words directly inside the sentences you've read.",
-      "s1": { "before": "We plan to", "word": "deploy", "after": "the new version on Friday." },
-      "s2": { "before": "Don't", "word": "assume", "after": "that everyone has read the email." },
-      "s3": { "before": "Can I", "word": "_____", "after": "your charger for a minute?" }
-    }
-  },
-  "Steps": {
-    "eyebrow": "HOW IT WORKS",
-    "title": "3 simple steps to <brMd></brMd>remember and use new words",
-    "step1": {
-      "title": "1. Save with context",
-      "body": "Save words along with the sentences you read, or choose from our curated A1–C2 topic library.",
-      "wordLabel": "New word",
-      "wordValue": "deploy",
-      "sentenceLabel": "Original sentence (optional)",
-      "sentenceValue": "We plan to deploy the new version on Friday.",
-      "save": "Save word"
+    "stage": {
+      "cardLabel": "Thẻ từ · ôn lại sau {days} ngày",
+      "practiceTitle": "Điền từ vào câu",
+      "practiceCount": "Câu 4/20",
+      "result": "Đúng · lên Bậc {level}",
+      "cycle": [
+        {
+          "lemma": "mitigate",
+          "pos": "verb",
+          "ipa": "/ˈmɪt.ɪ.ɡeɪt/",
+          "definition": "to make something bad less serious",
+          "meaning": "giảm nhẹ",
+          "example": "Planting trees can help mitigate the effects of urban heat.",
+          "before": "Cities need clear plans to ",
+          "after": " the risk of flooding.",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "allocate",
+          "pos": "verb",
+          "ipa": "/ˈæl.ə.keɪt/",
+          "definition": "to give a share of something for a purpose",
+          "meaning": "phân bổ",
+          "example": "The council will allocate more money to buses.",
+          "before": "We need to ",
+          "after": " more time to testing.",
+          "days": 7,
+          "level": 4
+        },
+        {
+          "lemma": "viable",
+          "pos": "adjective",
+          "ipa": "/ˈvaɪ.ə.bəl/",
+          "definition": "able to work successfully",
+          "meaning": "khả thi",
+          "example": "Solar power is now a viable option.",
+          "before": "Is the plan financially ",
+          "after": "?",
+          "days": 3,
+          "level": 3
+        },
+        {
+          "lemma": "deteriorate",
+          "pos": "verb",
+          "ipa": "/dɪˈtɪə.ri.ə.reɪt/",
+          "definition": "to become worse over time",
+          "meaning": "xấu đi",
+          "example": "Air quality tends to deteriorate in the dry season.",
+          "before": "His health began to ",
+          "after": " last winter.",
+          "days": 1,
+          "level": 2
+        },
+        {
+          "lemma": "coherent",
+          "pos": "adjective",
+          "ipa": "/kəʊˈhɪə.rənt/",
+          "definition": "logical and well organised",
+          "meaning": "mạch lạc",
+          "example": "She gave a clear and coherent answer.",
+          "before": "Write a ",
+          "after": " argument in your essay.",
+          "days": 14,
+          "level": 5
+        }
+      ],
+      "addedTitle": "Bài báo sáng nay",
+      "addedNote": "vừa thêm",
+      "addedWords": [
+        "mitigate",
+        "allocate",
+        "viable",
+        "scrutiny"
+      ],
+      "addedMore": "+14 từ",
+      "addedMorePhone": "+15 từ",
+      "binWord": "deteriorate",
+      "binNote": "ôn lại sau",
+      "binValue": "7 ngày"
     },
-    "step2": {
-      "title": "2. Practice in context",
-      "body": "Reinforce learning through fill-in-the-blanks, multiple choice, or recall from definitions.",
-      "sentenceBefore": "We plan to",
-      "sentenceAfter": "the new version on Friday.",
-      "chips": { "c1": "Fill-in-the-blank", "c2": "Multiple choice", "c3": "Recall by definition" }
+    "strip": {
+      "row1": [
+        {
+          "word": "mitigate",
+          "pos": "verb"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj"
+        },
+        {
+          "word": "viable",
+          "pos": "adj"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb"
+        }
+      ],
+      "row2": [
+        {
+          "word": "scrutiny",
+          "pos": "noun"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj"
+        },
+        {
+          "word": "detrimental",
+          "pos": "adj"
+        },
+        {
+          "word": "alleviate",
+          "pos": "verb"
+        },
+        {
+          "word": "incentive",
+          "pos": "noun"
+        },
+        {
+          "word": "undermine",
+          "pos": "verb"
+        },
+        {
+          "word": "feasible",
+          "pos": "adj"
+        },
+        {
+          "word": "consensus",
+          "pos": "noun"
+        }
+      ]
     },
-    "step3": {
-      "title": "3. Review at the right time",
-      "body": "Smart spaced repetition schedules reviews automatically—focusing on words you struggle with.",
-      "rows": {
-        "r1": { "word": "deploy", "status": "Missed 2× · Review today" },
-        "r2": { "word": "assume", "status": "Review in 3 days" },
-        "r3": { "word": "borrow", "status": "Review in 7 days" }
-      }
-    }
-  },
-  "Ai": {
-    "eyebrow": "AI-POWERED PRACTICE",
-    "title": "Same vocabulary, <brMd></brMd>brand-new contexts",
-    "description": "AI generates fresh example sentences complete with answer explanations and translations.",
-    "benefits": {
-      "b1": "Clear explanations for correct answers",
-      "b2": "Context-accurate Vietnamese translations",
-      "b3": "Instant answer checking without consuming AI credits"
+    "groups": {
+      "title": "Từ của mỗi bài thành một nhóm",
+      "lead": "Mỗi từ có lịch ôn riêng.",
+      "cards": [
+        {
+          "word": "mitigate",
+          "pos": "verb",
+          "meaning": "giảm nhẹ"
+        },
+        {
+          "word": "allocate",
+          "pos": "verb",
+          "meaning": "phân bổ"
+        },
+        {
+          "word": "substantial",
+          "pos": "adj",
+          "meaning": "đáng kể"
+        },
+        {
+          "word": "deteriorate",
+          "pos": "verb",
+          "meaning": "xấu đi"
+        },
+        {
+          "word": "inevitable",
+          "pos": "adj",
+          "meaning": "không tránh được"
+        },
+        {
+          "word": "viable",
+          "pos": "adj",
+          "meaning": "khả thi"
+        },
+        {
+          "word": "prevalent",
+          "pos": "adj",
+          "meaning": "phổ biến"
+        },
+        {
+          "word": "reluctant",
+          "pos": "adj",
+          "meaning": "miễn cưỡng"
+        },
+        {
+          "word": "advocate",
+          "pos": "verb",
+          "meaning": "ủng hộ"
+        },
+        {
+          "word": "scrutiny",
+          "pos": "noun",
+          "meaning": "sự xem xét kỹ"
+        },
+        {
+          "word": "fluctuate",
+          "pos": "verb",
+          "meaning": "dao động"
+        },
+        {
+          "word": "coherent",
+          "pos": "adj",
+          "meaning": "mạch lạc"
+        }
+      ]
     },
-    "chip": "14-day free trial · Included in Pro",
-    "card": {
-      "label": "AI-generated sentence · Word: assume",
-      "before": "Before the meeting, I",
-      "word": "assumed",
-      "after": "the report was complete.",
-      "explanation": "assume = to suppose something is true without verification.",
-      "translation": "VI: “Trước cuộc họp, tôi cho rằng báo cáo đã hoàn thành.”",
-      "report": "Report an issue with this sentence"
-    }
-  },
-  "Plans": {
-    "eyebrow": "PRICING PLANS",
-    "title": "Start for free",
-    "description": "Experience all AI features with a 14-day trial. <brSm></brSm>No credit card required.",
-    "free": {
-      "name": "Free",
-      "chip": "Free forever",
-      "items": {
-        "i1": "Save words with original reading context",
-        "i2": "Flashcards & automated review schedules",
-        "i3": "Essential practice modes",
-        "i4": "Automated priority list for weak words"
-      }
-    },
-    "trial": {
-      "name": "AI Experience",
-      "chip": "14-day trial",
-      "items": {
-        "i1": "Activate whenever you're ready",
-        "i2": "Practice with dynamic AI-generated sentences",
-        "i3": "Detailed answer explanations & translations",
-        "i4": "Includes all Free plan features"
-      }
-    }
-  },
-  "Faq": {
-    "eyebrow": "FAQ",
-    "title": "Frequently asked questions",
-    "items": {
-      "q1": {
-        "question": "How does Wordmet help me learn vocabulary more effectively?",
-        "answer": "Wordmet connects new words directly to the real context you encountered. Using spaced repetition, it schedules timely reviews to help you transition from merely recognizing words to actively using them."
+    "learn": {
+      "title": "Từ lúc gặp tới lúc dùng được",
+      "lead": "Ghi, nghe, luyện và ôn ở cùng một chỗ.",
+      "practice": {
+        "eyebrow": "Trong buổi học",
+        "title": "Luyện trong câu",
+        "body": "Điền và gõ từ vào câu, không chỉ chọn nghĩa. Sai thì thấy ngay đáp án trong câu.",
+        "demoTitle": "Điền từ vào câu",
+        "count": "Câu 7/20",
+        "scores": [
+          {
+            "n": "5",
+            "label": "đúng"
+          },
+          {
+            "n": "1",
+            "label": "sai"
+          },
+          {
+            "n": "13",
+            "label": "câu còn lại"
+          },
+          {
+            "n": "2",
+            "label": "từ ôn lại sau 7 ngày"
+          }
+        ],
+        "sentence": "Air quality tends to deteriorate in the dry season.",
+        "target": "deteriorate",
+        "choices": [
+          "deteriorate",
+          "allocate",
+          "advocate",
+          "mitigate"
+        ],
+        "right": "Đúng",
+        "wrong": "Sai"
       },
-      "q2": {
-        "question": "Is Wordmet completely free?",
-        "answer": "Yes. Core features like word saving, flashcards, automated review scheduling, and basic exercises are free forever. You also get a 14-day free trial for AI-powered practice features."
+      "note": {
+        "eyebrow": "Sau khi đọc một bài",
+        "title": "Ghi từ",
+        "body": "Gõ cả dạng đã chia, Wordmet đưa về từ gốc.",
+        "typed": "deteriorated",
+        "lemma": "deteriorate",
+        "meaning": "verb · xấu đi"
       },
-      "q3": {
-        "question": "How is Wordmet different from other vocabulary apps?",
-        "answer": "Instead of requiring manual card creation or static word lists, Wordmet automatically converts your saved sentences into interactive practice exercises. It also prioritizes challenging words so you spend time where it matters most."
+      "listen": {
+        "eyebrow": "Mỗi thẻ",
+        "title": "Nghe và đọc phiên âm",
+        "word": "viable",
+        "ipa": "/ˈvaɪ.ə.bəl/"
       },
-      "q4": {
-        "question": "Are my saved sentences shared publicly?",
-        "answer": "Not at all. Your saved sentences and vocabulary lists are 100% private and will never be shared publicly or added to a global database."
+      "review": {
+        "eyebrow": "Những ngày sau",
+        "title": "Ôn đúng lúc",
+        "body": "Mỗi ngày chỉ ôn những từ đến hạn. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "bins": [
+          {
+            "value": "1 ngày",
+            "label": "ôn lần đầu"
+          },
+          {
+            "value": "3 ngày",
+            "label": "nhớ lần hai"
+          },
+          {
+            "value": "7 ngày",
+            "label": "quen mặt"
+          },
+          {
+            "value": "14 ngày",
+            "label": "dùng được"
+          },
+          {
+            "value": "30 ngày",
+            "label": "nhớ lâu"
+          }
+        ]
       }
+    },
+    "plans": {
+      "title": "Hai gói, khác nhau ở mức luyện tập và AI",
+      "lead": "Cả hai gói đều ôn thẻ không giới hạn. Hết Pro, từ và lịch ôn của bạn vẫn còn.",
+      "free": "Miễn phí",
+      "freeNote": "không giới hạn thời gian",
+      "freeList": [
+        "Ghi từ, tra nghĩa và nghe phiên âm",
+        "Lịch ôn tự động",
+        "3 phiên luyện mỗi ngày",
+        "Dùng thử câu luyện và tra từ bằng AI"
+      ],
+      "freeSignup": "Tạo tài khoản miễn phí",
+      "pro": "Pro",
+      "proBadge": "Có AI",
+      "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",
+      "periods": {
+        "1": "1 tháng",
+        "3": "3 tháng",
+        "12": "12 tháng"
+      },
+      "saving": "−{percent}%",
+      "best": "Tiết kiệm nhất",
+      "perMonth": "mỗi tháng",
+      "perMonthApprox": "≈ {price} mỗi tháng",
+      "aiList": [
+        "AI soạn câu và tra từ",
+        "AI viết câu luyện cho từng từ bạn học",
+        "Tra từ bằng AI khi từ điển chưa có",
+        "Nhiều lượt AI hơn gói Miễn phí"
+      ],
+      "proList": [
+        "30 phiên luyện mỗi ngày",
+        "Mọi quyền lợi của gói Miễn phí"
+      ],
+      "proSignup": "Tạo tài khoản"
+    },
+    "faq": {
+      "title": "Câu hỏi thường gặp",
+      "lead": "Không thấy câu bạn cần? Gửi tới {email}."
+    },
+    "final": {
+      "title": "Bắt đầu với bài bạn vừa đọc",
+      "note": "Miễn phí để bắt đầu.",
+      "signup": "Tạo tài khoản miễn phí"
     }
-  },
-  "FinalCta": {
-    "title": "Start mastering the words you encounter today"
-  },
-  "Waitlist": {
-    "emailLabel": "Email address",
-    "emailPlaceholder": "Enter your email address...",
-    "submit": "Get notified at launch",
-    "submitting": "Submitting…",
-    "consent": "I agree to the <link>Privacy Policy</link>.",
-    "invalidEmail": "Please enter a valid email address (e.g. name@gmail.com).",
-    "missingConsent": "Please agree to the Privacy Policy to continue.",
-    "error": "Unable to sign up right now. Please check your connection and try again.",
-    "success": "You're on the list! We'll notify you as soon as Wordmet launches."
   },
   "Footer": {
     "privacy": "Privacy Policy",
     "terms": "Terms of Use",
+    "sources": "Data sources",
     "contact": "Contact",
-    "switchLanguage": "Tiếng Việt",
     "copyright": "© {year} Wordmet"
   },
   "Legal": {
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Use",
-    "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
-    "privacy": {
-      "effective": "Effective date: {date}.",
-      "intro": "This page explains how Wordmet handles your email address when you sign up for launch updates.",
-      "collectTitle": "Data we collect",
-      "collectBody": "Your email address, preferred page language at sign-up (Vietnamese or English), and sign-up timestamp. We use a single cookie to remember your language preference; no advertising or tracking cookies are used.",
-      "useTitle": "How we use your data",
-      "useBody": "Exclusively to send you updates about Wordmet's launch. Wordmet will never sell or share your email address with third parties.",
-      "storeTitle": "Data storage",
-      "storeBody": "Your data is stored securely in a Cloudflare D1 database under Wordmet's account. Cloudflare provides infrastructure support and processes data strictly on our behalf.",
-      "deleteTitle": "Data deletion requests",
-      "deleteBody": "You can request data removal by emailing <link>{email}</link> from your registered address. We will remove your email from our list within 30 days and send confirmation.",
-      "changesTitle": "Policy updates",
-      "changesBody": "When full user account features are introduced, this policy will be updated and communicated to registered users before taking effect."
-    }
+    "draftNotice": "This is a draft. The final text will be published before Wordmet launches.",
+    "effective": "Effective from {date}",
+    "contents": "Contents",
+    "privacyLead": "What data Wordmet collects, what it is used for, who it is shared with, and your rights over your own data.",
+    "termsLead": "What you agree to when you use Wordmet: your account, the Pro plan, payments and your content.",
+    "versionLine": "Version {version}",
+    "termsScope": "Applies to wordmet.com",
+    "contentsOpen": "Show contents",
+    "privacyHelpTitle": "Still have a question about your data?",
+    "privacyHelpBody": "Write from your account’s email address. We reply within 2 working days.",
+    "termsHelpTitle": "A problem with a payment?",
+    "termsHelpBody": "Send your account email, the transfer description (it starts with WM) and a photo of the receipt."
+  },
+  "Sources": {
+    "title": "Data sources",
+    "intro": "Wordmet uses the openly licensed data sets below. Thank you to the people who made and shared them.",
+    "empty": "There are no data sources to show yet.",
+    "license": "License: {license}",
+    "version": "Version {version}",
+    "link": "Original site",
+    "count": "{count, plural, one {# source in use} other {# sources in use}}"
   },
   "NotFound": {
     "title": "Page not found",
-    "body": "The page you're looking for doesn't exist or has been moved.",
+    "body": "This page doesn’t exist or has moved.",
     "home": "Back to home"
+  },
+  "App": {
+    "common": {
+      "retry": "Try again",
+      "loading": "Loading…",
+      "close": "Close",
+      "cancel": "Cancel",
+      "saveChanges": "Save changes",
+      "back": "Back",
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "The link may be out of date.",
+      "home": "Go to Today",
+      "charCount": "{count, number}/{max, number}",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "errorPageTitle": "Couldn’t load this page"
+    },
+    "session": {
+      "offlineTitle": "Can’t connect",
+      "offlineBody": "Check your connection and try again."
+    },
+    "chrome": {
+      "brand": "Wordmet",
+      "skipToContent": "Skip to main content",
+      "mainNav": "Main navigation",
+      "tabs": {
+        "today": "Today",
+        "groups": "Decks",
+        "practice": "Practice",
+        "lookup": "Look up"
+      },
+      "addWord": "Add word",
+      "plans": "Plans",
+      "settings": "Settings",
+      "themeToDark": "Switch to dark theme",
+      "themeToLight": "Switch to light theme",
+      "logout": "Sign out",
+      "account": "Your account",
+      "plan": {
+        "free": "Free",
+        "trial": "Trial",
+        "pro": "Pro"
+      },
+      "search": {
+        "placeholder": "Search for a word"
+      },
+      "menu": {
+        "account": "Account",
+        "transactions": "Transaction history",
+        "reports": "My reports"
+      }
+    },
+    "ui": {
+      "proBadge": "Pro",
+      "lockedLine": "Part of the Pro plan.",
+      "seePlans": "See plans",
+      "dob": {
+        "invalid": "That birth date isn’t valid. Pick another date.",
+        "tooYoung": "You need to be 13 or older to use Wordmet.",
+        "future": "Your birth date can’t be after today."
+      },
+      "stepper": {
+        "decrease": "{label}: one less",
+        "increase": "{label}: one more"
+      }
+    },
+    "speak": {
+      "word": "Listen",
+      "sentence": "Listen to the sentence",
+      "uk": "Play the UK pronunciation",
+      "us": "Play the US pronunciation",
+      "pending": "Preparing audio…"
+    },
+    "auth": {
+      "passwordMismatch": "The passwords don’t match.",
+      "required": {
+        "email": "Enter your email.",
+        "password": "Enter your password.",
+        "birthDate": "Choose your date of birth.",
+        "consent": "Agree to the Terms of Use and Privacy Policy to continue.",
+        "code": "Enter all 6 digits of the code."
+      },
+      "captchaPending": "Verifying…",
+      "captchaReload": "Reload the verification",
+      "captchaLoadFailed": "Couldn’t load the verification.",
+      "showcase": {
+        "today": "Today",
+        "due": "words due",
+        "allocate": "allot",
+        "viable": "workable",
+        "mitigate": "lessen",
+        "deteriorate": "worsen",
+        "coherent": "clear",
+        "days": "{days, plural, one {# day} other {# days}}",
+        "practice": "Fill in the blank",
+        "result": "Correct · up to {level}",
+        "priority": "{count, number} priority",
+        "dueCount": "{count, number} due"
+      },
+      "footer": {
+        "copyright": "© {year} Wordmet",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use"
+      },
+      "back": "Back",
+      "email": "Email",
+      "password": "Password",
+      "google": "Continue with Google",
+      "or": "Or",
+      "register": {
+        "title": "Create an account",
+        "givenName": "First name",
+        "familyName": "Last name (optional)",
+        "birthDate": "Date of birth",
+        "birthDateHint": "Wordmet is for people 13 and older.",
+        "confirmPassword": "Re-enter password",
+        "passwordHint": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
+        "consent": "I agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>.",
+        "submit": "Create account",
+        "haveAccount": "Already have an account?",
+        "login": "Sign in",
+        "givenNameRequired": "Enter your first name.",
+        "accountDeleting": "This account is being deleted. Try again later."
+      },
+      "passwordRules": {
+        "min_length": "Use at least 8 characters.",
+        "max_length": "Use at most 128 characters.",
+        "uppercase": "Add an uppercase letter.",
+        "lowercase": "Add a lowercase letter.",
+        "digit": "Add a number.",
+        "special": "Add a symbol.",
+        "same_as_current": "Choose a password different from your current one."
+      },
+      "login": {
+        "title": "Sign in",
+        "forgot": "Forgot password?",
+        "submit": "Sign in",
+        "noAccount": "Don’t have an account?",
+        "register": "Sign up",
+        "lockedTitle": "This account is locked",
+        "lockedBody": "You can’t sign in to this account right now. Contact the Wordmet team if you need it reopened.",
+        "expired": "Sign in again to continue.",
+        "rateLimited": "Your session ended because this browser sent too many requests. Sign in again to continue.",
+        "logoutFailed": "Sign-out didn’t finish because the connection dropped. Sign in again or try signing out once more.",
+        "retryLogout": "Sign out again",
+        "passwordReset": "Password changed. Sign in with your new password."
+      },
+      "verify": {
+        "title": "Enter the 6-digit code",
+        "body": "We sent a code to {email}. It expires in 10 minutes.",
+        "digit": "Digit {n, number}",
+        "resendIn": "Resend code in {seconds, number} s",
+        "resend": "Resend code",
+        "submit": "Verify",
+        "resent": "New code sent.",
+        "bodyNoEmail": "Enter the email you signed up with and the 6-digit code from our email. It expires in 10 minutes.",
+        "loginBody": "Verify your email to continue. We sent a code to {email}.",
+        "wrongCode": "The code or password is incorrect, or the code has expired. If your email is already verified, sign in.",
+        "locked": "Too many wrong codes. Try again in {time}, or use Forgot password on the sign-in page."
+      },
+      "forgot": {
+        "title": "Forgot password",
+        "body": "Enter your email. If it has an account, Wordmet sends a reset code to it.",
+        "submit": "Send code",
+        "mustChange": "This account needs a new password before you continue. Enter your email to get a reset code."
+      },
+      "reset": {
+        "title": "Set a new password",
+        "code": "6-digit code from the email",
+        "newPassword": "New password",
+        "hint": "Once changed, your other devices are signed out.",
+        "confirmPassword": "Re-enter new password",
+        "submit": "Change password"
+      },
+      "googleComplete": {
+        "title": "Finish signing up",
+        "intro": "You are about to create a Wordmet account with {email}. A few details are left.",
+        "submit": "Create account",
+        "expiredTitle": "Your sign-up session expired",
+        "expiredBody": "Choose your Google account again to continue.",
+        "toLogin": "Back to sign in"
+      },
+      "complete": {
+        "title": "Complete your account",
+        "body": "Before you continue, add your date of birth and agree to the terms.",
+        "submit": "Continue",
+        "updatedTitle": "The terms have been updated",
+        "updatedBody": "Wordmet has published a new version of the Terms of Use and the Privacy Policy. Read and accept them to keep learning."
+      },
+      "welcome": {
+        "title": "Which language should meanings be in?",
+        "body": "The app uses this language too. You can change it in Settings.",
+        "language": "Language",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "submit": "Continue"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "toc": "Contents",
+      "personal": "Personal details",
+      "fullName": "Name",
+      "birthDate": "Date of birth",
+      "email": "Email",
+      "edit": "Edit",
+      "planUsage": "Plan and usage",
+      "currentPlan": "Current plan",
+      "seePlans": "See plans",
+      "planUntil": "<b>{plan}</b> · through {date}",
+      "practiceToday": "Practice sessions today",
+      "used": "{used, number}/{limit, number} used",
+      "practiceLeft": "{remaining, plural, one {# session left} other {# sessions left}}, resets at {time}",
+      "aiPractice": "AI credits for questions",
+      "aiLookup": "AI credits for lookups",
+      "needsPro": "Needs Pro",
+      "remaining": "{remaining, number}/{limit, number} left",
+      "aiPracticeRefill": "New AI credits for questions on {date}",
+      "aiLookupRefill": "New AI credits for lookups on {date}",
+      "aiPracticeRefillTime": "New AI credits for questions at {time}",
+      "aiLookupRefillTime": "New AI credits for lookups at {time}",
+      "learning": "Learning",
+      "language": "Language",
+      "languageHint": "Word meanings and the app",
+      "languageVi": "Tiếng Việt",
+      "languageEn": "English",
+      "theme": "Appearance",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "notifications": "Notifications",
+      "reminders": "Email reminders",
+      "remindersHint": "At {time} your time, only when words are due",
+      "shortcuts": "Keyboard shortcuts",
+      "shortcutAdd": "Add a new word",
+      "shortcutLookup": "Look up",
+      "shortcutFlip": "Flip the card in a review",
+      "shortcutAnswer": "Needs review · Known",
+      "shortcutExit": "Leave the review",
+      "account": "Account",
+      "logout": "Sign out",
+      "logoutHint": "Sign out of this device",
+      "deleteAccount": "Delete account",
+      "signInMethods": "Sign in with",
+      "methodPassword": "Password",
+      "methodGoogle": "Google",
+      "setPassword": "Set a password",
+      "setPasswordHint": "This account signs in with Google only. Set a password to sign in with email too.",
+      "deleteAccountStaff": "Ask an admin to delete your account",
+      "transactions": "Transaction history",
+      "view": "View",
+      "reports": "My reports",
+      "saved": "Changes saved."
+    },
+    "deleteAccount": {
+      "title": "Delete account",
+      "back": "Settings",
+      "deletedTitle": "What is deleted",
+      "keptTitle": "What is kept",
+      "confirmTitle": "Confirm deletion",
+      "deleted": {
+        "learning": "Learning data: decks, review schedule, answer history",
+        "privateWords": "Your own words and saved sentences",
+        "plans": "Your plans",
+        "sessions": "Every sign-in session"
+      },
+      "kept": {
+        "payments": "Payment records for {years, number} years, without your name",
+        "paymentsNoYears": "Payment records for the legal period, without your name",
+        "reports": "Error reports you sent, without your name",
+        "usage": "Usage counts, without your name",
+        "totals": "Totals that do not identify you"
+      },
+      "proLost": "The rest of your Pro time will be lost, with no refund.",
+      "blocked": "You have a plan that renews. Cancel it before deleting your account.",
+      "blockedLink": "Go to Plans",
+      "understand": "I understand my data will be lost and cannot be restored",
+      "typeEmail": "Type your email again",
+      "password": "Password",
+      "confirmWithGoogle": "Confirm with Google",
+      "googleConfirmed": "Confirmed with Google",
+      "wrongAccount": "That is not your Google account. Choose the right one.",
+      "googleFailed": "Couldn’t confirm with Google. Try again.",
+      "submit": "Delete permanently",
+      "doneTitle": "Account deleted",
+      "doneBody": "We sent a confirmation to your email.",
+      "pendingTitle": "Your account is being deleted",
+      "pendingBody": "Wordmet is finishing the deletion. It can take up to an hour, and you don’t need to do anything.",
+      "toLogin": "Back to sign in"
+    },
+    "houseAd": {
+      "title": "Get more with Pro",
+      "close": "Close",
+      "lead": "The Pro plan has more practice sessions a day and more AI credits a month.",
+      "sessions": "{count, number} practice sessions a day",
+      "ai": "More AI practice questions and AI lookups",
+      "from": "From <b>{price}</b> for 1 month",
+      "cta": "See the Pro plan",
+      "later": "Later",
+      "badgePro": "Pro",
+      "badgeAi": "With AI"
+    },
+    "transactions": {
+      "title": "Transaction history",
+      "back": "Settings",
+      "kinds": {
+        "purchase": "Purchase",
+        "renewal": "Renewal",
+        "plan_change": "Billing change",
+        "refund": "Refund",
+        "trial": "Trial",
+        "grant": "Plan granted"
+      },
+      "statuses": {
+        "succeeded": "Succeeded",
+        "refunded": "Refunded",
+        "pending": "Pending",
+        "reversed": "Refund reversed"
+      },
+      "intervals": {
+        "month": "monthly",
+        "quarter": "quarterly",
+        "year": "yearly"
+      },
+      "prepaidIntervals": {
+        "month": "1 month",
+        "quarter": "3 months",
+        "year": "12 months"
+      },
+      "used": "active {period}",
+      "rowLabel": "{line1}, {date}, {amount}, {line2}, {status}. See details",
+      "more": "Show more",
+      "planUntil": "{plan} through {date}",
+      "detail": {
+        "title": "Transaction details",
+        "at": "Time",
+        "period": "Active period",
+        "provider": "Payment provider",
+        "id": "Transaction ID",
+        "atValue": "{date}, {time}",
+        "help": "Questions about this transaction? Send the transaction ID to the Wordmet team through Contact.",
+        "close": "Close",
+        "copy": "Copy transaction ID",
+        "copied": "Transaction ID copied.",
+        "dismiss": "Close transaction details"
+      },
+      "providers": {
+        "fake": "Fake (test)",
+        "payos": "payOS"
+      },
+      "emptyTitle": "No transactions yet",
+      "emptyBody": "When you buy Pro or get a plan from the Wordmet team, it shows up here.",
+      "noPeriod": "no period",
+      "currentPlan": "Current plan",
+      "seePlans": "See plans",
+      "error": "Couldn’t load your transaction history. Check your connection and try again."
+    },
+    "account": {
+      "title": "Account",
+      "back": "Settings",
+      "givenName": "First name",
+      "familyName": "Last name (optional)",
+      "birthDate": "Date of birth",
+      "verified": "Verified",
+      "save": "Save changes",
+      "profile": "Profile",
+      "loginEmail": "Sign-in email",
+      "ageHint": "Wordmet is for people 13 and older.",
+      "planTitle": "{plan} plan",
+      "planSessions": "{count, plural, one {# practice session} other {# practice sessions}} a day",
+      "seePlan": "See plans"
+    },
+    "today": {
+      "title": "Today",
+      "heroChipPriority": "Up next · priority cards",
+      "heroChip": "Up next",
+      "heroLine": "{total, plural, one {# word} other {# words}} in the deck",
+      "yourGroups": "Your decks",
+      "seeAll": "See all {count, plural, one {# deck} other {# decks}}",
+      "emptyTitle": "No decks yet",
+      "emptyBody": "Create your first deck to save the words you come across and review them on schedule.",
+      "createFirst": "Create your first deck",
+      "backlogTitle": "{count, plural, one {# word} other {# words}} not reviewed in a while",
+      "backlogLine": "{name} deck, over {days, number} days overdue",
+      "see": "See",
+      "levelsTitle": "{count, plural, one {# word} other {# words}} by level",
+      "levelsHint": "Due / total",
+      "levelHelp": "Review interval of {level}",
+      "allDone": "All cards done for today. Come back tomorrow.",
+      "heroWaiting": "Cards waiting today",
+      "heroBar": "Cards waiting today by kind",
+      "legendPriority": "{count, number} priority",
+      "legendDue": "{count, number} due",
+      "legendNew": "{count, number} new",
+      "seeAllShort": "See all",
+      "yourGroupsHint": "{count, plural, one {# other deck} other {# other decks}} with cards waiting",
+      "noteDone": "Done today: {names}",
+      "lastTitle": "Last practice",
+      "lastCorrect": "Correct",
+      "lastLine": "{date} · {count, plural, one {# question} other {# questions}}",
+      "lastBar": "{correct, number} correct, {wrong, number} incorrect",
+      "lastRetry": "Practice missed words",
+      "lastCalendar": "Open study calendar",
+      "backlogLabel": "Not reviewed in a while"
+    },
+    "calendar": {
+      "fab": {
+        "label": "Study calendar",
+        "streak": "{days, plural, one {# day} other {# days}} in a row"
+      },
+      "month": {
+        "label": "study calendar",
+        "streak": "{days, plural, one {# day} other {# days}} in a row",
+        "today": "Back to today",
+        "prev": "Previous month",
+        "next": "Next month",
+        "close": "Close calendar",
+        "totals": "Month totals",
+        "studyDays": "Study days",
+        "elapsed": "/{days, number}",
+        "learned": "New words learned",
+        "reviewed": "Reviews",
+        "sessions": "Practice sessions",
+        "weekdays": {
+          "mon": "Mo",
+          "tue": "Tu",
+          "wed": "We",
+          "thu": "Th",
+          "fri": "Fr",
+          "sat": "Sa",
+          "sun": "Su"
+        },
+        "todayMark": "Today",
+        "cellLearned": "learned {count, plural, one {# word} other {# words}}",
+        "cellReviewed": "{count, plural, one {# review} other {# reviews}}",
+        "cellSessions": "{count, plural, one {# practice session} other {# practice sessions}}",
+        "cellNone": "no study",
+        "cellFuture": "not yet",
+        "legend": {
+          "learn": "New words",
+          "review": "Review",
+          "practice": "Practice",
+          "run": "Days in a row"
+        },
+        "keysPick": "pick a day ·",
+        "keysOpen": "open the day ·",
+        "keysClose": "close",
+        "loading": "Loading the calendar",
+        "error": "Couldn’t load the calendar. Check your connection and try again."
+      },
+      "day": {
+        "back": "{month} calendar",
+        "prev": "Previous day",
+        "next": "Next day",
+        "close": "Close",
+        "todaySuffix": "{weekday} · today",
+        "sumLearned": "Learned {count, plural, one {# new word} other {# new words}}",
+        "sumReviewed": "{count, plural, one {# review} other {# reviews}}",
+        "sumPractice": "{count, plural, one {# practice question} other {# practice questions}}",
+        "filterLabel": "Filter",
+        "all": "All",
+        "filterLearn": "Learned",
+        "filterReview": "Review",
+        "learnTitle": "Learned {count, plural, one {# new word} other {# new words}}",
+        "learnHint": "{count, plural, one {# deck} other {# decks}}",
+        "reviewTitle": "{count, plural, one {# review} other {# reviews}}",
+        "reviewHint": "cards and review questions",
+        "known": "Known, up one level",
+        "again": "Needs review, back to Level 1",
+        "more": "+{count, plural, one {# word} other {# words}}",
+        "lemmaGone": "Word no longer in the dictionary",
+        "future": "This day hasn’t come yet.",
+        "none": "No study on this day.",
+        "sectionNone": "Nothing on this day.",
+        "loading": "Loading the day",
+        "error": "Couldn’t load this day. Check your connection and try again."
+      }
+    },
+    "groups": {
+      "title": "Your decks",
+      "create": "Create deck",
+      "search": "Search {count, plural, one {# deck} other {# decks}}",
+      "noMatch": "No deck matches.",
+      "words": "{count, plural, one {# word} other {# words}}",
+      "addWord": "Add word",
+      "rename": "Rename deck",
+      "studyAll": "Study all {count, plural, one {# word} other {# words}}",
+      "delete": "Delete deck",
+      "suggestTitle": "Quick decks by topic",
+      "suggestAll": "See every topic in Look up",
+      "suggestCard": "{topic} · {level}",
+      "suggestCount": "{count, plural, one {# word} other {# words}}",
+      "createTitle": "Create deck",
+      "nameLabel": "Deck name",
+      "createSubmit": "Create deck",
+      "renameTitle": "Rename deck",
+      "renameSubmit": "Save name",
+      "nameTaken": "You already have a deck with this name. Choose another name.",
+      "limit": "You have {max, plural, one {# deck} other {# decks}}, the most allowed. Delete a deck to create a new one.",
+      "conflict": "This deck was changed somewhere else. Check it and save again.",
+      "deleteTitle": "Delete the “{name}” deck?",
+      "deleteBody": "<b>{count, plural, one {# word that is only in this deck} other {# words that are only in this deck}}</b> will leave your reviews and lose their progress.",
+      "deleteBodyNone": "Every word in this deck is also in another deck, so progress is kept.",
+      "deleteNote": "Words you added yourself stay in My words.",
+      "deleteSubmit": "Delete deck and {count, plural, one {# word} other {# words}}",
+      "deleteSubmitNone": "Delete deck",
+      "keep": "Keep deck",
+      "created": "Deck “{name}” created.",
+      "renamed": "Deck renamed.",
+      "deleted": "Deck “{name}” deleted.",
+      "carousel": "Your decks",
+      "subtitle": "{due, plural, one {# card} other {# cards}} waiting in {groups, plural, one {# deck} other {# decks}} · left and right keys or swipe to switch",
+      "subtitlePhone": "{due, plural, one {# card} other {# cards}} waiting in {groups, plural, one {# deck} other {# decks}} · swipe to switch",
+      "prev": "Previous deck",
+      "next": "Next deck",
+      "hint": "Press to open · ↓",
+      "hintPhone": "Tap to open",
+      "live": "{name}, {count, plural, one {# card} other {# cards}} waiting",
+      "rhythm": "Review rhythm: New → Level 5",
+      "open": "Open deck",
+      "pickerTitle": "Choose a deck (F)",
+      "capWaiting": "Cards waiting",
+      "capDone": "Done today",
+      "capEmpty": "No words yet",
+      "rowWaiting": "waiting",
+      "rowEmpty": "Empty",
+      "keysMove": "↑ ↓ move",
+      "keysPick": "↵ choose",
+      "keysClose": "Esc close"
+    },
+    "group": {
+      "recallCount": "Review {count, plural, one {# card} other {# cards}}",
+      "learnNew": "Learn {count, plural, one {# new word} other {# new words}}",
+      "addWord": "Add word",
+      "back": "Your decks",
+      "meta": "{count, plural, one {# word} other {# words}} · created {date}",
+      "menu": "Deck options",
+      "backlog": "{count, plural, one {# word} other {# words}} not reviewed in a while",
+      "backlogSee": "See",
+      "allWords": "All {count, plural, one {# word} other {# words}}",
+      "filterLabel": "Filter words in the deck",
+      "filterAll": "All",
+      "filterPriority": "Priority",
+      "filterDue": "Due",
+      "filterNew": "New",
+      "priorityTag": "Priority",
+      "senseChanged": "Meaning changed",
+      "dueToday": "Due today",
+      "dueOn": "Next review {date}",
+      "newWord": "New word",
+      "removeLabel": "Remove {word} from the deck",
+      "removeLastTitle": "Remove “{word}” from the deck?",
+      "removeLastBody": "This word is only in this deck. Removing it takes it out of your reviews and its progress is lost.",
+      "removeLastConfirm": "Remove from deck",
+      "keep": "Keep word",
+      "removed": "“{word}” removed from the deck.",
+      "notFound": "Couldn’t find this deck.",
+      "toList": "Back to your decks",
+      "emptyFilter": "No words in this filter.",
+      "loadMore": "More words · {count, number} left",
+      "empty": "This deck has no words yet.",
+      "emptyTitle": "This deck has no words yet",
+      "emptyBody": "Add words you come across while reading or watching, or pick words by topic in Look up.",
+      "emptyLookup": "Pick words by topic",
+      "loadMoreUnknown": "More words",
+      "metaNoDate": "{count, plural, one {# word} other {# words}}",
+      "colWord": "Word",
+      "colMeaning": "Meaning",
+      "colLevel": "Level",
+      "colState": "Status"
+    },
+    "backlog": {
+      "back": "{name} deck",
+      "title": "Not reviewed in a while",
+      "line": "{count, plural, one {# word} other {# words}} in {name} {count, plural, one {is} other {are}} over {days, number} days overdue.",
+      "relearnAll": "Relearn all {count, plural, one {# word} other {# words}}",
+      "selected": "{count, number} selected",
+      "relearnSelected": "Relearn {count, plural, one {# word} other {# words}}",
+      "forget": "Stop learning",
+      "colWord": "Word",
+      "colMeaning": "Meaning",
+      "colOverdue": "Overdue",
+      "overdueDays": "{count, plural, one {# day} other {# days}}",
+      "select": "Select {word}",
+      "showing": "showing {shown, number}/{total, number} words",
+      "more": "Show {count, number} more",
+      "forgetTitle": "Stop learning {count, plural, one {# word} other {# words}}?",
+      "forgetBody": "These words leave every deck and lose their schedule. Your review history is kept.",
+      "forgetConfirm": "Stop learning {count, plural, one {# word} other {# words}}",
+      "keep": "Keep words",
+      "relearned": "{count, plural, one {# word} other {# words}} moved back to New.",
+      "forgotten": "{count, plural, one {# word} other {# words}} removed from learning.",
+      "empty": "No word in this deck is long overdue.",
+      "countCaption": "Overdue words",
+      "explain": "Words at Level 1 or above that are over {days, number} days overdue leave the review list, so a day’s review never piles up. <b>Relearn</b>: back to New, counted as a new word today. <b>Stop learning</b>: leaves every deck, no more reviews. <b>Leave it</b>: nothing happens; Wordmet never deletes a word by itself.",
+      "selectAll": "Select all {count, plural, one {# word} other {# words}}",
+      "list": "Overdue words"
+    },
+    "topic": {
+      "title": "{topic} · {level}",
+      "intro": "{count, plural, one {# suggested word} other {# suggested words}}. Pick the words you want, or add the whole topic.",
+      "selectAll": "Select all {count, plural, one {# word} other {# words}} not learned yet",
+      "selected": "{count, number} selected",
+      "select": "Select {word}",
+      "learning": "learning · {groups}",
+      "learningNoGroup": "learning",
+      "addTo": "Add to",
+      "newGroup": "New deck “{name}”",
+      "addAll": "Add all {count, plural, one {# word} other {# words}}",
+      "addSelected": "Add {count, plural, one {# selected word} other {# selected words}}",
+      "result": "{added, plural, one {# word} other {# words}} added to “{name}”.",
+      "resultSkipped": "{already, number} already in the deck, {full, number} didn’t fit because the deck is full, {missing, number} no longer available.",
+      "notFound": "Couldn’t find this topic.",
+      "back": "Back",
+      "none": "No words for this topic and level yet.",
+      "eyebrow": "Topic · CEFR level",
+      "countCaption": "Not learned yet · {learning, number} learning",
+      "more": "Show {count, number} more"
+    },
+    "review": {
+      "close": "Close review",
+      "left": "{count, plural, one {# card left} other {# cards left}}",
+      "card": "Card {n, number} of {total, number}",
+      "back": "Back: {meaning}",
+      "priority": "Priority",
+      "backlog": "Long overdue",
+      "hintWeb": "Click the card or press Space to flip",
+      "hintPhone": "Tap the card to flip",
+      "flip": "Flip card",
+      "forms": "Forms",
+      "example": "Example",
+      "seen": "Your saved sentences",
+      "newWord": "New word",
+      "stillLearning": "Needs review",
+      "know": "Known",
+      "failed": "Couldn’t save your answer. Check your connection and try again.",
+      "doneTitle": "{count, plural, one {# card done} other {# cards done}}",
+      "doneBody": "Cards marked Needs review go back to Level 1, at the top of the deck.",
+      "home": "Back to Today",
+      "emptyTitle": "No cards left in this deck today",
+      "studyAll": "Study all words",
+      "stampReview": "back to Level 1",
+      "stampKnow": "up to {level}",
+      "flipBack": "See the front",
+      "nudge": "Flip the card to see the meaning first.",
+      "dragHint": "Drag the card",
+      "legend": "Keys",
+      "stop": "Stop session",
+      "pileList": "{name} · {count, plural, one {# card} other {# cards}}",
+      "ring": "{known, number}/{total, number} cards known",
+      "ringCaption": "known"
+    },
+    "lookup": {
+      "title": "Look up",
+      "level": "CEFR level: {value}",
+      "topic": "Topic: {value}",
+      "pos": "Part of speech: {value}",
+      "all": "all",
+      "mine": "Only my words",
+      "clear": "Clear filters",
+      "mineTag": "Mine",
+      "emptyTitle": "No word found",
+      "emptyBody": "Try fewer filters, or add the word yourself with your own meaning.",
+      "addThis": "Add this word",
+      "topicLabel": "Topic",
+      "searchLabel": "Search for a word, for example mitigate",
+      "summary": "{count, plural, one {# word} other {# words}} at CEFR level <lv>{level}</lv>, topic <tp>{topic}</tp>, part of speech <ps>{pos}</ps>.",
+      "page": "page {n, number}",
+      "pageFoot": "— {n, number} —",
+      "next": "Next page",
+      "prev": "Previous page",
+      "card": "Card of the selected word",
+      "stacksTitle": "Choose a deck to add the word",
+      "addTo": "Add to {group}",
+      "addHere": "+ add here",
+      "hasIt": "✓ already in",
+      "otherGroup": "Another deck or a new one",
+      "openWordArrow": "Open the word page"
+    },
+    "word": {
+      "back": "Look up",
+      "senses": "{count, plural, one {# meaning} other {# meanings}}",
+      "forms": "Forms",
+      "formOf": "A form of {base}:",
+      "alsoFormOf": "Also a form of {base}:",
+      "addToGroup": "Add to deck",
+      "addCardTitle": "Add to another deck",
+      "sentences": "{count, plural, one {# saved sentence} other {# saved sentences}}",
+      "learningTitle": "You are learning",
+      "level": "{group} · {level}",
+      "levelNew": "{group} · not reviewed yet",
+      "addSentence": "Add a saved sentence",
+      "sameTopic": "Same topic: {topic}",
+      "notFoundTitle": "No word “{word}”",
+      "notFoundBody": "Wordmet’s dictionary does not have this word yet. You can add it with your own meaning.",
+      "addThis": "Add this word",
+      "sentencesTitle": "Saved sentences · {word}",
+      "deleteSentence": "Delete sentence",
+      "sentenceDeleted": "Sentence deleted.",
+      "noSentences": "No sentences yet.",
+      "added": "Added “{word}” to “{group}”.",
+      "alreadyIn": "“{word}” is already in “{group}”.",
+      "groupFull": "This deck is full. Choose another deck.",
+      "tabsLabel": "Parts of the word page",
+      "tabMeanings": "Meanings",
+      "tabSentences": "Saved sentences",
+      "tabForms": "Forms",
+      "tabTopic": "Same topic",
+      "levelBar": "Now at {level}",
+      "nextReview": "Next review",
+      "seenTitle": "Saved sentences",
+      "seenMeta": "meaning {n, number} · {meaning} · saved {date}",
+      "sameTopicLabel": "Same topic",
+      "levelRange": "CEFR level {range}",
+      "seeTopic": "See the topic {topic}",
+      "mine": {
+        "label": "My words",
+        "aiLabel": "AI suggestion",
+        "aiSource": "Source: AI suggestion. No one has checked this meaning yet, so check it yourself.",
+        "edit": "Edit word",
+        "delete": "Delete word",
+        "editTitle": "Edit word",
+        "saveChanges": "Save changes",
+        "saved": "Changes saved.",
+        "deleteTitle": "Delete “{word}”?",
+        "deleteBody": "This word, its saved sentences and its place in every deck will be deleted. This can’t be undone."
+      }
+    },
+    "addWord": {
+      "byTopic": "Add several words by topic",
+      "seeWords": "See words",
+      "title": "What new word did you come across?",
+      "word": "Word",
+      "sentence": "Sentence with the word (optional)",
+      "lookingUp": "Looking up…",
+      "inflection": "{kind} of {base}",
+      "noMatch": "Wordmet has no “{word}” yet. Enter a meaning to save it.",
+      "pickSense": "Choose a meaning",
+      "deck": "Save to deck",
+      "chooseDeck": "Choose a deck",
+      "deckRequired": "Choose a deck to save the word.",
+      "noDecks": "You have no decks yet. Create your first deck to save this word.",
+      "createFirst": "Create your first deck",
+      "manualButton": "Enter another meaning",
+      "saveShort": "Save",
+      "openGroup": "View deck",
+      "manualTitle": "Enter a meaning",
+      "manualSub": "Only you see this word.",
+      "recognized": "Wordmet recognized this as the {kind} of {base} and linked it.",
+      "meaning": "Meaning",
+      "meaningRequired": "Enter the word’s meaning.",
+      "wordRequired": "Enter the word.",
+      "saved": "Saved “{word}” to “{group}”.",
+      "alreadyIn": "Already in this deck",
+      "exists": "“{word}” is already in My words.",
+      "openExisting": "Open this word",
+      "groupFull": "“{group}” is full. Choose another deck.",
+      "privateLimit": "You’ve reached the limit for your own words. Delete one to add another.",
+      "sentenceLimit": "This meaning has the maximum number of sentences. Delete one to add another.",
+      "pickerTitle": "Save to deck",
+      "search": "Find or create a deck…",
+      "createNew": "Create a new deck",
+      "createNamed": "Create deck “{name}”",
+      "recent": "Recently used",
+      "others": "Other decks ({count, number})",
+      "all": "All decks ({count, number}), A–Z",
+      "results": "Results ({count, number})",
+      "noneNamed": "No deck named “{name}”.",
+      "createAndSave": "Create deck and save",
+      "words": "{count, plural, one {# word} other {# words}}",
+      "back": "Back",
+      "quickTitle": "Add a new word",
+      "quickBody": "Type the word, even an inflected form like went (from go). Paste the sentence too if you have it.",
+      "quickSubmit": "Add",
+      "quickPlaceholder": "For example: mitigate…",
+      "kinds": {
+        "third_person": "third-person form",
+        "present_participle": "-ing form",
+        "past": "past tense",
+        "past_participle": "past participle",
+        "plural": "plural",
+        "comparative": "comparative",
+        "superlative": "superlative"
+      },
+      "sentenceTitle": "Add a saved sentence",
+      "sentenceSub": "{lead}: {meaning} · {count, plural, one {# sentence} other {# sentences}} so far",
+      "sentenceSubNone": "{lead}: {meaning}",
+      "sentenceField": "Sentence",
+      "sentenceSense": "Meaning",
+      "sentencePreview": "Back of the card",
+      "sentenceSave": "Save sentence",
+      "sentenceSaved": "Sentence saved.",
+      "sentenceRequired": "Enter the sentence.",
+      "seeSentences": "See saved sentences",
+      "bulkButton": "Add them all to a deck",
+      "bulkTitle": "Add them all to a deck",
+      "bulkBody": "{filters}. Function words are skipped; words already in the deck stay as they are.",
+      "bulkInto": "Deck",
+      "bulkNewDeck": "New deck: {name}",
+      "bulkSubmit": "Add them all",
+      "bulkResult": "Added {added, plural, one {# word} other {# words}} to “{name}”.",
+      "bulkSkipped": "{already, number} already in the deck, {function, number} function words skipped, {full, number} did not fit because the deck is full.",
+      "pickDone": "Done",
+      "pickerHint": "You can choose several decks.",
+      "selectedCount": "{count, plural, =0 {No deck chosen} one {# deck chosen} other {# decks chosen}}",
+      "saveManual": "Save word",
+      "saveToCount": "{count, plural, one {Save to # deck} other {Save to # decks}}",
+      "fullNotSaved": "{group} is full. Nothing was saved.",
+      "fullUnknown": "A deck is full. Nothing was saved.",
+      "addAnother": "Add another deck",
+      "ai": {
+        "button": "Look up with AI",
+        "manual": "Enter a meaning",
+        "left": "{count, plural, one {# AI credit for lookups} other {# AI credits for lookups}} left",
+        "sendSentence": "Send the sentence to AI",
+        "looking": "Looking up…",
+        "failed": "Couldn’t look up the word with AI. Try again later.",
+        "retry": "Try again",
+        "quota": "No AI credits for lookups left.",
+        "refillDate": "New AI credits for lookups on {date}.",
+        "refillTime": "New AI credits for lookups at {time}.",
+        "notThis": "Not the meaning you need?"
+      },
+      "result": {
+        "title": "Results for “{word}”",
+        "used": "Used 1 AI credit · {remaining, number} left",
+        "catalog": "Meanings in the dictionary",
+        "choose": "Choose",
+        "aiLabel": "AI suggestion",
+        "definition": "English definition (for reference, not saved): {text}",
+        "caution": "AI suggestions can be wrong. Check before saving.",
+        "dictionary": "Dictionary",
+        "preview": "Card to save · preview",
+        "yourSentence": "Saved sentence",
+        "edit": "Edit and save"
+      },
+      "edit": {
+        "title": "Edit before saving",
+        "word": "Word",
+        "pos": "Part of speech",
+        "meaning": "Meaning",
+        "level": "CEFR level",
+        "topic": "Topic (optional)",
+        "formOf": "Form of:",
+        "examples": "Examples (up to 2)",
+        "example": "Example {n, number}",
+        "addExample": "+ Add an example",
+        "exampleHint": "Up to 300 characters each.",
+        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples.",
+        "ipa": "Pronunciation",
+        "ipaHint": "Optional."
+      },
+      "recognizedShort": "{kind} of {base}",
+      "lockedDeck": "Saving to deck: {name}",
+      "deckGone": "This deck no longer exists."
+    },
+    "levels": {
+      "name": "{level, select, 0 {New} other {Level {level}}}",
+      "interval": "{days, plural, one {review in # day} other {review in # days}}",
+      "bar": "Words by level"
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again later.",
+      "code": "Code: {code}",
+      "inProgress": "Your last action is still in progress. Wait a moment and try again.",
+      "account-locked": "This account is locked. Contact the Wordmet team if you need it reopened.",
+      "age-below-minimum": "You need to be 13 or older to use Wordmet.",
+      "ai-in-progress": "Looking it up…",
+      "ai-lookup-failed": "Couldn’t look up the word with AI. Try again later.",
+      "ai-quota-insufficient": "Not enough AI credits for questions for this session.",
+      "ai-unavailable": "AI isn’t available right now. Try again later.",
+      "csrf-header-required": "Something went wrong. Reload the page and try again.",
+      "email-already-verified": "This email is already verified.",
+      "email-taken": "This email already has an account. If it’s yours, use Forgot password.",
+      "entitlement-required": "Part of the Pro plan. Open Plans to buy it.",
+      "forbidden": "You can’t do this.",
+      "group-full": "This deck is full.",
+      "group-limit-reached": "You’ve reached the deck limit. Delete a deck to create a new one.",
+      "group-name-taken": "You already have a deck with this name. Choose another name.",
+      "idempotency-key-abandoned": "Your last action stopped halfway. Try again.",
+      "invalid-credentials": "Incorrect email or password. Try again.",
+      "invalid-current-password": "Your current password is incorrect. Try again.",
+      "captcha-failed": "Couldn’t complete the verification. Try again.",
+      "captcha-unavailable": "The verification isn’t available right now. Try again in a few minutes.",
+      "cancel-in-store": "This plan was bought in an app store. Cancel it in that store’s subscription settings.",
+      "confirm-email-mismatch": "The email you typed doesn’t match this account’s email. Type it again.",
+      "google-email-unverified": "Google hasn’t verified this email address yet. Verify it with Google and try again.",
+      "google-busy": "Too many Google sign-ins from this network. Wait a minute and try again, or use your email and password.",
+      "google-failed": "Couldn’t sign in with Google. Try again.",
+      "google-unavailable": "Google sign-in isn’t available right now. Use your email and password.",
+      "provider-unavailable": "The payment provider didn’t respond. Try again in a few minutes.",
+      "reauth-required": "Confirm with your Google account before deleting.",
+      "renewal-not-cancelled": "Your plan still renews. Cancel it on the Plans page, then try again.",
+      "staff-account": "A staff account can’t delete itself. Ask an admin to delete it.",
+      "subscription-not-cancellable": "This plan no longer renews, so there is nothing to cancel.",
+      "subscription-renewing": "You still have a plan that renews. Cancel it before deleting your account.",
+      "invalid-otp": "The code is incorrect or has expired. Enter it again or request a new one.",
+      "invalid-token": "Sign in again to continue.",
+      "mail-unavailable": "Couldn’t send the email. Try again in a few minutes.",
+      "not-found": "Not found.",
+      "password-change-required": "Change your password to continue.",
+      "payload-too-large": "This is too long. Shorten it and try again.",
+      "practice-no-words": "No words to practice yet.",
+      "profile-incomplete": "Choose a language to continue.",
+      "quota-exhausted": "You’ve used up your allowance for this feature.",
+      "rate-limited": "Too many attempts in a short time. Try again in {seconds, number} seconds.",
+      "report-exists": "You’ve already reported this question.",
+      "report-not-available": "This question can’t be reported.",
+      "sentence-limit-reached": "This meaning has the most sentences it can hold. Delete one to add a new one.",
+      "session-closed": "This session has ended.",
+      "session-not-waiting": "This question has already been answered.",
+      "share-consent-required": "Couldn’t send the report. Try again later.",
+      "unsupported-media-type": "This format isn’t supported.",
+      "validation-failed": "Some details aren’t valid. Check the marked fields.",
+      "version-conflict": "This was changed somewhere else. Check it and save again."
+    },
+    "offline": {
+      "message": "Can’t connect. Check your connection and try again."
+    },
+    "practice": {
+      "title": "Practice",
+      "types": {
+        "mcq_definition": "Multiple choice",
+        "true_false_definition": "True or false",
+        "type_word": "Type the word",
+        "cloze": "Fill in the blank",
+        "meaning_in_sentence": "Meaning in context",
+        "mcq_sentence": "Sentence multiple choice"
+      },
+      "hero": {
+        "chip": "Quick practice · words due today",
+        "title": "Today",
+        "empty": "No words due today. Pick a source below.",
+        "start": "Start {count, plural, one {# question} other {# questions}}",
+        "customize": "Customize",
+        "artPrompt": "One question · choose the right word",
+        "artMeaning": "to put into action",
+        "words": "Words to practice: <b>{words, number}</b> in {groups, plural, one {# deck} other {# decks}}",
+        "body": "{count, plural, one {# question} other {# questions}}, mixing three types: {types}.",
+        "artRight": "Correct"
+      },
+      "sources": {
+        "title": "Practice from another source",
+        "customize": "Customize: {name}",
+        "customizeButton": "Customize",
+        "reopens": "Resets at {time}",
+        "group": {
+          "name": "By deck",
+          "body": "One deck, filtered by level or priority words.",
+          "chip": "{name} · {count, number}",
+          "empty": "No decks yet.",
+          "more": "+{count, plural, one {# deck} other {# decks}}"
+        },
+        "weak": {
+          "name": "Weak words",
+          "body": "Wrong twice in the last 5 questions. Lowest level first.",
+          "chip": "{lemma} · wrong {wrong}/{counted}",
+          "more": "+{count, plural, one {# word} other {# words}}",
+          "start": "Practice {count, plural, one {# word} other {# words}}",
+          "empty": "No weak words yet."
+        },
+        "priority": {
+          "name": "Priority",
+          "body": "Words you marked Needs review, oldest first.",
+          "chip": "{count, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
+          "start": "Practice {count, plural, one {# word} other {# words}}",
+          "empty": "No priority words yet."
+        },
+        "all": {
+          "name": "Practice all",
+          "body": "Every word you’re learning, least practiced first.",
+          "chip": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
+          "start": "Practice {count, plural, one {# question} other {# questions}}",
+          "empty": "No words in your decks yet."
+        }
+      },
+      "noWords": {
+        "group-empty": "No words in this deck match your choices.",
+        "source-empty": "No words to practice from this source.",
+        "no-word-fits-types": "No word works with the chosen question types. Choose another type."
+      },
+      "usage": {
+        "title": "Practice sessions today",
+        "plan": {
+          "free": "Free plan",
+          "trial": "Trial plan",
+          "pro": "Pro plan"
+        },
+        "used": "{used, number}/{limit, number} used",
+        "note": "A session counts once you answer its first question. Resets at {time}.",
+        "out": "No sessions left today. Resets at {time}, in {wait}.",
+        "hoursMinutes": "{hours} h {minutes} min",
+        "minutes": "{minutes} min",
+        "outShort": "No sessions left today. Resets at {time}."
+      },
+      "current": {
+        "title": "Session in progress",
+        "body": "{source}, {done, number}/{total, number} questions done. Starting a new session ends this one.",
+        "bodyOut": "{source}, {done, number}/{total, number} questions done. It already counts for today, so you can still finish it.",
+        "resume": "Continue at question {n, number}",
+        "resumeWaiting": "Continue",
+        "source": {
+          "today": "Words due today",
+          "group": "{name} deck",
+          "groupUnknown": "A deck",
+          "weak": "Weak words",
+          "weakGroup": "Weak words in {name}",
+          "priority": "Priority words",
+          "all": "All your words"
+        }
+      },
+      "resumeDialog": {
+        "title": "You have a session in progress ({done, number}/{total, number})",
+        "body": "{source}, {done, number}/{total, number} questions done. A new session ends this one.",
+        "resume": "Continue",
+        "startNew": "Start new session"
+      },
+      "out": {
+        "chip": "No sessions left today",
+        "title": "Practice again tomorrow",
+        "body": "The {plan} includes {limit, number} practice sessions a day, resetting at {time}. Meanwhile, review cards as much as you like.",
+        "review": "Review cards"
+      },
+      "shortcuts": {
+        "title": "Session shortcuts",
+        "choose": "Choose an answer",
+        "check": "Check, then the bold button",
+        "hint": "Show a hint",
+        "stop": "Stop, see summary"
+      },
+      "customize": {
+        "title": "Customize session",
+        "group": "Deck",
+        "allGroups": "All decks · {count, number}",
+        "filterDue": "Due",
+        "filterPriority": "Priority",
+        "levelAll": "All levels",
+        "typesNone": "Choose at least one question type.",
+        "prompt": "Prompt",
+        "promptMeaning": "By meaning",
+        "promptSentence": "By sentence",
+        "promptMixed": "Mixed",
+        "count": "Questions",
+        "order": "Order",
+        "sorts": {
+          "level_asc": "Lowest level",
+          "overdue_first": "Most overdue",
+          "new_first": "New words",
+          "least_practiced": "Least practiced",
+          "most_wrong": "Most missed",
+          "queue": "Priority, due, then new",
+          "priority_oldest": "Oldest Needs review first",
+          "random": "Random"
+        },
+        "start": "Start {count, plural, one {# question} other {# questions}}",
+        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today.",
+        "ownToggle": "Fill in your saved sentences",
+        "quotaTitle": "Not enough AI credits for questions",
+        "quotaBody": "This session needs {needed, plural, one {# AI credit} other {# AI credits}} for questions, and you have {remaining, number}.",
+        "quotaRefillDate": "New AI credits for questions arrive on {date}.",
+        "quotaRefillTime": "New AI credits for questions arrive at {time}.",
+        "aiUnavailable": "AI question types aren’t available right now. Turn them off to start, or try again later.",
+        "dropAi": "Turn off AI question types",
+        "words": "Words",
+        "wordCount": "{count, plural, one {# word} other {# words}}",
+        "groupRow": "{name} · {count, plural, one {# word} other {# words}}",
+        "filterLabel": "Which words",
+        "levelMenu": "One level only",
+        "levelOption": "{level} · {count, number}",
+        "questions": "Questions",
+        "mcPick": "Sentence multiple choice",
+        "mcMeaning": "Pick the meaning",
+        "mcWord": "Pick the word",
+        "mcMixed": "Mix",
+        "aiTitle": "AI-written questions",
+        "aiMax": "Up to {max, number} AI questions · {left, number} credits left",
+        "aiMaxLeft": "Up to {max, number} AI questions, as you have {left, number} credits left",
+        "aiNone": "A {count, plural, one {#-question} other {#-question}} session has no AI questions.",
+        "aiOut": "No AI credits for questions left this month.",
+        "seePro": "See the Pro plan",
+        "mixLine": "Words with a saved sentence use it; AI writes the others.",
+        "placement": "AI question order",
+        "placementEven": "Spread out",
+        "placementRandom": "Random",
+        "needAi": "Choose at least one AI question type.",
+        "needRule": "Choose at least one non-AI question type for the other {count, plural, one {# question} other {# questions}}.",
+        "aiSummary": "{count, plural, one {# AI question} other {# AI questions}} among them, {placement}.",
+        "aiSummaryEven": "spread out",
+        "aiSummaryRandom": "in random order",
+        "filterAllWords": "All words",
+        "countMaxScope": "up to {max, number}",
+        "ownHelpLabel": "What is Fill in your saved sentences?",
+        "ownHelp": "Asks only words that have a saved sentence. Uses no AI credits."
+      },
+      "session": {
+        "close": "Stop, see summary",
+        "header": "Practice · {source}",
+        "aiChip": "AI sentence",
+        "translation": "Translation",
+        "translationAi": "AI translation",
+        "ai": {
+          "preparingTitle": "Writing the question…",
+          "preparingBody": "This usually takes a few seconds.",
+          "errorTitle": "Couldn’t write the AI question",
+          "quotaTitle": "No AI credits left for questions",
+          "refillDate": "New AI credits for questions arrive on {date}.",
+          "refillTime": "New AI credits for questions arrive at {time}.",
+          "planTitle": "Your plan has no AI questions",
+          "planBody": "Your plan has ended, so the remaining AI questions can’t be made.",
+          "stayOpen": "If you stop, the session stays open and you can finish it later.",
+          "retry": "Try again",
+          "later": "Later",
+          "fallback": "This question switched to a regular type.",
+          "fallbackQuota": "No AI credits left for questions. The rest of this session uses other question types.",
+          "notRecognized": "AI didn’t recognize “{lemma}”, a word you added, so this question uses another type.",
+          "notRecognizedStop": "AI didn’t recognize “{lemma}”, a word you added.",
+          "notRecognizedAny": "AI didn’t recognize a word you added, so this question uses another type.",
+          "seeWord": "Check the word in My words",
+          "dismiss": "Close notice"
+        },
+        "progress": "question {n, number} / {total, number}",
+        "progressDone": "done {total, number} / {total, number}",
+        "kind": {
+          "mcq": "Multiple choice",
+          "true_false": "True or false",
+          "type_meaning": "Type the word · from meaning",
+          "type_sentence": "Type the word · from sentence",
+          "other": "Question",
+          "cloze": "Fill in the blank",
+          "meaning_in_sentence": "Meaning in the sentence",
+          "mcq_sentence": "Sentence multiple choice"
+        },
+        "true": "True",
+        "false": "False",
+        "rightOption": "Correct answer",
+        "chosen": "Your choice",
+        "chosenRight": "Your choice · correct",
+        "answerLabel": "Your answer",
+        "blankLabel": "Missing word",
+        "answerPlaceholder": "Type the English word",
+        "check": "Check",
+        "attempt": "Try {n, number}",
+        "tryAgainBody": "Check the spelling and try again.",
+        "alternativeLabel": "Alternative answer",
+        "alternativeTyped": "The word you typed",
+        "alternativeAsked": "This sentence’s word",
+        "reviewWord": "Needs review: {lemma}",
+        "knowWord": "Known: {lemma}",
+        "retry": "Try again",
+        "reveal": "Show answer",
+        "right": "Correct",
+        "wrong": "Incorrect",
+        "revealLine": "{lemma} · {meaning}",
+        "stillLearning": "Needs review",
+        "know": "Known",
+        "next": "Next",
+        "noteWrong": "Press Enter to put {lemma} at the top of its deck, back to Level 1. Next keeps its schedule.",
+        "noteKnowEnter": "Press Enter to mark it Known: {lemma} moves up a level. Not sure? Choose Needs review.",
+        "noteHint": "Hints don’t change the grading, but a correct answer after a hint has no Known button.",
+        "phoneHint": "Tap an answer. It’s graded right away.",
+        "failed": "Couldn’t save your answer. Check your connection and try again.",
+        "closed": "This session has ended.",
+        "none": "No practice session is open.",
+        "back": "Back to Practice",
+        "hint": {
+          "progress": "Hint {opened, number} of {total, number}",
+          "button": "Hint",
+          "open": "Show hint {n, number}",
+          "locked": "Hint {n, number}",
+          "letters": "{first}… · {length} letters",
+          "kinds": {
+            "definition": "Definition",
+            "example": "Example",
+            "meaning": "Meaning",
+            "first_letter": "First letter",
+            "letters": "First letter and length"
+          }
+        },
+        "report": {
+          "button": "Report",
+          "sent": "Reported",
+          "title": "Report this question",
+          "question": "What’s wrong?",
+          "chooseReason": "Choose a reason.",
+          "note": "Note",
+          "optional": "optional · {count, number}/{max, number}",
+          "required": "required · {count, number}/{max, number}",
+          "noteMissing": "Describe the problem to send this report.",
+          "info": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words; the grade stays as it is.",
+          "send": "Send report",
+          "done": "Report sent. See the outcome in Settings, under My reports.",
+          "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
+          "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
+          "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
+        },
+        "round": {
+          "chip": "End of round {round}",
+          "title": "You’ve done all {words, plural, one {# word} other {# words}}",
+          "body": "The session has {target, number} questions, but only {words, plural, one {# word} other {# words}}. Practice {left, number} more with the same words? Wordmet shuffles them and changes the question type when it can.",
+          "correct": "{count, number} correct",
+          "wrong": "{count, number} incorrect",
+          "go": "Practice {left, number} more",
+          "stop": "Finish, see summary",
+          "note": "You see this question only once per session. Extra questions stay in this session and don’t use another session."
+        },
+        "summary": {
+          "title": "{count, plural, one {# question} other {# questions}} done",
+          "line": "{source}, {types}. {remaining, number} of {limit, plural, one {# session} other {# sessions}} left today.",
+          "lineNoPool": "{source}, {types}.",
+          "alternatives": "{count, plural, one {Including # alternative answer} other {Including # alternative answers}}",
+          "mixed": "{count, number} question types",
+          "listTitle": "Needs review · {count, plural, one {# word} other {# words}}",
+          "added": "Added to priority",
+          "review": "Needs review",
+          "reviewAll": "Add the other {count, plural, one {# word} other {# words}} to priority",
+          "home": "Back to Practice",
+          "again": "Practice another session",
+          "ring": "{correct, number}/{total, number} correct",
+          "ringCaption": "correct"
+        },
+        "noteNotDue": "{lemma} isn’t due yet, so its schedule stays the same.",
+        "countRight": "{count, number} correct",
+        "countWrong": "{count, number} incorrect",
+        "levelMove": "From {from} to {to}",
+        "noteKnowTap": "Tap Known and {lemma} moves up a level.",
+        "noteWrongTap": "Needs review: {lemma} goes to the top of its deck, back to Level 1. Next keeps its schedule.",
+        "legend": {
+          "label": "Keys",
+          "choose": "Choose an answer",
+          "check": "Check",
+          "hint": "Hint",
+          "stop": "Stop",
+          "know": "Known",
+          "review": "Needs review",
+          "next": "Next",
+          "retry": "Try again"
+        }
+      },
+      "weak": {
+        "title": "Weak words",
+        "back": "Practice",
+        "group": "Deck",
+        "all": "All decks · {count, number}",
+        "deckOption": "{name} · {count, number}",
+        "titleAll": "{count, plural, one {# weak word} other {# weak words}}",
+        "titleGroup": "{count, plural, one {# word} other {# words}} in the {name} deck",
+        "cols": {
+          "word": "Word",
+          "meaning": "Meaning",
+          "recent": "Last 5 questions",
+          "level": "Level",
+          "last": "Last missed"
+        },
+        "today": "{time} today",
+        "more": "Show more",
+        "emptyTitle": "No weak words yet",
+        "emptyBody": "Words you get wrong twice in your last 5 questions show up here.",
+        "cardChip": "Practice weak words",
+        "cardCount": "{count, plural, one {# word} other {# words}}",
+        "cardBody": "Lowest level first, all three question types. Four right in a row and a word leaves the list.",
+        "start": "Practice {count, plural, one {# word} other {# words}}",
+        "startGroup": "Practice {count, plural, one {# word} other {# words}} from {name}",
+        "customize": "Customize",
+        "rulesTitle": "How do words join and leave this list?",
+        "rules": {
+          "in": "Joins: wrong twice in the last 5 questions, any question type.",
+          "skip": "Not counted: right answers after a hint, and questions you reported that the Wordmet team is checking, fixed, or confirmed.",
+          "out": "Leaves: when fewer than 2 of the last 5 questions are wrong."
+        },
+        "reopens": "No sessions left today. Resets at {time}.",
+        "right": "{count, number} correct",
+        "wrong": "{count, number} incorrect"
+      },
+      "reports": {
+        "status": {
+          "open": "Under review",
+          "fixed": "Fixed",
+          "no_error": "No error found",
+          "confirmed": "Error confirmed"
+        },
+        "refunded": "1 AI credit returned",
+        "refunding": "Returning 1 AI credit",
+        "notRefundable": "This AI credit can’t be returned",
+        "emptyTitle": "You haven’t reported any questions",
+        "emptyBody": "If a question looks wrong during practice, choose Report on it. The outcome shows up here.",
+        "toPractice": "Back to Practice",
+        "unknownWord": "—",
+        "more": "Show more",
+        "title": "My reports",
+        "back": "Settings",
+        "aiQuestion": "AI question",
+        "foot": "dates in your time zone · an AI-written question confirmed as wrong returns 1 AI credit",
+        "loading": "Loading your reports",
+        "error": "Couldn’t load your reports. Check your connection and try again."
+      }
+    },
+    "plans": {
+      "subscriptions": {
+        "title": "Your subscription",
+        "renewsOn": "Renews on {date}",
+        "renews": "The plan renews automatically",
+        "endsOn": "Plan ends on {date}",
+        "ends": "Renewal is cancelled",
+        "cancel": "Cancel plan",
+        "dialogTitle": "Cancel the plan?",
+        "dialogBody": "The plan stays until {date}, then it does not renew. No refund for the time left.",
+        "dialogBodyNoDate": "The plan stays until the end of the paid period, then it does not renew. No refund for the time left.",
+        "keep": "Keep plan",
+        "confirm": "Cancel renewal",
+        "requested": "Cancel request sent"
+      },
+      "order": {
+        "checking": "Checking your order…",
+        "paidTitle": "Payment received",
+        "paid": "Pro is active through <b>{date}</b>.",
+        "paidNoDate": "Pro is active.",
+        "rowPlan": "Plan",
+        "planValue": "Pro, {period}",
+        "rowAmount": "Amount",
+        "rowCode": "Order code",
+        "start": "Start learning",
+        "seePlan": "View plan",
+        "pendingTitle": "Waiting for payment confirmation",
+        "pending": "Pro turns on by itself when the money arrives. You can close this page.",
+        "needsReviewTitle": "Your transfer is being checked",
+        "needsReview": "Pro turns on once the check is done.",
+        "contact": "Support: <mail>{email}</mail>",
+        "ended": "The order was cancelled or has expired",
+        "newOrder": "You can place a new order on the Plans page.",
+        "toPlans": "Go to Plans",
+        "notFound": "Order not found"
+      },
+      "title": "Learn a little every day, go Pro when you need it",
+      "lead": "Pay once for each period, with no automatic renewal. When it ends, you go back to Free.",
+      "titlePro": "You’re on Pro",
+      "titleTrial": "You’re trying Pro",
+      "trialUntil": "Trial through {date}.",
+      "period": "Billing period",
+      "periods": {
+        "1": "1 month",
+        "3": "3 months",
+        "12": "12 months"
+      },
+      "yours": "Current plan",
+      "free": "Free",
+      "pro": "Pro",
+      "usingThis": "You’re on this plan",
+      "freePriceNote": "no charge",
+      "proBadge": "With AI",
+      "perMonth": "a month",
+      "perMonthApprox": "≈ {price} a month",
+      "saving": "−{percent, number}%",
+      "savingBest": "−{percent, number}% · best value",
+      "oneTime": "One payment for {period}, no automatic renewal.",
+      "startsOn": "The new period starts on {date}, when the current one ends.",
+      "noRefund": "No automatic refunds; for help, write to <mail>{email}</mail>.",
+      "termsLink": "Terms of Use",
+      "buy": "Buy Pro for {period}",
+      "upgrade": "Upgrade to {period}",
+      "currentPeriod": "Your current period",
+      "priceChanged": "The price just changed. Check it before you buy.",
+      "buyUnavailable": "Couldn’t create the order. Try again in a few minutes.",
+      "nextPeriod": "Next period: {from} – {to}",
+      "thenPeriod": "Then: {from} – {to}",
+      "proLine": "Practice more, with AI writing questions and looking up words with you.",
+      "until": "Through {date}",
+      "freeList": {
+        "review": "Card reviews, review schedule, email reminders",
+        "lookup": "Look up and quick add, up to {groups, plural, one {# deck} other {# decks}}",
+        "sessions": "{count, number} practice sessions a day",
+        "ai": "{practice, number} AI questions and {lookup, number} AI lookups a month",
+        "aiOff": "AI questions and AI lookup: Pro only"
+      },
+      "proList": {
+        "aiWrite": "AI writes practice sentences for each word you learn",
+        "aiLookup": "AI lookup when the dictionary has no entry",
+        "ai": "{practice, number} AI questions and {lookup, number} AI lookups a month",
+        "sessions": "{count, number} practice sessions a day",
+        "allFree": "Everything in Free"
+      },
+      "compare": "Compare plans in detail",
+      "compareTable": {
+        "feature": "Feature",
+        "review": "Card reviews and schedule",
+        "reminders": "Email reminders",
+        "groups": "Decks",
+        "sessions": "Practice sessions a day",
+        "ai": "New AI questions a month",
+        "lookup": "AI lookups a month",
+        "yes": "Yes"
+      }
+    },
+    "deck": {
+      "learn": "Learn",
+      "recall": "Review",
+      "recallExtra": "Extra review"
+    },
+    "recall": {
+      "header": "Review · {group}",
+      "headerNoName": "Review",
+      "doneTitle": "{count, plural, one {# word} other {# words}} done",
+      "leveledUp": "Correct, moved up",
+      "correctKept": "Correct, same level",
+      "wrongKept": "Incorrect, same level",
+      "needsReview": "Needs review",
+      "newLeftTitle": "{count, plural, one {# new word} other {# new words}} left in this deck",
+      "newLeftBody": "Learn them now and they join tomorrow’s review.",
+      "again": "Review more",
+      "home": "Back to Today",
+      "back": "Back to the deck",
+      "nothingTitle": "This deck has no learned words yet",
+      "nothingBody": "Learn a few new words first, then come back to review.",
+      "noteLeveled": "{lemma} moved up to {level}.",
+      "noteKept": "{lemma} stays at {level}.",
+      "ring": "{correct, number}/{total, number} correct",
+      "ringCaption": "correct",
+      "compare": {
+        "label": "Letters: you typed {typed}, the answer is {answer}",
+        "typed": "you typed",
+        "answer": "answer"
+      }
+    },
+    "streak": {
+      "days": "{days, plural, one {# day} other {# days}} in a row"
+    },
+    "stack": {
+      "words": "{count, plural, one {# word} other {# words}}",
+      "empty": "empty deck",
+      "waiting": "{count, plural, one {card waiting} other {cards waiting}}",
+      "next": "Next",
+      "done": "✓ Done for today",
+      "last": "Last reviewed",
+      "noWords": "No words yet",
+      "addHint": "Add words to start"
+    }
   }
 }

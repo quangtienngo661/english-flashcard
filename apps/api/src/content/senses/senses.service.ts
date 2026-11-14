@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
-import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, type RevisionContent } from './revision-content.js';
+import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, revisionIpa, type RevisionContent } from './revision-content.js';
 
 export type CreateSenseInput = {
   entryId: string; contextLabel: string | null; content?: Partial<RevisionContent>;
@@ -14,16 +14,24 @@ export type SaveDraftResult = { revisionId: string; revisionNo: number; changed:
 export type MarkRevisionItem ={ senseId: string; revision: number; action: 'reviewed' | 'rejected' };
 export type MarkRevisionResult = { senseId: string; ok: boolean; reason?: string };
 export type TopicLookup = (codes: string[]) => Promise<Array<{ code: string; archivedAt: Date | null }>>;
-const empty: RevisionContent = { glossVi: null, definitionEn: null, examplesEn: [], topicCodes: [], acceptedForms: [] };
+export const emptyContent: RevisionContent = { glossVi: null, definitionEn: null, examplesEn: [], topicCodes: [], acceptedForms: [] };
 const revisionInclude = { texts: true } satisfies Prisma.SenseRevisionInclude;
-type RevisionRow = Prisma.SenseRevisionGetPayload<{ include: typeof revisionInclude }>;
+export type RevisionWithTexts = Prisma.SenseRevisionGetPayload<{ include: typeof revisionInclude }>;
+type RevisionRow = RevisionWithTexts;
+
+/** Newest revision a reviewer has not rejected: the base a new draft builds on, so rejected text is never carried forward (T1). */
+export function latestUsableRevision(tx: Prisma.TransactionClient, senseId: string): Promise<RevisionWithTexts | null> {
+  return tx.senseRevision.findFirst({
+    where: { senseId, status: { not: 'rejected' } }, orderBy: { revisionNo: 'desc' }, include: revisionInclude,
+  });
+}
 
 function readContent(revision: RevisionRow): RevisionContent {
   return {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
-    ...revisionFormOf(revision),
+    ...revisionFormOf(revision), ...revisionIpa(revision),
   };
 }
 
@@ -44,6 +52,7 @@ function revisionData(content: RevisionContent, source: 'ui' | 'csv', actorId: s
     draftSource: source, createdBy: actorId, status: 'draft', contentHash: contentHash(content),
     examples: content.examplesEn, topicCodes: content.topicCodes, acceptedForms: content.acceptedForms,
     formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
+    ipaUk: content.ipaUk ?? null, ipaUs: content.ipaUs ?? null, ipaSourceId: content.ipaSourceId ?? null, ipaCustom: content.ipaCustom ?? null,
     texts: { create: texts },
   };
 }
@@ -70,7 +79,7 @@ export class SensesService {
       entryId: entry.id, contextLabel, state: { not: 'retired' },
       OR: [{ replacesSenseId: null }, { liveRevisionId: { not: null } }],
     }, select: { id: true } })) throw new ContentRuleError('sense-exists');
-    const content = mergeContent(empty, normalizeContent(input.content ?? {}, entry.lemma));
+    const content = mergeContent(emptyContent, normalizeContent(input.content ?? {}, entry.lemma));
     await validateTopics(content.topicCodes, topics);
     const sense = await tx.sense.create({ data: {
       entryId: entry.id, contextLabel, replacesSenseId: input.replacesSenseId,
@@ -88,7 +97,10 @@ export class SensesService {
     const latest = sense.revisions[0];
     if (!latest || input.baseRevision !== latest.revisionNo) throw new ContentRuleError('stale-revision');
     const patch = normalizeContent(input.content, sense.entry.lemma);
-    const base = readContent(latest);
+    // After a rejection the base is the last usable revision (or empty content), never the rejected text.
+    const latestRejected = latest.status === 'rejected';
+    const usable = latestRejected ? await latestUsableRevision(tx, sense.id) : latest;
+    const base = usable ? readContent(usable) : { ...emptyContent };
     let droppedTopics: string[] = [];
     if (patch.topicCodes !== undefined) {
       // Only codes the caller sends are validated (unknown-topic / topic-archived).
@@ -101,7 +113,7 @@ export class SensesService {
       base.topicCodes = base.topicCodes.filter((code) => !archived.has(code));
     }
     const content = mergeContent(base, patch);
-    if (contentHash(content) === latest.contentHash) {
+    if (!latestRejected && contentHash(content) === latest.contentHash) {
       return { revisionId: latest.id, revisionNo: latest.revisionNo, changed: false, droppedTopics: [] };
     }
     await tx.senseRevision.updateMany({ where: { senseId: sense.id, status: { in: ['draft', 'reviewed'] } }, data: { status: 'superseded' } });
@@ -111,7 +123,10 @@ export class SensesService {
     return { revisionId: revision.id, revisionNo: revision.revisionNo, changed: true, droppedTopics };
   }
 
-  async markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
+  async markRevisions(
+    tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string,
+  ): Promise<MarkRevisionResult[]> {
+    const now = new Date();
     const results: MarkRevisionResult[] = [];
     for (const item of items) {
       const sense = await tx.sense.findUnique({ where: { id: item.senseId }, include: {
@@ -125,9 +140,13 @@ export class SensesService {
         results.push({ senseId: item.senseId, ok: false, reason });
         continue;
       }
-      await tx.senseRevision.update({ where: { id: latest.id }, data: { status: item.action } });
+      await tx.senseRevision.update({ where: { id: latest.id }, data: {
+        status: item.action, reviewedBy: actorId, reviewedAt: now,
+      } });
       if (item.action === 'rejected' && sense.replacesSenseId !== null && sense.liveRevisionId === null) {
-        await tx.sense.update({ where: { id: sense.id }, data: { state: 'retired' } });
+        await tx.sense.update({ where: { id: sense.id }, data: {
+          state: 'retired', stateChangedBy: actorId, stateChangedAt: now,
+        } });
       }
       results.push({ senseId: item.senseId, ok: true });
     }

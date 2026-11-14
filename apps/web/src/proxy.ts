@@ -2,12 +2,35 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { pickLocale, readCountry } from './i18n/pick-locale';
 import { LOCALE_COOKIE, routing } from './i18n/routing';
+import { withAppCsp } from './lib/app-csp';
+import { landingLocaleRedirect } from './lib/landing-locale';
+import { LEARNER_APP_ENABLED, learnerAppRedirect } from './lib/learner-app-flag';
 
 const handleI18nRouting = createMiddleware(routing);
 
 // Only "/" picks a locale by cookie, country and Accept-Language (spec §4.1); /vi and /en never redirect.
 export function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname !== '/') return handleI18nRouting(request);
+  // D8, E20: with the learner app off, /{locale}/app/* goes back to the landing (query dropped).
+  const appRedirect = learnerAppRedirect(request.nextUrl.pathname, LEARNER_APP_ENABLED);
+  if (appRedirect) {
+    const url = request.nextUrl.clone();
+    url.pathname = appRedirect;
+    url.search = '';
+    const response = NextResponse.redirect(url, 307);
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  }
+  // L4: the English landing is not translated yet, so the English home goes to the Vietnamese one (query kept).
+  const landingRedirect = landingLocaleRedirect(request.nextUrl.pathname);
+  if (landingRedirect) {
+    const url = request.nextUrl.clone();
+    url.pathname = landingRedirect;
+    const response = NextResponse.redirect(url, 307);
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  }
+  // /vi/app and /en/app get a policy with a nonce made for this request (launch prep B design §5.4); every other path is passed on as it is.
+  if (request.nextUrl.pathname !== '/') return withAppCsp(request, handleI18nRouting);
 
   const locale = pickLocale({
     cookie: request.cookies.get(LOCALE_COOKIE)?.value,

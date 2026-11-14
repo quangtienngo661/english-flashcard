@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { ApiError, NetworkError } from '../../api/problem';
 import { useIdempotencyKey } from '../../api/idempotency';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -29,7 +29,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const format = useFormatter();
   const api = useApi();
   const navigate = useNavigate();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const queryClient = useQueryClient();
   const sources = useQuery({ queryKey: ['sources'], queryFn: () => listSources(api) });
 
@@ -38,7 +38,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const [rejected, setRejected] = useState<Rejected | null>(null);
   const [levelSourceId, setLevelSourceId] = useState('');
   const [levelError, setLevelError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const [canRetry, setCanRetry] = useState(false);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -91,7 +91,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
       void queryClient.invalidateQueries({ queryKey: ['uploads'] });
       void navigate(`/uploads/${created.batch_id}`);
     } catch (e) {
-      setBanner(errorMessage(e));
+      setBanner(errorDetails(e));
       if (e instanceof NetworkError) setCanRetry(true);
       else if (e instanceof ApiError) {
         if (e.problem.status === 429) countdown.start(e.retryAfterSeconds ?? 1);
@@ -132,6 +132,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
       {banner && (
         <Banner
           variant="error"
+          code={banner.code}
           action={
             canRetry ? (
               <Button variant="secondary" onPress={() => void submit()}>
@@ -140,7 +141,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
             ) : undefined
           }
         >
-          {banner}
+          {banner.message}
         </Banner>
       )}
       <FileDrop

@@ -1,0 +1,153 @@
+# pnpm smoke:buoc-0-3-fixes — two runs, each on a fresh english_learning_smoke_fixes (API + worker built from branch test/buoc-0-3-m5-smoke @ 2db0a5a plus this script), 21/10/2026
+# stdout+stderr of each run, unedited; exit code after each
+
+## Run 1
+
+[1] 22:02:04Z setup: API reachable; admin and learners (psql, signed in through the API); a content source
+    ok — database english_learning_smoke_fixes; admin smokefx-admin-dac29d2b@example.com; 14 learners signed in; source 206a2f67-eb74-48ca-92f1-a7b3008dd9fa
+
+[2] 22:02:06Z M2: FE1 age, FE5 terms, register Lan with names, PATCH /v1/me birth_date
+    ok — FE1 12-year-old → 400 age-below-minimum; FE5 accept_terms false → 400 validation-failed; no user created
+    ok — Lan registered (6f7db4b5-bd94-421a-b953-6b388f690fbf), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17
+    ok — PATCH /v1/me with birth_date → 400 validation-failed
+
+[3] 22:02:08Z C2: FE32 time zones: "+07:00" refused, "asia/ho_chi_minh" stored as Asia/Saigon
+    ok — PATCH "+07:00" → 400 validation-failed; PATCH "asia/ho_chi_minh" → 200, GET /v1/me timezone Asia/Saigon
+
+[4] 22:02:08Z C1 FE26: 10 learners create a group at once
+    ok — FE26 10 learners × POST /v1/groups at once → 10 × 201
+
+[5] 22:02:08Z C1 FE27: one learner creates 10 groups at once, 10 keys
+    ok — FE27 one learner, 10 keys at once → 10 × 201, 10 distinct groups
+
+[6] 22:02:08Z C1 FE29: same key twice while the first request waits on the Learning lock
+    ok — FE29 same key twice while the first waits on the Learning lock → second 409 Retry-After: 2; first 201 after 2334 ms; a third call replays it
+
+[7] 22:02:12Z C1 B0E1: a key left in_progress past its lease
+    ok — B0E1 key left in_progress 1 h ago → 409 idempotency-key-abandoned
+
+[8] 22:02:12Z C1 key reuse: same key + different body
+    ok — same key + different body → 400
+
+[9] 22:02:12Z C1 rate limit: the 31st user.write in a minute
+    ok — rate limit: 30 × PATCH /v1/me → 200, the 31st → 429 with Retry-After: 47
+
+[10] 22:02:13Z N4/N5: lock Lan: refresh 401, login 403 account-locked; FE11 lock self 409; search q; unlock
+    ok — refresh before the lock → 200 (control); after: refresh → 401, login with the right password → 403 account-locked
+    ok — FE11 admin locks self → 409
+    ok — list ?q=lan finds Lan (locked); ?q=a → 400 validation-failed
+    ok — unlock → login 200
+
+[11] 22:02:13Z T1: reject revision 2 → publish it refused revision-rejected; FE19 quick publish → revision 3
+    ok — publish of rejected revision 2 → refused revision-rejected; quick publish {revision: 2} → revision 3 published
+
+[12] 22:02:14Z T2: import A (go), import C (went form_of go), revert A → go kept entry-in-use
+    ok — revert of A keeps zfgvrkycb (entry-in-use: zfwaslrwz is its past form)
+
+[13] 22:02:16Z T3: FE17 re-upload of an unchanged file after a hand edit → row unchanged, live content still the edit
+    ok — re-upload of F → row unchanged (no create/update); live example is still the hand edit
+
+[14] 22:02:18Z T4: round-2 rejected.csv re-uploaded as it is → accepted
+    ok — round-2 rejected.csv re-uploaded → batch partial, the row rejected only for its bad pos; one _row/_error pair
+
+[15] C3: covered by unit test (no API step)
+
+[16] 22:02:19Z T5: user B's private word never appears in A's /v1/lookup (control: A's own does)
+    ok — A's lookup never shows B's private word; A's own private word shows for A (control), B's for B
+
+Summary (14s):
+  setup: PASS
+  M2: PASS
+  C2: PASS
+  C1 FE26: PASS
+  C1 FE27: PASS
+  C1 FE29: PASS
+  C1 B0E1: PASS
+  C1 key reuse: PASS
+  C1 rate limit: PASS
+  N4/N5: PASS
+  T1: PASS
+  T2: PASS
+  T3: PASS
+  T4: PASS
+  C3: covered by unit test (no API step)
+  T5: PASS
+
+ALL STEPS MATCHED
+exit code: 0
+
+## Run 2
+
+[1] 22:02:32Z setup: API reachable; admin and learners (psql, signed in through the API); a content source
+    ok — database english_learning_smoke_fixes; admin smokefx-admin-d09b2559@example.com; 14 learners signed in; source dfd80a91-d74a-4830-8701-c1541f78219a
+
+[2] 22:02:34Z M2: FE1 age, FE5 terms, register Lan with names, PATCH /v1/me birth_date
+    ok — FE1 12-year-old → 400 age-below-minimum; FE5 accept_terms false → 400 validation-failed; no user created
+    ok — Lan registered (61501797-c773-442e-a0d5-3e3469e58eb2), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17
+    ok — PATCH /v1/me with birth_date → 400 validation-failed
+
+[3] 22:02:36Z C2: FE32 time zones: "+07:00" refused, "asia/ho_chi_minh" stored as Asia/Saigon
+    ok — PATCH "+07:00" → 400 validation-failed; PATCH "asia/ho_chi_minh" → 200, GET /v1/me timezone Asia/Saigon
+
+[4] 22:02:36Z C1 FE26: 10 learners create a group at once
+    ok — FE26 10 learners × POST /v1/groups at once → 10 × 201
+
+[5] 22:02:36Z C1 FE27: one learner creates 10 groups at once, 10 keys
+    ok — FE27 one learner, 10 keys at once → 10 × 201, 10 distinct groups
+
+[6] 22:02:36Z C1 FE29: same key twice while the first request waits on the Learning lock
+    ok — FE29 same key twice while the first waits on the Learning lock → second 409 Retry-After: 2; first 201 after 2320 ms; a third call replays it
+
+[7] 22:02:40Z C1 B0E1: a key left in_progress past its lease
+    ok — B0E1 key left in_progress 1 h ago → 409 idempotency-key-abandoned
+
+[8] 22:02:40Z C1 key reuse: same key + different body
+    ok — same key + different body → 400
+
+[9] 22:02:40Z C1 rate limit: the 31st user.write in a minute
+    (waiting 20s for a fresh rate-limit minute)
+    ok — rate limit: 30 × PATCH /v1/me → 200, the 31st → 429 with Retry-After: 60
+
+[10] 22:03:00Z N4/N5: lock Lan: refresh 401, login 403 account-locked; FE11 lock self 409; search q; unlock
+    ok — refresh before the lock → 200 (control); after: refresh → 401, login with the right password → 403 account-locked
+    ok — FE11 admin locks self → 409
+    ok — list ?q=lan finds Lan (locked); ?q=a → 400 validation-failed
+    ok — unlock → login 200
+
+[11] 22:03:00Z T1: reject revision 2 → publish it refused revision-rejected; FE19 quick publish → revision 3
+    ok — publish of rejected revision 2 → refused revision-rejected; quick publish {revision: 2} → revision 3 published
+
+[12] 22:03:01Z T2: import A (go), import C (went form_of go), revert A → go kept entry-in-use
+    ok — revert of A keeps zfgonozat (entry-in-use: zfwszrjav is its past form)
+
+[13] 22:03:03Z T3: FE17 re-upload of an unchanged file after a hand edit → row unchanged, live content still the edit
+    ok — re-upload of F → row unchanged (no create/update); live example is still the hand edit
+
+[14] 22:03:05Z T4: round-2 rejected.csv re-uploaded as it is → accepted
+    ok — round-2 rejected.csv re-uploaded → batch partial, the row rejected only for its bad pos; one _row/_error pair
+
+[15] C3: covered by unit test (no API step)
+
+[16] 22:03:06Z T5: user B's private word never appears in A's /v1/lookup (control: A's own does)
+    ok — A's lookup never shows B's private word; A's own private word shows for A (control), B's for B
+
+Summary (34s):
+  setup: PASS
+  M2: PASS
+  C2: PASS
+  C1 FE26: PASS
+  C1 FE27: PASS
+  C1 FE29: PASS
+  C1 B0E1: PASS
+  C1 key reuse: PASS
+  C1 rate limit: PASS
+  N4/N5: PASS
+  T1: PASS
+  T2: PASS
+  T3: PASS
+  T4: PASS
+  C3: covered by unit test (no API step)
+  T5: PASS
+
+ALL STEPS MATCHED
+exit code: 0

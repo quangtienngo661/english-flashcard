@@ -10,6 +10,8 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -39,11 +41,17 @@ async function waitForApi(timeoutMs = 20_000) {
   }
 }
 
-async function otpCodeFor(email) {
+async function mailsTo(email) {
+  const list = await (await fetch(`${MAILPIT}/api/v1/messages?limit=500`)).json();
+  return (list.messages ?? []).filter((m) => m.To?.[0]?.Address === email)
+    .sort((a, b) => (a.Created < b.Created ? 1 : -1));
+}
+
+async function otpCodeFor(email, atLeast) {
   const deadline = Date.now() + 10_000;
   for (;;) {
-    const list = await (await fetch(`${MAILPIT}/api/v1/messages`)).json();
-    const message = list.messages?.find((m) => m.To?.[0]?.Address === email);
+    const mails = await mailsTo(email);
+    const message = mails.length >= atLeast ? mails[0] : null;
     if (message) {
       const full = await (await fetch(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
       const match = (full.Text ?? '').match(/(\d{6})/);
@@ -57,23 +65,18 @@ async function otpCodeFor(email) {
 async function registerAdmin() {
   const email = `smoke-admin-${run}@example.com`;
   const password = 'Smoke-Test-Pass-9!';
-  const registered = await expect(
+  const before = (await mailsTo(email)).length;
+  await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 201, 'register admin',
   ).then((r) => r.json());
-  await expect(
-    await fetch(`${BASE}/v1/auth/otp`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
-      body: JSON.stringify({ purpose: 'verify_email' }),
-    }), 202, 'request verify-email OTP',
-  );
-  const code = await otpCodeFor(email);
+  const code = await otpCodeFor(email, before + 1);
   await expect(
     await fetch(`${BASE}/v1/auth/verify-email`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
-      body: JSON.stringify({ code }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 200, 'verify admin email',
   );
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
@@ -81,7 +84,7 @@ async function registerAdmin() {
   const login = await expect(
     await fetch(`${BASE}/v1/auth/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, client: 'web' }),
+      body: JSON.stringify({ email, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 200, 'login as admin',
   ).then((r) => r.json());
   ok(`admin ${email} registered, verified, granted, logged in`);
@@ -90,20 +93,29 @@ async function registerAdmin() {
 
 async function registerLearner() {
   const email = `smoke-learner-${run}@example.com`;
-  const registered = await expect(
+  const password = 'Smoke-Test-Pass-9!';
+  const before = (await mailsTo(email)).length;
+  await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: 'Smoke-Test-Pass-9!', timezone: 'Asia/Ho_Chi_Minh', client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 201, 'register learner',
+  ).then((r) => r.json());
+  const code = await otpCodeFor(email, before + 1);
+  const verified = await expect(
+    await fetch(`${BASE}/v1/auth/verify-email`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
+    }), 200, 'verify learner email',
   ).then((r) => r.json());
   await expect(
     await fetch(`${BASE}/v1/me`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${verified.access_token}` },
       body: JSON.stringify({ native_language: 'vi' }),
     }), 200, 'set learner native_language',
   );
-  ok(`learner ${email} registered with native_language=vi`);
-  return registered.access_token;
+  ok(`learner ${email} registered, verified with native_language=vi`);
+  return verified.access_token;
 }
 
 async function registerSource(token) {
@@ -186,9 +198,14 @@ async function main() {
     await fetch(`${BASE}/v1/admin/content/senses/export?status=unpublishable`, { headers: { Authorization: `Bearer ${adminToken}` } }),
     200, 'export unpublishable list',
   ).then((r) => r.text());
-  const gapRow = unpublishableBefore.split('\r\n').find((line) => line.startsWith(`${lemma}-gap,`));
+  const exportLines = unpublishableBefore.split('\r\n');
+  const gapRow = exportLines.find((line) => line.startsWith(`${lemma}-gap,`));
   if (!gapRow) throw new Error(`Expected ${lemma}-gap in the unpublishable export:\n${unpublishableBefore}`);
-  const [, , , , , , , , , , senseId, revision] = gapRow.split(',');
+  // Read by header name: the export gains columns over time (form_of, inflections in 6652985).
+  const exportHeader = exportLines[0].replace(/^﻿/, '').split(',');
+  const gapCells = gapRow.split(',');
+  const senseId = gapCells[exportHeader.indexOf('sense_id')];
+  const revision = gapCells[exportHeader.indexOf('revision')];
   const fillUpload = await upload(adminToken, sourceId, [
     'headword,pos,CEFR,gloss_vi,definition_en,example_en_1,topics,sense_id,revision',
     `${lemma}-gap,noun,A1,lòng can đảm,Bravery.,She showed it.,business,${senseId},${revision}`,

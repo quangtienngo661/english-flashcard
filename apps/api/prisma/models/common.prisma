@@ -10,6 +10,7 @@ model IdempotencyKey {
   updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
   @@unique([key, userId, endpoint])
+  @@index([userId])
   @@map("idempotency_keys")
 }
 

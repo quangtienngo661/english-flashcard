@@ -108,6 +108,30 @@ test('UBE27 the job row turns "Hoàn tất" when the panel sees it finish', asyn
   await expect(row.getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 8000 });
 });
 
+test('stopping a running job: the confirmation has no serious axe violations; confirming posts once and the job reads "Đã dừng"', async ({ page }) => {
+  let stopped = false;
+  const current = () => (stopped ? job({ status: 'failed', cancelled: true, counters: { processed: 480, pending: 770, published: 480, already_published: 0, refused: 0 } })
+    : job({ status: 'running', finished_at: null, counters: { processed: 480, pending: 770, published: 480, already_published: 0, refused: 0 } }));
+  await signedInAs(page, 'editor', {
+    ...base,
+    [`GET ${JOBS}`]: () => ({ json: { items: [current()], next_page_token: null } }),
+    [`GET ${JOBS}/${ID}`]: () => ({ json: current() }),
+    [`POST ${JOBS}/${ID}/cancel`]: () => {
+      stopped = true;
+      return { json: current() };
+    },
+  });
+  await page.goto(`/publish-jobs/${ID}`);
+  await page.getByTestId('detail-panel').getByRole('button', { name: t.stop }).click();
+  const dialog = page.getByRole('dialog', { name: t.stopTitle.replace('{id}', 'a3f2c1') });
+  await expect(dialog.getByText(t.stopBody)).toBeVisible();
+  expect(await scan(page)).toEqual([]);
+  await dialog.getByRole('button', { name: t.stop }).click();
+  await expect(page.getByTestId('detail-panel').getByText(vi.status.cancelled, { exact: true })).toBeVisible();
+  await expect(page.getByTestId('detail-panel').getByRole('button', { name: t.stop })).toHaveCount(0);
+  expect(requestCount(page, 'POST', `${JOBS}/${ID}/cancel`)).toBe(1);
+});
+
 test('Review Focus 5: Back after "Publish lô này" in the batch panel reopens that batch and polls it again', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'one layout is enough');
   const at = '2026-10-14T09:30:00.000Z';

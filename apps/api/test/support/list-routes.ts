@@ -30,3 +30,10 @@ export function listRoutes(app: INestApplication): Array<{ method: string; path:
   }
   return routes.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
 }
+
+/** `PermissionGuard` lets a route without `@RequirePermission` through, so every `/v1/admin/**` route must declare one (B2#66). */
+export function adminRoutesWithoutPermission(routes: ReturnType<typeof listRoutes>): string[] {
+  return routes
+    .filter(({ path, permissions }) => path.startsWith('/v1/admin/') && !permissions?.length)
+    .map(({ method, path }) => `${method} ${path}`);
+}
