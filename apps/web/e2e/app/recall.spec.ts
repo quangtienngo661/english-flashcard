@@ -102,9 +102,9 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(await seriousViolations(page), `${scheme} compare`).toEqual([]);
 
     await page.getByRole('button', { name: /Next/ }).click();
-    await expect(page.getByRole('heading', { name: '2 words done.' })).toBeVisible();
-    await expect(page.getByRole('img', { name: '1/2 right' })).toBeVisible();
-    // P.13 (chỗ 7, mockup L1285): the result boxes are surface cards; "Wrong, same level" counts in ink, "Review again" in fail.
+    await expect(page.getByRole('heading', { name: '2 words done' })).toBeVisible();
+    await expect(page.getByRole('img', { name: '1/2 correct' })).toBeVisible();
+    // P.13 (chỗ 7, mockup L1285): the result boxes are surface cards; "Incorrect, same level" counts in ink, "Needs review" in fail.
     for (const [label, token] of [[en.recall.leveledUp, 'pass'], [en.recall.wrongKept, 'ink'], [en.recall.needsReview, 'fail']] as const) {
       const box = page.getByText(label, { exact: true }).locator('..');
       const colours = await box.evaluate((el, name) => {

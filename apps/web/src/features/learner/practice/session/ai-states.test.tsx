@@ -79,7 +79,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     }) });
     await screen.findByText('Writing the question…');
     await act(() => vi.advanceTimersByTimeAsync(61_000));
-    expect(await screen.findByText('Something went wrong on our side.')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t write the AI question')).toBeInTheDocument();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/next`).at(-1)?.body).toEqual({ retry_ai: true }));
@@ -110,7 +110,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
       'GET /v1/practice/sessions/current': noItem,
       [NEXT]: nextAnswers(unavailable(reason), { state: 'question', session: view({ asked: 5 }), item: mcq('item-5') }),
     }) });
-    expect(await screen.findByText('Something went wrong on our side.')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t write the AI question')).toBeInTheDocument();
     expect(screen.getByText('If you stop, the session stays open and you can finish it later.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
@@ -119,8 +119,8 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
 
   it('T21: the "AI is not available" heading and its line come inside an alert, so the swap is announced', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes({ 'GET /v1/practice/sessions/current': noItem, [NEXT]: nextAnswers(unavailable('ai-failed')) }) });
-    await screen.findByRole('heading', { name: 'Something went wrong on our side.' });
-    expect(screen.queryAllByRole('alert').some((alert) => within(alert).queryByRole('heading', { name: 'Something went wrong on our side.' }))).toBe(true);
+    await screen.findByRole('heading', { name: 'Couldn’t write the AI question' });
+    expect(screen.queryAllByRole('alert').some((alert) => within(alert).queryByRole('heading', { name: 'Couldn’t write the AI question' }))).toBe(true);
   });
 
   it('[Để sau] leaves the session open and goes back to Luyện tập', async () => {
@@ -194,8 +194,8 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(screen.queryByRole('link', { name: 'Check the word in My words' })).toBeNull();
     await userEvent.keyboard('1');
     expect(await screen.findByRole('link', { name: 'Check the word in My words' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
-    expect(screen.getByRole('button', { name: /Know/ })).toHaveTextContent(/^Know$/);
-    expect(screen.getByRole('button', { name: /Review again/ })).toHaveTextContent(/^Review again$/);
+    expect(screen.getByRole('button', { name: /Known/ })).toHaveTextContent(/^Known$/);
+    expect(screen.getByRole('button', { name: /Needs review/ })).toHaveTextContent(/^Needs review$/);
     expect(screen.queryByRole('button', { name: /Next/ })).not.toBeInTheDocument();
   });
 
@@ -210,7 +210,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     }) });
     await screen.findByText('Writing the question…');
     await act(() => vi.advanceTimersByTimeAsync(2_100));
-    expect(await screen.findByText('Something went wrong on our side.')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t write the AI question')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(screen.queryByText('Writing the question…')).toBeNull();
   });

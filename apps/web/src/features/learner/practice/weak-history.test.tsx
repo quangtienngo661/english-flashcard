@@ -87,7 +87,7 @@ describe('WeakWordsPage (K/56)', () => {
         'GET /v1/practice/weak-words?page_size=50': () => Response.json({ items: [], next_page_token: null }),
       }),
     });
-    expect(await screen.findByText('Chưa có từ nào hay sai.')).toBeInTheDocument();
+    expect(await screen.findByText('Chưa có từ nào hay sai')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Luyện/ })).not.toBeInTheDocument();
   });
 

@@ -95,7 +95,7 @@ describe('HouseAd (launch prep B design §4.2, LB2A1, LB2A2, LB2E7–LB2E16)', (
     await mount({ locale: 'en' });
     await go('/en/app/lookup');
     expect(await screen.findByRole('dialog', { name: 'Get more with Pro' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'See Pro' })).toHaveAttribute('href', '/en/app/plans');
+    expect(screen.getByRole('link', { name: 'See the Pro plan' })).toHaveAttribute('href', '/en/app/plans');
   });
 
   // M9 minor: the effect used to note the new page before checking the account, so a change made while `me` loaded was never counted.

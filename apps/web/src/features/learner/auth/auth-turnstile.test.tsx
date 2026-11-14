@@ -78,7 +78,7 @@ describe('LoginForm and the bot check', () => {
     });
     await fillLogin();
     await press('Đăng nhập');
-    expect(await screen.findByText('Email hoặc mật khẩu chưa đúng.')).toBeInTheDocument();
+    expect(await screen.findByText('Email hoặc mật khẩu không đúng. Thử lại.')).toBeInTheDocument();
     expect(widget.resets).toBe(1);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled());
     await press('Đăng nhập');

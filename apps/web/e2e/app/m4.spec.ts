@@ -184,15 +184,15 @@ test.describe('M4 flows (mocked API)', () => {
     await page.keyboard.press('Enter');
 
     // Round prompt, one more question, then the summary.
-    await expect(page.getByText("You've done all 3 words")).toBeVisible();
+    await expect(page.getByText("You’ve done all 3 words")).toBeVisible();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('textbox', { name: en.session.answerLabel })).toBeVisible();
     await page.getByRole('textbox', { name: en.session.answerLabel }).fill('cache');
     await page.keyboard.press('Enter');
     await expect(page.getByText(en.session.right, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Know/ }).click();
-    await expect(page.getByRole('heading', { name: '4 questions done.' })).toBeVisible();
-    await page.getByRole('list', { name: /Review again · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
+    await expect(page.getByRole('heading', { name: '4 questions done' })).toBeVisible();
+    await page.getByRole('list', { name: /Needs review · 1 word/ }).getByRole('button', { name: en.session.summary.review }).click();
     await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/report`).map((r) => r.body)).toEqual([{ reason: 'meaning_wrong' }]);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/answer`)).toHaveLength(0);
@@ -294,7 +294,7 @@ const PAGES: Shot[] = [
   },
   { path: 'practice/session', ready: (p) => expect(p.getByText(LONG_OPTION)).toBeVisible() },
   // M5.5: phones show only the word and its ✓/✗ chips (Figma 119:4482), so wait for a chip, not the meaning.
-  { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|wrong)$/ }).first()).toBeVisible() },
+  { path: 'practice/weak', ready: (p) => expect(p.getByRole('img', { name: /(câu sai|incorrect)$/ }).first()).toBeVisible() },
   { path: 'settings/reports', ready: (p) => expect(p.getByText('Câu sai ngữ pháp hoặc không tự nhiên', { exact: false })).toBeVisible() },
   { path: 'plans', ready: (p) => expect(p.getByRole('heading', { level: 1 })).toBeVisible() },
 ];

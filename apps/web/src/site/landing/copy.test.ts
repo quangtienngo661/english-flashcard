@@ -58,8 +58,9 @@ describe('Landing copy (M8.5)', () => {
     }
   });
 
-  it('the page title is unchanged until the SEO task (M8.8)', () => {
+  it('the page title is unchanged until the SEO task (M8.8); the English one is translated (UI copy round 2, Q7)', () => {
     expect(vi.Metadata.title).toBe('Wordmet · Học từ vựng tiếng Anh, ghi nhớ và vận dụng');
+    expect(en.Metadata.title).toBe('Wordmet · Learn, remember and use English vocabulary');
   });
 
   it('fill replaces each {name} and leaves unknown ones', () => {

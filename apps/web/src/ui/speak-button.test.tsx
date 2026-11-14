@@ -67,7 +67,7 @@ describe('SpeakButton (đợt C §5.5, DC24, DC34)', () => {
     renderApp(<SpeakButton text="lead" voice="uk" audioUrl={null} />);
     const button = screen.getByRole('button', { name: 'Nghe giọng Anh-Anh' });
     expect(button).toHaveAttribute('aria-disabled', 'true');
-    expect(button).toHaveAccessibleDescription('Đang tạo giọng đọc');
+    expect(button).toHaveAccessibleDescription('Đang tạo âm thanh');
     await userEvent.click(button);
     expect(synth.speak).not.toHaveBeenCalled();
     expect(played).toEqual([]);

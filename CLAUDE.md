@@ -393,6 +393,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 Admin chọn số câu tối đa (cố định hoặc bằng số từ của phạm vi, trần 100), số câu AI tối đa (cố định hoặc tỉ lệ, làm tròn xuống) và cách xếp câu AI. Web người học
 **chưa** gửi `ai_count`: danh sách việc cho đợt web ở cuối delivery record. Design, decisions, plan: `docs/superpowers/{specs,decisions,plans}/2026-11-09-practice-ai-count*`.
 
+## Sửa chữ giao diện vòng 2 — plan & as-built
+
+`docs/deliveries/ui-copy-round-2.md` (14/11/2026; nhánh `fix/ui-copy-round-2`). Audit, tham khảo, FAQ và report: `docs/audit/2026-11-14-ui-copy/`. Quy ước đã chốt: EN "deck", nút "Needs review" / "Known", "CEFR level" cho trình độ, VI "câu đã gặp", lỗi theo mẫu "Không … được. [việc cần làm].", không "hãy". FAQ landing nạp qua migration `20261114180000_landing_faq_copy`; bản dự phòng phải giống migration (có test).
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

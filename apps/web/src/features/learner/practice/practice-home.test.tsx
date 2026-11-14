@@ -181,7 +181,7 @@ describe('PracticePage (K/51)', () => {
 describe('Out of sessions (K/55, E25)', () => {
   it('no session left today: the big card says so, with the refill time and [Ôn thẻ]; no plans button (D7)', async () => {
     renderApp(<PracticePage />, { routes: routes({ 'GET /v1/me/entitlements': () => Response.json(entitlements(3)) }) });
-    const hero = await screen.findByRole('region', { name: 'Mai luyện tiếp nhé' });
+    const hero = await screen.findByRole('region', { name: 'Luyện tiếp vào ngày mai' });
     expect(within(hero).getByText('Hết phiên luyện hôm nay')).toBeInTheDocument();
     expect(within(hero).getByText('Gói Miễn phí có 3 phiên luyện mỗi ngày, mở lại lúc 0:00. Trong lúc chờ, ôn thẻ không giới hạn.')).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Ôn thẻ' })).toHaveAttribute('href', '/vi/app');
@@ -206,7 +206,7 @@ describe('Out of sessions (K/55, E25)', () => {
     });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
     await userEvent.click(await within(hero).findByRole('button', { name: 'Bắt đầu 12 câu' }));
-    expect(await screen.findByRole('region', { name: 'Mai luyện tiếp nhé' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Luyện tiếp vào ngày mai' })).toBeInTheDocument();
     await waitFor(() => expect(view.count('GET', '/v1/me/entitlements')).toBeGreaterThan(1));
     expect(hardReplace).not.toHaveBeenCalled();
   });

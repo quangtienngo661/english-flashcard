@@ -76,7 +76,8 @@ describe('TransactionsPage (Figma 122:4203 / 122:4354)', () => {
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(
       ['tháng 11, 2026', 'tháng 8, 2026', 'tháng 7, 2026', 'tháng 6, 2026']);
     expect(screen.getAllByRole('list')).toHaveLength(4);
-    expect(screen.getByText('ngày theo múi giờ của bạn · bấm một dòng để xem cổng thanh toán và mã giao dịch')).toBeInTheDocument();
+    // UI copy round 2 (Q14): every row already says "Xem chi tiết", so the foot line is gone.
+    expect(screen.queryByText(/ngày theo múi giờ của bạn/)).not.toBeInTheDocument();
   });
 
   it('a payOS quarter purchase row reads line 1, date, amount, period and status', async () => {
@@ -235,7 +236,7 @@ describe('TransactionsPage (Figma 122:4203 / 122:4354)', () => {
 
   it('no transactions yet', async () => {
     renderApp(<TransactionsPage />, { routes: routes({ 'GET /v1/me/transactions?page_size=20': list([]) }) });
-    expect(await screen.findByText('Chưa có giao dịch nào.')).toBeInTheDocument();
+    expect(await screen.findByText('Chưa có giao dịch nào')).toBeInTheDocument();
     expect(screen.getByText('Khi bạn mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.')).toBeInTheDocument();
   });
 

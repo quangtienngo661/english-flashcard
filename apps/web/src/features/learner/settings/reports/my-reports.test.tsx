@@ -83,7 +83,7 @@ describe('MyReportsPage (Figma 211:5827 / 211:6061)', () => {
 
   it('no report yet: the empty state with the way to Luyện tập', async () => {
     renderApp(<MyReportsPage />, { routes: routes({ 'GET /v1/practice/reports?page_size=20': () => Response.json({ items: [], next_page_token: null }) }) });
-    expect(await screen.findByText('Bạn chưa báo lỗi câu nào.')).toBeInTheDocument();
+    expect(await screen.findByText('Bạn chưa báo lỗi câu nào')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Về Luyện tập' })).toHaveAttribute('href', '/vi/app/practice');
   });
 

@@ -71,7 +71,7 @@ describe('SessionIntl: session copy in English for every locale (QM9-9)', () => 
     renderApp(<FocusLayout><ReviewSession /></FocusLayout>, { locale: 'vi', routes: reviewRoutes });
 
     await screen.findByRole('group', { name: 'Card 1 of 2' });
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close review' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Flip card/ })).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: '2 cards left' })).toBeInTheDocument();
     // P.17: one hint per layout; jsdom answers matchMedia with false, so the phone one.
@@ -80,15 +80,15 @@ describe('SessionIntl: session copy in English for every locale (QM9-9)', () => 
 
     await userEvent.keyboard(' ');
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Still learning/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Needs review/ })).toBeInTheDocument();
     await userEvent.keyboard('2');
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     expect(screen.getByRole('progressbar', { name: '1 card left' })).toBeInTheDocument();
 
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByRole('heading', { name: '2 cards done.' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Back to home/ })).toHaveAttribute('href', '/vi/app');
+    expect(await screen.findByRole('heading', { name: '2 cards done' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Back to Today/ })).toHaveAttribute('href', '/vi/app');
   });
 
   it('the AI translation block follows the route: shown at /vi, absent at /en, with English chrome in both', async () => {
@@ -106,7 +106,7 @@ describe('SessionIntl: session copy in English for every locale (QM9-9)', () => 
     await screen.findByText('deployed', { selector: 'strong' });
     expect(screen.getByText('AI sentence')).toBeInTheDocument();
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     expect(screen.queryByText('Nhóm đã triển khai bản cập nhật lên mọi máy chủ.')).toBeNull();
     expect(screen.queryByText('AI translation')).toBeNull();
   });

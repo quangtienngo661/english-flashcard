@@ -95,7 +95,6 @@ export function BulkAddSheet({ filter, onClose }: { filter: BulkFilter; onClose:
         onChange={setTarget}
         items={[{ id: NEW, label: t('bulkNewDeck', { name: newName }) }, ...groups.map((g) => ({ id: g.id, label: g.name }))]}
       />
-      <p className="font-wm-sans text-wm-small text-wm-muted">{t('bulkNote')}</p>
       {error && (
         <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
           {error}

@@ -164,11 +164,11 @@ const registerBody = (email) => ({
 async function registerVerified(email) {
   const before = (await mailsTo(email)).length;
   await want(api('POST', '/v1/auth/register', { body: registerBody(email) }), 201, `register ${email}`);
-  let verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
+  let verified = await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
   if (verified.status !== 200) {
     const beforeResend = (await mailsTo(email)).length;
     await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email, turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 202, 'request OTP');
-    verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
+    verified = await api('POST', '/v1/auth/verify-email', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
   }
   check(verified.status === 200, `verify ${email}: ${verified.status} ${verified.text}`);
   return { email, token: verified.json.access_token };
@@ -262,10 +262,14 @@ async function main() {
     ok(`admin ${adminEmail}; learner ${L.email}; group ${groupId} with ${words.map((w) => w.lemma).join(', ')}`);
   }, { fatal: true });
 
-  // M8.1 (design §10.7): the 6 questions the migration seeds as published, in position order.
+  // M8.1 (design §10.7), replaced by UI copy round 2 (migration 20261114180000_landing_faq_copy): the 6 seeded questions, in position order.
   const SEEDED_FAQ = [
-    'Gói Pro có tự gia hạn không?', 'Hết Pro thì từ và lịch ôn có mất không?', 'Dùng trên điện thoại được không?',
-    'Mua thêm khi Pro còn hạn thì sao?', 'Có được hoàn tiền không?', 'AI có chấm bài của tôi không?',
+    'Wordmet giúp mình học từ vựng thế nào?',
+    'Học rồi vẫn quên, hoặc biết nghĩa mà không dùng được thì sao?',
+    'Mình nên bắt đầu từ đâu?',
+    'AI giúp gì, và có đáng tin không?',
+    'Gói Miễn phí và Pro khác nhau thế nào?',
+    'Nghĩa và câu ví dụ trong Wordmet lấy từ đâu?',
   ];
   await step('1b. FAQ: public list without a token; an admin adds a draft, publishes it, hits a stale version, deletes it', async () => {
     const publicQuestions = async () => {

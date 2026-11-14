@@ -66,12 +66,12 @@ describe('DayDialog (Figma 103:3820 / 103:4248)', () => {
     expect(screen.getByRole('button', { name: 'Học 10' })).toBeInTheDocument();
   });
 
-  it('a hidden sense reads "Từ không còn trong kho" and is not a link; a filter tab with 0 is disabled', async () => {
+  it('a hidden sense reads "Từ không còn trong từ điển" and is not a link; a filter tab with 0 is disabled', async () => {
     const day = { ...DAY, counts: { ...DAY.counts, learned: 1, practice_questions: 0, reviewed: 0, reviewed_known: 0, reviewed_again: 0, learned_groups: 0 },
       items: [item('learned', null, 1)], practice_sessions: [] };
     renderApp(<DayDialog {...props()} />, { routes: routes({ 'GET /v1/me/calendar/days/2026-11-05?kind=all&page_size=100': () => Response.json(day) }) });
     const learn = await screen.findByRole('region', { name: 'Học 1 từ mới' });
-    expect(within(learn).getByText('Từ không còn trong kho')).toBeInTheDocument();
+    expect(within(learn).getByText('Từ không còn trong từ điển')).toBeInTheDocument();
     expect(within(learn).queryByRole('link')).toBeNull();
     expect(screen.getByRole('button', { name: 'Ôn 0' })).toBeDisabled();
     expect(screen.getAllByText('Học 1 từ mới')).toHaveLength(2);

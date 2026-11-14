@@ -177,8 +177,9 @@ describe('SettingsPage (K/50, Figma 120:4295 / 120:4559)', () => {
       </ThemeProvider>,
       { routes: routes() },
     );
-    expect(await screen.findByText('Sáng, tối hoặc theo máy')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('radio', { name: 'Tối' }));
+    // UI copy round 2 (Q14): the hint repeated the three choices beside it.
+    expect(screen.queryByText('Sáng, tối hoặc theo máy')).not.toBeInTheDocument();
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
   });
 
@@ -282,7 +283,7 @@ describe('AccountPage (K/91, K/92)', () => {
     renderApp(<AccountPage />, { routes: routes('pro') });
     expect(await screen.findByText('30 phiên luyện mỗi ngày')).toBeInTheDocument();
     expect(screen.getByText('Gói Pro')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.getByRole('link', { name: 'Xem gói học' })).toHaveAttribute('href', '/vi/app/plans');
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 

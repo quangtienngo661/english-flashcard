@@ -75,8 +75,8 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'They deploy updates every week.')).toBeInTheDocument();
     const seen = screen.getByText('Your saved sentences').parentElement!;
     expect(within(seen).getByRole('strong')).toHaveTextContent(/^deploy$/);
-    expect(screen.getByRole('button', { name: /Still learning/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Know/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Needs review/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Known/ })).toBeInTheDocument();
   });
 
   it('3D flip (owner 27/10/2026, 1C): both faces stay mounted, so the card keeps the taller face; the hidden face is inert and aria-hidden', async () => {
@@ -103,7 +103,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(card.closest('.cstack')).not.toBeNull();
   });
 
-  it('keys 2 and 1 answer Know / Still learning, each press with a new review_id; the summary counts them', async () => {
+  it('keys 2 and 1 answer Known / Needs review, each press with a new review_id; the summary counts them', async () => {
     const { calls } = renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
@@ -111,7 +111,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('1');
-    expect(await screen.findByRole('heading', { name: '2 cards done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '2 cards done' })).toBeInTheDocument();
 
     const sent = posts(calls);
     expect(sent.map((b) => [b.item_id, b.answer, b.group_id])).toEqual([[uuid(1), 'known', G], [uuid(2), 'review', G]]);
@@ -134,11 +134,11 @@ describe('ReviewSession (K/20–K/22)', () => {
 
     await userEvent.keyboard(' ');
     await userEvent.keyboard('1');
-    const heading = await screen.findByRole('heading', { name: '2 cards done.' });
+    const heading = await screen.findByRole('heading', { name: '2 cards done' });
     expect(heading.parentElement).toHaveClass('motion-safe:[animation-delay:90ms]');
     expect(screen.getByTestId('known-count').closest('[class*="animate-wm-summary-in"]')).toHaveClass('motion-safe:[animation-delay:180ms]');
     // The way home sits in the actions row (đợt C: Ôn may stand beside it); the row rises as one block.
-    expect(screen.getByRole('link', { name: /Back to home/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
+    expect(screen.getByRole('link', { name: /Back to Today/ }).parentElement).toHaveClass('motion-safe:[animation-delay:270ms]');
   });
 
   // The focus half of audit 26/10/2026 #8 now holds with a mouse or trackpad only: see "Flip button focus (T18, QA10)".
@@ -149,7 +149,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
     await userEvent.keyboard(' ');
-    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Known/ }));
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     await waitFor(() => expect(live).toHaveTextContent('Card 2 of 2'));
   });
@@ -188,10 +188,10 @@ describe('ReviewSession (K/20–K/22)', () => {
     });
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
-    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
-    expect(await screen.findByText("We couldn't save your answer. Check your connection and try again.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Known/ }));
+    expect(await screen.findByText("Couldn’t save your answer. Check your connection and try again.")).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Card 1 of 2' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Know/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Known/ }));
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     const sent = posts(calls);
     expect(sent).toHaveLength(2);
@@ -215,7 +215,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByText("We couldn't save your answer. Check your connection and try again.");
+    await screen.findByText("Couldn’t save your answer. Check your connection and try again.");
     await userEvent.keyboard('1');
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     const sent = posts(calls);
@@ -230,7 +230,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     await userEvent.keyboard('2');
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     await userEvent.keyboard('{Escape}');
-    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1 card done' })).toBeInTheDocument();
     expect(screen.getByTestId('known-count')).toHaveTextContent('1');
     expect(screen.getByTestId('review-count')).toHaveTextContent('0');
   });
@@ -259,13 +259,13 @@ describe('ReviewSession (K/20–K/22)', () => {
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByText('13-day streak')).toBeInTheDocument();
+    expect(await screen.findByText('13 days in a row')).toBeInTheDocument();
     expect(screen.queryByText(/ngày liên tiếp/)).not.toBeInTheDocument();
     await screen.findByRole('group', { name: 'Card 2 of 2' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    await screen.findByRole('heading', { name: '2 cards done.' });
-    expect(screen.getAllByText(/streak/)).toHaveLength(1);
+    await screen.findByRole('heading', { name: '2 cards done' });
+    expect(screen.getAllByText(/in a row/)).toHaveLength(1);
   });
 
   it('M6.2: the first flip of the day writes the streak cache; no GET /v1/me/streak follows', async () => {
@@ -303,7 +303,7 @@ describe('ReviewSession (K/20–K/22)', () => {
     await screen.findByRole('group', { name: 'Card 1 of 1' });
     await userEvent.keyboard(' ');
     await userEvent.keyboard('2');
-    expect(await screen.findByRole('heading', { name: '1 card done.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1 card done' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Review' })).not.toBeInTheDocument();
   });
 
@@ -331,14 +331,14 @@ describe('ReviewSession (K/20–K/22)', () => {
 
   it('an empty queue offers to study every word', async () => {
     renderApp(<ReviewSession />, { session: true, routes: routes([]) });
-    expect(await screen.findByText('No cards left in this deck today.')).toBeInTheDocument();
+    expect(await screen.findByText('No cards left in this deck today')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Study all words' })).toHaveAttribute('href', `/vi/app/review?group=${G}&mode=all`);
   });
 
   it('an unknown deck shows not found (E17)', async () => {
     params.current = new URLSearchParams({ group: 'nope' });
     renderApp(<ReviewSession />, { session: true, routes: {} });
-    expect(await screen.findByText('This deck doesn’t exist anymore.')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t find this deck.')).toBeInTheDocument();
   });
 });
 

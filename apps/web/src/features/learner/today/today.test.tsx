@@ -171,7 +171,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
 
   it('every deck done: the all-done line instead of the hero', async () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes([GROUPS[0]]) });
-    expect(await screen.findByText('Xong hết thẻ hôm nay. Mai ôn tiếp.')).toBeInTheDocument();
+    expect(await screen.findByText('Đã xong thẻ hôm nay. Ngày mai ôn tiếp.')).toBeInTheDocument();
   });
 
   it('the side column says how many words wait too long, with the admin number of days', async () => {

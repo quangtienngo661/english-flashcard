@@ -156,7 +156,7 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
       routes: routes('pro', { 'POST /v1/lookup/ai': () => (n++ === 0 ? problem(503, 'ai-lookup-failed', { retryable: true }) : Response.json(RIZZ)) }),
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    expect(await screen.findByText('Hệ thống đang gặp lỗi.')).toBeInTheDocument();
+    expect(await screen.findByText('Không tra được bằng AI lúc này. Thử lại sau.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByRole('heading', { name: 'Kết quả cho “rizz”' })).toBeInTheDocument();
     // With a result on screen, the "enter a meaning" line above it is gone.
@@ -167,7 +167,7 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
   it('E39: not retryable (and ai-unavailable) → the D11 line, no [Thử lại], manual entry stays', async () => {
     open('rizz', { routes: routes('pro', { 'POST /v1/lookup/ai': () => problem(503, 'ai-lookup-failed', { retryable: false }) }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    expect(await screen.findByText('Hệ thống đang gặp lỗi.')).toBeInTheDocument();
+    expect(await screen.findByText('Không tra được bằng AI lúc này. Thử lại sau.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tự nhập nghĩa' })).toBeInTheDocument();
   });

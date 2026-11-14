@@ -105,7 +105,7 @@ describe('TopicPickerPage (K/18)', () => {
   it('counts suggested, unlearned and selected words; learning rows cannot be ticked', async () => {
     renderApp(<TopicPickerPage />, { chrome: true, routes: base(52) });
     expect(await screen.findByRole('heading', { name: 'Kinh doanh · B1' })).toBeInTheDocument();
-    expect(screen.getByText('52 từ gợi ý. Chọn từ bạn muốn học, hoặc thêm cả chủ đề.')).toBeInTheDocument();
+    expect(screen.getByText('52 từ gợi ý. Chọn từ bạn muốn học hoặc thêm cả chủ đề.')).toBeInTheDocument();
     expect(await screen.findByRole('checkbox', { name: 'Chọn tất cả 50 từ chưa học' })).toBeInTheDocument();
     const row1 = screen.getByRole('listitem', { name: 'word1' });
     expect(within(row1).getByText('đang học · Công việc')).toBeInTheDocument();

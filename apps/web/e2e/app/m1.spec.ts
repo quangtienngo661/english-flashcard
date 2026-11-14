@@ -92,13 +92,17 @@ test.describe('M1 flows (mocked API)', () => {
     // Text typed before hydration is wiped when React takes the field over; the form now checks empty fields, so retype until it holds.
     const email = page.getByRole('textbox', { name: vi.auth.email });
     const password = page.getByLabel(vi.auth.password, { exact: true });
+    // Hydration can also wipe them between the check and the press (2 of 6 runs on dev, 14/11/2026), so the press is inside the retry:
+    // a press on empty fields only shows the form's own errors and never calls the API.
     await expect(async () => {
+      if (/\/vi\/app\/settings$/.test(page.url())) return;
       await email.fill('lan@example.com');
       await password.fill('pw');
       await expect(email).toHaveValue('lan@example.com', { timeout: 500 });
       await expect(password).toHaveValue('pw', { timeout: 500 });
-    }).toPass();
-    await page.getByRole('button', { name: vi.auth.login.submit }).click();
+      await page.getByRole('button', { name: vi.auth.login.submit }).click();
+      await expect(page).toHaveURL(/\/vi\/app\/settings$/, { timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(page).toHaveURL(/\/vi\/app\/settings$/);
     await expect(page.getByRole('heading', { name: vi.settings.title, level: 1 })).toBeVisible();
   });

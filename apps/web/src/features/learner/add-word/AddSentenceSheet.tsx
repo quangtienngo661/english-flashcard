@@ -80,7 +80,7 @@ export function AddSentenceSheet({ sense: initial, senses, onClose, onSeeAll }: 
             onChange={setChosen}
           />
         )}
-        <TextField label={t('sentenceField')} value={text} onChange={setText} maxLength={SENTENCE_MAX} showCount description={t('sentenceHint')} error={error} autoFocus />
+        <TextField label={t('sentenceField')} value={text} onChange={setText} maxLength={SENTENCE_MAX} showCount error={error} autoFocus />
         {limit && onSeeAll && (
           <TextButton className="-mt-2 self-start" onPress={() => onSeeAll(sense.sense_id)}>
             {t('seeSentences')}

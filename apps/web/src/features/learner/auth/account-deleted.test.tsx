@@ -17,8 +17,8 @@ describe('AccountDeleted', () => {
 
   it('says the account was deleted and links back to sign-in', () => {
     renderApp(<AccountDeleted />, { routes: signedOut });
-    expect(screen.getByRole('heading', { level: 1, name: 'Tài khoản của bạn đã được xóa.' })).toBeInTheDocument();
-    expect(screen.getByText('Cảm ơn bạn đã học cùng Wordmet. Thư xác nhận đã gửi tới email của bạn.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Đã xóa tài khoản' })).toBeInTheDocument();
+    expect(screen.getByText('Thư xác nhận đã gửi tới email của bạn.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Về trang đăng nhập' })).toHaveAttribute('href', '/vi/app/login');
   });
 

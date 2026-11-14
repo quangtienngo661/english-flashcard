@@ -111,7 +111,6 @@ export function ReviewSession() {
     body = (
       <EmptyState
         title={t('review.emptyTitle')}
-        body={t('review.emptyBody')}
         action={
           <Link href={`/${locale}/app/review?group=${id}&mode=all`} className="font-semibold text-wm-accent underline underline-offset-2">
             {t('review.studyAll')}

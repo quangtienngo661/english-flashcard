@@ -88,7 +88,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
     renderApp(<DeleteAccountPage />, { routes: routes([SUB]) });
     const card = await screen.findByRole('region', { name: 'Xác nhận xóa' });
     expect(within(card).getByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();
-    expect(within(card).getByRole('link', { name: 'Đến trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(within(card).getByRole('link', { name: 'Đến trang Gói học' })).toHaveAttribute('href', '/vi/app/plans');
     expect(within(card).queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
@@ -101,7 +101,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
   it.each(['active', 'grace', 'on_hold', 'trialing'])('a %s auto-renewing plan blocks the form and links to the plans page', async (status) => {
     renderApp(<DeleteAccountPage />, { routes: routes([{ ...SUB, status }]) });
     expect(await screen.findByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Đến trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.getByRole('link', { name: 'Đến trang Gói học' })).toHaveAttribute('href', '/vi/app/plans');
     expect(screen.queryByRole('button', { name: 'Xóa vĩnh viễn' })).not.toBeInTheDocument();
   });
 
@@ -148,7 +148,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
     const view = renderApp(<DeleteAccountPage />, { routes: routes([], { 'POST /v1/me/account/delete': () => problem(400, 'confirm-email-mismatch') }) });
     await fill(view, { email: 'other@example.com', password: 'pw' });
     await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
-    expect(await screen.findByText('Email bạn gõ chưa khớp với email của tài khoản.')).toBeInTheDocument();
+    expect(await screen.findByText('Email bạn gõ không khớp với email của tài khoản. Gõ lại.')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
     expect(view.store.state.status).toBe('signed-in');
   });
@@ -172,7 +172,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
     await fill(view, { password: 'wrong' });
     const refreshesBefore = view.calls.filter((c) => c.path === '/v1/auth/refresh').length;
     await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
-    expect(await screen.findByText('Mật khẩu hiện tại chưa đúng.')).toBeInTheDocument();
+    expect(await screen.findByText('Mật khẩu hiện tại không đúng. Thử lại.')).toBeInTheDocument();
     expect(view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/account/delete')).toHaveLength(1);
     expect(view.calls.filter((c) => c.path === '/v1/auth/refresh')).toHaveLength(refreshesBefore);
   });
@@ -212,7 +212,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
       expect(view.calls.find((c) => c.path === '/v1/me/account/delete')!.body).toEqual({ confirm_email: 'lan@example.com', acknowledged: true });
     });
 
-    it.each([['wrong-account', 'Đây không phải tài khoản Google của bạn. Chọn lại đúng tài khoản.'], ['failed', 'Chưa xác nhận được bằng Google. Thử lại.']])(
+    it.each([['wrong-account', 'Đây không phải tài khoản Google của bạn. Chọn lại đúng tài khoản.'], ['failed', 'Không xác nhận được bằng Google. Thử lại.']])(
       'reauth=%s says so and keeps the button off', async (value, text) => {
         search = `reauth=${value}`;
         renderApp(<DeleteAccountPage />, { routes: routes(), me: googleOnly });
@@ -227,7 +227,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
       await userEvent.click(screen.getByRole('checkbox'));
       await userEvent.type(screen.getByLabelText('Gõ lại email của bạn'), 'lan@example.com');
       await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
-      expect(await screen.findByText('Hãy xác nhận lại bằng tài khoản Google của bạn trước khi xóa.')).toBeInTheDocument();
+      expect(await screen.findByText('Xác nhận lại bằng tài khoản Google trước khi xóa.')).toBeInTheDocument();
       void view;
     });
 
@@ -238,7 +238,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
       await userEvent.click(screen.getByRole('checkbox'));
       await userEvent.type(screen.getByLabelText('Gõ lại email của bạn'), 'lan@example.com');
       await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
-      await screen.findByText('Hãy xác nhận lại bằng tài khoản Google của bạn trước khi xóa.');
+      await screen.findByText('Xác nhận lại bằng tài khoản Google trước khi xóa.');
       expect(screen.getByRole('button', { name: 'Xác nhận bằng Google' })).toBeEnabled();
       expect(screen.getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeDisabled();
     });
@@ -248,7 +248,7 @@ describe('DeleteAccountPage (design §9.4)', () => {
 describe('AccountDeleted', () => {
   it('says the account was deleted, and links to the login page', async () => {
     renderApp(<AccountDeleted />);
-    expect(await screen.findByRole('heading', { name: 'Tài khoản của bạn đã được xóa.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Đã xóa tài khoản' })).toBeInTheDocument();
     expect(within(document.body).getByRole('link', { name: 'Về trang đăng nhập' })).toHaveAttribute('href', '/vi/app/login');
   });
 

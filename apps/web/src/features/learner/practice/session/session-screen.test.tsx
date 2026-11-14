@@ -94,15 +94,15 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
   });
 
-  it('a right answer at level 1 shows the move "Bậc 1 → Bậc 2" under "Đúng rồi"', async () => {
+  it('a right answer at level 1 shows the move "Bậc 1 → Bậc 2" under "Đúng"', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(mcq()) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    const panel = (await screen.findByText('Right')).closest('[data-feedback]') as HTMLElement;
+    const panel = (await screen.findByText('Correct')).closest('[data-feedback]') as HTMLElement;
     const move = within(panel).getByRole('group', { name: 'From Level 1 to Level 2' });
     expect(move).toHaveTextContent('Level 1Level 2');
     // F.14: the move is the stub's note; the case note follows the answer word.
-    expect(panel).toHaveTextContent(/^Right\s*Level 1\s*Level 2\s*xấu đi\s*to become worse in quality\s*deteriorate\s*Enter means Know/);
+    expect(panel).toHaveTextContent(/^Correct\s*Level 1\s*Level 2\s*xấu đi\s*to become worse in quality\s*deteriorate\s*Press Enter to mark it Known/);
   });
 
   it('no move line when the word has no level (left the schedule) or is already at the last level', async () => {
@@ -110,7 +110,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
       const v = renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), { 'POST /v1/practice/items/item-8/answer': () => Response.json(result({ level })) }) });
       await screen.findByText('xấu đi');
       await userEvent.keyboard('1');
-      await screen.findByText('Right');
+      await screen.findByText('Correct');
       expect(screen.queryByRole('group', { name: /^From (New|Level \d) to Level \d$/ })).not.toBeInTheDocument();
       v.unmount();
     }
@@ -124,12 +124,12 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     const bar = screen.getByRole('progressbar', { name: 'question 8 / 20' });
     expect(bar).toHaveAttribute('aria-valuenow', '8');
     expect(screen.getByText('question 8 / 20')).toBeInTheDocument();
-    expect(screen.getByLabelText('5 right')).toHaveTextContent('5');
-    expect(screen.getByLabelText('2 wrong')).toHaveTextContent('2');
+    expect(screen.getByLabelText('5 correct')).toHaveTextContent('5');
+    expect(screen.getByLabelText('2 incorrect')).toHaveTextContent('2');
     await userEvent.keyboard('3');
-    await screen.findByText('Not quite');
-    expect(screen.getByLabelText('3 wrong')).toHaveTextContent('3');
-    expect(screen.getByLabelText('5 right')).toHaveTextContent('5');
+    await screen.findByText('Incorrect');
+    expect(screen.getByLabelText('3 incorrect')).toHaveTextContent('3');
+    expect(screen.getByLabelText('5 correct')).toHaveTextContent('5');
   });
 
   it('MCQ wrong: the picked option reads "Bạn chọn", the right one "Đáp án đúng", the others are dimmed', async () => {
@@ -138,14 +138,14 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     }) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('3');
-    await screen.findByText('Not quite');
+    await screen.findByText('Incorrect');
     expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent('Your choice');
-    expect(screen.getByRole('button', { name: /deteriorate/ })).toHaveTextContent('Right answer');
-    expect(screen.getByRole('button', { name: /evaporate/ })).not.toHaveTextContent(/Your choice|Right answer/);
+    expect(screen.getByRole('button', { name: /deteriorate/ })).toHaveTextContent('Correct answer');
+    expect(screen.getByRole('button', { name: /evaporate/ })).not.toHaveTextContent(/Your choice|Correct answer/);
     expect(screen.getByRole('button', { name: /evaporate/ })).toHaveClass('opacity-60');
   });
 
-  it('keys keep today\'s actions: 1 answers, Enter = Know then next, H opens a hint, Esc ends', async () => {
+  it('keys keep today\'s actions: 1 answers, Enter = Known then next, H opens a hint, Esc ends', async () => {
     const v = renderApp(<PracticeSession />, { session: true, routes: routes(mcq(), {
       'POST /v1/practice/items/item-9/answer': () => Response.json(result()),
       [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ asked: 9, correct: 6 }), item: mcq({ item_id: 'item-9', position: 9 }) }),
@@ -155,24 +155,24 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     }) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     await userEvent.keyboard('{Enter}');
     await screen.findByText('question 9 / 20');
     expect(v.calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/item-8/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
-    expect(screen.getByLabelText('6 right')).toBeInTheDocument();
+    expect(screen.getByLabelText('6 correct')).toBeInTheDocument();
     await userEvent.keyboard('h');
     await screen.findByText('to become worse');
     await userEvent.keyboard('{Escape}');
-    await screen.findByText('9 questions done.');
+    await screen.findByText('9 questions done');
   });
 
   it('the key legend names the keys of the result on screen', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(mcq()) });
     await screen.findByText('xấu đi');
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     const legend = screen.getByRole('list', { name: 'Keys' });
-    expect(within(legend).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['EnterKnow', '1Review again', 'EscStop']);
+    expect(within(legend).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['EnterKnown', '1Needs review', 'EscStop']);
   });
 
   it('review M1: after a try-again, Enter in the field does not send the same wrong word again; the word is selected to retype', async () => {
@@ -182,7 +182,7 @@ describe('PracticeSession, the rebuilt screen (M5.4)', () => {
     }) });
     const field = await screen.findByRole('textbox', { name: 'Missing word' });
     await userEvent.type(field, 'deteriorated{Enter}');
-    await screen.findByText('Check the spelling and try again. The answer stays hidden.');
+    await screen.findByText('Check the spelling and try again.');
     await userEvent.type(field, '{Enter}');
     const answers = () => v.calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/items/item-8/answer');
     expect(answers()).toHaveLength(1);

@@ -86,7 +86,7 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
     await userEvent.type(blank, 'deploy{Enter}');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/answer')[0]?.body).toEqual({ text: 'deploy' }));
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.getByText('We use Docker to the app to the production server.')).toHaveTextContent('We use Docker to deploy the app to the production server.');
   });
@@ -107,7 +107,7 @@ describe('AI question types (K/78a–K/81)', () => {
       'POST /v1/practice/items/it-c/answer': () => Response.json(result({ result: 'wrong', show_known: false, highlight_needs_review: true })),
     }) });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'deplay{Enter}');
-    await screen.findAllByText('Not quite');
+    await screen.findAllByText('Incorrect');
     const sentence = screen.getByText('We use Docker to the app to the production server.');
     expect(within(sentence).getByRole('deletion')).toHaveTextContent('deplay');
     expect(sentence).toHaveTextContent('We use Docker to deplay deploy the app to the production server.');
@@ -120,18 +120,18 @@ describe('AI question types (K/78a–K/81)', () => {
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/skip')).toHaveLength(1));
   });
 
-  it('A16: [Xem đáp án] gives case 4: Still learning is primary', async () => {
+  it('A16: [Xem đáp án] gives case 4: Needs review is primary', async () => {
     const r = renderApp(<PracticeSession />, { session: true, routes: routes(cloze(), {
       'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true, show_known: false, highlight_needs_review: true })),
       'POST /v1/practice/items/it-c/review': () => Response.json({ action: 'needs_review', item_id: 'it-c', level: 1 }),
       [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view(), item: meaning }),
     }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Show answer' }));
-    const primary = await screen.findByRole('button', { name: /Review again/ });
-    expect(primary).toHaveTextContent(/^Review again$/);
+    const primary = await screen.findByRole('button', { name: /Needs review/ });
+    expect(primary).toHaveTextContent(/^Needs review$/);
     expect(screen.getByRole('button', { name: 'Next' })).toHaveTextContent(/^Next$/);
     expect(document.querySelector('button kbd')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Know/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Known/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Enter}');
     await screen.findByText('deployed', { selector: 'strong' });
     expect(posts(r.calls, '/v1/practice/items/it-c/review').map((c) => c.body)).toEqual([{ action: 'needs_review' }]);
@@ -164,7 +164,7 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByText('We ___ the app to the server yesterday.');
     await userEvent.keyboard('4');
-    await screen.findAllByText('Not quite');
+    await screen.findAllByText('Incorrect');
     const sentence = screen.getByText('We the app to the server yesterday.');
     expect(within(sentence).getByRole('deletion')).toHaveTextContent('delayed');
     expect(sentence).toHaveTextContent('We delayed deployed the app to the server yesterday.');
@@ -176,7 +176,7 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByText('We ___ the app to the server yesterday.');
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     const sentence = screen.getByText('We the app to the server yesterday.');
     expect(within(sentence).queryByRole('deletion')).not.toBeInTheDocument();
     expect(sentence).toHaveTextContent('We deployed the app to the server yesterday.');
@@ -248,10 +248,10 @@ describe('AI question types (K/78a–K/81)', () => {
     it('CS3: a session-word try-again says only "Chưa đúng": no line under it, not the spelling text (owner, 07/11/2026)', async () => {
       await typeAndCheck({ result: 'try_again', tries: 1, reason: 'session_word' });
       // Once on the page and once in the live region for screen readers.
-      expect(await screen.findAllByText('Not quite')).toHaveLength(2);
+      expect(await screen.findAllByText('Incorrect')).toHaveLength(2);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Check the spelling/)).not.toBeInTheDocument();
-      expect(document.querySelector('[data-live="result"]')).toHaveTextContent(/^Not quite$/);
+      expect(document.querySelector('[data-live="result"]')).toHaveTextContent(/^Incorrect$/);
     });
 
     it('CS4: a try-again with reason null keeps the spelling text', async () => {
@@ -259,7 +259,9 @@ describe('AI question types (K/78a–K/81)', () => {
       expect(await screen.findByText(/Check the spelling and try again/)).toBeInTheDocument();
       // F.14: the wrong ticket with no answer; the footer reads reveal, Hint, Try again.
       const panel = screen.getByText(/Check the spelling/).closest<HTMLElement>('[data-feedback]')!;
-      expect(panel).toHaveTextContent(/^Not quite\s*Check the spelling and try again\. The answer stays hidden\.\s*A right answer on a retry/);
+      expect(panel).toHaveTextContent(/^Incorrect\s*Check the spelling and try again\.\s*Show answer/);
+      // UI copy round 2 (Q14): the line about how a retry is scored is gone.
+      expect(panel).not.toHaveTextContent(/on a retry/);
       expect(panel).not.toHaveTextContent('deploy');
       expect(within(panel).getAllByRole('button').map((b) => b.textContent)).toEqual(['Show answer', 'Hint', 'Try again']);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
@@ -275,7 +277,7 @@ describe('AI question types (K/78a–K/81)', () => {
         'POST /v1/practice/items/it-c/answer': () => Response.json({ result: 'try_again', tries: 1, reason: 'session_word' }),
       }) });
       await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'habit{Enter}');
-      expect(await screen.findAllByText('Not quite')).toHaveLength(2);
+      expect(await screen.findAllByText('Incorrect')).toHaveLength(2);
       expect(screen.queryByText(/another word from this session/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Check the spelling/)).not.toBeInTheDocument();
     });
@@ -300,7 +302,7 @@ describe('AI question types (K/78a–K/81)', () => {
     });
     await screen.findByText('deployed', { selector: 'strong' });
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     expect(screen.queryByText(/Chúng tôi dùng Docker/)).toBeNull();
     expect(screen.queryByRole('region', { name: 'AI translation' })).toBeNull();
   });
@@ -326,7 +328,7 @@ describe('AI question types (K/78a–K/81)', () => {
     }) });
     await screen.findByText('We ___ the app to the server yesterday.');
     await userEvent.keyboard('1');
-    await screen.findByText('Right');
+    await screen.findByText('Correct');
     await userEvent.click(screen.getByRole('button', { name: 'Report' }));
     const dialog = await screen.findByRole('dialog', { name: 'Report this question' });
     expect(within(dialog).getByText('The Wordmet team will see “rizz”, a word you added, to check it.')).toBeInTheDocument();
@@ -391,7 +393,7 @@ describe('Alternative answer card', () => {
 
   it('CS2: shows "Đáp án thay thế", the sentence with vital filled in, the reveal line and one row per word', async () => {
     await open();
-    expect(screen.queryByText('Right')).not.toBeInTheDocument();
+    expect(screen.queryByText('Correct')).not.toBeInTheDocument();
     expect(screen.getByText('vital', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('vital', { selector: 'strong' }).parentElement).toHaveTextContent('Sleep is vital for good health.');
     expect(screen.getByText('vital · thiết yếu')).toBeInTheDocument();
@@ -401,33 +403,33 @@ describe('Alternative answer card', () => {
     // Each row names its role as its own label above the word (UI polish, 07/11/2026).
     expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();
     expect(within(items[0]).getByText('crucial')).toBeInTheDocument();
-    expect(within(items[1]).getByText("This sentence's word")).toBeInTheDocument();
+    expect(within(items[1]).getByText("This sentence’s word")).toBeInTheDocument();
     expect(within(items[1]).getByText('vital')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Know: crucial' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Review again: crucial' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Know: vital' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Known: crucial' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Needs review: crucial' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Needs review: vital' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Known: vital' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox')).toHaveValue('crucial');
   });
 
-  it('CS6: Know on crucial posts known for crucial only and stays on the card', async () => {
+  it('CS6: Known on crucial posts known for crucial only and stays on the card', async () => {
     const r = await open();
-    await userEvent.click(screen.getByRole('button', { name: 'Know: crucial' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Known: crucial' }));
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-a/review')).toHaveLength(1));
     expect(posts(r.calls, '/v1/practice/items/it-a/review')[0].body).toEqual({ action: 'known', sense_id: CRUCIAL });
     expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
     const items = within(altList()).getAllByRole('listitem');
     await waitFor(() => expect(within(items[0]).queryByRole('button')).not.toBeInTheDocument());
-    expect(within(items[0]).getByText('Know')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
+    expect(within(items[0]).getByText('Known')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Needs review: vital' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 
   it('each row is pressed on its own: both can be, and nothing moves on', async () => {
     const r = await open();
-    await userEvent.click(screen.getByRole('button', { name: 'Review again: vital' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Needs review: vital' }));
     await waitFor(() => expect(within(within(altList()).getAllByRole('listitem')[1]).queryByRole('button')).not.toBeInTheDocument());
-    await userEvent.click(screen.getByRole('button', { name: 'Review again: crucial' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Needs review: crucial' }));
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-a/review')).toHaveLength(2));
     expect(posts(r.calls, '/v1/practice/items/it-a/review').map((c) => c.body)).toEqual([
       { action: 'needs_review', sense_id: VITAL }, { action: 'needs_review', sense_id: CRUCIAL },
@@ -480,7 +482,7 @@ describe('Alternative answer card', () => {
   it('a plain right answer keeps today\'s card', async () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(sleep, { 'POST /v1/practice/items/it-a/answer': () => Response.json(result({ alternative: null })) }) });
     await userEvent.type(await screen.findByRole('textbox', { name: 'Missing word' }), 'vital{Enter}');
-    expect(await screen.findByText('Right')).toBeInTheDocument();
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
     expect(screen.queryByText('Alternative answer')).not.toBeInTheDocument();
     expect(screen.queryByText('The word you typed')).not.toBeInTheDocument();
   });
@@ -491,8 +493,8 @@ describe('Alternative answer card', () => {
     expect(await screen.findByText('Alternative answer')).toBeInTheDocument();
     const items = within(altList()).getAllByRole('listitem');
     expect(within(items[0]).getByText('The word you typed')).toBeInTheDocument();
-    expect(within(items[1]).getByText("This sentence's word")).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Know: crucial' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Review again: vital' })).toBeInTheDocument();
+    expect(within(items[1]).getByText("This sentence’s word")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Known: crucial' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Needs review: vital' })).toBeInTheDocument();
   });
 });
