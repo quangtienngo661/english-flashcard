@@ -30,7 +30,10 @@ describe('EmailProvider.send', () => {
   it('round C: the streak line reaches the mail text', async () => {
     const t = setup();
     await t.provider.send(USER, { ...message, streakDays: 12 });
-    expect((t.mailer.send.mock.calls[0][0] as { text: string }).text.split(String.fromCharCode(10))[0]).toBe('Bạn đang có chuỗi 12 ngày. Học hôm nay để giữ chuỗi.');
+    const sent = t.mailer.send.mock.calls[0][0] as { text: string; html: string };
+    expect(sent.text).toContain('Ôn hôm nay để giữ chuỗi 12 ngày.');
+    expect(sent.html).toContain('Chuỗi 12 ngày');
+    expect(sent.html).toContain('href="http://localhost:3001/vi/app"');
   });
 
   it('no verified address → no-address; budget spent → budget-exhausted; neither calls the mailer', async () => {

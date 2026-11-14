@@ -1,3 +1,5 @@
+import { renderMail } from '../../common/mail/layout/render-mail.js';
+import type { MailBlock } from '../../common/mail/layout/blocks.js';
 import type { MailMessage } from '../../common/mail/mailer.js';
 
 export type ReminderKind = 'regular' | 'inactive';
@@ -13,29 +15,60 @@ export function reminderSettingsUrl(learnerAppUrl: string, language: ReminderLan
   return `${learnerAppUrl}/${language}/app/settings`;
 }
 
-const COPY: Record<ReminderLanguage, Record<ReminderKind, { subject: string; body: string }> & { settings: string; streak: (days: number) => string }> = {
+type Copy = {
+  subject: string;
+  preheader: string;
+  heading: string;
+  /** The line under the heading; `streakDays` is only given when the learner has a streak worth keeping. */
+  body: (streakDays: number | null) => string;
+  button: string;
+  chip: (days: number) => string;
+};
+
+const COPY: Record<ReminderLanguage, Record<ReminderKind, Copy>> = {
   vi: {
-    regular: { subject: 'Tới giờ học từ vựng', body: 'Hôm nay bạn còn từ cần ôn. Mở app để học vài phút nhé.' },
-    inactive: { subject: 'Đã lâu rồi bạn chưa vào học', body: 'Các từ của bạn vẫn đang chờ. Quay lại học vài phút nhé.' },
-    settings: 'Tắt nhắc học trong Cài đặt',
-    streak: (days) => `Bạn đang có chuỗi ${days} ngày. Học hôm nay để giữ chuỗi.`,
+    regular: {
+      subject: 'Tới giờ ôn từ', preheader: 'Vài phút là xong.', heading: 'Hôm nay còn từ cần ôn', button: 'Ôn ngay',
+      body: (days) => days === null ? 'Ôn hôm nay. Vài phút là xong.' : `Ôn hôm nay để giữ chuỗi ${days} ngày. Vài phút là xong.`,
+      chip: (days) => `Chuỗi ${days} ngày`,
+    },
+    inactive: {
+      subject: 'Các từ của bạn vẫn đang chờ', preheader: 'Quay lại ôn vài phút.', heading: 'Các từ của bạn vẫn đang chờ', button: 'Mở Wordmet',
+      body: () => 'Đã lâu bạn chưa vào học. Quay lại ôn vài phút.',
+      chip: (days) => `Chuỗi ${days} ngày`,
+    },
   },
   en: {
-    regular: { subject: 'Time to study your words', body: 'You still have words to review today. Open the app for a few minutes.' },
-    inactive: { subject: "It's been a while since you studied", body: 'Your words are still waiting. Come back for a few minutes.' },
-    settings: 'Turn reminders off in Settings',
-    streak: (days) => `You're on a ${days}-day streak. Study today to keep it.`,
+    regular: {
+      subject: 'Time to review your words', preheader: 'A few minutes is enough.', heading: 'You have words to review today', button: 'Review now',
+      body: (days) => days === null ? 'Review today. A few minutes is enough.' : `Review today to keep your ${days}-day streak. A few minutes is enough.`,
+      chip: (days) => `${days}-day streak`,
+    },
+    inactive: {
+      subject: 'Your words are still waiting', preheader: 'Come back for a few minutes.', heading: 'Your words are still waiting', button: 'Open Wordmet',
+      body: () => 'It has been a while. Come back for a few minutes.',
+      chip: (days) => `${days}-day streak`,
+    },
   },
 };
 
 /**
- * Plain text, generic (design 8.4): names no word and ends with the settings link line. `streakDays` (round C, DC29) adds the
- * streak line first when the learner has a streak worth keeping; null leaves the mail as it was.
+ * HTML and text, generic (design 8.4): names no word. `streakDays` (round C, DC29) adds the streak chip when the learner has a streak worth
+ * keeping; null or 0 leaves it out. `learnerAppUrl` is the app origin: the button and the settings link are built from it and the language.
  */
 export function reminderMail(
-  to: string, kind: ReminderKind, language: ReminderLanguage, settingsUrl: string, streakDays: number | null,
+  to: string, kind: ReminderKind, language: ReminderLanguage, learnerAppUrl: string, streakDays: number | null,
 ): MailMessage {
-  const copy = COPY[language];
-  const streak = streakDays === null ? '' : `${copy.streak(streakDays)}\n\n`;
-  return { to, subject: copy[kind].subject, text: `${streak}${copy[kind].body}\n\n${copy.settings}: ${settingsUrl}` };
+  const copy = COPY[language][kind];
+  const streak = streakDays !== null && streakDays > 0 ? streakDays : null;
+  const blocks: MailBlock[] = [
+    ...(streak === null ? [] : [{ kind: 'chip', text: copy.chip(streak) } as const]),
+    { kind: 'heading', text: copy.heading },
+    { kind: 'paragraph', parts: [copy.body(streak)] },
+    { kind: 'button', label: copy.button, href: `${learnerAppUrl}/${language}/app` },
+  ];
+  const { html, text } = renderMail({
+    language, preheader: copy.preheader, blocks, footer: { kind: 'reminder', settingsUrl: reminderSettingsUrl(learnerAppUrl, language) }, appUrl: learnerAppUrl,
+  });
+  return { to, subject: copy.subject, text, html };
 }

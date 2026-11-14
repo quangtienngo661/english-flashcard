@@ -4,7 +4,7 @@ import { MailBudget, REMINDER_MAIL_SHARE } from '../../common/mail/mail-budget.s
 import { Mailer } from '../../common/mail/mailer.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { NotificationProvider, NotSentError, type NotificationOutcome, type ReminderKind } from './notification-provider.js';
-import { reminderMail, reminderSettingsUrl, type ReminderLanguage } from './reminder-message.js';
+import { reminderMail, type ReminderLanguage } from './reminder-message.js';
 
 @Injectable()
 export class EmailProvider extends NotificationProvider {
@@ -30,8 +30,7 @@ export class EmailProvider extends NotificationProvider {
       // Nothing reached the mail server: the caller may retry (B3-3). Only an error from `mailer.send` below says "unknown".
       throw new NotSentError(error);
     }
-    const settingsUrl = reminderSettingsUrl(this.config.learnerAppUrl, message.language);
-    await this.mailer.send(reminderMail(to, message.kind, message.language, settingsUrl, message.streakDays));
+    await this.mailer.send(reminderMail(to, message.kind, message.language, this.config.learnerAppUrl, message.streakDays));
     return 'sent';
   }
 }
