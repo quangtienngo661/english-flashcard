@@ -226,6 +226,8 @@ Ràng buộc (vì test và script đang đọc bản text, §8):
 |---|---|---|
 | 12 smoke script và `learner-test-setup.mjs` | số 6 chữ số đầu tiên trong `Text` của Mailpit | Giữ ràng buộc §4. |
 | `smoke-buoc-8.mjs:117–118` | tiêu đề khớp `đã được xóa\|was deleted`, `liên kết\|linked` | Tiêu đề mới #8, #7 vẫn khớp. |
+| `smoke-identity.mjs:96–98` | tiêu đề khớp `Tạm khóa mã xác thực\|temporarily locked`, `đã được đặt lại\|Password reset`, `đã được đổi\|Password changed` | Tiêu đề mới #3, #5, #4 **không** khớp. Đã sửa ba regex thành `Tạm khóa nhập mã\|codes locked`, `đã đặt lại\|password was reset`, `đã đổi\|password was changed` (phát hiện lúc chạy Task 10, không có trong bản rà đầu). |
+| `smoke-buoc-5.mjs:369–375` | tiêu đề trial (`dùng thử\|trial has started`, `sắp kết thúc\|ends soon`) | Không đổi: #18, #19 giữ nguyên. |
 | `smoke-buoc-b-payments.mjs:477, 488` | tiêu đề đúng chuỗi `Biên nhận mua Wordmet Pro`, `Gói Wordmet Pro sắp hết hạn` | Giữ hai tiêu đề này. |
 | `apps/admin/e2e-real/support/mailpit.ts` | `Password: \S+` trong `Text`; mã 6 số | Giữ ràng buộc §4. |
 | `FakeMailer.otpFor` | số 6 chữ số trong `text` | Giữ ràng buộc §4. |
