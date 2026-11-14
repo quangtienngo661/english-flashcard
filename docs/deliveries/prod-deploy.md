@@ -71,3 +71,15 @@ Nhánh `feat/prod-deploy`, làm theo plan (cách Native), 9 việc. Bằng chứ
   (`TRUST_PROXY=uniquelocal`, G3-14); khách IPv6 (không tạo bản ghi AAAA).
 - 15 điểm Minor của review để lại sau launch (ledger, mục "Final: minor (deferred)"); đáng làm sớm: giấu khóa khỏi dòng lệnh (`ps`), `umask 077`
   cho bản dump, `curl --max-time` và `flock`.
+
+# Đường deploy production — CD (14/11/2026)
+
+Chủ dự án duyệt C1–C6 trong chat (14/11/2026): merge vào `main` thì workflow **Deploy** (`.github/workflows/deploy-web.yml`) chạy job `api`
+(SSH vào VPS, `deploy.sh <sha>`), rồi `web` và `admin` cùng SHA. API hỏng thì dừng, web và admin giữ nguyên. Chỉ commit trên `main` được deploy;
+chạy tay nhận một SHA. Công tắc `DEPLOY_PAUSED` thay `WEB_DEPLOY_PAUSED`. Key riêng cho GitHub, khóa bằng `restrict,command=` gọi
+`/srv/wordmet/bin/ci-deploy.sh` (chỉ nhận SHA 40 ký tự); host key ghim trong `VPS_KNOWN_HOSTS`. Cách dùng và cách đổi key: `deploy/README.md`
+mục "Continuous deployment". Lệch so với đề xuất C2: `admin` chạy song song với `web` (cả hai chờ `api`), không nối sau `web`.
+
+Đã kiểm trên key thật: lệnh tùy ý → `ci-deploy: expected one 40-character commit SHA` (exit 2); xin terminal → bị từ chối; forward cổng →
+`administratively prohibited`. Script `ci-deploy.sh` thử 8 đầu vào (rỗng, tên nhánh, SHA thiếu ký tự, SHA kèm lệnh, kèm xuống dòng, chữ hoa: đều exit 2;
+SHA đúng: gọi deploy). shellcheck và actionlint sạch.

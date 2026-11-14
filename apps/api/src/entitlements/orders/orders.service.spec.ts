@@ -151,6 +151,24 @@ describe('OrdersService.create (design §3.6 "Tạo đơn")', () => {
     expect(memory.rows[0].status).toBe('failed');
   });
 
+  it('a payOS refusal is logged with its error name and payOS code, so the cause is readable without replaying the call', async () => {
+    const { service, logs, createCheckout } = setup();
+    createCheckout.mockRejectedValueOnce(Object.assign(new Error('HTTP 200, Đơn thanh toán đã tồn tại (code: 231)'), { name: 'APIError', code: '231' }));
+    await service.create(USER, request()).catch(() => {});
+    const entry = logs.find((l) => l.event === 'order_checkout_failed');
+    expect(entry).toMatchObject({ level: 'warn', error_name: 'APIError', provider_error: '231' });
+    expect(JSON.stringify(entry)).not.toContain('đã tồn tại');
+  });
+
+  it('a failure without a payOS code (network, timeout) is logged with its error name and no provider_error', async () => {
+    const { service, logs, createCheckout } = setup();
+    createCheckout.mockRejectedValueOnce(new TypeError('fetch failed'));
+    await service.create(USER, request()).catch(() => {});
+    const entry = logs.find((l) => l.event === 'order_checkout_failed');
+    expect(entry).toMatchObject({ error_name: 'TypeError' });
+    expect(entry).not.toHaveProperty('provider_error');
+  });
+
   it('LB1E27: two quick presses with two keys are two pending orders, each with its own link', async () => {
     const { service, memory } = setup();
     await Promise.all([service.create(USER, request()), service.create(USER, request())]);
