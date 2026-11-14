@@ -18,6 +18,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import argon2 from 'argon2';
 import { sendFakeEvent } from './billing-fake-event.mjs';
+// The compiled map (the smoke needs `dist/` for its CLIs anyway): what the deletion must do with each column.
+import { ACCOUNT_DATA_MAP } from '../dist/identity/deletion/account-data-map.js';
 import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
 requireFakeTurnstile();
 
@@ -219,13 +221,116 @@ const startSub = (sub, user) => fake('subscription_started', sub, user, {
 function referencesTo(id) {
   const columns = psql(`SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public' AND data_type = 'uuid'
     AND (column_name = 'user_id' OR column_name LIKE '%\\_user\\_id' OR column_name LIKE '%\\_by') ORDER BY 1`).split('\n').filter(Boolean);
-  const found = {};
-  for (const column of columns) {
+  // One query for all columns (one docker exec, not one per column).
+  const counts = psql(columns.map((column) => {
     const [table, name] = column.split('.');
-    const count = Number(psql(`SELECT count(*) FROM ${table} WHERE ${name} = '${id}'`));
-    if (count > 0) found[column] = count;
+    return `SELECT '${column}' || '|' || count(*) FROM ${table} WHERE ${name} = '${id}'`;
+  }).join(' UNION ALL '));
+  const found = {};
+  for (const line of counts.split('\n').filter(Boolean)) {
+    const [column, count] = line.split('|');
+    if (Number(count) > 0) found[column] = Number(count);
   }
-  return { checked: columns.length, found };
+  return { checked: columns.length, columns, found };
+}
+
+/**
+ * K2 (deploy runbook, G0): one row in EVERY user column for `v`, before its deletion. Rows the deletion must keep (`keep-id` in the
+ * account-data map) sit on a bystander's rows where the row itself would otherwise go with `v` (a grant TO `v` is erased whatever its
+ * granted_by says). Values are marked with the run id so the checks after the deletion find them again. Columns written by the real API
+ * in the step itself (groups, reminders, idempotency keys, login failures, session chains) are not seeded here.
+ */
+function seedEveryUserColumn(v, bystander, r) {
+  const orderCode = (offset) => 1_000_000_000 + randomInt(1_000_000_000) + offset;
+  const statements = [
+    // Identity (cascade from users) and the staff audit on another account.
+    `INSERT INTO otp_codes (user_id, purpose, code_hmac, expires_at) VALUES ('${v}', 'verify_email', 'smoke-${r}', now() + interval '10 minutes')`,
+    `INSERT INTO otp_failure_windows (user_id, purpose, window_start) VALUES ('${v}', 'reset_password', now())`,
+    `INSERT INTO pending_registrations (user_id, password_hash, given_name, birth_date, timezone, terms_version, terms_accepted_at, created_at)
+      VALUES ('${v}', 'x', 'Lan', DATE '2000-01-01', '${TIMEZONE}', 'smoke', now(), now())`,
+    `INSERT INTO user_identities (user_id, provider, subject) VALUES ('${v}', 'google', 'sub-k2-${r}')`,
+    `UPDATE users SET locked_by = '${v}' WHERE id = '${bystander}'`,
+    // Settings, legal, FAQ, pipeline (staff audit).
+    `INSERT INTO app_settings (key, value, version, updated_by, updated_at) VALUES ('smoke-k2-${r}', '{}', 1, '${v}', now())`,
+    `INSERT INTO app_setting_changes (key, old_value, new_value, changed_by, changed_at) VALUES ('smoke.k2${r}', '1', '2', '${v}', now())`,
+    `INSERT INTO legal_versions (number, status, created_by, created_at, updated_by, updated_at, published_by)
+      VALUES (${100_000 + randomInt(800_000)}, 'superseded', '${v}', now(), '${v}', now(), '${v}')`,
+    `INSERT INTO landing_faq_items (position, question, answer, created_at, updated_at, created_by, updated_by) VALUES (900, 'k2 ${r}?', 'k2', now(), now(), '${v}', '${v}')`,
+    `INSERT INTO background_jobs (queue, created_by, operation_id, status) VALUES ('content-import', '${v}', gen_random_uuid(), 'succeeded')`,
+    // Notifications.
+    `INSERT INTO reminder_deliveries (user_id, local_date, kind, state) VALUES ('${v}', current_date, 'regular', 'sent')`,
+    // Content: a catalog word whose staff audit columns name v (kept), a saved sentence and a word form of v.
+    `INSERT INTO entries (lemma, pos, scope) VALUES ('smokek2cat${r}', 'noun', 'catalog')`,
+    `INSERT INTO senses (entry_id, state, state_changed_by) SELECT id, 'open', '${v}' FROM entries WHERE lemma = 'smokek2cat${r}'`,
+    `INSERT INTO sense_revisions (sense_id, revision_no, draft_source, content_hash, created_by, reviewed_by, published_by)
+      SELECT s.id, 1, 'ui', 'k2', '${v}', '${v}', '${v}' FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO context_sentences (user_id, sense_id, text) SELECT '${v}', s.id, 'My own sentence ${r}.' FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO word_form_additions (lemma_key, form, form_key, added_by) VALUES ('smokek2${r}', 'smokek2s', 'smokek2s${r}', '${v}')`,
+    // Learning.
+    `INSERT INTO learning_items (user_id, sense_id, level, due_date, created_at) SELECT '${v}', s.id, 1, current_date, now() FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO learning_log (user_id, item_id, sense_id, kind, local_date, at) SELECT user_id, id, sense_id, 'review', current_date, now() FROM learning_items WHERE user_id = '${v}'`,
+    `INSERT INTO learning_activity_days (user_id, local_date) VALUES ('${v}', current_date)`,
+    // Entitlements: v's own rows (erased or anonymised) and a bystander's rows that v granted, revoked or confirmed (kept).
+    `INSERT INTO entitlement_grants (user_id, kind, plan, starts_at, ends_at, reason, granted_by, granted_by_role)
+      VALUES ('${v}', 'plan', 'pro', now(), now() + interval '1 day', 'k2-own-${r}', '${bystander}', 'admin'),
+             ('${bystander}', 'plan', 'pro', now(), now() + interval '1 day', 'k2-by-${r}', '${v}', 'admin')`,
+    `UPDATE entitlement_grants SET revoked_by = '${v}', revoked_at = now() WHERE reason = 'k2-by-${r}'`,
+    `INSERT INTO entitlement_grant_changes (grant_id, changed_by, changed_by_role, old_starts_at, new_starts_at, old_ends_at, new_ends_at, reason)
+      SELECT id, '${v}', 'admin', starts_at, starts_at, ends_at, ends_at, 'k2' FROM entitlement_grants WHERE reason = 'k2-by-${r}'`,
+    `INSERT INTO subscriptions (user_id, provider, environment, external_subscription_id, interval, status) VALUES ('${v}', 'fake', 'sandbox', 'sub-k2-${r}', 'month', 'expired')`,
+    `INSERT INTO fake_billing_subscriptions (external_subscription_id, user_id, status, interval, last_occurred_at) VALUES ('sub-k2-${r}', '${v}', 'expired', 'month', now())`,
+    `INSERT INTO billing_events (provider, environment, dedupe_key, external_event_id, type, kind, occurred_at, status, app_user_id, user_id)
+      VALUES ('fake', 'sandbox', 'smoke-k2:${r}', 'evt-k2-${r}', 'expired', 'state', now(), 'applied', '${v}', '${v}')`,
+    `INSERT INTO trial_history (user_id, provider, started_at) VALUES ('${v}', 'fake', now() - interval '30 days')`,
+    `INSERT INTO billing_transactions (user_id, kind, plan, occurred_at, period_start, status, provider, environment, provider_transaction_id)
+      VALUES ('${v}', 'purchase', 'pro', now(), now(), 'succeeded', 'fake', 'sandbox', 'tx-k2-${r}')`,
+    `INSERT INTO billing_orders (user_id, provider, environment, order_code, description, period_months, amount_minor, currency, status, expires_at, resolved_by)
+      VALUES ('${v}', 'payos', 'sandbox', ${orderCode(0)}, 'k2-own-${r}', 1, 49000, 'VND', 'paid', now() + interval '1 day', '${v}'),
+             ('${bystander}', 'payos', 'sandbox', ${orderCode(1)}, 'k2-by-${r}', 1, 49000, 'VND', 'paid', now() + interval '1 day', NULL)`,
+    `INSERT INTO billing_order_payments (order_id, payment_key, source, reference, amount_minor, outcome, confirmed_by)
+      SELECT id, 'pay-' || description, 'manual', 'ref', 49000, 'opened-period', '${v}' FROM billing_orders WHERE description IN ('k2-own-${r}', 'k2-by-${r}')`,
+    `INSERT INTO prepaid_periods (user_id, order_id, payment_id, starts_at, ends_at, revoked_by)
+      SELECT o.user_id, o.id, p.id, now(), now() + interval '30 days', CASE WHEN o.user_id = '${bystander}' THEN '${v}'::uuid END
+      FROM billing_orders o JOIN billing_order_payments p ON p.order_id = o.id WHERE o.description IN ('k2-own-${r}', 'k2-by-${r}')`,
+    `INSERT INTO entitlement_notices (user_id, recipient_user_id, kind, subject_key, period_key, state, due_at, window_ends_at)
+      VALUES ('${v}', '${v}', 'payment_receipt', 'k2-${r}', 'k2', 'sent', now(), now())`,
+    // Practice: a session with one item and its question, a report, a reason v last changed, an AI request and a word check.
+    `INSERT INTO practice_sessions (user_id, source, sort, prompt_style, target_count, status, started_at, last_activity_at) VALUES ('${v}', 'all', 'random', 'meaning', 1, 'finished', now(), now())`,
+    `INSERT INTO practice_questions (user_id, sense_id, type, prompt_style, schema_version, prompt, answer_key, hints, created_at)
+      SELECT '${v}', s.id, 'mcq_definition', 'meaning', 1, '{}', '{}', '[]', now() FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO practice_session_items (session_id, user_id, question_id, sense_id, round, position, asked_at)
+      SELECT ps.id, '${v}', q.id, q.sense_id, 1, 1, now() FROM practice_sessions ps, practice_questions q WHERE ps.user_id = '${v}' AND q.user_id = '${v}'`,
+    `INSERT INTO practice_report_reasons (code, label_vi, label_en, applies_to, note_required, refundable, active, position, updated_by)
+      VALUES ('k2${r}', 'x', 'x', 'all', false, false, true, 98, '${v}')`,
+    `INSERT INTO practice_reports (user_id, sense_id, question_snapshot, reason, reason_label, note, status, created_at, refunded, resolved_by)
+      SELECT '${v}', s.id, '{"learner":{"answer":"k2 answer","result":"wrong"}}', 'k2${r}', 'x', 'k2 note', 'fixed', now(), false, '${v}'
+      FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO practice_ai_requests (user_id, sense_id, type, round, state) SELECT '${v}', s.id, 'cloze', 1, 'ready' FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    `INSERT INTO practice_word_checks (user_id, sense_id, content_key, verdict, checked_at) SELECT '${v}', s.id, 'k2', 'ok', now() FROM senses s JOIN entries e ON e.id = s.entry_id WHERE e.lemma = 'smokek2cat${r}'`,
+    // AI: a learner call with its stored content (the content goes, the totals stay with no user), and every staff audit column.
+    `INSERT INTO ai_calls (user_id, operation_id, attempt, purpose, operation, provider, model, outcome, latency_ms, cost_known)
+      VALUES ('${v}', 'k2-call-${r}', 1, 'learner', 'lookup_word', 'fake', 'fake:ok', 'succeeded', 10, true)`,
+    `INSERT INTO ai_call_contents (call_id, request, response, expires_at) SELECT id, '{"word":"k2"}', 'k2 response', now() + interval '1 day' FROM ai_calls WHERE operation_id = 'k2-call-${r}'`,
+    `INSERT INTO ai_models (provider, model_id, info_checked_at, created_by) VALUES ('fake', 'fake:k2-${r}', now(), '${v}')`,
+    `UPDATE ai_operation_settings SET updated_by = '${v}' WHERE operation = 'lookup_word'`,
+    `INSERT INTO ai_operation_setting_changes (operation, old_value, new_value, changed_by) VALUES ('lookup_word', '1', '2', '${v}')`,
+    `UPDATE ai_prompts SET updated_by = '${v}' WHERE operation = 'lookup_word'`,
+    `INSERT INTO ai_prompt_revisions (operation, revision, instructions, examples, saved_by) VALUES ('lookup_word', ${100_000 + randomInt(800_000)}, 'k2', '[]', '${v}')`,
+    `INSERT INTO ai_eval_examples (operation, input, created_by) VALUES ('translate_sentence', '{"k2":"${r}"}', '${v}')`,
+    `INSERT INTO ai_eval_sets (operation, version, held_out_ratio, frozen_by) VALUES ('translate_sentence', ${100_000 + randomInt(800_000)}, 0.3, '${v}')`,
+    `INSERT INTO ai_eval_runs (operation, provider, model, status, total, started_by, set_id, prompt_revision)
+      SELECT 'translate_sentence', 'fake', 'fake:ok', 'finished', 0, '${v}', id, 1 FROM ai_eval_sets WHERE frozen_by = '${v}'`,
+    `INSERT INTO ai_judges (name, created_by, operations) VALUES ('k2-${r}', '${v}', ARRAY['generate_cloze'])`,
+    `INSERT INTO ai_judge_revisions (judge_id, revision, criteria, instructions, examples, saved_by) SELECT id, 1, '[]', 'k2', '[]', '${v}' FROM ai_judges WHERE name = 'k2-${r}'`,
+    `INSERT INTO ai_judge_passes (judge_revision_id, kind, operation, status, started_by) SELECT id, 'real', 'generate_cloze', 'finished', '${v}' FROM ai_judge_revisions WHERE saved_by = '${v}'`,
+    `INSERT INTO ai_labels (subject_kind, subject_id, criterion, verdict, labeled_by) VALUES ('real_question', gen_random_uuid(), 'k2', 'pass', '${v}')`,
+    `INSERT INTO ai_configs (operation, number, instructions, examples, status, created_by, published_by)
+      VALUES ('translate_sentence', ${100_000 + randomInt(800_000)}, 'k2', '[]', 'retired', '${v}', '${v}')`,
+    `INSERT INTO ai_config_revisions (config_id, version, content, saved_by) SELECT id, 1, '{}', '${v}' FROM ai_configs WHERE created_by = '${v}'`,
+    // A recording of v's private word (synthetic: the text is the private lemma). Not linked to a user: see the check after the deletion.
+    `INSERT INTO speech_audio (key, voice, voice_name, text, status) VALUES ('k2-${r}', 'uk', 'en-GB-Wavenet-B', 'smokeb8word${r}', 'ready')`,
+  ];
+  psql(statements.join(';\n'));
 }
 
 const S = {};
@@ -351,20 +456,29 @@ async function main() {
   });
 
   // -----------------------------------------------------------------------------------------------------------------------------
-  await step('B8A2 B8E18 B8E26', 'delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible', async () => {
+  await step('B8A2 B8E18 B8E26 K2', 'delete with a password: data in every user column first; wrong password counted and 400; right password 204; each column erased, anonymised, nulled or kept as the account-data map says; the mail; sign-in impossible', async () => {
     const u = S.u.pw;
-    // Data in several modules: a group + an idempotency key (API), reminder prefs (API), a private word, an AI replay row, a usage row, a report.
+    const [bystander] = await sqlUsers(['bystander']);
+    // Through the API: a group + idempotency keys, reminder prefs, a failed login (login_failures); the session chain came with the sign-in.
     await want(api('POST', '/v1/groups', { token: u.token, idem: true, body: { name: `Del ${run}` } }), 201, 'group');
     await want(api('PATCH', '/v1/me/reminders', { token: u.token, idem: true, body: { enabled: false } }), 200, 'reminders');
+    await wantProblem(api('POST', '/v1/auth/login', { body: { email: u.email, password: 'wrong-password', client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 401, 'invalid-credentials', 'a wrong login');
+    // With psql: a private word, an AI replay row, a usage row, and every other column (K2).
     psql(`INSERT INTO entries (lemma, pos, scope, owner_user_id) VALUES ('smokeb8word${run}', 'unspecified', 'private', '${u.id}')`);
     psql(`INSERT INTO ai_operations (user_id, operation_id, operation, fingerprint, status, attempt_id, started_at, deadline_at, expires_at)
       VALUES ('${u.id}', 'smoke-${run}-1', 'lookup_word', 'f', 'succeeded', gen_random_uuid(), now(), now(), now() + interval '1 day')`);
     psql(`INSERT INTO usage_records (user_id, pool, operation_id, kind, status, confirmed_at, system_date) VALUES ('${u.id}', 'ai_lookup', 'smoke-${run}-use', 'use', 'confirmed', now(), current_date)`);
+    seedEveryUserColumn(u.id, bystander.id, run);
     const before = referencesTo(u.id);
-    for (const column of ['learning_groups.user_id', 'idempotency_keys.user_id', 'reminder_prefs.user_id', 'entries.owner_user_id', 'ai_operations.user_id', 'usage_records.user_id']) {
-      check(before.found[column] > 0, `before: nothing in ${column}`);
-    }
-    ok(`before: rows in ${Object.keys(before.found).length} of ${before.checked} user columns`);
+    // deleted_accounts.user_id is written by the deletion itself; every other column must hold data now, or the run proves nothing about it.
+    const empty = before.columns.filter((column) => column !== 'deleted_accounts.user_id' && !(before.found[column] > 0));
+    check(empty.length === 0, `before: no row in ${empty.length} of ${before.checked} user columns: ${empty.join(', ')}`);
+    const unmapped = before.columns.filter((column) => !(column in ACCOUNT_DATA_MAP));
+    check(unmapped.length === 0, `columns missing from the account-data map: ${unmapped.join(', ')}`);
+    const contentCount = () => psql(`SELECT count(*) FROM ai_call_contents c JOIN ai_calls a ON a.id = c.call_id WHERE a.operation_id = 'k2-call-${run}'`);
+    check(contentCount() === '1', 'before: the AI call content row');
+    check(psql(`SELECT count(*) FROM speech_audio WHERE key = 'k2-${run}'`) === '1', 'before: the speech_audio row');
+    ok(`before: rows in ${Object.keys(before.found).length} of ${before.checked} user columns (all but deleted_accounts.user_id), plus ai_call_contents and speech_audio`);
 
     const body = (password) => ({ confirm_email: ` ${u.email.toUpperCase()} `, acknowledged: true, password });
     // F4: wrong passwords count in login_failures, one row per (account, client ip key).
@@ -380,18 +494,46 @@ async function main() {
     check(res.status === 204 && res.text === '', `delete ${brief(res)}`);
     check(!userExists(u.id), 'the user row remains');
     const after = referencesTo(u.id);
-    const allowed = new Set(['deleted_accounts.user_id']);
-    const left = Object.keys(after.found).filter((column) => !allowed.has(column));
-    check(left.length === 0, `rows still point at the deleted user: ${JSON.stringify(after.found)}`);
+    // K2: per column, what the account-data map promises. keep-id = the staff audit row keeps the id (D18), with as many rows as before.
+    const wrong = [];
+    for (const column of before.columns) {
+      const disposition = ACCOUNT_DATA_MAP[column];
+      const had = before.found[column] ?? 0;
+      const has = after.found[column] ?? 0;
+      if (column === 'deleted_accounts.user_id') { if (has !== 1) wrong.push(`${column}: ${has} rows, want 1`); continue; }
+      if (disposition === 'keep-id') { if (has !== had) wrong.push(`${column} (keep-id): ${had} → ${has}`); continue; }
+      if (has !== 0) wrong.push(`${column} (${disposition}): ${has} rows still point at the user`);
+    }
+    check(wrong.length === 0, `after the deletion: ${wrong.join('; ')}`);
+    const byDisposition = (d) => before.columns.filter((column) => ACCOUNT_DATA_MAP[column] === d && column !== 'deleted_accounts.user_id').length;
     check(psql(`SELECT by FROM deleted_accounts WHERE user_id = '${u.id}'`) === 'self', 'deleted_accounts.by');
     check(psql(`SELECT count(*) FROM usage_records WHERE operation_id = 'smoke-${run}-use'`) === '1', 'the usage row (anonymised) is gone');
+    // anonymise: the row stays under one random id that is not the user's.
+    for (const [what, sql] of [
+      ['billing_transactions', `SELECT count(*) || '|' || count(DISTINCT user_id) FROM billing_transactions WHERE provider_transaction_id = 'tx-k2-${run}' AND user_id <> '${u.id}'`],
+      ['billing_orders', `SELECT count(*) || '|' || count(DISTINCT user_id) FROM billing_orders WHERE description = 'k2-own-${run}' AND user_id <> '${u.id}'`],
+      ['practice_reports', `SELECT count(*) || '|' || count(DISTINCT user_id) FROM practice_reports WHERE reason = 'k2${run}' AND user_id <> '${u.id}' AND note IS NULL AND question_snapshot #>> '{learner,answer}' IS NULL`],
+    ]) check(psql(sql) === '1|1', `${what}: the anonymised row is missing or still personal (${psql(sql)})`);
+    // null: the call's totals stay with no user; its stored content (what was sent and answered) goes.
+    check(psql(`SELECT count(*) FROM ai_calls WHERE operation_id = 'k2-call-${run}' AND user_id IS NULL`) === '1', 'ai_calls: the row with user_id NULL is missing');
+    check(contentCount() === '0' && psql(`SELECT count(*) FROM ai_call_contents c WHERE NOT EXISTS (SELECT 1 FROM ai_calls a WHERE a.id = c.call_id)`) === '0', 'ai_call_contents of the user remain');
+    // The bystander's rows that only name the user as staff are untouched; the user's own prepaid period, grant and payments-side rows went.
+    check(psql(`SELECT count(*) FROM prepaid_periods WHERE user_id = '${bystander.id}' AND revoked_by = '${u.id}'`) === '1', 'the bystander period lost its revoked_by');
+    check(psql(`SELECT count(*) FROM billing_order_payments p JOIN billing_orders o ON o.id = p.order_id WHERE o.description = 'k2-own-${run}'`) === '1', 'the payment row of the kept order');
+    check(psql(`SELECT count(*) FROM entries WHERE lemma = 'smokek2cat${run}'`) === '1', 'the catalog word v had audited went with the account');
     check(psql(`SELECT count(*) FROM entries WHERE lemma = 'smokeb8word${run}'`) === '0', 'the private word remains');
+    // Known and documented (deploy-checklist.md, "Bản đồ dữ liệu cá nhân"): speech_audio has no user column; a recording of a private word is
+    // removed by the weekly audio cleanup (≥ 7 days after the word is gone), not by the deletion. Pinned here so a change is seen.
+    const speechLeft = psql(`SELECT count(*) FROM speech_audio WHERE key = 'k2-${run}'`);
+    check(speechLeft === '1', `speech_audio: ${speechLeft} rows; the deletion now removes recordings, update this check and the checklist`);
+    ok(`K2: ${before.checked} user columns: ${byDisposition('erase')} erase, ${byDisposition('anonymise')} anonymise, ${byDisposition('null')} null → 0 rows left; ${byDisposition('keep-id')} keep-id → same count as before; deleted_accounts 1 row; anonymised rows kept under one random id; ai_calls kept with user NULL, ai_call_contents gone`);
+    ok('KNOWN GAP (not changed by this smoke): the speech_audio row holding the private word stays until the weekly audio cleanup');
     const mails = await waitFor(() => mailsTo(u.email), (list) => list.some(isDeletedMail), 'the "đã xóa" mail');
     check(mails.filter(isDeletedMail).length === 1, `${mails.filter(isDeletedMail).length} "deleted" mails`);
     await wantProblem(loginRes(u.email), 401, 'invalid-credentials', 'login after deletion');
     const old = await api('GET', '/v1/me', { token: u.token });
     check(old.status === 401, `the old access token still works: ${old.status}`);
-    ok(`wrong password 400 (counted once); right → 204; ${after.checked} user columns checked, none points at the user; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused`);
+    ok(`wrong password 400 (counted once); right → 204; ${after.checked} user columns checked against the account-data map; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused`);
   });
 
   await step('B8A5 B8E19 B8E20', 'delete a Google-only account: reauth required, wrong Google account refused, the right one deletes', async () => {

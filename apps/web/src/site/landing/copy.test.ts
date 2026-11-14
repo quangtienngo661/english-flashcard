@@ -25,7 +25,7 @@ describe('Landing copy (M8.5)', () => {
   });
 
   it('the hero heading is Figma\'s, with "trong câu" in its second line', () => {
-    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Ôn từ đúng lúc, luyện từ trong câu.');
+    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu hơn, dùng từ tự tin trong câu.');
     expect(vi.Landing.hero.line2).toContain(vi.Landing.hero.accent);
   });
 

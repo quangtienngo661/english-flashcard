@@ -1,7 +1,7 @@
 name: CI
 
 # Runs on pull requests only (into main, dev or documents). A merge does not re-run it: the PR run already tested the change,
-# and deploy-web.yml only builds and deploys on push to main. Keep this workflow a required check on main and dev.
+# and deploy-web.yml (workflow Deploy) only deploys on push to main. Keep this workflow a required check on main and dev.
 on:
   pull_request:
 

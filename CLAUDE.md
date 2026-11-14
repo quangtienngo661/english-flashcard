@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (09/11/2026): improvement round C is built and merged into `dev`** (section "Đợt cải thiện C" below: Học / Ôn and the study streak; UK / US IPA and pre-made Google TTS audio; the last merge is PR #245, `defcf5b1`). Before it, the session synonyms work (section "Từ đồng nghĩa trong phiên") and launch prep rounds A and B (section "Chuẩn bị launch đợt A và B": round A M1–M3, round B code M0–M4) were merged into `dev`. What is left before launch: each round's owner steps (real payOS purchase, real Google sign-in, Google Cloud TTS and R2, AdSense approval, the owner checklists) and Deploy (`docs/deliveries/deploy-checklist.md`). Web-only launch: remaining work and open decisions in `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md` (branch `docs/web-launch-research`, local). **Earlier phase (29/10/2026): Bước 8 (Google sign-in, account deletion, cancel plan; API, web, admin) is built and merged into `dev` (PR #172–#181, 29/10/2026; real Google not yet tried, see the section "Bước 8" below). Before that (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+**Current phase (14/11/2026): production launch in progress.** The new learner UI (section "Giao diện mới" below, PR #250–#272), the production deploy path (section "Đường deploy production", PR #273) and UI copy round 2 (PR #274) are on `dev`. The `dev` → `main` PR #275 is open at the owner's request (not merged yet). Gate G1 of the deploy runbook passed on the VPS on 14/11 (deploy, rollback, automatic revert, R2 backup and restore, alerts); the rehearsal data was removed, the stack is stopped until `deploy.sh main`, and the ops crontab is installed (each line runs only once `state/current` is set). `DEPLOY_PAUSED` is `false`, so a push to `main` deploys the API, web and admin (workflow Deploy, `deploy/README.md` "Continuous deployment"). Still open before going public: K1–K3 smokes (gate G0), the real deploy and gates G2–G4, legal documents (Q12), AI caps (Q3), catalog, prices and FAQ entered in admin. Runbook, costs and dashboards: `docs/deliveries/deploy-production-runbook.md` and `docs/preparation/COSTS_AND_DASHBOARDS_2026-11-14.md` (local branch `docs/deploy-checklist-pre-launch`). **Earlier phase (09/11/2026): improvement round C is built and merged into `dev`** (section "Đợt cải thiện C" below: Học / Ôn and the study streak; UK / US IPA and pre-made Google TTS audio; the last merge is PR #245, `defcf5b1`). Before it, the session synonyms work (section "Từ đồng nghĩa trong phiên") and launch prep rounds A and B (section "Chuẩn bị launch đợt A và B": round A M1–M3, round B code M0–M4) were merged into `dev`. What is left before launch: each round's owner steps (real payOS purchase, real Google sign-in, Google Cloud TTS and R2, AdSense approval, the owner checklists) and Deploy (`docs/deliveries/deploy-checklist.md`). Web-only launch: remaining work and open decisions in `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md` (branch `docs/web-launch-research`, local). **Earlier phase (29/10/2026): Bước 8 (Google sign-in, account deletion, cancel plan; API, web, admin) is built and merged into `dev` (PR #172–#181, 29/10/2026; real Google not yet tried, see the section "Bước 8" below). Before that (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
 the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
 API only) and 7 (Practice AI + Content AI, API only) implemented; the learner web UI for Bước 3–7 (`apps/web` `/vi/app`, `/en/app`) is built
 (section "Giao diện người học" below), blocked on production until Deploy; the admin UI round (24 screens in `apps/admin`) is built (section "Đợt giao diện admin" below).** Real code is
@@ -26,8 +26,8 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 `main` holds Bước 0–3 (Bước 0–1 via PR #1–#5, the rest via the `dev` → `main` PR #45 of 18/10/2026; GitHub remote
-`english-flashcard`, CI required before merge). **Bước 4–8 are on `dev` only** (PR #47–#58, #62–#78, #82, #84–#94 and #104–#116, 19–21/10/2026; Bước 8: PR #172–#181, 29/10/2026); no `dev` → `main` PR yet
-(owner 19/10/2026: not needed yet; it opens only when the owner asks). As-built per Bước: sections below and `docs/deliveries/`.
+`english-flashcard`, CI required before merge). **Bước 4–8 are on `dev` only** (PR #47–#58, #62–#78, #82, #84–#94 and #104–#116, 19–21/10/2026; Bước 8: PR #172–#181, 29/10/2026); the `dev` → `main` PR #275
+opened 14/11/2026 at the owner's request for the production launch (it opens only when the owner asks). As-built per Bước: sections below and `docs/deliveries/`.
 - **Bước 2.5** (admin web: login, admin page, role granting, CSV flow; PR #17–#20, 15/10/2026). The owner's 15/10 note that the admin UI would be refactored is closed
   (owner AD2, 27/10/2026): UI refresh B (PR #22–#24) was that refactor, so the admin look is direction B and no longer provisional; B25E30 was fixed there
   (`docs/deliveries/ui-refresh-b.md`).
@@ -116,7 +116,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 | Branch | Holds | Topic branches PR into it | Reaches `main` when |
 |---|---|---|---|
-| `main` | Stable, accepted state. Only `main` deploys the landing (`deploy-web.yml`) | — | — |
+| `main` | Stable, accepted state. Only `main` deploys: API, web and admin (`deploy-web.yml`, workflow Deploy) | — | — |
 | `dev` | Integration branch for **everything**: code (`apps/**`, migrations, CI) **and** documents (`docs/**`, `CLAUDE.md`); where QA/QC runs | `feat/*`, `fix/*`, `docs/*`, `claude/*` | QA/QC passes: CI green (`ci.yml`) **and**, for code, the design's "Xong khi" manual run; then the owner asks for a `dev` → `main` PR |
 
 - A separate `documents` branch existed briefly (12/10/2026) and was dropped by the owner the same day: documents now go
@@ -126,7 +126,8 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 - **CI/CD (owner, 12/10/2026):** `ci.yml` runs on **pull requests only** and does not re-run when a PR is merged. Since
   Bước 4 (D38–D41, 18/10/2026) `apps/api` has **no e2e suite**: job `api` = lint, typecheck, build, unit, schema drift
   (`prisma migrate diff`); jobs `web`, `admin` and `admin-e2e-real` (admin against the real API, Postgres, Redis, Mailpit)
-  are unchanged. `deploy-web.yml` runs on push to `main` and only builds and deploys (no tests, not gated on CI).
+  are unchanged. `deploy-web.yml` (workflow Deploy) runs on push to `main` and only deploys (no tests, not gated on CI): the API over SSH with
+  `deploy.sh`, then the web and admin; it skips push deploys while the repo variable `DEPLOY_PAUSED` is `true` (a manual run always deploys).
   So a change is tested exactly once, on its PR, and a green CI on the PR is the only gate before `main`.
 - Not done yet (owner action in GitHub settings): branch protection on `main` and `dev` — require a PR, require the `CI`
   check green, forbid direct pushes (a direct push to `main` would deploy untested code), and ideally "require branches to
@@ -378,9 +379,13 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/cloze-own-then-ai.md` (plan tóm tắt và as-built 09/11/2026; **chỉ API**, PR vào `dev`; smoke ở `docs/deliveries/cloze-own-then-ai-smoke-output.txt`). Nguồn `cloze_source: 'own_then_ai'`: từ có câu đã lưu thì hỏi từ câu đó (không tốn lượt AI), từ chưa có thì AI viết, trong cùng một phiên; item trả về có `ai: boolean`. Thay phần "Pro bật cả hai thì câu điền từ AI tự tắt" của A11. Hộp Tùy chỉnh phiên trong code **chưa** gửi nguồn mới: giao diện làm cùng đợt dựng hộp mới (vòng 13, "hai cột gọn"); danh sách việc và câu chưa chốt (con số lượt AI trong hộp) ở cuối delivery record. Design, decisions: `docs/superpowers/{specs,decisions}/2026-11-09-cloze-own-then-ai*`.
 
+## Giao diện mới (apps/web) — plan & as-built
+
+`docs/deliveries/giao-dien-moi.md` (plan tóm tắt từng đợt M1–M9 và đợt polish, 10–12/11/2026; PR #250–#272, nhánh dài `refactor/giao-dien-moi` vào `dev` 13/11/2026). Giao diện người học dựng lại theo Figma `JKnyUUtGjpGpfKK4PqBfdY`, kèm API mới (lịch học, chuỗi ngày, gợi ý nhóm, giá, FAQ trang chủ do admin quản lý) và chế độ tối. Quyết định trong lúc làm: `docs/deliveries/giao-dien-moi-rulings.md`; checklist: `giao-dien-moi-checklist.md`, `giao-dien-moi-polish-checklist.md`; giao diện cũ giữ ở tag `archive/giao-dien-cu-2026-11`. Design: `docs/superpowers/specs/2026-11-09-giao-dien-moi-design.md`.
+
 ## Đường deploy production (API trên VPS) — plan & as-built
 
-`docs/deliveries/prod-deploy.md` (plan tóm tắt 13/11/2026, as-built 14/11/2026; plan `docs/superpowers/plans/2026-11-13-prod-deploy.md`; runbook ở nhánh local `docs/deploy-checklist-pre-launch`). API và worker chạy trên một VPS bằng `deploy/compose.prod.yml` sau Caddy; deploy, rollback, backup và cảnh báo bằng script trong `deploy/scripts/` (cách dùng: `deploy/README.md`). Không còn TypedSQL: `prisma generate` không cần DB. Việc chỉ kiểm được trên VPS: mục "Chưa kiểm" của delivery record.
+`docs/deliveries/prod-deploy.md` (plan tóm tắt 13/11/2026, as-built 14/11/2026; plan `docs/superpowers/plans/2026-11-13-prod-deploy.md`; runbook ở nhánh local `docs/deploy-checklist-pre-launch`). API và worker chạy trên một VPS bằng `deploy/compose.prod.yml` sau Caddy; deploy, rollback, backup và cảnh báo bằng script trong `deploy/scripts/` (cách dùng: `deploy/README.md`). Không còn TypedSQL: `prisma generate` không cần DB. Việc chỉ kiểm được trên VPS: mục "Chưa kiểm" của delivery record. VPS: `/srv/wordmet` (repo ở `app/`, `.env` và `ops.env` chmod 600, không bao giờ đọc hay in ra), Ubuntu 24.04, giờ UTC, `ufw` mở 22/80/443; G1 qua 14/11/2026, kết quả ở mục G1 của runbook.
 
 ## Sửa bảo mật trước launch — as-built
 
@@ -396,6 +401,10 @@ Admin chọn số câu tối đa (cố định hoặc bằng số từ của ph�
 ## Sửa chữ giao diện vòng 2 — plan & as-built
 
 `docs/deliveries/ui-copy-round-2.md` (14/11/2026; nhánh `fix/ui-copy-round-2`). Audit, tham khảo, FAQ và report: `docs/audit/2026-11-14-ui-copy/`. Quy ước đã chốt: EN "deck", nút "Needs review" / "Known", "CEFR level" cho trình độ, VI "câu đã gặp", lỗi theo mẫu "Không … được. [việc cần làm].", không "hãy". FAQ landing nạp qua migration `20261114180000_landing_faq_copy`; bản dự phòng phải giống migration (có test).
+
+## Giao diện email — plan & as-built
+
+`docs/deliveries/email-giao-dien.md` (plan tóm tắt 14/11/2026; as-built cùng file; chỉ API). 17 email đang gửi thật có bản HTML (layout bảng, CSS inline, khối chế độ tối) kèm bản text, dựng bằng một hàm chung `renderMail` ở `apps/api/src/common/mail/layout/`; ba email dùng thử, tự gia hạn giữ dạng text, chưa gửi lúc launch. `MailMessage` có thêm `html?`; địa chỉ hỗ trợ lấy từ `SUPPORT_EMAIL` (mặc định `support@wordmet.com`). Xem 17 thư thật trong Mailpit: `pnpm build && pnpm mail:preview` ở `apps/api`. Đã chạy qua Mailpit; **chưa xem trên Gmail, Outlook, Apple Mail thật** (việc của chủ dự án). Design, decisions (D1–D11) và plan: `docs/superpowers/{specs,decisions,plans}/2026-11-14-email-giao-dien*`; mockup `docs/mockups/2026-11-14-email/index.html`; bản rà 20 email `docs/preparation/EMAIL_INVENTORY_2026-11-14.md`. Script đọc chữ trong email (tiêu đề, mã 6 số, dòng `Password:`): bảng ở §8 của design.
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 

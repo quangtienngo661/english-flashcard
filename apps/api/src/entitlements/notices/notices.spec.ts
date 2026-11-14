@@ -107,9 +107,9 @@ function setup(opts: {
     getProfile: vi.fn(async (id: string) => ({ id, native_language: 'en', timezone: 'Asia/Ho_Chi_Minh' })),
   };
   const budget = { tryConsume: vi.fn(async () => opts.budget ?? true) };
-  const sent: Array<{ to: string; subject: string; text: string }> = [];
+  const sent: Array<{ to: string; subject: string; text: string; html?: string }> = [];
   const mailer = {
-    send: vi.fn(async (msg: { to: string; subject: string; text: string }) => {
+    send: vi.fn(async (msg: { to: string; subject: string; text: string; html?: string }) => {
       calls.push('send');
       if (opts.send) await opts.send(msg.to);
       sent.push(msg);
@@ -129,7 +129,7 @@ function setup(opts: {
     load: vi.fn(async (_db: unknown, userId: string, now: Date) => sourcesOf(userId, now)),
     loadMany: vi.fn(async (_db: unknown, userIds: string[], now: Date) => new Map(userIds.map((id) => [id, sourcesOf(id, now)]))),
   };
-  const config = { learnerAppUrl: 'https://app.wordmet.com/' };
+  const config = { learnerAppUrl: 'https://app.wordmet.com/', supportEmail: 'help@example.com' };
   const planner = new NoticePlanner(prisma as never, settings as never, sources as never);
   const scheduler = { register: vi.fn() };
   const sender = new NoticeSender(prisma as never, clock, planner, identity as never, budget as never, mailer as never,
@@ -349,6 +349,7 @@ describe('NoticeSender.send: expiry_notice and payment_receipt (design §3.10)',
     expect(sent[0].text).toContain('November 26, 2026');
     expect(sent[0].text).toContain('https://app.wordmet.com/en/app/plans');
     expect(sent[0].text).not.toMatch(/App Store|Google Play|auto-renew|renews/i);
+    expect(sent[0].html).toContain('href="https://app.wordmet.com/en/app/plans"');
   });
 
   it('LB1E43: a period that follows was bought after planning → skipped (covered) at send time, nothing sent', async () => {
@@ -415,6 +416,10 @@ describe('NoticeSender.send: expiry_notice and payment_receipt (design §3.10)',
     }
     expect(ctx.sent[0].text).not.toMatch(/App Store|Google Play|auto-renew|renews/i);
     expect(ctx.budget.tryConsume).toHaveBeenCalledWith({ ceiling: PAYMENT_MAIL_SHARE });
+    // The HTML twin: the plans button, the footer links from the app origin without its trailing slash, and the configured support address.
+    expect(ctx.sent[0].html).toContain('href="https://app.wordmet.com/en/app/plans"');
+    expect(ctx.sent[0].html).toContain('href="https://app.wordmet.com/en/privacy"');
+    expect(ctx.sent[0].html).toContain('href="mailto:help@example.com"');
   });
 
   it('a receipt whose payment (or period) is gone → skipped, nothing sent; one past its 7-day window → skipped', async () => {

@@ -31,6 +31,14 @@ export type OrderViewJson = {
 };
 
 const unavailable = () => new ProblemDetailsException({ status: 503, title: 'Payment provider unavailable', type: 'provider-unavailable' });
+
+/** What a failed checkout call logs: the error's class and payOS's own error code as `provider_error` (231 = order code already used; a key
+ * named `*code` would be redacted by the logger). Never the message. */
+function checkoutFailure(error: unknown): { error_name: string; provider_error?: string } {
+  const name = error instanceof Error ? error.name : typeof error;
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' || typeof code === 'number' ? { error_name: name, provider_error: String(code) } : { error_name: name };
+}
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 
 /** A learner's orders (launch prep B design §3.6). The provider call never runs inside a transaction (R6). */
@@ -79,7 +87,7 @@ export class OrdersService {
     }));
     if (!checkout.ok) {
       await this.orders.markFailed(this.prisma, created.id);
-      this.logger.warn('order_checkout_failed', { order_ref: created.id });
+      this.logger.warn('order_checkout_failed', { order_ref: created.id, ...checkoutFailure(checkout.error) });
       throw unavailable();
     }
     const kept = await this.orders.setLink(this.prisma, created.id, checkout.value.paymentLinkId, checkout.value.checkoutUrl);

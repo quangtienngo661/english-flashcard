@@ -2617,7 +2617,9 @@ async function partM6() {
       const first = await want(api('POST', '/v1/reviews', { as: T.L6, body }), 200, 'review');
       check(j(activityRows(T.L6.id)) === j([T.T]), `after one review: ${j(activityRows(T.L6.id))}`);
       const replay = await want(api('POST', '/v1/reviews', { as: T.L6, body }), 200, 'replayed review');
-      check(canon(replay) === canon(first), `the replay answered ${j(replay)}, not ${j(first)}`);
+      // The first study of the day carries the streak; a replayed review_id never does (design 2026-11-06-dot-cai-thien-c §H2 table: "Gửi lại cùng review_id").
+      check(first.streak?.days === 1, `the first review of the day answered streak ${j(first.streak)}, not { days: 1 }`);
+      check(canon(replay) === canon({ ...first, streak: null }), `the replay answered ${j(replay)}, not ${j({ ...first, streak: null })}`);
       check(j(activityRows(T.L6.id)) === j([T.T]) && count(`SELECT count(*) FROM learning_log WHERE user_id = '${T.L6.id}' AND review_id = '${reviewId}'`) === 1, 'the replay doubled a row');
       const log = rows(`SELECT kind, count(*) FROM learning_log WHERE user_id = '${T.L6.id}' GROUP BY 1 ORDER BY 1`);
       check(j(log) === j([['item_added', '3'], ['review', '1']]), `learning_log of L6: ${j(log)}`);

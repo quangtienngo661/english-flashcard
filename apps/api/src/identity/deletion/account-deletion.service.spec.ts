@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
+import { testConfig } from '../../../test/support/test-config.js';
 import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import type { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
@@ -70,7 +71,7 @@ function setup(overrides: Partial<Row> = {}, opts: { admins?: number; renewing?:
   const dispatcher = { afterResponse, runNow } as unknown as MailDispatcher;
   const service = new AccountDeletionService(
     prisma as unknown as PrismaClient, clock, new AppLogger({ write: (e) => logs.push(e) }), registry,
-    sessions as unknown as SessionService, dispatcher,
+    sessions as unknown as SessionService, dispatcher, testConfig(),
   );
   const res = {} as Response;
   const mailOf = (call: unknown[]) => (call[call.length - 1] as Array<() => Promise<{ to: string; text: string } | null>>)[0]!();

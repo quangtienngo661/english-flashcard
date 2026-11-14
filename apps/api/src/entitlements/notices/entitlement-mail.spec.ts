@@ -81,3 +81,66 @@ describe('expiry_notice and payment_receipt (design §3.10)', () => {
     }
   });
 });
+
+describe('html emails #16 #17 (design 2026-11-14-email-giao-dien §3)', () => {
+  const APP = 'https://app.wordmet.com';
+  const END_OF_PERIOD = new Date('2026-12-05T17:00:00.000Z');
+  const data = (language: 'vi' | 'en') => ({
+    periodEnd: END_OF_PERIOD, timeZone: 'Asia/Ho_Chi_Minh', appUrl: APP, plansUrl: `${APP}/${language}/app/plans`, supportEmail: 'help@example.com',
+    receipt: { months: 3 as const, amountMinor: 249000, description: 'WM7K2Q9X', reference: 'FT26318004512',
+      startsAt: new Date('2026-11-14T03:00:00.000Z'), endsAt: END_OF_PERIOD },
+  });
+  const lines = (text: string) => text.split(String.fromCharCode(10));
+
+  it('payment_receipt vi: rows in order, the plans button, the billing footer and a receipt that never says Pro is already on', () => {
+    const mail = entitlementMail('payment_receipt', 'vi', data('vi'));
+    expect(mail.subject).toBe('Biên nhận mua Wordmet Pro');
+    const html = mail.html!;
+    const labels = ['Gói', 'Số tiền', 'Nội dung chuyển khoản', 'Mã tham chiếu', 'Dùng được'].map((label) => html.indexOf(`>${label}<`));
+    expect(labels.every((at) => at >= 0)).toBe(true);
+    expect([...labels].sort((a, b) => a - b)).toEqual(labels);
+    expect(lines(mail.text)).toContain('Gói: Wordmet Pro 3 tháng');
+    expect(lines(mail.text)).toContain('Số tiền: 249.000 ₫');
+    expect(lines(mail.text)).toContain('Dùng được: 14/11/2026 – hết ngày 05/12/2026');
+    expect(html).toContain(`href="${APP}/vi/app/plans"`);
+    expect(lines(mail.text)).toContain(`Xem gói của bạn: ${APP}/vi/app/plans`);
+    expect(html).toContain('href="mailto:help@example.com"');
+    expect(html).toContain('<html lang="vi"');
+    expect(mail.text).not.toContain('Pro đã bật');
+  });
+
+  it('payment_receipt en: English labels, /en links and lang', () => {
+    const mail = entitlementMail('payment_receipt', 'en', data('en'));
+    expect(mail.subject).toBe('Your Wordmet Pro receipt');
+    expect(mail.html).toContain('<html lang="en"');
+    expect(lines(mail.text)).toContain('Plan: Wordmet Pro 3 months');
+    expect(lines(mail.text)).toContain('Valid: November 14, 2026 – through December 5, 2026');
+    expect(mail.html).toContain(`href="${APP}/en/privacy"`);
+  });
+
+  it('expiry_notice: the last covered day in bold, what stays, one plans button', () => {
+    const vi = entitlementMail('expiry_notice', 'vi', data('vi'));
+    expect(vi.subject).toBe('Gói Wordmet Pro sắp hết hạn');
+    expect(vi.html).toContain('<strong>hết ngày 05/12/2026</strong>');
+    expect(vi.text).toContain('các từ và lịch ôn vẫn giữ nguyên');
+    expect(vi.html).toContain(`href="${APP}/vi/app/plans"`);
+    const en = entitlementMail('expiry_notice', 'en', data('en'));
+    expect(en.subject).toBe('Your Wordmet Pro plan ends soon');
+    expect(en.html).toContain('<strong>through December 5, 2026</strong>');
+    expect(en.html).toContain('<html lang="en"');
+  });
+
+  it('escapes the transfer note and reference in the HTML', () => {
+    const mail = entitlementMail('payment_receipt', 'vi', { ...data('vi'), receipt: { ...data('vi').receipt, description: 'WM<1>&', reference: 'R"1' } });
+    expect(mail.html).toContain('WM&lt;1&gt;&amp;');
+    expect(mail.html).toContain('R&quot;1');
+    expect(mail.text).toContain('Nội dung chuyển khoản: WM<1>&');
+  });
+
+  it.each(['trial_started', 'trial_reminder', 'renewal_notice'] as const)('%s stays a text-only mail (not shipped as html)', (kind) => {
+    for (const language of ['vi', 'en'] as const) {
+      const mail = entitlementMail(kind, language, { trialEndsAt: END_OF_PERIOD, periodEnd: END_OF_PERIOD, appUrl: APP, plansUrl: `${APP}/${language}/app/plans` });
+      expect(mail.html).toBeUndefined();
+    }
+  });
+});

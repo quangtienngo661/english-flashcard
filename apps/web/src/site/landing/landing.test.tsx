@@ -25,7 +25,7 @@ function renderHome(data: LandingData = FALLBACK_LANDING_DATA) {
   return render(<HomePage copy={vi_.Landing} data={data} locale="vi" />);
 }
 
-const pricing = () => within(screen.getByRole('region', { name: 'Hai gói, khác nhau ở mức luyện tập và AI' }));
+const pricing = () => within(screen.getByRole('region', { name: 'Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn' }));
 /** The row of one period of the Pro card. */
 const period = (label: string) => within(pricing().getByText(label, { exact: true }).closest('li') as HTMLElement);
 
@@ -35,12 +35,12 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     // Accessible names, not textContent: M8.6 splits each title into aria-hidden words beside one sr-only copy.
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
-      'H1 Ôn từ đúng lúc, luyện từ trong câu.',
-      'H2 Từ của mỗi bài thành một nhóm',
-      'H2 Từ lúc gặp tới lúc dùng được',
-      'H2 Hai gói, khác nhau ở mức luyện tập và AI',
+      'H1 Nhớ từ lâu hơn, dùng từ tự tin trong câu.',
+      'H2 Mỗi bài đọc thành một nhóm từ của riêng bạn',
+      'H2 Từ lúc gặp đến lúc dùng được',
+      'H2 Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn',
       'H2 Câu hỏi thường gặp',
-      'H2 Bắt đầu với bài bạn vừa đọc',
+      'H2 Biến bài bạn vừa đọc thành vốn từ của bạn',
     ];
     expect(headings.map((h) => h.tagName)).toEqual(expected.map((e) => e.slice(0, 2)));
     headings.forEach((h, i) => expect(h).toHaveAccessibleName(expected[i].slice(3)));
@@ -50,15 +50,15 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const { container } = renderHome();
     const ids = [...container.querySelectorAll('section[id]')].map((s) => s.id);
     expect(ids).toEqual(['nhom-tu', 'cach-hoc', 'gia', 'hoi-dap']);
-    expect(screen.getByRole('region', { name: 'Từ của mỗi bài thành một nhóm' }).id).toBe('nhom-tu');
-    expect(screen.getByRole('region', { name: 'Từ lúc gặp tới lúc dùng được' }).id).toBe('cach-hoc');
-    expect(screen.getByRole('region', { name: 'Hai gói, khác nhau ở mức luyện tập và AI' }).id).toBe('gia');
+    expect(screen.getByRole('region', { name: 'Mỗi bài đọc thành một nhóm từ của riêng bạn' }).id).toBe('nhom-tu');
+    expect(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }).id).toBe('cach-hoc');
+    expect(screen.getByRole('region', { name: 'Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn' }).id).toBe('gia');
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
   });
 
   it('QM8-6 shows the drafted wording instead of "ngăn" and Figma\'s refund note', () => {
     renderHome();
-    expect(screen.getByText('Mỗi từ có lịch ôn riêng.')).toBeInTheDocument();
+    expect(screen.getByText('Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.')).toBeInTheDocument();
     expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(screen.getByText('ôn lại sau')).toBeInTheDocument();
     expect(screen.getByText('từ ôn lại sau 7 ngày')).toBeInTheDocument();
@@ -76,12 +76,12 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
 
   it('LearnSection has its four cards, the listen card included (shown from md)', () => {
     renderHome();
-    const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp tới lúc dùng được' }));
+    const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }));
     expect(learn.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      'Luyện trong câu',
-      'Ghi từ',
-      'Nghe và đọc phiên âm',
-      'Ôn đúng lúc',
+      'Luyện từ trong câu thật',
+      'Ghi từ trong vài giây',
+      'Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm',
+      'Ôn đúng lúc sắp quên',
     ]);
   });
 });

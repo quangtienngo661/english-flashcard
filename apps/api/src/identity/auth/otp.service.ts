@@ -59,7 +59,7 @@ export class OtpService {
       userId, purpose, codeHmac: this.hmac(code).toString('hex'),
       expiresAt: new Date(now.getTime() + 600_000), createdAt: now,
     } });
-    return otpMail(user.email, purpose, code);
+    return otpMail(user.email, purpose, code, this.config.learnerAppUrl);
   }
 
   /** Design §7 event, logged only after the issuing transaction committed; never carries code or address. */
@@ -147,7 +147,7 @@ export class OtpService {
       const lockedUntil = new Date(now.getTime() + day);
       await tx.otpFailureWindow.update({ where: { userId_purpose: { userId, purpose } }, data: { lockedUntil } });
       const account = await tx.user.findUnique({ where: { id: userId } });
-      return { kind: 'locked', lockedUntil, notice: account ? otpLockedMail(account.email, purpose) : null };
+      return { kind: 'locked', lockedUntil, notice: account ? otpLockedMail(account.email, purpose, this.config.learnerAppUrl) : null };
     }
     return { kind: 'wrong' };
   }
