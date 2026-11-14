@@ -15,8 +15,6 @@ import { PasswordField } from '@/ui/PasswordField';
 import { TextField } from '@/ui/TextField';
 import { AuthHeading, FormError, passwordViolations, PasswordRules, type PasswordRule } from './AuthHeading';
 import { useFocusFirstInvalid } from './focus-first-invalid';
-import { CaptchaPending } from './CaptchaPending';
-import { useTurnstile } from './use-turnstile';
 
 type Errors = {
   email?: string;
@@ -52,28 +50,18 @@ export function ResetPasswordForm() {
   const [typedEmail, setTypedEmail] = useState('');
   const email = pendingEmail ?? typedEmail.trim();
 
-  // Review 07/11 F7: the reset runs argon2 for anyone, so it needs a bot-check token.
-  const bot = useTurnstile();
   const { submit, busy } = useSubmitOnce(async () => {
-    try {
-      await createApiClient({ send: store!.send }).post('/v1/auth/password/reset', {
-        email,
-        code: code.replace(/\s/g, ''),
-        new_password: password,
-        turnstile_token: bot.token,
-      });
-    } catch (failure) {
-      // The form stays on the page after a failure, so the spent token is replaced; a success leaves the page.
-      bot.reset();
-      throw failure;
-    }
+    await createApiClient({ send: store!.send }).post('/v1/auth/password/reset', {
+      email,
+      code: code.replace(/\s/g, ''),
+      new_password: password,
+    });
     clearPendingEmail();
     hardReplace(`/${locale}/app/login?reset=1`);
   });
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (bot.token === null) return;
     const local: Errors = {
       ...(email ? {} : { email: t('required.email') }),
       ...(/^\d{6}$/.test(code) ? {} : { code: t('required.code') }),
@@ -120,9 +108,7 @@ export function ResetPasswordForm() {
           error={errors.confirm}
         />
         <FormError message={errors.form ?? null} />
-        {bot.widget}
-        <CaptchaPending show={bot.pending} />
-        <Button type="submit" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
+        <Button type="submit" size="lg" isPending={busy} isDisabled={!store}>
           {t('reset.submit')}
         </Button>
       </form>
