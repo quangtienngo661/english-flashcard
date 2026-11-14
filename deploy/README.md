@@ -40,6 +40,29 @@ Order: refuse a checkout with local changes → check out `<sha>` → build `wor
 
 Deploy the API before the web: the web build reads prices and FAQ from it (`LANDING_DATA_REQUIRED=1`).
 
+### Continuous deployment
+
+Merging into `main` runs the GitHub workflow **Deploy** (`.github/workflows/deploy-web.yml`):
+
+```
+job api   SSH to root@VPS_HOST with the deploy key, send the commit SHA → ci-deploy.sh → deploy.sh <sha>
+            fails (deploy.sh already put the previous version back) → the run stops, web and admin unchanged
+job web   (after api) build apps/web at the same SHA → wrangler deploy (wordmet.com)
+job admin (after api) build apps/admin at the same SHA → wrangler deploy (admin.wordmet.com)
+```
+
+- Only a commit on `main` deploys. A manual run (Actions tab → Deploy → Run workflow) takes an optional full SHA on `main`; empty means the
+  head of `main`. Redeploying the running SHA is safe: nothing to migrate, the containers are not recreated, the web picks up new prices.
+- Pause: repository variable `DEPLOY_PAUSED=true` skips the run on push; a manual run still deploys.
+- One run at a time (`concurrency: deploy`). Running `deploy.sh` by hand while a run is in progress is not guarded: check the Actions tab first.
+- The key: secret `VPS_SSH_KEY` (environment `deploy-env`), its public half in `/root/.ssh/authorized_keys` as
+  `restrict,command="/srv/wordmet/bin/ci-deploy.sh" ssh-ed25519 … github-actions-deploy@wordmet`. `restrict` refuses a shell, a terminal
+  and port forwarding; the forced command accepts only a 40-character SHA. `ci-deploy.sh` lives outside the clone because `deploy.sh`
+  checks out other commits; after changing it in the repo: `install -m 755 deploy/scripts/ci-deploy.sh /srv/wordmet/bin/`.
+- The host key is pinned in repository variable `VPS_KNOWN_HOSTS` (`ssh-keyscan -t rsa <ip>`, compared with
+  `ssh-keygen -lf /etc/ssh/ssh_host_rsa_key.pub` on the server). Rotate the deploy key: make a new pair, replace the line in
+  `authorized_keys`, `gh secret set VPS_SSH_KEY --env deploy-env < key`, delete the private file.
+
 ### After the first deploy
 
 ```bash
@@ -109,7 +132,7 @@ r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'
 r2 's3 cp "s3://$R2_BACKUP_BUCKET/<file>.dump" /backups/'
 ```
 
-## Admin web (by hand)
+## Admin web (by hand, when CD is not available)
 
 ```bash
 cd apps/admin

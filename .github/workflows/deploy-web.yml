@@ -1,25 +1,77 @@
-name: Deploy web
+name: Deploy
 
-# Deploys apps/web to Cloudflare Workers on every push to main (or by hand from the Actions tab).
-# CD only builds and deploys; it runs no tests. CI (ci.yml) runs on the pull request before it is merged and does not
-# re-run on merge (branching model in CLAUDE.md), so main must only receive PRs whose CI is green.
-# Needs secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit) and CLOUDFLARE_ACCOUNT_ID in environment deploy-env.
-# The landing has no database since the 03/11/2026 redesign (design landing-redesign L2).
-# Pause switch: repository variable WEB_DEPLOY_PAUSED=true stops the automatic deploy on push; a manual run still deploys (Q14).
-# Deploy the API first: the build reads the landing's prices and FAQ from https://api.wordmet.com and fails without them.
+# Deploys one commit of main to production, in order: the API and worker on the VPS (deploy/scripts/deploy.sh over SSH), then the web
+# and the admin on Cloudflare Workers. Runs on every push to main, or by hand from the Actions tab (input `sha`, default the head of
+# main). The file keeps its old name (deploy-web.yml) so earlier runs and links stay valid.
+# CD only builds and deploys; it runs no tests. CI (ci.yml) runs on the pull request before it is merged and does not re-run on merge
+# (branching model in CLAUDE.md), so main must only receive PRs whose CI is green.
+# The web and the admin wait for the API: the web build reads the landing's prices and FAQ from https://api.wordmet.com, and a failed
+# API deploy (deploy.sh has already put the previous version back) stops the run before anything else changes.
+# Pause switch: repository variable DEPLOY_PAUSED=true stops the automatic run on push; a manual run still deploys (Q14).
+# Environment deploy-env: secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit), CLOUDFLARE_ACCOUNT_ID, VPS_SSH_KEY (the forced-command
+# key, deploy/README.md "Continuous deployment"); variable TURNSTILE_SITE_KEY. Repository variables: VPS_HOST, VPS_KNOWN_HOSTS.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character commit SHA on main to deploy (empty = the head of main)
+        required: false
+        default: ''
 
 concurrency:
-  group: deploy-web
+  group: deploy
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  api:
+    name: deploy the api and worker on the VPS
+    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    environment: deploy-env
+    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Only a commit already on main reaches production, whichever branch a manual run was started from.
+      - name: Resolve the commit
+        id: sha
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ -n "$INPUT_SHA" ]; then sha="$INPUT_SHA"
+          elif [ "$EVENT_NAME" = push ]; then sha="$GITHUB_SHA"
+          else sha="$(git rev-parse origin/main)"; fi
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then echo "::error::sha must be a full 40-character commit SHA, got '$sha'"; exit 1; fi
+          if ! git merge-base --is-ancestor "$sha" origin/main; then echo "::error::$sha is not on main"; exit 1; fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying $sha"
+
+      # The key may only run /srv/wordmet/bin/ci-deploy.sh, which takes the SHA and runs deploy.sh; the host key is pinned.
+      - name: Deploy over SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ vars.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "root@$VPS_HOST" "$SHA"
+
+  web:
     name: deploy apps/web to Cloudflare
-    if: github.event_name == 'workflow_dispatch' || vars.WEB_DEPLOY_PAUSED != 'true'
+    needs: api
     runs-on: ubuntu-latest
     # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are secrets of this GitHub environment.
     environment: deploy-env
@@ -43,6 +95,8 @@ jobs:
       LANDING_DATA_REQUIRED: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.api.outputs.sha }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -58,6 +112,45 @@ jobs:
 
       - name: Build (OpenNext)
         run: pnpm cf:build
+
+      - name: Deploy
+        run: pnpm exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  admin:
+    name: deploy apps/admin to Cloudflare
+    needs: api
+    runs-on: ubuntu-latest
+    environment: deploy-env
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/admin
+    env:
+      # Baked into the build; admin.wordmet.com is attached by `routes` in apps/admin/wrangler.jsonc.
+      VITE_API_BASE_URL: https://admin-api.wordmet.com
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.api.outputs.sha }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.6.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.0
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
 
       - name: Deploy
         run: pnpm exec wrangler deploy
