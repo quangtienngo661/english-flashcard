@@ -62,6 +62,8 @@ export interface AppConfig {
   adminAppUrl: string;
   /** Origin of the learner app (apps/web); reminder emails link to `<learnerAppUrl>/<language>/app/settings`. */
   learnerAppUrl: string;
+  /** Address shown to learners for payment questions and account problems in emails. */
+  supportEmail: string;
   /** Version of the Terms/Privacy text a learner accepts at registration. */
   termsVersion: string;
   maintenanceEnabled: boolean;
@@ -279,6 +281,7 @@ const envSchema = z.object({
     const url = new URL(value);
     return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
   }),
+  SUPPORT_EMAIL: z.email().default('support@wordmet.com'),
   TERMS_VERSION: nonEmpty,
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
@@ -450,6 +453,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     problemTypeBase: values.PROBLEM_TYPE_BASE,
     adminAppUrl: values.ADMIN_APP_URL,
     learnerAppUrl: values.LEARNER_APP_URL,
+    supportEmail: values.SUPPORT_EMAIL,
     termsVersion: values.TERMS_VERSION,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
