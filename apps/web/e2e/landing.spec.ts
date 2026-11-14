@@ -65,18 +65,30 @@ test.describe('LR20 sign-up', () => {
   });
 });
 
-test.describe('LR21 the English landing', () => {
-  test('/en is a 307 to /vi, and /vi offers no English link', async ({ page, request }) => {
+test.describe('LR21 the English landing (served since 14/11/2026, design landing-redesign L4 reversed)', () => {
+  test('/en answers 200 in English with the English heading, FAQ and prices (no redirect to /vi)', async ({ page, request }) => {
     const res = await request.get('/en', { maxRedirects: 0 });
-    expect(res.status()).toBe(307);
-    expect(new URL(res.headers().location, 'http://x').pathname).toBe('/vi');
-    await page.goto('/vi');
-    await expect(page.getByRole('link', { name: /english/i })).toHaveCount(0);
+    expect(res.status()).toBe(200);
+    const E = copy.en.Landing;
+    await page.goto('/en');
+    await expect(page).toHaveURL(/\/en$/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByRole('heading', { level: 1, name: `${E.hero.line1} ${E.hero.line2}` })).toBeVisible();
+    await expect(page.getByRole('region', { name: E.faq.title }).getByRole('group').first().locator('summary')).toHaveText(
+      'How does Wordmet help me learn vocabulary?',
+    );
+    await expect(page.getByRole('region', { name: E.plans.title }).getByText('₫79,000')).toBeVisible();
+    await expect(page.getByRole('main').getByText(/Bắt đầu|Câu hỏi thường gặp|Miễn phí/)).toHaveCount(0);
   });
 
-  test('the query string survives the redirect', async ({ request }) => {
+  test('the footer switches language both ways, and the query string is kept on /en', async ({ page, request }) => {
+    await page.goto('/vi');
+    await page.getByRole('contentinfo').getByRole('link', { name: copy.vi.Footer.otherLanguage, exact: true }).click();
+    await expect(page).toHaveURL(/\/en$/);
+    await page.getByRole('contentinfo').getByRole('link', { name: copy.en.Footer.otherLanguage, exact: true }).click();
+    await expect(page).toHaveURL(/\/vi$/);
     const res = await request.get('/en?ref=x', { maxRedirects: 0 });
-    expect(new URL(res.headers().location, 'http://x').search).toBe('?ref=x');
+    expect(res.status()).toBe(200);
   });
 });
 

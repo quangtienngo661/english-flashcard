@@ -219,10 +219,10 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   (`giao-dien-moi.md`). Vì sao: từ M8, `next.config.ts` đọc giá và FAQ lúc build từ `GET /v1/public/prices`. Không có cờ này thì build không đọc được vẫn qua, in một
   dòng cảnh báo và đưa giá, FAQ dự phòng lên trang chủ; có cờ thì build fail. Chỉ bật khi `api.` đã chạy, nếu không mọi lần deploy `main` đều fail.
   Đổi giá hay FAQ trong admin chỉ hiện trên trang chủ sau lần build kế tiếp.
-- [ ] **Sau deploy: mở `/vi`, mở `/en` (phải 307 về `/vi`), bấm Đăng ký (phải tới `/vi/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
+- [ ] **Sau deploy: mở `/vi`, mở `/en` (phải hiện landing tiếng Anh, status 200), bấm Đăng ký ở mỗi trang (phải tới `/vi/app/register` và `/en/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
   Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
-- [ ] **Bản tiếng Anh của landing.** Nguồn: design L3, L4. Khi có: thêm `'en'` vào `LANDING_LOCALES` (`src/lib/landing-locale.ts`), dịch `Landing` trong
-  `messages/en.json` (hiện còn là chữ Việt), đưa link ngôn ngữ trở lại header/footer.
+- [x] **Bản tiếng Anh của landing** (14/11/2026, `docs/deliveries/landing-en.md`). Nguồn: design L3, L4. `'en'` đã ở `LANDING_LOCALES`, `Landing` trong `messages/en.json` đã dịch, link ngôn ngữ ở footer.
+  Còn lại: FAQ tiếng Anh nằm trong code (`landing-faq.en.ts`), không đọc từ admin; đổi câu nào ở admin thì đổi cả bản tiếng Anh. Sau deploy kiểm `hreflang` và sitemap có `/en`.
 
 ## Bước 8 — đăng nhập Google và xóa tài khoản (design Bước 8 §18, §19; 29/10/2026)
 

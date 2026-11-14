@@ -2,11 +2,12 @@ import type { AppLocale } from '@/i18n/routing';
 import type { Prices } from '@/lib/period-offer';
 import { site } from '@/lib/site';
 
-const PRO_OFFERS = [
-  ['1', 'Pro 1 tháng'],
-  ['3', 'Pro 3 tháng'],
-  ['12', 'Pro 12 tháng'],
-] as const;
+const MONTHS = ['1', '3', '12'] as const;
+
+const OFFER_NAMES: Record<AppLocale, { free: string; pro: (months: (typeof MONTHS)[number]) => string }> = {
+  vi: { free: 'Miễn phí', pro: (months) => `Pro ${months} tháng` },
+  en: { free: 'Free', pro: (months) => `Pro ${months} ${months === '1' ? 'month' : 'months'}` },
+};
 
 /**
  * Server-rendered JSON-LD (design §11, M8.8); `<` is escaped so the payload cannot close the script tag (Next.js JSON-LD guide). `prices`
@@ -26,8 +27,8 @@ export function JsonLd({ locale, description, prices }: { locale: AppLocale; des
       description,
       url,
       offers: [
-        { '@type': 'Offer', name: 'Miễn phí', price: 0, priceCurrency: 'VND' },
-        ...PRO_OFFERS.map(([months, name]) => ({ '@type': 'Offer', name, price: prices[months], priceCurrency: 'VND' })),
+        { '@type': 'Offer', name: OFFER_NAMES[locale].free, price: 0, priceCurrency: 'VND' },
+        ...MONTHS.map((months) => ({ '@type': 'Offer', name: OFFER_NAMES[locale].pro(months), price: prices[months], priceCurrency: 'VND' })),
       ],
     },
     { '@context': 'https://schema.org', '@type': 'Organization', name: 'Wordmet', url: site.url, logo: `${site.url}/icon.svg` },

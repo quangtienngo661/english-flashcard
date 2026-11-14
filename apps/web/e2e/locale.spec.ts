@@ -23,13 +23,12 @@ test.describe('locale at the root', () => {
     expect(new URL(res.headers().location, 'http://x').pathname).toBe('/vi');
   });
 
-  // The root still picks /en for English signals; /en then goes on to /vi until the English landing exists (design landing-redesign L4).
-  test('LP7 Accept-Language en-US without country redirects to /en, which goes on to /vi', async ({ request }) => {
+  // The root picks /en for English signals, and /en is the English landing (design landing-redesign L4, reversed 14/11/2026).
+  test('LP7 Accept-Language en-US without country redirects to /en, which answers 200', async ({ request }) => {
     const res = await root(request, { 'accept-language': 'en-US,en;q=0.9' });
     expect(new URL(res.headers().location, 'http://x').pathname).toBe('/en');
     const next = await request.get('/en', { maxRedirects: 0 });
-    expect(next.status()).toBe(307);
-    expect(new URL(next.headers().location, 'http://x').pathname).toBe('/vi');
+    expect(next.status()).toBe(200);
   });
 
   test('LP8 /vi with an English Accept-Language returns 200 Vietnamese', async ({ request }) => {
@@ -52,11 +51,11 @@ test.describe('locale at the root', () => {
     expect(res?.status()).toBe(404);
   });
 
-  test('LP9 a visitor with English signals who opens / ends on the Vietnamese landing', async ({ page }) => {
+  test('LP9 a visitor with English signals who opens / ends on the English landing', async ({ page }) => {
     await page.setExtraHTTPHeaders({ 'accept-language': 'en-US,en;q=0.9' });
     await page.goto('/');
-    await expect(page).toHaveURL(/\/vi$/);
-    await expect(page.getByRole('heading', { level: 1, name: `${copy.vi.Landing.hero.line1} ${copy.vi.Landing.hero.line2}` })).toBeVisible();
+    await expect(page).toHaveURL(/\/en$/);
+    await expect(page.getByRole('heading', { level: 1, name: `${copy.en.Landing.hero.line1} ${copy.en.Landing.hero.line2}` })).toBeVisible();
   });
 
   test('D2 the English legal pages are not redirected', async ({ request }) => {

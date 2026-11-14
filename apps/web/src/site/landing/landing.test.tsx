@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import { getDefaultNormalizer, render, screen, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
+import en_ from '../../../messages/en.json';
 import vi_ from '../../../messages/vi.json';
 import { createFormat } from '@/app-shell/format';
 import { formatVnd } from './copy';
 import { HomePage } from './HomePage';
 import type { LandingData } from './landing-data';
 import { FALLBACK_LANDING_DATA } from './landing-data.fallback';
+import { LANDING_FAQ_EN } from './landing-faq.en';
 
 // next/link renders a marked anchor here, so a test can tell client navigation from a plain <a> (LB3E6: links into /app reload).
 vi.mock('next/link', () => ({
@@ -143,6 +145,14 @@ describe('PricingSection (QM8-2: three prices, the saving, no struck price, no s
     }
     expect(formatVnd(66300)).toBe(`66.300${NBSP}₫`);
   });
+
+  it('formats money in English exactly as the app does for /en (createFormat("en", ...).money)', () => {
+    const app = createFormat('en', 'UTC');
+    for (const amount of [0, 79000, 199000, 599000, 66300, 1250000]) {
+      expect(formatVnd(amount, 'en')).toBe(app.money(amount, 'VND'));
+    }
+    expect(formatVnd(66300, 'en')).toBe('₫66,300');
+  });
 });
 
 describe('FaqSection', () => {
@@ -177,5 +187,42 @@ describe('links', () => {
     ]);
     expect(appLinks.filter((a) => a.hasAttribute('data-client-link'))).toEqual([]);
     expect(screen.getByRole('link', { name: 'Xem cách học' })).toHaveAttribute('href', '#cach-hoc');
+  });
+});
+
+describe('the English landing (/en, 14/11/2026)', () => {
+  function renderEnglish(data: LandingData = FALLBACK_LANDING_DATA) {
+    return render(<HomePage copy={en_.Landing} data={data} locale="en" />);
+  }
+
+  it('shows the English heading, the English FAQ (not the Vietnamese one) and links into /en/app', () => {
+    renderEnglish();
+    expect(screen.getByRole('heading', { level: 1, name: 'Remember words longer, use them with confidence in a sentence.' })).toBeInTheDocument();
+    const faq = within(screen.getByRole('region', { name: 'Frequently asked questions' }));
+    expect(faq.getAllByRole('group').map((d) => d.querySelector('summary')?.textContent)).toEqual(LANDING_FAQ_EN.map((f) => f.question));
+    expect(faq.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
+    const appLinks = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('/en/app/'));
+    expect(appLinks.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Start for free', '/en/app/register'],
+      ['Create a free account', '/en/app/register'],
+      ['Create an account', '/en/app/register'],
+      ['Create a free account', '/en/app/register'],
+    ]);
+  });
+
+  it('prices follow the build data in English money: free, three Pro periods, the saving and the monthly figure', () => {
+    renderEnglish({ ...FALLBACK_LANDING_DATA, prices: { '1': 79000, '3': 240000, '12': 599000 }, source: 'api' });
+    const pro = within(screen.getByRole('region', { name: 'Start free, go Pro when you want to practice more' }));
+    expect(pro.getByText('₫0')).toBeInTheDocument();
+    expect(pro.getByText('₫240,000')).toBeInTheDocument();
+    expect(pro.getByText('≈ ₫80,000 per month')).toBeInTheDocument();
+    expect(pro.getByText('3 months', { exact: true })).toBeInTheDocument();
+    expect(pro.queryByText(/ngày|tháng|₫\s?\d+\.\d/)).toBeNull();
+  });
+
+  it('keeps no Vietnamese sentence on the page except the demo word glosses', () => {
+    const { container } = renderEnglish();
+    const text = container.textContent ?? '';
+    expect(text).not.toMatch(/Bắt đầu|Câu hỏi|Miễn phí|Tạo tài khoản|Xem cách học|ngày/);
   });
 });
