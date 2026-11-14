@@ -35,7 +35,8 @@ function groupApi(alreadyIn = false): Record<string, MockHandler> {
       return { json: { items: [FIRST, SECOND], next_page_token: null } };
     },
     'GET /v1/items': () => ({ json: { items: [] } }),
-    [`POST /v1/groups/${DECK}/items/bulk`]: () => ({ json: { added: 2, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 } }),
+    'GET /v1/items/topic-summary': () => ({ json: { total: 2, learning: 0, unlearned: 2 } }),
+    'POST /v1/items/topic-add': () => ({ json: { mode: 'all_unlearned', group_id: DECK, added: 2, eligible: 2, skipped_group_full: 0 } }),
   };
 }
 
@@ -94,7 +95,9 @@ test.describe('A14: adding words from a deck (mocked API)', () => {
     await expect(page.getByRole('button', { name: new RegExp(vi.topic.addTo) })).toHaveText(NAME);
     await page.getByRole('button', { name: fill(vi.topic.addAll, { count: 2 }), exact: true }).click();
     await expect(page.getByText(fill(vi.topic.result, { added: 2, name: NAME }))).toBeVisible();
-    expect(requests(page, 'POST', `/v1/groups/${DECK}/items/bulk`)[0].body).toEqual({ sense_ids: [FIRST.sense_id, SECOND.sense_id] });
+    expect(requests(page, 'POST', '/v1/items/topic-add')[0].body).toEqual({
+      topic: TOPIC.code, level: 'B1', mode: 'all_unlearned', target: { group_id: DECK },
+    });
     expect(requests(page, 'POST', '/v1/groups')).toHaveLength(0);
   });
 });
