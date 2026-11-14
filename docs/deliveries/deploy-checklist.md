@@ -99,10 +99,11 @@ Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi
   (vd `/uploads`) phải có bốn header trên; `dist/_headers` giống `public/_headers` sau `pnpm build`.
 - [x] **Security header cho API: phần code đã làm (đợt A, M1).** Nguồn: FD-dj. API dùng `helmet` với năm header của một API JSON: không `X-Powered-By`;
   `X-Content-Type-Options: nosniff`; `Referrer-Policy: no-referrer`; `Content-Security-Policy: default-src 'none';frame-ancestors 'none'` (helmet viết
-  không có dấu cách sau `;`); `Cross-Origin-Resource-Policy: same-site`. Không đặt HSTS ở API (`app.setup.headers.spec.ts` ghim).
-- [ ] **Sau khi deploy API: kiểm HSTS và header.** `curl -I https://api.wordmet.com/v1/health` có năm header trên. HSTS: `ASSUMPTION` Cloudflare đặt ở
-  tầng edge, chỉ đúng khi API đứng sau proxy Cloudflare; nếu hosting của API không đứng sau proxy thì bật `strictTransportSecurity` trong `helmet`
-  (`apps/api/src/app.setup.ts`).
+  không có dấu cách sau `;`); `Cross-Origin-Resource-Policy: same-site`. Sửa 14/11/2026: API tự đặt `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+  (`app.setup.headers.spec.ts` ghim), vì `api.` và `admin-api.` trỏ thẳng VPS (Q6), không qua proxy Cloudflare.
+- [ ] **Sau khi deploy API: kiểm HSTS và header.** `curl -I https://api.wordmet.com/v1/health` có năm header trên và
+  `Strict-Transport-Security: max-age=31536000; includeSubDomains`; `admin-api.` cũng vậy. Kiểm 14/11/2026 trước bản sửa: năm header có, HSTS không có
+  (`docs/audit/2026-11-14-production-checks.md`). `wordmet.com` và `admin.wordmet.com` cũng chưa có HSTS: bật ở Cloudflare → SSL/TLS → Edge Certificates.
 - [ ] **Sau khi deploy web: kiểm header của web.** `curl -I https://wordmet.com/vi` có `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` và CSP;
   `curl -I` một file `/_next/static/…`. `ASSUMPTION`: `headers()` của `next.config.ts` có thể không áp cho file tĩnh mà Workers Static Assets trả thẳng
   (`.open-next/assets`). E23 trong CI chỉ kiểm phần Worker trả lời.
