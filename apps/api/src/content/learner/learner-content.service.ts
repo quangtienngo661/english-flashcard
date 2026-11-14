@@ -11,6 +11,8 @@ export type LearnerListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string;
   exclude_function_words?: boolean;
 };
+export type TopicScope = { topic: string; level: Level };
+export type TopicSenseOptions = { senseIds?: readonly string[]; db?: Prisma.TransactionClient };
 export type LearnerSenseView = {
   sense_id: string; entry_id: string; lemma: string; pos: string; level: Level | null; is_function_word: boolean;
   context_label: string | null; meaning: { text: string; language: 'vi' | 'en'; translation_missing: boolean };
@@ -24,6 +26,33 @@ const cursorSchema = z.strictObject({
   pos: z.enum(VALID_POS), id: z.uuid(),
 });
 type Cursor = z.infer<typeof cursorSchema>;
+
+const liveCatalogWord = Prisma.sql`s.state = 'open' AND s.live_revision_id IS NOT NULL
+  AND e.language = 'en' AND e.entry_type = 'word' AND e.scope = 'catalog'`;
+const notFunctionWord = Prisma.sql`COALESCE(e.function_word_override, e.function_word_derived) = false`;
+const liveSenses = Prisma.sql`FROM senses s
+  JOIN entries e ON e.id = s.entry_id
+  JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id`;
+const displayedLevel = Prisma.sql`LEFT JOIN LATERAL (
+  SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
+  WHERE el.entry_id = e.id
+  ORDER BY (el.basis = 'editorial') DESC,
+    CASE WHEN el.basis = 'editorial' THEN el.created_at END DESC,
+    CASE WHEN el.basis = 'editorial' THEN el.id END ASC,
+    ds.display_priority ASC, ds.id ASC,
+    array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
+  LIMIT 1
+) displayed ON true`;
+
+function catalogFilters(query: Pick<LearnerListQuery, 'level' | 'topic' | 'pos' | 'exclude_function_words'>): Prisma.Sql[] {
+  return [
+    liveCatalogWord,
+    ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
+    ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
+    ...(query.pos === undefined ? [] : [Prisma.sql`e.pos = ${query.pos}`]),
+    ...(query.exclude_function_words ? [notFunctionWord] : []),
+  ];
+}
 
 function queryBinding(route: 'search' | 'browse', query: LearnerListQuery): string {
   return createHash('sha256').update(JSON.stringify({
@@ -67,6 +96,21 @@ export class LearnerContentService {
     return this.list('browse', query, nativeLanguage);
   }
 
+  /** Browse order for a topic, without a text search or fetching definitions. */
+  async topicSenseIds(scope: TopicScope, { senseIds, db = this.prisma }: TopicSenseOptions = {}): Promise<string[]> {
+    if (senseIds?.length === 0) return [];
+    const filters = catalogFilters({ ...scope, exclude_function_words: true });
+    if (senseIds) filters.push(Prisma.sql`s.id = ANY(${[...senseIds]}::uuid[])`);
+    const rows = await db.$queryRaw<Array<{ sense_id: string }>>(Prisma.sql`
+      SELECT s.id::text AS sense_id
+      ${liveSenses}
+      ${displayedLevel}
+      WHERE ${Prisma.join(filters, ' AND ')}
+      ORDER BY e.lemma ASC, e.pos ASC, s.id ASC
+    `);
+    return rows.map(({ sense_id }) => sense_id);
+  }
+
   async getSense(id: string, nativeLanguage: NativeLanguage): Promise<LearnerSenseView> {
     const [row] = await this.readRows({ page_size: 1 }, nativeLanguage, undefined, id);
     if (!row) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
@@ -101,15 +145,8 @@ export class LearnerContentService {
         SELECT v.text FROM entry_variants v WHERE v.entry_id = e.id
       ) head
       WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'}`;
-    const filters = [
-      Prisma.sql`s.state = 'open' AND s.live_revision_id IS NOT NULL`,
-      Prisma.sql`e.language = 'en' AND e.entry_type = 'word' AND e.scope = 'catalog'`,
-      ...(senseId === undefined ? [] : [Prisma.sql`s.id = ${senseId}::uuid`]),
-      ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
-      ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
-      ...(query.pos === undefined ? [] : [Prisma.sql`e.pos = ${query.pos}`]),
-      ...(query.exclude_function_words ? [Prisma.sql`COALESCE(e.function_word_override, e.function_word_derived) = false`] : []),
-    ];
+    const filters = catalogFilters(query);
+    if (senseId !== undefined) filters.push(Prisma.sql`s.id = ${senseId}::uuid`);
     const after = cursor ? Prisma.sql`
       WHERE (rank, lemma, pos, sense_id) > (${cursor.rank}, ${cursor.lemma}, ${cursor.pos}, ${cursor.id}::uuid)` : Prisma.empty;
     // No search index: design §9 requires measuring the real ~9,800-entry scan before adding one.
@@ -118,20 +155,9 @@ export class LearnerContentService {
         SELECT s.id AS sense_id, s.entry_id, e.lemma, e.pos, s.context_label,
           COALESCE(e.function_word_override, e.function_word_derived) AS is_function_word,
           displayed.level, matched.rank, r.id AS revision_id, r.examples, r.topic_codes
-        FROM senses s
-        JOIN entries e ON e.id = s.entry_id
-        JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
+        ${liveSenses}
         JOIN LATERAL (${rank}) matched ON matched.rank IS NOT NULL
-        LEFT JOIN LATERAL (
-          SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
-          WHERE el.entry_id = e.id
-          ORDER BY (el.basis = 'editorial') DESC,
-            CASE WHEN el.basis = 'editorial' THEN el.created_at END DESC,
-            CASE WHEN el.basis = 'editorial' THEN el.id END ASC,
-            ds.display_priority ASC, ds.id ASC,
-            array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
-          LIMIT 1
-        ) displayed ON true
+        ${displayedLevel}
         WHERE ${Prisma.join(filters, ' AND ')}
       ), page AS (
         SELECT * FROM candidates ${after}
