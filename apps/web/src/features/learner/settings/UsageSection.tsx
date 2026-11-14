@@ -20,6 +20,9 @@ export function UsageRows() {
   const { data } = useEntitlements();
   if (!data) return null;
   const { practice_sessions: practice, ai_practice: aiPractice, ai_lookup: aiLookup } = data.pools;
+  // Owner 14/11/2026: a Pro or trial period is prepaid and does not renew yet, so "new credits on <end date>" would promise a refill that
+  // never comes. Free keeps it: its allowance really restarts on the first of the month.
+  const tellsRefill = data.plan === 'free';
 
   return (
     <>
@@ -29,8 +32,8 @@ export function UsageRows() {
         value={<Meter value={practice.used} max={practice.limit} label={t('practiceToday')} />}
         control={<span className={COUNT}>{t('used', { used: practice.used, limit: practice.limit })}</span>}
       />
-      <AiRow label={t('aiPractice')} pool={aiPractice} refill="aiPracticeRefill" />
-      <AiRow label={t('aiLookup')} pool={aiLookup} refill="aiLookupRefill" />
+      <AiRow label={t('aiPractice')} pool={aiPractice} refill={tellsRefill ? 'aiPracticeRefill' : null} />
+      <AiRow label={t('aiLookup')} pool={aiLookup} refill={tellsRefill ? 'aiLookupRefill' : null} />
     </>
   );
 }
@@ -40,17 +43,17 @@ function useZone(): string {
   return state.status === 'signed-in' ? state.me.timezone : 'UTC';
 }
 
-function AiRow({ label, pool, refill }: { label: string; pool: Pool; refill: 'aiPracticeRefill' | 'aiLookupRefill' }) {
+function AiRow({ label, pool, refill }: { label: string; pool: Pool; refill: 'aiPracticeRefill' | 'aiLookupRefill' | null }) {
   const t = useTranslations('App.settings');
   const format = useFormat();
   const zone = useZone();
   // A limit of 0 means this account has no AI of this kind: a Free account whose allowance the admin set to 0, or a limits grant of 0 (D6).
   if (pool.limit === 0) return <SettingsRow label={label} control={<Tag tone="accent">{t('needsPro')}</Tag>} />;
-  const kind = pool.resets_at ? refillKind(pool.resets_at, new Date(), zone) : null;
+  const kind = pool.resets_at && refill !== null ? refillKind(pool.resets_at, new Date(), zone) : null;
   const hint =
-    pool.resets_at && kind === 'date'
+    refill && pool.resets_at && kind === 'date'
       ? t(refill, { date: format.date(pool.resets_at, 'dayMonth') })
-      : pool.resets_at && kind === 'time'
+      : refill && pool.resets_at && kind === 'time'
         ? t(`${refill}Time`, { time: format.time(pool.resets_at) })
         : undefined;
   return (

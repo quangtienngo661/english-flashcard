@@ -144,11 +144,12 @@ describe('SettingsPage (K/50, Figma 120:4295 / 120:4559)', () => {
     expect(screen.queryByText(/mới vào/)).not.toBeInTheDocument();
   });
 
-  it('Pro: AI rows show what is left and the refill date', async () => {
-    renderApp(<SettingsPage />, { routes: routes('pro') });
+  it.each(['pro', 'trial'] as const)('%s: AI rows show what is left and no "new credits" line, since the period is prepaid and does not renew (owner 14/11/2026)', async (plan) => {
+    renderApp(<SettingsPage />, { routes: routes(plan) });
     expect(await screen.findByText('còn 287/300')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới vào 15/11')).toBeInTheDocument();
     expect(screen.getByText('còn 96/100')).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Lượt câu AI' })).toHaveAttribute('aria-valuenow', '287');
+    expect(screen.queryByText(/mới vào|mới có lúc/)).not.toBeInTheDocument();
   });
 
   it('E26: a pool without resets_at shows no reset line', async () => {
