@@ -19,19 +19,19 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Từ vựng theo đúng chủ đề bạn cần",
-      "line1": "Nhớ từ lâu hơn,",
-      "line2": "dùng từ tự tin trong câu.",
-      "accent": "trong câu",
-      "lead": "Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi tự xếp lịch ôn cho từng từ. Bạn chỉ việc dành thời gian luyện từ trong câu.",
-      "signup": "Bắt đầu miễn phí",
-      "howTo": "Xem cách học"
+      "topicLabel": "Vocabulary for exactly the topics you need",
+      "line1": "Remember words longer,",
+      "line2": "use them with confidence in a sentence.",
+      "accent": "in a sentence",
+      "lead": "Wordmet looks up the meaning, example sentences and pronunciation, then schedules each word’s review for you. All you do is practice words in sentences.",
+      "signup": "Start for free",
+      "howTo": "See how it works"
     },
     "stage": {
-      "cardLabel": "Thẻ từ · ôn lại sau {days} ngày",
-      "practiceTitle": "Điền từ vào câu",
-      "practiceCount": "Câu 4/20",
-      "result": "Đúng · lên Bậc {level}",
+      "cardLabel": "Word card · review again in {days}d",
+      "practiceTitle": "Fill in the blank",
+      "practiceCount": "Question 4/20",
+      "result": "Correct · up to Level {level}",
       "cycle": [
         {
           "lemma": "mitigate",
@@ -94,19 +94,19 @@
           "level": 5
         }
       ],
-      "addedTitle": "Bài báo sáng nay",
-      "addedNote": "vừa thêm",
+      "addedTitle": "This morning’s article",
+      "addedNote": "just added",
       "addedWords": [
         "mitigate",
         "allocate",
         "viable",
         "scrutiny"
       ],
-      "addedMore": "+14 từ",
-      "addedMorePhone": "+15 từ",
+      "addedMore": "+14 words",
+      "addedMorePhone": "+15 words",
       "binWord": "deteriorate",
-      "binNote": "ôn lại sau",
-      "binValue": "7 ngày"
+      "binNote": "review again in",
+      "binValue": "7 days"
     },
     "strip": {
       "row1": [
@@ -187,8 +187,8 @@
       ]
     },
     "groups": {
-      "title": "Mỗi bài đọc thành một nhóm từ của riêng bạn",
-      "lead": "Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.",
+      "title": "Every reading becomes a deck of your own",
+      "lead": "Each word has its own review schedule. When one is due, Wordmet reminds you.",
       "cards": [
         {
           "word": "mitigate",
@@ -253,30 +253,30 @@
       ]
     },
     "learn": {
-      "title": "Từ lúc gặp đến lúc dùng được",
-      "lead": "Ghi, nghe, luyện và ôn: tất cả ở một nơi.",
+      "title": "From first meeting to confident use",
+      "lead": "Save, listen, practice and review: all in one place.",
       "practice": {
-        "eyebrow": "Trong buổi học",
-        "title": "Luyện từ trong câu thật",
-        "body": "Điền và gõ từ vào câu thay vì chỉ chọn nghĩa, để từ đi vào cách bạn viết. Sai thì thấy ngay đáp án đặt đúng chỗ.",
-        "demoTitle": "Điền từ vào câu",
-        "count": "Câu 7/20",
+        "eyebrow": "In a study session",
+        "title": "Practice words in real sentences",
+        "body": "Fill in and type the word in the sentence instead of only picking a meaning, so the word makes its way into how you write. Miss it and you see the right answer in place.",
+        "demoTitle": "Fill in the blank",
+        "count": "Question 7/20",
         "scores": [
           {
             "n": "5",
-            "label": "đúng"
+            "label": "correct"
           },
           {
             "n": "1",
-            "label": "sai"
+            "label": "incorrect"
           },
           {
             "n": "13",
-            "label": "câu còn lại"
+            "label": "questions left"
           },
           {
             "n": "2",
-            "label": "từ ôn lại sau 7 ngày"
+            "label": "words to review in 7 days"
           }
         ],
         "sentence": "Air quality tends to deteriorate in the dry season.",
@@ -287,95 +287,95 @@
           "advocate",
           "mitigate"
         ],
-        "right": "Đúng",
-        "wrong": "Sai"
+        "right": "Correct",
+        "wrong": "Incorrect"
       },
       "note": {
-        "eyebrow": "Sau khi đọc một bài",
-        "title": "Ghi từ trong vài giây",
-        "body": "Gõ đúng dạng bạn gặp, Wordmet tự đưa về từ gốc.",
+        "eyebrow": "After reading an article",
+        "title": "Save a word in seconds",
+        "body": "Type the form you came across and Wordmet takes it back to the base word.",
         "typed": "deteriorated",
         "lemma": "deteriorate",
         "meaning": "verb · xấu đi"
       },
       "listen": {
-        "eyebrow": "Mỗi thẻ",
-        "title": "Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm",
+        "eyebrow": "On every card",
+        "title": "Hear UK and US pronunciation, and read the IPA",
         "word": "viable",
         "ipa": "/ˈvaɪ.ə.bəl/"
       },
       "review": {
-        "eyebrow": "Những ngày sau",
-        "title": "Ôn đúng lúc sắp quên",
-        "body": "Mỗi ngày chỉ ôn những từ đến hạn, không tốn thời gian cho từ đã nhớ. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "eyebrow": "In the days after",
+        "title": "Review right before you forget",
+        "body": "Each day you review only the words that are due, with no time spent on words you already know. Remember a word and its schedule stretches out; forget it and it comes back sooner.",
         "bins": [
           {
-            "value": "1 ngày",
-            "label": "ôn lần đầu"
+            "value": "1 day",
+            "label": "first review"
           },
           {
-            "value": "3 ngày",
-            "label": "nhớ lần hai"
+            "value": "3 days",
+            "label": "second recall"
           },
           {
-            "value": "7 ngày",
-            "label": "quen mặt"
+            "value": "7 days",
+            "label": "getting familiar"
           },
           {
-            "value": "14 ngày",
-            "label": "dùng được"
+            "value": "14 days",
+            "label": "ready to use"
           },
           {
-            "value": "30 ngày",
-            "label": "nhớ lâu"
+            "value": "30 days",
+            "label": "stays with you"
           }
         ]
       }
     },
     "plans": {
-      "title": "Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn",
-      "lead": "Cả hai gói đều ôn thẻ không giới hạn. Hết Pro, từ và lịch ôn của bạn vẫn còn.",
-      "free": "Miễn phí",
-      "freeNote": "không giới hạn thời gian",
+      "title": "Start free, go Pro when you want to practice more",
+      "lead": "Both plans include unlimited card review. When Pro ends, your words and review schedule stay.",
+      "free": "Free",
+      "freeNote": "no time limit",
       "freeList": [
-        "Ghi từ, tra nghĩa và nghe phiên âm",
-        "Lịch ôn tự động",
-        "3 phiên luyện mỗi ngày",
-        "Dùng thử câu luyện và tra từ bằng AI"
+        "Save words, look up meanings and hear pronunciation",
+        "Automatic review schedule",
+        "3 practice sessions a day",
+        "Try AI practice sentences and lookups"
       ],
-      "freeSignup": "Tạo tài khoản miễn phí",
+      "freeSignup": "Create a free account",
       "pro": "Pro",
-      "proBadge": "Có AI",
-      "proLine": "Luyện nhiều hơn mỗi ngày, có AI soạn câu luyện riêng cho từng từ và tra từ cùng bạn.",
+      "proBadge": "AI included",
+      "proLine": "More practice every day, with AI that writes practice sentences for each word and looks up words with you.",
       "periods": {
-        "1": "1 tháng",
-        "3": "3 tháng",
-        "12": "12 tháng"
+        "1": "1 month",
+        "3": "3 months",
+        "12": "12 months"
       },
       "saving": "−{percent}%",
-      "best": "Tiết kiệm nhất",
-      "perMonth": "mỗi tháng",
-      "perMonthApprox": "≈ {price} mỗi tháng",
+      "best": "Best value",
+      "perMonth": "per month",
+      "perMonthApprox": "≈ {price} per month",
       "aiList": [
-        "AI soạn câu và tra từ",
-        "AI viết câu luyện cho từng từ bạn học",
-        "Tra từ bằng AI khi từ điển chưa có",
-        "Nhiều lượt AI hơn gói Miễn phí"
+        "AI writes sentences and looks up words",
+        "AI writes practice sentences for each word you study",
+        "AI lookup when the dictionary doesn’t have a word",
+        "More AI credits than the Free plan"
       ],
       "proList": [
-        "30 phiên luyện mỗi ngày",
-        "Mọi quyền lợi của gói Miễn phí"
+        "30 practice sessions a day",
+        "Everything in the Free plan"
       ],
-      "proSignup": "Tạo tài khoản"
+      "proSignup": "Create an account"
     },
     "faq": {
-      "title": "Câu hỏi thường gặp",
-      "lead": "Còn câu hỏi khác? Gửi tới {email}, đội Wordmet sẽ trả lời."
+      "title": "Frequently asked questions",
+      "lead": "More questions? Write to {email} and the Wordmet team will reply."
     },
     "final": {
-      "title": "Biến bài bạn vừa đọc thành vốn từ của bạn",
-      "note": "Miễn phí để bắt đầu, không cần cài đặt.",
-      "signup": "Tạo tài khoản miễn phí"
+      "title": "Turn what you just read into your own vocabulary",
+      "note": "Free to start, nothing to install.",
+      "signup": "Create a free account"
     }
   },
   "Footer": {
@@ -383,6 +383,7 @@
     "terms": "Terms of Use",
     "sources": "Data sources",
     "contact": "Contact",
+    "otherLanguage": "Tiếng Việt",
     "copyright": "© {year} Wordmet"
   },
   "Legal": {

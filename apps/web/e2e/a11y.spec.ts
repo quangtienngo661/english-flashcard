@@ -3,9 +3,9 @@ import { expect, test } from '@playwright/test';
 import { PUBLISHED } from './support/published';
 
 // LP25 / LR27: every public page as it loads, in both themes, scrolled through so the sections that come in on scroll are drawn. The legal
-// and sources pages twice: with no API (draft, "no sources") and with a published text (support/public-api.mjs). /en redirects to /vi
-// (design landing-redesign L4). The states behind a click (an open FAQ answer, the phone contents list) are LR27 in landing.spec.ts.
-const PATHS = ['/vi', '/vi/privacy', '/vi/terms', '/vi/sources', '/vi/khong-ton-tai', `${PUBLISHED}/vi/privacy`, `${PUBLISHED}/vi/terms`, `${PUBLISHED}/vi/sources`];
+// and sources pages twice: with no API (draft, "no sources") and with a published text (support/public-api.mjs). /en is the English
+// landing (design landing-redesign L4, reversed 14/11/2026). The states behind a click (an open FAQ answer, the phone contents list) are LR27 in landing.spec.ts.
+const PATHS = ['/vi', '/en', '/vi/privacy', '/vi/terms', '/vi/sources', '/vi/khong-ton-tai', `${PUBLISHED}/vi/privacy`, `${PUBLISHED}/vi/terms`, `${PUBLISHED}/vi/sources`];
 
 for (const scheme of ['light', 'dark'] as const) {
   for (const path of PATHS) {

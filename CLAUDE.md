@@ -389,7 +389,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 ## Sửa bảo mật trước launch — as-built
 
-`docs/deliveries/pre-launch-fixes.md` (12/11/2026; F2, F3, F4, F5, F7, F10, F12 của review bảo mật 07/11 và M4 của launch B; không design doc, chủ dự án duyệt đề xuất trong chat). Đáng nhớ: khóa 10 lần sai giờ theo tài khoản + IP (bảng `login_failures`, bỏ hai cột lock trên `users`); đăng ký luôn 201; `verify-email` và `password/reset` cần `turnstile_token`; admin đổi email thì email mới chưa xác minh. Việc nhánh `refactor/giao-dien-moi` phải làm trước khi merge ở cuối file đó.
+`docs/deliveries/pre-launch-fixes.md` (12/11/2026; F2, F3, F4, F5, F7, F10, F12 của review bảo mật 07/11 và M4 của launch B; không design doc, chủ dự án duyệt đề xuất trong chat). Đáng nhớ: khóa 10 lần sai giờ theo tài khoản + IP (bảng `login_failures`, bỏ hai cột lock trên `users`); đăng ký luôn 201; `verify-email` và `password/reset` từng cần `turnstile_token` (từ 14/11/2026 bỏ cùng `/v1/auth/otp`: Turnstile chỉ còn ở đăng nhập và đăng ký, ba route kia chỉ còn giới hạn tần suất); admin đổi email thì email mới chưa xác minh. Việc nhánh `refactor/giao-dien-moi` phải làm trước khi merge ở cuối file đó.
 
 ## Số câu AI do người học chọn — plan & as-built
 

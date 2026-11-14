@@ -3,17 +3,16 @@ import { copy } from './copy';
 
 const attr = (html: string, pattern: RegExp) => html.match(pattern)?.[1] ?? null;
 
-// Only the Vietnamese landing exists (design landing-redesign L4), so hreflang lists vi and x-default and no English alternate.
+// Both landings exist (design landing-redesign L4, reversed 14/11/2026), so hreflang lists vi, en and x-default.
 test('LP10 /vi carries complete metadata', async ({ request }) => {
   const html = await (await request.get('/vi')).text();
   expect(attr(html, /<html[^>]*lang="([^"]+)"/)).toBe('vi');
   expect(attr(html, /<title>([^<]+)<\/title>/)).toContain('Wordmet');
   expect(attr(html, /<meta name="description" content="([^"]+)"/)).toBeTruthy();
   expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toMatch(/\/vi$/);
-  for (const hreflang of ['vi', 'x-default']) {
+  for (const hreflang of ['vi', 'en', 'x-default']) {
     expect(html, `hreflang ${hreflang}`).toMatch(new RegExp(`<link rel="alternate" hrefLang="${hreflang}" href="[^"]+"`, 'i'));
   }
-  expect(html, 'no English alternate').not.toMatch(/<link rel="alternate" hrefLang="en"/i);
   for (const prop of ['og:title', 'og:description', 'og:image']) expect(html).toContain(`property="${prop}"`);
   expect(attr(html, /<meta property="og:locale" content="([^"]+)"/)).toBe('vi_VN');
   expect(html).not.toContain('og:locale:alternate');
@@ -65,13 +64,14 @@ test('LP11 without NEXT_PUBLIC_INDEXABLE robots.txt disallows / and pages carry 
   expect(html).toMatch(/<meta name="robots" content="noindex, nofollow"/);
 });
 
-test('sitemap lists /vi alone', async ({ request }) => {
+test('sitemap lists the two landings, each with both hreflang alternates', async ({ request }) => {
   const xml = await (await request.get('/sitemap.xml')).text();
   expect(xml).toMatch(/<loc>[^<]+\/vi<\/loc>/);
-  expect(xml).not.toMatch(/<loc>[^<]+\/en<\/loc>/);
+  expect(xml).toMatch(/<loc>[^<]+\/en<\/loc>/);
+  expect(xml).toMatch(/hreflang="vi"/);
+  expect(xml).toMatch(/hreflang="en"/);
   // Design §11: /vi/privacy joins only when NEXT_PUBLIC_INDEXABLE is on, and e2e builds are not indexable.
   expect(xml).not.toContain('/privacy');
-  expect(xml).not.toMatch(/hreflang="en"/);
 });
 
 test('opengraph-image returns image/png 1200x630', async ({ request }) => {

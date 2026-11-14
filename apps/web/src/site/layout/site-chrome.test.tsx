@@ -71,7 +71,7 @@ describe('SiteHeader', () => {
 });
 
 describe('SiteFooter', () => {
-  it('has the four links of Figma 7:209 and the year from the clock', () => {
+  it('has the four links of Figma 7:209, a link to the other language and the year from the clock', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-11T08:00:00Z'));
     renderChrome(<SiteFooter locale="vi" />);
@@ -83,6 +83,7 @@ describe('SiteFooter', () => {
       ['Điều khoản sử dụng', '/vi/terms'],
       ['Nguồn dữ liệu', '/vi/sources'],
       ['Liên hệ', 'mailto:contact@wordmet.com'],
+      ['English', '/en'],
     ]);
     expect(footer.getByText('© 2026 Wordmet')).toBeInTheDocument();
   });

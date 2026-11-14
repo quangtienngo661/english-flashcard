@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { FALLBACK_LANDING_DATA } from './landing-data.fallback';
 import { landingData, parseLandingData } from './landing-data';
+import { LANDING_FAQ_EN } from './landing-faq.en';
 
 // Giao diện mới M8.3: the landing reads prices and FAQ only from the JSON `next build` inlined (WORDMET_LANDING_DATA), else the fallback.
 const SEEDED = { '1': 79000, '3': 199000, '12': 599000 };
@@ -36,6 +37,18 @@ describe('landing data (M8.3)', () => {
       ],
       source: 'api',
     });
+  });
+
+  it('the English FAQ (in code, owner 14/11/2026) has one item per fallback question, none empty, plain English', () => {
+    expect(LANDING_FAQ_EN).toHaveLength(FALLBACK_LANDING_DATA.faq.length);
+    for (const item of LANDING_FAQ_EN) {
+      expect(item.question.trim()).not.toBe('');
+      expect(item.answer.trim()).not.toBe('');
+      expect(item.question + item.answer).not.toMatch(/[ăâđêôơưĂÂĐÊÔƠƯàáãèéìíòóùúýÀÁÃÈÉÌÍÒÓÙÚÝẠ-ỹ]/);
+    }
+    expect(LANDING_FAQ_EN.map((item) => item.question)[0]).toBe('How does Wordmet help me learn vocabulary?');
+    // Like the Vietnamese FAQ, nothing about payment: that lives on the Plans page and in the Terms.
+    expect(LANDING_FAQ_EN.filter((item) => /refund|renew|payment/i.test(item.question + item.answer))).toEqual([]);
   });
 
   it('an empty published FAQ stays empty (the home page then has no FAQ section)', () => {

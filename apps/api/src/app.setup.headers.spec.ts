@@ -21,8 +21,8 @@ describe('API security headers (launch prep A, LA1#11)', () => {
     expect(res.headers['content-security-policy']).toBe("default-src 'none';frame-ancestors 'none'");
     expect(res.headers['cross-origin-resource-policy']).toBe('same-site');
     expect(res.headers['x-powered-by']).toBeUndefined();
-    // Cloudflare sets HSTS at the edge (design 4.4); the API must not.
-    expect(res.headers['strict-transport-security']).toBeUndefined();
+    // api. and admin-api. point straight at the VPS (Q6, no Cloudflare proxy), so no edge adds HSTS: the API sends it, one year.
+    expect(res.headers['strict-transport-security']).toBe('max-age=31536000; includeSubDomains');
   });
 
   it('adds no other helmet header the API does not want', async () => {

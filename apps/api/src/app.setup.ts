@@ -13,14 +13,14 @@ const BULK_EXAMPLES_BODY_LIMIT = '2mb';
 export function configureApp(app: NestExpressApplication, config: AppConfig): void {
   app.use(operationIdMiddleware);
   // Header set for a JSON API (launch prep A, design 4.4): helmet's defaults suit HTML pages, so every default is off or replaced.
-  // HSTS is left to Cloudflare at the edge; Cross-Origin-Resource-Policy `same-site` still lets the web and admin hosts under
-  // wordmet.com read responses (CORS decides the rest).
+  // HSTS comes from the API itself: api. and admin-api. point straight at the VPS (Q6, no Cloudflare proxy), so no edge adds it.
+  // Cross-Origin-Resource-Policy `same-site` still lets the web and admin hosts under wordmet.com read responses (CORS decides the rest).
   app.disable('x-powered-by');
   app.use(helmet({
     contentSecurityPolicy: { useDefaults: false, directives: { 'default-src': ["'none'"], 'frame-ancestors': ["'none'"] } },
     referrerPolicy: { policy: 'no-referrer' },
     crossOriginResourcePolicy: { policy: 'same-site' },
-    strictTransportSecurity: false,
+    strictTransportSecurity: { maxAge: 31_536_000, includeSubDomains: true, preload: false },
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     originAgentCluster: false,

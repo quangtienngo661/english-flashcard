@@ -49,6 +49,20 @@ describe('JsonLd', () => {
     ]);
   });
 
+  it('names the offers in English on /en and points at the English page', async () => {
+    const JsonLd = await load();
+    const { data } = payload(renderToStaticMarkup(<JsonLd locale="en" description="Review cards on a schedule." prices={PRICES} />));
+    expect(data[0]).toMatchObject({ url: 'https://wordmet.com/en', inLanguage: 'en' });
+    const offers = (data[1] as { url: string; offers: Array<{ name: string; price: number }> });
+    expect(offers.url).toBe('https://wordmet.com/en');
+    expect(offers.offers.map((offer) => [offer.name, offer.price])).toEqual([
+      ['Free', 0],
+      ['Pro 1 month', 79000],
+      ['Pro 3 months', 199000],
+      ['Pro 12 months', 599000],
+    ]);
+  });
+
   it('follows the prices it is given (an admin changed them before the build)', async () => {
     const JsonLd = await load();
     const { data } = payload(renderToStaticMarkup(<JsonLd locale="vi" description="d" prices={{ '1': 89000, '3': 240000, '12': 699000 }} />));

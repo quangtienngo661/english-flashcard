@@ -5,6 +5,7 @@ import { FinalCta } from './FinalCta';
 import { GroupsSection } from './GroupsSection';
 import { Hero } from './Hero';
 import type { LandingData } from './landing-data';
+import { LANDING_FAQ_EN } from './landing-faq.en';
 import { LearnSection } from './LearnSection';
 import { PricingSection } from './PricingSection';
 import { WordStrip } from './WordStrip';
@@ -21,7 +22,7 @@ export function HomePage({ copy, data, locale }: { copy: LandingCopy; data: Land
       <GroupsSection copy={copy.groups} />
       <LearnSection copy={copy.learn} />
       <PricingSection copy={copy.plans} prices={data.prices} locale={locale} />
-      <FaqSection copy={copy.faq} items={data.faq} />
+      <FaqSection copy={copy.faq} items={locale === 'en' ? LANDING_FAQ_EN : data.faq} />
       <FinalCta copy={copy.final} locale={locale} />
     </>
   );

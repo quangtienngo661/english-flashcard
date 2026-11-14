@@ -26,20 +26,20 @@ export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['pl
       <Container className="flex flex-col gap-8 pt-12 pb-10 md:items-center md:gap-11 md:pt-18 md:pb-12">
         <SectionHead id="gia-title" title={copy.title} lead={copy.lead} align="phone-left" />
         <div className="flex w-full flex-col gap-6 xl:w-auto xl:flex-row xl:items-stretch">
-          <FreeCard copy={copy} register={register} />
-          <ProCard copy={copy} prices={prices} register={register} />
+          <FreeCard copy={copy} register={register} locale={locale} />
+          <ProCard copy={copy} prices={prices} register={register} locale={locale} />
         </div>
       </Container>
     </section>
   );
 }
 
-function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: string }) {
+function FreeCard({ copy, register, locale }: { copy: LandingCopy['plans']; register: string; locale: AppLocale }) {
   return (
     <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 xl:w-90">
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{copy.free}</h3>
       <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className={cn(FREE_PRICE, 'text-wm-ink')}>{formatVnd(0)}</span>
+        <span className={cn(FREE_PRICE, 'text-wm-ink')}>{formatVnd(0, locale)}</span>
         <span className="font-wm-sans text-wm-small text-wm-muted">{copy.freeNote}</span>
       </p>
       <CheckList items={copy.freeList} />
@@ -50,7 +50,7 @@ function FreeCard({ copy, register }: { copy: LandingCopy['plans']; register: st
   );
 }
 
-function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; prices: Prices; register: string }) {
+function ProCard({ copy, prices, register, locale }: { copy: LandingCopy['plans']; prices: Prices; register: string; locale: AppLocale }) {
   const best = bestPeriod(prices);
   const [aiTitle, ...aiRows] = copy.aiList;
   return (
@@ -73,7 +73,7 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
 
         <ul className="grid gap-2.5 md:grid-cols-3">
           {MONTHS.map((months) => (
-            <Period key={months} copy={copy} prices={prices} months={months} best={best === months} />
+            <Period key={months} copy={copy} prices={prices} months={months} best={best === months} locale={locale} />
           ))}
         </ul>
 
@@ -103,7 +103,7 @@ function ProCard({ copy, prices, register }: { copy: LandingCopy['plans']; price
 }
 
 /** One period (`33:351`…`33:367`): a row on a phone, a cell from md. The best saving is drawn like Figma's 12-month cell. */
-function Period({ copy, prices, months, best }: { copy: LandingCopy['plans']; prices: Prices; months: Months; best: boolean }) {
+function Period({ copy, prices, months, best, locale }: { copy: LandingCopy['plans']; prices: Prices; months: Months; best: boolean; locale: AppLocale }) {
   const offer = periodOffer(prices, months);
   const saving = offer.saving !== null && offer.saving >= 1 ? offer.saving : null;
   return (
@@ -132,9 +132,9 @@ function Period({ copy, prices, months, best }: { copy: LandingCopy['plans']; pr
         )}
       </span>
       <span className="flex flex-col items-end md:items-start">
-        <span className={cn(PERIOD_PRICE, best ? 'text-wm-accent' : 'text-wm-ink')}>{formatVnd(offer.price)}</span>
+        <span className={cn(PERIOD_PRICE, best ? 'text-wm-accent' : 'text-wm-ink')}>{formatVnd(offer.price, locale)}</span>
         <span className={cn('font-wm-sans text-wm-caption', best ? 'text-wm-accent' : 'text-wm-muted')}>
-          {months === '1' ? copy.perMonth : fill(copy.perMonthApprox, { price: formatVnd(offer.perMonth) })}
+          {months === '1' ? copy.perMonth : fill(copy.perMonthApprox, { price: formatVnd(offer.perMonth, locale) })}
         </span>
       </span>
     </li>

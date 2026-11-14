@@ -11,7 +11,8 @@ import { OtpService } from './otp.service.js';
 import { PasswordService } from './password.service.js';
 
 // Same isolation as auth.controller.spec: routing, the real TurnstileGuard, RateLimitGuard and validation run; persistence and the services are stubbed.
-describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', () => {
+// Owner 14/11/2026: the bot check stays on register and login only; OTP requests, verify-email and password reset have the route counters alone.
+describe('Turnstile on register and login (HTTP, launch prep A); none on OTP, verify-email and password reset', () => {
   let ctx: TestApp;
   let verdict: TurnstileVerdict;
   const verify = vi.fn(async (_token: string, _ip: string | undefined) => verdict);
@@ -77,49 +78,44 @@ describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', 
     expect(login).toHaveBeenCalledTimes(1);
   });
 
-  it.each(['verify_email', 'reset_password'])('LA1#5: an OTP request (%s) with a good token → 202', async (purpose) => {
-    const res = await ctx.http().post('/v1/auth/otp').send({ purpose, email: 'a@example.com', turnstile_token });
+  const verifyBody = { email: 'a@example.com', password: 'Password1!', code: '012345', client: 'web' };
+  const resetBody = { email: 'a@example.com', code: '012345', new_password: 'Password1!' };
+
+  it.each(['verify_email', 'reset_password'])('an OTP request (%s) without a token → 202: no Cloudflare check, only the route counters (owner 14/11/2026)', async (purpose) => {
+    const res = await ctx.http().post('/v1/auth/otp').send({ purpose, email: 'a@example.com' });
     expect(res.status).toBe(202);
     expect(res.body).toEqual({});
-    expect(rulesHit().slice(0, 3)).toEqual(['auth.captcha.ip', 'auth.otp.ip', 'mail.ip.daily']);
+    expect(rulesHit()).toEqual(['auth.otp.ip', 'mail.ip.daily']);
+    expect(verify).not.toHaveBeenCalled();
   });
 
-  // Review 07/11 F7 (replaces LA1E14): verify-email and password reset run argon2 for anyone, so the bot check goes in front of both.
-  const verifyBody = { email: 'a@example.com', password: 'Password1!', code: '012345', client: 'web', turnstile_token };
-  const resetBody = { email: 'a@example.com', code: '012345', new_password: 'Password1!', turnstile_token };
-
-  it('F7: verify-email with a good token → 200, the route counter counts after the bot check', async () => {
+  it('verify-email without a token → 200: the route counter counts, Cloudflare is not asked', async () => {
     const res = await ctx.http().post('/v1/auth/verify-email').send(verifyBody);
     expect(res.status).toBe(200);
-    expect(rulesHit()).toEqual(['auth.captcha.ip', 'auth.verify.ip']);
-    expect(verify).toHaveBeenCalledExactlyOnceWith(turnstile_token, expect.any(String));
+    expect(rulesHit()).toEqual(['auth.verify.ip']);
+    expect(verify).not.toHaveBeenCalled();
     expect(verifyEmail).toHaveBeenCalledTimes(1);
   });
 
-  it('F7: password reset with a good token → 204, the route counter counts after the bot check', async () => {
+  it('password reset without a token → 204: the route counter counts, Cloudflare is not asked', async () => {
     const res = await ctx.http().post('/v1/auth/password/reset').send(resetBody);
     expect(res.status).toBe(204);
-    expect(rulesHit()).toEqual(['auth.captcha.ip', 'auth.reset.ip']);
+    expect(rulesHit()).toEqual(['auth.reset.ip']);
+    expect(verify).not.toHaveBeenCalled();
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it.each([['verify-email', verifyBody], ['password/reset', resetBody]])(
-    'F7: %s with a wrong token → 400 captcha-failed, no argon2 work; Cloudflare down → 503, no bypass', async (route, body) => {
-      verdict = { kind: 'rejected', codes: ['invalid-input-response'] };
-      const wrong = await ctx.http().post(`/v1/auth/${route}`).send(body);
-      expect(wrong.status).toBe(400);
-      expect(wrong.body.type).toBe('https://api.example.com/problems/captcha-failed');
-      verdict = { kind: 'unavailable', reason: 'timeout' };
-      const down = await ctx.http().post(`/v1/auth/${route}`).send(body);
-      expect(down.status).toBe(503);
-      expect(down.body.type).toBe('https://api.example.com/problems/captcha-unavailable');
-      expect(verifyEmail).not.toHaveBeenCalled();
-      expect(reset).not.toHaveBeenCalled();
-    });
+  it.each([
+    ['otp', { purpose: 'reset_password', email: 'a@example.com' }], ['verify-email', verifyBody], ['password/reset', resetBody],
+  ])('a client that still sends a token to %s (the admin app, an old tab) is not refused and the token is not checked', async (route, body) => {
+    verdict = { kind: 'rejected', codes: ['invalid-input-response'] };
+    const res = await ctx.http().post(`/v1/auth/${route}`).send({ ...body, turnstile_token });
+    expect(res.status).toBeLessThan(300);
+    expect(verify).not.toHaveBeenCalled();
+  });
 
   it.each([
-    ['register', registerBody], ['login', loginBody], ['otp', { purpose: 'reset_password', email: 'a@example.com', turnstile_token }],
-    ['verify-email', verifyBody], ['password/reset', resetBody],
+    ['register', registerBody], ['login', loginBody],
   ])('LA1E15/LA1E1: %s without a token (also client mobile) is 400 validation-failed, with no check and no count', async (route, body) => {
     const { turnstile_token: _omitted, ...noToken } = body as Record<string, unknown>;
     for (const input of [noToken, { ...noToken, client: 'mobile' }]) {
@@ -138,16 +134,15 @@ describe('Turnstile on register, login and OTP requests (HTTP, launch prep A)', 
     expect(verify).not.toHaveBeenCalled();
   });
 
-  it('LA1E8: with Cloudflare unavailable, register and OTP are 503 captcha-unavailable and nothing is sent; login still works', async () => {
+  it('LA1E8: with Cloudflare unavailable, register is 503 captcha-unavailable and nothing is sent; login still works; OTP does not depend on Cloudflare', async () => {
     verdict = { kind: 'unavailable', reason: 'timeout' };
     const reg = await ctx.http().post('/v1/auth/register').send(registerBody);
     expect(reg.status).toBe(503);
     expect(reg.body.type).toBe('https://api.example.com/problems/captcha-unavailable');
-    const otp = await ctx.http().post('/v1/auth/otp').send({ purpose: 'verify_email', email: 'a@example.com', turnstile_token });
-    expect(otp.status).toBe(503);
-    expect(otp.body.type).toBe('https://api.example.com/problems/captcha-unavailable');
     expect(register).not.toHaveBeenCalled();
-    expect(requestVerify).not.toHaveBeenCalled();
+    const otp = await ctx.http().post('/v1/auth/otp').send({ purpose: 'verify_email', email: 'a@example.com' });
+    expect(otp.status).toBe(202);
+    expect(requestVerify).toHaveBeenCalledTimes(1);
     const log = await ctx.http().post('/v1/auth/login').send(loginBody);
     expect(log.status).toBe(200);
     expect(login).toHaveBeenCalledTimes(1);
