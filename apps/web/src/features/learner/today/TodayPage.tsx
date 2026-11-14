@@ -4,7 +4,7 @@ import { ArrowRight, Check, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, type MouseEvent } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import { PageColumns } from '@/app-chrome/PageColumns';
 import { createFormat, useFormat } from '@/app-shell/format';
 import { useAppConfig } from '@/app-shell/queries';
@@ -26,7 +26,7 @@ import { DeckButtons } from '../groups/DeckButtons';
 import { ms, rememberRect, token } from '../groups/flip';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { GroupStack } from '../groups/GroupStack';
-import { useGroups, type GroupSummary } from '../groups/groups-api';
+import { useGroups, useTopicSuggestions, type GroupSummary } from '../groups/groups-api';
 import { TopicSuggestions } from '../groups/TopicSuggestions';
 import { DeckRow } from './DeckRow';
 import { useLastSession, type LastSessionView } from './last-session';
@@ -40,6 +40,8 @@ export function TodayPage() {
   const tCommon = useTranslations('App.common');
   const format = useFormat();
   const groups = useGroups();
+  const [suggestionVisit] = useState(() => crypto.randomUUID());
+  const suggestions = useTopicSuggestions(suggestionVisit);
   const { open, dialogs } = useGroupDialogs();
   const sorted = sortForToday(groups.data?.items ?? []);
   const hero = sorted.find((g) => waiting(g) > 0) ?? null;
@@ -85,7 +87,7 @@ export function TodayPage() {
                 <OtherGroups groups={sorted} hero={hero} />
               </>
             )}
-            <TopicSuggestions />
+            <TopicSuggestions suggestions={suggestions} />
           </div>
         )}
         {dialogs}

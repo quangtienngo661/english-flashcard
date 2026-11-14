@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useApi } from '@/app-shell/session/session-context';
 import type { Pronunciation } from '@/lib/speech/pronunciation';
+import { TOPIC_PICKER_KEY, type TopicAddBody, type TopicAddReceipt } from './topic-picker-api';
 
 export type Cell = 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -159,11 +160,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** E17: an id from the address bar that is not a UUID never reaches the API. */
 export const isId = (value: string | null): value is string => value !== null && UUID.test(value);
 
-export function useTopicSuggestions() {
+export function useTopicSuggestions(visit = 'current') {
   const api = useApi();
   return useQuery({
-    queryKey: ['topics', 'suggestions'],
+    queryKey: ['topics', 'suggestions', visit],
     queryFn: () => api.get<{ items: TopicSuggestion[] }>('/v1/topics/suggestions'),
+    staleTime: 'static',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
@@ -207,6 +211,13 @@ export function useGroupMutations() {
       async bulkAdd(groupId: string, body: BulkBody, key: string) {
         const result = await api.post<BulkResult>(`/v1/groups/${groupId}/items/bulk`, body, keyed(key));
         refresh(groupId);
+        return result;
+      },
+      async addFromTopic(body: TopicAddBody, key: string) {
+        const result = await api.post<TopicAddReceipt>('/v1/items/topic-add', body, keyed(key));
+        refresh(result.group_id ?? undefined);
+        // Other visited pages remain cached and stale until the learner opens them.
+        void client.invalidateQueries({ queryKey: TOPIC_PICKER_KEY, refetchType: 'none' });
         return result;
       },
     };

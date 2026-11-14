@@ -47,8 +47,8 @@ export class TopicSuggestionQueries {
     return rows.map((row) => ({ ...row, count: Number(row.count) }));
   }
 
-  /** The visible senses of one pair, with the meaning in the learner's language (gloss for vi, definition for en). */
-  samples(topic: string, level: string, language: 'vi' | 'en'): Promise<SuggestionSample[]> {
+  /** Up to four visible senses for one pair, with meanings in the learner's language. */
+  samples(topic: string, level: string, language: 'vi' | 'en', seed: number): Promise<SuggestionSample[]> {
     const meaningKind = language === 'vi' ? Prisma.sql`'vi' AND m.kind = 'gloss'` : Prisma.sql`'en' AND m.kind = 'definition'`;
     return this.prisma.$queryRaw<SuggestionSample[]>(Prisma.sql`
       SELECT s.id::text AS sense_id, e.lemma, e.pos, m.text AS meaning
@@ -58,6 +58,7 @@ export class TopicSuggestionQueries {
       ${DISPLAYED_LEVEL}
       LEFT JOIN sense_revision_texts m ON m.revision_id = r.id AND m.language = ${meaningKind}
       WHERE ${VISIBLE} AND ${topic} = ANY(r.topic_codes) AND displayed.level = ${level}
-      ORDER BY s.id`);
+      ORDER BY md5(${String(seed)}::text || ':' || s.id::text), s.id
+      LIMIT 4`);
   }
 }
