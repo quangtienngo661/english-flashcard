@@ -327,6 +327,10 @@ describe('topic pagination (e2e, isolated PostgreSQL)', () => {
   });
   it.skipIf(!browserProbe)('runs the opt-in Playwright probe against the test API', async () => {
     const { userId } = await seedUser(ctx.prisma, { verified: true, nativeLanguage: 'vi' });
+    await ctx.prisma.user.update({
+      where: { id: userId },
+      data: { birthDate: new Date('1995-01-01'), termsAcceptedAt: now, termsVersion: '2026-10-20' },
+    });
     await group(userId, 'Browser topic already learning', large.slice(0, 2000));
     const { refreshToken } = await startSession(ctx, userId, 'web');
     const { execFile } = await import('node:child_process');

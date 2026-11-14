@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { problem, rateLimited, type Route } from '@/app-shell/session/test-support';
 import { renderApp } from '@/test-utils/render-app';
-import { ToastRegion } from '@/ui/Toast';
+import { ToastRegion, toastQueue } from '@/ui/Toast';
 import { TopicPickerPage } from './TopicPickerPage';
 
 let search = new URLSearchParams({ code: 'business', level: 'B1' });
@@ -70,6 +70,7 @@ const selectedReceipt = (added: string[], { groupId = NEW, full = [], already = 
 });
 
 beforeEach(() => { search = new URLSearchParams({ code: 'business', level: 'B1' }); });
+afterEach(() => { act(() => toastQueue.clear()); });
 
 describe('TopicPickerPage', () => {
   it('requests only the first 20 rows, uses the separate topic total, and preserves selection across pages', async () => {
