@@ -19,19 +19,19 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Vocabulary for exactly the topics you need",
+      "topicLabel": "Vocabulary for the topics you need",
       "line1": "Remember words longer,",
       "line2": "use them with confidence in a sentence.",
       "accent": "in a sentence",
-      "lead": "Wordmet looks up the meaning, example sentences and pronunciation, then schedules each word’s review for you. All you do is practice words in sentences.",
-      "signup": "Start for free",
+      "lead": "Wordmet looks up meanings, pronunciation, and example sentences, then schedules reviews for each word. Focus on using words in sentences.",
+      "signup": "Create a free account",
       "howTo": "See how it works"
     },
     "stage": {
-      "cardLabel": "Word card · review again in {days}d",
+      "cardLabel": "Card · review in {days}d",
       "practiceTitle": "Fill in the blank",
       "practiceCount": "Question 4/20",
-      "result": "Correct · up to Level {level}",
+      "result": "Correct · moved up to Level {level}",
       "cycle": [
         {
           "lemma": "mitigate",
@@ -105,7 +105,7 @@
       "addedMore": "+14 words",
       "addedMorePhone": "+15 words",
       "binWord": "deteriorate",
-      "binNote": "review again in",
+      "binNote": "review in",
       "binValue": "7 days"
     },
     "strip": {
@@ -187,7 +187,7 @@
       ]
     },
     "groups": {
-      "title": "Every reading becomes a deck of your own",
+      "title": "Build a deck from each text you read",
       "lead": "Each word has its own review schedule. When one is due, Wordmet reminds you.",
       "cards": [
         {
@@ -253,10 +253,10 @@
       ]
     },
     "learn": {
-      "title": "From first meeting to confident use",
-      "lead": "Save, listen, practice and review: all in one place.",
+      "title": "From finding new words to using them confidently",
+      "lead": "Save words, listen to their pronunciation, practice, and review in one place.",
       "practice": {
-        "eyebrow": "In a study session",
+        "eyebrow": "In a practice session",
         "title": "Practice words in real sentences",
         "body": "Fill in and type the word in the sentence instead of only picking a meaning, so the word makes its way into how you write. Miss it and you see the right answer in place.",
         "demoTitle": "Fill in the blank",
@@ -293,7 +293,7 @@
       "note": {
         "eyebrow": "After reading an article",
         "title": "Save a word in seconds",
-        "body": "Type the form you came across and Wordmet takes it back to the base word.",
+        "body": "Type the word as you saw it. Wordmet finds its base form.",
         "typed": "deteriorated",
         "lemma": "deteriorate",
         "meaning": "verb · xấu đi"
@@ -305,7 +305,7 @@
         "ipa": "/ˈvaɪ.ə.bəl/"
       },
       "review": {
-        "eyebrow": "In the days after",
+        "eyebrow": "In the following days",
         "title": "Review right before you forget",
         "body": "Each day you review only the words that are due, with no time spent on words you already know. Remember a word and its schedule stretches out; forget it and it comes back sooner.",
         "bins": [
@@ -333,12 +333,12 @@
       }
     },
     "plans": {
-      "title": "Start free, go Pro when you want to practice more",
-      "lead": "Both plans include unlimited card review. When Pro ends, your words and review schedule stay.",
-      "free": "Free",
+      "title": "Start for free and upgrade to Pro when you want to practice more",
+      "lead": "Both plans include unlimited card reviews. When Pro ends, your words and review schedule remain.",
+      "free": "Free plan",
       "freeNote": "no time limit",
       "freeList": [
-        "Save words, look up meanings and hear pronunciation",
+        "Save words, look up meanings, and listen to pronunciation",
         "Automatic review schedule",
         "3 practice sessions a day",
         "Try AI practice sentences and lookups"
@@ -357,7 +357,7 @@
       "perMonth": "per month",
       "perMonthApprox": "≈ {price} per month",
       "aiList": [
-        "AI writes sentences and looks up words",
+        "AI practice sentences and lookups",
         "AI writes practice sentences for each word you study",
         "AI lookup when the dictionary doesn’t have a word",
         "More AI credits than the Free plan"
@@ -370,11 +370,11 @@
     },
     "faq": {
       "title": "Frequently asked questions",
-      "lead": "More questions? Write to {email} and the Wordmet team will reply."
+      "lead": "Have more questions? Email {email} and the Wordmet team will reply."
     },
     "final": {
-      "title": "Turn what you just read into your own vocabulary",
-      "note": "Free to start, nothing to install.",
+      "title": "Build your vocabulary from what you just read",
+      "note": "Start for free without installing anything.",
       "signup": "Create a free account"
     }
   },

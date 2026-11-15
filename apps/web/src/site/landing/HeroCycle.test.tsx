@@ -54,7 +54,7 @@ afterEach(() => {
 describe('HeroCycle (F.18)', () => {
   it('the server render is the final frame of mitigate: typed in, green, "Đúng · lên Bậc 3"', () => {
     const markup = renderToStaticMarkup(<HeroCycle copy={stage} />);
-    expect(markup).toContain('Thẻ từ · ôn lại sau 3 ngày');
+    expect(markup).toContain('Thẻ · ôn lại sau 3 ngày');
     expect(markup).toContain('Đúng · lên Bậc 3');
     expect(markup).toContain('Cities need clear plans to ');
   });
@@ -82,7 +82,7 @@ describe('HeroCycle (F.18)', () => {
     mockReducedMotion(true);
     render(<HeroCycle copy={stage} />);
     act(() => void vi.advanceTimersByTime(20000));
-    expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(html()).toContain('Đúng · lên Bậc 3');
   });
 
@@ -92,9 +92,9 @@ describe('HeroCycle (F.18)', () => {
     document.documentElement.classList.add('js');
     mockReducedMotion(false);
     render(<HeroCycle copy={stage} />);
-    expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
     act(() => void vi.advanceTimersByTime(1700 + 900 + 100 * 8 + 320 + 260 + 5000));
-    expect(screen.getByText('Thẻ từ · ôn lại sau 7 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Thẻ · ôn lại sau 7 ngày')).toBeInTheDocument();
     expect(screen.getByText('allocate', { selector: 'p' })).toBeInTheDocument();
   });
 
@@ -125,6 +125,6 @@ describe('HeroCycle (F.18)', () => {
     mockReducedMotion(false);
     render(<HeroCycle copy={stage} />);
     act(() => void vi.advanceTimersByTime(30000));
-    expect(screen.getByText('Thẻ từ · ôn lại sau 3 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
   });
 });
