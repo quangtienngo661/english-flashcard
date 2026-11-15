@@ -200,6 +200,7 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
   const targetPicker = (
     <Select
       label={t('addTo')}
+      hideLabel
       value={target ?? ''}
       onChange={(id) => {
         setTargetChoice({ requested: requestedGroup, id });
@@ -320,7 +321,7 @@ function Picker({ scope, requestedGroup }: { scope: TopicScope; requestedGroup: 
           </div>
         </FloatingBar>
       ) : selected.size > 0 && (
-        <FloatingBar label={t('selected', { count: selected.size })}>
+        <FloatingBar label={t('selected', { count: selected.size })} className="md:px-2">
           <div className="w-full min-w-0 md:w-72">{targetPicker}</div>
           <Button isPending={add.busy} isDisabled={!canAdd && !add.busy} onPress={submit}>
             {t('addSelected', { count: selected.size })}

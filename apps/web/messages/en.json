@@ -19,9 +19,9 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Vocabulary for the topics you need",
-      "line1": "Remember words longer,",
-      "line2": "use them with confidence in a sentence.",
+      "topicLabel": "Smarter English vocabulary",
+      "line1": "Remember words forever,",
+      "line2": "use them in a sentence.",
       "accent": "in a sentence",
       "lead": "Wordmet looks up meanings, pronunciation, and example sentences, then schedules reviews for each word. Focus on using words in sentences.",
       "signup": "Create a free account",
@@ -333,7 +333,7 @@
       }
     },
     "plans": {
-      "title": "Start for free and upgrade to Pro when you want to practice more",
+      "title": "Start free, accelerate with Pro",
       "lead": "Both plans include unlimited card reviews. When Pro ends, your words and review schedule remain.",
       "free": "Free plan",
       "freeNote": "no time limit",
@@ -373,7 +373,7 @@
       "lead": "Have more questions? Email {email} and the Wordmet team will reply."
     },
     "final": {
-      "title": "Build your vocabulary from what you just read",
+      "title": "Turn reading into fluent English",
       "note": "Start for free without installing anything.",
       "signup": "Create a free account"
     }

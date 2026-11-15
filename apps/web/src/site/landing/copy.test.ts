@@ -39,7 +39,7 @@ describe('Landing copy (M8.5)', () => {
 
   it('the English landing follows the EN conventions of UI copy round 2 and the same rules as the Vietnamese one', () => {
     const flat = [...landing(en)];
-    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words longer, use them with confidence in a sentence.');
+    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words forever, use them in a sentence.');
     expect(en.Landing.hero.line2).toContain(en.Landing.hero.accent);
     expect(flat.filter(([, v]) => /!/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /\bPro\b.*\bAI\b|\bAI\b.*\bPro\b/.test(v)).map(([k]) => k)).toEqual([]);
@@ -51,7 +51,7 @@ describe('Landing copy (M8.5)', () => {
   });
 
   it('the hero heading is Figma\'s, with "trong câu" in its second line', () => {
-    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu hơn, dùng từ tự tin trong câu.');
+    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu bền, tự tin dùng trong câu.');
     expect(vi.Landing.hero.line2).toContain(vi.Landing.hero.accent);
   });
 

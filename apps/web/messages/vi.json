@@ -19,9 +19,9 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Từ vựng theo chủ đề bạn cần",
-      "line1": "Nhớ từ lâu hơn,",
-      "line2": "dùng từ tự tin trong câu.",
+      "topicLabel": "Nâng tầm vốn từ tiếng Anh",
+      "line1": "Nhớ từ lâu bền,",
+      "line2": "tự tin dùng trong câu.",
       "accent": "trong câu",
       "lead": "Wordmet tra nghĩa, phiên âm và câu ví dụ rồi xếp lịch ôn cho từng từ. Bạn tập trung luyện cách dùng từ trong câu.",
       "signup": "Tạo tài khoản miễn phí",
@@ -333,7 +333,7 @@
       }
     },
     "plans": {
-      "title": "Bắt đầu miễn phí, nâng cấp Pro khi muốn luyện nhiều hơn",
+      "title": "Học miễn phí, bứt phá cùng Pro",
       "lead": "Cả hai gói đều ôn thẻ không giới hạn. Khi hết hạn Pro, từ vựng và lịch ôn vẫn được giữ nguyên.",
       "free": "Gói Free",
       "freeNote": "không giới hạn thời gian",
@@ -373,7 +373,7 @@
       "lead": "Còn câu hỏi? Gửi email đến {email}, đội Wordmet sẽ trả lời."
     },
     "final": {
-      "title": "Biến từ mới trong bài vừa đọc thành vốn từ của bạn",
+      "title": "Biến bài đọc thành tiếng Anh trôi chảy",
       "note": "Bắt đầu miễn phí, không cần cài đặt.",
       "signup": "Tạo tài khoản miễn phí"
     }
