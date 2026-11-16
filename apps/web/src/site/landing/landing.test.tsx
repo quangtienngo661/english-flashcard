@@ -27,7 +27,7 @@ function renderHome(data: LandingData = FALLBACK_LANDING_DATA) {
   return render(<HomePage copy={vi_.Landing} data={data} locale="vi" />);
 }
 
-const pricing = () => within(screen.getByRole('region', { name: 'Bắt đầu miễn phí, nâng cấp Pro khi muốn luyện nhiều hơn' }));
+const pricing = () => within(screen.getByRole('region', { name: 'Học miễn phí, bứt phá cùng Pro' }));
 /** The row of one period of the Pro card. */
 const period = (label: string) => within(pricing().getByText(label, { exact: true }).closest('li') as HTMLElement);
 
@@ -37,12 +37,12 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     // Accessible names, not textContent: M8.6 splits each title into aria-hidden words beside one sr-only copy.
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
-      'H1 Nhớ từ lâu hơn, dùng từ tự tin trong câu.',
+      'H1 Nhớ từ lâu bền, tự tin dùng trong câu.',
       'H2 Tạo nhóm từ cho mỗi bài đọc',
       'H2 Từ lúc gặp đến lúc dùng được',
-      'H2 Bắt đầu miễn phí, nâng cấp Pro khi muốn luyện nhiều hơn',
+      'H2 Học miễn phí, bứt phá cùng Pro',
       'H2 Câu hỏi thường gặp',
-      'H2 Biến từ mới trong bài vừa đọc thành vốn từ của bạn',
+      'H2 Biến bài đọc thành tiếng Anh trôi chảy',
     ];
     expect(headings.map((h) => h.tagName)).toEqual(expected.map((e) => e.slice(0, 2)));
     headings.forEach((h, i) => expect(h).toHaveAccessibleName(expected[i].slice(3)));
@@ -54,7 +54,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(ids).toEqual(['nhom-tu', 'cach-hoc', 'gia', 'hoi-dap']);
     expect(screen.getByRole('region', { name: 'Tạo nhóm từ cho mỗi bài đọc' }).id).toBe('nhom-tu');
     expect(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }).id).toBe('cach-hoc');
-    expect(screen.getByRole('region', { name: 'Bắt đầu miễn phí, nâng cấp Pro khi muốn luyện nhiều hơn' }).id).toBe('gia');
+    expect(screen.getByRole('region', { name: 'Học miễn phí, bứt phá cùng Pro' }).id).toBe('gia');
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
   });
 
@@ -197,7 +197,7 @@ describe('the English landing (/en, 14/11/2026)', () => {
 
   it('shows the English heading, the English FAQ (not the Vietnamese one) and links into /en/app', () => {
     renderEnglish();
-    expect(screen.getByRole('heading', { level: 1, name: 'Remember words longer, use them with confidence in a sentence.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Remember words forever, use them in a sentence.' })).toBeInTheDocument();
     const faq = within(screen.getByRole('region', { name: 'Frequently asked questions' }));
     expect(faq.getAllByRole('group').map((d) => d.querySelector('summary')?.textContent)).toEqual(LANDING_FAQ_EN.map((f) => f.question));
     expect(faq.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
@@ -212,7 +212,7 @@ describe('the English landing (/en, 14/11/2026)', () => {
 
   it('prices follow the build data in English money: free, three Pro periods, the saving and the monthly figure', () => {
     renderEnglish({ ...FALLBACK_LANDING_DATA, prices: { '1': 79000, '3': 240000, '12': 599000 }, source: 'api' });
-    const pro = within(screen.getByRole('region', { name: 'Start for free and upgrade to Pro when you want to practice more' }));
+    const pro = within(screen.getByRole('region', { name: 'Start free, accelerate with Pro' }));
     expect(pro.getByText('₫0')).toBeInTheDocument();
     expect(pro.getByText('₫240,000')).toBeInTheDocument();
     expect(pro.getByText('≈ ₫80,000 per month')).toBeInTheDocument();

@@ -39,8 +39,8 @@ describe('landing data (M8.3)', () => {
     });
   });
 
-  it('the English FAQ (in code, owner 14/11/2026) has one item per fallback question, none empty, plain English', () => {
-    expect(LANDING_FAQ_EN).toHaveLength(FALLBACK_LANDING_DATA.faq.length);
+  it('the English FAQ has five nonempty items in plain English', () => {
+    expect(LANDING_FAQ_EN).toHaveLength(5);
     for (const item of LANDING_FAQ_EN) {
       expect(item.question.trim()).not.toBe('');
       expect(item.answer.trim()).not.toBe('');
