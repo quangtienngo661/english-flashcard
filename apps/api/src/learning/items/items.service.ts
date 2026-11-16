@@ -1,10 +1,12 @@
+import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { runIdempotentInTx } from '../../common/idempotency/run-idempotent-in-tx.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
-import { ContentService, type Level, type WordSense } from '../../content/index.js';
+import { ContentService, type Level, type TopicScope, type WordSense } from '../../content/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
@@ -12,6 +14,7 @@ import { SettingsService } from '../../settings/index.js';
 import { recordActivityIn } from '../activity/record-activity.js';
 import { lockItems, withLearnerLock } from '../learning-lock.js';
 import { newItem, sectionOf, type Section } from '../schedule/schedule.js';
+import type { TopicAddBody } from './items.schemas.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 
@@ -23,6 +26,11 @@ export type BulkResult = {
   skipped_not_found: number;
 };
 export type ItemState = { sense_id: string; item_id: string; level: number; due_date: string; priority: boolean; group_ids: string[] };
+export type TopicSummary = { total: number; learning: number; unlearned: number };
+export type TopicAddReceipt = { group_id: string | null; eligible: number; added: number; skipped_group_full: number } & (
+  | { mode: 'all_unlearned' }
+  | { mode: 'selected'; added_ids: string[]; already_learning_ids: string[]; unavailable_ids: string[]; group_full_ids: string[] }
+);
 export type GroupItemView = {
   item_id: string; sense_id: string; level: number; due_date: string; priority: boolean; group_count: number;
   sense_changed: boolean; added_at: string;
@@ -119,6 +127,54 @@ export class ItemsService {
         skipped_group_full: fresh.length - toAdd.length, skipped_not_found: skippedNotFound,
       };
     }, transactionOptions);
+  }
+
+  topicSummary(userId: string, scope: TopicScope): Promise<TopicSummary> {
+    return this.prisma.$transaction(async (tx) => {
+      const ids = await this.content.topicSenseIds(scope, { db: tx });
+      if (ids.length === 0) return { total: 0, learning: 0, unlearned: 0 };
+      const [{ learning }] = await tx.$queryRaw<Array<{ learning: number }>>`
+        SELECT count(*)::int AS learning FROM learning_items
+        WHERE user_id = ${userId}::uuid AND sense_id = ANY(${ids}::uuid[])`;
+      return { total: ids.length, learning, unlearned: ids.length - learning };
+    }, { ...transactionOptions, isolationLevel: 'RepeatableRead' });
+  }
+
+  async addFromTopic(userId: string, body: TopicAddBody, key: string): Promise<TopicAddReceipt> {
+    const scope = { topic: body.topic, level: body.level };
+    const target = 'group_id' in body.target ? { group_id: body.target.group_id } : { new_group_name: body.target.new_group_name };
+    const selected = body.mode === 'selected' ? body.sense_ids : undefined;
+    const payloadHash = createHash('sha256').update(JSON.stringify({ ...scope, target, mode: body.mode, sense_ids: selected })).digest('hex');
+    const today = await this.today(userId);
+    return runIdempotentInTx<TopicAddReceipt>(this.prisma, { key, userId, endpoint: '/v1/items/topic-add', payloadHash }, async (tx, save) => {
+      await withLearnerLock(tx, userId);
+      let groupId = target.group_id ?? null;
+      if (groupId) await this.groups.assertOwned(tx, userId, groupId);
+      const { itemsPerGroup, groupsPerUser } = (await this.settings.get(tx)).learning;
+      const matching = await this.content.topicSenseIds(scope, { senseIds: selected, db: tx });
+      const learning = new Set(matching.length === 0 ? [] : (await tx.$queryRaw<Array<{ sense_id: string }>>`
+        SELECT sense_id::text AS sense_id FROM learning_items
+        WHERE user_id = ${userId}::uuid AND sense_id = ANY(${matching}::uuid[])
+      `).map(({ sense_id }) => sense_id));
+      const eligible = matching.filter((id) => !learning.has(id));
+      const used = groupId ? await tx.groupItem.count({ where: { groupId } }) : 0;
+      const added = eligible.slice(0, Math.max(0, itemsPerGroup - used));
+      const full = eligible.slice(added.length);
+      if (target.new_group_name && added.length > 0) {
+        groupId = (await this.groups.createInTx(tx, userId, target.new_group_name, groupsPerUser)).id;
+      }
+      const counts = { group_id: groupId, eligible: eligible.length, added: added.length, skipped_group_full: full.length };
+      const matchingSet = selected ? new Set(matching) : undefined;
+      const receipt: TopicAddReceipt = selected ? {
+        ...counts, mode: 'selected',
+        added_ids: added, group_full_ids: full,
+        already_learning_ids: matching.filter((id) => learning.has(id)),
+        unavailable_ids: selected.filter((id) => !matchingSet?.has(id)),
+      } : { ...counts, mode: 'all_unlearned' };
+      await save(receipt);
+      if (groupId && added.length > 0) await this.ensureItems(tx, userId, groupId, added, today);
+      return receipt;
+    }, { now: () => this.clock.now() });
   }
 
   /** B3E19: leaving the last group removes the item from learning. */

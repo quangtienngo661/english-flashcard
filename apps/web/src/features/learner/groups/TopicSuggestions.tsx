@@ -3,6 +3,7 @@
 import { ArrowRight, Layers } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { Button } from '@/ui/Button';
 import { Tag } from '@/ui/Tag';
 import { useTopicSuggestions, type TopicSuggestion } from './groups-api';
 
@@ -15,11 +16,12 @@ const SAMPLES = 3;
  * "Tạo nhóm nhanh theo chủ đề": the first topic suggestions as small cards (owner 10/11/2026: polish of the Figma rows), each with
  * its level, a few sample words and the word count; hidden when the API suggests nothing (GH3).
  */
-export function TopicSuggestions() {
+export function TopicSuggestions({ suggestions }: { suggestions: ReturnType<typeof useTopicSuggestions> }) {
   const t = useTranslations('App.groups');
+  const common = useTranslations('App.common');
   const locale = useLocale();
-  const { data } = useTopicSuggestions();
-  if (!data || data.items.length === 0) return null;
+  const { data, isError, isFetching, refetch } = suggestions;
+  if (!isError && !data?.items.length) return null;
   return (
     <section className="flex flex-col gap-3" aria-labelledby="topic-suggestions">
       <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
@@ -31,13 +33,20 @@ export function TopicSuggestions() {
           <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
         </Link>
       </div>
-      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {data.items.slice(0, ROWS).map((item) => (
-          <li key={`${item.topic.code}-${item.level}`}>
-            <TopicCard item={item} />
-          </li>
-        ))}
-      </ul>
+      {isError ? (
+        <div className="flex items-center gap-3" role="alert">
+          <p className="text-wm-small text-wm-muted">{common('errorPageTitle')}</p>
+          <Button variant="secondary" isDisabled={isFetching} onPress={() => void refetch()}>{common('retry')}</Button>
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {data?.items.slice(0, ROWS).map((item) => (
+            <li key={`${item.topic.code}-${item.level}`}>
+              <TopicCard item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

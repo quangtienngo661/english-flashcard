@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LEVELS, VALID_POS } from '../../content/index.js';
+import { groupName } from '../groups/groups.schemas.js';
 
 const uuid = z.uuid().transform((value) => value.toLowerCase());
 
@@ -17,6 +18,21 @@ export const bulkAddBody = z.strictObject({
 export const statesQuery = z.strictObject({
   sense_ids: z.string().transform((value) => value.split(',')).pipe(z.array(uuid).min(1).max(100)),
 });
+export const topicScopeQuery = z.strictObject({
+  topic: z.string().regex(/^[a-z0-9-]+$/),
+  level: z.enum(LEVELS),
+});
+
+const topicTarget = z.union([z.strictObject({ group_id: uuid }), z.strictObject({ new_group_name: groupName })]);
+export const topicAddBody = z.discriminatedUnion('mode', [
+  topicScopeQuery.extend({ target: topicTarget, mode: z.literal('all_unlearned') }),
+  topicScopeQuery.extend({
+    target: topicTarget,
+    mode: z.literal('selected'),
+    sense_ids: z.array(uuid).min(1).max(100).refine((ids) => new Set(ids).size === ids.length),
+  }),
+]);
+export type TopicAddBody = z.infer<typeof topicAddBody>;
 export const groupItemsQuery = z.strictObject({
   cell: z.enum(['priority', '0', '1', '2', '3', '4', '5'])
     .transform((value) => (value === 'priority' ? value : Number(value) as 0 | 1 | 2 | 3 | 4 | 5)).optional(),

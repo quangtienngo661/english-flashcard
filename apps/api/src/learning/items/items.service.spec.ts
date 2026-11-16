@@ -14,14 +14,21 @@ function setup(count: number) {
   settings.learning.itemsPerGroup = 150;
   const tx = {
     $executeRaw: vi.fn(async () => 0),
+    $queryRaw: vi.fn<(...args: unknown[]) => Promise<unknown[]>>().mockImplementation(async (...args) => {
+      const query = args[0] as TemplateStringsArray | { text: string };
+      const sql = 'text' in query ? query.text : query.join('');
+      return sql.includes('pg_try_advisory_xact_lock') ? [{ locked: true }] : [{ learning: 1 }];
+    }),
+    idempotencyKey: { findFirst: vi.fn(async () => null), create: vi.fn(async () => ({})) },
     learningItem: { findUnique: vi.fn(async () => null), findMany: vi.fn(async () => []) },
     groupItem: { count: vi.fn(async () => count) },
   };
   const prisma = { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as unknown as PrismaClient;
   const settingsService = { get: vi.fn(async () => settings) } as unknown as SettingsService;
   const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService;
-  const groups = { assertOwned: vi.fn(async () => ({})) } as unknown as GroupsService;
+  const groups = { assertOwned: vi.fn(async () => ({})), createInTx: vi.fn(async () => ({ id: 'g-new' })) } as unknown as GroupsService;
   const content = {
+    topicSenseIds: vi.fn(async () => ['s1', 's2', 's3']),
     bulkCandidates: vi.fn(async () => ({ senseIds: Array.from({ length: 10 }, (_, i) => `s${i}`), skippedFunctionWords: 0 })),
     // Every id but `hidden` (another learner's private word, or none at all) is visible.
     visibleSenseIds: vi.fn(async (_viewer: string, ids: string[]) => new Set(ids.filter((id) => !id.startsWith('hidden')))),
@@ -32,7 +39,7 @@ function setup(count: number) {
   const ensureItems = vi.spyOn(service as unknown as { ensureItems: (...args: unknown[]) => unknown }, 'ensureItems')
     .mockImplementation(async (...args: unknown[]) => (args[3] as string[]).map((senseId) => (
       { id: `i-${senseId}`, level: 0, dueDate, created: true })));
-  return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, ensureItems, settingsService, content };
+  return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, ensureItems, settingsService, content, groups };
 }
 
 describe('ItemsService limits', () => {
@@ -63,6 +70,61 @@ describe('ItemsService limits', () => {
       const { service } = setup(count);
       await expect(service.bulkAdd('u1', 'g1', {})).resolves.toMatchObject({ added: 0, skipped_group_full: 10 });
     }
+  });
+});
+
+describe('ItemsService.topicSummary', () => {
+  const scope = { topic: 'exam-vstep', level: 'B2' } as const;
+
+  it('counts learning items across the account, irrespective of the deck', async () => {
+    const { service, tx, rawTx, content } = setup(149);
+    await expect(service.topicSummary('u1', scope)).resolves.toEqual({ total: 3, learning: 1, unlearned: 2 });
+    expect(content.topicSenseIds).toHaveBeenCalledWith(scope, { db: tx });
+    expect(rawTx.$queryRaw.mock.calls[0]?.slice(1)).toEqual(['u1', ['s1', 's2', 's3']]);
+  });
+
+  it('does not query learning items for an empty topic', async () => {
+    const { service, rawTx, content } = setup(0);
+    vi.mocked(content.topicSenseIds).mockResolvedValueOnce([]);
+    await expect(service.topicSummary('u1', scope)).resolves.toEqual({ total: 0, learning: 0, unlearned: 0 });
+    expect(rawTx.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('ItemsService.addFromTopic', () => {
+  const scope = { topic: 'exam-vstep', level: 'B2' } as const;
+
+  it('removes out-of-scope and already-learning IDs before filling the deck in browse order', async () => {
+    const { service, content, rawTx, ensureItems } = setup(149);
+    vi.mocked(content.topicSenseIds).mockResolvedValueOnce(['a', 'b', 'c']);
+    rawTx.$queryRaw.mockResolvedValueOnce([{ locked: true }]).mockResolvedValueOnce([{ sense_id: 'c' }]);
+    await expect(service.addFromTopic('u1', {
+      ...scope, target: { group_id: 'g1' }, mode: 'selected', sense_ids: ['d', 'b', 'c', 'a'],
+    }, 'press')).resolves.toEqual({
+      mode: 'selected', group_id: 'g1', eligible: 2, added: 1, skipped_group_full: 1,
+      added_ids: ['a'], already_learning_ids: ['c'], unavailable_ids: ['d'], group_full_ids: ['b'],
+    });
+    expect(ensureItems.mock.calls[0]?.[3]).toEqual(['a']);
+  });
+
+  it('applies the all-unlearned filter at execution and returns only counts', async () => {
+    const { service, content, rawTx, ensureItems } = setup(149);
+    rawTx.$queryRaw.mockResolvedValueOnce([{ locked: true }]).mockResolvedValueOnce([{ sense_id: 's1' }]);
+    await expect(service.addFromTopic('u1', {
+      ...scope, target: { group_id: 'g1' }, mode: 'all_unlearned',
+    }, 'press')).resolves.toEqual({ mode: 'all_unlearned', group_id: 'g1', eligible: 2, added: 1, skipped_group_full: 1 });
+    expect(vi.mocked(content.topicSenseIds).mock.calls[0]?.[1]?.senseIds).toBeUndefined();
+    expect(ensureItems.mock.calls[0]?.[3]).toEqual(['s2']);
+  });
+
+  it('leaves a proposed new deck uncreated when no sense is eligible', async () => {
+    const { service, content, groups, ensureItems } = setup(0);
+    vi.mocked(content.topicSenseIds).mockResolvedValueOnce([]);
+    await expect(service.addFromTopic('u1', {
+      ...scope, target: { new_group_name: 'VSTEP · B2' }, mode: 'all_unlearned',
+    }, 'press')).resolves.toMatchObject({ group_id: null, added: 0 });
+    expect(groups.createInTx).not.toHaveBeenCalled();
+    expect(ensureItems).not.toHaveBeenCalled();
   });
 });
 

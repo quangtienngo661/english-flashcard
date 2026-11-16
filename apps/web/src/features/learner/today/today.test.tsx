@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { focusManager } from '@tanstack/react-query';
+import { useState } from 'react';
 import { renderApp } from '@/test-utils/render-app';
 import { CalendarHost } from '../calendar/CalendarHost';
 import { TodayPage } from './TodayPage';
@@ -207,6 +209,57 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes([], { items: [] }) });
     await screen.findByText('Chưa có nhóm nào');
     expect(screen.queryByText('Tạo nhóm nhanh theo chủ đề')).not.toBeInTheDocument();
+  });
+
+  it('shows four suggestions, refetches on a new visit, and keeps the cards when the window regains focus', async () => {
+    const topics = ['Kinh doanh', 'Du lịch', 'Ẩm thực', 'Công nghệ'];
+    let requests = 0;
+    const mock = {
+      ...routes([]),
+      'GET /v1/topics/suggestions': () => {
+        requests += 1;
+        return Response.json({ items: topics.map((name, i) => ({
+          ...SUGGESTIONS.items[0], topic: { code: `topic-${i}`, name: requests === 1 ? name : `${name} mới` },
+        })) });
+      },
+    };
+    let newVisit!: () => void;
+    function Visits() {
+      const [visit, setVisit] = useState(0);
+      newVisit = () => setVisit((value) => value + 1);
+      return <TodayPage key={visit} />;
+    }
+    const render = renderApp(<Visits />, { chrome: true, routes: mock });
+    const first = await screen.findByRole('region', { name: 'Tạo nhóm nhanh theo chủ đề' });
+    expect(within(first).getAllByRole('listitem')).toHaveLength(4);
+    expect(requests).toBe(1);
+    try {
+      await act(async () => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+        await render.client.refetchQueries({ type: 'active' });
+      });
+      expect(requests).toBe(1);
+      expect(within(first).getByRole('link', { name: /Kinh doanh · B1/ })).toBeInTheDocument();
+    } finally {
+      focusManager.setFocused(undefined);
+    }
+    act(newVisit);
+    expect(await screen.findByRole('link', { name: /Kinh doanh mới · B1/ })).toBeInTheDocument();
+    expect(requests).toBe(2);
+  });
+
+  it('offers a retry when suggestions fail without hiding the rest of Today', async () => {
+    let attempts = 0;
+    renderApp(<TodayPage />, { chrome: true, routes: {
+      ...routes([]),
+      'GET /v1/topics/suggestions': () => ++attempts === 1 ? problem(500)() : Response.json(SUGGESTIONS),
+    } });
+    expect(await screen.findByText('Chưa có nhóm nào')).toBeInTheDocument();
+    const box = await screen.findByRole('region', { name: 'Tạo nhóm nhanh theo chủ đề' });
+    await userEvent.click(within(box).getByRole('button', { name: /thử lại/i }));
+    expect(await screen.findByRole('link', { name: /Kinh doanh · B1/ })).toBeInTheDocument();
+    expect(attempts).toBe(2);
   });
 
   it('the quick-add box opens the add-word sheet with the typed word', async () => {

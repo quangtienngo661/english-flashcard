@@ -198,7 +198,8 @@ async function gmM1(page: Page, opts?: ShotOpts, phase: Phase = 'all') {
   if (!(await link.count())) {
     await page.goto(`/vi/app/${TOPIC}`);
     await settle(page, page.getByRole('list').first());
-    await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+    await page.getByRole('checkbox', { name: /^Chọn tất cả/ }).check({ force: true });
+    await page.getByRole('button', { name: /^Thêm \d+ từ đã chọn$/ }).click();
     await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
     await page.goto('/vi/app/groups');
     await settle(page);
@@ -257,7 +258,8 @@ async function gmM3(page: Page, opts?: ShotOpts) {
   if (!(await page.getByRole('region', { name: 'Các nhóm của bạn' }).count())) {
     await page.goto(`/vi/app/${topic}`);
     await settle(page);
-    await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+    await page.getByRole('checkbox', { name: /^Chọn tất cả/ }).check({ force: true });
+    await page.getByRole('button', { name: /^Thêm \d+ từ đã chọn$/ }).click();
     await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
     await page.goto('/vi/app/groups');
     await settle(page);
@@ -559,7 +561,8 @@ async function m2(page: Page) {
   await page.goto(`/vi/app/${TOPIC}`);
   await settle(page, page.getByRole('list').first());
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+  await page.getByRole('checkbox', { name: /^Chọn tất cả/ }).check({ force: true });
+  await page.getByRole('button', { name: /^Thêm \d+ từ đã chọn$/ }).click();
   await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
   await page.goto('/vi/app/groups');
   await settle(page);
