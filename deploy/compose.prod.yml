@@ -87,14 +87,33 @@ services:
         condition: service_healthy
 
   postgres:
-    image: postgres:17
+    # Postgres 17 + WAL-G (deploy/postgres/Dockerfile). The tag is fixed because deploy.sh runs `compose up` without
+    # --build: an ops step builds it first (`compose build postgres`), and `up` then uses the local image.
+    build:
+      context: ./postgres
+    image: wordmet-postgres:17-walg-3.0.9
     restart: unless-stopped
+    # Only the postgres service reads walg.env: api and worker must not see the key that can overwrite the backups (R5).
+    env_file: ${WORDMET_HOME:-/srv/wordmet}/walg.env
     # A runaway query or a forgotten open transaction cannot hold locks for longer than 5 minutes.
-    command: ['postgres', '-c', 'statement_timeout=300s', '-c', 'idle_in_transaction_session_timeout=300s']
+    # archive_mode/archive_command ship every WAL file to R2 with wal-g; archive_timeout=60 closes a segment at least
+    # once a minute, so a lost machine loses about a minute of writes. A brand-new cluster must run its first initdb
+    # without archive_mode (initdb fails while R2 is unreachable); the VPS cluster already exists.
+    command:
+      [
+        'postgres',
+        '-c', 'statement_timeout=300s',
+        '-c', 'idle_in_transaction_session_timeout=300s',
+        '-c', 'archive_mode=on',
+        '-c', 'archive_command=wal-g wal-push %p',
+        '-c', 'archive_timeout=60',
+      ]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?}
       POSTGRES_USER: ${POSTGRES_USER:?}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      # wal-g connects as this role (the cluster has no `postgres` role).
+      PGUSER: ${POSTGRES_USER:?}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
