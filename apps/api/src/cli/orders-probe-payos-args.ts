@@ -3,7 +3,8 @@ import { ORDER_CODE_EPOCH_MS } from '../entitlements/orders/order-codes.js';
 // Arguments and output of `pnpm orders:probe-payos` (restore-safety). Pure: no clock, no network. Kept apart from the entry file.
 
 export const PROBE_USAGE = 'usage: pnpm orders:probe-payos --from <ISO 8601 instant> --to <ISO 8601 instant>   (window at most 24 hours)\n'
-  + 'A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.';
+  + 'A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.\n'
+  + 'A payOS error other than "not found" stops the walk: the rows printed so far are real, so run it again with a later --from.';
 
 /** Consecutive order codes without a payOS link after which the rest of a second is skipped (the app fills slots from 0 with no gaps). */
 export const PROBE_GAP = 3;

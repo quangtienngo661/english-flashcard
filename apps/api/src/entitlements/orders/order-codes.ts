@@ -2,7 +2,7 @@ import type { BillingEnvironment } from '../entitlements.types.js';
 
 // Order identities (launch prep B design §3.4, §3.5). Pure: no clock, no database.
 
-/** `billing_order_code_seq` starts here, so payOS's test webhook (orderCode 123) never matches a real order. */
+/** The codes of the old `billing_order_code_seq` start here (the sequence is now unused: codes are time-based, below), so payOS's test webhook (orderCode 123) never matches a real order. */
 export const ORDER_CODE_MIN = 1_000_000_000;
 /** 32^7 − 1: the largest code whose description still fits 'WM' + 7 base32 characters; below Number.MAX_SAFE_INTEGER. */
 export const ORDER_CODE_MAX = 34_359_738_367;

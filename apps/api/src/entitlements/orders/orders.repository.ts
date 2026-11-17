@@ -125,7 +125,7 @@ const toReconcile = (row: ReconcileRow): ReconcileOrder => ({
   expiresAt: row.expires_at, createdAt: row.created_at,
 });
 
-/** A new `pending` order: the order code comes from the sequence, the status and the link are not set yet. */
+/** A new `pending` order: the order code is time-based (`nextOrderCode`), the status and the link are not set yet. */
 export type NewOrder = {
   userId: string;
   provider: string;
@@ -226,8 +226,8 @@ export class OrdersRepository {
    * uses it, so asking payOS about this order would read that other order; mark it checked so the reconcile job skips it, and
    * `provider-mismatch` so a webhook for that code (the other buyer's money) is ignored whatever its time (`precheckPayment`).
    */
-  async markFailed(db: Db, id: string, opts?: { codeTaken?: boolean }): Promise<boolean> {
-    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: new Date(), reviewReason: 'provider-mismatch' as const } : { status: 'failed' as const };
+  async markFailed(db: Db, id: string, opts?: { codeTaken?: false } | { codeTaken: true; now: Date }): Promise<boolean> {
+    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: opts.now, reviewReason: 'provider-mismatch' as const } : { status: 'failed' as const };
     const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data });
     return result.count > 0;
   }

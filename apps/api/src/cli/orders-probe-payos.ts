@@ -14,7 +14,8 @@ import { PROBE_HEADER, PROBE_USAGE, formatProbeRow, parseProbeArgs, type ProbeRa
 // until `gap` codes in a row have no link. Output is a TSV table with the payer's name; an account number is never printed.
 // A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.
 // Rows are printed as they are found and a progress line goes to stderr at most once a minute.
-// Exit 2 on bad arguments, 1 when payOS is not real or a call fails, 0 otherwise.
+// Exit 2 on bad arguments, 1 when payOS is not real or a call fails, 0 otherwise. A payOS error that is not "not found" aborts the whole
+// walk: the rows found before it were already printed, so restart with a later --from.
 
 const PAUSE_MS = 100;
 const PROGRESS_EVERY_MS = 60_000;

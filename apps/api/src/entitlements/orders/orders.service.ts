@@ -39,6 +39,11 @@ function isCodeTaken(error: unknown): boolean {
   return code === '231' || code === 231 || code === 'P2002';
 }
 
+/** True when `nextOrderCode` found every slot of the current second taken (100 orders in one second): nothing to retry with now. */
+function isCodesExhausted(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === 'order-codes-exhausted';
+}
+
 const unavailable = () => new ProblemDetailsException({ status: 503, title: 'Payment provider unavailable', type: 'provider-unavailable' });
 
 /** What a failed checkout call logs: the error's class and payOS's own error code as `provider_error` (231 = order code already used; a key
@@ -95,6 +100,10 @@ export class OrdersService {
         });
       } catch (error) {
         // Another request took the same code between our read and our insert: no order was created, so ask for the next code.
+        if (isCodesExhausted(error)) {
+          this.logger.warn('order_codes_exhausted', { attempt });
+          throw unavailable();
+        }
         if (!isCodeTaken(error)) throw error;
         this.logger.warn('order_code_taken', { attempt });
         if (last) throw unavailable();
@@ -109,7 +118,7 @@ export class OrdersService {
         const codeTaken = isCodeTaken(checkout.error);
         // A taken code means payOS never made a link for this order, so the job must not ask about it (codeTaken); any other failure can
         // still have made one, so the job may ask (LB1E17).
-        await this.orders.markFailed(this.prisma, created.id, codeTaken ? { codeTaken: true } : undefined);
+        await this.orders.markFailed(this.prisma, created.id, codeTaken ? { codeTaken: true, now: this.clock.now() } : undefined);
         this.logger.warn('order_checkout_failed', { order_ref: created.id, ...checkoutFailure(checkout.error) });
         if (!codeTaken) throw unavailable();
         this.logger.warn('order_code_taken', { order_ref: created.id, attempt });

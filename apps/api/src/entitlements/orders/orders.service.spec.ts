@@ -36,8 +36,10 @@ class MemoryOrders {
     return true;
   }
   codeTaken = new Map<string, boolean>();
-  async markFailed(_db: unknown, id: string, opts?: { codeTaken?: boolean }) {
+  failedAt = new Map<string, Date | undefined>();
+  async markFailed(_db: unknown, id: string, opts?: { codeTaken?: boolean; now?: Date }) {
     this.calls.push('mark-failed');
+    this.failedAt.set(id, opts?.now);
     const row = this.rows.find((r) => r.id === id && r.status === 'pending');
     if (!row) return false;
     row.status = 'failed';
@@ -244,6 +246,21 @@ describe('OrdersService.create retries with a new order code when the code is ta
     const taken = logs.find((l) => l.event === 'order_code_taken');
     expect(taken).toMatchObject({ order_ref: 'order-1' });
     expect(JSON.stringify(taken)).not.toContain('1000000000');
+  });
+
+  it('the taken-code order is failed with the service clock’s time, so the time that marks it checked is the one the tests control', async () => {
+    const { service, memory, createCheckout } = setup();
+    createCheckout.mockRejectedValueOnce(Object.assign(new Error('x'), { code: '231' }));
+    await service.create(USER, request());
+    expect(memory.failedAt.get('order-1')).toEqual(NOW);
+  });
+
+  it('every code of the second is taken (the repository throws order-codes-exhausted): 503 provider-unavailable, no order created, payOS not asked', async () => {
+    const { service, memory, createCheckout } = setup();
+    memory.nextOrderCode = async () => { throw Object.assign(new Error('all 100 order codes of second 5 are taken'), { code: 'order-codes-exhausted' }); };
+    await expect(service.create(USER, request())).rejects.toMatchObject({ status: 503, problemType: 'provider-unavailable' });
+    expect(memory.rows).toEqual([]);
+    expect(createCheckout).not.toHaveBeenCalled();
   });
 
   it('payOS code 231 as a number counts the same', async () => {

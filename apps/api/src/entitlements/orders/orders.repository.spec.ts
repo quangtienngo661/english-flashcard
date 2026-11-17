@@ -183,9 +183,10 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
 
   it('markFailed with codeTaken also marks the order as already checked (the reconcile job skips it) and as a provider-mismatch (the webhook ignores it)', async () => {
     const updateMany = vi.fn(async () => ({ count: 1 }));
-    expect(await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1', { codeTaken: true })).toBe(true);
+    const now = new Date('2026-11-17T10:00:00.000Z');
+    expect(await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1', { codeTaken: true, now })).toBe(true);
     expect(updateMany).toHaveBeenCalledWith({
-      where: { id: 'o1', status: 'pending' }, data: { status: 'failed', checkedAt: expect.any(Date), reviewReason: 'provider-mismatch' },
+      where: { id: 'o1', status: 'pending' }, data: { status: 'failed', checkedAt: now, reviewReason: 'provider-mismatch' },
     });
   });
 
