@@ -75,9 +75,11 @@ export class OrderApplier {
   async applyPayment(tx: Tx, input: ApplyPaymentInput): Promise<OrderApplyResult> {
     const now = this.clock.now();
     const found = await this.orders.findByCode(tx, 'payos', input.orderCode);
+    // No provider time (or one that does not parse) reads as now, which is never before the order: that money is accepted, as before.
+    const paidAt = parsePayosTime(input.providerTime, now);
     const refused = precheckPayment(
-      { success: input.success, code: input.code, paymentLinkId: input.paymentLinkId, env: input.env },
-      found === null ? null : { paymentLinkId: found.paymentLinkId, environment: found.environment },
+      { success: input.success, code: input.code, paymentLinkId: input.paymentLinkId, env: input.env, paidAt },
+      found === null ? null : { paymentLinkId: found.paymentLinkId, environment: found.environment, createdAt: found.createdAt },
     );
     if (refused !== null || found === null) {
       this.logger.warn('order_payment_ignored', { reason: refused ?? 'unknown-order' });
@@ -97,7 +99,7 @@ export class OrderApplier {
     const totals = { ...(await this.orders.payosTotals(tx, order.id)), transfers: await this.orders.payosTransfers(tx, order.id) };
     const decision = decideOrderPayment(
       this.stateOf(order, account, totals),
-      { source: input.source, amount: input.amount, at: parsePayosTime(input.providerTime, now), providerTime: input.providerTime },
+      { source: input.source, amount: input.amount, at: paidAt, providerTime: input.providerTime },
     );
 
     const payment = await this.orders.insertPayment(tx, {

@@ -24,6 +24,7 @@ export type OrderRecord = {
   paidVia: PaidVia | null;
   paymentLinkId: string | null;
   expiresAt: Date;
+  createdAt: Date;
 };
 
 export type NewPayment = {
@@ -172,6 +173,7 @@ const toRecord = (row: OrderRow): OrderRecord => ({
   paidVia: row.paidVia as PaidVia | null,
   paymentLinkId: row.paymentLinkId,
   expiresAt: row.expiresAt,
+  createdAt: row.createdAt,
 });
 
 /**
