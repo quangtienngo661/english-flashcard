@@ -7,7 +7,8 @@ name: wordmet
 
 x-api-env: &api-env
   PORT: '3000'
-  DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+  # The app role reads and writes rows only: it cannot create or alter tables (deploy/sql/roles.sql).
+  DATABASE_URL: postgresql://${APP_DB_USER:?}:${APP_DB_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
   REDIS_URL: redis://redis:6379
 
 x-logging: &logging
@@ -81,7 +82,8 @@ services:
     profiles: ['migrate']
     command: ['pnpm', 'exec', 'prisma', 'migrate', 'deploy']
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+      # The migrator owns the schema; it is the only login that may change it.
+      DATABASE_URL: postgresql://${MIGRATOR_DB_USER:?}:${MIGRATOR_DB_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,8 +99,10 @@ services:
     env_file: ${WORDMET_HOME:-/srv/wordmet}/walg.env
     # A runaway query or a forgotten open transaction cannot hold locks for longer than 5 minutes.
     # archive_mode/archive_command ship every WAL file to R2 with wal-g; archive_timeout=60 closes a segment at least
-    # once a minute, so a lost machine loses about a minute of writes. A brand-new cluster must run its first initdb
-    # without archive_mode (initdb fails while R2 is unreachable); the VPS cluster already exists.
+    # once a minute, so a lost machine loses about a minute of writes. If archive_command keeps failing (R2 unreachable,
+    # key revoked), pg_wal grows until the disk fills and Postgres stops; Task 9 alerts on archive age, .ready files and
+    # free disk. A brand-new cluster: design §4 measured this; initialise the cluster first, then switch archiving on
+    # (the exact mechanism is not verified). The VPS cluster already exists.
     command:
       [
         'postgres',

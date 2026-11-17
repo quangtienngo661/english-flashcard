@@ -1,0 +1,28 @@
+Restore safety: smoke output (secret-free). Sections are merged by hand per milestone; this is the M2 (ops) part.
+Date: 2026-11-17. Branch feat/restore-safety-ops.
+
+== M2: role split smokes ==
+Setup: isolated Postgres 17 (container rs8-pg), Redis, Mailpit. For each smoke a FRESH database: deploy/scripts/db-roles.sh (empty db)
+-> `prisma migrate deploy` as wordmet_migrator -> db-roles.sh again (closes _prisma_migrations to the app role) -> built API and worker
+(restore-safety-fba865, dist current) started as wordmet_app -> smoke. The smokes' own psql fixtures run as the SUPERUSER role (a shim
+redirects their hard-coded `docker compose ... psql -U dev` to the isolated container as `wordmet`); only API and worker use wordmet_app.
+
+db-roles.sh, every fresh run:   left over: 0   (empty db)   left over: 0   (after migrate)
+db-roles.sh on a migrated db, run twice in a row:   left over: 0 / left over: 0   (owners: wordmet_migrator 91 tables)
+wordmet_app, over TCP with password (a wrong password is refused: control):
+  CREATE TABLE      -> ERROR: permission denied for schema public
+  COPY ... PROGRAM  -> ERROR: permission denied to COPY to or from an external program
+  _prisma_migrations-> ERROR: permission denied for table _prisma_migrations
+  ALTER / DROP      -> ERROR: must be owner of table users;   TRUNCATE -> permission denied
+  control: SELECT on users and nextval('billing_order_code_seq') work
+wordmet_migrator: COPY ... PROGRAM -> permission denied; reads _prisma_migrations (control)
+Throwaway migration as wordmet_migrator (enum + sequence + table): wordmet_app INSERT 0 2, UPDATE 1, SELECT, DELETE 1 work; DROP and TRUNCATE denied.
+
+smoke:buoc-4   API as wordmet_app: ready=true   ALL CHECKS PASSED in 78097ms (run id 7ccabb11; 20 sessions, 41 answers)
+smoke:buoc-8   API as wordmet_app: ready=true   exit 0, 20 PASS, 0 FAIL (last: PASS final review M4 M8)
+smoke:buoc-b-payments   API as wordmet_app: ready=true   exit 0, 23 PASS, 0 FAIL (last: PASS privacy)
+"permission denied" / "denied" in the API and worker logs of all three runs: 0 lines (logs of 355-388 lines each, so the check had text to read).
+
+Rollback (APP_DB_USER and MIGRATOR_DB_USER set to the superuser and its password): compose renders DATABASE_URL with the superuser for
+api, worker and migrate; `migrate deploy` -> No pending migrations to apply; API and worker as the superuser: ready=true.
+Not verified: applying the split on the VPS (lock time of ALTER ... OWNER on production data); smokes other than the three above.
