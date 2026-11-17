@@ -4,6 +4,7 @@ import { AccountDeletionController } from './deletion/account-deletion.controlle
 import { AccountDeletionRequests } from './deletion/account-deletion-requests.service.js';
 import { AccountDeletionService } from './deletion/account-deletion.service.js';
 import { AccountDeletionRegistry } from './deletion/account-eraser.js';
+import { DeletionJournal } from './deletion/deletion-journal.js';
 import { DeletionJobs } from './deletion/deletion-jobs.service.js';
 import { FakeGoogleController } from './google/fake-google.controller.js';
 import { GoogleClient } from './google/google-client.js';
@@ -46,7 +47,7 @@ import { StaffService } from './staff/staff.service.js';
     PasswordHasher, OtpService, TermsVersion, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
     { provide: AccountStatusReader, useClass: PrismaAccountStatusReader }, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: ROLE_PERMISSIONS_TOKEN, useValue: ROLE_PERMISSIONS },
-    IdentityCleanupService, AccountDeletionRegistry, AccountDeletionService, AccountDeletionRequests, DeletionJobs, GoogleAuthService,
+    IdentityCleanupService, AccountDeletionRegistry, AccountDeletionService, AccountDeletionRequests, DeletionJournal, DeletionJobs, GoogleAuthService,
     // The fake only when GOOGLE_FAKE_ENABLED (mode 'fake'); in mode 'off' the real client is never called.
     { provide: GoogleClient, inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => (config.google.mode === 'fake' ? new FakeGoogleClient(config.google) : new RealGoogleClient(config.google)) },
