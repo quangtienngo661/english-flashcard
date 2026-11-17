@@ -47,10 +47,22 @@ load_ops_env() {
 }
 
 # How far WAL archiving to R2 is behind, as "<seconds since the last WAL file reached R2> <WAL files still waiting in
-# archive_status>". The age is -1 when nothing was ever archived. Fails (status 1, nothing printed) when Postgres cannot be asked.
+# archive_status>". The age is -1 when nothing was ever archived. Status 1, nothing printed: Postgres cannot be asked. Status 2, the
+# reason printed: Postgres answered but archiving is off (archive_mode) or archive_status is missing.
 # Not `failed_count`: it only grows and never says whether archiving works now (restore-safety design 5).
 archive_state() {
-  local age ready
+  local age ready mode
+  mode="$(compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -c 'SHOW archive_mode' 2>/dev/null | tr -d '[:space:]')" || return 1
+  [ -n "$mode" ] || return 1
+  # Postgres answered, so what follows is a problem with archiving itself, not with reaching Postgres: say what it is (status 2).
+  if [ "$mode" != on ] && [ "$mode" != always ]; then
+    printf 'archive_mode is %s: WAL is not being archived at all\n' "$mode"
+    return 2
+  fi
+  if ! compose exec -T postgres sh -c 'test -d "$PGDATA/pg_wal/archive_status"' >/dev/null 2>&1; then
+    printf 'pg_wal/archive_status not found under PGDATA: the archive check cannot read the waiting files (wrong PGDATA?)\n'
+    return 2
+  fi
   age="$(compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -c \
     "SELECT coalesce(extract(epoch FROM now() - last_archived_time)::bigint, -1) FROM pg_stat_archiver" 2>/dev/null | tr -d '[:space:]')" || return 1
   ready="$(compose exec -T postgres sh -c 'find "$PGDATA/pg_wal/archive_status" -name "*.ready" | wc -l' 2>/dev/null | tr -d '[:space:]')" || return 1

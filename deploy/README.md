@@ -208,7 +208,8 @@ cat /srv/wordmet/state/current # the SHA in production
   per kind of problem per hour, through the Resend HTTP API (`send-alert.sh`), so it still works when the app's own mail is broken.
 - `daily-report.sh` (08:00 Vietnam time): yesterday's accounts, learners, practice sessions, AI calls and cost, paid orders, mails sent; 5xx count and
   p95 latency from the Caddy access log; the newest backup; disk and memory.
-- `backup.sh` (03:00 Vietnam time, and before every deploy): a failure emails the owner (alert type `backup`).
+- `backup.sh` (03:00 Vietnam time, and before every deploy): a failure emails the owner (alert type `backup`). The WAL-G base backup runs
+  only from cron; `deploy.sh` sets `BACKUP_SKIP_BASE=1`, so a deploy takes the dump only.
 - A missing `ops.env` key stops the script and names the key (it lands in `logs/cron.log`).
 
 `crontab -e` as root. The times are UTC: Ubuntu's cron runs on the server clock, and whether it honours `CRON_TZ` is not verified, so

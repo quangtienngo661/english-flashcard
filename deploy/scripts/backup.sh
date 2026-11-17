@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dump the production database and upload it to R2 (bucket wordmet-backups). Keeps 14 copies on R2 and 3 on the VPS.
-# Then a WAL-G base backup (to the WAL-G bucket of walg.env), keeping the 14 newest.
-# Daily by cron and before every deploy (deploy.sh). Deploy runbook M4; restore steps in deploy/README.md.
+# Then a WAL-G base backup (to the WAL-G bucket of walg.env), keeping the 14 newest; skipped when BACKUP_SKIP_BASE=1.
+# Daily by cron (dump and base backup) and before every deploy (deploy.sh: dump only). Deploy runbook M4; restore steps in deploy/README.md.
 set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -59,6 +59,12 @@ main() {
 
   log "uploaded s3://$R2_BACKUP_BUCKET/$name"
 
+  # The WAL-G base backup runs from cron only: deploy.sh sets BACKUP_SKIP_BASE=1, so a WAL-G problem cannot block a deploy and a deploy
+  # adds no base backup (owner, 18/11/2026). `retain FULL 14` counts base backups, so with one cron backup a day it keeps 14 days.
+  if [ "${BACKUP_SKIP_BASE:-}" = 1 ]; then
+    log "wal-g base backup skipped (BACKUP_SKIP_BASE=1)"
+    return 0
+  fi
   # The dump above is already safe on R2, so a WAL-G failure here still leaves one restorable copy; the failure alerts like any other.
   # A base backup plus the WAL archived since is what point-in-time restore starts from (restore-safety design 3.1).
   log "wal-g base backup"
