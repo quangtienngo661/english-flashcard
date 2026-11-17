@@ -4,6 +4,7 @@ import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
 
 const RECEIPT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 import type { BillingEnvironment } from '../entitlements.types.js';
+import { ORDER_CODES_PER_SECOND, orderCodeAt, orderCodeSecond, orderCodeSlots } from './order-codes.js';
 import type { OrderStatus, PaidVia, PaymentOutcome, ReviewReason } from './order-rules.js';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -23,6 +24,7 @@ export type OrderRecord = {
   paidVia: PaidVia | null;
   paymentLinkId: string | null;
   expiresAt: Date;
+  createdAt: Date;
 };
 
 export type NewPayment = {
@@ -123,7 +125,7 @@ const toReconcile = (row: ReconcileRow): ReconcileOrder => ({
   expiresAt: row.expires_at, createdAt: row.created_at,
 });
 
-/** A new `pending` order: the order code comes from the sequence, the status and the link are not set yet. */
+/** A new `pending` order: the order code is time-based (`nextOrderCode`), the status and the link are not set yet. */
 export type NewOrder = {
   userId: string;
   provider: string;
@@ -171,6 +173,7 @@ const toRecord = (row: OrderRow): OrderRecord => ({
   paidVia: row.paidVia as PaidVia | null,
   paymentLinkId: row.paymentLinkId,
   expiresAt: row.expiresAt,
+  createdAt: row.createdAt,
 });
 
 /**
@@ -184,10 +187,22 @@ export class OrdersRepository {
     return row === null ? null : toRecord(row);
   }
 
-  /** The next order code: 10^9 and up (the migration's sequence), never reused, also not after a failed order. */
-  async nextOrderCode(db: Db): Promise<number> {
-    const rows = await db.$queryRaw<Array<{ code: bigint }>>`SELECT nextval('billing_order_code_seq') AS code`;
-    return Number(rows[0].code);
+  /**
+   * The next free code of the second `now` falls in (slots 0..99, see order-codes.ts), read from the table: a restored
+   * database cannot hand out a code payOS already knows. No lock: two callers racing for the same slot hit the unique
+   * (provider, order_code) index and the caller retries. Throws `order-codes-exhausted` when the second is full.
+   */
+  async nextOrderCode(db: Db, now: Date): Promise<number> {
+    const second = orderCodeSecond(now);
+    const { first, last } = orderCodeSlots(second);
+    const rows = await db.$queryRaw<Array<{ max: bigint | number | null }>>`
+      SELECT max(order_code) AS max FROM billing_orders WHERE order_code BETWEEN ${first} AND ${last}`;
+    const max = rows[0]?.max ?? null;
+    const slot = max === null ? 0 : Number(max) - first + 1;
+    if (slot >= ORDER_CODES_PER_SECOND) {
+      throw Object.assign(new Error(`all ${ORDER_CODES_PER_SECOND} order codes of second ${second} are taken`), { code: 'order-codes-exhausted' });
+    }
+    return orderCodeAt(second, slot);
   }
 
   async insertPending(db: Db, row: NewOrder): Promise<{ id: string }> {
@@ -206,9 +221,14 @@ export class OrdersRepository {
     return result.count > 0;
   }
 
-  /** `pending` → `failed`, only while it is still pending. */
-  async markFailed(db: Db, id: string): Promise<boolean> {
-    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data: { status: 'failed' } });
+  /**
+   * `pending` → `failed`, only while it is still pending. `codeTaken`: payOS refused the code because another order already
+   * uses it, so asking payOS about this order would read that other order; mark it checked so the reconcile job skips it, and
+   * `provider-mismatch` so a webhook for that code (the other buyer's money) is ignored whatever its time (`precheckPayment`).
+   */
+  async markFailed(db: Db, id: string, opts?: { codeTaken?: false } | { codeTaken: true; now: Date }): Promise<boolean> {
+    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: opts.now, reviewReason: 'provider-mismatch' as const } : { status: 'failed' as const };
+    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data });
     return result.count > 0;
   }
 

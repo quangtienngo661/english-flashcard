@@ -1,0 +1,187 @@
+Restore-safety, Task 6: smoke output
+Date: 2026-11-17
+Branch: feat/restore-safety-orders (code under test: commit 02b4624c, plus the smoke change committed with this file)
+Stack: isolated Postgres 17, Redis, Mailpit; the built API and worker (apps/api: pnpm build) started by a throwaway launcher with in-memory
+test-only secrets, PAYOS_FAKE_ENABLED=true, BILLING_FAKE_ENABLED=true, TURNSTILE_MODE=fake, AI_FAKE_ENABLED=true, MAINTENANCE_ENABLED=false.
+Each run starts on a fresh database: DROP/CREATE DATABASE, `pnpm exec prisma migrate deploy`, FLUSHALL on Redis.
+The smokes' psql calls were redirected to the isolated Postgres container (the launcher preloads a shim that rewrites
+"docker compose -p english-learning exec -T postgres psql -U dev" to "docker exec -i <container> psql -U <user>") (done outside the scripts).
+Commands (apps/api):
+  SMOKE_LOGS=<api.log>,<worker.log> node <launcher> <apiDir> smoke-buoc-b-payments   (= pnpm smoke:buoc-b-payments; API and worker output kept in the two log files)
+  node <launcher> <apiDir> smoke-buoc-4                                              (= pnpm smoke:buoc-4)
+Output below is the smokes' own stdout (grep for token/secret/password/bearer/key found nothing).
+
+============================================================
+pnpm smoke:buoc-b-payments  (23/23 steps PASS, 0 FAIL; the privacy step scanned the API and worker logs)
+============================================================
+
+
+[1] 13:39:05Z LB1A1: Lan buys 1 month through the fake page: paid by webhook, one period from now, Pro, a purchase row of 79.000 ₫ "month"
+    ok — paid, period to 2026-12-17T17:00:00.000Z, Pro, one purchase row
+
+[2] 13:39:08Z LB1E1: the same webhook sent again, and a second delivery of it: still one period, one payment
+    ok — one inbox row, one payment, one period
+
+[3] 13:39:11Z LB1E22: a webhook with a wrong signature is 400 and writes nothing; payOS’s own test webhook (orderCode 123) is 200 and ignored as unknown-order
+    ok — forged → 400 nothing stored; sample → 200 and ignored (unknown-order)
+
+[4] 13:39:13Z LB1A3: the transfer is made but the webhook never comes: the return page asks payOS once, the order becomes paid (reconcile), and F5 does not ask again within 10 s
+    ok — check found the money: paid by reconcile, one period
+
+[5] 13:39:15Z LB1E46: F5 on the return page of a pending order asks payOS at most once per 10 seconds
+    ok — one ask per 10 s; another learner’s order is 404
+
+[6] 13:39:17Z LB1A4: neither webhook nor return page: the hourly job finds the money (reconcile), through the real maintenance CLI
+    ok — paid by the job; 3 months is interval quarter
+
+[7] 13:39:40Z Review Focus 1: the webhook and the return page for the SAME transfer at the same time (Promise.all, ×5 orders): always exactly one period
+    ok — 5 races, 5 times one period, one payment, one purchase row
+
+[8] 13:39:55Z LB1E7 + LB1E26: Lan (already Pro) buys 12 months: the new period starts where the running one ends; the second transfer into a paid order is a second period
+    ok — periods follow end to start; pro_until is the end of the chain
+
+[9] 13:39:58Z LB1E33: admin revokes the middle period of a chain: the next one does not move, Lan is Pro until the end of the first period only
+    ok — gap after the revoke; the later period keeps its dates; revoking twice is 409
+
+[10] 13:39:59Z LB1E9: a short payment then the rest: needs_review amount-short, then paid with one period
+    ok — short → needs_review amount-short; rest → paid, one period, two payments
+
+[11] 13:40:02Z LB1E3 + LB1E5 + LB1E6: admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid
+    ok — confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it
+
+[12] 13:40:06Z M4 (launch B minor): admin confirms an unpaid order: its payOS link is cancelled first, so the old QR takes no second transfer
+    ok — the link is cancelled; paying the old QR adds nothing
+
+[13] 13:40:09Z RS-collide: payOS (the fake) already holds every code of the next 10 seconds: three codes tried, three failed orders (marked checked, provider-mismatch), 503 provider-unavailable, the job leaves them and the other buyers’ links alone, the key is freed and the next press is a new order with a later code
+    ok — 503 after three taken codes (1104920900, 1104920901, 1104920902), key freed, new order 1104923500 is later than all of them, the job leaves the failed orders alone
+
+[14] 13:40:35Z RS1: the fake already holds slot 0 of this second and the next: the order still gets a free code, the taken attempt is a failed order marked checked and provider-mismatch
+    ok — 201 with code 1104923801 (taken: 1104923700, 1104923800); 1 failed order(s) with checked_at and provider-mismatch
+
+[15] 13:40:39Z LB1E28: a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone
+    ok — 409 with the current amount; 2 months is 400
+
+[16] 13:40:40Z LB1E36 + LB1E39: the learner deletes the account with an order waiting; the money arrives after: needs_review account-deleted, the payer saved on the order, no period, no purchase row, no payer left in the stored event
+    ok — T1: needs_review, refund info kept, nothing opened, event carries no payer; resolve closes it and clears the info
+
+[17] 13:40:44Z LB1E38: the three payer fields on an order are cleared 90 days after they were saved (the cleanup job), the order stays
+    ok — payer fields cleared, order still needs_review
+
+[18] 13:40:59Z Review I2: the return page counts the transfer first; the webhook then brings it under another reference (same amount, same moment): one period, one purchase row, the second payment attached, no flag
+    ok — reconcile first, webhook second under another reference: one period, outcomes opened-period,attached
+
+[19] 13:41:03Z Review I1: the webhook for a real transfer is ignored (success false); the job then finds the transfer at payOS: the order goes to needs_review provider-mismatch instead of staying pending with the money taken
+    ok — ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look
+
+[20] 13:41:21Z Task 15: the first purchase sends one receipt (Mailpit gets it); the last period ending in 6 days sends one expiry email; a period that a later one covers sends none
+    ok — receipt sent once with its parts; expiry email sent once; a covered period is skipped and nothing goes out
+
+[21] 13:42:49Z periods end: every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until
+    ok — Free again, pro_until null
+
+[22] 13:42:50Z LB1A8: Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)
+    ok — Free window starts at 2026-11-17T12:42:50Z: used 1 of 15 (the Pro one is outside it)
+
+[23] 13:42:52Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — log files scanned
+
+== payments smoke: 23/23 steps in 229 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  M4 (launch B minor)
+PASS  RS-collide
+PASS  RS1
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  Review I2
+PASS  Review I1
+PASS  Task 15
+PASS  periods end
+PASS  LB1A8
+PASS  privacy
+
+
+
+============================================================
+pnpm smoke:buoc-4  (ALL CHECKS PASSED)
+============================================================
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3095; database wordmet_smoke
+
+[2] Register admin and learner
+    ok — admin smoke4-admin-a19b033e@example.com registered, verified, granted, logged in
+    ok — learner smoke4-learner-a19b033e@example.com registered, verified with native_language=vi, timezone Asia/Ho_Chi_Minh
+
+[3] Grant the learner 200 sessions a day for one day
+    ok — grant 20d206fc-128a-4c52-b9ff-dc0aa1380b40: practice_sessions_per_day 200 until 2026-11-18T13:02:24.425Z
+
+[4] Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them
+    ok — batch 9bb3ca1e-f176-4989-b035-a2b714b7512b: 8 created, published by job 3db1df2d-0d63-40b8-8657-130843b3f3f5; the learner sees all 8 with meaning and example
+
+[5] Build group A (W1–W7 + private words P, P2) and group B (W7, W8)
+    ok — group A 2e9808cc-bcbc-4463-bfee-5b28d0a33de1 has 9 words (2 private), group B 6c08c1e0-329a-4c74-8e68-826ecf2f9aaf has 2
+
+[6] Each source × each type (count 1, answered right): group A, all, today
+    ok — group × mcq_definition: W1 (mcq) → correct; session finished
+    ok — group × true_false_definition: W1 (true_false) → correct; session finished
+    ok — group × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — all × mcq_definition: W3 (mcq) → correct; session finished
+    ok — all × true_false_definition: W5 (true_false) → correct; session finished
+    ok — all × type_word: W8 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — today × mcq_definition: W1 (mcq) → correct; session finished
+    ok — today × true_false_definition: W1 (true_false) → correct; session finished
+    ok — today × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+
+[7] "Đã biết" on a right answer without hint (B4#9) and "Cần ôn tập" on another
+    ok — W1: "Đã biết" → level 1, no priority; again → same; "Cần ôn tập" after it → 409 review-already-set; W1: "Cần ôn tập" → level 1, priority, due 2026-11-17
+
+[8] Group B, typing only, 4 questions for 2 words: wrong + skip, hints, "Ôn lại" (B4#2), report, summary, review-all
+    ok — W7 (round 1): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 1): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — report bf14754c-a74c-401b-ba4e-a8c210f1ae97 on W8's item (stays open); a second report → 409 report-exists
+    ok — after round 1 (2 words) the session waits; "Ôn lại" → active
+    ok — W7 (round 2): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 2): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — order W7@r1, W8@r1, W7@r2, W8@r2; no word twice in a row; finished after 4
+    ok — summary: 4 asked, 2 right, 2 wrong; list = W7 (wrong) + W8 (right with hints); W7 pressed, review-all adds 1 (W8)
+
+[9] "Từ hay sai" (B4#12): W7 with 2 wrong; W8 (right only with hints) is not
+    ok — W7: wrong 2 of 2 counted, level 1
+
+[10] Each type from "Từ hay sai" and "Đang ưu tiên" (count 1, answered right)
+    ok — weak × mcq_definition: W7 → correct; finished
+    ok — weak × true_false_definition: W7 → correct; finished
+    ok — weak × type_word: W7 → correct; finished
+    ok — priority × mcq_definition: W1 → correct; finished
+    (429 on POST /v1/practice/sessions; waiting 25s)
+    ok — priority × true_false_definition: W1 → correct; finished
+    ok — priority × type_word: W1 → correct; finished
+    ok — group B, multiple choice only → 1 word (W7; W8 has no multiple choice, B4#19); true/false only → both words
+
+[11] B4#28 / B4E48 and B4#29: a private word as a chosen option is masked for staff; a private question is not reportable
+    ok — report 0860b760-9648-4e01-80ec-1feb8dba3f8d: staff response (2 rows) never contains P's word or meaning, shows "[từ riêng của người học]"; resolved no_error; second resolve → 409 report-not-open; a learner → 403
+    ok — a question on a private word: reportable=false, report → 409 report-not-available
+
+[12] History by date (B4#15) and by word
+    ok — 27 rows on 2026-11-17 (newest first), 0 on 2000-01-01, 6 for W7
+
+[13] B4E8: delete a private word while its question shows → current says "word-not-found" with the next question
+    ok — P2's question 9681edd5-ad5a-4326-8639-e5bb351b41dd showing; DELETE /v1/my-words → 204; current → notice word-not-found + W4's question 5415aa90-a7b8-471e-ba7b-8ebe5bea9178
+    ok — P2's items and questions are gone (read back with psql)
+
+[14] Cleanup: back-date group B session 7 months and leave the last session idle 25 h; run maintenance:run; read back
+    ok — group B items 4 → 0, session gone; report bf14754c-a74c-401b-ba4e-a8c210f1ae97 = open|null; idle session → abandoned
+
+ALL CHECKS PASSED in 70094ms (run id a19b033e; 20 sessions, 46 answers)
+
