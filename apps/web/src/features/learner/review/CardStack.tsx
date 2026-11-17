@@ -192,10 +192,44 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
 const FACE = 'cstack-face flex min-h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-117.5 [@media(max-height:46rem)]:min-h-80';
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
+function FitWord({ word, className }: { word: string; className: string }) {
+  const container = useRef<HTMLSpanElement>(null);
+  const text = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const box = container.current;
+    const label = text.current;
+    if (!box || !label) return;
+    let active = true;
+    const fit = () => {
+      if (!active || !box.clientWidth) return;
+      label.style.fontSize = '';
+      const maximum = parseFloat(getComputedStyle(label).fontSize);
+      const width = label.scrollWidth;
+      if (width > box.clientWidth && maximum) {
+        label.style.fontSize = `${maximum * box.clientWidth / width}px`;
+        if (label.scrollWidth > box.clientWidth) {
+          label.style.fontSize = `${parseFloat(label.style.fontSize) * box.clientWidth / label.scrollWidth}px`;
+        }
+      }
+    };
+    fit();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    observer?.observe(box);
+    document.fonts?.addEventListener('loadingdone', fit);
+    void document.fonts?.ready.then(fit);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      document.fonts?.removeEventListener('loadingdone', fit);
+    };
+  }, [word]);
+  return <span ref={container} className="block w-full min-w-0 text-center [contain:inline-size]"><span ref={text} data-fit-word className={cn('inline-block whitespace-nowrap', className)}>{word}</span></span>;
+}
+
 function LightFront({ card }: { card: Card }) {
   return (
     <div className={cn(FACE, 'items-center justify-center gap-1 p-6 text-center')}>
-      <span className="break-all font-wm-display text-wm-lemma text-wm-ink">{card.content.lemma}</span>
+      <FitWord word={card.content.lemma} className="font-wm-display text-wm-section text-wm-ink" />
       <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(card.content.pos)}</span>
     </div>
   );
@@ -225,7 +259,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         >
           <Badges card={card} />
           <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
-            <span className="break-all font-wm-display text-wm-section text-wm-ink">{content.lemma}</span>
+            <FitWord word={content.lemma} className="font-wm-display text-wm-section text-wm-ink" />
             <span className="font-wm-sans text-wm-base text-wm-muted">{shownPos(content.pos)}</span>
           </span>
         </button>
