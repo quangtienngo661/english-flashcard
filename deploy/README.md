@@ -93,27 +93,80 @@ earlier code runs on the newer database.
 
 `backup.sh` runs before every deploy and daily from cron: `pg_dump -Fc` → `backups/` → R2 bucket `wordmet-backups`.
 
+### Set up the deletion journal
+
+Create a private R2 bucket for the journal and give API/worker an Object Read & Write token scoped to that bucket. Keep its
+credentials separate from the backup and audio buckets. Set the four `DELETION_JOURNAL_*` variables from
+`deploy/env.production.example`. Retain journal records for as long as any backup they cover can be restored.
+
+At cutover, stop API and worker and seed from the authoritative database with the new image. The one-off command copies
+completed and in-progress deletions, then writes the marker required by recovery. Run it again if it fails. Use the authoritative
+database for this one-time initialization, since a restored snapshot may be missing records from after the dump.
+
+```bash
+deploy/scripts/compose.sh stop api worker
+deploy/scripts/compose.sh run --rm --no-deps -T api node dist/cli/accounts-deletions.js seed-journal
+deploy/scripts/compose.sh up -d api worker
+```
+
+Production deletion requests report success or pending only after R2 accepts their record. If R2 fails after the account is
+marked `deleting`, the request fails and the deletion retry job attempts to journal and finish it. An outage before the write
+can leave a locally pending request absent from the journal if the original DB is lost at the same time. If a rollback runs an
+older image that does not journal, stop deletion writers and backfill from the authoritative DB again before relying on recovery.
+
+### Restore and replay
+
 Restore into an **empty** database, then migrate it to the running code. `pg_restore --clean` on the live database would keep tables
 created after the dump and rewind `_prisma_migrations`, and the next deploy would fail on "relation already exists".
 
+Keep API and worker stopped from the export through deletion replay and payment reconciliation. Before replacing the database,
+verify that the journal covers the interval since the dump. If the original DB is readable, stop writes and export its deletion
+list and sequence position as additional evidence. The regular database backup alone cannot recover deletion requests made after
+the dump. If coverage is unknown, keep traffic stopped while resolving it.
+
 ```bash
-cd /srv/wordmet/app && alias compose=deploy/scripts/compose.sh
-U=<POSTGRES_USER>; D=<POSTGRES_DB>; F=/srv/wordmet/backups/<file>.dump
-# 1. Accounts deleted after the dump must be deleted again: list them while the database still answers (skip if it does not).
-compose exec api node dist/cli/accounts-deletions.js export --out /tmp/deletions.txt
-docker cp "$(compose ps -q api)":/tmp/deletions.txt /srv/wordmet/backups/deletions.txt
-# 2. Stop the app, replace the database with an empty one, load the dump.
+cd /srv/wordmet/app
+compose() { deploy/scripts/compose.sh "$@"; }
+U='<POSTGRES_USER>'; D='<POSTGRES_DB>'; F='/srv/wordmet/backups/<file>.dump'
 compose stop api worker
+
+# If the original database is readable, keep these results outside it.
+umask 077
+J="$(mktemp /srv/wordmet/backups/deletions.XXXXXXXX.jsonl)"
+compose run --rm --no-deps -T api sh -c \
+  'node dist/cli/accounts-deletions.js export --out /tmp/deletions.jsonl >&2 && cat /tmp/deletions.jsonl' > "$J"
+compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U "$U" -d "$D" -Atc 'SELECT last_value FROM billing_order_code_seq'
+```
+
+Continue with the verified dump. Stop on any command error. Recovery reads the R2 journal even when the original DB is gone. A
+missing initialization marker, unreadable journal or pending deletion produces a nonzero exit code. `compose run` executes the
+CLI in a temporary container while the serving API and worker are stopped.
+
+```bash
 compose exec -T postgres dropdb -U "$U" --force "$D"
 compose exec -T postgres createdb -U "$U" "$D"
-compose exec -T postgres pg_restore -U "$U" -d "$D" < "$F"
-# 3. Bring the schema up to the running code (backup.sh runs before migrate, so the dump may be one migration behind; add-only).
+compose exec -T postgres pg_restore --exit-on-error -U "$U" -d "$D" < "$F"
 compose --profile migrate run --rm migrate
-compose up -d api worker
-# 4. Delete again the accounts deleted after the dump.
-docker cp /srv/wordmet/backups/deletions.txt "$(compose ps -q api)":/tmp/deletions.txt
-compose exec api node dist/cli/accounts-deletions.js replay --from /tmp/deletions.txt
+compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
 ```
+
+If you also have a verified export from the original database, use `replay --journal --from /dev/stdin < "$J"` in that last
+command to combine it with R2. Replay skips accounts that are already absent.
+
+Before restarting, reconcile transfers and orders since the dump against the payment provider's records. Match using the original
+payment link and independently verified order ownership. Review any transfer whose order is missing. Determine an upper bound on
+issued order codes from evidence outside the restored DB and set `billing_order_code_seq` to at least that value and the current
+sequence position. Keep traffic stopped if deletion coverage, payment ownership or the upper bound cannot be verified.
+
+```bash
+MAX_ISSUED='<verified upper bound>'
+compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -v max_issued="$MAX_ISSUED" -U "$U" -d "$D" <<'SQL'
+SELECT setval('billing_order_code_seq', GREATEST(last_value, :'max_issued'::bigint), true)
+FROM billing_order_code_seq;
+SQL
+```
+
+Once those checks pass, run `compose up -d api worker` and check `/v1/health/ready`.
 
 Check a backup without touching production (G1): load it into a scratch database and compare counts.
 
