@@ -70,7 +70,7 @@ function setup(opts: { rows?: AdminOrderRow[]; detail?: Partial<AdminOrderDetail
   const getCheckout = vi.fn(async (_code: number): Promise<CheckoutState | null> => {
     calls.push(`get-checkout(inTx=${inTx})`);
     if (opts.link === 'fail') throw new Error('payos down');
-    return opts.link === null ? null : { status: opts.link ?? 'PENDING', amount: 79000, amountPaid: 0, transactions: [] };
+    return opts.link === null ? null : { paymentLinkId: 'link-1', status: opts.link ?? 'PENDING', amount: 79000, amountPaid: 0, transactions: [] };
   });
   if (opts.cancel !== 'none') registry.register({ provider: 'payos', cancelCheckout, getCheckout } as unknown as BillingAdapter);
   const logs: LogEntry[] = [];

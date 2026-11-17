@@ -17,7 +17,9 @@ const order = (over: Partial<ReconcileOrder> = {}): ReconcileOrder => ({
   id: 'order-1', userId: USER, status: 'pending', orderCode: CODE, paymentLinkId: 'link-1',
   expiresAt: new Date(NOW.getTime() - minutes(30)), createdAt: new Date(NOW.getTime() - minutes(60)), ...over,
 });
-const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({ status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over });
+const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({
+  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over,
+});
 const tx = (reference: string, amount = 79000) => ({
   reference, amount, transactionDateTime: '2026-11-05 10:02:00',
   payer: { counterAccountName: 'NGUYEN THI LAN', counterAccountNumber: '0123456789', counterAccountBankName: 'MB Bank' },
@@ -144,7 +146,18 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
   it('a payer with no fields becomes a null payer; an order with no stored link id still produces the event', async () => {
     const { service, stores } = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [{ ...tx('FT1'), payer: null }] }) });
     await service.reconcileOne(order({ paymentLinkId: null, status: 'failed' }), NOW);
-    expect(stores[0][0].event).toMatchObject({ paymentLinkId: '', payer: { counterAccountName: null, counterAccountNumber: null, counterAccountBankName: null } });
+    expect(stores[0][0].event).toMatchObject({ paymentLinkId: 'link-1', payer: { counterAccountName: null, counterAccountNumber: null, counterAccountBankName: null } });
+  });
+
+  it.each(['PAID', 'PENDING'] as const)('isolates a %s provider link with a reused order code but a different link ID', async (status) => {
+    const { service, row, inbox, applier, cancelCheckout } = setup({
+      getCheckout: async () => state({ paymentLinkId: 'old-link', status, transactions: status === 'PAID' ? [tx('OLD-TRANSFER')] : [] }),
+    });
+    await service.reconcileOne(order(), NOW);
+    expect(row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    expect(inbox.store).not.toHaveBeenCalled();
+    expect(applier.applyMany).not.toHaveBeenCalled();
+    expect(cancelCheckout).not.toHaveBeenCalled();
   });
 });
 
