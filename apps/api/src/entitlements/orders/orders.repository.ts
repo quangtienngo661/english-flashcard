@@ -4,6 +4,7 @@ import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
 
 const RECEIPT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 import type { BillingEnvironment } from '../entitlements.types.js';
+import { ORDER_CODES_PER_SECOND, orderCodeAt, orderCodeSecond, orderCodeSlots } from './order-codes.js';
 import type { OrderStatus, PaidVia, PaymentOutcome, ReviewReason } from './order-rules.js';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -184,10 +185,22 @@ export class OrdersRepository {
     return row === null ? null : toRecord(row);
   }
 
-  /** The next order code: 10^9 and up (the migration's sequence), never reused, also not after a failed order. */
-  async nextOrderCode(db: Db): Promise<number> {
-    const rows = await db.$queryRaw<Array<{ code: bigint }>>`SELECT nextval('billing_order_code_seq') AS code`;
-    return Number(rows[0].code);
+  /**
+   * The next free code of the second `now` falls in (slots 0..99, see order-codes.ts), read from the table: a restored
+   * database cannot hand out a code payOS already knows. No lock: two callers racing for the same slot hit the unique
+   * (provider, order_code) index and the caller retries. Throws `order-codes-exhausted` when the second is full.
+   */
+  async nextOrderCode(db: Db, now: Date): Promise<number> {
+    const second = orderCodeSecond(now);
+    const { first, last } = orderCodeSlots(second);
+    const rows = await db.$queryRaw<Array<{ max: bigint | number | null }>>`
+      SELECT max(order_code) AS max FROM billing_orders WHERE order_code BETWEEN ${first} AND ${last}`;
+    const max = rows[0]?.max ?? null;
+    const slot = max === null ? 0 : Number(max) - first + 1;
+    if (slot >= ORDER_CODES_PER_SECOND) {
+      throw Object.assign(new Error(`all ${ORDER_CODES_PER_SECOND} order codes of second ${second} are taken`), { code: 'order-codes-exhausted' });
+    }
+    return orderCodeAt(second, slot);
   }
 
   async insertPending(db: Db, row: NewOrder): Promise<{ id: string }> {
@@ -206,9 +219,13 @@ export class OrdersRepository {
     return result.count > 0;
   }
 
-  /** `pending` → `failed`, only while it is still pending. */
-  async markFailed(db: Db, id: string): Promise<boolean> {
-    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data: { status: 'failed' } });
+  /**
+   * `pending` → `failed`, only while it is still pending. `codeTaken`: payOS refused the code because another order already
+   * uses it, so asking payOS about this order would read that other order; mark it checked so the reconcile job skips it.
+   */
+  async markFailed(db: Db, id: string, opts?: { codeTaken?: boolean }): Promise<boolean> {
+    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: new Date() } : { status: 'failed' as const };
+    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data });
     return result.count > 0;
   }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ORDER_CODE_EPOCH_MS } from './order-codes.js';
 import { OrdersRepository } from './orders.repository.js';
 
 const ROW = {
@@ -129,10 +130,26 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     expect(db.billingOrder.update).toHaveBeenCalledWith({ where: { id: 'o1' }, data: { status: 'paid', paidVia: 'webhook', reviewReason: null } });
   });
 
-  it('nextOrderCode reads the sequence and gives a number', async () => {
-    const queryRaw = vi.fn(async (_strings: TemplateStringsArray) => [{ code: 1_000_000_007n }]);
-    expect(await repo.nextOrderCode({ $queryRaw: queryRaw } as never)).toBe(1_000_000_007);
-    expect(queryRaw.mock.calls[0][0].join('?')).toContain("nextval('billing_order_code_seq')");
+  it('nextOrderCode gives slot 0 of the current second when no code of that second exists, from the table and not the sequence', async () => {
+    const queryRaw = vi.fn(async (_strings: TemplateStringsArray, ..._values: unknown[]) => [{ max: null }]);
+    expect(await repo.nextOrderCode({ $queryRaw: queryRaw } as never, new Date(ORDER_CODE_EPOCH_MS + 5_000))).toBe(1_100_000_500);
+    const sql = queryRaw.mock.calls[0][0].join('?');
+    expect(sql).toContain('max(order_code)');
+    expect(sql).not.toContain('nextval');
+    expect(queryRaw.mock.calls[0].slice(1)).toEqual([1_100_000_500, 1_100_000_599]);
+  });
+
+  it('nextOrderCode takes the slot after the highest code of the second, whether the database gives a bigint or a number', async () => {
+    const at = new Date(ORDER_CODE_EPOCH_MS + 5_000);
+    const asBigint = vi.fn(async () => [{ max: 1_100_000_503n }]);
+    const asNumber = vi.fn(async () => [{ max: 1_100_000_503 }]);
+    expect(await repo.nextOrderCode({ $queryRaw: asBigint } as never, at)).toBe(1_100_000_504);
+    expect(await repo.nextOrderCode({ $queryRaw: asNumber } as never, at)).toBe(1_100_000_504);
+  });
+
+  it('nextOrderCode throws order-codes-exhausted when all 100 slots of the second are taken', async () => {
+    const queryRaw = vi.fn(async () => [{ max: 1_100_000_599n }]);
+    await expect(repo.nextOrderCode({ $queryRaw: queryRaw } as never, new Date(ORDER_CODE_EPOCH_MS + 5_000))).rejects.toMatchObject({ code: 'order-codes-exhausted' });
   });
 
   it('insertPending writes a pending order with bigint amount and order code and no link yet', async () => {
@@ -157,6 +174,12 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     updateMany.mockResolvedValue({ count: 0 });
     expect(await repo.setLink(db as never, 'o1', 'l', 'u')).toBe(false);
     expect(await repo.markFailed(db as never, 'o1')).toBe(false);
+  });
+
+  it('markFailed with codeTaken also marks the order as already checked, so the reconcile job does not ask payOS about it', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    expect(await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1', { codeTaken: true })).toBe(true);
+    expect(updateMany).toHaveBeenCalledWith({ where: { id: 'o1', status: 'pending' }, data: { status: 'failed', checkedAt: expect.any(Date) } });
   });
 
   it('findOwned asks for the order of this learner with its first period, and is null for anyone else’s', async () => {

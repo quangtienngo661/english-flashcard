@@ -73,7 +73,7 @@ export class OrdersService {
 
     const expiresAt = new Date(this.clock.now().getTime() + ORDER_TTL_MS);
     const created = await this.prisma.$transaction(async (tx) => {
-      const orderCode = await this.orders.nextOrderCode(tx);
+      const orderCode = await this.orders.nextOrderCode(tx, this.clock.now());
       const { id } = await this.orders.insertPending(tx, {
         userId, provider: 'payos', environment: this.config.payos.mode === 'fake' ? 'sandbox' : 'production', orderCode,
         description: orderDescription(orderCode), periodMonths: input.period_months, amount, currency: 'VND', expiresAt,
