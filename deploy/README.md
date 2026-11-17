@@ -7,6 +7,7 @@ The runbook (when to do what, quality gates, who does it) is `docs/deliveries/de
   app/        clone of the repo; the scripts run from app/deploy/scripts
   .env        API + worker settings and secrets (from deploy/env.production.example), chmod 600
   ops.env     backup and alert settings (from deploy/ops.env.example), chmod 600
+  walg.env    WAL-G settings and the R2 key for WAL and base backups (from deploy/walg.env.example), chmod 600; only postgres reads it
   state/      current and previous: the SHA running now and the one before
   backups/    the 3 newest database dumps (14 more on R2)
   logs/       cron output
@@ -23,7 +24,45 @@ The runbook (when to do what, quality gates, who does it) is `docs/deliveries/de
 5. `mkdir -p /srv/wordmet/{state,backups,logs}`, `git clone <repo> /srv/wordmet/app`.
 6. `.env` and `ops.env`: copy the two templates, fill every `<…>`, `chmod 600`. Secrets come from `node scripts/gen-secret.mjs` or the
    provider consoles; never paste them anywhere else.
-7. DNS: `api` and `admin-api` A records point at this server, grey cloud. Caddy gets the certificates on the first start.
+7. `walg.env`: copy `deploy/walg.env.example` to `/srv/wordmet/walg.env`, fill every `<…>` (a dedicated R2 bucket and a token limited to it)
+   and `chmod 600`. Only the `postgres` service reads it: the key can overwrite the backups, so api and worker never get it. With the file
+   missing, `compose up` and `compose run` stop with "env file … not found" before they start anything, so `deploy.sh` and `rollback.sh` stop
+   too (`compose ps` and `exec` still work).
+8. DNS: `api` and `admin-api` A records point at this server, grey cloud. Caddy gets the certificates on the first start.
+
+### Database roles and WAL-G (first rollout)
+
+Three database logins: `POSTGRES_USER` (superuser, for ops only: backup, restore, reports), `wordmet_migrator` (owns every table; only the
+`migrate` service uses it) and `wordmet_app` (reads and writes rows; api, worker and the CLIs use it and cannot create or alter tables).
+`db-roles.sh` creates and repairs the two roles from `deploy/sql/roles.sql`; it is safe to run again.
+
+On the running server, at night (Vietnam time; step 4 is a few minutes of downtime):
+
+1. `walg.env` as in step 7 above. In `.env` add the four role variables of `deploy/env.production.example`: `APP_DB_USER=wordmet_app`,
+   `MIGRATOR_DB_USER=wordmet_migrator` and a generated `APP_DB_PASSWORD` and `MIGRATOR_DB_PASSWORD`.
+2. Build the Postgres image first, because `deploy.sh` runs `compose up` without `--build`:
+   `deploy/scripts/compose.sh build postgres` (tag `wordmet-postgres:17-walg-3.0.9`: Postgres 17 and the WAL-G binary).
+3. `deploy/scripts/db-roles.sh` with api and worker stopped or at low traffic. It hands the tables to the migrator (a short `ACCESS EXCLUSIVE`
+   lock per table) and gives up after 5 s on a lock, rolling back whole: on a lock timeout error, run it again. It prints `left over: 0`
+   when the split is complete and exits 1 otherwise.
+4. `deploy/scripts/compose.sh up -d postgres` recreates Postgres from the new image with archiving on (the one restart), then
+   `deploy/scripts/compose.sh up -d api worker` so they log in as `wordmet_app`.
+5. `deploy/scripts/backup.sh` by hand: the first WAL-G base backup. Check that WAL reaches R2:
+
+```bash
+deploy/scripts/compose.sh exec -T postgres psql -X -U <POSTGRES_USER> -d <POSTGRES_DB> -c 'SELECT archived_count, failed_count, last_archived_wal FROM pg_stat_archiver'
+```
+
+A new, empty database: Postgres needs R2 reachable at its first start (archiving is on from the start; with R2 down the first start fails).
+Order: start Postgres alone, create the roles, migrate, create the roles again so `_prisma_migrations` is closed to the app role.
+
+```bash
+cd /srv/wordmet/app
+deploy/scripts/compose.sh up -d --wait postgres   # --wait: until Postgres answers; db-roles.sh needs it
+deploy/scripts/db-roles.sh
+deploy/scripts/deploy.sh <sha>     # migrates as wordmet_migrator, then starts everything
+deploy/scripts/db-roles.sh
+```
 
 ## Deploy
 
@@ -31,8 +70,9 @@ The runbook (when to do what, quality gates, who does it) is `docs/deliveries/de
 /srv/wordmet/app/deploy/scripts/deploy.sh <sha>
 ```
 
-Order: refuse a checkout with local changes → check out `<sha>` → build `wordmet-api:<sha>` and `wordmet-api-migrate:<sha>` → backup
-(skipped on the first deploy) → migrate → start → wait up to 120 s for `/v1/health/ready`.
+Order: refuse a checkout with local changes → check out `<sha>` → build `wordmet-api:<sha>` and `wordmet-api-migrate:<sha>` → database dump
+(skipped on the first deploy; no WAL-G base backup, that runs from cron only) → migrate → start → wait up to 120 s for `/v1/health/ready`.
+The Postgres image is not built here: after a change to `deploy/postgres/Dockerfile` run `compose build postgres` first.
 
 - Ready: `state/current` = `<sha>`, the one before goes to `state/previous`; images older than the 3 newest are removed.
 - Not ready: the previous version is started again and the script exits 1; `<sha>` is not recorded.
@@ -89,9 +129,62 @@ earlier code runs on the newer database.
 | Web | `pnpm exec wrangler rollback --name wordmet-web` (in `apps/web`), or the Cloudflare dashboard → Deployments |
 | Admin | `pnpm exec wrangler rollback --name wordmet-admin` (in `apps/admin`) |
 
+### Roll back the database logins and the Postgres image
+
+`rollback.sh` touches neither. The logins and the image roll back separately.
+
+**Back to one login (the superuser).** In `/srv/wordmet/.env` set `APP_DB_USER` and `MIGRATOR_DB_USER` to the value of `POSTGRES_USER`, and
+`APP_DB_PASSWORD` and `MIGRATOR_DB_PASSWORD` to the value of `POSTGRES_PASSWORD`, then `deploy/scripts/compose.sh up -d api worker`. The two
+roles stay in the database, unused, and nothing changes in the database. In this state `db-roles.sh` refuses to run (it needs the real role
+names in `.env`).
+
+**A migration ran as the superuser while the split was on** (for example `migrate` ran with the superuser in `MIGRATOR_DB_USER`): the new
+tables belong to the superuser and the app reports `permission denied` on them. Put the role names back in `.env` and run
+`deploy/scripts/db-roles.sh` again: it hands those tables to the migrator and grants the app role its rows.
+
+**Back to the plain `postgres:17` image** (no WAL-G, no archiving): in the clone, check out the parent of the commit that introduced
+`wordmet-postgres:17-walg-` in `deploy/compose.prod.yml` (`git log --oneline -S'walg-3.0.9' -- deploy/compose.prod.yml` finds it), then
+`deploy/scripts/compose.sh up -d postgres api worker`. That file also has the superuser `DATABASE_URL`, so api, worker and migrate go back to one
+login too (the roles stay, unused). The data volume is the same one and Postgres 17 opens it as it is (rehearsed with the `compose.prod.yml` from
+before the WAL-G commit: same rows, `archive_mode` off). The restart is a few minutes of downtime. Without archiving there is no point-in-time
+restore and `watch.sh` raises the `archive` alert "off or unreadable": the daily dump is the only backup until you return to the WAL-G
+image (check out the newer commit again and `compose up -d postgres`).
+
 ## Backup and restore
 
-`backup.sh` runs before every deploy and daily from cron: `pg_dump -Fc` → `backups/` → R2 bucket `wordmet-backups`.
+Two independent copies of the database:
+
+| | What | When | Kept | Restore to |
+|---|---|---|---|---|
+| WAL archive + base backup (WAL-G) | Postgres ships every WAL file to the WAL-G bucket (`archive_timeout=60`: at least one file a minute while the database is written); `backup.sh` adds a base backup | WAL continuously; base backup daily from cron (03:00 Vietnam time) | newest 14 base backups = 14 days (cron only; `wal-g delete retain FULL 14`) | any moment from the oldest kept base backup to the last WAL that reached R2 |
+| `pg_dump -Fc` | `backup.sh` → `backups/` → R2 bucket `wordmet-backups` | before every deploy and daily from cron | 3 on the VPS, 14 on R2 | the moment of the dump |
+
+`deploy.sh` runs `backup.sh` with `BACKUP_SKIP_BASE=1`: the deploy takes the dump only, so a WAL-G problem cannot block a deploy. The WAL-G
+base backup runs only from the cron line below.
+
+Lost with a restore from the WAL archive: what was written after the last WAL file that reached R2, up to about 60 s plus the upload time.
+Lost with a dump: everything since the dump. Not covered by either: Redis (queues; not backed up) and the R2 buckets of audio and the
+deletion journal. An application mistake (a bad deploy, a wrong delete) can be undone to any time in the 14 days only while a base
+backup from before it still exists; the restore starts from the newest base backup older than the mistake.
+
+### Alerts and what to do
+
+`watch.sh` (every 5 minutes) and `backup.sh` email the owner through `send-alert.sh`, one email per kind per hour.
+
+| Alert | It fires when | First action |
+|---|---|---|
+| `archive`: "WAL archiving to R2 is behind" | the last WAL file reached R2 more than 15 min ago while files are waiting, or more than 20 files (`.ready`) wait in `pg_wal/archive_status` | The body shows `pg_stat_archiver` and the last `wal-g` lines. Check R2 (status page, token not revoked, `walg.env` unchanged). Waiting WAL stays in `pg_wal` and is shipped late once R2 answers; `compose exec -T -u postgres postgres wal-g backup-list` tests the key. Until it is fixed `pg_wal` grows (up to ~23 GB a day under constant writes) |
+| `archive`: "WAL archiving is off or unreadable" | `archive_mode` is not `on`, or `pg_wal/archive_status` is missing | Postgres runs without the archive flags: `compose up -d postgres` with the current `compose.prod.yml`. Until fixed there is no point-in-time restore and nothing else warns |
+| `disk-low` | less than 15 GB free | Look for the cause: if an `archive` alert is open, fix R2 first (it fills `pg_wal`); else images (`docker image prune`), logs. Never delete files from `pg_wal` by hand |
+| `disk-critical` | less than 8 GB free | Same, now: Postgres stops writing when the disk is full |
+| `backup` | `backup.sh` failed: dump, upload to R2 or the WAL-G base backup (the dump is already on R2 when only WAL-G failed) | Read `logs/cron.log`, run `deploy/scripts/backup.sh` by hand |
+
+The daily report has one line, for example `PITR: last WAL 20 s ago, .ready 0, newest base backup base_0000…, 2026-11-20T20:00:11Z`. A large
+age with `.ready 0` is a quiet database (a WAL file is shipped only after writes); a large age with `.ready` above 0 is the `archive` alert.
+`PITR: unavailable` means neither Postgres nor R2 could be asked.
+
+Rehearsed with an S3-compatible fake (SeaweedFS) using these scripts; the same flow was measured on real R2 with a hand-made script
+(`docs/superpowers/specs/2026-11-17-restore-safety-design.md` §5). The scripts have not run against real R2 yet.
 
 ### Set up the deletion journal
 
@@ -114,15 +207,93 @@ marked `deleting`, the request fails and the deletion retry job attempts to jour
 can leave a locally pending request absent from the journal if the original DB is lost at the same time. If a rollback runs an
 older image that does not journal, stop deletion writers and backfill from the authoritative DB again before relying on recovery.
 
-### Restore and replay
+### Which restore
+
+- **Restore to a point in time (WAL-G)** is the default: it loses seconds, not a day, and can stop just before a mistake.
+- **Restore from a dump** when the WAL archive cannot be used (R2 bucket gone, no base backup old enough), or to build a database from
+  a dump on another cluster.
+
+Both start from an empty database and end the same way: roles repaired, migrations applied to the running code, deletions replayed, API and
+worker started, payments reconciled. Keep API and worker stopped from the first command to the last.
+
+Before replacing the database, verify that the deletion journal covers the interval since the backup: neither kind of backup can recover a
+deletion request made after it, and the journal can. If the original database is readable, stop writes and export its deletion list first
+(the export block in "Restore from a dump" below) as additional evidence. If coverage is unknown, keep traffic stopped while resolving it.
+
+### Restore to a point in time (WAL-G)
+
+Choose the time: a moment just before the mistake, in UTC (`2026-11-20 03:41:00+00`), or none to replay every WAL file that reached R2. The
+time must be later than the end of a base backup: `wal-g backup-list` (needs no running Postgres) shows them, newest last. `LATEST` is the
+newest; for a time before it, put the name of an older base backup (`base_…`) in place of `LATEST`.
+
+```bash
+cd /srv/wordmet/app
+compose() { deploy/scripts/compose.sh "$@"; }
+compose run --rm --no-deps -T --entrypoint wal-g postgres backup-list
+```
+
+The restore. Stop on a command error and read it; a restore that goes wrong is started again from the first step.
+
+```bash
+cd /srv/wordmet/app
+compose() { deploy/scripts/compose.sh "$@"; }
+U='<POSTGRES_USER>'; D='<POSTGRES_DB>'
+T='<time in UTC, e.g. 2026-11-20 03:41:00+00; empty to replay all WAL>'
+
+compose stop api worker
+compose rm -sf postgres
+docker volume rm wordmet_postgres_data   # the old data directory; "no such volume" is fine after a lost machine
+
+# New data directory: the base backup, then Postgres replays WAL from R2 up to $T and promotes itself.
+compose run --rm --no-deps -T -e T="$T" --entrypoint bash postgres -s <<'EOF'
+set -e
+wal-g backup-fetch "$PGDATA" LATEST
+touch "$PGDATA/recovery.signal"
+{
+  echo "restore_command = 'wal-g wal-fetch %f %p'"
+  [ -z "$T" ] || echo "recovery_target_time = '$T'"
+  echo "recovery_target_action = 'promote'"
+} >> "$PGDATA/postgresql.auto.conf"
+chown -R postgres:postgres "$PGDATA"
+chmod 700 "$PGDATA"
+EOF
+
+compose up -d postgres
+until compose exec -T postgres psql -X -U "$U" -d "$D" -Atc 'SELECT NOT pg_is_in_recovery()' 2>/dev/null | grep -qx t; do sleep 2; done
+compose logs --no-log-prefix postgres | grep -E 'recovery stopping|last completed transaction|selected new timeline|archive recovery complete'
+compose exec -T postgres psql -X -U "$U" -d "$D" -c 'ALTER SYSTEM RESET restore_command' -c 'ALTER SYSTEM RESET recovery_target_time' \
+  -c 'ALTER SYSTEM RESET recovery_target_action'
+
+deploy/scripts/db-roles.sh                   # repairs the roles and grants; must print "left over: 0"
+compose --profile migrate run --rm migrate   # the restored schema is as old as the backup: bring it to the running code
+compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
+compose up -d api worker
+deploy/scripts/backup.sh                     # a new base backup on the new timeline
+```
+
+What to read in the output:
+
+- `last completed transaction was at log time …`: the moment the restored data ends (with a `T`, `recovery stopping before commit …` shows
+  the first transaction left out). Write that time down, in UTC: it is the `--from` of the payment check below. Without `T` it is the last
+  commit that reached R2.
+- `selected new timeline ID: <n>` and `archive recovery complete`: the cluster was promoted. If the container exits instead, `compose logs
+  postgres`: `recovery ended before configured recovery target was reached` means `T` is later than the WAL on R2 (take an earlier `T` or none).
+- `left over: 0` from `db-roles.sh`. A restored cluster keeps its roles and grants, so the script normally changes nothing; it confirms
+  the split is intact.
+- Then `/v1/health/ready` and `compose logs --tail 50 api`.
+
+The restored cluster archives to the same bucket on the new timeline, next to the old one. Old base backups stay valid until
+`retain FULL 14` removes them.
+
+Replaying the deletion journal is the step for deletions between the end of the restored data and the failure; the rules for it are in
+"Set up the deletion journal" above and in the dump restore below (`replay --journal --from /dev/stdin < "$J"` when you also have an export).
+
+### Restore from a dump into an empty database
 
 Restore into an **empty** database, then migrate it to the running code. `pg_restore --clean` on the live database would keep tables
 created after the dump and rewind `_prisma_migrations`, and the next deploy would fail on "relation already exists".
 
-Keep API and worker stopped from the export through deletion replay and payment reconciliation. Before replacing the database,
-verify that the journal covers the interval since the dump. If the original DB is readable, stop writes and export its deletion
-list and sequence position as additional evidence. The regular database backup alone cannot recover deletion requests made after
-the dump. If coverage is unknown, keep traffic stopped while resolving it.
+If the original database is readable, export its deletion list now, and keep the result outside it:
 
 ```bash
 cd /srv/wordmet/app
@@ -130,43 +301,54 @@ compose() { deploy/scripts/compose.sh "$@"; }
 U='<POSTGRES_USER>'; D='<POSTGRES_DB>'; F='/srv/wordmet/backups/<file>.dump'
 compose stop api worker
 
-# If the original database is readable, keep these results outside it.
 umask 077
 J="$(mktemp /srv/wordmet/backups/deletions.XXXXXXXX.jsonl)"
 compose run --rm --no-deps -T api sh -c \
   'node dist/cli/accounts-deletions.js export --out /tmp/deletions.jsonl >&2 && cat /tmp/deletions.jsonl' > "$J"
-compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U "$U" -d "$D" -Atc 'SELECT last_value FROM billing_order_code_seq'
 ```
 
 Continue with the verified dump. Stop on any command error. Recovery reads the R2 journal even when the original DB is gone. A
 missing initialization marker, unreadable journal or pending deletion produces a nonzero exit code. `compose run` executes the
 CLI in a temporary container while the serving API and worker are stopped.
 
+On a cluster that has never had the two roles (a new server) `pg_restore` needs them first: the dump gives its tables to
+`wordmet_migrator`, and without the roles it stops at the first such statement (`role "wordmet_migrator" does not exist`). The first
+`db-roles.sh` creates the roles and sets the grants on the database itself (`CONNECT` for the app role, closed to `PUBLIC`): a dump does not
+carry those. The second checks the restored tables and must print `left over: 0`.
+
 ```bash
 compose exec -T postgres dropdb -U "$U" --force "$D"
 compose exec -T postgres createdb -U "$U" "$D"
+deploy/scripts/db-roles.sh                   # creates the roles (a no-op when they exist)
 compose exec -T postgres pg_restore --exit-on-error -U "$U" -d "$D" < "$F"
+deploy/scripts/db-roles.sh                   # must print "left over: 0"
 compose --profile migrate run --rm migrate
 compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
+compose up -d api worker
 ```
 
 If you also have a verified export from the original database, use `replay --journal --from /dev/stdin < "$J"` in that last
 command to combine it with R2. Replay skips accounts that are already absent.
 
-Before restarting, reconcile transfers and orders since the dump against the payment provider's records. Match using the original
-payment link and independently verified order ownership. Review any transfer whose order is missing. Determine an upper bound on
-issued order codes from evidence outside the restored DB and set `billing_order_code_seq` to at least that value and the current
-sequence position. Keep traffic stopped if deletion coverage, payment ownership or the upper bound cannot be verified.
+### After a restore: payments
+
+A restore loses the orders written after the end of the restored data, but payOS still has their payment links and may hold the money. Order
+codes come from the clock, so a new order never reuses the code of a lost one. The CLI lists the payOS links whose code falls in a time
+window; staff then confirm each paid one that the restored database does not have with "Xác nhận thanh toán" in admin. It only reads payOS
+and needs no database.
+
+With API and worker started (confirming happens in admin), run the CLI for the smallest window that covers the gap: from the time the
+restored data ends (the `last completed transaction` time above, or the time of the dump) to the time of the failure, both in UTC. About 3
+payOS calls per second of window: ten minutes take about three minutes.
 
 ```bash
-MAX_ISSUED='<verified upper bound>'
-compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -v max_issued="$MAX_ISSUED" -U "$U" -d "$D" <<'SQL'
-SELECT setval('billing_order_code_seq', GREATEST(last_value, :'max_issued'::bigint), true)
-FROM billing_order_code_seq;
-SQL
+compose run --rm --no-deps -T api node dist/cli/orders-probe-payos.js --from 2026-11-20T03:41:00Z --to 2026-11-20T03:55:00Z
 ```
 
-Once those checks pass, run `compose up -d api worker` and check `/v1/health/ready`.
+Output is one tab-separated line per link found (order code, description, status, amount, paid amount, time, payer names), printed as it is
+found. A payOS error other than "not found" stops the walk: the lines already printed are real, so run it again with a later `--from`.
+Exit 2 is a wrong argument (a time must be ISO 8601 with a zone, a window at most 24 hours, not before 2026-11-17).
+A paid link with no order in the restored database is a payment to review by hand: match the payer's name to a learner before confirming it.
 
 Check a backup without touching production (G1): load it into a scratch database and compare counts.
 
@@ -204,10 +386,11 @@ cat /srv/wordmet/state/current # the SHA in production
 ## Monitoring and cron (M7)
 
 - `watch.sh` (every 5 minutes): log events `request_failed` (5 or more), `maintenance_job_failed`, `account_deletion_failed`,
-  `turnstile_bypassed`; disk above 80 %; less than 300 MB of memory; a service not running or unhealthy; an api or worker restart. One email
+  `turnstile_bypassed`; disk above 80 %; less than 300 MB of memory; a service not running or unhealthy; an api or worker restart; WAL not reaching R2 or archiving
+  off; less than 15 GB and less than 8 GB of free disk (what each means: "Alerts and what to do"). One email
   per kind of problem per hour, through the Resend HTTP API (`send-alert.sh`), so it still works when the app's own mail is broken.
 - `daily-report.sh` (08:00 Vietnam time): yesterday's accounts, learners, practice sessions, AI calls and cost, paid orders, mails sent; 5xx count and
-  p95 latency from the Caddy access log; the newest backup; disk and memory.
+  p95 latency from the Caddy access log; the newest backup; the PITR line (last WAL shipped, newest WAL-G base backup); disk and memory.
 - `backup.sh` (03:00 Vietnam time, and before every deploy): a failure emails the owner (alert type `backup`). The WAL-G base backup runs
   only from cron; `deploy.sh` sets `BACKUP_SKIP_BASE=1`, so a deploy takes the dump only.
 - A missing `ops.env` key stops the script and names the key (it lands in `logs/cron.log`).

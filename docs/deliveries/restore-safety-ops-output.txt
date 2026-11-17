@@ -1,0 +1,316 @@
+Restore safety: smoke output (secret-free). Sections are merged by hand per milestone; this is the M2 (ops) part.
+Date: 2026-11-17. Branch feat/restore-safety-ops.
+
+== M2: role split smokes ==
+Setup: isolated Postgres 17 (container rs8-pg), Redis, Mailpit. For each smoke a FRESH database: deploy/scripts/db-roles.sh (empty db)
+-> `prisma migrate deploy` as wordmet_migrator -> db-roles.sh again (closes _prisma_migrations to the app role) -> built API and worker
+(restore-safety-fba865, dist current) started as wordmet_app -> smoke. The smokes' own psql fixtures run as the SUPERUSER role (a shim
+redirects their hard-coded `docker compose ... psql -U dev` to the isolated container as `wordmet`); only API and worker use wordmet_app.
+
+db-roles.sh, every fresh run:   left over: 0   (empty db)   left over: 0   (after migrate)
+db-roles.sh on a migrated db, run twice in a row:   left over: 0 / left over: 0   (owners: wordmet_migrator 91 tables)
+wordmet_app, over TCP with password (a wrong password is refused: control):
+  CREATE TABLE      -> ERROR: permission denied for schema public
+  COPY ... PROGRAM  -> ERROR: permission denied to COPY to or from an external program
+  _prisma_migrations-> ERROR: permission denied for table _prisma_migrations
+  ALTER / DROP      -> ERROR: must be owner of table users;   TRUNCATE -> permission denied
+  control: SELECT on users and nextval('billing_order_code_seq') work
+wordmet_migrator: COPY ... PROGRAM -> permission denied; reads _prisma_migrations (control)
+Throwaway migration as wordmet_migrator (enum + sequence + table): wordmet_app INSERT 0 2, UPDATE 1, SELECT, DELETE 1 work; DROP and TRUNCATE denied.
+
+smoke:buoc-4   API as wordmet_app: ready=true   ALL CHECKS PASSED in 78097ms (run id 7ccabb11; 20 sessions, 41 answers)
+smoke:buoc-8   API as wordmet_app: ready=true   exit 0, 20 PASS, 0 FAIL (last: PASS final review M4 M8)
+smoke:buoc-b-payments   API as wordmet_app: ready=true   exit 0, 23 PASS, 0 FAIL (last: PASS privacy)
+"permission denied" / "denied" in the API and worker logs of all three runs: 0 lines (logs of 355-388 lines each, so the check had text to read).
+
+Rollback (APP_DB_USER and MIGRATOR_DB_USER set to the superuser and its password): compose renders DATABASE_URL with the superuser for
+api, worker and migrate; `migrate deploy` -> No pending migrations to apply; API and worker as the superuser: ready=true.
+Not verified: applying the split on the VPS (lock time of ALTER ... OWNER on production data); smokes other than the three above.
+
+== M2: PITR restore rehearsal ==
+Date: 2026-11-17 (UTC times below are the rehearsal containers' clock). Scripts and README of branch feat/restore-safety-ops at the commit
+that adds this section. Isolated stack, nothing real touched: compose project rs12 (containers rs12-*, volume rs12_postgres_data, image
+rs12-pg-walg built from deploy/postgres/Dockerfile by `compose build postgres`), SeaweedFS S3 on 127.0.0.1:8342 as the fake R2 (container
+rs12-s3), fake keys inline, no real R2, no VPS, no payOS.
+Harness (untracked): runs deploy/scripts/* from a COPY of deploy/ with only these test edits: `-p wordmet` -> `-p rs12` in common.sh, the
+image tag in the compose copy, SERVICES=(postgres) and a fake /proc/meminfo in watch.sh, a fake send-alert.sh that appends
+"<type>|<subject>" to a file, a df shim (the Git Bash df cannot read this path). The README's command blocks are EXTRACTED from
+deploy/README.md by heading and run as they are; the only changes to them are the production names -> rehearsal names (cd /srv/wordmet/app,
+/srv/wordmet, wordmet_postgres_data, <POSTGRES_USER>, <POSTGRES_DB>, <file>), the placeholder T, and deleting the lines that need the real
+API image or the R2 deletion journal (`accounts-deletions.js replay`, `compose up -d api worker`). The diff of each edit is printed below.
+Database: the real 65 migrations, from the image wordmet-api-migrate:rolestest (the compose `migrate` service), applied as wordmet_migrator.
+Role names in .env are the real ones (wordmet_app, wordmet_migrator): db-roles.sh refuses others.
+
+--- 1. README 'Prepare the server' step 7: with walg.env missing ---
+compose ps          -> exit 0 (prints an empty table)
+compose exec        -> exit 0
+compose up -d postgres  -> exit 1: env file <rehearsal>/home/walg.env not found
+compose run ... postgres -> exit 1: same message
+(so the README says: up and run stop, ps and exec still work; this is also why deploy.sh and rollback.sh stop)
+
+--- 2. README 'Database roles and WAL-G': `compose build postgres`, then the empty-database order ---
+README block run (deploy.sh <sha> replaced by its migrate step, `compose --profile migrate run --rm migrate`):
+  cd <rehearsal>/tree
+  deploy/scripts/compose.sh up -d --wait postgres   # --wait: until Postgres answers; db-roles.sh needs it
+  deploy/scripts/db-roles.sh
+  deploy/scripts/compose.sh --profile migrate run --rm migrate
+  deploy/scripts/db-roles.sh
+Output (migration list shortened):
+ Container rs12-postgres-1  Started
+ Container rs12-postgres-1  Healthy
+left over: 0
+65 migrations found in prisma/migrations
+left over: 0
+exit=0
+
+First attempt, before the README was corrected (it had `up -d postgres` with no --wait): db-roles.sh ran while Postgres was still
+initialising -> "psql: error: connection to server on socket ... failed: No such file or directory" and "ERROR: roles.sql failed";
+migrate then failed with P1000 (the migrator did not exist yet). README corrected to `up -d --wait postgres`; the volume was removed and
+the block re-run from scratch, output above.
+
+--- 3. Data, base backup through backup.sh, T1, writes after T1, loss of the machine ---
+=== A. data before the base backup (as wordmet_migrator)
+CREATE TABLE
+INSERT 0 2
+65
+=== B. base backup through backup.sh (dump + wal-g backup-push)
+2026-11-17T17:28:30Z dump rs12db
+2026-11-17T17:28:31Z upload wordmet-20261117T172830Z.dump (268K)
+2026-11-17T17:28:34Z uploaded s3://rs12-dumps/wordmet-20261117T172830Z.dump
+2026-11-17T17:28:34Z wal-g base backup
+INFO: 2026/11/17 17:28:34.681499 Backup will be pushed to storage: default
+INFO: 2026/11/17 17:28:34.900569 Started backup with name base_000000010000000000000003 at LSN 0/3000028
+INFO: 2026/11/17 17:28:36.425441 Wrote backup with name base_000000010000000000000003 to storage default
+INFO: 2026/11/17 17:28:37.162525 No backup found for deletion
+2026-11-17T17:28:37Z wal-g base backup done (newest 14 kept)
+=== C. m1-keep, then T1, then writes after T1
+INSERT 0 1
+INSERT 0 1
+DELETE 1
+T1=2026-11-17 17:28:39.683363+00
+ERROR:  permission denied for function pg_switch_wal
+.ready files left: 0
+archived 3, failed 0, last 000000010000000000000003.00000028.backup
+marks before the loss: before-base,m1-keep,after-T1
+migrations before the loss: 65
+failure time (UTC): 2026-11-17T17:28:45Z
+
+(the first pg_switch_wal ran as wordmet_migrator and was denied, as it should be: no superuser rights; repeated as the superuser)
+=== D. switch the WAL file (superuser) so the writes after T1 are archived
+.ready files left: 0
+archived 4, failed 0, last 000000010000000000000004
+failure time (UTC): 2026-11-17T17:28:58Z
+
+--- 4. README 'Restore to a point in time': lose the machine, list base backups, restore to T1 ---
+=== E. lose the machine: remove the postgres container and its data volume
+rs12_postgres_data
+0
+=== F. README block 1: list base backups (no running Postgres needed)
+cd "<rehearsal>/tree"
+compose() { deploy/scripts/compose.sh "$@"; }
+compose run --rm --no-deps -T --entrypoint wal-g postgres backup-list
+INFO: 2026/11/17 17:29:10.888431 List backups from storages: [default]
+backup_name                   modified             wal_file_name            storage_name
+base_000000010000000000000003 2026-11-17T17:28:36Z 000000010000000000000003 default
+=== G. README block 2: the restore, to T1=2026-11-17 17:28:39.683363+00
+4c4
+< T='<time in UTC, e.g. 2026-11-20 03:41:00+00; empty to replay all WAL>'
+---
+> T='2026-11-17 17:28:39.683363+00'
+32,33d31
+< compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
+< compose up -d api worker
+---- run
+restore exit=0
+No stopped containers
+rs12_postgres_data
+INFO: 2026/11/17 17:29:14.261595 Selecting the latest backup...
+INFO: 2026/11/17 17:29:14.261955 Backup to fetch will be searched in storages: [default]
+INFO: 2026/11/17 17:29:14.273903 LATEST backup is: 'base_000000010000000000000003'
+INFO: 2026/11/17 17:29:16.731316 Finished extraction of part_001.tar.br
+INFO: 2026/11/17 17:29:16.741787 Finished extraction of pg_control.tar.br
+INFO: 2026/11/17 17:29:16.743999 
+Backup extraction complete.
+ Container rs12-postgres-1  Started
+2026-11-17 17:29:18.666 UTC [29] LOG:  recovery stopping before commit of transaction 1459, time 2026-11-17 17:28:39.985747+00
+2026-11-17 17:29:18.666 UTC [29] LOG:  last completed transaction was at log time 2026-11-17 17:28:37.955934+00
+2026-11-17 17:29:18.730 UTC [29] LOG:  selected new timeline ID: 2
+2026-11-17 17:29:18.832 UTC [29] LOG:  archive recovery complete
+ALTER SYSTEM
+ALTER SYSTEM
+ALTER SYSTEM
+left over: 0
+65 migrations found in prisma/migrations
+No pending migrations to apply.
+2026-11-17T17:29:25Z dump rs12db
+2026-11-17T17:29:26Z upload wordmet-20261117T172925Z.dump (268K)
+2026-11-17T17:29:29Z uploaded s3://rs12-dumps/wordmet-20261117T172925Z.dump
+2026-11-17T17:29:29Z wal-g base backup
+INFO: 2026/11/17 17:29:30.411285 Backup will be pushed to storage: default
+INFO: 2026/11/17 17:29:30.586452 Started backup with name base_000000020000000000000005 at LSN 0/5000028
+INFO: 2026/11/17 17:29:32.080555 Wrote backup with name base_000000020000000000000005 to storage default
+INFO: 2026/11/17 17:29:32.804250 No backup found for deletion
+2026-11-17T17:29:33Z wal-g base backup done (newest 14 kept)
+
+--- 5. Checks after the restore to T1 ---
+=== H. verification after the restore to T1=2026-11-17 17:28:39.683363+00
+rows (as superuser):        before-base,to-delete,m1-keep
+rows (as wordmet_app):      before-base,to-delete,m1-keep
+migrations (wordmet_migrator): 65  (65 before the loss)
+wordmet_app on _prisma_migrations: ERROR:  permission denied for table _prisma_migrations
+wordmet_app can create a table:    ERROR:  permission denied for schema public
+timeline: 2
+recovery settings left in postgresql.auto.conf:
+0
+db-roles.sh again:
+left over: 0
+--- archiving on the new timeline
+INSERT 0 1
+archived 5, failed 0, last 000000020000000000000006
+0
+--- base backups on R2
+backup_name                   modified             wal_file_name            storage_name
+base_000000010000000000000003 2026-11-17T17:28:36Z 000000010000000000000003 default
+base_000000020000000000000005 2026-11-17T17:29:32Z 000000020000000000000005 default
+--- daily report line
+
+Note on the checks: the base backup holds `before-base` and `to-delete`; `m1-keep` came after the base backup and was replayed from WAL
+from R2; `after-T1` (written after T1) is absent and the delete of `to-delete` (after T1) did not happen, so `to-delete` is still there.
+
+--- 6. README restore with T empty (replay to the end of the WAL), after a second loss of the machine ---
+=== I. second loss, restore to the END of the WAL (T empty)
+rows before the loss: before-base,to-delete,m1-keep,after-restore,after-restore,end-1
+rs12_postgres_data
+4c4
+< T='<time in UTC, e.g. 2026-11-20 03:41:00+00; empty to replay all WAL>'
+---
+> T=''
+32,34d31
+< compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
+< compose up -d api worker
+< deploy/scripts/backup.sh                     # a new base backup on the new timeline
+restore exit=0
+2026-11-17 17:30:30.404 UTC [29] LOG:  last completed transaction was at log time 2026-11-17 17:30:19.674971+00
+2026-11-17 17:30:30.584 UTC [29] LOG:  selected new timeline ID: 3
+2026-11-17 17:30:30.688 UTC [29] LOG:  archive recovery complete
+left over: 0
+No pending migrations to apply.
+rows after restore to end of WAL: before-base,to-delete,m1-keep,after-restore,after-restore,end-1
+timeline: 3
+
+--- 7. README 'Restore from a dump': new cluster (no roles), empty database ---
+=== J. dump restore into a NEW cluster (no roles, empty database)
+--- dump as deploy.sh takes it (BACKUP_SKIP_BASE=1)
+2026-11-17T17:30:59Z dump rs12db
+2026-11-17T17:31:00Z upload wordmet-20261117T173059Z.dump (268K)
+2026-11-17T17:31:03Z uploaded s3://rs12-dumps/wordmet-20261117T173059Z.dump
+2026-11-17T17:31:03Z wal-g base backup skipped (BACKUP_SKIP_BASE=1)
+dump: wordmet-20261117T173059Z.dump
+--- simulate the new cluster: drop the database and both roles, recreate the empty database like initdb does
+DROP DATABASE
+DROP ROLE
+DROP ROLE
+CREATE DATABASE
+--- control: pg_restore WITHOUT creating the roles first
+pg_restore: error: could not execute query: ERROR:  role "wordmet_migrator" does not exist
+Command was: ALTER FUNCTION public.clear_form_kind_of_deleted_entry() OWNER TO wordmet_migrator;
+pg_restore exit=1
+--- README dump block (dropdb, createdb, roles, pg_restore, roles, migrate)
+cd "<rehearsal>/tree"
+compose() { deploy/scripts/compose.sh "$@"; }
+U='rs12user'; D='rs12db'; F='<rehearsal>/home/backups/wordmet-20261117T173059Z.dump'
+compose stop api worker
+compose exec -T postgres dropdb -U "$U" --force "$D"
+compose exec -T postgres createdb -U "$U" "$D"
+deploy/scripts/db-roles.sh                   # creates the roles (a no-op when they exist)
+compose exec -T postgres pg_restore --exit-on-error -U "$U" -d "$D" < "$F"
+deploy/scripts/db-roles.sh                   # must print "left over: 0"
+compose --profile migrate run --rm migrate
+---- run
+exit=0
+left over: 0
+left over: 0
+65 migrations found in prisma/migrations
+No pending migrations to apply.
+--- after
+rows (as wordmet_app): before-base,to-delete,m1-keep,after-restore,after-restore,end-1
+migrations (as migrator): 65
+database ACL: {rs12user=CTc/rs12user,wordmet_migrator=Tc/rs12user,wordmet_app=c/rs12user}
+
+--- 8. The archive alert (watch.sh): S3 stopped, then started again ---
+=== K. the archive alert: S3 stops, then comes back
+--- control, healthy: watch.sh with the default thresholds and with WATCH_ARCHIVE_MAX_AGE_S=5
+alerts sent so far: 0   .ready: 0
+report line: PITR: last WAL 21 s ago, .ready 0, newest base backup base_000000020000000000000005, 2026-11-17T17:29:32Z
+--- stop the S3 container, write, switch the WAL file
+.ready: 1
+--- default threshold (900 s): the age is small, so no alert
+alerts sent: 0
+--- WATCH_ARCHIVE_MAX_AGE_S=5 (stand-in for 'older than 15 minutes')
+alerts sent: 1
+archive|[wordmet] WAL archiving to R2 is behind (1 waiting)
+WAL files are not reaching R2: 1 waiting in pg_wal/archive_status, last one archived 56 s ago (-1 = never; threshold 5 s, or more than 20 waiting).
+-[ RECORD 1 ]------+------------------------------
+report line while S3 is down: PITR: last WAL 61 s ago, .ready 1, newest base backup unavailable
+--- S3 back
+.ready: 0
+alerts before/after the check: 1 / 1  (no new alert = cleared)
+report line after: PITR: last WAL 13 s ago, .ready 0, newest base backup base_000000020000000000000005, 2026-11-17T17:29:32Z
+
+Notes: failed_count is not the signal (it stays 0 while wal-g retries). The default threshold is 900 s, so a stand-in
+WATCH_ARCHIVE_MAX_AGE_S=5 makes a 56 s age count as 'older than 15 minutes'; the other condition (more than 20 .ready files) was
+exercised in the earlier task (22 waiting -> alert). The fake send-alert has no one-hour dedup; "clear" here means no new alert line.
+
+--- 9. Rolling back the image, and the probe CLI arguments ---
+=== L. roll back the Postgres image: the compose file from before the WAL-G commit (c607f39d^)
+ Container rs12-postgres-1  Recreate
+ Container rs12-postgres-1  Recreated
+ Container rs12-postgres-1  Started
+ Container rs12-postgres-1  Healthy
+image=postgres:17
+rows: before-base,to-delete,m1-keep,after-restore,after-restore,end-1,s3-down
+archive_mode: off
+--- watch.sh sees archiving off
+alerts before/after: 1 / 2
+archive|[wordmet] WAL archiving is off or unreadable
+WAL archiving cannot be checked: archive_mode is off: WAL is not being archived at all.
+--- back to the WAL-G image (the compose file of this branch)
+ Container rs12-postgres-1  Recreate
+ Container rs12-postgres-1  Recreated
+ Container rs12-postgres-1  Started
+ Container rs12-postgres-1  Healthy
+image=rs12-pg-walg
+archive_mode: on
+archived 6, failed 0, last 00000003000000000000000C
+alerts before/after: 2 / 2
+=== M. orders:probe-payos argument check (CLI of the M1 branch, built tree, no payOS call)
+--from is not an ISO 8601 instant: x
+usage: pnpm orders:probe-payos --from <ISO 8601 instant> --to <ISO 8601 instant>   (window at most 24 hours)
+A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.
+A payOS error other than "not found" stops the walk: the rows printed so far are real, so run it again with a later --from.
+exit=2
+
+--- 10. Rolling back the logins; a migration that ran as the superuser ---
+=== N. roll back the logins: .env with APP_DB_*/MIGRATOR_DB_* = the superuser (db-roles.sh must refuse)
+2026-11-17T17:35:45Z ERROR: MIGRATOR_DB_USER in .env must be wordmet_migrator (rolled back to the superuser? then do not run this script)
+db-roles.sh exit=1
+rendered DATABASE_URL users (passwords masked):
+      DATABASE_URL: postgresql://rs12user:***@postgres:5432/rs12db
+      DATABASE_URL: postgresql://rs12user:***@postgres:5432/rs12db
+      DATABASE_URL: postgresql://rs12user:***@postgres:5432/rs12db
+  DATABASE_URL: postgresql://rs12user:***@postgres:5432/rs12db
+=== O. a migration ran as the superuser while the split was on
+wordmet_app: ERROR:  permission denied for table ran_as_super
+left over: 0
+db-roles.sh exit=0
+wordmet_app: 1
+
+--- Not verified ---
+- Real R2 (TLS, token scope, latency, the 14-day retention on real data): SeaweedFS is an S3-compatible fake. The same flow was measured on
+  real R2 on 17/11 with a hand-made script (design 5), not with these scripts.
+- Production data size and restore time (here ~270 KB dump, a few seconds); the Ubuntu VPS (all of this ran on Git Bash + Docker Desktop).
+- The README lines that need the real API image and R2 journal: `accounts-deletions.js replay --journal`, `compose up -d api worker`, the
+  health check after it, and `orders-probe-payos.js` against payOS (only `--from x` -> exit 2 was run, from the built tree of the M1
+  branch because the rehearsal image predates that CLI). The restore was not run with a time before the newest base backup (the README
+  says to pick an older base name by hand instead of LATEST; not exercised).
+- Concurrent writers: api and worker were not running during the restore, as the README says; nothing here ran under load.
