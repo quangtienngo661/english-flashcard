@@ -223,10 +223,11 @@ export class OrdersRepository {
 
   /**
    * `pending` → `failed`, only while it is still pending. `codeTaken`: payOS refused the code because another order already
-   * uses it, so asking payOS about this order would read that other order; mark it checked so the reconcile job skips it.
+   * uses it, so asking payOS about this order would read that other order; mark it checked so the reconcile job skips it, and
+   * `provider-mismatch` so a webhook for that code (the other buyer's money) is ignored whatever its time (`precheckPayment`).
    */
   async markFailed(db: Db, id: string, opts?: { codeTaken?: boolean }): Promise<boolean> {
-    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: new Date() } : { status: 'failed' as const };
+    const data = opts?.codeTaken === true ? { status: 'failed' as const, checkedAt: new Date(), reviewReason: 'provider-mismatch' as const } : { status: 'failed' as const };
     const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data });
     return result.count > 0;
   }

@@ -79,7 +79,7 @@ export class OrderApplier {
     const paidAt = parsePayosTime(input.providerTime, now);
     const refused = precheckPayment(
       { success: input.success, code: input.code, paymentLinkId: input.paymentLinkId, env: input.env, paidAt },
-      found === null ? null : { paymentLinkId: found.paymentLinkId, environment: found.environment, createdAt: found.createdAt },
+      found === null ? null : { paymentLinkId: found.paymentLinkId, environment: found.environment, createdAt: found.createdAt, reviewReason: found.reviewReason },
     );
     if (refused !== null || found === null) {
       this.logger.warn('order_payment_ignored', { reason: refused ?? 'unknown-order' });
