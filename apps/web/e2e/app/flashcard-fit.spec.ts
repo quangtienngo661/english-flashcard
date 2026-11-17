@@ -25,7 +25,7 @@ test('a long word stays on one line, shrinks to the card and does not widen it',
   await signedInAs(page, 'free', handlers);
   await page.goto(`/vi/app/review?group=${G}`);
   await page.locator('[data-fit-word]').first().waitFor();
-  await page.waitForTimeout(600);
+  await page.evaluate(() => document.fonts.ready);
   const measure = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-fit-word]')].map((el) => {
     const card = el.closest('.cstack-card') as HTMLElement;
     const size = parseFloat(getComputedStyle(el).fontSize);
@@ -35,17 +35,19 @@ test('a long word stays on one line, shrinks to the card and does not widen it',
     if (step === 'after rating') {
       await page.keyboard.press('Space');
       await page.keyboard.press('1');
-      await page.waitForTimeout(700);
     }
-    const words = await measure();
-    expect(words.length, step).toBeGreaterThan(1);
-    for (const m of words) {
-      expect(m.oneLine, `${m.word} ${step}`).toBe(true);
-      expect(m.cardWidth, `${m.word} ${step}`).toBeLessThanOrEqual(m.viewport);
-      expect(m.textWidth, `${m.word} ${step}`).toBeLessThanOrEqual(m.boxWidth + 1);
-    }
-    // The longest word is smaller than a short one: it shrank instead of widening the card.
-    const sizes = new Map(words.map((m) => [m.word, m.size]));
-    expect(sizes.get('electroencephalograph') ?? 0).toBeLessThan(sizes.get('cat') ?? sizes.get('electroencephalograph')!);
+    // The word is measured again after the web font loads and after the next card arrives, so wait for the layout to settle.
+    await expect(async () => {
+      const words = await measure();
+      expect(words.length, step).toBeGreaterThan(1);
+      for (const m of words) {
+        expect(m.oneLine, `${m.word} ${step}`).toBe(true);
+        expect(m.cardWidth, `${m.word} ${step}`).toBeLessThanOrEqual(m.viewport);
+        expect(m.textWidth, `${m.word} ${step}`).toBeLessThanOrEqual(m.boxWidth + 1);
+      }
+      // The longest word is smaller than a short one: it shrank instead of widening the card.
+      const sizes = new Map(words.map((m) => [m.word, m.size]));
+      expect(sizes.get('electroencephalograph') ?? 0).toBeLessThan(sizes.get('cat') ?? sizes.get('electroencephalograph')!);
+    }).toPass({ timeout: 8_000 });
   }
 });

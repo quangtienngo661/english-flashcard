@@ -204,12 +204,12 @@ function FitWord({ word, className }: { word: string; className: string }) {
       if (!active || !box.clientWidth) return;
       label.style.fontSize = '';
       const maximum = parseFloat(getComputedStyle(label).fontSize);
-      const width = label.scrollWidth;
-      if (width > box.clientWidth && maximum) {
-        label.style.fontSize = `${maximum * box.clientWidth / width}px`;
-        if (label.scrollWidth > box.clientWidth) {
-          label.style.fontSize = `${parseFloat(label.style.fontSize) * box.clientWidth / label.scrollWidth}px`;
-        }
+      // Glyph widths do not scale exactly with the font size (hinting, rounding), so one proportional step can still leave the word a
+      // pixel or two wide. Repeat, shaving a little extra, until it fits (CI saw 310 px of text in a 308 px box).
+      let size = maximum;
+      for (let step = 0; step < 6 && size && label.scrollWidth > box.clientWidth; step += 1) {
+        size = size * box.clientWidth / label.scrollWidth * 0.995;
+        label.style.fontSize = `${size}px`;
       }
     };
     fit();
