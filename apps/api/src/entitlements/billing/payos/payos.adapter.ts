@@ -100,6 +100,7 @@ export class PayosAdapter extends BillingAdapter implements OnModuleInit {
       status = 'PROCESSING';
     }
     return {
+      paymentLinkId: link.id,
       status,
       amount: link.amount,
       amountPaid: link.amountPaid,
