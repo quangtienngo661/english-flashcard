@@ -103,6 +103,34 @@ const card = (n: number): Card => ({
 });
 
 describe('CardStack', () => {
+  it.each(['drag', 'button'] as const)('starts the next card from the displayed pose after %s', async (method) => {
+    const animate = vi.fn(() => ({ finished: Promise.resolve() }));
+    Object.defineProperty(Element.prototype, 'animate', { value: animate, configurable: true, writable: true });
+    const original = window.getComputedStyle;
+    const pose = { transform: 'matrix(0.98, 0, 0, 0.98, 0, 7)', filter: 'blur(2px)', opacity: '0.93' };
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) =>
+      element.getAttribute('data-depth') === '1' ? pose as CSSStyleDeclaration : original.call(window, element, pseudo));
+    const ref = { current: null as null | CardStackHandle };
+    const onRate = vi.fn();
+    function Harness() {
+      const [current, setCurrent] = useState(0);
+      return <CardStack ref={ref} cards={[card(1), card(2)]} current={current} flipped onFlip={() => {}}
+        label="Top" onRate={(rating) => { onRate(rating); setCurrent(1); }} />;
+    }
+    renderApp(<Harness />, { session: true, chrome: false, routes: {
+      'GET /v1/words/word1': () => Response.json({ inflections: [] }),
+      'GET /v1/words/word2': () => Response.json({ inflections: [] }),
+    } });
+    const top = await screen.findByRole('group', { name: 'Top' });
+    if (method === 'drag') drag(top, 120);
+    else act(() => ref.current!.rate('known'));
+    expect(onRate).toHaveBeenCalledExactlyOnceWith('known');
+    const frames = (animate.mock.calls as unknown as Array<[Keyframe[], KeyframeAnimationOptions]>)
+      .find(([, options]) => options.duration === 300)?.[0];
+    expect(frames?.[0]).toEqual(pose);
+    delete (Element.prototype as { animate?: unknown }).animate;
+  });
+
   it('only the top card loads its word page (the cards behind draw a light front)', async () => {
     const view = renderApp(<CardStack cards={[card(1), card(2), card(3), card(4)]} current={0} flipped={false} onFlip={() => {}} onRate={() => {}} />, {
       session: true,
