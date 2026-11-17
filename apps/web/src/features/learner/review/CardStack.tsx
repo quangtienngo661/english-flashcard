@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { shownPos } from '@/lib/pos';
-import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
+import { arrive, dissolve, prefersReducedMotion, shake, type ArrivalPose } from '@/lib/stack-motion';
 import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
@@ -51,6 +51,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const t = useTranslations('App.review');
   const levelName = useLevelName();
   const topRef = useRef<HTMLDivElement>(null);
+  const behindRef = useRef<HTMLDivElement>(null);
+  const arrival = useRef<{ id: string; pose: ArrivalPose } | null>(null);
   const [leaving, setLeaving] = useState<Leaving[]>([]);
   const [follow, setFollow] = useState(0);
   const top = cards[current] as Card | undefined;
@@ -66,6 +68,13 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     }
     if (rated.current === top.item_id) return;
     rated.current = top.item_id;
+    const nextCard = cards[current + 1];
+    if (nextCard && behindRef.current) {
+      const style = getComputedStyle(behindRef.current);
+      arrival.current = { id: nextCard.item_id, pose: { transform: style.transform, filter: style.filter, opacity: style.opacity } };
+    } else {
+      arrival.current = null;
+    }
     const from = topRef.current?.style.transform ?? '';
     setLeaving((list) => [...list, { card: top, direction: rating === 'known' ? 1 : -1, how, speed, from }]);
     setFollow(0);
@@ -92,8 +101,9 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     rated.current = null;
     if (id && shownTop.current && shownTop.current !== id && topRef.current) {
       topRef.current.style.transform = '';
-      void arrive(topRef.current);
+      void arrive(topRef.current, arrival.current?.id === id ? arrival.current.pose : undefined);
     }
+    arrival.current = null;
     shownTop.current = id;
   }, [top?.item_id]);
 
@@ -111,6 +121,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
         return (
           <div
             key={card.item_id}
+            ref={depth === 1 ? behindRef : undefined}
             aria-hidden
             inert
             data-depth={depth}
