@@ -4,6 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { localDate, zonedMidnight } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 import type { Usage } from '../adapters/ai-adapter.js';
 import { AI_DAY_ZONE } from '../ai.constants.js';
 import type { AiProviderName, AiPurpose, CallOutcome, GatewayOperation } from '../ai.types.js';
@@ -66,12 +67,13 @@ export class CallLedger {
   ): Promise<string> {
     const id = randomUUID();
     const { costUsd, known } = callCost(call.usage, call.price);
-    const writes: Prisma.PrismaPromise<unknown>[] = [
-      this.prisma.aiCall.create({
+    await this.prisma.$transaction(async (tx) => {
+      const retain = call.userId === null || await lockUserForDataWrite(tx, call.userId);
+      await tx.aiCall.create({
         data: {
           id,
           operationId: call.operationId,
-          aiOperationId: call.aiOperationId,
+          aiOperationId: retain ? call.aiOperationId : null,
           batchId: call.batchId ?? null,
           attempt: call.attempt,
           purpose: call.purpose,
@@ -93,22 +95,21 @@ export class CallLedger {
           costUsd,
           costKnown: known,
           providerRequestId: call.providerRequestId,
-          userId: call.userId,
+          userId: retain ? call.userId : null,
           createdAt: now,
         },
-      }),
-    ];
-    if (retentionDays > 0) {
-      writes.push(this.prisma.aiCallContent.create({
-        data: {
-          callId: id,
-          request: content.request as Prisma.InputJsonValue,
-          response: content.response,
-          expiresAt: new Date(now.getTime() + retentionDays * DAY_MS),
-        },
-      }));
-    }
-    await this.prisma.$transaction(writes);
+      });
+      if (retain && retentionDays > 0) {
+        await tx.aiCallContent.create({
+          data: {
+            callId: id,
+            request: content.request as Prisma.InputJsonValue,
+            response: content.response,
+            expiresAt: new Date(now.getTime() + retentionDays * DAY_MS),
+          },
+        });
+      }
+    }, USER_DATA_TX);
     // Field names avoid the logger's redaction pattern (`token`, `code`, …) and `operation_id` (the request's own; plan choice 12).
     this.logger.info('ai_call', {
       ai_op: call.operationId,

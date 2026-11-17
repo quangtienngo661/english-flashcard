@@ -80,7 +80,7 @@ type CallContext = {
 /**
  * One run of one operation (design §8.1). The learner path keeps `ai_operations` so one operation id gives at most one provider
  * call at a time and replays its result for 24 h; the test and eval paths of an admin skip that table, the switch and the cap.
- * Every write is a single statement: nothing holds a transaction while a provider is called (R9). Elapsed time is
+ * Nothing holds a transaction while a provider is called (R9). Elapsed time is
  * `performance.now()`; stored times come from `Clock`.
  */
 @Injectable()
