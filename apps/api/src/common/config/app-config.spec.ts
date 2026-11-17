@@ -30,6 +30,25 @@ function validEnv(): NodeJS.ProcessEnv {
 // A production-grade bot check: BILLING_PRODUCTION=true refuses `fake` and `off` (LA1#10), so the billing and AI tests below use this.
 const turnstileReal = { TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: 's', TURNSTILE_ALLOWED_HOSTNAMES: 'wordmet.com' };
 
+describe('deletion journal configuration', () => {
+  const keys = {
+    DELETION_JOURNAL_ENDPOINT: 'http://127.0.0.1:9000', DELETION_JOURNAL_BUCKET: 'wordmet-deletions',
+    DELETION_JOURNAL_ACCESS_KEY_ID: 'local-access', DELETION_JOURNAL_SECRET_ACCESS_KEY: 'local-secret',
+  };
+
+  it('enables the journal only with all four variables', () => {
+    expect(loadConfig(validEnv()).deletionJournal).toBeNull();
+    expect(loadConfig({ ...validEnv(), ...keys }).deletionJournal).toMatchObject({ bucket: 'wordmet-deletions' });
+    expect(() => loadConfig({ ...validEnv(), ...keys, DELETION_JOURNAL_SECRET_ACCESS_KEY: '' }))
+      .toThrow(/DELETION_JOURNAL_SECRET_ACCESS_KEY/);
+  });
+
+  it('requires TLS for a configured journal in production', () => {
+    expect(() => loadConfig({ ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true', ...keys }))
+      .toThrow(/DELETION_JOURNAL_ENDPOINT/);
+  });
+});
+
 describe('Google sign-in configuration (Bước 8)', () => {
   const key = () => randomBytes(32).toString('base64url');
   const real = () => ({ ...validEnv(), GOOGLE_CLIENT_ID: 'id.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'secret',
