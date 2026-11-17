@@ -35,11 +35,13 @@ class MemoryOrders {
     Object.assign(row, { paymentLinkId, checkoutUrl });
     return true;
   }
-  async markFailed(_db: unknown, id: string) {
+  codeTaken = new Map<string, boolean>();
+  async markFailed(_db: unknown, id: string, opts?: { codeTaken?: boolean }) {
     this.calls.push('mark-failed');
     const row = this.rows.find((r) => r.id === id && r.status === 'pending');
     if (!row) return false;
     row.status = 'failed';
+    this.codeTaken.set(id, opts?.codeTaken === true);
     return true;
   }
   async claimForCheck(_db: unknown, id: string, userId: string, now: Date, minGapMs: number): Promise<ReconcileOrder | null> {
@@ -213,6 +215,76 @@ describe('OrdersService.create (design §3.6 "Tạo đơn")', () => {
     expect(text).not.toContain('1000000000');
     expect(text).not.toContain('pay.example');
     expect(text).not.toContain('order_code');
+  });
+});
+
+describe('OrdersService.create retries with a new order code when the code is taken (restore safety)', () => {
+  it('insert hits a unique violation (P2002) once: the second attempt succeeds with the next code, 201, no failed order', async () => {
+    const { service, memory } = setup();
+    const insert = memory.insertPending.bind(memory);
+    let first = true;
+    memory.insertPending = async (db: unknown, row: NewOrder) => {
+      if (first) { first = false; memory.calls.push('insert-pending'); throw Object.assign(new Error('unique'), { code: 'P2002' }); }
+      return insert(db, row);
+    };
+    const result = await service.create(USER, request());
+    expect(result).toEqual({ order_id: 'order-1', checkout_url: 'https://pay.example/1000000001' });
+    expect(memory.rows).toHaveLength(1);
+    expect(memory.rows[0]).toMatchObject({ orderCode: 1_000_000_001, status: 'pending' });
+    expect(memory.rows.some((r) => r.status === 'failed')).toBe(false);
+  });
+
+  it('payOS says the code is used (231): that order is failed with codeTaken, the second order has its own code and link', async () => {
+    const { service, memory, createCheckout, logs } = setup();
+    createCheckout.mockRejectedValueOnce(Object.assign(new Error('x'), { code: '231' }));
+    const result = await service.create(USER, request());
+    expect(memory.rows.map((r) => [r.orderCode, r.status])).toEqual([[1_000_000_000, 'failed'], [1_000_000_001, 'pending']]);
+    expect(memory.codeTaken.get('order-1')).toBe(true);
+    expect(result).toEqual({ order_id: 'order-2', checkout_url: 'https://pay.example/1000000001' });
+    const taken = logs.find((l) => l.event === 'order_code_taken');
+    expect(taken).toMatchObject({ order_ref: 'order-1' });
+    expect(JSON.stringify(taken)).not.toContain('1000000000');
+  });
+
+  it('payOS code 231 as a number counts the same', async () => {
+    const { service, memory, createCheckout } = setup();
+    createCheckout.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 231 }));
+    await service.create(USER, request());
+    expect(memory.codeTaken.get('order-1')).toBe(true);
+  });
+
+  it('the fake payOS answering P2002 three times: 503, three failed orders all codeTaken, createCheckout called three times', async () => {
+    const { service, memory, createCheckout } = setup();
+    createCheckout.mockRejectedValue(Object.assign(new Error('x'), { code: 'P2002' }));
+    await expect(service.create(USER, request())).rejects.toMatchObject({ status: 503, problemType: 'provider-unavailable' });
+    expect(createCheckout).toHaveBeenCalledTimes(3);
+    expect(memory.rows.map((r) => r.status)).toEqual(['failed', 'failed', 'failed']);
+    expect([...memory.codeTaken.values()]).toEqual([true, true, true]);
+    expect(new Set(memory.rows.map((r) => r.orderCode)).size).toBe(3);
+  });
+
+  it('three unique violations on insert: 503 and createCheckout is never called', async () => {
+    const { service, memory, createCheckout } = setup();
+    memory.insertPending = async () => { throw Object.assign(new Error('unique'), { code: 'P2002' }); };
+    await expect(service.create(USER, request())).rejects.toMatchObject({ status: 503, problemType: 'provider-unavailable' });
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
+  it('a TimeoutError is not a taken code: 503 at once, one payOS call, the order failed WITHOUT codeTaken (LB1E17: the job can still ask payOS)', async () => {
+    const { service, memory, createCheckout } = setup();
+    createCheckout.mockRejectedValueOnce(Object.assign(new Error('slow'), { name: 'TimeoutError' }));
+    await expect(service.create(USER, request())).rejects.toMatchObject({ status: 503, problemType: 'provider-unavailable' });
+    expect(createCheckout).toHaveBeenCalledTimes(1);
+    expect(memory.rows).toHaveLength(1);
+    expect(memory.rows[0].status).toBe('failed');
+    expect(memory.codeTaken.get('order-1')).toBe(false);
+  });
+
+  it('an unexpected error while creating the order (not P2002) is not retried', async () => {
+    const { service, memory, createCheckout } = setup();
+    memory.insertPending = async () => { throw new Error('db down'); };
+    await expect(service.create(USER, request())).rejects.toThrow('db down');
+    expect(createCheckout).not.toHaveBeenCalled();
   });
 });
 
