@@ -37,7 +37,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     // Accessible names, not textContent: M8.6 splits each title into aria-hidden words beside one sr-only copy.
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
-      'H1 Nhớ từ lâu bền, tự tin dùng trong câu.',
+      'H1 Nhớ từ lâu bền, tự tin dùng trong câu',
       'H2 Tạo nhóm từ cho mỗi bài đọc',
       'H2 Từ lúc gặp đến lúc dùng được',
       'H2 Học miễn phí, bứt phá cùng Pro',
@@ -197,7 +197,7 @@ describe('the English landing (/en, 14/11/2026)', () => {
 
   it('shows the English heading, the English FAQ (not the Vietnamese one) and links into /en/app', () => {
     renderEnglish();
-    expect(screen.getByRole('heading', { level: 1, name: 'Remember words forever, use them in a sentence.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Remember words forever, use them in a sentence' })).toBeInTheDocument();
     const faq = within(screen.getByRole('region', { name: 'Frequently asked questions' }));
     expect(faq.getAllByRole('group').map((d) => d.querySelector('summary')?.textContent)).toEqual(LANDING_FAQ_EN.map((f) => f.question));
     expect(faq.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');

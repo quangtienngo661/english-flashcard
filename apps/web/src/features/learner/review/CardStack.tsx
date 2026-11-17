@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { shownPos } from '@/lib/pos';
-import { arrive, dissolve, prefersReducedMotion, shake } from '@/lib/stack-motion';
+import { arrive, dissolve, prefersReducedMotion, shake, type ArrivalPose } from '@/lib/stack-motion';
 import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
 import { SpeakSentence } from '@/ui/SpeakButton';
@@ -51,6 +51,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const t = useTranslations('App.review');
   const levelName = useLevelName();
   const topRef = useRef<HTMLDivElement>(null);
+  const behindRef = useRef<HTMLDivElement>(null);
+  const arrival = useRef<{ id: string; pose: ArrivalPose } | null>(null);
   const [leaving, setLeaving] = useState<Leaving[]>([]);
   const [follow, setFollow] = useState(0);
   const top = cards[current] as Card | undefined;
@@ -66,6 +68,13 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     }
     if (rated.current === top.item_id) return;
     rated.current = top.item_id;
+    const nextCard = cards[current + 1];
+    if (nextCard && behindRef.current) {
+      const style = getComputedStyle(behindRef.current);
+      arrival.current = { id: nextCard.item_id, pose: { transform: style.transform, filter: style.filter, opacity: style.opacity } };
+    } else {
+      arrival.current = null;
+    }
     const from = topRef.current?.style.transform ?? '';
     setLeaving((list) => [...list, { card: top, direction: rating === 'known' ? 1 : -1, how, speed, from }]);
     setFollow(0);
@@ -92,8 +101,9 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     rated.current = null;
     if (id && shownTop.current && shownTop.current !== id && topRef.current) {
       topRef.current.style.transform = '';
-      void arrive(topRef.current);
+      void arrive(topRef.current, arrival.current?.id === id ? arrival.current.pose : undefined);
     }
+    arrival.current = null;
     shownTop.current = id;
   }, [top?.item_id]);
 
@@ -111,6 +121,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
         return (
           <div
             key={card.item_id}
+            ref={depth === 1 ? behindRef : undefined}
             aria-hidden
             inert
             data-depth={depth}
@@ -181,10 +192,44 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
 const FACE = 'cstack-face flex min-h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-117.5 [@media(max-height:46rem)]:min-h-80';
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
+function FitWord({ word, className }: { word: string; className: string }) {
+  const container = useRef<HTMLSpanElement>(null);
+  const text = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const box = container.current;
+    const label = text.current;
+    if (!box || !label) return;
+    let active = true;
+    const fit = () => {
+      if (!active || !box.clientWidth) return;
+      label.style.fontSize = '';
+      const maximum = parseFloat(getComputedStyle(label).fontSize);
+      // Glyph widths do not scale exactly with the font size (hinting, rounding), so one proportional step can still leave the word a
+      // pixel or two wide. Repeat, shaving a little extra, until it fits (CI saw 310 px of text in a 308 px box).
+      let size = maximum;
+      for (let step = 0; step < 6 && size && label.scrollWidth > box.clientWidth; step += 1) {
+        size = size * box.clientWidth / label.scrollWidth * 0.995;
+        label.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    observer?.observe(box);
+    document.fonts?.addEventListener('loadingdone', fit);
+    void document.fonts?.ready.then(fit);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      document.fonts?.removeEventListener('loadingdone', fit);
+    };
+  }, [word]);
+  return <span ref={container} className="block w-full min-w-0 text-center [contain:inline-size]"><span ref={text} data-fit-word className={cn('inline-block whitespace-nowrap', className)}>{word}</span></span>;
+}
+
 function LightFront({ card }: { card: Card }) {
   return (
     <div className={cn(FACE, 'items-center justify-center gap-1 p-6 text-center')}>
-      <span className="break-all font-wm-display text-wm-lemma text-wm-ink">{card.content.lemma}</span>
+      <FitWord word={card.content.lemma} className="font-wm-display text-wm-section text-wm-ink" />
       <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(card.content.pos)}</span>
     </div>
   );
@@ -214,7 +259,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         >
           <Badges card={card} />
           <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
-            <span className="break-all font-wm-display text-wm-section text-wm-ink">{content.lemma}</span>
+            <FitWord word={content.lemma} className="font-wm-display text-wm-section text-wm-ink" />
             <span className="font-wm-sans text-wm-base text-wm-muted">{shownPos(content.pos)}</span>
           </span>
         </button>
