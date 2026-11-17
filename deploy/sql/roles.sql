@@ -15,13 +15,18 @@ ALTER ROLE wordmet_migrator PASSWORD :'mig_pw';
 ALTER ROLE wordmet_app PASSWORD :'app_pw';
 
 BEGIN;
+-- Every ALTER ... OWNER below takes ACCESS EXCLUSIVE until COMMIT. Behind a long transaction of the api that would queue every query
+-- on those tables, so give up after 5 s: the whole transaction rolls back (nothing is half split) and the next run starts over.
+SET LOCAL lock_timeout = '5s';
 -- Hand every app object in schema public to the migrator (REASSIGN OWNED fails: the bootstrap superuser owns the system catalogs).
+-- Members of an extension (deptype 'e') keep their owner: the extension owns them.
 DO $$
 DECLARE r record;
 BEGIN
   FOR r IN SELECT c.relname, c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
            WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m','f')
-             AND pg_get_userbyid(c.relowner) <> 'wordmet_migrator' LOOP
+             AND pg_get_userbyid(c.relowner) <> 'wordmet_migrator'
+             AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e') LOOP
     EXECUTE format(CASE r.relkind WHEN 'v' THEN 'ALTER VIEW %I OWNER TO wordmet_migrator'
                                   WHEN 'm' THEN 'ALTER MATERIALIZED VIEW %I OWNER TO wordmet_migrator'
                                   ELSE 'ALTER TABLE %I OWNER TO wordmet_migrator' END, r.relname);
@@ -32,13 +37,16 @@ BEGIN
              AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = c.oid AND d.deptype IN ('a','i')) LOOP
     EXECUTE format('ALTER SEQUENCE %I OWNER TO wordmet_migrator', r.relname);
   END LOOP;
+  -- Row types of tables (typrelid <> 0), array types and multirange types follow their parent and are skipped here and in the report.
   FOR r IN SELECT t.typname FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-           WHERE n.nspname = 'public' AND t.typtype IN ('e','d','c') AND t.typrelid = 0
-             AND pg_get_userbyid(t.typowner) <> 'wordmet_migrator' LOOP
+           WHERE n.nspname = 'public' AND t.typtype IN ('e','d','c','r','b') AND t.typrelid = 0 AND t.typcategory <> 'A'
+             AND pg_get_userbyid(t.typowner) <> 'wordmet_migrator'
+             AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_type'::regclass AND d.objid = t.oid AND d.deptype = 'e') LOOP
     EXECUTE format('ALTER TYPE %I OWNER TO wordmet_migrator', r.typname);
   END LOOP;
   FOR r IN SELECT p.oid::regprocedure AS sig, p.prokind FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-           WHERE n.nspname = 'public' AND pg_get_userbyid(p.proowner) <> 'wordmet_migrator' LOOP
+           WHERE n.nspname = 'public' AND pg_get_userbyid(p.proowner) <> 'wordmet_migrator'
+             AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e') LOOP
     EXECUTE format(CASE r.prokind WHEN 'p' THEN 'ALTER PROCEDURE %s OWNER TO wordmet_migrator'
                                   ELSE 'ALTER FUNCTION %s OWNER TO wordmet_migrator' END, r.sig);
   END LOOP;
@@ -69,6 +77,19 @@ ALTER DEFAULT PRIVILEGES FOR ROLE wordmet_migrator IN SCHEMA public GRANT USAGE,
 ALTER DEFAULT PRIVILEGES FOR ROLE wordmet_migrator IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO wordmet_app;
 COMMIT;
 
--- Report: anything in public still not owned by the migrator must be empty.
-SELECT 'left over: ' || count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
- WHERE n.nspname = 'public' AND pg_get_userbyid(c.relowner) <> 'wordmet_migrator';
+-- Report: what the split missed. Counts, in schema public, relations, types and functions the migrator does not own (extension
+-- members excepted), plus 1 while the app role can still read _prisma_migrations (directly, through PUBLIC or through a group).
+SELECT 'left over: ' || (
+    (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND pg_get_userbyid(c.relowner) <> 'wordmet_migrator'
+        AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e'))
+  + (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE n.nspname = 'public' AND t.typtype IN ('e','d','c','r','b') AND t.typrelid = 0 AND t.typcategory <> 'A'
+        AND pg_get_userbyid(t.typowner) <> 'wordmet_migrator'
+        AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_type'::regclass AND d.objid = t.oid AND d.deptype = 'e'))
+  + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND pg_get_userbyid(p.proowner) <> 'wordmet_migrator'
+        AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e'))
+  + CASE WHEN to_regclass('public._prisma_migrations') IS NOT NULL
+          AND has_table_privilege('wordmet_app', 'public._prisma_migrations', 'SELECT') THEN 1 ELSE 0 END
+);

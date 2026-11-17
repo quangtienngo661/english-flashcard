@@ -116,8 +116,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?}
       POSTGRES_USER: ${POSTGRES_USER:?}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
-      # wal-g connects as this role (the cluster has no `postgres` role).
+      # wal-g connects as this role and to this database (the cluster has no `postgres` role; without PGDATABASE libpq uses the user name).
       PGUSER: ${POSTGRES_USER:?}
+      PGDATABASE: ${POSTGRES_DB:?}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

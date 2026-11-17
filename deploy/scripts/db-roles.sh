@@ -5,7 +5,13 @@
 #   - once before the first deploy that uses the two roles,
 #   - again after the first `migrate deploy` on an empty database (so _prisma_migrations is closed to the app role),
 #   - after every restore (restored dumps lose the database-level grants) and when MIGRATOR_DB_PASSWORD / APP_DB_PASSWORD change.
-# Prints exactly one line, `left over: N`, N being the objects in schema public the migrator does not own yet; N != 0 exits 1.
+# First time on a fresh database the order is: db-roles.sh, migrate, db-roles.sh.
+# Refuses when APP_DB_USER / MIGRATOR_DB_USER in .env are not wordmet_app / wordmet_migrator (the rolled-back state).
+# Run the first split (the one that moves existing tables to the migrator) with the api and worker stopped or at low traffic: each
+# ALTER TABLE ... OWNER takes ACCESS EXCLUSIVE, so roles.sql gives up after a 5 s lock wait and rolls back. A lock timeout error means
+# some transaction held a table: retry (tables already owned by the migrator are skipped).
+# Prints exactly one line, `left over: N`, N counting what is still wrong: relations, types and functions in schema public the migrator
+# does not own, plus 1 while the app role can still read _prisma_migrations. N != 0 exits 1.
 # The passwords go to psql through stdin and are never printed. Deploy runbook: deploy/README.md.
 set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
