@@ -221,6 +221,26 @@ describe('precheckPayment (design §3.4 "Kiểm trước")', () => {
     expect(precheckPayment({ ...base, paymentLinkId: 'any' }, { ...known, paymentLinkId: null })).toBeNull();
   });
 
+  describe('an order whose code another buyer holds at payOS (failed by a taken code, review reason provider-mismatch)', () => {
+    const taken = { ...known, paymentLinkId: null, reviewReason: 'provider-mismatch' as const };
+    const ordinary = { ...known, paymentLinkId: null, reviewReason: null };
+
+    it('refuses a transfer however late it came: that link belongs to the other buyer, so the time rule is not enough', () => {
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-17T10:30:00.000Z') }, taken)).toBe('link-mismatch');
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-18T10:00:00.000Z') }, taken)).toBe('link-mismatch');
+    });
+
+    it('an ordinary failed order with no link (reason null) still takes money paid after it existed', () => {
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-17T10:30:00.000Z') }, ordinary)).toBeNull();
+    });
+
+    it('not-success and unknown-order still win over the marker', () => {
+      expect(precheckPayment({ ...base, success: false }, taken)).toBe('not-success');
+      expect(precheckPayment(base, null)).toBe('unknown-order');
+      expect(precheckPayment({ ...base, paymentLinkId: 'any' }, { ...taken, environment: 'sandbox' })).toBe('unknown-order');
+    });
+  });
+
   it('not-success wins over unknown-order (a failed payment for an unknown order is just not a payment)', () => {
     expect(precheckPayment({ ...base, success: false }, null)).toBe('not-success');
   });

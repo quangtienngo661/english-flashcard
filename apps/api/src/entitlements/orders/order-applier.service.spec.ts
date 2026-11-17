@@ -302,6 +302,16 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
         expect(memory.calls).not.toContain('insert-payment');
       });
 
+      it('an order failed by a taken code (reason provider-mismatch) ignores a transfer made after it existed: that link is another buyer’s', async () => {
+        const { applier, memory, tx, purchases } = setup({ orders: [noLink({ status: 'failed', reviewReason: 'provider-mismatch' })] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-17 17:30:00' }))).toEqual({ outcome: 'ignored', reason: 'link-mismatch' });
+        expect(memory.payments).toEqual([]);
+        expect(memory.periods).toEqual([]);
+        expect(purchases).toEqual([]);
+        expect(memory.updates).toEqual([]);
+        expect(memory.orders.get(ORDER)).toMatchObject({ status: 'failed', reviewReason: 'provider-mismatch' });
+      });
+
       it('a transfer after the order was created is applied as before', async () => {
         const { applier, memory, tx } = setup({ orders: [noLink()] });
         expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-17 17:02:00' }))).toMatchObject({ outcome: 'opened-period' });

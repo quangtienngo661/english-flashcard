@@ -181,10 +181,19 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     expect(await repo.markFailed(db as never, 'o1')).toBe(false);
   });
 
-  it('markFailed with codeTaken also marks the order as already checked, so the reconcile job does not ask payOS about it', async () => {
+  it('markFailed with codeTaken also marks the order as already checked (the reconcile job skips it) and as a provider-mismatch (the webhook ignores it)', async () => {
     const updateMany = vi.fn(async () => ({ count: 1 }));
     expect(await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1', { codeTaken: true })).toBe(true);
-    expect(updateMany).toHaveBeenCalledWith({ where: { id: 'o1', status: 'pending' }, data: { status: 'failed', checkedAt: expect.any(Date) } });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'o1', status: 'pending' }, data: { status: 'failed', checkedAt: expect.any(Date), reviewReason: 'provider-mismatch' },
+    });
+  });
+
+  it('markFailed without codeTaken sets no review reason and no checked time', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1');
+    await repo.markFailed({ billingOrder: { updateMany } } as never, 'o1', { codeTaken: false });
+    for (const call of updateMany.mock.calls) expect((call as unknown as [{ data: object }])[0].data).toEqual({ status: 'failed' });
   });
 
   it('findOwned asks for the order of this learner with its first period, and is null for anyone else’s', async () => {
