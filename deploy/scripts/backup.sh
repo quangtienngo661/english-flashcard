@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Dump the production database and upload it to R2 (bucket wordmet-backups). Keeps 14 copies on R2 and 3 on the VPS.
+# Then a WAL-G base backup (to the WAL-G bucket of walg.env), keeping the 14 newest.
 # Daily by cron and before every deploy (deploy.sh). Deploy runbook M4; restore steps in deploy/README.md.
 set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
@@ -7,6 +8,7 @@ set -euo pipefail
 
 KEEP_REMOTE=14
 KEEP_LOCAL=3
+KEEP_BASE=14 # WAL-G base backups kept on R2 (restore-safety Q1)
 AWS_CLI_IMAGE=amazon/aws-cli:2.40.2
 
 # The AWS CLI in a container, pointed at R2. R2 does not take the extra checksum headers newer AWS clients add by default.
@@ -56,6 +58,15 @@ main() {
   done
 
   log "uploaded s3://$R2_BACKUP_BUCKET/$name"
+
+  # The dump above is already safe on R2, so a WAL-G failure here still leaves one restorable copy; the failure alerts like any other.
+  # A base backup plus the WAL archived since is what point-in-time restore starts from (restore-safety design 3.1).
+  log "wal-g base backup"
+  # backup-push connects to Postgres: PGUSER comes from the compose file, but with no PGDATABASE libpq looks for a database named
+  # like the user, which this cluster does not have (found in the rehearsal), so the database is passed here.
+  compose exec -T -u postgres -e PGDATABASE="$db" postgres sh -c 'exec wal-g backup-push "$PGDATA"' || die "wal-g backup-push failed"
+  compose exec -T -u postgres postgres wal-g delete retain FULL "$KEEP_BASE" --confirm || die "wal-g delete retain failed"
+  log "wal-g base backup done (newest $KEEP_BASE kept)"
 }
 
 main "$@"; exit $?

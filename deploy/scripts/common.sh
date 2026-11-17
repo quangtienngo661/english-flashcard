@@ -46,6 +46,18 @@ load_ops_env() {
   [ "${#missing[@]}" -eq 0 ] || die "ops.env is missing: ${missing[*]}"
 }
 
+# How far WAL archiving to R2 is behind, as "<seconds since the last WAL file reached R2> <WAL files still waiting in
+# archive_status>". The age is -1 when nothing was ever archived. Fails (status 1, nothing printed) when Postgres cannot be asked.
+# Not `failed_count`: it only grows and never says whether archiving works now (restore-safety design 5).
+archive_state() {
+  local age ready
+  age="$(compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -c \
+    "SELECT coalesce(extract(epoch FROM now() - last_archived_time)::bigint, -1) FROM pg_stat_archiver" 2>/dev/null | tr -d '[:space:]')" || return 1
+  ready="$(compose exec -T postgres sh -c 'find "$PGDATA/pg_wal/archive_status" -name "*.ready" | wc -l' 2>/dev/null | tr -d '[:space:]')" || return 1
+  [[ "$age" =~ ^-?[0-9]+$ && "$ready" =~ ^[0-9]+$ ]] || return 1
+  printf '%s %s\n' "$age" "$ready"
+}
+
 current_sha() { cat "$STATE_DIR/current" 2>/dev/null || true; }
 previous_sha() { cat "$STATE_DIR/previous" 2>/dev/null || true; }
 
