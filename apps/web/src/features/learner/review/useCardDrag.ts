@@ -109,8 +109,8 @@ export function useCardDrag(ref: RefObject<HTMLElement | null>, options: Options
       if (latest.current.flipped && (Math.abs(lastX) > threshold || fast)) {
         const rating: Rating = lastX > 0 ? 'known' : 'review';
         const speed = Math.min(1, Math.abs(v) / 2);
-        reset();
         latest.current.onRate(rating, speed);
+        reset();
         return;
       }
       const from = el.style.transform;
