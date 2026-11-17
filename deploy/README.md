@@ -27,7 +27,7 @@ The runbook (when to do what, quality gates, who does it) is `docs/deliveries/de
 7. `walg.env`: copy `deploy/walg.env.example` to `/srv/wordmet/walg.env`, fill every `<…>` (a dedicated R2 bucket and a token limited to it)
    and `chmod 600`. Only the `postgres` service reads it: the key can overwrite the backups, so api and worker never get it. With the file
    missing, `compose up` and `compose run` stop with "env file … not found" before they start anything, so `deploy.sh` and `rollback.sh` stop
-   too (`compose ps` and `exec` still work).
+   too (`compose ps` and `exec` still work). Checked with the compose of Docker Desktop only, not with the one on the VPS.
 8. DNS: `api` and `admin-api` A records point at this server, grey cloud. Caddy gets the certificates on the first start.
 
 ### Database roles and WAL-G (first rollout)
@@ -36,22 +36,49 @@ Three database logins: `POSTGRES_USER` (superuser, for ops only: backup, restore
 `migrate` service uses it) and `wordmet_app` (reads and writes rows; api, worker and the CLIs use it and cannot create or alter tables).
 `db-roles.sh` creates and repairs the two roles from `deploy/sql/roles.sql`; it is safe to run again.
 
-On the running server, at night (Vietnam time; step 4 is a few minutes of downtime):
+The design's "deploy the code first, then change the roles" does not apply here: the compose change in `deploy/compose.prod.yml` (the
+`DATABASE_URL` of api, worker and migrate, and the Postgres image) is itself the role and image change, so it cannot reach the server before
+the roles exist. The order below is therefore fixed: do steps 0 to 6 **before** merging this change into `main`.
 
+On the running server, at night (Vietnam time). Step 4 restarts Postgres: plan for a few minutes of downtime. That figure is an estimate;
+the restart was rehearsed only on Docker Desktop with about 270 KB of data, never on the VPS.
+
+0. Pause continuous deployment: repository variable `DEPLOY_PAUSED=true` (see "Continuous deployment"), and check in the Actions tab that no
+   run is in progress. Then, in `/srv/wordmet/app`, get the new files without deploying anything:
+   `git fetch origin && git checkout --detach <sha>` (`<sha>` is the head of this change's branch). `db-roles.sh`, `deploy/sql/roles.sql`,
+   `deploy/postgres/` and the `build:` section of the compose file exist only from that commit on, and step 2 needs them.
 1. `walg.env` as in step 7 above. In `.env` add the four role variables of `deploy/env.production.example`: `APP_DB_USER=wordmet_app`,
    `MIGRATOR_DB_USER=wordmet_migrator` and a generated `APP_DB_PASSWORD` and `MIGRATOR_DB_PASSWORD`.
 2. Build the Postgres image first, because `deploy.sh` runs `compose up` without `--build`:
    `deploy/scripts/compose.sh build postgres` (tag `wordmet-postgres:17-walg-3.0.9`: Postgres 17 and the WAL-G binary).
 3. `deploy/scripts/db-roles.sh` with api and worker stopped or at low traffic. It hands the tables to the migrator (a short `ACCESS EXCLUSIVE`
    lock per table) and gives up after 5 s on a lock, rolling back whole: on a lock timeout error, run it again. It prints `left over: 0`
-   when the split is complete and exits 1 otherwise.
+   when the split is complete and exits 1 otherwise. Its failure line never shows the SQL (the statements hold the passwords).
 4. `deploy/scripts/compose.sh up -d postgres` recreates Postgres from the new image with archiving on (the one restart), then
-   `deploy/scripts/compose.sh up -d api worker` so they log in as `wordmet_app`.
+   `deploy/scripts/compose.sh up -d api worker` so they log in as `wordmet_app`. Read `compose logs --tail 100 api worker` for
+   `permission denied` or `must be owner`: that would be DDL at run time, which the roles forbid. The api was checked on `wordmet_app` with
+   the code built from this branch, not with the production image; that api and worker run no DDL at run time is an **assumption**. If it
+   fails, use "Back to one login" below.
 5. `deploy/scripts/backup.sh` by hand: the first WAL-G base backup. Check that WAL reaches R2:
 
 ```bash
 deploy/scripts/compose.sh exec -T postgres psql -X -U <POSTGRES_USER> -d <POSTGRES_DB> -c 'SELECT archived_count, failed_count, last_archived_wal FROM pg_stat_archiver'
 ```
+
+6. `deploy/scripts/deploy.sh <sha>`: it migrates as `wordmet_migrator`, starts everything and writes `state/current`. Only then set
+   `DEPLOY_PAUSED` back to `false` and merge into `main`; the push deploys the merge commit (the same tree again changes nothing).
+
+If `main` is deployed before these steps:
+
+- `.env` has no `APP_DB_*` / `MIGRATOR_DB_*` yet: the new compose file refuses to load for `up`, `run`, `ps` and `logs` (`required variable
+  APP_DB_USER is missing a value`); `exec` still works (all checked with the compose of Docker Desktop). `deploy.sh` has already checked out
+  the new commit; its dump (`exec`) succeeds, then the migration (`run`) fails and it stops with "migration failed". `state/current` stays the
+  old SHA and the old containers keep running. But `rollback.sh` (`up`) fails, and so do the `compose ps` calls of `watch.sh`,
+  because the cron scripts and `rollback.sh` read the compose file of the checked-out clone, until `.env` is fixed. What `watch.sh` then reports was not checked. Fix `.env`, run steps 2 to 5, then `deploy.sh <sha>`.
+- `.env` has the variables but `db-roles.sh` has not run: the migration cannot log in as `wordmet_migrator`, `deploy.sh` stops at
+  "migration failed" and the old version keeps running. Nothing is half changed; run `db-roles.sh` and deploy again.
+
+Each manual `backup.sh` adds a base backup; see "Backup and restore" for what that does to the 14-day window.
 
 A new, empty database: Postgres needs R2 reachable at its first start (archiving is on from the start; with R2 down the first start fails).
 Order: start Postgres alone, create the roles, migrate, create the roles again so `_prisma_migrations` is closed to the app role.
@@ -142,13 +169,45 @@ names in `.env`).
 tables belong to the superuser and the app reports `permission denied` on them. Put the role names back in `.env` and run
 `deploy/scripts/db-roles.sh` again: it hands those tables to the migrator and grants the app role its rows.
 
-**Back to the plain `postgres:17` image** (no WAL-G, no archiving): in the clone, check out the parent of the commit that introduced
-`wordmet-postgres:17-walg-` in `deploy/compose.prod.yml` (`git log --oneline -S'walg-3.0.9' -- deploy/compose.prod.yml` finds it), then
-`deploy/scripts/compose.sh up -d postgres api worker`. That file also has the superuser `DATABASE_URL`, so api, worker and migrate go back to one
-login too (the roles stay, unused). The data volume is the same one and Postgres 17 opens it as it is (rehearsed with the `compose.prod.yml` from
-before the WAL-G commit: same rows, `archive_mode` off). The restart is a few minutes of downtime. Without archiving there is no point-in-time
-restore and `watch.sh` raises the `archive` alert "off or unreadable": the daily dump is the only backup until you return to the WAL-G
-image (check out the newer commit again and `compose up -d postgres`).
+**Back to the plain `postgres:17` image** (no WAL-G, no archiving). Do not check out an older commit for this: cron runs the scripts from the
+clone, so the older scripts (no archive check in `watch.sh`) would run too, and the next continuous deployment would put the WAL-G image back.
+Use a compose override file instead; the scripts and the code stay as they are. Needs a compose that knows `!reset` (2.24 or newer).
+
+1. Pause continuous deployment (`DEPLOY_PAUSED=true`): any `compose up` without the override puts the WAL-G image back.
+2. Write `/srv/wordmet/compose.pg17.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    build: !reset null
+    env_file: !reset []      # no walg.env: this image cannot read it and needs none
+    command:                 # the base file's list without the three archive_* flags
+      [
+        'postgres',
+        '-c', 'statement_timeout=300s',
+        '-c', 'idle_in_transaction_session_timeout=300s',
+      ]
+```
+
+3. Check, then recreate Postgres only. The override has to be named on every command that changes the stack:
+
+```bash
+cd /srv/wordmet/app
+pg17() { API_TAG="$(cat /srv/wordmet/state/current)" docker compose -p wordmet -f deploy/compose.prod.yml -f /srv/wordmet/compose.pg17.yml --env-file /srv/wordmet/.env "$@"; }
+pg17 config --quiet && pg17 up -d postgres
+deploy/scripts/compose.sh exec -T postgres psql -X -U <POSTGRES_USER> -d <POSTGRES_DB> -Atc 'SHOW archive_mode'   # off
+```
+
+The api, worker and migrate keep their role logins: the roles are in the database, so nothing else changes. (To drop them too, use "Back to
+one login".) The data volume is the same one, and Postgres 17 should open it as it is: **measured** only with the `compose.prod.yml` from before
+the WAL-G commit on Docker Desktop (about 270 KB of data, same rows, `archive_mode` off), not on the VPS and not with this override. Expect a
+few minutes of downtime (an estimate). Without archiving there is no point-in-time restore, and `watch.sh` raises the `archive` alert "off or
+unreadable" once an hour: expected; the daily dump is the only backup meanwhile.
+
+To go back to the WAL-G image: `deploy/scripts/compose.sh up -d postgres` (no override), unpause continuous deployment, and **run
+`deploy/scripts/backup.sh` at once**. While archiving was off, no WAL reached R2, so the archive has a gap; a restore from a base backup older
+than the gap stops at it. Only a base backup taken after the switch back has no gap before it.
 
 ## Backup and restore
 
@@ -162,6 +221,10 @@ Two independent copies of the database:
 `deploy.sh` runs `backup.sh` with `BACKUP_SKIP_BASE=1`: the deploy takes the dump only, so a WAL-G problem cannot block a deploy. The WAL-G
 base backup runs only from the cron line below.
 
+`wal-g delete retain FULL 14` keeps the newest 14 **base backups**, not 14 days. With one cron backup a day that is 14 days, but every manual
+`backup.sh` (the first rollout, after a restore, after a `backup` alert) adds one more and pushes the oldest day out of the window. Run it
+by hand only where a step asks for it.
+
 Lost with a restore from the WAL archive: what was written after the last WAL file that reached R2, up to about 60 s plus the upload time.
 Lost with a dump: everything since the dump. Not covered by either: Redis (queues; not backed up) and the R2 buckets of audio and the
 deletion journal. An application mistake (a bad deploy, a wrong delete) can be undone to any time in the 14 days only while a base
@@ -173,10 +236,13 @@ backup from before it still exists; the restore starts from the newest base back
 
 | Alert | It fires when | First action |
 |---|---|---|
-| `archive`: "WAL archiving to R2 is behind" | the last WAL file reached R2 more than 15 min ago while files are waiting, or more than 20 files (`.ready`) wait in `pg_wal/archive_status` | The body shows `pg_stat_archiver` and the last `wal-g` lines. Check R2 (status page, token not revoked, `walg.env` unchanged). Waiting WAL stays in `pg_wal` and is shipped late once R2 answers; `compose exec -T -u postgres postgres wal-g backup-list` tests the key. Until it is fixed `pg_wal` grows (up to ~23 GB a day under constant writes) |
+| `archive`: "WAL archiving to R2 is behind" | the last WAL file reached R2 more than 15 min ago while files are waiting, or more than 20 files (`.ready`) wait in `pg_wal/archive_status` | The body shows `pg_stat_archiver` and the last `wal-g` lines. Check R2 (status page, token not revoked, `walg.env` unchanged). Waiting WAL stays in `pg_wal` and is shipped late once R2 answers; `compose exec -T -u postgres postgres wal-g backup-list` tests the key. Until it is fixed `pg_wal` grows (design estimate for sustained heavy writes: up to ~23 GB a day; the production WAL measured 104 MB a day) |
 | `archive`: "WAL archiving is off or unreadable" | `archive_mode` is not `on`, or `pg_wal/archive_status` is missing | Postgres runs without the archive flags: `compose up -d postgres` with the current `compose.prod.yml`. Until fixed there is no point-in-time restore and nothing else warns |
 | `disk-low` | less than 15 GB free | Look for the cause: if an `archive` alert is open, fix R2 first (it fills `pg_wal`); else images (`docker image prune`), logs. Never delete files from `pg_wal` by hand |
 | `disk-critical` | less than 8 GB free | Same, now: Postgres stops writing when the disk is full |
+
+The older `disk` alert (more than 80 % used) and `disk-low` (less than 15 GB free) fire at nearly the same moment on a 79 GB disk (80 % is
+about 63 GB used, about 16 GB free): two emails for one cause, expected.
 | `backup` | `backup.sh` failed: dump, upload to R2 or the WAL-G base backup (the dump is already on R2 when only WAL-G failed) | Read `logs/cron.log`, run `deploy/scripts/backup.sh` by hand |
 
 The daily report has one line, for example `PITR: last WAL 20 s ago, .ready 0, newest base backup base_0000…, 2026-11-20T20:00:11Z`. A large
@@ -209,7 +275,8 @@ older image that does not journal, stop deletion writers and backfill from the a
 
 ### Which restore
 
-- **Restore to a point in time (WAL-G)** is the default: it loses seconds, not a day, and can stop just before a mistake.
+- **Restore to a point in time (WAL-G)** is the default: while archiving is healthy it loses about the last 60 s of writes plus the upload
+  time, not a day, and it can stop just before a mistake.
 - **Restore from a dump** when the WAL archive cannot be used (R2 bucket gone, no base backup old enough), or to build a database from
   a dump on another cluster.
 
@@ -229,8 +296,29 @@ newest; for a time before it, put the name of an older base backup (`base_…`) 
 ```bash
 cd /srv/wordmet/app
 compose() { deploy/scripts/compose.sh "$@"; }
-compose run --rm --no-deps -T --entrypoint wal-g postgres backup-list
+L="$(compose run --rm --no-deps -T --entrypoint wal-g postgres backup-list)"; echo "$L"
+echo "$L" | grep -c '^base_'     # must print 1 or more
 ```
+
+**Do not go on unless that command lists at least one `base_…` backup.** An error or a count of 0 means the WAL-G bucket cannot be read
+or is empty: use "Restore from a dump" instead. The next block deletes the old data directory, so first keep a copy of it while it still
+exists (a bad deploy or a wrong delete, not a lost machine). The command lists the backups only; whether `backup-fetch` can read the chosen
+one is known only when the restore block runs it, which is why the copy is not optional:
+
+```bash
+BACKUP_SKIP_BASE=1 deploy/scripts/backup.sh     # a dump to backups/ and R2; works only while Postgres still answers
+compose stop postgres
+df -h /srv/wordmet/backups                      # the copy is about as big as the database
+docker run --rm -v wordmet_postgres_data:/from:ro -v /srv/wordmet/backups:/to --entrypoint tar \
+  wordmet-postgres:17-walg-3.0.9 czf /to/postgres_data-before-restore.tgz -C /from .
+```
+
+Delete that file once the restored database is checked. A brand-new machine has neither Postgres nor a volume: skip this copy, and note it
+has no `state/current` either, so `compose` runs with `API_TAG=none`. Before the first command below, run `deploy/scripts/compose.sh build
+postgres` and build the API images the way `deploy.sh` does (`docker build --target api-prod -t wordmet-api:<sha> .` and `docker build
+--target api-build -t wordmet-api-migrate:<sha> .`), then `export API_TAG=<sha>` in the shell you restore from and write `<sha>` to
+`state/current` at the end. `deploy.sh` itself would migrate and start api and worker before the deletion replay, so do not use it here.
+That sequence was not run end to end.
 
 The restore. Stop on a command error and read it; a restore that goes wrong is started again from the first step.
 
@@ -259,7 +347,11 @@ chmod 700 "$PGDATA"
 EOF
 
 compose up -d postgres
-until compose exec -T postgres psql -X -U "$U" -d "$D" -Atc 'SELECT NOT pg_is_in_recovery()' 2>/dev/null | grep -qx t; do sleep 2; done
+ok=''; for i in $(seq 300); do   # up to 10 minutes
+  compose exec -T postgres psql -X -U "$U" -d "$D" -Atc 'SELECT NOT pg_is_in_recovery()' 2>/dev/null | grep -qx t && { ok=1; break; }
+  sleep 2
+done
+[ -n "$ok" ] || { echo 'not promoted after 10 minutes: read compose logs --tail 100 postgres'; false; }
 compose logs --no-log-prefix postgres | grep -E 'recovery stopping|last completed transaction|selected new timeline|archive recovery complete'
 compose exec -T postgres psql -X -U "$U" -d "$D" -c 'ALTER SYSTEM RESET restore_command' -c 'ALTER SYSTEM RESET recovery_target_time' \
   -c 'ALTER SYSTEM RESET recovery_target_action'
@@ -332,14 +424,20 @@ command to combine it with R2. Replay skips accounts that are already absent.
 
 ### After a restore: payments
 
-A restore loses the orders written after the end of the restored data, but payOS still has their payment links and may hold the money. Order
-codes come from the clock, so a new order never reuses the code of a lost one. The CLI lists the payOS links whose code falls in a time
-window; staff then confirm each paid one that the restored database does not have with "Xác nhận thanh toán" in admin. It only reads payOS
-and needs no database.
+**Which code this applies to.** The rest of this section (order codes from the clock, the `orders-probe-payos` CLI) holds only once the
+time-based order codes change (PR #301 branch, "M1") is merged **and deployed**. This branch is based on code that still issues order codes
+from the database sequence `billing_order_code_seq`, and the CLI does not exist in that code. Until M1 is deployed, use the block
+"Only until the time-based order codes are deployed" below instead of the CLI, and delete that block after the deploy.
+
+A restore loses the orders written after the end of the restored data, but payOS still has their payment links and may hold the money. With
+M1, order codes come from the clock, so a new order never reuses the code of a lost one. The CLI lists the payOS links whose code falls in a
+time window; staff then confirm each paid one that the restored database does not have with "Xác nhận thanh toán" in admin. It only reads
+payOS and needs no database.
 
 With API and worker started (confirming happens in admin), run the CLI for the smallest window that covers the gap: from the time the
-restored data ends (the `last completed transaction` time above, or the time of the dump) to the time of the failure, both in UTC. About 3
-payOS calls per second of window: ten minutes take about three minutes.
+restored data ends (the `last completed transaction` time above, or the time of the dump) to the time of the failure, both in UTC. The CLI
+makes about 3 payOS calls per second of window; at an **assumed** 100 ms a call (not measured against real payOS) ten minutes would take
+about three minutes.
 
 ```bash
 compose run --rm --no-deps -T api node dist/cli/orders-probe-payos.js --from 2026-11-20T03:41:00Z --to 2026-11-20T03:55:00Z
@@ -349,6 +447,30 @@ Output is one tab-separated line per link found (order code, description, status
 found. A payOS error other than "not found" stops the walk: the lines already printed are real, so run it again with a later `--from`.
 Exit 2 is a wrong argument (a time must be ISO 8601 with a zone, a window at most 24 hours, not before 2026-11-17).
 A paid link with no order in the restored database is a payment to review by hand: match the payer's name to a learner before confirming it.
+
+#### Only until the time-based order codes are deployed
+
+Delete this block after M1 is deployed. Without M1, a restored database goes back to an older `billing_order_code_seq`, so the next order
+could reuse the code of a lost order that payOS still knows. If the original database is readable, record the sequence before replacing it:
+
+```bash
+compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U "$U" -d "$D" -Atc 'SELECT last_value FROM billing_order_code_seq'
+```
+
+Before restarting api and worker, reconcile transfers and orders since the backup against the payment provider's records. Match using the
+original payment link and independently verified order ownership. Review any transfer whose order is missing. Determine an upper bound on
+issued order codes from evidence outside the restored database and set `billing_order_code_seq` to at least that value and the current
+sequence position. Keep traffic stopped if payment ownership or the upper bound cannot be verified.
+
+```bash
+MAX_ISSUED='<verified upper bound>'
+compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -v max_issued="$MAX_ISSUED" -U "$U" -d "$D" <<'SQL'
+SELECT setval('billing_order_code_seq', GREATEST(last_value, :'max_issued'::bigint), true)
+FROM billing_order_code_seq;
+SQL
+```
+
+In the restore blocks above, run this one after the migration step and before `compose up -d api worker`.
 
 Check a backup without touching production (G1): load it into a scratch database and compare counts.
 

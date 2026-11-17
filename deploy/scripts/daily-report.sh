@@ -54,11 +54,15 @@ main() {
 # One line on point-in-time restore: how fresh the WAL on R2 is and the newest WAL-G base backup. A failure to read either prints
 # `unavailable` for that part (R2 down, container down); it never stops the report.
 pitr_line() {
-  local state age ready wal="unavailable" base="unavailable" list newest
-  if state="$(archive_state)"; then
+  local state age ready wal="unavailable" base="unavailable" list newest rc=0
+  # archive_state: status 0 = "<age> <ready>", 1 = Postgres could not be asked, 2 = Postgres answered but archiving is off or unreadable.
+  state="$(archive_state)" || rc=$?
+  if [ "$rc" -eq 0 ]; then
     read -r age ready <<< "$state"
     if [ "$age" -lt 0 ]; then wal="never archived"; else wal="${age} s ago"; fi
     wal="last WAL $wal, .ready $ready"
+  elif [ "$rc" -eq 2 ]; then
+    wal="archiving off or unreadable"
   else
     wal="last WAL unavailable, .ready unavailable"
   fi

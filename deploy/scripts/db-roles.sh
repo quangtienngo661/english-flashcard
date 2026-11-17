@@ -12,7 +12,8 @@
 # some transaction held a table: retry (tables already owned by the migrator are skipped).
 # Prints exactly one line, `left over: N`, N counting what is still wrong: relations, types and functions in schema public the migrator
 # does not own, plus 1 while the app role can still read _prisma_migrations. N != 0 exits 1.
-# The passwords go to psql through stdin and are never printed. Deploy runbook: deploy/README.md.
+# The passwords go to psql through stdin and are never printed: psql's stderr is not shown either (it can quote the failing statement),
+# so a failure prints one generic line, with the reason only when it is a lock timeout or a stopped container. Deploy runbook: deploy/README.md.
 set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -34,11 +35,22 @@ main() {
   [[ "$mig_pw" =~ ^[A-Za-z0-9._~-]+$ ]] || die "MIGRATOR_DB_PASSWORD has characters outside A-Z a-z 0-9 . _ ~ - (use node scripts/gen-secret.mjs)"
   [[ "$app_pw" =~ ^[A-Za-z0-9._~-]+$ ]] || die "APP_DB_PASSWORD has characters outside A-Z a-z 0-9 . _ ~ - (use node scripts/gen-secret.mjs)"
 
+  # psql's error text can quote the failing statement, and the CREATE / ALTER ROLE statements hold the passwords: stderr goes to a file
+  # that is never printed, only classified. (roles.sql also keeps the statement out of the server log.)
+  err="$(mktemp)" # global, not local: the EXIT trap runs after main has returned
+  trap 'rm -f "$err"' EXIT
   # -q and -At: no command tags, only the value of the final SELECT.
   out="$({
     printf '\\set db %s\n\\set mig_pw %s\n\\set app_pw %s\n' "$db" "$mig_pw" "$app_pw"
     cat "$REPO/deploy/sql/roles.sql"
-  } | compose exec -T postgres psql -X -q -At -U "$user" -d "$db" -v ON_ERROR_STOP=1)" || die "roles.sql failed (the passwords are not shown here)"
+  } | compose exec -T postgres psql -X -q -At -U "$user" -d "$db" -v ON_ERROR_STOP=1 2>"$err")" || {
+    if grep -q 'lock timeout' "$err"; then
+      die "roles.sql failed: lock timeout, a transaction held a table for more than 5 s; nothing changed, run it again (error text hidden: it can contain the passwords)"
+    elif grep -q 'is not running' "$err"; then
+      die "roles.sql failed: the postgres container is not running (compose ps); error text hidden: it can contain the passwords"
+    fi
+    die "roles.sql failed; error text hidden because it can contain the passwords (compose logs postgres shows the server side, without the statement)"
+  }
 
   [[ "$out" =~ ^left\ over:\ [0-9]+$ ]] || die "unexpected output from roles.sql: expected one line 'left over: N', got $(printf '%s' "$out" | wc -l) line(s)"
   printf '%s\n' "$out"

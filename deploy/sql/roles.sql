@@ -6,6 +6,9 @@
 -- as psql variables and connects as the superuser to that database. Idempotent: safe to run again after every restore and
 -- whenever a password in .env changes. The last line must read `left over: 0`.
 \set ON_ERROR_STOP on
+-- The CREATE / ALTER ROLE statements below carry the passwords as literals. Keep a failing statement out of the server log (the default,
+-- log_min_error_statement = error, would write the whole statement after its error line); db-roles.sh hides psql's own error text.
+SET log_min_error_statement = panic;
 SELECT format('CREATE ROLE wordmet_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION PASSWORD %L', :'mig_pw')
   WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'wordmet_migrator') \gexec
 SELECT format('CREATE ROLE wordmet_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION PASSWORD %L', :'app_pw')
