@@ -147,6 +147,11 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     expect(await repo.nextOrderCode({ $queryRaw: asNumber } as never, at)).toBe(1_100_000_504);
   });
 
+  it('nextOrderCode hands out slot 99 when the highest code of the second is slot 98', async () => {
+    const queryRaw = vi.fn(async () => [{ max: 1_100_000_598n }]);
+    expect(await repo.nextOrderCode({ $queryRaw: queryRaw } as never, new Date(ORDER_CODE_EPOCH_MS + 5_000))).toBe(1_100_000_599);
+  });
+
   it('nextOrderCode throws order-codes-exhausted when all 100 slots of the second are taken', async () => {
     const queryRaw = vi.fn(async () => [{ max: 1_100_000_599n }]);
     await expect(repo.nextOrderCode({ $queryRaw: queryRaw } as never, new Date(ORDER_CODE_EPOCH_MS + 5_000))).rejects.toMatchObject({ code: 'order-codes-exhausted' });

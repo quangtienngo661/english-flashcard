@@ -95,7 +95,11 @@ describe('time-based order codes', () => {
   });
 
   it('the last second still fits in ORDER_CODE_MAX and the next second is refused', () => {
+    expect(lastSecond).toBe(332_597_382);
+    expect(orderCodeAt(lastSecond, 99)).toBe(34_359_738_299);
     expect(orderCodeAt(lastSecond, 99)).toBeLessThanOrEqual(ORDER_CODE_MAX);
+    // Slot 0 of the next second is under ORDER_CODE_MAX, but the second is refused: its slot 99 would not fit.
+    expect(orderCodeAt(lastSecond, 99) + 1).toBeLessThanOrEqual(ORDER_CODE_MAX);
     expect(() => orderCodeAt(lastSecond + 1, 0)).toThrow(RangeError);
   });
 
@@ -104,19 +108,13 @@ describe('time-based order codes', () => {
   });
 
   it('codes grow strictly with (second, slot) and all sit above the old sequence range', () => {
-    const rand = (n: number) => Math.floor(Math.random() * n);
-    const pairs = Array.from({ length: 50 }, () => ({ second: rand(lastSecond + 1), slot: rand(100) }));
-    pairs.sort((a, b) => a.second - b.second || a.slot - b.slot);
-    for (let i = 0; i < pairs.length; i++) {
-      const code = orderCodeAt(pairs[i].second, pairs[i].slot);
-      expect(code).toBeGreaterThanOrEqual(ORDER_CODE_TIME_BASE);
-      expect(code).toBeGreaterThan(ORDER_CODE_MIN);
-      if (i > 0) {
-        const prev = pairs[i - 1];
-        if (prev.second !== pairs[i].second || prev.slot !== pairs[i].slot) {
-          expect(code).toBeGreaterThan(orderCodeAt(prev.second, prev.slot));
-        }
-      }
+    const seconds = [0, 1, 2, lastSecond - 1, lastSecond];
+    const slots = [0, 1, 98, 99];
+    const codes = seconds.flatMap((second) => slots.map((slot) => orderCodeAt(second, slot)));
+    for (let i = 0; i < codes.length; i++) {
+      expect(codes[i]).toBeGreaterThanOrEqual(ORDER_CODE_TIME_BASE);
+      expect(codes[i]).toBeGreaterThan(ORDER_CODE_MIN);
+      if (i > 0) expect(codes[i]).toBeGreaterThan(codes[i - 1]);
     }
   });
 

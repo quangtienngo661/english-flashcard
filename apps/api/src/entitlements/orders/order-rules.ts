@@ -113,6 +113,9 @@ export function decideManualConfirm(state: OrderState): Decision {
   return { ...same(state), orderStatus: 'paid', reviewReason: null, paidVia: 'manual', openPeriod: true, outcome: 'opened-period' };
 }
 
+/** How far before an order's creation a payment may be dated and still count for an order with no link (clock skew between payOS and us). */
+export const NO_LINK_PAYMENT_SKEW_MS = 60_000;
+
 /**
  * What to check before a payment counts at all (design §3.4 "Kiểm trước"): `not-success` when payOS did not say success with code
  * 00, `unknown-order` when no order of this environment has the code, `link-mismatch` when the order's link is another. An order
@@ -132,9 +135,6 @@ export function precheckPayment(
   if (order.paymentLinkId !== payment.paymentLinkId) return 'link-mismatch';
   return null;
 }
-
-/** How far before an order's creation a payment may be dated and still count for an order with no link (clock skew between payOS and us). */
-export const NO_LINK_PAYMENT_SKEW_MS = 60_000;
 
 const PAYOS_TIME = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
 

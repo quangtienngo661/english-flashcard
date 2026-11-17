@@ -170,6 +170,7 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
         );
         if (refused === null) opened.push(payload.orderCode.toString());
       });
+      // That an inbox row the applier ignored counts as never applied is asserted in orders.repository.spec.ts.
       ctx.orders.neverApplied.mockImplementation(async () => refused !== null);
       return { ctx, opened, refusal: () => refused };
     }

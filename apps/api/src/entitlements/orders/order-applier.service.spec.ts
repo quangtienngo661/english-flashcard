@@ -318,8 +318,8 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
       });
 
       it('an order with a link ignores the time: a transfer from long before it was created still counts when the link matches', async () => {
-        const { applier, memory, tx } = setup({ orders: [noLink({ paymentLinkId: 'link-1', createdAt: at('2026-11-05T03:00:00.000Z') })] });
-        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-04 10:02:00' }))).toMatchObject({ outcome: expect.any(String) });
+        const { applier, memory, tx } = setup({ orders: [baseOrder({ createdAt: at('2026-11-05T03:00:00.000Z') })] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-04 10:02:00' }))).toMatchObject({ outcome: 'opened-period' });
         expect(memory.payments).toHaveLength(1);
       });
     });

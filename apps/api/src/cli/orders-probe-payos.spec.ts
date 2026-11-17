@@ -15,6 +15,10 @@ describe('parseProbeArgs', () => {
     expect(parseProbeArgs(['--from', '2026-11-17T10:00:00Z', '--to', '2026-11-18T10:00:00Z']).ok).toBe(true);
   });
 
+  it('accepts a --from exactly at the start of time-based order codes', () => {
+    expect(parseProbeArgs(['--from', '2026-11-17T00:00:00Z', '--to', '2026-11-17T01:00:00Z']).ok).toBe(true);
+  });
+
   it('accepts an offset and the equals form', () => {
     const parsed = parseProbeArgs(['--from=2026-11-17T17:00:00+07:00', '--to=2026-11-17T10:02:00Z']);
     expect(parsed).toEqual({ ok: true, from: new Date('2026-11-17T10:00:00Z'), to: new Date('2026-11-17T10:02:00Z'), gap: 3 });
@@ -32,6 +36,7 @@ describe('parseProbeArgs', () => {
     [['--from', '2026-11-17T10:00:00Z', '--to', '2026-11-18T10:00:01Z'], 'the window must not be longer than 24 hours'],
     [['--from', '2026-11-17T10:00:00Z', '--to', '2026-11-17T11:00:00Z', '--gap', '5'], 'unknown argument: --gap'],
     [['--from'], '--from needs a value'],
+    [['--from', '2026-11-16T23:59:59Z', '--to', '2026-11-17T01:00:00Z'], '--from is before 2026-11-17T00:00:00Z, the start of time-based order codes'],
   ])('rejects %j with "%s"', (argv, error) => {
     expect(parseProbeArgs(argv)).toEqual({ ok: false, error });
   });
@@ -80,6 +85,21 @@ describe('probe', () => {
       ...[0, 1, 2].map((s) => orderCodeAt(SECOND0 + 1, s)),
       ...[0, 1, 2, 3].map((s) => orderCodeAt(SECOND0 + 2, s)),
     ]);
+  });
+
+  it('hands each row to onRow as soon as its link is found, before the walk goes on, and still returns all rows', async () => {
+    const links = new Map<number, Link>([[orderCodeAt(SECOND0, 0), {}], [orderCodeAt(SECOND0 + 1, 0), {}]]);
+    const { client, get } = fakeClient(links);
+    const seen: Array<{ code: number; callsSoFar: number }> = [];
+    const rows = await probe(client, { from: T0, to: new Date(T0.getTime() + 1000), gap: 3 }, async () => undefined, (row) => {
+      seen.push({ code: row.orderCode, callsSoFar: get.mock.calls.length });
+    });
+    // Row 1 arrives after call 1 (slot 0 of second 0); calls 2-4 are its 3 misses, so slot 0 of second 1 is call 5.
+    expect(seen).toEqual([
+      { code: orderCodeAt(SECOND0, 0), callsSoFar: 1 },
+      { code: orderCodeAt(SECOND0 + 1, 0), callsSoFar: 5 },
+    ]);
+    expect(rows.map((r) => r.orderCode)).toEqual(seen.map((s) => s.code));
   });
 
   it('calls get exactly gap times for a second with nothing, and sleeps 100 ms between two calls (not before the first)', async () => {

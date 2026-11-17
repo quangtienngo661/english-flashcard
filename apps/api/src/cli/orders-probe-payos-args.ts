@@ -1,6 +1,9 @@
+import { ORDER_CODE_EPOCH_MS } from '../entitlements/orders/order-codes.js';
+
 // Arguments and output of `pnpm orders:probe-payos` (restore-safety). Pure: no clock, no network. Kept apart from the entry file.
 
-export const PROBE_USAGE = 'usage: pnpm orders:probe-payos --from <ISO 8601 instant> --to <ISO 8601 instant>   (window at most 24 hours)';
+export const PROBE_USAGE = 'usage: pnpm orders:probe-payos --from <ISO 8601 instant> --to <ISO 8601 instant>   (window at most 24 hours)\n'
+  + 'A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.';
 
 /** Consecutive order codes without a payOS link after which the rest of a second is skipped (the app fills slots from 0 with no gaps). */
 export const PROBE_GAP = 3;
@@ -33,6 +36,9 @@ export function parseProbeArgs(argv: string[]): ({ ok: true } & ProbeRange) | { 
   if (!from.ok) return from;
   const to = instant('--to', values['--to']);
   if (!to.ok) return to;
+  if (from.date.getTime() < ORDER_CODE_EPOCH_MS) {
+    return { ok: false, error: '--from is before 2026-11-17T00:00:00Z, the start of time-based order codes' };
+  }
   if (to.date.getTime() <= from.date.getTime()) return { ok: false, error: '--to must be after --from' };
   if (to.date.getTime() - from.date.getTime() > MAX_WINDOW_MS) return { ok: false, error: 'the window must not be longer than 24 hours' };
   return { ok: true, from: from.date, to: to.date, gap: PROBE_GAP };

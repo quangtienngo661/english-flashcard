@@ -12,13 +12,17 @@ import { PROBE_HEADER, PROBE_USAGE, formatProbeRow, parseProbeArgs, type ProbeRa
 // [time of the restored backup, time of the failure]: a link payOS has but the database lost is an order to confirm by hand, with
 // "Xác nhận thanh toán" in admin. Order codes come from the clock (100 slots a second, filled from 0 with no gaps), so each second is walked
 // until `gap` codes in a row have no link. Output is a TSV table with the payer's name; an account number is never printed.
+// A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.
+// Rows are printed as they are found and a progress line goes to stderr at most once a minute.
 // Exit 2 on bad arguments, 1 when payOS is not real or a call fails, 0 otherwise.
 
 const PAUSE_MS = 100;
+const PROGRESS_EVERY_MS = 60_000;
 
 /** Every link payOS has in `range`, ordered by order code. A NotFoundError means "no link for this code"; any other error is thrown. */
 export async function probe(
   client: Pick<PayOS, 'paymentRequests'>, range: ProbeRange, sleep: (ms: number) => Promise<void>,
+  onRow?: (row: ProbeRow) => void,
 ): Promise<ProbeRow[]> {
   const rows: ProbeRow[] = [];
   let first = true;
@@ -40,10 +44,12 @@ export async function probe(
       }
       misses = 0;
       const payers = link.transactions.map((transaction) => transaction.counterAccountName).filter((name): name is string => !!name);
-      rows.push({
+      const row: ProbeRow = {
         orderCode, description: orderDescription(orderCode), status: link.status, amount: link.amount, amountPaid: link.amountPaid,
         createdAt: link.createdAt, payers: [...new Set(payers)],
-      });
+      };
+      rows.push(row);
+      onRow?.(row);
     }
   }
   return rows;
@@ -71,9 +77,21 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    const rows = await probe(createPayosClient(payos), args, (ms) => delay(ms));
     console.log(PROBE_HEADER);
-    for (const row of rows) console.log(formatProbeRow(row));
+    let found = 0;
+    let calls = 0;
+    let lastProgress = Date.now();
+    const rows = await probe(createPayosClient(payos), args, async (ms) => {
+      calls++;
+      if (Date.now() - lastProgress >= PROGRESS_EVERY_MS) {
+        lastProgress = Date.now();
+        console.error(`still walking: ${calls} payOS calls, ${found} payment links so far`);
+      }
+      await delay(ms);
+    }, (row) => {
+      found++;
+      console.log(formatProbeRow(row));
+    });
     console.error(`${rows.length} payment links`);
   } catch (error) {
     const text = error instanceof Error ? error.message : 'unknown error';
@@ -84,4 +102,4 @@ async function main(): Promise<void> {
 
 // Run only as the entry file, so a test can import `probe`.
 const entry = process.argv[1];
-if (entry !== undefined && existsSync(entry) && realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url))) await main();
+if (entry !== undefined && existsSync(entry) && realpathSync.native(entry) === realpathSync.native(fileURLToPath(import.meta.url))) await main();
