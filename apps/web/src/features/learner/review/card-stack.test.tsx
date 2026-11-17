@@ -103,6 +103,20 @@ const card = (n: number): Card => ({
 });
 
 describe('CardStack', () => {
+  it('keeps the word on one line on the front and behind cards', async () => {
+    const long = (n: number): Card => ({ ...card(n), content: { ...card(n).content, lemma: 'anthropologist' } });
+    const { container } = renderApp(
+      <CardStack cards={[long(1), long(2)]} current={0} flipped={false} onFlip={() => {}} onRate={() => {}} />,
+      { session: true, chrome: false, routes: { 'GET /v1/words/anthropologist': () => Response.json({ inflections: [] }) } },
+    );
+    const words = container.querySelectorAll('[data-fit-word]');
+    expect(words).toHaveLength(2);
+    words.forEach((word) => {
+      expect(word).toHaveTextContent('anthropologist');
+      expect(word).toHaveClass('whitespace-nowrap');
+    });
+  });
+
   it.each(['drag', 'button'] as const)('starts the next card from the displayed pose after %s', async (method) => {
     const animate = vi.fn(() => ({ finished: Promise.resolve() }));
     Object.defineProperty(Element.prototype, 'animate', { value: animate, configurable: true, writable: true });
