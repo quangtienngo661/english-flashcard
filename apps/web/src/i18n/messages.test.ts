@@ -40,10 +40,10 @@ describe('messages', () => {
     expect(empty).toEqual([]);
   });
 
-  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy, mail, lv, tp, ps) and every tag is closed', () => {
+  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy, mail, lv, tp, ps, label, detail) and every tag is closed', () => {
     // `mail` is the support address link of the order return page (launch prep B design §3.8); `lv`, `tp`, `ps` are the filter
-    // values of Tra từ's sentence (giao diện mới M4.5).
-    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy', 'mail', 'lv', 'tp', 'ps']);
+    // values of Tra từ's sentence (giao diện mới M4.5); `label` and `detail` are the two text lines next to the big count of the practice hero.
+    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy', 'mail', 'lv', 'tp', 'ps', 'label', 'detail']);
     const problems: string[] = [];
     for (const [key, value] of [...flatVi, ...flatEn]) {
       const opened = [...value.matchAll(/<([a-zA-Z]+)>/g)].map((m) => m[1]);
