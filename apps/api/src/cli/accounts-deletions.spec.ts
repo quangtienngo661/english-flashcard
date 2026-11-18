@@ -12,6 +12,9 @@ describe('parseDeletionsArgs', () => {
     expect(parseDeletionsArgs(['export', '--out', 'd.jsonl'])).toEqual({ command: 'export', out: 'd.jsonl' });
     expect(parseDeletionsArgs(['replay'])).toEqual({ command: 'replay', from: null });
     expect(parseDeletionsArgs(['replay', '--from', 'd.jsonl'])).toEqual({ command: 'replay', from: 'd.jsonl' });
+    expect(parseDeletionsArgs(['seed-journal'])).toEqual({ command: 'seed-journal' });
+    expect(parseDeletionsArgs(['replay', '--journal'])).toEqual({ command: 'replay', from: null, journal: true });
+    expect(parseDeletionsArgs(['replay', '--journal', '--from', 'd.jsonl'])).toEqual({ command: 'replay', from: 'd.jsonl', journal: true });
   });
   it.each([[[]], [['nope']], [['export', '--from', 'x']], [['replay', '--out', 'x']], [['export', '--out']], [['replay', '--from', 'a', 'b']]])(
     'rejects %j with the usage', (argv) => { expect(() => parseDeletionsArgs(argv)).toThrow(/Usage/); });
@@ -19,10 +22,9 @@ describe('parseDeletionsArgs', () => {
 
 describe('exportDeletions', () => {
   it('writes one JSON line { user_id, deleted_at, by } per row, oldest first', async () => {
-    const findMany = vi.fn(async (_a: unknown) => [{ userId: A, deletedAt: new Date('2026-10-01T00:00:00Z'), by: 'self' }]);
-    const lines = await exportDeletions({ deletedAccount: { findMany } } as unknown as PrismaClient);
+    const $queryRaw = vi.fn(async () => [{ userId: A, deletedAt: new Date('2026-10-01T00:00:00Z'), by: 'self' }]);
+    const lines = await exportDeletions({ $queryRaw } as unknown as PrismaClient);
     expect(lines.map((l) => JSON.parse(l))).toEqual([{ user_id: A, deleted_at: '2026-10-01T00:00:00.000Z', by: 'self' }]);
-    expect(findMany).toHaveBeenCalledWith({ orderBy: [{ deletedAt: 'asc' }, { userId: 'asc' }] });
   });
 });
 

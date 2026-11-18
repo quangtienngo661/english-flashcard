@@ -66,6 +66,7 @@ export interface AppConfig {
   supportEmail: string;
   /** Version of the Terms/Privacy text a learner accepts at registration. */
   termsVersion: string;
+  deletionJournal: { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string } | null;
   maintenanceEnabled: boolean;
   content: {
     publishMaxItems: number;
@@ -322,6 +323,11 @@ const envSchema = z.object({
   AUDIO_PUBLIC_BASE_URL: optionalText,
   AUDIO_STORAGE_FAKE_ENABLED: booleanString.default(false),
   AUDIO_STORAGE_FAKE_DIR: nonEmpty.default('.tmp/audio'),
+  DELETION_JOURNAL_ENDPOINT: optionalText.refine((value) => value === null
+    || (URL.canParse(value) && ['http:', 'https:'].includes(new URL(value).protocol))),
+  DELETION_JOURNAL_BUCKET: optionalText,
+  DELETION_JOURNAL_ACCESS_KEY_ID: optionalText,
+  DELETION_JOURNAL_SECRET_ACCESS_KEY: optionalText,
   GOOGLE_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
   GOOGLE_CLIENT_SECRET: z.string().optional().transform((value) => value?.trim() || null),
   GOOGLE_REDIRECT_URI: z.string().optional().transform((value) => value?.trim() || null)
@@ -373,6 +379,15 @@ const envSchema = z.object({
   }
   if (storageOn && values.AUDIO_PUBLIC_BASE_URL === null) {
     ctx.addIssue({ code: 'custom', path: ['AUDIO_PUBLIC_BASE_URL'], message: 'Required when audio storage is on' });
+  }
+  const journalKeys = ['DELETION_JOURNAL_ENDPOINT', 'DELETION_JOURNAL_BUCKET', 'DELETION_JOURNAL_ACCESS_KEY_ID', 'DELETION_JOURNAL_SECRET_ACCESS_KEY'] as const;
+  if (journalKeys.some((name) => values[name] !== null)) {
+    for (const name of journalKeys) {
+      if (values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when deletion journal is configured' });
+    }
+    if (values.BILLING_PRODUCTION && values.DELETION_JOURNAL_ENDPOINT !== null && !values.DELETION_JOURNAL_ENDPOINT.startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: ['DELETION_JOURNAL_ENDPOINT'], message: 'HTTPS is required in production' });
+    }
   }
   if (values.AUDIO_PUBLIC_BASE_URL !== null && !(URL.canParse(values.AUDIO_PUBLIC_BASE_URL)
     && ['http:', 'https:'].includes(new URL(values.AUDIO_PUBLIC_BASE_URL).protocol))) {
@@ -455,6 +470,10 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     learnerAppUrl: values.LEARNER_APP_URL,
     supportEmail: values.SUPPORT_EMAIL,
     termsVersion: values.TERMS_VERSION,
+    deletionJournal: values.DELETION_JOURNAL_ENDPOINT === null ? null : {
+      endpoint: values.DELETION_JOURNAL_ENDPOINT, bucket: values.DELETION_JOURNAL_BUCKET!,
+      accessKeyId: values.DELETION_JOURNAL_ACCESS_KEY_ID!, secretAccessKey: values.DELETION_JOURNAL_SECRET_ACCESS_KEY!,
+    },
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
     pipeline: {

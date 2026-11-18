@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "accounts:export-deletions": "node dist/cli/accounts-deletions.js export",
+    "accounts:seed-deletion-journal": "node dist/cli/accounts-deletions.js seed-journal",
     "accounts:replay-deletions": "node dist/cli/accounts-deletions.js replay",
     "admin:grant": "node dist/cli/admin-grant.js",
     "mail:preview": "node dist/cli/mail-preview.js",

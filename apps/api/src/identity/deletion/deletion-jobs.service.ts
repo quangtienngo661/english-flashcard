@@ -36,7 +36,7 @@ export class DeletionJobs implements OnModuleInit {
     this.scheduler.register('identity.unverified-cleanup', (now) => this.cleanUnverified(now));
   }
 
-  /** Accounts left `deleting` by a failed Tx B: run Tx B again, nothing else (plan review P1). Not for Tx B still running in a request. */
+  /** Retry the journal write and erasure for accounts left deleting. Recent requests get time to finish first. */
   async retryStuck(now: Date): Promise<number> {
     const stuck = await this.prisma.user.findMany({
       where: { status: 'deleting', deletingSince: { lt: new Date(now.getTime() - RETRY_AFTER) } },

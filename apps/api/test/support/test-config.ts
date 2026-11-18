@@ -27,6 +27,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     learnerAppUrl: 'http://localhost:3001',
     supportEmail: 'support@wordmet.com',
     termsVersion: '2026-10-20',
+    deletionJournal: null,
     maintenanceEnabled: false,
     content: { publishMaxItems: 500 },
     pipeline: {
