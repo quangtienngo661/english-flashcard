@@ -36,6 +36,7 @@ describe('groupTone', () => {
       wash: 'bg-wm-group-6-wash',
       ink: 'text-wm-group-6-ink',
       bg: 'bg-wm-group-6',
+      color: 'var(--color-wm-group-6)',
     });
   });
 
@@ -47,6 +48,7 @@ describe('groupTone', () => {
       wash: 'bg-wm-group-empty-wash',
       ink: 'text-wm-group-empty-ink',
       bg: 'bg-wm-group-empty',
+      color: 'var(--color-wm-group-empty)',
     });
   });
 });

@@ -92,7 +92,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     }) });
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
     await waitFor(() => expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/prepare`)).toHaveLength(1));
-    expect(screen.getByRole('button', { name: /^1deploy/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^deploy/ })).toBeEnabled();
     release();
   });
 

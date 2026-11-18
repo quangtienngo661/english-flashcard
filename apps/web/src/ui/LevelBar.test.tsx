@@ -42,4 +42,22 @@ describe('LevelBar', () => {
     renderApp(<LevelBar counts={[1, 0, 0, 0, 0, 0]} />);
     expect(screen.getByRole('img').parentElement).toHaveClass('h-2.5');
   });
+
+  it('with a colour, levels 1–5 are shades of it (level 5 the full colour) and Mới stays grey, in the bar and the legend', () => {
+    renderApp(<LevelBar counts={[1, 1, 0, 0, 0, 2]} color="var(--color-wm-group-3)" />);
+    const bar = screen.getByRole('figure', { name: 'Số từ theo bậc' });
+    expect(bar.style.getPropertyValue('--wm-bar')).toBe('var(--color-wm-group-3)');
+    const [mới, bậc1, bậc5] = within(bar).getAllByRole('img');
+    expect(mới).toHaveClass('bg-wm-level-0');
+    expect(bậc1).toHaveClass('bg-(--wm-bar)/35');
+    expect(bậc5).toHaveClass('bg-(--wm-bar)');
+    const dots = within(screen.getByRole('list', { name: 'Số từ theo bậc' })).getAllByRole('listitem').map((li) => li.querySelector('span'));
+    expect(dots[5]).toHaveClass('bg-(--wm-bar)');
+    expect(dots[0]).toHaveClass('bg-wm-level-0');
+  });
+
+  it('without a colour, the level colours stay', () => {
+    renderApp(<LevelBar counts={[0, 0, 0, 0, 0, 2]} />);
+    expect(screen.getByRole('img')).toHaveClass('bg-wm-level-5');
+  });
 });

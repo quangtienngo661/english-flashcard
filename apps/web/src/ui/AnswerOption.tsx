@@ -17,9 +17,7 @@ const STATE: Record<AnswerOptionState, string> = {
 type Props = {
   state: AnswerOptionState;
   label: ReactNode;
-  /** The number key that picks it ("1"–"4"); the cap shows from `md` up (Figma phone rows have none). */
-  kbd?: string;
-  /** "Đáp án đúng" on the right option, "Bạn chọn" on a wrong pick (the caller passes the text). */
+  /** "Đáp án đúng" on the right option, "Bạn chọn" on a wrong pick (the caller passes the text); read by screen readers only, the ✓ / ✗ shows it. */
   note?: string;
   onPress?: () => void;
   isDisabled?: boolean;
@@ -30,7 +28,7 @@ type Props = {
 };
 
 /** Figma "Lựa chọn" (3:51): an answer of a multiple-choice question in Phiên luyện and Ôn. Radius 14, border 1.5 px. */
-export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop = false, className }: Props) {
+export function AnswerOption({ state, label, note, onPress, isDisabled, pop = false, className }: Props) {
   return (
     <AriaButton
       onPress={onPress}
@@ -43,18 +41,14 @@ export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop
         className,
       )}
     >
-      {kbd && (
-        <kbd className="hidden size-5.5 shrink-0 items-center justify-center rounded-wm-key bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent md:inline-flex">
-          {kbd}
-        </kbd>
-      )}
       <span className="min-w-0 flex-1 break-words font-wm-display text-wm-word">{label}</span>
       {note && (state === 'correct' || state === 'wrong') && (
-        <span className={cn('inline-flex shrink-0 items-center gap-1 font-wm-sans text-wm-label', state === 'correct' ? 'text-wm-pass' : 'text-wm-fail')}>
+        // Owner 18/11/2026: the mark alone (the number keys still pick, the legend says so; no number cap, no visible note).
+        <span className={cn('inline-flex shrink-0 items-center', state === 'correct' ? 'text-wm-pass' : 'text-wm-fail')}>
           {state === 'correct'
-            ? <Check aria-hidden className={cn('size-4', pop && 'motion-safe:animate-wm-pop-in')} />
-            : <X aria-hidden className="size-4" />}
-          {note}
+            ? <Check aria-hidden className={cn('size-5', pop && 'motion-safe:animate-wm-pop-in')} />
+            : <X aria-hidden className="size-5" />}
+          <span className="sr-only">{note}</span>
         </span>
       )}
     </AriaButton>

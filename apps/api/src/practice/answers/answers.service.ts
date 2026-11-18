@@ -32,6 +32,11 @@ export type AnswerResult = {
   streak: { days: number } | null;
   /** The word's current stage, 0–5, read through Learning (giao diện mới M5.1, QR2); null when the word is not in learning. */
   level: number | null;
+  /**
+   * Owner 18/11/2026: the asked word's pre-made recordings, so the speaker plays them (the browser voice only when a file is not ready).
+   * Read after the answer's transaction commits; null for an accent whose file is not ready, and on a 409 body or a review check.
+   */
+  audio: { uk: string | null; us: string | null };
 };
 /** What `writeFinal` leaves behind: the stored item, the schedule change of a recall session and whether the session was one. */
 export type FinalOutcome = { item: ItemWithQuestion; schedule: AnswerResult['schedule']; recall: boolean; streak: AnswerResult['streak'] };
@@ -79,7 +84,7 @@ export class AnswersService {
   ) {}
 
   answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | TryAgainReply> {
-    return this.locked(userId, itemId, async (tx, item, session) => {
+    return this.withAudio(userId, itemId, async (tx, item, session) => {
       await this.assertUnanswered(tx, userId, item, true, session);
       const key = item.question.answerKey as AnswerKey;
       let correct: boolean;
@@ -133,7 +138,7 @@ export class AnswersService {
    * After a try, the last typed text becomes the stored answer.
    */
   skip(userId: string, itemId: string): Promise<AnswerResult> {
-    return this.locked(userId, itemId, async (tx, item, session) => {
+    return this.withAudio(userId, itemId, async (tx, item, session) => {
       await this.assertUnanswered(tx, userId, item, false, session);
       if (!['type_word', 'cloze'].includes(item.question.type) || (item.question.type === 'type_word' && item.tries === 0)) {
         throw conflict('skip-not-allowed', 'Skip not allowed');
@@ -221,7 +226,7 @@ export class AnswersService {
       // A recall session already moved the word (round C): "Đã biết" is never offered there.
       show_known: !recall.recall && alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
       highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
-      schedule: recall.schedule, streak: recall.streak ?? null, level: learningItem?.level ?? null,
+      schedule: recall.schedule, streak: recall.streak ?? null, level: learningItem?.level ?? null, audio: { uk: null, us: null },
     };
   }
 
@@ -263,6 +268,18 @@ export class AnswersService {
    * Lock order (plan, Global Constraints): the idle close in its own statement, then the session row (404, session-closed,
    * last_activity_at), then the item row; a void item is 409 item-void.
    */
+  /** `locked`, then, once the transaction has committed, the final result gets the asked word's recordings (no second connection held). */
+  private async withAudio<T extends AnswerResult | TryAgainReply>(userId: string, itemId: string,
+    work: (tx: Prisma.TransactionClient, item: ItemWithQuestion, session: PracticeSession) => Promise<T>): Promise<T> {
+    const seen = { senseId: '' };
+    const reply = await this.locked(userId, itemId, (tx, item, session) => {
+      seen.senseId = item.senseId;
+      return work(tx, item, session);
+    });
+    if (reply.result === 'try_again') return reply;
+    return { ...reply, audio: await this.content.audioForSense(seen.senseId) };
+  }
+
   private async locked<T>(userId: string, itemId: string,
     work: (tx: Prisma.TransactionClient, item: ItemWithQuestion, session: PracticeSession) => Promise<T>): Promise<T> {
     const found = await this.prisma.practiceSessionItem.findFirst({ where: { id: itemId, userId }, select: { sessionId: true } });

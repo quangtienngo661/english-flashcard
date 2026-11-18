@@ -236,6 +236,11 @@ export class ContentService {
    * Practice questions: visible senses only, with examples, spellings, accepted answers and inflections. A caller inside an
    * open transaction passes its `tx` as `db`, so the read needs no second connection.
    */
+  /** The pre-made recordings of one sense (null per accent until its file is ready); never throws (the audio service logs and returns nulls). */
+  async audioForSense(senseId: string): Promise<{ uk: string | null; us: string | null }> {
+    return (await this.audio.urlsForSenses([senseId])).get(senseId) ?? { uk: null, us: null };
+  }
+
   practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
     Promise<Map<string, PracticeSense>> {
     return practiceSenses(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
