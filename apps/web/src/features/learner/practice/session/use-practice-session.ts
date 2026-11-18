@@ -57,6 +57,8 @@ export type AnswerResult = {
   translation: string | null;
   /** Set for an AI fill-in answered with a declared session word: the two rows of the card. Absent from an older API. */
   alternative?: { typed: string; rows: AlternativeRow[] } | null;
+  /** Owner 18/11/2026: the asked word's pre-made recordings (null until a file is ready). Absent from an older API. */
+  audio?: { uk: string | null; us: string | null } | null;
   /** Đợt C (H6): what the answer did to the schedule, in an Ôn session only. */
   schedule?: { level: number; due_date: string; outcome: 'leveled_up' | 'kept' } | null;
   /** Đợt C (H6): the study streak, on the first study of the learner's day only. */

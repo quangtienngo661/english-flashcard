@@ -695,8 +695,9 @@
   outline-offset: 2px;
   background: color-mix(in srgb, var(--color-wm-ink) 4%, transparent);
 }
-.lk-card { rotate: -1.5deg; box-shadow: var(--shadow-wm-paper-card); }
-.lk-card-behind { rotate: 1deg; translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
+/* Owner 18/11/2026: both cards stand straight (were -1.5deg and 1deg). */
+.lk-card { box-shadow: var(--shadow-wm-paper-card); }
+.lk-card-behind { translate: 0 14px; scale: 0.95; filter: blur(4px); opacity: 0.7; }
 @keyframes lk-card-in {
   from { translate: 0 16px; scale: 0.92; filter: blur(10px); opacity: 0.5; }
   to { translate: 0 0; scale: 1; filter: blur(0); opacity: 1; }
