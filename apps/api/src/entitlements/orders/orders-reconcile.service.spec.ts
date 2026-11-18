@@ -5,6 +5,7 @@ import { testConfig } from '../../../test/support/test-config.js';
 import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import type { BillingAdapter, CheckoutState, ParsedEvent } from '../billing/billing-adapter.js';
 import type { OrderPaymentPayload } from '../billing/billing.types.js';
+import { parsePayosTime, precheckPayment } from './order-rules.js';
 import { OrdersReconcileJob } from './orders-reconcile.job.js';
 import { OrdersReconcileService, type ReconcileOrder } from './orders-reconcile.service.js';
 
@@ -17,7 +18,9 @@ const order = (over: Partial<ReconcileOrder> = {}): ReconcileOrder => ({
   id: 'order-1', userId: USER, status: 'pending', orderCode: CODE, paymentLinkId: 'link-1',
   expiresAt: new Date(NOW.getTime() - minutes(30)), createdAt: new Date(NOW.getTime() - minutes(60)), ...over,
 });
-const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({ status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over });
+const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({
+  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over,
+});
 const tx = (reference: string, amount = 79000) => ({
   reference, amount, transactionDateTime: '2026-11-05 10:02:00',
   payer: { counterAccountName: 'NGUYEN THI LAN', counterAccountNumber: '0123456789', counterAccountBankName: 'MB Bank' },
@@ -144,7 +147,62 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
   it('a payer with no fields becomes a null payer; an order with no stored link id still produces the event', async () => {
     const { service, stores } = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [{ ...tx('FT1'), payer: null }] }) });
     await service.reconcileOne(order({ paymentLinkId: null, status: 'failed' }), NOW);
-    expect(stores[0][0].event).toMatchObject({ paymentLinkId: '', payer: { counterAccountName: null, counterAccountNumber: null, counterAccountBankName: null } });
+    expect(stores[0][0].event).toMatchObject({ paymentLinkId: 'link-1', payer: { counterAccountName: null, counterAccountNumber: null, counterAccountBankName: null } });
+  });
+
+  describe('restore safety: a failed order with no link and a payOS link whose transfer is older than the order', () => {
+    /**
+     * The applier is the real rule: `deliver` stores the event, the applier refuses it with `precheckPayment` (what OrderApplier.applyPayment
+     * runs first: `link-mismatch`, nothing written), and the inbox row ends final without being applied, so `neverApplied` is true.
+     */
+    function withRealRule(transactionDateTime: string) {
+      const ctx = setup({
+        stored: { status: 'failed', paymentLinkId: null }, // created 60 minutes before NOW (03:00Z)
+        getCheckout: async () => state({ status: 'PAID', transactions: [{ ...tx('FT-OLD'), transactionDateTime }] }),
+      });
+      const opened: string[] = [];
+      let refused: string | null = null;
+      ctx.applier.applyMany.mockImplementation(async () => {
+        const payload = ctx.stores[0][0].event as OrderPaymentPayload;
+        refused = precheckPayment(
+          { success: payload.success, code: payload.code, paymentLinkId: payload.paymentLinkId, env: 'production', paidAt: parsePayosTime(payload.transactionDateTime, NOW) },
+          { paymentLinkId: ctx.row.paymentLinkId, environment: 'production', createdAt: ctx.row.createdAt },
+        );
+        if (refused === null) opened.push(payload.orderCode.toString());
+      });
+      // That an inbox row the applier ignored counts as never applied is asserted in orders.repository.spec.ts.
+      ctx.orders.neverApplied.mockImplementation(async () => refused !== null);
+      return { ctx, opened, refusal: () => refused };
+    }
+
+    it('the transfer was paid before the order existed → the applier refuses it (link-mismatch), the order becomes needs_review/provider-mismatch, and no period is opened', async () => {
+      const { ctx, opened, refusal } = withRealRule('2026-11-05 09:00:00'); // 02:00Z, an hour before the order
+      await ctx.service.reconcileOne(order({ status: 'failed', paymentLinkId: null }), NOW);
+      expect(refusal()).toBe('link-mismatch');
+      expect(opened).toEqual([]);
+      expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+      expect(ctx.transitions).toEqual([{ id: 'order-1', from: 'failed', to: { status: 'needs_review', reviewReason: 'provider-mismatch' } }]);
+    });
+
+    it('control: a transfer paid after the order existed is applied, and the order is not sent to review', async () => {
+      const { ctx, opened, refusal } = withRealRule('2026-11-05 10:30:00'); // 03:30Z
+      await ctx.service.reconcileOne(order({ status: 'failed', paymentLinkId: null }), NOW);
+      expect(refusal()).toBeNull();
+      expect(opened).toEqual([String(CODE)]);
+      expect(ctx.row.status).toBe('failed');
+      expect(ctx.transitions).toEqual([]);
+    });
+  });
+
+  it.each(['PAID', 'PENDING'] as const)('isolates a %s provider link with a reused order code but a different link ID', async (status) => {
+    const { service, row, inbox, applier, cancelCheckout } = setup({
+      getCheckout: async () => state({ paymentLinkId: 'old-link', status, transactions: status === 'PAID' ? [tx('OLD-TRANSFER')] : [] }),
+    });
+    await service.reconcileOne(order(), NOW);
+    expect(row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    expect(inbox.store).not.toHaveBeenCalled();
+    expect(applier.applyMany).not.toHaveBeenCalled();
+    expect(cancelCheckout).not.toHaveBeenCalled();
   });
 });
 

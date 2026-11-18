@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 import type { ExistingRow } from './run-rules.js';
 
 export type OperationRow = ExistingRow & { id: string; result: unknown; meta: unknown };
@@ -19,8 +20,8 @@ type Row = {
 const json = (value: unknown): string | null => (value === null || value === undefined ? null : JSON.stringify(value));
 
 /**
- * `ai_operations` (design §8.1–8.2). Every write that races another caller is one conditional statement on the shared client, so
- * no transaction is ever open while a provider is called (R9): the claim's `ON CONFLICT`, and `attempt_id` on every later write.
+ * `ai_operations` (design §8.1–8.2). Inserts share the account-deletion lock. Later writes are conditional on `attempt_id` and
+ * cannot recreate a removed row. No transaction is open while a provider is called (R9).
  */
 @Injectable()
 export class OperationsRepository {
@@ -39,14 +40,17 @@ export class OperationsRepository {
     } : null;
   }
 
-  /** The row's id, or null when another caller holds this id already (B6E78). */
+  /** The row's id, or null if another caller holds it or the account is being deleted. */
   async claim(row: Claim): Promise<string | null> {
-    const [claimed] = await this.prisma.$queryRaw<Array<{ id: string }>>`
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, row.userId))) return null;
+      const [claimed] = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO ai_operations (user_id, operation_id, operation, fingerprint, status, attempt_id, started_at, deadline_at, created_at)
       VALUES (${row.userId}::uuid, ${row.operationId}, ${row.operation}, ${row.fingerprint}, 'running', ${row.attemptId}::uuid,
         ${row.startedAt}, ${row.deadlineAt}, ${row.startedAt})
       ON CONFLICT (user_id, operation_id) DO NOTHING RETURNING id`;
-    return claimed?.id ?? null;
+      return claimed?.id ?? null;
+    }, USER_DATA_TX);
   }
 
   /** Takes over an abandoned `running` row; false when another caller took it first (B6E79). */
@@ -74,11 +78,14 @@ export class OperationsRepository {
 
   /** A `bad-input` found before any row existed (design §8.1 step 2); a row someone else wrote meanwhile wins. */
   async storeFinal(row: Claim & { result: unknown; finishedAt: Date; expiresAt: Date }): Promise<void> {
-    await this.prisma.$executeRaw`
+    await this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, row.userId))) return;
+      await tx.$executeRaw`
       INSERT INTO ai_operations (user_id, operation_id, operation, fingerprint, status, attempt_id, started_at, deadline_at, result,
         finished_at, expires_at, created_at)
       VALUES (${row.userId}::uuid, ${row.operationId}, ${row.operation}, ${row.fingerprint}, 'permanent_failure', ${row.attemptId}::uuid,
         ${row.startedAt}, ${row.deadlineAt}, ${json(row.result)}::jsonb, ${row.finishedAt}, ${row.expiresAt}, ${row.startedAt})
       ON CONFLICT (user_id, operation_id) DO NOTHING`;
+    }, USER_DATA_TX);
   }
 }

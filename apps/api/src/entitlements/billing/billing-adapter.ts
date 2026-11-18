@@ -44,6 +44,7 @@ export const CHECKOUT_STATUSES = ['PENDING', 'CANCELLED', 'UNDERPAID', 'PAID', '
 
 /** The provider's own view of a payment link: the SDK's `PaymentLink` without what Wordmet does not use. */
 export type CheckoutState = {
+  paymentLinkId: string;
   status: (typeof CHECKOUT_STATUSES)[number];
   amount: number;
   amountPaid: number;
