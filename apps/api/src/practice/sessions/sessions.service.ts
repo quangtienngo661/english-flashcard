@@ -196,8 +196,13 @@ export class SessionsService {
       sense_id: item.sense_id, level: item.level, due_date: item.due_date, priority: item.priority, section: item.section,
       added_at: item.added_at, last_needs_review_at: item.last_needs_review_at, last_practiced_at: null, recent_wrong: 0,
     }));
-    const order = sortWords(words, 'queue', Math.random);
-    const { kept } = await this.keepAvailable(learner, order, practice.defaultQuestionsPerSession, RECALL_TYPES, null);
+    // With words due, the session asks every priority and due word (the count the deck's "Ôn" button shows) and nothing else;
+    // with none due ("Ôn thêm"), the default number of the learned words.
+    const due = words.filter((word) => word.section === 'priority' || word.section === 'due');
+    const pool = due.length > 0 ? due : words;
+    const count = due.length > 0 ? due.length : practice.defaultQuestionsPerSession;
+    const order = sortWords(pool, 'queue', Math.random);
+    const { kept } = await this.keepAvailable(learner, order, count, RECALL_TYPES, null);
     if (kept.length === 0) throw noWords('no-word-fits-types');
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
