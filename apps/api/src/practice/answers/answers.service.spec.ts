@@ -142,6 +142,7 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
   };
   const content = {
     practiceSenses: vi.fn(async (_user: string, ids: string[]) => new Map(session.senses.filter((s) => ids.includes(s.sense_id)).map((s) => [s.sense_id, s]))),
+    audioForSense: vi.fn(async (_senseId: string) => ({ uk: null as string | null, us: 'https://audio.test/deploy-us.mp3' as string | null })),
   };
   const entitlements = { recordPracticeSession: vi.fn(async () => undefined) };
   const service = new AnswersService(prisma as unknown as PrismaClient, new FakeClock(new Date('2026-10-19T03:00:00Z')),
@@ -186,6 +187,37 @@ describe('AnswersService — the item stage in the answer (giao diện mới M5.
     const t = route(mcqItem());
     t.learning.practiceCheck.mockImplementation(async () => ({ item: null } as never));
     await expect(t.service.answer(userId, 'it-1', { choice: 1 })).resolves.toMatchObject({ result: 'correct', level: null });
+  });
+});
+
+describe('AnswersService — the pre-made recording of the asked word (owner 18/11/2026: the speaker plays it, not the browser voice)', () => {
+  it('a final answer carries the sense recordings, read after the transaction has committed', async () => {
+    const t = route(mcqItem());
+    let committed = false;
+    const run = t.service['prisma'].$transaction as unknown as ReturnType<typeof vi.fn>;
+    run.mockImplementation(async (fn: (tx: unknown) => unknown) => { const out = await fn(t.tx); committed = true; return out; });
+    t.content.audioForSense.mockImplementation(async (senseId: string) => {
+      expect(committed).toBe(true);
+      return { uk: null, us: `https://audio.test/${senseId}-us.mp3` };
+    });
+    await expect(t.service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({
+      result: 'correct', audio: { uk: null, us: 'https://audio.test/sense-1-us.mp3' },
+    });
+    expect(t.content.audioForSense).toHaveBeenCalledExactlyOnceWith('sense-1');
+  });
+
+  it('a recording that is not ready yet comes back as null for that accent', async () => {
+    const t = route(mcqItem());
+    t.content.audioForSense.mockImplementation(async () => ({ uk: null, us: null }));
+    await expect(t.service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ audio: { uk: null, us: null } });
+  });
+
+  it('the 409 body of an item already answered carries no recording (null, null)', async () => {
+    const t = route(mcqItem({ result: 'wrong' }));
+    await expect(t.service.answer(userId, 'it-1', { choice: 0 })).rejects.toMatchObject({
+      status: 409, extensions: { result: { audio: { uk: null, us: null } } },
+    });
+    expect(t.content.audioForSense).not.toHaveBeenCalled();
   });
 });
 
