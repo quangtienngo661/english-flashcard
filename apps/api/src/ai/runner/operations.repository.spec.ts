@@ -11,12 +11,12 @@ const DEADLINE = new Date('2026-10-20T05:00:10.000Z');
 
 type Statement = { kind: 'query' | 'exec'; sql: string; values: unknown[] };
 
-function setup(answers: { query?: unknown[][]; exec?: number[] } = {}) {
+function setup(answers: { query?: unknown[][]; exec?: number[]; deleting?: boolean } = {}) {
   const statements: Statement[] = [];
   const queries = [...(answers.query ?? [])];
   const execs = [...(answers.exec ?? [])];
   const sql = (strings: TemplateStringsArray) => strings.join('?').replace(/\s+/g, ' ').trim();
-  const prisma = {
+  const sqlClient = {
     $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       statements.push({ kind: 'query', sql: sql(strings), values });
       return queries.shift() ?? [];
@@ -25,7 +25,14 @@ function setup(answers: { query?: unknown[][]; exec?: number[] } = {}) {
       statements.push({ kind: 'exec', sql: sql(strings), values });
       return execs.shift() ?? 0;
     }),
-  } as unknown as PrismaClient;
+  };
+  const tx = {
+    ...sqlClient,
+    user: { findUnique: async () => ({ status: answers.deleting ? 'deleting' : 'active' }) },
+    $executeRaw: (strings: TemplateStringsArray, ...values: unknown[]) =>
+      sql(strings).includes('pg_advisory_xact_lock') ? Promise.resolve(0) : sqlClient.$executeRaw(strings, ...values),
+  };
+  const prisma = { ...sqlClient, $transaction: async (run: (client: typeof tx) => Promise<unknown>) => run(tx) } as unknown as PrismaClient;
   return { repository: new OperationsRepository(prisma), statements };
 }
 
@@ -67,6 +74,17 @@ describe('OperationsRepository', () => {
       userId: USER, operationId: 'q1', operation: 'generate_cloze', fingerprint: 'fp', attemptId: NEW, startedAt: NOW,
       deadlineAt: DEADLINE,
     })).resolves.toBeNull();
+  });
+
+  it('does not insert a running or final operation for an account being deleted', async () => {
+    const { repository, statements } = setup({ deleting: true });
+    const row = {
+      userId: USER, operationId: 'q1', operation: 'generate_cloze', fingerprint: 'fp', attemptId: NEW, startedAt: NOW,
+      deadlineAt: DEADLINE,
+    };
+    await expect(repository.claim(row)).resolves.toBeNull();
+    await repository.storeFinal({ ...row, result: { reason: 'bad-input' }, finishedAt: NOW, expiresAt: DEADLINE });
+    expect(statements).toEqual([]);
   });
 
   it('B6E79: reclaim updates only the same running attempt', async () => {

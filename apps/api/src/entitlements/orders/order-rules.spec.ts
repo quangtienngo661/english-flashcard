@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  decideManualConfirm, decideOrderPayment, parsePayosTime, precheckPayment, type IncomingPayment, type OrderState, type OrderStatus,
+  decideManualConfirm, decideOrderPayment, NO_LINK_PAYMENT_SKEW_MS, parsePayosTime, precheckPayment, type IncomingPayment, type OrderState, type OrderStatus,
 } from './order-rules.js';
 
 const at = (iso: string) => new Date(iso);
@@ -194,8 +194,9 @@ describe('decideOrderPayment — design §3.4, one row of the table at a time', 
 
 describe('precheckPayment (design §3.4 "Kiểm trước")', () => {
   const link = 'link-1';
-  const known = { paymentLinkId: link, environment: 'production' as const };
-  const base = { success: true, code: '00', paymentLinkId: link, env: 'production' as const };
+  const created = at('2026-11-17T10:00:00.000Z');
+  const known = { paymentLinkId: link, environment: 'production' as const, createdAt: created };
+  const base = { success: true, code: '00', paymentLinkId: link, env: 'production' as const, paidAt: at('2026-11-17T10:02:00.000Z') };
 
   it('passes a successful payment for a known order with the same link', () => {
     expect(precheckPayment(base, known)).toBeNull();
@@ -220,8 +221,58 @@ describe('precheckPayment (design §3.4 "Kiểm trước")', () => {
     expect(precheckPayment({ ...base, paymentLinkId: 'any' }, { ...known, paymentLinkId: null })).toBeNull();
   });
 
+  describe('an order whose code another buyer holds at payOS (failed by a taken code, review reason provider-mismatch)', () => {
+    const taken = { ...known, paymentLinkId: null, reviewReason: 'provider-mismatch' as const };
+    const ordinary = { ...known, paymentLinkId: null, reviewReason: null };
+
+    it('refuses a transfer however late it came: that link belongs to the other buyer, so the time rule is not enough', () => {
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-17T10:30:00.000Z') }, taken)).toBe('link-mismatch');
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-18T10:00:00.000Z') }, taken)).toBe('link-mismatch');
+    });
+
+    it('an ordinary failed order with no link (reason null) still takes money paid after it existed', () => {
+      expect(precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at('2026-11-17T10:30:00.000Z') }, ordinary)).toBeNull();
+    });
+
+    it('not-success and unknown-order still win over the marker', () => {
+      expect(precheckPayment({ ...base, success: false }, taken)).toBe('not-success');
+      expect(precheckPayment(base, null)).toBe('unknown-order');
+      expect(precheckPayment({ ...base, paymentLinkId: 'any' }, { ...taken, environment: 'sandbox' })).toBe('unknown-order');
+    });
+  });
+
   it('not-success wins over unknown-order (a failed payment for an unknown order is just not a payment)', () => {
     expect(precheckPayment({ ...base, success: false }, null)).toBe('not-success');
+  });
+
+  describe('an order with no link accepts only money sent after it existed (restore safety: a reused code must not take an old transfer)', () => {
+    const noLink = { ...known, paymentLinkId: null };
+    const paid = (iso: string) => precheckPayment({ ...base, paymentLinkId: 'any', paidAt: at(iso) }, noLink);
+
+    it('NO_LINK_PAYMENT_SKEW_MS is 60 seconds', () => {
+      expect(NO_LINK_PAYMENT_SKEW_MS).toBe(60_000);
+    });
+
+    it.each([
+      ['two minutes before the order existed', '2026-11-17T09:58:00.000Z', 'link-mismatch'],
+      ['one minute and one second before (09:58:59)', '2026-11-17T09:58:59.000Z', 'link-mismatch'],
+      ['1 ms before the 60 s edge', '2026-11-17T09:58:59.999Z', 'link-mismatch'],
+      ['exactly 60 s before the order existed (09:59:00)', '2026-11-17T09:59:00.000Z', null],
+      ['the moment the order was created', '2026-11-17T10:00:00.000Z', null],
+      ['five minutes after (10:05:00)', '2026-11-17T10:05:00.000Z', null],
+    ] as const)('%s → %s', (_label, iso, expected) => {
+      expect(paid(iso)).toBe(expected);
+    });
+
+    it('the order with a link keeps today’s rule: the same link passes whatever the time, another link is link-mismatch', () => {
+      expect(precheckPayment({ ...base, paidAt: at('2020-01-01T00:00:00.000Z') }, known)).toBeNull();
+      expect(precheckPayment({ ...base, paymentLinkId: 'another', paidAt: at('2026-11-17T12:00:00.000Z') }, known)).toBe('link-mismatch');
+    });
+
+    it('not-success and unknown-order still win over the time rule', () => {
+      expect(precheckPayment({ ...base, success: false, paidAt: at('2020-01-01T00:00:00.000Z') }, noLink)).toBe('not-success');
+      expect(precheckPayment({ ...base, paidAt: at('2020-01-01T00:00:00.000Z') }, { ...noLink, environment: 'sandbox' })).toBe('unknown-order');
+    });
   });
 });
 

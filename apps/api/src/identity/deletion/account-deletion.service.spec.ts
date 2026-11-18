@@ -9,6 +9,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { SessionService } from '../sessions/session.service.js';
 import { AccountDeletionRegistry, ERASE_ORDER, type AccountDataEraser, type ErasableModule } from './account-eraser.js';
 import { AccountDeletionService, type DeleteInput } from './account-deletion.service.js';
+import type { DeletionJournal } from './deletion-journal.js';
 
 const clock = new FakeClock(new Date('2026-10-29T12:00:00Z'));
 const USER = randomUUID();
@@ -16,15 +17,17 @@ const DAY = 86_400_000;
 
 type Row = {
   email: string; status: string; staffRole: string | null; deletingBy: string | null; emailVerifiedAt: Date | null;
-  termsAcceptedAt: Date | null; createdAt: Date;
+  termsAcceptedAt: Date | null; createdAt: Date; deletingSince: Date | null;
 };
 
 /** The unit double: statements are recorded, rows are one object. Locks, cascades and races are proven in the smoke. */
-function setup(overrides: Partial<Row> = {}, opts: { admins?: number; renewing?: boolean; eraserFails?: ErasableModule } = {}) {
+function setup(overrides: Partial<Row> = {}, opts: {
+  admins?: number; renewing?: boolean; eraserFails?: ErasableModule; journal?: boolean; production?: boolean;
+} = {}) {
   const events: string[] = [];
   let row: Row | null = {
     email: 'lan@example.com', status: 'active', staffRole: null, deletingBy: null, emailVerifiedAt: clock.now(),
-    termsAcceptedAt: null, createdAt: new Date(clock.now().getTime() - 30 * DAY), ...overrides,
+    termsAcceptedAt: null, createdAt: new Date(clock.now().getTime() - 30 * DAY), deletingSince: null, ...overrides,
   };
   const anonIds: string[] = [];
   const deleted: Array<{ userId: string; by: string; deletedAt?: Date }> = [];
@@ -46,7 +49,7 @@ function setup(overrides: Partial<Row> = {}, opts: { admins?: number; renewing?:
     idempotencyKey: { deleteMany: vi.fn(async () => { events.push('idempotency'); return { count: 0 }; }) },
   };
   const prisma = {
-    user: { findUnique: vi.fn(async () => (row ? { staffRole: row.staffRole } : null)) },
+    user: { findUnique: vi.fn(async () => (row ? { ...row } : null)) },
     $transaction: vi.fn(async (fn: (t: unknown) => unknown, options: unknown) => { events.push(`tx:${JSON.stringify(options)}`); return fn(tx); }),
   };
   const sessions = { revokeAllForUser: vi.fn(async (_t: unknown, _u: string, reason: string) => { events.push(`revoke:${reason}`); }) };
@@ -69,19 +72,49 @@ function setup(overrides: Partial<Row> = {}, opts: { admins?: number; renewing?:
   const afterResponse = vi.fn();
   const runNow = vi.fn();
   const dispatcher = { afterResponse, runNow } as unknown as MailDispatcher;
+  const config = testConfig();
+  config.billing.production = opts.production ?? false;
+  const journal = { enabled: opts.journal ?? false, append: vi.fn(async () => { events.push('journal-write'); }) };
   const service = new AccountDeletionService(
     prisma as unknown as PrismaClient, clock, new AppLogger({ write: (e) => logs.push(e) }), registry,
-    sessions as unknown as SessionService, dispatcher, testConfig(),
+    sessions as unknown as SessionService, dispatcher, config, journal as unknown as DeletionJournal,
   );
   const res = {} as Response;
   const mailOf = (call: unknown[]) => (call[call.length - 1] as Array<() => Promise<{ to: string; text: string } | null>>)[0]!();
-  return { service, events, tx, prisma, sessions, precondition, anonIds, deleted, logs, afterResponse, runNow, res, mailOf, retentionYears, row: () => row };
+  return { service, events, tx, prisma, sessions, precondition, anonIds, deleted, logs, afterResponse, runNow, res, mailOf, retentionYears, journal, row: () => row };
 }
 
 const call = (service: AccountDeletionService, input: Partial<DeleteInput> = {}) =>
   service.delete({ userId: USER, by: 'self', mode: 'normal', ...input });
 
 describe('AccountDeletionService (unit double: statements and order)', () => {
+  it('journals the authorized request after Tx A and before erasing data', async () => {
+    const s = setup({}, { journal: true });
+    expect(await call(s.service)).toBe('done');
+    expect(s.journal.append).toHaveBeenCalledWith({ user_id: USER, deleted_at: clock.now().toISOString(), by: 'self' });
+    expect(s.events.indexOf('tx-a-write')).toBeLessThan(s.events.indexOf('journal-write'));
+    expect(s.events.indexOf('journal-write')).toBeLessThan(s.events.findIndex((e) => e.startsWith('erase:')));
+  });
+
+  it('does not acknowledge or erase a request when R2 is down, and resumes it when R2 returns', async () => {
+    const s = setup({}, { journal: true });
+    s.journal.append.mockRejectedValueOnce(new Error('storage unavailable'));
+    await expect(call(s.service)).rejects.toMatchObject({ status: 503, problemType: 'account-deletion-unavailable' });
+    expect(s.row()?.status).toBe('deleting');
+    expect(s.deleted).toEqual([]);
+    expect(s.events).not.toContain('user-delete');
+    s.journal.append.mockRejectedValueOnce(new Error('storage unavailable'));
+    expect(await call(s.service, { mode: 'resume' })).toBe('pending');
+    expect(await call(s.service, { mode: 'resume' })).toBe('done');
+    expect(s.row()).toBeNull();
+  });
+
+  it('refuses to start deletion in production without a configured journal', async () => {
+    const s = setup({}, { production: true });
+    await expect(call(s.service)).rejects.toMatchObject({ status: 503, problemType: 'account-deletion-unavailable' });
+    expect(s.row()?.status).toBe('active');
+    expect(s.events).not.toContain('tx-a-write');
+  });
   it('Tx A commits before any eraser runs; Tx B takes the 120 s timeout and the user lock first', async () => {
     const s = setup();
     expect(await call(s.service)).toBe('done');
@@ -177,6 +210,15 @@ describe('AccountDeletionService (unit double: statements and order)', () => {
     const s = setup({ status: 'deleting', deletingBy: 'self' });
     expect(await call(s.service)).toBe('pending');
     expect(s.events.some((e) => e.startsWith('erase:'))).toBe(false);
+  });
+
+  it('replay finishes a self deletion already in progress without sending mail', async () => {
+    const s = setup({ status: 'deleting', deletingBy: 'self' }, { journal: true });
+    expect(await call(s.service, { mode: 'replay' })).toBe('done');
+    expect(s.journal.append).not.toHaveBeenCalled();
+    expect(s.row()).toBeNull();
+    expect(s.deleted).toEqual([{ userId: USER, by: 'self', deletedAt: clock.now() }]);
+    expect(s.runNow).not.toHaveBeenCalled();
   });
 
   it('B8E43: an admin request on a deleting account skips Tx A writes and runs Tx B', async () => {
