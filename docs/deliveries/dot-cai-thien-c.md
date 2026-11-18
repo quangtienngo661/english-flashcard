@@ -11,7 +11,7 @@ Phiên BE (Sonnet 5.5, xhigh) làm Task 1–23; phiên UI làm Task 24–31 khi 
 2. Lật thẻ dùng luật Học; hàng thẻ có thêm chế độ "chỉ từ mới"; phát lại lần lật thẻ trả đúng cờ ưu tiên.
 3. Migration: loại phiên `practice` / `recall`, kết quả lịch của từng câu, một phiên mở cho mỗi loại.
 4. Learning: danh sách "từ đã học" của nhóm (trong trần ôn) và ghi kết quả Ôn vào lịch.
-5. Mở phiên Ôn: không trừ lượt, không đóng phiên Luyện tập đang dở, tối đa 10 câu.
+5. Mở phiên Ôn: không trừ lượt, không đóng phiên Luyện tập đang dở, tối đa 10 câu (đổi 18/11/2026: có từ đến hạn thì hỏi hết từ ưu tiên + đến hạn; "Ôn thêm" vẫn 10 câu, DC27).
 6. Câu trả lời cuối của phiên Ôn đổi lịch và trả kết quả lịch về app.
 7. Tổng kết phiên Ôn (lên nấc, đúng giữ nấc); lịch sử Luyện tập bỏ phiên Ôn.
 
