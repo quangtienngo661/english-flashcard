@@ -49,7 +49,7 @@ describe('LevelBar', () => {
     expect(bar.style.getPropertyValue('--wm-bar')).toBe('var(--color-wm-group-3)');
     const [mới, bậc1, bậc5] = within(bar).getAllByRole('img');
     expect(mới).toHaveClass('bg-wm-level-0');
-    expect(bậc1).toHaveClass('bg-[color-mix(in_srgb,var(--wm-bar)_35%,transparent)]');
+    expect(bậc1).toHaveClass('bg-(--wm-bar)/35');
     expect(bậc5).toHaveClass('bg-(--wm-bar)');
     const dots = within(screen.getByRole('list', { name: 'Số từ theo bậc' })).getAllByRole('listitem').map((li) => li.querySelector('span'));
     expect(dots[5]).toHaveClass('bg-(--wm-bar)');

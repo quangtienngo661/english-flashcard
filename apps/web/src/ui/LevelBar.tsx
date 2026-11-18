@@ -9,10 +9,10 @@ import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName, type Level } from '
 /** Levels 1–5 as shades of `--wm-bar` (owner 18/11/2026: the bar takes its group's colour); Mới keeps the grey of a word not yet learnt. */
 const SHADE_FILL: Record<Level, string> = {
   0: LEVEL_FILL[0],
-  1: 'bg-[color-mix(in_srgb,var(--wm-bar)_35%,transparent)]',
-  2: 'bg-[color-mix(in_srgb,var(--wm-bar)_50%,transparent)]',
-  3: 'bg-[color-mix(in_srgb,var(--wm-bar)_65%,transparent)]',
-  4: 'bg-[color-mix(in_srgb,var(--wm-bar)_80%,transparent)]',
+  1: 'bg-(--wm-bar)/35',
+  2: 'bg-(--wm-bar)/50',
+  3: 'bg-(--wm-bar)/65',
+  4: 'bg-(--wm-bar)/80',
   5: 'bg-(--wm-bar)',
 };
 
