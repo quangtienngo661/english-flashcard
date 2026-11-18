@@ -28,11 +28,14 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
         <p className="font-wm-sans text-wm-base text-wm-muted">{t('hero.empty')}</p>
       ) : (
         <>
-          <p className="flex flex-wrap items-baseline gap-x-3 font-wm-display text-wm-card-heading-mobile text-wm-ink md:text-wm-card-heading">
+          {/* The count is the stat: big on the left, spanning the two text lines on its right (a wrapping flex row left a tall gap). // raw-ok: two content-sized columns, no token for a grid template */}
+          <p className="grid grid-cols-[auto_1fr] items-center gap-x-4 font-wm-display text-wm-ink">
             {t.rich('hero.words', {
               words,
               groups,
-              b: (chunks) => <span className="text-wm-section text-wm-accent md:text-wm-hero">{chunks}</span>,
+              b: (chunks) => <span className="row-span-2 text-wm-section leading-none text-wm-accent md:text-wm-hero">{chunks}</span>,
+              label: (chunks) => <span className="col-start-2 self-end text-wm-card-heading-mobile md:text-wm-card-heading">{chunks}</span>,
+              detail: (chunks) => <span className="col-start-2 self-start font-wm-sans text-wm-base text-wm-muted">{chunks}</span>,
             })}
           </p>
           <p className="font-wm-sans text-wm-base text-wm-muted">{t('hero.body', { count, types })}</p>

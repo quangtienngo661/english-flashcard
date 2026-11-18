@@ -1352,7 +1352,7 @@
         "customize": "Customize",
         "artPrompt": "One question · choose the right word",
         "artMeaning": "to put into action",
-        "words": "Words to practice: <b>{words, number}</b> in {groups, plural, one {# deck} other {# decks}}",
+        "words": "<b>{words, number}</b> <label>Words to practice</label> <detail>in {groups, plural, one {# deck} other {# decks}}</detail>",
         "body": "{count, plural, one {# question} other {# questions}}, mixing three types: {types}.",
         "artRight": "Correct"
       },
