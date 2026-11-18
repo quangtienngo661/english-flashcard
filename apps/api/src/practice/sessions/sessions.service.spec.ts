@@ -427,11 +427,41 @@ describe('SessionsService — recall sessions (round C, H3–H5)', () => {
     });
   });
 
-  it('asks for min(default questions per session, usable words): 30 words → 10', async () => {
-    const { service, tx } = setup({ items: words(30) });
+  it('nothing due ("Ôn thêm"): asks for min(default questions per session, usable words): 30 words → 10', async () => {
+    const { service, tx } = setup({ items: words(30).map((w) => ({ ...w, section: 'early' as const })) });
     await service.start(learner, recallInput as never);
     const data = (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
     expect(data.targetCount).toBe(10);
+  });
+
+  const sectioned = (prefix: string, n: number, section: 'priority' | 'due' | 'early') =>
+    Array.from({ length: n }, (_, i) => ({ ...item(`${prefix}${i + 1}`), section, priority: section === 'priority' }));
+  const created = (tx: ReturnType<typeof setup>['tx']) =>
+    (tx.practiceSession.create.mock.calls as unknown as Array<[{ data: Record<string, unknown> }]>)[0][0].data;
+
+  it('with words due: asks every priority and due word, past the default 10, and no word that is not due yet', async () => {
+    const due = [...sectioned('p', 3, 'priority'), ...sectioned('d', 12, 'due')];
+    const { service, tx } = setup({ items: [...sectioned('e', 10, 'early'), ...due] });
+    await service.start(learner, recallInput as never);
+    const data = created(tx);
+    expect(data.targetCount).toBe(15);
+    expect([...(data.senseIds as string[])].sort()).toEqual(due.map((w) => w.sense_id).sort());
+  });
+
+  it('with words due: 25 due words → 25 questions (above max questions per session 20)', async () => {
+    const { service, tx } = setup({ items: sectioned('d', 25, 'due') });
+    await service.start(learner, recallInput as never);
+    expect(created(tx).targetCount).toBe(25);
+  });
+
+  it('with words due: a due word no recall type fits is left out, not replaced by a word not due yet', async () => {
+    const { service, builder, tx } = setup({ items: [...sectioned('d', 4, 'due'), ...sectioned('e', 5, 'early')] });
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) =>
+      new Map(senseIds.map((id) => [id, id === 'd2' ? [] : ['type_word']])) as never);
+    await service.start(learner, recallInput as never);
+    const data = created(tx);
+    expect(data.targetCount).toBe(3);
+    expect([...(data.senseIds as string[])].sort()).toEqual(['d1', 'd3', 'd4']);
   });
 
   it('closes only the open session of the same kind: a practice session in progress stays', async () => {
