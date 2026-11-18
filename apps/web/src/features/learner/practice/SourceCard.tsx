@@ -12,9 +12,9 @@ import { PRELOAD_CUSTOMIZE } from './use-practice-starter';
 export const CHIP = 'inline-flex max-w-full items-center rounded-wm-key bg-wm-bg px-2 py-0.5 font-wm-sans text-wm-label text-wm-ink';
 export const CHIP_FAIL = 'inline-flex max-w-full items-center rounded-wm-key bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail';
 
-/** Owner 10/11/2026: each source has its own colour (now only on its start button; 18/11/2026 the icon tiles went neutral with no border, and the rows lost their description line: the title and the chips say enough). */
+/** Owner 10/11/2026: each source has its own colour (now only on its start button; 18/11/2026 the icon tiles went neutral with no border or background, and the rows lost their description line: the title and the chips say enough). */
 export type SourceTone = 'accent' | 'fail' | 'mark' | 'pass';
-const TILE = 'bg-wm-bg text-wm-muted';
+const TILE = 'text-wm-muted';
 // The yellow has no dark ink that reads on both themes (mark-ink stays navy in dark mode, axe color-contrast), so its start uses ink.
 const START: Record<SourceTone, string> = {
   accent: 'text-wm-accent',
