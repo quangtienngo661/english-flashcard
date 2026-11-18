@@ -195,8 +195,11 @@ const login = async (email) => (await want(api('POST', '/v1/auth/login', {
 const letters = (n) => Array.from({ length: n }, () => String.fromCharCode(97 + randomInt(26))).join('');
 const clozeData = (word = letters(8)) => ({ word, part_of_speech: 'verb', level: 'A2', meaning_vi: 'hoàn thành', context_label: null });
 
-// The learner of every `ai:fake-call` (a plain uuid: `ai_calls.user_id` has no foreign key, design §11).
+// The learner of each `ai:fake-call` must exist so AI can retain its data.
 const LEARNER = randomUUID();
+function seedLearner(id) {
+  psql(`INSERT INTO users (id, email, timezone, email_verified_at, status) VALUES ('${id}', '${id}@example.com', '${TIMEZONE}', now(), 'active')`);
+}
 
 async function main() {
   const started = Date.now();
@@ -219,6 +222,7 @@ async function main() {
   await want(api('POST', '/v1/admin/users', { token: admin, body: {
     email: publisherEmail, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, 'create publisher');
   const publisher = await login(publisherEmail);
+  seedLearner(LEARNER);
   ok(`admin ${adminEmail}; editor ${editorEmail}; publisher (admin) ${publisherEmail}; learner uuid ${LEARNER}`);
 
   const status = () => want(api('GET', '/v1/admin/ai/status', { token: admin }), 200, 'GET status');
@@ -511,6 +515,7 @@ async function main() {
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#24: deleteUserData (ai:fake-call delete-user-data)');
   const gone = randomUUID();
+  seedLearner(gone);
   const own = call('generate_cloze', clozeData(), randomUUID(), gone);
   check(own.result.status === 'succeeded', `result ${JSON.stringify(own.result)}`);
   check(count(`SELECT count(*) FROM ai_call_contents c JOIN ai_calls a ON a.id = c.call_id WHERE a.user_id = '${gone}'`) === 1, 'no content to delete');

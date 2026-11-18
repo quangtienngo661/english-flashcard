@@ -95,6 +95,7 @@ export class FakePayosAdapter extends BillingAdapter implements OnModuleInit {
     const link = await this.link(orderCode);
     if (link === null) return null;
     return {
+      paymentLinkId: link.paymentLinkId,
       status: link.status,
       amount: link.amount,
       amountPaid: sum(link.transactions),

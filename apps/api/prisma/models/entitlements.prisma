@@ -244,7 +244,7 @@ model BillingOrder {
   provider           String
   // production with the real payOS, sandbox with the fake.
   environment        String
-  // From billing_order_code_seq; unique with provider.
+  // Time-based (see order-codes.ts), chosen by the app from this table; unique with provider. billing_order_code_seq is no longer used.
   orderCode          BigInt    @map("order_code")
   // 'WM' + 7 base32 characters of order_code: what the payer types into the bank transfer.
   description        String

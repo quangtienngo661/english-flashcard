@@ -14,7 +14,7 @@ const at = (iso: string) => new Date(iso);
 
 const baseOrder = (over: Partial<OrderRecord> = {}): OrderRecord => ({
   id: ORDER, userId: USER, provider: 'payos', environment: 'production', orderCode: CODE, periodMonths: 1, amount: 79000, currency: 'VND',
-  status: 'pending', reviewReason: null, paidVia: null, paymentLinkId: 'link-1', expiresAt: at('2026-11-05T03:17:00.000Z'), ...over,
+  status: 'pending', reviewReason: null, paidVia: null, paymentLinkId: 'link-1', expiresAt: at('2026-11-05T03:17:00.000Z'), createdAt: at('2026-11-05T03:02:00.000Z'), ...over,
 });
 
 type PeriodRow = NewPeriod & { id: string; revokedAt: Date | null };
@@ -284,6 +284,54 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
       expect(await applier.applyPayment(tx as never, input({ code: '01' }))).toMatchObject({ outcome: 'ignored', reason: 'not-success' });
       expect(memory.payments).toEqual([]);
       expect(memory.orders.get(ORDER)).toMatchObject({ status: 'pending' });
+    });
+
+    describe('an order with no link takes only money sent after it existed (restore safety)', () => {
+      const noLink = (over: Partial<OrderRecord> = {}) => baseOrder({
+        paymentLinkId: null, createdAt: at('2026-11-17T10:00:00.000Z'), expiresAt: at('2026-11-17T10:15:00.000Z'), ...over,
+      });
+
+      it('a transfer from 09:58:00Z (16:58 in Vietnam) for an order created at 10:00:00Z is ignored as link-mismatch: no payment row, no period, the order unchanged', async () => {
+        const { applier, memory, tx, purchases } = setup({ orders: [noLink({ status: 'failed' })] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-17 16:58:00' }))).toEqual({ outcome: 'ignored', reason: 'link-mismatch' });
+        expect(memory.payments).toEqual([]);
+        expect(memory.periods).toEqual([]);
+        expect(purchases).toEqual([]);
+        expect(memory.updates).toEqual([]);
+        expect(memory.orders.get(ORDER)).toMatchObject({ status: 'failed' });
+        expect(memory.calls).not.toContain('insert-payment');
+      });
+
+      it('an order failed by a taken code (reason provider-mismatch) ignores a transfer made after it existed: that link is another buyer’s', async () => {
+        const { applier, memory, tx, purchases } = setup({ orders: [noLink({ status: 'failed', reviewReason: 'provider-mismatch' })] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-17 17:30:00' }))).toEqual({ outcome: 'ignored', reason: 'link-mismatch' });
+        expect(memory.payments).toEqual([]);
+        expect(memory.periods).toEqual([]);
+        expect(purchases).toEqual([]);
+        expect(memory.updates).toEqual([]);
+        expect(memory.orders.get(ORDER)).toMatchObject({ status: 'failed', reviewReason: 'provider-mismatch' });
+      });
+
+      it('a transfer after the order was created is applied as before', async () => {
+        const { applier, memory, tx } = setup({ orders: [noLink()] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-17 17:02:00' }))).toMatchObject({ outcome: 'opened-period' });
+        expect(memory.payments).toHaveLength(1);
+        expect(memory.periods).toHaveLength(1);
+      });
+
+      it('no provider time (null, or text that does not parse) reads as now, which is after the order: the money is accepted, as today', async () => {
+        for (const providerTime of [null, 'not a time']) {
+          const { applier, memory, tx } = setup({ orders: [noLink({ createdAt: at('2026-11-05T03:00:00.000Z'), expiresAt: at('2026-11-05T03:15:00.000Z') })] });
+          expect(await applier.applyPayment(tx as never, input({ providerTime })), String(providerTime)).toMatchObject({ outcome: 'opened-period' });
+          expect(memory.periods, String(providerTime)).toHaveLength(1);
+        }
+      });
+
+      it('an order with a link ignores the time: a transfer from long before it was created still counts when the link matches', async () => {
+        const { applier, memory, tx } = setup({ orders: [baseOrder({ createdAt: at('2026-11-05T03:00:00.000Z') })] });
+        expect(await applier.applyPayment(tx as never, input({ providerTime: '2026-11-04 10:02:00' }))).toMatchObject({ outcome: 'opened-period' });
+        expect(memory.payments).toHaveLength(1);
+      });
     });
 
     it('an order of the other environment is unknown too (a sandbox payment never pays a production order)', async () => {

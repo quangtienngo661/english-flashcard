@@ -113,18 +113,28 @@ export function decideManualConfirm(state: OrderState): Decision {
   return { ...same(state), orderStatus: 'paid', reviewReason: null, paidVia: 'manual', openPeriod: true, outcome: 'opened-period' };
 }
 
+/** How far before an order's creation a payment may be dated and still count for an order with no link (clock skew between payOS and us). */
+export const NO_LINK_PAYMENT_SKEW_MS = 60_000;
+
 /**
  * What to check before a payment counts at all (design §3.4 "Kiểm trước"): `not-success` when payOS did not say success with code
  * 00, `unknown-order` when no order of this environment has the code, `link-mismatch` when the order's link is another. An order
- * that never stored its link id cannot be compared, so its money is accepted. Null: go on.
+ * that never stored its link id cannot be compared by link, so it accepts only money paid after the order existed (minus
+ * `NO_LINK_PAYMENT_SKEW_MS` of clock skew): a restored database can hand out a code payOS already holds for an older order, and that
+ * old transfer must not pay this one. An order failed because payOS said another order holds its code (no link, review reason
+ * `provider-mismatch`) accepts nothing, at any time: the link carrying that code is another buyer's. Null: go on.
  */
 export function precheckPayment(
-  payment: { success: boolean; code: string; paymentLinkId: string; env: 'sandbox' | 'production' },
-  order: { paymentLinkId: string | null; environment: 'sandbox' | 'production' } | null,
+  payment: { success: boolean; code: string; paymentLinkId: string; env: 'sandbox' | 'production'; paidAt: Date },
+  order: { paymentLinkId: string | null; environment: 'sandbox' | 'production'; createdAt: Date; reviewReason?: ReviewReason | null } | null,
 ): 'not-success' | 'unknown-order' | 'link-mismatch' | null {
   if (!payment.success || payment.code !== '00') return 'not-success';
   if (order === null || order.environment !== payment.env) return 'unknown-order';
-  if (order.paymentLinkId !== null && order.paymentLinkId !== payment.paymentLinkId) return 'link-mismatch';
+  if (order.paymentLinkId === null) {
+    if (order.reviewReason === 'provider-mismatch') return 'link-mismatch';
+    return payment.paidAt.getTime() < order.createdAt.getTime() - NO_LINK_PAYMENT_SKEW_MS ? 'link-mismatch' : null;
+  }
+  if (order.paymentLinkId !== payment.paymentLinkId) return 'link-mismatch';
   return null;
 }
 

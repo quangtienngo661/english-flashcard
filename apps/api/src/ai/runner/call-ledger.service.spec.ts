@@ -18,12 +18,14 @@ const record = (overrides: Partial<CallRecord> = {}): CallRecord => ({
   userId: USER, price: { input: 0.1, cachedInput: null, output: 0.5 }, ...overrides,
 });
 
-function setup() {
+function setup(userStatus: 'active' | 'deleting' | null = 'active') {
   const calls: Array<Record<string, unknown>> = [];
   const contents: Array<Record<string, unknown>> = [];
   const counts: unknown[] = [];
   const raws: Array<{ sql: string; values: unknown[] }> = [];
-  const prisma = {
+  const tx = {
+    $executeRaw: vi.fn(async () => 0),
+    user: { findUnique: vi.fn(async () => userStatus === null ? null : { status: userStatus }) },
     aiCall: {
       create: vi.fn((args: { data: Record<string, unknown> }) => {
         calls.push(args.data);
@@ -40,7 +42,10 @@ function setup() {
         return { kind: 'content' };
       }),
     },
-    $transaction: vi.fn(async (ops: unknown[]) => ops),
+  };
+  const prisma = {
+    aiCall: tx.aiCall,
+    $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)),
     $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       raws.push({ sql: strings.join('?').replace(/\s+/g, ' ').trim(), values });
       return [{ spent: '1.50000000' }];
@@ -88,10 +93,17 @@ describe('CallLedger.record', () => {
     }]);
   });
 
-  it('the call and its content are written in one transaction', async () => {
+  it.each(['deleting', null] as const)('keeps cost without private data when the account status is %s', async (status) => {
+    const { ledger, calls, contents } = setup(status);
+    const id = await ledger.record(record(), content, 7, NOW);
+    expect(calls).toMatchObject([{ id, costUsd: '0.00031000', userId: null, aiOperationId: null }]);
+    expect(contents).toEqual([]);
+  });
+
+  it('waits for the user lock longer than the default 5 s transaction timeout', async () => {
     const { ledger, prisma } = setup();
     await ledger.record(record(), content, 7, NOW);
-    expect(prisma.$transaction).toHaveBeenCalledWith([{ kind: 'call' }, { kind: 'content' }]);
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'ReadCommitted', maxWait: 5_000, timeout: 125_000 });
   });
 
   it('B6E64: no price → cost_usd null, cost_known false, tokens still written', async () => {
