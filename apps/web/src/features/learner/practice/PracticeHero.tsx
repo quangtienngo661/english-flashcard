@@ -28,7 +28,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
         <p className="font-wm-sans text-wm-base text-wm-muted">{t('hero.empty')}</p>
       ) : (
         <>
-          {/* The count is the stat: big on the left, spanning the two text lines on its right (a wrapping flex row left a tall gap). */}
+          {/* The count is the stat: big on the left, spanning the two text lines on its right (a wrapping flex row left a tall gap). // raw-ok: two content-sized columns, no token for a grid template */}
           <p className="grid grid-cols-[auto_1fr] items-center gap-x-4 font-wm-display text-wm-ink">
             {t.rich('hero.words', {
               words,
