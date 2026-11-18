@@ -30,6 +30,20 @@ export type OrderViewJson = {
   period: { starts_at: string; ends_at: string } | null;
 };
 
+/** Order creation tries up to this many order codes before it gives up. */
+const MAX_CODE_ATTEMPTS = 3;
+
+/** True when the order code is already used: payOS error 231 (string or number) or a unique violation (Prisma/fake payOS `P2002`). */
+function isCodeTaken(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === '231' || code === 231 || code === 'P2002';
+}
+
+/** True when `nextOrderCode` found every slot of the current second taken (100 orders in one second): nothing to retry with now. */
+function isCodesExhausted(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === 'order-codes-exhausted';
+}
+
 const unavailable = () => new ProblemDetailsException({ status: 503, title: 'Payment provider unavailable', type: 'provider-unavailable' });
 
 /** What a failed checkout call logs: the error's class and payOS's own error code as `provider_error` (231 = order code already used; a key
@@ -72,30 +86,53 @@ export class OrdersService {
     if (adapter === undefined || adapter.createCheckout === undefined) throw unavailable();
 
     const expiresAt = new Date(this.clock.now().getTime() + ORDER_TTL_MS);
-    const created = await this.prisma.$transaction(async (tx) => {
-      const orderCode = await this.orders.nextOrderCode(tx);
-      const { id } = await this.orders.insertPending(tx, {
-        userId, provider: 'payos', environment: this.config.payos.mode === 'fake' ? 'sandbox' : 'production', orderCode,
-        description: orderDescription(orderCode), periodMonths: input.period_months, amount, currency: 'VND', expiresAt,
-      });
-      return { id, orderCode, description: orderDescription(orderCode) };
-    });
+    for (let attempt = 1; attempt <= MAX_CODE_ATTEMPTS; attempt += 1) {
+      const last = attempt === MAX_CODE_ATTEMPTS;
+      let created: { id: string; orderCode: number; description: string };
+      try {
+        created = await this.prisma.$transaction(async (tx) => {
+          const orderCode = await this.orders.nextOrderCode(tx, this.clock.now());
+          const { id } = await this.orders.insertPending(tx, {
+            userId, provider: 'payos', environment: this.config.payos.mode === 'fake' ? 'sandbox' : 'production', orderCode,
+            description: orderDescription(orderCode), periodMonths: input.period_months, amount, currency: 'VND', expiresAt,
+          });
+          return { id, orderCode, description: orderDescription(orderCode) };
+        });
+      } catch (error) {
+        // Another request took the same code between our read and our insert: no order was created, so ask for the next code.
+        if (isCodesExhausted(error)) {
+          this.logger.warn('order_codes_exhausted', { attempt });
+          throw unavailable();
+        }
+        if (!isCodeTaken(error)) throw error;
+        this.logger.warn('order_code_taken', { attempt });
+        if (last) throw unavailable();
+        continue;
+      }
 
-    const back = `${this.config.learnerAppUrl.replace(/\/+$/, '')}/${input.locale}/app/plans/order?order=${created.id}`;
-    const checkout = await callAdapter(() => adapter.createCheckout!({
-      orderCode: created.orderCode, amount, description: created.description, returnUrl: back, cancelUrl: back, expiresAt,
-    }));
-    if (!checkout.ok) {
-      await this.orders.markFailed(this.prisma, created.id);
-      this.logger.warn('order_checkout_failed', { order_ref: created.id, ...checkoutFailure(checkout.error) });
-      throw unavailable();
+      const back = `${this.config.learnerAppUrl.replace(/\/+$/, '')}/${input.locale}/app/plans/order?order=${created.id}`;
+      const checkout = await callAdapter(() => adapter.createCheckout!({
+        orderCode: created.orderCode, amount, description: created.description, returnUrl: back, cancelUrl: back, expiresAt,
+      }));
+      if (!checkout.ok) {
+        const codeTaken = isCodeTaken(checkout.error);
+        // A taken code means payOS never made a link for this order, so the job must not ask about it (codeTaken); any other failure can
+        // still have made one, so the job may ask (LB1E17).
+        await this.orders.markFailed(this.prisma, created.id, codeTaken ? { codeTaken: true, now: this.clock.now() } : undefined);
+        this.logger.warn('order_checkout_failed', { order_ref: created.id, ...checkoutFailure(checkout.error) });
+        if (!codeTaken) throw unavailable();
+        this.logger.warn('order_code_taken', { order_ref: created.id, attempt });
+        if (last) throw unavailable();
+        continue;
+      }
+      const kept = await this.orders.setLink(this.prisma, created.id, checkout.value.paymentLinkId, checkout.value.checkoutUrl);
+      if (!kept) {
+        this.logger.warn('order_link_not_kept', { order_ref: created.id });
+        throw unavailable();
+      }
+      return { order_id: created.id, checkout_url: checkout.value.checkoutUrl };
     }
-    const kept = await this.orders.setLink(this.prisma, created.id, checkout.value.paymentLinkId, checkout.value.checkoutUrl);
-    if (!kept) {
-      this.logger.warn('order_link_not_kept', { order_ref: created.id });
-      throw unavailable();
-    }
-    return { order_id: created.id, checkout_url: checkout.value.checkoutUrl };
+    throw unavailable();
   }
 
   /**

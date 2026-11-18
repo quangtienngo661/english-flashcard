@@ -50,12 +50,14 @@ export function dissolve(el: HTMLElement, direction: 1 | -1, how: 'drag' | 'key'
 }
 
 /** The new top card comes from behind: from blur and small to sharp and at rest (300 ms). */
-export function arrive(el: HTMLElement): Promise<void> {
+export type ArrivalPose = { transform: string; filter: string; opacity: string };
+
+export function arrive(el: HTMLElement, from?: ArrivalPose): Promise<void> {
   if (prefersReducedMotion()) return run(el, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 140, easing: 'linear' });
   return run(
     el,
     [
-      { transform: 'translateY(16px) scale(0.92)', filter: 'blur(10px)', opacity: 0.55 },
+      from ?? { transform: 'translateY(16px) scale(0.92)', filter: 'blur(10px)', opacity: 0.55 },
       { transform: 'none', filter: 'blur(0px)', opacity: 1 },
     ],
     { duration: 300, easing: STACK_EASE },

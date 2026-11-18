@@ -5,8 +5,8 @@ learn new words with flashcards, review them with short quizzes on an automatic 
 pronunciations, and practise with non-AI questions and AI-written questions (graded by rules, never by the AI). The content team (`admin`, `editor`) writes, reviews and publishes words and grants plans in
 the admin app.
 
-> **Status:** not launched yet. The landing page deploys from `main` to Cloudflare Workers; the learner app (`/vi/app`,
-> `/en/app`) is left out of production builds until the Deploy step ([what is left](docs/deliveries/deploy-checklist.md)).
+> **Status:** the production deploy path is built (API and worker on a VPS, web and admin on Cloudflare Workers); the web build from
+> `main` includes the learner app (`/vi/app`, `/en/app`). What is left before launch: [deploy-checklist.md](docs/deliveries/deploy-checklist.md).
 > Sign-in is email and password or Google; payments go through payOS (VietQR), with a fake payOS for local work and tests.
 > Per-step status: [CLAUDE.md](CLAUDE.md) and [docs/deliveries/](docs/deliveries/).
 
@@ -21,16 +21,39 @@ the admin app.
 
 A mobile app (Flutter) will share the same API; it has not been started.
 
+## Architecture at a glance
+
+Full document, with diagrams of each flow and the decisions behind them: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ```
- apps/web (learners) ──┐
-                       ├──► apps/api ──► PostgreSQL
- apps/admin (staff) ───┘        │
-                                ├──► Redis ◄── worker (CSV import, publish, review reminder emails, AI eval)
-                                ├──► SMTP (locally: Mailpit)
-                                ├──► OpenAI / Anthropic (through the `ai` module, with a fake provider)
-                                ├──► payOS (payment links; its webhook calls the API back; fake payOS locally)
-                                └──► Google (sign-in; a fake Google for tests)
+ Cloudflare Workers                    One VPS (Docker Compose)
+ +-------------------------------+     +-----------------------------------------------+
+ | apps/web    wordmet.com       |---->| Caddy (TLS)  api.wordmet.com                  |
+ | apps/admin  admin.wordmet.com |---->|              admin-api.wordmet.com            |
+ +-------------------------------+     |   |                                           |
+                                       |   v                                           |
+                                       | api (NestJS /v1) ----> PostgreSQL 17          |
+                                       |   | enqueue                ^                  |
+                                       |   v                        |                  |
+                                       | Redis 7.4 <---- worker (same image as api)    |
+                                       +----------------------|------------------------+
+                                                              v
+                     Cloudflare R2: pronunciation files (audio.wordmet.com), database backups
+
+ Outside services: Resend (email), payOS (payments + webhook), OpenAI / Anthropic (AI questions),
+ Google (sign-in, text-to-speech), Cloudflare Turnstile (bot check). Each has a fake for local work and tests.
 ```
+
+- **One API for every client.** The browser calls the API directly: learners at `api.wordmet.com`, staff at `admin-api.wordmet.com` (same
+  API; two host names keep the two sign-in cookies apart).
+- **Modular monolith.** Twelve modules under `apps/api/src` (identity, content, content-pipeline, learning, practice, entitlements, ai,
+  settings, notifications, legal, faq, common), each owning its own tables in `apps/api/prisma/models/<module>.prisma`.
+- **In the request vs. in the background.** AI questions, grading and payment webhooks run in the request. CSV import, bulk publish,
+  pronunciation files (Google TTS → R2), reminder emails and AI evals go through BullMQ queues handled by the worker.
+- **AI is never the grader.** AI writes questions; answers are checked by rules. Learner AI use is counted in units per plan, with a daily
+  cap on provider calls.
+- **Deploy.** GitHub Actions deploys a commit from `main` to the VPS over SSH. Once the API is ready, the workflow deploys web and admin
+  to Cloudflare Workers at the same commit. See the [operations guide](deploy/README.md).
 
 ## Prerequisites
 
@@ -117,6 +140,7 @@ Most project documents are written in Vietnamese.
 | To learn | Read |
 |---|---|
 | Who the product is for and what it does | [PRODUCT.md](PRODUCT.md) |
+| How the system is built and deployed (in English) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Current status and how work is done in this repo | [CLAUDE.md](CLAUDE.md) |
 | Design and decisions of each step | [docs/superpowers/specs/](docs/superpowers/specs/), [docs/superpowers/decisions/](docs/superpowers/decisions/) |
 | What was built and how to test it by hand | [docs/deliveries/](docs/deliveries/) |

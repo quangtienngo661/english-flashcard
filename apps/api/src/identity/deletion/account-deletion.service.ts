@@ -8,15 +8,16 @@ import { deleteIdempotencyKeysOf } from '../../common/idempotency/erase-idempote
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
 import { accountDeletedMail } from '../mailer/templates.js';
 import { SessionService } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import { AccountDeletionRegistry } from './account-eraser.js';
+import { DeletionJournal } from './deletion-journal.js';
 
 export type DeletionBy = 'self' | 'admin' | 'cleanup';
 /**
- * `normal`: the request of a learner or an admin, or the clean-up job. `resume`: the retry job, Tx B only (P1). `replay`: after a
+ * `normal`: the request of a learner or an admin, or the clean-up job. `resume`: retry the journal write and Tx B. `replay`: after a
  * restore from backup, no condition is checked and no mail is sent (design §7.5).
  */
 export type DeletionMode = 'normal' | 'resume' | 'replay';
@@ -58,15 +59,44 @@ export class AccountDeletionService {
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(DeletionJournal) private readonly journal: DeletionJournal,
   ) {}
 
   async delete(input: DeleteInput): Promise<DeletionOutcome> {
+    const { userId, mode } = input;
+    if (mode !== 'replay' && this.config.billing.production && !this.journal.enabled) {
+      return this.journalUnavailable(input);
+    }
+    let pending = false;
     if (input.mode !== 'resume') {
       const a = await this.txAWithStaffHint(input);
-      if (a === 'pending' || a === 'skipped') return a;
+      if (a === 'skipped') return a;
       if (a === 'gone') return 'done';
+      pending = a === 'pending';
     }
+    // Tx A committed the authorized intent. No request acknowledges it or erases data until the independent copy is durable.
+    if (mode !== 'replay' && this.journal.enabled) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true, deletingSince: true, deletingBy: true } });
+      if (!user) return 'done';
+      if (user.status !== 'deleting') return 'skipped';
+      try {
+        await this.journal.append({
+          user_id: userId, deleted_at: (user.deletingSince ?? this.clock.now()).toISOString(), by: (user.deletingBy ?? input.by) as DeletionBy,
+        });
+      } catch {
+        return this.journalUnavailable(input);
+      }
+    }
+    if (pending) return 'pending';
     return this.txB(input);
+  }
+
+  private journalUnavailable(input: DeleteInput): 'pending' {
+    this.logger.warn('account_deletion_journal_unavailable', { user_id: input.userId });
+    if (input.mode === 'normal' && input.by !== 'cleanup') {
+      throw refuse(503, 'Account deletion temporarily unavailable', 'account-deletion-unavailable');
+    }
+    return 'pending';
   }
 
   private async txAWithStaffHint(input: DeleteInput): Promise<TxAResult> {
@@ -95,7 +125,7 @@ export class AccountDeletionService {
 
       if (user.status === 'deleting') {
         // B8E54: a second request of the learner finds it under way. An admin, the job or a replay goes on to Tx B.
-        return by === 'self' ? 'pending' : 'go';
+        return mode === 'normal' && by === 'self' ? 'pending' : 'go';
       }
       if (mode === 'normal') {
         if (by === 'cleanup') {

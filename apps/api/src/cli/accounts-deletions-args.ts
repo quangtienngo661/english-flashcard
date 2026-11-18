@@ -1,27 +1,43 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
 import type { AccountDeletionService, DeletionBy } from '../identity/deletion/account-deletion.service.js';
+import type { DeletionJournalEntry } from '../identity/deletion/deletion-journal.js';
 
-export type DeletionsCommand = { command: 'export'; out: string | null } | { command: 'replay'; from: string | null };
+export type DeletionsCommand = { command: 'export'; out: string | null } | { command: 'seed-journal' }
+  | { command: 'replay'; from: string | null; journal?: true };
 
-const USAGE = 'Usage: accounts-deletions export [--out <file>] | replay [--from <file>]';
+const USAGE = 'Usage: accounts-deletions export [--out <file>] | seed-journal | replay [--journal] [--from <file>]';
 
 /** `export [--out <file>]` or `replay [--from <file>]`; anything else is an error naming the usage. */
 export function parseDeletionsArgs(argv: string[]): DeletionsCommand {
   const [command, flag, value, ...rest] = argv;
-  if (rest.length > 0 || (flag !== undefined && value === undefined)) throw new Error(USAGE);
+  if (command === 'seed-journal' && argv.length === 1) return { command };
+  if (command === 'replay' && flag === '--journal') {
+    if (argv.length === 2) return { command, from: null, journal: true };
+    if (argv.length === 4 && value === '--from' && rest[0] && !rest[0].startsWith('--')) return { command, from: rest[0], journal: true };
+    throw new Error(USAGE);
+  }
+  if (rest.length > 0 || (flag !== undefined && (!value || value.startsWith('--')))) throw new Error(USAGE);
   if (command === 'export' && (flag === undefined || flag === '--out')) return { command, out: value ?? null };
   if (command === 'replay' && (flag === undefined || flag === '--from')) return { command, from: value ?? null };
   throw new Error(USAGE);
 }
 
-export type DeletionLine = { user_id: string; deleted_at: string; by: DeletionBy };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BYS: readonly string[] = ['self', 'admin', 'cleanup'];
 
-/** One JSON line per deleted account: the list an operator keeps outside the database (design §7.5, D21). */
+/** One JSON line per completed or pending deletion. One statement sees a consistent snapshot of both tables. */
+export async function deletionEntries(prisma: PrismaClient): Promise<DeletionJournalEntry[]> {
+  const rows = await prisma.$queryRaw<Array<{ userId: string; deletedAt: Date; by: DeletionBy }>>`
+    SELECT user_id AS "userId", deleted_at AS "deletedAt", by FROM deleted_accounts
+    UNION ALL
+    SELECT id, deleting_since, deleting_by FROM users
+    WHERE status = 'deleting' AND deleting_since IS NOT NULL AND deleting_by IS NOT NULL
+    ORDER BY "deletedAt", "userId"`;
+  return rows.map((row) => ({ user_id: row.userId, deleted_at: row.deletedAt.toISOString(), by: row.by }));
+}
+
 export async function exportDeletions(prisma: PrismaClient): Promise<string[]> {
-  const rows = await prisma.deletedAccount.findMany({ orderBy: [{ deletedAt: 'asc' }, { userId: 'asc' }] });
-  return rows.map((row) => JSON.stringify({ user_id: row.userId, deleted_at: row.deletedAt.toISOString(), by: row.by as DeletionBy } satisfies DeletionLine));
+  return (await deletionEntries(prisma)).map((entry) => JSON.stringify(entry));
 }
 
 /** Lines of a file written by `export`; blank lines are skipped, a bad line stops with its number (a half-read list would miss accounts). */
@@ -56,12 +72,16 @@ export async function replayDeletions(
   const byId = new Map<string, DeletionBy>(known.map((row) => [row.userId, row.by as DeletionBy]));
   for (const line of fromFile) if (line.by !== null || !byId.has(line.userId)) byId.set(line.userId, line.by ?? 'admin');
   const ids = [...byId.keys()];
-  const present = new Set((await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true } })).map((row) => row.id));
-  const result: ReplayResult = { replayed: 0, withoutRow: ids.length - present.size, pending: [] };
-  for (const userId of ids.filter((id) => present.has(id))) {
-    const outcome = await deletion.delete({ userId, by: byId.get(userId)!, mode: 'replay' });
-    if (outcome === 'done') result.replayed += 1;
-    else result.pending.push(userId);
+  const result: ReplayResult = { replayed: 0, withoutRow: 0, pending: [] };
+  for (let start = 0; start < ids.length; start += 1000) {
+    const batch = ids.slice(start, start + 1000);
+    const present = await prisma.user.findMany({ where: { id: { in: batch } }, select: { id: true } });
+    result.withoutRow += batch.length - present.length;
+    for (const { id: userId } of present) {
+      const outcome = await deletion.delete({ userId, by: byId.get(userId)!, mode: 'replay' });
+      if (outcome === 'done') result.replayed += 1;
+      else result.pending.push(userId);
+    }
   }
   return result;
 }

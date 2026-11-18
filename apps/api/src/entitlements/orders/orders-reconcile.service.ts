@@ -59,6 +59,11 @@ export class OrdersReconcileService {
       else this.logger.warn('order_link_unknown', { order_ref: order.id });
       return;
     }
+    if (order.paymentLinkId !== null && order.paymentLinkId !== link.paymentLinkId) {
+      this.logger.warn('order_provider_mismatch', { order_ref: order.id });
+      await this.move(order, order.status as OrderStatus, { status: 'needs_review', reviewReason: 'provider-mismatch' });
+      return;
+    }
     // Money first, in whatever state payOS says the link is in.
     if (link.transactions.length > 0) {
       await this.deliver(order, link, now);
@@ -112,7 +117,7 @@ export class OrdersReconcileService {
     const events: ParsedEvent[] = link.transactions.map((transaction) => {
       const identity = `${order.orderCode}:${transaction.reference}`;
       const payload: OrderPaymentPayload = {
-        orderCode: order.orderCode, paymentLinkId: order.paymentLinkId ?? '', amount: transaction.amount, reference: transaction.reference,
+        orderCode: order.orderCode, paymentLinkId: link.paymentLinkId, amount: transaction.amount, reference: transaction.reference,
         transactionDateTime: transaction.transactionDateTime, source: 'reconcile', success: true, code: '00',
         payer: {
           counterAccountName: transaction.payer?.counterAccountName ?? null, counterAccountNumber: transaction.payer?.counterAccountNumber ?? null,

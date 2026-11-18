@@ -380,19 +380,55 @@ async function main() {
     ok('the link is cancelled; paying the old QR adds nothing');
   });
 
-  await step('LB1E17 + LB1E18', 'payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link', async () => {
-    const next = Number(psql("SELECT CASE WHEN is_called THEN last_value + 1 ELSE last_value END FROM billing_order_code_seq"));
-    psql(`INSERT INTO fake_payos_links (order_code, payment_link_id, amount, status, expires_at, return_url, cancel_url) VALUES (${next}, 'collide-${run}', 1000, 'PENDING', now() + interval '15 minutes', 'http://x', 'http://x')`);
+  // Order codes come from the clock (restore-safety): code = 1_100_000_000 + (seconds since 2026-11-17T00:00:00Z) * 100 + slot. A fake payOS link
+  // that already holds a code makes the fake say "code taken", exactly as payOS's error 231 does, so the retry has to move to the next code.
+  // The seconds are computed in SQL from now(): the clock the smoke reads is the database's, and a request that crosses a second boundary
+  // must still find every code it can reach taken (look-ahead: 10 seconds).
+  const FAKE_LINKS_SQL = (secondsAhead, slotsSql) => `INSERT INTO fake_payos_links (order_code, payment_link_id, amount, status, expires_at, return_url, cancel_url)
+    SELECT 1100000000 + (floor(extract(epoch from now()) - 1794873600) + s) * 100 + k, 'collide-${run}-' || s || '-' || k, 1000, 'PENDING', now() + interval '15 minutes', 'http://x', 'http://x'
+    FROM generate_series(0, ${secondsAhead}) AS s, ${slotsSql} AS k ON CONFLICT DO NOTHING`;
+
+  // The timeout case of LB1E17/LB1E18 (the job cancels the link a timed-out call may have made) is covered by unit tests only; this step is
+  // the taken-code case: the job must not ask payOS about these orders while the colliding links, which belong to other buyers, still exist.
+  await step('RS-collide', 'payOS (the fake) already holds every code of the next 10 seconds: three codes tried, three failed orders (marked checked, provider-mismatch), 503 provider-unavailable, the job leaves them and the other buyers\u2019 links alone, the key is freed and the next press is a new order with a later code', async () => {
+    psql(FAKE_LINKS_SQL(9, 'generate_series(0, 99)'));
+    const since = psql('SELECT clock_timestamp()');
     const key = randomUUID();
     const failed = await api('POST', '/v1/me/orders', { token: S.cuong.token, idem: key, body: { period_months: 1, expected_amount: PRICES['1'], locale: 'vi' } });
     check(failed.status === 503 && String(failed.json?.type).endsWith('/provider-unavailable'), `create: ${brief(failed)}`);
-    check(psql(`SELECT status FROM billing_orders WHERE order_code = ${next}`) === 'failed', 'the failed order');
-    const again = await api('POST', '/v1/me/orders', { token: S.cuong.token, idem: key, body: { period_months: 1, expected_amount: PRICES['1'], locale: 'vi' } });
-    check(again.status === 201 && Number(new URL(again.json.checkout_url).searchParams.get('order')) === next + 1, `the same key again: ${brief(again)}`);
+    const rows = psql(`SELECT order_code || '|' || (checked_at IS NOT NULL)::text || '|' || coalesce(review_reason, '-') FROM billing_orders WHERE user_id = '${S.cuong.id}' AND status = 'failed' AND created_at >= '${since}' ORDER BY order_code`).split('\n').filter(Boolean);
+    check(rows.length === 3 && rows.every((r) => r.endsWith('|true|provider-mismatch')), `failed orders of this press: ${JSON.stringify(rows)}`);
+    const codes = rows.map((r) => Number(r.split('|')[0]));
+    // The job runs while the colliding links still exist: if it asked payOS about these orders it would read (and could cancel) another buyer's link.
+    const checkedAt = () => psql(`SELECT string_agg(checked_at::text, ',' ORDER BY order_code) FROM billing_orders WHERE order_code IN (${codes.join(',')})`);
+    const checkedBefore = checkedAt();
     maintenance();
-    check(psql(`SELECT status FROM fake_payos_links WHERE order_code = ${next}`) === 'CANCELLED', 'the job cancelled the stray link');
-    check(psql(`SELECT status FROM billing_orders WHERE order_code = ${next}`) === 'failed', 'the failed order stays failed');
-    ok('503, key freed, new order with the next code; the stray link cancelled by the job');
+    check(checkedAt() === checkedBefore, `the job changed checked_at of a failed order: ${checkedBefore} -> ${checkedAt()}`);
+    check(psql(`SELECT count(*) FROM fake_payos_links WHERE order_code IN (${codes.join(',')}) AND payment_link_id LIKE 'collide-${run}-%' AND status = 'PENDING'`) === '3', 'the other buyers\u2019 links are still PENDING (the job did not cancel them)');
+    check(psql(`SELECT count(*) FROM billing_orders WHERE order_code IN (${codes.join(',')}) AND status = 'failed' AND review_reason = 'provider-mismatch'`) === '3', 'the failed orders stay failed after the job');
+    psql(`DELETE FROM fake_payos_links WHERE payment_link_id LIKE 'collide-${run}-%'`);
+    const again = await api('POST', '/v1/me/orders', { token: S.cuong.token, idem: key, body: { period_months: 1, expected_amount: PRICES['1'], locale: 'vi' } });
+    const newCode = again.status === 201 ? Number(new URL(again.json.checkout_url).searchParams.get('order')) : 0;
+    check(again.status === 201 && newCode > Math.max(...codes), `the same key again: ${brief(again)} (failed codes ${codes.join(',')})`);
+    ok(`503 after three taken codes (${codes.join(', ')}), key freed, new order ${newCode} is later than all of them, the job leaves the failed orders alone`);
+  });
+
+  await step('RS1', 'the fake already holds slot 0 of this second and the next: the order still gets a free code, the taken attempt is a failed order marked checked and provider-mismatch', async () => {
+    // The step before may have just created an order in this very second (its real link holds slot 0 and would swallow our insert):
+    // move to the next second, where slot 0 is free.
+    psql('SELECT pg_sleep(1.1)');
+    psql(FAKE_LINKS_SQL(1, 'generate_series(0, 0)'));
+    const since = psql('SELECT clock_timestamp()');
+    const taken = psql(`SELECT string_agg(order_code::text, ',' ORDER BY order_code) FROM fake_payos_links WHERE payment_link_id LIKE 'collide-${run}-%'`).split(',').map(Number);
+    check(taken.length === 2, `the two fake links: ${taken}`);
+    const bought = await api('POST', '/v1/me/orders', { token: S.cuong.token, idem: true, body: { period_months: 1, expected_amount: PRICES['1'], locale: 'vi' } });
+    const code = bought.status === 201 ? Number(new URL(bought.json.checkout_url).searchParams.get('order')) : 0;
+    psql(`DELETE FROM fake_payos_links WHERE payment_link_id LIKE 'collide-${run}-%'`);
+    check(bought.status === 201 && !taken.includes(code) && code > 1_100_000_000, `buy: ${brief(bought)} (taken ${taken.join(',')})`);
+    const failedRows = Number(psql(`SELECT count(*) FROM billing_orders WHERE user_id = '${S.cuong.id}' AND status = 'failed' AND checked_at IS NOT NULL AND review_reason = 'provider-mismatch' AND created_at >= '${since}'`));
+    // One failed order when the request stays inside one second; two when it crosses the boundary onto the second link.
+    check(failedRows >= 1 && failedRows <= 2, `failed orders marked checked and provider-mismatch: ${failedRows}`);
+    ok(`201 with code ${code} (taken: ${taken.join(', ')}); ${failedRows} failed order(s) with checked_at and provider-mismatch`);
   });
 
   await step('LB1E28', 'a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone', async () => {
