@@ -115,7 +115,7 @@ function Hero({ group }: { group: GroupSummary }) {
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <p className="text-wm-meta text-wm-muted">{t('heroChip')}</p>
         <h2 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight wrap-anywhere text-wm-ink md:text-4xl">{group.name}</h2>
-        {line && <p className="text-wm-small text-wm-muted">{line}</p>}
+        {line && <p className="text-wm-base font-semibold text-wm-ink">{line}</p>}
         <DeckButtons group={group} className="mt-3" buttonClassName="flex-1 md:w-37 md:flex-none" />
       </div>
       <p className="order-first flex flex-col md:order-none md:items-end">
