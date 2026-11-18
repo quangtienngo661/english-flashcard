@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Every 5 minutes from cron: look at the last 5 minutes of the stack and email the owner when something is wrong. Deploy runbook M7.
 # Each check is its own alert type, so send-alert.sh sends at most one email per check per hour.
-# WATCH_DISK_PERCENT (default 80) and WATCH_MEM_MB (default 300) change the thresholds.
+# WATCH_DISK_PERCENT (default 80), WATCH_MEM_MB (default 300) and WATCH_ARCHIVE_MAX_AGE_S (default 900) change the thresholds.
 set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -10,7 +10,7 @@ SERVICES=(caddy api worker postgres redis)
 
 main() {
   load_ops_env ALERT_RESEND_API_KEY ALERT_FROM ALERT_TO
-  local spec name min count disk mem service id state broken="" restarts last
+  local spec name min count disk mem service id state broken="" restarts last age ready max_age free rc
   # Global, not local: the EXIT trap runs after main has returned.
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
@@ -67,6 +67,45 @@ main() {
     echo "$restarts" > "$STATE_DIR/restarts/$service"
   done
   if [ -s "$tmp/body" ]; then alert restarts "[wordmet] the API or the worker restarted" "$tmp/body"; fi
+
+  # 5. WAL reaches R2. If it stops, pg_wal grows until the disk is full and Postgres stops. The archiver retries on its own, so one slow
+  # minute is not a problem: alert when the last file archived is older than WATCH_ARCHIVE_MAX_AGE_S (default 900) AND files are waiting,
+  # or when more than 20 are waiting. Postgres being down is check 3's alert, not this one; archiving switched off or an unreadable
+  # archive_status (archive_state status 2) is this one's.
+  rc=0
+  state="$(archive_state)" || rc=$?
+  if [ "$rc" -eq 2 ]; then
+    { echo "WAL archiving cannot be checked: $state."; echo; echo "Without archiving there is no point-in-time restore and nothing tells when it stopped."; } > "$tmp/body"
+    alert archive "[wordmet] WAL archiving is off or unreadable" "$tmp/body"
+  elif [ "$rc" -eq 0 ]; then
+    read -r age ready <<< "$state"
+    max_age="${WATCH_ARCHIVE_MAX_AGE_S:-900}"
+    if { [ "$ready" -gt 0 ] && { [ "$age" -lt 0 ] || [ "$age" -gt "$max_age" ]; }; } || [ "$ready" -gt 20 ]; then
+      {
+        echo "WAL files are not reaching R2: $ready waiting in pg_wal/archive_status, last one archived ${age} s ago (-1 = never; threshold ${max_age} s, or more than 20 waiting)."
+        echo
+        compose exec -T postgres psql -X -x -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -c 'SELECT * FROM pg_stat_archiver' 2>&1 || true
+        # Only archiver lines: other server log lines can hold query text or row data. wal-g's own retry lines ("Retrying S3 request...",
+        # "caused by: Put .../wal_005/<file>") never say wal-g or archive, hence the extra words (seen with R2 down in the rehearsal).
+        echo "Last archiver lines of the postgres log:"
+        { compose logs --tail 300 --no-log-prefix postgres 2>&1 | grep -iE 'archive|wal-g|wal-push|wal_005|S3 request|^caused by' | tail -n 15; } || true
+      } > "$tmp/body"
+      alert archive "[wordmet] WAL archiving to R2 is behind ($ready waiting)" "$tmp/body"
+    fi
+  fi
+
+  # 6. Free disk in GB. Postgres stops when the disk is full, so the two levels warn well before that.
+  # -P keeps each filesystem on one line, so field 4 is always Available.
+  free="$(df -P -BG / | awk 'NR == 2 { gsub("G", "", $4); print $4 }')"
+  if ! [[ "$free" =~ ^[0-9]+$ ]]; then
+    log "WARNING: could not read the free disk space in GB (got '${free}'), skipping the free-GB check"
+  elif [ "$free" -lt 8 ]; then
+    df -h / > "$tmp/body"
+    alert disk-critical "[wordmet] only ${free} GB of disk left" "$tmp/body"
+  elif [ "$free" -lt 15 ]; then
+    df -h / > "$tmp/body"
+    alert disk-low "[wordmet] only ${free} GB of disk left" "$tmp/body"
+  fi
 }
 
 alert() {

@@ -7,7 +7,8 @@ name: wordmet
 
 x-api-env: &api-env
   PORT: '3000'
-  DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+  # The app role reads and writes rows only: it cannot create or alter tables (deploy/sql/roles.sql).
+  DATABASE_URL: postgresql://${APP_DB_USER:?}:${APP_DB_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
   REDIS_URL: redis://redis:6379
 
 x-logging: &logging
@@ -81,20 +82,43 @@ services:
     profiles: ['migrate']
     command: ['pnpm', 'exec', 'prisma', 'migrate', 'deploy']
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+      # The migrator owns the schema; it is the only login that may change it.
+      DATABASE_URL: postgresql://${MIGRATOR_DB_USER:?}:${MIGRATOR_DB_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
-    image: postgres:17
+    # Postgres 17 + WAL-G (deploy/postgres/Dockerfile). The tag is fixed because deploy.sh runs `compose up` without
+    # --build: an ops step builds it first (`compose build postgres`), and `up` then uses the local image.
+    build:
+      context: ./postgres
+    image: wordmet-postgres:17-walg-3.0.9
     restart: unless-stopped
+    # Only the postgres service reads walg.env: api and worker must not see the key that can overwrite the backups (R5).
+    env_file: ${WORDMET_HOME:-/srv/wordmet}/walg.env
     # A runaway query or a forgotten open transaction cannot hold locks for longer than 5 minutes.
-    command: ['postgres', '-c', 'statement_timeout=300s', '-c', 'idle_in_transaction_session_timeout=300s']
+    # archive_mode/archive_command ship every WAL file to R2 with wal-g; archive_timeout=60 closes a segment at least
+    # once a minute, so a lost machine loses about a minute of writes. If archive_command keeps failing (R2 unreachable,
+    # key revoked), pg_wal grows until the disk fills and Postgres stops; Task 9 alerts on archive age, .ready files and
+    # free disk. A brand-new cluster: design §4 measured this; initialise the cluster first, then switch archiving on
+    # (the exact mechanism is not verified). The VPS cluster already exists.
+    command:
+      [
+        'postgres',
+        '-c', 'statement_timeout=300s',
+        '-c', 'idle_in_transaction_session_timeout=300s',
+        '-c', 'archive_mode=on',
+        '-c', 'archive_command=wal-g wal-push %p',
+        '-c', 'archive_timeout=60',
+      ]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?}
       POSTGRES_USER: ${POSTGRES_USER:?}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      # wal-g connects as this role and to this database (the cluster has no `postgres` role; without PGDATABASE libpq uses the user name).
+      PGUSER: ${POSTGRES_USER:?}
+      PGDATABASE: ${POSTGRES_DB:?}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

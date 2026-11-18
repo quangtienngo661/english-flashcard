@@ -41,12 +41,41 @@ main() {
     echo
     echo "Newest backup on this server: $(newest_backups 1)"
     echo
+    pitr_line
+    echo
     echo "Disk:"; df -h /
     echo
     echo "Memory:"; free -m 2>/dev/null || grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
   } >> "$tmp/body"
 
   "$SCRIPTS/send-alert.sh" "daily-$day" "[wordmet] daily report $day" "$tmp/body"
+}
+
+# One line on point-in-time restore: how fresh the WAL on R2 is and the newest WAL-G base backup. A failure to read either prints
+# `unavailable` for that part (R2 down, container down); it never stops the report.
+pitr_line() {
+  local state age ready wal="unavailable" base="unavailable" list newest rc=0
+  # archive_state: status 0 = "<age> <ready>", 1 = Postgres could not be asked, 2 = Postgres answered but archiving is off or unreadable.
+  state="$(archive_state)" || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    read -r age ready <<< "$state"
+    if [ "$age" -lt 0 ]; then wal="never archived"; else wal="${age} s ago"; fi
+    wal="last WAL $wal, .ready $ready"
+  elif [ "$rc" -eq 2 ]; then
+    wal="archiving off or unreadable"
+  else
+    wal="last WAL unavailable, .ready unavailable"
+  fi
+  # `wal-g backup-list` prints a header, then one backup per line, oldest first: name, modified time, first WAL segment.
+  if list="$(compose exec -T -u postgres postgres timeout 60 wal-g backup-list 2>/dev/null)"; then
+    newest="$(printf '%s\n' "$list" | awk '$1 ~ /^base_/ { name = $1; at = $2 } END { if (name != "") print name ", " at }')"
+    base="${newest:-none}"
+  fi
+  if [ "$wal" = "last WAL unavailable, .ready unavailable" ] && [ "$base" = unavailable ]; then
+    echo "PITR: unavailable"
+  else
+    echo "PITR: $wal, newest base backup $base"
+  fi
 }
 
 main "$@"; exit $?
