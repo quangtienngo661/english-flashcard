@@ -2,23 +2,41 @@
 
 import { useTranslations } from 'next-intl';
 import { Focusable, OverlayArrow, Tooltip, TooltipTrigger } from 'react-aria-components';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
-import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName } from './levels';
+import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName, type Level } from './levels';
+
+/** Levels 1–5 as shades of `--wm-bar` (owner 18/11/2026: the bar takes its group's colour); Mới keeps the grey of a word not yet learnt. */
+const SHADE_FILL: Record<Level, string> = {
+  0: LEVEL_FILL[0],
+  1: 'bg-[color-mix(in_srgb,var(--wm-bar)_35%,transparent)]',
+  2: 'bg-[color-mix(in_srgb,var(--wm-bar)_50%,transparent)]',
+  3: 'bg-[color-mix(in_srgb,var(--wm-bar)_65%,transparent)]',
+  4: 'bg-[color-mix(in_srgb,var(--wm-bar)_80%,transparent)]',
+  5: 'bg-(--wm-bar)',
+};
 
 /**
  * Words per level as a bar and a legend (mockup L185-193): one segment per non-empty level, wide in proportion to its count, 3 px apart;
  * the segments grow in from the left (700 ms, none under reduced motion). The legend below names every level with its count, in full.
  * Hovering or focusing a segment shows the level name, the count and the review interval. `counts` has six entries, level 0 first.
+ * `color` (a CSS colour) draws levels 1–5 as its shades instead of the level greens.
  */
-export function LevelBar({ counts, size = 'md', centered = false }: { counts: readonly number[]; size?: 'md' | 'lg'; centered?: boolean }) {
+export function LevelBar({ counts, size = 'md', centered = false, color }: { counts: readonly number[]; size?: 'md' | 'lg'; centered?: boolean; color?: string }) {
   const t = useTranslations('App.levels');
   const tWords = useTranslations('App.stack');
   const levelName = useLevelName();
   const levelInterval = useLevelInterval();
   const total = counts.reduce((sum, c) => sum + c, 0);
+  const fill = color ? SHADE_FILL : LEVEL_FILL;
 
   return (
-    <figure aria-label={t('bar')} className="m-0 flex w-full flex-col gap-2">
+    <figure
+      aria-label={t('bar')}
+      className="m-0 flex w-full flex-col gap-2"
+      // raw-ok: the group's colour, read by the shade classes
+      style={color ? ({ '--wm-bar': color } as CSSProperties) : undefined}
+    >
       <div className={cn('flex gap-0.75', size === 'lg' ? 'h-3' : 'h-2.5')}>
         {total === 0 && <span aria-hidden className="block flex-1 rounded-wm-key bg-wm-line" />}
         {LEVELS.map((level) => {
@@ -33,7 +51,7 @@ export function LevelBar({ counts, size = 'md', centered = false }: { counts: re
                   aria-label={tip}
                   className={cn(
                     'block min-w-0 origin-left rounded-wm-key outline-none motion-safe:animate-wm-bar-grow focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-wm-accent',
-                    LEVEL_FILL[level],
+                    fill[level],
                   )}
                   // raw-ok: the segment width is its count, its delay follows its level
                   style={{ flexGrow: count, flexBasis: 0, animationDelay: `${level * 60}ms` }}
@@ -57,7 +75,7 @@ export function LevelBar({ counts, size = 'md', centered = false }: { counts: re
       <ul aria-label={t('bar')} className={cn('flex flex-wrap gap-y-1 text-wm-meta text-wm-muted', centered ? 'mx-auto max-w-115 justify-center gap-x-3' : 'gap-x-3.5')}>
         {LEVELS.map((level) => (
           <li key={level} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
+            <span aria-hidden className={cn('size-2 shrink-0 rounded-wm-key', fill[level])} />
             <b className="font-bold tabular-nums text-wm-ink">{counts[level] ?? 0}</b> {levelName(level)}
           </li>
         ))}

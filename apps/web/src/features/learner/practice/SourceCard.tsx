@@ -12,14 +12,9 @@ import { PRELOAD_CUSTOMIZE } from './use-practice-starter';
 export const CHIP = 'inline-flex max-w-full items-center rounded-wm-key bg-wm-bg px-2 py-0.5 font-wm-sans text-wm-label text-wm-ink';
 export const CHIP_FAIL = 'inline-flex max-w-full items-center rounded-wm-key bg-wm-fail-soft px-2 py-0.5 font-wm-sans text-wm-label text-wm-fail';
 
-/** Owner 10/11/2026: each source has its own colour, so the four rows read apart at a glance. */
+/** Owner 10/11/2026: each source has its own colour (now only on its start button; 18/11/2026 the icon tiles went neutral, the coloured tiles read as busy). */
 export type SourceTone = 'accent' | 'fail' | 'mark' | 'pass';
-const TILE: Record<SourceTone, string> = {
-  accent: 'bg-wm-accent-soft text-wm-accent',
-  fail: 'bg-wm-fail-soft text-wm-fail',
-  mark: 'bg-wm-mark/35 text-wm-mark-ink',
-  pass: 'bg-wm-pass-soft text-wm-pass',
-};
+const TILE = 'border border-wm-line bg-wm-bg text-wm-muted';
 // The yellow has no dark ink that reads on both themes (mark-ink stays navy in dark mode, axe color-contrast), so its start uses ink.
 const START: Record<SourceTone, string> = {
   accent: 'text-wm-accent',
@@ -54,7 +49,7 @@ export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, on
   const starts = !reopensAt && startLabel;
   return (
     <li aria-label={name} className="flex gap-4 border-t border-wm-line py-4 first:border-t-0 md:items-center md:gap-5">
-      <span aria-hidden className={cn('flex size-11 shrink-0 items-center justify-center rounded-wm-control', TILE[tone])}>
+      <span aria-hidden className={cn('flex size-11 shrink-0 items-center justify-center rounded-wm-control', TILE)}>
         <Icon className="size-5" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-6">

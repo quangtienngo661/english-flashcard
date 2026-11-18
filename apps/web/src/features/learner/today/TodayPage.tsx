@@ -14,12 +14,9 @@ import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { groupTone } from '@/lib/group-color';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { HelpTip } from '@/ui/HelpTip';
 import { PageTitle } from '@/ui/PageTitle';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
-import { SegmentBar } from '@/ui/SegmentBar';
-import { LEVEL_FILL, LEVELS, useLevelInterval, useLevelName } from '@/ui/levels';
 import { sortForToday, waiting } from '../groups/deck-actions';
 import { CalendarLink } from '../calendar/CalendarLink';
 import { DeckButtons } from '../groups/DeckButtons';
@@ -54,6 +51,7 @@ export function TodayPage() {
           <>
             <QuickAddBox />
             {sorted.length > 0 && <TodayAside groups={sorted} />}
+            {sorted.length > 0 && <LastPractice groups={sorted} />}
           </>
         }
       >
@@ -83,7 +81,6 @@ export function TodayPage() {
             ) : (
               <>
                 {hero ? <Hero group={hero} /> : <p className="rounded-wm-card bg-wm-pass-soft p-5 text-wm-base text-wm-ink">{t('allDone')}</p>}
-                <LastPractice groups={sorted} />
                 <OtherGroups groups={sorted} hero={hero} />
               </>
             )}
@@ -96,44 +93,30 @@ export function TodayPage() {
   );
 }
 
-/** "Ôn tiếp" (Figma 117:4545): border in the deck colour, the three-part bar, Học · Ôn, the big waiting count. */
+/**
+ * "Ôn tiếp" (Figma 117:4545): border in the deck colour, the deck, what waits in one line, Học · Ôn, the big waiting count.
+ * Owner 18/11/2026: the three-part bar, its legend and the deck's word count went; only the counts that are not zero stay.
+ */
 function Hero({ group }: { group: GroupSummary }) {
   const t = useTranslations('App.today');
   const format = useFormat();
   const tone = groupTone(group.id, group.total);
   const { priority, due, new: fresh } = group.today;
-  const legend = [
-    ['bg-wm-accent', t('legendPriority', { count: priority })],
-    ['bg-wm-level-due', t('legendDue', { count: due })],
-    ['bg-wm-ghost', t('legendNew', { count: fresh })],
-  ] as const;
+  const line = [
+    priority > 0 && t('legendPriority', { count: priority }),
+    due > 0 && t('legendDue', { count: due }),
+    fresh > 0 && t('legendNew', { count: fresh }),
+  ].filter(Boolean).join(' · ');
   return (
     <section
       aria-label={group.name}
       className={cn('flex flex-col gap-4 rounded-wm-card border-2 bg-wm-surface p-5 shadow-wm-lift md:flex-row md:items-center md:gap-6 md:p-7', tone.border)}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <p className="text-wm-meta text-wm-muted">{priority > 0 ? t('heroChipPriority') : t('heroChip')}</p>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-wm-meta text-wm-muted">{t('heroChip')}</p>
         <h2 className="font-wm-display text-3xl font-extrabold leading-tight tracking-tight wrap-anywhere text-wm-ink md:text-4xl">{group.name}</h2>
-        <p className="text-wm-small text-wm-muted">{t('heroLine', { total: group.total })}</p>
-        <SegmentBar
-          aria-label={t('heroBar')}
-          className="max-w-110"
-          segments={[
-            { size: priority, fill: priority, tone: 'bg-wm-accent', label: legend[0][1] },
-            { size: due, fill: due, tone: 'bg-wm-level-due', label: legend[1][1] },
-            { size: fresh, fill: fresh, tone: 'bg-wm-ghost', label: legend[2][1] },
-          ].filter((s) => s.size > 0)}
-        />
-        <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {legend.map(([dot, text]) => (
-            <li key={text} className="flex items-center gap-1.5 text-wm-caption text-wm-muted">
-              <span aria-hidden className={cn('size-2.25 rounded-wm-key', dot)} />
-              {text}
-            </li>
-          ))}
-        </ul>
-        <DeckButtons group={group} className="mt-1" buttonClassName="flex-1 md:w-37 md:flex-none" />
+        {line && <p className="text-wm-small text-wm-muted">{line}</p>}
+        <DeckButtons group={group} className="mt-3" buttonClassName="flex-1 md:w-37 md:flex-none" />
       </div>
       <p className="order-first flex flex-col md:order-none md:items-end">
         <span className={cn('font-wm-display text-6xl font-extrabold leading-none tracking-tight md:text-8xl', tone.ink)}>{format.number(waiting(group))}</span>
@@ -159,15 +142,15 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
   const line = [t('lastLine', { date, count: last.questions }), name].filter(Boolean).join(' · ');
   const wrong = last.questions - last.correct;
   return (
-    <Card as="section" aria-labelledby="last-practice" className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 md:py-5">
-      <div className="flex shrink-0 items-baseline gap-2 md:flex-col md:items-center md:gap-0">
+    <Card as="section" aria-labelledby="last-practice" className="flex flex-col gap-3">
+      <SectionTitle id="last-practice">{t('lastTitle')}</SectionTitle>
+      <div className="flex items-baseline gap-2">
         <span className="font-wm-display text-3xl font-extrabold tracking-tight text-wm-ink">
           {last.correct}/{last.questions}
         </span>
         <span className="text-wm-meta text-wm-muted">{t('lastCorrect')}</span>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <SectionTitle id="last-practice">{t('lastTitle')}</SectionTitle>
+      <div className="flex min-w-0 flex-col gap-1.5">
         <p className="text-wm-meta text-wm-muted wrap-anywhere">{line}</p>
         <div className="flex items-center gap-3">
           <span role="img" aria-label={t('lastBar', { correct: last.correct, wrong })} className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-pill bg-wm-line">
@@ -186,7 +169,7 @@ function LastPracticeCard({ last, groups }: { last: LastSessionView; groups: Gro
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 gap-5 md:flex-col md:items-end md:gap-2">
+      <div className="flex flex-wrap gap-x-5 gap-y-2">
         <Link href={`/${locale}/app/practice/weak`} className={LINK}>
           {t('lastRetry')}
           <ArrowRight aria-hidden className="size-4" strokeWidth={1.75} />
@@ -252,21 +235,13 @@ function OtherGroups({ groups, hero }: { groups: GroupSummary[]; hero: GroupSumm
   );
 }
 
-/** Side column: words waiting too long (the deck with most) and every word by level. */
+/** Side column: words waiting too long (the deck with most); the last practice follows it (owner 18/11/2026, in place of the words by level). */
 function TodayAside({ groups }: { groups: GroupSummary[] }) {
   const t = useTranslations('App.today');
-  const levelName = useLevelName();
-  const levelInterval = useLevelInterval();
   const locale = useLocale();
   const format = useFormat();
   const days = useAppConfig().data?.learning.backlog_after_days;
   const backlog = [...groups].sort((a, b) => b.backlog - a.backlog)[0];
-  const levels = LEVELS.map((level) => ({
-    level,
-    total: groups.reduce((sum, g) => sum + (g.cells[level]?.total ?? 0), 0),
-    due: groups.reduce((sum, g) => sum + (g.cells[level]?.due ?? 0), 0),
-  }));
-  const words = levels.reduce((sum, s) => sum + s.total, 0);
   return (
     <>
       {backlog && backlog.backlog > 0 && days !== undefined && (
@@ -281,33 +256,6 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
           </Link>
         </Card>
       )}
-      <Card as="section" aria-labelledby="by-level" className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <SectionTitle id="by-level">{t('levelsTitle', { count: words })}</SectionTitle>
-          <span className="text-wm-meta text-wm-muted">{t('levelsHint')}</span>
-        </div>
-        <ul className="flex flex-col gap-3">
-          {levels.map((s) => (
-            <li key={s.level} className="flex items-center gap-3 text-wm-caption text-wm-ink">
-              <span className="flex w-28 shrink-0 items-center gap-2">
-                <span aria-hidden className={cn('size-2.25 shrink-0 rounded-wm-key', LEVEL_FILL[s.level])} />
-                {levelName(s.level)}
-                {levelInterval(s.level) && <HelpTip label={t('levelHelp', { level: levelName(s.level) })}>{levelInterval(s.level) ?? ''}</HelpTip>}
-              </span>
-              <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-wm-pill bg-wm-line">
-                <span
-                  className={cn('block h-full', LEVEL_FILL[s.level])}
-                  // raw-ok: bar width is the share of due cards in the level
-                  style={{ width: `${s.total ? Math.round((s.due / s.total) * 100) : 0}%` }}
-                />
-              </span>
-              <span className="w-14 shrink-0 text-right text-wm-meta text-wm-muted">
-                {s.due} / {s.total}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Card>
     </>
   );
 }

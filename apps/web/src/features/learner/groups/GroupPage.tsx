@@ -24,7 +24,7 @@ import { Select } from '@/ui/Select';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { ButtonLink } from '@/ui/ButtonLink';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
-import { LEVEL_FILL, STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
+import { STATE_TEXT, toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import { showToast } from '@/ui/Toast';
 import { rememberCentre } from './centre-memory';
 import { deckPlan } from './deck-actions';
@@ -390,8 +390,8 @@ function WordRow({ card, groupId, last }: { card: DeckWord; groupId: string; las
         {card.sense_changed && <span className="ml-2 rounded-wm-key bg-wm-fail-soft px-1.5 py-0.5 text-wm-label text-wm-fail">{t('senseChanged')}</span>}
       </td>
       <td role="cell" className={cn(cell, 'col-start-2 row-start-1 pb-0 text-right md:pb-3 md:text-left')}>
-        <span title={levelInterval(level) ?? undefined} className="inline-flex items-center gap-1.5 whitespace-nowrap text-wm-label text-wm-ink">
-          <span aria-hidden className={cn('h-1.5 w-5.5 shrink-0 rounded-wm-key', LEVEL_FILL[level])} />
+        {/* Owner 18/11/2026: the level is a word only; the coloured mark beside it read as clutter. */}
+        <span title={levelInterval(level) ?? undefined} className="inline-flex items-center whitespace-nowrap text-wm-label text-wm-ink">
           {levelName(level)}
         </span>
       </td>
