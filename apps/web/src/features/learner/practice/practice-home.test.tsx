@@ -109,6 +109,13 @@ describe('PracticePage (K/51)', () => {
     for (const name of names) expect(within(list).getByRole('button', { name: `Tùy chỉnh: ${name}` })).toBeInTheDocument();
   });
 
+  it('owner 18/11/2026: a source row is its title and its chips, with no description line', async () => {
+    renderApp(<PracticePage />, { routes: routes() });
+    const card = await screen.findByRole('listitem', { name: 'Theo nhóm' });
+    expect(within(card).queryByText('Một nhóm, lọc theo bậc hoặc từ ưu tiên.')).toBeNull();
+    expect(screen.queryByText('Mọi từ đang học, từ lâu chưa luyện trước.')).toBeNull();
+  });
+
   it('Theo nhóm (owner 27/10/2026): decks are shown but not buttons; the only action is a visible [Tùy chỉnh]', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const card = await screen.findByRole('listitem', { name: 'Theo nhóm' });

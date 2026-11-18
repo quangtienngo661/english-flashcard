@@ -1363,14 +1363,12 @@
         "reopens": "Resets at {time}",
         "group": {
           "name": "By deck",
-          "body": "One deck, filtered by level or priority words.",
           "chip": "{name} · {count, number}",
           "empty": "No decks yet.",
           "more": "+{count, plural, one {# deck} other {# decks}}"
         },
         "weak": {
           "name": "Weak words",
-          "body": "Wrong twice in the last 5 questions. Lowest level first.",
           "chip": "{lemma} · wrong {wrong}/{counted}",
           "more": "+{count, plural, one {# word} other {# words}}",
           "start": "Practice {count, plural, one {# word} other {# words}}",
@@ -1378,14 +1376,12 @@
         },
         "priority": {
           "name": "Priority",
-          "body": "Words you marked Needs review, oldest first.",
           "chip": "{count, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
           "start": "Practice {count, plural, one {# word} other {# words}}",
           "empty": "No priority words yet."
         },
         "all": {
           "name": "Practice all",
-          "body": "Every word you’re learning, least practiced first.",
           "chip": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
           "start": "Practice {count, plural, one {# question} other {# questions}}",
           "empty": "No words in your decks yet."

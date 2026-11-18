@@ -1363,14 +1363,12 @@
         "reopens": "Mở lại lúc {time}",
         "group": {
           "name": "Theo nhóm",
-          "body": "Một nhóm, lọc theo bậc hoặc từ ưu tiên.",
           "chip": "{name} · {count, number}",
           "empty": "Chưa có nhóm nào.",
           "more": "+{count, number} nhóm"
         },
         "weak": {
           "name": "Từ hay sai",
-          "body": "Sai 2 lần trong 5 câu gần nhất. Xếp theo bậc thấp trước.",
           "chip": "{lemma} · sai {wrong}/{counted}",
           "more": "+{count, number} từ",
           "start": "Luyện {count, number} từ",
@@ -1378,14 +1376,12 @@
         },
         "priority": {
           "name": "Đang ưu tiên",
-          "body": "Từ bạn đã bấm Cần ôn lại, bấm lâu nhất trước.",
           "chip": "{count, number} từ trong {groups, number} nhóm",
           "start": "Luyện {count, number} từ",
           "empty": "Chưa có từ nào đang ưu tiên."
         },
         "all": {
           "name": "Luyện tất cả",
-          "body": "Mọi từ đang học, từ lâu chưa luyện trước.",
           "chip": "{words, number} từ trong {groups, number} nhóm",
           "start": "Luyện {count, number} câu",
           "empty": "Chưa có từ nào trong nhóm."

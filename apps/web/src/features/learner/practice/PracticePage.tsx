@@ -88,7 +88,6 @@ export function PracticePage() {
               name={t('sources.group.name')}
               icon={Folder}
               tone="accent"
-              body={t('sources.group.body')}
               chips={
                 decks.length === 0 ? (
                   empty(t('sources.group.empty'))
@@ -116,7 +115,6 @@ export function PracticePage() {
               icon={Target}
               tone="fail"
               titleHref={`/${locale}/app/practice/weak`}
-              body={t('sources.weak.body')}
               chips={
                 weakTotal === 0 ? (
                   empty(t('sources.weak.empty'))
@@ -149,7 +147,6 @@ export function PracticePage() {
               name={t('sources.priority.name')}
               icon={Star}
               tone="mark"
-              body={t('sources.priority.body')}
               chips={
                 priority > 0 ? <span className={CHIP}>{t('sources.priority.chip', { count: priority, groups: priorityDecks })}</span> : empty(t('sources.priority.empty'))
               }
@@ -164,7 +161,6 @@ export function PracticePage() {
               name={t('sources.all.name')}
               icon={Layers}
               tone="pass"
-              body={t('sources.all.body')}
               chips={words > 0 ? <span className={CHIP}>{t('sources.all.chip', { words, groups: decks.length })}</span> : empty(t('sources.all.empty'))}
               startLabel={words > 0 ? t('sources.all.start', { count }) : null}
               onStart={() => request('all', quick('all'))}
