@@ -363,6 +363,15 @@ describe('Blank focus (T17, QA10)', () => {
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
     expect(await screen.findByRole('textbox', { name: 'Missing word' })).toHaveFocus();
   });
+
+  it('owner 18/11/2026: the empty blank sits on the sentence line: its width mirror always holds a character (a zero-width space)', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    const blank = await screen.findByRole('textbox', { name: 'Missing word' });
+    const mirror = blank.previousElementSibling as HTMLElement;
+    expect(mirror.textContent).toBe('​');
+    await userEvent.type(blank, 'vital');
+    expect(mirror.textContent).toBe('vital');
+  });
 });
 
 describe('Alternative answer card', () => {
