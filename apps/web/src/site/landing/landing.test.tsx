@@ -92,13 +92,14 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(document.body.textContent).not.toMatch(/IELTS|Writing|Đề 12|Sau khi làm đề|mỗi đề|đề bạn vừa làm/);
   });
 
-  it('LearnSection has its four cards, the listen card included (shown from md)', () => {
+  it('LearnSection lists its four steps in learning order, the listen step on every width', () => {
     renderHome();
     const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }));
-    expect(learn.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      'Luyện từ trong câu thật',
+    const steps = learn.queryAllByRole('listitem').filter((li) => li.parentElement?.tagName === 'OL' && within(li).queryByRole('heading', { level: 3 }));
+    expect(steps.map((li) => within(li).getByRole('heading', { level: 3 }).textContent)).toEqual([
       'Lưu từ trong vài giây',
       'Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm',
+      'Luyện từ trong câu thật',
       'Ôn đúng lúc sắp quên',
     ]);
   });
