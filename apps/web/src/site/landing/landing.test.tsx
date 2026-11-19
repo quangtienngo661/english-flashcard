@@ -58,6 +58,12 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
   });
 
+  it('has no sliding word strip: its words are gone from the page', () => {
+    renderHome();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    for (const word of ['feasible', 'alleviate', 'detrimental', 'incentive']) expect(screen.queryAllByText(word)).toHaveLength(0);
+  });
+
   it('QM8-6 shows the drafted wording instead of "ngăn" and Figma\'s refund note', () => {
     renderHome();
     expect(screen.getByText('Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.')).toBeInTheDocument();

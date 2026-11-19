@@ -963,8 +963,6 @@
   --wm-site-bob-down: 6px;
   --wm-site-parallax: 400ms;
   /* Word strip: 52 s, the reversed row 64 s. */
-  --wm-site-strip: 52s;
-  --wm-site-strip-reverse: 64s;
   /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all). */
   --wm-site-flash: 1100ms;
   /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
@@ -1077,11 +1075,6 @@
   }
   to {
     translate: 0 var(--wm-site-bob-down);
-  }
-}
-@keyframes wm-site-slide {
-  to {
-    transform: translateX(-50%);
   }
 }
 /* 240 ms of 1100 ms = 21.82 %. */
@@ -1236,15 +1229,6 @@
   html.js [data-float='bin'] {
     --wm-depth: 22;
     animation-delay: -2s;
-  }
-
-  /* Word strip (S/interactive/Marquee.tsx). */
-  html.js [data-wm-marquee] {
-    animation: wm-site-slide var(--wm-site-strip) linear infinite;
-  }
-  html.js [data-wm-marquee='reverse'] {
-    animation-duration: var(--wm-site-strip-reverse);
-    animation-direction: reverse;
   }
 
   /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands. */
