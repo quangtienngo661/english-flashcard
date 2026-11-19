@@ -188,7 +188,51 @@ function Stamp({ side, shown, strength, label, detail }: { side: 'review' | 'kno
   );
 }
 
-const FACE = 'cstack-face flex min-h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:min-h-117.5 [@media(max-height:46rem)]:min-h-80';
+// A fixed height, never a minimum: a card with a long meaning or many saved sentences is as tall as a short one (the back face shrinks its
+// text, then scrolls; `useFitHeight`). 440 px, 470 px from md, 320 px on a short window (the minimums it had before).
+const FACE = 'cstack-face flex h-110 flex-col overflow-hidden rounded-wm-dialog border border-wm-line bg-wm-surface shadow-wm-card md:h-117.5 [@media(max-height:46rem)]:h-80';
+
+/** The smallest the back face's content shrinks to; what still does not fit scrolls inside the card. */
+const FIT_FLOOR = 0.75;
+
+/**
+ * Fits the back face's content to its box: while the content is taller than the box, shrinks it (CSS `zoom` on `body`, so text, spacing
+ * and buttons scale together) down to `FIT_FLOOR`; what is still too tall scrolls inside `box`, which then takes the keyboard focus
+ * (`scrolls`). Measures the real heights, repeating a few times because wrapping does not change in proportion to the zoom. Runs again
+ * when `key` changes (another card, the forms arriving) and when the box's width changes.
+ */
+function useFitHeight(key: string) {
+  const box = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useLayoutEffect(() => {
+    const frame = box.current;
+    const content = body.current;
+    if (!frame || !content) return;
+    let active = true;
+    const fit = () => {
+      if (!active || !frame.clientHeight) return;
+      content.style.removeProperty('zoom');
+      let zoom = 1;
+      for (let step = 0; step < 6 && zoom > FIT_FLOOR && frame.scrollHeight > frame.clientHeight; step += 1) {
+        zoom = Math.max(FIT_FLOOR, zoom * frame.clientHeight / frame.scrollHeight * 0.99);
+        content.style.setProperty('zoom', String(zoom));
+      }
+      setScrolls(frame.scrollHeight > frame.clientHeight);
+    };
+    fit();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    observer?.observe(frame);
+    document.fonts?.addEventListener('loadingdone', fit);
+    void document.fonts?.ready.then(fit);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      document.fonts?.removeEventListener('loadingdone', fit);
+    };
+  }, [key]);
+  return { box, body, scrolls };
+}
 
 /** The front of a card behind the top one: word and part of speech, no request, no speaker. */
 function FitWord({ word, className }: { word: string; className: string }) {
@@ -248,6 +292,7 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
   const { content } = card;
   const forms = useForms(still ? undefined : content.lemma);
   const pron = content.pronunciation ? { scope: content.scope, pronunciation: content.pronunciation } : null;
+  const { box: fitBox, body: fitBody, scrolls } = useFitHeight(`${card.item_id}|${forms.join('|')}`);
   return (
     <div className="cstack-flip" data-flipped={flipped}>
       <div data-face="front" aria-hidden={flipped || undefined} inert={flipped} className={FACE}>
@@ -269,42 +314,51 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         </span>
       </div>
       <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'cstack-back')}>
-        <div className="flex min-w-0 flex-col gap-2 p-6">
-          <Badges card={card} />
-          <p className="flex flex-wrap items-baseline gap-x-2">
-            <span className="break-all font-wm-display text-wm-card-title text-wm-ink">{content.lemma}</span>
-            <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(content.pos)}</span>
-          </p>
-          <PronunciationLine text={content.lemma} line={pron} />
-          <p className="break-words font-wm-display text-wm-card-heading-mobile text-wm-ink">{content.meaning.text}</p>
-          {forms.length > 0 && (
-            <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">
-              {forms.map((form) => (
-                <li key={form} className="rounded-wm-key border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
-                  {form}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {content.examples[0] && (
-          <Block title={t('example')}>
-            <p className="break-words font-wm-sans text-wm-small text-wm-ink">
-              <TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} />
-            </p>
-          </Block>
-        )}
-        {content.sentences.length > 0 && (
-          <Block title={t('seen')} soft>
-            {content.sentences.map((sentence) => (
-              <p key={sentence} className="break-words font-wm-sans text-wm-small text-wm-ink">
-                <TargetWord text={sentence} lemma={content.lemma} forms={forms} />
+        <div
+          ref={fitBox}
+          data-fit-back=""
+          tabIndex={scrolls ? 0 : undefined}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-wm-accent"
+        >
+        <div ref={fitBody} className="flex flex-col">
+            <div className="flex min-w-0 flex-col gap-2 p-6">
+              <Badges card={card} />
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="break-all font-wm-display text-wm-card-title text-wm-ink">{content.lemma}</span>
+                <span className="font-wm-sans text-wm-small text-wm-muted">{shownPos(content.pos)}</span>
               </p>
-            ))}
-          </Block>
-        )}
-        {/* Mockup L1020, L1024: the level line at the foot of the back face. */}
-        <p className="mt-auto px-6 pb-5 pt-3 font-wm-sans text-wm-caption text-wm-muted">
+              <PronunciationLine text={content.lemma} line={pron} />
+              <p className="break-words font-wm-display text-wm-card-heading-mobile text-wm-ink">{content.meaning.text}</p>
+              {forms.length > 0 && (
+                <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">
+                  {forms.map((form) => (
+                    <li key={form} className="rounded-wm-key border border-wm-line px-2 py-0.5 font-wm-sans text-wm-caption text-wm-ink">
+                      {form}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {content.examples[0] && (
+              <Block title={t('example')}>
+                <p className="break-words font-wm-sans text-wm-small text-wm-ink">
+                  <TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} />
+                </p>
+              </Block>
+            )}
+            {content.sentences.length > 0 && (
+              <Block title={t('seen')} soft>
+                {content.sentences.map((sentence) => (
+                  <p key={sentence} className="break-words font-wm-sans text-wm-small text-wm-ink">
+                    <TargetWord text={sentence} lemma={content.lemma} forms={forms} />
+                  </p>
+                ))}
+              </Block>
+            )}
+        </div>
+        </div>
+        {/* Mockup L1020, L1024: the level line at the foot of the back face, outside the scroll. */}
+        <p className="px-6 pb-5 pt-3 font-wm-sans text-wm-caption text-wm-muted">
           {level === 0 ? t('newWord') : `${levelName(level)} · ${levelInterval(level)}`}
         </p>
       </div>
