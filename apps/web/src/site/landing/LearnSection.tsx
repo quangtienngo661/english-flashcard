@@ -63,7 +63,7 @@ export function LearnSection({ copy }: { copy: LandingCopy['learn'] }) {
                     key={bin.value}
                     data-bin=""
                     data-on={i === ACTIVE_BIN ? '' : undefined}
-                    className="group relative isolate flex flex-col gap-1 rounded-wm-control bg-wm-bg px-3 py-2 text-wm-ink before:absolute before:inset-0 before:-z-10 before:rounded-wm-control before:bg-wm-accent before:opacity-0 before:shadow-wm-btn data-on:text-wm-on-accent data-on:before:opacity-100 motion-safe:transition-colors motion-safe:duration-300 motion-safe:before:transition-opacity motion-safe:before:duration-300 md:flex-1 md:p-3.5"
+                    className="group relative isolate flex flex-col gap-1 rounded-wm-control bg-wm-bg px-3 py-2 text-wm-ink before:absolute before:inset-0 before:-z-10 before:rounded-wm-control before:bg-wm-accent before:opacity-0 before:shadow-wm-btn data-on:text-wm-on-accent data-on:before:opacity-100 motion-safe:transition-colors motion-safe:duration-300 motion-safe:before:transition-opacity motion-safe:before:duration-300 md:flex-1 md:p-3.5 lg:px-2.5 xl:px-3.5"
                   >
                     <span className={BIN_VALUE}>{bin.value}</span>
                     <span className="hidden font-wm-sans text-wm-caption text-wm-muted group-data-on:text-wm-on-accent group-data-on:opacity-80 md:block">{bin.label}</span>

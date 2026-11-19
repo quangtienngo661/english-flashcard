@@ -108,70 +108,8 @@
       "binValue": "7 days"
     },
     "groups": {
-      "title": "Build a deck from each text you read",
-      "lead": "Each word has its own review schedule. When one is due, Wordmet reminds you.",
-      "cards": [
-        {
-          "word": "mitigate",
-          "pos": "verb",
-          "meaning": "giảm nhẹ"
-        },
-        {
-          "word": "allocate",
-          "pos": "verb",
-          "meaning": "phân bổ"
-        },
-        {
-          "word": "substantial",
-          "pos": "adj",
-          "meaning": "đáng kể"
-        },
-        {
-          "word": "deteriorate",
-          "pos": "verb",
-          "meaning": "xấu đi"
-        },
-        {
-          "word": "inevitable",
-          "pos": "adj",
-          "meaning": "không tránh được"
-        },
-        {
-          "word": "viable",
-          "pos": "adj",
-          "meaning": "khả thi"
-        },
-        {
-          "word": "prevalent",
-          "pos": "adj",
-          "meaning": "phổ biến"
-        },
-        {
-          "word": "reluctant",
-          "pos": "adj",
-          "meaning": "miễn cưỡng"
-        },
-        {
-          "word": "advocate",
-          "pos": "verb",
-          "meaning": "ủng hộ"
-        },
-        {
-          "word": "scrutiny",
-          "pos": "noun",
-          "meaning": "sự xem xét kỹ"
-        },
-        {
-          "word": "fluctuate",
-          "pos": "verb",
-          "meaning": "dao động"
-        },
-        {
-          "word": "coherent",
-          "pos": "adj",
-          "meaning": "mạch lạc"
-        }
-      ],
+      "title": "Learn with topic decks",
+      "lead": "Pick a topic and a level, and Wordmet builds the deck. Each word has its own review schedule.",
       "label": "Sample topic decks",
       "kind": "Ready-made topic",
       "words": "{count} words",

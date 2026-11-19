@@ -108,70 +108,8 @@
       "binValue": "7 ngày"
     },
     "groups": {
-      "title": "Tạo nhóm từ cho mỗi bài đọc",
-      "lead": "Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.",
-      "cards": [
-        {
-          "word": "mitigate",
-          "pos": "verb",
-          "meaning": "giảm nhẹ"
-        },
-        {
-          "word": "allocate",
-          "pos": "verb",
-          "meaning": "phân bổ"
-        },
-        {
-          "word": "substantial",
-          "pos": "adj",
-          "meaning": "đáng kể"
-        },
-        {
-          "word": "deteriorate",
-          "pos": "verb",
-          "meaning": "xấu đi"
-        },
-        {
-          "word": "inevitable",
-          "pos": "adj",
-          "meaning": "không tránh được"
-        },
-        {
-          "word": "viable",
-          "pos": "adj",
-          "meaning": "khả thi"
-        },
-        {
-          "word": "prevalent",
-          "pos": "adj",
-          "meaning": "phổ biến"
-        },
-        {
-          "word": "reluctant",
-          "pos": "adj",
-          "meaning": "miễn cưỡng"
-        },
-        {
-          "word": "advocate",
-          "pos": "verb",
-          "meaning": "ủng hộ"
-        },
-        {
-          "word": "scrutiny",
-          "pos": "noun",
-          "meaning": "sự xem xét kỹ"
-        },
-        {
-          "word": "fluctuate",
-          "pos": "verb",
-          "meaning": "dao động"
-        },
-        {
-          "word": "coherent",
-          "pos": "adj",
-          "meaning": "mạch lạc"
-        }
-      ],
+      "title": "Học theo nhóm chủ đề",
+      "lead": "Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.",
       "label": "Các nhóm chủ đề mẫu",
       "kind": "Chủ đề có sẵn",
       "words": "{count} từ",

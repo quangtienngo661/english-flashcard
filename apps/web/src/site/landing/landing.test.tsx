@@ -38,7 +38,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
       'H1 Nhớ từ lâu bền, tự tin dùng trong câu',
-      'H2 Tạo nhóm từ cho mỗi bài đọc',
+      'H2 Học theo nhóm chủ đề',
       'H2 Từ lúc gặp đến lúc dùng được',
       'H2 Học miễn phí, bứt phá cùng Pro',
       'H2 Câu hỏi thường gặp',
@@ -52,7 +52,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const { container } = renderHome();
     const ids = [...container.querySelectorAll('section[id]')].map((s) => s.id);
     expect(ids).toEqual(['nhom-tu', 'cach-hoc', 'gia', 'hoi-dap']);
-    expect(screen.getByRole('region', { name: 'Tạo nhóm từ cho mỗi bài đọc' }).id).toBe('nhom-tu');
+    expect(screen.getByRole('region', { name: 'Học theo nhóm chủ đề' }).id).toBe('nhom-tu');
     expect(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }).id).toBe('cach-hoc');
     expect(screen.getByRole('region', { name: 'Học miễn phí, bứt phá cùng Pro' }).id).toBe('gia');
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
@@ -66,11 +66,23 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
 
   it('QM8-6 shows the drafted wording instead of "ngăn" and Figma\'s refund note', () => {
     renderHome();
-    expect(screen.getByText('Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.')).toBeInTheDocument();
+    expect(screen.getByText('Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.')).toBeInTheDocument();
     expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(screen.getByText('ôn lại sau')).toBeInTheDocument();
     expect(pricing().queryByText('Không hoàn tiền sau khi đã thanh toán.')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/ngăn|Không hoàn tiền tự động/);
+  });
+
+  it('shows five ready-made topic decks with Travel as the first active deck', () => {
+    renderHome();
+    const groups = within(screen.getByRole('region', { name: 'Học theo nhóm chủ đề' }));
+    const decks = within(groups.getByRole('region', { name: 'Các nhóm chủ đề mẫu' }));
+    for (const name of ['Travel', 'Food & Drink', 'Work & Jobs', 'Body & Health', 'Education']) {
+      expect(decks.getByText(name)).toBeInTheDocument();
+    }
+    expect(within(decks.getByRole('list')).getByText('destination')).toBeInTheDocument();
+    expect(decks.queryByText(/thẻ chờ/)).toBeNull();
+    expect(decks.queryByText('fluctuate')).toBeNull();
   });
 
   it('the practice demo has one tally line like the app, with no right or wrong words on the rows', () => {

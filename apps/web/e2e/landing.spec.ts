@@ -229,6 +229,11 @@ test.describe('LR26 without JavaScript', () => {
     expect(checked).toBeGreaterThanOrEqual(3);
     expect(out).toEqual([]);
 
+    const topics = page.getByRole('region', { name: L.groups.label });
+    const centre = topics.getByRole('list');
+    await expect(centre.getByRole('listitem')).toHaveText([...L.groups.topics[0].words, '+124 từ']);
+    await expect(centre.getByText('destination')).toHaveCSS('opacity', '1');
+
     const plans = page.getByRole('region', { name: L.plans.title });
     for (const amount of Object.values(FALLBACK_LANDING_DATA.prices)) await expect(plans.getByText(vnd(amount), { exact: true })).toBeVisible();
 

@@ -28,8 +28,8 @@ describe('Landing copy (M8.5)', () => {
     const vietnamese = /[ăâđêôơưĂÂĐÊÔƠƯàáãèéìíòóùúýÀÁÃÈÉÌÍÒÓÙÚÝẠ-ỹ]/;
     const left = [...landing(en)].filter(([, v]) => vietnamese.test(v)).map(([k]) => k);
     expect(left.filter((k) => !/(^|\.)meaning$/.test(k))).toEqual([]);
-    // 18 glosses: 5 in the hero cycle, 12 deck cards, 1 in the note demo. The app shows Vietnamese meanings, so the demo does too.
-    expect(left).toHaveLength(18);
+    // 6 glosses: 5 in the hero cycle, 1 in the note demo. The app shows Vietnamese meanings, so the demo does too.
+    expect(left).toHaveLength(6);
     // Prose is never copied from vi; what stays equal is data (words, IPA, numbers) and the names "Pro" and "−{percent}%".
     const flatVi = landing(vi);
     const prose = [...landing(en)].filter(([k]) => /^(hero|plans|faq|final)\.|^groups\.(title|lead)$|^learn\.\w+\.(eyebrow|title|body)$|^learn\.(title|lead)$/.test(k));
