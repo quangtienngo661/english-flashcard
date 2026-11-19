@@ -340,7 +340,7 @@
       "freeList": [
         "Save words, look up meanings, and listen to pronunciation",
         "Automatic review schedule",
-        "3 practice sessions a day",
+        "{count} practice sessions a day",
         "Try AI practice sentences and lookups"
       ],
       "freeSignup": "Create a free account",
@@ -363,7 +363,7 @@
         "More AI credits than the Free plan"
       ],
       "proList": [
-        "30 practice sessions a day",
+        "{count} practice sessions a day",
         "Everything in the Free plan"
       ],
       "proSignup": "Create an account"
@@ -789,9 +789,7 @@
     },
     "today": {
       "title": "Today",
-      "heroChipPriority": "Up next · priority cards",
       "heroChip": "Up next",
-      "heroLine": "{total, plural, one {# word} other {# words}} in the deck",
       "yourGroups": "Your decks",
       "seeAll": "See all {count, plural, one {# deck} other {# decks}}",
       "emptyTitle": "No decks yet",
@@ -800,12 +798,8 @@
       "backlogTitle": "{count, plural, one {# word} other {# words}} not reviewed in a while",
       "backlogLine": "{name} deck, over {days, number} days overdue",
       "see": "See",
-      "levelsTitle": "{count, plural, one {# word} other {# words}} by level",
-      "levelsHint": "Due / total",
-      "levelHelp": "Review interval of {level}",
       "allDone": "All cards done for today. Come back tomorrow.",
       "heroWaiting": "Cards waiting today",
-      "heroBar": "Cards waiting today by kind",
       "legendPriority": "{count, number} priority",
       "legendDue": "{count, number} due",
       "legendNew": "{count, number} new",
@@ -826,7 +820,6 @@
         "streak": "{days, plural, one {# day} other {# days}} in a row"
       },
       "month": {
-        "label": "study calendar",
         "streak": "{days, plural, one {# day} other {# days}} in a row",
         "today": "Back to today",
         "prev": "Previous month",
@@ -1369,14 +1362,12 @@
         "reopens": "Resets at {time}",
         "group": {
           "name": "By deck",
-          "body": "One deck, filtered by level or priority words.",
           "chip": "{name} · {count, number}",
           "empty": "No decks yet.",
           "more": "+{count, plural, one {# deck} other {# decks}}"
         },
         "weak": {
           "name": "Weak words",
-          "body": "Wrong twice in the last 5 questions. Lowest level first.",
           "chip": "{lemma} · wrong {wrong}/{counted}",
           "more": "+{count, plural, one {# word} other {# words}}",
           "start": "Practice {count, plural, one {# word} other {# words}}",
@@ -1384,14 +1375,12 @@
         },
         "priority": {
           "name": "Priority",
-          "body": "Words you marked Needs review, oldest first.",
           "chip": "{count, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
           "start": "Practice {count, plural, one {# word} other {# words}}",
           "empty": "No priority words yet."
         },
         "all": {
           "name": "Practice all",
-          "body": "Every word you’re learning, least practiced first.",
           "chip": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
           "start": "Practice {count, plural, one {# question} other {# questions}}",
           "empty": "No words in your decks yet."
@@ -1578,7 +1567,6 @@
         "know": "Known",
         "next": "Next",
         "noteWrong": "Press Enter to put {lemma} at the top of its deck, back to Level 1. Next keeps its schedule.",
-        "noteKnowEnter": "Press Enter to mark it Known: {lemma} moves up a level. Not sure? Choose Needs review.",
         "noteHint": "Hints don’t change the grading, but a correct answer after a hint has no Known button.",
         "phoneHint": "Tap an answer. It’s graded right away.",
         "failed": "Couldn’t save your answer. Check your connection and try again.",
@@ -1645,7 +1633,6 @@
         "countRight": "{count, number} correct",
         "countWrong": "{count, number} incorrect",
         "levelMove": "From {from} to {to}",
-        "noteKnowTap": "Tap Known and {lemma} moves up a level.",
         "noteWrongTap": "Needs review: {lemma} goes to the top of its deck, back to Level 1. Next keeps its schedule.",
         "legend": {
           "label": "Keys",

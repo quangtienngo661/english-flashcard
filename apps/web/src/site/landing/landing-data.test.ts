@@ -35,8 +35,21 @@ describe('landing data (M8.3)', () => {
         { question: 'Câu B?', answer: 'Trả lời B.' },
         { question: 'Câu A?', answer: 'Trả lời A.' },
       ],
+      sessions: { free: 3, pro: 30 },
       source: 'api',
     });
+  });
+
+  it('owner 19/11/2026: the sessions per day the build read are used; a missing or bad pair keeps the fallback 3 and 30, not the prices and FAQ', () => {
+    const base = { prices: { '1': 89000, '3': 240000, '12': 699000 }, faq: [] };
+    expect(parseLandingData(JSON.stringify({ ...base, sessions: { free: 5, pro: 40 } }))).toEqual({ ...base, sessions: { free: 5, pro: 40 }, source: 'api' });
+    for (const sessions of [undefined, { free: 0, pro: 40 }, { free: 5 }, { free: '5', pro: 40 }, { free: 2.5, pro: 40 }, null]) {
+      expect(parseLandingData(JSON.stringify({ ...base, sessions }))).toEqual({ ...base, sessions: { free: 3, pro: 30 }, source: 'api' });
+    }
+  });
+
+  it('the fallback has 3 and 30 sessions a day, the seeded settings', () => {
+    expect(FALLBACK_LANDING_DATA.sessions).toEqual({ free: 3, pro: 30 });
   });
 
   it('the English FAQ has five nonempty items in plain English', () => {
@@ -52,7 +65,7 @@ describe('landing data (M8.3)', () => {
   });
 
   it('an empty published FAQ stays empty (the home page then has no FAQ section)', () => {
-    expect(parseLandingData('{"prices":{"1":79000,"3":199000,"12":599000},"faq":[]}')).toEqual({ prices: SEEDED, faq: [], source: 'api' });
+    expect(parseLandingData('{"prices":{"1":79000,"3":199000,"12":599000},"faq":[]}')).toEqual({ prices: SEEDED, faq: [], sessions: { free: 3, pro: 30 }, source: 'api' });
   });
 
   it('the fallback holds the six seeded questions (UI copy round 2), in order', () => {
@@ -96,7 +109,7 @@ describe('landing data (M8.3)', () => {
 
     it('set to valid JSON: api', () => {
       process.env.WORDMET_LANDING_DATA = '{"prices":{"1":1000,"3":2000,"12":3000},"faq":[]}';
-      expect(landingData()).toEqual({ prices: { '1': 1000, '3': 2000, '12': 3000 }, faq: [], source: 'api' });
+      expect(landingData()).toEqual({ prices: { '1': 1000, '3': 2000, '12': 3000 }, faq: [], sessions: { free: 3, pro: 30 }, source: 'api' });
     });
   });
 });

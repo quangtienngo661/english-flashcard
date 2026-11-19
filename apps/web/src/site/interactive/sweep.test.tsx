@@ -85,7 +85,7 @@ describe('the light on the Pro card border', () => {
     window.matchMedia = ((query: string) =>
       ({ matches: false, media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList) as typeof window.matchMedia;
     document.documentElement.classList.add('js');
-    render(<PricingSection copy={vi_.Landing.plans} prices={FALLBACK_LANDING_DATA.prices} locale="vi" />);
+    render(<PricingSection copy={vi_.Landing.plans} prices={FALLBACK_LANDING_DATA.prices} sessions={FALLBACK_LANDING_DATA.sessions} locale="vi" />);
     const ring = document.querySelector('[data-pro-ring]');
     expect(ring).not.toBeNull();
     expect(ring?.querySelector('[data-pro-card]')).not.toBeNull();

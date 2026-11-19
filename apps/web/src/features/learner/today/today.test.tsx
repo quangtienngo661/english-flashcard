@@ -50,16 +50,16 @@ const problem = (status: number) => () =>
   new Response(JSON.stringify({ type: 'about:blank', title: 'Error', status }), { status, headers: { 'content-type': 'application/problem+json' } });
 
 describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
-  it('the hero is the first deck of the Today order: big waiting count, the three-part bar, Học · Ôn', async () => {
+  it('the hero is the first deck of the Today order: big waiting count, one line of what waits, Học · Ôn (owner 18/11/2026: no bar, no legend)', async () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
     const hero = await screen.findByRole('region', { name: 'Công nghệ' });
-    expect(within(hero).getByText('Ôn tiếp · có thẻ ưu tiên')).toBeInTheDocument();
+    expect(within(hero).getByText('Ôn tiếp')).toBeInTheDocument();
     expect(within(hero).getByText('10')).toBeInTheDocument();
     expect(within(hero).getByText('Thẻ chờ hôm nay')).toBeInTheDocument();
-    expect(within(hero).getByText('nhóm có 18 từ')).toBeInTheDocument();
-    expect(within(hero).getByText('2 ưu tiên')).toBeInTheDocument();
-    expect(within(hero).getByText('5 đến hạn')).toBeInTheDocument();
-    expect(within(hero).getByText('3 mới')).toBeInTheDocument();
+    expect(within(hero).getByText('2 ưu tiên · 5 đến hạn · 3 mới')).toBeInTheDocument();
+    expect(within(hero).queryByText(/nhóm có/)).toBeNull();
+    expect(within(hero).queryByRole('img')).toBeNull();
+    expect(within(hero).queryByRole('list')).toBeNull();
     expect(within(hero).getByRole('link', { name: 'Học' })).toHaveAttribute('href', '/vi/app/review?group=g-tech&mode=new');
     expect(within(hero).getByRole('link', { name: 'Học' })).toHaveAttribute('data-variant', 'secondary');
     const recall = within(hero).getByRole('link', { name: 'Ôn' });
@@ -77,7 +77,7 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     renderApp(<TodayPage />, { chrome: true, routes: routes([group('g-big', 'Lớn', { priority: 0, due: 262962, new: 0 }, 123456)]) });
     const hero = await screen.findByRole('region', { name: 'Lớn' });
     expect(within(hero).getByText('262.962')).toBeInTheDocument();
-    expect(within(hero).getByText('nhóm có 123.456 từ')).toBeInTheDocument();
+    expect(within(hero).getByText('262.962 đến hạn')).toBeInTheDocument();
   });
 
   it('sessions/last 200: score, wrong words and the links', async () => {
@@ -183,14 +183,14 @@ describe('TodayPage (Figma 117:4425 / 117:4712)', () => {
     expect(within(box).getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/vi/app/group/backlog?id=g-ielts');
   });
 
-  it('words by level: due / total per level', async () => {
-    renderApp(<TodayPage />, { chrome: true, routes: routes(GROUPS) });
-    const box = await screen.findByRole('region', { name: '128 từ theo bậc' });
-    expect(within(box).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Mới8 / 20', 'Bậc 18 / 36', 'Bậc 28 / 48', 'Bậc 38 / 24', 'Bậc 40 / 0', 'Bậc 50 / 0',
-    ]);
-    // Each level past Mới explains its review interval behind a "?" (mockup L819-865).
-    expect(within(box).getAllByRole('button', { name: /^Khoảng ôn lại/ })).toHaveLength(5);
+  it('owner 18/11/2026: no words-by-level box; "Nhóm của bạn" comes right after the hero and the last practice moves to the side column', async () => {
+    renderApp(<TodayPage />, { chrome: true, routes: { ...routes(GROUPS), 'GET /v1/practice/sessions/last': () => Response.json(LAST) } });
+    const last = await screen.findByRole('region', { name: 'Lần luyện gần nhất' });
+    expect(screen.queryByRole('region', { name: /từ theo bậc/ })).toBeNull();
+    const hero = screen.getByRole('region', { name: 'Công nghệ' });
+    const groups = screen.getByRole('heading', { name: 'Nhóm của bạn' });
+    expect(hero.compareDocumentPosition(groups) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('complementary')).toContainElement(last);
   });
 
   it('no deck yet → the empty block and topic rows', async () => {

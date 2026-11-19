@@ -90,7 +90,8 @@ export function BlankInput({ outcome, onSubmit }: { outcome: Outcome | null; onS
             'invisible col-start-1 row-start-1 min-w-[5ch] whitespace-pre border-b-3 border-transparent px-2',
           )}
         >
-          {field.shown}
+          {/* Owner 18/11/2026: an empty mirror has no baseline, so the blank sank below the sentence; a zero-width space keeps one. */}
+          {field.shown || '​'}
         </span>
         <input
           aria-label={t('blankLabel')}

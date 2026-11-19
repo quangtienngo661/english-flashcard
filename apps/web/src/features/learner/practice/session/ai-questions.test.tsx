@@ -143,7 +143,7 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(await screen.findByText('deployed', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('Meaning in the sentence')).toBeInTheDocument();
     expect(screen.queryByText('What does the bold word mean here?')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1triển khai (phần mềm)', '2giao hàng', '3bảo vệ', '4trì hoãn']);
+    expect(screen.getAllByRole('button', { name: /^(triển khai|giao hàng|bảo vệ|trì hoãn)/ }).map((b) => b.textContent)).toEqual(['triển khai (phần mềm)', 'giao hàng', 'bảo vệ', 'trì hoãn']);
     await userEvent.keyboard('1');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-m/answer')[0]?.body).toEqual({ choice: 0 }));
   });
@@ -153,7 +153,7 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(await screen.findByText('We ___ the app to the server yesterday.')).toBeInTheDocument();
     expect(screen.getByText('Sentence multiple choice')).toBeInTheDocument();
     expect(screen.queryByText('Choose the word that fills the gap')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^1deployed/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^deployed/ })).toBeInTheDocument();
   });
 
   it('F.14: a wrong sentence-MCQ pick is struck in the sentence, before the right word', async () => {
@@ -362,6 +362,15 @@ describe('Blank focus (T17, QA10)', () => {
     finePointer();
     renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
     expect(await screen.findByRole('textbox', { name: 'Missing word' })).toHaveFocus();
+  });
+
+  it('owner 18/11/2026: the empty blank sits on the sentence line: its width mirror always holds a character (a zero-width space)', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes(cloze()) });
+    const blank = await screen.findByRole('textbox', { name: 'Missing word' });
+    const mirror = blank.previousElementSibling as HTMLElement;
+    expect(mirror.textContent).toBe('​');
+    await userEvent.type(blank, 'vital');
+    expect(mirror.textContent).toBe('vital');
   });
 });
 

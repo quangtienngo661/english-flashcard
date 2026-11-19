@@ -5,10 +5,14 @@ import { SpeakSentence, SpeakWord } from './SpeakButton';
 import { installSpeech, makeVoice } from '@/lib/speech/speech-test-support';
 import { renderApp } from '@/test-utils/render-app';
 
+const playAudio = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>(async () => undefined));
+vi.mock('@/lib/speech/audio-player', () => ({ playAudio }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
 afterEach(() => {
   cleanup();
+  playAudio.mockReset();
+  playAudio.mockImplementation(async () => undefined);
   vi.unstubAllGlobals();
 });
 
@@ -107,5 +111,29 @@ describe('pronunciation buttons', () => {
     for (const name of ['Listen', 'Listen to the sentence']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
+  });
+
+  it('owner 18/11/2026: with a pre-made file the word speaker plays it, not the browser voice', async () => {
+    const synth = installSpeech([makeVoice('en-US')]);
+    renderApp(<SpeakWord text="geological" audioUrl="https://audio.test/geological-us.mp3" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Nghe phát âm' }));
+    expect(playAudio).toHaveBeenCalledExactlyOnceWith('https://audio.test/geological-us.mp3');
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+
+  it('a file that fails to play falls back to the browser US voice', async () => {
+    const us = makeVoice('en-US');
+    const synth = installSpeech([us]);
+    playAudio.mockRejectedValueOnce(new Error('network'));
+    renderApp(<SpeakWord text="geological" audioUrl="https://audio.test/geological-us.mp3" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Nghe phát âm' }));
+    expect(synth.speak).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ text: 'geological', voice: us }));
+  });
+
+  it('with a file but no browser voice the speaker still shows and plays the file', async () => {
+    vi.stubGlobal('speechSynthesis', undefined);
+    renderApp(<SpeakWord text="geological" audioUrl="https://audio.test/geological-us.mp3" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Nghe phát âm' }));
+    expect(playAudio).toHaveBeenCalledExactlyOnceWith('https://audio.test/geological-us.mp3');
   });
 });

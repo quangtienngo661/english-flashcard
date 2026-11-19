@@ -14,6 +14,8 @@ import { PracticeSession } from './PracticeSession';
 import { againBody } from './SessionSummary';
 
 const hardReplace = vi.fn();
+const playAudio = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>(async () => undefined));
+vi.mock('@/lib/speech/audio-player', () => ({ playAudio }));
 vi.mock('next/navigation', () => ({
   useParams: () => ({ locale: testRoute.locale }),
   usePathname: () => '/vi/app/practice/session',
@@ -98,7 +100,7 @@ const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 
 
 describe('PracticeSession (K/60–K/67)', () => {
   const cases = [
-    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Known', action: 'known', note: 'Press Enter to mark it Known: deploy moves up a level. Not sure? Choose Needs review.' },
+    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Known', action: 'known', note: null },
     { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Next', action: null, note: "deploy isn’t due yet, so its schedule stays the same." },
     { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Next', action: null, note: "Hints don’t change the grading, but a correct answer after a hint has no Known button." },
     { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Needs review', action: 'needs_review', note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
@@ -132,7 +134,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText(note)).toBeInTheDocument();
+    // Owner 18/11/2026: case 1 has no note line (the Known button says it).
+    if (note) expect(await screen.findByText(note)).toBeInTheDocument();
+    else expect(await screen.findByRole('button', { name: 'Known' })).toBeInTheDocument();
+    expect(screen.queryByText(/moves up a level|Press Enter to mark/)).toBeNull();
     const buttons = screen.getAllByRole('button').filter((b) => /^(Needs review|Known|Next)/.test(b.textContent ?? ''));
     expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Needs review', 'Known'] : id === 4 ? ['Next', 'Needs review'] : ['Needs review', 'Next']);
     buttons.forEach((b) => expect(b.querySelector('kbd')).toBeNull());
@@ -146,7 +151,6 @@ describe('PracticeSession (K/60–K/67)', () => {
   });
 
   it.each([
-    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Press Enter to mark it Known: deploy moves up a level. Not sure? Choose Needs review.' },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn’t due yet, so its schedule stays the same." },
     { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don’t change the grading, but a correct answer after a hint has no Known button." },
     { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Press Enter to put deploy at the top of its deck, back to Level 1. Next keeps its schedule.' },
@@ -294,7 +298,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     // QM9-9: the chip names the kind; no instruction line under it (P.13).
     expect(screen.getByText('Multiple choice')).toBeInTheDocument();
     expect(screen.queryByText('Choose the word with this meaning')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^[1-4]/ }).map((b) => b.textContent)).toEqual(['1deploy', '2delay', '3deliver', '4defend']);
+    expect(screen.getAllByRole('button', { name: /^de(ploy|lay|liver|fend)$/ }).map((b) => b.textContent)).toEqual(['deploy', 'delay', 'deliver', 'defend']);
   });
 
   it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {
@@ -303,7 +307,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     const live = container.querySelector('[data-live="result"]')!;
     expect(live).toHaveAttribute('aria-live', 'polite');
     expect(live).toHaveTextContent('');
-    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^delay/ }));
     await waitFor(() => expect(live).toHaveTextContent('Incorrect. deploy · triển khai (phần mềm)'));
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Needs review/ }));
   });
@@ -311,8 +315,9 @@ describe('PracticeSession (K/60–K/67)', () => {
   it.each(cases)('F.14: focus still lands on the primary action ($primary) of case $id', async ({ answer, primary, note }) => {
     renderApp(<PracticeSession />, { session: true, routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
-    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
-    await screen.findByText(note);
+    await userEvent.click(screen.getByRole('button', { name: /^deploy/ }));
+    await screen.findByRole('button', { name: new RegExp(`^${primary}$`) });
+    if (note) await screen.findByText(note);
     expect(document.activeElement).toBe(screen.getByRole('button', { name: new RegExp(`^${primary}$`) }));
   });
 
@@ -349,8 +354,8 @@ describe('PracticeSession (K/60–K/67)', () => {
     const [answer] = posts(view_.calls, '/v1/practice/items/item-4/answer');
     expect(answer.body).toEqual({ choice: 1 });
     expect(answer.headers['Idempotency-Key']).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^1deploy/ })).toHaveTextContent('Correct answer');
-    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveTextContent('Your choice');
+    expect(screen.getByRole('button', { name: /^deploy/ })).toHaveTextContent('Correct answer');
+    expect(screen.getByRole('button', { name: /^delay/ })).toHaveTextContent('Your choice');
     // F.14 (the result ticket): "Incorrect" and the case note on the stub, the meaning as the lead with its definition, then the answer
     // word with its speaker; the nested answer box is gone.
     const panel = screen.getByText('Incorrect').closest<HTMLElement>('[data-feedback]')!;
@@ -375,8 +380,8 @@ describe('PracticeSession (K/60–K/67)', () => {
       }),
     });
     await screen.findByText('triển khai');
-    await userEvent.click(screen.getByRole('button', { name: /^1deploy/ }));
-    await userEvent.click(screen.getByRole('button', { name: /^2delay/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^deploy/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^delay/ }));
     release();
     await screen.findByText('Incorrect');
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
@@ -389,10 +394,10 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(card).toHaveClass('motion-safe:animate-wm-card-rise');
     await userEvent.keyboard('2');
     await screen.findByText('Incorrect');
-    expect(screen.getByRole('button', { name: /^2delay/ })).toHaveClass('motion-safe:animate-wm-wiggle-soft');
-    expect(screen.getByRole('button', { name: /^1deploy/ })).not.toHaveClass('motion-safe:animate-wm-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^delay/ })).toHaveClass('motion-safe:animate-wm-wiggle-soft');
+    expect(screen.getByRole('button', { name: /^deploy/ })).not.toHaveClass('motion-safe:animate-wm-wiggle-soft');
     // As in the prototype, the check pops only when the learner chose it.
-    expect(screen.getByRole('button', { name: /^1deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-wm-pop-in');
+    expect(screen.getByRole('button', { name: /^deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-wm-pop-in');
     expect(screen.getByText('Incorrect').closest('[data-feedback]')).toHaveClass('motion-safe:animate-wm-panel-drop');
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('server')).toBeInTheDocument();
@@ -412,9 +417,9 @@ describe('PracticeSession (K/60–K/67)', () => {
       }),
     });
     expect(await screen.findByText('True or false')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /^1True/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^True/ }));
     expect(await screen.findByText('Correct')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^1True/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
+    expect(screen.getByRole('button', { name: /^True/ }).querySelector('svg')).toHaveClass('motion-safe:animate-wm-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
     await userEvent.click(screen.getByRole('button', { name: /Known/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
@@ -804,6 +809,19 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
     expect(screen.getByText('Incorrect')).toBeInTheDocument();
+  });
+
+  it('owner 18/11/2026: the speaker by the answer word plays the pre-made US file of the answer, not the browser voice', async () => {
+    const synth = installSpeech([makeVoice('en-US')]);
+    playAudio.mockClear();
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ audio: { uk: 'https://audio.test/deploy-uk.mp3', us: 'https://audio.test/deploy-us.mp3' } })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await userEvent.click(await screen.findByRole('button', { name: 'Listen' }));
+    expect(playAudio).toHaveBeenCalledExactlyOnceWith('https://audio.test/deploy-us.mp3');
+    expect(synth.speak).not.toHaveBeenCalled();
   });
 });
 

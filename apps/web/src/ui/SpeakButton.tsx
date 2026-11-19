@@ -11,12 +11,17 @@ function stopReviewKeys(event: KeyboardEvent<HTMLButtonElement>) {
   if (event.key === ' ' || event.key === '1' || event.key === '2') event.stopPropagation();
 }
 
-function VoiceButton({ text, voice, label, children }: {
+function VoiceButton({ text, voice, audioUrl = null, label, children }: {
   text: string;
-  voice: SpeechSynthesisVoice;
+  voice: SpeechSynthesisVoice | null;
+  /** A pre-made file: played first; the browser voice reads `text` only when it fails. */
+  audioUrl?: string | null;
   label: string;
   children: ReactNode;
 }) {
+  const fallback = () => {
+    if (voice) speak(text, voice);
+  };
   return (
     <button
       type="button"
@@ -25,7 +30,8 @@ function VoiceButton({ text, voice, label, children }: {
       onKeyDown={stopReviewKeys}
       onClick={(event) => {
         event.stopPropagation();
-        speak(text, voice);
+        if (audioUrl) void playAudio(audioUrl).catch(fallback);
+        else fallback();
       }}
     >
       {children}
@@ -33,13 +39,16 @@ function VoiceButton({ text, voice, label, children }: {
   );
 }
 
-/** One speaker button in the American voice (owner 27/10/2026: no UK button, an icon instead of "US"). */
-export function SpeakWord({ text }: { text: string }) {
+/**
+ * One speaker button in the American voice (owner 27/10/2026: no UK button, an icon instead of "US"). With `audioUrl` (owner 18/11/2026)
+ * it plays the pre-made US file and shows even without a browser voice; the browser voice reads only when the file fails.
+ */
+export function SpeakWord({ text, audioUrl = null }: { text: string; audioUrl?: string | null }) {
   const { us } = useVoices();
   const t = useTranslations('App.speak');
-  if (!us) return null;
+  if (!us && !audioUrl) return null;
   return (
-    <VoiceButton text={text} voice={us} label={t('word')}>
+    <VoiceButton text={text} voice={us} audioUrl={audioUrl} label={t('word')}>
       <Volume2 aria-hidden="true" className="size-5" />
     </VoiceButton>
   );

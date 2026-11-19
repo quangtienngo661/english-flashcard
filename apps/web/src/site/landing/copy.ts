@@ -1,14 +1,8 @@
-import { getMessages } from 'next-intl/server';
 import type vi from '../../../messages/vi.json';
 import type { AppLocale } from '@/i18n/routing';
 
 /** The `Landing` message tree (M8 Figma A §7). Sections receive their own slice as props. */
 export type LandingCopy = (typeof vi)['Landing'];
-
-export async function getLandingCopy(): Promise<LandingCopy> {
-  const messages = (await getMessages()) as unknown as { Landing: LandingCopy };
-  return messages.Landing;
-}
 
 /** Fills `{name}` placeholders; an unknown name stays as written. */
 export function fill(message: string, values: Record<string, string | number>): string {

@@ -340,7 +340,7 @@
       "freeList": [
         "Lưu từ, tra nghĩa và nghe phát âm",
         "Lịch ôn tự động",
-        "3 phiên luyện mỗi ngày",
+        "{count} phiên luyện mỗi ngày",
         "Dùng thử câu luyện và tra từ bằng AI"
       ],
       "freeSignup": "Tạo tài khoản miễn phí",
@@ -363,7 +363,7 @@
         "Nhiều lượt AI hơn gói Free"
       ],
       "proList": [
-        "30 phiên luyện mỗi ngày",
+        "{count} phiên luyện mỗi ngày",
         "Mọi quyền lợi của gói Free"
       ],
       "proSignup": "Tạo tài khoản"
@@ -789,9 +789,7 @@
     },
     "today": {
       "title": "Hôm nay",
-      "heroChipPriority": "Ôn tiếp · có thẻ ưu tiên",
       "heroChip": "Ôn tiếp",
-      "heroLine": "nhóm có {total, number} từ",
       "yourGroups": "Nhóm của bạn",
       "seeAll": "Xem tất cả {count, number} nhóm",
       "emptyTitle": "Chưa có nhóm nào",
@@ -800,12 +798,8 @@
       "backlogTitle": "{count, number} từ lâu chưa ôn",
       "backlogLine": "Nhóm {name}, quá hạn hơn {days, number} ngày",
       "see": "Xem",
-      "levelsTitle": "{count, number} từ theo bậc",
-      "levelsHint": "Đến hạn / tổng",
-      "levelHelp": "Khoảng ôn lại của {level}",
       "allDone": "Đã xong thẻ hôm nay. Ngày mai ôn tiếp.",
       "heroWaiting": "Thẻ chờ hôm nay",
-      "heroBar": "Thẻ chờ hôm nay theo loại",
       "legendPriority": "{count, number} ưu tiên",
       "legendDue": "{count, number} đến hạn",
       "legendNew": "{count, number} mới",
@@ -826,7 +820,6 @@
         "streak": "{days, number} ngày liên tiếp"
       },
       "month": {
-        "label": "lịch học",
         "streak": "{days, number} ngày liên tiếp",
         "today": "Về hôm nay",
         "prev": "Tháng trước",
@@ -1369,14 +1362,12 @@
         "reopens": "Mở lại lúc {time}",
         "group": {
           "name": "Theo nhóm",
-          "body": "Một nhóm, lọc theo bậc hoặc từ ưu tiên.",
           "chip": "{name} · {count, number}",
           "empty": "Chưa có nhóm nào.",
           "more": "+{count, number} nhóm"
         },
         "weak": {
           "name": "Từ hay sai",
-          "body": "Sai 2 lần trong 5 câu gần nhất. Xếp theo bậc thấp trước.",
           "chip": "{lemma} · sai {wrong}/{counted}",
           "more": "+{count, number} từ",
           "start": "Luyện {count, number} từ",
@@ -1384,14 +1375,12 @@
         },
         "priority": {
           "name": "Đang ưu tiên",
-          "body": "Từ bạn đã bấm Cần ôn lại, bấm lâu nhất trước.",
           "chip": "{count, number} từ trong {groups, number} nhóm",
           "start": "Luyện {count, number} từ",
           "empty": "Chưa có từ nào đang ưu tiên."
         },
         "all": {
           "name": "Luyện tất cả",
-          "body": "Mọi từ đang học, từ lâu chưa luyện trước.",
           "chip": "{words, number} từ trong {groups, number} nhóm",
           "start": "Luyện {count, number} câu",
           "empty": "Chưa có từ nào trong nhóm."
@@ -1578,7 +1567,6 @@
         "know": "Đã biết",
         "next": "Câu tiếp",
         "noteWrong": "Nhấn Enter để đưa {lemma} lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.",
-        "noteKnowEnter": "Nhấn Enter là Đã biết: {lemma} lên một bậc. Chưa chắc thì bấm Cần ôn lại.",
         "noteHint": "Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.",
         "phoneHint": "Chạm vào đáp án để chấm ngay.",
         "failed": "Không lưu được câu trả lời. Kiểm tra mạng rồi thử lại.",
@@ -1645,7 +1633,6 @@
         "countRight": "{count, number} câu đúng",
         "countWrong": "{count, number} câu sai",
         "levelMove": "Từ {from} sang {to}",
-        "noteKnowTap": "Bấm Đã biết thì {lemma} lên một bậc.",
         "noteWrongTap": "Cần ôn lại: {lemma} lên đầu nhóm, về Bậc 1. Câu tiếp: giữ lịch ôn.",
         "legend": {
           "label": "Phím",

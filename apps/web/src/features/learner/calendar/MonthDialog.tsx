@@ -135,8 +135,8 @@ export function MonthDialog({ month, today, onMonth, onDay, onClose }: MonthDial
       <div className="flex flex-col gap-3 px-4 pb-5 pt-2 md:gap-4 md:px-7 md:pb-6 md:pt-7">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-3 max-md:pr-10">
           <div className="flex items-center gap-3">
+            {/* Owner 19/11/2026: no "lịch học" eyebrow; the month is the title. */}
             <div className="flex flex-col">
-              <span className="text-wm-meta text-wm-muted">{t('label')}</span>
               <Heading slot="title" className={cn('font-wm-display font-extrabold leading-tight text-wm-ink', RAW.title)}>
                 {format.date(`${month}-15T12:00:00Z`, 'monthYear')}
               </Heading>
