@@ -171,6 +171,75 @@
           "pos": "adj",
           "meaning": "mạch lạc"
         }
+      ],
+      "label": "Các nhóm chủ đề mẫu",
+      "kind": "Chủ đề có sẵn",
+      "words": "{count} từ",
+      "more": "+{count} từ",
+      "start": "Bắt đầu với",
+      "prev": "Nhóm trước",
+      "next": "Nhóm sau",
+      "topics": [
+        {
+          "name": "Travel",
+          "level": "B1",
+          "total": 129,
+          "words": [
+            "destination",
+            "accommodation",
+            "departure",
+            "baggage",
+            "customs"
+          ]
+        },
+        {
+          "name": "Food & Drink",
+          "level": "B1",
+          "total": 73,
+          "words": [
+            "ingredient",
+            "flavour",
+            "appetite",
+            "nutrition",
+            "feast"
+          ]
+        },
+        {
+          "name": "Work & Jobs",
+          "level": "B1–B2",
+          "total": 179,
+          "words": [
+            "colleague",
+            "career",
+            "agenda",
+            "client",
+            "contract"
+          ]
+        },
+        {
+          "name": "Body & Health",
+          "level": "B1",
+          "total": 63,
+          "words": [
+            "injury",
+            "infection",
+            "muscle",
+            "pharmacy",
+            "clinic"
+          ]
+        },
+        {
+          "name": "Education",
+          "level": "B1",
+          "total": 157,
+          "words": [
+            "assignment",
+            "curriculum",
+            "deadline",
+            "admission",
+            "certificate"
+          ]
+        }
       ]
     },
     "learn": {

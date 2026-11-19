@@ -632,6 +632,45 @@
   }
 }
 
+/* The landing uses the app's deck stack and arc, with a viewport-wide track. */
+.wm-topic-track {
+  --fade: 28px;
+  position: relative;
+  height: 23rem;
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+}
+@media (width >= 48rem) {
+  .wm-topic-track {
+    --fade: min(9vw, 120px);
+    height: 33.5rem;
+  }
+}
+.wm-topic-words {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 0.4em;
+  margin: 0.9em 0 0.6em;
+}
+.wm-topic-words > li {
+  border-radius: 0.6em;
+  padding: 0.45em 0.65em;
+  font: 600 1em/1 var(--font-wm-display);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .wm-topic-words > li {
+    animation: wm-rise var(--transition-duration-wm-rise) var(--ease-wm-rise) both;
+    animation-delay: calc(220ms + var(--i) * 70ms);
+  }
+}
+html:not(.js) .wm-topic-track .gcar-slot {
+  transition: none;
+}
+.wm-topic-track .gcar-slot[data-abs='0']:hover .gstack {
+  translate: none;
+}
+
 /* Một nhóm opening from the carousel (motion doc §3, flip.ts): while the stack flies (FLIP 380ms), the other parts come in from
    blur(12px) translateY(12px), 340ms, 60ms then 22ms apart. Closing: they dissolve in 150ms before the route changes. */
 @keyframes wm-page-in {

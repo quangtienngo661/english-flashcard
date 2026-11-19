@@ -1,4 +1,4 @@
-import { arcSlot, type ArcSlot } from '@/features/learner/groups/carousel';
+import { arcSlot, type ArcSlot } from '@/lib/group-carousel';
 
 /** Fit the outer decks inside the viewport's fade when space permits. */
 export function topicStep(viewportWidth: number): number {
