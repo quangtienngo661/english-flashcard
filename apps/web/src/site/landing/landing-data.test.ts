@@ -109,7 +109,7 @@ describe('landing data (M8.3)', () => {
 
     it('set to valid JSON: api', () => {
       process.env.WORDMET_LANDING_DATA = '{"prices":{"1":1000,"3":2000,"12":3000},"faq":[]}';
-      expect(landingData()).toEqual({ prices: { '1': 1000, '3': 2000, '12': 3000 }, faq: [], source: 'api' });
+      expect(landingData()).toEqual({ prices: { '1': 1000, '3': 2000, '12': 3000 }, faq: [], sessions: { free: 3, pro: 30 }, source: 'api' });
     });
   });
 });

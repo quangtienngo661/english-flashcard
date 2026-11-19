@@ -1,7 +1,7 @@
 import type { LandingData } from './landing-data';
 
 /**
- * What the home page shows when `next build` could not read the API (M8.3): the seeded prices (design §10.6) and the six FAQ items
+ * What the home page shows when `next build` could not read the API (M8.3): the seeded prices (design §10.6), the seeded sessions per day and the six FAQ items
  * the migrations seed, verbatim (M8.1, replaced by UI copy round 2 in 20261114180000_landing_faq_copy). Keep both copies equal.
  */
 export const FALLBACK_LANDING_DATA: LandingData = {
@@ -32,5 +32,7 @@ export const FALLBACK_LANDING_DATA: LandingData = {
       answer: 'Từ điển của Wordmet dựa trên các bộ dữ liệu có giấy phép mở, và mỗi nghĩa được đội Wordmet duyệt trước khi đến tay người học. Danh sách nguồn có ở trang Nguồn dữ liệu. Nghĩa do AI gợi ý luôn có nhãn riêng để bạn kiểm lại.',
     },
   ],
+  // The seeded settings `freePracticeSessionsPerDay` and `proPracticeSessionsPerDay` (apps/api settings.definitions.ts).
+  sessions: { free: 3, pro: 30 },
   source: 'fallback',
 };
