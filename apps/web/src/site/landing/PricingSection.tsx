@@ -6,6 +6,7 @@ import { ButtonLink } from '@/ui/ButtonLink';
 import { Reveal } from '../interactive/Reveal';
 import { Container } from '../layout/Container';
 import { fill, formatVnd, type LandingCopy } from './copy';
+import type { Sessions } from './landing-data';
 import { CheckList, Glow, SectionHead } from './parts';
 import { FREE_PRICE, PERIOD_PRICE } from './styles';
 
@@ -18,7 +19,7 @@ const AI_ICONS = [Bot, Pen, Search, Zap];
  * M8.6: the cards come in (Free, then Pro 120 ms later and without blur, Figma scene 6); while the Pro card is on screen a light runs
  * on its border (`data-pro-ring`, owner 13/11/2026: the blurred light around it bulged out) and its four AI badges pulse (CSS, `data-wm-on`). F.19: one glow layer (`.wm-price-drift`) drifts behind both cards.
  */
-export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['plans']; prices: Prices; locale: AppLocale }) {
+export function PricingSection({ copy, prices, sessions, locale }: { copy: LandingCopy['plans']; prices: Prices; sessions: Sessions; locale: AppLocale }) {
   const register = `/${locale}/app/register`;
   return (
     <section id="gia" aria-labelledby="gia-title" className="relative isolate scroll-mt-15 overflow-x-clip md:scroll-mt-17">
@@ -26,15 +27,21 @@ export function PricingSection({ copy, prices, locale }: { copy: LandingCopy['pl
       <Container className="flex flex-col gap-8 pt-12 pb-10 md:items-center md:gap-11 md:pt-18 md:pb-12">
         <SectionHead id="gia-title" title={copy.title} lead={copy.lead} align="phone-left" />
         <div className="flex w-full flex-col gap-6 xl:w-auto xl:flex-row xl:items-stretch">
-          <FreeCard copy={copy} register={register} locale={locale} />
-          <ProCard copy={copy} prices={prices} register={register} locale={locale} />
+          <FreeCard copy={copy} register={register} locale={locale} items={withCount(copy.freeList, sessions.free, locale)} />
+          <ProCard copy={copy} prices={prices} register={register} locale={locale} items={withCount(copy.proList, sessions.pro, locale)} />
         </div>
       </Container>
     </section>
   );
 }
 
-function FreeCard({ copy, register, locale }: { copy: LandingCopy['plans']; register: string; locale: AppLocale }) {
+/** Owner 19/11/2026: the "{count} phiên luyện mỗi ngày" row takes the admin's number, written the locale's way (1.200 / 1,200). */
+function withCount(items: string[], count: number, locale: AppLocale): string[] {
+  const n = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'vi-VN').format(count);
+  return items.map((item) => fill(item, { count: n }));
+}
+
+function FreeCard({ copy, register, locale, items }: { copy: LandingCopy['plans']; register: string; locale: AppLocale; items: string[] }) {
   return (
     <Reveal as="article" className="flex flex-col gap-4.5 rounded-wm-card border border-wm-line bg-wm-surface p-6 shadow-wm-soft md:p-8 xl:w-90">
       <h3 className="font-wm-display text-wm-card-title text-wm-ink">{copy.free}</h3>
@@ -42,7 +49,7 @@ function FreeCard({ copy, register, locale }: { copy: LandingCopy['plans']; regi
         <span className={cn(FREE_PRICE, 'text-wm-ink')}>{formatVnd(0, locale)}</span>
         <span className="font-wm-sans text-wm-small text-wm-muted">{copy.freeNote}</span>
       </p>
-      <CheckList items={copy.freeList} />
+      <CheckList items={items} />
       <ButtonLink reload variant="secondary" href={register} className="w-full xl:mt-auto">
         {copy.freeSignup}
       </ButtonLink>
@@ -50,7 +57,7 @@ function FreeCard({ copy, register, locale }: { copy: LandingCopy['plans']; regi
   );
 }
 
-function ProCard({ copy, prices, register, locale }: { copy: LandingCopy['plans']; prices: Prices; register: string; locale: AppLocale }) {
+function ProCard({ copy, prices, register, locale, items }: { copy: LandingCopy['plans']; prices: Prices; register: string; locale: AppLocale; items: string[] }) {
   const best = bestPeriod(prices);
   const [aiTitle, ...aiRows] = copy.aiList;
   return (
@@ -91,7 +98,7 @@ function ProCard({ copy, prices, register, locale }: { copy: LandingCopy['plans'
           })}
         </ul>
 
-        <CheckList items={copy.proList} />
+        <CheckList items={items} />
 
         <ButtonLink reload variant="primary" href={register} className="w-full">
           {copy.proSignup}

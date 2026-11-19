@@ -21,7 +21,7 @@ export function HomePage({ copy, data, locale }: { copy: LandingCopy; data: Land
       <WordStrip copy={copy.strip} />
       <GroupsSection copy={copy.groups} />
       <LearnSection copy={copy.learn} />
-      <PricingSection copy={copy.plans} prices={data.prices} locale={locale} />
+      <PricingSection copy={copy.plans} prices={data.prices} sessions={data.sessions} locale={locale} />
       <FaqSection copy={copy.faq} items={locale === 'en' ? LANDING_FAQ_EN : data.faq} />
       <FinalCta copy={copy.final} locale={locale} />
     </>
