@@ -268,7 +268,12 @@ function CustomizeForm({
       <div className={cn('flex flex-col gap-6', hasWords && 'md:flex-row md:gap-8')}>
         {wordsColumn}
         <section className="flex min-w-0 flex-1 flex-col gap-3">
-          <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('questions')}</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('questions')}</h3>
+            <span className="flex-1" />
+            {scopeMode && <span className="whitespace-nowrap text-wm-meta text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
+            <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
+          </div>
           <div className="flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1">
             <TypeRow label={t('types.mcq_definition')} on={mcq} onChange={setMcq} />
             <TypeRow label={t('types.true_false_definition')} on={trueFalse} onChange={setTrueFalse} />
@@ -376,11 +381,6 @@ function CustomizeForm({
           </p>
         )}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('count')}</span>
-            <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
-            {scopeMode && <span className="whitespace-nowrap text-wm-meta text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
-          </div>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
             <Select
