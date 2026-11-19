@@ -820,7 +820,6 @@
         "streak": "{days, plural, one {# day} other {# days}} in a row"
       },
       "month": {
-        "label": "study calendar",
         "streak": "{days, plural, one {# day} other {# days}} in a row",
         "today": "Back to today",
         "prev": "Previous month",

@@ -820,7 +820,6 @@
         "streak": "{days, number} ngày liên tiếp"
       },
       "month": {
-        "label": "lịch học",
         "streak": "{days, number} ngày liên tiếp",
         "today": "Về hôm nay",
         "prev": "Tháng trước",
