@@ -40,7 +40,7 @@ describe('Landing copy (M8.5)', () => {
   it('the English landing follows the EN conventions of UI copy round 2 and the same rules as the Vietnamese one', () => {
     const flat = [...landing(en)];
     expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words forever, use them in a sentence');
-    expect(en.Landing.hero.line2).toContain(en.Landing.hero.accent);
+    expect('accent' in en.Landing.hero).toBe(false);
     expect(flat.filter(([, v]) => /!/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /\bPro\b.*\bAI\b|\bAI\b.*\bPro\b/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /trial/i.test(v)).map(([k]) => k)).toEqual([]);
@@ -50,9 +50,9 @@ describe('Landing copy (M8.5)', () => {
     expect([en.Landing.learn.practice.right, en.Landing.learn.practice.wrong]).toEqual(['Correct', 'Incorrect']);
   });
 
-  it('the hero heading is Figma\'s, with "trong câu" in its second line', () => {
+  it('the hero heading is Figma\'s, in one colour (no accent key)', () => {
     expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu bền, tự tin dùng trong câu');
-    expect(vi.Landing.hero.line2).toContain(vi.Landing.hero.accent);
+    expect('accent' in vi.Landing.hero).toBe(false);
   });
 
   it('no Landing string says "!", "Vui lòng" or "Chưa mở bán", and none names the review boxes ("ngăn", design §3.3)', () => {
