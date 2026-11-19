@@ -79,7 +79,12 @@ export function ChoiceRow({ n, word, state, note, className }: { n: number; word
         className,
       )}
     >
-      <span className="inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-key bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent">{n}</span>
+      <span className={cn(
+        'inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-key font-wm-sans text-wm-label',
+        state === 'right' ? 'bg-wm-surface text-wm-pass ring-1 ring-inset ring-wm-pass'
+          : state === 'wrong' ? 'bg-wm-surface text-wm-fail ring-1 ring-inset ring-wm-fail'
+            : 'bg-wm-accent-soft text-wm-accent',
+      )}>{n}</span>
       <span className="min-w-0 flex-1 truncate">{word}</span>
       {state && note && (
         <span className={cn('inline-flex items-center gap-1 font-wm-sans text-wm-label', state === 'right' ? 'text-wm-pass' : 'text-wm-fail')}>

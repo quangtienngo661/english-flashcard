@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { renderApp } from '@/test-utils/render-app';
@@ -9,22 +9,22 @@ import { ProgressBar } from './ProgressBar';
 import { Stepper } from './Stepper';
 
 describe('ui practice kit', () => {
-  it('AnswerOption marks its state with ✓ / ✗ only (owner 18/11/2026): the note is for screen readers, no number key cap', () => {
+  it('AnswerOption shows the shortcut number while keeping the state note for screen readers', () => {
     renderApp(
       <>
-        <AnswerOption state="wrong" label="dominate" note="Bạn chọn" />
-        <AnswerOption state="correct" label="deteriorate" note="Đáp án đúng" />
-        <AnswerOption state="dim" label="evaporate" />
-        <AnswerOption state="idle" label="accumulate" />
+        <AnswerOption state="wrong" label="dominate" kbd="1" note="Bạn chọn" />
+        <AnswerOption state="correct" label="deteriorate" kbd="2" note="Đáp án đúng" />
+        <AnswerOption state="dim" label="evaporate" kbd="3" />
+        <AnswerOption state="idle" label="accumulate" kbd="4" />
       </>,
       { chrome: false },
     );
-    expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent(/^dominate\s*Bạn chọn$/);
     expect(screen.getByText('Bạn chọn')).toHaveClass('sr-only');
     expect(screen.getByText('Đáp án đúng')).toHaveClass('sr-only');
-    expect(screen.getByRole('button', { name: /evaporate/ })).toHaveTextContent(/^evaporate$/);
-    expect(screen.getByRole('button', { name: /accumulate/ })).toHaveTextContent(/^accumulate$/);
-    expect(document.querySelector('button kbd')).toBeNull();
+    for (const [index, name] of [/^dominate.*Bạn chọn$/, /^deteriorate.*Đáp án đúng$/, /^evaporate$/, /^accumulate$/].entries()) {
+      const option = screen.getByRole('button', { name });
+      expect(within(option).getByText(String(index + 1))).toBeInTheDocument();
+    }
   });
 
   it('AnswerOption calls onPress with its press, and not once disabled', () => {

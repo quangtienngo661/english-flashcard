@@ -143,7 +143,9 @@ describe('AI question types (K/78a–K/81)', () => {
     expect(await screen.findByText('deployed', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('Meaning in the sentence')).toBeInTheDocument();
     expect(screen.queryByText('What does the bold word mean here?')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^(triển khai|giao hàng|bảo vệ|trì hoãn)/ }).map((b) => b.textContent)).toEqual(['triển khai (phần mềm)', 'giao hàng', 'bảo vệ', 'trì hoãn']);
+    const options = screen.getAllByRole('button', { name: /^(triển khai|giao hàng|bảo vệ|trì hoãn)/ });
+    expect(options).toHaveLength(4);
+    ['triển khai (phần mềm)', 'giao hàng', 'bảo vệ', 'trì hoãn'].forEach((label, index) => expect(options[index]).toHaveAccessibleName(label));
     await userEvent.keyboard('1');
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-m/answer')[0]?.body).toEqual({ choice: 0 }));
   });

@@ -298,7 +298,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     // QM9-9: the chip names the kind; no instruction line under it (P.13).
     expect(screen.getByText('Multiple choice')).toBeInTheDocument();
     expect(screen.queryByText('Choose the word with this meaning')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^de(ploy|lay|liver|fend)$/ }).map((b) => b.textContent)).toEqual(['deploy', 'delay', 'deliver', 'defend']);
+    const options = screen.getAllByRole('button', { name: /^de(ploy|lay|liver|fend)$/ });
+    expect(options).toHaveLength(4);
+    ['deploy', 'delay', 'deliver', 'defend'].forEach((label, index) => expect(options[index]).toHaveAccessibleName(label));
   });
 
   it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {

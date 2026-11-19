@@ -6,7 +6,7 @@ import { AnswerOption, type AnswerOptionState } from '@/ui/AnswerOption';
 import type { Outcome } from './use-practice-session';
 
 /**
- * Choice buttons (K/60–K/62; Figma "Lựa chọn" 3:51, frame 178:5755): the option (keys 1–4 pick it, no cap since 18/11/2026), and after the answer the right one
+ * Choice buttons (K/60–K/62; Figma "Lựa chọn" 3:51, frame 178:5755): the option (keys 1–4 pick it), and after the answer the right one
  * ("Đáp án đúng"), the wrong pick ("Bạn chọn") and the rest dimmed. 2 × 2 on desktop, stacked on phones.
  */
 export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, columns = 2 }: {
@@ -30,6 +30,7 @@ export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, 
             key={index}
             state={state}
             label={option}
+            kbd={String(index + 1)}
             note={right ? (chosen ? t('chosenRight') : t('rightOption')) : chosen ? t('chosen') : undefined}
             isDisabled={disabled || answered}
             pop={right && chosen}
