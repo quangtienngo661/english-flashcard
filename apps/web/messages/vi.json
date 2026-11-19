@@ -340,7 +340,7 @@
       "freeList": [
         "Lưu từ, tra nghĩa và nghe phát âm",
         "Lịch ôn tự động",
-        "3 phiên luyện mỗi ngày",
+        "{count} phiên luyện mỗi ngày",
         "Dùng thử câu luyện và tra từ bằng AI"
       ],
       "freeSignup": "Tạo tài khoản miễn phí",
@@ -363,7 +363,7 @@
         "Nhiều lượt AI hơn gói Free"
       ],
       "proList": [
-        "30 phiên luyện mỗi ngày",
+        "{count} phiên luyện mỗi ngày",
         "Mọi quyền lợi của gói Free"
       ],
       "proSignup": "Tạo tài khoản"
@@ -820,7 +820,6 @@
         "streak": "{days, number} ngày liên tiếp"
       },
       "month": {
-        "label": "lịch học",
         "streak": "{days, number} ngày liên tiếp",
         "today": "Về hôm nay",
         "prev": "Tháng trước",

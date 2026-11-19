@@ -89,6 +89,17 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
 });
 
 describe('PricingSection (QM8-2: three prices, the saving, no struck price, no selection)', () => {
+  it('owner 19/11/2026: the sessions per day come from the data, not fixed text (3 and 30 from the fallback, 5 and 1.200 from the API)', () => {
+    const { unmount } = renderHome();
+    expect(pricing().getByText('3 phiên luyện mỗi ngày')).toBeInTheDocument();
+    expect(pricing().getByText('30 phiên luyện mỗi ngày')).toBeInTheDocument();
+    unmount();
+    renderHome({ ...FALLBACK_LANDING_DATA, sessions: { free: 5, pro: 1200 }, source: 'api' });
+    expect(pricing().getByText('5 phiên luyện mỗi ngày')).toBeInTheDocument();
+    expect(pricing().getByText('1.200 phiên luyện mỗi ngày')).toBeInTheDocument();
+    expect(pricing().queryByText(/^(3|30) phiên/)).toBeNull();
+  });
+
   it('Free costs 0 ₫ and asks for no card; Pro has the "Có AI" chip', () => {
     renderHome();
     expect(pricing().getByText(`0${NBSP}₫`, keepSpaces)).toBeInTheDocument();
@@ -208,6 +219,13 @@ describe('the English landing (/en, 14/11/2026)', () => {
       ['Create an account', '/en/app/register'],
       ['Create a free account', '/en/app/register'],
     ]);
+  });
+
+  it('the sessions per day follow the data in English too', () => {
+    renderEnglish({ ...FALLBACK_LANDING_DATA, sessions: { free: 5, pro: 1200 }, source: 'api' });
+    const pro = within(screen.getByRole('region', { name: 'Start free, accelerate with Pro' }));
+    expect(pro.getByText('5 practice sessions a day')).toBeInTheDocument();
+    expect(pro.getByText('1,200 practice sessions a day')).toBeInTheDocument();
   });
 
   it('prices follow the build data in English money: free, three Pro periods, the saving and the monthly figure', () => {

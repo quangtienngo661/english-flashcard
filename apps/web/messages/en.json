@@ -340,7 +340,7 @@
       "freeList": [
         "Save words, look up meanings, and listen to pronunciation",
         "Automatic review schedule",
-        "3 practice sessions a day",
+        "{count} practice sessions a day",
         "Try AI practice sentences and lookups"
       ],
       "freeSignup": "Create a free account",
@@ -363,7 +363,7 @@
         "More AI credits than the Free plan"
       ],
       "proList": [
-        "30 practice sessions a day",
+        "{count} practice sessions a day",
         "Everything in the Free plan"
       ],
       "proSignup": "Create an account"
@@ -820,7 +820,6 @@
         "streak": "{days, plural, one {# day} other {# days}} in a row"
       },
       "month": {
-        "label": "study calendar",
         "streak": "{days, plural, one {# day} other {# days}} in a row",
         "today": "Back to today",
         "prev": "Previous month",

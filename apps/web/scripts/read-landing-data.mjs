@@ -17,6 +17,20 @@ function pricesOf(body) {
   return /** @type {Record<'1' | '3' | '12', number>} */ (out);
 }
 
+/**
+ * The prices answer: its prices (required) and, from an API that has them, `practice_sessions_per_day` (owner 19/11/2026).
+ * @param {unknown} body @returns {{ prices: Record<'1' | '3' | '12', number>; sessions: { free: number; pro: number } | null } | null}
+ */
+function priceAnswerOf(body) {
+  const prices = pricesOf(body);
+  if (!prices) return null;
+  const pair = body && typeof body === 'object' ? /** @type {{ practice_sessions_per_day?: unknown }} */ (body).practice_sessions_per_day : undefined;
+  const whole = (/** @type {unknown} */ n) => typeof n === 'number' && Number.isInteger(n) && n > 0;
+  const sessions = pair && typeof pair === 'object' && whole(/** @type {any} */ (pair).free) && whole(/** @type {any} */ (pair).pro)
+    ? { free: /** @type {any} */ (pair).free, pro: /** @type {any} */ (pair).pro } : null;
+  return { prices, sessions };
+}
+
 /** @param {unknown} body @returns {{ question: string; answer: string }[] | null} */
 function faqOf(body) {
   const items = body && typeof body === 'object' ? /** @type {{ items?: unknown }} */ (body).items : undefined;
@@ -60,17 +74,17 @@ async function read(fetchImpl, url, timeoutMs, shape) {
 
 /**
  * @param {{ baseUrl: string; required: boolean; offline: boolean; timeoutMs?: number; fetchImpl?: typeof fetch }} options
- * @returns {Promise<string | undefined>} `JSON.stringify({ prices, faq })`, or undefined when the API cannot give both.
+ * @returns {Promise<string | undefined>} `JSON.stringify({ prices, faq, sessions? })`, or undefined when the API cannot give both.
  */
 export async function readLandingData({ baseUrl, required, offline, timeoutMs = 5000, fetchImpl = fetch }) {
   if (offline) return undefined;
   const base = baseUrl.replace(/\/+$/, '');
   try {
-    const [prices, faq] = await Promise.all([
-      read(fetchImpl, `${base}/v1/public/prices`, timeoutMs, pricesOf),
+    const [{ prices, sessions }, faq] = await Promise.all([
+      read(fetchImpl, `${base}/v1/public/prices`, timeoutMs, priceAnswerOf),
       read(fetchImpl, `${base}/v1/public/faq`, timeoutMs, faqOf),
     ]);
-    return JSON.stringify({ prices, faq });
+    return JSON.stringify(sessions ? { prices, faq, sessions } : { prices, faq });
   } catch (error) {
     const url = error instanceof Unavailable ? error.url : base;
     const reason = error instanceof Error ? error.message : String(error);
