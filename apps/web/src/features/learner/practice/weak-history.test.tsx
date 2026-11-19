@@ -76,7 +76,7 @@ describe('WeakWordsPage (K/56)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Luyện 3 từ của nhóm Công nghệ' }));
     await waitFor(() => expect(posts(view.calls, '/v1/practice/sessions')).toHaveLength(1));
     expect(posts(view.calls, '/v1/practice/sessions')[0].body).toEqual({
-      source: 'weak', group_id: TECH, types: ['mcq_definition', 'true_false_definition', 'type_word'], count: 10,
+      source: 'weak', group_id: TECH, types: ['mcq_definition', 'true_false_definition', 'type_word'], count: 3,
     });
   });
 
