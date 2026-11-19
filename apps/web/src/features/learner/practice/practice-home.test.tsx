@@ -145,7 +145,34 @@ describe('PracticePage (K/51)', () => {
     expect(within(card).getByRole('link', { name: '+4 từ' })).toHaveAttribute('href', '/vi/app/practice/weak');
     await userEvent.click(within(card).getByRole('button', { name: 'Luyện 6 từ' }));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 12 });
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 6 });
+  });
+
+  it('owner 19/11/2026: "Luyện N từ" opens N questions; a fixed session max M caps both the label and the count at M', async () => {
+    const capped = { ...CONFIG, practice: { ...CONFIG.practice, max_questions_per_session: 5 } };
+    const view = renderApp(<PracticePage />, { routes: routes({ 'GET /v1/me/app-config': () => Response.json(capped) }) });
+    const weakCard = await screen.findByRole('listitem', { name: 'Từ hay sai' });
+    await userEvent.click(await within(weakCard).findByRole('button', { name: 'Luyện 5 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 5 });
+    const priority = screen.getByRole('listitem', { name: 'Đang ưu tiên' });
+    await userEvent.click(within(priority).getByRole('button', { name: 'Luyện 4 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(2));
+    expect(starts(view.calls)[1].body).toEqual({ source: 'priority', types: THREE, count: 4 });
+  });
+
+  it('owner 19/11/2026: in the "scope words" mode the weak start takes every weak word, above the default count', async () => {
+    const scope = { ...CONFIG, practice: { ...CONFIG.practice, max_questions_per_session: 5, default_questions_per_session: 10, session_max_mode: 'scope_words' } };
+    const view = renderApp(<PracticePage />, {
+      routes: routes({
+        'GET /v1/me/app-config': () => Response.json(scope),
+        'GET /v1/practice/weak-words/groups': () => Response.json({ total: 13, items: [{ group_id: TECH, name: 'Công nghệ', count: 13 }] }),
+      }),
+    });
+    const card = await screen.findByRole('listitem', { name: 'Từ hay sai' });
+    await userEvent.click(await within(card).findByRole('button', { name: 'Luyện 13 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 13 });
   });
 
   it('Đang ưu tiên and Luyện tất cả count from the decks', async () => {
