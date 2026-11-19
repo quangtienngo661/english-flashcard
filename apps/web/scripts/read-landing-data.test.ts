@@ -45,6 +45,24 @@ describe('readLandingData (M8.3)', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('owner 19/11/2026: practice_sessions_per_day in the prices answer goes into the data as sessions', async () => {
+    const fetchImpl = fakeFetch({
+      '/v1/public/prices': json({ ...PRICES, practice_sessions_per_day: { free: 5, pro: 40 } }),
+      '/v1/public/faq': json({ items: [] }),
+    });
+    await expect(readLandingData({ baseUrl: BASE, required: false, offline: false, fetchImpl })).resolves.toBe(
+      '{"prices":{"1":79000,"3":199000,"12":599000},"faq":[],"sessions":{"free":5,"pro":40}}',
+    );
+  });
+
+  it('an older API without practice_sessions_per_day still gives prices and FAQ, without sessions', async () => {
+    const fetchImpl = fakeFetch({ '/v1/public/prices': json(PRICES), '/v1/public/faq': json({ items: [] }) });
+    await expect(readLandingData({ baseUrl: BASE, required: false, offline: false, fetchImpl })).resolves.toBe(
+      '{"prices":{"1":79000,"3":199000,"12":599000},"faq":[]}',
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('an empty published FAQ is valid data: faq []', async () => {
     const fetchImpl = fakeFetch({ '/v1/public/prices': json(PRICES), '/v1/public/faq': json({ items: [] }) });
     expect(await readLandingData({ baseUrl: BASE, required: false, offline: false, fetchImpl })).toBe(
