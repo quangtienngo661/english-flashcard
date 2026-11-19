@@ -8,7 +8,9 @@ import type { SettingsService } from './settings.service.js';
 describe('GET /v1/public/prices (giao diện mới §10.6)', () => {
   it('returns the Pro prices from the settings, exactly', async () => {
     const controller = new PublicPricesController({ get: async () => SETTINGS_DEFAULTS } as unknown as SettingsService);
-    expect(await controller.prices()).toEqual({ currency: 'VND', prices: { '1': 79000, '3': 199000, '12': 599000 } });
+    expect(await controller.prices()).toEqual({
+      currency: 'VND', prices: { '1': 79000, '3': 199000, '12': 599000 }, practice_sessions_per_day: { free: 3, pro: 30 },
+    });
   });
 
   it('follows an admin change at once', async () => {
@@ -18,6 +20,15 @@ describe('GET /v1/public/prices (giao diện mới §10.6)', () => {
     };
     const controller = new PublicPricesController({ get: async () => values } as unknown as SettingsService);
     expect((await controller.prices()).prices['1']).toBe(89000);
+  });
+
+  it('carries the practice sessions per day of Free and Pro, following an admin change (owner 19/11/2026: the landing reads them)', async () => {
+    const values: AppSettings = {
+      ...SETTINGS_DEFAULTS,
+      entitlements: { ...SETTINGS_DEFAULTS.entitlements, freePracticeSessionsPerDay: 5, proPracticeSessionsPerDay: 40 },
+    };
+    const controller = new PublicPricesController({ get: async () => values } as unknown as SettingsService);
+    expect((await controller.prices()).practice_sessions_per_day).toEqual({ free: 5, pro: 40 });
   });
 
   it('is public and limited by IP with public.prices.ip', () => {
