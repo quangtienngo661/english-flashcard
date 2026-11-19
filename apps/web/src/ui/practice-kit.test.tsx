@@ -9,28 +9,30 @@ import { ProgressBar } from './ProgressBar';
 import { Stepper } from './Stepper';
 
 describe('ui practice kit', () => {
-  it('AnswerOption shows the note of its state: "Bạn chọn" on the wrong pick, "Đáp án đúng" on the right one', () => {
+  it('AnswerOption marks its state with ✓ / ✗ only (owner 18/11/2026): the note is for screen readers, no number key cap', () => {
     renderApp(
       <>
-        <AnswerOption state="wrong" label="dominate" kbd="3" note="Bạn chọn" />
-        <AnswerOption state="correct" label="deteriorate" kbd="1" note="Đáp án đúng" />
-        <AnswerOption state="dim" label="evaporate" kbd="4" />
-        <AnswerOption state="idle" label="accumulate" kbd="2" />
+        <AnswerOption state="wrong" label="dominate" note="Bạn chọn" />
+        <AnswerOption state="correct" label="deteriorate" note="Đáp án đúng" />
+        <AnswerOption state="dim" label="evaporate" />
+        <AnswerOption state="idle" label="accumulate" />
       </>,
       { chrome: false },
     );
-    expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent('Bạn chọn');
-    expect(screen.getByRole('button', { name: /deteriorate/ })).toHaveTextContent('Đáp án đúng');
-    expect(screen.getByRole('button', { name: /evaporate/ })).toHaveTextContent(/^4evaporate$/);
-    expect(screen.getByRole('button', { name: /accumulate/ })).toHaveTextContent(/^2accumulate$/);
+    expect(screen.getByRole('button', { name: /dominate/ })).toHaveTextContent(/^dominate\s*Bạn chọn$/);
+    expect(screen.getByText('Bạn chọn')).toHaveClass('sr-only');
+    expect(screen.getByText('Đáp án đúng')).toHaveClass('sr-only');
+    expect(screen.getByRole('button', { name: /evaporate/ })).toHaveTextContent(/^evaporate$/);
+    expect(screen.getByRole('button', { name: /accumulate/ })).toHaveTextContent(/^accumulate$/);
+    expect(document.querySelector('button kbd')).toBeNull();
   });
 
   it('AnswerOption calls onPress with its press, and not once disabled', () => {
     const onPress = vi.fn();
-    const { rerender } = renderApp(<AnswerOption state="idle" label="deploy" kbd="1" onPress={onPress} />, { chrome: false });
+    const { rerender } = renderApp(<AnswerOption state="idle" label="deploy" onPress={onPress} />, { chrome: false });
     fireEvent.click(screen.getByRole('button', { name: /deploy/ }));
     expect(onPress).toHaveBeenCalledOnce();
-    rerender(<AnswerOption state="dim" label="deploy" kbd="1" onPress={onPress} isDisabled />);
+    rerender(<AnswerOption state="dim" label="deploy" onPress={onPress} isDisabled />);
     fireEvent.click(screen.getByRole('button', { name: /deploy/ }));
     expect(onPress).toHaveBeenCalledOnce();
   });

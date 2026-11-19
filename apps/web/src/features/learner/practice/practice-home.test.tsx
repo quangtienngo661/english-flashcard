@@ -74,7 +74,7 @@ describe('PracticePage (K/51)', () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
     // Figma 99:3169: the count is big, then the questions and their types.
-    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '34 từ trong 3 nhóm')).toBeInTheDocument();
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '34 từ cần luyện trong 3 nhóm')).toBeInTheDocument();
     expect(within(hero).getByText('12 câu, trộn ba kiểu: Trắc nghiệm, Đúng/sai, Gõ từ.')).toBeInTheDocument();
     await userEvent.click(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/practice/session'));
@@ -109,6 +109,13 @@ describe('PracticePage (K/51)', () => {
     for (const name of names) expect(within(list).getByRole('button', { name: `Tùy chỉnh: ${name}` })).toBeInTheDocument();
   });
 
+  it('owner 18/11/2026: a source row is its title and its chips, with no description line', async () => {
+    renderApp(<PracticePage />, { routes: routes() });
+    const card = await screen.findByRole('listitem', { name: 'Theo nhóm' });
+    expect(within(card).queryByText('Một nhóm, lọc theo bậc hoặc từ ưu tiên.')).toBeNull();
+    expect(screen.queryByText('Mọi từ đang học, từ lâu chưa luyện trước.')).toBeNull();
+  });
+
   it('Theo nhóm (owner 27/10/2026): decks are shown but not buttons; the only action is a visible [Tùy chỉnh]', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const card = await screen.findByRole('listitem', { name: 'Theo nhóm' });
@@ -138,7 +145,34 @@ describe('PracticePage (K/51)', () => {
     expect(within(card).getByRole('link', { name: '+4 từ' })).toHaveAttribute('href', '/vi/app/practice/weak');
     await userEvent.click(within(card).getByRole('button', { name: 'Luyện 6 từ' }));
     await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 12 });
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 6 });
+  });
+
+  it('owner 19/11/2026: "Luyện N từ" opens N questions; a fixed session max M caps both the label and the count at M', async () => {
+    const capped = { ...CONFIG, practice: { ...CONFIG.practice, max_questions_per_session: 5 } };
+    const view = renderApp(<PracticePage />, { routes: routes({ 'GET /v1/me/app-config': () => Response.json(capped) }) });
+    const weakCard = await screen.findByRole('listitem', { name: 'Từ hay sai' });
+    await userEvent.click(await within(weakCard).findByRole('button', { name: 'Luyện 5 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 5 });
+    const priority = screen.getByRole('listitem', { name: 'Đang ưu tiên' });
+    await userEvent.click(within(priority).getByRole('button', { name: 'Luyện 4 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(2));
+    expect(starts(view.calls)[1].body).toEqual({ source: 'priority', types: THREE, count: 4 });
+  });
+
+  it('owner 19/11/2026: in the "scope words" mode the weak start takes every weak word, above the default count', async () => {
+    const scope = { ...CONFIG, practice: { ...CONFIG.practice, max_questions_per_session: 5, default_questions_per_session: 10, session_max_mode: 'scope_words' } };
+    const view = renderApp(<PracticePage />, {
+      routes: routes({
+        'GET /v1/me/app-config': () => Response.json(scope),
+        'GET /v1/practice/weak-words/groups': () => Response.json({ total: 13, items: [{ group_id: TECH, name: 'Công nghệ', count: 13 }] }),
+      }),
+    });
+    const card = await screen.findByRole('listitem', { name: 'Từ hay sai' });
+    await userEvent.click(await within(card).findByRole('button', { name: 'Luyện 13 từ' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({ source: 'weak', types: THREE, count: 13 });
   });
 
   it('Đang ưu tiên and Luyện tất cả count from the decks', async () => {
@@ -270,7 +304,7 @@ describe('English (design §7.1–§7.2)', () => {
     const fresh = [deck(TECH, 'Công nghệ', 18, { priority: 0, due: 0, new: 5 })];
     renderApp(<PracticePage />, { routes: routes({ 'GET /v1/groups': () => Response.json({ items: fresh }) }) });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '5 từ trong 1 nhóm')).toBeInTheDocument();
+    expect(await within(hero).findByText((_, el) => el?.tagName === 'P' && el.textContent === '5 từ cần luyện trong 1 nhóm')).toBeInTheDocument();
     expect(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' })).toBeInTheDocument();
   });
 });

@@ -102,6 +102,78 @@ const card = (n: number): Card => ({
   },
 });
 
+describe('CardStack back face: a fixed size, the text shrinks and then scrolls', () => {
+  // jsdom has no layout: the scroller is 300 px tall and its content is `natural` px at full size, shrinking with the zoom on its child.
+  function layout(natural: number) {
+    const original = {
+      scrollHeight: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight'),
+      clientHeight: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight'),
+    };
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get(this: HTMLElement) { return this.hasAttribute('data-fit-back') ? 300 : 0; },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (!this.hasAttribute('data-fit-back')) return 0;
+        const zoom = Number((this.firstElementChild as HTMLElement | null)?.style.getPropertyValue('zoom') || 1);
+        return Math.round(natural * zoom);
+      },
+    });
+    return () => {
+      for (const key of ['scrollHeight', 'clientHeight'] as const) {
+        if (original[key]) Object.defineProperty(HTMLElement.prototype, key, original[key]);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    };
+  }
+  const renderBack = () => renderApp(
+    <CardStack cards={[card(1)]} current={0} flipped onFlip={() => {}} onRate={() => {}} />,
+    { session: true, chrome: false, routes: { 'GET /v1/words/word1': () => Response.json({ inflections: [] }) } },
+  );
+  const scroller = (container: HTMLElement) => container.querySelector<HTMLElement>('[data-fit-back]')!;
+  const zoomOf = (el: HTMLElement) => Number((el.firstElementChild as HTMLElement).style.getPropertyValue('zoom') || 1);
+
+  it('content that fits is left at full size and does not scroll', () => {
+    const restore = layout(240);
+    try {
+      const { container } = renderBack();
+      expect(zoomOf(scroller(container))).toBe(1);
+      expect(scroller(container)).not.toHaveAttribute('tabindex');
+    } finally { restore(); }
+  });
+
+  it('content a little too tall shrinks until it fits, and does not scroll', () => {
+    const restore = layout(360);
+    try {
+      const { container } = renderBack();
+      const zoom = zoomOf(scroller(container));
+      expect(zoom).toBeLessThan(1);
+      expect(zoom).toBeGreaterThanOrEqual(0.75);
+      expect(Math.round(360 * zoom)).toBeLessThanOrEqual(300);
+      expect(scroller(container)).not.toHaveAttribute('tabindex');
+    } finally { restore(); }
+  });
+
+  it('content too tall even at 75 % stops shrinking there and scrolls inside the card, reachable by keyboard', () => {
+    const restore = layout(900);
+    try {
+      const { container } = renderBack();
+      expect(zoomOf(scroller(container))).toBe(0.75);
+      expect(scroller(container)).toHaveAttribute('tabindex', '0');
+    } finally { restore(); }
+  });
+
+  it('both faces have a fixed height, not a minimum, so a long card is as tall as a short one', () => {
+    const { container } = renderBack();
+    for (const face of container.querySelectorAll('[data-face]')) {
+      expect(face.className).not.toMatch(/(^|\s)min-h-/);
+      expect(face.className).toMatch(/(^|\s)h-110(\s|$)/);
+    }
+  });
+});
+
 describe('CardStack', () => {
   it('keeps the word on one line on the front and behind cards', async () => {
     const long = (n: number): Card => ({ ...card(n), content: { ...card(n).content, lemma: 'anthropologist' } });

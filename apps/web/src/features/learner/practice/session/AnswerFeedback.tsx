@@ -96,8 +96,8 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
   // M5.1: Đã biết moves the word one level up; shown only when it can (Figma 100:3164).
   const level = kind === 1 && !schedule ? result.level ?? null : null;
   const move = level !== null && level >= 0 && level < 5 ? { from: toLevel(level), to: toLevel(level + 1) } : null;
-  const note = kind === 1 ? ['noteKnowEnter', 'noteKnowTap'] as const
-    : kind === 2 ? ['noteNotDue', null] as const
+  // Owner 18/11/2026: case 1 has no note (the Known button says it).
+  const note = kind === 2 ? ['noteNotDue', null] as const
       : kind === 3 ? ['noteHint', null] as const
         : kind === 4 ? ['noteWrong', 'noteWrongTap'] as const : null;
 
@@ -152,7 +152,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = 
       </p>
       <div className="flex items-center gap-2">
         <span className="min-w-0 break-words font-wm-sans text-wm-word text-wm-pass">{lemma}</span>
-        <SpeakWord text={lemma} />
+        <SpeakWord text={lemma} audioUrl={result.audio?.us ?? null} />
       </div>
       {moveNote && caseNote && <div className="font-wm-sans text-wm-small text-wm-muted">{caseNote}</div>}
     </ResultTicket>

@@ -3,7 +3,7 @@ import { copy } from '../copy';
 import { seriousViolations } from '../support/axe';
 import { signedInAs, type MockHandler } from '../support/mock-api';
 
-// Đợt cải thiện A, C1 (design §7); owner 27/10/2026: one speaker icon (US voice) by a word, one button by a sentence, with the browser's own voices.
+// Đợt cải thiện A, C1 (design §7); owner 27/10/2026: one speaker icon (US voice) by a word, with the browser's own voices; owner 19/11/2026: no speaker by a sentence.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const G = uuid(201);
 const SESSION = uuid(410);
@@ -73,18 +73,18 @@ async function setup(page: Page, locale: 'vi' | 'en' = 'vi') {
 }
 
 test.describe('Pronunciation buttons (C1, mocked API)', () => {
-  test('word page: the US speaker of the block reads the word in the US voice; the example and the saved sentence have a button', async ({ page }) => {
+  test('word page: the US speaker of the block reads the word in the US voice; the example and the saved sentence have none', async ({ page }) => {
     await setup(page);
     await page.goto('/vi/app/word?w=deploy');
     await expect(page.getByRole('heading', { level: 1, name: 'deploy' })).toBeVisible();
     // Đợt C §5.3: the speakers sit in each part-of-speech block (UK, US); no file in the mocked API, so the browser voice reads.
     await page.getByRole('button', { name: 'Nghe giọng Anh-Mỹ' }).first().click();
     await expect(page.getByText('We deploy the app every Friday.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(0);
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
   });
 
-  test('review card: the front button reads without flipping; the back reads the word and its sentences', async ({ page }) => {
+  test('review card: the front button reads without flipping; the back reads the word, its sentences have no speaker', async ({ page }) => {
     await setup(page);
     await page.goto(`/vi/app/review?group=${G}`);
     const front = page.getByRole('group', { name: /Card 1/ });
@@ -101,7 +101,8 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await expect(page.getByText('triển khai', { exact: true })).toBeVisible();
     await page.getByRole('group', { name: /Card 1/ }).getByRole('button', { name: 'Play the US pronunciation' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
-    await expect(page.getByRole('button', { name: 'Listen to the sentence' })).toHaveCount(2);
+    await expect(page.getByText('We deploy the app every Friday.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Listen to the sentence' })).toHaveCount(0);
   });
 
   test('practice: no button on the question; after grading the speaker reads the word', async ({ page }) => {
@@ -143,7 +144,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');
-        await expect(page.getByRole('button', { name: s.sentence }).first()).toBeVisible();
+        await expect(page.getByText('We deploy the app every Friday.').first()).toBeVisible();
         await noSideScroll(page, `${where} card back`);
         expect(await seriousViolations(page), `${where} card back`).toEqual([]);
 

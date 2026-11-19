@@ -35,7 +35,8 @@ describe('MonthDialog (Figma 102:3278 / 102:3948)', () => {
   it('head, totals and day labels of the sample month', async () => {
     renderApp(<MonthDialog {...props()} />, { routes: routes() });
     const dialog = await screen.findByRole('dialog', { name: 'Tháng 11, 2026' });
-    expect(within(dialog).getByText('lịch học')).toBeInTheDocument();
+    // Owner 19/11/2026: no "lịch học" eyebrow over the month.
+    expect(within(dialog).queryByText('lịch học')).toBeNull();
     expect(await within(dialog).findByText('6 ngày liên tiếp')).toBeInTheDocument();
     const totals = await within(dialog).findByRole('list', { name: 'Tổng tháng' });
     expect(within(totals).getAllByRole('listitem').map((item) => item.textContent)).toEqual([

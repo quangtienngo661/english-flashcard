@@ -21,6 +21,7 @@ import { OutOfSessions } from './OutOfSessions';
 import { TodayHero } from './PracticeHero';
 import { CHIP, CHIP_FAIL, SourceCard } from './SourceCard';
 import { usePracticeStarter } from './use-practice-starter';
+import { wordsCount } from './session-max';
 import { RULE_TYPES, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
 
 type Origin = Exclude<Source, 'today'> | 'hero';
@@ -46,7 +47,7 @@ export function PracticePage() {
   const errors: Partial<Record<Origin, string>> = Object.fromEntries(ORIGINS.map((o) => [o, starter.error(o) ?? undefined]));
   const pending = starter.pending;
 
-  const quick = (source: Source, extra: Partial<StartBody> = {}): StartBody => ({ source, ...extra, types: [...RULE_TYPES], count });
+  const quick = (source: Source, n = count): StartBody => ({ source, types: [...RULE_TYPES], count: n });
 
   // The `today` source takes priority, due and today's new cards of every deck (as the review queue).
   const todayWords = (g: (typeof decks)[number]) => g.today.priority + g.today.due + g.today.new;
@@ -57,6 +58,9 @@ export function PracticePage() {
   const words = decks.reduce((sum, g) => sum + g.total, 0);
   const weakTotal = weakGroups.data?.total ?? 0;
   const weakShown = weakPreview.data?.items ?? [];
+  // Owner 19/11/2026: "Luyện N từ" opens one question per word, capped by the admin's session max.
+  const weakCount = wordsCount(config.data?.practice, weakTotal);
+  const priorityCount = wordsCount(config.data?.practice, priority);
   const empty = (text: string) => <span className="font-wm-sans text-wm-small text-wm-muted">{text}</span>;
 
   let body;
@@ -88,7 +92,6 @@ export function PracticePage() {
               name={t('sources.group.name')}
               icon={Folder}
               tone="accent"
-              body={t('sources.group.body')}
               chips={
                 decks.length === 0 ? (
                   empty(t('sources.group.empty'))
@@ -116,7 +119,6 @@ export function PracticePage() {
               icon={Target}
               tone="fail"
               titleHref={`/${locale}/app/practice/weak`}
-              body={t('sources.weak.body')}
               chips={
                 weakTotal === 0 ? (
                   empty(t('sources.weak.empty'))
@@ -138,8 +140,8 @@ export function PracticePage() {
                   </>
                 )
               }
-              startLabel={weakTotal > 0 ? t('sources.weak.start', { count: weakTotal }) : null}
-              onStart={() => request('weak', quick('weak'))}
+              startLabel={weakTotal > 0 ? t('sources.weak.start', { count: weakCount }) : null}
+              onStart={() => request('weak', quick('weak', weakCount))}
               busy={pending('weak')}
               onCustomize={() => setCustomize({ source: 'weak' })}
               error={errors.weak ?? null}
@@ -149,12 +151,11 @@ export function PracticePage() {
               name={t('sources.priority.name')}
               icon={Star}
               tone="mark"
-              body={t('sources.priority.body')}
               chips={
                 priority > 0 ? <span className={CHIP}>{t('sources.priority.chip', { count: priority, groups: priorityDecks })}</span> : empty(t('sources.priority.empty'))
               }
-              startLabel={priority > 0 ? t('sources.priority.start', { count: priority }) : null}
-              onStart={() => request('priority', quick('priority'))}
+              startLabel={priority > 0 ? t('sources.priority.start', { count: priorityCount }) : null}
+              onStart={() => request('priority', quick('priority', priorityCount))}
               busy={pending('priority')}
               onCustomize={() => setCustomize({ source: 'priority' })}
               error={errors.priority ?? null}
@@ -164,7 +165,6 @@ export function PracticePage() {
               name={t('sources.all.name')}
               icon={Layers}
               tone="pass"
-              body={t('sources.all.body')}
               chips={words > 0 ? <span className={CHIP}>{t('sources.all.chip', { words, groups: decks.length })}</span> : empty(t('sources.all.empty'))}
               startLabel={words > 0 ? t('sources.all.start', { count }) : null}
               onStart={() => request('all', quick('all'))}

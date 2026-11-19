@@ -41,7 +41,7 @@ export function AlternativeFeedback({ result, sentence, onReviewWord, onNext, bu
           <div className="flex flex-wrap items-center gap-x-2">
             <p className="min-w-0 break-words text-wm-small-strong text-wm-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
             <span className="flex gap-1">
-              <SpeakWord text={result.correct.lemma} />
+              <SpeakWord text={result.correct.lemma} audioUrl={result.audio?.us ?? null} />
             </span>
           </div>
           {result.definition_en && result.definition_en !== result.meaning && <p className="break-words text-wm-caption text-wm-muted">{result.definition_en}</p>}

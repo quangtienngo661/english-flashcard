@@ -438,17 +438,15 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     play.mockRestore();
   });
 
-  it('back: the speaker icon by the word (US voice), a button by the example and by the saved sentence (local voice)', async () => {
-    const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
+  it('back: the speaker icon by the word (US voice); no speaker by the example or the saved sentence (owner 19/11/2026)', async () => {
+    installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<ReviewSession />, { session: true, routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Card 1 of 2' });
     await userEvent.keyboard(' ');
     const card = await screen.findByRole('group', { name: 'Card 1 of 2' });
     await within(card).findByText('triển khai');
     expect(within(card).getAllByRole('button', { name: 'Play the US pronunciation' }).length).toBeGreaterThan(0);
-    const sentences = within(card).getAllByRole('button', { name: 'Listen to the sentence' });
-    expect(sentences).toHaveLength(2);
-    await userEvent.click(sentences[1]);
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'We deploy the app every Friday.' }));
+    expect(within(card).getByText((_, el) => el?.tagName === 'P' && el.textContent === 'We deploy the app every Friday.')).toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: /sentence/i })).not.toBeInTheDocument();
   });
 });

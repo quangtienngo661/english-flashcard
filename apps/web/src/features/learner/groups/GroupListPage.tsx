@@ -9,6 +9,7 @@ import { useReducedMotion } from '@/lib/use-reduced-motion';
 import { cn } from '@/lib/cn';
 import { Button } from '@/ui/Button';
 import { Skeleton } from '@/ui/Skeleton';
+import { groupTone } from '@/lib/group-color';
 import { LevelBar } from '@/ui/LevelBar';
 import { TextButton } from '@/ui/TextButton';
 import { useAddWord } from '../add-word/add-word-context';
@@ -227,7 +228,7 @@ function Below({ group, onOpen }: { group: GroupSummary; onOpen: (event: MouseEv
     <div data-part="3" className="gcar-rise mx-auto flex w-full max-w-124 flex-col items-center gap-2.5">
       <p className="text-wm-meta text-wm-muted">{t('rhythm')}</p>
       <div className="w-full max-w-105">
-        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} />
+        <LevelBar centered counts={rhythm(group.cells).map((c) => c.total)} color={groupTone(group.id, group.total).color} />
       </div>
       <DeckButtons group={group} className="gdeck justify-center gap-3 pt-2 max-md:pr-18" buttonClassName="gdeck-btn w-37.5 max-md:w-32" />
       <div className="flex flex-wrap items-center justify-center gap-x-4.5 gap-y-1">
