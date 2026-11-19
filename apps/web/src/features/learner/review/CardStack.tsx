@@ -7,7 +7,6 @@ import { shownPos } from '@/lib/pos';
 import { arrive, dissolve, prefersReducedMotion, shake, type ArrivalPose } from '@/lib/stack-motion';
 import { useDesktop } from '@/lib/use-desktop';
 import { PronunciationLine } from '@/ui/PronunciationLine';
-import { SpeakSentence } from '@/ui/SpeakButton';
 import { toLevel, useLevelInterval, useLevelName } from '@/ui/levels';
 import type { Card } from '../groups/groups-api';
 import { TargetWord } from '@/ui/TargetWord';
@@ -290,22 +289,16 @@ function FullCard({ card, flipped, onFlip, still = false }: { card: Card; flippe
         </div>
         {content.examples[0] && (
           <Block title={t('example')}>
-            <p className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-              <span className="min-w-0 flex-1 break-words"><TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} /></span>
-              <span className="shrink-0">
-                <SpeakSentence text={content.examples[0]} />
-              </span>
+            <p className="break-words font-wm-sans text-wm-small text-wm-ink">
+              <TargetWord text={content.examples[0]} lemma={content.lemma} forms={forms} />
             </p>
           </Block>
         )}
         {content.sentences.length > 0 && (
           <Block title={t('seen')} soft>
             {content.sentences.map((sentence) => (
-              <p key={sentence} className="flex items-start gap-1 font-wm-sans text-wm-small text-wm-ink">
-                <span className="min-w-0 flex-1 break-words"><TargetWord text={sentence} lemma={content.lemma} forms={forms} /></span>
-                <span className="shrink-0">
-                  <SpeakSentence private text={sentence} />
-                </span>
+              <p key={sentence} className="break-words font-wm-sans text-wm-small text-wm-ink">
+                <TargetWord text={sentence} lemma={content.lemma} forms={forms} />
               </p>
             ))}
           </Block>

@@ -205,8 +205,8 @@ describe('WordPage IPA (đợt C §5.3, DC13)', () => {
 describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('A1-5: the speaker icon by the word (US voice) and a button by the example; saved sentences only with a local US voice', async () => {
-    const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US', false)]);
+  it('A1-5: the speaker by the word (US voice); no speaker by the example or the saved sentences (owner 19/11/2026)', async () => {
+    const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<WordPage />, { routes: routes() });
     // Đợt C §5.3: the speakers moved from the head to each part-of-speech block (UK and US).
     const adjectiveBlock = await screen.findByRole('group', { name: 'adjective' });
@@ -215,29 +215,15 @@ describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
     const head = screen.getByRole('heading', { level: 1, name: 'left' }).parentElement!;
     expect(within(head).queryByRole('button')).not.toBeInTheDocument();
     const adjective = screen.getAllByRole('article')[0];
-    await userEvent.click(within(adjective).getByRole('button', { name: 'Nghe câu' }));
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left 1.', lang: 'en-US' }));
+    expect(within(adjective).getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left 1.')).toBeInTheDocument();
+    expect(within(adjective).queryAllByRole('button', { name: /^Nghe/ }).map((b) => b.getAttribute('aria-label'))).not.toContain('Nghe câu');
     const block = screen.getByRole('region', { name: 'Câu bạn đã gặp' });
     await within(block).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.');
-    expect(within(block).queryByRole('button', { name: 'Nghe câu' })).not.toBeInTheDocument();
+    expect(within(block).queryByRole('button', { name: /^Nghe/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
     const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
     await waitFor(() => expect(within(dialog).getAllByRole('listitem')).toHaveLength(3));
-    expect(within(dialog).queryByRole('button', { name: 'Nghe câu' })).not.toBeInTheDocument();
-  });
-
-  it('a saved sentence is read with the local US voice, in "Câu bạn đã gặp" and in the list', async () => {
-    const local = makeVoice('en-US');
-    const synth = installSpeech([makeVoice('en-US', false), local]);
-    renderApp(<WordPage />, { routes: routes() });
-    const block = await screen.findByRole('region', { name: 'Câu bạn đã gặp' });
-    await waitFor(() => expect(within(block).getAllByRole('button', { name: 'Nghe câu' })).toHaveLength(3));
-    // Newest first: "Turn left after the bridge." (20/10) is the last row.
-    await userEvent.click(within(block).getAllByRole('button', { name: 'Nghe câu' })[2]);
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left after the bridge.', voice: local }));
-    await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
-    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Nghe câu' })).toHaveLength(3));
+    expect(within(dialog).queryByRole('button', { name: /^Nghe/ })).not.toBeInTheDocument();
   });
 });
 

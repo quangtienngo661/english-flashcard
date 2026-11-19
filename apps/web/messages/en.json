@@ -483,7 +483,6 @@
     },
     "speak": {
       "word": "Listen",
-      "sentence": "Listen to the sentence",
       "uk": "Play the UK pronunciation",
       "us": "Play the US pronunciation",
       "pending": "Preparing audio…"

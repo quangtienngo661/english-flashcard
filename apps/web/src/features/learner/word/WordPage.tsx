@@ -17,7 +17,7 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
-import { SpeakButton, SpeakSentence } from '@/ui/SpeakButton';
+import { SpeakButton } from '@/ui/SpeakButton';
 import { EmptyState, ErrorState } from '@/ui/States';
 import { TextButton } from '@/ui/TextButton';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
@@ -265,12 +265,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
           <ul className="flex flex-col divide-y divide-wm-line">
             {rows.map(({ sentence, sense, n }) => (
               <li key={sentence.id} className="flex flex-col gap-1 py-4">
-                <div className="flex items-start gap-1">
-                  <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.text} lemma={sense.lemma} forms={forms} /></p>
-                  <span className="shrink-0">
-                    <SpeakSentence private text={sentence.text} />
-                  </span>
-                </div>
+                <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.text} lemma={sense.lemma} forms={forms} /></p>
                 <p className="text-wm-meta text-wm-muted">
                   {t('seenMeta', { n, meaning: sense.meaning.text, date: format.date(sentence.created_at, 'numeric') })}
                 </p>

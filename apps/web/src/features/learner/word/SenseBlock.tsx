@@ -4,7 +4,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { PronunciationLine } from '@/ui/PronunciationLine';
-import { SpeakSentence } from '@/ui/SpeakButton';
 import { TextButton } from '@/ui/TextButton';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { TargetWord } from '@/ui/TargetWord';
@@ -64,12 +63,7 @@ export function SenseBlock({ index, sense, item, groupName, forms, ownLine }: {
             <p className="max-w-lg break-words font-wm-sans text-wm-small text-wm-muted">{sense.definition_en}</p>
           )}
           {sense.examples[0] && (
-            <div className="flex items-start gap-1">
-              <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sense.examples[0]} lemma={sense.lemma} forms={forms} /></p>
-              <span className="shrink-0">
-                <SpeakSentence text={sense.examples[0]} />
-              </span>
-            </div>
+            <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sense.examples[0]} lemma={sense.lemma} forms={forms} /></p>
           )}
           {sense.sentence_count > 0 && (
             <TextButton className="self-start" onPress={() => setDialog('sentences')}>
