@@ -23,6 +23,7 @@ import { LEVEL_FILL, toLevel, useLevelName } from '@/ui/levels';
 import { localDay } from './days';
 import { RULE_TYPES, useWeakGroups, type WeakWord } from './practice-api';
 import { PRELOAD_CUSTOMIZE, usePracticeStarter } from './use-practice-starter';
+import { wordsCount } from './session-max';
 
 const PAGE = 50;
 
@@ -51,7 +52,8 @@ export function WeakWordsPage() {
   const chosen = groups.data?.items.find((g) => g.group_id === deck) ?? null;
   const count = chosen ? chosen.count : (groups.data?.total ?? 0);
   const words = list.data?.pages.flatMap((p) => p.items) ?? [];
-  const questions = config.data?.practice.default_questions_per_session ?? 10;
+  // Owner 19/11/2026: one question per weak word, capped by the admin's session max.
+  const questions = wordsCount(config.data?.practice, count);
   const back = { href: `/${locale}/app/practice`, label: t('back') };
 
   const start = () =>
@@ -83,7 +85,7 @@ export function WeakWordsPage() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Button variant="primary" isPending={starter.pending('weak')} onPress={start}>
-                      <span className="truncate">{chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}</span>
+                      <span className="truncate">{chosen ? t('startGroup', { count: questions, name: chosen.name }) : t('start', { count: questions })}</span>
                     </Button>
                     <TextButton className="justify-center" {...PRELOAD_CUSTOMIZE} onPress={() => starter.customize({ source: 'weak', groupId: chosen?.group_id })}>
                       {t('customize')}
