@@ -1,6 +1,6 @@
 import { getLocale } from 'next-intl/server';
 import type { AppLocale } from '@/i18n/routing';
-import { getLandingCopy } from '@/site/landing/copy';
+import { getLandingCopy } from '@/site/landing/get-landing-copy';
 import { HomePage } from '@/site/landing/HomePage';
 import { landingData } from '@/site/landing/landing-data';
 
