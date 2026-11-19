@@ -1,12 +1,13 @@
-import { Volume2 } from 'lucide-react';
+import { Check, Volume2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { Tag } from '@/ui/Tag';
 import { DemoLoops } from '../interactive/DemoLoops';
 import { Reveal } from '../interactive/Reveal';
 import { Container } from '../layout/Container';
-import type { LandingCopy } from './copy';
-import { ChoiceRow, Eyebrow, Marked, Progress, SectionHead, WaveBars } from './parts';
-import { BIN_VALUE, BORDER_15, CARD, LISTEN_WORD, SENTENCE_22, TEXT_17 } from './styles';
+import { fill, type LandingCopy } from './copy';
+import { ChoiceRow, Eyebrow, Filled, Progress, SectionHead, WaveBars } from './parts';
+import { BIN_VALUE, BORDER_15, CARD, LISTEN_WORD, QUESTION, TEXT_17 } from './styles';
 
 /** The review box Figma draws lit (`7:180`): "7 ngày · quen mặt". */
 const ACTIVE_BIN = 2;
@@ -105,24 +106,30 @@ function Card({
 
 function PracticeDemo({ copy }: { copy: LandingCopy['learn']['practice'] }) {
   const shown = [0, 3];
+  const { tally } = copy;
   return (
     <div className="flex flex-col gap-3 rounded-wm-row bg-wm-bg p-4">
       <div className="hidden flex-col gap-3 md:flex">
-        <p className="flex justify-between gap-3 font-wm-sans text-wm-caption text-wm-muted">
-          <span>{copy.demoTitle}</span>
+        <div className="flex items-center gap-2 font-wm-sans text-wm-caption text-wm-muted">
+          <span className="mr-auto">{copy.demoTitle}</span>
           <span>{copy.count}</span>
-        </p>
+          <span role="img" aria-label={fill(tally.rightLabel, { count: tally.right })}>
+            <Tag tone="pass">
+              <Check aria-hidden className="size-3" />
+              {tally.right}
+            </Tag>
+          </span>
+          <span role="img" aria-label={fill(tally.wrongLabel, { count: tally.wrong })}>
+            <Tag tone="fail">
+              <X aria-hidden className="size-3" />
+              {tally.wrong}
+            </Tag>
+          </span>
+        </div>
         <Progress done={6} total={20} />
-        <ul className="flex flex-wrap gap-2">
-          {copy.scores.map(({ n, label }) => (
-            <li key={label} className="rounded-wm-pill border border-wm-line bg-wm-surface px-3 py-1 font-wm-sans text-wm-caption text-wm-muted">
-              <span className="font-semibold text-wm-ink">{n}</span> {label}
-            </li>
-          ))}
-        </ul>
       </div>
-      <p className={cn(SENTENCE_22, 'py-1 text-wm-ink')}>
-        <Marked sentence={copy.sentence} target={copy.target} />
+      <p className={cn(QUESTION, 'py-4 text-wm-ink md:py-5')}>
+        <Filled sentence={copy.sentence} target={copy.target} />
       </p>
       <div className="grid gap-2 md:grid-cols-2">
         {copy.choices.map((word, i) => (
@@ -131,7 +138,6 @@ function PracticeDemo({ copy }: { copy: LandingCopy['learn']['practice'] }) {
             n={i + 1}
             word={word}
             state={i === 0 ? 'right' : i === 3 ? 'wrong' : undefined}
-            note={i === 0 ? copy.right : i === 3 ? copy.wrong : undefined}
             className={shown.includes(i) ? undefined : 'hidden md:flex'}
           />
         ))}

@@ -2,13 +2,13 @@ import en from '../../../messages/en.json';
 import vi from '../../../messages/vi.json';
 import { fill } from './copy';
 
-type Tree = { [key: string]: string | Tree };
+type Tree = { [key: string]: string | number | Tree };
 
 function flatten(tree: Tree, prefix = ''): Map<string, string> {
   const out = new Map<string, string>();
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix ? `${prefix}.${key}` : key;
-    if (typeof value === 'string') out.set(path, value);
+    if (typeof value === 'string' || typeof value === 'number') out.set(path, String(value));
     else for (const [k, v] of flatten(value, path)) out.set(k, v);
   }
   return out;
@@ -47,7 +47,7 @@ describe('Landing copy (M8.5)', () => {
     // Q1: "deck", never "group" or "stack"; Q8: "Correct" / "Incorrect", never "Wrong"; Q4: "saved sentence".
     expect(flat.filter(([, v]) => /\b(group|stack|wrong|box(es)?)\b/i.test(v)).map(([k]) => k)).toEqual([]);
     expect(en.Landing.groups.title).toContain('deck');
-    expect([en.Landing.learn.practice.right, en.Landing.learn.practice.wrong]).toEqual(['Correct', 'Incorrect']);
+    expect(fill(en.Landing.learn.practice.tally.wrongLabel, { count: 1 })).toBe('1 incorrect');
   });
 
   it('the hero heading is Figma\'s, in one colour (no accent key)', () => {

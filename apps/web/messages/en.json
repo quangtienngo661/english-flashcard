@@ -181,25 +181,7 @@
         "title": "Practice words in real sentences",
         "body": "Fill in and type the word in the sentence instead of only picking a meaning, so the word makes its way into how you write. Miss it and you see the right answer in place.",
         "demoTitle": "Fill in the blank",
-        "count": "Question 7/20",
-        "scores": [
-          {
-            "n": "5",
-            "label": "correct"
-          },
-          {
-            "n": "1",
-            "label": "incorrect"
-          },
-          {
-            "n": "13",
-            "label": "questions left"
-          },
-          {
-            "n": "2",
-            "label": "words to review in 7 days"
-          }
-        ],
+        "count": "7/20",
         "sentence": "Air quality tends to deteriorate in the dry season.",
         "target": "deteriorate",
         "choices": [
@@ -208,8 +190,12 @@
           "advocate",
           "mitigate"
         ],
-        "right": "Correct",
-        "wrong": "Incorrect"
+        "tally": {
+          "right": 5,
+          "wrong": 1,
+          "rightLabel": "{count} correct",
+          "wrongLabel": "{count} incorrect"
+        }
       },
       "note": {
         "eyebrow": "After reading an article",

@@ -69,9 +69,19 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(screen.getByText('Mỗi từ có lịch ôn riêng, đến hạn là Wordmet nhắc.')).toBeInTheDocument();
     expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(screen.getByText('ôn lại sau')).toBeInTheDocument();
-    expect(screen.getByText('từ ôn lại sau 7 ngày')).toBeInTheDocument();
     expect(pricing().queryByText('Không hoàn tiền sau khi đã thanh toán.')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/ngăn|Không hoàn tiền tự động/);
+  });
+
+  it('the practice demo has one tally line like the app, with no right or wrong words on the rows', () => {
+    renderHome();
+    const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }));
+    expect(learn.getByText('7/20')).toBeInTheDocument();
+    expect(learn.getByRole('img', { name: '5 câu đúng' })).toBeInTheDocument();
+    expect(learn.getByRole('img', { name: '1 câu sai' })).toBeInTheDocument();
+    expect(learn.queryByText(/câu còn lại|từ ôn lại sau 7 ngày/)).toBeNull();
+    expect(learn.queryByText('Đúng', { exact: true })).toBeNull();
+    expect(learn.queryByText('Sai', { exact: true })).toBeNull();
   });
 
   it('F.22 reads as general English, not IELTS-only: no caption pill under the groups, no exam wording', () => {
