@@ -38,3 +38,8 @@ const EMPTY: GroupTone = {
 export function groupTone(id: string, total: number): GroupTone {
   return total === 0 ? EMPTY : TONES[groupColorIndex(id)];
 }
+
+/** A colour at a fixed position in the deck palette, wrapping in either direction. */
+export function groupToneAt(index: number): GroupTone {
+  return TONES[((index % TONES.length) + TONES.length) % TONES.length];
+}
