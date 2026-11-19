@@ -292,11 +292,14 @@ describe('WordPage new look (giao diện mới M4.6, Figma 118:4413)', () => {
     expect(within(screen.getByRole('group', { name: 'verb' })).getByText('/rɪˈkɔːrd/')).toBeInTheDocument();
   });
 
-  it('the tabs jump inside the page: "Nghĩa 3", "Câu đã gặp 2"', async () => {
+  it('has no jump-link bar: the sections are all on the page, so "Nghĩa 3" and "Câu đã gặp 2" are not links', async () => {
     renderApp(<WordPage />, { routes: recordRoutes() });
-    expect(await screen.findByRole('link', { name: 'Nghĩa 3' })).toHaveAttribute('href', '#nghia');
-    expect(screen.getByRole('link', { name: 'Câu đã gặp 2' })).toHaveAttribute('href', '#cau-da-gap');
+    // Control: the sections the bar used to point at are there.
     expect(await screen.findByRole('region', { name: 'Câu bạn đã gặp' })).toHaveAttribute('id', 'cau-da-gap');
+    expect(screen.getAllByRole('article').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('link', { name: 'Nghĩa 3' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Câu đã gặp 2' })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Các phần của trang từ' })).toBeNull();
   });
 
   it('a learned meaning shows its level and group; one not learned has [Thêm vào nhóm] that opens "Lưu vào nhóm"', async () => {
