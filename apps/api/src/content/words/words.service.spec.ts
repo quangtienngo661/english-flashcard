@@ -91,6 +91,55 @@ describe('WordsService — audio urls in the pronunciation (round C, H9)', () =>
 });
 
 // Giao diện mới M4.1: the word list carries the first sense's IPA and example, and the number of matching words.
+describe('WordsService.search — an inflected form finds its base word', () => {
+  // The statement is a tagged template: render it to text with each bound value shown as <value>, nested statements included.
+  type Part = { strings: readonly string[]; values: readonly unknown[] };
+  const isPart = (v: unknown): v is Part => typeof v === 'object' && v !== null && 'strings' in v && 'values' in v;
+  const render = (strings: readonly string[], values: readonly unknown[]): string =>
+    strings.map((chunk, i) => chunk + (i < values.length ? renderValue(values[i]) : '')).join('');
+  const renderValue = (v: unknown): string => (isPart(v) ? render(v.strings, v.values) : Array.isArray(v) ? v.map(renderValue).join(',') : `<${String(v)}>`);
+  const statement = async (query: Record<string, unknown>) => {
+    const queryRaw = vi.fn(async (..._args: unknown[]) => [] as unknown[]);
+    const service = new WordsService({ $queryRaw: queryRaw } as unknown as PrismaClient, {} as InflectionsService, {} as SentencesService, noAudio);
+    await service.search('u1', { page_size: 20, ...query }, 'vi');
+    const [strings, ...values] = queryRaw.mock.calls[0] as [readonly string[], ...unknown[]];
+    return render(strings, values);
+  };
+
+  it('a typed inflected form is also matched against the stored forms of each entry, by its normalized key', async () => {
+    const sql = await statement({ q: 'incurring' });
+    expect(sql).toMatch(/entry_inflections/);
+    expect(sql).toMatch(/form_key = <incurring>/);
+  });
+
+  it('the form key is the lower-cased, NFC-normalized text, like the stored form_key', async () => {
+    expect(await statement({ q: 'Café'.normalize('NFD').toLowerCase() })).toMatch(/form_key = <café>/);
+  });
+
+  it('a search without a typed word does not touch the forms table', async () => {
+    expect(await statement({})).not.toMatch(/entry_inflections/);
+  });
+
+  it('ranks an exact lemma first, then an exact inflected form, then a prefix, then a contained match', async () => {
+    const sql = await statement({ q: 'incur' });
+    expect(sql).toMatch(/lower\(head\.text\) = <incur> THEN 0/);
+    expect(sql).toMatch(/ILIKE <incur%>[^]*?THEN 2 ELSE 3/);
+    expect(sql).toMatch(/\(SELECT 1 WHERE EXISTS \(SELECT 1 FROM entry_inflections/);
+  });
+
+  it('a page that ends on a contained match (rank 3) gives a token the next page accepts', async () => {
+    const row = (lemma: string) => ({ lemma, pos_list: ['verb'], level: null, meaning_preview: '', has_private: false, rank: 3, total: 2,
+      ipa_uk: null, ipa_us: null, ipa_custom: null, example: null });
+    const first = new WordsService({ $queryRaw: vi.fn(async () => [row('recur'), row('reoccur')]) } as unknown as PrismaClient,
+      {} as InflectionsService, {} as SentencesService, noAudio);
+    const { next_page_token: token } = await first.search('u1', { page_size: 1, q: 'cur' }, 'vi');
+    expect(token).not.toBeNull();
+    const second = new WordsService({ $queryRaw: vi.fn(async () => [row('reoccur')]) } as unknown as PrismaClient,
+      {} as InflectionsService, {} as SentencesService, noAudio);
+    await expect(second.search('u1', { page_size: 1, q: 'cur', page_token: token! }, 'vi')).resolves.toMatchObject({ total: 2 });
+  });
+});
+
 describe('WordsService.search — ipa, example, total (giao diện mới M4.1)', () => {
   const word = (over: Record<string, unknown> = {}) => ({
     lemma: 'record', pos_list: ['noun'], level: 'B1', meaning_preview: 'hồ sơ', has_private: false, rank: 0, total: 1,
