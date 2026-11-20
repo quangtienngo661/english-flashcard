@@ -78,7 +78,13 @@ export function WaveBars({ count = 5 }: { count?: 4 | 5 }) {
   );
 }
 
-export function ChoiceRow({ n, word, state, className }: { n: number; word: string; state?: 'right' | 'wrong'; className?: string }) {
+export function ChoiceRow({ n, word, state, statusLabel, className }: {
+  n: number;
+  word: string;
+  state?: 'right' | 'wrong';
+  statusLabel?: string;
+  className?: string;
+}) {
   return (
     <div
       className={cn(
@@ -95,6 +101,7 @@ export function ChoiceRow({ n, word, state, className }: { n: number; word: stri
             : 'bg-wm-accent-soft text-wm-accent',
       )}>{n}</span>
       <span className="min-w-0 flex-1 truncate">{word}</span>
+      {statusLabel && <span className="sr-only">{statusLabel}</span>}
     </div>
   );
 }

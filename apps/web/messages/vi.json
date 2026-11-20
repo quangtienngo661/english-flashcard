@@ -202,6 +202,10 @@
           "wrong": 1,
           "rightLabel": "{count} câu đúng",
           "wrongLabel": "{count} câu sai"
+        },
+        "choiceStatus": {
+          "correct": "Đáp án đúng",
+          "incorrect": "Đáp án sai"
         }
       },
       "note": {

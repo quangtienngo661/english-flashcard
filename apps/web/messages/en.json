@@ -202,6 +202,10 @@
           "wrong": 1,
           "rightLabel": "{count} correct",
           "wrongLabel": "{count} incorrect"
+        },
+        "choiceStatus": {
+          "correct": "Correct answer",
+          "incorrect": "Incorrect answer"
         }
       },
       "note": {

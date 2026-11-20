@@ -150,6 +150,7 @@ function PracticeDemo({ copy }: { copy: LandingCopy['learn']['practice'] }) {
             n={i + 1}
             word={word}
             state={i === 0 ? 'right' : i === 3 ? 'wrong' : undefined}
+            statusLabel={i === 0 ? copy.choiceStatus.correct : i === 3 ? copy.choiceStatus.incorrect : undefined}
             className={shown.includes(i) ? undefined : 'hidden md:flex'}
           />
         ))}
