@@ -96,6 +96,13 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     expect(learn.queryByText('Sai', { exact: true })).toBeNull();
   });
 
+  it('keeps an accessible status on each graded option in the practice demo', () => {
+    renderHome();
+    const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }));
+    expect(learn.getByText('Đáp án đúng').parentElement).toHaveTextContent(/1\s*deteriorate\s*Đáp án đúng/);
+    expect(learn.getByText('Đáp án sai').parentElement).toHaveTextContent(/4\s*mitigate\s*Đáp án sai/);
+  });
+
   it('F.22 reads as general English, not IELTS-only: no caption pill under the groups, no exam wording', () => {
     renderHome();
     expect(screen.queryByText(/12 từ · ôn lần đầu ngày mai/)).toBeNull();

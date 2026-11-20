@@ -99,6 +99,18 @@ describe('TopicCarousel', () => {
     expect(words().getByText('ingredient')).toBeInTheDocument();
   });
 
+  it('does not advance when the track, rather than a deck, receives the click', () => {
+    renderCarousel();
+    const work = screen.getByText('Work & Jobs').closest<HTMLElement>('[data-k]')!;
+    const track = work.parentElement!;
+    vi.spyOn(work, 'getBoundingClientRect').mockReturnValue(new DOMRect(1000, 100, 200, 380));
+    expect(words().getByText('destination')).toBeInTheDocument();
+    fireEvent.click(track, { clientX: 1050, clientY: 200 });
+    expect(words().getByText('destination')).toBeInTheDocument();
+    fireEvent.click(work, { clientX: 1050, clientY: 200 });
+    expect(words().getByText('colleague')).toBeInTheDocument();
+  });
+
   it('advances on a horizontal swipe and ignores the click at the end of it', () => {
     renderCarousel();
     const start = words().getByText('destination');
