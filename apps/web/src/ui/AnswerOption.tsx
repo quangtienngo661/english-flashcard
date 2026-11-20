@@ -14,18 +14,9 @@ const STATE: Record<AnswerOptionState, string> = {
   dim: 'border-wm-line bg-wm-surface text-wm-ink opacity-60',
 };
 
-const BADGE: Record<AnswerOptionState, string> = {
-  idle: 'bg-wm-accent-soft text-wm-accent',
-  dim: 'bg-wm-accent-soft text-wm-accent',
-  correct: 'bg-wm-surface text-wm-pass ring-1 ring-inset ring-wm-pass',
-  wrong: 'bg-wm-surface text-wm-fail ring-1 ring-inset ring-wm-fail',
-};
-
 type Props = {
   state: AnswerOptionState;
   label: ReactNode;
-  /** The number key for this choice, shown from md. */
-  kbd?: string;
   /** "Đáp án đúng" on the right option, "Bạn chọn" on a wrong pick (the caller passes the text); read by screen readers only, the ✓ / ✗ shows it. */
   note?: string;
   onPress?: () => void;
@@ -37,7 +28,7 @@ type Props = {
 };
 
 /** Figma "Lựa chọn" (3:51): an answer of a multiple-choice question in Phiên luyện and Ôn. Radius 14, border 1.5 px. */
-export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop = false, className }: Props) {
+export function AnswerOption({ state, label, note, onPress, isDisabled, pop = false, className }: Props) {
   return (
     <AriaButton
       onPress={onPress}
@@ -50,13 +41,9 @@ export function AnswerOption({ state, label, kbd, note, onPress, isDisabled, pop
         className,
       )}
     >
-      {kbd && (
-        <kbd aria-hidden className={cn('hidden size-5.5 shrink-0 items-center justify-center rounded-wm-key font-wm-sans text-wm-label md:inline-flex', BADGE[state])}>
-          {kbd}
-        </kbd>
-      )}
       <span className="min-w-0 flex-1 break-words font-wm-display text-wm-word">{label}</span>
       {note && (state === 'correct' || state === 'wrong') && (
+        // Owner 18/11/2026: the mark alone (the number keys still pick, the legend says so; no number cap, no visible note).
         <span className={cn('inline-flex shrink-0 items-center', state === 'correct' ? 'text-wm-pass' : 'text-wm-fail')}>
           {state === 'correct'
             ? <Check aria-hidden className={cn('size-5', pop && 'motion-safe:animate-wm-pop-in')} />
