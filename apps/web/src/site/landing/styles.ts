@@ -10,8 +10,8 @@ export const TEXT_17 = 'font-wm-sans text-[1.0625rem]/[1.6]';
 // raw-ok: Figma FAQ questions are Noto SemiBold 17 / 1.6
 export const FAQ_QUESTION = 'font-wm-sans text-[1.0625rem]/[1.6] font-semibold';
 
-// raw-ok: the practice demo's sentence is Noto 22 (`7:67`)
-export const SENTENCE_22 = 'font-wm-sans text-[1.375rem]/[1.5]';
+// raw-ok: the question is the demo's largest text, 22 px on phones and 26 px from md
+export const QUESTION = 'font-wm-display text-[1.375rem]/[1.4] font-medium md:text-[1.625rem]/[1.4]';
 
 // raw-ok: period prices are Bricolage Bold 26 (`33:351`…`33:367`)
 export const PERIOD_PRICE = 'font-wm-display text-[1.625rem]/[1.2] font-bold tracking-[-0.01em]';

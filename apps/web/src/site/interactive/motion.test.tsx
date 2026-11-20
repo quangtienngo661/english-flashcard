@@ -5,7 +5,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import vi_ from '../../../messages/vi.json';
 import { HomePage } from '../landing/HomePage';
 import { FALLBACK_LANDING_DATA } from '../landing/landing-data.fallback';
-import { Marquee } from './Marquee';
 import { HIDDEN_START } from './motion';
 import { SplitWords } from './SplitWords';
 
@@ -100,18 +99,5 @@ describe('the home page before and after JavaScript', () => {
     const h2s = [...doc.querySelectorAll('h2')];
     expect(h2s).toHaveLength(5);
     expect(h2s.every((h) => h.hasAttribute('data-wm-reveal') && !h.hasAttribute('data-wm-in'))).toBe(true);
-  });
-});
-
-describe('Marquee', () => {
-  it('repeats its children once and hides the copy from screen readers', () => {
-    render(
-      <Marquee>
-        <span>mitigate</span>
-        <span>allocate</span>
-      </Marquee>,
-    );
-    expect(screen.getAllByText('mitigate').map((el) => el.closest('[aria-hidden="true"]') !== null)).toEqual([false, true]);
-    expect(screen.getAllByText('allocate')).toHaveLength(2);
   });
 });

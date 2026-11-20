@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Reveal } from '../interactive/Reveal';
@@ -52,6 +52,19 @@ export function Marked({ sentence, target }: { sentence: string; target: string 
   );
 }
 
+/** The first occurrence of the answer, shown as a filled blank. */
+export function Filled({ sentence, target }: { sentence: string; target: string }) {
+  const at = sentence.indexOf(target);
+  if (at < 0) return sentence;
+  return (
+    <>
+      {sentence.slice(0, at)}
+      <span className={cn(BORDER_15, 'rounded-wm-control border-wm-pass bg-wm-pass-soft px-2 text-wm-ink')}>{target}</span>
+      {sentence.slice(at + target.length)}
+    </>
+  );
+}
+
 const WAVE = ['h-1.5', 'h-3.5', 'h-4.5', 'h-2.5', 'h-1.75'];
 
 /** "Sóng âm": the pronunciation bars (3 px, `--accent`); the site motion CSS scales them (900 ms, 150 ms apart). */
@@ -65,11 +78,13 @@ export function WaveBars({ count = 5 }: { count?: 4 | 5 }) {
   );
 }
 
-/**
- * A still "Lựa chọn" (3:51) in a mock-up: the key chip, the word, and for a judged row the icon and "Đúng" / "Sai". Plain markup, not a
- * control: nothing on the page can be answered.
- */
-export function ChoiceRow({ n, word, state, note, className }: { n: number; word: string; state?: 'right' | 'wrong'; note?: string; className?: string }) {
+export function ChoiceRow({ n, word, state, statusLabel, className }: {
+  n: number;
+  word: string;
+  state?: 'right' | 'wrong';
+  statusLabel?: string;
+  className?: string;
+}) {
   return (
     <div
       className={cn(
@@ -79,14 +94,14 @@ export function ChoiceRow({ n, word, state, note, className }: { n: number; word
         className,
       )}
     >
-      <span className="inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-key bg-wm-accent-soft font-wm-sans text-wm-label text-wm-accent">{n}</span>
+      <span className={cn(
+        'inline-flex size-5.5 shrink-0 items-center justify-center rounded-wm-key font-wm-sans text-wm-label',
+        state === 'right' ? 'bg-wm-surface text-wm-pass ring-1 ring-inset ring-wm-pass'
+          : state === 'wrong' ? 'bg-wm-surface text-wm-fail ring-1 ring-inset ring-wm-fail'
+            : 'bg-wm-accent-soft text-wm-accent',
+      )}>{n}</span>
       <span className="min-w-0 flex-1 truncate">{word}</span>
-      {state && note && (
-        <span className={cn('inline-flex items-center gap-1 font-wm-sans text-wm-label', state === 'right' ? 'text-wm-pass' : 'text-wm-fail')}>
-          {state === 'right' ? <Check aria-hidden className="size-3.5" /> : <X aria-hidden className="size-3.5" />}
-          {note}
-        </span>
-      )}
+      {statusLabel && <span className="sr-only">{statusLabel}</span>}
     </div>
   );
 }

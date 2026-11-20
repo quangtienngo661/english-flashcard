@@ -108,6 +108,24 @@ test.describe('LR22 no sideways scroll', () => {
   }
 });
 
+test.describe('topic deck selection', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('pressing the outer deck selects it where its rotated face is exposed', async ({ page }, testInfo) => {
+    desktopOnly(testInfo);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, '/en');
+    const carousel = page.getByRole('region', { name: copy.en.Landing.groups.label });
+    const terms = carousel.getByRole('list');
+    await expect(terms.getByText('destination')).toBeVisible();
+    const track = carousel.locator('.wm-topic-track');
+    await track.scrollIntoViewIfNeeded();
+    // The Work & Jobs face is exposed here beneath the rotated edge of Food & Drink.
+    await track.click({ position: { x: 1080, y: 394 } });
+    await expect(terms.getByText('colleague')).toBeVisible();
+  });
+});
+
 test.describe('LR23 the theme follows the visitor into the app', () => {
   test('dark chosen on the home page is still dark after a reload and on the login page', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
@@ -228,6 +246,11 @@ test.describe('LR26 without JavaScript', () => {
     const { checked, out } = await faded(page);
     expect(checked).toBeGreaterThanOrEqual(3);
     expect(out).toEqual([]);
+
+    const topics = page.getByRole('region', { name: L.groups.label });
+    const centre = topics.getByRole('list');
+    await expect(centre.getByRole('listitem')).toHaveText([...L.groups.topics[0].words, '+124 từ']);
+    await expect(centre.getByText('destination')).toHaveCSS('opacity', '1');
 
     const plans = page.getByRole('region', { name: L.plans.title });
     for (const amount of Object.values(FALLBACK_LANDING_DATA.prices)) await expect(plans.getByText(vnd(amount), { exact: true })).toBeVisible();

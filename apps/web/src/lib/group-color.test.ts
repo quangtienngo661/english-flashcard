@@ -1,4 +1,4 @@
-import { groupColorIndex, groupTone } from './group-color';
+import { groupColorIndex, groupTone, groupToneAt } from './group-color';
 
 describe('groupColorIndex (design §7.4: FNV-1a 32-bit of the lower-cased ID, mod 7)', () => {
   // Expected values from a separate reference run in Node (Buffer bytes, Math.imul, 10/11/2026), not from this module.
@@ -50,5 +50,14 @@ describe('groupTone', () => {
       bg: 'bg-wm-group-empty',
       color: 'var(--color-wm-group-empty)',
     });
+  });
+});
+
+describe('groupToneAt', () => {
+  it('walks the seven deck colours and wraps', () => {
+    expect(groupToneAt(0).border).toBe('border-wm-group-0');
+    expect(groupToneAt(6).ink).toBe('text-wm-group-6-ink');
+    expect(groupToneAt(7)).toEqual(groupToneAt(0));
+    expect(groupToneAt(-1)).toEqual(groupToneAt(6));
   });
 });
