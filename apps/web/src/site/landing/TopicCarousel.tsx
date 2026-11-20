@@ -139,23 +139,10 @@ export function TopicCarousel({ copy }: { copy: LandingCopy['groups'] }) {
       swiped.current = false;
       return;
     }
-    const direct = (event.target as Element).closest<HTMLElement>('[data-k]');
-    if (direct) {
-      const k = Number(direct.dataset.k);
-      if (k !== 0) step(k);
-      return;
-    }
-
-    // The browser retargets presses on inert neighbours to the track. Find
-    // the closest visible slot under the pointer using its transformed bounds.
-    let hit = 0;
-    for (const slot of event.currentTarget.querySelectorAll<HTMLElement>('[data-k]')) {
-      const k = Number(slot.dataset.k);
-      if (k === 0 || (hit !== 0 && Math.abs(hit) <= Math.abs(k))) continue;
-      const { left, right, top, bottom } = slot.getBoundingClientRect();
-      if (event.clientX >= left && event.clientX < right && event.clientY >= top && event.clientY < bottom) hit = k;
-    }
-    if (hit !== 0) step(hit);
+    // Let the browser hit-test the transformed slot, including overlapping decks.
+    const slot = (event.target as Element).closest<HTMLElement>('[data-k]');
+    const k = Number(slot?.dataset.k ?? 0);
+    if (k !== 0) step(k);
   }
 
   return (
@@ -186,12 +173,11 @@ export function TopicCarousel({ copy }: { copy: LandingCopy['groups'] }) {
               data-topic={deck.name}
               data-k={k}
               data-abs={Math.abs(k)}
-              inert={side || undefined}
               aria-hidden={side || undefined}
               // raw-ok: these numeric arc coordinates feed the shared .gcar-slot transform.
               style={{ '--x': arc.x, '--xp': arc.x, '--y': arc.y, '--r': arc.rotate, '--s': arc.scale, '--o': arc.opacity, '--z': arc.z } as CSSProperties}
             >
-              <div className="gstack" data-size="carousel" data-layers="2">
+              <div className="gstack" data-size="carousel" data-layers="2" inert={side || undefined}>
                 {[2, 1].map((layer) => (
                   <div key={layer} aria-hidden data-behind={layer} className={cn('gstack-behind rounded-wm-dialog', tone.soft)} />
                 ))}
