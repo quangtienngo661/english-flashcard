@@ -36,7 +36,7 @@ Bối cảnh: góp ý 4–7 chụp từ bản minh họa trên landing; Claude �
 | Phương án | Trade-off |
 |---|---|
 | Chỉ landing | Ít việc; app vẫn còn ô số khó nhìn |
-| ✅ Landing và màn luyện tập | Ô số sửa một lần cho cả hai; đụng `AnswerOption` dùng chung |
+| ✅ Landing và màn luyện tập | Ô số sửa một lần cho cả hai; đụng `AnswerOption` dùng chung. **Đảo lại 20/11/2026:** khi chuẩn bị PR phát hiện `dev` đã bỏ ô số trên dòng đáp án của app (chủ dự án 18/11, "no number cap"); sửa ở app sẽ khôi phục thứ chủ dự án đã bỏ. Chỉ sửa ở landing |
 
 ## D2. Cách ra quyết định
 

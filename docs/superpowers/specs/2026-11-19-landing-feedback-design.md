@@ -4,7 +4,7 @@ Nguồn: 8 góp ý trong `Wordmet.pdf` (người góp ý gửi chủ dự án 18
 `docs/mockups/2026-11-18-landing-gop-y/index.html` (ảnh "Trước" trong `truoc/`). Quyết định và các vòng sửa:
 `docs/superpowers/decisions/2026-11-19-landing-feedback-decisions.md`.
 
-Phạm vi: `apps/web` landing (`src/site/landing/**`) và một chỗ trong app người học (`src/ui/AnswerOption.tsx`). Không đụng API,
+Phạm vi: `apps/web` landing (`src/site/landing/**`). **Cập nhật 20/11/2026:** bản đầu của design còn sửa ô số trong `src/ui/AnswerOption.tsx` của app; mục đó đã bỏ vì `dev` đã bỏ ô số trên dòng đáp án theo quyết định của chủ dự án ngày 18/11. Chỉ còn sửa ô số ở bản minh họa trên landing. Không đụng API,
 DB, admin. Không thêm dependency.
 
 ## 1. Hero: tiêu đề một màu (góp ý 1)

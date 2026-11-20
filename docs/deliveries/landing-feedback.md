@@ -20,7 +20,7 @@ Nhóm thứ 5 là Education, không phải IELTS như mock-up (chủ dự án ch
 
 - Hero dùng một màu cho tiêu đề và bỏ dải chip trượt. Section nhóm dùng carousel 5 chủ đề với Education ở vị trí thứ 5 theo D17 và F.22.
 - Demo luyện tập dùng một dòng 7/20, ✓ 5, ✕ 1 trên desktop, chữ câu hỏi 22/26 px và ô đáp án xanh. Bốn bước đi theo thứ tự Lưu từ → Nghe → Luyện → Ôn ở cả desktop và mobile.
-- Khôi phục ô số 1–4 từ `md` trong lựa chọn của app vì `origin/dev` đã bỏ ô số. Sau khi chấm, ô số ở dòng đúng/sai dùng nền surface và chữ, viền theo màu trạng thái. Màn luyện giữ accessible name của nút.
+- **Cập nhật 20/11/2026:** bản đầu của nhánh đã khôi phục ô số 1–4 trong lựa chọn của app. Việc đó **trái quyết định của chủ dự án ngày 18/11** (`dev` bỏ ô số, "no number cap"), nên đã hoàn lại: app giữ nguyên dòng đáp án của `dev`. Góp ý 4 (độ tương phản ô số khi đúng/sai) chỉ sửa ở bản minh họa trên landing (`ChoiceRow`), nơi ô số vẫn còn: nền surface, chữ và viền theo màu trạng thái.
 - Chuyển phần hình học thuần của arc về `src/lib/group-carousel.ts` để giữ import boundary giữa landing và learner app. Các export cũ tiếp tục dùng được.
 - Kiểm bằng Chromium và đối chiếu mock-up ở 1440, 1280, 1024 và 390 px, sáng và tối. Kiểm mẫu Travel ở giữa, các thẻ ở mép mờ dần, màu chữ và nền chip, câu hỏi, badge và các bước. Sau khi chỉnh padding, cả năm mốc Ôn cùng hàng tại 1024 px.
 - Chromium ghi nhận carousel đổi thẻ sau 3,55 giây, các chip rise cách nhau 70 ms, focus giữ nguyên thẻ và click thẻ bên dừng tự chạy. Với JavaScript tắt ở 390 px, Travel và 5 từ mẫu hiện sẵn.
