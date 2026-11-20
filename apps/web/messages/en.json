@@ -19,10 +19,10 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Smarter English vocabulary",
-      "line1": "Remember words forever,",
-      "line2": "use them in a sentence",
-      "lead": "Wordmet looks up meanings, pronunciation, and example sentences, then schedules reviews for each word. Focus on using words in sentences.",
+      "topicLabel": "English vocabulary",
+      "line1": "Remember words longer",
+      "line2": "use them with confidence",
+      "lead": "Save words, practice in context, review on schedule",
       "signup": "Create a free account",
       "howTo": "See how it works"
     },
@@ -108,8 +108,8 @@
       "binValue": "7 days"
     },
     "groups": {
-      "title": "Learn with topic decks",
-      "lead": "Pick a topic and a level, and Wordmet builds the deck. Each word has its own review schedule.",
+      "title": "Topic decks",
+      "lead": "Pick a topic and level to start",
       "label": "Sample topic decks",
       "kind": "Ready-made topic",
       "words": "{count} words",
@@ -181,12 +181,10 @@
       ]
     },
     "learn": {
-      "title": "From finding new words to using them confidently",
-      "lead": "Save words, listen to their pronunciation, practice, and review in one place.",
+      "title": "From seeing a word to using it",
       "practice": {
-        "eyebrow": "In a practice session",
-        "title": "Practice words in real sentences",
-        "body": "Fill in and type the word in the sentence instead of only picking a meaning, so the word makes its way into how you write. Miss it and you see the right answer in place.",
+        "eyebrow": "Practice",
+        "title": "Use words in sentences",
         "demoTitle": "Fill in the blank",
         "count": "7/20",
         "sentence": "Air quality tends to deteriorate in the dry season.",
@@ -209,23 +207,15 @@
         }
       },
       "note": {
-        "eyebrow": "After reading an article",
-        "title": "Save a word in seconds",
-        "body": "Type the word as you saw it. Wordmet finds its base form.",
+        "eyebrow": "Save",
+        "title": "Find the base form",
         "typed": "deteriorated",
         "lemma": "deteriorate",
         "meaning": "verb · xấu đi"
       },
-      "listen": {
-        "eyebrow": "On every card",
-        "title": "Hear UK and US pronunciation, and read the IPA",
-        "word": "viable",
-        "ipa": "/ˈvaɪ.ə.bəl/"
-      },
       "review": {
-        "eyebrow": "In the following days",
-        "title": "Review right before you forget",
-        "body": "Each day you review only the words that are due, with no time spent on words you already know. Remember a word and its schedule stretches out; forget it and it comes back sooner.",
+        "eyebrow": "Automatic reminders",
+        "title": "Retain words at every milestone",
         "bins": [
           {
             "value": "1 day",
@@ -251,20 +241,20 @@
       }
     },
     "plans": {
-      "title": "Start free, accelerate with Pro",
-      "lead": "Both plans include unlimited card reviews. When Pro ends, your words and review schedule remain.",
+      "title": "Start free, practice more with Pro",
+      "lead": "Unlimited card reviews on both plans",
       "free": "Free plan",
       "freeNote": "no time limit",
       "freeList": [
-        "Save words, look up meanings, and listen to pronunciation",
+        "Save, look up, and listen",
         "Automatic review schedule",
         "{count} practice sessions a day",
-        "Try AI practice sentences and lookups"
+        "Try AI features"
       ],
       "freeSignup": "Create a free account",
       "pro": "Pro",
       "proBadge": "AI included",
-      "proLine": "More practice every day, with AI that writes practice sentences for each word and looks up words with you.",
+      "proLine": "More practice sessions and AI credits",
       "periods": {
         "1": "1 month",
         "3": "3 months",
@@ -275,9 +265,9 @@
       "perMonth": "per month",
       "perMonthApprox": "≈ {price} per month",
       "aiList": [
-        "AI practice sentences and lookups",
-        "AI writes practice sentences for each word you study",
-        "AI lookup when the dictionary doesn’t have a word",
+        "AI features",
+        "AI practice questions",
+        "AI dictionary lookup",
         "More AI credits than the Free plan"
       ],
       "proList": [
@@ -287,12 +277,12 @@
       "proSignup": "Create an account"
     },
     "faq": {
-      "title": "Frequently asked questions",
-      "lead": "Have more questions? Email {email} and the Wordmet team will reply."
+      "title": "Common questions",
+      "lead": "Need help? Email {email}"
     },
     "final": {
-      "title": "Turn reading into fluent English",
-      "note": "Start for free without installing anything.",
+      "title": "Start learning today",
+      "note": "Free, nothing to install",
       "signup": "Create a free account"
     }
   },

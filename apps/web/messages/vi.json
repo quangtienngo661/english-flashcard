@@ -19,10 +19,10 @@
   },
   "Landing": {
     "hero": {
-      "topicLabel": "Nâng tầm vốn từ tiếng Anh",
-      "line1": "Nhớ từ lâu bền,",
-      "line2": "tự tin dùng trong câu",
-      "lead": "Wordmet tra nghĩa, phiên âm và câu ví dụ rồi xếp lịch ôn cho từng từ. Bạn tập trung luyện cách dùng từ trong câu.",
+      "topicLabel": "Học từ vựng tiếng Anh",
+      "line1": "Nhớ từ bền lâu",
+      "line2": "vững vàng trong câu",
+      "lead": "Lưu từ, luyện câu và ôn tự động",
       "signup": "Tạo tài khoản miễn phí",
       "howTo": "Xem cách học"
     },
@@ -108,8 +108,8 @@
       "binValue": "7 ngày"
     },
     "groups": {
-      "title": "Học theo nhóm chủ đề",
-      "lead": "Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.",
+      "title": "Nhóm từ theo chủ đề",
+      "lead": "Chọn chủ đề và trình độ để học ngay",
       "label": "Các nhóm chủ đề mẫu",
       "kind": "Chủ đề có sẵn",
       "words": "{count} từ",
@@ -182,11 +182,9 @@
     },
     "learn": {
       "title": "Từ lúc gặp đến lúc dùng được",
-      "lead": "Lưu từ, nghe phát âm, luyện và ôn ở cùng một nơi.",
       "practice": {
-        "eyebrow": "Trong phiên luyện",
-        "title": "Luyện từ trong câu thật",
-        "body": "Điền và gõ từ vào câu thay vì chỉ chọn nghĩa, để từ đi vào cách bạn viết. Sai thì thấy ngay đáp án đặt đúng chỗ.",
+        "eyebrow": "Luyện tập",
+        "title": "Điền từ vào câu",
         "demoTitle": "Điền từ vào câu",
         "count": "7/20",
         "sentence": "Air quality tends to deteriorate in the dry season.",
@@ -209,23 +207,15 @@
         }
       },
       "note": {
-        "eyebrow": "Sau khi đọc một bài",
-        "title": "Lưu từ trong vài giây",
-        "body": "Gõ đúng dạng từ bạn gặp, Wordmet tự đưa về từ gốc.",
+        "eyebrow": "Lưu từ",
+        "title": "Nhận diện từ gốc",
         "typed": "deteriorated",
         "lemma": "deteriorate",
         "meaning": "verb · xấu đi"
       },
-      "listen": {
-        "eyebrow": "Mỗi thẻ",
-        "title": "Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm",
-        "word": "viable",
-        "ipa": "/ˈvaɪ.ə.bəl/"
-      },
       "review": {
-        "eyebrow": "Những ngày sau",
-        "title": "Ôn đúng lúc sắp quên",
-        "body": "Mỗi ngày chỉ ôn những từ đến hạn, không tốn thời gian cho từ đã nhớ. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.",
+        "eyebrow": "Nhắc lịch tự động",
+        "title": "Ghi nhớ qua từng cột mốc",
         "bins": [
           {
             "value": "1 ngày",
@@ -251,20 +241,20 @@
       }
     },
     "plans": {
-      "title": "Học miễn phí, bứt phá cùng Pro",
-      "lead": "Cả hai gói đều ôn thẻ không giới hạn. Khi hết hạn Pro, từ vựng và lịch ôn vẫn được giữ nguyên.",
+      "title": "Bắt đầu miễn phí, luyện nhiều hơn với Pro",
+      "lead": "Ôn thẻ không giới hạn ở cả hai gói",
       "free": "Gói Free",
       "freeNote": "không giới hạn thời gian",
       "freeList": [
-        "Lưu từ, tra nghĩa và nghe phát âm",
+        "Lưu từ, tra nghĩa, nghe phát âm",
         "Lịch ôn tự động",
         "{count} phiên luyện mỗi ngày",
-        "Dùng thử câu luyện và tra từ bằng AI"
+        "Dùng thử tính năng AI"
       ],
       "freeSignup": "Tạo tài khoản miễn phí",
       "pro": "Pro",
       "proBadge": "Có AI",
-      "proLine": "Luyện nhiều hơn mỗi ngày, có AI soạn câu luyện riêng cho từng từ và tra từ cùng bạn.",
+      "proLine": "Thêm phiên luyện và lượt AI",
       "periods": {
         "1": "1 tháng",
         "3": "3 tháng",
@@ -275,9 +265,9 @@
       "perMonth": "mỗi tháng",
       "perMonthApprox": "≈ {price} mỗi tháng",
       "aiList": [
-        "Câu luyện và tra từ bằng AI",
-        "AI viết câu luyện cho từng từ bạn học",
-        "Tra từ bằng AI khi từ điển chưa có",
+        "Tính năng AI",
+        "Tạo câu luyện bằng AI",
+        "Tra từ ngoài từ điển",
         "Nhiều lượt AI hơn gói Free"
       ],
       "proList": [
@@ -288,11 +278,11 @@
     },
     "faq": {
       "title": "Câu hỏi thường gặp",
-      "lead": "Còn câu hỏi? Gửi email đến {email}, đội Wordmet sẽ trả lời."
+      "lead": "Cần hỗ trợ? Liên hệ {email}"
     },
     "final": {
-      "title": "Biến bài đọc thành tiếng Anh trôi chảy",
-      "note": "Bắt đầu miễn phí, không cần cài đặt.",
+      "title": "Bắt đầu học từ hôm nay",
+      "note": "Miễn phí, không cần cài đặt",
       "signup": "Tạo tài khoản miễn phí"
     }
   },

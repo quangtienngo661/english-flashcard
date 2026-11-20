@@ -27,7 +27,7 @@ function renderHome(data: LandingData = FALLBACK_LANDING_DATA) {
   return render(<HomePage copy={vi_.Landing} data={data} locale="vi" />);
 }
 
-const pricing = () => within(screen.getByRole('region', { name: 'Học miễn phí, bứt phá cùng Pro' }));
+const pricing = () => within(screen.getByRole('region', { name: 'Bắt đầu miễn phí, luyện nhiều hơn với Pro' }));
 /** The row of one period of the Pro card. */
 const period = (label: string) => within(pricing().getByText(label, { exact: true }).closest('li') as HTMLElement);
 
@@ -37,12 +37,12 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     // Accessible names, not textContent: M8.6 splits each title into aria-hidden words beside one sr-only copy.
     const headings = screen.getAllByRole('heading').filter((h) => h.tagName === 'H1' || h.tagName === 'H2');
     const expected = [
-      'H1 Nhớ từ lâu bền, tự tin dùng trong câu',
-      'H2 Học theo nhóm chủ đề',
+      'H1 Nhớ từ bền lâu vững vàng trong câu',
+      'H2 Nhóm từ theo chủ đề',
       'H2 Từ lúc gặp đến lúc dùng được',
-      'H2 Học miễn phí, bứt phá cùng Pro',
+      'H2 Bắt đầu miễn phí, luyện nhiều hơn với Pro',
       'H2 Câu hỏi thường gặp',
-      'H2 Biến bài đọc thành tiếng Anh trôi chảy',
+      'H2 Bắt đầu học từ hôm nay',
     ];
     expect(headings.map((h) => h.tagName)).toEqual(expected.map((e) => e.slice(0, 2)));
     headings.forEach((h, i) => expect(h).toHaveAccessibleName(expected[i].slice(3)));
@@ -52,9 +52,9 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     const { container } = renderHome();
     const ids = [...container.querySelectorAll('section[id]')].map((s) => s.id);
     expect(ids).toEqual(['nhom-tu', 'cach-hoc', 'gia', 'hoi-dap']);
-    expect(screen.getByRole('region', { name: 'Học theo nhóm chủ đề' }).id).toBe('nhom-tu');
+    expect(screen.getByRole('region', { name: 'Nhóm từ theo chủ đề' }).id).toBe('nhom-tu');
     expect(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }).id).toBe('cach-hoc');
-    expect(screen.getByRole('region', { name: 'Học miễn phí, bứt phá cùng Pro' }).id).toBe('gia');
+    expect(screen.getByRole('region', { name: 'Bắt đầu miễn phí, luyện nhiều hơn với Pro' }).id).toBe('gia');
     expect(screen.getByRole('region', { name: 'Câu hỏi thường gặp' }).id).toBe('hoi-dap');
   });
 
@@ -66,7 +66,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
 
   it('QM8-6 shows the drafted wording instead of "ngăn" and Figma\'s refund note', () => {
     renderHome();
-    expect(screen.getByText('Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.')).toBeInTheDocument();
+    expect(screen.getByText('Chọn chủ đề và trình độ để học ngay')).toBeInTheDocument();
     expect(screen.getByText('Thẻ · ôn lại sau 3 ngày')).toBeInTheDocument();
     expect(screen.getByText('ôn lại sau')).toBeInTheDocument();
     expect(pricing().queryByText('Không hoàn tiền sau khi đã thanh toán.')).not.toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
 
   it('shows five ready-made topic decks with Travel as the first active deck', () => {
     renderHome();
-    const groups = within(screen.getByRole('region', { name: 'Học theo nhóm chủ đề' }));
+    const groups = within(screen.getByRole('region', { name: 'Nhóm từ theo chủ đề' }));
     const decks = within(groups.getByRole('region', { name: 'Các nhóm chủ đề mẫu' }));
     for (const name of ['Travel', 'Food & Drink', 'Work & Jobs', 'Body & Health', 'Education']) {
       expect(decks.getByText(name)).toBeInTheDocument();
@@ -107,19 +107,18 @@ describe('home page (M8.5, Figma 5:13 / 9:108)', () => {
     renderHome();
     expect(screen.queryByText(/12 từ · ôn lần đầu ngày mai/)).toBeNull();
     expect(screen.getByText('Bài báo sáng nay')).toBeInTheDocument();
-    expect(screen.getByText('Sau khi đọc một bài')).toBeInTheDocument();
+    expect(screen.getByText('Lưu từ')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/IELTS|Writing|Đề 12|Sau khi làm đề|mỗi đề|đề bạn vừa làm/);
   });
 
-  it('LearnSection lists its four steps in learning order, the listen step on every width', () => {
+  it('LearnSection lists its three steps in learning order (save, practice, review)', () => {
     renderHome();
     const learn = within(screen.getByRole('region', { name: 'Từ lúc gặp đến lúc dùng được' }));
     const steps = learn.queryAllByRole('listitem').filter((li) => li.parentElement?.tagName === 'OL' && within(li).queryByRole('heading', { level: 3 }));
     expect(steps.map((li) => within(li).getByRole('heading', { level: 3 }).textContent)).toEqual([
-      'Lưu từ trong vài giây',
-      'Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm',
-      'Luyện từ trong câu thật',
-      'Ôn đúng lúc sắp quên',
+      'Nhận diện từ gốc',
+      'Điền từ vào câu',
+      'Ghi nhớ qua từng cột mốc',
     ]);
   });
 });
@@ -244,8 +243,8 @@ describe('the English landing (/en, 14/11/2026)', () => {
 
   it('shows the English heading, the English FAQ (not the Vietnamese one) and links into /en/app', () => {
     renderEnglish();
-    expect(screen.getByRole('heading', { level: 1, name: 'Remember words forever, use them in a sentence' })).toBeInTheDocument();
-    const faq = within(screen.getByRole('region', { name: 'Frequently asked questions' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Remember words longer use them with confidence' })).toBeInTheDocument();
+    const faq = within(screen.getByRole('region', { name: 'Common questions' }));
     expect(faq.getAllByRole('group').map((d) => d.querySelector('summary')?.textContent)).toEqual(LANDING_FAQ_EN.map((f) => f.question));
     expect(faq.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
     const appLinks = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('/en/app/'));
@@ -259,14 +258,14 @@ describe('the English landing (/en, 14/11/2026)', () => {
 
   it('the sessions per day follow the data in English too', () => {
     renderEnglish({ ...FALLBACK_LANDING_DATA, sessions: { free: 5, pro: 1200 }, source: 'api' });
-    const pro = within(screen.getByRole('region', { name: 'Start free, accelerate with Pro' }));
+    const pro = within(screen.getByRole('region', { name: 'Start free, practice more with Pro' }));
     expect(pro.getByText('5 practice sessions a day')).toBeInTheDocument();
     expect(pro.getByText('1,200 practice sessions a day')).toBeInTheDocument();
   });
 
   it('prices follow the build data in English money: free, three Pro periods, the saving and the monthly figure', () => {
     renderEnglish({ ...FALLBACK_LANDING_DATA, prices: { '1': 79000, '3': 240000, '12': 599000 }, source: 'api' });
-    const pro = within(screen.getByRole('region', { name: 'Start free, accelerate with Pro' }));
+    const pro = within(screen.getByRole('region', { name: 'Start free, practice more with Pro' }));
     expect(pro.getByText('₫0')).toBeInTheDocument();
     expect(pro.getByText('₫240,000')).toBeInTheDocument();
     expect(pro.getByText('≈ ₫80,000 per month')).toBeInTheDocument();

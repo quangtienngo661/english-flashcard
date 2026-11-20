@@ -1,12 +1,12 @@
 # Audit UI copy Việt – Anh của Wordmet
 
-**Ngày:** 15/11/2026. **Phạm vi:** `apps/web/messages/vi.json` và `apps/web/messages/en.json` (web người học, gồm landing và app).
+**Ngày:** 15/11/2026 (cập nhật nhóm `Landing` đối chiếu với `dev` tại `c71d938c` ngày 20/11/2026, đồng bộ bản copy landing đã chốt). **Phạm vi:** `apps/web/messages/vi.json` và `apps/web/messages/en.json` (web người học, gồm landing và app).
 Ví dụ về giới hạn câu AI nằm ở cặp file này. Cặp file admin, nội dung do API trả về và các chuỗi ngoài hai tệp không thuộc phạm vi.
 Mỗi đề xuất có value cũ và value mới trong bảng thay đổi.
 
-Đã rà **1.491 cặp chuỗi**. Đề xuất **353** thay đổi ở VI và **350** ở EN; **43** nhóm vấn đề cần chốt. Áp dụng sentence case, câu ngắn, một thuật ngữ cho mỗi khái niệm và chỉ đưa bước xử lý khi phù hợp với trạng thái.
+Đã rà **1.491 cặp chuỗi**. Đề xuất **357** thay đổi ở VI và **355** ở EN; **44** nhóm vấn đề cần chốt. Áp dụng sentence case, câu ngắn, một thuật ngữ cho mỗi khái niệm và chỉ đưa bước xử lý khi phù hợp với trạng thái.
 
-Tham chiếu: [Microsoft Vietnamese Localization Style Guide](https://download.microsoft.com/download/b/f/e/bfecb1b4-21ab-48fd-a48c-c2471b026f8f/vie-vnm-StyleGuide.pdf) (§4.1.5, §4.1.14, §5.5.2); [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice); [hướng dẫn viết lỗi và nút của Microsoft](https://learn.microsoft.com/en-us/windows/apps/design/style/writing-style). Quy tắc riêng của Wordmet theo yêu cầu audit.
+Tham chiếu: [Microsoft Vietnamese Localization Style Guide](https://download.microsoft.com/download/b/f/e/bfecb1b4-21ab-48fd-a48c-c2471b026f8f/vie-vnm-StyleGuide.pdf) (§4.1.5, §4.1.14, §5.5.2); [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice); [hướng dẫn viết lỗi và nút của Microsoft](https://learn.microsoft.com/en-us/windows/apps/design/style/writing-style); `docs/preparation/reports/Cách viết landing page Wordmet.md`. Quy tắc riêng của Wordmet theo yêu cầu audit.
 
 ## 1. Bảng thuật ngữ
 
@@ -47,12 +47,12 @@ Những chuỗi dưới đây giữ nguyên trong JSON trừ khi mục đó ghi 
 
 | STT | Key | Vấn đề và căn cứ | Điểm cần chốt |
 | ---: | --- | --- | --- |
-| 1 | `Landing.plans.freeList.2`,<br>`Landing.plans.proList.0` ↔ `App.plans.freeList.sessions`,<br>`App.plans.proList.sessions` | Landing ghi cứng 3/30 phiên mỗi ngày; đây là các mặc định trong apps/api/src/settings/settings.definitions.ts, không phải giới hạn cố định. App đọc plans.*.practice_sessions_per_day từ useAppConfig (PlansPage.tsx); Landing PricingSection.tsx chỉ nhận giá từ data.prices. Chưa xác minh cấu hình đang chạy. | Quyết định: tiếp tục nêu số nếu chấp nhận đồng bộ thủ công, bỏ số để copy không lỗi thời nhưng kém cụ thể, hoặc cấp cùng dữ liệu cấu hình cho landing trong một đợt implementation riêng. |
+| 1 | `Landing.plans.freeList.2`,<br>`Landing.plans.proList.0` ↔ `App.plans.freeList.sessions`,<br>`App.plans.proList.sessions` | **Đã xử lý trên `dev` (PR #312):** Hai chuỗi trên landing đã chuyển sang `{count} phiên luyện mỗi ngày` / `{count} practice sessions a day` và đọc live từ API qua `LandingLive.tsx` + `PricingSection.tsx` (`withCount()` dùng `fill()`). | Đã chốt phần đồng bộ dữ liệu. Chỉ lưu ý phụ: nếu admin từng đặt `count = 1`, bản EN sẽ hiện `1 practice sessions a day` vì `PricingSection.tsx` dùng `fill()` chứ chưa dùng ICU plural. |
 | 2 | `Landing.plans.freeList.3`;<br>`Landing.plans.proBadge`;<br>`Landing.plans.aiList.1`;<br>`Landing.plans.aiList.3` | “Dùng thử/Try” trên Free dễ hiểu là thử một lần/Pro trial; “Có AI/AI included” chỉ nổi bật trên Pro dễ gợi ý AI độc quyền; “cho từng từ” không diễn đạt giới hạn. Defaults: Free 15 lượt câu AI + 5 lượt tra AI, Pro 300 + 100; app đọc cấu hình từng nhóm lượt và 0/0 tắt AI trên Free. settings.definitions.ts chỉ kiểm tra quan hệ giữa số phiên Free/Pro, không đảm bảo Pro luôn nhiều lượt AI hơn Free. Free tính tháng lịch theo múi giờ người học; Pro theo mốc chu kỳ theo UTC (entitlements/rules/ai-cycle.ts và cycle.ts). Chưa xác minh số trên môi trường chạy. | Giữ copy claim hiện tại để owner chọn giữa mô tả quyền lợi có điều kiện và cấp dữ liệu cấu hình cho cả hai mặt. Khi chốt dữ liệu, thống nhất “gói Free” và dùng “lượt” cho giới hạn chứ không gọi đó là số câu đã tạo. FAQ câu so sánh gói nằm ngoài hai dictionary và cũng cần đối chiếu khi sửa. Trong bản nháp, các key App.plans.freeList.ai và App.plans.proList.ai chỉ chuẩn hóa tên hai loại lượt, giữ nguyên số và cách nói «mỗi tháng». |
-| 3 | `Metadata.description`,<br>`Landing.learn.review.title`,<br>`Landing.learn.review.body`,<br>`Landing.learn.review.bins.2.label`,<br>`Landing.learn.review.bins.3.label`,<br>`Landing.learn.review.bins.4.label` | “Đúng lúc sắp quên” và các mốc gắn kết quả “dùng được/nhớ lâu” là lời quảng bá. Repo có lịch theo Bậc cố định 1, 3, 7, 14, 30 ngày (learning.constants.ts), không thấy cơ chế đo lúc sắp quên trong schedule.ts. Bản mô tả còn nói chỉ ôn từ đến hạn; schedule.ts có nhánh early/backlog, và sai trong applyRecall giữ Bậc/lịch, khác lựa chọn cần ôn lại trong applyLearn. | Giữ nguyên để owner xác định lời hứa quảng bá hoặc mô tả đúng lịch đến hạn/tách flow Học và Ôn. |
-| 4 | `Landing.groups.lead` | “Đến hạn là Wordmet nhắc”/“When one is due, Wordmet reminds you” có thể hiểu là mỗi từ đều có thông báo riêng. Reminder thực tế phụ thuộc cấu hình của hệ thống và người học (channel-chooser.ts), kiểm tra còn thẻ và ghi nhận tối đa một email mỗi ngày cho người học (reminder-send.service.ts). | Giữ nguyên pending owner: nói về lịch cá nhân kèm điều kiện nhắc qua email, hoặc chỉ nêu lịch đến hạn. |
-| 5 | `Landing.learn.practice.body`,<br>`Landing.learn.practice.demoTitle`,<br>`Landing.learn.practice.choices` | Nội dung nói gõ từ và thấy đáp án ngay khi sai, nhưng demo ngay dưới đó hiển thị danh sách lựa chọn có đánh dấu đúng/sai (LearnSection.tsx), trong khi HeroCycle.tsx mới minh họa gõ từ. PracticeSession.tsx còn có flow gợi ý/thử lại/xem đáp án tuỳ câu. | Giữ nguyên; cần xác định demo muốn giới thiệu gõ từ, chọn từ hay cả hai trước khi đồng bộ copy và hình. |
-| 6 | `Landing.learn.listen.eyebrow`,<br>`Landing.learn.listen.title` | “Mỗi thẻ/On every card” đi cùng lời hứa có giọng Anh-Anh, Anh-Mỹ và IPA. PronunciationLine.tsx phân hai giọng cho từ trong từ điển, một cho từ riêng và ẩn IPA nếu thiếu. | Giữ nguyên; owner có thể phân biệt theo loại từ hoặc giới thiệu khả năng phát âm mà không dùng “mỗi thẻ”. |
+| 3 | `Metadata.description`,<br>`Landing.learn.review.title`,<br>`Landing.learn.review.body`,<br>`Landing.learn.review.bins.2.label`,<br>`Landing.learn.review.bins.3.label`,<br>`Landing.learn.review.bins.4.label` | “Đúng lúc sắp quên” và các mốc gắn kết quả “dùng được/nhớ lâu” là lời quảng bá. Repo có lịch theo Bậc cố định 1, 3, 7, 14, 30 ngày (learning.constants.ts), không thấy cơ chế đo lúc sắp quên trong schedule.ts. **Đã chốt một phần (20/11/2026):** `Landing.learn.review.title` đổi sang «Ghi nhớ qua từng cột mốc» / «Retain words at every milestone» (với eyebrow «Nhắc lịch tự động» / «Automatic reminders»), và `LearnSection.tsx` bỏ hiển thị `body`. | Đã bỏ cụm “đúng lúc sắp quên” ở tiêu đề bước 3; chỉ còn `Metadata.description` và nhãn mốc `bins.*` nếu cần rà thêm. |
+| 4 | `Landing.groups.lead` | **Đã chốt (20/11/2026):** Section nhóm chuyển sang «Nhóm từ theo chủ đề» / «Topic decks» với câu dẫn ngắn «Chọn chủ đề và trình độ để học ngay» / «Pick a topic and level to start». | Đã chốt. |
+| 5 | `Landing.learn.practice.body`,<br>`Landing.learn.practice.demoTitle`,<br>`Landing.learn.practice.choices` | **Đã xử lý phần `body` (20/11/2026):** `LearnSection.tsx` đã bỏ đoạn mô tả `body` ở cả 3 bước; bước 2 hiện gọn «Luyện tập · Điền từ vào câu» / «Practice · Use words in sentences». | Nếu sau này muốn đồng bộ sâu hơn giữa demo trắc nghiệm (`choices`) và cụm «Điền từ vào câu», có thể rà lại minh họa demo. |
+| 6 | `Landing.learn.listen.eyebrow`,<br>`Landing.learn.listen.title` | **Đã xử lý (20/11/2026):** Bước «Nghe phát âm» (`listen`) cùng các key `Landing.learn.listen.*`, `Landing.learn.lead` và `Landing.learn.*.body` đã được gỡ khỏi `LearnSection.tsx` và cặp file `vi.json` / `en.json` (rút còn 3 bước: Lưu từ → Luyện tập → Nhắc lịch tự động). | Đã chốt. |
 | 7 | `Legal.draftNotice` | Thông báo gọi nội dung là bản nháp và hứa bản chính thức trước lúc ra mắt. getLegal trả null cả khi chưa xuất bản lẫn API không truy cập được hoặc trả dữ liệu lỗi; hai page dùng cùng thông báo cho cả hai. Không thể suy ra trạng thái xuất bản từ null. | Giữ nguyên lời công bố; owner chọn câu trung tính về tài liệu chưa hiển thị hoặc tách trạng thái/API trước khi viết hai thông báo. |
 | 8 | `App.houseAd.lead` | `ai-cycle.ts` và `cycle.ts` tính Pro theo chu kỳ tháng từ mốc kích hoạt, Free không có mốc theo tháng lịch. `UsageSection.tsx` ẩn ngày có lượt mới cho Pro/Trial vì gói trả trước có thể hết hạn. | Chốt có giữ ‘mỗi tháng’ cho ưu đãi Pro đang còn hiệu lực hay dùng ‘mỗi chu kỳ’ kèm giải thích. Lead cũng lặp hai bullet lợi ích bên dưới, cần quyết định gộp ở UI nếu giữ đủ thông tin. |
 | 9 | `App.settings.needsPro`,<br>`App.ui.lockedLine`,<br>`App.errors.entitlement-required` | `UsageSection.tsx` hiển thị `needsPro` khi `pool.limit === 0`, cả với tài khoản được cấp mức riêng. `plan-rules.ts` cho cấu hình lượt AI của Free. `problem.test.ts` ghim cặp câu Pro theo quyết định cũ. | Cần chốt khi nào thực sự bắt buộc Pro và khi nào chỉ thông báo tài khoản không có lượt AI. |
@@ -87,9 +87,10 @@ Những chuỗi dưới đây giữ nguyên trong JSON trừ khi mục đó ghi 
 | 38 | `App.plans.order.paid`;<br>`App.plans.order.paidNoDate` | EN nói Pro đang có hiệu lực; đơn đã thanh toán có thể mua kỳ nối tiếp. Màn hiện chỉ đưa `ends_at` vào chuỗi, dù dữ liệu có `starts_at`. | Bạn muốn chỉ xác nhận kỳ Pro đã được mua, hay hiển thị cả ngày bắt đầu khi kỳ mới chưa tới? Đối chiếu `OrderReturnPage.tsx` và `PlansPage.tsx`. |
 | 39 | `App.plans.freeList.aiOff` | UI dùng khi hai hạn mức Free đều bằng 0; câu lại khẳng định chỉ Pro có AI, trong khi API cũng có cấu hình Trial và quyền cấp riêng. | Bạn muốn nói riêng «Gói Free hiện không có lượt AI» hay nêu gói/quyền nào mở được AI? Đối chiếu `PlansPage.tsx` và `plan-numbers.ts`. |
 | 40 | `App.plans.proList.aiWrite` | «Cho từng từ bạn học» có thể được hiểu là AI sẽ tạo câu cho mọi từ. Phần luyện chỉ chọn một số câu AI và có thể chuyển sang kiểu khác nếu AI không tạo được. | Bạn muốn mô tả khả năng AI soạn câu tránh hứa phạm vi «từng từ», hay giữ lời giới thiệu hiện tại? Đối chiếu `CustomizeDialog.tsx` và `ai-question-generator.service.ts`. |
-| 41 | `Landing.hero.line1`,<br>`Landing.hero.line2`,<br>`Landing.hero.lead`,<br>`Landing.hero.topicLabel` | Báo cáo nghiên cứu *Cách viết landing page Wordmet* (§ Thử hai cách mở đầu cho Wordmet) chỉ ra hai hướng mở đầu: (1) Hướng kết quả chung (hiện tại): H1 «Nhớ từ lâu hơn, dùng từ tự tin trong câu» đi kèm lead tra từ, xếp lịch và pill «Từ vựng theo chủ đề bạn cần»; (2) Hướng hành động/quy trình cụ thể: H1 «Lưu và ôn lại những từ tiếng Anh bạn gặp» đi kèm lead «Bạn nhập từ mới gặp trong bài đọc rồi lưu vào nhóm. Wordmet xếp lịch để bạn ôn lại bằng thẻ» và CTA phụ «Xem cách học». Hướng thứ hai bám sát câu chuyện một từ đi từ bài đọc vào vốn từ của người học. | Giữ định vị kết quả hiện tại hay chuyển sang mở đầu bằng hành động lưu và ôn từ đã gặp theo nghiên cứu. Nếu chọn hướng thứ hai, cần thiết kế lại vị trí `accent` trong component Hero (`Hero.tsx`). |
+| 41 | `Landing.hero.line1`,<br>`Landing.hero.line2`,<br>`Landing.hero.lead`,<br>`Landing.hero.topicLabel` | **Đã chốt (20/11/2026):** Giữ hướng kết quả với H1 2 dòng (mỗi vế 1 hàng, cỡ chữ `text-wm-site-hero` 80px trên desktop, bỏ dấu phẩy) «Nhớ từ bền lâu» / «vững vàng trong câu» (EN: «Remember words longer» / «use them with confidence»), pill «Học từ vựng tiếng Anh» / «English vocabulary» và lead gọn «Lưu từ, luyện câu và ôn tự động» / «Save words, practice in context, review on schedule». | Đã chốt. |
 | 42 | `Landing.plans.proSignup` | Nút CTA nằm ở thẻ Pro (`PricingSection.tsx`), hiển thị mức giá các kỳ 1, 3, 12 tháng nhưng liên kết đến `/${locale}/app/register`. Vì landing page không có luồng thanh toán trực tiếp, người học bấm nút sẽ đến trang tạo tài khoản (mặc định ban đầu là Free), sau đó mới vào trang Gói học trong app để thanh toán. Nhãn hiện tại là «Tạo tài khoản» / «Create an account» (khác thẻ Free là «Tạo tài khoản miễn phí» / «Create a free account»). | (1) Giữ «Tạo tài khoản» / «Create an account» để phản ánh đúng hành động tạo tài khoản; (2) Đổi thành «Đăng ký để dùng Pro» / «Sign up for Pro» để thể hiện rõ ý định chọn gói Pro; hoặc (3) Bổ sung microcopy giải thích bên dưới nút (cần can thiệp component). |
-| 43 | `Landing.learn.lead`,<br>`Landing.learn.practice.eyebrow`,<br>`Landing.learn.note.eyebrow` | Khung viết landing page khuyên mỗi bước mở bằng động từ và giữ cùng ví dụ qua các bước theo trình tự tự nhiên. Câu lead của LearnSection đã chuẩn hóa theo đúng chu trình: «Lưu từ, nghe phát âm, luyện và ôn ở cùng một nơi» (Lưu từ sau bài đọc → Nghe phát âm trên thẻ → Luyện từ trong câu → Ôn tập giãn cách). Tuy nhiên trên UI (`LearnSection.tsx`), thẻ Luyện (`practice`) lại được đặt đầu tiên bên trái (chiếm 2 cột) để tạo ấn tượng thị giác, còn thẻ Lưu từ (`note`) nằm ở cột bên phải. | Giữ bố cục UI hiện tại (ưu tiên tính năng luyện tập nổi bật trực quan) hay điều chỉnh thứ tự component theo đúng trình tự thời gian của hành trình người học (Lưu từ → Nghe phát âm → Luyện từ trong câu → Ôn tập giãn cách). |
+| 43 | `Landing.learn.lead`,<br>`Landing.learn.practice.eyebrow`,<br>`Landing.learn.note.eyebrow` | **Đã chốt (20/11/2026):** `LearnSection.tsx` rút gọn còn 3 bước đánh số không có `lead` và không có `body`: 1 Lưu từ · Nhận diện từ gốc (`note`) → 2 Luyện tập · Điền từ vào câu (`practice`) → 3 Nhắc lịch tự động · Ghi nhớ qua từng cột mốc (`review`). | Đã chốt. |
+| 44 | `en:Landing.stage.cycle.*.meaning`,<br>`en:Landing.learn.note.meaning` | Trong `en.json`, 6 nghĩa minh họa của các từ mẫu trên landing (5 từ trong `stage.cycle` và 1 từ trong `learn.note`) vẫn để tiếng Việt (`giảm nhẹ`, `phân bổ`, `khả thi`, `xấu đi`, `mạch lạc`, `verb · xấu đi`), trong khi `en:App.auth.showcase` dịch 5 từ đó sang từ đồng nghĩa tiếng Anh (`lessen`, `allot`, `workable`, `worsen`, `clear`). | (1) Giữ nghĩa tiếng Việt trên landing EN nếu trang EN vẫn nhắm tới người Việt dùng giao diện tiếng Anh; hoặc (2) Đổi sang từ đồng nghĩa/giải nghĩa ngắn bằng tiếng Anh để đồng bộ với `en:App.auth.showcase` và phục vụ người đọc quốc tế. |
 
 ## 3. Bảng thay đổi
 
@@ -99,45 +100,54 @@ Những chuỗi dưới đây giữ nguyên trong JSON trừ khi mục đó ghi 
 
 | Key | Cũ | Mới |
 | --- | --- | --- |
-| `vi:Landing.hero.topicLabel` | `Từ vựng theo đúng chủ đề bạn cần` | `Từ vựng theo chủ đề bạn cần` |
-| `en:Landing.hero.topicLabel` | `Vocabulary for exactly the topics you need` | `Vocabulary for the topics you need` |
-| `vi:Landing.hero.lead` | `Wordmet tra sẵn nghĩa, câu ví dụ và phiên âm, rồi tự xếp lịch ôn cho từng từ. Bạn chỉ việc dành thời gian luyện từ trong câu.` | `Wordmet tra nghĩa, phiên âm và câu ví dụ rồi xếp lịch ôn cho từng từ. Bạn tập trung luyện cách dùng từ trong câu.` |
-| `en:Landing.hero.lead` | `Wordmet looks up the meaning, example sentences and pronunciation, then schedules each word’s review for you. All you do is practice words in sentences.` | `Wordmet looks up meanings, pronunciation, and example sentences, then schedules reviews for each word. Focus on using words in sentences.` |
-| `vi:Landing.hero.signup` | `Bắt đầu miễn phí` | `Tạo tài khoản miễn phí` |
-| `en:Landing.hero.signup` | `Start for free` | `Create a free account` |
-| `vi:Landing.stage.cardLabel` | `Thẻ từ · ôn lại sau {days} ngày` | `Thẻ · ôn lại sau {days} ngày` |
-| `en:Landing.stage.cardLabel` | `Word card · review again in {days}d` | `Card · review in {days}d` |
-| `en:Landing.stage.result` | `Correct · up to Level {level}` | `Correct · moved up to Level {level}` |
-| `en:Landing.stage.binNote` | `review again in` | `review in` |
-| `vi:Landing.groups.title` | `Mỗi bài đọc thành một nhóm từ của riêng bạn` | `Tạo nhóm từ cho mỗi bài đọc` |
-| `en:Landing.groups.title` | `Every reading becomes a deck of your own` | `Build a deck from each text you read` |
-| `en:Landing.learn.title` | `From first meeting to confident use` | `From finding new words to using them confidently` |
-| `vi:Landing.learn.lead` | `Ghi, nghe, luyện và ôn: tất cả ở một nơi.` | `Lưu từ, nghe phát âm, luyện và ôn ở cùng một nơi.` |
-| `en:Landing.learn.lead` | `Save, listen, practice and review: all in one place.` | `Save words, listen to their pronunciation, practice, and review in one place.` |
-| `vi:Landing.learn.practice.eyebrow` | `Trong buổi học` | `Trong phiên luyện` |
-| `en:Landing.learn.practice.eyebrow` | `In a study session` | `In a practice session` |
-| `vi:Landing.learn.note.title` | `Ghi từ trong vài giây` | `Lưu từ trong vài giây` |
-| `vi:Landing.learn.note.body` | `Gõ đúng dạng bạn gặp, Wordmet tự đưa về từ gốc.` | `Gõ đúng dạng từ bạn gặp, Wordmet tự đưa về từ gốc.` |
-| `en:Landing.learn.note.body` | `Type the form you came across and Wordmet takes it back to the base word.` | `Type the word as you saw it. Wordmet finds its base form.` |
-| `en:Landing.learn.review.eyebrow` | `In the days after` | `In the following days` |
-| `vi:Landing.plans.title` | `Bắt đầu miễn phí, lên Pro khi muốn luyện nhiều hơn` | `Bắt đầu miễn phí, nâng cấp Pro khi muốn luyện nhiều hơn` |
-| `en:Landing.plans.title` | `Start free, go Pro when you want to practice more` | `Start for free and upgrade to Pro when you want to practice more` |
-| `vi:Landing.plans.lead` | `Cả hai gói đều ôn thẻ không giới hạn. Hết Pro, từ và lịch ôn của bạn vẫn còn.` | `Cả hai gói đều ôn thẻ không giới hạn. Khi hết hạn Pro, từ vựng và lịch ôn vẫn được giữ nguyên.` |
-| `en:Landing.plans.lead` | `Both plans include unlimited card review. When Pro ends, your words and review schedule stay.` | `Both plans include unlimited card reviews. When Pro ends, your words and review schedule remain.` |
-| `vi:Landing.plans.free` | `Miễn phí` | `Gói Free` |
-| `en:Landing.plans.free` | `Free` | `Free plan` |
-| `vi:Landing.plans.freeList.0` | `Ghi từ, tra nghĩa và nghe phiên âm` | `Lưu từ, tra nghĩa và nghe phát âm` |
-| `en:Landing.plans.freeList.0` | `Save words, look up meanings and hear pronunciation` | `Save words, look up meanings, and listen to pronunciation` |
-| `vi:Landing.plans.aiList.0` | `AI soạn câu và tra từ` | `Câu luyện và tra từ bằng AI` |
-| `en:Landing.plans.aiList.0` | `AI writes sentences and looks up words` | `AI practice sentences and lookups` |
-| `vi:Landing.plans.aiList.3` | `Nhiều lượt AI hơn gói Miễn phí` | `Nhiều lượt AI hơn gói Free` |
-| `vi:Landing.plans.proList.1` | `Mọi quyền lợi của gói Miễn phí` | `Mọi quyền lợi của gói Free` |
-| `vi:Landing.faq.lead` | `Còn câu hỏi khác? Gửi tới {email}, đội Wordmet sẽ trả lời.` | `Còn câu hỏi? Gửi email đến {email}, đội Wordmet sẽ trả lời.` |
-| `en:Landing.faq.lead` | `More questions? Write to {email} and the Wordmet team will reply.` | `Have more questions? Email {email} and the Wordmet team will reply.` |
-| `vi:Landing.final.title` | `Biến bài bạn vừa đọc thành vốn từ của bạn` | `Biến từ mới trong bài vừa đọc thành vốn từ của bạn` |
-| `en:Landing.final.title` | `Turn what you just read into your own vocabulary` | `Build your vocabulary from what you just read` |
-| `vi:Landing.final.note` | `Miễn phí để bắt đầu, không cần cài đặt.` | `Bắt đầu miễn phí, không cần cài đặt.` |
-| `en:Landing.final.note` | `Free to start, nothing to install.` | `Start for free without installing anything.` |
+| `vi:Landing.hero.topicLabel` | `Nâng tầm vốn từ tiếng Anh` | `Học từ vựng tiếng Anh` |
+| `en:Landing.hero.topicLabel` | `Smarter English vocabulary` | `English vocabulary` |
+| `vi:Landing.hero.line1` | `Nhớ từ lâu bền,` | `Nhớ từ bền lâu` |
+| `en:Landing.hero.line1` | `Remember words forever,` | `Remember words longer` |
+| `vi:Landing.hero.line2` | `tự tin dùng trong câu` | `vững vàng trong câu` |
+| `en:Landing.hero.line2` | `use them in a sentence` | `use them with confidence` |
+| `vi:Landing.hero.lead` | `Wordmet tra nghĩa, phiên âm và câu ví dụ rồi xếp lịch ôn cho từng từ. Bạn tập trung luyện cách dùng từ trong câu.` | `Lưu từ, luyện câu và ôn tự động` |
+| `en:Landing.hero.lead` | `Wordmet looks up meanings, pronunciation, and example sentences, then schedules reviews for each word. Focus on using words in sentences.` | `Save words, practice in context, review on schedule` |
+| `vi:Landing.groups.title` | `Học theo nhóm chủ đề` | `Nhóm từ theo chủ đề` |
+| `en:Landing.groups.title` | `Learn with topic decks` | `Topic decks` |
+| `vi:Landing.groups.lead` | `Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.` | `Chọn chủ đề và trình độ để học ngay` |
+| `en:Landing.groups.lead` | `Pick a topic and a level, and Wordmet builds the deck. Each word has its own review schedule.` | `Pick a topic and level to start` |
+| `en:Landing.learn.title` | `From finding new words to using them confidently` | `From seeing a word to using it` |
+| `vi:Landing.learn.practice.eyebrow` | `Trong phiên luyện` | `Luyện tập` |
+| `en:Landing.learn.practice.eyebrow` | `In a practice session` | `Practice` |
+| `vi:Landing.learn.practice.title` | `Luyện từ trong câu thật` | `Điền từ vào câu` |
+| `en:Landing.learn.practice.title` | `Practice words in real sentences` | `Use words in sentences` |
+| `vi:Landing.learn.note.eyebrow` | `Sau khi đọc một bài` | `Lưu từ` |
+| `en:Landing.learn.note.eyebrow` | `After reading an article` | `Save` |
+| `vi:Landing.learn.note.title` | `Lưu từ trong vài giây` | `Nhận diện từ gốc` |
+| `en:Landing.learn.note.title` | `Save a word in seconds` | `Find the base form` |
+| `vi:Landing.learn.review.eyebrow` | `Những ngày sau` | `Nhắc lịch tự động` |
+| `en:Landing.learn.review.eyebrow` | `In the following days` | `Automatic reminders` |
+| `vi:Landing.learn.review.title` | `Ôn đúng lúc sắp quên` | `Ghi nhớ qua từng cột mốc` |
+| `en:Landing.learn.review.title` | `Review right before you forget` | `Retain words at every milestone` |
+| `vi:Landing.plans.title` | `Học miễn phí, bứt phá cùng Pro` | `Bắt đầu miễn phí, luyện nhiều hơn với Pro` |
+| `en:Landing.plans.title` | `Start free, accelerate with Pro` | `Start free, practice more with Pro` |
+| `vi:Landing.plans.lead` | `Cả hai gói đều ôn thẻ không giới hạn. Khi hết hạn Pro, từ vựng và lịch ôn vẫn được giữ nguyên.` | `Ôn thẻ không giới hạn ở cả hai gói` |
+| `en:Landing.plans.lead` | `Both plans include unlimited card reviews. When Pro ends, your words and review schedule remain.` | `Unlimited card reviews on both plans` |
+| `vi:Landing.plans.freeList.0` | `Lưu từ, tra nghĩa và nghe phát âm` | `Lưu từ, tra nghĩa, nghe phát âm` |
+| `en:Landing.plans.freeList.0` | `Save words, look up meanings, and listen to pronunciation` | `Save, look up, and listen` |
+| `vi:Landing.plans.freeList.3` | `Dùng thử câu luyện và tra từ bằng AI` | `Dùng thử tính năng AI` |
+| `en:Landing.plans.freeList.3` | `Try AI practice sentences and lookups` | `Try AI features` |
+| `vi:Landing.plans.proLine` | `Luyện nhiều hơn mỗi ngày, có AI soạn câu luyện riêng cho từng từ và tra từ cùng bạn.` | `Thêm phiên luyện và lượt AI` |
+| `en:Landing.plans.proLine` | `More practice every day, with AI that writes practice sentences for each word and looks up words with you.` | `More practice sessions and AI credits` |
+| `vi:Landing.plans.aiList.0` | `Câu luyện và tra từ bằng AI` | `Tính năng AI` |
+| `en:Landing.plans.aiList.0` | `AI practice sentences and lookups` | `AI features` |
+| `vi:Landing.plans.aiList.1` | `AI viết câu luyện cho từng từ bạn học` | `Tạo câu luyện bằng AI` |
+| `en:Landing.plans.aiList.1` | `AI writes practice sentences for each word you study` | `AI practice questions` |
+| `vi:Landing.plans.aiList.2` | `Tra từ bằng AI khi từ điển chưa có` | `Tra từ ngoài từ điển` |
+| `en:Landing.plans.aiList.2` | `AI lookup when the dictionary doesn’t have a word` | `AI dictionary lookup` |
+| `en:Landing.faq.title` | `Frequently asked questions` | `Common questions` |
+| `vi:Landing.faq.lead` | `Còn câu hỏi? Gửi email đến {email}, đội Wordmet sẽ trả lời.` | `Cần hỗ trợ? Liên hệ {email}` |
+| `en:Landing.faq.lead` | `Have more questions? Email {email} and the Wordmet team will reply.` | `Need help? Email {email}` |
+| `vi:Landing.final.title` | `Biến bài đọc thành tiếng Anh trôi chảy` | `Bắt đầu học từ hôm nay` |
+| `en:Landing.final.title` | `Turn reading into fluent English` | `Start learning today` |
+| `vi:Landing.final.note` | `Bắt đầu miễn phí, không cần cài đặt.` | `Miễn phí, không cần cài đặt` |
+| `en:Landing.final.note` | `Start for free without installing anything.` | `Free, nothing to install` |
 
 ### `Legal`
 
