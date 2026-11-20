@@ -114,6 +114,8 @@ phụ thuộc tỉ lệ nén thật (bản thử nén cao vì dữ liệu tổng
 lần đầu. 6. Kiểm `pg_stat_archiver`, cảnh báo, rồi diễn tập restore vào một container tách mạng từ R2 thật.
 Rollback: trả image Postgres cũ và `DATABASE_URL` về `wordmet` (đo: chạy ngay).
 
+**As-built (18/11/2026):** bước 2 không làm được như viết: compose mới tự đổi image và role, nên code không thể lên server trước khi role tồn tại. Thứ tự đã dùng (tạm dừng CD, lấy code không deploy, build image, `db-roles.sh`, restart, base backup, rồi `deploy.sh`) nằm ở `deploy/README.md`, mục "Database roles and WAL-G (first rollout)"; kết quả ở `docs/deliveries/restore-safety.md`, mục "M3 — as-built".
+
 ## 7. Quyết định (chốt 17/11/2026; chủ dự án nhờ Claude đề xuất, rồi đồng ý cả bốn)
 
 - **Q1. Giữ 14 ngày** (`wal-g delete retain FULL 14`), bằng `KEEP_REMOTE=14` của `pg_dump` đang có; `pg_dump` giữ làm bản thứ hai.

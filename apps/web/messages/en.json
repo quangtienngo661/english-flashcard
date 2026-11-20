@@ -401,7 +401,6 @@
     },
     "speak": {
       "word": "Listen",
-      "sentence": "Listen to the sentence",
       "uk": "Play the UK pronunciation",
       "us": "Play the US pronunciation",
       "pending": "Preparing audio…"
@@ -1035,11 +1034,7 @@
       "added": "Added “{word}” to “{group}”.",
       "alreadyIn": "“{word}” is already in “{group}”.",
       "groupFull": "This deck is full. Choose another deck.",
-      "tabsLabel": "Parts of the word page",
       "tabMeanings": "Meanings",
-      "tabSentences": "Saved sentences",
-      "tabForms": "Forms",
-      "tabTopic": "Same topic",
       "levelBar": "Now at {level}",
       "nextReview": "Next review",
       "seenTitle": "Saved sentences",

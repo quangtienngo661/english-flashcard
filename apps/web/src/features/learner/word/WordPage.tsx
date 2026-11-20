@@ -17,9 +17,8 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { SectionTitle } from '@/ui/SectionTitle';
 import { Skeleton } from '@/ui/Skeleton';
-import { SpeakButton, SpeakSentence } from '@/ui/SpeakButton';
+import { SpeakButton } from '@/ui/SpeakButton';
 import { EmptyState, ErrorState } from '@/ui/States';
-import { Tabs } from '@/ui/Tabs';
 import { TextButton } from '@/ui/TextButton';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
 import { useAddWord } from '../add-word/add-word-context';
@@ -70,7 +69,7 @@ export function WordPage() {
 const senseList = (data: WordPageData) => data.sections.flatMap((s) => s.senses);
 
 /**
- * The page: head, tabs, meanings and "Câu bạn đã gặp" in the main column; "Bạn đang học" and "Cùng chủ đề" in the right column from
+ * The page: head, meanings and "Câu bạn đã gặp" in the main column; "Bạn đang học" and "Cùng chủ đề" in the right column from
  * 1024 px. Below that the two columns dissolve (`contents`) and `order` puts "Bạn đang học" after the head and "Cùng chủ đề" last.
  */
 function WordBody({ data }: { data: WordPageData }) {
@@ -84,16 +83,12 @@ function WordBody({ data }: { data: WordPageData }) {
   const sentenceTotal = senses.reduce((n, s) => n + s.sentence_count, 0);
   const showSentences = learned.length > 0 || sentenceTotal > 0;
   const groupName = (item: ItemState | undefined) => item?.group_ids.map((id) => groups.find((g) => g.id === id)?.name).find(Boolean);
-  const hasForms = data.inflections.length > 0 || senses.some((s) => s.form_of);
 
   return (
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-7">
       <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-col lg:gap-5">
         <div className="order-1 lg:order-none">
           <WordHead data={data} />
-        </div>
-        <div className="order-3 lg:order-none">
-          <WordTabs count={senses.length} sentences={showSentences ? sentenceTotal : null} forms={hasForms} topic={Boolean(topic)} />
         </div>
         <div id="nghia" className="order-4 flex scroll-mt-24 flex-col gap-5 lg:order-none">
           {data.sections.map((section, s) => {
@@ -223,25 +218,6 @@ function BaseForms({ base, label, current }: { base: string; label: string; curr
   return <FormsLine label={label} base={base} forms={page.data?.inflections ?? []} current={current} />;
 }
 
-/** Jump links inside the page (mockup L591), with counts; they wrap on phones. */
-function WordTabs({ count, sentences, forms, topic }: { count: number; sentences: number | null; forms: boolean; topic: boolean }) {
-  const t = useTranslations('App.word');
-  const tabs = [
-    { id: 'meanings', href: '#nghia', label: t('tabMeanings'), count },
-    ...(sentences !== null ? [{ id: 'sentences', href: '#cau-da-gap', label: t('tabSentences'), count: sentences }] : []),
-    ...(forms ? [{ id: 'forms', href: '#dang-chia', label: t('tabForms') }] : []),
-    ...(topic ? [{ id: 'topic', href: '#cung-chu-de', label: t('tabTopic') }] : []),
-  ];
-  return (
-    <Tabs
-      label={t('tabsLabel')}
-      selected="meanings"
-      items={tabs.map(({ id, label, count }) => ({ id, label, count }))}
-      hrefs={Object.fromEntries(tabs.map((tab) => [tab.id, tab.href]))}
-    />
-  );
-}
-
 function MeaningsOfPos({ pos, count, children }: { pos: string; count: number; children: ReactNode }) {
   const t = useTranslations('App.word');
   const id = `pos-${pos}`;
@@ -289,12 +265,7 @@ function SeenSentences({ data, learned, forms }: { data: WordPageData; learned: 
           <ul className="flex flex-col divide-y divide-wm-line">
             {rows.map(({ sentence, sense, n }) => (
               <li key={sentence.id} className="flex flex-col gap-1 py-4">
-                <div className="flex items-start gap-1">
-                  <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.text} lemma={sense.lemma} forms={forms} /></p>
-                  <span className="shrink-0">
-                    <SpeakSentence private text={sentence.text} />
-                  </span>
-                </div>
+                <p className="min-w-0 break-words font-wm-sans text-wm-small text-wm-ink"><TargetWord text={sentence.text} lemma={sense.lemma} forms={forms} /></p>
                 <p className="text-wm-meta text-wm-muted">
                   {t('seenMeta', { n, meaning: sense.meaning.text, date: format.date(sentence.created_at, 'numeric') })}
                 </p>

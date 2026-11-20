@@ -401,7 +401,6 @@
     },
     "speak": {
       "word": "Nghe phát âm",
-      "sentence": "Nghe câu",
       "uk": "Nghe giọng Anh-Anh",
       "us": "Nghe giọng Anh-Mỹ",
       "pending": "Đang tạo âm thanh"
@@ -1035,11 +1034,7 @@
       "added": "Đã thêm “{word}” vào nhóm “{group}”.",
       "alreadyIn": "“{word}” đã có trong nhóm “{group}”.",
       "groupFull": "Nhóm này đã đầy. Chọn nhóm khác.",
-      "tabsLabel": "Các phần của trang từ",
       "tabMeanings": "Nghĩa",
-      "tabSentences": "Câu đã gặp",
-      "tabForms": "Dạng chia",
-      "tabTopic": "Cùng chủ đề",
       "levelBar": "Đang ở {level}",
       "nextReview": "Ôn tiếp",
       "seenTitle": "Câu bạn đã gặp",

@@ -23,6 +23,7 @@ import { LEVEL_FILL, LEVELS, toLevel, useLevelName } from '@/ui/levels';
 import type { GroupSummary } from '../groups/groups-api';
 import { refillKind } from '../settings/refill';
 import { readOwnSentencesOn, writeOwnSentencesOn } from './own-sentences';
+import { sessionMax } from './session-max';
 import {
   DEFAULT_SORT,
   SORTS,
@@ -60,7 +61,6 @@ const offered = (sort: Sort): Sort => (HIDDEN_SORTS.includes(sort) ? 'queue' : s
 type McPick = 'meaning' | 'word' | 'mixed';
 const SOURCE_NAME: Record<Source, string> = { today: 'hero.title', group: 'sources.group.name', weak: 'sources.weak.name', priority: 'sources.priority.name', all: 'sources.all.name' };
 /** #249 defaults, for an API that does not send the new fields yet. */
-const SCOPE_MAX = 100;
 
 const todayWords = (g: GroupSummary) => g.today.priority + g.today.due + g.today.new;
 
@@ -133,8 +133,8 @@ function CustomizeForm({
   else scopeWords = groups.reduce((n, g) => n + g.total, 0);
 
   const scopeMode = config?.session_max_mode === 'scope_words';
-  const sessionMax = scopeMode ? Math.max(1, Math.min(scopeWords, config?.scope_questions_max ?? SCOPE_MAX)) : (config?.max_questions_per_session ?? 20);
-  const count = Math.max(1, Math.min(countWanted ?? config?.default_questions_per_session ?? 10, sessionMax));
+  const maxQuestions = sessionMax(config, scopeWords);
+  const count = Math.max(1, Math.min(countWanted ?? config?.default_questions_per_session ?? 10, maxQuestions));
   const aiCap = config?.ai_max_mode === 'fixed' ? Math.min(config.ai_max_fixed ?? 5, count) : Math.floor((count * (config?.ai_max_percent ?? 50)) / 100);
   const cachedLeft = aiPool?.remaining ?? 0;
   // After a 403 the API's own count of units left wins over the cached one until the entitlements are read again (review I1): the
@@ -268,7 +268,12 @@ function CustomizeForm({
       <div className={cn('flex flex-col gap-6', hasWords && 'md:flex-row md:gap-8')}>
         {wordsColumn}
         <section className="flex min-w-0 flex-1 flex-col gap-3">
-          <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('questions')}</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="font-wm-sans text-wm-base-strong text-wm-ink">{tc('questions')}</h3>
+            <span className="flex-1" />
+            {scopeMode && <span className="whitespace-nowrap text-wm-meta text-wm-muted">{tc('countMaxScope', { max: maxQuestions })}</span>}
+            <Stepper label={tc('count')} value={count} min={1} max={maxQuestions} onChange={setCountWanted} />
+          </div>
           <div className="flex flex-col gap-0.5 rounded-wm-row bg-wm-bg p-1">
             <TypeRow label={t('types.mcq_definition')} on={mcq} onChange={setMcq} />
             <TypeRow label={t('types.true_false_definition')} on={trueFalse} onChange={setTrueFalse} />
@@ -376,11 +381,6 @@ function CustomizeForm({
           </p>
         )}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('count')}</span>
-            <Stepper label={tc('count')} value={count} min={1} max={sessionMax} onChange={setCountWanted} />
-            {scopeMode && <span className="whitespace-nowrap text-wm-meta text-wm-muted">{tc('countMaxScope', { max: sessionMax })}</span>}
-          </div>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="whitespace-nowrap font-wm-sans text-wm-small-strong text-wm-ink">{tc('order')}</span>
             <Select

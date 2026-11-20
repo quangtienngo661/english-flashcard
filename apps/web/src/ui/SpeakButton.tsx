@@ -54,18 +54,6 @@ export function SpeakWord({ text, audioUrl = null }: { text: string; audioUrl?: 
   );
 }
 
-export function SpeakSentence({ text, private: isPrivate = false }: { text: string; private?: boolean }) {
-  const { us, usLocal } = useVoices();
-  const t = useTranslations('App.speak');
-  const voice = isPrivate ? usLocal : us;
-  if (!voice) return null;
-  return (
-    <VoiceButton text={text} voice={voice} label={t('sentence')}>
-      <Volume2 aria-hidden="true" className="size-4" />
-    </VoiceButton>
-  );
-}
-
 /**
  * Figma "Nút loa" (`54:657`): an accent-soft circle, 32 px (28 px in the word page head), speaker icon about 17 px.
  * Đợt C §5.5 (DC24, DC34): one accent's speaker. With a pre-made file it plays the file (one player for the page); without one, or when

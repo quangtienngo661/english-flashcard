@@ -132,6 +132,15 @@ describe('Tùy chỉnh phiên: words', () => {
     expect(within(dialog).queryByText(/^tối đa/)).not.toBeInTheDocument();
   });
 
+  it('the question count sits on the "Câu hỏi" heading row, like the AI count on its own, not in the footer with the order', async () => {
+    const { dialog } = await open('Luyện tất cả');
+    const headingRow = within(dialog).getByRole('heading', { name: 'Câu hỏi' }).parentElement as HTMLElement;
+    expect(within(headingRow).getByRole('textbox', { name: 'Số câu' })).toBeInTheDocument();
+    const aiRow = within(dialog).getByRole('heading', { name: 'Câu AI viết' }).parentElement as HTMLElement;
+    expect(within(aiRow).getByRole('textbox', { name: 'Câu AI viết' })).toBeInTheDocument();
+    expect(within(headingRow).queryByRole('textbox', { name: 'Câu AI viết' })).toBeNull();
+  });
+
   it('the order list has no "Bấm Cần ôn lại lâu nhất trước", "Quá hạn lâu nhất" or "Lâu chưa luyện" (owner 14/11/2026): five orders, queue first', async () => {
     const { dialog } = await open('Theo nhóm');
     await userEvent.click(within(dialog).getByRole('button', { name: /Thứ tự/ }));
