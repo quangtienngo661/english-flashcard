@@ -33,10 +33,9 @@ function loop(el: Element, run: (wait: (ms: number, next: () => void) => void) =
 }
 
 /**
- * The living demos of "Từ lúc gặp tới lúc dùng được" (M8.6), around the card grid. Ghi từ types the word again and again with the caret
- * blinking (CSS) and shows the result row after it (`data-wm-off` hides it, 400 ms); Ôn đúng lúc lights the boxes in turn (`data-on`).
- * The listen ring is CSS only. Each loop runs while its card is on screen (30 %); off screen, and with reduced motion, every card shows
- * its server end state.
+ * The living demos of "Từ lúc gặp đến lúc dùng được" (M8.6), around the step list. Lưu từ types the word again and again with the caret
+ * blinking (CSS) and shows the result row after it (`data-wm-off` hides it, 400 ms); Nhắc lịch tự động lights the boxes in turn (`data-on`).
+ * Each loop runs while its card is on screen (30 %); off screen, and with reduced motion, every card shows its server end state.
  */
 export function DemoLoops({ className, children }: { className?: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);

@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Reveal } from './Reveal';
 
-/** A run of text (with the class its words carry, e.g. the hero's accent) or a `<br>` with its class. */
-export type SplitSegment = { text: string; className?: string } | { br: string };
+/** A run of text (with the class its words carry, e.g. the hero's accent) or a `<br>` (always, or with a class). */
+export type SplitSegment = { text: string; className?: string } | { br: string | true };
 
 /**
  * A title that comes in word by word (M8.6 "Words": opacity 650 ms, blur 12 → 0 and `.3em` → 0 in 800 ms, 60 ms apart). Screen readers
@@ -32,7 +32,7 @@ export function SplitWords({
   const words: ReactNode[] = [];
   segments.forEach((segment, s) => {
     if ('br' in segment) {
-      words.push(<br key={`br${s}`} className={segment.br} />);
+      words.push(<br key={`br${s}`} className={typeof segment.br === 'string' && segment.br ? segment.br : undefined} />);
       return;
     }
     segment.text.split(/(\s+)/).forEach((part, p) => {

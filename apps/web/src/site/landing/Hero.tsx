@@ -37,8 +37,8 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
           id="hero-title"
           trigger="load"
           delay={120}
-          className="max-w-205 text-center font-wm-display text-wm-site-hero-mobile text-wm-ink lg:text-wm-site-hero"
-          segments={[{ text: `${copy.line1} ` }, { br: 'md:hidden' }, { text: copy.line2 }]}
+          className="max-w-full text-center font-wm-display text-wm-site-hero-mobile text-wm-ink md:text-wm-site-section lg:text-wm-site-hero"
+          segments={[{ text: `${copy.line1} ` }, { br: true }, { text: copy.line2 }]}
         />
         <Reveal as="p" trigger="load" delay={620} blur={10} className={cn(TEXT_17, 'max-w-150 text-center text-wm-muted md:text-wm-lead')}>
           {copy.lead}

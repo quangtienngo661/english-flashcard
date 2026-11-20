@@ -31,9 +31,6 @@ export const BIN_VALUE = 'font-wm-display text-[0.9375rem]/[1.4] font-bold white
 // raw-ok: "7 ngày" on the floating card is Bricolage Bold 20 (`5:150`)
 export const FLOAT_VALUE = 'font-wm-display text-[1.25rem]/[1.3] font-bold';
 
-// raw-ok: "viable" in the listen card is Bricolage Bold 28 (`7:161`)
-export const LISTEN_WORD = 'font-wm-display text-[1.75rem]/[1.2] font-bold';
-
 // raw-ok: the lit boxes of the floating card glow 0 0 12 accent 34 % (`5:150`), a shadow no token has
 export const BIN_GLOW = 'shadow-[0_0_12px_rgb(30_58_138/0.34)]';
 

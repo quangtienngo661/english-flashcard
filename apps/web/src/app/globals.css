@@ -1001,9 +1001,8 @@ html:not(.js) .wm-topic-track .gcar-slot {
   --wm-site-bob-up: -5px;
   --wm-site-bob-down: 6px;
   --wm-site-parallax: 400ms;
-  /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
+  /* Demo cards: caret 1 s, result row 400 ms from 8 px and blur 6. */
   --wm-site-caret: 1s;
-  --wm-site-ping: 2.4s;
   --wm-site-result: 400ms;
   --wm-site-result-rise: 8px;
   --wm-site-result-blur: 6px;
@@ -1116,18 +1115,6 @@ html:not(.js) .wm-topic-track .gcar-slot {
 @keyframes wm-site-blink {
   50% {
     opacity: 0;
-  }
-}
-/* bản 3's ping as a ring that grows 16 px past the 52 px button (scale 84 / 52) and fades by 70 %. */
-@keyframes wm-site-ping {
-  0% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(1.62);
   }
 }
 @keyframes wm-site-turn {
@@ -1252,7 +1239,7 @@ html:not(.js) .wm-topic-track .gcar-slot {
     animation-delay: -2s;
   }
 
-  /* Demo cards (S/interactive/DemoLoops.tsx): caret, the result row while the word is typed again, the listen ping. */
+  /* Demo cards (S/interactive/DemoLoops.tsx): caret and the result row while the word is typed again. */
   html.js [data-caret] {
     animation: wm-site-blink var(--wm-site-caret) steps(1) infinite;
   }
@@ -1266,19 +1253,6 @@ html:not(.js) .wm-topic-track .gcar-slot {
     opacity: 0;
     transform: translateY(var(--wm-site-result-rise));
     filter: blur(var(--wm-site-result-blur));
-  }
-  html.js [data-listen] {
-    position: relative;
-    isolation: isolate;
-  }
-  html.js [data-listen]::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: var(--color-wm-accent);
-    animation: wm-site-ping var(--wm-site-ping) ease-out infinite;
   }
 
   /* Pro card: a short light runs round its 2 px border only while the card is on screen (`data-wm-on`), like the closing card's ring;

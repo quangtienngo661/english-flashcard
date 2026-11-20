@@ -27,14 +27,16 @@ export function Glow({ tone, className }: { tone: 'accent' | 'mark'; className: 
  * A section title and its one-line lead, centred (left on a phone where Figma draws it so). The title comes in word by word as it scrolls
  * in, the lead 300 ms later with blur 8 (Figma scene 2, `13:206`).
  */
-export function SectionHead({ id, title, lead, align = 'center' }: { id: string; title: string; lead: string; align?: 'center' | 'phone-left' }) {
+export function SectionHead({ id, title, lead, align = 'center' }: { id: string; title: string; lead?: string; align?: 'center' | 'phone-left' }) {
   const place = align === 'center' ? 'items-center text-center' : 'items-start text-left md:items-center md:text-center';
   return (
     <div className={cn('flex flex-col gap-3', place)}>
       <SplitWords as="h2" id={id} className={SECTION_TITLE} segments={[{ text: title }]} />
-      <Reveal as="p" delay={300} blur={8} className={cn(TEXT_17, 'max-w-160 text-wm-muted')}>
-        {lead}
-      </Reveal>
+      {lead && (
+        <Reveal as="p" delay={300} blur={8} className={cn(TEXT_17, 'max-w-160 text-wm-muted')}>
+          {lead}
+        </Reveal>
+      )}
     </div>
   );
 }

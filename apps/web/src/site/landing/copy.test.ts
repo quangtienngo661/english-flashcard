@@ -32,14 +32,14 @@ describe('Landing copy (M8.5)', () => {
     expect(left).toHaveLength(6);
     // Prose is never copied from vi; what stays equal is data (words, IPA, numbers) and the names "Pro" and "−{percent}%".
     const flatVi = landing(vi);
-    const prose = [...landing(en)].filter(([k]) => /^(hero|plans|faq|final)\.|^groups\.(title|lead)$|^learn\.\w+\.(eyebrow|title|body)$|^learn\.(title|lead)$/.test(k));
+    const prose = [...landing(en)].filter(([k]) => /^(hero|plans|faq|final)\.|^groups\.(title|lead)$|^learn\.\w+\.(eyebrow|title)$|^learn\.title$/.test(k));
     const copied = prose.filter(([k, v]) => flatVi.get(k) === v).map(([k]) => k);
     expect(copied.filter((k) => k !== 'plans.pro' && k !== 'plans.saving')).toEqual([]);
   });
 
   it('the English landing follows the EN conventions of UI copy round 2 and the same rules as the Vietnamese one', () => {
     const flat = [...landing(en)];
-    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words forever, use them in a sentence');
+    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words longer use them with confidence');
     expect('accent' in en.Landing.hero).toBe(false);
     expect(flat.filter(([, v]) => /!/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /\bPro\b.*\bAI\b|\bAI\b.*\bPro\b/.test(v)).map(([k]) => k)).toEqual([]);
@@ -50,8 +50,8 @@ describe('Landing copy (M8.5)', () => {
     expect(fill(en.Landing.learn.practice.tally.wrongLabel, { count: 1 })).toBe('1 incorrect');
   });
 
-  it('the hero heading is Figma\'s, in one colour (no accent key)', () => {
-    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu bền, tự tin dùng trong câu');
+  it('the hero heading is in one colour (no accent key)', () => {
+    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ bền lâu vững vàng trong câu');
     expect('accent' in vi.Landing.hero).toBe(false);
   });
 
