@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landing: sửa theo góp ý</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Token values copied from packages/design-tokens/web.css and web-dark.css (18/11/2026). */
+:root{
+  --bg:#f6f7fa;--surface:#fff;--ink:#1b2444;--muted:#525a78;--line:#e1e5ee;
+  --accent:#1e3a8a;--accent-soft:#e7ecf8;--on-accent:#fff;--mark:#ffd84a;
+  --pass:#1b7a46;--pass-soft:#e4f2ea;--fail:#b8352a;--fail-soft:#f8e7e5;
+  --shadow:0 1px 2px rgba(27,36,68,.06),0 8px 24px -12px rgba(27,36,68,.18);
+  --display:'Bricolage Grotesque','Noto Sans',sans-serif;--sans:'Noto Sans',system-ui,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1220;--surface:#171b2a;--ink:#eceef5;--muted:#a6adc4;--line:#2a3044;
+  --accent:#8da2ff;--accent-soft:#2c334f;--on-accent:#0f1220;
+  --pass:#62c98f;--pass-soft:#24373c;--fail:#ff8d80;--fail-soft:#3c2f3a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 var(--sans)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:56px}
+.top b{font-family:var(--display);font-size:18px}
+.top nav{display:flex;gap:12px;flex:1;overflow-x:auto;white-space:nowrap;font-size:13px}
+.top nav a{color:var(--muted);text-decoration:none}
+.btn-theme{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;font:500 13px var(--sans);cursor:pointer}
+h1.doc{font-family:var(--display);font-size:30px;line-height:1.2;margin:32px 0 8px}
+h2.item{font-family:var(--display);font-size:22px;margin:56px 0 4px;scroll-margin-top:72px}
+.why{color:var(--muted);margin:0 0 16px;max-width:760px}
+table.sum{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
+table.sum th,table.sum td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.sum th{font-weight:600;color:var(--muted);font-size:12px}
+.pair{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:900px){.pair.two{grid-template-columns:1fr 1fr}}
+.tag{display:inline-block;font:600 11px var(--sans);letter-spacing:.02em;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+.tag.before{background:var(--fail-soft);color:var(--fail)}
+.tag.after{background:var(--pass-soft);color:var(--pass)}
+.shot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.shot img{width:100%;height:auto;display:block;border-radius:6px}
+.canvas{background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:32px 20px;overflow:hidden}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+
+/* Landing pieces */
+.sec-head{text-align:center;max-width:620px;margin:0 auto 28px}
+.sec-head h3{font-family:var(--display);font-weight:600;font-size:clamp(26px,4vw,36px);line-height:1.15;margin:0 0 10px}
+.sec-head p{color:var(--muted);margin:0;font-size:16px}
+.hero-title{font-family:var(--display);font-weight:600;font-size:clamp(36px,6vw,60px);line-height:1.08;text-align:center;margin:12px auto;max-width:760px}
+.pill{display:block;width:max-content;margin:0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;font-size:13px;color:var(--muted)}
+.lead{color:var(--muted);text-align:center;max-width:560px;margin:0 auto 18px;font-size:16px}
+.ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.b{border-radius:10px;padding:10px 16px;font:600 14px var(--sans);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.b.p{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+
+/* Groups (item 3) */
+/* Groups carousel (item 3, bản 3): the app's "Vòng cung" (GroupCarousel.tsx, globals.css .gcar-*, .gstack-*), auto-advancing, with the
+   centre group's words on its face. Group colours from packages/design-tokens (group-0…6). */
+:root{--g0:#e5603f;--g0i:#984941;--g1:#149384;--g1i:#17696c;--g2:#7a55d3;--g2i:#56429d;--g3:#d99a17;--g3i:#86641f;--g4:#4a9637;--g4i:#376d45;--g5:#d2427a;--g5i:#8c3765;--g6:#2a86d1;--g6i:#29629d;
+  --ease-car:cubic-bezier(.34,1.56,.64,1);--ease-rise:cubic-bezier(.3,1.3,.5,1)}
+:root[data-theme="dark"]{--g0i:#e87052;--g1i:#37a396;--g2i:#9d81de;--g3i:#d99a17;--g4i:#62a451;--g5i:#dc6c97;--g6i:#4c99d8}
+.canvas.bleed{overflow:visible}
+.gcar{position:relative;width:100vw;margin-left:calc(50% - 50vw);touch-action:pan-y;user-select:none}
+#gtrack{position:relative;height:33.5rem;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);--fade:min(9vw,120px)}
+.gslot{position:absolute;top:1.5rem;left:50%;width:18.125rem;margin-left:-9.0625rem;transform-origin:50% 130%;
+  transform:translateX(calc(var(--x)*1px)) translateY(calc(var(--y)*1px)) rotate(calc(var(--r)*1deg)) scale(var(--s));
+  opacity:var(--o);z-index:var(--z);transition:transform 660ms var(--ease-car),opacity 300ms ease-out;cursor:pointer}
+.gslot[data-abs="0"]{cursor:default}
+.gst{position:relative;font-size:1rem}
+.gface{position:relative;z-index:1;display:flex;flex-direction:column;height:23em;overflow:hidden;border:2px solid var(--tone);border-radius:22px;
+  background:var(--surface);padding:1.6em 1.74em 1.4em;color:var(--ink);
+  box-shadow:0 1px 2px rgba(27,36,68,.08),0 2.23em 4.18em -2.65em color-mix(in srgb,var(--tone) 70%,transparent)}
+.gbehind{position:absolute;inset:0 0 auto;height:23em;border:1.5px solid color-mix(in srgb,var(--tone) 50%,var(--surface));border-radius:22px;background:var(--surface)}
+.gbehind[data-n="1"]{transform:translateY(1.325em) scale(.94);filter:blur(.156em);opacity:.85}
+.gbehind[data-n="2"]{transform:translateY(2.509em) scale(.88);filter:blur(.3125em);opacity:.55}
+.gbehind[data-n="3"]{transform:translateY(3.486em) scale(.82);filter:blur(.4375em);opacity:.3}
+.gmeta{margin:0;font-size:1.0875em;font-weight:500;color:var(--muted)}
+.gname{flex:none;margin:.35em 0 0;font:800 2.25em/1.08 var(--display);letter-spacing:-.021em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gwords{flex:1;min-height:0;overflow:hidden;display:flex;flex-wrap:wrap;align-content:center;gap:.4em;margin:.9em 0 .6em;padding:0;list-style:none}
+.gwords li{font:600 1em/1 var(--display);padding:.45em .65em;border-radius:.6em;color:var(--tone-ink);background:color-mix(in srgb,var(--tone) 12%,var(--surface));
+  opacity:0;transform:translateY(10px) scale(.96)}
+.gwords li.more{color:var(--muted);background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.gfoot{flex:none;margin:0;border-top:1px solid var(--line);padding-top:.6em;font-size:1.144em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gfoot b{font:700 1.12em var(--display);color:var(--ink)}
+.gslot[data-abs="0"] .gwords li{animation:wrise 460ms var(--ease-rise) forwards;animation-delay:calc(220ms + var(--i)*70ms)}
+@keyframes wrise{to{opacity:1;transform:none}}
+.gcount{flex:none;display:flex;align-items:baseline;gap:.25em;margin:0;font-size:1.255em;font-weight:600;color:var(--muted)}
+.gcount b{font:800 3em/1 var(--display);letter-spacing:-.02em;color:var(--tone-ink)}
+.gunder{text-align:center;font-size:15px;color:var(--ink);margin:4px 0 12px}
+.gunder span{color:var(--muted)}
+.gctl{display:flex;justify-content:center;align-items:center;gap:10px}
+.gctl button{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px;cursor:pointer}
+.gdots{display:flex;gap:6px}
+.gdots i{width:7px;height:7px;border-radius:999px;background:var(--line);transition:width 300ms,background 300ms}
+.gdots i.on{width:22px;background:var(--accent)}
+@media(max-width:767px){#gtrack{height:23rem;--fade:28px}.gst{font-size:.7241rem}.gslot{width:13.125rem;margin-left:-6.5625rem;top:1rem}.gunder{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.gslot{transition:none}.gslot[data-abs="0"] .gwords li{animation:none;opacity:1;transform:none}}
+.gnotes{margin:14px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.gnotes b{color:var(--ink)}
+/* Learn timeline (item 8) */
+.steps{list-style:none;margin:0 auto;padding:0;max-width:980px;position:relative}
+.steps>li{display:grid;grid-template-columns:40px 1fr;gap:0 16px;position:relative;padding-bottom:28px}
+.steps>li:not(:last-child)::before{content:"";position:absolute;left:19px;top:40px;bottom:0;width:2px;background:var(--line)}
+.num{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:600 16px var(--display)}
+.step{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:860px){.step{grid-template-columns:300px 1fr;align-items:start}}
+.eyebrow{font:600 12px var(--sans);color:var(--accent);margin:8px 0 2px}
+.step h4{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.25;margin:0 0 6px}
+.step div>p:not(.q){margin:0;color:var(--muted)}
+.step div>p.eyebrow{color:var(--accent);margin:8px 0 2px}
+.demo{padding:16px}
+.typed{border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:10px 12px;font-size:16px}
+.typed::after{content:"";display:inline-block;width:2px;height:18px;background:var(--accent);vertical-align:-3px;margin-left:1px}
+.res{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--bg)}
+.res b{font-family:var(--display);font-size:18px}
+.res span{font-size:12px;color:var(--muted)}
+.listen{display:flex;gap:14px;align-items:center}
+.listen .play{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:18px;flex:none}
+.listen b{font-family:var(--display);font-size:22px;display:block}
+.listen small{color:var(--muted)}
+.bins{display:flex;gap:8px;flex-wrap:wrap;list-style:none;margin:0;padding:0}
+.bins li{flex:1 1 90px;background:var(--bg);border-radius:10px;padding:8px 12px}
+.bins b{display:block;font-family:var(--display);font-size:16px}
+.bins span{font-size:12px;color:var(--muted)}
+
+/* Practice demo (items 4–7) */
+.pq{padding:18px}
+.pq .meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.pq .meta .kind{flex:1}
+.cnt{display:inline-flex;align-items:center;gap:3px;font-weight:600;border-radius:6px;padding:1px 7px}
+.cnt.ok{background:var(--pass-soft);color:var(--pass)}
+.cnt.no{background:var(--fail-soft);color:var(--fail)}
+.bar{display:flex;gap:3px;margin:10px 0 0}
+.bar i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.bar i.d{background:var(--accent)}
+.q{font-family:var(--display);font-weight:500;font-size:clamp(20px,2.6vw,26px);line-height:1.4;margin:26px 0 22px;padding:0 2px}
+.fill{display:inline-block;border:1.5px solid var(--pass);background:var(--pass-soft);color:var(--ink);border-radius:8px;padding:0 8px;line-height:1.35}
+.choices{display:grid;gap:8px;grid-template-columns:1fr}
+@media(min-width:620px){.choices{grid-template-columns:1fr 1fr}}
+.ch{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font-size:15px;min-height:46px}
+.ch .k{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font:600 12px var(--sans);background:var(--accent-soft);color:var(--accent);flex:none}
+.ch .w{flex:1}
+.ch .n{font:600 12px var(--sans);display:inline-flex;gap:3px}
+.ch.ok{border-color:var(--pass);background:var(--pass-soft)}
+.ch.ok .n{color:var(--pass)}
+.ch.no{border-color:var(--fail);background:var(--fail-soft)}
+.ch.no .n{color:var(--fail)}
+/* Item 4: the number takes the row's colour on a plain surface. */
+.v2 .ch.ok .k{background:var(--surface);color:var(--pass);box-shadow:inset 0 0 0 1px var(--pass)}
+.v2 .ch.no .k{background:var(--surface);color:var(--fail);box-shadow:inset 0 0 0 1px var(--fail)}
+.v1 .mk{background:var(--mark);border-radius:3px;padding:0 3px;color:#1b2444}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips span{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
+.chips b{color:var(--ink)}
+.v1 .q{font-family:var(--sans);font-weight:400;font-size:22px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap">
+  <b>wordmet.</b>
+  <nav><a href="#tom-tat">Tóm tắt</a><a href="#g1">1 Hero</a><a href="#g2">2–3 Nhóm từ</a><a href="#g4">4–7 Câu luyện</a><a href="#g8">8 Cách học</a></nav>
+  <button class="btn-theme" type="button" id="theme">Chế độ tối</button>
+</div></div>
+
+<main class="wrap">
+<h1 class="doc">Landing và màn luyện tập: sửa theo góp ý (18/11/2026)</h1>
+<p class="why">Mỗi mục có ảnh <b>Trước</b> (lấy từ PDF góp ý) và bản <b>Sau</b> dựng bằng đúng màu và font của app. Đây là mock-up, chưa phải code. Bấm "Chế độ tối" ở góc trên để xem bản tối.</p>
+
+<h2 class="item" id="tom-tat">Đề xuất cho 8 góp ý</h2>
+<table class="sum">
+<tr><th>#</th><th>Góp ý</th><th>Đề xuất</th><th>Sửa ở đâu</th></tr>
+<tr><td>1</td><td>Hero: "trong câu" khác màu, dấu chấm khác màu</td><td>Tiêu đề một màu. Dấu chấm đã bỏ ở commit 81f63d87.</td><td>Landing</td></tr>
+<tr><td>2</td><td>Hai hàng chip trượt ngang, có chip trông như bấm được</td><td>Bỏ hẳn dải chip. Các từ đó đã có ở section nhóm từ ngay dưới.</td><td>Landing</td></tr>
+<tr><td>3</td><td>"Tạo nhóm từ cho mỗi bài đọc" chỉ là 12 thẻ từ, không thấy "bài đọc" hay "nhóm"</td><td>Vòng cung chồng thẻ nhóm như trong app, tự chuyển nhóm sau 3,5 giây. Nhóm ở giữa hiện các từ ngay trên thẻ, không kèm nghĩa. 5 nhóm là chủ đề phổ biến có sẵn trong app, tên tiếng Anh; tiêu đề đổi thành "Học theo nhóm chủ đề".</td><td>Landing</td></tr>
+<tr><td>4</td><td>Ô số 1–4 khó đọc trên nền xanh và đỏ</td><td>Khi đã trả lời, ô số đổi sang nền trắng, chữ và viền cùng màu với dòng (xanh hoặc đỏ).</td><td><b>Landing và app</b> (cùng kiểu ô số)</td></tr>
+<tr><td>5</td><td>"Câu 7/20" và "13 câu còn lại" lặp thông tin</td><td>Bỏ hàng chip. Giữ một dòng như thanh phiên thật trong app: loại câu, "7/20", ✓5, ✗1, rồi thanh tiến độ.</td><td>Landing</td></tr>
+<tr><td>6</td><td>Câu hỏi không nổi bật hơn thanh tiến độ và đáp án</td><td>Câu hỏi to hơn (26 px, font tiêu đề), cách xa dòng trên và các đáp án. Trong app câu hỏi đã nằm ở thẻ riêng với chữ lớn, nên không sửa app.</td><td>Landing</td></tr>
+<tr><td>7</td><td>Nền vàng đậm sau khi chọn đúng trông như cảnh báo</td><td>Từ điền vào chỗ trống dùng ô xanh "đúng", giống app. Màu vàng chỉ còn ở câu ví dụ trên thẻ của hero (vai trò bút dạ quang, không phải trạng thái đúng/sai).</td><td>Landing</td></tr>
+<tr><td>8</td><td>Bố cục "Cách học" không theo thứ tự trước, trong và sau khi học</td><td>Một cột bước 1 → 4 từ trên xuống: Lưu từ → Nghe → Luyện → Ôn. Mỗi bước: chữ bên trái, minh họa bên phải. Trên điện thoại, minh họa nằm dưới chữ.</td><td>Landing</td></tr>
+</table>
+
+<!-- 1 -->
+<h2 class="item" id="g1">1. Tiêu đề hero một màu</h2>
+<p class="why">Người góp ý thấy "trong câu" khác màu là lạ. Bỏ màu nhấn để tiêu đề đọc liền một câu. Phần minh họa ngay dưới đã cho thấy "dùng trong câu".</p>
+<div class="pair two">
+  <div><span class="tag before">Trước</span><div class="shot"><img src="truoc/1.png" alt="Hero hiện tại"></div></div>
+  <div><span class="tag after">Sau</span><div class="canvas">
+    <span class="pill">Nâng tầm vốn từ tiếng Anh</span>
+    <p class="hero-title">Nhớ từ lâu bền, tự tin dùng trong câu</p>
+    <p class="lead">Wordmet tra nghĩa, phiên âm và câu ví dụ rồi xếp lịch ôn cho từng từ. Bạn tập trung luyện cách dùng từ trong câu.</p>
+    <div class="ctas"><span class="b p">Tạo tài khoản miễn phí →</span><span class="b">Xem cách học</span></div>
+  </div></div>
+</div>
+
+<!-- 2–3 -->
+<h2 class="item" id="g2">2–3. Bỏ dải chip, vẽ lại section nhóm từ</h2>
+<p class="why">Dải chip trượt ngang bị bỏ. Section nhóm từ (bản 3, theo góp ý 19/11) dùng vòng cung chồng thẻ nhóm của trang "Nhóm của bạn" trong app, tự chuyển nhóm; nhóm ở giữa hiện các từ ngay trên thẻ. Các nhóm là chủ đề có sẵn trong app, nên tiêu đề đổi thành "Học theo nhóm chủ đề".</p>
+<div class="pair">
+  <div><span class="tag before">Trước</span><div class="pair two">
+    <div class="shot"><img src="truoc/2.png" alt="Dải chip hiện tại"></div>
+    <div class="shot"><img src="truoc/3.png" alt="Section nhóm từ hiện tại"></div>
+  </div></div>
+  <div><span class="tag after">Sau</span><div class="canvas bleed">
+    <div class="sec-head"><h3>Học theo nhóm chủ đề</h3><p>Chọn chủ đề và trình độ, Wordmet tạo sẵn nhóm từ. Mỗi từ có lịch ôn riêng.</p></div>
+    <div class="gcar" id="gcar" aria-roledescription="carousel" aria-label="Các nhóm từ mẫu">
+      <div id="gtrack"></div>
+      <p class="gunder" id="gunder" aria-live="polite"></p>
+      <div class="gctl"><button type="button" id="gprev" aria-label="Nhóm trước">‹</button><span class="gdots" id="gdots"></span><button type="button" id="gnext" aria-label="Nhóm sau">›</button></div>
+    </div>
+  </div></div>
+</div>
+<ul class="gnotes">
+  <li><b>Giống app:</b> chồng thẻ nhóm xếp trên vòng cung, màu theo nhóm, số từ ở đầu thẻ, các thẻ phía sau tạo cảm giác một chồng.</li>
+  <li><b>Khác app:</b> nhóm ở giữa hiện các từ ngay trên thẻ, từng từ nổi lên lần lượt, không kèm nghĩa; không hiện số thẻ chờ. Dưới vòng cung ghi loại nhóm và trình độ.</li>
+  <li><b>5 nhóm</b> là chủ đề có thật trong app (tên tiếng Anh, như danh sách chủ đề đã chốt 14/11): Travel, Food &amp; Drink, Work &amp; Jobs, Body &amp; Health và bộ IELTS. Chọn vì chúng lặp lại ở hầu hết danh sách chủ đề của các app học từ (PREP, Drops, Lumetest) và có nhiều từ nhất trong nhãn CEFR-J; IELTS là bộ kỳ thi người học Việt tìm nhiều. Các từ trên thẻ lấy từ CEFR-J 1.5 đúng nhãn chủ đề đó; số từ chỉ là số mẫu.</li>
+  <li><b>Tự chuyển</b> sang nhóm kế sau 3,5 giây. Dừng khi rê chuột vào; bấm thẻ bên cạnh, mũi tên hoặc vuốt để chuyển tay. Người bật "giảm chuyển động" thì không tự chuyển, từ hiện sẵn.</li>
+</ul>
+<script>
+(()=>{const G=[{"name": "Travel", "src": "Chủ đề có sẵn · B1", "tone": 6, "words": ["destination", "accommodation", "departure", "baggage", "customs", "booking"], "total": 129, "due": 4}, {"name": "Food & Drink", "src": "Chủ đề có sẵn · B1", "tone": 0, "words": ["ingredient", "flavour", "appetite", "nutrition", "nutrient", "feast"], "total": 73, "due": 3}, {"name": "Work & Jobs", "src": "Chủ đề có sẵn · B1–B2", "tone": 2, "words": ["colleague", "career", "agenda", "client", "contract", "conference"], "total": 179, "due": 12}, {"name": "Body & Health", "src": "Chủ đề có sẵn · B1", "tone": 1, "words": ["injury", "infection", "muscle", "pharmacy", "clinic", "illness"], "total": 63, "due": 5}, {"name": "IELTS", "src": "Bộ theo kỳ thi · B2–C1", "tone": 5, "words": ["approach", "sustainable", "contribute", "interpret", "consequence", "hypothesis"], "total": 150, "due": 8}];
+const track=document.getElementById('gtrack'),under=document.getElementById('gunder'),dots=document.getElementById('gdots'),car=document.getElementById('gcar');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');let c=0,timer=null,hold=false;
+const depth=w=>w>16?3:w>6?2:w>0?1:0;
+const step=(from,to,n)=>{const d=(((to-from)%n)+n)%n;return d>n/2?d-n:d};
+G.forEach((g,i)=>{const el=document.createElement('div');el.className='gslot';el.dataset.i=i;
+  el.style.setProperty('--tone','var(--g'+g.tone+')');el.style.setProperty('--tone-ink','var(--g'+g.tone+'i)');
+  el.innerHTML='<div class="gst">'+[3,2,1].filter(n=>n<=depth(g.due)).map(n=>'<div class="gbehind" data-n="'+n+'"></div>').join('')+
+  '<div class="gface"><p class="gmeta">'+g.total+' từ</p><p class="gname">'+g.name+'</p>'+
+  '<ul class="gwords">'+g.words.slice(0,5).map((w,j)=>'<li style="--i:'+j+'">'+w+'</li>').join('')+'<li class="more" style="--i:'+5+'">+'+(g.total-5)+' từ</li></ul>'+
+  '<p class="gfoot"><span>Bắt đầu với</span> <b>'+g.words[0]+'</b></p>'+
+  '</div></div>';
+  el.addEventListener('click',()=>{const k=+el.dataset.k;if(k)go(c+k)});track.appendChild(el);
+  dots.appendChild(document.createElement('i'))});
+function place(){const vw=document.documentElement.clientWidth,st=vw<768?128:Math.min(230,Math.max(150,(vw/2-Math.min(vw*.09,120)-230)/1.68));
+  track.querySelectorAll('.gslot').forEach(el=>{const k=step(c,+el.dataset.i,G.length),a=Math.abs(k);
+    const prev=el.dataset.k===undefined?NaN:+el.dataset.k;el.dataset.k=k;el.dataset.abs=a;
+    if(!Number.isNaN(prev)&&Math.abs(k-prev)>2){el.style.transition='none';void el.offsetWidth;requestAnimationFrame(()=>el.style.transition='')}
+    el.style.setProperty('--x',k*st*.84);el.style.setProperty('--y',16*k*k);el.style.setProperty('--r',8*k);
+    el.style.setProperty('--s',1-.1*a);el.style.setProperty('--o',a>2?0:1-.25*a);el.style.setProperty('--z',10-a);
+    el.setAttribute('aria-hidden',a?'true':'false');
+    if(a===0&&prev!==0){const ul=el.querySelector('.gwords');ul.replaceWith(ul.cloneNode(true))}});
+  const [kind,when]=G[c].src.split(' · ');under.innerHTML=kind+(when?'<span> · '+when+'</span>':'');
+  [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c))}
+function go(i){c=((i%G.length)+G.length)%G.length;place();restart()}
+function restart(){clearInterval(timer);if(reduce.matches||hold)return;timer=setInterval(()=>{if(!document.hidden)go(c+1)},3500)}
+document.getElementById('gprev').onclick=()=>go(c-1);document.getElementById('gnext').onclick=()=>go(c+1);
+car.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){hold=true;clearInterval(timer)}});
+car.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'){hold=false;restart()}});
+let x0=null;car.addEventListener('pointerdown',e=>{x0=e.clientX});
+car.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>40)go(c+(dx<0?1:-1))});
+addEventListener('resize',place);reduce.addEventListener('change',restart);place();restart()})();
+</script>
+
+<!-- 4–7 -->
+<h2 class="item" id="g4">4–7. Câu luyện: ô số, dòng tiến độ, câu hỏi, màu đáp án</h2>
+<p class="why">Bản Sau giống thanh phiên thật trong app: một dòng có loại câu, số câu, ✓ và ✗. Câu hỏi là thứ lớn nhất. Từ điền vào dùng ô xanh. Ô số trên dòng đúng và sai đổi sang nền trắng để dễ đọc.</p>
+<div class="pair two">
+  <div><span class="tag before">Trước</span>
+    <div class="card pq v1">
+      <div class="meta"><span class="kind">Điền từ vào câu</span><span>Câu 7/20</span></div>
+      <div class="bar"><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="chips"><span><b>5</b> đúng</span><span><b>1</b> sai</span><span><b>13</b> câu còn lại</span><span><b>2</b> từ ôn lại sau 7 ngày</span></div>
+      <p class="q">Air quality tends to <span class="mk">deteriorate</span> in the dry season.</p>
+      <div class="choices">
+        <div class="ch ok"><span class="k">1</span><span class="w">deteriorate</span><span class="n">✓ Đúng</span></div>
+        <div class="ch"><span class="k">2</span><span class="w">allocate</span></div>
+        <div class="ch"><span class="k">3</span><span class="w">advocate</span></div>
+        <div class="ch no"><span class="k">4</span><span class="w">mitigate</span><span class="n">✕ Sai</span></div>
+      </div>
+    </div>
+  </div>
+  <div><span class="tag after">Sau</span>
+    <div class="card pq v2">
+      <div class="meta"><span class="kind">Điền từ vào câu</span><span>7/20</span><span class="cnt ok">✓ 5</span><span class="cnt no">✕ 1</span></div>
+      <div class="bar"><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p class="q">Air quality tends to <span class="fill">deteriorate</span> in the dry season.</p>
+      <div class="choices">
+        <div class="ch ok"><span class="k">1</span><span class="w">deteriorate</span></div>
+        <div class="ch"><span class="k">2</span><span class="w">allocate</span></div>
+        <div class="ch"><span class="k">3</span><span class="w">advocate</span></div>
+        <div class="ch no"><span class="k">4</span><span class="w">mitigate</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note">Mục 4 cũng sửa trong app (<code>apps/web/src/ui/AnswerOption.tsx</code>): cùng thay đổi ô số như bản Sau, phần còn lại của màn luyện tập giữ nguyên.</p>
+
+<!-- 8 -->
+<h2 class="item" id="g8">8. "Từ lúc gặp đến lúc dùng được": các bước theo thứ tự</h2>
+<p class="why">Bản cũ đặt "Luyện" to nhất bên trái, trong khi bước đầu tiên là "Lưu từ" lại nằm bên phải. Bản Sau đi từ trên xuống theo đúng thứ tự người học trải qua, có số bước và đường nối.</p>
+<div class="pair">
+  <div><span class="tag before">Trước</span><div class="shot"><img src="truoc/5.png" alt="Section cách học hiện tại"></div></div>
+  <div><span class="tag after">Sau</span><div class="canvas">
+    <div class="sec-head"><h3>Từ lúc gặp đến lúc dùng được</h3><p>Lưu từ, nghe phát âm, luyện và ôn ở cùng một nơi.</p></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="step">
+        <div><p class="eyebrow">Sau khi đọc một bài</p><h4>Lưu từ trong vài giây</h4><p>Gõ đúng dạng từ bạn gặp, Wordmet tự đưa về từ gốc.</p></div>
+        <div class="card demo"><div class="typed">deteriorated</div><div class="res"><b>deteriorate</b><span>verb · xấu đi</span></div></div>
+      </div></li>
+      <li><span class="num">2</span><div class="step">
+        <div><p class="eyebrow">Mỗi thẻ</p><h4>Nghe giọng Anh-Anh, Anh-Mỹ và đọc phiên âm</h4></div>
+        <div class="card demo listen"><span class="play" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></span><span><b>viable</b><small>/ˈvaɪ.ə.bəl/</small></span></div>
+      </div></li>
+      <li><span class="num">3</span><div class="step">
+        <div><p class="eyebrow">Trong phiên luyện</p><h4>Luyện từ trong câu thật</h4><p>Điền và gõ từ vào câu thay vì chỉ chọn nghĩa, để từ đi vào cách bạn viết. Sai thì thấy ngay đáp án đặt đúng chỗ.</p></div>
+        <div class="card pq v2">
+          <div class="meta"><span class="kind">Điền từ vào câu</span><span>7/20</span><span class="cnt ok">✓ 5</span><span class="cnt no">✕ 1</span></div>
+          <div class="bar"><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="q">Air quality tends to <span class="fill">deteriorate</span> in the dry season.</p>
+          <div class="choices">
+            <div class="ch ok"><span class="k">1</span><span class="w">deteriorate</span></div>
+            <div class="ch"><span class="k">2</span><span class="w">allocate</span></div>
+            <div class="ch"><span class="k">3</span><span class="w">advocate</span></div>
+            <div class="ch no"><span class="k">4</span><span class="w">mitigate</span></div>
+          </div>
+        </div>
+      </div></li>
+      <li><span class="num">4</span><div class="step">
+        <div><p class="eyebrow">Những ngày sau</p><h4>Ôn đúng lúc sắp quên</h4><p>Mỗi ngày chỉ ôn những từ đến hạn. Nhớ thì lịch giãn ra, quên thì ôn lại sớm.</p></div>
+        <div class="card demo"><ol class="bins"><li><b>1 ngày</b><span>ôn lần đầu</span></li><li><b>3 ngày</b><span>nhớ lần hai</span></li><li><b>7 ngày</b><span>quen mặt</span></li><li><b>14 ngày</b><span>dùng được</span></li><li><b>30 ngày</b><span>nhớ lâu</span></li></ol></div>
+      </div></li>
+    </ol>
+  </div></div>
+</div>
+<p class="note">Bước 4 bỏ ô "đang sáng" cố định; hiệu ứng các ô sáng lần lượt khi cuộn tới vẫn giữ như hiện tại.</p>
+<div style="height:64px"></div>
+</main>
+<script>
+const root=document.documentElement,btn=document.getElementById('theme');
+btn.addEventListener('click',()=>{const d=root.dataset.theme==='dark';root.dataset.theme=d?'light':'dark';btn.textContent=d?'Chế độ tối':'Chế độ sáng';});
+</script>
+</body>
+</html>

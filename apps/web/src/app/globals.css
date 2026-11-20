@@ -632,6 +632,45 @@
   }
 }
 
+/* The landing uses the app's deck stack and arc, with a viewport-wide track. */
+.wm-topic-track {
+  --fade: 28px;
+  position: relative;
+  height: 23rem;
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+}
+@media (width >= 48rem) {
+  .wm-topic-track {
+    --fade: min(9vw, 120px);
+    height: 33.5rem;
+  }
+}
+.wm-topic-words {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 0.4em;
+  margin: 0.9em 0 0.6em;
+}
+.wm-topic-words > li {
+  border-radius: 0.6em;
+  padding: 0.45em 0.65em;
+  font: 600 1em/1 var(--font-wm-display);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .wm-topic-words > li {
+    animation: wm-rise var(--transition-duration-wm-rise) var(--ease-wm-rise) both;
+    animation-delay: calc(220ms + var(--i) * 70ms);
+  }
+}
+html:not(.js) .wm-topic-track .gcar-slot {
+  transition: none;
+}
+.wm-topic-track .gcar-slot[data-abs='0']:hover .gstack {
+  translate: none;
+}
+
 /* Một nhóm opening from the carousel (motion doc §3, flip.ts): while the stack flies (FLIP 380ms), the other parts come in from
    blur(12px) translateY(12px), 340ms, 60ms then 22ms apart. Closing: they dissolve in 150ms before the route changes. */
 @keyframes wm-page-in {
@@ -962,14 +1001,8 @@
   --wm-site-bob-up: -5px;
   --wm-site-bob-down: 6px;
   --wm-site-parallax: 400ms;
-  /* Word strip: 52 s, the reversed row 64 s. */
-  --wm-site-strip: 52s;
-  --wm-site-strip-reverse: 64s;
-  /* Groups: each border flashes 240 ms in, 860 ms out (1100 ms in all). */
-  --wm-site-flash: 1100ms;
-  /* Demo cards: caret 1 s, listen ping 2.4 s, result row 400 ms from 8 px and blur 6. */
+  /* Demo cards: caret 1 s, result row 400 ms from 8 px and blur 6. */
   --wm-site-caret: 1s;
-  --wm-site-ping: 2.4s;
   --wm-site-result: 400ms;
   --wm-site-result-rise: 8px;
   --wm-site-result-blur: 6px;
@@ -1079,40 +1112,9 @@
     translate: 0 var(--wm-site-bob-down);
   }
 }
-@keyframes wm-site-slide {
-  to {
-    transform: translateX(-50%);
-  }
-}
-/* 240 ms of 1100 ms = 21.82 %. */
-@keyframes wm-site-flash {
-  0% {
-    opacity: 0;
-    animation-timing-function: var(--wm-site-ease);
-  }
-  21.82% {
-    opacity: 1;
-    animation-timing-function: var(--wm-site-ease);
-  }
-  100% {
-    opacity: 0;
-  }
-}
 @keyframes wm-site-blink {
   50% {
     opacity: 0;
-  }
-}
-/* bản 3's ping as a ring that grows 16 px past the 52 px button (scale 84 / 52) and fades by 70 %. */
-@keyframes wm-site-ping {
-  0% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(1.62);
   }
 }
 @keyframes wm-site-turn {
@@ -1158,8 +1160,7 @@
 /* Print matches `prefers-reduced-motion: no-preference` too: a block that has not scrolled in yet would print blank (M8b review I2, R249). */
 @media print {
   html.js [data-wm-reveal],
-  html.js [data-wm-reveal] [data-wm-word],
-  html.js [data-group-card] {
+  html.js [data-wm-reveal] [data-wm-word] {
     opacity: 1 !important;
     animation: none !important;
   }
@@ -1238,33 +1239,7 @@
     animation-delay: -2s;
   }
 
-  /* Word strip (S/interactive/Marquee.tsx). */
-  html.js [data-wm-marquee] {
-    animation: wm-site-slide var(--wm-site-strip) linear infinite;
-  }
-  html.js [data-wm-marquee='reverse'] {
-    animation-duration: var(--wm-site-strip-reverse);
-    animation-direction: reverse;
-  }
-
-  /* Groups (S/interactive/FlyIn.tsx): the cards wait for the fly-in; each border flashes as its card lands. */
-  html.js [data-wm-fly] ul {
-    perspective: 1400px;
-  }
-  html.js [data-wm-fly]:not([data-wm-in]) [data-group-card] {
-    opacity: 0;
-  }
-  html.js [data-group-card][data-wm-lit]::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    pointer-events: none;
-    box-shadow: 0 0 0 1.5px var(--color-wm-accent);
-    animation: wm-site-flash var(--wm-site-flash) both;
-  }
-
-  /* Demo cards (S/interactive/DemoLoops.tsx): caret, the result row while the word is typed again, the listen ping. */
+  /* Demo cards (S/interactive/DemoLoops.tsx): caret and the result row while the word is typed again. */
   html.js [data-caret] {
     animation: wm-site-blink var(--wm-site-caret) steps(1) infinite;
   }
@@ -1278,19 +1253,6 @@
     opacity: 0;
     transform: translateY(var(--wm-site-result-rise));
     filter: blur(var(--wm-site-result-blur));
-  }
-  html.js [data-listen] {
-    position: relative;
-    isolation: isolate;
-  }
-  html.js [data-listen]::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: var(--color-wm-accent);
-    animation: wm-site-ping var(--wm-site-ping) ease-out infinite;
   }
 
   /* Pro card: a short light runs round its 2 px border only while the card is on screen (`data-wm-on`), like the closing card's ring;

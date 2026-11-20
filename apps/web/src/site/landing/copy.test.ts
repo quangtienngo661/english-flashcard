@@ -2,13 +2,13 @@ import en from '../../../messages/en.json';
 import vi from '../../../messages/vi.json';
 import { fill } from './copy';
 
-type Tree = { [key: string]: string | Tree };
+type Tree = { [key: string]: string | number | Tree };
 
 function flatten(tree: Tree, prefix = ''): Map<string, string> {
   const out = new Map<string, string>();
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix ? `${prefix}.${key}` : key;
-    if (typeof value === 'string') out.set(path, value);
+    if (typeof value === 'string' || typeof value === 'number') out.set(path, String(value));
     else for (const [k, v] of flatten(value, path)) out.set(k, v);
   }
   return out;
@@ -28,31 +28,31 @@ describe('Landing copy (M8.5)', () => {
     const vietnamese = /[ăâđêôơưĂÂĐÊÔƠƯàáãèéìíòóùúýÀÁÃÈÉÌÍÒÓÙÚÝẠ-ỹ]/;
     const left = [...landing(en)].filter(([, v]) => vietnamese.test(v)).map(([k]) => k);
     expect(left.filter((k) => !/(^|\.)meaning$/.test(k))).toEqual([]);
-    // 18 glosses: 5 in the hero cycle, 12 deck cards, 1 in the note demo. The app shows Vietnamese meanings, so the demo does too.
-    expect(left).toHaveLength(18);
+    // 6 glosses: 5 in the hero cycle, 1 in the note demo. The app shows Vietnamese meanings, so the demo does too.
+    expect(left).toHaveLength(6);
     // Prose is never copied from vi; what stays equal is data (words, IPA, numbers) and the names "Pro" and "−{percent}%".
     const flatVi = landing(vi);
-    const prose = [...landing(en)].filter(([k]) => /^(hero|plans|faq|final)\.|^groups\.(title|lead)$|^learn\.\w+\.(eyebrow|title|body)$|^learn\.(title|lead)$/.test(k));
+    const prose = [...landing(en)].filter(([k]) => /^(hero|plans|faq|final)\.|^groups\.(title|lead)$|^learn\.\w+\.(eyebrow|title)$|^learn\.title$/.test(k));
     const copied = prose.filter(([k, v]) => flatVi.get(k) === v).map(([k]) => k);
     expect(copied.filter((k) => k !== 'plans.pro' && k !== 'plans.saving')).toEqual([]);
   });
 
   it('the English landing follows the EN conventions of UI copy round 2 and the same rules as the Vietnamese one', () => {
     const flat = [...landing(en)];
-    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words forever, use them in a sentence');
-    expect(en.Landing.hero.line2).toContain(en.Landing.hero.accent);
+    expect(`${en.Landing.hero.line1} ${en.Landing.hero.line2}`).toBe('Remember words longer use them with confidence');
+    expect('accent' in en.Landing.hero).toBe(false);
     expect(flat.filter(([, v]) => /!/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /\bPro\b.*\bAI\b|\bAI\b.*\bPro\b/.test(v)).map(([k]) => k)).toEqual([]);
     expect(flat.filter(([, v]) => /trial/i.test(v)).map(([k]) => k)).toEqual([]);
     // Q1: "deck", never "group" or "stack"; Q8: "Correct" / "Incorrect", never "Wrong"; Q4: "saved sentence".
     expect(flat.filter(([, v]) => /\b(group|stack|wrong|box(es)?)\b/i.test(v)).map(([k]) => k)).toEqual([]);
     expect(en.Landing.groups.title).toContain('deck');
-    expect([en.Landing.learn.practice.right, en.Landing.learn.practice.wrong]).toEqual(['Correct', 'Incorrect']);
+    expect(fill(en.Landing.learn.practice.tally.wrongLabel, { count: 1 })).toBe('1 incorrect');
   });
 
-  it('the hero heading is Figma\'s, with "trong câu" in its second line', () => {
-    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ lâu bền, tự tin dùng trong câu');
-    expect(vi.Landing.hero.line2).toContain(vi.Landing.hero.accent);
+  it('the hero heading is in one colour (no accent key)', () => {
+    expect(`${vi.Landing.hero.line1} ${vi.Landing.hero.line2}`).toBe('Nhớ từ bền lâu vững vàng trong câu');
+    expect('accent' in vi.Landing.hero).toBe(false);
   });
 
   it('no Landing string says "!", "Vui lòng" or "Chưa mở bán", and none names the review boxes ("ngăn", design §3.3)', () => {

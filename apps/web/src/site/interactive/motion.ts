@@ -2,15 +2,12 @@
 // globals.css, block `/* site motion */`: it hides an element only under `html.js` (set by the site's inline head script) and only when
 // motion is allowed, so the server HTML is the end state and reduced motion sees it from the first paint.
 
-/** What the CSS keeps hidden until this file's code marks it: a block or title before `data-wm-in`, the groups before `data-wm-done`. */
-export const HIDDEN_START = '[data-wm-reveal]:not([data-wm-in]), [data-wm-fly]:not([data-wm-done])';
-
-/** `E` of the plan, the same curve as `--ease-wm-out`. */
-export const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+/** What the CSS keeps hidden until this file's code marks it: a block or title before `data-wm-in`. */
+export const HIDDEN_START = '[data-wm-reveal]:not([data-wm-in])';
 
 /** Blocks and titles start when 22 % is in view, 8 % above the bottom edge (bản 3). */
 export const REVEAL_VIEW: IntersectionObserverInit = { threshold: 0.22, rootMargin: '0px 0px -8% 0px' };
-/** The groups fly in and the demo loops run at 30 % in view (bản 3). */
+/** The demo loops run at 30 % in view (bản 3). */
 export const LOOP_VIEW: IntersectionObserverInit = { threshold: 0.3 };
 
 export function prefersReducedMotion(): boolean {
@@ -25,12 +22,6 @@ export function motionAllowed(): boolean {
 /** Pointer parallax is for a mouse or trackpad only (bản 3). */
 export function finePointer(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-}
-
-/** The blur cap of the page in px: 12 on a phone (`--wm-blur-cap`, design §8.1), no cap above. */
-export function blurCap(): number {
-  const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wm-blur-cap'));
-  return Number.isFinite(value) ? value : Infinity;
 }
 
 type Watch = (visible: boolean) => void;

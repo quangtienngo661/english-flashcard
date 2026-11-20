@@ -12,15 +12,12 @@ import { Glow } from './parts';
 import { BIN_GLOW, FLOAT_VALUE, TEXT_17 } from './styles';
 
 /**
- * Figma Hero `5:24` (phone `9:115`): the label pill, the title with "trong câu" in the accent colour, the lead, two buttons and the stage
+ * Figma Hero `5:24` (phone `9:115`): the label pill, the single-colour title, the lead, two buttons and the stage
  * (the app mock-up with its floating cards: two from xl, where Figma's offsets fit beside it, one below). M8.6: everything comes in on
  * load (bản 3's delays: pill 0, title 120 word by word, lead 620, buttons 760, stage 880), the cards bob and follow
  * a fine pointer, the wave bars move.
  */
 export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage: LandingCopy['stage']; locale: AppLocale }) {
-  const at = copy.line2.indexOf(copy.accent);
-  const before = at < 0 ? copy.line2 : copy.line2.slice(0, at);
-  const after = at < 0 ? '' : copy.line2.slice(at + copy.accent.length);
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-x-clip">
       <Glow tone="accent" className="-top-5 left-1/2 -ml-160 h-126 w-192" />
@@ -40,8 +37,8 @@ export function Hero({ copy, stage, locale }: { copy: LandingCopy['hero']; stage
           id="hero-title"
           trigger="load"
           delay={120}
-          className="max-w-205 text-center font-wm-display text-wm-site-hero-mobile text-wm-ink lg:text-wm-site-hero"
-          segments={[{ text: `${copy.line1} ` }, { br: 'md:hidden' }, { text: before }, { text: copy.accent, className: 'text-wm-accent' }, { text: after }]}
+          className="max-w-full text-center font-wm-display text-wm-site-hero-mobile text-wm-ink md:text-wm-site-section lg:text-wm-site-hero"
+          segments={[{ text: `${copy.line1} ` }, { br: true }, { text: copy.line2 }]}
         />
         <Reveal as="p" trigger="load" delay={620} blur={10} className={cn(TEXT_17, 'max-w-150 text-center text-wm-muted md:text-wm-lead')}>
           {copy.lead}

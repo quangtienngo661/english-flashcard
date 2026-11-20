@@ -10,8 +10,8 @@ export const TEXT_17 = 'font-wm-sans text-[1.0625rem]/[1.6]';
 // raw-ok: Figma FAQ questions are Noto SemiBold 17 / 1.6
 export const FAQ_QUESTION = 'font-wm-sans text-[1.0625rem]/[1.6] font-semibold';
 
-// raw-ok: the practice demo's sentence is Noto 22 (`7:67`)
-export const SENTENCE_22 = 'font-wm-sans text-[1.375rem]/[1.5]';
+// raw-ok: the question is the demo's largest text, 22 px on phones and 26 px from md
+export const QUESTION = 'font-wm-display text-[1.375rem]/[1.4] font-medium md:text-[1.625rem]/[1.4]';
 
 // raw-ok: period prices are Bricolage Bold 26 (`33:351`…`33:367`)
 export const PERIOD_PRICE = 'font-wm-display text-[1.625rem]/[1.2] font-bold tracking-[-0.01em]';
@@ -30,9 +30,6 @@ export const BIN_VALUE = 'font-wm-display text-[0.9375rem]/[1.4] font-bold white
 
 // raw-ok: "7 ngày" on the floating card is Bricolage Bold 20 (`5:150`)
 export const FLOAT_VALUE = 'font-wm-display text-[1.25rem]/[1.3] font-bold';
-
-// raw-ok: "viable" in the listen card is Bricolage Bold 28 (`7:161`)
-export const LISTEN_WORD = 'font-wm-display text-[1.75rem]/[1.2] font-bold';
 
 // raw-ok: the lit boxes of the floating card glow 0 0 12 accent 34 % (`5:150`), a shadow no token has
 export const BIN_GLOW = 'shadow-[0_0_12px_rgb(30_58_138/0.34)]';

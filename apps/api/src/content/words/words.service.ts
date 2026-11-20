@@ -6,7 +6,7 @@ import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
-import { InflectionsService } from '../inflections/inflections.service.js';
+import { InflectionsService, inflectionFormKey } from '../inflections/inflections.service.js';
 import { AudioService } from '../audio/audio.service.js';
 import { SentencesService } from '../sentences/sentences.service.js';
 import { visibleEntryCondition } from '../learner/visible-senses.js';
@@ -52,7 +52,7 @@ type SenseRow = Omit<WordSense, 'meaning' | 'form_of' | 'pronunciation'> & {
 const posOrder = [...VALID_POS, PRIVATE_POS_UNSET];
 const posRank = (pos: string) => posOrder.indexOf(pos as (typeof posOrder)[number]);
 const cursorSchema = z.strictObject({
-  rank: z.number().int().min(0).max(2),
+  rank: z.number().int().min(0).max(3),
   lemma: z.string().refine((value) => !value.includes('\0') && [...value].length >= 1 && [...value].length <= 100),
 });
 const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
@@ -189,7 +189,7 @@ export class WordsService {
     return { senses, via_inflection: viaInflection };
   }
 
-  /** One row per exact lemma (D42), ranked exact → prefix → contains on lemma and variants (B2#58). */
+  /** One row per exact lemma (D42), ranked exact → exact inflected form → prefix → contains on lemma and variants (B2#58). */
   async search(viewerId: string, query: WordListQuery, nativeLanguage: NativeLanguage) {
     const binding = createHash('sha256').update(JSON.stringify({ route: 'words', viewerId, q: query.q ?? null,
       level: query.level ?? null, topic: query.topic ?? null, pos: query.pos ?? null, mine: query.mine ?? false })).digest('hex');
@@ -200,10 +200,13 @@ export class WordsService {
       cursor = parsed.data;
     }
     const escaped = query.q?.replace(/[\\%_]/g, '\\$&');
-    const rank = query.q === undefined ? Prisma.sql`0` : Prisma.sql`(
-      SELECT MIN(CASE WHEN lower(head.text) = ${query.q} THEN 0 WHEN head.text ILIKE ${escaped + '%'} ESCAPE ${'\\'} THEN 1 ELSE 2 END)
-      FROM (SELECT e.lemma AS text UNION ALL SELECT v.text FROM entry_variants v WHERE v.entry_id = e.id) head
-      WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'})`;
+    // 0 the typed word is a lemma or variant, 1 it is an exact stored inflected form of the entry ("incurring" finds incur), 2 a lemma or
+    // variant starts with it, 3 it only contains it. LEAST skips the NULL of a part that does not match; all NULL means no match.
+    const rank = query.q === undefined ? Prisma.sql`0` : Prisma.sql`LEAST(
+      (SELECT MIN(CASE WHEN lower(head.text) = ${query.q} THEN 0 WHEN head.text ILIKE ${escaped + '%'} ESCAPE ${'\\'} THEN 2 ELSE 3 END)
+       FROM (SELECT e.lemma AS text UNION ALL SELECT v.text FROM entry_variants v WHERE v.entry_id = e.id) head
+       WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'}),
+      (SELECT 1 WHERE EXISTS (SELECT 1 FROM entry_inflections i WHERE i.entry_id = e.id AND i.form_key = ${inflectionFormKey(query.q)})))`;
     // Entry-level tests run first, on their own, so Postgres reads only the viewer's entries and the catalog before it touches
     // senses; folded into the big join it started from every learner's senses (T5).
     const entryFilters = [
