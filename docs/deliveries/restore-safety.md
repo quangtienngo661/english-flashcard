@@ -72,7 +72,7 @@ Hai điều gặp lúc làm:
 
 ## Chưa kiểm
 
-- **Restore từ R2 thật** (`wal-g backup-fetch` và replay WAL) chưa diễn tập, nên thời gian restore ở dung lượng production chưa đo. Việc kế tiếp.
+- **Restore PITR từ R2 thật** (`wal-g backup-fetch` và replay WAL) chưa diễn tập, nên thời gian restore PITR ở dung lượng production chưa đo. Việc kế tiếp. *(Lưu ý: khôi phục từ `pg_dump` trên R2 thật đã được diễn tập thành công ngày 15/11/2026 — `docs/audit/2026-11-15-restore-drill.md`, ~3 giây restore / ~9 giây tổng, 9.806 `sense_revisions` published, 65 migrations — nhưng đó là bản `pg_dump` trước khi bật WAL-G 18/11.)*
 - Mốc cron đầu tiên: base backup theo lịch (20:00 UTC) và dòng `PITR:` trong báo cáo ngày (01:00 UTC) chưa có lần chạy nào sau rollout; chưa có email cảnh báo `archive` hay `disk-low` nào được thấy.
 - Thời gian khóa của `ALTER … OWNER` trên 91 bảng production: chỉ biết script xong trong vài giây.
 - API và worker không chạy DDL lúc runtime vẫn là suy ra từ log sau rollout (không có `permission denied`), chưa phủ hết đường code hiếm.
@@ -80,4 +80,4 @@ Hai điều gặp lúc làm:
 - Chưa có test trên Postgres thật cho hai đơn cùng giây cùng lúc; hơn 3 đơn đồng thời trong một giây có thể nhận 503.
 - Smoke mới chưa được mutation-check; smoke không có ca đối chứng "job sẽ nhận đơn failed nếu `checked_at` rỗng".
 - Chưa chạy: `accounts-deletions.js replay` với journal thật, restore về mốc cũ hơn base backup mới nhất, Compose cũ hơn 2.40, cái `watch.sh` báo khi `.env` thiếu biến role.
-- `deploy/README.md`, mục "After a restore: payments", còn đoạn "Only until the time-based order codes are deployed" (và câu mở đầu nói M1 chưa deploy). M1 đã lên VPS cùng M2 (`05e4c68f`), nên đoạn đó hết hiệu lực; README chưa được sửa trong PR này.
+- ~~`deploy/README.md`, mục "After a restore: payments", còn đoạn "Only until the time-based order codes are deployed" (và câu mở đầu nói M1 chưa deploy). M1 đã lên VPS cùng M2 (`05e4c68f`), nên đoạn đó hết hiệu lực; README chưa được sửa trong PR này.~~ *(Đã sửa trong `deploy/README.md` ngày 20/11/2026, đồng thời sửa hướng dẫn ghép đơn mất dòng `billing_orders` sang dùng `entitlement_grants`.)*

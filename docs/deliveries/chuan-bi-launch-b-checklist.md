@@ -121,7 +121,7 @@ Cần thêm ở phần chuẩn bị: app người học chạy (`pnpm dev:app` �
 ### Văn bản
 
 - [ ] **[local] Bản nháp Điều khoản và Chính sách.** Kiểm: `git switch docs/launch-b-legal-drafts` (nhánh local, chưa push) và đọc `docs/preparation/legal-drafts/`: Điều khoản mục 5–8, Chính sách mục 2, 5, 8, 10. Đúng là: nói mua một lần, không tự gia hạn, kỳ nối tiếp, không hoàn tiền, payOS, quảng cáo "có thể hiển thị"; không còn "dùng thử" hay "tự gia hạn" ngoài câu phủ định.
-- [ ] **[deploy] Đăng hai bản vào admin `/legal`** và mở `/vi/terms`, `/vi/privacy` xem đúng bản đã đăng (xem `deploy-checklist.md`).
+- [x] **[deploy] Đăng hai bản vào admin `/legal`** và mở `/vi/terms`, `/vi/privacy` xem đúng bản đã đăng (xem `deploy-checklist.md`). *(Đã kiểm 20/11/2026: `GET /v1/legal/current` trả 200 live trên production; kiểm lại văn bản nếu bổ sung Google Cloud TTS / analytics.)*
 
 ## M3. Ai thấy quảng cáo, hộp thoại giới thiệu Pro
 
@@ -144,8 +144,8 @@ Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 
 
 - [ ] **[local] Chính sách của `/app` đúng bảng §5.4, trên bản build Worker.** Kiểm: ở `apps/web`, `pnpm cf:docker e2e/csp.spec.ts --project=desktop` (Docker chạy; cài, build OpenNext và chạy Chromium trong container Linux, vài phút). Đúng là: 8 test qua; chúng kiểm `/vi/app` và `/vi/app/login` có đúng một chính sách với `'nonce-…'` và `'strict-dynamic'`, mọi script mang đúng nonce (trừ script chống nháy màu có hash và script Turnstile do script có nonce tự thêm), hai lần gọi `/vi/app/groups` ra hai nonce khác nhau, `/vi` không nonce, widget Turnstile thật chạy không vi phạm, vào app từ landing là tải lại cả trang, 0 vi phạm ở `/vi`, `/vi/app`, `/vi/app/login`, `/vi/app/groups`.
 - [ ] **[local] Landing vẫn tĩnh, app dựng theo request.** Kiểm: `pnpm cf:docker --build` rồi `pnpm assert:render-mode` (hoặc cả bộ `pnpm cf:docker --project=desktop`, 194 test, cuối cùng chạy `assert:render-mode`). Đúng là: dòng "Render mode: the landing is static; no page under /app is prerendered".
-- [ ] **[deploy] Trên Cloudflare đã deploy:** `/vi/app` trả đúng một chính sách có nonce, nonce đổi mỗi lần gọi, trang đăng nhập có widget Turnstile chạy. Vì sao: spike chỉ chạy trên workerd cục bộ; issue OpenNext #1302 (mất nonce) có thể chỉ hiện ở đây. Nếu hỏng `/app` mất mọi script: cách lùi ở `deploy-checklist.md`.
-- [ ] **[deploy] CPU Worker một trang `/app` dựng theo request; beacon Cloudflare Web Analytics.** Xem `deploy-checklist.md`, mục "CSP có `nonce` cho `/app`".
+- [x] **[deploy] Trên Cloudflare đã deploy:** `/vi/app` trả đúng một chính sách có nonce, nonce đổi mỗi lần gọi, trang đăng nhập có widget Turnstile chạy. *(Đã kiểm trên production 14/11/2026 — `docs/audit/2026-11-14-production-checks.md` và xác nhận lại 20/11/2026: `/vi/app` trả đúng 1 CSP nonce thay đổi mỗi request; `/vi/app/login` có widget Turnstile thật.)*
+- [x] **[deploy] CPU Worker một trang `/app` dựng theo request; beacon Cloudflare Web Analytics.** Xem `deploy-checklist.md`, mục "CSP có `nonce` cho `/app`" (console/beacon sạch theo `2026-11-14-production-checks.md`).
 
 ### Nạp AdSense và chân trang
 
@@ -161,20 +161,15 @@ Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 
 - [ ] **[deploy] Một tuần `Content-Security-Policy-Report-Only`** song song chính sách đang áp, với đúng chuỗi §5.4 phần có AdSense, đọc Console ở Nhóm và Tra từ; vi phạm nào thì thêm đúng nguồn đó và sửa test.
 - [ ] **[deploy] Bảng §5.7:** A1 (vignette có hiện khi bấm link giữa các trang trong app không), A2, A8 (tắt được video không), và LB3A1, LB3A2. Nếu A1 sai (LB3E10) hoặc Google từ chối (LB3E13): bỏ `NEXT_PUBLIC_ADSENSE_CLIENT`, hộp thoại giới thiệu Pro quay lại, đợt B xong với M1–M3.
 
-## Chưa kiểm được (và vì sao)
+## Chưa kiểm được (và vì sao) — cập nhật 20/11/2026
 
-- **payOS thật, mọi giả định P1–P12 của design §3.14**: chỉ kiểm được sau deploy, bằng tiền thật số nhỏ, vì payOS không có sandbox. Trong đó hai dòng đổi kết quả của M1: **P7** (webhook và danh sách giao dịch của payOS cùng `reference` cho một lần chuyển; so với `transactionDateTime` của P9, vì quy tắc chống mở kỳ thứ hai dựa vào cả hai) và **P12** (link không tồn tại thì payOS trả HTTP 404; nếu trả 200 kèm mã lỗi, đơn chỉ được để nguyên và ghi cảnh báo). **[deploy]**
-- **Webhook thật qua WAF và Bot Fight Mode của Cloudflare**, và `pnpm payos:confirm-webhook <url>` đăng ký URL với payOS thật (cần ba khóa thật và địa chỉ công khai). **[deploy]**
-- **Chuyển lần hai vào link đã trả sinh webhook riêng (P8)**: không thử bằng tiền; theo dõi khi xảy ra. **[deploy]**
-- **Phần của Task 9 phụ thuộc đợt A** (lượt AI dùng lúc còn Pro trả trước không trừ vào Free sau khi kỳ hết, LB1A8): chưa làm, chờ `origin/dev` có M3 của đợt A. Chưa kiểm được cho tới lúc đó.
-- **Các màn M2 trên trình duyệt thật và e2e Playwright** (trang Gói, trang về, "Đơn hàng" của admin): mới có test đơn vị với API giả; chưa ai bấm; e2e chạy ở CI.
-- **AdSense thật** (bảng §5.7 A1, A2, A8; một tuần Report-Only): chỉ sau khi Google duyệt site. **[deploy]**
-- **Cloudflare đã deploy** (nonce có còn khi chạy thật, CPU Worker, beacon): xem nhóm M4. **[deploy]**
-- **Spike CSP `nonce` với Turnstile thật**: chạy lại sau khi mã Turnstile của đợt A vào `dev` (đã vào ngày 04/11/2026, chưa chạy lại); xem `chuan-bi-launch-b-spike-csp.md`.
-- **Smoke 5 và 7** chạy lại ở Task 24, sau khi hợp nhất với đợt A (M1 đổi `resolve()` và snapshot quyền lợi).
+- **payOS thật:**
+  - *Đã kiểm (14/11/2026):* luồng mua thật 1 tháng (79.000 ₫), chuyển khoản thật, webhook thật qua VPS/Caddy (`api.wordmet.com` không proxy Cloudflare WAF), tự mở kỳ Pro 14/11→14/12/2026 và ghi `billing_transactions` (ảnh chụp admin của chủ dự án).
+  - *Còn mở sau đợt đổi `orderCode` theo thời gian (18/11/2026, PR #303/#307):* thử 1 đơn mới với `orderCode >= 1_100_000_000`, chạy read-only `orders:probe-payos` live trên payOS thật để kiểm giả định **P12** (HTTP 404 vs 200 kèm mã lỗi) và mã trùng `231`, và kiểm **P7/P8** (chuyển lần hai vào link đã trả) nếu cần. **[deploy]**
+- **AdSense thật** (bảng §5.7 A1, A2, A8; một tuần Report-Only): chỉ sau khi Google duyệt site (đang tắt theo chủ ý ở launch). **[deploy]**
+- ~~Các mục M1–M4 chờ đợt A / chưa mở PR / Cloudflare nonce chưa deploy / smoke 5 & 7 chưa chạy lại:~~ **đều đã hoàn tất, hợp nhất vào `dev` và lên `main` production** (PR #219–#235, xem `chuan-bi-launch-b.md` và `deploy-checklist.md`).
 
 ## Liên kết
 
-- PR M1: **chưa mở**, nhánh `feat/launch-b-m1-orders`; chờ M3 của đợt A vào `dev` rồi hợp nhất `origin/dev` và chạy lại test, smoke.
-- PR M2, M3, M4: chưa có (cũng chờ M3 của đợt A). Nhánh: `feat/launch-b-m1-orders`, `feat/launch-b-m2-purchase`, `feat/launch-b-m3-house-ad`, `feat/launch-b-m4-adsense` (xếp chồng).
+- M1–M4 đã hoàn tất và merge vào `dev` → `main` production (xem [`chuan-bi-launch-b.md`](chuan-bi-launch-b.md)); các nhánh cũ `feat/launch-b-m1-orders`, `feat/launch-b-m2-purchase` không còn diff so với `dev`.
 - Đợt A (cùng đợt chuẩn bị launch): [`chuan-bi-launch-a.md`](chuan-bi-launch-a.md), PR [#211](https://github.com/quangtienngo661/english-flashcard/pull/211) (Turnstile) và [#212](https://github.com/quangtienngo661/english-flashcard/pull/212) (tài liệu).
