@@ -205,7 +205,7 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
 
   it('F-08: unchecked private word excluded with fallbackReason=ai-unavailable when check_private_word has no model; checked private word stays', async () => {
     const priv = deploy({ sense_id: 's1', scope: 'private' });
-    const pub = deploy({ sense_id: 's2', scope: 'public' });
+    const pub = deploy({ sense_id: 's2', scope: 'catalog' });
     const t = setup({ senses: [priv, pub], notReady: ['check_private_word'] });
     await expect(t.planner.plan(learner, { types: ['cloze'], clozeSource: 'ai', count: 2, kept: ['s1', 's2'],
       available: availableAll(['s1', 's2'], ['cloze']) }, snapshot())).resolves.toEqual({
@@ -214,7 +214,7 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
     const checks = new Map([['s1', { contentKey: contentKey(priv.lemma, priv.pos, priv.gloss_vi!), verdict: 'ok' as const }]]);
     const checked = setup({ senses: [priv], notReady: ['check_private_word'], checks });
     await expect(checked.planner.plan(learner, { types: ['cloze'], clozeSource: 'ai', count: 1, kept: ['s1'],
-      available: availableAll(['s1'], ['cloze']) }, snapshot())).resolves.toEqual({ aiPlanned: 1, aiSenseIds: ['s1'], fallbackReason: null, fallbackReason: null });
+      available: availableAll(['s1'], ['cloze']) }, snapshot())).resolves.toEqual({ aiPlanned: 1, aiSenseIds: ['s1'], fallbackReason: null });
   });
 });
 

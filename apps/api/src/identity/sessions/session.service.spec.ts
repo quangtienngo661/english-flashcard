@@ -443,7 +443,7 @@ describe('SessionService transaction invariants', () => {
     const s = setup();
     s.row.rotatedAt = s.clock.now();
     await s.service.revokeByRefreshToken(s.original.token, 'mobile');
-    const [{ where }] = s.chainUpdateMany.mock.calls[0];
+    const [{ where }] = s.chainUpdateMany.mock.calls[0] as unknown as [{ where: Record<string, unknown> }];
     expect(where).toEqual({ id: s.chain.id, revokedAt: null });
     expect(where).not.toHaveProperty('userId');
   });

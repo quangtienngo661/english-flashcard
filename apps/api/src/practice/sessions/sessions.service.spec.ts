@@ -743,7 +743,7 @@ describe("SessionsService.start — the learner's ai count and the session maxim
 describe('SessionsService.start — F-08 / D7 automatic AI fallback', () => {
   const snap = {} as EntitlementsSnapshot;
   const createData = (tx: ReturnType<typeof setup>['tx']) =>
-    (tx.practiceSession.create.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    (tx.practiceSession.create.mock.calls[0][0] as { data: Record<string, unknown> }).data;
 
   it('F-08: mixed session with AI unavailable drops AI types, keeps chosen rule types, sets aiStopped=ai-unavailable and aiNoticeShown=false', async () => {
     const { service, tx } = setup({
