@@ -130,12 +130,14 @@ export async function seedAiReport(state: RealState): Promise<AiReportSeed> {
     reason, note: 'Còn một từ khác cũng điền được vào chỗ trống.',
   });
 
-  // The unknown form: the model answers with `${lemma}ment`, which no table knows; the session ends "ai-failed" and the form is recorded.
+  // The unknown form: the model answers with `${lemma}ment`, which no table knows; the form is recorded and the session auto-falls back to a rule question (F-08/D7).
   await chooseClozeModel(adminToken, 'fake:bad-form');
   try {
     const badSession = await clozeSession(lanToken, `E2E M3 form ${run}`, await senseOf(lanToken, unknownLemma));
-    const failed = await apiCall<{ state: string }>('POST', `/v1/practice/sessions/${badSession}/next`, lanToken);
-    if (failed.state === 'question') throw new Error('fake:bad-form produced a question; no unknown form was recorded');
+    const failed = await apiCall<{ state: string; notice?: string; item?: { type: string } }>('POST', `/v1/practice/sessions/${badSession}/next`, lanToken);
+    if (failed.state === 'question' && failed.item?.type === 'cloze') {
+      throw new Error('fake:bad-form produced a question; no unknown form was recorded');
+    }
   } finally {
     // The config before `fake:bad-form` is the `fake:ok` one made live above: going back needs no run.
     await rollbackConfig(adminToken, 'generate_cloze');

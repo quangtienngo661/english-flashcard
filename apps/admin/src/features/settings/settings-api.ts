@@ -98,6 +98,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },
     { key: 'pro_price_3m_vnd', kind: 'int', unit: 'vnd' },
     { key: 'pro_price_12m_vnd', kind: 'int', unit: 'vnd' },
+    { key: 'pro_checkout_enabled', kind: 'bool' },
   ],
   content: [
     { key: 'private_words_per_user', kind: 'int' },

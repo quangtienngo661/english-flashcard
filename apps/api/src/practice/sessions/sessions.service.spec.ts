@@ -8,7 +8,8 @@ import type { LearningService, PracticeItem } from '../../learning/index.js';
 import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
 import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
 import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
-import { AiSessionPlanner, type AiSessionPlan } from '../ai/ai-session-planner.service.js';
+import { AiSessionPlanner, type AiGateResult, type AiSessionPlan } from '../ai/ai-session-planner.service.js';
+import { isAiType, type ClozeSource, type QuestionType } from '../practice.types.js';
 import type { WordChecksRepository } from '../ai/word-checks.repository.js';
 import type { QuestionBuilder } from '../questions/question-builder.service.js';
 import type { ItemWithQuestion } from './session-views.js';
@@ -36,7 +37,7 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 
 function setup(options: {
   early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
-  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[]; realAiPlanner?: boolean;
+  snapshot?: EntitlementsSnapshot; gateResult?: AiGateResult | null; aiPlan?: AiSessionPlan; weak?: PracticeItem[]; realAiPlanner?: boolean;
   /** Practice AI count (09/11/2026): practice settings over the defaults. */
   practice?: Partial<AppSettings['practice']>;
 } = {}) {
@@ -99,8 +100,17 @@ function setup(options: {
   const values: AppSettings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, ...options.practice } };
   const settings = { get: vi.fn(async (db?: unknown) => { via('settings.get', db); return values; }) };
   const aiPlanner = {
-    gate: vi.fn(async () => { calls.push('gate'); return options.snapshot ?? null; }),
-    plan: vi.fn(async () => options.aiPlan ?? { aiPlanned: 0, aiSenseIds: [] }),
+    gate: vi.fn(async (_userId: string, types: QuestionType[], clozeSource: ClozeSource | null) => {
+      calls.push('gate');
+      if (options.gateResult !== undefined) return options.gateResult;
+      if (!options.snapshot) return null;
+      return {
+        snapshot: options.snapshot,
+        availableAiTypes: types.filter((t) => isAiType(t, clozeSource)),
+        fallbackReason: null,
+      };
+    }),
+    plan: vi.fn(async () => ({ fallbackReason: null, ...(options.aiPlan ?? { aiPlanned: 0, aiSenseIds: [] }) })),
   };
   const service = new SessionsService(prisma, new FakeClock(now), settings as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
@@ -727,6 +737,98 @@ describe("SessionsService.start — the learner's ai count and the session maxim
     await service.start(learner, { kind: 'recall', source: 'group', group_id: 'g1', ai_count: 3 } as never);
     expect(aiPlanner.plan).not.toHaveBeenCalled();
     expect(createData(tx)).toMatchObject({ kind: 'recall', targetCount: 4, aiPlanned: 0 });
+  });
+});
+
+describe('SessionsService.start — F-08 / D7 automatic AI fallback', () => {
+  const snap = {} as EntitlementsSnapshot;
+  const createData = (tx: ReturnType<typeof setup>['tx']) =>
+    (tx.practiceSession.create.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+
+  it('F-08: mixed session with AI unavailable drops AI types, keeps chosen rule types, sets aiStopped=ai-unavailable and aiNoticeShown=false', async () => {
+    const { service, tx } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: [], fallbackReason: 'ai-unavailable' },
+    });
+    await service.start(learner, { source: 'all', types: ['mcq_definition', 'cloze'], cloze_source: 'ai' });
+    expect(createData(tx)).toMatchObject({
+      types: ['mcq_definition'], clozeSource: null, aiPlanned: 0, aiStopped: 'ai-unavailable', aiNoticeShown: false,
+    });
+  });
+
+  it('F-08 Review Focus 4: mixed session (own_then_ai) with AI unavailable downgrades clozeSource to own and serves saved-sentence cloze', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: [], fallbackReason: 'ai-unavailable' },
+    });
+    builder.availability.mockResolvedValueOnce(new Map([['s1', ['cloze']], ['s2', ['cloze']]]) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own_then_ai' });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ chosenTypes: ['cloze'], clozeSource: 'own' }));
+    expect(createData(tx)).toMatchObject({
+      types: ['cloze'], clozeSource: 'own', aiPlanned: 0, aiStopped: 'ai-unavailable', aiNoticeShown: false,
+    });
+  });
+
+  it('F-08 Review Focus 4: mixed session where learner unchecked type_word and remaining rule type cannot fit throws no-word-fits-types and preserves open session', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: [], fallbackReason: 'ai-unavailable' },
+    });
+    builder.availability.mockResolvedValueOnce(new Map([['s1', []], ['s2', []]]) as never);
+    await expect(service.start(learner, { source: 'all', types: ['mcq_definition', 'cloze'], cloze_source: 'ai' }))
+      .rejects.toMatchObject({ status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' } });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ chosenTypes: ['mcq_definition'] }));
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('F-08: AI-only session with AI unavailable opens with [type_word, mcq_definition], aiStopped=ai-unavailable, aiNoticeShown=false', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: [], fallbackReason: 'ai-unavailable' },
+    });
+    builder.availability.mockResolvedValueOnce(new Map([['s1', ['type_word']], ['s2', ['type_word']]]) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai' });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ chosenTypes: ['type_word', 'mcq_definition'], clozeSource: null }));
+    expect(createData(tx)).toMatchObject({
+      types: ['type_word', 'mcq_definition'], clozeSource: null, aiPlanned: 0, aiStopped: 'ai-unavailable', aiNoticeShown: false,
+    });
+  });
+
+  it('F-08: partial AI availability (1 of 2 AI ops ready) keeps ready AI op, sets aiStopped=null, and returns additive ai-fallback notice', async () => {
+    const { service, tx } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: ['cloze'], fallbackReason: 'ai-unavailable' },
+      aiPlan: { aiPlanned: 1, aiSenseIds: ['s1'], fallbackReason: null },
+    });
+    const res = await service.start(learner, { source: 'all', types: ['type_word', 'cloze', 'mcq_sentence'], cloze_source: 'ai' });
+    expect(createData(tx)).toMatchObject({
+      types: ['type_word', 'cloze'], clozeSource: 'ai', aiPlanned: 1, aiStopped: null,
+    });
+    expect(res).toMatchObject({ notice: 'ai-fallback', ai_reason: 'ai-unavailable' });
+  });
+
+  it('F-08 (review #3a): mixed session where plan() drops all unchecked private words re-checks rule availability and throws no-word-fits-types without closing open session', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: ['cloze'], fallbackReason: null },
+      aiPlan: { aiPlanned: 0, aiSenseIds: [], fallbackReason: 'ai-unavailable', excludedPrivateIds: ['s1', 's2'] },
+    });
+    builder.availability
+      .mockResolvedValueOnce(new Map([['s1', ['cloze']], ['s2', ['cloze']]]) as never)
+      .mockResolvedValueOnce(new Map([['s1', []], ['s2', []]]) as never);
+    await expect(service.start(learner, { source: 'all', types: ['mcq_definition', 'cloze'], cloze_source: 'ai' }))
+      .rejects.toMatchObject({ status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' } });
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('F-08 (review #3a): AI-only session where plan() drops all unchecked private words switches session.types to [type_word, mcq_definition]', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: ['cloze'], fallbackReason: null },
+      aiPlan: { aiPlanned: 0, aiSenseIds: [], fallbackReason: 'ai-unavailable', excludedPrivateIds: ['s1', 's2'] },
+    });
+    builder.availability
+      .mockResolvedValueOnce(new Map([['s1', ['cloze']], ['s2', ['cloze']]]) as never)
+      .mockResolvedValueOnce(new Map([['s1', ['type_word']], ['s2', ['type_word']]]) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai' });
+    expect(createData(tx)).toMatchObject({
+      types: ['type_word', 'mcq_definition'], clozeSource: null, aiPlanned: 0, aiStopped: 'ai-unavailable', aiNoticeShown: false,
+    });
   });
 });
 

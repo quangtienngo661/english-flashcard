@@ -4,6 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 import { SettingsService, type AppSettings } from '../../settings/index.js';
 import { RESERVATION_TTL_MS } from '../entitlements.constants.js';
 import { lockAiDaily, lockPool } from '../entitlements.locks.js';
@@ -48,6 +49,9 @@ export class UsageLedgerService {
   async reserve(userId: string, pool: AiPool, operationId: string): Promise<ReserveResult> {
     const { entitlements } = await this.settings.get();
     return this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, userId))) {
+        return { state: 'refused' as const, reason: 'ai-unavailable' as const, retry_after_seconds: null };
+      }
       const now = this.clock.now();
       await lockPool(tx, userId, pool);
       const [latest] = await this.rows(tx, userId, pool, operationId);
@@ -88,7 +92,7 @@ export class UsageLedgerService {
         VALUES (${userId}::uuid, ${pool}, ${operationId}, 'use', 'reserved', ${day}::date, ${now}, ${expiresAt}, ${plan})
         ON CONFLICT DO NOTHING`;
       return { state: 'reserved' as const, expires_at: expiresAt.toISOString() };
-    }, transactionOptions);
+    }, USER_DATA_TX);
   }
 
   async confirm(userId: string, pool: AiPool, operationId: string): Promise<{ state: 'confirmed' | 'released' | 'not-found' }> {
@@ -153,6 +157,7 @@ export class UsageLedgerService {
   async refund(userId: string, pool: AiPool, operationId: string, reportId: string): Promise<{ refunded: boolean }> {
     const { entitlements } = await this.settings.get();
     return this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, userId))) return { refunded: false };
       const now = this.clock.now();
       await lockPool(tx, userId, pool);
       if (await tx.usageRecord.findFirst({ where: { userId, pool, operationId, kind: 'credit' }, select: { id: true } })) {
@@ -170,7 +175,7 @@ export class UsageLedgerService {
         VALUES (${userId}::uuid, ${pool}, ${operationId}, 'credit', 'confirmed', ${now}, ${reportId})
         ON CONFLICT DO NOTHING`;
       return { refunded: true };
-    }, transactionOptions);
+    }, USER_DATA_TX);
   }
 
   /** The operation's `use` rows, newest first, locked. */

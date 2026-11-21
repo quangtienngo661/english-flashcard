@@ -18,6 +18,7 @@ describe('appConfigView (design §8.7)', () => {
         pro: {
           practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100,
           prices: { '1': 79000, '3': 199000, '12': 599000 },
+          checkout_enabled: true,
         },
       },
     });
@@ -38,5 +39,11 @@ describe('appConfigView (design §8.7)', () => {
     settings.entitlements.freeAiPracticePerCycle = 0;
     settings.entitlements.freeAiLookupPerCycle = 8;
     expect(appConfigView(settings).plans.free).toEqual({ practice_sessions_per_day: 3, ai_practice_per_cycle: 0, ai_lookup_per_cycle: 8 });
+  });
+
+  it('D8: exposes plans.pro.checkout_enabled from entitlements.proCheckoutEnabled', () => {
+    const settings = structuredClone(SETTINGS_DEFAULTS);
+    settings.entitlements.proCheckoutEnabled = false;
+    expect(appConfigView(settings).plans.pro.checkout_enabled).toBe(false);
   });
 });

@@ -15,10 +15,10 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 61 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B, one TTS cap of đợt C, five of the practice AI count), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(61);
-    expect(new Set(FIELD_ORDER).size).toBe(61);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 14, 22, 2, 10, 1, 1]);
+  it('the layout has the 62 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B, one TTS cap of đợt C, five of the practice AI count, one Pro checkout toggle of D8), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(62);
+    expect(new Set(FIELD_ORDER).size).toBe(62);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 14, 23, 2, 10, 1, 1]);
     // Practice AI count (09/11/2026): mockup order, each number field under the choice it depends on.
     expect(SETTINGS_LAYOUT.practice.slice(0, 7)).toEqual([
       { key: 'session_max_mode', kind: 'choice', options: ['fixed', 'scope_words'] },
@@ -30,11 +30,12 @@ describe('settings-api', () => {
       { key: 'ai_placement', kind: 'choice', options: ['even', 'random', 'learner'] },
     ]);
     expect(SETTINGS_LAYOUT.practice[7].key).toBe('history_months');
-    // The three prices close the entitlements tab, in dong.
-    expect(SETTINGS_LAYOUT.entitlements.slice(-3)).toEqual([
+    // The three prices and emergency checkout toggle close the entitlements tab.
+    expect(SETTINGS_LAYOUT.entitlements.slice(-4)).toEqual([
       { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },
       { key: 'pro_price_3m_vnd', kind: 'int', unit: 'vnd' },
       { key: 'pro_price_12m_vnd', kind: 'int', unit: 'vnd' },
+      { key: 'pro_checkout_enabled', kind: 'bool' },
     ]);
     // The window of "đang học" (D39) is the last field of the learning tab, in days.
     expect(SETTINGS_LAYOUT.learning.at(-1)).toEqual({ key: 'active_window_days', kind: 'int', unit: 'days' });

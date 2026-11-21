@@ -1673,6 +1673,7 @@
       "currentPeriod": "Đang dùng kỳ này",
       "priceChanged": "Giá vừa thay đổi. Xem lại trước khi mua.",
       "buyUnavailable": "Không tạo được đơn hàng. Thử lại sau ít phút.",
+      "checkoutPaused": "Đang tạm dừng tạo đơn Pro mới để bảo trì. Các đơn đã thanh toán vẫn được xử lý bình thường.",
       "nextPeriod": "Kỳ tiếp theo: {from} – {to}",
       "thenPeriod": "Sau đó: {from} – {to}",
       "proLine": "Luyện nhiều hơn, có AI soạn câu và tra từ cùng bạn.",

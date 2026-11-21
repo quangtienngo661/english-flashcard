@@ -156,6 +156,7 @@ export function PlansPage() {
                   runningMonths={onPro ? prepaidMonths(source) : null}
                   // The new period starts where the running Pro ends: the raw end, not the last day.
                   startsAt={onPro ? endsAt : null}
+                  checkoutPaused={plans.pro.checkout_enabled === false}
                 />
               )
             }
@@ -218,12 +219,13 @@ function periodState(months: Months, runningMonths: number | null): 'buy' | 'loc
  * The full-width buy button and what follows it (owner 05/11/2026, Part 7 constraints): the error line, when the new period starts (on
  * Pro, unless the button is locked), one payment with no renewal and no automatic refund with the support email, then the Terms.
  */
-function BuyBlock({ months, price, runningMonths, startsAt }: {
+function BuyBlock({ months, price, runningMonths, startsAt, checkoutPaused }: {
   months: Months;
   price: number;
   /** The length of the running prepaid period: the same length is locked, a longer one is an upgrade (owner 05/11/2026). */
   runningMonths: number | null;
   startsAt: string | null;
+  checkoutPaused: boolean;
 }) {
   const t = useTranslations('App.plans');
   const locale = useLocale();
@@ -232,19 +234,25 @@ function BuyBlock({ months, price, runningMonths, startsAt }: {
   const state = periodState(months, runningMonths);
   const period = t(`periods.${months}`);
   const locked = state === 'locked';
+  const disabled = locked || checkoutPaused;
 
   return (
     <div className="flex flex-col gap-3">
       <Button
-        variant={locked ? 'secondary' : 'primary'}
+        variant={disabled ? 'secondary' : 'primary'}
         className="w-full"
-        isDisabled={locked}
+        isDisabled={disabled}
         onPress={() => order.buy(months, price)}
         isPending={order.isPending}
       >
         {locked ? t('currentPeriod') : state === 'upgrade' ? t('upgrade', { period }) : t('buy', { period })}
         {!locked && <ArrowRight aria-hidden className="size-4" />}
       </Button>
+      {checkoutPaused && !order.error && (
+        <p role="status" className="font-wm-sans text-wm-small text-wm-muted">
+          {t('checkoutPaused')}
+        </p>
+      )}
       {order.error && (
         <p role="alert" className="font-wm-sans text-wm-small text-wm-fail">
           {order.error}

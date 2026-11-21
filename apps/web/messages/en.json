@@ -1673,6 +1673,7 @@
       "currentPeriod": "Your current period",
       "priceChanged": "The price just changed. Check it before you buy.",
       "buyUnavailable": "Couldn’t create the order. Try again in a few minutes.",
+      "checkoutPaused": "New Pro checkouts are temporarily paused for maintenance. Existing paid orders continue processing normally.",
       "nextPeriod": "Next period: {from} – {to}",
       "thenPeriod": "Then: {from} – {to}",
       "proLine": "Practice more, with AI writing questions and looking up words with you.",

@@ -118,7 +118,7 @@ export class SessionService {
       await withUserLock(tx, located.chain.userId);
       const row = await tx.refreshToken.findUnique({ where: { id: located.id }, include: { chain: true } });
       const now = this.clock.now();
-      if (!row || row.rotatedAt || row.chain.revokedAt || row.chain.clientType !== path) return;
+      if (!row || row.chain.revokedAt || row.chain.clientType !== path) return;
       await tx.sessionChain.updateMany({
         where: { id: row.chainId, revokedAt: null }, data: { revokedAt: now, revokeReason: 'logout' },
       });

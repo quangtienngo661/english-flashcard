@@ -59,6 +59,8 @@ export type AppConfig = {
       practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number;
       /** Launch prep B: dong per prepaid period of 1, 3 and 12 months. Optional like `account`: the plans page (M2) is the only reader. */
       prices?: { '1': number; '3': number; '12': number };
+      /** Pre-publish D8: false when admin temporarily pauses new Pro orders; absent defaults to true. */
+      checkout_enabled?: boolean;
     };
   };
 };

@@ -18,6 +18,7 @@ const DEFAULTS = {
     trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7, trial_reminder_days_before: 3,
     renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000, free_ai_daily_cap: 500, ai_cap_alert_percent: 75, ads_enabled: false,
     ads_interstitial_per_day: 3, ads_min_interval_minutes: 10, pro_price_1m_vnd: 79000, pro_price_3m_vnd: 199000, pro_price_12m_vnd: 599000,
+    pro_checkout_enabled: true,
   },
   content: { private_words_per_user: 10000, sentences_per_sense: 20 },
   ai: { call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7, usd_vnd_rate: 26100, eval_held_out_ratio: 0.3,

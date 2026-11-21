@@ -2238,7 +2238,8 @@
         "transaction_retention_years": "Keep payment records after an account is deleted",
         "pro_price_1m_vnd": "Pro price, 1 month",
         "pro_price_3m_vnd": "Pro price, 3 months",
-        "pro_price_12m_vnd": "Pro price, 12 months"
+        "pro_price_12m_vnd": "Pro price, 12 months",
+        "pro_checkout_enabled": "Allow new Pro orders (turn off to pause new checkouts; existing webhooks and reconciliation keep running)"
       },
       "content": {
         "private_words_per_user": "Private words per person",
