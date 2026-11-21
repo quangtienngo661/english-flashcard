@@ -417,10 +417,9 @@ describe('SessionService transaction invariants', () => {
     expect(s.sign).not.toHaveBeenCalled();
   });
 
-  it.each(['rotated', 'revoked', 'path_mismatch'] as const)(
+  it.each(['revoked', 'path_mismatch'] as const)(
     'B1#20: logout with a %s token is a locked read-only no-op', async (state) => {
       const s = setup();
-      if (state === 'rotated') s.row.rotatedAt = s.clock.now();
       if (state === 'revoked') s.chain.revokedAt = s.clock.now();
       if (state === 'path_mismatch') s.chain.clientType = 'web';
       await s.service.revokeByRefreshToken(s.original.token, 'mobile');
@@ -429,4 +428,23 @@ describe('SessionService transaction invariants', () => {
       expect(s.chainUpdateMany).not.toHaveBeenCalled();
     },
   );
+
+  it('F-03: logout with an already-rotated token still revokes the active session chain (refresh-vs-logout race)', async () => {
+    const s = setup();
+    s.row.rotatedAt = new Date(s.clock.now().getTime() - 5);
+    await s.service.revokeByRefreshToken(s.original.token, 'mobile');
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null },
+      data: { revokedAt: s.clock.now(), revokeReason: 'logout' },
+    });
+  });
+
+  it('F-03 Review Focus 1: logout with a rotated token only targets row.chainId, leaving sibling device chains untouched', async () => {
+    const s = setup();
+    s.row.rotatedAt = s.clock.now();
+    await s.service.revokeByRefreshToken(s.original.token, 'mobile');
+    const [{ where }] = s.chainUpdateMany.mock.calls[0];
+    expect(where).toEqual({ id: s.chain.id, revokedAt: null });
+    expect(where).not.toHaveProperty('userId');
+  });
 });
