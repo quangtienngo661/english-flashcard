@@ -2,7 +2,7 @@
 #   -p wordmet -f deploy/compose.prod.yml --env-file $WORDMET_HOME/.env
 # so every ${VAR} below comes from that file or the shell. Nothing secret is written here.
 #   API_TAG        the commit the api/worker/migrate images were built from (set by deploy.sh / rollback.sh)
-#   HTTP_PORT, HTTPS_PORT, CADDY_SITES, CADDY_LOG_DIR   only changed for the local rehearsal
+#   HTTP_PORT, HTTPS_PORT, CADDY_API_SITE, CADDY_ADMIN_API_SITE, CADDY_LOG_DIR   only changed for the local rehearsal
 name: wordmet
 
 x-api-env: &api-env
@@ -27,7 +27,8 @@ services:
       - '${HTTPS_PORT:-443}:443/udp'
     environment:
       ACME_EMAIL: ${ACME_EMAIL:?}
-      CADDY_SITES: ${CADDY_SITES:-api.wordmet.com, admin-api.wordmet.com}
+      CADDY_API_SITE: ${CADDY_API_SITE:-api.wordmet.com}
+      CADDY_ADMIN_API_SITE: ${CADDY_ADMIN_API_SITE:-admin-api.wordmet.com}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -69,6 +70,12 @@ services:
     environment:
       <<: *api-env
       MAINTENANCE_ENABLED: 'true'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "const fs=require('node:fs');const s=fs.statSync('/tmp/worker-heartbeat');process.exit(Date.now()-s.mtimeMs<60000?0:1)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
     depends_on:
       postgres:
         condition: service_healthy

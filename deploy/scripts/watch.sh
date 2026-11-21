@@ -17,7 +17,7 @@ main() {
 
   # 1. Log events of the API and the worker.
   compose logs --since 5m --no-log-prefix api worker > "$tmp/logs" 2>&1 || true
-  for spec in request_failed:5 maintenance_job_failed:1 account_deletion_failed:1 turnstile_bypassed:1; do
+  for spec in request_failed:5 maintenance_job_failed:1 account_deletion_failed:1 turnstile_bypassed:1 order_money_unapplied:1 billing_signature_invalid:1 order_provider_mismatch:1; do
     name="${spec%%:*}"
     min="${spec##*:}"
     count="$(grep -c "\"event\":\"$name\"" "$tmp/logs" || true)"
@@ -105,6 +105,32 @@ main() {
   elif [ "$free" -lt 15 ]; then
     df -h / > "$tmp/body"
     alert disk-low "[wordmet] only ${free} GB of disk left" "$tmp/body"
+  fi
+
+  # 7. Billing anomalies in Postgres: orders needing review or stuck failed billing_events (F-09; IDs and counts only, never PII).
+  local nr_count fail_ev_count
+  nr_count="$(compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" \
+    -c "SELECT count(*) FROM billing_orders WHERE status = 'needs_review'" 2>/dev/null || true)"
+  if [[ "$nr_count" =~ ^[0-9]+$ ]] && [ "$nr_count" -gt 0 ]; then
+    {
+      echo "$nr_count billing_orders row(s) currently in status = 'needs_review'."
+      echo
+      compose exec -T postgres psql -X -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" \
+        -c "SELECT id, review_reason, amount_minor, created_at FROM billing_orders WHERE status = 'needs_review' ORDER BY created_at DESC LIMIT 20" 2>&1 || true
+    } > "$tmp/body"
+    alert billing-needs-review "[wordmet] $nr_count billing order(s) need review" "$tmp/body"
+  fi
+
+  fail_ev_count="$(compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" \
+    -c "SELECT count(*) FROM billing_events WHERE status = 'failed'" 2>/dev/null || true)"
+  if [[ "$fail_ev_count" =~ ^[0-9]+$ ]] && [ "$fail_ev_count" -gt 0 ]; then
+    {
+      echo "$fail_ev_count billing_events row(s) currently in status = 'failed'."
+      echo
+      compose exec -T postgres psql -X -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" \
+        -c "SELECT id, event_type, attempts, last_error, received_at FROM billing_events WHERE status = 'failed' ORDER BY received_at DESC LIMIT 20" 2>&1 || true
+    } > "$tmp/body"
+    alert billing-event-failed "[wordmet] $fail_ev_count failed billing event(s)" "$tmp/body"
   fi
 }
 
