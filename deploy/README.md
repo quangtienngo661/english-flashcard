@@ -424,20 +424,14 @@ command to combine it with R2. Replay skips accounts that are already absent.
 
 ### After a restore: payments
 
-**Which code this applies to.** The rest of this section (order codes from the clock, the `orders-probe-payos` CLI) holds only once the
-time-based order codes change (PR #301 branch, "M1") is merged **and deployed**. This branch is based on code that still issues order codes
-from the database sequence `billing_order_code_seq`, and the CLI does not exist in that code. Until M1 is deployed, use the block
-"Only until the time-based order codes are deployed" below instead of the CLI, and delete that block after the deploy.
+A restore loses the orders written after the end of the restored data, but payOS still has their payment links and may hold the money. Since
+the 18/11/2026 rollout (PR #303 / #307, `cad0b96a`), order codes are derived from the clock (`>= 1_100_000_000`), so a restored database never
+reuses the code of a lost order (provided the server clock does not move backwards). The `orders-probe-payos` CLI lists the payOS links whose
+code falls in a time window; it only reads payOS and needs no database.
 
-A restore loses the orders written after the end of the restored data, but payOS still has their payment links and may hold the money. With
-M1, order codes come from the clock, so a new order never reuses the code of a lost one. The CLI lists the payOS links whose code falls in a
-time window; staff then confirm each paid one that the restored database does not have with "Xác nhận thanh toán" in admin. It only reads
-payOS and needs no database.
-
-With API and worker started (confirming happens in admin), run the CLI for the smallest window that covers the gap: from the time the
-restored data ends (the `last completed transaction` time above, or the time of the dump) to the time of the failure, both in UTC. The CLI
-makes about 3 payOS calls per second of window; at an **assumed** 100 ms a call (not measured against real payOS) ten minutes would take
-about three minutes.
+With API and worker started, run the CLI for the smallest window that covers the gap: from the time the restored data ends (the
+`last completed transaction` time above, or the time of the dump) to the time of the failure, both in UTC. The CLI makes about 3 payOS calls
+per second of window; at an **assumed** 100 ms a call (not measured against real payOS) ten minutes would take about three minutes.
 
 ```bash
 compose run --rm --no-deps -T api node dist/cli/orders-probe-payos.js --from 2026-11-20T03:41:00Z --to 2026-11-20T03:55:00Z
@@ -446,31 +440,12 @@ compose run --rm --no-deps -T api node dist/cli/orders-probe-payos.js --from 202
 Output is one tab-separated line per link found (order code, description, status, amount, paid amount, time, payer names), printed as it is
 found. A payOS error other than "not found" stops the walk: the lines already printed are real, so run it again with a later `--from`.
 Exit 2 is a wrong argument (a time must be ISO 8601 with a zone, a window at most 24 hours, not before 2026-11-17).
-A paid link with no order in the restored database is a payment to review by hand: match the payer's name to a learner before confirming it.
-
-#### Only until the time-based order codes are deployed
-
-Delete this block after M1 is deployed. Without M1, a restored database goes back to an older `billing_order_code_seq`, so the next order
-could reuse the code of a lost order that payOS still knows. If the original database is readable, record the sequence before replacing it:
-
-```bash
-compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U "$U" -d "$D" -Atc 'SELECT last_value FROM billing_order_code_seq'
-```
-
-Before restarting api and worker, reconcile transfers and orders since the backup against the payment provider's records. Match using the
-original payment link and independently verified order ownership. Review any transfer whose order is missing. Determine an upper bound on
-issued order codes from evidence outside the restored database and set `billing_order_code_seq` to at least that value and the current
-sequence position. Keep traffic stopped if payment ownership or the upper bound cannot be verified.
-
-```bash
-MAX_ISSUED='<verified upper bound>'
-compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -v max_issued="$MAX_ISSUED" -U "$U" -d "$D" <<'SQL'
-SELECT setval('billing_order_code_seq', GREATEST(last_value, :'max_issued'::bigint), true)
-FROM billing_order_code_seq;
-SQL
-```
-
-In the restore blocks above, run this one after the migration step and before `compose up -d api worker`.
+Handling each paid link found by the CLI:
+- If the `billing_orders` row **exists** in the restored database (the order was created before the backup and paid after it), confirm it with
+  "Xác nhận thanh toán" in admin (`/orders`).
+- If the `billing_orders` row **does not exist** in the restored database (the order was created after the backup), payOS does not store the
+  buyer's `user_id`, so "Xác nhận thanh toán" has no order to attach to: match the payer's name or support receipt to the learner and grant the
+  Pro period manually via "Cấp gói" (`entitlement_grants`) in admin.
 
 Check a backup without touching production (G1): load it into a scratch database and compare counts.
 
