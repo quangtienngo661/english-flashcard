@@ -261,16 +261,44 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     expect(t.generator.run).toHaveBeenCalledWith(request.id, expect.anything());
   });
 
-  it('B7E48: AI-only, the AI fails → ai_unavailable; again without retry_ai → no call; with retry_ai → a new request', async () => {
-    let outcome: GenerateOutcome = failed('ai-failed');
-    const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1, generate: () => outcome });
-    expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed' });
-    expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed' });
-    expect(t.generator.run).toHaveBeenCalledTimes(1);
-    outcome = { state: 'ready', questionId: '' };
-    expect(await t.service.next(learner, 'sess-1', true)).toMatchObject({ state: 'question' });
-    expect(t.requests).toHaveLength(2);
-    expect(t.generator.run).toHaveBeenCalledTimes(2);
+  it('F-08: mid-session AI-only provider error (ai-failed) falls back to type_word instead of ai_unavailable, keeping progress and charging 0 AI units', async () => {
+    const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1', 's2'], aiSenseIds: ['s1', 's2'], aiPlanned: 2,
+      generate: () => failed('ai-failed') });
+    const first = await t.service.next(learner, 'sess-1');
+    expect(first).toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-failed' });
+    expect(t.counters.built[0]).toEqual(['type_word']);
+    expect(t.counters.charged).toBe(0);
+    t.answerLast();
+    const second = await t.service.next(learner, 'sess-1');
+    expect(second).toMatchObject({ state: 'question', item: { type: 'type_word' } });
+    expect(second).not.toHaveProperty('notice');
+    expect(t.items.map((i) => i.senseId)).toEqual(['s1', 's2']);
+  });
+
+  it('F-08: mid-session AI-only word-not-recognized falls back to rule question with notice=word-not-recognized', async () => {
+    const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1,
+      generate: () => failed('word-not-recognized') });
+    const res = await t.service.next(learner, 'sess-1');
+    expect(res).toMatchObject({ state: 'question', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1', item: { type: 'type_word' } });
+  });
+
+  it('F-08 Review Focus 4: mid-session AI-only quota-exhausted and plan-required STILL return state=ai_unavailable', async () => {
+    for (const reason of ['quota-exhausted', 'plan-required'] as const) {
+      const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1,
+        generate: () => failed(reason) });
+      expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'ai_unavailable', reason });
+    }
+  });
+
+  it('F-08: start-time fallback session (aiStopped=ai-unavailable, aiNoticeShown=false) emits ai-fallback once on first next()', async () => {
+    const t = setup({ types: ['type_word', 'mcq_definition'], clozeSource: null, senseIds: ['s1', 's2'], aiSenseIds: [], aiPlanned: 0,
+      aiStopped: 'ai-unavailable' });
+    const first = await t.service.next(learner, 'sess-1');
+    expect(first).toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-unavailable' });
+    t.answerLast();
+    const second = await t.service.next(learner, 'sess-1');
+    expect(second).toMatchObject({ state: 'question' });
+    expect(second).not.toHaveProperty('notice');
   });
 
   it('B7E49: mixed session, AI fails at two words → rule types for both; ai-fallback notice only the first time', async () => {
@@ -607,29 +635,31 @@ describe('AI failures as the app sees them (design §6.5 A, §6.6 rows 1 and 4)'
       .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'word-not-recognized', sense_id: 's1' });
   });
 
-  it('AI-only × failed in prepare × AI error → ai_unavailable, reason ai-failed, no new call', async () => {
+  it('F-08/D7: AI-only × failed in prepare × AI error → rule fallback with ai-fallback (ai-failed), no new call', async () => {
     const t = setupFailing(aiOnly, 'input-mismatch');
     await t.service.prepare(learner, 'sess-1');
-    expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed' });
+    expect(await t.service.next(learner, 'sess-1'))
+      .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-failed' });
     expect(t.generator.run).toHaveBeenCalledTimes(1);
   });
 
-  it('AI-only × failed in prepare × word not recognized → ai_unavailable ai-failed with word-not-recognized and the sense id', async () => {
+  it('F-08/D7: AI-only × failed in prepare × word not recognized → rule fallback with word-not-recognized and the sense id', async () => {
     const t = setupFailing(aiOnly, 'word-not-recognized');
     await t.service.prepare(learner, 'sess-1');
     expect(await t.service.next(learner, 'sess-1'))
-      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
+      .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
   });
 
-  it('AI-only × failed in next × rejected twice → ai_unavailable, reason ai-failed', async () => {
+  it('F-08/D7: AI-only × failed in next × rejected twice → rule fallback with ai-fallback (ai-failed)', async () => {
     const t = setupFailing(aiOnly, 'rejected');
-    expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed' });
+    expect(await t.service.next(learner, 'sess-1'))
+      .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-failed' });
   });
 
-  it('AI-only × failed in next × word not recognized → ai_unavailable ai-failed with word-not-recognized and the sense id', async () => {
+  it('F-08/D7: AI-only × failed in next × word not recognized → rule fallback with word-not-recognized and the sense id', async () => {
     const t = setupFailing(aiOnly, 'word-not-recognized');
     expect(await t.service.next(learner, 'sess-1'))
-      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
+      .toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
   });
 
   it('mixed × failed in next × word not recognized → rule type with word-not-recognized (B7E98)', async () => {
