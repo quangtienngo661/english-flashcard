@@ -14,7 +14,7 @@ const NOW = new Date('2026-11-05T03:02:00.000Z');
 const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
 const OTHER = '11111111-0b7d-4c1e-9a55-3d2f8e7b6a10';
 
-type Row = NewOrder & { id: string; paymentLinkId: string | null; checkoutUrl: string | null; status: string; checkedAt: Date | null; createdAt: Date; period: { startsAt: Date; endsAt: Date } | null };
+type Row = NewOrder & { id: string; paymentLinkId: string | null; checkoutUrl: string | null; status: string; reviewReason: 'amount-short' | 'provider-mismatch' | 'account-deleted' | null; checkedAt: Date | null; createdAt: Date; period: { startsAt: Date; endsAt: Date } | null };
 
 /** The orders table in memory with a call log; the sequence starts where the migration's does. */
 class MemoryOrders {
@@ -24,7 +24,7 @@ class MemoryOrders {
   async nextOrderCode() { this.calls.push('next-code'); return this.code++; }
   async insertPending(_db: unknown, row: NewOrder) {
     this.calls.push('insert-pending');
-    const stored: Row = { ...row, id: `order-${this.rows.length + 1}`, paymentLinkId: null, checkoutUrl: null, status: 'pending', checkedAt: null, createdAt: NOW, period: null };
+    const stored: Row = { ...row, id: `order-${this.rows.length + 1}`, paymentLinkId: null, checkoutUrl: null, status: 'pending', reviewReason: null, checkedAt: null, createdAt: NOW, period: null };
     this.rows.push(stored);
     return { id: stored.id };
   }
@@ -48,14 +48,16 @@ class MemoryOrders {
   }
   async claimForCheck(_db: unknown, id: string, userId: string, now: Date, minGapMs: number): Promise<ReconcileOrder | null> {
     this.calls.push('claim-check');
-    const row = this.rows.find((r) => r.id === id && r.userId === userId && r.status === 'pending' && (r.checkedAt === null || r.checkedAt.getTime() < now.getTime() - minGapMs));
+    const row = this.rows.find((r) => r.id === id && r.userId === userId
+      && (r.status === 'pending' || (r.status === 'needs_review' && r.reviewReason === 'amount-short'))
+      && (r.checkedAt === null || r.checkedAt.getTime() < now.getTime() - minGapMs));
     if (!row) return null;
     row.checkedAt = now;
     return { id: row.id, userId: row.userId, status: row.status, orderCode: row.orderCode, paymentLinkId: row.paymentLinkId, expiresAt: row.expiresAt, createdAt: row.createdAt };
   }
   async findOwned(_db: unknown, id: string, userId: string): Promise<OrderView | null> {
     const row = this.rows.find((r) => r.id === id && r.userId === userId);
-    return row ? { id: row.id, status: row.status, periodMonths: row.periodMonths, amount: row.amount, description: row.description, expiresAt: row.expiresAt, period: row.period } : null;
+    return row ? { id: row.id, status: row.status, reviewReason: row.reviewReason, periodMonths: row.periodMonths, amount: row.amount, description: row.description, expiresAt: row.expiresAt, period: row.period } as OrderView : null;
   }
 }
 
@@ -385,4 +387,31 @@ describe('OrdersService.check (the return page, design §3.6)', () => {
     reconcile.reconcileOne.mockRejectedValueOnce(new Error('payos down'));
     expect((await service.check(USER, order_id)).status).toBe('pending');
   });
+
+  it('F-05: check() polls payOS when order is needs_review with reviewReason amount-short', async () => {
+    const { service, memory, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    memory.rows[0].status = 'needs_review';
+    memory.rows[0].reviewReason = 'amount-short';
+    reconcile.reconcileOne.mockImplementationOnce(async () => { memory.rows[0].status = 'paid'; memory.rows[0].reviewReason = null; });
+    const view = await service.check(USER, order_id);
+    expect(memory.calls).toContain('claim-check');
+    expect(reconcile.reconcileOne).toHaveBeenCalledTimes(1);
+    expect(view.status).toBe('paid');
+    expect(view).not.toHaveProperty('reviewReason');
+  });
+
+  it.each(['provider-mismatch', 'account-deleted', null] as const)(
+    'F-05: check() does NOT poll payOS for needs_review with reviewReason=%s',
+    async (reviewReason) => {
+      const { service, memory, reconcile } = setup();
+      const { order_id } = await service.create(USER, request());
+      memory.rows[0].status = 'needs_review';
+      memory.rows[0].reviewReason = reviewReason;
+      const view = await service.check(USER, order_id);
+      expect(view.status).toBe('needs_review');
+      expect(memory.calls).not.toContain('claim-check');
+      expect(reconcile.reconcileOne).not.toHaveBeenCalled();
+    },
+  );
 });

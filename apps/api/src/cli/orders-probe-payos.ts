@@ -9,8 +9,9 @@ import { PROBE_HEADER, PROBE_USAGE, formatProbeRow, parseProbeArgs, type ProbeRa
 
 // `pnpm orders:probe-payos --from <ISO> --to <ISO>`: lists the payOS payment links whose order code falls in a time window (restore-safety).
 // Read-only: it only asks payOS (`paymentRequests.get`), it never writes and needs no database. Use it after a restore for the window
-// [time of the restored backup, time of the failure]: a link payOS has but the database lost is an order to confirm by hand, with
-// "Xác nhận thanh toán" in admin. Order codes come from the clock (100 slots a second, filled from 0 with no gaps), so each second is walked
+// [time of the restored backup, time of the failure]: if the `billing_orders` row was lost after a restore, staff verify ownership
+// and transfer proof, then grant Pro via "Cấp gói" (`entitlement_grants`, requires `entitlements.grant`) instead of "Xác nhận thanh toán".
+// Order codes come from the clock (100 slots a second, filled from 0 with no gaps), so each second is walked
 // until `gap` codes in a row have no link. Output is a TSV table with the payer's name; an account number is never printed.
 // A full 24 h window takes hours (about 3 payOS calls per second of window, 100 ms each): give the smallest window that covers the restore gap.
 // Rows are printed as they are found and a progress line goes to stderr at most once a minute.
