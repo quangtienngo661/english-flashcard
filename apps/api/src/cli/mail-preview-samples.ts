@@ -6,15 +6,24 @@ import {
   otpLockedMail, otpMail, passwordChangedMail, passwordResetMail, staffAccountMail,
 } from '../identity/mailer/templates.js';
 
-export type MailPreviewOptions = { to: string; learnerAppUrl: string; adminAppUrl: string; supportEmail: string };
+export type MailPreviewOptions = {
+  to: string;
+  learnerAppUrl: string;
+  adminAppUrl: string;
+  supportEmail: string;
+  allLocales?: boolean;
+};
 
 /** Only a mail server on this machine (Mailpit) may receive sample mail. */
 export function isLocalSmtpHost(host: string): boolean {
   return ['localhost', '127.0.0.1', '::1'].includes(host);
 }
 
-/** The 17 emails Wordmet sends, with the example data of the mockup (Lan, code 482915, a 3-month receipt), all addressed to `to`. */
-export function mailPreviewSamples({ to, learnerAppUrl: app, adminAppUrl, supportEmail }: MailPreviewOptions): MailMessage[] {
+/**
+ * The sample emails Wordmet sends, with the example data of the mockup (Lan, code 482915, a 3-month receipt), all addressed to `to`.
+ * Default: 17 emails (one locale per localized template). With `allLocales: true`: 21 emails (both VI and EN for every localized template).
+ */
+export function mailPreviewSamples({ to, learnerAppUrl: app, adminAppUrl, supportEmail, allLocales = false }: MailPreviewOptions): MailMessage[] {
   const periodEnd = new Date('2027-02-13T17:00:00.000Z');
   const mail = (kind: 'payment_receipt' | 'expiry_notice', language: 'vi' | 'en'): MailMessage => ({
     to,
@@ -23,6 +32,23 @@ export function mailPreviewSamples({ to, learnerAppUrl: app, adminAppUrl, suppor
       receipt: { months: 3, amountMinor: 249000, description: 'WM7K2Q9X', reference: 'FT26318004512', startsAt: new Date('2026-11-14T03:00:00.000Z'), endsAt: periodEnd },
     }),
   });
+  const localized: MailMessage[] = allLocales
+    ? [
+      reminderMail(to, 'regular', 'vi', app, 12),
+      reminderMail(to, 'regular', 'en', app, 12),
+      reminderMail(to, 'inactive', 'vi', app, null),
+      reminderMail(to, 'inactive', 'en', app, null),
+      mail('payment_receipt', 'vi'),
+      mail('payment_receipt', 'en'),
+      mail('expiry_notice', 'vi'),
+      mail('expiry_notice', 'en'),
+    ]
+    : [
+      reminderMail(to, 'regular', 'vi', app, 12),
+      reminderMail(to, 'inactive', 'en', app, null),
+      mail('payment_receipt', 'vi'),
+      mail('expiry_notice', 'en'),
+    ];
   return [
     otpMail(to, 'verify_email', '482915', app),
     otpMail(to, 'reset_password', '482915', app),
@@ -37,9 +63,6 @@ export function mailPreviewSamples({ to, learnerAppUrl: app, adminAppUrl, suppor
     adminPasswordResetMail(to, 'Kp7#wQ2m9xLr', app, true, app),
     emailChangedNoticeMail(to, 'lan.work@example.com', app, supportEmail),
     emailChangedConfirmMail(to, app),
-    reminderMail(to, 'regular', 'vi', app, 12),
-    reminderMail(to, 'inactive', 'en', app, null),
-    mail('payment_receipt', 'vi'),
-    mail('expiry_notice', 'en'),
+    ...localized,
   ];
 }
