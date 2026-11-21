@@ -209,7 +209,7 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
     const t = setup({ senses: [priv, pub], notReady: ['check_private_word'] });
     await expect(t.planner.plan(learner, { types: ['cloze'], clozeSource: 'ai', count: 2, kept: ['s1', 's2'],
       available: availableAll(['s1', 's2'], ['cloze']) }, snapshot())).resolves.toEqual({
-      aiPlanned: 1, aiSenseIds: ['s2'], fallbackReason: 'ai-unavailable',
+      aiPlanned: 1, aiSenseIds: ['s2'], fallbackReason: 'ai-unavailable', excludedPrivateIds: ['s1'],
     });
     const checks = new Map([['s1', { contentKey: contentKey(priv.lemma, priv.pos, priv.gloss_vi!), verdict: 'ok' as const }]]);
     const checked = setup({ senses: [priv], notReady: ['check_private_word'], checks });

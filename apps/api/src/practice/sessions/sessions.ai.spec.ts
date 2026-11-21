@@ -290,11 +290,12 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     }
   });
 
-  it('F-08: start-time fallback session (aiStopped=ai-unavailable, aiNoticeShown=false) emits ai-fallback once on first next()', async () => {
+  it('F-08: start-time fallback session (aiStopped=ai-unavailable, aiNoticeShown=false) emits ai-fallback once on first next() and prefers type_word', async () => {
     const t = setup({ types: ['type_word', 'mcq_definition'], clozeSource: null, senseIds: ['s1', 's2'], aiSenseIds: [], aiPlanned: 0,
       aiStopped: 'ai-unavailable' });
     const first = await t.service.next(learner, 'sess-1');
     expect(first).toMatchObject({ state: 'question', item: { type: 'type_word' }, notice: 'ai-fallback', ai_reason: 'ai-unavailable' });
+    expect(t.counters.built[0]).toEqual(['type_word']);
     t.answerLast();
     const second = await t.service.next(learner, 'sess-1');
     expect(second).toMatchObject({ state: 'question' });

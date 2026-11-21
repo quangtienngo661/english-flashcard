@@ -188,10 +188,10 @@ export class SessionsService {
       recent_wrong: statsBySense.get(item.sense_id)?.wrong ?? 0,
     }));
     const order = sortWords(words, sort, Math.random);
-    const { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
+    let { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
     if (kept.length === 0) throw noWords('no-word-fits-types');
     // §4 step 3: in scope_words mode the session asks each kept word once.
-    const target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+    let target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
     let aiCount: number | undefined;
     let placement: 'even' | 'random' | undefined;
     if (byCount) {
@@ -207,7 +207,29 @@ export class SessionsService {
     const aiAvailable = clozeSource === 'own_then_ai' ? await this.aiSideAvailability(learner, kept, types, clozeSource) : availableBySense;
     const ai = await this.aiPlanner.plan(learner,
       { types, clozeSource, count: target, kept, available: aiAvailable, aiCount, placement }, snapshot);
-    if (ai.fallbackReason) fallbackReason = ai.fallbackReason;
+    if (ai.fallbackReason) {
+      fallbackReason = ai.fallbackReason;
+      if (ai.aiPlanned === 0) {
+        ({ types, clozeSource } = applyGateFallback(types, clozeSource, []));
+        ({ kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource));
+        if (kept.length === 0) throw noWords('no-word-fits-types');
+        target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+      } else if (ai.excludedPrivateIds && ai.excludedPrivateIds.length > 0) {
+        const ruleOnly = withoutAi(types, clozeSource);
+        const ruleAvail = ruleOnly.types.length > 0
+          ? await this.builder.availability({
+            userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: ai.excludedPrivateIds,
+            chosenTypes: ruleOnly.types, clozeSource: ruleOnly.clozeSource,
+          })
+          : new Map<string, QuestionType[]>();
+        const dropped = new Set(ai.excludedPrivateIds.filter((id) => (ruleAvail.get(id)?.length ?? 0) === 0));
+        if (dropped.size > 0) {
+          kept = kept.filter((id) => !dropped.has(id));
+          if (kept.length === 0) throw noWords('no-word-fits-types');
+          target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+        }
+      }
+    }
     const fullFallback = fallbackReason !== null && (!hasAiType(types, clozeSource) || ai.aiPlanned === 0);
     const partialFallback = fallbackReason !== null && !fullFallback;
     return this.prisma.$transaction(async (tx) => {
@@ -813,11 +835,13 @@ export class SessionsService {
   /** A rule question using chosen rule types, or fallback `['type_word', 'mcq_definition']` (preferring `type_word`) for AI-only system fallback. */
   private async buildFallbackRuleItem(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
     senseId: string, round: number, ruleTypes: QuestionType[], previous: ItemWithQuestion | undefined): Promise<ItemWithQuestion | null> {
-    if (ruleTypes.length > 0) return this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
-    if (session.aiStopped !== null && isSystemAiFailure(session.aiStopped)) {
+    const isAiOnlyStartFallback = session.aiStopped !== null && isSystemAiFailure(session.aiStopped)
+      && (ruleTypes.length === 0 || (session.aiPlanned === 0 && ruleTypes.length === 2 && ruleTypes[0] === 'type_word' && ruleTypes[1] === 'mcq_definition'));
+    if (isAiOnlyStartFallback) {
       return (await this.ruleItem(tx, learner, session, items, senseId, round, ['type_word'], previous))
         ?? (await this.ruleItem(tx, learner, session, items, senseId, round, ['mcq_definition'], previous));
     }
+    if (ruleTypes.length > 0) return this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
     return null;
   }
 

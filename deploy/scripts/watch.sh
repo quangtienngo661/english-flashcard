@@ -128,7 +128,7 @@ main() {
       echo "$fail_ev_count billing_events row(s) currently in status = 'failed'."
       echo
       compose exec -T postgres psql -X -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" \
-        -c "SELECT id, event_type, attempts, last_error, received_at FROM billing_events WHERE status = 'failed' ORDER BY received_at DESC LIMIT 20" 2>&1 || true
+        -c "SELECT id, provider, type, attempts, error, received_at FROM billing_events WHERE status = 'failed' ORDER BY received_at DESC LIMIT 20" 2>&1 || true
     } > "$tmp/body"
     alert billing-event-failed "[wordmet] $fail_ev_count failed billing event(s)" "$tmp/body"
   fi

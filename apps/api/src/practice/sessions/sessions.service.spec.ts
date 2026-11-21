@@ -802,6 +802,34 @@ describe('SessionsService.start — F-08 / D7 automatic AI fallback', () => {
     });
     expect(res).toMatchObject({ notice: 'ai-fallback', ai_reason: 'ai-unavailable' });
   });
+
+  it('F-08 (review #3a): mixed session where plan() drops all unchecked private words re-checks rule availability and throws no-word-fits-types without closing open session', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: ['cloze'], fallbackReason: null },
+      aiPlan: { aiPlanned: 0, aiSenseIds: [], fallbackReason: 'ai-unavailable', excludedPrivateIds: ['s1', 's2'] },
+    });
+    builder.availability
+      .mockResolvedValueOnce(new Map([['s1', ['cloze']], ['s2', ['cloze']]]) as never)
+      .mockResolvedValueOnce(new Map([['s1', []], ['s2', []]]) as never);
+    await expect(service.start(learner, { source: 'all', types: ['mcq_definition', 'cloze'], cloze_source: 'ai' }))
+      .rejects.toMatchObject({ status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' } });
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('F-08 (review #3a): AI-only session where plan() drops all unchecked private words switches session.types to [type_word, mcq_definition]', async () => {
+    const { service, tx, builder } = setup({
+      gateResult: { snapshot: snap, availableAiTypes: ['cloze'], fallbackReason: null },
+      aiPlan: { aiPlanned: 0, aiSenseIds: [], fallbackReason: 'ai-unavailable', excludedPrivateIds: ['s1', 's2'] },
+    });
+    builder.availability
+      .mockResolvedValueOnce(new Map([['s1', ['cloze']], ['s2', ['cloze']]]) as never)
+      .mockResolvedValueOnce(new Map([['s1', ['type_word']], ['s2', ['type_word']]]) as never);
+    await service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai' });
+    expect(createData(tx)).toMatchObject({
+      types: ['type_word', 'mcq_definition'], clozeSource: null, aiPlanned: 0, aiStopped: 'ai-unavailable', aiNoticeShown: false,
+    });
+  });
 });
 
 function setupCurrent() {

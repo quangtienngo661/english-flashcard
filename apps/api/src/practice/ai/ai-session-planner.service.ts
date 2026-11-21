@@ -21,7 +21,12 @@ export type AiGateResult = {
   fallbackReason: 'ai-unavailable' | null;
 };
 
-export type AiSessionPlan = { aiPlanned: number; aiSenseIds: string[]; fallbackReason?: 'ai-unavailable' | null };
+export type AiSessionPlan = {
+  aiPlanned: number;
+  aiSenseIds: string[];
+  fallbackReason?: 'ai-unavailable' | null;
+  excludedPrivateIds?: string[];
+};
 
 /** The AI part of opening a session (design §6.1 steps 2–5); reads only, nothing is reserved or held (B7E2). */
 @Injectable()
@@ -102,12 +107,14 @@ export class AiSessionPlanner {
       if ((await this.wordChecks.get(userId, senseId))?.contentKey !== key) uncheckedPrivate.add(senseId);
     }
     let capableCount = capable.length;
+    let excludedPrivateIds: string[] | undefined;
     if (uncheckedPrivate.size > 0) {
       const readiness = await this.ai.isReady('check_private_word');
       if (!readiness.ready) {
         marked = marked.filter((id) => !uncheckedPrivate.has(id));
         capableCount = Math.max(0, capable.length - uncheckedPrivate.size);
         fallbackReason = 'ai-unavailable';
+        excludedPrivateIds = [...uncheckedPrivate];
       }
     }
     const planned = capableCount === 0
@@ -123,6 +130,6 @@ export class AiSessionPlanner {
         extensions: { remaining: pool.remaining, needed, resets_at: pool.resets_at },
       });
     }
-    return { aiPlanned: planned, aiSenseIds: marked, fallbackReason };
+    return { aiPlanned: planned, aiSenseIds: marked, fallbackReason, ...(excludedPrivateIds ? { excludedPrivateIds } : {}) };
   }
 }
