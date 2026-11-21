@@ -2238,7 +2238,8 @@
         "transaction_retention_years": "Giữ hồ sơ thanh toán sau khi xóa tài khoản",
         "pro_price_1m_vnd": "Giá Pro 1 tháng",
         "pro_price_3m_vnd": "Giá Pro 3 tháng",
-        "pro_price_12m_vnd": "Giá Pro 12 tháng"
+        "pro_price_12m_vnd": "Giá Pro 12 tháng",
+        "pro_checkout_enabled": "Mở tạo đơn mua Pro mới (tắt để tạm dừng tạo đơn mới; webhook và đối soát đơn cũ vẫn chạy)"
       },
       "content": {
         "private_words_per_user": "Số từ riêng mỗi người",

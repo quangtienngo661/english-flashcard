@@ -142,6 +142,7 @@ export type NewOrder = {
 export type OrderView = {
   id: string;
   status: string;
+  reviewReason: ReviewReason | null;
   periodMonths: number;
   amount: number;
   description: string;
@@ -238,16 +239,18 @@ export class OrdersRepository {
     if (row === null) return null;
     const period = row.periods[0];
     return {
-      id: row.id, status: row.status, periodMonths: row.periodMonths, amount: Number(row.amountMinor), description: row.description,
-      expiresAt: row.expiresAt, period: period ? { startsAt: period.startsAt, endsAt: period.endsAt } : null,
+      id: row.id, status: row.status, reviewReason: row.reviewReason as ReviewReason | null, periodMonths: row.periodMonths,
+      amount: Number(row.amountMinor), description: row.description, expiresAt: row.expiresAt,
+      period: period ? { startsAt: period.startsAt, endsAt: period.endsAt } : null,
     };
   }
 
   /**
    * The orders the hourly job looks at, claimed by writing `checked_at` in the same statement that picks them (`SKIP LOCKED`), so the
    * API and the worker never ask about the same order: pending with a link, created more than 5 minutes ago and not asked in the last
-   * 10; pending with no link after 2 minutes (the process died between the insert and the link); failed with no link, within 24
-   * hours, never asked. Oldest first, at most `limit` (design §3.6).
+   * 10; pending with no link after 2 minutes (the process died between the insert and the link); needs_review/amount-short within 7
+   * days (top-up transfer after lost webhook); failed with no link and no review_reason (excludes codeTaken provider-mismatch), within
+   * 24 hours, retried at most once per hour. Oldest first, at most `limit` (design §3.6, F-05, F-11).
    */
   async claimForReconcile(db: Db, now: Date, limit: number): Promise<ReconcileOrder[]> {
     const rows = await db.$queryRaw<ReconcileRow[]>`
@@ -259,7 +262,10 @@ export class OrdersRepository {
             AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '10 minutes'))
           OR (status = 'pending' AND payment_link_id IS NULL AND created_at < ${now}::timestamptz - interval '2 minutes'
             AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '10 minutes'))
-          OR (status = 'failed' AND payment_link_id IS NULL AND created_at > ${now}::timestamptz - interval '24 hours' AND checked_at IS NULL)
+          OR (status = 'needs_review' AND review_reason = 'amount-short' AND created_at > ${now}::timestamptz - interval '7 days'
+            AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '10 minutes'))
+          OR (status = 'failed' AND payment_link_id IS NULL AND review_reason IS NULL AND created_at > ${now}::timestamptz - interval '24 hours'
+            AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '1 hour'))
         )
         ORDER BY created_at ASC LIMIT ${limit} FOR UPDATE SKIP LOCKED
       )
@@ -267,11 +273,12 @@ export class OrdersRepository {
     return rows.map(toReconcile);
   }
 
-  /** The return page's claim: this learner's pending order, if it was not asked in the last `minGapMs`; null otherwise. */
+  /** The return page's claim: this learner's pending or underpaid (`needs_review/amount-short`) order, if not asked in the last `minGapMs`. */
   async claimForCheck(db: Db, id: string, userId: string, now: Date, minGapMs: number): Promise<ReconcileOrder | null> {
     const rows = await db.$queryRaw<ReconcileRow[]>`
       UPDATE billing_orders SET checked_at = ${now}::timestamptz
-      WHERE id = ${id}::uuid AND user_id = ${userId}::uuid AND status = 'pending'
+      WHERE id = ${id}::uuid AND user_id = ${userId}::uuid
+        AND (status = 'pending' OR (status = 'needs_review' AND review_reason = 'amount-short'))
         AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - ${minGapMs}::double precision * interval '1 millisecond')
       RETURNING id, user_id, status, order_code, payment_link_id, expires_at, created_at`;
     return rows.length === 0 ? null : toReconcile(rows[0]);

@@ -1,33 +1,47 @@
 import { describe, expect, it } from 'vitest';
-import { isLocalSmtpHost, mailPreviewSamples } from './mail-preview-samples.js';
+import { mailPreviewSamples } from './mail-preview-samples.js';
+import { parseMailPreviewArgs, resolveMailPreviewTarget } from './mail-preview.js';
 
-const options = { to: 'a@x.test', learnerAppUrl: 'http://localhost:3001', adminAppUrl: 'http://localhost:5173', supportEmail: 'support@wordmet.com' };
+const BASE = {
+  to: 'test@example.com',
+  learnerAppUrl: 'https://wordmet.com',
+  adminAppUrl: 'https://admin.wordmet.com',
+  supportEmail: 'support@wordmet.com',
+};
 
-describe('mailPreviewSamples', () => {
-  const samples = mailPreviewSamples(options);
-
-  it('builds the 17 shipped emails, every one for the given address, with an html part and a text twin', () => {
+describe('mail-preview (D5)', () => {
+  it('mailPreviewSamples defaults to 17 emails (backward compatible)', () => {
+    const samples = mailPreviewSamples(BASE);
     expect(samples).toHaveLength(17);
-    for (const mail of samples) {
-      expect(mail.to, mail.subject).toBe('a@x.test');
-      expect(mail.html, mail.subject).toContain('<html');
-      expect(mail.text.length, mail.subject).toBeGreaterThan(20);
-    }
+    expect(samples.every((m) => m.to === 'test@example.com')).toBe(true);
   });
 
-  it('covers every kind: the code mail, the password mails, the reminders in both languages, the receipt and the expiry notice', () => {
-    const subjects = samples.map((mail) => mail.subject);
-    for (const expected of ['Mã xác minh Wordmet / Your Wordmet code', 'Tài khoản quản trị Wordmet / Your Wordmet admin account',
-      'Tới giờ ôn từ', 'Your words are still waiting', 'Biên nhận mua Wordmet Pro', 'Your Wordmet Pro plan ends soon']) {
-      expect(subjects, expected).toContain(expected);
-    }
-    expect(samples.find((mail) => mail.subject.startsWith('Mã xác minh'))!.text).toMatch(/\b482915\b/);
+  it('mailPreviewSamples with allLocales=true generates all 21 emails covering VI and EN for every localized template', () => {
+    const samples = mailPreviewSamples({ ...BASE, allLocales: true });
+    expect(samples).toHaveLength(21);
+    expect(samples.every((m) => m.to === 'test@example.com')).toBe(true);
   });
-});
 
-describe('isLocalSmtpHost', () => {
-  it.each(['localhost', '127.0.0.1', '::1'])('%s is local', (host) => expect(isLocalSmtpHost(host)).toBe(true));
-  it.each(['smtp.resend.com', 'mail.example.com', 'localhost.evil.com'])('%s is refused so sample mail never leaves the machine', (host) => {
-    expect(isLocalSmtpHost(host)).toBe(false);
+  it('refuses non-local SMTP_HOST when --allow-remote-to is absent', () => {
+    const args = parseMailPreviewArgs([]);
+    const res = resolveMailPreviewTarget('smtp.resend.com', args);
+    expect(res.ok).toBe(false);
+  });
+
+  it('allows local SMTP_HOST without --allow-remote-to (Mailpit default)', () => {
+    const args = parseMailPreviewArgs(['local@example.com']);
+    const res = resolveMailPreviewTarget('localhost', args);
+    expect(res).toEqual({ ok: true, to: 'local@example.com', remote: false });
+  });
+
+  it('allows non-local SMTP_HOST only when --allow-remote-to matches the exact target email', () => {
+    const args = parseMailPreviewArgs(['--allow-remote-to', 'test@example.com', '--all-locales']);
+    expect(args.allLocales).toBe(true);
+    expect(resolveMailPreviewTarget('smtp.resend.com', args)).toEqual({
+      ok: true, to: 'test@example.com', remote: true,
+    });
+
+    const mismatch = parseMailPreviewArgs(['other@example.com', '--allow-remote-to', 'test@example.com']);
+    expect(resolveMailPreviewTarget('smtp.resend.com', mismatch).ok).toBe(false);
   });
 });

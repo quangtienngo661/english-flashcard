@@ -12,7 +12,7 @@ import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import { priceFor } from '../plan-numbers.js';
 import { orderDescription } from './order-codes.js';
 import { OrdersReconcileService } from './orders-reconcile.service.js';
-import { OrdersRepository } from './orders.repository.js';
+import { OrdersRepository, type OrderView } from './orders.repository.js';
 import type { createOrderSchema } from './orders.schemas.js';
 
 /** A link lives this long (design §3.1). */
@@ -55,6 +55,14 @@ function checkoutFailure(error: unknown): { error_name: string; provider_error?:
 }
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 
+function toOrderViewJson(order: OrderView): OrderViewJson {
+  return {
+    id: order.id, status: order.status, period_months: order.periodMonths, amount: order.amount, description: order.description,
+    expires_at: order.expiresAt.toISOString(),
+    period: order.period === null ? null : { starts_at: order.period.startsAt.toISOString(), ends_at: order.period.endsAt.toISOString() },
+  };
+}
+
 /** A learner's orders (launch prep B design §3.6). The provider call never runs inside a transaction (R6). */
 @Injectable()
 export class OrdersService {
@@ -76,6 +84,9 @@ export class OrdersService {
    */
   async create(userId: string, input: z.infer<typeof createOrderSchema>): Promise<{ order_id: string; checkout_url: string }> {
     const { entitlements } = await this.settings.get();
+    if (!entitlements.proCheckoutEnabled) {
+      throw new ProblemDetailsException({ status: 503, title: 'Pro checkout paused', type: 'checkout-paused' });
+    }
     const amount = priceFor(entitlements, input.period_months);
     if (input.expected_amount !== amount) {
       throw new ProblemDetailsException({
@@ -136,15 +147,17 @@ export class OrdersService {
   }
 
   /**
-   * The return page: ask payOS about a pending order of this learner (at most once per 10 seconds per order, so F5 cannot hammer payOS),
-   * then answer with the order as it is. A failure while asking does not fail the page.
+   * The return page: ask payOS about a pending or underpaid (`needs_review/amount-short`) order of this learner (at most once
+   * per 10 seconds per order, so F5 cannot hammer payOS), then answer with the order as it is. A failure while asking does not fail the page.
    */
   async check(userId: string, orderId: string): Promise<OrderViewJson> {
-    const view = await this.get(userId, orderId);
-    if (view.status !== 'pending') return view;
+    const order = await this.orders.findOwned(this.prisma, orderId, userId);
+    if (order === null) throw notFound();
+    const canPoll = order.status === 'pending' || (order.status === 'needs_review' && order.reviewReason === 'amount-short');
+    if (!canPoll) return toOrderViewJson(order);
     const now = this.clock.now();
     const claimed = await this.orders.claimForCheck(this.prisma, orderId, userId, now, CHECK_MIN_GAP_MS);
-    if (claimed === null) return view;
+    if (claimed === null) return toOrderViewJson(order);
     try {
       await this.reconcile.reconcileOne(claimed, now);
     } catch (error) {
@@ -157,10 +170,6 @@ export class OrdersService {
   async get(userId: string, orderId: string): Promise<OrderViewJson> {
     const order = await this.orders.findOwned(this.prisma, orderId, userId);
     if (order === null) throw notFound();
-    return {
-      id: order.id, status: order.status, period_months: order.periodMonths, amount: order.amount, description: order.description,
-      expires_at: order.expiresAt.toISOString(),
-      period: order.period === null ? null : { starts_at: order.period.startsAt.toISOString(), ends_at: order.period.endsAt.toISOString() },
-    };
+    return toOrderViewJson(order);
   }
 }

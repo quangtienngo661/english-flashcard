@@ -1,19 +1,41 @@
-# TLS and reverse proxy for the API (deploy runbook M3). Caddy asks Let's Encrypt for a certificate for each name in CADDY_SITES
-# and renews it; the DNS records of those names must point at this server (grey cloud) before the first start.
+# TLS and reverse proxy for the API (deploy runbook M3; hardened F-06 & F-07).
+# Public API host blocks /v1/admin and /v1/admin/* with 404; admin API host proxies all routes.
+# Query parameters carrying OAuth codes/states/tickets or search/email PII are redacted to REDACTED in JSON access logs.
 {
 	email {$ACME_EMAIL}
 }
 
-{$CADDY_SITES:api.wordmet.com, admin-api.wordmet.com} {
-	reverse_proxy api:3000
-	# JSON access log for daily-report.sh (5xx count, p95 latency). It holds client IPs, kept 7 days (privacy policy, M7):
-	# rolled every day, and rolled files older than 7 days are deleted (roll_keep_for alone only deletes files already rolled by size).
+(api_log) {
+	# JSON access log for daily-report.sh (5xx count, p95 latency). Kept 7 days (privacy policy, M7).
 	log {
 		output file /var/log/caddy/access.log {
 			roll_interval 24h
 			roll_keep 7
 			roll_keep_for 168h
 		}
-		format json
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					replace code REDACTED
+					replace state REDACTED
+					replace ticket REDACTED
+					replace email REDACTED
+					replace q REDACTED
+				}
+			}
+		}
 	}
+}
+
+{$CADDY_API_SITE:api.wordmet.com} {
+	@admin path /v1/admin /v1/admin/*
+	respond @admin 404
+	reverse_proxy api:3000
+	import api_log
+}
+
+{$CADDY_ADMIN_API_SITE:admin-api.wordmet.com} {
+	reverse_proxy api:3000
+	import api_log
 }

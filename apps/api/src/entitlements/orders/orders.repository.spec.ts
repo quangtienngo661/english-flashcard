@@ -202,7 +202,7 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     const end = new Date('2026-12-05T17:00:00Z');
     const findFirst = vi.fn(async () => ({ ...ROW, periods: [{ startsAt: start, endsAt: end }] }));
     expect(await repo.findOwned({ billingOrder: { findFirst } } as never, 'o1', 'u1')).toEqual({
-      id: 'o1', status: 'pending', periodMonths: 3, amount: 199000, description: 'WM0XSNJKV', expiresAt: ROW.expiresAt, period: { startsAt: start, endsAt: end },
+      id: 'o1', status: 'pending', reviewReason: null, periodMonths: 3, amount: 199000, description: 'WM0XSNJKV', expiresAt: ROW.expiresAt, period: { startsAt: start, endsAt: end },
     });
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'o1', userId: 'u1' }, include: { periods: { orderBy: { startsAt: 'asc' }, take: 1 } } });
     expect(await repo.findOwned({ billingOrder: { findFirst: vi.fn(async () => null) } } as never, 'o1', 'other')).toBeNull();
@@ -229,19 +229,20 @@ describe('OrdersRepository — reconcile queries (shapes; the rows are checked b
     expect(sql).toContain('ORDER BY created_at ASC LIMIT ?');
     expect(sql).toContain("status = 'pending' AND payment_link_id IS NOT NULL AND created_at < ?::timestamptz - interval '5 minutes'");
     expect(sql).toContain("status = 'pending' AND payment_link_id IS NULL AND created_at < ?::timestamptz - interval '2 minutes'");
-    expect(sql).toContain("status = 'failed' AND payment_link_id IS NULL AND created_at > ?::timestamptz - interval '24 hours' AND checked_at IS NULL");
+    expect(sql).toContain("status = 'needs_review' AND review_reason = 'amount-short' AND created_at > ?::timestamptz - interval '7 days'");
+    expect(sql).toContain("status = 'failed' AND payment_link_id IS NULL AND review_reason IS NULL AND created_at > ?::timestamptz - interval '24 hours'");
     expect(sql).toContain('RETURNING');
     expect(queryRaw.mock.calls[0].slice(1)).toContain(100);
   });
 
-  it('claimForCheck claims one pending order of the learner when it was not asked in the last gap, and is null otherwise', async () => {
+  it('claimForCheck claims one pending or needs_review/amount-short order of the learner when it was not asked in the last gap, and is null otherwise', async () => {
     const queryRaw = vi.fn(async (..._args: unknown[]) => [{
       id: 'o1', user_id: 'u1', status: 'pending', order_code: 1_000_000_123n, payment_link_id: 'link-1', expires_at: new Date('2026-11-05T03:17:00Z'), created_at: new Date('2026-11-05T03:02:00Z'),
     }]);
     expect((await repo.claimForCheck({ $queryRaw: queryRaw } as never, 'o1', 'u1', NOW, 10_000))?.orderCode).toBe(1_000_000_123);
     const sql = sqlOf(queryRaw.mock.calls[0]);
     expect(sql).toContain('UPDATE billing_orders SET checked_at = ?');
-    expect(sql).toContain("WHERE id = ?::uuid AND user_id = ?::uuid AND status = 'pending' AND (checked_at IS NULL OR checked_at < ?");
+    expect(sql).toContain("WHERE id = ?::uuid AND user_id = ?::uuid AND (status = 'pending' OR (status = 'needs_review' AND review_reason = 'amount-short')) AND (checked_at IS NULL OR checked_at < ?");
     expect(await repo.claimForCheck({ $queryRaw: vi.fn(async () => []) } as never, 'o1', 'u1', NOW, 10_000)).toBeNull();
   });
 
@@ -315,5 +316,38 @@ describe('OrdersRepository — staff queries (shapes; the rows are checked by th
     const findUnique = vi.fn(async () => ({ id: 'per1', userId: 'u1', revokedAt: null }));
     expect(await repo.findPeriod({ prepaidPeriod: { findUnique } } as never, 'per1')).toEqual({ id: 'per1', userId: 'u1', revokedAt: null });
     expect(findUnique).toHaveBeenCalledWith({ where: { id: 'per1' }, select: { id: true, userId: true, revokedAt: true } });
+  });
+
+  it('F-05: findOwned populates reviewReason on OrderView', async () => {
+    const findFirst = vi.fn(async () => ({
+      id: 'o1', status: 'needs_review', reviewReason: 'amount-short', periodMonths: 1,
+      amountMinor: 79000n, description: 'WM0XSNJG0', expiresAt: new Date('2026-11-21T05:00:00Z'), periods: [],
+    }));
+    const view = await repo.findOwned({ billingOrder: { findFirst } } as never, 'o1', 'u1');
+    expect(view).toMatchObject({ id: 'o1', status: 'needs_review', reviewReason: 'amount-short' });
+  });
+
+  it('F-05 & F-11 (Review Focus 3): claimForReconcile SQL includes needs_review/amount-short (7d/10m) and failed no-link with review_reason IS NULL (24h/1h)', async () => {
+    const queries: string[] = [];
+    const $queryRaw = vi.fn(async (strings: TemplateStringsArray) => {
+      queries.push(strings.join('?').replace(/\s+/g, ' ').trim());
+      return [];
+    });
+    await repo.claimForReconcile({ $queryRaw } as never, new Date('2026-11-21T05:00:00Z'), 20);
+    expect(queries[0]).toContain("status = 'needs_review' AND review_reason = 'amount-short'");
+    expect(queries[0]).toContain("interval '7 days'");
+    expect(queries[0]).toContain("status = 'failed' AND payment_link_id IS NULL AND review_reason IS NULL");
+    expect(queries[0]).toContain("interval '24 hours'");
+    expect(queries[0]).toContain("checked_at IS NULL OR checked_at < ?::timestamptz - interval '1 hour'");
+  });
+
+  it('F-05: claimForCheck SQL accepts pending OR (needs_review AND review_reason = amount-short)', async () => {
+    const queries: string[] = [];
+    const $queryRaw = vi.fn(async (strings: TemplateStringsArray) => {
+      queries.push(strings.join('?').replace(/\s+/g, ' ').trim());
+      return [];
+    });
+    await repo.claimForCheck({ $queryRaw } as never, 'o1', 'u1', new Date('2026-11-21T05:00:00Z'), 10_000);
+    expect(queries[0]).toContain("(status = 'pending' OR (status = 'needs_review' AND review_reason = 'amount-short'))");
   });
 });

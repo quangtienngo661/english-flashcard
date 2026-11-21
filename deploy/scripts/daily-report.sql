@@ -16,6 +16,8 @@ SELECT
   (SELECT count(*) FROM billing_orders o WHERE o.status = 'paid' AND o.created_at >= day.starts AND o.created_at < day.ends) AS paid_orders,
   (SELECT coalesce(sum(o.amount_minor), 0) FROM billing_orders o
      WHERE o.status = 'paid' AND o.created_at >= day.starts AND o.created_at < day.ends) AS paid_amount_minor,
+  (SELECT count(*) FROM billing_orders o WHERE o.status = 'needs_review') AS needs_review_orders,
+  (SELECT count(*) FROM billing_events e WHERE e.status = 'failed') AS failed_billing_events,
   (SELECT coalesce(sum(m.sent), 0) FROM mail_budget_buckets m
      WHERE m.bucket = :'budget_key' || ':' || to_char(day.local_date, 'YYYY-MM-DD')) AS mails_sent
 FROM day;

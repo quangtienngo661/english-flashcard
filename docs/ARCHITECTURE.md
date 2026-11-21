@@ -1,6 +1,6 @@
 # Wordmet architecture
 
-The architecture was first documented against commit `419fd0a0` on 14 November 2026. The deployment section was updated against `origin/dev` at `1bd8507f` on 16 November 2026. Each section cites its repository sources. Section 11 records the remaining verification gaps.
+The architecture was first documented against commit `419fd0a0` on 14 November 2026. The deployment section was updated against `origin/dev` at `1bd8507f` on 16 November 2026, and synced on 20 November 2026 against `origin/main` (`0970665a` / `dev` `13ce8e9a`: restore-safety M1–M3, split DB roles, WAL-G 60s archiving, `main` ruleset). Each section cites its repository sources. Section 11 records the remaining verification gaps.
 
 The outline uses arc42 with C4-style context and container views, sequence diagrams for runtime flows, and a deployment diagram. Section 9 links to the decision records.
 
@@ -474,14 +474,14 @@ container's healthcheck calls it every 10 seconds.
 
 | Task | When (Vietnam time) | What it does | Source |
 |---|---|---|---|
-| `watch.sh` | every 5 minutes | Alert email for: 5+ `request_failed`, `maintenance_job_failed`, `account_deletion_failed`, `turnstile_bypassed`, disk above 80%, less than 300 MB of memory, a service stopped or restarted. At most one email per kind per hour, sent through Resend's HTTP API | `deploy/scripts/watch.sh`, `send-alert.sh` |
-| `daily-report.sh` | 08:00 | Accounts, learners, sessions, AI calls and cost, paid orders, emails sent; 5xx count and p95 from the Caddy log; newest backup; disk, memory | `deploy/scripts/daily-report.sh`, `daily-report.sql` |
-| `backup.sh` | 03:00 and before every deploy | `pg_dump -Fc`, 3 copies kept on the machine, 14 on R2; failure sends an email | `deploy/scripts/backup.sh` |
+| `watch.sh` | every 5 minutes | Alert email for: 5+ `request_failed`, `maintenance_job_failed`, `account_deletion_failed`, `turnstile_bypassed`, WAL-G archive failures (`archive`), disk above 80% or under 15 GB / 8 GB, less than 300 MB of memory, a service stopped or restarted. At most one email per kind per hour, sent through Resend's HTTP API. (External uptime monitor: UptimeRobot calling `/v1/health/ready`, owner-confirmed 20/11/2026.) | `deploy/scripts/watch.sh`, `send-alert.sh` |
+| `daily-report.sh` | 08:00 | Accounts, learners, sessions, AI calls and cost, paid orders, emails sent; 5xx count and p95 from the Caddy log; newest backup and `PITR:` status line; disk, memory | `deploy/scripts/daily-report.sh`, `daily-report.sql` |
+| `backup.sh` | 03:00 and before every deploy | `pg_dump -Fc` (3 local copies, 14 on R2) plus daily WAL-G base backup (14 kept on R2; skipped pre-deploy via `BACKUP_SKIP_BASE=1`). Postgres (`wordmet-postgres:17-walg-3.0.9`) runs `archive_mode=on` pushing WAL segments to R2 every 60 seconds; failure sends an email | `deploy/scripts/backup.sh`, `deploy/compose.prod.yml` |
 | `run-maintenance.js` | minute 15 of every hour | Runs every maintenance job once in the worker container | [deploy/README.md](../deploy/README.md) |
 
-Restore: load the dump into an **empty** database, migrate it up to the running code, then delete again the accounts deleted after the dump
-was taken (`accounts-deletions.js export/replay`, Bước 8 decision D21). Full steps: [deploy/README.md](../deploy/README.md) "Backup and
-restore".
+Database roles (rolled out 18/11/2026, `docs/deliveries/restore-safety.md`): API, worker and CLI connect as `wordmet_app` (DML only, no DDL/TRUNCATE/schema changes); migrations run as `wordmet_migrator` (owns schema objects in `public`); `backup.sh` and `daily-report.sh` still use `POSTGRES_USER`.
+
+Restore: either PITR via WAL-G (`wal-g backup-fetch` + WAL replay) or `pg_dump` into an **empty** database, migrate up to the running code, then replay accounts deleted after the restore point via the R2 Deletion Journal (`accounts-deletions.js replay --journal`, Bước 8 D21 + PR #302/#305). Full steps: [deploy/README.md](../deploy/README.md) "Backup and restore".
 
 Secrets: `/srv/wordmet/.env` and `ops.env` (chmod 600), created from `deploy/env.production.example` and `deploy/ops.env.example`; web and
 admin get public variables at build time; the Cloudflare keys used by Actions live in the `deploy-env` environment. Only Caddy opens ports
@@ -558,15 +558,15 @@ Each row is a settled decision; the link leads to the decision record with every
 
 | # | Risk / question | Affects | Source |
 |---|---|---|---|
-| R1 | **One VPS is a single point of failure**: the API, worker, Postgres and Redis share one machine. If it dies the whole app is down, and data written since the latest backup (daily at 03:00, or the last deploy) is lost | Whole system | `compose.prod.yml`, Q5 |
-| R2 | **Production checks to repeat after an infrastructure change**: Caddy certificates, backup to and restore from R2, Resend from the VPS (port 465), Google voices written to R2, cron at the right time (the schedule is written in UTC), client IPs through Caddy (`TRUST_PROXY=uniquelocal`), IPv6 clients | Launch | [prod-deploy.md](deliveries/prod-deploy.md) "Chưa kiểm" |
+| R1 | **One VPS is a single point of failure**: the API, worker, Postgres and Redis share one machine. If it dies the whole app is down. Since 18/11/2026 WAL-G archives WAL to R2 every 60 seconds alongside daily `pg_dump` + base backup (`pg_dump` restore from R2 rehearsed 15/11 in ~9 s, `docs/audit/2026-11-15-restore-drill.md`; WAL-G PITR restore and `replay-deletions --journal` from R2 are **not yet rehearsed**) | Whole system | `compose.prod.yml`, Q5, `docs/deliveries/restore-safety.md` |
+| R2 | **Production checks after infrastructure changes**: Caddy TLS, `pg_dump` backup+restore from R2 (15/11), Resend SMTP, Google TTS → R2 (`audio.wordmet.com`, 9,481 files) and a real payOS purchase (14/11) are confirmed live. Still unverified on production: WAL-G PITR restore + R2 Deletion Journal replay, real Google OAuth flow confirmation, post-18/11 time-based `orderCode` / `orders:probe-payos`, and cron UTC timing / IPv6 rate-limit edge cases | Launch | [prod-deploy.md](deliveries/prod-deploy.md), [restore-safety.md](deliveries/restore-safety.md), [2026-11-20-agy-audit/REPORT.md](audit/2026-11-20-agy-audit/REPORT.md) |
 | R3 | **15 Minor points from the deploy review left for after launch**; worth doing early: keep keys off the command line (`ps`), `umask 077` for dumps, `curl --max-time`, `flock` | Operations | [prod-deploy.md](deliveries/prod-deploy.md); [current workflow](../.github/workflows/deploy-web.yml) |
 | R4 | **Module boundaries are not checked by a tool**: a violation is only caught in review | Maintainability | Bước 1 D3 |
 | R5 | **Automatic Google linking by email** when the email is not managed by Google: deferred, to review before launch | Account security | Bước 8 D26 |
 | R6 | **Maintenance jobs run twice an hour** (worker + cron). All 23 jobs checked on 14/11/2026: safe by design, at the cost of twice the database work (section 5.4). The launch runbook recorded that cron keeps its schedule when a deploy restarts the worker. New jobs must keep the "two overlapping runs stay correct" rule | Database load; a badly written new job could send duplicates | section 5.4, `maintenance.scheduler.ts`, deploy README "cron" |
 | R7 | **Rate limits are counted in Postgres**: one upsert per write request. This document does not establish the current capacity limit | Performance | `rate-limiter.service.ts`; deploy-checklist "Đo tải trước launch" |
 | R8 | **The web deploy depends on the API**: the landing build reads prices and FAQ from the API; with the API down the web cannot deploy | Releases | `next.config.ts`, `deploy-web.yml` |
-| R9 | **Branch protection:** GitHub reported protection on `dev` and none on `main` on 16 November 2026 | Code that skipped CI could reach `main` and deploy the web | GitHub branch API, `protected` field |
+| R9 | **Branch protection (checked 20/11/2026):** `main` IS protected by active ruleset `validate-before-merge-main` (id `24639679`: PR required, 4 required checks `api`/`web`/`admin`/`admin-e2e-real`, strict up-to-date, no bypass). `dev` currently has **no** branch protection (`404 Branch not protected`) and `deploy-env` has no protection rules | Unchecked code could still be pushed or merged to `dev` (blocked only at the `dev` → `main` PR gate) | GitHub Rulesets API (`20/11/2026`) |
 
 The full pre-launch list: [deliveries/deploy-checklist.md](deliveries/deploy-checklist.md).
 

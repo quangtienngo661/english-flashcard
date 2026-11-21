@@ -169,6 +169,15 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(screen.getByText('triển khai')).toBeInTheDocument();
   });
 
+  it('F-08: notice ai-fallback with ai_reason=ai-unavailable renders fallback banner over rule question', async () => {
+    renderApp(<PracticeSession />, { session: true, routes: routes({
+      'GET /v1/practice/sessions/current': noItem,
+      [NEXT]: nextAnswers({ state: 'question', session: view({ types: ['type_word', 'mcq_definition'], ai_planned: 0 }), item: mcq(), notice: 'ai-fallback', ai_reason: 'ai-unavailable' }),
+    }) });
+    expect(await screen.findByText('This question switched to a regular type.')).toBeInTheDocument();
+    expect(screen.getByText('triển khai')).toBeInTheDocument();
+  });
+
   it('K/75b: ai-fallback because credits ran out tells when they refill', async () => {
     // LATER is shown as a date only when it is more than a day away: pin the clock so the test does not depend on today.
     vi.useFakeTimers({ toFake: ['Date'] });

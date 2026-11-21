@@ -9,6 +9,7 @@ const ENTITLEMENT_DEFAULTS_API = {
   trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000, free_ai_daily_cap: 500,
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
   transaction_retention_years: 10, pro_price_1m_vnd: 79000, pro_price_3m_vnd: 199000, pro_price_12m_vnd: 599000,
+  pro_checkout_enabled: true,
 };
 
 const AI_DEFAULTS_API = {
@@ -93,9 +94,20 @@ describe('settings definitions', () => {
   it('D18, LA3#14, LB1: defaults are 3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10, 79000, 199000, 599000; learning 100/2000; content 10000/20', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
     expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
-    expect(Object.values(api.entitlements)).toEqual([3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10, 79000, 199000, 599000]);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10, 79000, 199000, 599000, true]);
     expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
     expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
+  });
+
+  it('D8: pro_checkout_enabled defaults to true, accepts booleans, fills default for older JSON, and records history diff', () => {
+    expect(SETTINGS_DEFAULTS.entitlements.proCheckoutEnabled).toBe(true);
+    expect(issues({ entitlements: { pro_checkout_enabled: false } })).toEqual([]);
+    expect(issues({ entitlements: { pro_checkout_enabled: 'false' } })).toEqual(['entitlements.pro_checkout_enabled']);
+    expect(withDefaults({ entitlements: { graceDays: 4 } }).entitlements.proCheckoutEnabled).toBe(true);
+    expect(withDefaults({ entitlements: { proCheckoutEnabled: false } }).entitlements.proCheckoutEnabled).toBe(false);
+    const next = applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_checkout_enabled: false } });
+    expect(next.entitlements.proCheckoutEnabled).toBe(false);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'entitlements.pro_checkout_enabled', oldValue: true, newValue: false }]);
   });
 
   it('withDefaults fills the new keys for JSON stored before Bước 5 and keeps a stored null for a nullable key', () => {

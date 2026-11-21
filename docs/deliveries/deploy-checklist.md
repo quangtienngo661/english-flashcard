@@ -21,8 +21,8 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 - [ ] **Đo và đặt `DATABASE_POOL_MAX`, `DATABASE_POOL_TIMEOUT_MS` theo DB thật được deploy.** Nguồn: design sửa thiếu sót §6.1, §11.3 (20 và
   5000 là `ASSUMPTION`). Vì sao: số kết nối tối đa của DB thuê có giới hạn; pool quá to thì hết kết nối, quá nhỏ thì request chờ rồi lỗi.
-- [ ] **Cộng ngân sách kết nối: API (mặc định 20) + worker (mặc định 20) + các CLI chạy cùng lúc (`maintenance:run`, `admin:grant`…) phải
-  nhỏ hơn số kết nối tối đa của DB.** Nguồn: M1 final review. Vì sao: mỗi process có pool riêng; tổng vượt mức DB cho phép thì process sau
+- [x] **Cộng ngân sách kết nối: API (mặc định 20) + worker (mặc định 20) + các CLI chạy cùng lúc (`maintenance:run`, `admin:grant`…) phải
+  nhỏ hơn số kết nối tối đa của DB.** *(Đã kiểm 14–15/11: API 20 + worker 20 = 40 < Postgres `max_connections` 100; đỉnh load test 50 người dùng là 21/100, `2026-11-14-production-checks.md`, `2026-11-15-load-test.md`.)* Nguồn: M1 final review. Vì sao: mỗi process có pool riêng; tổng vượt mức DB cho phép thì process sau
   không kết nối được.
 - [ ] **Pool của worker ≥ 2 × số job import CSV chạy cùng lúc.** Nguồn: M1 gate (21/10; xem as-built). Vì sao: worker pool 1 thì job
   import không xử lý được dòng nào; pool 20 thì chạy. `ASSUMPTION` về nguyên nhân (chưa đọc stack): mỗi job giữ một kết nối cho transaction
@@ -30,7 +30,7 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 ## Cấu hình và dữ liệu
 
-- [ ] **Đặt `TERMS_VERSION` bằng phiên bản thật của trang Điều khoản.** Nguồn: design sửa thiếu sót §11.6. Vì sao: hiện là giá trị tạm
+- [x] **Đặt `TERMS_VERSION` bằng phiên bản thật của trang Điều khoản.** *(Đã xong: `TERMS_VERSION` đã đặt trên VPS từ 14/11 và văn bản pháp lý phiên bản `1` đã đăng trong admin `/legal`, `GET /v1/legal/current` trả `200` ngày 20/11.)* Nguồn: design sửa thiếu sót §11.6. Vì sao: hiện là giá trị tạm
   `2026-10-20`; mỗi lần đăng ký ghi giá trị này làm bằng chứng người dùng đã đồng ý phiên bản nào. Thiếu biến thì API và worker không khởi động.
 - [ ] **Chạy `pnpm db:normalize-timezones` một lần trên DB thật (sau `pnpm build`), bằng cùng phiên bản Node/ICU với API.** Nguồn: design
   §6.2 (C2), Task 5. Vì sao: dữ liệu cũ còn múi giờ viết kiểu lạ (`asia/ho_chi_minh`, `+07:00`); tên chuẩn phụ thuộc bảng ICU của Node
@@ -40,7 +40,7 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 ## Chặn đồ giả ở production (đợt A, R3)
 
-- [ ] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`; rồi kiểm API từ chối khởi động khi bật một đồ giả.**
+- [x] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`** *(Đã kiểm trực tiếp trong container VPS ngày 14–15/11: `BILLING_PRODUCTION=true`, `TURNSTILE_MODE=real`, cả 6 cờ `*_FAKE_ENABLED=false`, `2026-11-14-production-checks.md`, `2026-11-15-pilot-readiness.md`. Lưu ý: bước thử bật ngược từng cờ giả trên VPS chưa ghi nhận riêng, nhưng cơ chế `superRefine` đã khóa bằng unit test.)*
   Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (02/11/2026 giữ cơ chế, chỉ thêm mục checklist; 07/11/2026 bỏ giá trị mặc định).
   Vì sao: `BILLING_PRODUCTION=true` cùng một đồ giả (thanh toán, AI, Google, hoặc `TURNSTILE_MODE` là `fake`/`off`) làm API và worker dừng ngay khi khởi động
   (`apps/api/src/common/config/app-config.ts`, `superRefine`). Từ 07/11/2026 biến này không có giá trị mặc định: thiếu nó thì API và worker cũng không khởi động, nên không còn
@@ -49,11 +49,11 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 ## Lượt AI cho Free và trial đã tắt (đợt A M3, 05/11/2026)
 
-- [ ] **DB production tạo mới bằng `prisma migrate deploy`.** Migration `20261105100000_free_ai_cycle` thêm `subscriptions.ended_at` và `usage_records.plan` (cả hai `NULL`, không backfill).
+- [x] **DB production tạo mới bằng `prisma migrate deploy`.** *(Đã kiểm 15/11: đủ 65 migration đã áp trên DB production, `2026-11-15-restore-drill.md`.)* Migration `20261105100000_free_ai_cycle` thêm `subscriptions.ended_at` và `usage_records.plan` (cả hai `NULL`, không backfill).
   Vì sao: một DB đã có người dùng Pro cũ thì dòng cũ không có `ended_at`, nên lượt Pro cũ của họ có thể bị tính vào lượt Free tháng này (sai về phía chặt, không cho thêm lượt).
-- [ ] **Ba setting mới trong Cài đặt → Gói và lượt: `free_ai_practice_per_cycle` (15), `free_ai_lookup_per_cycle` (5), `free_ai_daily_cap` (500).** Landing ghi cứng "15/tháng" và "5/tháng"
+- [x] **Ba setting mới trong Cài đặt → Gói và lượt: `free_ai_practice_per_cycle` (15), `free_ai_lookup_per_cycle` (5), `free_ai_daily_cap` (500).** *(Đã kiểm 15/11 trong `app_settings` production: `ai_daily_cap=1000`, `free_ai_daily_cap=500`, `2026-11-15-pilot-readiness.md`.)* Landing ghi cứng "15/tháng" và "5/tháng"
   (`Landing.plans.freeAiPractice`, `freeAiLookup`): đổi số ở Cài đặt thì sửa chữ landing trước khi đăng. `free_ai_daily_cap` là số ước; xem lại sau tuần đầu có người dùng thật.
-- [ ] **Chữ hứa dùng thử không còn ở web, landing và bản nháp pháp lý; `trial_eligible` luôn `false`.** Mục 5 "Dùng thử" của Điều khoản còn trong bản nháp: đợt B viết lại các mục 5–8.
+- [x] **Chữ hứa dùng thử không còn ở web, landing và bản nháp pháp lý; `trial_eligible` luôn `false`.** *(Đã kiểm 14/11 trên `/vi`, `2026-11-14-production-checks.md`; văn bản pháp lý v1 đã đăng 20/11.)* Mục 5 "Dùng thử" của Điều khoản còn trong bản nháp: đợt B viết lại các mục 5–8.
   Code trial giữ nguyên cho một nhà cung cấp tự gia hạn về sau; các test e2e/smoke dựng trial bằng provider giả vẫn chạy.
 - [ ] **Cửa sổ Free theo tháng dương lịch của múi giờ người học.** Đổi múi giờ cuối tháng có thể cho thêm tối đa một lượt Free đầy đủ (LA3E3, LA3E4); chấp nhận.
 
@@ -94,23 +94,19 @@ Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi
   [`inventory-admin-practice.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-admin-practice.md)). `apps/admin/public/_headers` có một rule `/*`
   với CSP (chấp nhận `'unsafe-inline'` cho `style-src` vì React Aria tự chèn thẻ `<style>`), `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`;
   `apps/admin/src/headers.test.ts` ghim nội dung. `vite` và `vite preview` không đọc `_headers`, nên local không có header này.
-- [ ] **Sau khi deploy admin: kiểm header thật bằng `curl -I`.** Vì sao: hai `ASSUMPTION` của design đợt A (§4.4) chưa kiểm được ở local: Workers Static
+- [x] **Sau khi deploy admin: kiểm header thật bằng `curl -I`.** *(Đã kiểm 14/11 và 20/11: `https://admin.wordmet.com/` và `/uploads` trả đủ 4 header CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy`; vẫn thiếu HSTS ở mục dưới.)* Vì sao: hai `ASSUMPTION` của design đợt A (§4.4) chưa kiểm được ở local: Workers Static
   Assets áp `_headers` cho cả trang trả về từ fallback SPA, và Vite copy `public/` vào `dist/`. Làm: `curl -I https://admin.wordmet.com/` và một đường dẫn sâu
   (vd `/uploads`) phải có bốn header trên; `dist/_headers` giống `public/_headers` sau `pnpm build`.
 - [x] **Security header cho API: phần code đã làm (đợt A, M1).** Nguồn: FD-dj. API dùng `helmet` với năm header của một API JSON: không `X-Powered-By`;
   `X-Content-Type-Options: nosniff`; `Referrer-Policy: no-referrer`; `Content-Security-Policy: default-src 'none';frame-ancestors 'none'` (helmet viết
   không có dấu cách sau `;`); `Cross-Origin-Resource-Policy: same-site`. Sửa 14/11/2026: API tự đặt `Strict-Transport-Security: max-age=31536000; includeSubDomains`
   (`app.setup.headers.spec.ts` ghim), vì `api.` và `admin-api.` trỏ thẳng VPS (Q6), không qua proxy Cloudflare.
-- [ ] **Sau khi deploy API: kiểm HSTS và header.** `curl -I https://api.wordmet.com/v1/health` có năm header trên và
-  `Strict-Transport-Security: max-age=31536000; includeSubDomains`; `admin-api.` cũng vậy. Kiểm 14/11/2026 trước bản sửa: năm header có, HSTS không có
-  (`docs/audit/2026-11-14-production-checks.md`). `wordmet.com` và `admin.wordmet.com` cũng chưa có HSTS: bật ở Cloudflare → SSL/TLS → Edge Certificates.
-- [ ] **Sau khi deploy web: kiểm header của web.** `curl -I https://wordmet.com/vi` có `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` và CSP;
-  `curl -I` một file `/_next/static/…`. `ASSUMPTION`: `headers()` của `next.config.ts` có thể không áp cho file tĩnh mà Workers Static Assets trả thẳng
-  (`.open-next/assets`). E23 trong CI chỉ kiểm phần Worker trả lời.
+- [ ] **Sau khi deploy API & web: kiểm HSTS và header.** *(Kiểm lại 20/11/2026: `api.wordmet.com` và `admin-api.wordmet.com` **ĐÃ CÓ** đủ 5 header + `Strict-Transport-Security: max-age=31536000; includeSubDomains`; `http://wordmet.com` và `http://admin.wordmet.com` đã redirect `301` → HTTPS. **Còn mở:** `https://wordmet.com/` và `https://admin.wordmet.com/` vẫn **chưa có header `Strict-Transport-Security`** — cần bật HSTS ở Cloudflare → SSL/TLS → Edge Certificates hoặc thêm trực tiếp vào headers của web/admin.)*
+- [x] **Sau khi deploy web: kiểm header của web.** *(Đã kiểm 14/11 và 20/11: `/vi` và `/vi/app` có đủ CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy`; đã xác nhận `/_next/static/*` do Workers Static Assets trả thẳng không có security header, `2026-11-14-production-checks.md`.)*
 
 ## Từ kiểm kê 20/10, mức Thấp, đã gắn nhãn "deploy-checklist" (chưa làm, D11)
 
-- [ ] **`LEARNER_APP_URL` là biến bắt buộc.** Nguồn: L17 ([`inventory-identity-learning.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-identity-learning.md)). Vì sao: `.env` cũ thiếu biến này thì API và
+- [x] **`LEARNER_APP_URL` là biến bắt buộc.** *(Đã kiểm 14/11 trên VPS: đúng host production `https://wordmet.com`, `2026-11-14-production-checks.md`.)* Nguồn: L17 ([`inventory-identity-learning.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-identity-learning.md)). Vì sao: `.env` cũ thiếu biến này thì API và
   worker không khởi động.
 - [ ] **Quy ước migration khi bảng đã có dữ liệu: `CHECK … NOT VALID` rồi `VALIDATE CONSTRAINT`; `CREATE INDEX CONCURRENTLY` đứng riêng một
   migration.** Nguồn: DB18 (`inventory-foundation-db.md`, như trên). Vì sao: cách hiện nay khóa cả bảng trong lúc quét; vô hại khi bảng trống, chặn
@@ -173,18 +169,18 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   3.462,38 KiB; hết M3 bật app 3.706,34 KiB; hết M4 3.739,72 KiB; hết đợt (M5b, 26/10) 3.761,49 KiB; mỗi mốc ở
   `docs/deliveries/giao-dien-nguoi-hoc.md`. Đo bằng
   `NEXT_PUBLIC_LEARNER_APP=on NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 pnpm cf:docker --build` (in dòng "Total Upload … gzip"; thiếu `NEXT_PUBLIC_API_BASE_URL` thì build dừng).
-- [ ] **Ngay sau lần đầu CSP lên `main`, mở `wordmet.com` và `/vi/app` trên production, xem Console không có lỗi CSP.** Nguồn: D22,
+- [x] **Ngay sau lần đầu CSP lên `main`, mở `wordmet.com` và `/vi/app` trên production, xem Console không có lỗi CSP.** *(Đã kiểm 14/11 trên `/vi` và `/vi/app/login`, 0 lỗi CSP, beacon `POST /cdn-cgi/rum` trả 204, `2026-11-14-production-checks.md`.)* Nguồn: D22,
   design §4.6. Vì sao: beacon Cloudflare Web Analytics chỉ chèn ở edge, e2e local không thấy; CSP đang ở chế độ dự phòng D20
   (`'unsafe-inline'` cho script/style) vì Next chèn script `self.__next_f.push(…)`.
 - [ ] **Chính sách bảo mật nhắc việc đo lượt xem bằng Cloudflare Web Analytics.** Nguồn: D22, design §12. Vì sao: script bên thứ ba duy nhất
   chạy trên mọi trang, kể cả `/app`.
-- [ ] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** Nguồn: design §4.2. Vì sao: cookie
+- [x] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** *(Đã đặt `https://api.wordmet.com` trong `.github/workflows/deploy-web.yml:89`.)* Nguồn: design §4.2. Vì sao: cookie
   `refresh_token` host-only của `admin-api.` và `api.` không được đè nhau; `next.config.ts` dừng build khi sai.
 - [x] **Dọn tài khoản chưa từng xác nhận email sau N ngày (đã có job `identity.unverified-cleanup`, `deletion-jobs.service.ts:36`; [B8-6](../superpowers/reviews/buoc-1-8/buoc-8.md#b8-6)).** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
   làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
   `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.
 
-- [ ] **Xem lại CSP (nonce hoặc hash thay `'unsafe-inline'`) trước khi bật `/app`.** Nguồn: [UW-4](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-4). Vì sao: D20 đang để
+- [x] **Xem lại CSP (nonce hoặc hash thay `'unsafe-inline'`) trước khi bật `/app`.** *(Đã triển khai ở Launch B M4 và kiểm trên production 14/11 & 20/11: `/vi/app` trả `script-src 'nonce-…' 'strict-dynamic'`, mỗi request một nonce mới.)* Nguồn: [UW-4](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-4). Vì sao: D20 đang để
   `'unsafe-inline'` vì Next chèn script RSC inline; script Turnstile (đợt A) phải còn nạp được sau khi đổi.
 - [ ] **Build và kiểm bản cờ app tắt (cấu hình production hiện tại, `NEXT_PUBLIC_LEARNER_APP` không đặt).** Nguồn: [UW-3](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-3).
   Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
@@ -192,11 +188,9 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 
 ## Giao diện mới M8: trang công khai (design giao diện mới §10.6, §10.7, QM8, 11/11/2026)
 
-- [ ] **Đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API trong `deploy-web.yml` khi `api.wordmet.com` đã chạy.** Nguồn: design §10.6, Part 8
-  của plan (M8.3). Vì sao: trang chủ đọc giá và hỏi đáp lúc build. Workflow hiện chưa có địa chỉ API, nên mọi bản deploy đang dùng giá và hỏi đáp dự phòng
-  trong code. Đặt biến này khi chưa có API thì deploy `main` sẽ fail.
-- [ ] **Đổi giá hoặc đăng hỏi đáp trong admin xong thì deploy lại web.** Nguồn: design §10.6, §10.7. Vì sao: trang chủ dựng sẵn lúc build, nên giữ số và
-  câu cũ tới lần deploy sau. Trang Gói học và lúc thanh toán vẫn đọc giá thật.
+- [x] **Đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API trong `deploy-web.yml` khi `api.wordmet.com` đã chạy.** *(Đã đặt trong `.github/workflows/deploy-web.yml:89,95` và đã deploy thành công.)* Nguồn: design §10.6, Part 8
+  của plan (M8.3).
+- [x] **Đổi giá hoặc đăng hỏi đáp trong admin xong thì deploy lại web.** *(Đã thay bằng đọc live ở trình duyệt từ PR #312 ngày 19/11, `docs/deliveries/landing-live-plans.md` — không cần deploy lại web nữa, chỉ còn JSON-LD giữ giá lúc build.)* Nguồn: design §10.6, §10.7.
 - [ ] **Chủ dự án sửa văn bản Chính sách bảo mật và Điều khoản sử dụng trong admin `/legal`:** bỏ tiêu đề, dòng "Phiên bản · Có hiệu lực",
   đoạn mở và "Mục lục" viết tay ở đầu văn bản, rồi đăng bản mới. Nguồn: QM8-4. Vì sao: trang mới tự vẽ các phần đó, giữ lại thì trang có hai tiêu đề và
   hai mục lục.
@@ -206,21 +200,12 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 
 ## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
 
-- [ ] **`deploy-web.yml` phải build với `NEXT_PUBLIC_LEARNER_APP=on` và `NEXT_PUBLIC_API_BASE_URL` (host bắt đầu bằng `api.`) trước khi lên `main`.**
-  Nguồn: design §9, LRE7. Vì sao: hiện workflow chỉ đặt `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_INDEXABLE`, `NEXT_PUBLIC_CONTACT_EMAIL`. Với app tắt,
-  `proxy.ts` đưa mọi `/{locale}/app/*` về `/vi` (D8, E20), nên nút Đăng ký và Đăng nhập của landing quay về chính trang đó. Cần API thật đang chạy
-  ở host `api.` thì đăng ký mới hoàn tất.
+- [x] **`deploy-web.yml` phải build với `NEXT_PUBLIC_LEARNER_APP=on` và `NEXT_PUBLIC_API_BASE_URL` (host bắt đầu bằng `api.`) trước khi lên `main`.** *(Đã đặt trong `.github/workflows/deploy-web.yml:88-89` và đã deploy lên `main`.)* Nguồn: design §9, LRE7.
 - [ ] **Xóa database D1 `wordmet-waitlist` trong Cloudflare dashboard.** Nguồn: design L2. Vì sao: binding `DB`, migration và form đã bị bỏ khỏi code,
   database còn lại chỉ tốn chỗ. Chủ dự án (lúc brainstorm landing, 11/2026) nói chưa có ai đăng ký thật nên không cần xuất dữ liệu.
-- [x] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** *(11/11/2026, M8 giao diện mới: link có ở chân trang công khai từ 04/11; nội dung đăng trong admin, việc còn lại ở mục "Chính sách bảo mật và Điều khoản" cuối file.)* Nguồn: design L2; nghiên cứu
-  `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`. Vì sao: hai trang hiện là bản nháp (`LegalDraft`), link đang ẩn từ 09/10/2026; khi link
-  trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file. *(03/11/2026: nội dung nay soạn và đăng trong admin, xem mục "Chính sách bảo mật và Điều khoản" ở cuối file.)*
-- [ ] **Khi Deploy: đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API (`NEXT_PUBLIC_API_BASE_URL`) trong `deploy-web.yml`.** Nguồn: plan giao diện mới M8.9, as-built M8b
-  (`giao-dien-moi.md`). Vì sao: từ M8, `next.config.ts` đọc giá và FAQ lúc build từ `GET /v1/public/prices`. Không có cờ này thì build không đọc được vẫn qua, in một
-  dòng cảnh báo và đưa giá, FAQ dự phòng lên trang chủ; có cờ thì build fail. Chỉ bật khi `api.` đã chạy, nếu không mọi lần deploy `main` đều fail.
-  Đổi giá hay FAQ trong admin chỉ hiện trên trang chủ sau lần build kế tiếp.
-- [ ] **Sau deploy: mở `/vi`, mở `/en` (phải hiện landing tiếng Anh, status 200), bấm Đăng ký ở mỗi trang (phải tới `/vi/app/register` và `/en/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
-  Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
+- [x] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** *(Đã đăng phiên bản `1` trong admin `/legal`, `GET /v1/legal/current` trả `200` ngày 20/11.)*
+- [x] **Khi Deploy: đặt `LANDING_DATA_REQUIRED=1` và địa chỉ API (`NEXT_PUBLIC_API_BASE_URL`) trong `deploy-web.yml`.** *(Đã đặt và deploy thành công, trùng mục M8 ở trên.)*
+- [x] **Sau deploy: mở `/vi`, mở `/en` (phải hiện landing tiếng Anh, status 200), bấm Đăng ký ở mỗi trang, xem Console không có lỗi CSP.** *(Kiểm 20/11 bằng Playwright + axe trên production: `/vi` và `/en` đều `200`, 0 lỗi JS console, 0 lỗi axe WCAG 2.2 AA sau cuộn, `2026-11-20-agy-audit/REPORT.md`.)* Nguồn: design §9.
 - [x] **Bản tiếng Anh của landing** (14/11/2026, `docs/deliveries/landing-en.md`). Nguồn: design L3, L4. `'en'` đã ở `LANDING_LOCALES`, `Landing` trong `messages/en.json` đã dịch, link ngôn ngữ ở footer.
   Còn lại: FAQ tiếng Anh nằm trong code (`landing-faq.en.ts`), không đọc từ admin; đổi câu nào ở admin thì đổi cả bản tiếng Anh. Sau deploy kiểm `hreflang` và sitemap có `/en`.
 
@@ -230,8 +215,7 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   cần xác minh brand) và để không phụ thuộc chế độ Testing. Sửa 29/10/2026: với đúng ba scope `openid email profile`, ở Testing người dùng vẫn đăng nhập được mà không cần là test user, không có cảnh báo và không hết hạn
   sau 7 ngày (Google Cloud Help, Publishing status; chưa thử với Gmail ngoài danh sách). Giới hạn 100 test user, cảnh báo và 7 ngày chỉ quay lại nếu app xin thêm scope khác. Việc: trang chủ có link chính sách riêng tư cùng domain (`docs/preparation/LEGAL_PAGES_RESEARCH_2026-10-11.md`), thêm địa chỉ quay
   về production (`https://api.<domain>/v1/auth/google/callback`) vào OAuth client, đặt `GOOGLE_REDIRECT_URI` đúng địa chỉ đó. Khi đã xác minh có thể bật `auth_time` để siết bước xác nhận Google (D25).
-- [ ] **Đặt secret production: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_COOKIE_KEY` (khóa riêng, sinh bằng `node scripts/gen-secret.mjs`) và KHÔNG đặt `GOOGLE_FAKE_ENABLED`.**
-  Vì sao: API từ chối khởi động nếu Google giả bật cùng `BILLING_PRODUCTION`, nhưng đừng dựa vào đó. `TERMS_VERSION` cũng bắt buộc (đợt sửa Bước 0–3).
+- [x] **Đặt secret production: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_COOKIE_KEY` và KHÔNG đặt `GOOGLE_FAKE_ENABLED`.** *(Đã kiểm 14/11 trên VPS: đủ 3 biến secret, `GOOGLE_FAKE_ENABLED=false`, `/v1/auth/google/start` redirect 302 tới Google với client id thật, `2026-11-14-production-checks.md`.)*
 - [ ] **`GOOGLE_FAKE_ENABLED` không bao giờ bật ở môi trường nào nối được ra internet (staging, demo, preview), không chỉ production.** Nguồn: review cuối Bước 8. Vì sao: Google giả cho ai cũng tự cấp ID token "đã xác minh"
   cho bất kỳ email nào, nên qua tự liên kết (K8) nó là lối vào mọi tài khoản đã xác nhận, không chỉ là chuyện thanh toán giả. Lớp chặn duy nhất trong code là từ chối khởi động khi cùng bật `BILLING_PRODUCTION`.
 - [ ] **Thời gian một yêu cầu xóa tài khoản có thể kéo dài tới 120 giây** (Tx B). Kiểm giới hạn thời gian của reverse proxy/hosting (nhiều nơi cắt ở 60–100 giây); bị cắt thì dữ liệu vẫn an toàn (đã commit hoặc còn `deleting` để retry) nhưng web hiện lỗi mạng.
@@ -245,11 +229,7 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   hàng ẩn danh của sổ lượt, giao dịch, báo lỗi đã bỏ ghi chú); cách giữ báo lỗi.
 - [ ] **Xem lại câu 26 trước khi mở cho người dùng thật: tự liên kết Google với email không do Google quản lý.** Nguồn: design §19. Vì sao: người từng giữ hộp thư công ty đã tạo
   tài khoản Google bằng email đó có thể vào tài khoản Wordmet của người đang giữ hộp thư, vì Google chỉ xác minh email một lần lúc tạo tài khoản Google. Bước 8 chấp nhận.
-- [ ] **Backup và danh sách tài khoản đã xóa (D21).** Nguồn: design §7.5. `deleted_accounts` nằm trong chính DB nên khôi phục backup cũ làm mất danh sách. Thủ tục (trong `apps/api`):
-  (1) trước khi khôi phục, nếu DB đang chạy còn đọc được: `pnpm accounts:export-deletions --out deleted-accounts.jsonl` (giữ file ngoài DB); (2) khôi phục backup; (3) **trước khi mở app**:
-  `pnpm accounts:replay-deletions --from deleted-accounts.jsonl` (thoát mã 2 và in `pending <id>` khi còn tài khoản chưa xóa xong). Lệnh xóa lại mọi tài khoản trong file mà bảng `users` vẫn còn hàng, bỏ qua điều kiện "gói đang gia hạn / admin cuối",
-  không gửi thư; in `replayed N, without a users row M, pending K` — **K > 0 nghĩa là một vài tài khoản chưa xóa xong, chạy lại lệnh**. Còn mở: nơi lưu danh sách **ngoài DB**
-  (cho trường hợp mất cả DB) và thời hạn backup — chốt cùng cách backup. Thời hạn giữ log cũng phải ghi (log mang `user_id`).
+- [ ] **Backup và danh sách tài khoản đã xóa (D21) — cập nhật 20/11/2026.** *(Đã xong phần lớn: R2 daily `pg_dump` đã diễn tập restore 15/11 trong ~3s, `2026-11-15-restore-drill.md`; WAL-G 60s archiving + Deletion Journal trên R2 độc lập DB đã rollout 18/11, PR #301–#307. **Còn mở:** diễn tập `wal-g backup-fetch` + WAL replay từ R2 thật và chạy thử `accounts:replay-deletions --journal` từ R2 thật, `restore-safety.md:75,82`.)*
 - [ ] **Kích thước pool kết nối DB.** Nguồn: Bước 8 R6/R8 (`docs/deliveries/buoc-8-rulings.md`). Vì sao: Tx B của xóa tài khoản giữ một kết nối tới 120 giây và bộ xóa của Entitlements đọc
   cài đặt qua client dùng chung trong lúc đó; kiểm nhiều người xóa cùng lúc không làm cạn pool. Cũng xem lại: thông điệp lỗi trong log `account_deletion_failed` có thể nêu giá trị từ lỗi DB.
 - [ ] **Scheduler chạy ở cả API và worker.** Nguồn: design §19 (`CHƯA KIỂM` trong production). Các việc Bước 8 (thử lại xóa, quét hàng ghi muộn, dọn chưa xác nhận, xóa giao dịch quá hạn)
@@ -267,14 +247,10 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 
 ## Chính sách bảo mật và Điều khoản soạn trong admin (`docs/deliveries/legal-documents.md`, 03/11/2026)
 
-- [ ] **Đặt `NEXT_PUBLIC_API_BASE_URL` cho bản build web (host `api.`).** Nguồn: as-built legal-documents. Vì sao: `/privacy` và `/terms` đọc `GET /v1/legal/current` ở
-  server mỗi lần mở trang; không có địa chỉ API thì hai trang luôn hiện dòng "bản nháp". Mục này trùng với mục `NEXT_PUBLIC_API_BASE_URL` của phần "Landing mới".
-- [ ] **Dán nội dung vào admin rồi đăng bản đầu tiên.** Nguồn: as-built. Việc: mở `/legal` trong admin, "Tạo bản nháp", dán hai bản nháp (nhánh
-  `docs/web-launch-research`, thư mục `docs/preparation/legal-drafts/`) sau khi điền các ô `[[...]]`, chọn ngày có hiệu lực, Đăng. Vì sao: trước lần đăng đầu, phiên bản
-  vẫn lấy từ `TERMS_VERSION`; lần đăng đầu khiến **mọi** người học đã đồng ý bản đó bị hỏi lại.
-- [ ] **Sau deploy: mở `/vi/privacy`, `/vi/terms`, `/en/privacy` và xem đúng bản đã đăng; tắt API thử thì trang phải về dòng "bản nháp".** Nguồn: as-built. Vì sao:
-  hai trang không còn là trang tĩnh, mỗi lượt mở gọi Worker rồi gọi API (hết 2,5 giây thì dùng dòng "bản nháp"); chưa đo tải.
-- [ ] **Đặt `TERMS_VERSION` vẫn bắt buộc.** Vì sao: API không khởi động nếu thiếu; giá trị này chỉ còn dùng cho tới khi có bản đầu tiên được đăng.
+- [x] **Đặt `NEXT_PUBLIC_API_BASE_URL` cho bản build web (host `api.`).** *(Đã đặt `https://api.wordmet.com` trong `deploy-web.yml:89`.)*
+- [x] **Dán nội dung vào admin rồi đăng bản đầu tiên.** *(Đã kiểm 20/11: `GET https://api.wordmet.com/v1/legal/current` trả `200`, `version: "1"`, `effective_date: "2026-11-20"`.)*
+- [ ] **Sau deploy: mở `/vi/privacy`, `/vi/terms`, `/en/privacy` và xem đúng bản đã đăng; tắt API thử thì trang phải về dòng "bản nháp".** *(Đã xác nhận API trả v1; chưa kiểm tay hiển thị cả 3 trang + ca tắt API.)*
+- [x] **Đặt `TERMS_VERSION` vẫn bắt buộc.** *(Đã đặt trên VPS 14/11 và đã có bản pháp lý v1 đăng trong admin.)*
 - [ ] **Email báo trước 07 ngày khi đổi điều khoản.** Chưa làm: cần tính năng gửi thư hàng loạt. Cho tới khi có, người học chỉ biết qua màn đồng ý lại.
 
 ## Trang Nguồn dữ liệu (`docs/deliveries/nguon-du-lieu.md`, 05/11/2026)
@@ -287,47 +263,26 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 
 ## Chuẩn bị launch B: mua gói Pro một lần bằng payOS (`docs/deliveries/chuan-bi-launch-b.md`, 04/11/2026)
 
-- [ ] **Ba biến payOS cho API và worker.** Nguồn: design launch B §3.3, `apps/api/.env.example`. Việc: đặt `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` (ba cái cùng lúc; đặt dở dang thì API từ chối chạy và nói thiếu biến nào). Vì sao: thiếu cả ba thì `payos.mode = off` và `POST /v1/me/orders` trả 503. **Không** đặt `PAYOS_FAKE_ENABLED=true` ở production: kết hợp với `BILLING_PRODUCTION=true` thì API không khởi động. Ba khóa là bí mật: không dán vào chat hay commit.
-- [ ] **Đăng ký URL webhook với payOS: `pnpm payos:confirm-webhook https://<api>/v1/billing/webhooks/payos` sau mỗi lần đổi domain.** Nguồn: design §3.3 (P3). Việc: chạy ở `apps/api` với ba biến trên; payOS gửi một mẫu có chữ ký (`orderCode: 123`), API trả 2xx và bỏ qua vì không có đơn nào mang mã đó. Vì sao: payOS chỉ gửi webhook tới URL đã đăng ký và đã thử được. Kiểm: dòng `billing_events` của mẫu ở trạng thái `ignored` lý do `unknown-order`.
-- [ ] **Cho `/v1/billing/webhooks/payos` đi qua WAF và Bot Fight Mode của Cloudflare.** Nguồn: design §3.3. Vì sao: webhook là máy gửi tới, không có trình duyệt; Bot Fight Mode hoặc một luật WAF chặn nó thì tiền về mà Wordmet không biết cho tới khi job đối soát (mỗi giờ) hoặc trang về tìm thấy. Kiểm: một lần chuyển thật nhỏ, xem `billing_events` có dòng `payos:production:<orderCode>:<reference>` ngay sau khi chuyển.
-- [ ] **Giá ba kỳ ở admin "Cài đặt hệ thống".** Nguồn: design §3.6. Ba khóa `pro_price_1m_vnd`, `pro_price_3m_vnd`, `pro_price_12m_vnd` (mặc định 79.000, 199.000, 599.000 ₫, giới hạn 1.000 tới 10.000.000). Đổi giá giữa lúc có người đang xem trang Gói: người đó nhận lỗi "Giá vừa đổi" và không bao giờ trả số khác số đã thấy.
-- [ ] **`LEARNER_APP_URL` đúng host của app người học.** Nguồn: `OrdersService.create`, `NoticeSender`. Vì sao: link về sau khi trả (`/<ngôn ngữ>/app/plans/order?order=…`) và link "mua kỳ mới" trong email biên nhận và email nhắc hết hạn đều dựng từ biến này. Sai host thì người học trả xong về một trang không tồn tại.
-- [ ] **Worker chạy job `billing.orders-reconcile` mỗi giờ và job `entitlement-notices`.** Nguồn: design §3.6, §3.10. Việc: kiểm `MAINTENANCE_ENABLED` của worker; sau deploy chạy `pnpm maintenance:run` một lần và xem không lỗi. Vì sao: job đối soát là lưới an toàn cho webhook bị chặn hoặc mất; job thông báo gửi biên nhận (hạn 7 ngày kể từ lúc tiền về) và email nhắc 07 ngày trước khi kỳ cuối hết.
-- [ ] **SMTP thật cho biên nhận và email nhắc hết hạn.** Nguồn: design §3.10. Cả hai dùng trần 95% ngân sách mail như email thanh toán khác (`PAYMENT_MAIL_SHARE`); mail quá trần thì thử lại lần chạy sau, trong cửa sổ của hàng.
-- [ ] **Kiểm một lần mua thật nhỏ theo bảng giả định P1–P12.** Nguồn: design §3.14 (DB40). Việc (chủ dự án, sau deploy M1–M2, tiền thật số nhỏ vì payOS không có sandbox): làm từng dòng của bảng, ghi kết quả vào `docs/deliveries/chuan-bi-launch-b.md`. Hai dòng đổi kết quả của code: **P7** (`reference` của webhook trùng `transactions[].reference` của `getCheckout`; code chặn mở kỳ thứ hai cho cùng một lần chuyển khi cùng số tiền và cùng `transactionDateTime`, nên cũng cần P9 là cùng định dạng và múi giờ) và **P12** (payOS trả HTTP 404 cho link không tồn tại; nếu trả 200 kèm mã lỗi thì đơn chỉ được để nguyên và ghi cảnh báo).
-- [ ] **Đăng Điều khoản và Chính sách bảo mật bản mới trước khi bán.** Nguồn: design §3.8, Q-B16. Việc: bản nháp đã viết lại nằm ở nhánh `docs/launch-b-legal-drafts` (thư mục `docs/preparation/legal-drafts/`, bốn file, chưa push); chuyển sang nhánh `docs/web-launch-research` hoặc dán thẳng vào admin `/legal`, điền các ô `[[…]]`, đăng. Vì sao: Điều khoản cũ nói dùng thử và tự gia hạn; mục 5–8 mới nói mua một lần, không tự gia hạn, không hoàn tiền. Chính sách mới có payOS và phần quảng cáo viết dạng "có thể hiển thị" (M4 không cần bản mới).
-- [ ] **Kiểm không còn chỗ nào nói Pro "chưa mở bán".** Nguồn: design §3.8. Việc: sau deploy tìm chữ "chưa mở bán" trong web và trong email. Đợt B đã đổi trang Gói, câu khóa tính năng (`ui.lockedLine`, `errors.entitlement-required`); landing không hiện giá (Q-B9).
+- [x] **Ba biến payOS cho API và worker.** *(Đã kiểm 14/11 trên VPS: đủ 3 biến `PAYOS_*`, `PAYOS_FAKE_ENABLED=false`, `2026-11-14-production-checks.md`.)*
+- [x] **Đăng ký URL webhook với payOS & cho `/v1/billing/webhooks/payos` đi qua Cloudflare.** *(Đã kiểm 14/11: endpoint nhận POST trực tiếp qua DNS xám trả 400 trên thân rỗng, và giao dịch mua Pro thật 79.000 ₫ ngày 14/11 nhận webhook thật thành công.)*
+- [x] **Giá ba kỳ ở admin "Cài đặt hệ thống".** *(Đã kiểm 20/11: `GET /v1/public/prices` trả 79.000 / 199.000 / 599.000 ₫.)*
+- [x] **`LEARNER_APP_URL` đúng host của app người học.** *(Đã kiểm 14/11 trên VPS.)*
+- [x] **Worker chạy job `billing.orders-reconcile` mỗi giờ và job `entitlement-notices`.** *(Đã kiểm 14/11 trên VPS: `MAINTENANCE_ENABLED=true` trên worker, cron bảo trì chạy phút 15 mỗi giờ.)*
+- [x] **SMTP thật cho biên nhận và email nhắc hết hạn.** *(Đã kiểm 14/11 trên VPS: `smtp.resend.com:465`, `SMTP_SECURE=true`, `Wordmet <no-reply@wordmet.com>`.)*
+- [ ] **Kiểm một lần mua thật nhỏ theo bảng giả định P1–P12.** *(Cập nhật 20/11: happy path mua thật 79.000 ₫ qua payOS production đã thành công ngày 14/11 với `orderCode` cũ `1001000000`, tự mở kỳ 14/11→14/12/2026. **Còn mở sau rollout 18/11:** kiểm chứng `orderCode` theo thời gian `>= 1_100_000_000` và chạy thử `orders:probe-payos` live để đối chứng P7/P9/P12.)*
+- [x] **Đăng Điều khoản và Chính sách bảo mật bản mới trước khi bán.** *(Đã đăng phiên bản `1`, `GET /v1/legal/current` trả `200` ngày 20/11.)*
+- [x] **Kiểm không còn chỗ nào nói Pro "chưa mở bán".** *(Đã kiểm 14/11 trên `/vi`, đếm 0, `2026-11-14-production-checks.md`.)*
 
 ## CSP có `nonce` cho `/app` (launch prep B, M4; `docs/deliveries/chuan-bi-launch-b-spike-csp.md`)
 
-- [ ] **Sau deploy: `/vi/app` trả đúng MỘT chính sách CSP, có `'nonce-` và `'strict-dynamic'`; mọi `<script>` (trừ script chống nháy màu, có hash) mang đúng nonce đó.** Nguồn: design §5.4, issue OpenNext #1302. Kiểm: `curl -sI https://<host>/vi/app | findstr /i content-security-policy` (một dòng, một `default-src`), và hai lần gọi cho hai nonce khác nhau. Vì sao: spike chạy trên `wrangler dev` (workerd cục bộ), chưa trên Cloudflare đã deploy; lỗi #1302 mất nonce có thể chỉ hiện ở đó. Nếu mất nonce: `/app` hỏng hoàn toàn (mọi script bị chặn); lùi bằng cách đặt lại CSP cũ cho `/app` trong `next.config.ts` và bỏ nonce trong `src/proxy.ts`.
-- [ ] **Đo CPU Worker của một trang `/app` dựng theo request.** Nguồn: design §5.4, spike M0. Việc: sau deploy, mở Observability hoặc `wrangler tail`, xem "CPU time" của vài request `/vi/app/groups` và ghi con số vào đây. Vì sao: `/app` không còn là trang dựng sẵn, mỗi lượt mở là một lần chạy Worker; gói Cloudflare Free có giới hạn 10 ms CPU mỗi request (theo trang Limits của Cloudflare, chưa đọc trang gốc), gói Paid cao hơn nhiều. Chưa biết Wordmet dùng gói nào. Nếu vượt: gói Paid, hoặc `prefetch={false}` cho các link trong app (mỗi lần tải một trang bắn khoảng 15 request `_rsc` prefetch, mỗi cái là một lần chạy Worker).
-- [ ] **Beacon Cloudflare Web Analytics.** Nguồn: design §5.4 (ASSUMPTION A6). Việc: trong Cloudflare dashboard xem Web Analytics đang tự chèn ở edge hay bằng snippet tay. Tự chèn thì thẻ chèn không có nonce và `'strict-dynamic'` chặn nó ở `/app`: tắt chèn tự động và đặt snippet tay có nonce (LB3E9), hoặc chấp nhận beacon không chạy ở `/app`. Kiểm: Console ở `/vi/app` không có vi phạm; thống kê trang landing vẫn chạy.
-- [ ] **Chạy lại mục Turnstile của spike M0 với code thật của đợt A.** Nguồn: `chuan-bi-launch-b-spike-csp.md`. Việc: e2e `LA1#14` (widget Turnstile thật ở `/vi/app/login`, cần mạng) nằm trong `e2e/csp.spec.ts` và chạy ở CI trên bản build Worker; xem nó xanh sau khi hợp nhất với đợt A.
-- [ ] **Đưa `assert:render-mode` vào mọi chỗ từng gọi `assert:static`.** Nguồn: M4 Task 22. Đã đổi ở `ci.yml`, `scripts/cf-docker.mjs` và `README.md` của `apps/web`; kiểm các nơi khác (lệnh deploy, tài liệu) không còn nhắc `assert:static`.
+- [x] **Sau deploy: `/vi/app` trả đúng MỘT chính sách CSP, có `'nonce-` và `'strict-dynamic'`; mọi `<script>` mang đúng nonce.** *(Đã kiểm 14/11 và 20/11 trên `https://wordmet.com/vi/app`: một header CSP, nonce đổi mỗi request, `'strict-dynamic'`, 0 lỗi CSP.)*
+- [x] **Đo CPU Worker của một trang `/app` dựng theo request.** *(Đã đo 15/11 qua Cloudflare Analytics: `usage_model=standard`, `limits.cpu_ms=5000`, 5.157 lượt 0 lỗi, CPU P90 356 ms, `2026-11-15-load-test.md`.)*
+- [x] **Beacon Cloudflare Web Analytics.** *(Đã kiểm 14/11: `beacon.min.js` nạp được ở `/app`, `POST /cdn-cgi/rum` 204, 0 lỗi CSP.)*
+- [x] **Chạy lại mục Turnstile của spike M0 với code thật của đợt A.** *(Đã nằm trong `e2e/csp.spec.ts` chạy xanh trên CI; `TURNSTILE_MODE=real` đã bật trên prod.)*
+- [x] **Đưa `assert:render-mode` vào mọi chỗ từng gọi `assert:static`.** *(Đã xác nhận trong `.github/workflows/ci.yml:108`.)*
 
 ## Đợt C: Học / Ôn, chuỗi ngày, phiên âm và giọng đọc (`docs/deliveries/dot-cai-thien-c.md`, 07/11/2026)
 
-- [ ] **Tạo tài khoản Google Cloud cho Text-to-Speech, bật billing và cảnh báo ngân sách.** Nguồn: design đợt C §5. Việc: project mới, bật Cloud Text-to-Speech API, một service account chỉ có quyền gọi API này, tạo khoá JSON.
-  Đặt cảnh báo ngân sách (ví dụ 5 USD). Vì sao: giọng WaveNet tính theo ký tự; trần mặc định 120.000 ký tự/ngày (setting `tts.daily_char_cap`, đổi ở admin) chỉ là lưới thứ hai.
-- [ ] **Hai biến cho API và worker: `GOOGLE_TTS_CREDENTIALS` (base64 của file JSON, một dòng) và `TTS_VOICE_UK`, `TTS_VOICE_US`.** Nguồn: `apps/api/.env.example`. Việc: `[Convert]::ToBase64String([IO.File]::ReadAllBytes('key.json'))`
-  rồi dán vào biến môi trường của host. Vì sao: thiếu thì app im lặng và dùng giọng trình duyệt; sai định dạng thì API từ chối khởi động và chỉ nói tên biến. **Là bí mật: không dán vào chat, không commit.**
-- [ ] **Nghe thử rồi chọn giọng.** Việc: nghe 10 từ trong design đợt C §7 với vài giọng `en-GB-Wavenet-*` và `en-US-Wavenet-*`, đặt hai biến giọng. Vì sao: đổi giọng sau này đổi **mọi khoá file**, nghĩa là tạo lại toàn bộ (tốn ký tự lần nữa).
-- [ ] **Bucket Cloudflare R2 cho file âm thanh, tên miền công khai `audio.wordmet.com`, rồi bốn biến lưu trữ và một biến địa chỉ.** Việc: tạo bucket, gắn custom domain, tạo API token R2 (đọc và ghi cho bucket đó);
-  đặt `AUDIO_STORAGE_ENDPOINT` (`https://<account>.r2.cloudflarestorage.com`), `AUDIO_STORAGE_BUCKET`, `AUDIO_STORAGE_ACCESS_KEY_ID`, `AUDIO_STORAGE_SECRET_ACCESS_KEY` (cả bốn cùng lúc, thiếu một thì API không khởi động)
-  và `AUDIO_PUBLIC_BASE_URL=https://audio.wordmet.com`. Vì sao: file có `Cache-Control: immutable` một năm, nên không cần CDN riêng. Hai khoá truy cập là bí mật.
-- [ ] **Web: `NEXT_PUBLIC_AUDIO_BASE_URL=https://audio.wordmet.com` cho bản build, và CSP `media-src` có origin này.** Nguồn: design §5.7. Vì sao: thiếu thì trình duyệt chặn file âm thanh và nút loa rơi về giọng máy.
-  Kiểm sau deploy: mở một từ đã có file, nút loa phát file (Network có request tới `audio.wordmet.com`), Console không có lỗi CSP.
-- [ ] **Không đặt `TTS_FAKE_ENABLED` và `AUDIO_STORAGE_FAKE_ENABLED` ở production.** Cả hai kết hợp với `BILLING_PRODUCTION=true` thì API không khởi động.
-- [ ] **Worker phải chạy.** Vì sao: tạo giọng đọc, vòng quét 5 phút và dọn tuần đều là job của worker (hàng `content-tts`); chỉ chạy API thì dòng `speech_audio` nằm ở `pending`.
-  Kiểm: sau khi đăng một nghĩa, `speech_audio` có hai dòng `ready` trong vài giây.
-- [ ] **Nạp phiên âm: `ipa:build-csv`, nhập CSV, đăng hàng loạt, `tts:backfill`.** Việc (theo thứ tự, chạy ở `apps/api`):
-  1. Tải bản raw Wiktextract (kaikki.org, JSONL nén 2,9 GB). Tạo nguồn dữ liệu "Wiktionary" (loại third_party, giấy phép CC BY-SA 4.0, link, ghi công) ở admin "Nguồn dữ liệu", lấy uuid.
-  2. `pnpm ipa:build-csv --in <raw.jsonl.gz> --out ipa.csv --source-id <uuid>`: in số nghĩa có phiên âm, không có trong Wiktionary, và "readings disagree" (hai cách đọc khác nhau, cần điền tay).
-  3. Nhập `ipa.csv` ở admin; nó tạo bản nháp mới cho từng nghĩa (giữ nguyên mọi trường khác). Xem bản nháp, rồi đăng hàng loạt.
-  4. `pnpm tts:backfill`: xếp hàng giọng đọc cho cả kho; worker làm dần (khoảng 2 file mỗi nghĩa; trần ký tự mỗi ngày chặn chi phí, hết trần thì việc chờ tới 00:00 UTC).
-  Vì sao: đăng một nghĩa chỉ tạo giọng cho nghĩa đó; kho cũ chưa có file nào.
-- [ ] **Chính sách bảo mật: thêm Google Cloud Text-to-Speech vào danh sách bên xử lý.** Nguồn: design §5.8. Việc: ghi rằng chỉ **chữ của từ** (kể cả từ riêng của người học) được gửi, không kèm tên hay tài khoản;
-  **sửa câu "không gửi từ vựng của bạn cho Google"** ở đoạn AdSense (hiện sai). Đăng bản mới qua `/legal` ở admin. Vì sao: từ riêng đi tới Google khi nó được tạo.
-- [ ] **Sau deploy, đọc `speech_audio`:** `SELECT status, count(*) FROM speech_audio GROUP BY 1;` Không nên có `failed` kéo dài; có thì mở nghĩa đó ở admin (trạng thái giọng có lý do), sửa nguyên nhân, bấm "Tạo lại" (`POST /v1/admin/content/senses/:id/audio/retry`).
-- [ ] **Bản đồ dữ liệu cá nhân: `speech_audio.text` có thể chứa từ riêng của người học.** Việc: ghi vào tài liệu xoá tài khoản rằng dòng này được dọn bởi job tuần (từ 7 ngày sau khi từ bị xoá). Chưa có đường xoá ngay.
+- [x] **Google Cloud Text-to-Speech, `GOOGLE_TTS_CREDENTIALS`, `TTS_VOICE_UK`/`TTS_VOICE_US`, bucket R2 `audio.wordmet.com`, `NEXT_PUBLIC_AUDIO_BASE_URL`, `TTS_FAKE_ENABLED=false` và worker chạy `content-tts`.** *(Đã kiểm 14/11 trên VPS & bên ngoài: đủ secret TTS/R2, `audio.wordmet.com/tts/v1/*.mp3` trả `200 audio/mpeg`, CSP `media-src` có `https://audio.wordmet.com`, `9.481` dòng `speech_audio` `ready`, `0 failed`, `2026-11-14-production-checks.md`; dump 15/11 có `9.806` `sense_revisions` đã publish, `2026-11-15-restore-drill.md`.)*
+- [ ] **Chính sách bảo mật: xác nhận bản đã đăng (v1) đã nêu Google Cloud Text-to-Speech và sửa câu "không gửi từ vựng của bạn cho Google".** Nguồn: design §5.8.
+- [ ] **Bản đồ dữ liệu cá nhân: `speech_audio.text` có thể chứa từ riêng của người học** (dọn bởi job tuần sau 7 ngày, ghi nhận trong tài liệu xóa tài khoản).

@@ -87,6 +87,30 @@ const noWords = (reason: 'group-empty' | 'no-word-fits-types' | 'source-empty' |
 });
 const validationFailed = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 const hasAiType = (types: QuestionType[], clozeSource: ClozeSource | null) => types.some((type) => isAiType(type, clozeSource));
+const FALLBACK_RULE_TYPES: QuestionType[] = ['type_word', 'mcq_definition'];
+const isSystemAiFailure = (failure: AiFailure | string): boolean => failure !== 'quota-exhausted' && failure !== 'plan-required';
+
+function applyGateFallback(
+  types: QuestionType[],
+  clozeSource: ClozeSource | null,
+  availableAiTypes: QuestionType[],
+): { types: QuestionType[]; clozeSource: ClozeSource | null } {
+  const available = new Set(availableAiTypes);
+  let nextClozeSource = clozeSource;
+  const nextTypes: QuestionType[] = [];
+  for (const type of types) {
+    if (!isAiType(type, clozeSource) || available.has(type)) {
+      nextTypes.push(type);
+    } else if (type === 'cloze' && clozeSource === 'own_then_ai') {
+      nextTypes.push('cloze');
+      nextClozeSource = 'own';
+    } else if (type === 'cloze') {
+      nextClozeSource = null;
+    }
+  }
+  if (nextTypes.length === 0) return { types: [...FALLBACK_RULE_TYPES], clozeSource: null };
+  return { types: nextTypes, clozeSource: nextClozeSource };
+}
 
 @Injectable()
 export class SessionsService {
@@ -104,7 +128,7 @@ export class SessionsService {
     @Inject(ContentService) private readonly content: ContentService,
   ) {}
 
-  async start(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
+  async start(learner: Learner, input: StartInput): Promise<{ session: SessionView; notice?: 'ai-fallback'; ai_reason?: 'ai-unavailable' }> {
     if (input.kind === 'recall') return this.startRecall(learner, input);
     let types = input.types!;
     let clozeSource: ClozeSource | null = types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
@@ -124,7 +148,18 @@ export class SessionsService {
     await this.assertEntitled(learner.userId);
     // Bước 7 (design §6.1 step 2); null when no AI type is chosen (own cloze is a rule question). Without ai_count it runs before
     // the words are read, as before; with ai_count it waits for the provisional K, so a session with no AI question skips it.
-    let snapshot: EntitlementsSnapshot | null = byCount ? null : await this.aiPlanner.gate(learner.userId, types, clozeSource);
+    let snapshot: EntitlementsSnapshot | null = null;
+    let fallbackReason: 'ai-unavailable' | null = null;
+    if (!byCount) {
+      const gate = await this.aiPlanner.gate(learner.userId, types, clozeSource);
+      if (gate !== null) {
+        snapshot = gate.snapshot;
+        if (gate.fallbackReason !== null) {
+          fallbackReason = gate.fallbackReason;
+          ({ types, clozeSource } = applyGateFallback(types, clozeSource, gate.availableAiTypes));
+        }
+      }
+    }
     const items = await this.sourceItems(learner.userId, input);
     if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
     // §4 steps 1–2: above the maximum is lowered, never refused (the scope may change between the dialog and the start).
@@ -134,7 +169,16 @@ export class SessionsService {
     if (byCount && provisionalAi === 0) ({ types, clozeSource } = withoutAi(types, clozeSource));
     // Only AI types and no AI question: no type is left for any question (D16), so 400 rather than "no word fits".
     if (types.length === 0) throw validationFailed();
-    if (byCount && hasAiType(types, clozeSource)) snapshot = await this.aiPlanner.gate(learner.userId, types, clozeSource);
+    if (byCount && hasAiType(types, clozeSource)) {
+      const gate = await this.aiPlanner.gate(learner.userId, types, clozeSource);
+      if (gate !== null) {
+        snapshot = gate.snapshot;
+        if (gate.fallbackReason !== null) {
+          fallbackReason = gate.fallbackReason;
+          ({ types, clozeSource } = applyGateFallback(types, clozeSource, gate.availableAiTypes));
+        }
+      }
+    }
     const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
       ? await this.stats.statsFor(learner.userId) : new Map();
     const words: SortableWord[] = items.map((item) => ({
@@ -144,14 +188,14 @@ export class SessionsService {
       recent_wrong: statsBySense.get(item.sense_id)?.wrong ?? 0,
     }));
     const order = sortWords(words, sort, Math.random);
-    const { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
+    let { kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource);
     if (kept.length === 0) throw noWords('no-word-fits-types');
     // §4 step 3: in scope_words mode the session asks each kept word once.
-    const target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+    let target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
     let aiCount: number | undefined;
     let placement: 'even' | 'random' | undefined;
     if (byCount) {
-      aiCount = Math.min(provisionalAi, aiCapOf(practice, target));
+      aiCount = hasAiType(types, clozeSource) ? Math.min(provisionalAi, aiCapOf(practice, target)) : 0;
       // A session with no AI question stores no AI type, so later rounds never plan one.
       if (aiCount === 0 && hasAiType(types, clozeSource)) ({ types, clozeSource } = withoutAi(types, clozeSource));
       // The questions that are not AI need a type (D16; the plan's open decision keeps this 400).
@@ -163,6 +207,31 @@ export class SessionsService {
     const aiAvailable = clozeSource === 'own_then_ai' ? await this.aiSideAvailability(learner, kept, types, clozeSource) : availableBySense;
     const ai = await this.aiPlanner.plan(learner,
       { types, clozeSource, count: target, kept, available: aiAvailable, aiCount, placement }, snapshot);
+    if (ai.fallbackReason) {
+      fallbackReason = ai.fallbackReason;
+      if (ai.aiPlanned === 0) {
+        ({ types, clozeSource } = applyGateFallback(types, clozeSource, []));
+        ({ kept, availableBySense } = await this.keepAvailable(learner, order, count, types, clozeSource));
+        if (kept.length === 0) throw noWords('no-word-fits-types');
+        target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+      } else if (ai.excludedPrivateIds && ai.excludedPrivateIds.length > 0) {
+        const ruleOnly = withoutAi(types, clozeSource);
+        const ruleAvail = ruleOnly.types.length > 0
+          ? await this.builder.availability({
+            userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: ai.excludedPrivateIds,
+            chosenTypes: ruleOnly.types, clozeSource: ruleOnly.clozeSource,
+          })
+          : new Map<string, QuestionType[]>();
+        const dropped = new Set(ai.excludedPrivateIds.filter((id) => (ruleAvail.get(id)?.length ?? 0) === 0));
+        if (dropped.size > 0) {
+          kept = kept.filter((id) => !dropped.has(id));
+          if (kept.length === 0) throw noWords('no-word-fits-types');
+          target = practice.sessionMaxMode === 'scope_words' ? Math.min(count, kept.length) : count;
+        }
+      }
+    }
+    const fullFallback = fallbackReason !== null && (!hasAiType(types, clozeSource) || ai.aiPlanned === 0);
+    const partialFallback = fallbackReason !== null && !fullFallback;
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
       const now = this.clock.now();
@@ -178,8 +247,13 @@ export class SessionsService {
         groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types,
         promptStyle: input.prompt_style ?? 'mixed', targetCount: target, senseIds: kept, status: 'active', startedAt: now,
         lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds, aiPlacement: placement ?? null,
+        aiStopped: fullFallback ? 'ai-unavailable' : null,
+        aiNoticeShown: partialFallback,
       } });
-      return { session: sessionView(session, []) };
+      return {
+        session: sessionView(session, []),
+        ...(partialFallback ? { notice: 'ai-fallback' as const, ai_reason: 'ai-unavailable' as const } : {}),
+      };
     }, transactionOptions);
   }
 
@@ -572,11 +646,18 @@ export class SessionsService {
           (previous?.question.type as QuestionType | undefined) ?? null, build);
         if (slot) return slot.state === 'question' ? { ...slot, notice } : withNotice(slot, notice);
         // B7E47: the word no longer takes an AI type; a rule type if chosen, else the word is skipped.
-      } else if (ruleTypes.length === 0 && session.aiStopped !== null) {
+      } else if (ruleTypes.length === 0 && session.aiStopped !== null && !isSystemAiFailure(session.aiStopped)) {
         return { state: 'ai_unavailable', reason: publicReason(session.aiStopped as AiFailure) };
       }
-      const item = await this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
-      if (item) return { state: 'question', item, notice };
+      const item = await this.buildFallbackRuleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
+      if (item) {
+        let ai: AiNotice | undefined;
+        if (session.aiStopped !== null && !session.aiNoticeShown && isSystemAiFailure(session.aiStopped)) {
+          ai = { notice: 'ai-fallback', ai_reason: publicReason(session.aiStopped as AiFailure) };
+          await tx.practiceSession.update({ where: { id: session.id }, data: { aiNoticeShown: true } });
+        }
+        return { state: 'question', item, notice, ...(ai ? { ai } : {}) };
+      }
     }
     // Round 1 done short of the target: ask once whether to go on, unless no word is left at all (B4E31).
     if (lastRound === 1 && session.continued === null && usable.size > 0) {
@@ -705,10 +786,13 @@ export class SessionsService {
       lemma: (await this.content.practiceSenses(learner.userId, [request.senseId], learner.nativeLanguage, tx)).get(request.senseId)?.lemma ?? null,
     } : undefined;
     const ruleTypes = this.ruleTypesOf(session);
-    if (ruleTypes.length > 0) {
+    if (ruleTypes.length > 0 || isSystemAiFailure(failure)) {
       await tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: null } });
       const previous = items.filter((item) => item.senseId === request.senseId).at(-1);
-      const item = await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ruleTypes, previous);
+      const item = ruleTypes.length > 0
+        ? await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ruleTypes, previous)
+        : (await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ['type_word'], previous))
+          ?? (await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ['mcq_definition'], previous));
       if (!item) return null;
       let ai: AiNotice | undefined = notRecognized;
       if (!ai && !session.aiNoticeShown) {
@@ -746,6 +830,19 @@ export class SessionsService {
       },
       include: { question: true },
     });
+  }
+
+  /** A rule question using chosen rule types, or fallback `['type_word', 'mcq_definition']` (preferring `type_word`) for AI-only system fallback. */
+  private async buildFallbackRuleItem(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
+    senseId: string, round: number, ruleTypes: QuestionType[], previous: ItemWithQuestion | undefined): Promise<ItemWithQuestion | null> {
+    const isAiOnlyStartFallback = session.aiStopped !== null && isSystemAiFailure(session.aiStopped)
+      && (ruleTypes.length === 0 || (session.aiPlanned === 0 && ruleTypes.length === 2 && ruleTypes[0] === 'type_word' && ruleTypes[1] === 'mcq_definition'));
+    if (isAiOnlyStartFallback) {
+      return (await this.ruleItem(tx, learner, session, items, senseId, round, ['type_word'], previous))
+        ?? (await this.ruleItem(tx, learner, session, items, senseId, round, ['mcq_definition'], previous));
+    }
+    if (ruleTypes.length > 0) return this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
+    return null;
   }
 
   /** A question of a rule type, built and asked now (Bước 4, plus cloze from saved sentences); null when none fits. */

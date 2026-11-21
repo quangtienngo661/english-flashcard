@@ -2,8 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> Viết bởi `/impeccable init` ngày 26/10/2026 **từ bằng chứng trong repo** (CLAUDE.md, design các Bước, bản chữ giao diện), chưa qua
-> vòng phỏng vấn chủ dự án. Mọi mục dưới đây là **chờ chủ dự án xác nhận**; chỗ nào sai, sửa thẳng file này.
+> Cập nhật 20/11/2026 (khởi tạo bởi `/impeccable init` ngày 26/10/2026 **từ bằng chứng trong repo** và đối chiếu lại theo trạng thái production ngày 20/11/2026). Chỗ nào cần chỉnh định hướng, chủ dự án sửa thẳng file này.
 
 ## Platform
 
@@ -31,10 +30,9 @@ Câu AI được chấm bằng quy tắc (không để AI chấm), và lượt A
 
 ## Operating Context
 
-- Gói Miễn phí (3 phiên luyện mỗi ngày, ôn thẻ không giới hạn), Dùng thử, Pro (lượt câu AI, lượt tra AI). Gói Pro chưa mở bán; chưa có cổng
-  thanh toán thật.
+- Gói **Miễn phí** (3 phiên luyện mỗi ngày, ôn thẻ không giới hạn, kèm lượt AI Free theo tháng dương lịch) và gói **Pro** trả trước một lần qua **payOS** (1 / 3 / 12 tháng: 79.000 / 199.000 / 599.000 ₫, không tự gia hạn; dùng thử đã tắt từ launch prep A M3).
 - Ngày giờ theo múi giờ IANA của người học; số, ngày, tiền theo `Intl` vi-VN.
-- App `/app` chưa mở cho người dùng thật cho tới Deploy (trước launch).
+- Production đã deploy đầy đủ (`wordmet.com/{vi,en}/app`, `api.wordmet.com`, `admin.wordmet.com`, `audio.wordmet.com`), giao dịch payOS thật đã thử thành công ngày 14/11/2026; đang chuẩn bị mở đợt pilot kín cho người dùng thật.
 
 ## Capabilities and Constraints
 
@@ -51,8 +49,8 @@ Câu AI được chấm bằng quy tắc (không để AI chấm), và lượt A
 
 ## Evidence on Hand
 
-- Dữ liệu mẫu: `apps/api/scripts/fixtures/learner-sample.csv` (303 nghĩa); bộ CEFR-J thật cho nội dung (mục tiêu 8.812 từ).
-- Chưa có người dùng thật, chưa có testimonial, chưa có số liệu giữ chân. Không bịa những thứ này.
+- Catalog trên production đã có **9.806 `sense_revisions` đã publish** (theo dump R2 ngày 15/11/2026; vượt mục tiêu 8.812 từ) và hệ thống giọng đọc TTS trên R2 (`audio.wordmet.com`, 9.481 file `ready` lúc kiểm 14/11); dữ liệu mẫu local là `apps/api/scripts/fixtures/learner-sample.csv` (303 nghĩa).
+- Bằng chứng nhu cầu hiện mới có khảo sát 30/09/2026 (N=12) và 1 buổi phỏng vấn nội bộ 07/11/2026; **chưa có người dùng đại trà, chưa có testimonial, chưa có số liệu retention, conversion hay hiệu quả học tập**. Không bịa những thứ này.
 
 ## Product Principles
 

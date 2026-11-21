@@ -63,6 +63,8 @@ export type AppSettings = {
     transactionRetentionYears: number;
     /** Launch prep B (Q-B8, design §3.5): the price in dong of a prepaid Pro period of 1, 3 and 12 months. */
     proPrice1mVnd: number; proPrice3mVnd: number; proPrice12mVnd: number;
+    /** Pre-publish D8: emergency switch to pause new Pro orders while webhooks and reconciliation keep running. */
+    proCheckoutEnabled: boolean;
   };
   /** Bước 8 (D19): days before an account that never verified its email is deleted. */
   identity: { unverifiedCleanupDays: number };
@@ -103,6 +105,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
     renewalNoticeDaysBefore: 7, aiEnabled: true, aiDailyCap: 1000, freeAiDailyCap: 500, aiCapAlertPercent: 75, adsEnabled: false,
     adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10, transactionRetentionYears: 10,
     proPrice1mVnd: 79000, proPrice3mVnd: 199000, proPrice12mVnd: 599000,
+    proCheckoutEnabled: true,
   },
   identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
@@ -252,6 +255,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     pro_price_1m_vnd: intIn(b.entitlements.pro_price_1m_vnd).optional(),
     pro_price_3m_vnd: intIn(b.entitlements.pro_price_3m_vnd).optional(),
     pro_price_12m_vnd: intIn(b.entitlements.pro_price_12m_vnd).optional(),
+    pro_checkout_enabled: z.boolean().optional(),
   }).optional(),
   identity: z.strictObject({
     unverified_cleanup_days: intIn(b.identity.unverified_cleanup_days).optional(),
@@ -327,6 +331,7 @@ const FIELDS = [
   ['entitlements', 'pro_price_1m_vnd', 'proPrice1mVnd'],
   ['entitlements', 'pro_price_3m_vnd', 'proPrice3mVnd'],
   ['entitlements', 'pro_price_12m_vnd', 'proPrice12mVnd'],
+  ['entitlements', 'pro_checkout_enabled', 'proCheckoutEnabled'],
   ['identity', 'unverified_cleanup_days', 'unverifiedCleanupDays'],
   ['content', 'private_words_per_user', 'privateWordsPerUser'],
   ['content', 'sentences_per_sense', 'sentencesPerSense'],

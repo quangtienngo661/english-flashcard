@@ -100,7 +100,7 @@ Ví dụ dùng **Lan**, người học có nhóm "Kinh doanh". "Ngăn" là chữ
 
 ## 5. Sau deploy
 
-- [ ] **C-23 · Giọng thật.** Tạo Google Cloud, R2, đặt biến (mục "Đợt C" của `deploy-checklist.md`); nghe ~10 từ (design §7: `lead` hai nghĩa, `record` hai loại từ, `read`, `live`, `a`, `the`, `look after`) rồi chọn giọng. **[sau deploy]**
-- [ ] **C-24 · Nạp phiên âm cho cả kho.** `ipa:build-csv` trên bản Wiktionary thật → nhập CSV → đăng hàng loạt → `tts:backfill`; xem số "readings disagree" để điền tay. **[sau deploy]**
-- [ ] **C-25 · CSP thật.** Mở một từ có file: Network có request tới `audio.wordmet.com`, Console không có lỗi CSP. **[sau deploy]**
-- [ ] **C-26 · Chính sách bảo mật.** Thêm Google Cloud Text-to-Speech; sửa câu "không gửi từ vựng của bạn cho Google"; đăng qua `/legal`. **[sau deploy]**
+- [x] **C-23 · Giọng thật.** Tạo Google Cloud, R2 (`audio.wordmet.com`), đặt biến (mục "Đợt C" của `deploy-checklist.md`). *(Đã chạy trên production: 9.481 file `speech_audio` trên R2 trong bản dump 15/11/2026 — `docs/audit/2026-11-15-restore-drill.md`.)* **[sau deploy]**
+- [x] **C-24 · Nạp phiên âm cho cả kho.** `ipa:build-csv` → nhập CSV → đăng hàng loạt → `tts:backfill`. *(Đã hoàn tất trên production: 9.806 `sense_revisions` published và 9.481 file TTS ready theo `docs/audit/2026-11-15-restore-drill.md`.)* **[sau deploy]**
+- [x] **C-25 · CSP thật.** Mở một từ có file: `https://audio.wordmet.com` nằm trong `media-src` CSP của `/vi/app` trên production (đã kiểm header live 20/11/2026). **[sau deploy]**
+- [ ] **C-26 · Chính sách bảo mật.** Kiểm lại bản v1 đã đăng qua `/legal` xem đã liệt kê Google Cloud Text-to-Speech và bỏ câu "không gửi từ vựng của bạn cho Google" hay chưa. **[sau deploy]**

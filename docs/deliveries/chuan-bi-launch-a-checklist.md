@@ -66,11 +66,8 @@ Ví dụ trong file dùng tên **Lan**, một học viên mới đăng ký (gói
 
 ### 1B. Chỉ kiểm được sau deploy
 
-- [ ] **M1-9 · Header thật.** **Kiểm:** `curl -I https://admin.wordmet.com/` và một đường dẫn sâu (ví dụ `/uploads`); `curl -I https://wordmet.com/vi` và một file `/_next/static/…`; `curl -I` vào API.
-  **Đúng là:** admin có bốn header của `apps/admin/public/_headers` cả ở trang gốc lẫn đường dẫn sâu (Cloudflare Assets áp `_headers` cho cả trang trả về từ SPA fallback: một `ASSUMPTION` của design §4.4); web có ba header + CSP; API có HSTS. **[sau deploy]**
-- [ ] **M1-10 · Widget thật hiện ra và cho qua.** **Thấy:** Lan mở `wordmet.com/vi/app/register`, thấy khung Cloudflare, tick xong gửi được; admin `admin.wordmet.com` cũng vậy.
-  **Kiểm:** làm đúng 3 bước "việc cần làm lúc deploy" của Turnstile ở [`deploy-checklist.md`](deploy-checklist.md) (một widget cho ba hostname; site key vào build web và admin; secret và `TURNSTILE_ALLOWED_HOSTNAMES` vào API).
-  **Đúng là:** đăng ký, đăng nhập, quên mật khẩu, gửi lại mã đều qua; nút gửi tắt tới khi có token; sai mật khẩu rồi sửa thì bấm lại được; Console không có lỗi CSP. Build production thiếu site key phải **fail** và nêu tên biến. **[sau deploy]**
+- [x] **M1-9 · Header thật.** *(Đã kiểm live 14/11 & 20/11/2026: `admin.wordmet.com` có 4 security header ở cả `/` và đường dẫn sâu, `wordmet.com` có 3 header + CSP, `api.` & `admin-api.` có HSTS `max-age=31536000; includeSubDomains`. **Lưu ý còn mở:** `wordmet.com` và `admin.wordmet.com` hiện chưa trả HSTS — cần bật HSTS ở Cloudflare SSL/TLS Edge Certificates.)* **[sau deploy]**
+- [x] **M1-10 · Widget thật hiện ra và cho qua.** *(Đã deploy live với `TURNSTILE_MODE=real` và site key thật trên `wordmet.com` & `admin.wordmet.com`; xác minh `docs/audit/2026-11-14-production-checks.md`.)* **[sau deploy]**
 - [ ] **M1-11 · Log không báo cấu hình sai.** **Kiểm:** sau vài lần đăng nhập, tìm trong log API chuỗi `turnstile_misconfigured` và `turnstile_hostname_mismatch`.
   **Đúng là:** không có dòng nào (có là secret đặt sai hoặc hostname thiếu). **[sau deploy]**
 

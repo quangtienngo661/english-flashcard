@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 
 export type WordVerdict = 'ok' | 'not_recognized';
 
@@ -14,11 +15,15 @@ export class WordChecksRepository {
     return row ? { contentKey: row.contentKey, verdict: row.verdict as WordVerdict } : null;
   }
 
-  async put(userId: string, senseId: string, contentKey: string, verdict: WordVerdict, now: Date): Promise<void> {
-    await this.prisma.practiceWordCheck.upsert({
-      where: { userId_senseId: { userId, senseId } },
-      create: { userId, senseId, contentKey, verdict, checkedAt: now },
-      update: { contentKey, verdict, checkedAt: now },
-    });
+  async put(userId: string, senseId: string, contentKey: string, verdict: WordVerdict, now: Date): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, userId))) return false;
+      await tx.practiceWordCheck.upsert({
+        where: { userId_senseId: { userId, senseId } },
+        create: { userId, senseId, contentKey, verdict, checkedAt: now },
+        update: { contentKey, verdict, checkedAt: now },
+      });
+      return true;
+    }, USER_DATA_TX);
   }
 }

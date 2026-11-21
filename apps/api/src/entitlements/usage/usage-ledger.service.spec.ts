@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
+import { USER_DATA_TX } from '../../identity/user-lock.js';
 import { SETTINGS_DEFAULTS, type AppSettings } from '../../settings/index.js';
 import type { GrantSource, PrepaidSource, SubscriptionSource } from '../rules/plan-rules.js';
 import type { EndedSources } from '../rules/source-ends.js';
@@ -37,6 +38,7 @@ type Setup = {
   timezone?: string | null;
   ended?: Partial<EndedSources>;
   capUsedFree?: { confirmed: number; reserved: number };
+  userStatus?: 'active' | 'deleting' | null;
 };
 
 /**
@@ -63,6 +65,9 @@ function setup(input: Setup = {}) {
       return 1;
     }),
     $queryRaw: vi.fn(async () => input.rows ?? []),
+    user: {
+      findUnique: vi.fn(async () => (input.userStatus === null ? null : { status: input.userStatus ?? 'active' })),
+    },
     usageRecord: {
       update: vi.fn(async (args: { where: { id: string }; data: Record<string, unknown> }) => {
         events.push(`update:${args.where.id}:${String(args.data.status)}:${String(args.data.releaseReason ?? '')}`);
@@ -126,20 +131,34 @@ function setup(input: Setup = {}) {
   return { service, events, execs, tx, usage, logger, sources, settings, identity };
 }
 
+const USER_LOCK = `lock:identity.user:${USER}`;
 const POOL_LOCK = `lock:entitlements.pool:${USER}:ai_practice`;
 const DAILY_LOCK = 'lock:entitlements.ai_daily';
 
 describe('UsageLedgerService.reserve', () => {
-  it('reserve takes lockPool before lockAiDaily, then inserts a reserved row expiring in 2 minutes on the Vietnam day', async () => {
+  it('reserve takes identity.user lock before lockPool and lockAiDaily, then inserts a reserved row expiring in 2 minutes on the Vietnam day', async () => {
     const { service, events, execs } = setup();
     expect(await service.reserve(USER, 'ai_practice', OP))
       .toEqual({ state: 'reserved', expires_at: new Date(NOW.getTime() + 120_000).toISOString() });
-    expect(events.filter((event) => event.startsWith('lock:'))).toEqual([POOL_LOCK, DAILY_LOCK]);
+    expect(events.filter((event) => event.startsWith('lock:'))).toEqual([USER_LOCK, POOL_LOCK, DAILY_LOCK]);
     expect(events.at(-1)).toBe('INSERT INTO usage_records');
     expect(execs.at(-1)).toMatch(/'use', 'reserved'/);
     expect(execs.at(-1)).toMatch(/ON CONFLICT DO NOTHING/);
-    expect(events[0]).toBe('tx:{"timeout":10000,"maxWait":5000}');
+    expect(events[0]).toBe(`tx:${JSON.stringify(USER_DATA_TX)}`);
   });
+
+  it.each([null, 'deleting'] as const)(
+    'F-04: reserve acquires identity.user lock before pool lock and refuses without inserting when user is %s',
+    async (userStatus) => {
+      const { service, events, tx } = setup({ userStatus });
+      expect(await service.reserve(USER, 'ai_practice', OP))
+        .toEqual({ state: 'refused', reason: 'ai-unavailable', retry_after_seconds: null });
+      expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(events.filter((event) => event.startsWith('lock:'))).toEqual([USER_LOCK]);
+      expect(events[0]).toBe(`tx:${JSON.stringify(USER_DATA_TX)}`);
+      expect(events.some((event) => event.startsWith('INSERT') || event.startsWith('update'))).toBe(false);
+    },
+  );
 
   it.each([
     ['the switch is off', { entitlements: { aiEnabled: false } }, { reason: 'ai-unavailable', retry_after_seconds: null }],
@@ -332,6 +351,24 @@ describe('UsageLedgerService.refund', () => {
   it('no window (a Free account whose AI numbers are both 0) → refunded false', async () => {
     const { service } = setup({ subscriptions: [], confirmedInCycle: 5, entitlements: { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 } });
     expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
+  });
+
+  it.each([null, 'deleting'] as const)(
+    'F-04 Review Focus 2: refund refuses without inserting a credit row when user is %s',
+    async (userStatus) => {
+      const { service, events, tx } = setup({ confirmedInCycle: 1, userStatus });
+      expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
+      expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(events.filter((event) => event.startsWith('lock:'))).toEqual([USER_LOCK]);
+      expect(events[0]).toBe(`tx:${JSON.stringify(USER_DATA_TX)}`);
+      expect(events.some((event) => event.startsWith('INSERT'))).toBe(false);
+    },
+  );
+
+  it('F-04 Review Focus 2: active user refund acquires identity.user lock before entitlements.pool lock', async () => {
+    const { service, events } = setup({ confirmedInCycle: 1 });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: true });
+    expect(events.filter((event) => event.startsWith('lock:'))).toEqual([USER_LOCK, POOL_LOCK]);
   });
 });
 
