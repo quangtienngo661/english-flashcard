@@ -457,4 +457,32 @@ describe('Hủy gói (Bước 8, design §8.2)', () => {
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Hủy gia hạn' }));
     expect(await screen.findByText('Gói này không còn tự gia hạn nên không cần hủy.')).toBeInTheDocument();
   });
+
+  it('D8: when plans.pro.checkout_enabled is false, disables Buy button and shows paused notice', async () => {
+    const paused = { ...CONFIG, plans: { ...CONFIG.plans, pro: { ...CONFIG.plans.pro, checkout_enabled: false } } };
+    renderApp(<PlansPage />, { routes: routes(ent('free'), {}, paused) });
+    const pro = await screen.findByRole('region', { name: 'Pro' });
+    expect(within(pro).getByRole('button', { name: 'Mua gói Pro 12 tháng' })).toBeDisabled();
+    expect(within(pro).getByText('Đang tạm dừng tạo đơn Pro mới để bảo trì. Các đơn đã thanh toán vẫn được xử lý bình thường.')).toBeInTheDocument();
+  });
+
+  it('D8: when POST /v1/me/orders returns 503 checkout-paused, shows paused copy and invalidates app-config', async () => {
+    let configCalls = 0;
+    renderApp(<PlansPage />, {
+      routes: {
+        'GET /v1/me/app-config': () => {
+          configCalls += 1;
+          return Response.json(configCalls > 1 ? { ...CONFIG, plans: { ...CONFIG.plans, pro: { ...CONFIG.plans.pro, checkout_enabled: false } } } : CONFIG);
+        },
+        'GET /v1/me/entitlements': () => Response.json(ent('free')),
+        'POST /v1/me/orders': () => problem(503, 'checkout-paused'),
+      },
+    });
+    const pro = await screen.findByRole('region', { name: 'Pro' });
+    await userEvent.click(within(pro).getByRole('button', { name: 'Mua gói Pro 12 tháng' }));
+    expect(await within(pro).findByRole('alert')).toHaveTextContent(
+      'Đang tạm dừng tạo đơn Pro mới để bảo trì. Các đơn đã thanh toán vẫn được xử lý bình thường.',
+    );
+    await waitFor(() => expect(configCalls).toBeGreaterThanOrEqual(2));
+  });
 });

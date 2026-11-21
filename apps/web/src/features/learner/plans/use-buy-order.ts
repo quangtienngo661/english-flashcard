@@ -64,6 +64,9 @@ export function useBuyOrder(): { buy(months: Months, price: number): void; isPen
       if (failure instanceof ApiError && failure.problem.slug === 'price-changed') {
         void queryClient.invalidateQueries({ queryKey: APP_CONFIG_KEY });
         setError(t('priceChanged'));
+      } else if (failure instanceof ApiError && failure.problem.slug === 'checkout-paused') {
+        void queryClient.invalidateQueries({ queryKey: APP_CONFIG_KEY });
+        setError(t('checkoutPaused'));
       } else if (failure instanceof ApiError && (failure.problem.status === 503 || failure.problem.slug === 'provider-unavailable')) {
         setError(t('buyUnavailable'));
       } else {

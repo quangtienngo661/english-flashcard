@@ -61,7 +61,7 @@ class MemoryOrders {
   }
 }
 
-function setup(opts: { payos?: 'real' | 'fake' | 'off'; adapter?: Partial<BillingAdapter> | null; prices?: Partial<Record<'proPrice1mVnd' | 'proPrice3mVnd' | 'proPrice12mVnd', number>> } = {}) {
+function setup(opts: { payos?: 'real' | 'fake' | 'off'; adapter?: Partial<BillingAdapter> | null; prices?: Partial<Record<'proPrice1mVnd' | 'proPrice3mVnd' | 'proPrice12mVnd', number>>; proCheckoutEnabled?: boolean } = {}) {
   const memory = new MemoryOrders();
   const clock = new FakeClock(NOW);
   const logs: LogEntry[] = [];
@@ -75,7 +75,14 @@ function setup(opts: { payos?: 'real' | 'fake' | 'off'; adapter?: Partial<Billin
   });
   const registry = new BillingAdapterRegistry();
   if (opts.adapter !== null) registry.register({ provider: 'payos', createCheckout, ...opts.adapter } as unknown as BillingAdapter);
-  const settingsValue = { ...SETTINGS_DEFAULTS, entitlements: { ...SETTINGS_DEFAULTS.entitlements, ...opts.prices } };
+  const settingsValue = {
+    ...SETTINGS_DEFAULTS,
+    entitlements: {
+      ...SETTINGS_DEFAULTS.entitlements,
+      ...opts.prices,
+      ...(opts.proCheckoutEnabled === undefined ? {} : { proCheckoutEnabled: opts.proCheckoutEnabled }),
+    },
+  };
   const settings = { get: vi.fn(async () => settingsValue), value: settingsValue };
   const config = testConfig({ learnerAppUrl: 'http://localhost:3001', payos: { mode: opts.payos ?? 'real', clientId: null, apiKey: null, checksumKey: null } });
   const prisma = {
@@ -219,6 +226,19 @@ describe('OrdersService.create (design §3.6 "Tạo đơn")', () => {
     expect(text).not.toContain('1000000000');
     expect(text).not.toContain('pay.example');
     expect(text).not.toContain('order_code');
+  });
+
+  it('D8: proCheckoutEnabled=false → 503 checkout-paused, 0 orders created, 0 payOS calls; check() on existing order still reconciles', async () => {
+    const { service, memory, createCheckout, settings, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    createCheckout.mockClear();
+    settings.value.entitlements.proCheckoutEnabled = false;
+    await expect(service.create(USER, request())).rejects.toMatchObject({ status: 503, problemType: 'checkout-paused' });
+    expect(memory.rows).toHaveLength(1);
+    expect(createCheckout).not.toHaveBeenCalled();
+    reconcile.reconcileOne.mockImplementationOnce(async () => { memory.rows[0].status = 'paid'; });
+    expect((await service.check(USER, order_id)).status).toBe('paid');
+    expect(reconcile.reconcileOne).toHaveBeenCalledTimes(1);
   });
 });
 

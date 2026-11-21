@@ -84,6 +84,9 @@ export class OrdersService {
    */
   async create(userId: string, input: z.infer<typeof createOrderSchema>): Promise<{ order_id: string; checkout_url: string }> {
     const { entitlements } = await this.settings.get();
+    if (!entitlements.proCheckoutEnabled) {
+      throw new ProblemDetailsException({ status: 503, title: 'Pro checkout paused', type: 'checkout-paused' });
+    }
     const amount = priceFor(entitlements, input.period_months);
     if (input.expected_amount !== amount) {
       throw new ProblemDetailsException({

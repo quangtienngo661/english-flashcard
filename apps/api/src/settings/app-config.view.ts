@@ -18,6 +18,7 @@ export type AppConfigView = {
     pro: {
       practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number;
       prices: { '1': number; '3': number; '12': number };
+      checkout_enabled: boolean;
     };
   };
 };
@@ -50,6 +51,7 @@ export function appConfigView(s: AppSettings): AppConfigView {
         ai_practice_per_cycle: e.proAiPracticePerCycle,
         ai_lookup_per_cycle: e.proAiLookupPerCycle,
         prices: { '1': e.proPrice1mVnd, '3': e.proPrice3mVnd, '12': e.proPrice12mVnd },
+        checkout_enabled: e.proCheckoutEnabled,
       },
     },
   };
