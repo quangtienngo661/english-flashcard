@@ -293,6 +293,53 @@ describe('OrdersReconcileService.reconcileOne — no money (design §3.6 table)'
     expect(failed.row.status).toBe('failed');
   });
 
+  describe('PAY-06 (A2.5): pending order with no stored link cancels only a payOS link not older than order - 5 min', () => {
+    const baseOrder = order({ paymentLinkId: null });
+
+    it('cancels when link createdAt is order createdAt + 10 s', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() + 10_000);
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).toHaveBeenCalledTimes(1);
+      expect(ctx.row.status).toBe('failed');
+    });
+
+    it('does not cancel and moves to needs_review/provider-mismatch when link createdAt is order createdAt - 6 min', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() - minutes(6));
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).not.toHaveBeenCalled();
+      expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    });
+
+    it('does not cancel and moves to needs_review/provider-mismatch when link createdAt is null', async () => {
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: null } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).not.toHaveBeenCalled();
+      expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    });
+
+    it('cancels when link createdAt is order createdAt - 4 min (inside 5 min skew)', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() - minutes(4));
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).toHaveBeenCalledTimes(1);
+      expect(ctx.row.status).toBe('failed');
+    });
+  });
+
   it('LB1E16: payOS errors or does not answer → no change; a pending order more than 24 hours past its expiry that cannot be asked is expired', async () => {
     const quiet = setup({ getCheckout: async () => { throw new Error('timeout'); } });
     await quiet.service.reconcileOne(order(), NOW);

@@ -111,6 +111,13 @@ describe('PayosAdapter.getCheckout', () => {
     });
   });
 
+  it('parses the SDK link createdAt into CheckoutState.createdAt (PAY-06, A2.5)', async () => {
+    const { adapter, paymentRequests } = setup();
+    paymentRequests.get.mockResolvedValue(link({ createdAt: '2026-11-21T18:44:15+07:00' }));
+    const res = await adapter.getCheckout(1_000_000_123);
+    expect((res as { createdAt?: Date | null })?.createdAt?.toISOString()).toBe('2026-11-21T11:44:15.000Z');
+  });
+
   it('a link payOS does not know is null, not an error (HTTP 404 or HTTP 200 code 101)', async () => {
     const { adapter, paymentRequests } = setup();
     paymentRequests.get.mockRejectedValueOnce(new NotFoundError(404, { code: '101', desc: 'not found' }, 'not found', new Headers()));
