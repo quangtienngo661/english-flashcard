@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 import { SettingsService } from '../../settings/index.js';
 import type { NoticeKind } from '../entitlements.types.js';
 import { coveredBeyond } from '../orders/period-window.js';
@@ -57,20 +58,34 @@ export class NoticePlanner {
     }
     if (rows.length === 0) return 0;
 
-    const created = await this.prisma.entitlementNotice.createMany({
-      data: rows.map((row) => ({
-        userId: row.userId,
-        recipientUserId: row.userId,
-        kind: row.kind,
-        subjectKey: row.id,
-        periodKey: row.end.toISOString(),
-        state: 'pending',
-        dueAt: addDays(row.end, -row.days),
-        windowEndsAt: row.end,
-      })),
-      skipDuplicates: true,
-    });
-    return created.count;
+    const byUser = new Map<string, typeof rows>();
+    for (const row of rows) {
+      const group = byUser.get(row.userId);
+      if (group) group.push(row);
+      else byUser.set(row.userId, [row]);
+    }
+
+    let count = 0;
+    for (const [userId, userRows] of byUser) {
+      count += await this.prisma.$transaction(async (tx) => {
+        if (!(await lockUserForDataWrite(tx, userId))) return 0;
+        const created = await tx.entitlementNotice.createMany({
+          data: userRows.map((row) => ({
+            userId: row.userId,
+            recipientUserId: row.userId,
+            kind: row.kind,
+            subjectKey: row.id,
+            periodKey: row.end.toISOString(),
+            state: 'pending',
+            dueAt: addDays(row.end, -row.days),
+            windowEndsAt: row.end,
+          })),
+          skipDuplicates: true,
+        });
+        return created.count;
+      }, USER_DATA_TX);
+    }
+    return count;
   }
 }
 

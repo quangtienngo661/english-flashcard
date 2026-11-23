@@ -5,6 +5,7 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { lockUserForDataWrite, USER_DATA_TX, withUserLock } from '../../identity/user-lock.js';
 import type { Payer } from '../billing/billing-adapter.js';
 import { TransactionsRepository } from '../billing/transactions.repository.js';
 import { lockUser } from '../entitlements.locks.js';
@@ -86,10 +87,11 @@ export class OrderApplier {
       return { outcome: 'ignored', reason: refused ?? 'unknown-order' };
     }
 
+    const live = await lockUserForDataWrite(tx, found.userId);
     await lockUser(tx, found.userId);
     const order = await this.orders.lock(tx, found.id);
     if (order === null) return { outcome: 'ignored', reason: 'unknown-order' };
-    const account = await this.accountOf(tx, order.userId);
+    const account = live ? await this.accountOf(tx, order.userId) : 'deleted';
 
     // The same payment seen again, by the webhook or by the job: already received, nothing written (design §3.4).
     const key = paymentKeyPayos(input.env, input.orderCode, input.reference);
@@ -124,11 +126,12 @@ export class OrderApplier {
     return { outcome: decision.outcome as PaymentOutcome, userId: account === 'active' ? order.userId : null, ...(periodId ? { periodId } : {}) };
   }
 
-  /** Staff confirm they saw the money (T11–T14). One transaction of its own: user lock → order lock → write, or a 409/404 and nothing written. */
+  /** Staff confirm they saw the money (T11–T14). One transaction of its own: identity lock → user lock → order lock → write, or a 409/404 and nothing written. */
   async confirmManual(input: ConfirmManualInput): Promise<OrderApplyResult> {
     return this.prisma.$transaction(async (tx) => {
       const found = await this.orders.findById(tx, input.orderId);
       if (found === null) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
+      await withUserLock(tx, found.userId);
       await lockUser(tx, found.userId);
       const order = await this.orders.lock(tx, found.id);
       if (order === null) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
@@ -147,7 +150,7 @@ export class OrderApplier {
       await this.orders.updateOrder(tx, order.id, { status: decision.orderStatus, reviewReason: decision.reviewReason, paidVia: decision.paidVia });
       this.logger.info('order_confirmed_manually', { order_ref: order.id, admin_id: input.adminId });
       return { outcome: 'opened-period' as const, userId: order.userId, periodId };
-    });
+    }, USER_DATA_TX);
   }
 
   private async accountOf(tx: Tx, userId: string): Promise<OrderState['account']> {

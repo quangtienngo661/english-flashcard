@@ -98,9 +98,14 @@ function setup(opts: { account?: 'active' | 'locked' | 'deleting' | null; timezo
   const locks: string[] = [];
   const tx = {
     $executeRaw: async (_strings: TemplateStringsArray, ...values: unknown[]) => {
-      memory.calls.push(`lock-user:${String(values[0]).replace('entitlements.user:', '')}`);
-      locks.push(String(values[0]));
+      const key = String(values[0]);
+      if (key.startsWith('entitlements.user:')) memory.calls.push(`lock-user:${key.replace('entitlements.user:', '')}`);
+      else if (key.startsWith('identity.user:')) memory.calls.push(`lock-identity:${key.replace('identity.user:', '')}`);
+      locks.push(key);
       return 1;
+    },
+    user: {
+      findUnique: async () => (accountState.value === null ? null : { status: accountState.value }),
     },
   };
   const prisma = {
@@ -427,9 +432,11 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
   it('lock order (design §3.4): the user lock comes before the order lock, and the account check, profile and sources read through the same transaction', async () => {
     const { applier, memory, identity, sources, tx } = setup();
     await applier.applyPayment(tx as never, input());
+    const identityLock = memory.calls.indexOf(`lock-identity:${USER}`);
     const userLock = memory.calls.indexOf(`lock-user:${USER}`);
     const orderLock = memory.calls.indexOf(`lock-order:${ORDER}`);
-    expect(userLock).toBeGreaterThanOrEqual(0);
+    expect(identityLock).toBeGreaterThanOrEqual(0);
+    expect(userLock).toBeGreaterThan(identityLock);
     expect(orderLock).toBeGreaterThan(userLock);
     expect(memory.calls.indexOf('insert-payment')).toBeGreaterThan(orderLock);
     expect(identity.accountStatus).toHaveBeenCalledWith(USER, tx);

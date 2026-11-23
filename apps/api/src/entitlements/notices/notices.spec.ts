@@ -36,6 +36,10 @@ function setup(opts: {
   const calls: string[] = [];
   let seq = 0;
   const tx = {
+    $executeRaw: async () => 1,
+    user: {
+      findUnique: async () => ({ status: 'active' }),
+    },
     $queryRaw: async (_s: TemplateStringsArray, now: Date) => {
       const due = notices
         .filter((n) => !lockedByOther.has(n.id) && n.dueAt <= now
@@ -47,6 +51,18 @@ function setup(opts: {
       }));
     },
     entitlementNotice: {
+      createMany: async ({ data, skipDuplicates }: { data: Array<Omit<Notice, 'id' | 'attempts' | 'lastErrorAt' | 'sentAt'>>; skipDuplicates: boolean }) => {
+        expect(skipDuplicates).toBe(true);
+        let count = 0;
+        for (const row of data) {
+          const exists = notices.some((n) => n.kind === row.kind && n.subjectKey === row.subjectKey && n.periodKey === row.periodKey
+            && n.recipientUserId === row.recipientUserId);
+          if (exists) continue;
+          notices.push({ ...row, id: `n-${++seq}`, attempts: 0, lastErrorAt: null, sentAt: null });
+          count += 1;
+        }
+        return { count };
+      },
       update: async ({ where, data }: { where: { id: string }; data: Partial<Notice> }) => {
         calls.push(`${where.id}:${data.state}`);
         Object.assign(notices.find((n) => n.id === where.id)!, data);

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { lockUserForDataWrite, USER_DATA_TX } from '../../identity/user-lock.js';
 import { AI_REQUEST_STALE_MS } from '../practice.constants.js';
 import type { AiFailure, QuestionType } from '../practice.types.js';
 import type { BuiltQuestion } from '../questions/question-builder.service.js';
@@ -17,7 +18,6 @@ export type AiQuestionData = {
   aiMeta: Record<string, unknown>; createdAt: Date;
 };
 
-const transactionOptions = { timeout: 15_000, maxWait: 10_000 };
 const toRow = (row: Awaited<ReturnType<PrismaClient['practiceAiRequest']['findUniqueOrThrow']>>): AiRequestRow => ({
   ...row, type: row.type as QuestionType, state: row.state as AiRequestState, failure: row.failure as AiFailure | null,
 });
@@ -64,6 +64,7 @@ export class AiRequestsRepository {
    */
   async writeQuestion(id: string, data: AiQuestionData): Promise<{ questionId: string } | null> {
     return this.prisma.$transaction(async (tx) => {
+      if (!(await lockUserForDataWrite(tx, data.userId))) return null;
       const locked = await tx.$queryRaw<Array<{ state: string }>>`
         SELECT state FROM practice_ai_requests WHERE id = ${id}::uuid FOR UPDATE`;
       if (locked[0]?.state !== 'generating') return null;
@@ -76,7 +77,7 @@ export class AiRequestsRepository {
       } });
       await tx.practiceAiRequest.update({ where: { id }, data: { state: 'ready', questionId: question.id, updatedAt: data.createdAt } });
       return { questionId: question.id };
-    }, transactionOptions);
+    }, USER_DATA_TX);
   }
 
   async setCharged(questionId: string): Promise<void> {
