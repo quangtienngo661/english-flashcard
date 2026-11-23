@@ -156,6 +156,17 @@ main() {
     } > "$tmp/body"
     alert billing-paid-flagged "[wordmet] $flagged_count paid order(s) flagged for review" "$tmp/body"
   fi
+
+  # 8. Landing JSON-LD prices match live /v1/public/prices (exit 3 = mismatch, exit 4 = cannot check).
+  local price_rc=0
+  compose exec -T api node dist/cli/landing-prices-check.js > "$tmp/body" 2>&1 || price_rc=$?
+  if [ "$price_rc" -eq 3 ]; then
+    alert landing-price-mismatch "[wordmet] landing prices differ from the live prices: run the Deploy workflow" "$tmp/body"
+  elif [ "$price_rc" -eq 4 ]; then
+    log "landing-prices-check skipped (exit 4): $(tr '\n' ' ' < "$tmp/body")"
+  elif [ "$price_rc" -ne 0 ]; then
+    log "WARNING: landing-prices-check exited $price_rc"
+  fi
 }
 
 alert() {
