@@ -4,7 +4,7 @@ import { Check, LogOut } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { displayName } from '@/app-chrome/AvatarMenu';
 import { PageTitle } from '@/ui/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -19,13 +19,15 @@ import { proLastDay } from '@/features/learner/plans/pro-last-day';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { useDesktop } from '@/lib/use-desktop';
+import { Button } from '@/ui/Button';
+import { Dialog } from '@/ui/Dialog';
 import { Segmented } from '@/ui/Segmented';
 import { Select } from '@/ui/Select';
 import { Switch } from '@/ui/Switch';
 import { Skeleton } from '@/ui/Skeleton';
 import { TEXT_BUTTON_BASE, TEXT_BUTTON_TONE, TextButton } from '@/ui/TextButton';
 import { showToast } from '@/ui/Toast';
-import { useReminders, useSetReminders, useUpdateProfile } from './settings-api';
+import { useLogoutAll, useReminders, useSetReminders, useUpdateProfile } from './settings-api';
 import { SETTINGS_ROW, SettingsRow, SettingsSection } from './SettingsRows';
 import { SettingsToc } from './SettingsToc';
 import { ShortcutRows } from './Shortcuts';
@@ -65,6 +67,10 @@ export function SettingsPage() {
   const reminders = useReminders();
   const setReminders = useSetReminders();
   const updateProfile = useUpdateProfile();
+  const logoutAll = useLogoutAll();
+  const [logoutAllOpen, setLogoutAllOpen] = useState(false);
+  const [logoutAllBusy, setLogoutAllBusy] = useState(false);
+  const [logoutAllError, setLogoutAllError] = useState<string | null>(null);
   const toc = useMemo(() => SECTIONS.map((id) => ({ id, title: t(SECTION_TITLE[id]) })), [t]);
 
   const reminderPress = useSubmitOnce(async (key) => setReminders(!reminders.data?.enabled, key));
@@ -88,6 +94,21 @@ export function SettingsPage() {
       await reminderPress.submit();
     } catch (error) {
       showToast(errorText(error), 'danger');
+    }
+  }
+
+  async function confirmLogoutAll() {
+    if (logoutAllBusy) return;
+    setLogoutAllBusy(true);
+    setLogoutAllError(null);
+    try {
+      await logoutAll();
+      store?.clearLocalSession();
+      hardReplace(`/${locale}/app/login`);
+    } catch {
+      setLogoutAllError(t('logoutAllError'));
+    } finally {
+      setLogoutAllBusy(false);
     }
   }
 
@@ -229,6 +250,18 @@ export function SettingsPage() {
                 </TextButton>
               }
             />
+            <SettingsRow
+              control={
+                <TextButton
+                  onPress={() => {
+                    setLogoutAllError(null);
+                    setLogoutAllOpen(true);
+                  }}
+                >
+                  {t('logoutAll')}
+                </TextButton>
+              }
+            />
             {/* Staff do not delete themselves: an admin does it for them (D18). */}
             {me.staff_role !== null ? (
               <SettingsRow value={<span className="text-wm-muted">{t('deleteAccountStaff')}</span>} />
@@ -238,6 +271,34 @@ export function SettingsPage() {
           </SettingsSection>
         </div>
       </div>
+      <Dialog
+        isOpen={logoutAllOpen}
+        onOpenChange={(open) => {
+          if (logoutAllBusy) return;
+          setLogoutAllOpen(open);
+          if (!open) setLogoutAllError(null);
+        }}
+        title={t('logoutAllTitle')}
+        closeLabel={tCommon('close')}
+        isDismissable={!logoutAllBusy}
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setLogoutAllOpen(false)} isDisabled={logoutAllBusy}>
+              {t('logoutAllCancel')}
+            </Button>
+            <Button variant="danger" onPress={() => void confirmLogoutAll()} isPending={logoutAllBusy}>
+              {t('logoutAllConfirm')}
+            </Button>
+          </>
+        }
+      >
+        <p className="font-wm-sans text-wm-base text-wm-muted">{t('logoutAllBody')}</p>
+        {logoutAllError && (
+          <p role="alert" className="font-wm-sans text-wm-small-strong text-wm-fail">
+            {logoutAllError}
+          </p>
+        )}
+      </Dialog>
     </>
   );
 }

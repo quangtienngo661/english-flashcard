@@ -198,6 +198,13 @@ export class SessionStore {
     this.broadcast({ type: 'logout' });
   }
 
+  /** Local cleanup after `POST /v1/auth/logout-all` succeeded on the server: clears token and notifies other tabs. */
+  clearLocalSession(): void {
+    this.token = null;
+    this.set({ status: 'signed-out', notice: null });
+    this.broadcast({ type: 'logout' });
+  }
+
   /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
   async retryLogout(): Promise<void> {
     const pending = () => this.state.status === 'signed-out' && this.state.notice === 'logout-failed';

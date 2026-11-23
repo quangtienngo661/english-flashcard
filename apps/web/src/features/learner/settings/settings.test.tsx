@@ -261,6 +261,38 @@ describe('SettingsPage account section (Bước 8, Figma 120:4507)', () => {
     expect(within(methods).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Mật khẩu']);
     expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
   });
+
+  it('SEC-06: "Đăng xuất mọi thiết bị" opens a confirm dialog; Cancel closes with no call; Confirm posts /v1/auth/logout-all and goes to login', async () => {
+    const { count } = renderApp(<SettingsPage />, {
+      routes: routes('free', { 'POST /v1/auth/logout-all': () => new Response(null, { status: 204 }) }),
+    });
+    const trigger = await screen.findByRole('button', { name: 'Đăng xuất mọi thiết bị' });
+    await userEvent.click(trigger);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Đăng xuất mọi thiết bị?' });
+    expect(within(dialog).getByText('Mọi thiết bị đang đăng nhập, kể cả thiết bị này, sẽ phải đăng nhập lại.')).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(count('POST', '/v1/auth/logout-all')).toBe(0);
+
+    await userEvent.click(trigger);
+    const reopened = await screen.findByRole('dialog', { name: 'Đăng xuất mọi thiết bị?' });
+    await userEvent.click(within(reopened).getByRole('button', { name: 'Đăng xuất' }));
+    await waitFor(() => expect(count('POST', '/v1/auth/logout-all')).toBe(1));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login'));
+  });
+
+  it('SEC-06: an API error on logout-all shows "Không đăng xuất được. Thử lại."', async () => {
+    renderApp(<SettingsPage />, {
+      routes: routes('free', { 'POST /v1/auth/logout-all': () => problem(503, 'db-busy') }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Đăng xuất mọi thiết bị' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Đăng xuất mọi thiết bị?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Đăng xuất' }));
+    expect(await within(dialog).findByText('Không đăng xuất được. Thử lại.')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
 
 describe('AccountPage (K/91, K/92)', () => {
