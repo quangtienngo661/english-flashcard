@@ -21,22 +21,23 @@ main() {
   fi
   git checkout --quiet --detach "$sha"
   current="$(current_sha)"
+  restore_checkout() { if [ -n "$current" ]; then git checkout --quiet --detach "$current"; fi; }
 
   log "build wordmet-api:$sha and wordmet-api-migrate:$sha"
-  docker build --quiet --target api-prod -t "wordmet-api:$sha" . >/dev/null
-  docker build --quiet --target api-build -t "wordmet-api-migrate:$sha" . >/dev/null
+  docker build --quiet --target api-prod -t "wordmet-api:$sha" . >/dev/null || { restore_checkout; die "docker build api-prod failed"; }
+  docker build --quiet --target api-build -t "wordmet-api-migrate:$sha" . >/dev/null || { restore_checkout; die "docker build api-build failed"; }
 
   if [ -z "$current" ]; then
     log "first deploy: no backup (no database yet)"
   elif [ "${DEPLOY_SKIP_BACKUP:-}" = 1 ]; then
     log "WARNING: DEPLOY_SKIP_BACKUP=1, no backup taken"
   else
-    BACKUP_KIND=deploy BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || die "backup failed; nothing was changed, $current still runs"
+    BACKUP_KIND=deploy BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || { restore_checkout; die "backup failed; nothing was changed, $current still runs"; }
   fi
 
   log "migrate"
   if ! API_TAG="$sha" compose --profile migrate run --rm migrate; then
-    if [ -n "$current" ]; then git checkout --quiet --detach "$current"; fi
+    restore_checkout
     die "migration failed; ${current:-nothing} still runs (an add-only migration that half-applied is safe for it)"
   fi
 

@@ -20,7 +20,7 @@ const PATTERNS = [
  */
 export function findDestructive(sql) {
   if (OVERRIDE_RE.test(sql)) return [];
-  const stripped = sql.replace(/--[^\n]*/g, '');
+  const stripped = sql.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '');
   /** @type {string[]} */
   const findings = [];
   for (const pattern of PATTERNS) {

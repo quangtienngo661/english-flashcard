@@ -62,11 +62,16 @@ ls -la /srv/wordmet/*.env /srv/wordmet/.env
 
 ### Bước 5. Phục hồi Postgres bằng WAL-G PITR tới thời điểm mới nhất
 
-Kiểm tra danh sách base backup trên R2 trước khi kéo:
+Build image API/migrate và ghi SHA hiện tại vào `/srv/wordmet/state/current` (trên VPS trắng chưa có `current`, nếu bỏ bước này `API_TAG` sẽ mặc định là `none`), sau đó kiểm tra danh sách base backup trên R2:
 
 ```bash
 cd /srv/wordmet/app
-deploy/scripts/compose.sh build postgres api
+SHA="$(git rev-parse HEAD)"
+printf '%s\n' "$SHA" > /srv/wordmet/state/current
+docker build --quiet --target api-prod -t "wordmet-api:$SHA" .
+docker build --quiet --target api-build -t "wordmet-api-migrate:$SHA" .
+deploy/scripts/compose.sh build postgres
+
 L="$(deploy/scripts/compose.sh run --rm --no-deps -T --entrypoint wal-g postgres backup-list)"
 echo "$L"
 echo "$L" | grep -c '^base_'
@@ -90,13 +95,20 @@ EOF
 deploy/scripts/compose.sh up -d postgres redis
 ```
 
-Chờ Postgres hoàn tất phát lại WAL và thoát chế độ recovery:
+Chờ Postgres hoàn tất phát lại WAL, thoát chế độ recovery, dọn cấu hình recovery, kiểm roles và áp dụng migration còn thiếu (lưu ý: cluster production **không** có role `postgres`, dùng `$POSTGRES_USER` / `$POSTGRES_DB` trong `/srv/wordmet/.env`):
 
 ```bash
-deploy/scripts/compose.sh exec -T postgres psql -U postgres -tAc "SELECT pg_is_in_recovery();"
+U="$(grep -E '^POSTGRES_USER=' /srv/wordmet/.env | tail -n 1 | cut -d= -f2-)"
+D="$(grep -E '^POSTGRES_DB=' /srv/wordmet/.env | tail -n 1 | cut -d= -f2-)"
+deploy/scripts/compose.sh exec -T postgres psql -X -U "$U" -d "$D" -tAc "SELECT pg_is_in_recovery();"
+deploy/scripts/compose.sh exec -T postgres psql -X -U "$U" -d "$D" \
+  -c 'ALTER SYSTEM RESET restore_command' \
+  -c 'ALTER SYSTEM RESET recovery_target_action'
+deploy/scripts/db-roles.sh
+deploy/scripts/compose.sh --profile migrate run --rm migrate
 ```
 
-- **Kết quả kỳ vọng:** Lệnh `wal-g backup-list` có ít nhất 1 dòng `base_...`; sau khi `postgres` khởi động và phát lại WAL, `SELECT pg_is_in_recovery();` trả về `f` (false). Sau đó chạy lại `deploy/scripts/compose.sh --profile migrate run --rm migrate` nếu cần áp dụng migration còn thiếu và kiểm tra roles `wordmet_app` / `wordmet_migrator`.
+- **Kết quả kỳ vọng:** `wal-g backup-list` có ít nhất 1 dòng `base_...`; `SELECT pg_is_in_recovery();` trả về `f` (false); `db-roles.sh` in `left over: 0`; `migrate` thoát `0`.
 
 ### Bước 6. Phát lại Deletion Journal từ R2 (chạy 2 lần để kiểm chứng idempotent)
 
@@ -111,11 +123,12 @@ deploy/scripts/compose.sh run --rm --no-deps -T api node dist/cli/accounts-delet
   - Lần 1: exit `0`, in `pending 0`.
   - Lần 2: exit `0`, in `replayed 0, ..., pending 0` (xác nhận toàn bộ tài khoản đã yêu cầu xóa đều đã bị xóa sạch khỏi DB vừa phục hồi).
 
-### Bước 7. Khởi chạy toàn bộ stack (API, worker, Caddy) và cài lại cron
+### Bước 7. Khởi chạy toàn bộ stack (API, worker, Caddy), tạo base backup mới và cài lại cron
 
 ```bash
 deploy/scripts/compose.sh up -d
 deploy/scripts/compose.sh ps
+deploy/scripts/backup.sh
 ```
 
 Cài lại các dòng cron của `watch.sh`, `backup.sh`, `run-maintenance.js` và `daily-report.sh` theo hướng dẫn mục cron trong [deploy/README.md](../../deploy/README.md).

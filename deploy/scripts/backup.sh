@@ -25,7 +25,9 @@ r2() {
 alert_on_failure() {
   local status=$? body
   [ "$status" -eq 0 ] && return 0
-  ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}" fail
+  if [ "${BACKUP_KIND:-daily}" = daily ]; then
+    ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}" fail
+  fi
   body="$(mktemp)"
   { echo "backup.sh failed (exit $status) at $(date -u +%Y-%m-%dT%H:%M:%SZ) on $(hostname)."; echo "Last backups kept on this server:"; newest_backups 3; } > "$body"
   "$SCRIPTS/send-alert.sh" backup "[wordmet] backup failed" "$body" || log "ERROR: could not send the backup alert"
@@ -89,7 +91,9 @@ main() {
   # adds no base backup (owner, 18/11/2026). `retain FULL 14` counts base backups, so with one cron backup a day it keeps 14 days.
   if [ "${BACKUP_SKIP_BASE:-}" = 1 ]; then
     log "wal-g base backup skipped (BACKUP_SKIP_BASE=1)"
-    ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
+    if [ "${BACKUP_KIND:-daily}" = daily ]; then
+      ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
+    fi
     return 0
   fi
   # The dump above is already safe on R2, so a WAL-G failure here still leaves one restorable copy; the failure alerts like any other.
