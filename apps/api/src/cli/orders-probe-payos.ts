@@ -1,9 +1,10 @@
-import { NotFoundError, type PayOS } from '@payos/node';
+import { type PayOS } from '@payos/node';
 import { existsSync, realpathSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../common/config/app-config.js';
 import { createPayosClient } from '../entitlements/billing/payos/payos.adapter.js';
+import { isPayosNotFound } from '../entitlements/billing/payos/payos-errors.js';
 import { ORDER_CODES_PER_SECOND, orderCodeAt, orderCodeSecond, orderDescription } from '../entitlements/orders/order-codes.js';
 import { PROBE_HEADER, PROBE_USAGE, formatProbeRow, parseProbeArgs, type ProbeRange, type ProbeRow } from './orders-probe-payos-args.js';
 
@@ -38,7 +39,7 @@ export async function probe(
       try {
         link = await client.paymentRequests.get(orderCode);
       } catch (error) {
-        if (error instanceof NotFoundError) {
+        if (isPayosNotFound(error)) {
           misses++;
           continue;
         }
