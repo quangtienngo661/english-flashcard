@@ -21,8 +21,11 @@ SELECT
   (SELECT count(*) FROM billing_events e WHERE e.status = 'failed') AS failed_billing_events,
   (SELECT count(*) FROM billing_events e
      WHERE e.status = 'ignored' AND e.error IN ('unknown-order', 'link-mismatch')
-       AND split_part(e.external_event_id, ':', 1) ~ '^[0-9]+$'
-       AND split_part(e.external_event_id, ':', 1)::bigint >= 1100000000
+       AND CASE
+         WHEN split_part(e.external_event_id, ':', 1) ~ '^[0-9]{1,18}$'
+         THEN split_part(e.external_event_id, ':', 1)::bigint >= 1100000000
+         ELSE false
+       END
        AND e.received_at > now() - interval '24 hours') AS ignored_payment_events_24h,
   (SELECT coalesce(sum(m.sent), 0) FROM mail_budget_buckets m
      WHERE m.bucket = :'budget_key' || ':' || to_char(day.local_date, 'YYYY-MM-DD')) AS mails_sent
