@@ -229,6 +229,20 @@ The original write map (who may write what, and reads from whom) is in [system-s
 liệu". Two points worth keeping in mind: Content Pipeline writes the catalog only through Content's operations; the provider cost ledger
 (`ai_calls`) is separate from the learner unit ledger (`usage_records`) because the two counts differ when a call is retried.
 
+#### Ngoại lệ truy cập bảng chéo module
+
+Tất cả các ngoại lệ dưới đây đều là **đọc** (không ghi chéo module), được ghi nhận từ audit kiến trúc 23/11/2026 (`ARC-01`):
+
+| File:dòng | Bảng | Lý do | Cách thay thế nếu gỡ ngoại lệ |
+|---|---|---|---|
+| `apps/api/src/content-pipeline/import/row-processor.ts:122` | `entry` (`content`) | Kiểm tra `entry` đã tồn tại trong cùng transaction nhập CSV trước khi ghi dòng | Export method đọc/lookup `entry` nhận `tx` từ `ContentService` |
+| `apps/api/src/content-pipeline/import/row-processor.ts:124` | `entryInflection` (`content`) | Kiểm tra biến thể từ đã tồn tại khi xử lý dòng CSV trong cùng `tx` | Export method kiểm tra biến thể từ nhận `tx` từ `ContentService` |
+| `apps/api/src/content-pipeline/import/row-processor.ts:166` | `entry` (`content`) | Tra cứu `entry` gốc cho cột liên kết `form_of` trong cùng `tx` | Export method tìm `entry` theo `(lemma, pos)` nhận `tx` từ `ContentService` |
+| `apps/api/src/content-pipeline/inflections/inflections-backfill.handler.ts:41` | `entry` (`content`) | Quét theo lô các `entry` cần bổ sung biến thể trong job nền | Export iterator/batch reader cho `entry` từ `ContentService` |
+| `apps/api/src/content-pipeline/inflections/inflections-backfill.handler.ts:53` | `entryInflection` (`content`) | Đọc các biến thể hiện có của lô `entry` để tránh ghi trùng | Export reader biến thể theo danh sách `entryId` từ `ContentService` |
+| `apps/api/src/content/sources/sources.service.ts:190` (raw SQL) | `import_batches`, `import_row_keys` (`content-pipeline`) | Kiểm tra `NOT EXISTS` trước khi xóa `data_sources` (hai cột UUID chéo module không có FK), sau khi đã khóa `FOR UPDATE` | Export hàm kiểm tra nguồn đang được pipeline sử dụng nhận `tx` từ `ContentPipelineService` (cần tránh cycle `content ↔ content-pipeline`) |
+| `apps/api/src/cli/accounts-deletions-args.ts:71,78` | `deletedAccount`, `user` (`identity`) | Lệnh CLI vận hành (`accounts:export-deletions`, `accounts:replay-deletions`) chạy trực tiếp khi phục hồi sau restore | Gọi qua `IdentityService` nếu muốn gom truy cập CLI vào facade của module |
+
 ### 5.4 Queues and background work
 
 | BullMQ queue | Work | Declared in |
