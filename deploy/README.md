@@ -276,6 +276,8 @@ older image that does not journal, stop deletion writers and backfill from the a
 
 ### Which restore
 
+- **Restore order (B12):** always try **PITR (WAL-G)** first. Fall back to a **dump** (`daily/` or `deploy/`) only when PITR is impossible, and after a dump restore always run `orders:probe-payos` for the gap window and grant Pro manually as rehearsed on 21/11/2026 (`docs/audit/2026-11-21-pitr-drill/README.md`).
+- **Complete VPS loss:** follow the 10-step runbook in [`docs/deliveries/runbook-vps-loss.md`](../docs/deliveries/runbook-vps-loss.md).
 - **Restore to a point in time (WAL-G)** is the default: while archiving is healthy it loses about the last 60 s of writes plus the upload
   time, not a day, and it can stop just before a mistake.
 - **Restore from a dump** when the WAL archive cannot be used (R2 bucket gone, no base backup old enough), or to build a database from
