@@ -92,16 +92,22 @@ record_running() {
   printf '%s\n' "$1" > "$STATE_DIR/current"
 }
 
-# Waits until the api container reports healthy (its healthcheck calls /v1/health/ready). 0 = healthy, 1 = not within <seconds>.
+# Waits until every listed service reports healthy (default: api worker). 0 = all healthy, 1 = not within <seconds>.
 wait_ready() {
-  local deadline=$((SECONDS + $1)) id status
+  local seconds="$1"; shift
+  local services=("$@")
+  if [ "${#services[@]}" -eq 0 ]; then services=(api worker); fi
+  local deadline=$((SECONDS + seconds)) service id status all_ok
   while [ "$SECONDS" -lt "$deadline" ]; do
-    id="$(compose ps -q api 2>/dev/null || true)"
-    if [ -n "$id" ]; then
+    all_ok=1
+    for service in "${services[@]}"; do
+      id="$(compose ps -q "$service" 2>/dev/null || true)"
+      if [ -z "$id" ]; then all_ok=0; break; fi
       status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$id" 2>/dev/null || echo missing)"
-      if [ "$status" = healthy ]; then return 0; fi
-    fi
-    sleep 3
+      if [ "$status" != healthy ]; then all_ok=0; break; fi
+    done
+    if [ "$all_ok" -eq 1 ]; then return 0; fi
+    sleep 1
   done
   return 1
 }
