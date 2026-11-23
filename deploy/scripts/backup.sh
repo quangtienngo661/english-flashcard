@@ -6,7 +6,8 @@ set -euo pipefail
 # shellcheck source=deploy/scripts/common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-KEEP_REMOTE=14
+KEEP_REMOTE_DAILY=14
+KEEP_REMOTE_DEPLOY=5
 KEEP_LOCAL=3
 KEEP_BASE=14 # WAL-G base backups kept on R2 (restore-safety Q1)
 AWS_CLI_IMAGE=amazon/aws-cli:2.40.2
@@ -32,12 +33,39 @@ alert_on_failure() {
   return "$status"
 }
 
+# Prunes remote dumps in daily/ (keep KEEP_REMOTE_DAILY), deploy/ (keep KEEP_REMOTE_DEPLOY),
+# and legacy root-level wordmet-*.dump older than cutoff_date (YYYYMMDD, default 14 days ago UTC).
+prune_remote_dumps() {
+  local cutoff="${1:-$(date -u -d '14 days ago' +%Y%m%d)}" old dump_date
+  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/daily/" | awk '{print $4}' | grep -E '^wordmet-[0-9TZ]+\.dump$' | sort | head -n "-$KEEP_REMOTE_DAILY"); do
+    r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/daily/$old"
+    log "removed old daily copy $old from R2"
+  done
+  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/deploy/" | awk '{print $4}' | grep -E '^wordmet-[0-9TZ]+\.dump$' | sort | head -n "-$KEEP_REMOTE_DEPLOY"); do
+    r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/deploy/$old"
+    log "removed old deploy copy $old from R2"
+  done
+  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/" | awk '{print $4}' | grep -E '^wordmet-[0-9]{8}T[0-9]{6}Z\.dump$' | sort); do
+    dump_date="${old#wordmet-}"
+    dump_date="${dump_date:0:8}"
+    if [[ "$dump_date" < "$cutoff" ]]; then
+      r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/$old"
+      log "removed legacy root copy $old from R2"
+    fi
+  done
+}
+
 main() {
   trap alert_on_failure EXIT
   load_ops_env R2_BACKUP_ENDPOINT R2_BACKUP_BUCKET R2_BACKUP_ACCESS_KEY_ID R2_BACKUP_SECRET_ACCESS_KEY
   BACKUP_DIR="$WORDMET_HOME/backups"
   mkdir -p "$BACKUP_DIR"
-  local user db name file old
+  local user db name file old kind
+  kind="${BACKUP_KIND:-daily}"
+  case "$kind" in
+    daily | deploy) ;;
+    *) die "invalid BACKUP_KIND='$kind' (expected daily or deploy)" ;;
+  esac
   user="$(env_get POSTGRES_USER)"
   db="$(env_get POSTGRES_DB)"
   name="wordmet-$(date -u +%Y%m%dT%H%M%SZ).dump"
@@ -47,18 +75,15 @@ main() {
   compose exec -T postgres pg_dump -U "$user" -Fc "$db" > "$file" || { rm -f "$file"; die "pg_dump failed"; }
   [ -s "$file" ] || { rm -f "$file"; die "pg_dump wrote an empty file"; }
 
-  log "upload $name ($(du -h "$file" | cut -f1))"
-  r2 s3 cp --only-show-errors "/backups/$name" "s3://$R2_BACKUP_BUCKET/$name"
+  log "upload $kind/$name ($(du -h "$file" | cut -f1))"
+  r2 s3 cp --only-show-errors "/backups/$name" "s3://$R2_BACKUP_BUCKET/$kind/$name"
 
-  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/" | awk '{print $4}' | grep -E '^wordmet-[0-9TZ]+\.dump$' | sort | head -n "-$KEEP_REMOTE"); do
-    r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/$old"
-    log "removed old copy $old from R2"
-  done
+  prune_remote_dumps
   find "$BACKUP_DIR" -maxdepth 1 -name 'wordmet-*.dump' -printf '%f\n' | sort | head -n "-$KEEP_LOCAL" | while read -r old; do
     rm -f "$BACKUP_DIR/$old"
   done
 
-  log "uploaded s3://$R2_BACKUP_BUCKET/$name"
+  log "uploaded s3://$R2_BACKUP_BUCKET/$kind/$name"
 
   # The WAL-G base backup runs from cron only: deploy.sh sets BACKUP_SKIP_BASE=1, so a WAL-G problem cannot block a deploy and a deploy
   # adds no base backup (owner, 18/11/2026). `retain FULL 14` counts base backups, so with one cron backup a day it keeps 14 days.
@@ -78,4 +103,6 @@ main() {
   ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
 }
 
-main "$@"; exit $?
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"; exit $?
+fi

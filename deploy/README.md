@@ -216,7 +216,7 @@ Two independent copies of the database:
 | | What | When | Kept | Restore to |
 |---|---|---|---|---|
 | WAL archive + base backup (WAL-G) | Postgres ships every WAL file to the WAL-G bucket (`archive_timeout=60`: at least one file a minute while the database is written); `backup.sh` adds a base backup | WAL continuously; base backup daily from cron (03:00 Vietnam time) | newest 14 base backups = 14 days (cron only; `wal-g delete retain FULL 14`) | any moment from the oldest kept base backup to the last WAL that reached R2 |
-| `pg_dump -Fc` | `backup.sh` → `backups/` → R2 bucket `wordmet-backups` | before every deploy and daily from cron | 3 on the VPS, 14 on R2 | the moment of the dump |
+| `pg_dump -Fc` | `backup.sh` → `backups/` → R2 bucket `wordmet-backups` (`daily/` and `deploy/`) | before every deploy (`deploy/`) and daily from cron (`daily/`) | 3 on the VPS; 14 in `daily/` and 5 in `deploy/` on R2 | the moment of the dump |
 
 `deploy.sh` runs `backup.sh` with `BACKUP_SKIP_BASE=1`: the deploy takes the dump only, so a WAL-G problem cannot block a deploy. The WAL-G
 base backup runs only from the cron line below.
@@ -463,8 +463,15 @@ A dump older than the 3 kept in `backups/` is on R2. List and download it (the k
 
 ```bash
 r2() { docker run --rm --env-file /srv/wordmet/ops.env -e AWS_DEFAULT_REGION=auto   -e AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED -e AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED   -v /srv/wordmet/backups:/backups --entrypoint sh amazon/aws-cli:2.40.2 -c   'AWS_ACCESS_KEY_ID=$R2_BACKUP_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$R2_BACKUP_SECRET_ACCESS_KEY aws --endpoint-url "$R2_BACKUP_ENDPOINT" '"$*"; }
-r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'
-r2 's3 cp "s3://$R2_BACKUP_BUCKET/<file>.dump" /backups/'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/daily/"'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/deploy/"'
+r2 's3 cp "s3://$R2_BACKUP_BUCKET/daily/<file>.dump" /backups/'
+```
+
+To protect daily dumps from accidental deletion or overwrite, lock only the `daily/` prefix of the dump bucket (never lock the WAL bucket):
+
+```bash
+wrangler r2 bucket lock add wordmet-backups daily-13d daily/ --retention-days 13
 ```
 
 ## Admin web (by hand, when CD is not available)

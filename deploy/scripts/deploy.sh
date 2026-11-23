@@ -28,7 +28,7 @@ main() {
   elif [ "${DEPLOY_SKIP_BACKUP:-}" = 1 ]; then
     log "WARNING: DEPLOY_SKIP_BACKUP=1, no backup taken"
   else
-    BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || die "backup failed; nothing was changed, $current still runs"
+    BACKUP_KIND=deploy BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || die "backup failed; nothing was changed, $current still runs"
   fi
 
   log "migrate"
