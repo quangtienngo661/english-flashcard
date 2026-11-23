@@ -22,7 +22,10 @@
 					replace ticket REDACTED
 					replace email REDACTED
 					replace q REDACTED
+					replace user_email REDACTED
+					replace granted_by_email REDACTED
 				}
+				request>headers>Referer delete
 			}
 		}
 	}
