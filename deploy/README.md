@@ -249,8 +249,9 @@ The daily report has one line, for example `PITR: last WAL 20 s ago, .ready 0, n
 age with `.ready 0` is a quiet database (a WAL file is shipped only after writes); a large age with `.ready` above 0 is the `archive` alert.
 `PITR: unavailable` means neither Postgres nor R2 could be asked.
 
-Rehearsed with an S3-compatible fake (SeaweedFS) using these scripts; the same flow was measured on real R2 with a hand-made script
-(`docs/superpowers/specs/2026-11-17-restore-safety-design.md` §5). The scripts have not run against real R2 yet.
+Rehearsed with an S3-compatible fake (SeaweedFS) using these scripts; the same flow was measured on real R2 on 21/11/2026 on a local Docker machine (RTO 41.97 s, including `wal-g backup-fetch`, PITR promote, and two idempotent `accounts:replay-deletions --journal` runs — see `docs/audit/2026-11-21-pitr-drill/README.md`).
+
+> **Production prefix warning:** `s3://wordmet-wal/spike` is the production archive despite its name; never delete or rename it.
 
 ### Set up the deletion journal
 
