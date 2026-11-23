@@ -197,4 +197,26 @@ describe('Session HTTP transport (unit, isolated persistence)', () => {
     expect(res.status).toBe(204);
     expect(revoke).toHaveBeenCalledExactlyOnceWith('mobile-token', 'mobile');
   });
+
+  it('SEC-06: POST /v1/auth/logout-all revokes all chains for the caller, clears the cookie, and rate-limits by user', async () => {
+    const revokeAll = vi.spyOn(SessionService.prototype, 'revokeAllChains').mockResolvedValue(undefined);
+    const subject = { userId: randomUUID(), sessionChainId: randomUUID() };
+    const token = await ctx.app.get(AccessTokenService).sign(subject);
+    const res = await ctx.http().post('/v1/auth/logout-all').set('Authorization', `Bearer ${token}`).send({});
+    expect(res.status).toBe(204);
+    expect(res.text).toBe('');
+    expect(revokeAll).toHaveBeenCalledExactlyOnceWith(subject.userId);
+    expect(hit).toHaveBeenCalledWith('user.write', subject.userId);
+    expect(cookieFrom(res)).toBe('refresh_token=');
+    const cookie = res.headers['set-cookie'][0];
+    for (const attr of ['HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/v1/auth', 'Expires=Thu, 01 Jan 1970']) {
+      expect(cookie).toContain(attr);
+    }
+    revokeAll.mockRestore();
+  });
+
+  it('SEC-06: POST /v1/auth/logout-all without an access token returns 401', async () => {
+    const res = await ctx.http().post('/v1/auth/logout-all').send({});
+    expect(res.status).toBe(401);
+  });
 });

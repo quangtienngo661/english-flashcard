@@ -447,4 +447,14 @@ describe('SessionService transaction invariants', () => {
     expect(where).toEqual({ id: s.chain.id, revokedAt: null });
     expect(where).not.toHaveProperty('userId');
   });
+
+  it('SEC-06: revokeAllChains locks the user and revokes all active chains with reason logout_all', async () => {
+    const s = setup();
+    await s.service.revokeAllChains('u1');
+    expect(s.events).toEqual(['lock', 'chain-write', 'commit']);
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId: 'u1', revokedAt: null },
+      data: { revokedAt: s.clock.now(), revokeReason: 'logout_all' },
+    });
+  });
 });
