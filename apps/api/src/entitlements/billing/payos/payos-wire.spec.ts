@@ -129,6 +129,6 @@ describe('toParsedEvent (design §3.3, §3.12)', () => {
   });
 
   it('the webhook of payOS’s own confirm-webhook test (orderCode 123) parses; the applier turns it into unknown-order', () => {
-    expect(event({ orderCode: 123 })).toMatchObject({ externalEventId: '123:FT26309ABC', missing: [] });
+    expect(event({ orderCode: 123 })).toMatchObject({ externalEventId: '123:FT26309ABC:124c33293c43417ab7879e14c8d9eb18', missing: [] });
   });
 });

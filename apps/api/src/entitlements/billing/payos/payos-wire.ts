@@ -61,6 +61,7 @@ export function toParsedEvent(body: PayosWebhook, environment: BillingEnvironmen
   if (typeof amount !== 'number' || !Number.isFinite(amount)) missing.push('amount');
   if (typeof paymentLinkId !== 'string' || paymentLinkId === '') missing.push('paymentLinkId');
   const identity = `${orderCode}:${reference}`;
+  const externalEventId = typeof paymentLinkId === 'string' && paymentLinkId !== '' ? `${identity}:${paymentLinkId}` : identity;
   const payload: OrderPaymentPayload | null = missing.length > 0 ? null : {
     orderCode,
     paymentLinkId: paymentLinkId as string,
@@ -77,7 +78,7 @@ export function toParsedEvent(body: PayosWebhook, environment: BillingEnvironmen
     },
   };
   return {
-    externalEventId: identity,
+    externalEventId,
     type: 'payment_succeeded',
     environment,
     externalSubscriptionId: null,

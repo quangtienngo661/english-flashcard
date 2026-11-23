@@ -62,7 +62,7 @@ describe('payOS webhook route (design §3.1; LB1E22)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: 1 });
     expect(inbox.store).toHaveBeenCalledWith('payos', [expect.objectContaining({
-      type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC',
+      type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC:link-1',
     })]);
     expect(inbox.afterResponse).toHaveBeenCalledWith(expect.anything(), ['id-0']);
   });

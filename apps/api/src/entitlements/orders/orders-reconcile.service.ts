@@ -116,6 +116,7 @@ export class OrdersReconcileService {
     const environment = this.config.payos.mode === 'fake' ? 'sandbox' : 'production';
     const events: ParsedEvent[] = link.transactions.map((transaction) => {
       const identity = `${order.orderCode}:${transaction.reference}`;
+      const externalEventId = link.paymentLinkId !== '' ? `${identity}:${link.paymentLinkId}` : identity;
       const payload: OrderPaymentPayload = {
         orderCode: order.orderCode, paymentLinkId: link.paymentLinkId, amount: transaction.amount, reference: transaction.reference,
         transactionDateTime: transaction.transactionDateTime, source: 'reconcile', success: true, code: '00',
@@ -125,7 +126,7 @@ export class OrdersReconcileService {
         },
       };
       return {
-        externalEventId: identity, type: 'payment_succeeded', environment, externalSubscriptionId: null, appUserId: null, occurredAt: now,
+        externalEventId, type: 'payment_succeeded', environment, externalSubscriptionId: null, appUserId: null, occurredAt: now,
         transactionId: identity, event: payload, missing: [],
         // No payer here: the raw payload is kept 90 days (design §3.12).
         raw: { source: 'reconcile', reference: transaction.reference, amount: transaction.amount, transactionDateTime: transaction.transactionDateTime },
@@ -135,8 +136,9 @@ export class OrdersReconcileService {
     if (ids.length > 0) await this.applier.applyMany(ids);
     // Review I1: a key the webhook already stored gives no new row, so a webhook the applier ignored (or gave up on) leaves this money with
     // no path that applies it. Nothing counted and every row final → staff have to look; the order is not left pending without a word.
-    const keys = link.transactions.map((transaction) => paymentKeyPayos(environment, order.orderCode, transaction.reference));
-    if (await this.orders.neverApplied(this.prisma, keys)) {
+    const paymentKeys = link.transactions.map((transaction) => paymentKeyPayos(environment, order.orderCode, transaction.reference));
+    const eventKeys = events.map((event) => `payos:${environment}:${event.externalEventId}`);
+    if (await this.orders.neverApplied(this.prisma, paymentKeys, eventKeys)) {
       this.logger.warn('order_money_unapplied', { order_ref: order.id });
       await this.move(order, order.status as OrderStatus, { status: 'needs_review', reviewReason: 'provider-mismatch' });
     }

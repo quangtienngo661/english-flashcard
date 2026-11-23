@@ -164,7 +164,7 @@ describe('PayosAdapter.verify and ack', () => {
     expect(result).toMatchObject({ ok: true, skipped: 0 });
     if (!result.ok) throw new Error('unreachable');
     expect(result.events).toHaveLength(1);
-    expect(result.events[0]).toMatchObject({ type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC', appUserId: null });
+    expect(result.events[0]).toMatchObject({ type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC:link-1', appUserId: null });
   });
 
   it('a wrong signature is refused', async () => {

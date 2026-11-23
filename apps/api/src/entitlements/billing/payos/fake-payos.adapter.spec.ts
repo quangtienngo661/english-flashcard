@@ -106,7 +106,7 @@ describe('FakePayosAdapter.pay (the page buttons "Đã trả" and "Trả thiếu
     expect(inbox.store).toHaveBeenCalledTimes(1);
     expect(stored[0]).toHaveLength(1);
     expect(stored[0][0]).toMatchObject({
-      type: 'payment_succeeded', environment: 'sandbox', externalEventId: `${CODE}:${state?.transactions[0].reference}`,
+      type: 'payment_succeeded', environment: 'sandbox', externalEventId: `${CODE}:${state?.transactions[0].reference}:${state?.paymentLinkId}`,
       event: { orderCode: CODE, amount: 199000, paymentLinkId: expect.stringMatching(/^fake-link-/), success: true, code: '00', source: 'webhook' },
     });
     expect(applier.applyMany).toHaveBeenCalledWith(['id-1-0']);
