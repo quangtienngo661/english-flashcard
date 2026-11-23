@@ -1,15 +1,18 @@
 import { writeFileSync } from 'node:fs';
+import type { WorkerLiveness } from '../common/workers/worker-liveness.js';
 import type { ReadinessService } from './readiness.service.js';
 
 export const DEFAULT_HEARTBEAT_PATH = '/tmp/worker-heartbeat';
 export const DEFAULT_HEARTBEAT_INTERVAL_MS = 20_000;
 
 /**
- * Periodically verifies Postgres + Redis readiness and touches `filePath` so Docker's healthcheck
- * can detect a hung event loop or lost backing connections without opening a network port (F-09).
+ * Periodically verifies Postgres + Redis readiness and that every registered BullMQ worker is still running,
+ * touching `filePath` so Docker's healthcheck can detect a hung event loop, lost backing connections, or a
+ * stopped worker without opening a network port (F-09, OPS-04).
  */
 export function startWorkerHeartbeat(
   readiness: Pick<ReadinessService, 'check'>,
+  liveness: Pick<WorkerLiveness, 'notRunning'>,
   filePath = DEFAULT_HEARTBEAT_PATH,
   intervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS,
 ): { stop: () => void } {
@@ -21,7 +24,7 @@ export function startWorkerHeartbeat(
     running = true;
     try {
       const checks = await readiness.check();
-      if (!stopped && checks.database === 'ok' && checks.redis === 'ok') {
+      if (!stopped && checks.database === 'ok' && checks.redis === 'ok' && liveness.notRunning().length === 0) {
         writeFileSync(filePath, String(Date.now()), 'utf8');
       }
     } catch {

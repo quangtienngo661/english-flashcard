@@ -1,8 +1,9 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Optional, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
+import { WorkerLiveness } from '../../common/workers/worker-liveness.js';
 import type { ReminderKind } from '../provider/notification-provider.js';
 import type { ReminderLanguage } from '../provider/reminder-message.js';
 
@@ -39,6 +40,7 @@ export class ReminderQueueService implements OnApplicationBootstrap, OnModuleDes
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Optional() @Inject(WorkerLiveness) private readonly liveness?: WorkerLiveness,
   ) {}
 
   /** Called by the tick and send services at module init, so this service does not depend on them. */
@@ -63,6 +65,7 @@ export class ReminderQueueService implements OnApplicationBootstrap, OnModuleDes
     this.worker = new Worker(REMINDER_QUEUE, (job) => this.process(job), {
       connection: this.connection('reminder_worker_connection_failed'), prefix, concurrency: 1,
     });
+    this.liveness?.register(REMINDER_QUEUE, this.worker);
     this.worker.on('error', (error) => { this.logger.warn('reminder_worker_error', { error }); });
     await this.worker.waitUntilReady();
   }
