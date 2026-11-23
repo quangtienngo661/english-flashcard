@@ -74,6 +74,9 @@ export class UploadsService {
     }
 
     const batchId = await this.prisma.$transaction(async (tx) => {
+      if (levelSourceId !== undefined && !(await this.content.lockSourceForBatch(tx, levelSourceId))) {
+        throw new ProblemDetailsException({ status: 404, type: 'not-found', title: 'Source not found' });
+      }
       const id = await this.jobs.create(tx, {
         queue: 'content-import', createdBy: user.userId, operationId,
         exclusiveKey: levelSourceId ? `content-import:${levelSourceId}` : undefined,

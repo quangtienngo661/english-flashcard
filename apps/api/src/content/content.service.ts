@@ -76,6 +76,10 @@ export class ContentService {
     return this.sources.getSource(id);
   }
 
+  lockSourceForBatch(tx: Prisma.TransactionClient, sourceId: string): Promise<boolean> {
+    return this.sources.lockSourceForBatch(tx, sourceId);
+  }
+
   isSourceComplete(source: SourceView): boolean {
     return isSourceComplete(source);
   }

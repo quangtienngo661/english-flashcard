@@ -36,6 +36,7 @@ function setup() {
     dataSource: { update: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     $executeRaw: vi.fn(),
     $queryRaw: vi.fn(),
+    $transaction: vi.fn((fn: (tx: unknown) => Promise<unknown>) => fn(prisma)),
   };
   return { prisma, service: new SourcesService(prisma as unknown as PrismaClient) };
 }
@@ -112,6 +113,7 @@ describe('SourcesService.update', () => {
 
   it('any other database error is not turned into a problem', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     const boom = new Error('connection lost');
     prisma.dataSource.update.mockRejectedValue(boom);
     await expect(service.update(ID, { name: 'x' })).rejects.toBe(boom);
@@ -178,10 +180,13 @@ describe('SourcesService.update: the version of a source that has data (Q15, own
 describe('SourcesService.remove', () => {
   const sqlOf = (call: unknown[]) => ({ text: (call[0] as TemplateStringsArray).join('?').replace(/\s+/g, ' ').trim(), values: call.slice(1) });
 
-  it('one guarded DELETE: third_party only, and nothing in entry_levels, import_batches or import_row_keys refers to it', async () => {
+  it('locks the source FOR UPDATE then runs one guarded DELETE: third_party only, and nothing in entry_levels, import_batches or import_row_keys refers to it', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     prisma.$executeRaw.mockResolvedValue(1);
     await service.remove(ID);
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    expect(sqlOf(prisma.$queryRaw.mock.calls[0]!).text).toContain('FOR UPDATE');
     expect(prisma.$executeRaw).toHaveBeenCalledOnce();
     const { text, values } = sqlOf(prisma.$executeRaw.mock.calls[0]!);
     expect(text).toContain('DELETE FROM data_sources');
@@ -193,24 +198,22 @@ describe('SourcesService.remove', () => {
     expect(prisma.dataSource.findUnique).not.toHaveBeenCalled();
   });
 
-  it('nothing deleted and no such row → 404 not-found', async () => {
+  it('no such row → 404 not-found', async () => {
     const { prisma, service } = setup();
-    prisma.$executeRaw.mockResolvedValue(0);
-    prisma.dataSource.findUnique.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([]);
     expect(await problem(service.remove(ID))).toEqual({ status: 404, type: 'not-found' });
   });
 
-  it('nothing deleted and the row is an owner source → 409 source-protected', async () => {
+  it('the row is an owner source → 409 source-protected', async () => {
     const { prisma, service } = setup();
-    prisma.$executeRaw.mockResolvedValue(0);
-    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'owner' });
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'owner' }]);
     expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-protected' });
   });
 
   it('nothing deleted and a third_party row is still there → 409 source-in-use', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     prisma.$executeRaw.mockResolvedValue(0);
-    prisma.dataSource.findUnique.mockResolvedValue({ kind: 'third_party' });
     expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-in-use' });
   });
 
@@ -223,12 +226,14 @@ describe('SourcesService.remove', () => {
     } } }],
   ])('a foreign-key refusal (%s: a level written between the guard and the delete) → 409 source-in-use', async (code, meta) => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     prisma.$executeRaw.mockRejectedValue(new Prisma.PrismaClientKnownRequestError('fk', { code, clientVersion: 'x', meta }));
     expect(await problem(service.remove(ID))).toEqual({ status: 409, type: 'source-in-use' });
   });
 
   it('a raw error that is not a foreign-key refusal (P2010 with another driver code) is not turned into a problem', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     const boom = new Prisma.PrismaClientKnownRequestError('x', { code: 'P2010', clientVersion: 'x', meta: {
       driverAdapterError: { cause: { originalCode: '40001', kind: 'TransactionWriteConflict' } },
     } });
@@ -238,6 +243,7 @@ describe('SourcesService.remove', () => {
 
   it('any other database error is not turned into a problem', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     const boom = new Error('connection lost');
     prisma.$executeRaw.mockRejectedValue(boom);
     await expect(service.remove(ID)).rejects.toBe(boom);
