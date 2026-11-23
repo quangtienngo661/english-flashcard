@@ -62,7 +62,7 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi tiết ở design Bước 6 §18–§19 và Bước 7 §19–§20.
 
 - [ ] **Chính sách bảo mật nêu việc gửi từ riêng và câu ngữ cảnh của người học cho OpenAI/Anthropic (bên nhận ở Mỹ), và việc `ai_call_contents` giữ nội dung 7 ngày, admin đọc được**
-  (`apps/api/src/ai/reports/reports.service.ts:218-235`). Nguồn: B6 §18, F29, SR15. Vì sao: trang chính sách hiện chưa nhắc AI; bản nháp đã ở nhánh `docs/web-launch-research`.
+  (`apps/api/src/ai/reports/dashboard-quality.service.ts`). Nguồn: B6 §18, F29, SR15. Trạng thái: `/vi/privacy` live đã có mục "4. AI trong Wordmet" (dữ liệu gửi AI, giữ 7 ngày, nút báo lỗi/hoàn lượt); cần chủ dự án xác nhận lại câu chữ về bên nhận ở Mỹ (OpenAI/Anthropic).
 - [ ] **Điều khoản xử lý dữ liệu của từng provider (F30); OpenAI cho người dưới 18 tuổi và ZDR so với mốc 13 tuổi của app; không dùng model có giữ dữ liệu 30 ngày.**
   Nguồn: B6-1. Vì sao: app nhận người học từ 13 tuổi và gửi nội dung người học cho provider.
 - [ ] **`max_concurrent_calls` (50) đếm theo từng tiến trình, không theo cả hệ thống: đặt theo tier của provider khi chạy nhiều instance.** Nguồn: B6 §18 "Deploy".
@@ -184,7 +184,7 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   `'unsafe-inline'` vì Next chèn script RSC inline; script Turnstile (đợt A) phải còn nạp được sau khi đổi.
 - [ ] **Build và kiểm bản cờ app tắt (cấu hình production hiện tại, `NEXT_PUBLIC_LEARNER_APP` không đặt).** Nguồn: [UW-3](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-3).
   Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
-- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
+- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev 04/11 (mục D, bản nháp local) đã có bước này.
 
 ## Giao diện mới M8: trang công khai (design giao diện mới §10.6, §10.7, QM8, 11/11/2026)
 

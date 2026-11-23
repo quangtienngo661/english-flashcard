@@ -30,7 +30,7 @@ Câu AI được chấm bằng quy tắc (không để AI chấm), và lượt A
 
 ## Operating Context
 
-- Gói **Miễn phí** (3 phiên luyện mỗi ngày, ôn thẻ không giới hạn, kèm lượt AI Free theo tháng dương lịch) và gói **Pro** trả trước một lần qua **payOS** (1 / 3 / 12 tháng: 79.000 / 199.000 / 599.000 ₫, không tự gia hạn; dùng thử đã tắt từ launch prep A M3).
+- Gói **Miễn phí** (3 phiên luyện mỗi ngày, ôn thẻ không giới hạn, kèm lượt AI Free theo tháng dương lịch) và gói **Pro** (15 phiên luyện mỗi ngày) trả trước một lần qua **payOS** (1 / 3 / 12 tháng: 59.000 / 149.000 / 479.000 ₫, không tự gia hạn; dùng thử đã tắt từ launch prep A M3).
 - Ngày giờ theo múi giờ IANA của người học; số, ngày, tiền theo `Intl` vi-VN.
 - Production đã deploy đầy đủ (`wordmet.com/{vi,en}/app`, `api.wordmet.com`, `admin.wordmet.com`, `audio.wordmet.com`), giao dịch payOS thật đã thử thành công ngày 14/11/2026; đang chuẩn bị mở đợt pilot kín cho người dùng thật.
 
