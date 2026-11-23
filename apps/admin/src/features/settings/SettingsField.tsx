@@ -64,7 +64,7 @@ const CROSS = { stop_after_days: 1, default_questions_per_session: 1, pro_practi
 const EMPTY = { ai_cap_alert_percent: 1 } as const;
 const NOTE = {
   transaction_retention_years: 1, admin_daily_usd_cap: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, session_max_mode: 1,
-  ai_max_fixed: 1, ai_max_percent: 1, ai_placement: 1,
+  ai_max_fixed: 1, ai_max_percent: 1, ai_placement: 1, pro_price_1m_vnd: 1, pro_price_3m_vnd: 1, pro_price_12m_vnd: 1,
 } as const;
 const ZERO = {
   ai_prefetch_count: 1, content_retention_days: 1, free_ai_practice_per_cycle: 1, free_ai_lookup_per_cycle: 1, free_ai_daily_cap: 1, ai_max_fixed: 1,

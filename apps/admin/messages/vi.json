@@ -2154,7 +2154,10 @@
       "session_max_mode": "Bằng số từ: tối đa là số từ của phạm vi người học chọn, không quá 100",
       "ai_max_fixed": "không vượt số câu của phiên",
       "ai_max_percent": "làm tròn xuống",
-      "ai_placement": "Để người học chọn: hộp Tùy chỉnh phiên hiện Rải đều / Ngẫu nhiên khi người học chọn ít nhất 1 câu AI"
+      "ai_placement": "Để người học chọn: hộp Tùy chỉnh phiên hiện Rải đều / Ngẫu nhiên khi người học chọn ít nhất 1 câu AI",
+      "pro_price_1m_vnd": "Đổi giá xong, chạy workflow Deploy để trang chủ và Google thấy giá mới.",
+      "pro_price_3m_vnd": "Đổi giá xong, chạy workflow Deploy để trang chủ và Google thấy giá mới.",
+      "pro_price_12m_vnd": "Đổi giá xong, chạy workflow Deploy để trang chủ và Google thấy giá mới."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",

@@ -503,4 +503,11 @@ describe('practice AI count (09/11/2026): single-choice fields', () => {
     expect(within(dialog).getByText(`${p.ai_max_mode} · ${p.ai_max_fixed}`)).toBeInTheDocument();
     expect(within(dialog).getByText('5 → 2')).toBeInTheDocument();
   });
+
+  it('shows the redeploy reminder under "Giá Pro 1 tháng"', async () => {
+    renderApp('/settings?tab=entitlements', { [GET]: () => Response.json(VIEW()), [USAGE]: usage(false) });
+    const input = await screen.findByRole('textbox', { name: s.fields.entitlements.pro_price_1m_vnd });
+    const field = input.closest('div')!;
+    expect(within(field).getByText(/Đổi giá xong, chạy workflow Deploy để trang chủ và Google thấy giá mới\./)).toBeInTheDocument();
+  });
 });
