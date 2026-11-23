@@ -62,7 +62,7 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi tiết ở design Bước 6 §18–§19 và Bước 7 §19–§20.
 
 - [ ] **Chính sách bảo mật nêu việc gửi từ riêng và câu ngữ cảnh của người học cho OpenAI/Anthropic (bên nhận ở Mỹ), và việc `ai_call_contents` giữ nội dung 7 ngày, admin đọc được**
-  (`apps/api/src/ai/reports/dashboard-quality.service.ts`). Nguồn: B6 §18, F29, SR15. Trạng thái: `/vi/privacy` live đã có mục "4. AI trong Wordmet" (dữ liệu gửi AI, giữ 7 ngày, nút báo lỗi/hoàn lượt); cần chủ dự án xác nhận lại câu chữ về bên nhận ở Mỹ (OpenAI/Anthropic).
+  (`apps/api/src/ai/reports/reports.service.ts:279,293`). Nguồn: B6 §18, F29, SR15. Trạng thái: `/vi/privacy` live đã có mục "4. AI trong Wordmet" (dữ liệu gửi AI, giữ 7 ngày, nút báo lỗi/hoàn lượt); cần chủ dự án xác nhận lại câu chữ về bên nhận ở Mỹ (OpenAI/Anthropic).
 - [ ] **Điều khoản xử lý dữ liệu của từng provider (F30); OpenAI cho người dưới 18 tuổi và ZDR so với mốc 13 tuổi của app; không dùng model có giữ dữ liệu 30 ngày.**
   Nguồn: B6-1. Vì sao: app nhận người học từ 13 tuổi và gửi nội dung người học cho provider.
 - [ ] **`max_concurrent_calls` (50) đếm theo từng tiến trình, không theo cả hệ thống: đặt theo tier của provider khi chạy nhiều instance.** Nguồn: B6 §18 "Deploy".

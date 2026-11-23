@@ -45,7 +45,7 @@ Wordmet is an English vocabulary learning app (CEFR A1–C2 and topic-based) for
 | `main` | Live production state; pushes trigger `deploy-web.yml` (unless `DEPLOY_PAUSED=true` or docs-only) | — | — |
 | `dev` | Integration branch for code and docs | `feat/*`, `fix/*`, `docs/*`, `claude/*` | CI green + manual "Xong khi" gate; `dev` → `main` PR opens only when the owner asks |
 
-- Never PR or push straight to `main` from a topic branch. After merging into `main`, merge `main` back into `dev`.
+- Pushing a topic branch, opening a PR into `dev`, and merging into `dev` once CI is green need no extra approval unless the owner overrides it in-session; never PR or push straight to `main` from a topic branch. After merging into `main`, merge `main` back into `dev`.
 - **CI (`.github/workflows/ci.yml`)** runs on pull requests only (never re-runs on merge):
   - `api`: lint, typecheck, build, unit tests, schema drift (`prisma migrate diff`), migration safety (`check-migrations.mjs`), documentation check (`pnpm test:docs`).
   - `api-integration`: real Postgres + Redis tests via Testcontainers (`pnpm test:integration`).
