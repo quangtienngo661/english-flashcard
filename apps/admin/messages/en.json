@@ -2709,7 +2709,22 @@
       },
       "weekOf": "From {date}",
       "rate": "{percent} ({count}/{size})",
-      "blank": "“—”: the group has not reached day +7 / +30 yet, or nobody registered."
+      "blank": "“—”: the group has not reached day +7 / +30 yet, or nobody registered.",
+      "pilot": {
+        "activated": "Activated (studied within 1 day)",
+        "aiSessions": "Sessions with AI questions",
+        "ordersByWeek": "Orders created / paid by week",
+        "recallByLevel": "Due recall by level",
+        "cols": {
+          "week": "Week",
+          "verified": "Verified",
+          "ordersCreated": "Orders created",
+          "ordersPaid": "Orders paid",
+          "level": "Level",
+          "dueAnswers": "Due answers",
+          "remembered": "Remembered"
+        }
+      }
     },
     "cols": {
       "operation": "Operation",
