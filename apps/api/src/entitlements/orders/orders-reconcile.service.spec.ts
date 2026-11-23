@@ -73,7 +73,7 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     expect(stores).toHaveLength(1);
     expect(stores[0]).toHaveLength(1);
     expect(stores[0][0]).toMatchObject({
-      type: 'payment_succeeded', environment: 'production', externalEventId: `${CODE}:FT1`, transactionId: `${CODE}:FT1`, appUserId: null, externalSubscriptionId: null,
+      type: 'payment_succeeded', environment: 'production', externalEventId: `${CODE}:FT1:link-1`, transactionId: `${CODE}:FT1`, appUserId: null, externalSubscriptionId: null,
       occurredAt: NOW, missing: [],
     });
     expect(stores[0][0].event as OrderPaymentPayload).toEqual({
@@ -95,7 +95,7 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
   it('two transactions are two events (a short payment and its rest)', async () => {
     const { service, stores } = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1', 40000), tx('FT2', 39000)] }) });
     await service.reconcileOne(order(), NOW);
-    expect(stores[0].map((e) => e.externalEventId)).toEqual([`${CODE}:FT1`, `${CODE}:FT2`]);
+    expect(stores[0].map((e) => e.externalEventId)).toEqual([`${CODE}:FT1:link-1`, `${CODE}:FT2:link-1`]);
   });
 
   it('money counts whatever status payOS gives the link (an expired link with a transfer on it)', async () => {
@@ -118,7 +118,11 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     const ctx = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1'), tx('FT2', 40000)] }), neverApplied: true });
     ctx.inbox.store.mockResolvedValue([]);
     await ctx.service.reconcileOne(order(), NOW);
-    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:production:${CODE}:FT1`, `payos:production:${CODE}:FT2`]);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(
+      expect.anything(),
+      [`payos:production:${CODE}:FT1`, `payos:production:${CODE}:FT2`],
+      [`payos:production:${CODE}:FT1:link-1`, `payos:production:${CODE}:FT2:link-1`],
+    );
     expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
     expect(ctx.logs.some((l) => l.level === 'warn')).toBe(true);
   });
@@ -127,7 +131,11 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     const ctx = setup({ account: 'sandbox', getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1')] }), neverApplied: true });
     await ctx.service.reconcileOne(order(), NOW);
     expect(ctx.applier.applyMany).toHaveBeenCalledWith(['evt-1-0']);
-    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:sandbox:${CODE}:FT1`]);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(
+      expect.anything(),
+      [`payos:sandbox:${CODE}:FT1`],
+      [`payos:sandbox:${CODE}:FT1:link-1`],
+    );
     expect(ctx.applier.applyMany.mock.invocationCallOrder[0]).toBeLessThan(ctx.orders.neverApplied.mock.invocationCallOrder[0]);
   });
 
