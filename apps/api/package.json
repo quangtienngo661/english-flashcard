@@ -50,6 +50,7 @@
     "billing:fake-event": "node scripts/billing-fake-event.mjs",
     "payos:confirm-webhook": "node dist/cli/payos-confirm-webhook.js",
     "orders:probe-payos": "node dist/cli/orders-probe-payos.js",
+    "landing:prices-check": "node dist/cli/landing-prices-check.js",
     "smoke:buoc-b-payments": "node scripts/smoke-buoc-b-payments.mjs",
     "learner:setup": "node scripts/learner-test-setup.mjs",
     "entitlements:fake-ai": "node dist/cli/fake-ai.js",
