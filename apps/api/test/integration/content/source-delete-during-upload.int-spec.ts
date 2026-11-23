@@ -26,9 +26,12 @@ describe('ARC-02: source delete during upload batch creation', () => {
 
   it('throws 404 not-found and creates 0 import_batches when the source is deleted before the batch transaction', async () => {
     const created = await sources.create({
+      kind: 'third_party',
       name: `Test Source ${randomUUID().slice(0, 8)}`,
       version: '1.0',
+      url: null,
       license: 'CC BY-SA 4.0',
+      attribution: '',
       display_priority: 10,
     });
     const cachedSource = await sources.getSource(created.id);
@@ -70,9 +73,12 @@ describe('ARC-02: source delete during upload batch creation', () => {
 
   it('blocks SourcesService.remove while lockSourceForBatch holds FOR KEY SHARE and rejects delete as source-in-use after batch commit', async () => {
     const created = await sources.create({
+      kind: 'third_party',
       name: `Concurrent Source ${randomUUID().slice(0, 8)}`,
       version: '1.0',
+      url: null,
       license: 'CC BY-SA 4.0',
+      attribution: '',
       display_priority: 10,
     });
 
