@@ -34,6 +34,8 @@ jobs:
       DATABASE_URL: postgresql://dev:dev@localhost:5434/english_learning
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -54,6 +56,9 @@ jobs:
       # migration. --exit-code: 0 empty, 2 not empty, 1 error (Bước 4 D40; replaces test/common/schema-drift.e2e-spec.ts).
       - name: Schema drift check (committed migrations vs Prisma schema)
         run: pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma --exit-code --script
+
+      - name: Migration safety (destructive DDL needs a destructive-ok line)
+        run: node scripts/check-migrations.mjs "origin/${{ github.base_ref }}"
 
       - name: Lint
         run: pnpm lint
@@ -76,6 +81,8 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -124,6 +131,8 @@ jobs:
         working-directory: apps/admin
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -196,6 +205,8 @@ jobs:
           - 8025:8025
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
