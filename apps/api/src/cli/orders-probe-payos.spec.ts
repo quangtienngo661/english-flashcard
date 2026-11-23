@@ -1,4 +1,4 @@
-import { NotFoundError, type PayOS } from '@payos/node';
+import { APIError, NotFoundError, type PayOS } from '@payos/node';
 import { describe, expect, it, vi } from 'vitest';
 import { orderCodeAt, orderCodeSecond, orderDescription } from '../entitlements/orders/order-codes.js';
 import { PROBE_GAP, PROBE_USAGE, formatProbeRow, parseProbeArgs } from './orders-probe-payos-args.js';
@@ -84,6 +84,37 @@ describe('probe', () => {
       ...[0, 1, 2, 3, 4].map((s) => orderCodeAt(SECOND0, s)),
       ...[0, 1, 2].map((s) => orderCodeAt(SECOND0 + 1, s)),
       ...[0, 1, 2, 3].map((s) => orderCodeAt(SECOND0 + 2, s)),
+    ]);
+  });
+
+  it('walks past empty slots when payOS returns HTTP 200 with code 101 (PAY-01)', async () => {
+    const err101 = () => APIError.generateError(
+      200,
+      { data: null, code: '101', desc: 'Mã thanh toán không tồn tại', signature: null },
+      'Mã thanh toán không tồn tại',
+      new Headers(),
+    );
+    const paidCode = orderCodeAt(SECOND0, 1);
+    const get = vi.fn(async (code: number) => {
+      if (code === paidCode) {
+        return {
+          id: `link-${code}`, orderCode: code, amount: 79_000, amountPaid: 79_000, amountRemaining: 0, status: 'PAID',
+          createdAt: '2026-11-17T10:00:00+07:00', cancellationReason: null, canceledAt: null, transactions: [],
+        };
+      }
+      throw err101();
+    });
+    const client = { paymentRequests: { get } } as unknown as Pick<PayOS, 'paymentRequests'>;
+    const printed: number[] = [];
+    const rows = await probe(client, { from: T0, to: T0, gap: 2 }, async () => undefined, (row) => {
+      printed.push(row.amountPaid);
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ orderCode: paidCode, status: 'PAID', amount: 79_000, amountPaid: 79_000 });
+    expect(printed).toEqual([79_000]);
+    // slot 0 miss (1), slot 1 hit (reset), slot 2 miss (1), slot 3 miss (2 -> stop)
+    expect(get.mock.calls.map(([code]) => code)).toEqual([
+      orderCodeAt(SECOND0, 0), orderCodeAt(SECOND0, 1), orderCodeAt(SECOND0, 2), orderCodeAt(SECOND0, 3),
     ]);
   });
 
