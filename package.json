@@ -4,6 +4,7 @@
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "test:docs": "node --test \"scripts/*.test.mjs\" && node scripts/check-docs.mjs"
   }
 }

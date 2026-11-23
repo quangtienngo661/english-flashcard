@@ -60,6 +60,10 @@ jobs:
       - name: Migration safety (destructive DDL needs a destructive-ok line)
         run: node scripts/check-migrations.mjs "origin/${{ github.base_ref }}"
 
+      - name: Documentation links and paths
+        working-directory: .
+        run: node --test "scripts/*.test.mjs" && node scripts/check-docs.mjs
+
       - name: Lint
         run: pnpm lint
 
