@@ -12,6 +12,16 @@ STATE_DIR="$WORDMET_HOME/state"
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 die() { log "ERROR: $*" >&2; exit 1; }
 
+# Pings a dead-man switch URL (healthchecks.io). Empty URL is a no-op; curl errors are logged and never fatal.
+ping_healthcheck() {
+  local url="${1:-}" mode="${2:-}" target
+  [ -n "$url" ] || return 0
+  target="$url"
+  if [ "$mode" = fail ]; then target="${url%/}/fail"; fi
+  curl -fsS -m 10 --retry 3 -o /dev/null "$target" || log "WARNING: healthcheck ping failed ($target)"
+  return 0
+}
+
 # The one way to reach the production stack. API_TAG defaults to the running version so commands that do not deploy
 # (backup, exec, logs) still satisfy the compose file.
 compose() {

@@ -24,6 +24,7 @@ r2() {
 alert_on_failure() {
   local status=$? body
   [ "$status" -eq 0 ] && return 0
+  ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}" fail
   body="$(mktemp)"
   { echo "backup.sh failed (exit $status) at $(date -u +%Y-%m-%dT%H:%M:%SZ) on $(hostname)."; echo "Last backups kept on this server:"; newest_backups 3; } > "$body"
   "$SCRIPTS/send-alert.sh" backup "[wordmet] backup failed" "$body" || log "ERROR: could not send the backup alert"
@@ -63,6 +64,7 @@ main() {
   # adds no base backup (owner, 18/11/2026). `retain FULL 14` counts base backups, so with one cron backup a day it keeps 14 days.
   if [ "${BACKUP_SKIP_BASE:-}" = 1 ]; then
     log "wal-g base backup skipped (BACKUP_SKIP_BASE=1)"
+    ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
     return 0
   fi
   # The dump above is already safe on R2, so a WAL-G failure here still leaves one restorable copy; the failure alerts like any other.
@@ -73,6 +75,7 @@ main() {
   compose exec -T -u postgres -e PGDATABASE="$db" postgres sh -c 'exec wal-g backup-push "$PGDATA"' || die "wal-g backup-push failed"
   compose exec -T -u postgres postgres wal-g delete retain FULL "$KEEP_BASE" --confirm || die "wal-g delete retain failed"
   log "wal-g base backup done (newest $KEEP_BASE kept)"
+  ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
 }
 
 main "$@"; exit $?

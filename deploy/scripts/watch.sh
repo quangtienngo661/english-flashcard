@@ -167,6 +167,8 @@ main() {
   elif [ "$price_rc" -ne 0 ]; then
     log "WARNING: landing-prices-check exited $price_rc"
   fi
+
+  ping_healthcheck "${HEALTHCHECK_WATCH_URL:-}"
 }
 
 alert() {
