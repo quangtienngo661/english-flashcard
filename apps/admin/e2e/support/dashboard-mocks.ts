@@ -92,6 +92,13 @@ export const dashboardMocks: Record<string, MockHandler> = {
       { week_start: '2026-11-02', size: 0, d7: null, d30: null },
     ],
   } }),
+  // Pilot numbers (audit 23/11, Task D2): shown under the retention table.
+  'GET /v1/admin/learning/pilot-metrics': ({ query }) => ({ json: {
+    from: query.get('from'), to: query.get('to'), members: 9, activated: 5,
+    weeks: [{ week: '2026-11-09', verified: 5, orders_created: 2, orders_paid: 1 }],
+    ai_sessions: { sessions: 20, with_ai: 6 },
+    recall_by_level: [{ level: 1, due_answers: 10, remembered: 7 }],
+  } }),
   'GET /v1/admin/entitlements/ai-usage/days': ({ query }) => ({ json: {
     from: query.get('from'), to: query.get('to'),
     today: { date: query.get('to'), used: 10, confirmed: 10, reserved: 0, cap: 1000, alert_percent: 75, alert_reached: false, enabled: true },
