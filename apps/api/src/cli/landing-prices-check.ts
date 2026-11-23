@@ -67,10 +67,16 @@ function parseLivePrices(body: unknown): PriceMap | null {
   const prices = (body as Record<string, unknown>).prices;
   if (!prices || typeof prices !== 'object') return null;
   const rec = prices as Record<string, unknown>;
-  const p1 = Number(rec['1']);
-  const p3 = Number(rec['3']);
-  const p12 = Number(rec['12']);
-  if (!Number.isFinite(p1) || !Number.isFinite(p3) || !Number.isFinite(p12)) return null;
+  const p1 = rec['1'];
+  const p3 = rec['3'];
+  const p12 = rec['12'];
+  if (
+    typeof p1 !== 'number' || !Number.isFinite(p1) || p1 <= 0 ||
+    typeof p3 !== 'number' || !Number.isFinite(p3) || p3 <= 0 ||
+    typeof p12 !== 'number' || !Number.isFinite(p12) || p12 <= 0
+  ) {
+    return null;
+  }
   return { 1: p1, 3: p3, 12: p12 };
 }
 

@@ -113,7 +113,6 @@ describe('SourcesService.update', () => {
 
   it('any other database error is not turned into a problem', async () => {
     const { prisma, service } = setup();
-    prisma.$queryRaw.mockResolvedValue([{ kind: 'third_party' }]);
     const boom = new Error('connection lost');
     prisma.dataSource.update.mockRejectedValue(boom);
     await expect(service.update(ID, { name: 'x' })).rejects.toBe(boom);
