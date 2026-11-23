@@ -133,7 +133,11 @@ function parseSince(argv: string[]): Date | null {
   if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     throw new Error('Usage: --since YYYY-MM-DD');
   }
-  return new Date(`${raw}T00:00:00.000Z`);
+  const parsed = new Date(`${raw}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== raw) {
+    throw new Error(`Invalid date for --since: ${raw}`);
+  }
+  return parsed;
 }
 
 export async function runSampleSenses(argv = process.argv.slice(2)): Promise<void> {
@@ -165,7 +169,7 @@ export async function runSampleSenses(argv = process.argv.slice(2)): Promise<voi
             SELECT srt.text
             FROM sense_revision_texts srt
             WHERE srt.revision_id = r.id AND srt.language = 'vi'
-            ORDER BY CASE srt.kind WHEN 'meaning' THEN 0 WHEN 'definition' THEN 1 ELSE 2 END
+            ORDER BY CASE srt.kind WHEN 'gloss' THEN 0 WHEN 'definition' THEN 1 ELSE 2 END
             LIMIT 1
           ),
           ''
@@ -176,7 +180,7 @@ export async function runSampleSenses(argv = process.argv.slice(2)): Promise<voi
       FROM senses s
       JOIN entries e ON e.id = s.entry_id
       JOIN sense_revisions r ON r.id = s.live_revision_id
-      WHERE e.scope = 'catalog' AND r.status = 'published'
+      WHERE e.scope = 'catalog' AND s.state = 'open' AND r.status = 'published'
     `;
 
     const reviewedByNull = rows.filter((r) => !r.reviewed_by_set).length;
