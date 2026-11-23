@@ -98,9 +98,14 @@ function setup(opts: { account?: 'active' | 'locked' | 'deleting' | null; timezo
   const locks: string[] = [];
   const tx = {
     $executeRaw: async (_strings: TemplateStringsArray, ...values: unknown[]) => {
-      memory.calls.push(`lock-user:${String(values[0]).replace('entitlements.user:', '')}`);
-      locks.push(String(values[0]));
+      const key = String(values[0]);
+      if (key.startsWith('entitlements.user:')) memory.calls.push(`lock-user:${key.replace('entitlements.user:', '')}`);
+      else if (key.startsWith('identity.user:')) memory.calls.push(`lock-identity:${key.replace('identity.user:', '')}`);
+      locks.push(key);
       return 1;
+    },
+    user: {
+      findUnique: async () => (accountState.value === null ? null : { status: accountState.value }),
     },
   };
   const prisma = {

@@ -5,6 +5,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { USER_DATA_TX } from '../../identity/user-lock.js';
 import { SettingsService } from '../../settings/index.js';
 import { OrderApplier } from '../orders/order-applier.service.js';
 import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
@@ -67,7 +68,7 @@ export class BillingEventApplier implements BillingApplyPort {
 
     let first: FirstPass;
     try {
-      first = await this.prisma.$transaction((tx) => this.decide(tx, row, known, graceDays, adapter));
+      first = await this.prisma.$transaction((tx) => this.decide(tx, row, known, graceDays, adapter), USER_DATA_TX);
     } catch (err) {
       await this.fail(row, err);
       return 'failed';

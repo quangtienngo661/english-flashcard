@@ -5,6 +5,7 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { lockUserForDataWrite } from '../../identity/user-lock.js';
 import type { Payer } from '../billing/billing-adapter.js';
 import { TransactionsRepository } from '../billing/transactions.repository.js';
 import { lockUser } from '../entitlements.locks.js';
@@ -86,10 +87,11 @@ export class OrderApplier {
       return { outcome: 'ignored', reason: refused ?? 'unknown-order' };
     }
 
+    const live = await lockUserForDataWrite(tx, found.userId);
     await lockUser(tx, found.userId);
     const order = await this.orders.lock(tx, found.id);
     if (order === null) return { outcome: 'ignored', reason: 'unknown-order' };
-    const account = await this.accountOf(tx, order.userId);
+    const account = live ? await this.accountOf(tx, order.userId) : 'deleted';
 
     // The same payment seen again, by the webhook or by the job: already received, nothing written (design §3.4).
     const key = paymentKeyPayos(input.env, input.orderCode, input.reference);
