@@ -432,9 +432,11 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
   it('lock order (design §3.4): the user lock comes before the order lock, and the account check, profile and sources read through the same transaction', async () => {
     const { applier, memory, identity, sources, tx } = setup();
     await applier.applyPayment(tx as never, input());
+    const identityLock = memory.calls.indexOf(`lock-identity:${USER}`);
     const userLock = memory.calls.indexOf(`lock-user:${USER}`);
     const orderLock = memory.calls.indexOf(`lock-order:${ORDER}`);
-    expect(userLock).toBeGreaterThanOrEqual(0);
+    expect(identityLock).toBeGreaterThanOrEqual(0);
+    expect(userLock).toBeGreaterThan(identityLock);
     expect(orderLock).toBeGreaterThan(userLock);
     expect(memory.calls.indexOf('insert-payment')).toBeGreaterThan(orderLock);
     expect(identity.accountStatus).toHaveBeenCalledWith(USER, tx);

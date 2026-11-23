@@ -102,8 +102,12 @@ describe('OrderApplier.applyPayment during account deletion (A1.5)', () => {
       const periodCount = await ctx.prisma.prepaidPeriod.count({ where: { userId: user.id } });
       expect(periodCount, `run ${i}: deleted user must have 0 prepaid_periods`).toBe(0);
 
+      const eventRow = await ctx.prisma.billingEvent.findUniqueOrThrow({ where: { id: eventIds[0] } });
+      expect(eventRow.status, `run ${i}: billing event must be applied`).toBe('applied');
+
       const updatedOrder = await ctx.prisma.billingOrder.findUniqueOrThrow({ where: { id: order.id } });
-      expect(updatedOrder.reviewReason === 'account-deleted' || periodCount === 0).toBe(true);
+      expect(updatedOrder.status, `run ${i}: order must be needs_review`).toBe('needs_review');
+      expect(updatedOrder.reviewReason, `run ${i}: order reviewReason must be account-deleted`).toBe('account-deleted');
     }
   });
 });
