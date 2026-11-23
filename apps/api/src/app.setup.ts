@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import type { AppConfig } from './common/config/app-config.js';
+import { corsOriginsFor } from './common/cors/cors-origins.js';
 import { AppLogger } from './common/logging/app-logger.js';
 import { operationIdMiddleware } from './common/logging/operation-id.middleware.js';
 import { ProblemDetailsFilter } from './common/problem-details/problem-details.filter.js';
@@ -45,11 +46,13 @@ export function configureApp(app: NestExpressApplication, config: AppConfig): vo
   app.useBodyParser('json', { limit: '100kb' });
   app.use(cookieParser());
   app.set('trust proxy', config.trustProxy);
-  app.enableCors({
-    origin: config.corsOrigins,
-    credentials: true,
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Protection', 'Idempotency-Key'],
-    exposedHeaders: ['Retry-After'],
+  app.enableCors((req: { headers: { host?: string } }, cb: (err: Error | null, options: Record<string, unknown>) => void) => {
+    cb(null, {
+      origin: corsOriginsFor(req.headers.host, config),
+      credentials: true,
+      allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Protection', 'Idempotency-Key'],
+      exposedHeaders: ['Retry-After'],
+    });
   });
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new ProblemDetailsFilter(config.problemTypeBase, app.get(AppLogger)));
