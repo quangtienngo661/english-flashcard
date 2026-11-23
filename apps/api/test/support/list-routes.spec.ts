@@ -43,6 +43,7 @@ describe('listRoutes (unit, isolated persistence)', () => {
       { method: 'GET', path: '/v1/admin/ai/dashboard', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/entitlements/ai-usage/days', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/entitlements/ai-usage/pro', permissions: ['ai.view'] },
+      { method: 'GET', path: '/v1/admin/learning/pilot-metrics', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/learning/retention', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/practice/ai-quality', permissions: ['ai.view'] },
     ]);
