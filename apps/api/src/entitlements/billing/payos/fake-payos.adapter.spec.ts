@@ -71,7 +71,7 @@ describe('FakePayosAdapter links (design §3.3)', () => {
     await adapter.createCheckout(order);
     const worker = new FakePayosAdapter(testConfig({ payos: { mode: 'fake', clientId: null, apiKey: null, checksumKey: null }, billing: { production: false, fakeEnabled: false, fakeSecret: SECRET, fakeFetchState: true } }),
       { fakePayosLink: table } as unknown as PrismaClient, new FakeClock(NOW), registry);
-    expect(await worker.getCheckout(CODE)).toEqual({ paymentLinkId: expect.stringMatching(/^fake-link-/), status: 'PENDING', amount: 199000, amountPaid: 0, transactions: [] });
+    expect(await worker.getCheckout(CODE)).toEqual({ paymentLinkId: expect.stringMatching(/^fake-link-/), status: 'PENDING', amount: 199000, amountPaid: 0, createdAt: NOW, transactions: [] });
     expect(await worker.getCheckout(CODE + 1)).toBeNull();
   });
 

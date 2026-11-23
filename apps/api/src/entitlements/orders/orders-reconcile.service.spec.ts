@@ -19,7 +19,7 @@ const order = (over: Partial<ReconcileOrder> = {}): ReconcileOrder => ({
   expiresAt: new Date(NOW.getTime() - minutes(30)), createdAt: new Date(NOW.getTime() - minutes(60)), ...over,
 });
 const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({
-  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over,
+  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, createdAt: new Date(NOW.getTime() - minutes(60)), transactions: [], ...over,
 });
 const tx = (reference: string, amount = 79000) => ({
   reference, amount, transactionDateTime: '2026-11-05 10:02:00',

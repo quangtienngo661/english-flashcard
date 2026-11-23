@@ -4,6 +4,7 @@ import { APP_CONFIG, type AppConfig } from '../../../common/config/app-config.js
 import { AppLogger } from '../../../common/logging/app-logger.js';
 import { PAYOS_SDK_TIMEOUT_MS } from '../../entitlements.constants.js';
 import { expiredAtSeconds } from '../../orders/order-codes.js';
+import { parsePayosInstant } from '../../orders/order-rules.js';
 import { BillingAdapter, CHECKOUT_STATUSES, type BillingRequest, type CheckoutOrder, type CheckoutState, type ParsedEvent, type Payer } from '../billing-adapter.js';
 import { BillingAdapterRegistry } from '../billing-adapter.registry.js';
 import { isPayosNotFound } from './payos-errors.js';
@@ -105,6 +106,7 @@ export class PayosAdapter extends BillingAdapter implements OnModuleInit {
       status,
       amount: link.amount,
       amountPaid: link.amountPaid,
+      createdAt: parsePayosInstant(link.createdAt ?? null),
       transactions: link.transactions.map((transaction) => ({
         reference: transaction.reference,
         amount: transaction.amount,

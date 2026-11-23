@@ -48,6 +48,7 @@ export type CheckoutState = {
   status: (typeof CHECKOUT_STATUSES)[number];
   amount: number;
   amountPaid: number;
+  createdAt: Date | null;
   transactions: Array<{ reference: string; amount: number; transactionDateTime: string; payer: Payer | null }>;
 };
 

@@ -102,7 +102,7 @@ describe('PayosAdapter.getCheckout', () => {
       ],
     }));
     expect(await adapter.getCheckout(1_000_000_123)).toEqual({
-      paymentLinkId: 'link-1', status: 'UNDERPAID', amount: 199000, amountPaid: 100000,
+      paymentLinkId: 'link-1', status: 'UNDERPAID', amount: 199000, amountPaid: 100000, createdAt: new Date('2026-11-05T03:00:00.000Z'),
       transactions: [
         { reference: 'FT1', amount: 60000, transactionDateTime: '2026-11-05 10:02:00',
           payer: { counterAccountName: 'LAN', counterAccountNumber: '0123', counterAccountBankName: 'MB Bank' } },

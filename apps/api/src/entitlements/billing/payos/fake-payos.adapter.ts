@@ -20,6 +20,7 @@ export type FakeLink = {
   amount: number;
   status: CheckoutState['status'];
   expiresAt: Date;
+  createdAt: Date;
   returnUrl: string;
   cancelUrl: string;
   transactions: FakeTransaction[];
@@ -99,6 +100,7 @@ export class FakePayosAdapter extends BillingAdapter implements OnModuleInit {
       status: link.status,
       amount: link.amount,
       amountPaid: sum(link.transactions),
+      createdAt: link.createdAt,
       transactions: link.transactions.map((tx) => ({ reference: tx.reference, amount: tx.amount, transactionDateTime: tx.transactionDateTime, payer: tx.payer })),
     };
   }
@@ -120,6 +122,7 @@ export class FakePayosAdapter extends BillingAdapter implements OnModuleInit {
       amount: row.amount,
       status: (CHECKOUT_STATUSES as readonly string[]).includes(row.status) ? (row.status as CheckoutState['status']) : 'PROCESSING',
       expiresAt: row.expiresAt,
+      createdAt: row.createdAt ?? this.clock.now(),
       returnUrl: row.returnUrl,
       cancelUrl: row.cancelUrl,
       transactions: (row.transactions ?? []) as unknown as FakeTransaction[],

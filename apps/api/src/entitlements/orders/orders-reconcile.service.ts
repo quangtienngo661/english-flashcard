@@ -29,6 +29,9 @@ const GIVE_UP_AFTER_EXPIRY_MS = DAY;
  * every lock; each status change is a conditional UPDATE under the user lock then the order lock, so a webhook or staff that got
  * there first wins and the order is never overwritten.
  */
+/** Grace period before cancelling a PENDING payOS link on a no-link order: older links may belong to another order (PAY-06). */
+export const LINK_SKEW_MS = 5 * 60_000;
+
 @Injectable()
 export class OrdersReconcileService {
   constructor(
@@ -85,6 +88,11 @@ export class OrdersReconcileService {
       case 'PENDING':
         // A link payOS still holds for an order that is failed or never got its link: cancel it, so nobody can pay it.
         if (order.paymentLinkId === null || status === 'failed') {
+          if (order.paymentLinkId === null && (link.createdAt === null || link.createdAt.getTime() < order.createdAt.getTime() - LINK_SKEW_MS)) {
+            this.logger.warn('order_provider_mismatch', { order_ref: order.id });
+            await this.move(order, status, { status: 'needs_review', reviewReason: 'provider-mismatch' });
+            return;
+          }
           const cancelled = await callAdapter(() => this.registry.get('payos')!.cancelCheckout!(order.orderCode));
           if (!cancelled.ok) this.logger.warn('order_cancel_failed', { order_ref: order.id });
           if (status !== 'failed') await this.move(order, status, { status: 'failed' });
