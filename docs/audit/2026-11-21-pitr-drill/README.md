@@ -1,6 +1,6 @@
 # Diễn tập phục hồi PITR + Deletion Journal từ R2 thật (21/11/2026)
 
-Bằng chứng gốc (đã ẩn toàn bộ UUID thành `<uuid>` và `operation_id` thành `<op>`): [pitr-drill-success.log](pitr-drill-success.log).
+Bằng chứng gốc (đã ẩn toàn bộ UUID thành `<uuid>`, `operation_id` thành `<op>` và mã đơn payOS thành `<order>`): [pitr-drill-success.log](pitr-drill-success.log).
 
 ## 1. Bối cảnh và thiết lập
 
@@ -28,7 +28,7 @@ Bằng chứng gốc (đã ẩn toàn bộ UUID thành `<uuid>` và `operation_i
 
 | Lần thử (log gốc) | Nguyên nhân lỗi |
 |---|---|
-| `task-739` | Chỉ chạy tới bước promote PITR và đếm bảng (`users=8`, `published_senses=9820`, `migrations=65`); chưa chạy replay Deletion Journal hay khởi chạy API. |
+| `task-739` | Chỉ chạy tới bước promote PITR và đếm bảng (`users=<n>`, `published_senses=<n>`, `migrations=<n>`); chưa chạy replay Deletion Journal hay khởi chạy API. |
 | `task-744` | Chạy CLI `accounts-deletions` từ bản build cũ chưa hỗ trợ `--journal` (`REPLAY_RUN1_EXIT=1`), API không ready, và lệnh SQL thử `entitlement_grants` thiếu cột `granted_by_role` (`NOT NULL`). |
 | `task-750` | Lỗi cú pháp `printf` trong script tạm `/tmp/fetch.sh` (`invalid format character`) sau khi `backup-fetch` hoàn tất (7,45 s). |
 | `task-753` | API không lên được trạng thái ready (`API did not become ready`, lỗi load module Node.js khi khởi chạy). |

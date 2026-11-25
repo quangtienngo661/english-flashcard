@@ -16,7 +16,7 @@ Tài liệu này dùng khi VPS production hiện tại không còn truy cập đ
 ### Bước 1. Tạo VPS mới (Ubuntu 24.04 LTS)
 
 - Cấu hình khuyến nghị: **4 vCPU, 8 GB RAM, ≥ 80 GB SSD**, hệ điều hành **Ubuntu 24.04 LTS**.
-- Tạo user quản trị không phải `root` (có quyền `sudo`) và gắn SSH public key.
+- Tạo user quản trị không phải `root` (`deploy`, có quyền `sudo`) và gắn SSH public key. Giữ cấu hình SSH chỉ cho phép key (`/etc/ssh/sshd_config.d/00-hardening.conf`: `PasswordAuthentication no`, `PermitRootLogin prohibit-password`, theo [deploy/README.md](../../deploy/README.md)) vì GitHub Actions CD đăng nhập bằng `root` với forced-command key ở Bước 8.
 - **Kết quả kỳ vọng:** SSH vào được IP mới (`ssh deploy@<NEW_VPS_IP>`), lệnh `lsb_release -ds` in ra `Ubuntu 24.04...`.
 
 ### Bước 2. Cài Docker và bật tường lửa `ufw` (chỉ mở cổng 22, 80, 443)
@@ -128,20 +128,36 @@ deploy/scripts/compose.sh run --rm --no-deps -T api node dist/cli/accounts-delet
 ```bash
 deploy/scripts/compose.sh up -d
 deploy/scripts/compose.sh ps
-deploy/scripts/backup.sh
+BACKUP_KIND=deploy deploy/scripts/backup.sh
 ```
 
 Cài lại các dòng cron của `watch.sh`, `backup.sh`, `run-maintenance.js` và `daily-report.sh` theo hướng dẫn mục cron trong [deploy/README.md](../../deploy/README.md).
 
 - **Kết quả kỳ vọng:** Tất cả các service (`caddy`, `api`, `worker`, `postgres`, `redis`) ở trạng thái `Up (healthy)`.
 
-### Bước 8. Trỏ DNS trên Cloudflare sang IP VPS mới
+### Bước 8. Trỏ DNS trên Cloudflare và cập nhật cấu hình SSH/CD trên GitHub
 
 Trên Cloudflare Dashboard (DNS cho `wordmet.com`):
 - Cập nhật bản ghi `A` của `api.wordmet.com` và `admin-api.wordmet.com` sang `<NEW_VPS_IP>` (giữ nguyên **grey cloud / DNS only**).
-- Cập nhật bí mật `VPS_HOST` (nếu dùng IP) trong GitHub Actions secrets của repo.
 
-- **Kết quả kỳ vọng:** `dig +short api.wordmet.com` và `dig +short admin-api.wordmet.com` trả về `<NEW_VPS_IP>`; Caddy tự cấp chứng chỉ TLS Let's Encrypt thành công.
+Cấp quyền SSH cho GitHub Actions CD trên VPS mới (theo [deploy/README.md](../../deploy/README.md), mục *Continuous deployment*):
+- Workflow `.github/workflows/deploy-web.yml` đăng nhập SSH bằng user **`root`** (`root@$VPS_HOST`), **không phải** user quản trị `deploy` tạo ở Bước 1.
+- Cài script wrapper `ci-deploy.sh` ngoài bản clone và khai báo `safe.directory` cho `root`:
+  ```bash
+  sudo install -d -m 755 /srv/wordmet/bin
+  sudo install -m 755 /srv/wordmet/app/deploy/scripts/ci-deploy.sh /srv/wordmet/bin/
+  sudo git config --global --add safe.directory /srv/wordmet/app
+  ```
+- Thêm nửa công khai (public half) của deploy key `VPS_SSH_KEY` (secret trong GitHub environment `deploy-env`) vào `/root/.ssh/authorized_keys` với tiền tố forced-command:
+  ```text
+  restrict,command="/srv/wordmet/bin/ci-deploy.sh" ssh-ed25519 <PUBLIC_KEY> github-actions-deploy@wordmet
+  ```
+
+Cập nhật **repository variables** trên GitHub (**Settings → Secrets and variables → Actions → Variables**, dùng qua `vars.VPS_HOST` và `vars.VPS_KNOWN_HOSTS` trong `.github/workflows/deploy-web.yml` — **không phải** Secrets):
+- Cập nhật `VPS_HOST` (nếu dùng IP) sang `<NEW_VPS_IP>`.
+- Thay `VPS_KNOWN_HOSTS` bằng SSH host key mới của VPS: chạy từ máy của chủ dự án lệnh `ssh-keyscan -t rsa <NEW_VPS_IP>`, đối chiếu fingerprint với `ssh-keygen -lf /etc/ssh/ssh_host_rsa_key.pub` trên VPS, rồi lưu vào `VPS_KNOWN_HOSTS`.
+
+- **Kết quả kỳ vọng:** `dig +short api.wordmet.com` và `dig +short admin-api.wordmet.com` trả về `<NEW_VPS_IP>`; Caddy tự cấp chứng chỉ TLS Let's Encrypt thành công; `/root/.ssh/authorized_keys` có dòng `ci-deploy.sh` và hai repository variable `VPS_HOST`, `VPS_KNOWN_HOSTS` khớp với VPS mới.
 
 ### Bước 9. Chạy tay workflow `Deploy` trên GitHub Actions cho commit `main` hiện tại
 

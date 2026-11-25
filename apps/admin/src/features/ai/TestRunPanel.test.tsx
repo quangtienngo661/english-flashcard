@@ -7,6 +7,9 @@ import { renderApp } from '../staff/test-utils';
 import { URL, configRoutes, configsView, draftView } from './configs/config-test-support';
 import { evalExample, heldOutExample, quota, succeeded } from './prompt-test-support';
 
+// Full-app jsdom renders with multi-step userEvent interactions exceed 5 s on Windows under parallel workers.
+vitest.setConfig({ testTimeout: 15_000 });
+
 const t = vi.ai.prompts.test;
 const runButton = () => screen.getByRole('button', { name: t.run });
 const posts = (calls: { method: string; path: string; body: unknown }[]) => calls.filter((c) => c.method === 'POST' && c.path.endsWith('/drafts/C4/test'));

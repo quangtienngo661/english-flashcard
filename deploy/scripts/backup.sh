@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dump the production database and upload it to R2 (bucket wordmet-backups). Keeps 14 copies on R2 and 3 on the VPS.
+# Dump the production database and upload it to R2 (bucket wordmet-backups). Keeps 14 days of daily copies and 5 deploy copies on R2, and 3 on the VPS.
 # Then a WAL-G base backup (to the WAL-G bucket of walg.env), keeping the 14 newest; skipped when BACKUP_SKIP_BASE=1.
 # Daily by cron (dump and base backup) and before every deploy (deploy.sh: dump only). Deploy runbook M4; restore steps in deploy/README.md.
 set -euo pipefail
@@ -35,24 +35,38 @@ alert_on_failure() {
   return "$status"
 }
 
-# Prunes remote dumps in daily/ (keep KEEP_REMOTE_DAILY), deploy/ (keep KEEP_REMOTE_DEPLOY),
-# and legacy root-level wordmet-*.dump older than cutoff_date (YYYYMMDD, default 14 days ago UTC).
+# Prunes remote dumps in daily/ (older than cutoff_date), deploy/ (keep KEEP_REMOTE_DEPLOY),
+# and legacy root-level wordmet-*.dump older than cutoff_date (YYYYMMDD, default KEEP_REMOTE_DAILY days ago UTC).
+# Failed deletes are logged as warnings and do not abort the backup run (e.g. R2 object lock).
 prune_remote_dumps() {
-  local cutoff="${1:-$(date -u -d '14 days ago' +%Y%m%d)}" old dump_date
-  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/daily/" | awk '{print $4}' | grep -E '^wordmet-[0-9TZ]+\.dump$' | sort | head -n "-$KEEP_REMOTE_DAILY"); do
-    r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/daily/$old"
-    log "removed old daily copy $old from R2"
+  local cutoff="${1:-$(date -u -d "$KEEP_REMOTE_DAILY days ago" +%Y%m%d)}" old dump_date
+  for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/daily/" | awk '{print $4}' | grep -E '^wordmet-[0-9]{8}T[0-9]{6}Z\.dump$' | sort); do
+    dump_date="${old#wordmet-}"
+    dump_date="${dump_date:0:8}"
+    if [[ "$dump_date" < "$cutoff" ]]; then
+      if r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/daily/$old"; then
+        log "removed old daily copy $old from R2"
+      else
+        log "WARNING: could not delete daily/$old"
+      fi
+    fi
   done
   for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/deploy/" | awk '{print $4}' | grep -E '^wordmet-[0-9TZ]+\.dump$' | sort | head -n "-$KEEP_REMOTE_DEPLOY"); do
-    r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/deploy/$old"
-    log "removed old deploy copy $old from R2"
+    if r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/deploy/$old"; then
+      log "removed old deploy copy $old from R2"
+    else
+      log "WARNING: could not delete deploy/$old"
+    fi
   done
   for old in $(r2 s3 ls "s3://$R2_BACKUP_BUCKET/" | awk '{print $4}' | grep -E '^wordmet-[0-9]{8}T[0-9]{6}Z\.dump$' | sort); do
     dump_date="${old#wordmet-}"
     dump_date="${dump_date:0:8}"
     if [[ "$dump_date" < "$cutoff" ]]; then
-      r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/$old"
-      log "removed legacy root copy $old from R2"
+      if r2 s3 rm --only-show-errors "s3://$R2_BACKUP_BUCKET/$old"; then
+        log "removed legacy root copy $old from R2"
+      else
+        log "WARNING: could not delete $old"
+      fi
     fi
   done
 }
@@ -80,7 +94,6 @@ main() {
   log "upload $kind/$name ($(du -h "$file" | cut -f1))"
   r2 s3 cp --only-show-errors "/backups/$name" "s3://$R2_BACKUP_BUCKET/$kind/$name"
 
-  prune_remote_dumps
   find "$BACKUP_DIR" -maxdepth 1 -name 'wordmet-*.dump' -printf '%f\n' | sort | head -n "-$KEEP_LOCAL" | while read -r old; do
     rm -f "$BACKUP_DIR/$old"
   done
@@ -91,7 +104,8 @@ main() {
   # adds no base backup (owner, 18/11/2026). `retain FULL 14` counts base backups, so with one cron backup a day it keeps 14 days.
   if [ "${BACKUP_SKIP_BASE:-}" = 1 ]; then
     log "wal-g base backup skipped (BACKUP_SKIP_BASE=1)"
-    if [ "${BACKUP_KIND:-daily}" = daily ]; then
+    prune_remote_dumps
+    if [ "$kind" = daily ]; then
       ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
     fi
     return 0
@@ -104,7 +118,10 @@ main() {
   compose exec -T -u postgres -e PGDATABASE="$db" postgres sh -c 'exec wal-g backup-push "$PGDATA"' || die "wal-g backup-push failed"
   compose exec -T -u postgres postgres wal-g delete retain FULL "$KEEP_BASE" --confirm || die "wal-g delete retain failed"
   log "wal-g base backup done (newest $KEEP_BASE kept)"
-  ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
+  prune_remote_dumps
+  if [ "$kind" = daily ]; then
+    ping_healthcheck "${HEALTHCHECK_BACKUP_URL:-}"
+  fi
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
