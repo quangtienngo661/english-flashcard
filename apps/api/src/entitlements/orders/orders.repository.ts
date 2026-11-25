@@ -361,7 +361,7 @@ export class OrdersRepository {
    * (by `eventKeys`) is final without having been applied (`ignored`, or `failed` for good): money no automatic path will pick up.
    * Since R5d, `dedupe_key` includes `paymentLinkId` while `payment_key` stays `payos:<env>:<orderCode>:<reference>`, so both lists are passed.
    */
-  async neverApplied(db: Db, paymentKeys: string[], eventKeys: string[] = paymentKeys): Promise<boolean> {
+  async neverApplied(db: Db, paymentKeys: string[], eventKeys: string[]): Promise<boolean> {
     if (paymentKeys.length === 0 || eventKeys.length === 0) return false;
     if (await db.billingOrderPayment.count({ where: { paymentKey: { in: paymentKeys } } }) > 0) return false;
     const events = await db.billingEvent.findMany({ where: { dedupeKey: { in: eventKeys } }, select: { status: true, attempts: true } });

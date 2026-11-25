@@ -58,19 +58,19 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     const db = (counted: number, events: Array<{ status: string; attempts: number }>) => ({
       billingOrderPayment: { count: vi.fn(async () => counted) }, billingEvent: { findMany: vi.fn(async () => events) },
     });
-    const ask = (counted: number, events: Array<{ status: string; attempts: number }>, keys = KEYS) => repo.neverApplied(db(counted, events) as never, keys);
+    const ask = (counted: number, events: Array<{ status: string; attempts: number }>, keys = KEYS) => repo.neverApplied(db(counted, events) as never, keys, keys);
 
     it('ignored rows, or rows that failed 5 times → true; the query reads both tables by the keys', async () => {
       expect(await ask(0, [{ status: 'ignored', attempts: 0 }, { status: 'failed', attempts: 5 }])).toBe(true);
       const probe = db(0, [{ status: 'ignored', attempts: 0 }, { status: 'ignored', attempts: 0 }]);
-      await repo.neverApplied(probe as never, KEYS);
+      await repo.neverApplied(probe as never, KEYS, KEYS);
       expect(probe.billingOrderPayment.count).toHaveBeenCalledWith({ where: { paymentKey: { in: KEYS } } });
       expect(probe.billingEvent.findMany).toHaveBeenCalledWith({ where: { dedupeKey: { in: KEYS } }, select: { status: true, attempts: true } });
     });
 
     it('any payment counted → false, and the inbox is not read', async () => {
       const probe = db(1, [{ status: 'ignored', attempts: 0 }, { status: 'ignored', attempts: 0 }]);
-      expect(await repo.neverApplied(probe as never, KEYS)).toBe(false);
+      expect(await repo.neverApplied(probe as never, KEYS, KEYS)).toBe(false);
       expect(probe.billingEvent.findMany).not.toHaveBeenCalled();
     });
 

@@ -20,7 +20,7 @@ SELECT
   (SELECT count(*) FROM billing_orders o WHERE o.status = 'paid' AND o.review_reason IS NOT NULL) AS paid_flagged_orders,
   (SELECT count(*) FROM billing_events e WHERE e.status = 'failed') AS failed_billing_events,
   (SELECT count(*) FROM billing_events e
-     WHERE e.status = 'ignored' AND e.error IN ('unknown-order', 'link-mismatch')
+     WHERE e.provider = 'payos' AND e.status = 'ignored' AND e.error IN ('unknown-order', 'link-mismatch')
        AND CASE
          WHEN split_part(e.external_event_id, ':', 1) ~ '^[0-9]{1,18}$'
          THEN split_part(e.external_event_id, ':', 1)::bigint >= 1100000000

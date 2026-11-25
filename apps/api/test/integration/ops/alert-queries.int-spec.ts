@@ -59,6 +59,11 @@ describe('Ops alert SQL queries (PAY-03, PAY-04, A2.2)', () => {
           externalEventId: 'non-numeric:R6', type: 'payment_succeeded', kind,
           occurredAt: now, receivedAt: now, status: 'ignored', error: 'unknown-order',
         },
+        {
+          provider: 'other', environment: 'production', dedupeKey: 'other:production:1100000005:R7',
+          externalEventId: '1100000005:R7', type: 'payment_succeeded', kind,
+          occurredAt: now, receivedAt: now, status: 'ignored', error: 'unknown-order',
+        },
       ],
     });
 
