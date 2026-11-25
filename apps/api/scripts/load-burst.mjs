@@ -7,7 +7,7 @@ function parseArgs(argv) {
     tokenFile: '',
     concurrency: 30,
     rounds: 3,
-    paths: ['/v1/me', '/v1/groups', '/v1/practice/today'],
+    paths: ['/v1/me', '/v1/groups', '/v1/me/entitlements'],
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -18,7 +18,7 @@ function parseArgs(argv) {
     else if (arg === '--rounds' && next) { opts.rounds = Number(next); i++; }
     else if (arg === '--paths' && next) { opts.paths = next.split(',').map((p) => p.trim()).filter(Boolean); i++; }
     else if (arg === '--help' || arg === '-h') {
-      console.log('usage: node scripts/load-burst.mjs --base <url> --token-file <path> [--concurrency 30] [--rounds 3] [--paths /v1/me,/v1/groups,/v1/practice/today]');
+      console.log('usage: node scripts/load-burst.mjs --base <url> --token-file <path> [--concurrency 30] [--rounds 3] [--paths /v1/me,/v1/groups,/v1/me/entitlements]');
       process.exit(0);
     }
   }

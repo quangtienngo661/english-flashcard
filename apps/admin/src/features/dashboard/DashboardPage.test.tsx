@@ -388,6 +388,16 @@ describe('DashboardPage — learners still learning and D7 / D30 (nhóm B M6)', 
     await screen.findByRole('heading', { level: 2, name: t.retention.title });
     expect(screen.getByText(/trong 14 ngày gần nhất/)).toBeInTheDocument();
   });
+
+  it('a 500 from pilot-metrics still renders the AI tiles and retention table with an inline pilot error', async () => {
+    const u = urls();
+    renderApp('/dashboard', { ...routes(u), [u.pilot]: () => problem(500, 'internal-error') });
+    expect(await screen.findByRole('heading', { level: 2, name: t.today.title })).toBeInTheDocument();
+    expect(within(tile(t.today.calls)).getByText('2 / 500')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: t.retention.title })).toBeInTheDocument();
+    expect(within(tile(t.retention.active)).getByText('12')).toBeInTheDocument();
+    expect(await screen.findByText('Không tải được số liệu pilot.')).toBeInTheDocument();
+  });
 });
 
 const split = (over: Partial<SplitStats> = {}): SplitStats => ({

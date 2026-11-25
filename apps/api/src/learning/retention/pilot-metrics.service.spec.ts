@@ -7,8 +7,8 @@ function makeService() {
   const prisma = {
     billingOrder: { findMany: vi.fn().mockResolvedValue([]) },
     practiceSession: { count: vi.fn().mockResolvedValue(0) },
-    learningLogEntry: { findMany: vi.fn().mockResolvedValue([]) },
     learningActivityDay: { groupBy: vi.fn().mockResolvedValue([]) },
+    $queryRaw: vi.fn().mockResolvedValue([]),
   };
   const identity = {
     registrations: vi.fn().mockResolvedValue([]),
@@ -42,10 +42,8 @@ describe('PilotMetricsService', () => {
     prisma.practiceSession.count
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(4);
-    prisma.learningLogEntry.findMany.mockResolvedValue([
-      { userId: 'u-1', levelBefore: 1, levelAfter: 2 },
-      { userId: 'u-2', levelBefore: 1, levelAfter: 1 },
-      { userId: 'staff-1', levelBefore: 1, levelAfter: 2 }, // excluded
+    prisma.$queryRaw.mockResolvedValue([
+      { level: 1, due_answers: 2n, remembered: 1n },
     ]);
 
     const res = await service.report(
@@ -62,9 +60,36 @@ describe('PilotMetricsService', () => {
       ai_sessions: { sessions: 10, with_ai: 4 },
       recall_by_level: [{ level: 1, due_answers: 2, remembered: 1 }],
     });
+
+    // Pin query filters (S-5):
+    expect(prisma.learningActivityDay.groupBy).toHaveBeenCalledWith({
+      by: ['userId'],
+      where: { userId: { in: ['u-1', 'u-2'] }, studied: true },
+      _min: { localDate: true },
+    });
+    expect(prisma.billingOrder.findMany).toHaveBeenCalledWith({
+      where: {
+        createdAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        userId: { notIn: ['staff-1'] },
+      },
+      select: { createdAt: true, status: true },
+    });
+    expect(prisma.practiceSession.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        startedAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        userId: { notIn: ['staff-1'] },
+      },
+    });
+    expect(prisma.practiceSession.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        startedAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        aiPlanned: { gt: 0 },
+        userId: { notIn: ['staff-1'] },
+      },
+    });
   });
 
-  it('skips learningActivityDay query when no verified members registered in range', async () => {
+  it('skips learningActivityDay and $queryRaw when no verified members registered in range', async () => {
     const { service, prisma } = makeService();
     const res = await service.report(
       { from: '2026-11-16', to: '2026-11-22' },
@@ -72,6 +97,8 @@ describe('PilotMetricsService', () => {
     );
     expect(res.members).toBe(0);
     expect(res.activated).toBe(0);
+    expect(res.recall_by_level).toEqual([]);
     expect(prisma.learningActivityDay.groupBy).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 });

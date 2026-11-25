@@ -242,6 +242,8 @@ Tất cả các ngoại lệ dưới đây đều là **đọc** (không ghi ch�
 | `apps/api/src/content-pipeline/inflections/inflections-backfill.handler.ts:53` | `entryInflection` (`content`) | Đọc các biến thể hiện có của lô `entry` để tránh ghi trùng | Export reader biến thể theo danh sách `entryId` từ `ContentService` |
 | `apps/api/src/content/sources/sources.service.ts:203-208,224-229` (raw SQL) | `import_batches`, `import_row_keys` (`content-pipeline`) | Kiểm tra `NOT EXISTS` trước khi xóa `data_sources` (hai cột UUID chéo module không có FK), sau khi đã khóa `FOR UPDATE` | Export hàm kiểm tra nguồn đang được pipeline sử dụng nhận `tx` từ `ContentPipelineService` (cần tránh cycle `content ↔ content-pipeline`) |
 | `apps/api/src/cli/accounts-deletions-args.ts:71,78` | `deletedAccount`, `user` (`identity`) | Lệnh CLI vận hành (`accounts:export-deletions`, `accounts:replay-deletions`) chạy trực tiếp khi phục hồi sau restore | Gọi qua `IdentityService` nếu muốn gom truy cập CLI vào facade của module |
+| `apps/api/src/learning/retention/pilot-metrics.service.ts:61` | `billing_orders` (`entitlements`) | Gom số liệu pilot theo tuần (số đơn tạo / đã trả, loại staff) cho màn hình dashboard admin | Export method đếm/đọc đơn theo khoảng thời gian trên service của module `entitlements` |
+| `apps/api/src/learning/retention/pilot-metrics.service.ts:65,68` | `practice_sessions` (`practice`) | Gom số phiên luyện và số phiên có câu AI (loại staff) cho số liệu pilot trên dashboard admin | Export method đếm phiên luyện theo khoảng thời gian trên service của module `practice` |
 
 ### 5.4 Queues and background work
 

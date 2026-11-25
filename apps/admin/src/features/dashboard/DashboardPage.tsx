@@ -53,7 +53,7 @@ export function DashboardPage() {
   const retention = useQuery({ queryKey: retentionKey(from, to), queryFn: () => getRetention(api, from, to) });
   const pilotMetrics = useQuery({ queryKey: pilotMetricsKey(from, to), queryFn: () => getPilotMetrics(api, from, to) });
 
-  const queries = [ai, quality, usage, usagePro, retention, pilotMetrics];
+  const queries = [ai, quality, usage, usagePro, retention];
   if (queries.some((q) => q.error instanceof ApiError && q.error.problem.slug === 'forbidden')) {
     return <Banner variant="error">{t('errors.forbidden')}</Banner>;
   }
@@ -74,7 +74,7 @@ export function DashboardPage() {
       ) : queries.some((q) => q.isError) ? (
         <ListState state="error" onRetry={() => queries.forEach((q) => q.isError && void q.refetch())} />
       ) : (
-        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} usagePro={usagePro.data!} retention={retention.data!} pilot={pilotMetrics.data!} />
+        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} usagePro={usagePro.data!} retention={retention.data!} pilot={pilotMetrics.data} pilotError={pilotMetrics.isError} />
       )}
     </div>
   );
@@ -83,8 +83,8 @@ export function DashboardPage() {
 const tiles = 'grid gap-3 grid-cols-2';
 const numeric = 'whitespace-nowrap';
 
-function Body({ ai, quality, usage, usagePro, retention, pilot }: {
-  ai: AiDashboard; quality: AiQuality; usage: AiUsageDays; usagePro: AiUsagePro; retention: Retention; pilot: PilotMetrics;
+function Body({ ai, quality, usage, usagePro, retention, pilot, pilotError }: {
+  ai: AiDashboard; quality: AiQuality; usage: AiUsageDays; usagePro: AiUsagePro; retention: Retention; pilot?: PilotMetrics; pilotError?: boolean;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -433,7 +433,7 @@ function Body({ ai, quality, usage, usagePro, retention, pilot }: {
           </TableView>
         </Card>
 
-        <RetentionCard data={retention} pilot={pilot} />
+        <RetentionCard data={retention} pilot={pilot} pilotError={pilotError} />
       </div>
     </>
   );

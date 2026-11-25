@@ -1,12 +1,15 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../../messages/vi.json';
 import { makeMe, problem } from '../../../auth/test-support';
 import { renderApp } from '../../staff/test-utils';
 import type { ConfigsView, SaveDraftBody } from '../ai-api';
 import { example, evalRun, succeeded } from '../prompt-test-support';
 import { FAKE_OK, RUN_ID, URL, configRoutes, configView, configsView, draftView, modelRow, publishCheck } from './config-test-support';
+
+// Full-app jsdom renders with multi-step userEvent interactions exceed 5 s on Windows under parallel workers.
+vitest.setConfig({ testTimeout: 15_000 });
 
 const t = vi.ai.configs;
 const PATH = '/ai/configs';

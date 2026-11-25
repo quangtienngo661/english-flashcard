@@ -54,7 +54,10 @@ export function weekRows(args: {
   return rows;
 }
 
-/** Group due review answers by `levelBefore`, counting rows with `levelAfter > levelBefore`, sorted by level. */
+/**
+ * Group due review answers by `levelBefore`, counting rows with `levelAfter > levelBefore`, sorted by level.
+ * Retained as a pure helper (the service aggregates directly in SQL via `$queryRaw`).
+ */
 export function recallByLevel(rows: Array<{ levelBefore: number; levelAfter: number }>): RecallLevelRow[] {
   const byLevel = new Map<number, { due: number; remembered: number }>();
   for (const row of rows) {

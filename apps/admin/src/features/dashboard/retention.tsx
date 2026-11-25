@@ -9,7 +9,7 @@ import type { PilotMetrics, PilotWeek, RecallLevel, Retention, RetentionCohort }
 const NUMERIC = 'whitespace-nowrap';
 
 /** Whether learners keep learning: today's two numbers and, per registration week, how many of them were still learning 7 and 30 days after (a table, no chart: D28). */
-export function RetentionCard({ data, pilot }: { data: Retention; pilot?: PilotMetrics }) {
+export function RetentionCard({ data, pilot, pilotError = false }: { data: Retention; pilot?: PilotMetrics; pilotError?: boolean }) {
   const t = useTranslations();
   const locale = useLocale();
   const format = useAiFormat();
@@ -54,7 +54,7 @@ export function RetentionCard({ data, pilot }: { data: Retention; pilot?: PilotM
         <DataList rows={data.cohorts} rowKey={(r) => r.week_start} columns={columns} state="ready" emptyText={t('dashboard.empty')} />
         <p className="text-ui text-muted">{t('dashboard.retention.blank')}</p>
       </div>
-      {pilot && (
+      {pilot ? (
         <div className="flex flex-col gap-4 border-t border-border pt-4">
           <div className="grid gap-3 grid-cols-2">
             <Stat label={t('dashboard.retention.pilot.activated')} value={ratioText(pilot.activated, pilot.members)} />
@@ -69,7 +69,11 @@ export function RetentionCard({ data, pilot }: { data: Retention; pilot?: PilotM
             <DataList rows={pilot.recall_by_level} rowKey={(r) => String(r.level)} columns={recallColumns} state="ready" emptyText={t('dashboard.empty')} />
           </div>
         </div>
-      )}
+      ) : pilotError ? (
+        <p className="border-t border-border pt-4 text-ui text-muted" role="status">
+          {t('dashboard.retention.pilot.loadFailed')}
+        </p>
+      ) : null}
     </Card>
   );
 }

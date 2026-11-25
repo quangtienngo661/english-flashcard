@@ -12,8 +12,10 @@ members_7d AS (
   FROM users u, day
   WHERE u.email_verified_at IS NOT NULL
     AND u.staff_role IS NULL
+    AND u.deleting_since IS NULL
     AND u.created_at >= day.week_starts
     AND u.created_at < day.ends
+    AND (u.created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + 1 < (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
 )
 SELECT
   day.local_date AS day,
@@ -44,8 +46,16 @@ SELECT
        SELECT 1 FROM learning_activity_days a
        WHERE a.user_id = m.id AND a.studied AND a.local_date <= m.reg_day + 1
      )) AS pilot_activated_7d,
-  (SELECT count(*) FROM billing_orders o WHERE o.created_at >= day.week_starts AND o.created_at < day.ends) AS pilot_orders_created_7d,
-  (SELECT count(*) FROM billing_orders o WHERE o.status = 'paid' AND o.created_at >= day.week_starts AND o.created_at < day.ends) AS pilot_orders_paid_7d,
-  (SELECT count(*) FROM practice_sessions p WHERE p.started_at >= day.week_starts AND p.started_at < day.ends) AS pilot_sessions_7d,
-  (SELECT count(*) FROM practice_sessions p WHERE p.started_at >= day.week_starts AND p.started_at < day.ends AND p.ai_planned > 0) AS pilot_ai_sessions_7d
+  (SELECT count(*) FROM billing_orders o
+     WHERE o.created_at >= day.week_starts AND o.created_at < day.ends
+       AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = o.user_id AND u.staff_role IS NOT NULL)) AS pilot_orders_created_7d,
+  (SELECT count(*) FROM billing_orders o
+     WHERE o.status = 'paid' AND o.created_at >= day.week_starts AND o.created_at < day.ends
+       AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = o.user_id AND u.staff_role IS NOT NULL)) AS pilot_orders_paid_7d,
+  (SELECT count(*) FROM practice_sessions p
+     WHERE p.started_at >= day.week_starts AND p.started_at < day.ends
+       AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = p.user_id AND u.staff_role IS NOT NULL)) AS pilot_sessions_7d,
+  (SELECT count(*) FROM practice_sessions p
+     WHERE p.started_at >= day.week_starts AND p.started_at < day.ends AND p.ai_planned > 0
+       AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = p.user_id AND u.staff_role IS NOT NULL)) AS pilot_ai_sessions_7d
 FROM day;
