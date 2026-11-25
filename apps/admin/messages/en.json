@@ -2715,6 +2715,7 @@
         "aiSessions": "Sessions with AI questions",
         "ordersByWeek": "Orders created / paid by week",
         "recallByLevel": "Due recall by level",
+        "loadFailed": "Could not load pilot metrics.",
         "cols": {
           "week": "Week",
           "verified": "Verified",
