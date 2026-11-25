@@ -60,6 +60,33 @@ describe('PilotMetricsService', () => {
       ai_sessions: { sessions: 10, with_ai: 4 },
       recall_by_level: [{ level: 1, due_answers: 2, remembered: 1 }],
     });
+
+    // Pin query filters (S-5):
+    expect(prisma.learningActivityDay.groupBy).toHaveBeenCalledWith({
+      by: ['userId'],
+      where: { userId: { in: ['u-1', 'u-2'] }, studied: true },
+      _min: { localDate: true },
+    });
+    expect(prisma.billingOrder.findMany).toHaveBeenCalledWith({
+      where: {
+        createdAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        userId: { notIn: ['staff-1'] },
+      },
+      select: { createdAt: true, status: true },
+    });
+    expect(prisma.practiceSession.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        startedAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        userId: { notIn: ['staff-1'] },
+      },
+    });
+    expect(prisma.practiceSession.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        startedAt: { gte: new Date('2026-11-15T17:00:00.000Z'), lt: new Date('2026-11-22T17:00:00.000Z') },
+        aiPlanned: { gt: 0 },
+        userId: { notIn: ['staff-1'] },
+      },
+    });
   });
 
   it('skips learningActivityDay and $queryRaw when no verified members registered in range', async () => {
