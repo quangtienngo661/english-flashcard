@@ -53,6 +53,29 @@ main() {
     alert services "[wordmet] a service is down or unhealthy" "$tmp/body"
   fi
 
+  # 3b. If worker is unhealthy, restart it at most once per hour so a dead BullMQ worker self-heals.
+  local worker_id worker_health last_restart now_epoch
+  worker_id="$(compose ps -q worker 2>/dev/null || true)"
+  if [ -n "$worker_id" ]; then
+    worker_health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$worker_id" 2>/dev/null || echo none)"
+    if [ "$worker_health" = unhealthy ]; then
+      mkdir -p "$STATE_DIR"
+      now_epoch="$(date +%s)"
+      last_restart="$(cat "$STATE_DIR/worker-restarted" 2>/dev/null || echo 0)"
+      if ! [[ "$last_restart" =~ ^[0-9]+$ ]] || [ $((now_epoch - last_restart)) -ge 3600 ]; then
+        printf '%s\n' "$now_epoch" > "$STATE_DIR/worker-restarted"
+        {
+          echo "worker container was unhealthy; running compose restart worker."
+          echo
+          compose logs --tail 30 --no-log-prefix worker 2>&1 || true
+          echo
+          compose restart worker 2>&1 || true
+        } > "$tmp/body"
+        alert worker-restarted "[wordmet] worker was unhealthy and was restarted" "$tmp/body"
+      fi
+    fi
+  fi
+
   # 4. The api or worker restarted since the last run (Docker resets the count when deploy.sh creates a new container).
   mkdir -p "$STATE_DIR/restarts"
   : > "$tmp/body"
@@ -167,6 +190,46 @@ main() {
   elif [ "$price_rc" -ne 0 ]; then
     log "WARNING: landing-prices-check exited $price_rc"
   fi
+
+  # 9. BullMQ queue progress and maintenance freshness (OPS-04).
+  local qh_json stalled maint_msg worker_started
+  qh_json="$(compose exec -T api node dist/cli/ops-queue-health.js 2>/dev/null || true)"
+  if [ -n "$qh_json" ]; then
+    worker_started=""
+    if [ -n "$worker_id" ]; then
+      worker_started="$(docker inspect -f '{{.State.StartedAt}}' "$worker_id" 2>/dev/null || true)"
+    fi
+    stalled="$(printf '%s' "$qh_json" | compose exec -T api node -e '
+      const maxS = Number(process.argv[1] || 900);
+      const data = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+      const bad = (data.queues || []).filter((q) => typeof q.oldestWaitingSeconds === "number" && q.oldestWaitingSeconds > maxS);
+      for (const q of bad) console.log(q.name + ": waiting=" + q.waiting + " oldest=" + q.oldestWaitingSeconds + "s (threshold " + maxS + "s)");
+    ' "${WATCH_QUEUE_MAX_WAIT_S:-900}" 2>/dev/null || true)"
+    if [ -n "$stalled" ]; then
+      printf '%s\n' "$stalled" > "$tmp/body"
+      alert queue-stalled "[wordmet] BullMQ queue stalled" "$tmp/body"
+    fi
+
+    maint_msg="$(printf '%s' "$qh_json" | compose exec -T api node -e '
+      const startedAt = process.argv[1] || "";
+      const data = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+      const now = Date.now();
+      const last = data.maintenanceLastRunAt ? Date.parse(data.maintenanceLastRunAt) : NaN;
+      if (Number.isFinite(last)) {
+        const age = Math.floor((now - last) / 1000);
+        if (age > 7200) console.log("maintenance last ran " + age + "s ago (" + data.maintenanceLastRunAt + "); threshold 7200s");
+      } else if (startedAt) {
+        const up = Math.floor((now - Date.parse(startedAt)) / 1000);
+        if (Number.isFinite(up) && up > 7200) console.log("maintenance has never recorded a run after worker uptime " + up + "s (started " + startedAt + ")");
+      }
+    ' "$worker_started" 2>/dev/null || true)"
+    if [ -n "$maint_msg" ]; then
+      printf '%s\n' "$maint_msg" > "$tmp/body"
+      alert maintenance-stale "[wordmet] worker maintenance is stale" "$tmp/body"
+    fi
+  fi
+
+  ping_healthcheck "${HEALTHCHECK_WATCH_URL:-}"
 }
 
 alert() {

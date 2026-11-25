@@ -59,7 +59,7 @@ the restart was rehearsed only on Docker Desktop with about 270 KB of data, neve
    `permission denied` or `must be owner`: that would be DDL at run time, which the roles forbid. The api was checked on `wordmet_app` with
    the code built from this branch, not with the production image; that api and worker run no DDL at run time is an **assumption**. If it
    fails, use "Back to one login" below.
-5. `deploy/scripts/backup.sh` by hand: the first WAL-G base backup. Check that WAL reaches R2:
+5. `BACKUP_KIND=deploy deploy/scripts/backup.sh` by hand: the first WAL-G base backup (`BACKUP_KIND=deploy` keeps manual dumps out of the locked `daily/` prefix). Check that WAL reaches R2:
 
 ```bash
 deploy/scripts/compose.sh exec -T postgres psql -X -U <POSTGRES_USER> -d <POSTGRES_DB> -c 'SELECT archived_count, failed_count, last_archived_wal FROM pg_stat_archiver'
@@ -78,7 +78,7 @@ If `main` is deployed before these steps:
 - `.env` has the variables but `db-roles.sh` has not run: the migration cannot log in as `wordmet_migrator`, `deploy.sh` stops at
   "migration failed" and the old version keeps running. Nothing is half changed; run `db-roles.sh` and deploy again.
 
-Each manual `backup.sh` adds a base backup; see "Backup and restore" for what that does to the 14-day window.
+Each manual `BACKUP_KIND=deploy deploy/scripts/backup.sh` adds a base backup; see "Backup and restore" for what that does to the 14-day window.
 
 A new, empty database: Postgres needs R2 reachable at its first start (archiving is on from the start; with R2 down the first start fails).
 Order: start Postgres alone, create the roles, migrate, create the roles again so `_prisma_migrations` is closed to the app role.
@@ -98,7 +98,7 @@ deploy/scripts/db-roles.sh
 ```
 
 Order: refuse a checkout with local changes → check out `<sha>` → build `wordmet-api:<sha>` and `wordmet-api-migrate:<sha>` → database dump
-(skipped on the first deploy; no WAL-G base backup, that runs from cron only) → migrate → start → wait up to 120 s for `/v1/health/ready`.
+(skipped on the first deploy; no WAL-G base backup, that runs from cron only) → migrate → start → wait up to 120 s (`WAIT_READY_TIMEOUT`) for api and worker to be healthy.
 The Postgres image is not built here: after a change to `deploy/postgres/Dockerfile` run `compose build postgres` first.
 
 - Ready: `state/current` = `<sha>`, the one before goes to `state/previous`; images older than the 3 newest are removed.
@@ -206,7 +206,7 @@ few minutes of downtime (an estimate). Without archiving there is no point-in-ti
 unreadable" once an hour: expected; the daily dump is the only backup meanwhile.
 
 To go back to the WAL-G image: `deploy/scripts/compose.sh up -d postgres` (no override), unpause continuous deployment, and **run
-`deploy/scripts/backup.sh` at once**. While archiving was off, no WAL reached R2, so the archive has a gap; a restore from a base backup older
+`BACKUP_KIND=deploy deploy/scripts/backup.sh` at once**. While archiving was off, no WAL reached R2, so the archive has a gap; a restore from a base backup older
 than the gap stops at it. Only a base backup taken after the switch back has no gap before it.
 
 ## Backup and restore
@@ -216,13 +216,13 @@ Two independent copies of the database:
 | | What | When | Kept | Restore to |
 |---|---|---|---|---|
 | WAL archive + base backup (WAL-G) | Postgres ships every WAL file to the WAL-G bucket (`archive_timeout=60`: at least one file a minute while the database is written); `backup.sh` adds a base backup | WAL continuously; base backup daily from cron (03:00 Vietnam time) | newest 14 base backups = 14 days (cron only; `wal-g delete retain FULL 14`) | any moment from the oldest kept base backup to the last WAL that reached R2 |
-| `pg_dump -Fc` | `backup.sh` → `backups/` → R2 bucket `wordmet-backups` | before every deploy and daily from cron | 3 on the VPS, 14 on R2 | the moment of the dump |
+| `pg_dump -Fc` | `backup.sh` → `backups/` → R2 bucket `wordmet-backups` (`daily/` and `deploy/`) | before every deploy (`deploy/`) and daily from cron (`daily/`) | 3 on the VPS; 14 days in `daily/` and 5 in `deploy/` on R2 | the moment of the dump |
 
-`deploy.sh` runs `backup.sh` with `BACKUP_SKIP_BASE=1`: the deploy takes the dump only, so a WAL-G problem cannot block a deploy. The WAL-G
-base backup runs only from the cron line below.
+`deploy.sh` runs `backup.sh` with `BACKUP_KIND=deploy BACKUP_SKIP_BASE=1`: the deploy takes the dump only, so a WAL-G problem cannot block a deploy. The WAL-G
+base backup runs only from the cron line below (or a manual run).
 
 `wal-g delete retain FULL 14` keeps the newest 14 **base backups**, not 14 days. With one cron backup a day that is 14 days, but every manual
-`backup.sh` (the first rollout, after a restore, after a `backup` alert) adds one more and pushes the oldest day out of the window. Run it
+`BACKUP_KIND=deploy deploy/scripts/backup.sh` (the first rollout, after a restore, after a `backup` alert) adds one more and pushes the oldest day out of the window. Always pass `BACKUP_KIND=deploy` on manual runs so ad-hoc dumps land in `deploy/` instead of the locked `daily/` prefix, and run it
 by hand only where a step asks for it.
 
 Lost with a restore from the WAL archive: what was written after the last WAL file that reached R2, up to about 60 s plus the upload time.
@@ -243,14 +243,15 @@ backup from before it still exists; the restore starts from the newest base back
 
 The older `disk` alert (more than 80 % used) and `disk-low` (less than 15 GB free) fire at nearly the same moment on a 79 GB disk (80 % is
 about 63 GB used, about 16 GB free): two emails for one cause, expected.
-| `backup` | `backup.sh` failed: dump, upload to R2 or the WAL-G base backup (the dump is already on R2 when only WAL-G failed) | Read `logs/cron.log`, run `deploy/scripts/backup.sh` by hand |
+| `backup` | `backup.sh` failed: dump, upload to R2 or the WAL-G base backup (the dump is already on R2 when only WAL-G failed) | Read `logs/cron.log`, run `BACKUP_KIND=deploy deploy/scripts/backup.sh` by hand |
 
 The daily report has one line, for example `PITR: last WAL 20 s ago, .ready 0, newest base backup base_0000…, 2026-11-20T20:00:11Z`. A large
 age with `.ready 0` is a quiet database (a WAL file is shipped only after writes); a large age with `.ready` above 0 is the `archive` alert.
 `PITR: unavailable` means neither Postgres nor R2 could be asked.
 
-Rehearsed with an S3-compatible fake (SeaweedFS) using these scripts; the same flow was measured on real R2 with a hand-made script
-(`docs/superpowers/specs/2026-11-17-restore-safety-design.md` §5). The scripts have not run against real R2 yet.
+Rehearsed with an S3-compatible fake (SeaweedFS) using these scripts; the same flow was measured on real R2 on 21/11/2026 on a local Docker machine (RTO 41.97 s, including `wal-g backup-fetch`, PITR promote, and two idempotent `accounts:replay-deletions --journal` runs — see `docs/audit/2026-11-21-pitr-drill/README.md`).
+
+> **Production prefix warning:** `s3://wordmet-wal/spike` is the production archive despite its name; never delete or rename it.
 
 ### Set up the deletion journal
 
@@ -275,6 +276,8 @@ older image that does not journal, stop deletion writers and backfill from the a
 
 ### Which restore
 
+- **Restore order (B12):** always try **PITR (WAL-G)** first. Fall back to a **dump** (`daily/` or `deploy/`) only when PITR is impossible, and after a dump restore always run `orders:probe-payos` for the gap window and grant Pro manually as rehearsed on 21/11/2026 (`docs/audit/2026-11-21-pitr-drill/README.md`).
+- **Complete VPS loss:** follow the 10-step runbook in [`docs/deliveries/runbook-vps-loss.md`](../docs/deliveries/runbook-vps-loss.md).
 - **Restore to a point in time (WAL-G)** is the default: while archiving is healthy it loses about the last 60 s of writes plus the upload
   time, not a day, and it can stop just before a mistake.
 - **Restore from a dump** when the WAL archive cannot be used (R2 bucket gone, no base backup old enough), or to build a database from
@@ -306,7 +309,7 @@ exists (a bad deploy or a wrong delete, not a lost machine). The command lists t
 one is known only when the restore block runs it, which is why the copy is not optional:
 
 ```bash
-BACKUP_SKIP_BASE=1 deploy/scripts/backup.sh     # a dump to backups/ and R2; works only while Postgres still answers
+BACKUP_KIND=deploy BACKUP_SKIP_BASE=1 deploy/scripts/backup.sh  # a dump to backups/ and R2; works only while Postgres still answers
 compose stop postgres
 df -h /srv/wordmet/backups                      # the copy is about as big as the database
 docker run --rm -v wordmet_postgres_data:/from:ro -v /srv/wordmet/backups:/to --entrypoint tar \
@@ -360,7 +363,7 @@ deploy/scripts/db-roles.sh                   # repairs the roles and grants; mus
 compose --profile migrate run --rm migrate   # the restored schema is as old as the backup: bring it to the running code
 compose run --rm --no-deps -T api node dist/cli/accounts-deletions.js replay --journal
 compose up -d api worker
-deploy/scripts/backup.sh                     # a new base backup on the new timeline
+BACKUP_KIND=deploy deploy/scripts/backup.sh  # a new base backup on the new timeline
 ```
 
 What to read in the output:
@@ -460,8 +463,16 @@ A dump older than the 3 kept in `backups/` is on R2. List and download it (the k
 
 ```bash
 r2() { docker run --rm --env-file /srv/wordmet/ops.env -e AWS_DEFAULT_REGION=auto   -e AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED -e AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED   -v /srv/wordmet/backups:/backups --entrypoint sh amazon/aws-cli:2.40.2 -c   'AWS_ACCESS_KEY_ID=$R2_BACKUP_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$R2_BACKUP_SECRET_ACCESS_KEY aws --endpoint-url "$R2_BACKUP_ENDPOINT" '"$*"; }
-r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'
-r2 's3 cp "s3://$R2_BACKUP_BUCKET/<file>.dump" /backups/'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/daily/"'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/deploy/"'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'   # legacy root dumps kept for 14 days after prefix rollout
+r2 's3 cp "s3://$R2_BACKUP_BUCKET/daily/<file>.dump" /backups/'
+```
+
+To protect daily dumps from accidental deletion or overwrite, lock only the `daily/` prefix of the dump bucket (never lock the WAL bucket):
+
+```bash
+wrangler r2 bucket lock add wordmet-backups daily-13d daily/ --retention-days 13
 ```
 
 ## Admin web (by hand, when CD is not available)

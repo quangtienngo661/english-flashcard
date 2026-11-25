@@ -1,0 +1,73 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma.
+
+✔ Generated Prisma Client (7.10.1) to .\src\generated\prisma in 583ms
+
+$ nest build
+=== 1. WAL-G BACKUP-FETCH + PITR TO 2026-11-21 04:00:00+00 ===
+INFO: 2026/11/21 12:45:59.058929 Selecting the latest backup...
+INFO: 2026/11/21 12:45:59.059772 Backup to fetch will be searched in storages: [default]
+INFO: 2026/11/21 12:45:59.446327 LATEST backup is: 'base_000000010000000100000033'
+INFO: 2026/11/21 12:46:07.982647 Finished extraction of part_001.tar.br
+INFO: 2026/11/21 12:46:08.307667 Finished extraction of pg_control.tar.br
+INFO: 2026/11/21 12:46:08.364739 Finished extraction of backup_label.tar.br
+INFO: 2026/11/21 12:46:08.364798 
+Backup extraction complete.
+BACKUP_FETCH_SECONDS: 10.28
+PITR_PROMOTED_SECONDS: 20.77
+DELETED_USER_PRESENT_BEFORE_REPLAY=1
+=== 2. REPLAY DELETION JOURNAL FROM REAL R2 (2 IDEMPOTENT RUNS) ===
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [NestFactory] Starting Nest application...
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] PrismaModule dependencies initialized +102ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] MulterModule dependencies initialized +2ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] BatchScopeModule dependencies initialized +1ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] PracticePortsModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] AppModule dependencies initialized +3ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] CommonModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] MailModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] FaqModule dependencies initialized +6ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] SettingsModule dependencies initialized +3ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] LegalModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] IdentityModule dependencies initialized +2ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] EntitlementsModule dependencies initialized +4ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] ContentPipelineModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] LearningModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] NotificationsModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] AiModule dependencies initialized +1ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] ContentModule dependencies initialized +0ms
+[Nest] 39152  - 11/21/2026, 7:46:25 PM     LOG [InstanceLoader] PracticeModule dependencies initialized +0ms
+read 1 journal records and 0 file records
+{"user_id":"<uuid>","by":"self","level":"info","event":"account_deleted","operation_id":"<op>"}
+replayed 1, without a users row 0, pending 0
+REPLAY_RUN1_EXIT=0
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [NestFactory] Starting Nest application...
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] PrismaModule dependencies initialized +60ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] MulterModule dependencies initialized +2ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] BatchScopeModule dependencies initialized +1ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] PracticePortsModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] CommonModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] MailModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] FaqModule dependencies initialized +4ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] SettingsModule dependencies initialized +2ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] LegalModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] IdentityModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] EntitlementsModule dependencies initialized +2ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] ContentPipelineModule dependencies initialized +1ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] LearningModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] NotificationsModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] AiModule dependencies initialized +0ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] ContentModule dependencies initialized +1ms
+[Nest] 33316  - 11/21/2026, 7:46:32 PM     LOG [InstanceLoader] PracticeModule dependencies initialized +0ms
+read 1 journal records and 0 file records
+replayed 0, without a users row 1, pending 0
+REPLAY_RUN2_EXIT=0
+DELETED_USER_AFTER_REPLAY (users|deleted_accounts)=0|1
+=== 3. BOOT API AGAINST RESTORED DB & CHECK /v1/health/ready ===
+API_READY_RESPONSE: {"status":"ok","checks":{"database":"ok","redis":"ok"}}
+END_TO_END_RTO_SECONDS: 41.97
+=== 4. MANUAL POST-RESTORE PRO GRANT REHEARSAL ===
+MISSING_ORDER_<order>=0 | GRANTS_BEFORE=0 | GRANT_INSERTED=1 INSERT 0 1 | GRANTS_AFTER=1 (duplicate check sees >=1 -> HOLD)
+=== 5. MANDATORY CLEANUP ===
+CLEANUP_CONTAINERS='' | CLEANUP_VOLUMES=''

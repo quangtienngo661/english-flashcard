@@ -1,10 +1,11 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Optional, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { type Job, UnrecoverableError, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
+import { WorkerLiveness } from '../../common/workers/worker-liveness.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { BackgroundJobsService, makeJobContext } from './background-jobs.service.js';
 import { JobHandlerRegistry } from './job-handler.registry.js';
@@ -30,6 +31,7 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
     @Inject(BackgroundJobsService) private readonly backgroundJobs: BackgroundJobsService,
     @Inject(JobHandlerRegistry) private readonly registry: JobHandlerRegistry,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Optional() @Inject(WorkerLiveness) private readonly liveness?: WorkerLiveness,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -47,6 +49,7 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
       const worker = new Worker(queue, (job) => this.process(job, handler), {
         connection, prefix: this.config.pipeline.queuePrefix, concurrency: 1,
       });
+      this.liveness?.register(queue, worker);
       worker.on('error', (error) => { this.logger.warn('job_worker_error', { queue, error }); });
       this.workers.push(worker);
       await worker.waitUntilReady();

@@ -16,6 +16,7 @@ const HOURLY = 3_600_000;
 @Injectable()
 export class MaintenanceScheduler implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly jobs = new Map<string, (now: Date) => Promise<unknown>>();
+  private readonly finishedListeners: Array<(at: Date) => void | Promise<void>> = [];
   private timer: NodeJS.Timeout | undefined;
 
   constructor(
@@ -26,6 +27,10 @@ export class MaintenanceScheduler implements OnApplicationBootstrap, OnModuleDes
 
   register(name: string, job: (now: Date) => Promise<unknown>): void {
     this.jobs.set(name, job);
+  }
+
+  onRunFinished(listener: (at: Date) => void | Promise<void>): void {
+    this.finishedListeners.push(listener);
   }
 
   jobNames(): string[] {
@@ -47,6 +52,13 @@ export class MaintenanceScheduler implements OnApplicationBootstrap, OnModuleDes
           this.logger.error('maintenance_job_failed', err, { job: name });
         }
       });
+    }
+    for (const listener of this.finishedListeners) {
+      try {
+        await listener(now);
+      } catch (err) {
+        this.logger.warn('maintenance_listener_failed', { error: err });
+      }
     }
   }
 

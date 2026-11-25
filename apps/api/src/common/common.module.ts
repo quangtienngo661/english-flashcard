@@ -8,6 +8,7 @@ import { MaintenanceScheduler } from './maintenance/maintenance.scheduler.js';
 import { RateLimitCleanupRegistrar } from './rate-limit/rate-limit-cleanup.registrar.js';
 import { RateLimitGuard } from './rate-limit/rate-limit.guard.js';
 import { RateLimiter } from './rate-limit/rate-limiter.service.js';
+import { WorkerLiveness } from './workers/worker-liveness.js';
 
 @Global()
 @Module({})
@@ -29,8 +30,9 @@ export class CommonModule {
         RateLimitCleanupRegistrar,
         IdempotencyCleanupRegistrar,
         MailBudgetCleanupRegistrar,
+        WorkerLiveness,
       ],
-      exports: [APP_CONFIG, Clock, LOG_SINK, AppLogger, RateLimiter, RateLimitGuard, MaintenanceScheduler],
+      exports: [APP_CONFIG, Clock, LOG_SINK, AppLogger, RateLimiter, RateLimitGuard, MaintenanceScheduler, WorkerLiveness],
     };
   }
 }

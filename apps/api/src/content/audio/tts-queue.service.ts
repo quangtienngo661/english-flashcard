@@ -1,8 +1,9 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Optional, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { DelayedError, type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
+import { WorkerLiveness } from '../../common/workers/worker-liveness.js';
 
 export const TTS_QUEUE = 'content-tts';
 /** Recordings made at the same time by one worker process (design §5.5; Google allows 1,000 requests a minute). */
@@ -40,6 +41,7 @@ export class TtsQueueService implements OnApplicationBootstrap, OnModuleDestroy 
   constructor(
     @Inject(APP_CONFIG) protected readonly config: AppConfig,
     @Inject(AppLogger) protected readonly logger: AppLogger,
+    @Optional() @Inject(WorkerLiveness) private readonly liveness?: WorkerLiveness,
   ) {}
 
   get running(): boolean {
@@ -82,6 +84,7 @@ export class TtsQueueService implements OnApplicationBootstrap, OnModuleDestroy 
     this.worker = new Worker(TTS_QUEUE, (job, token) => this.process(job, token), {
       connection: this.workerConnection, prefix: this.config.pipeline.queuePrefix, concurrency: TTS_CONCURRENCY,
     });
+    this.liveness?.register(TTS_QUEUE, this.worker);
     this.worker.on('error', (error) => { this.logger.warn('tts_worker_error', { error }); });
     await this.worker.waitUntilReady();
   }

@@ -16,29 +16,36 @@ main() {
   log "fetch and check out $wanted"
   git fetch --quiet origin
   sha="$(resolve_commit "$wanted")"
+  if ! git merge-base --is-ancestor "$sha" origin/main; then
+    die "$sha is not on origin/main"
+  fi
   git checkout --quiet --detach "$sha"
   current="$(current_sha)"
+  restore_checkout() { if [ -n "$current" ]; then git checkout --quiet --detach "$current"; fi; }
 
   log "build wordmet-api:$sha and wordmet-api-migrate:$sha"
-  docker build --quiet --target api-prod -t "wordmet-api:$sha" . >/dev/null
-  docker build --quiet --target api-build -t "wordmet-api-migrate:$sha" . >/dev/null
+  docker build --quiet --target api-prod -t "wordmet-api:$sha" . >/dev/null || { restore_checkout; die "docker build api-prod failed"; }
+  docker build --quiet --target api-build -t "wordmet-api-migrate:$sha" . >/dev/null || { restore_checkout; die "docker build api-build failed"; }
 
   if [ -z "$current" ]; then
     log "first deploy: no backup (no database yet)"
   elif [ "${DEPLOY_SKIP_BACKUP:-}" = 1 ]; then
     log "WARNING: DEPLOY_SKIP_BACKUP=1, no backup taken"
   else
-    BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || die "backup failed; nothing was changed, $current still runs"
+    BACKUP_KIND=deploy BACKUP_SKIP_BASE=1 "$SCRIPTS/backup.sh" || { restore_checkout; die "backup failed; nothing was changed, $current still runs"; }
   fi
 
   log "migrate"
-  API_TAG="$sha" compose --profile migrate run --rm migrate \
-    || die "migration failed; ${current:-nothing} still runs (an add-only migration that half-applied is safe for it)"
+  if ! API_TAG="$sha" compose --profile migrate run --rm migrate; then
+    restore_checkout
+    die "migration failed; ${current:-nothing} still runs (an add-only migration that half-applied is safe for it)"
+  fi
 
   log "start $sha"
   API_TAG="$sha" compose up -d --remove-orphans postgres redis api worker caddy
 
-  if wait_ready 120; then
+  local wait_s="${WAIT_READY_TIMEOUT:-120}"
+  if wait_ready "$wait_s"; then
     record_running "$sha"
     prune_images
     log "deployed $sha (previous: ${current:-none})"
@@ -46,12 +53,13 @@ main() {
   fi
 
   if [ -z "$current" ]; then
-    log "the API is not ready after 120 s and there is no previous version to return to; containers left up for: compose logs api"
+    log "the API is not ready after ${wait_s} s and there is no previous version to return to; containers left up for: compose logs api"
     return 1
   fi
-  log "the API is not ready after 120 s: putting $current back"
+  log "the API is not ready after ${wait_s} s: putting $current back"
+  git checkout --quiet --detach "$current"
   API_TAG="$current" compose up -d api worker
-  if wait_ready 120; then log "$current runs again; $sha was not recorded"; else log "ERROR: $current is not ready either"; fi
+  if wait_ready "$wait_s"; then log "$current runs again; $sha was not recorded"; else log "ERROR: $current is not ready either"; fi
   return 1
 }
 

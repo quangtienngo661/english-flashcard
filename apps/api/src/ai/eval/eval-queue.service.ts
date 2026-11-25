@@ -1,9 +1,10 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Optional, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { type Job, Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
+import { WorkerLiveness } from '../../common/workers/worker-liveness.js';
 import { JudgeJob } from '../judge/judge-job.js';
 import { JudgePassesRepository } from '../judge/judge-passes.repository.js';
 import { EvalJob } from './eval-job.js';
@@ -35,6 +36,7 @@ export class EvalQueue implements OnApplicationBootstrap, OnModuleDestroy {
     @Inject(JudgeJob) private readonly judgeJob: JudgeJob,
     @Inject(JudgePassesRepository) private readonly passes: JudgePassesRepository,
     @Inject(Clock) private readonly clock: Clock,
+    @Optional() @Inject(WorkerLiveness) private readonly liveness?: WorkerLiveness,
   ) {}
 
   get running(): boolean {
@@ -48,6 +50,7 @@ export class EvalQueue implements OnApplicationBootstrap, OnModuleDestroy {
     this.worker = new Worker(EVAL_QUEUE, (job: Job<{ runId?: string; passId?: string }>) => this.process(job), {
       connection: this.workerConnection, prefix: this.config.pipeline.queuePrefix, concurrency: 1,
     });
+    this.liveness?.register(EVAL_QUEUE, this.worker);
     this.worker.on('error', (error) => { this.logger.warn('ai_eval_worker_error', { error }); });
     await this.worker.waitUntilReady();
   }

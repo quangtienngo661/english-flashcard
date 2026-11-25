@@ -12,6 +12,16 @@ STATE_DIR="$WORDMET_HOME/state"
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 die() { log "ERROR: $*" >&2; exit 1; }
 
+# Pings a dead-man switch URL (healthchecks.io). Empty URL is a no-op; curl errors are logged and never fatal.
+ping_healthcheck() {
+  local url="${1:-}" mode="${2:-}" target
+  [ -n "$url" ] || return 0
+  target="$url"
+  if [ "$mode" = fail ]; then target="${url%/}/fail"; fi
+  curl -fsS -m 10 --retry 3 -o /dev/null "$target" || log "WARNING: healthcheck ping failed ($target)"
+  return 0
+}
+
 # The one way to reach the production stack. API_TAG defaults to the running version so commands that do not deploy
 # (backup, exec, logs) still satisfy the compose file.
 compose() {
@@ -82,16 +92,22 @@ record_running() {
   printf '%s\n' "$1" > "$STATE_DIR/current"
 }
 
-# Waits until the api container reports healthy (its healthcheck calls /v1/health/ready). 0 = healthy, 1 = not within <seconds>.
+# Waits until every listed service reports healthy (default: api worker). 0 = all healthy, 1 = not within <seconds>.
 wait_ready() {
-  local deadline=$((SECONDS + $1)) id status
+  local seconds="$1"; shift
+  local services=("$@")
+  if [ "${#services[@]}" -eq 0 ]; then services=(api worker); fi
+  local deadline=$((SECONDS + seconds)) service id status all_ok
   while [ "$SECONDS" -lt "$deadline" ]; do
-    id="$(compose ps -q api 2>/dev/null || true)"
-    if [ -n "$id" ]; then
+    all_ok=1
+    for service in "${services[@]}"; do
+      id="$(compose ps -q "$service" 2>/dev/null || true)"
+      if [ -z "$id" ]; then all_ok=0; break; fi
       status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$id" 2>/dev/null || echo missing)"
-      if [ "$status" = healthy ]; then return 0; fi
-    fi
-    sleep 3
+      if [ "$status" != healthy ]; then all_ok=0; break; fi
+    done
+    if [ "$all_ok" -eq 1 ]; then return 0; fi
+    sleep 1
   done
   return 1
 }
