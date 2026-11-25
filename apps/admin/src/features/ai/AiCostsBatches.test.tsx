@@ -1,12 +1,15 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
 import en from '../../../messages/en.json';
 import { problem } from '../../auth/test-support';
 import { POLL_INTERVAL_MS } from '../jobs/usePollingStatus';
 import { todayInAdminZone } from './cost-range';
 import { batchRow, BATCH_ID, CONFIG_ID, renderCosts, SOURCE_ID } from './costs-test-support';
+
+// Full-app jsdom renders with multi-step userEvent interactions exceed 5 s on Windows under parallel workers.
+vitest.setConfig({ testTimeout: 15_000 });
 
 const t = vi.ai.costs.batches;
 const today = todayInAdminZone(new Date());
