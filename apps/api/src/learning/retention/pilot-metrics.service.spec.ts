@@ -7,8 +7,8 @@ function makeService() {
   const prisma = {
     billingOrder: { findMany: vi.fn().mockResolvedValue([]) },
     practiceSession: { count: vi.fn().mockResolvedValue(0) },
-    learningLogEntry: { findMany: vi.fn().mockResolvedValue([]) },
     learningActivityDay: { groupBy: vi.fn().mockResolvedValue([]) },
+    $queryRaw: vi.fn().mockResolvedValue([]),
   };
   const identity = {
     registrations: vi.fn().mockResolvedValue([]),
@@ -42,10 +42,8 @@ describe('PilotMetricsService', () => {
     prisma.practiceSession.count
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(4);
-    prisma.learningLogEntry.findMany.mockResolvedValue([
-      { userId: 'u-1', levelBefore: 1, levelAfter: 2 },
-      { userId: 'u-2', levelBefore: 1, levelAfter: 1 },
-      { userId: 'staff-1', levelBefore: 1, levelAfter: 2 }, // excluded
+    prisma.$queryRaw.mockResolvedValue([
+      { level: 1, due_answers: 2n, remembered: 1n },
     ]);
 
     const res = await service.report(
@@ -64,7 +62,7 @@ describe('PilotMetricsService', () => {
     });
   });
 
-  it('skips learningActivityDay query when no verified members registered in range', async () => {
+  it('skips learningActivityDay and $queryRaw when no verified members registered in range', async () => {
     const { service, prisma } = makeService();
     const res = await service.report(
       { from: '2026-11-16', to: '2026-11-22' },
@@ -72,6 +70,8 @@ describe('PilotMetricsService', () => {
     );
     expect(res.members).toBe(0);
     expect(res.activated).toBe(0);
+    expect(res.recall_by_level).toEqual([]);
     expect(prisma.learningActivityDay.groupBy).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 });
