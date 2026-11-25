@@ -57,17 +57,17 @@ describe('RetentionService.report (nhóm B M6, design §10)', () => {
     });
     // The members' rows: only learners that count, from D7's window start to the last D30.
     expect(activity.findMany).toHaveBeenCalledExactlyOnceWith({
-      where: { userId: { in: ['lan', 'minh'] }, localDate: { gte: day('2026-10-27'), lte: day('2026-12-08') } },
+      where: { userId: { in: ['lan', 'minh'] }, studied: true, localDate: { gte: day('2026-10-27'), lte: day('2026-12-08') } },
       select: { userId: true, localDate: true },
     });
   });
 
-  it('today: the window read covers [today − 6, today], "ever" has no filter, and staff are taken out of both numbers', async () => {
+  it('today: the window read covers [today − 6, today], "ever" filters studied: true, and staff are taken out of both numbers', async () => {
     const { service, activity, staffUserIds } = setup();
     const { today } = await service.report({ from: '2026-10-28', to: '2026-11-03' }, NOW);
     expect(activity.groupBy).toHaveBeenCalledTimes(2);
-    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { localDate: { gte: day('2026-12-09'), lte: day('2026-12-15') } } });
-    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'] });
+    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { studied: true, localDate: { gte: day('2026-12-09'), lte: day('2026-12-15') } } });
+    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { studied: true } });
     expect(staffUserIds).toHaveBeenCalledOnce();
     // Window: lan (10/12), x (12/12), e1 (14/12); ever also has minh; e1 is staff.
     expect(today).toEqual({ date: '2026-12-15', active: 2, stopped: 1 });
@@ -81,7 +81,7 @@ describe('RetentionService.report (nhóm B M6, design §10)', () => {
       { week_start: '2026-10-26', size: 1, d7: 0, d30: 0 },
       { week_start: '2026-11-02', size: 1, d7: 1, d30: 0 },
     ]);
-    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { localDate: { gte: day('2026-12-15'), lte: day('2026-12-15') } } });
+    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { studied: true, localDate: { gte: day('2026-12-15'), lte: day('2026-12-15') } } });
     expect(activity.findMany.mock.calls[0][0].where?.localDate).toEqual({ gte: day('2026-11-02'), lte: day('2026-12-08') });
     expect(view.today).toEqual({ date: '2026-12-15', active: 0, stopped: 3 });
   });
@@ -96,7 +96,7 @@ describe('RetentionService.report (nhóm B M6, design §10)', () => {
       { week_start: '2026-11-02', size: 1, d7: 1, d30: 1 },
     ]);
     expect(activity.findMany.mock.calls[0][0].where?.localDate).toEqual({ gte: day('2026-09-04'), lte: day('2026-12-08') });
-    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { localDate: { gte: day('2026-10-17'), lte: day('2026-12-15') } } });
+    expect(activity.groupBy).toHaveBeenCalledWith({ by: ['userId'], where: { studied: true, localDate: { gte: day('2026-10-17'), lte: day('2026-12-15') } } });
     expect(view.today).toEqual({ date: '2026-12-15', active: 3, stopped: 0 });
   });
 

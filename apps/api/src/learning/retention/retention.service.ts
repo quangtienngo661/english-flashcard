@@ -50,9 +50,9 @@ export class RetentionService {
 
     const [inWindow, ever] = await Promise.all([
       this.prisma.learningActivityDay.groupBy({
-        by: ['userId'], where: { localDate: { gte: dateValue(addDays(today, 1 - n)), lte: dateValue(today) } },
+        by: ['userId'], where: { studied: true, localDate: { gte: dateValue(addDays(today, 1 - n)), lte: dateValue(today) } },
       }),
-      this.prisma.learningActivityDay.groupBy({ by: ['userId'] }),
+      this.prisma.learningActivityDay.groupBy({ by: ['userId'], where: { studied: true } }),
     ]);
     const counts = todayCounts({
       inWindow: inWindow.map((row) => row.userId), ever: ever.map((row) => row.userId), excluded: new Set(staff),
@@ -68,7 +68,7 @@ export class RetentionService {
     const activity = new Map<string, Set<string>>();
     if (members.length === 0) return activity;
     const rows = await this.prisma.learningActivityDay.findMany({
-      where: { userId: { in: members.map((member) => member.userId) }, localDate: { gte: dateValue(from), lte: dateValue(to) } },
+      where: { userId: { in: members.map((member) => member.userId) }, studied: true, localDate: { gte: dateValue(from), lte: dateValue(to) } },
       select: { userId: true, localDate: true },
     });
     for (const row of rows) {

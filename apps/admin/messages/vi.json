@@ -2709,7 +2709,23 @@
       },
       "weekOf": "Từ {date}",
       "rate": "{percent} ({count}/{size})",
-      "blank": "“—”: nhóm chưa tới ngày +7 / +30, hoặc không có ai đăng ký."
+      "blank": "“—”: nhóm chưa tới ngày +7 / +30, hoặc không có ai đăng ký.",
+      "pilot": {
+        "activated": "Kích hoạt (học trong 1 ngày đầu)",
+        "aiSessions": "Phiên có câu AI",
+        "ordersByWeek": "Đơn tạo / đã trả theo tuần",
+        "recallByLevel": "Nhớ khi tới hạn, theo cấp",
+        "loadFailed": "Không tải được số liệu pilot.",
+        "cols": {
+          "week": "Tuần",
+          "verified": "Xác nhận email",
+          "ordersCreated": "Đơn tạo",
+          "ordersPaid": "Đơn đã trả",
+          "level": "Cấp",
+          "dueAnswers": "Lượt trả lời tới hạn",
+          "remembered": "Nhớ"
+        }
+      }
     },
     "cols": {
       "operation": "Thao tác",

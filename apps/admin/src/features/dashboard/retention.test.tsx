@@ -5,7 +5,7 @@ import en from '../../../messages/en.json';
 import vi from '../../../messages/vi.json';
 import { renderRouteTree } from '../../app/test-router';
 import { RetentionCard } from './retention';
-import type { Retention } from './retention-api';
+import type { PilotMetrics, Retention } from './retention-api';
 
 const t = vi.dashboard.retention;
 
@@ -17,8 +17,8 @@ const DATA: Retention = {
   ],
 };
 
-function show(data: Retention, locale: 'vi' | 'en' = 'vi') {
-  return renderRouteTree([{ path: '/', element: <RetentionCard data={data} /> }], { initialEntries: ['/'] }, (node) => (
+function show(data: Retention, locale: 'vi' | 'en' = 'vi', pilot?: PilotMetrics) {
+  return renderRouteTree([{ path: '/', element: <RetentionCard data={data} pilot={pilot} /> }], { initialEntries: ['/'] }, (node) => (
     <IntlProvider locale={locale} messages={locale === 'en' ? en : vi} timeZone="Asia/Ho_Chi_Minh">{node}</IntlProvider>
   ));
 }
@@ -98,5 +98,22 @@ describe('RetentionCard (nhóm B M6, D28: tiles and a table, no chart)', () => {
     expect(first[0]).toBe('From 10/26');
     expect(first[2]).toMatch(/^60\s?% \(3\/5\)$/);
     expect(second).toEqual(['From 11/02', '0', '—', '—']);
+  });
+
+  it('shows pilot activation, AI sessions, weekly orders and recall by level when pilot metrics are provided', () => {
+    const pilot: PilotMetrics = {
+      from: '2026-10-26',
+      to: '2026-11-08',
+      members: 40,
+      activated: 22,
+      weeks: [{ week: '2026-10-26', verified: 40, orders_created: 5, orders_paid: 3 }],
+      ai_sessions: { sessions: 60, with_ai: 15 },
+      recall_by_level: [{ level: 1, due_answers: 20, remembered: 16 }],
+    };
+    show(DATA, 'vi', pilot);
+    expect(within(tile(t.pilot.activated)).getByText('22/40 (55%)')).toBeInTheDocument();
+    expect(within(tile(t.pilot.aiSessions)).getByText('15/60 (25%)')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: t.pilot.ordersByWeek })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: t.pilot.recallByLevel })).toBeInTheDocument();
   });
 });

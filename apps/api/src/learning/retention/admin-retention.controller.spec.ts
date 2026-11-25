@@ -4,6 +4,7 @@ import { createTestApp, type TestApp } from '../../../test/support/create-test-a
 import { listRoutes } from '../../../test/support/list-routes.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
+import { PilotMetricsService, type PilotMetricsView } from './pilot-metrics.service.js';
 import { RetentionService, type RetentionView } from './retention.service.js';
 
 const PROBLEM = 'https://api.example.com/problems/';
@@ -11,11 +12,18 @@ const VIEW: RetentionView = {
   from: '2026-10-26', to: '2026-11-03', window_days: 7, today: { date: '2026-12-15', active: 2, stopped: 1 },
   cohorts: [{ week_start: '2026-10-26', size: 1, d7: 1, d30: 0 }, { week_start: '2026-11-02', size: 0, d7: null, d30: null }],
 };
+const PILOT_VIEW: PilotMetricsView = {
+  from: '2026-10-28', to: '2026-11-03', members: 40, activated: 22,
+  weeks: [{ week: '2026-10-26', verified: 40, orders_created: 3, orders_paid: 2 }],
+  ai_sessions: { sessions: 60, with_ai: 15 },
+  recall_by_level: [{ level: 1, due_answers: 10, remembered: 8 }],
+};
 
 describe('GET /v1/admin/learning/retention (unit, mocked service)', () => {
   let ctx: TestApp; let token: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   let report: ReturnType<typeof vi.spyOn>;
+  let pilotReport: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
 
   beforeAll(async () => {
@@ -24,6 +32,7 @@ describe('GET /v1/admin/learning/retention (unit, mocked service)', () => {
     ctx = await createTestApp({ databaseUrl: 'unused' });
     // Not mocked by default: a bad range makes the real service throw before it reads anything.
     report = vi.spyOn(ctx.app.get(RetentionService), 'report');
+    pilotReport = vi.spyOn(ctx.app.get(PilotMetricsService), 'report');
   });
   beforeEach(async () => {
     role = 'editor';
@@ -31,6 +40,7 @@ describe('GET /v1/admin/learning/retention (unit, mocked service)', () => {
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     report.mockClear();
+    pilotReport.mockClear();
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
@@ -81,5 +91,17 @@ describe('GET /v1/admin/learning/retention (unit, mocked service)', () => {
       expect(res.body.type, query).toBe(`${PROBLEM}validation-failed`);
     }
     expect(report).not.toHaveBeenCalled();
+  });
+
+  it('GET /v1/admin/learning/pilot-metrics requires ai.view and returns the pilot metrics view', async () => {
+    const routes = listRoutes(ctx.app).filter(({ path }) => path === '/v1/admin/learning/pilot-metrics');
+    expect(routes.map(({ method, path, permissions }) => ({ method, path, permissions }))).toEqual([
+      { method: 'GET', path: '/v1/admin/learning/pilot-metrics', permissions: ['ai.view'] },
+    ]);
+    pilotReport.mockResolvedValueOnce(PILOT_VIEW);
+    const res = await ctx.http().get('/v1/admin/learning/pilot-metrics?from=2026-10-28&to=2026-11-03').set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(PILOT_VIEW);
+    expect(pilotReport).toHaveBeenCalledExactlyOnceWith({ from: '2026-10-28', to: '2026-11-03' }, expect.any(Date));
   });
 });

@@ -24,6 +24,7 @@ import { QueueController } from './queue/queue.controller.js';
 import { LearningAccountEraser } from './account-eraser.provider.js';
 import { QueueService } from './queue/queue.service.js';
 import { AdminRetentionController } from './retention/admin-retention.controller.js';
+import { PilotMetricsService } from './retention/pilot-metrics.service.js';
 import { RetentionService } from './retention/retention.service.js';
 import { ReviewsController } from './reviews/reviews.controller.js';
 import { ReviewsService } from './reviews/reviews.service.js';
@@ -38,7 +39,7 @@ import { ReviewsService } from './reviews/reviews.service.js';
   providers: [
     BacklogService, CalendarService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
     PracticeReviewService, RecallAnswerService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
-    RetentionService,
+    RetentionService, PilotMetricsService,
   ],
   exports: [LearningService],
 })

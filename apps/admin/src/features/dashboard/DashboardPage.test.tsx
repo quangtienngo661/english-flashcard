@@ -9,7 +9,7 @@ import { renderApp } from '../staff/test-utils';
 import type {
   AiDashboard, AiQuality, AiUsageDays, AiUsagePro, DashboardJudgeRevision, JudgeScoreGroup, LatestEval, VerdictCounts,
 } from './dashboard-api';
-import type { Retention } from './retention-api';
+import type { PilotMetrics, Retention } from './retention-api';
 
 const t = vi.dashboard;
 const PRO_URL = 'GET /v1/admin/entitlements/ai-usage/pro';
@@ -20,6 +20,7 @@ const urls = (from = back(29), to = TODAY) => ({
   quality: `GET /v1/admin/practice/ai-quality?from=${from}&to=${to}`,
   usage: `GET /v1/admin/entitlements/ai-usage/days?from=${from}&to=${to}`,
   retention: `GET /v1/admin/learning/retention?from=${from}&to=${to}`,
+  pilot: `GET /v1/admin/learning/pilot-metrics?from=${from}&to=${to}`,
 });
 const EDITOR = makeMe({
   id: 'me-2', email: 'editor@wordmet.com', staff_role: 'editor',
@@ -93,11 +94,19 @@ const retentionReply = (over: Partial<Retention> = {}): Retention => ({
   cohorts: [{ week_start: '2026-10-26', size: 5, d7: 3, d30: 1 }, { week_start: '2026-11-02', size: 0, d7: null, d30: null }],
   ...over,
 });
-const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays; pro?: AiUsagePro; retention?: Retention } = {}) => ({
+const pilotReply = (over: Partial<PilotMetrics> = {}): PilotMetrics => ({
+  from: back(29), to: TODAY, members: 10, activated: 6,
+  weeks: [{ week: '2026-10-26', verified: 10, orders_created: 2, orders_paid: 1 }],
+  ai_sessions: { sessions: 20, with_ai: 5 },
+  recall_by_level: [{ level: 1, due_answers: 10, remembered: 8 }],
+  ...over,
+});
+const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays; pro?: AiUsagePro; retention?: Retention; pilot?: PilotMetrics } = {}) => ({
   [u.ai]: () => Response.json(replies.ai ?? aiReply()),
   [u.quality]: () => Response.json(replies.quality ?? qualityReply()),
   [u.usage]: () => Response.json(replies.usage ?? usageReply()),
   [u.retention]: () => Response.json(replies.retention ?? retentionReply()),
+  [u.pilot]: () => Response.json(replies.pilot ?? pilotReply()),
   [PRO_URL]: () => Response.json(replies.pro ?? proReply()),
 });
 const tile = (label: string) => screen.getByText(label).parentElement as HTMLElement;
@@ -356,7 +365,7 @@ describe('DashboardPage — learners still learning and D7 / D30 (nhóm B M6)', 
     const card = (await screen.findByRole('heading', { level: 2, name: t.retention.title })).closest('section') as HTMLElement;
     expect(within(tile(t.retention.active)).getByText('12')).toBeInTheDocument();
     expect(within(tile(t.retention.stopped)).getByText('3')).toBeInTheDocument();
-    const rows = within(within(card).getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true }).slice(1);
+    const rows = within(within(card).getAllByRole('table', { hidden: true })[0]).getAllByRole('row', { hidden: true }).slice(1);
     expect(rows.map((row) => within(row).getAllByRole('cell', { hidden: true }).map((cell) => cell.textContent?.replace(/\s/g, '')))).toEqual([
       ['Từ26/10', '5', '60%(3/5)', '20%(1/5)'], ['Từ02/11', '0', '—', '—'],
     ]);
@@ -378,6 +387,16 @@ describe('DashboardPage — learners still learning and D7 / D30 (nhóm B M6)', 
     renderApp('/dashboard', routes(urls(), { retention: retentionReply({ window_days: 14, from: back(40) }) }));
     await screen.findByRole('heading', { level: 2, name: t.retention.title });
     expect(screen.getByText(/trong 14 ngày gần nhất/)).toBeInTheDocument();
+  });
+
+  it('a 500 from pilot-metrics still renders the AI tiles and retention table with an inline pilot error', async () => {
+    const u = urls();
+    renderApp('/dashboard', { ...routes(u), [u.pilot]: () => problem(500, 'internal-error') });
+    expect(await screen.findByRole('heading', { level: 2, name: t.today.title })).toBeInTheDocument();
+    expect(within(tile(t.today.calls)).getByText('2 / 500')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: t.retention.title })).toBeInTheDocument();
+    expect(within(tile(t.retention.active)).getByText('12')).toBeInTheDocument();
+    expect(await screen.findByText('Không tải được số liệu pilot.')).toBeInTheDocument();
   });
 });
 

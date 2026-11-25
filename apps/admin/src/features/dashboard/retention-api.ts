@@ -19,3 +19,20 @@ export const retentionKey = (from: string, to: string) => ['dashboard', 'retenti
 
 export const getRetention = (api: ApiClient, from: string, to: string) =>
   api.get<Retention>(`/v1/admin/learning/retention?${new URLSearchParams({ from, to }).toString()}`);
+
+export type PilotWeek = { week: string; verified: number; orders_created: number; orders_paid: number };
+export type RecallLevel = { level: number; due_answers: number; remembered: number };
+export type PilotMetrics = {
+  from: string;
+  to: string;
+  members: number;
+  activated: number;
+  weeks: PilotWeek[];
+  ai_sessions: { sessions: number; with_ai: number };
+  recall_by_level: RecallLevel[];
+};
+
+export const pilotMetricsKey = (from: string, to: string) => ['dashboard', 'pilot-metrics', from, to] as const;
+
+export const getPilotMetrics = (api: ApiClient, from: string, to: string) =>
+  api.get<PilotMetrics>(`/v1/admin/learning/pilot-metrics?${new URLSearchParams({ from, to }).toString()}`);
