@@ -162,7 +162,10 @@ async function postWebhook(order, transaction, { amount, success = true } = {}) 
   const body = JSON.stringify({ code: '00', desc: 'success', success, data, signature: signPayosData(data, CHECKSUM_KEY) });
   return read(await send(`${BASE}/v1/billing/webhooks/payos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }));
 }
-const eventStatus = (code, reference) => psql(`SELECT status FROM billing_events WHERE dedupe_key = 'payos:sandbox:${code}:${reference}'`);
+// R5d (audit 23/11): a payOS event key is `payos:<env>:<orderCode>:<reference>:<paymentLinkId>`, or without the link id when the webhook
+// has none (payOS test webhook). Match both forms of one transfer.
+const eventKeyIs = (code, reference) => `(dedupe_key = 'payos:sandbox:${code}:${reference}' OR dedupe_key LIKE 'payos:sandbox:${code}:${reference}:%')`;
+const eventStatus = (code, reference) => psql(`SELECT status FROM billing_events WHERE ${eventKeyIs(code, reference)}`);
 
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025';
 /** What Mailpit holds for one address: subject and text of every message. */
@@ -229,7 +232,7 @@ async function main() {
     check(second.status === 200, `duplicate webhook: ${brief(second)}`);
     await sleep(1_000);
     check(periodsOf(order.id) === 1 && paymentsOf(order.id) === 1, 'a second period or payment appeared');
-    check(psql(`SELECT count(*) FROM billing_events WHERE dedupe_key = 'payos:sandbox:${order.code}:${tx.reference}'`) === '1', 'a second inbox row');
+    check(psql(`SELECT count(*) FROM billing_events WHERE ${eventKeyIs(order.code, tx.reference)}`) === '1', 'a second inbox row');
     ok('one inbox row, one payment, one period');
   });
 
@@ -245,8 +248,8 @@ async function main() {
     const sampleBody = JSON.stringify({ code: '00', desc: 'success', success: true, data: data123, signature: signPayosData(data123, CHECKSUM_KEY) });
     const sample = await read(await send(`${BASE}/v1/billing/webhooks/payos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: sampleBody }));
     check(sample.status === 200, `test webhook: ${brief(sample)}`);
-    await waitFor(() => psql(`SELECT status FROM billing_events WHERE dedupe_key = 'payos:sandbox:123:TF230204212323'`), (s) => s === 'ignored', 'the test webhook ignored');
-    check(psql(`SELECT error FROM billing_events WHERE dedupe_key = 'payos:sandbox:123:TF230204212323'`) === 'unknown-order', 'reason unknown-order');
+    await waitFor(() => psql(`SELECT status FROM billing_events WHERE ${eventKeyIs(123, 'TF230204212323')}`), (s) => s === 'ignored', 'the test webhook ignored');
+    check(psql(`SELECT error FROM billing_events WHERE ${eventKeyIs(123, 'TF230204212323')}`) === 'unknown-order', 'reason unknown-order');
     ok('forged → 400 nothing stored; sample → 200 and ignored (unknown-order)');
   });
 
@@ -451,7 +454,7 @@ async function main() {
     check(periodsOf(order.id) === 0, 'a period for a deleted learner');
     check(psql(`SELECT count(*) FROM billing_transactions WHERE provider_transaction_id LIKE '${order.code}:%'`) === '0', 'a purchase row for a deleted learner');
     const tx = fakeTransactions(order.code)[0];
-    const event = psql(`SELECT (payload ? 'payer')::text || '|' || (raw_payload::text LIKE '%counterAccount%')::text || '|' || status FROM billing_events WHERE dedupe_key = 'payos:sandbox:${order.code}:${tx.reference}'`);
+    const event = psql(`SELECT (payload ? 'payer')::text || '|' || (raw_payload::text LIKE '%counterAccount%')::text || '|' || status FROM billing_events WHERE ${eventKeyIs(order.code, tx.reference)}`);
     check(event === 'false|false|applied', `stored event: ${event} (payer in payload | payer in raw | status)`);
     const detail = await want(api('GET', `/v1/admin/orders/${order.id}`, { token: S.admin.token }), 200, 'admin detail');
     check(detail.refund?.payer_name === 'NGUYEN VAN FAKE' && detail.user.email === null, 'admin sees the refund information and no email');

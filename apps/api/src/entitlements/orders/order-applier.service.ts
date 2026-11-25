@@ -91,6 +91,7 @@ export class OrderApplier {
     await lockUser(tx, found.userId);
     const order = await this.orders.lock(tx, found.id);
     if (order === null) return { outcome: 'ignored', reason: 'unknown-order' };
+    // Both `deleted` and `deleting` take the same path in decideOrderPayment (`account-deleted`).
     const account = live ? await this.accountOf(tx, order.userId) : 'deleted';
 
     // The same payment seen again, by the webhook or by the job: already received, nothing written (design §3.4).

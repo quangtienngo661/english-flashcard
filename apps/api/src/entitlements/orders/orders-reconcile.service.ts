@@ -5,7 +5,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { callAdapter } from '../billing/adapter-call.js';
-import type { CheckoutState, ParsedEvent } from '../billing/billing-adapter.js';
+import { dedupeKey, type CheckoutState, type ParsedEvent } from '../billing/billing-adapter.js';
 import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import { BILLING_APPLY_PORT, BillingInbox, type BillingApplyPort } from '../billing/billing-inbox.service.js';
 import type { OrderPaymentPayload } from '../billing/billing.types.js';
@@ -145,7 +145,7 @@ export class OrdersReconcileService {
     // Review I1: a key the webhook already stored gives no new row, so a webhook the applier ignored (or gave up on) leaves this money with
     // no path that applies it. Nothing counted and every row final → staff have to look; the order is not left pending without a word.
     const paymentKeys = link.transactions.map((transaction) => paymentKeyPayos(environment, order.orderCode, transaction.reference));
-    const eventKeys = events.map((event) => `payos:${environment}:${event.externalEventId}`);
+    const eventKeys = events.map((event) => dedupeKey('payos', environment, event.externalEventId));
     if (await this.orders.neverApplied(this.prisma, paymentKeys, eventKeys)) {
       this.logger.warn('order_money_unapplied', { order_ref: order.id });
       await this.move(order, order.status as OrderStatus, { status: 'needs_review', reviewReason: 'provider-mismatch' });
