@@ -72,6 +72,36 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+  api-integration:
+    name: api-integration (postgres and redis via testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: postgresql://dev:dev@localhost:5434/english_learning
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.6.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.0
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Postgres integration tests
+        run: pnpm test:integration
+
   web:
     name: web (lint, typecheck, unit, build, e2e)
     runs-on: ubuntu-latest
