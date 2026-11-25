@@ -184,7 +184,7 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   `'unsafe-inline'` vì Next chèn script RSC inline; script Turnstile (đợt A) phải còn nạp được sau khi đổi.
 - [ ] **Build và kiểm bản cờ app tắt (cấu hình production hiện tại, `NEXT_PUBLIC_LEARNER_APP` không đặt).** Nguồn: [UW-3](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-3).
   Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
-- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
+- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev 04/11 (mục D, bản nháp local) đã có bước này.
 
 ## Giao diện mới M8: trang công khai (design giao diện mới §10.6, §10.7, QM8, 11/11/2026)
 

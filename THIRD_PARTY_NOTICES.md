@@ -164,6 +164,14 @@ its page history. The transcriptions were normalised before use (slashes dropped
 for example `r` to `ɹ`); a transcription staff edit by hand is recorded as Wordmet's own. Registered in the API as a third-party data source
 and shown on the public sources page while a published sense uses it.
 
+## CEFR-J Vocabulary Profile (A1–B2)
+
+Used as a CEFR level source for catalog entries (A1–B2). Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, based on the CEFR-J Wordlist by Yukio Tono, Tokyo University of Foreign Studies). Licence terms: to be filled by the owner.
+
+## Octanove Vocabulary Profile C1/C2 (CC BY-SA 4.0)
+
+Used as a CEFR level source for C1–C2 catalog entries. Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, Octanove Labs). Available under the Creative Commons Attribution-ShareAlike 4.0 International licence (`https://creativecommons.org/licenses/by-sa/4.0/`). Modified/filtered to match Wordmet's catalog lemmas and parts of speech.
+
 ## pluralize 8.0.0 (MIT)
 
 Used by the API only to recognise uncountable nouns, which get no library plural (D47).

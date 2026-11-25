@@ -155,4 +155,4 @@ Most project documents are written in Vietnamese.
 
 ## Third-party data
 
-Verb and noun inflections come from AGID; copyright terms: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Catalog level lists, pronunciations and inflections use third-party datasets documented in this repository (CEFR-J, Octanove C1/C2, English Wiktionary for IPA, and AGID); copyright terms and notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
