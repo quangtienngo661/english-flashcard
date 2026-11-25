@@ -132,6 +132,30 @@ main() {
     } > "$tmp/body"
     alert billing-event-failed "[wordmet] $fail_ev_count failed billing event(s)" "$tmp/body"
   fi
+
+  local ignored_sql="$REPO/deploy/sql/alerts/payments-ignored.sql"
+  local ignored_count
+  ignored_count="$(sed '/^-- detail/q' "$ignored_sql" | compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -f - 2>/dev/null | tr -d '[:space:]' || true)"
+  if [[ "$ignored_count" =~ ^[0-9]+$ ]] && [ "$ignored_count" -gt 0 ]; then
+    {
+      echo "$ignored_count ignored payment event(s) in the last 24 h (unknown-order or link-mismatch)."
+      echo
+      sed -n '/^-- detail/,$p' "$ignored_sql" | compose exec -T postgres psql -X -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -f - 2>&1 || true
+    } > "$tmp/body"
+    alert billing-payment-ignored "[wordmet] $ignored_count payment(s) ignored in 24 h (unknown order or link mismatch)" "$tmp/body"
+  fi
+
+  local flagged_sql="$REPO/deploy/sql/alerts/paid-with-review-reason.sql"
+  local flagged_count
+  flagged_count="$(sed '/^-- detail/q' "$flagged_sql" | compose exec -T postgres psql -X -A -t -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -f - 2>/dev/null | tr -d '[:space:]' || true)"
+  if [[ "$flagged_count" =~ ^[0-9]+$ ]] && [ "$flagged_count" -gt 0 ]; then
+    {
+      echo "$flagged_count paid billing_orders row(s) flagged with a review_reason."
+      echo
+      sed -n '/^-- detail/,$p' "$flagged_sql" | compose exec -T postgres psql -X -U "$(env_get POSTGRES_USER)" -d "$(env_get POSTGRES_DB)" -f - 2>&1 || true
+    } > "$tmp/body"
+    alert billing-paid-flagged "[wordmet] $flagged_count paid order(s) flagged for review" "$tmp/body"
+  fi
 }
 
 alert() {

@@ -71,7 +71,7 @@ describe('FakePayosAdapter links (design §3.3)', () => {
     await adapter.createCheckout(order);
     const worker = new FakePayosAdapter(testConfig({ payos: { mode: 'fake', clientId: null, apiKey: null, checksumKey: null }, billing: { production: false, fakeEnabled: false, fakeSecret: SECRET, fakeFetchState: true } }),
       { fakePayosLink: table } as unknown as PrismaClient, new FakeClock(NOW), registry);
-    expect(await worker.getCheckout(CODE)).toEqual({ paymentLinkId: expect.stringMatching(/^fake-link-/), status: 'PENDING', amount: 199000, amountPaid: 0, transactions: [] });
+    expect(await worker.getCheckout(CODE)).toEqual({ paymentLinkId: expect.stringMatching(/^fake-link-/), status: 'PENDING', amount: 199000, amountPaid: 0, createdAt: NOW, transactions: [] });
     expect(await worker.getCheckout(CODE + 1)).toBeNull();
   });
 
@@ -106,7 +106,7 @@ describe('FakePayosAdapter.pay (the page buttons "Đã trả" and "Trả thiếu
     expect(inbox.store).toHaveBeenCalledTimes(1);
     expect(stored[0]).toHaveLength(1);
     expect(stored[0][0]).toMatchObject({
-      type: 'payment_succeeded', environment: 'sandbox', externalEventId: `${CODE}:${state?.transactions[0].reference}`,
+      type: 'payment_succeeded', environment: 'sandbox', externalEventId: `${CODE}:${state?.transactions[0].reference}:${state?.paymentLinkId}`,
       event: { orderCode: CODE, amount: 199000, paymentLinkId: expect.stringMatching(/^fake-link-/), success: true, code: '00', source: 'webhook' },
     });
     expect(applier.applyMany).toHaveBeenCalledWith(['id-1-0']);

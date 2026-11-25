@@ -17,7 +17,16 @@ SELECT
   (SELECT coalesce(sum(o.amount_minor), 0) FROM billing_orders o
      WHERE o.status = 'paid' AND o.created_at >= day.starts AND o.created_at < day.ends) AS paid_amount_minor,
   (SELECT count(*) FROM billing_orders o WHERE o.status = 'needs_review') AS needs_review_orders,
+  (SELECT count(*) FROM billing_orders o WHERE o.status = 'paid' AND o.review_reason IS NOT NULL) AS paid_flagged_orders,
   (SELECT count(*) FROM billing_events e WHERE e.status = 'failed') AS failed_billing_events,
+  (SELECT count(*) FROM billing_events e
+     WHERE e.provider = 'payos' AND e.status = 'ignored' AND e.error IN ('unknown-order', 'link-mismatch')
+       AND CASE
+         WHEN split_part(e.external_event_id, ':', 1) ~ '^[0-9]{1,18}$'
+         THEN split_part(e.external_event_id, ':', 1)::bigint >= 1100000000
+         ELSE false
+       END
+       AND e.received_at > now() - interval '24 hours') AS ignored_payment_events_24h,
   (SELECT coalesce(sum(m.sent), 0) FROM mail_budget_buckets m
      WHERE m.bucket = :'budget_key' || ':' || to_char(day.local_date, 'YYYY-MM-DD')) AS mails_sent
 FROM day;

@@ -19,7 +19,7 @@ const order = (over: Partial<ReconcileOrder> = {}): ReconcileOrder => ({
   expiresAt: new Date(NOW.getTime() - minutes(30)), createdAt: new Date(NOW.getTime() - minutes(60)), ...over,
 });
 const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({
-  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, transactions: [], ...over,
+  paymentLinkId: 'link-1', status: 'PENDING', amount: 79000, amountPaid: 0, createdAt: new Date(NOW.getTime() - minutes(60)), transactions: [], ...over,
 });
 const tx = (reference: string, amount = 79000) => ({
   reference, amount, transactionDateTime: '2026-11-05 10:02:00',
@@ -73,7 +73,7 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     expect(stores).toHaveLength(1);
     expect(stores[0]).toHaveLength(1);
     expect(stores[0][0]).toMatchObject({
-      type: 'payment_succeeded', environment: 'production', externalEventId: `${CODE}:FT1`, transactionId: `${CODE}:FT1`, appUserId: null, externalSubscriptionId: null,
+      type: 'payment_succeeded', environment: 'production', externalEventId: `${CODE}:FT1:link-1`, transactionId: `${CODE}:FT1`, appUserId: null, externalSubscriptionId: null,
       occurredAt: NOW, missing: [],
     });
     expect(stores[0][0].event as OrderPaymentPayload).toEqual({
@@ -95,7 +95,7 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
   it('two transactions are two events (a short payment and its rest)', async () => {
     const { service, stores } = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1', 40000), tx('FT2', 39000)] }) });
     await service.reconcileOne(order(), NOW);
-    expect(stores[0].map((e) => e.externalEventId)).toEqual([`${CODE}:FT1`, `${CODE}:FT2`]);
+    expect(stores[0].map((e) => e.externalEventId)).toEqual([`${CODE}:FT1:link-1`, `${CODE}:FT2:link-1`]);
   });
 
   it('money counts whatever status payOS gives the link (an expired link with a transfer on it)', async () => {
@@ -118,7 +118,11 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     const ctx = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1'), tx('FT2', 40000)] }), neverApplied: true });
     ctx.inbox.store.mockResolvedValue([]);
     await ctx.service.reconcileOne(order(), NOW);
-    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:production:${CODE}:FT1`, `payos:production:${CODE}:FT2`]);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(
+      expect.anything(),
+      [`payos:production:${CODE}:FT1`, `payos:production:${CODE}:FT2`],
+      [`payos:production:${CODE}:FT1:link-1`, `payos:production:${CODE}:FT2:link-1`],
+    );
     expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
     expect(ctx.logs.some((l) => l.level === 'warn')).toBe(true);
   });
@@ -127,7 +131,11 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     const ctx = setup({ account: 'sandbox', getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1')] }), neverApplied: true });
     await ctx.service.reconcileOne(order(), NOW);
     expect(ctx.applier.applyMany).toHaveBeenCalledWith(['evt-1-0']);
-    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:sandbox:${CODE}:FT1`]);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(
+      expect.anything(),
+      [`payos:sandbox:${CODE}:FT1`],
+      [`payos:sandbox:${CODE}:FT1:link-1`],
+    );
     expect(ctx.applier.applyMany.mock.invocationCallOrder[0]).toBeLessThan(ctx.orders.neverApplied.mock.invocationCallOrder[0]);
   });
 
@@ -283,6 +291,53 @@ describe('OrdersReconcileService.reconcileOne — no money (design §3.6 table)'
     await failed.service.reconcileOne(order({ status: 'failed' }), NOW);
     expect(failed.cancelCheckout).toHaveBeenCalledWith(CODE);
     expect(failed.row.status).toBe('failed');
+  });
+
+  describe('PAY-06 (A2.5): pending order with no stored link cancels only a payOS link not older than order - 5 min', () => {
+    const baseOrder = order({ paymentLinkId: null });
+
+    it('cancels when link createdAt is order createdAt + 10 s', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() + 10_000);
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).toHaveBeenCalledTimes(1);
+      expect(ctx.row.status).toBe('failed');
+    });
+
+    it('does not cancel and moves to needs_review/provider-mismatch when link createdAt is order createdAt - 6 min', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() - minutes(6));
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).not.toHaveBeenCalled();
+      expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    });
+
+    it('does not cancel and moves to needs_review/provider-mismatch when link createdAt is null', async () => {
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: null } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).not.toHaveBeenCalled();
+      expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    });
+
+    it('cancels when link createdAt is order createdAt - 4 min (inside 5 min skew)', async () => {
+      const linkAt = new Date(baseOrder.createdAt.getTime() - minutes(4));
+      const ctx = setup({
+        getCheckout: async () => ({ ...state({ status: 'PENDING' }), createdAt: linkAt } as CheckoutState),
+        stored: { paymentLinkId: null },
+      });
+      await ctx.service.reconcileOne(baseOrder, NOW);
+      expect(ctx.cancelCheckout).toHaveBeenCalledTimes(1);
+      expect(ctx.row.status).toBe('failed');
+    });
   });
 
   it('LB1E16: payOS errors or does not answer → no change; a pending order more than 24 hours past its expiry that cannot be asked is expired', async () => {

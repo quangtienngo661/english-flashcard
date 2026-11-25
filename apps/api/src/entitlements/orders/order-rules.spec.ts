@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  decideManualConfirm, decideOrderPayment, NO_LINK_PAYMENT_SKEW_MS, parsePayosTime, precheckPayment, type IncomingPayment, type OrderState, type OrderStatus,
+  decideManualConfirm, decideOrderPayment, NO_LINK_PAYMENT_SKEW_MS, parsePayosInstant, parsePayosTime, precheckPayment, samePayosMoment,
+  type IncomingPayment, type OrderState, type OrderStatus,
 } from './order-rules.js';
 
 const at = (iso: string) => new Date(iso);
@@ -279,15 +280,48 @@ describe('precheckPayment (design §3.4 "Kiểm trước")', () => {
 describe('parsePayosTime (ASSUMPTION P9: Vietnam time)', () => {
   const fallback = at('2026-11-05T03:02:07.000Z');
 
-  it('reads YYYY-MM-DD HH:mm:ss as Vietnam time', () => {
+  it('reads YYYY-MM-DD HH:mm:ss as Vietnam time and ISO 8601 with offset or Z', () => {
     expect(parsePayosTime('2026-11-05 10:02:00', fallback).toISOString()).toBe('2026-11-05T03:02:00.000Z');
     expect(parsePayosTime('2026-01-01 00:00:00', fallback).toISOString()).toBe('2025-12-31T17:00:00.000Z');
+    expect(parsePayosTime('2026-11-05T10:02:00+07:00', fallback).toISOString()).toBe('2026-11-05T03:02:00.000Z');
+    expect(parsePayosTime('2026-11-05T03:02:00Z', fallback).toISOString()).toBe('2026-11-05T03:02:00.000Z');
+    expect(parsePayosInstant('2026-11-05T10:02:00')).toBeNull();
   });
 
   it('falls back to the time of receipt when it is missing or not that shape', () => {
-    for (const bad of [null, '', 'yesterday', '2026-11-05', '2026-13-45 99:99:99', '2026-11-05T10:02:00+07:00']) {
+    for (const bad of [null, '', 'yesterday', '2026-11-05', '2026-13-45 99:99:99', '2026-11-05T10:02:00']) {
       expect(parsePayosTime(bad, fallback), String(bad)).toBe(fallback);
     }
+  });
+});
+
+describe('samePayosMoment (PAY-05, A2.4)', () => {
+  it('treats the same instant in space-separated Vietnam time and ISO 8601 formats as equal', () => {
+    expect(samePayosMoment('2026-11-21 18:44:15', '2026-11-21T18:44:15+07:00')).toBe(true);
+    expect(samePayosMoment('2026-11-21 18:44:15', '2026-11-21T11:44:15Z')).toBe(true);
+    expect(samePayosMoment('2026-11-21 18:44:15', '2026-11-21 18:44:16')).toBe(false);
+  });
+
+  it('falls back to non-null string equality for unparsable values', () => {
+    expect(samePayosMoment('abc', 'abc')).toBe(true);
+    expect(samePayosMoment('abc', 'abd')).toBe(false);
+    expect(samePayosMoment(null, null)).toBe(false);
+  });
+
+  it('I2 attaches a duplicate transfer whose timestamp arrives in ISO 8601 format instead of opening a second period', () => {
+    const decision = decideOrderPayment(
+      order({
+        status: 'paid',
+        paidVia: 'reconcile',
+        amount: 79_000,
+        payosTotal: 79_000,
+        payosCount: 1,
+        payosTransfers: [{ amount: 79_000, providerTime: '2026-11-21 18:44:15' }],
+      }),
+      { source: 'webhook', amount: 79_000, at: at('2026-11-21T11:44:15.000Z'), providerTime: '2026-11-21T18:44:15+07:00' },
+    );
+    expect(decision.outcome).toBe('attached');
+    expect(decision.openPeriod).toBe(false);
   });
 });
 

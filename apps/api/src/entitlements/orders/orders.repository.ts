@@ -357,14 +357,15 @@ export class OrdersRepository {
   }
 
   /**
-   * Review I1. True when none of these payOS transfers was ever counted and every one of their inbox rows is final without having been applied
-   * (`ignored`, or `failed` for good): money no automatic path will pick up. A payment key is also the inbox `dedupe_key`, so one list serves both.
+   * Review I1 & R5d. True when none of these payOS transfers was ever counted (by `paymentKeys`) and every one of their inbox rows
+   * (by `eventKeys`) is final without having been applied (`ignored`, or `failed` for good): money no automatic path will pick up.
+   * Since R5d, `dedupe_key` includes `paymentLinkId` while `payment_key` stays `payos:<env>:<orderCode>:<reference>`, so both lists are passed.
    */
-  async neverApplied(db: Db, keys: string[]): Promise<boolean> {
-    if (keys.length === 0) return false;
-    if (await db.billingOrderPayment.count({ where: { paymentKey: { in: keys } } }) > 0) return false;
-    const events = await db.billingEvent.findMany({ where: { dedupeKey: { in: keys } }, select: { status: true, attempts: true } });
-    return events.length === keys.length
+  async neverApplied(db: Db, paymentKeys: string[], eventKeys: string[]): Promise<boolean> {
+    if (paymentKeys.length === 0 || eventKeys.length === 0) return false;
+    if (await db.billingOrderPayment.count({ where: { paymentKey: { in: paymentKeys } } }) > 0) return false;
+    const events = await db.billingEvent.findMany({ where: { dedupeKey: { in: eventKeys } }, select: { status: true, attempts: true } });
+    return events.length === eventKeys.length
       && events.every((event) => event.status === 'ignored' || (event.status === 'failed' && event.attempts >= BILLING_MAX_ATTEMPTS));
   }
 

@@ -1,4 +1,4 @@
-import { NotFoundError, PayOS, TooManyRequestError } from '@payos/node';
+import { APIError, NotFoundError, PayOS, TooManyRequestError } from '@payos/node';
 import { describe, expect, it, vi } from 'vitest';
 import { testConfig } from '../../../../test/support/test-config.js';
 import { BillingAdapterRegistry } from '../billing-adapter.registry.js';
@@ -102,7 +102,7 @@ describe('PayosAdapter.getCheckout', () => {
       ],
     }));
     expect(await adapter.getCheckout(1_000_000_123)).toEqual({
-      paymentLinkId: 'link-1', status: 'UNDERPAID', amount: 199000, amountPaid: 100000,
+      paymentLinkId: 'link-1', status: 'UNDERPAID', amount: 199000, amountPaid: 100000, createdAt: new Date('2026-11-05T03:00:00.000Z'),
       transactions: [
         { reference: 'FT1', amount: 60000, transactionDateTime: '2026-11-05 10:02:00',
           payer: { counterAccountName: 'LAN', counterAccountNumber: '0123', counterAccountBankName: 'MB Bank' } },
@@ -111,16 +111,41 @@ describe('PayosAdapter.getCheckout', () => {
     });
   });
 
-  it('a link payOS does not know is null, not an error', async () => {
+  it('parses the SDK link createdAt into CheckoutState.createdAt (PAY-06, A2.5)', async () => {
     const { adapter, paymentRequests } = setup();
-    paymentRequests.get.mockRejectedValue(new NotFoundError(404, { code: '101', desc: 'not found' }, 'not found', new Headers()));
-    expect(await adapter.getCheckout(1_000_000_123)).toBeNull();
+    paymentRequests.get.mockResolvedValue(link({ createdAt: '2026-11-21T18:44:15+07:00' }));
+    const res = await adapter.getCheckout(1_000_000_123);
+    expect((res as { createdAt?: Date | null })?.createdAt?.toISOString()).toBe('2026-11-21T11:44:15.000Z');
   });
 
-  it('any other failure is thrown, so the caller leaves the order as it is (design §3.6)', async () => {
+  it('a link payOS does not know is null, not an error (HTTP 404 or HTTP 200 code 101)', async () => {
     const { adapter, paymentRequests } = setup();
-    paymentRequests.get.mockRejectedValue(new TooManyRequestError(429, undefined, 'slow down', new Headers()));
+    paymentRequests.get.mockRejectedValueOnce(new NotFoundError(404, { code: '101', desc: 'not found' }, 'not found', new Headers()));
+    expect(await adapter.getCheckout(1_000_000_123)).toBeNull();
+
+    const http200Code101 = APIError.generateError(
+      200,
+      { data: null, code: '101', desc: 'Mã thanh toán không tồn tại', signature: null },
+      'Mã thanh toán không tồn tại',
+      new Headers(),
+    );
+    paymentRequests.get.mockRejectedValueOnce(http200Code101);
+    expect(await adapter.getCheckout(1_000_000_124)).toBeNull();
+  });
+
+  it('any other failure (including HTTP 200 with a non-101 code) is thrown, so the caller leaves the order as it is (design §3.6)', async () => {
+    const { adapter, paymentRequests } = setup();
+    paymentRequests.get.mockRejectedValueOnce(new TooManyRequestError(429, undefined, 'slow down', new Headers()));
     await expect(adapter.getCheckout(1_000_000_123)).rejects.toThrow();
+
+    const http200Code20 = APIError.generateError(
+      200,
+      { data: null, code: '20', desc: 'other error', signature: null },
+      'other error',
+      new Headers(),
+    );
+    paymentRequests.get.mockRejectedValueOnce(http200Code20);
+    await expect(adapter.getCheckout(1_000_000_125)).rejects.toThrow();
   });
 });
 
@@ -146,7 +171,7 @@ describe('PayosAdapter.verify and ack', () => {
     expect(result).toMatchObject({ ok: true, skipped: 0 });
     if (!result.ok) throw new Error('unreachable');
     expect(result.events).toHaveLength(1);
-    expect(result.events[0]).toMatchObject({ type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC', appUserId: null });
+    expect(result.events[0]).toMatchObject({ type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC:link-1', appUserId: null });
   });
 
   it('a wrong signature is refused', async () => {

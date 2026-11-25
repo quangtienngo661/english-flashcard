@@ -77,7 +77,7 @@ export function decideOrderPayment(state: OrderState, payment: IncomingPayment):
     // T7: staff confirmed first, and this is the same transfer arriving through payOS. Attach it; no second period.
     if (state.paidVia === 'manual' && state.payosCount === 0 && payment.amount === state.amount) return { ...keep, outcome: 'attached' };
     // Review I2: the same transfer under another reference (payOS gave the webhook and the job two): same amount, same moment. Already counted.
-    if (payment.providerTime !== null && state.payosTransfers.some((t) => t.amount === payment.amount && t.providerTime === payment.providerTime)) {
+    if (payment.providerTime !== null && state.payosTransfers.some((t) => t.amount === payment.amount && samePayosMoment(t.providerTime, payment.providerTime))) {
       return { ...keep, outcome: 'attached' };
     }
     // T9: not the amount of the order, so not a second purchase: a flag for staff.
@@ -139,11 +139,35 @@ export function precheckPayment(
 }
 
 const PAYOS_TIME = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
+const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
-/** payOS writes `transactionDateTime` as `YYYY-MM-DD HH:mm:ss` with no zone: Vietnam time (ASSUMPTION P9). Anything else → `fallback`. */
+/**
+ * Parses a payOS timestamp as an instant: `YYYY-MM-DD HH:mm:ss` (Vietnam time `+07:00`) or ISO 8601 with an offset or `Z`.
+ * Anything else returns `null`.
+ */
+export function parsePayosInstant(text: string | null): Date | null {
+  if (text === null) return null;
+  const space = PAYOS_TIME.exec(text);
+  if (space !== null) {
+    const parsed = new Date(`${space[1]}-${space[2]}-${space[3]}T${space[4]}:${space[5]}:${space[6]}+07:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  if (ISO_WITH_ZONE.test(text)) {
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+/** True when two payOS timestamps represent the same millisecond; falls back to non-null string equality when unparsable. */
+export function samePayosMoment(a: string | null, b: string | null): boolean {
+  const pa = parsePayosInstant(a);
+  const pb = parsePayosInstant(b);
+  if (pa !== null && pb !== null) return pa.getTime() === pb.getTime();
+  return a !== null && a === b;
+}
+
+/** payOS writes `transactionDateTime` as `YYYY-MM-DD HH:mm:ss` (Vietnam time) or ISO 8601 with zone. Anything else → `fallback`. */
 export function parsePayosTime(text: string | null, fallback: Date): Date {
-  const match = text === null ? null : PAYOS_TIME.exec(text);
-  if (match === null) return fallback;
-  const parsed = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}+07:00`);
-  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+  return parsePayosInstant(text) ?? fallback;
 }

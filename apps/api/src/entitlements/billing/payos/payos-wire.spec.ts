@@ -69,10 +69,21 @@ describe('verifyPayosBody (design §3.3, §3.4)', () => {
 describe('toParsedEvent (design §3.3, §3.12)', () => {
   const event = (over: Record<string, unknown> = {}, top: Record<string, unknown> = {}) => toParsedEvent(signed(data(over), top), 'production', RECEIVED);
 
-  it('gives the event the identity <orderCode>:<reference>, no user and no subscription', () => {
+  it('gives the event the identity <orderCode>:<reference>:<paymentLinkId>, no user and no subscription', () => {
     expect(event()).toMatchObject({
-      type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC', transactionId: '1000000123:FT26309ABC',
+      type: 'payment_succeeded', environment: 'production', externalEventId: '1000000123:FT26309ABC:124c33293c43417ab7879e14c8d9eb18', transactionId: '1000000123:FT26309ABC',
       appUserId: null, externalSubscriptionId: null, occurredAt: RECEIVED, missing: [],
+    });
+  });
+
+  it('keeps <orderCode>:<reference> when paymentLinkId is missing or empty', () => {
+    expect(event({ paymentLinkId: undefined })).toMatchObject({
+      externalEventId: '1000000123:FT26309ABC',
+      transactionId: '1000000123:FT26309ABC',
+    });
+    expect(event({ paymentLinkId: '' })).toMatchObject({
+      externalEventId: '1000000123:FT26309ABC',
+      transactionId: '1000000123:FT26309ABC',
     });
   });
 
@@ -106,7 +117,7 @@ describe('toParsedEvent (design §3.3, §3.12)', () => {
 
   it('without an amount or a link id the payload is null and says which are missing (the applier ignores it as missing-fields)', () => {
     const noAmount = event({ amount: undefined });
-    expect(noAmount).toMatchObject({ event: null, missing: ['amount'], externalEventId: '1000000123:FT26309ABC' });
+    expect(noAmount).toMatchObject({ event: null, missing: ['amount'], externalEventId: '1000000123:FT26309ABC:124c33293c43417ab7879e14c8d9eb18' });
     expect(event({ amount: undefined, paymentLinkId: '' })).toMatchObject({ event: null, missing: ['amount', 'paymentLinkId'] });
     expect(event({ amount: '199000' })).toMatchObject({ event: null, missing: ['amount'] });
   });
@@ -118,6 +129,6 @@ describe('toParsedEvent (design §3.3, §3.12)', () => {
   });
 
   it('the webhook of payOS’s own confirm-webhook test (orderCode 123) parses; the applier turns it into unknown-order', () => {
-    expect(event({ orderCode: 123 })).toMatchObject({ externalEventId: '123:FT26309ABC', missing: [] });
+    expect(event({ orderCode: 123 })).toMatchObject({ externalEventId: '123:FT26309ABC:124c33293c43417ab7879e14c8d9eb18', missing: [] });
   });
 });
