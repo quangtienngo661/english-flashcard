@@ -128,7 +128,7 @@ deploy/scripts/compose.sh run --rm --no-deps -T api node dist/cli/accounts-delet
 ```bash
 deploy/scripts/compose.sh up -d
 deploy/scripts/compose.sh ps
-deploy/scripts/backup.sh
+BACKUP_KIND=deploy deploy/scripts/backup.sh
 ```
 
 Cài lại các dòng cron của `watch.sh`, `backup.sh`, `run-maintenance.js` và `daily-report.sh` theo hướng dẫn mục cron trong [deploy/README.md](../../deploy/README.md).
