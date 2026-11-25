@@ -162,7 +162,7 @@ export interface AppConfig {
 }
 
 export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
-  'auth.register.ip': { by: 'ip', max: 5, windowSeconds: 3600 },
+  'auth.register.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'auth.login.ip': { by: 'ip', max: 20, windowSeconds: 60 },
   // ASSUMPTION number, design 4.2.
   'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
@@ -173,7 +173,7 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'auth.refresh.chain': { by: 'chain', max: 10, windowSeconds: 60 },
   'auth.logout.ip': { by: 'ip', max: 60, windowSeconds: 60 },
   'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
-  'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
+  'mail.ip.daily': { by: 'ip', max: 60, windowSeconds: 86400 },
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
   // Flashcard answers: a fast session goes well past 30 a minute.
   'learning.review': { by: 'user', max: 120, windowSeconds: 60 },

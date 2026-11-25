@@ -28,3 +28,8 @@ export function useUpdateProfile() {
   const api = useApi();
   return (patch: ProfilePatch) => api.patch<Me>('/v1/me', patch);
 }
+
+export function useLogoutAll() {
+  const api = useApi();
+  return () => api.post<void>('/v1/auth/logout-all', {});
+}

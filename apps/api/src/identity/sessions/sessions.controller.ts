@@ -4,6 +4,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
+import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { Public } from './public.decorator.js';
 import { clearSessionCookie, readRefreshToken, writeSession, type TokenResponse } from './session-transport.js';
 import { SessionService } from './session.service.js';
@@ -47,5 +48,16 @@ export class SessionsController {
     if (!input) return;
     await this.sessions.revokeByRefreshToken(input.token, input.path);
     if (input.path === 'web') clearSessionCookie(res);
+  }
+
+  @Post('logout-all')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  async logoutAll(
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.sessions.revokeAllChains(req.user!.userId);
+    clearSessionCookie(res);
   }
 }

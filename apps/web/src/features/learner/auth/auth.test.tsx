@@ -131,7 +131,7 @@ describe('RegisterForm (K/01, K/01b)', () => {
     await userEvent.click(submit);
     const given = screen.getByRole('textbox', { name: 'Tên' });
     await waitFor(() => expect(given).toHaveFocus());
-    expect(given).toHaveAccessibleDescription('Nhập tên của bạn.');
+    expect(given).toHaveAccessibleDescription('Nhập tên.');
     expect(screen.getByLabelText('Ngày sinh')).toHaveAccessibleDescription('Chọn ngày sinh.');
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAccessibleDescription('Nhập email.');
     expect(screen.getByLabelText('Mật khẩu')).toHaveAccessibleDescription('Nhập mật khẩu.');

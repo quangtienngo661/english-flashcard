@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { isTransientDbError } from '../db/transient-db-error.js';
 import type { AppLogger } from '../logging/app-logger.js';
 import type { RequestWithOperationId } from '../logging/operation-id.middleware.js';
 import { ProblemDetailsException, type ProblemDetailsOptions } from './problem-details.exception.js';
@@ -22,7 +23,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const response = ctx.getResponse<ProblemDetailsResponse>();
     const request = ctx.getRequest<Partial<RequestWithOperationId>>();
 
-    const { status, type, title, detail, extensions, retryAfterSeconds } = this.toProblemDetails(exception);
+    const { status, type, title, detail, extensions, retryAfterSeconds, transient } = this.toProblemDetails(exception);
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       // The 500 body carries no cause; this line is the only trace tying its operation_id to a failure. It logs the
       // route pattern (never the URL, which holds ids and query strings) and no message (it can hold row values).
@@ -30,6 +31,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         method: request.method,
         route: request.route?.path ?? 'unmatched',
         stack: stackFrames(exception),
+        ...(transient ? { transient: true } : {}),
       });
     }
     if (retryAfterSeconds !== undefined) {
@@ -51,7 +53,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       });
   }
 
-  private toProblemDetails(thrown: unknown): ProblemDetailsOptions {
+  private toProblemDetails(thrown: unknown): ProblemDetailsOptions & { transient?: boolean } {
     // @nestjs/platform-express 12.3.0 wraps body-parser's http-errors in an HttpException whose `cause` is the original
     // (12.1.2 passed them through): unwrap it so a body error maps as below, not as a bare HttpException.
     const exception = thrown instanceof HttpException && isExposedClientError(thrown.cause) ? thrown.cause : thrown;
@@ -92,6 +94,15 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         status: exception.getStatus(),
         type: 'about:blank',
         title: exception.message,
+      };
+    }
+    if (isTransientDbError(exception)) {
+      return {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        type: 'db-busy',
+        title: 'Service busy',
+        retryAfterSeconds: 2,
+        transient: true,
       };
     }
     return {

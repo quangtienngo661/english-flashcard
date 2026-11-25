@@ -7,7 +7,7 @@ const prismaError = (code: string, meta?: Record<string, unknown>) => new Prisma
 );
 
 describe('isTransientDbError', () => {
-  it.each(['P1001', 'P1002', 'P1017', 'P2034'])('B2#34: recognizes Prisma %s', (code) => {
+  it.each(['P1001', 'P1002', 'P1017', 'P2024', 'P2028', 'P2034'])('B2#34/ARC-03: recognizes Prisma %s', (code) => {
     expect(isTransientDbError(prismaError(code))).toBe(true);
   });
 

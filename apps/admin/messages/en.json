@@ -2154,7 +2154,10 @@
       "session_max_mode": "Word count: the maximum is the number of words in the scope the learner picks, at most 100",
       "ai_max_fixed": "never above the session’s questions",
       "ai_max_percent": "rounded down",
-      "ai_placement": "Let the learner choose: the Customize session dialog shows Spread evenly / Random once the learner picks at least 1 AI question"
+      "ai_placement": "Let the learner choose: the Customize session dialog shows Spread evenly / Random once the learner picks at least 1 AI question",
+      "pro_price_1m_vnd": "After changing a price, run the Deploy workflow so the home page and Google show it.",
+      "pro_price_3m_vnd": "After changing a price, run the Deploy workflow so the home page and Google show it.",
+      "pro_price_12m_vnd": "After changing a price, run the Deploy workflow so the home page and Google show it."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "off",

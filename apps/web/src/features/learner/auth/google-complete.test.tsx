@@ -43,7 +43,7 @@ describe('GoogleComplete (design §9.2)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     const given = screen.getByLabelText('Tên');
     await waitFor(() => expect(given).toHaveFocus());
-    expect(given).toHaveAccessibleDescription('Nhập tên của bạn.');
+    expect(given).toHaveAccessibleDescription('Nhập tên.');
     expect(f.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
   });
 
@@ -66,7 +66,7 @@ describe('GoogleComplete (design §9.2)', () => {
     expect(screen.queryByLabelText('Tên')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     await waitFor(() => expect(screen.getByLabelText('Ngày sinh')).toHaveFocus());
-    expect(screen.queryByText('Nhập tên của bạn.')).toBeNull();
+    expect(screen.queryByText('Nhập tên.')).toBeNull();
   });
 
   it('posts birth date, consent, time zone (and the names when asked) with the CSRF header, adopts the session and goes to the app', async () => {

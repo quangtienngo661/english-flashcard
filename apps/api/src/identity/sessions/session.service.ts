@@ -132,6 +132,13 @@ export class SessionService {
     });
   }
 
+  async revokeAllChains(userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, userId);
+      await this.revokeAllForUser(tx, userId, 'logout_all');
+    }, transactionOptions);
+  }
+
   private locate(token: string) {
     return this.prisma.refreshToken.findUnique({
       where: { tokenHash: createHash('sha256').update(token).digest('hex') },

@@ -110,6 +110,16 @@ export class SourcesService {
     return row ? toView(row) : null;
   }
 
+  /**
+   * Acquires a FOR KEY SHARE lock on a data source inside the caller's transaction so concurrent `remove()` blocks
+   * until the referencing batch commits. Returns false if the source no longer exists.
+   */
+  async lockSourceForBatch(tx: Prisma.TransactionClient, sourceId: string): Promise<boolean> {
+    const rows = await tx.$queryRaw<Array<{ ok: number }>>`
+      SELECT 1 AS ok FROM data_sources WHERE id = ${sourceId}::uuid FOR KEY SHARE`;
+    return rows.length > 0;
+  }
+
   /** Every source for the admin screen, each with whether learners see it on the public sources page. */
   async list(): Promise<{ items: AdminSourceView[] }> {
     const rows = await this.prisma.$queryRaw<RawSourceRow[]>(Prisma.sql`
@@ -178,28 +188,31 @@ export class SourcesService {
   }
 
   /**
-   * One guarded statement: the source goes only when it is third_party and no level, import batch or row key refers to it.
-   * The last two are plain UUID columns of the pipeline module (no foreign key), so they are checked here by hand; the
-   * foreign key of entry_levels (ON DELETE RESTRICT) stays the backstop for a level written while this runs.
+   * Locks the source row `FOR UPDATE` inside a transaction before running the guarded `DELETE`, so any concurrent
+   * upload holding `FOR KEY SHARE` commits its `import_batches` row before the `DELETE` takes its Read Committed
+   * snapshot. The foreign key on `entry_levels` (`ON DELETE RESTRICT`) remains the backstop for concurrent levels.
    */
   async remove(id: string): Promise<void> {
     if (id === AGID_SOURCE_ID) throw sourceProtected();
-    try {
-      const deleted = await this.prisma.$executeRaw`
-        DELETE FROM data_sources ds
-        WHERE ds.id = ${id}::uuid AND ds.kind = 'third_party'
-          AND NOT EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)
-          AND NOT EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)
-          AND NOT EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)`;
-      if (deleted === 1) return;
-    } catch (error) {
-      if (isForeignKeyViolation(error)) throw sourceInUse();
-      throw error;
-    }
-    // Nothing was deleted: no such source, the owner's, or one that something still refers to.
-    const kind = await this.kindOf(id);
-    if (kind === null) throw notFound();
-    throw kind === 'owner' ? sourceProtected() : sourceInUse();
+    const deleted = await this.prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ kind: string }>>`
+        SELECT kind FROM data_sources WHERE id = ${id}::uuid FOR UPDATE`;
+      if (locked.length === 0) throw notFound();
+      if (locked[0].kind === 'owner') throw sourceProtected();
+      try {
+        return await tx.$executeRaw`
+          DELETE FROM data_sources ds
+          WHERE ds.id = ${id}::uuid AND ds.kind = 'third_party'
+            AND NOT EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)
+            AND NOT EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)
+            AND NOT EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)`;
+      } catch (error) {
+        if (isForeignKeyViolation(error)) throw sourceInUse();
+        throw error;
+      }
+    });
+    if (deleted === 1) return;
+    throw sourceInUse();
   }
 
   /**

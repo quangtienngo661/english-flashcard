@@ -22,3 +22,7 @@ allowBuilds:
   # Optional native speed-up for bullmq's msgpackr serialization; msgpackr's pure-JS
   # fallback is functionally identical, just slower, so the native build isn't needed.
   msgpackr-extract: false
+
+overrides:
+  'glob@>=10.2.0 <10.5.0': '^10.5.0'
+  'effect@<=3.22.0': '^3.22.1'

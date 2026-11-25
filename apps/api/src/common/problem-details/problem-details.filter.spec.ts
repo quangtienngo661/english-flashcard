@@ -1,6 +1,7 @@
 import { BadRequestException, HttpException, NotFoundException, StandardSchemaValidationPipe, type ArgumentsHost } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { Prisma } from '../../generated/prisma/client.js';
 import { AppLogger, type LogEntry } from '../logging/app-logger.js';
 import { runWithOperationId } from '../logging/request-context.js';
 import { ProblemDetailsException } from './problem-details.exception.js';
@@ -229,6 +230,55 @@ describe('ProblemDetailsFilter', () => {
       const { host, response } = mockArgumentsHost({ operationId: 'op-2' });
       new ProblemDetailsFilter().catch(new Error('boom'), host);
       expect(response.body).toMatchObject({ status: 500, operation_id: 'op-2' });
+    });
+  });
+
+  describe('ARC-03: transient database errors', () => {
+    const prismaError = (code: string) =>
+      new Prisma.PrismaClientKnownRequestError('Database request failed', { code, clientVersion: '7.10.1' });
+
+    it('maps Prisma P2024 to 503 db-busy with Retry-After: 2 and logs transient: true', () => {
+      const entries: LogEntry[] = [];
+      const logger = new AppLogger({ write: (entry) => entries.push(entry) });
+      const { host, response } = mockArgumentsHost({ operationId: 'op-db', method: 'GET', route: { path: '/v1/me' } });
+      runWithOperationId('op-db', () =>
+        new ProblemDetailsFilter('https://api.example.com/problems/', logger).catch(prismaError('P2024'), host),
+      );
+      expect(response.statusCode).toBe(503);
+      expect(response.headers['Retry-After']).toBe('2');
+      expect(response.body).toMatchObject({
+        status: 503,
+        type: 'https://api.example.com/problems/db-busy',
+        title: 'Service busy',
+        operation_id: 'op-db',
+      });
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({ event: 'request_failed', transient: true });
+    });
+
+    it('maps Prisma P2028 to 503 db-busy', () => {
+      const { host, response } = mockArgumentsHost({ operationId: 'op-db2' });
+      new ProblemDetailsFilter('https://api.example.com/problems/').catch(prismaError('P2028'), host);
+      expect(response.statusCode).toBe(503);
+      expect(response.headers['Retry-After']).toBe('2');
+      expect((response.body as { type: string }).type).toMatch(/db-busy$/);
+    });
+
+    it('maps nested cause.code 40P01 to 503 db-busy', () => {
+      const { host, response } = mockArgumentsHost({ operationId: 'op-db3' });
+      new ProblemDetailsFilter('https://api.example.com/problems/').catch({ cause: { code: '40P01' } }, host);
+      expect(response.statusCode).toBe(503);
+      expect(response.headers['Retry-After']).toBe('2');
+    });
+
+    it('keeps Prisma P2002 and plain Error at 500', () => {
+      const { host: h1, response: r1 } = mockArgumentsHost({});
+      new ProblemDetailsFilter('https://api.example.com/problems/').catch(prismaError('P2002'), h1);
+      expect(r1.statusCode).toBe(500);
+
+      const { host: h2, response: r2 } = mockArgumentsHost({});
+      new ProblemDetailsFilter('https://api.example.com/problems/').catch(new Error('x'), h2);
+      expect(r2.statusCode).toBe(500);
     });
   });
 });
