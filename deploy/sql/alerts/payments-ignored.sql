@@ -1,6 +1,7 @@
 SELECT count(*)::int AS count
 FROM billing_events
-WHERE status = 'ignored'
+WHERE provider = 'payos'
+  AND status = 'ignored'
   AND error IN ('unknown-order', 'link-mismatch')
   AND CASE
     WHEN split_part(external_event_id, ':', 1) ~ '^[0-9]{1,18}$'
@@ -12,7 +13,8 @@ WHERE status = 'ignored'
 -- detail
 SELECT id, provider, external_event_id, error, received_at
 FROM billing_events
-WHERE status = 'ignored'
+WHERE provider = 'payos'
+  AND status = 'ignored'
   AND error IN ('unknown-order', 'link-mismatch')
   AND CASE
     WHEN split_part(external_event_id, ':', 1) ~ '^[0-9]{1,18}$'
