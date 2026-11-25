@@ -98,7 +98,7 @@ deploy/scripts/db-roles.sh
 ```
 
 Order: refuse a checkout with local changes → check out `<sha>` → build `wordmet-api:<sha>` and `wordmet-api-migrate:<sha>` → database dump
-(skipped on the first deploy; no WAL-G base backup, that runs from cron only) → migrate → start → wait up to 120 s for `/v1/health/ready`.
+(skipped on the first deploy; no WAL-G base backup, that runs from cron only) → migrate → start → wait up to 120 s (`WAIT_READY_TIMEOUT`) for api and worker to be healthy.
 The Postgres image is not built here: after a change to `deploy/postgres/Dockerfile` run `compose build postgres` first.
 
 - Ready: `state/current` = `<sha>`, the one before goes to `state/previous`; images older than the 3 newest are removed.
@@ -465,6 +465,7 @@ A dump older than the 3 kept in `backups/` is on R2. List and download it (the k
 r2() { docker run --rm --env-file /srv/wordmet/ops.env -e AWS_DEFAULT_REGION=auto   -e AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED -e AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED   -v /srv/wordmet/backups:/backups --entrypoint sh amazon/aws-cli:2.40.2 -c   'AWS_ACCESS_KEY_ID=$R2_BACKUP_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$R2_BACKUP_SECRET_ACCESS_KEY aws --endpoint-url "$R2_BACKUP_ENDPOINT" '"$*"; }
 r2 's3 ls "s3://$R2_BACKUP_BUCKET/daily/"'
 r2 's3 ls "s3://$R2_BACKUP_BUCKET/deploy/"'
+r2 's3 ls "s3://$R2_BACKUP_BUCKET/"'   # legacy root dumps kept for 14 days after prefix rollout
 r2 's3 cp "s3://$R2_BACKUP_BUCKET/daily/<file>.dump" /backups/'
 ```
 
