@@ -166,15 +166,11 @@ and shown on the public sources page while a published sense uses it.
 
 ## CEFR-J Vocabulary Profile (A1–B2)
 
-Used as a CEFR level source for catalog entries (A1–B2). Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, based on the CEFR-J Wordlist by Yukio Tono, Tokyo University of Foreign Studies). Registered in the API as a third-party data source and shown on the public `/sources` page while published senses reference it.
+Used as a CEFR level source for catalog entries (A1–B2). Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, based on the CEFR-J Wordlist by Yukio Tono, Tokyo University of Foreign Studies). Licence terms: to be filled by the owner.
 
 ## Octanove Vocabulary Profile C1/C2 (CC BY-SA 4.0)
 
-Used as a CEFR level source for C1–C2 catalog entries. Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, Octanove Labs). Available under the Creative Commons Attribution-ShareAlike 4.0 International licence (`https://creativecommons.org/licenses/by-sa/4.0/`). Modified/filtered to match Wordmet's catalog lemmas and parts of speech; shown on the public `/sources` page with licence and modification notice.
-
-## NGSL / NAWL / BSL / TSL Word Lists (CC BY-SA 4.0)
-
-New General Service List (NGSL), New Academic Word List (NAWL), Business Service List (BSL), and TOEIC Service List (TSL) by Charles Browne, Brent Culligan, and Joseph Phillips (`https://www.newgeneralservicelist.com/`). Available under the Creative Commons Attribution-ShareAlike 4.0 International licence (`https://creativecommons.org/licenses/by-sa/4.0/`). Registered in the API as third-party data sources and shown on the public `/sources` page whenever published senses reference them.
+Used as a CEFR level source for C1–C2 catalog entries. Source: Open Language Profiles (`https://github.com/openlanguageprofiles/olp-en-cefrj`, Octanove Labs). Available under the Creative Commons Attribution-ShareAlike 4.0 International licence (`https://creativecommons.org/licenses/by-sa/4.0/`). Modified/filtered to match Wordmet's catalog lemmas and parts of speech.
 
 ## pluralize 8.0.0 (MIT)
 

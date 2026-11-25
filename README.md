@@ -155,4 +155,4 @@ Most project documents are written in Vietnamese.
 
 ## Third-party data
 
-Catalog level lists, pronunciations and inflections use third-party datasets (CEFR-J, Octanove C1/C2, NGSL/NAWL/BSL/TSL, English Wiktionary via Wiktextract, and AGID). Full licence notices and attribution: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (and live on `/vi/sources` / `/en/sources`).
+Catalog level lists, pronunciations and inflections use third-party datasets documented in this repository (CEFR-J, Octanove C1/C2, English Wiktionary for IPA, and AGID); copyright terms and notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
