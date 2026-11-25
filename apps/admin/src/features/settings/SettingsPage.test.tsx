@@ -1,12 +1,14 @@
 import { configure, screen, waitFor, within } from '@testing-library/react';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import { SECTIONS, SETTINGS_LAYOUT, type Values } from './settings-api';
 
+// Full-app jsdom renders with multi-step userEvent interactions exceed 5 s on Windows under parallel workers.
+vitest.setConfig({ testTimeout: 15_000 });
 // These pages mount the whole app (session, shell, several queries): the first render can pass 1 s on a busy machine.
 configure({ asyncUtilTimeout: 4000 });
 
