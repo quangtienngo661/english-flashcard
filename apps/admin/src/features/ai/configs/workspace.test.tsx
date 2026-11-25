@@ -1,11 +1,14 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi as vitest } from 'vitest';
 import { renderApp } from '../../staff/test-utils';
 import { problem, type Route } from '../../../auth/test-support';
 import { evalRun, succeeded } from '../prompt-test-support';
 import vi from '../../../../messages/vi.json';
 import { configRoutes, configView, configsView, draftView, publishCheck, FAKE_OK, modelRow, RUN_ID, URL } from './config-test-support';
+
+// Full-app jsdom renders with multi-step userEvent interactions exceed 5 s on Windows under parallel workers.
+vitest.setConfig({ testTimeout: 15_000 });
 
 const root = '/v1/admin/ai/configs/generate_cloze/drafts';
 const draft = () => draftView({ name: 'Thử ngữ cảnh' });
