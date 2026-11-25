@@ -4,8 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '../generated/prisma/client.js';
 
 /**
- * Proportional allocation by the largest-remainder method, guaranteeing each level at least
- * `minPerLevel` (or its full count when smaller) and summing exactly to `min(total, sum(counts))`.
+ * Proportional allocation by the largest-remainder method, always summing exactly to
+ * `target = Math.min(total, sum(counts))` (each level capped at its available count).
+ *
+ * Rule for `minPerLevel`: the per-level minimum (or a level's full count when smaller) is
+ * applied ONLY when `activeLevels.length * minPerLevel <= target`. Otherwise (for example
+ * 7 active levels with `total = 30` and `minPerLevel = 5`), allocation falls back to plain
+ * proportional largest-remainder allocation so the exact sum is preserved without distorting
+ * large levels. Remainder ties are broken deterministically by input order.
  */
 export function allocate(
   countsByLevel: Record<string, number>,
@@ -17,6 +23,7 @@ export function allocate(
 
   const available = entries.reduce((sum, [, count]) => sum + count, 0);
   const target = Math.min(total, available);
+  const effectiveMin = entries.length * minPerLevel <= target ? minPerLevel : 0;
 
   const locked = new Map<string, number>();
   let unlocked = entries.map(([level, count]) => ({ level, count }));
@@ -29,7 +36,7 @@ export function allocate(
 
     const nextUnlocked: typeof unlocked = [];
     for (const item of unlocked) {
-      const floor = Math.min(item.count, minPerLevel);
+      const floor = Math.min(item.count, effectiveMin);
       const exact = unlockedCount > 0 ? (item.count / unlockedCount) * remaining : 0;
       if (exact < floor) {
         locked.set(item.level, floor);
@@ -68,15 +75,6 @@ export function allocate(
         assigned += 1;
       }
     }
-  }
-
-  // If sum of minPerLevel floors exceeded target, trim from largest locked entries.
-  let sum = Object.values(result).reduce((a, b) => a + b, 0);
-  while (sum > target) {
-    const largest = Object.entries(result).sort((a, b) => b[1] - a[1])[0];
-    if (!largest || largest[1] <= 0) break;
-    result[largest[0]] -= 1;
-    sum -= 1;
   }
 
   return result;
@@ -126,18 +124,19 @@ function sampleByLevel(rows: SampleRow[], total: number): SampleRow[] {
   return picked;
 }
 
-function parseSince(argv: string[]): Date | null {
+export function parseSince(argv: string[]): Date | null {
   const idx = argv.indexOf('--since');
   if (idx === -1) return null;
   const raw = argv[idx + 1];
   if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     throw new Error('Usage: --since YYYY-MM-DD');
   }
-  const parsed = new Date(`${raw}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== raw) {
+  const utcCheck = new Date(`${raw}T00:00:00.000Z`);
+  if (Number.isNaN(utcCheck.getTime()) || utcCheck.toISOString().slice(0, 10) !== raw) {
     throw new Error(`Invalid date for --since: ${raw}`);
   }
-  return parsed;
+  // Compare `--since` against Vietnam midnight (+07:00), matching admin report dates.
+  return new Date(`${raw}T00:00:00+07:00`);
 }
 
 export async function runSampleSenses(argv = process.argv.slice(2)): Promise<void> {
